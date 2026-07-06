@@ -1,0 +1,30 @@
+/* Header section styles - with page margins */
+.recent-content-header {
+  padding: 0 var(--page-margin);
+  margin: 2rem 0 1rem 0;
+}
+
+.recent-content-header h2 {
+  margin-bottom: 1.5rem;
+  /* Uses global h2 styles for green color and larger font */
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 599px) {
+  .recent-content-header {
+    margin: 1rem 0;
+  }
+
+  .recent-content-header h2 {
+    margin-bottom: 1rem;
+    /* Uses global responsive h2 styles */
+  }
+}

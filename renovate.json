@@ -1,0 +1,94 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "local>renovate/config",
+    "group:angularMonorepo",
+    "group:angular-cli"
+  ],
+  "packageRules": [
+    {
+      "description": "Group Angular and TypeScript together to prevent incompatibility",
+      "groupName": "Angular ecosystem",
+      "matchPackagePatterns": [
+        "^@angular/",
+        "^@angular-devkit/",
+        "^@nguniversal/",
+        "typescript"
+      ]
+    },
+    {
+      "description": "Require approval for major Angular updates",
+      "matchPackagePatterns": ["^@angular/"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "TypeScript must be compatible with Angular",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": ">=5.8.0 <5.9.0",
+      "matchBaseBranches": ["main"]
+    },
+    {
+      "description": "Group FastAPI ecosystem packages",
+      "groupName": "FastAPI ecosystem",
+      "matchPackageNames": [
+        "fastapi",
+        "uvicorn",
+        "starlette",
+        "pydantic",
+        "pydantic-settings",
+        "python-multipart"
+      ]
+    },
+    {
+      "description": "Group semantic search and ML packages",
+      "groupName": "ML/AI ecosystem",
+      "matchPackageNames": [
+        "qdrant-client",
+        "sentence-transformers",
+        "torch",
+        "transformers",
+        "numpy",
+        "scikit-learn"
+      ]
+    },
+    {
+      "description": "Group database and vector packages",
+      "groupName": "Database ecosystem",
+      "matchPackageNames": [
+        "psycopg2-binary",
+        "sqlalchemy",
+        "alembic",
+        "asyncpg"
+      ]
+    },
+    {
+      "description": "Group testing packages",
+      "groupName": "Python testing",
+      "matchPackageNames": [
+        "pytest",
+        "pytest-asyncio",
+        "pytest-mock",
+        "coverage",
+        "httpx"
+      ]
+    },
+    {
+      "description": "Require approval for major Python framework updates",
+      "matchPackageNames": ["fastapi", "pydantic", "qdrant-client", "torch"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Auto-merge patch updates for low-risk packages",
+      "matchUpdateTypes": ["patch"],
+      "matchPackagePatterns": ["^@types/", "eslint", "prettier"],
+      "automerge": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "📋 Dependency Updates"
+}

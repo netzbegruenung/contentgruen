@@ -1,0 +1,125 @@
+[
+  {
+    "statement": "Ohne Atomkraft wird Deutschland in Dunkelheit versinken und häufige Blackouts erleben.",
+    "commentaries": [
+      {
+        "text": "Trotz des Ausstiegs aus der Atomkraft gab es 2023 keinen Blackout, und die Kohleverstromung sank auf ein historisches Tief.",
+        "title": "Keine Blackouts trotz Atomausstieg",
+        "long_text": "2023 wurden in Deutschland die letzten Atomkraftwerke abgeschaltet, doch anstatt in Dunkelheit zu versinken, konnte das Land nicht nur die Kohleverstromung stark reduzieren, sondern auch die Stromversorgung stabil halten. Die steigende Nutzung erneuerbarer Energien spielte dabei eine entscheidende Rolle.",
+        "short_text": "Kein Blackout trotz Atomausstieg, Kohleverstromung auf Rekordtief.",
+        "references": [
+          {
+            "text": "Artikel über die Stromversorgung 2023",
+            "reference_string": "https://graslutscher.de/das-war-2023-kein-blackout-kohle-auf-einem-historischen-tief-und-sinkende-kosten-trotz-atomausstieg/"
+          }
+        ]
+      },
+      {
+        "text": "Selbst auf dem Land haben die Menschen 2023 keine Blackouts erlebt, sondern konnten sich auf eine stabile Stromversorgung verlassen.",
+        "title": "Stabile Stromversorgung auf dem Land",
+        "long_text": "Im ländlichen Raum, wo die Sorgen vor Stromausfällen groß waren, stellte sich 2023 heraus, dass die Stromversorgung auch ohne Atomkraft stabil blieb. Es gab keine weitreichenden Blackouts, und die Lebensqualität wurde nicht beeinträchtigt.",
+        "short_text": "Stromversorgung auf dem Land blieb stabil.",
+        "references": [
+          {
+            "text": "Erfahrungen aus dem ländlichen Raum 2023",
+            "reference_string": "https://graslutscher.de/das-war-2023-kein-blackout-kohle-auf-einem-historischen-tief-und-sinkende-kosten-trotz-atomausstieg/"
+          }
+        ]
+      },
+      {
+        "text": "Die Bundesnetzagentur bestätigte, dass die Zahl der Stromausfälle 2023 sogar gesunken ist.",
+        "title": "Rückgang der Stromausfälle",
+        "long_text": "Die Bundesnetzagentur dokumentierte, dass es 2023 weniger Stromausfälle gab als in den Vorjahren, trotz des Atomausstiegs. Dies zeigt, dass der Atomausstieg keine negativen Auswirkungen auf die Netzstabilität hatte.",
+        "short_text": "Stromausfälle 2023 gesunken.",
+        "references": [
+          {
+            "text": "Bericht der Bundesnetzagentur",
+            "reference_string": "https://www.bundesnetzagentur.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Erneuerbare Energien sind nicht zuverlässig genug und können den Energiebedarf nicht decken.",
+    "commentaries": [
+      {
+        "text": "Die Erneuerbaren Energien lagen 2023 auf einem historischen Hoch und erzeugten mehr Strom als alle Kohlekraftwerke zusammen.",
+        "title": "Rekordhoch bei Erneuerbaren Energien",
+        "long_text": "2023 erreichten die Erneuerbaren Energien ein Rekordhoch, insbesondere die Windkraft an Land, die den Energiebedarf zuverlässig deckte. Sie produzierte mehr Strom als alle Kohlekraftwerke in Deutschland zusammen, was die hohe Leistungsfähigkeit dieser Energiequellen belegt.",
+        "short_text": "Erneuerbare Energien decken zuverlässig den Bedarf.",
+        "references": [
+          {
+            "text": "Bericht über Erneuerbare Energien 2023",
+            "reference_string": "https://graslutscher.de/das-war-2023-kein-blackout-kohle-auf-einem-historischen-tief-und-sinkende-kosten-trotz-atomausstieg/"
+          }
+        ]
+      },
+      {
+        "text": "Auch in ländlichen Gebieten zeigt sich, dass die lokale Nutzung von Wind und Solarenergie den Energiebedarf zuverlässig abdecken kann.",
+        "title": "Zuverlässigkeit in ländlichen Gebieten",
+        "long_text": "Auf dem Land spielen Wind- und Solarenergie eine immer wichtigere Rolle bei der Energieversorgung. 2023 wurde deutlich, dass diese erneuerbaren Quellen stabil und zuverlässig genug sind, um den regionalen Bedarf zu decken.",
+        "short_text": "Wind und Solar decken den Bedarf auf dem Land.",
+        "references": [
+          {
+            "text": "Erfahrungsberichte aus ländlichen Gebieten",
+            "reference_string": "https://graslutscher.de/das-war-2023-kein-blackout-kohle-auf-einem-historischen-tief-und-sinkende-kosten-trotz-atomausstieg/"
+          }
+        ]
+      },
+      {
+        "text": "Daten zeigen, dass die Stromerzeugung aus Erneuerbaren Energien um 8% gegenüber dem Vorjahr gestiegen ist.",
+        "title": "Steigerung der Stromerzeugung aus Erneuerbaren",
+        "long_text": "Die Stromerzeugung aus erneuerbaren Quellen stieg 2023 um 8% gegenüber dem Vorjahr. Dies unterstreicht die Zuverlässigkeit und zunehmende Bedeutung dieser Energiequellen für die nationale Energieversorgung.",
+        "short_text": "Stromerzeugung aus Erneuerbaren +8%.",
+        "references": [
+          {
+            "text": "Statistische Daten zur Stromerzeugung",
+            "reference_string": "https://energy-charts.info"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Ohne Kohlekraftwerke würde Deutschland im Winter erfrieren.",
+    "commentaries": [
+      {
+        "text": "2023 war der Dezember der kohleärmste seit Beginn der Aufzeichnungen, und dennoch blieb die Energieversorgung stabil.",
+        "title": "Dezember 2023: Kohleärmster Monat",
+        "long_text": "Der Dezember 2023 war der kohleärmste seit Beginn der Aufzeichnungen, was zeigt, dass Deutschland auch in den kältesten Monaten ohne intensive Nutzung von Kohlekraftwerken auskommen kann, ohne die Energieversorgung zu gefährden.",
+        "short_text": "Dezember 2023: Wenig Kohle, stabile Versorgung.",
+        "references": [
+          {
+            "text": "Bericht über die Kohleverstromung im Dezember 2023",
+            "reference_string": "https://graslutscher.de/das-war-2023-kein-blackout-kohle-auf-einem-historischen-tief-und-sinkende-kosten-trotz-atomausstieg/"
+          }
+        ]
+      },
+      {
+        "text": "Auch in ländlichen Regionen wurde der Winter 2023 ohne größere Kohleverstromung überstanden, dank effektiver Nutzung von erneuerbaren Energien und besseren Wärmedämmungen.",
+        "title": "Weniger Kohle, trotzdem warm",
+        "long_text": "Auf dem Land wurde der Winter 2023 ohne die sonst übliche intensive Kohleverstromung überstanden. Dies gelang durch die effektive Nutzung von Wind- und Solarenergie sowie durch moderne Wärmedämmungen, die den Bedarf an zusätzlicher Energie reduzierten.",
+        "short_text": "Ländlicher Raum: Winter ohne Kohleprobleme.",
+        "references": [
+          {
+            "text": "Erfahrungen im ländlichen Raum im Winter 2023",
+            "reference_string": "https://graslutscher.de/das-war-2023-kein-blackout-kohle-auf-einem-historischen-tief-und-sinkende-kosten-trotz-atomausstieg/"
+          }
+        ]
+      },
+      {
+        "text": "Die Gasspeicher waren zu 91% gefüllt, was zeigt, dass es alternative Methoden gibt, um die Energieversorgung im Winter sicherzustellen.",
+        "title": "Hohe Füllstände der Gasspeicher",
+        "long_text": "Im Winter 2023 waren die Gasspeicher zu 91% gefüllt, was beweist, dass Deutschland in der Lage ist, auch ohne verstärkte Kohleverstromung eine sichere Energieversorgung zu gewährleisten. Gas spielt eine wichtige Rolle als flexibler und weniger umweltschädlicher Energieträger.",
+        "short_text": "Gasspeicher sicherten die Versorgung.",
+        "references": [
+          {
+            "text": "Bericht über die Füllstände der Gasspeicher 2023",
+            "reference_string": "https://www.zeit.de"
+          }
+        ]
+      }
+    ]
+  }
+]

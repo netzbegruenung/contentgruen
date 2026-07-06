@@ -1,0 +1,131 @@
+when:
+  - event: push
+    branch: main
+    path:
+      exclude: ["renovate.json", "README.md"]
+  - event: manual
+  - event: pull_request
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    entrypoint: /qdrant/qdrant
+
+steps:
+  test-semantic-search:
+    image: python:3.13@sha256:4ea77121eab13d9e71f2783d7505f5655b25bb7b2c263e8020aae3b555dbc0b2
+    pull: true
+    commands:
+      - cd mvp/backend/semantic-search-service
+      - pip install -r requirements.txt
+      - cd app
+      - python -m pytest tests/unit/ --ignore=tests/unit/services/test_seeding_implementation.py --tb=short -v --junitxml=test-results.xml
+    when:
+      - event: [push, pull_request]
+        path:
+          include: ["mvp/backend/semantic-search-service/**"]
+
+  test-semantic-search-integration:
+    image: python:3.13@sha256:4ea77121eab13d9e71f2783d7505f5655b25bb7b2c263e8020aae3b555dbc0b2
+    pull: true
+    environment:
+      QDRANT_URL: http://qdrant:6333
+    depends_on: [test-semantic-search]
+    commands:
+      - cd mvp/backend/semantic-search-service
+      - pip install -r requirements.txt
+      - cd app
+      - python -m pytest tests/integration/ --ignore=tests/integration/api --tb=short -v --junitxml=integration-test-results.xml
+    when:
+      - event: [push, pull_request]
+        path:
+          include: ["mvp/backend/semantic-search-service/**"]
+  build-frontend:
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    pull: true
+    settings:
+      repo: git.verdigado.com/netzbegruenung-images/contentgruen-frontend
+      dockerfile: mvp/frontend/contentgruen-frontend/Dockerfile
+      context: mvp/frontend/contentgruen-frontend
+      platforms: linux/amd64
+      registry: ${CI_FORGE_URL}
+      username: WoodpeckerCI
+      password:
+        from_secret: gitea_token
+      tags:
+        - 'latest'
+        - ${CI_COMMIT_SHA}
+    when:
+      - event: [push, manual]
+
+  build-bff:
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    pull: true
+    settings:
+      repo: git.verdigado.com/netzbegruenung-images/contentgruen-bff
+      dockerfile: mvp/backend/BFF/Dockerfile
+      context: mvp/backend/BFF
+      platforms: linux/amd64
+      registry: ${CI_FORGE_URL}
+      username: WoodpeckerCI
+      password:
+        from_secret: gitea_token
+      tags:
+        - 'latest'
+        - ${CI_COMMIT_SHA}
+    when:
+      - event: [push, manual]
+
+  build-semantic-search:
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    pull: true
+    settings:
+      repo: git.verdigado.com/netzbegruenung-images/contentgruen-semantic-search
+      dockerfile: mvp/backend/semantic-search-service/Dockerfile
+      context: mvp  # Changed context to include data directory
+      platforms: linux/amd64
+      registry: ${CI_FORGE_URL}
+      username: WoodpeckerCI
+      password:
+        from_secret: gitea_token
+      tags:
+        - 'latest'
+        - ${CI_COMMIT_SHA}
+    when:
+      - event: [push, manual]
+
+  build-postgres-semantic:
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    pull: true
+    settings:
+      repo: git.verdigado.com/netzbegruenung-images/contentgruen-postgres-semantic
+      dockerfile: mvp/backend/postgres-semantic/Dockerfile
+      context: mvp/backend/postgres-semantic
+      platforms: linux/amd64
+      registry: ${CI_FORGE_URL}
+      username: WoodpeckerCI
+      password:
+        from_secret: gitea_token
+      tags:
+        - 'latest'
+        - ${CI_COMMIT_SHA}
+    when:
+      - event: [push, manual]
+
+  build-postgres-app:
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    pull: true
+    settings:
+      repo: git.verdigado.com/netzbegruenung-images/contentgruen-postgres-app
+      dockerfile: mvp/backend/postgres-app/Dockerfile
+      context: mvp/backend/postgres-app
+      platforms: linux/amd64
+      registry: ${CI_FORGE_URL}
+      username: WoodpeckerCI
+      password:
+        from_secret: gitea_token
+      tags:
+        - 'latest'
+        - ${CI_COMMIT_SHA}
+    when:
+      - event: [push, manual]

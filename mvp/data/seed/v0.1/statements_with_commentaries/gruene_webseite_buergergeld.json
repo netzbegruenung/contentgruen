@@ -1,0 +1,60 @@
+[
+  {
+    "statement": "Das Bürgergeld führt dazu, dass Menschen weniger motiviert sind, Arbeit zu suchen.",
+    "commentaries": [
+      {
+        "text": "Das Bürgergeld bietet nicht nur finanzielle Sicherheit, sondern fördert gezielt Weiterbildung und langfristige Beschäftigungsmöglichkeiten. Es motiviert Menschen, ihre Qualifikationen zu verbessern und nachhaltige Jobperspektiven zu finden.",
+        "title": "Förderung von Qualifikation und nachhaltiger Beschäftigung",
+        "long_text": "Das Bürgergeld schafft Anreize für Weiterbildung und nachhaltige Arbeitsverhältnisse. Es unterstützt Menschen dabei, langfristige Berufsperspektiven zu entwickeln, anstatt sie zu kurzfristigen, instabilen Jobs zu drängen.",
+        "short_text": "Bürgergeld fördert langfristige Jobperspektiven.",
+        "references": [
+          {
+            "text": "Grüne: Bürgergeld – Anreize für nachhaltige Beschäftigung und Qualifizierung",
+            "reference_string": "https://www.gruene.de/artikel/buergergeld-eingefuehrt-anreize-fuer-nachhaltige-beschaeftigung-und-qualifizierung"
+          }
+        ]
+      },
+      {
+        "text": "Laut der Bundesagentur für Arbeit werden mit dem Bürgergeld Weiterbildung und Qualifizierung gefördert. Wer eine Ausbildung oder Fortbildung macht, erhält zusätzliche finanzielle Unterstützung, was das Engagement im Beruf erhöht.",
+        "title": "Weiterbildungsbonus als Motivationsanreiz",
+        "long_text": "Das Bürgergeld setzt auf positive Anreize, z.B. einen Bonus für Weiterbildungen. Dies fördert die Qualifikation der Arbeitssuchenden und steigert die Chancen auf eine stabile berufliche Zukunft.",
+        "short_text": "Bonus für Weiterbildung motiviert zur Jobsuche.",
+        "references": [
+          {
+            "text": "Bundesagentur für Arbeit: Bürgergeld und Weiterbildung",
+            "reference_string": "https://www.arbeitsagentur.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Bürgergeld verursacht hohe Kosten und belastet den Staatshaushalt.",
+    "commentaries": [
+      {
+        "text": "Das Bürgergeld spart langfristig Kosten, indem es Bürokratie abbaut und Menschen in nachhaltige Jobs integriert. Durch die Förderung stabiler Arbeitsverhältnisse sinkt die Abhängigkeit von staatlicher Unterstützung.",
+        "title": "Langfristige Kosteneinsparungen durch Arbeitsintegration",
+        "long_text": "Durch die Vereinfachung des Systems und die Förderung nachhaltiger Jobs kann das Bürgergeld langfristig staatliche Ausgaben senken. Menschen werden stabiler in den Arbeitsmarkt integriert und brauchen weniger staatliche Hilfe.",
+        "short_text": "Bürgergeld spart langfristig Kosten.",
+        "references": [
+          {
+            "text": "Grüne: Bürgergeld – Anreize für nachhaltige Beschäftigung und Qualifizierung",
+            "reference_string": "https://www.gruene.de/artikel/buergergeld-eingefuehrt-anreize-fuer-nachhaltige-beschaeftigung-und-qualifizierung"
+          }
+        ]
+      },
+      {
+        "text": "Analysen zeigen, dass durch die Reduktion von Bürokratie und kurzfristigen Maßnahmen das Bürgergeldsystem effizienter ist und weniger Verwaltungsaufwand benötigt. Dies führt zu einer stabileren wirtschaftlichen Basis.",
+        "title": "Effizienz durch Bürokratieabbau",
+        "long_text": "Das Bürgergeld reduziert bürokratische Hürden und die Kosten für kurzfristige, instabile Maßnahmen. Stattdessen werden langfristig Arbeitsplätze geschaffen, die weniger Unterstützung vom Staat erfordern.",
+        "short_text": "Bürgergeld fördert Effizienz und spart Verwaltungskosten.",
+        "references": [
+          {
+            "text": "Analyse des Bundesministeriums für Arbeit zum Bürgergeld",
+            "reference_string": "https://www.bmas.de"
+          }
+        ]
+      }
+    ]
+  }
+]

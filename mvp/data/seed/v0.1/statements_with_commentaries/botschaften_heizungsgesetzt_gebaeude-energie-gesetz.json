@@ -1,0 +1,147 @@
+[
+  {
+    "statement": "Das Heizungsgesetz ist zu teuer und überfordert Hausbesitzer mit hohen Kosten.",
+    "commentaries": [
+      {
+        "text": "Das Gesetz sieht umfangreiche Förderungen vor, die den Heizungstausch für Hausbesitzer erschwinglich machen. Viele werden durch Zuschüsse und Kredite entlastet, was langfristig Heizkosten spart.",
+        "title": "Förderungen machen den Tausch erschwinglich",
+        "long_text": "Durch die vorgesehenen Förderungen im Heizungsgesetz wird der Austausch alter Heizungen erschwinglich. Zuschüsse und Kredite entlasten Hausbesitzer und ermöglichen langfristig Einsparungen bei den Heizkosten.",
+        "short_text": "Förderungen machen Tausch erschwinglich.",
+        "references": [
+          {
+            "text": "Förderprogramme zum Heizungsgesetz",
+            "reference_string": "/mnt/data/Heizungsgesetz_230725_Botschaften.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Studien zeigen, dass klimafreundliche Technologien langfristig günstiger sind als Öl- und Gasheizungen, deren Betriebskosten stark steigen. Das Gesetz hilft dabei, diese Kostenvorteile zu nutzen.",
+        "title": "Langfristig günstigere Alternativen",
+        "long_text": "Die Betriebskosten für Öl- und Gasheizungen steigen kontinuierlich. Klimafreundliche Alternativen sind auf lange Sicht günstiger und helfen dabei, Energiekosten zu senken.",
+        "short_text": "Klimafreundliche Alternativen sind günstiger.",
+        "references": [
+          {
+            "text": "Kostenvergleich: Öl/Gas vs. klimafreundliche Heizungen",
+            "reference_string": "https://www.verbraucherzentrale.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Heizungsgesetz greift zu stark in das Privatleben ein und zwingt Menschen zu Veränderungen.",
+    "commentaries": [
+      {
+        "text": "Das Gesetz enthält lange Übergangsfristen und flexible Regelungen, die Hausbesitzern Zeit geben, die Umstellung Schritt für Schritt anzugehen und sich anzupassen.",
+        "title": "Lange Übergangsfristen für mehr Flexibilität",
+        "long_text": "Mit großzügigen Übergangsfristen und flexiblen Regelungen bietet das Heizungsgesetz den Menschen ausreichend Zeit, sich an die Änderungen anzupassen und schrittweise umzusteigen.",
+        "short_text": "Übergangsfristen geben Flexibilität.",
+        "references": [
+          {
+            "text": "Übergangsregelungen im Heizungsgesetz",
+            "reference_string": "/mnt/data/Heizungsgesetz_230725_Botschaften.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Das Ziel des Gesetzes ist der Schutz zukünftiger Generationen vor den Folgen der Klimakrise. Die Klimakrise betrifft uns alle und erfordert entschlossene Maßnahmen.",
+        "title": "Schutz zukünftiger Generationen",
+        "long_text": "Das Heizungsgesetz ist ein wichtiger Schritt im Kampf gegen die Klimakrise und schafft eine nachhaltige Zukunft für kommende Generationen, indem es langfristig umweltfreundliche Heizsysteme fördert.",
+        "short_text": "Schutz der Zukunft durch Klimaschutz.",
+        "references": [
+          {
+            "text": "Klimaschutz und Zukunftssicherung",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Förderung erneuerbarer Heizsysteme wird die Wirtschaft schwächen, da traditionelle Energieträger wegfallen.",
+    "commentaries": [
+      {
+        "text": "Das Gesetz unterstützt die regionale Wirtschaft, da der Umstieg auf klimafreundliche Heizungen Handwerksbetriebe und lokale Energiedienstleister stärkt.",
+        "title": "Stärkung der regionalen Wirtschaft",
+        "long_text": "Indem das Heizungsgesetz den Einbau klimafreundlicher Heizungen fördert, profitieren lokale Handwerksbetriebe und Energiedienstleister. So wird die regionale Wirtschaft gestärkt.",
+        "short_text": "Gesetz stärkt lokale Wirtschaft.",
+        "references": [
+          {
+            "text": "Stärkung der Wirtschaft durch Heizungsgesetz",
+            "reference_string": "/mnt/data/Heizungsgesetz_230725_Botschaften.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Wirtschaftsdaten belegen, dass Investitionen in erneuerbare Energien nachhaltige Arbeitsplätze schaffen und das lokale Handwerk unterstützen. Diese Maßnahmen fördern langfristigen Wohlstand.",
+        "title": "Erneuerbare Energien schaffen Arbeitsplätze",
+        "long_text": "Investitionen in klimafreundliche Heizsysteme sorgen für die Schaffung von Arbeitsplätzen und stärken lokale Wirtschaftskreisläufe, was den Wohlstand fördert.",
+        "short_text": "Erneuerbare Energien fördern Wohlstand.",
+        "references": [
+          {
+            "text": "Arbeitsmarktstudie zu erneuerbaren Energien",
+            "reference_string": "https://www.bmwi.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Mit dem Heizungsgesetz werden Heizkosten für alle steigen und die Energiekosten noch teurer machen.",
+    "commentaries": [
+      {
+        "text": "Das Gesetz setzt auf Energieeinsparungen und nachhaltige Technologien, die die Heizkosten langfristig senken. Es geht darum, Menschen vor steigenden Preisen fossiler Energien zu schützen.",
+        "title": "Nachhaltige Technologien senken langfristig Kosten",
+        "long_text": "Klimafreundliche Heizungen, die durch das Heizungsgesetz gefördert werden, senken langfristig die Heizkosten, indem sie weniger abhängig von fossilen Energiepreisen sind.",
+        "short_text": "Klimafreundliche Heizungen senken Kosten.",
+        "references": [
+          {
+            "text": "Energieeinsparungen durch klimafreundliche Heizungen",
+            "reference_string": "/mnt/data/Heizungsgesetz_230725_Botschaften.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Langfristige Berechnungen zeigen, dass fossile Energien weiterhin im Preis steigen werden. Erneuerbare Energien bieten eine stabile und bezahlbare Alternative.",
+        "title": "Stabilität durch erneuerbare Energien",
+        "long_text": "Erneuerbare Energien sind weniger preisschwankend als fossile Energien und bieten langfristig stabilere Heizkosten für Verbraucher.",
+        "short_text": "Erneuerbare bieten stabile Kosten.",
+        "references": [
+          {
+            "text": "Studien zu Energiekosten und fossilen Brennstoffen",
+            "reference_string": "https://www.bdew.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Heizungsgesetz bringt keinen wirklichen Vorteil für das Klima und ist nur Symbolpolitik.",
+    "commentaries": [
+      {
+        "text": "Das Heizungsgesetz senkt den CO2-Ausstoß und hilft, die Klimaziele zu erreichen. Der Wärmebereich verursacht einen erheblichen Anteil der Emissionen, weshalb diese Reduzierung essentiell ist.",
+        "title": "Heizungsgesetz senkt CO2-Ausstoß",
+        "long_text": "Durch die Reduzierung der CO2-Emissionen im Wärmebereich trägt das Heizungsgesetz erheblich zum Klimaschutz bei und ist damit mehr als reine Symbolpolitik.",
+        "short_text": "GEG hilft beim CO2-Sparen.",
+        "references": [
+          {
+            "text": "CO2-Reduktion durch das Heizungsgesetz",
+            "reference_string": "/mnt/data/Heizungsgesetz_230725_Botschaften.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Zahlen belegen, dass Deutschland bis 2045 klimaneutral werden will. Das Heizungsgesetz ist ein zentraler Bestandteil, um die Emissionen im Gebäudesektor nachhaltig zu senken.",
+        "title": "Ziel Klimaneutralität bis 2045",
+        "long_text": "Das Gesetz hilft, die Klimaziele zu erreichen, indem es den CO2-Ausstoß im Gebäudebereich deutlich senkt. Es ist ein notwendiger Schritt in Richtung Klimaneutralität.",
+        "short_text": "GEG für Klimaneutralität notwendig.",
+        "references": [
+          {
+            "text": "Klimaneutralität und Heizungsgesetz",
+            "reference_string": "https://www.bundesregierung.de"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "statement": "Viren gab es schon immer, warum also diese Panik?",
+    "commentaries": [
+      {
+        "text": "Im Alltag zeigt sich, dass die aktuellen Maßnahmen vielen Menschen helfen, sich vor einer ernsthaften Erkrankung zu schützen. Selbst eine Grippewelle zeigt jedes Jahr, wie gefährlich Infektionskrankheiten sein können, und Covid-19 ist erheblich gefährlicher.",
+        "title": "Prävention schützt die Gesellschaft",
+        "long_text": "Auch wenn Viren alltäglich sind, können sie gefährlich sein. Maßnahmen wie das Maskentragen und Händewaschen schützen besonders ältere und vorerkrankte Menschen.",
+        "short_text": "Maßnahmen schützen besonders gefährdete Personen.",
+        "references": []
+      },
+      {
+        "text": "Studien der WHO zeigen, dass Covid-19 eine deutlich höhere Sterblichkeitsrate hat als die Grippe. Zudem sind Krankenhäuser ohne Schutzmaßnahmen überlastet, was die Versorgung aller Patienten gefährdet.",
+        "title": "Fakten zur Gefährlichkeit von Covid-19",
+        "long_text": "Covid-19 hat eine höhere Sterblichkeitsrate als saisonale Grippe, und eine Überlastung des Gesundheitssystems gefährdet auch Menschen mit anderen Krankheiten.",
+        "short_text": "Covid-19 ist gefährlicher als viele andere Viren.",
+        "references": [
+          {
+            "text": "WHO zu Covid-19 Sterblichkeit",
+            "reference_string": "https://www.who.int"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Einschränkungen verletzen unsere persönlichen Freiheiten.",
+    "commentaries": [
+      {
+        "text": "Im Alltag helfen Schutzmaßnahmen, die Ausbreitung des Virus zu kontrollieren und weitere Lockdowns zu vermeiden. Auch einfache Maßnahmen wie das Tragen einer Maske sorgen dafür, dass alle sicherer sind und weniger Einschränkungen notwendig werden.",
+        "title": "Sicherheitsmaßnahmen für langfristige Freiheit",
+        "long_text": "Durch das Tragen von Masken und das Einhalten von Abständen können wir helfen, die Ausbreitung einzudämmen und damit strengere Maßnahmen zu vermeiden.",
+        "short_text": "Schutzmaßnahmen helfen, langfristig die Freiheit zu erhalten.",
+        "references": []
+      },
+      {
+        "text": "Laut Studien haben Länder mit frühzeitigen und wirksamen Maßnahmen die Infektionsraten gesenkt und konnten so schneller zur Normalität zurückkehren.",
+        "title": "Fakten zur Effektivität der Maßnahmen",
+        "long_text": "Länder, die frühzeitig Maßnahmen ergriffen, konnten Infektionen besser eindämmen und schneller Lockerungen einführen. Dies hilft langfristig, schwere Einschränkungen zu vermeiden.",
+        "short_text": "Frühe Maßnahmen helfen langfristig bei der Rückkehr zur Normalität.",
+        "references": [
+          {
+            "text": "Studie zu Covid-19 Maßnahmen und Infektionsraten",
+            "reference_string": "https://www.healthdata.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Deutschland allein kann das Virus nicht besiegen, also sind die Maßnahmen unnötig.",
+    "commentaries": [
+      {
+        "text": "Im Alltag schützt jeder Beitrag das Gesundheitssystem. Auch in Deutschland bedeutet ein reduziertes Infektionsgeschehen weniger Druck auf Kliniken und medizinisches Personal, was letztlich allen zugutekommt.",
+        "title": "Bedeutung von lokalen Maßnahmen",
+        "long_text": "Auch lokale Maßnahmen tragen dazu bei, die Belastung des Gesundheitssystems zu verringern. Jede Maßnahme zählt, besonders für die Krankenhauskapazitäten.",
+        "short_text": "Jeder Beitrag zählt, auch auf lokaler Ebene.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass Länder mit strengen Maßnahmen die Infektionsraten stark reduzieren konnten, was die Gesundheitsversorgung aufrechterhält und Menschenleben schützt.",
+        "title": "Fakten zur globalen Wirkung von Maßnahmen",
+        "long_text": "Selbst kleinere Länder tragen durch Maßnahmen zur Verringerung der weltweiten Virusausbreitung bei und entlasten so die Gesundheitssysteme.",
+        "short_text": "Jede Nation kann zur globalen Virusbekämpfung beitragen.",
+        "references": [
+          {
+            "text": "Globaler Bericht zur Wirkung von Covid-19-Maßnahmen",
+            "reference_string": "https://www.nejm.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Maßnahmen gefährden Arbeitsplätze und die Wirtschaft.",
+    "commentaries": [
+      {
+        "text": "Im Alltag zeigen viele Firmen, dass kreative Lösungen wie Homeoffice und digitale Angebote helfen, während der Pandemie wirtschaftlich stabil zu bleiben. Langfristig schützen die Maßnahmen Arbeitsplätze, da sie weitere Lockdowns vermeiden helfen.",
+        "title": "Anpassungsfähigkeit der Unternehmen",
+        "long_text": "Durch Homeoffice und digitale Innovationen konnten viele Unternehmen weiterhin arbeiten, und Schutzmaßnahmen ermöglichen es, neue Lockdowns zu verhindern.",
+        "short_text": "Schutzmaßnahmen helfen, langfristig Arbeitsplätze zu sichern.",
+        "references": []
+      },
+      {
+        "text": "Eine Studie des IWF zeigt, dass Länder, die Maßnahmen frühzeitig ergriffen, wirtschaftlich besser dastehen, da sich ihre Wirtschaft schneller erholt.",
+        "title": "Fakten zur Wirtschaft und Covid-Maßnahmen",
+        "long_text": "Länder, die frühzeitig Maßnahmen gegen Covid-19 ergriffen, erlebten eine stabilere Wirtschaft, da sie weitere Lockdowns und wirtschaftliche Einbußen vermeiden konnten.",
+        "short_text": "Frühe Maßnahmen fördern eine stabile Wirtschaft.",
+        "references": [
+          {
+            "text": "IWF zu Covid-19 und Wirtschaft",
+            "reference_string": "https://www.imf.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Virus ist ungefährlich und betrifft nur eine kleine Gruppe von Menschen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sehen wir, dass Covid-19 auch junge, gesunde Menschen treffen kann. Langzeitfolgen wie Erschöpfung und Atemprobleme sind keine Seltenheit. Solidarität bedeutet, auch jüngere Menschen vor langfristigen Schäden zu bewahren.",
+        "title": "Covid-19 trifft nicht nur Risikogruppen",
+        "long_text": "Covid-19 betrifft Menschen aller Altersgruppen. Die Langzeitfolgen, wie anhaltende Atemprobleme und Erschöpfung, zeigen, dass jeder potenziell betroffen ist.",
+        "short_text": "Covid-19 kann jeden betreffen, auch Junge und Gesunde.",
+        "references": []
+      },
+      {
+        "text": "Laut RKI-Daten sind auch junge Menschen betroffen. Die Rate an Long-Covid-Fällen ist erheblich und zeigt, dass Covid-19 langfristige gesundheitliche Risiken birgt, selbst für junge und gesunde Menschen.",
+        "title": "Fakten zu Long-Covid und betroffenen Gruppen",
+        "long_text": "Langzeitfolgen von Covid-19 betreffen auch junge Menschen, was die Wichtigkeit von Präventionsmaßnahmen unterstreicht. Laut RKI sind 10-20 % der Genesenen von Long-Covid betroffen.",
+        "short_text": "Long-Covid betrifft auch jüngere, gesunde Menschen.",
+        "references": [
+          {
+            "text": "Robert Koch-Institut zu Long-Covid",
+            "reference_string": "https://www.rki.de"
+          }
+        ]
+      }
+    ]
+  }
+]

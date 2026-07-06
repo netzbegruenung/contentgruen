@@ -1,0 +1,26 @@
+<div class="workflow-container">
+    <!-- Loading State for Statement -->
+    <div *ngIf="isLoadingStatement" class="loading-container">
+        <mat-spinner></mat-spinner>
+        <p>Statement wird vorbereitet...</p>
+    </div>
+
+    <!-- Error State for Statement -->
+    <div *ngIf="statementError" class="error-container">
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ statementError }}</p>
+        <button mat-raised-button color="primary" (click)="navigateBack()">
+            Zurück
+        </button>
+    </div>
+
+    <!-- Main Content when Statement is Ready or Not Required -->
+    <div *ngIf="!isLoadingStatement && !statementError">
+        <app-add-generictext
+            [statementText]="statementText"
+            [statementId]="statementId"
+            (success)="onSuccess($event)"
+            (cancel)="onCancel()">
+        </app-add-generictext>
+    </div>
+</div>

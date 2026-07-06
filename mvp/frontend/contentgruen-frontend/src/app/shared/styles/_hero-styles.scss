@@ -1,0 +1,98 @@
+// Centralized hero styles for consistent hero sections across all pages
+
+// Hero title - main heading
+.hero-title {
+  font-size: 60px;
+  font-family: GrueneType, Roboto, sans-serif;
+  color: var(--primary-dark);
+  line-height: 1.1;
+  font-weight: 400;
+  margin: 0 0 10px 0;
+
+  // Tablet responsive
+  @media (max-width: 1024px) {
+    font-size: 44px;
+  }
+
+  // Mobile responsive
+  @media (max-width: 768px) {
+    font-size: 36px;
+  }
+
+  @media (max-width: 600px) {
+    font-size: 30px;
+  }
+}
+
+// Hero subtitle - secondary text under hero title
+.hero-subtitle {
+  font-size: 1.6rem;
+  line-height: 1.6;
+  color: #333;
+  font-weight: bold;
+
+  // Tablet responsive
+  @media (max-width: 1024px) {
+    font-size: 1.4rem;
+  }
+
+  // Mobile responsive
+  @media (max-width: 768px) {
+    font-size: 1.3rem;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 600px) {
+    font-size: 1.1rem;
+  }
+}
+
+.hero-value-proposal {
+  margin-top: 30px;
+  font-size: 1.1rem;
+
+  @media (max-width: 600px) {
+    font-size: 0.95rem;
+    margin-top: 20px;
+  }
+}
+
+// Hero section container - base styles for hero sections
+.hero-section-base {
+  padding: 2rem var(--page-margin) 1rem var(--page-margin);
+  text-align: center;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem var(--page-margin-mobile) 0.5rem var(--page-margin-mobile);
+  }
+
+  @media (max-width: 600px) {
+    padding: 15px var(--page-margin-mobile);
+  }
+}
+
+// Compact intro section (used in search view)
+.compact-intro {
+  padding: 20px var(--page-margin);
+  text-align: center;
+
+  @media (max-width: 600px) {
+    padding: 15px var(--page-margin);
+  }
+}
+
+// Alternative subtitle style for legal/formal pages
+.subtitle-secondary {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: normal;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    font-size: 0.95rem;
+  }
+}

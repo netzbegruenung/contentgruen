@@ -1,0 +1,677 @@
+/* Global styles - ContentGrün Material Design System */
+
+/* You can add global styles to this file, and also import other style files */
+
+/* Font definitions */
+@font-face {
+    font-family: GrueneType;
+    src: url(/fonts/GrueneTypeNeue-Regular.woff2) format("woff2"),
+         url(/fonts/GrueneTypeNeue-Regular.woff) format("woff"),
+         url(/fonts/GrueneTypeNeue-Regular.otf) format("opentype");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: PTSans;
+    src: url(/fonts/PTS55F.ttf) format("truetype");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: PTSans-italic;
+    src: url(/fonts/PTS56F.ttf) format("truetype");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: PTSans-bold;
+    src: url(/fonts/PTS75F.ttf) format("truetype");
+    font-display: swap;
+}
+
+@font-face {
+    font-family: PTSans-bold-italic;
+    src: url(/fonts/PTS76F.ttf) format("truetype");
+    font-display: swap;
+}
+
+/* Avatar and component sizes */
+:root {
+    --avatar-size-mobile: 40px;
+    --avatar-size-desktop: 48px;
+    --header-height-mobile: 50px;
+    --header-height-desktop: 80px;
+    --font-size-h1-desktop: 80px;
+    --font-size-h1-tablet: 52px;
+    --font-size-h1-mobile: 42px;
+    --font-size-h2-desktop: 40px;
+    --font-size-h2-tablet: 30px;
+    --font-size-h2-mobile: 28px;
+    --font-size-h3-desktop: 30px;
+    --font-size-h3-tablet: 25px;
+    --font-size-h3-mobile: 22px;
+
+    /* Z-index scale for consistent layering */
+    --z-index-dropdown: 1000;
+    --z-index-sticky: 1020;
+    --z-index-fixed: 1030;
+    --z-index-modal-backdrop: 1040;
+    --z-index-modal: 1050;
+    --z-index-popover: 1060;
+    --z-index-tooltip: 1070;
+    --z-index-toast: 1080;
+}
+
+/* Typography - Using consistent Material Design inspired typography with brand fonts */
+h1 {
+    font-family: GrueneType, Roboto, sans-serif;
+    color: var(--primary-dark);
+    font-size: var(--font-size-h1-desktop);
+    line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: -0.01562em;
+    margin: 0 0 0.5em 0;
+}
+
+h2 {
+    font-family: GrueneType, Roboto, sans-serif;
+    color: var(--primary-dark);
+    font-size: var(--font-size-h2-desktop);
+    line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: 0.00735em;
+    margin: 0 0 0.5em 0;
+}
+
+h3 {
+    font-family: GrueneType, Roboto, sans-serif;
+    color: var(--text-primary);
+    font-size: var(--font-size-h3-desktop);
+    line-height: 1.1;
+    font-weight: 400;
+    margin: 0 0 0.5em 0;
+}
+
+h4 {
+    font-family: PTSans-bold, Roboto, sans-serif;
+    color: var(--text-primary);
+    font-size: 25px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: 0.0125em;
+    margin: 0 0 0.5em 0;
+}
+
+h5 {
+    font-family: PTSans-bold, Roboto, sans-serif;
+    color: var(--text-primary);
+    font-size: 20px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: 0.00937em;
+    margin: 0 0 0.5em 0;
+}
+
+h6 {
+    font-family: PTSans-bold, Roboto, sans-serif;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.3;
+    font-weight: 700;
+    margin: 0 0 0.5em 0;
+}
+
+/* Base document styles */
+html,
+body {
+    height: 100%;
+    margin: 0;
+    min-height: 100vh;
+}
+
+body {
+    min-height: 100vh;
+    background-color: var(--bg-main);
+    font-family: PTSans, Roboto, sans-serif;
+    color: var(--text-primary);
+    overflow-y: auto;
+}
+
+/* Custom scrollbar styling */
+* {
+    scrollbar-width: 20px;
+    scrollbar-color: var(--primary-dark) transparent;
+}
+
+/* Text utility classes - Consolidated naming */
+.bold {
+    font-weight: 700;
+}
+
+.emphasis {
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.italic {
+    font-style: italic;
+}
+
+.bold-italic {
+    font-weight: 700;
+    font-style: italic;
+}
+
+/* Legacy class support (for backward compatibility) */
+.text-bold {
+    font-weight: 700;
+}
+
+.text-emphasis {
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.text-italic {
+    font-style: italic;
+}
+
+.text-bold-italic {
+    font-weight: 700;
+    font-style: italic;
+}
+
+/* Elevation utilities */
+.elevated {
+    box-shadow: var(--elevation-2);
+}
+
+.icon-elevated {
+    filter: drop-shadow(2px 3px 0.5px rgba(0, 0, 0, 0.35));
+}
+
+/* Layout System - Separation of Concerns */
+/* ========================================= */
+
+/* Layout variables */
+:root {
+    --page-margin: 100px;
+    --page-margin-tablet: 50px;
+    --page-margin-mobile: 24px;
+    --section-gap: 40px;
+    --input-background: white;
+
+    /* Mobile layout heights */
+    --mobile-header-height: 140px;
+    --mobile-bottom-space: 40px;
+    --mobile-card-max-height: 520px;
+    --mobile-footer-height: 60px;
+    --mobile-result-item-height: calc(100vh - var(--mobile-header-height) - var(--mobile-bottom-space));
+}
+
+/* Content section - Standard margins for page content */
+.content-section {
+    padding: var(--spacing-xs) var(--page-margin) 0 var(--page-margin);
+    margin-bottom: var(--section-gap);
+}
+
+.content-section img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Carousel section - Full width for carousels */
+.carousel-section {
+    width: 100%;
+    margin-bottom: var(--section-gap);
+    /* No horizontal padding to allow full-width display */
+}
+
+/* Card section - Elevated boxes with padding */
+.card-section {
+    padding: var(--spacing-lg) var(--page-margin);
+    margin-bottom: var(--section-gap);
+    background: var(--surface);
+    box-shadow: var(--elevation-2);
+    border-radius: var(--border-radius);
+    margin-left: var(--page-margin);
+    margin-right: var(--page-margin);
+}
+
+/* Full-width section - Spans entire main width */
+.full-width-section {
+    width: 100%;
+    margin-bottom: var(--section-gap);
+    /* No horizontal margins to span full width */
+}
+
+/* Search box special styling - moved to component CSS */
+
+/* Legacy support - Redirect to new system */
+.component-box {
+    padding: var(--spacing-xs) var(--page-margin) 0 var(--page-margin);
+}
+
+.component-box img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Common component patterns */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-xl);
+    min-height: 200px;
+}
+
+.error-container {
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    border-radius: var(--border-radius-small);
+    background-color: var(--error-bg);
+    color: var(--error-color);
+    border-left: 4px solid var(--error-border);
+}
+
+.success-container {
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    border-radius: var(--border-radius-small);
+    background-color: var(--success-bg);
+    color: var(--success-color);
+    border-left: 4px solid var(--success-border);
+}
+
+.warning-container {
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    border-radius: var(--border-radius-small);
+    background-color: var(--warning-bg);
+    color: var(--warning-color);
+    border-left: 4px solid var(--warning-border);
+}
+
+.info-container {
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md) 0;
+    border-radius: var(--border-radius-small);
+    background-color: var(--info-bg);
+    color: var(--info-color);
+    border-left: 4px solid var(--info-border);
+}
+
+/* Links */
+a {
+    color: var(--primary-main);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Additional elevation utilities */
+.elevated-high {
+    box-shadow: 2px 4px 4px 0px rgba(0, 0, 0, 0.35);
+}
+
+/* Icon images with elevation (help, home, back buttons) */
+.elevated-image {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35))
+            drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    transition: filter var(--transition-fast), transform var(--transition-fast);
+    cursor: pointer;
+}
+
+.elevated-image:hover {
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.38))
+            drop-shadow(0 1px 2px rgba(0, 0, 0, 0.22));
+    transform: scale(1.02);
+}
+
+.elevated-image:active {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    transform: scale(0.99);
+}
+
+.infomoji {
+    filter: drop-shadow(2px 3px 0.5px rgba(0, 0, 0, 0.35));
+}
+
+
+/* Text size utilities */
+.text-large {
+    font-size: 24px;
+}
+
+.text-small {
+    font-size: 12px;
+}
+
+.text-xlarge {
+    font-size: 32px;
+}
+
+.text-xxlarge {
+    font-size: 48px;
+}
+
+/* Icon size utilities for emojis */
+.icon-large {
+    font-size: 24px;
+}
+
+.icon-xlarge {
+    font-size: 32px;
+}
+
+.icon-xxlarge {
+    font-size: 48px;
+}
+
+/* Button utilities - Consistent with Material Design */
+.dark-green-button {
+    background-color: var(--primary-dark) !important;
+    color: white !important;
+}
+
+.primary-button {
+    background-color: var(--primary-main) !important;
+    color: white !important;
+}
+
+.accent-button {
+    background-color: var(--accent-main) !important;
+    color: white !important;
+}
+
+.light-button {
+    background-color: var(--bg-card) !important;
+    color: var(--primary-dark) !important;
+    border: 1px solid var(--primary-dark) !important;
+}
+
+/* Cursor utilities */
+.cursor-not-allowed {
+    cursor: not-allowed !important;
+}
+
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
+.cursor-help {
+    cursor: help !important;
+}
+
+/* Interactive utilities */
+.clickable {
+    cursor: pointer;
+}
+
+/* Form field utilities */
+.full-width {
+    width: 100%;
+}
+
+.form-field-large {
+    width: 100%;
+    max-width: 800px;
+}
+
+.form-field-medium {
+    width: 100%;
+    max-width: 600px;
+}
+
+.form-field-small {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Material Design tab customization */
+.mat-tab-label {
+    font-size: 1.2rem;
+    color: white;
+    background-color: #6200ea;
+    padding: 10px;
+    border-radius: var(--border-radius-small);
+    transition: background-color 0.3s;
+}
+
+.mat-tab-label.mat-tab-label-active {
+    background-color: #3700b3;
+}
+
+.mat-tab-group {
+    background-color: #c73d3d;
+    padding: 16px;
+}
+
+/* Responsive design breakpoints */
+@media (max-width: 1200px) {
+    :root {
+        --page-margin: var(--page-margin-tablet);
+    }
+
+    .content-section {
+        padding: var(--spacing-xs) var(--page-margin) 0 var(--page-margin);
+    }
+
+    .card-section {
+        padding: var(--spacing-lg) var(--page-margin);
+        margin-left: var(--page-margin);
+        margin-right: var(--page-margin);
+    }
+
+    .component-box {
+        padding: var(--spacing-xs) var(--page-margin) 0 var(--page-margin);
+    }
+
+    h1 {
+        font-size: 60px;
+    }
+
+    h2 {
+        font-size: 35px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --page-margin: var(--page-margin-mobile);
+        --section-gap: 24px;
+    }
+
+    .content-section {
+        padding: var(--spacing-xs) var(--page-margin) 0 var(--page-margin);
+        margin-bottom: 0;
+    }
+
+    .card-section {
+        padding: var(--spacing-md) var(--page-margin);
+        margin-left: var(--page-margin);
+        margin-right: var(--page-margin);
+    }
+
+    .carousel-section {
+        margin-bottom: var(--section-gap);
+    }
+
+    .component-box {
+        padding: var(--spacing-xs) var(--page-margin) 0 var(--page-margin);
+    }
+
+    h1 {
+        font-size: var(--font-size-h1-tablet);
+    }
+
+    h2 {
+        font-size: var(--font-size-h2-tablet);
+    }
+
+    h3 {
+        font-size: var(--font-size-h3-tablet);
+    }
+
+    .form-field-large,
+    .form-field-medium,
+    .form-field-small {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --page-margin: var(--spacing-md);
+    }
+
+    .content-section,
+    .card-section,
+    .component-box {
+        padding-left: var(--page-margin);
+        padding-right: var(--page-margin);
+    }
+
+    .card-section {
+        margin-left: var(--page-margin);
+        margin-right: var(--page-margin);
+    }
+
+    h1 {
+        font-size: var(--font-size-h1-mobile);
+        line-height: 1.2;
+    }
+
+    h2 {
+        font-size: var(--font-size-h2-mobile);
+    }
+
+    h3 {
+        font-size: var(--font-size-h3-mobile);
+    }
+
+    .text-large {
+        font-size: 20px;
+    }
+}
+
+/* Accessibility improvements */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus styles for better keyboard navigation */
+*:focus-visible {
+    outline: 2px solid var(--primary-main);
+    outline-offset: 2px;
+}
+
+/* Skip to main content link */
+.skip-to-main {
+    position: absolute;
+    left: -9999px;
+    z-index: var(--z-index-dropdown);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--primary-main);
+    color: white;
+    text-decoration: none;
+}
+
+.skip-to-main:focus {
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+}
+
+/* Dialog backdrop styles */
+.cdk-overlay-dark-backdrop {
+    background: rgba(0, 0, 0, 0.32);
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.cdk-overlay-container {
+    position: fixed !important;
+    z-index: var(--z-index-dropdown);
+    pointer-events: none;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.cdk-overlay-pane {
+    /* Ensure dialog is properly centered */
+    position: fixed !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: auto;
+}
+
+.custom-dialog-container {
+    /* Ensure dialog has proper background */
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 11px 15px -7px rgba(0,0,0,0.2),
+                0 24px 38px 3px rgba(0,0,0,0.14),
+                0 9px 46px 8px rgba(0,0,0,0.12);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Fix for dialog container height issues */
+.mat-mdc-dialog-container {
+    display: block !important;
+    position: relative !important;
+}
+
+.mat-mdc-dialog-surface {
+    display: block !important;
+    background: white !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+}
+
+/* Ensure body doesn't get height restricted when dialog opens */
+body.cdk-global-scrollblock {
+    position: fixed !important;
+    width: 100% !important;
+    overflow-y: scroll !important;
+    top: 0 !important;
+}
+
+/* Success Snackbar Styling for Contribution Feedback */
+.mat-mdc-snack-bar-container.success-snackbar {
+    --mdc-snackbar-container-color: #4caf50;
+    --mdc-snackbar-supporting-text-color: white;
+    --mat-snack-bar-button-color: white;
+}
+
+.mat-mdc-snack-bar-container.success-snackbar .mat-mdc-button {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: 500;
+}
+
+.mat-mdc-snack-bar-container.success-snackbar .mat-mdc-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}

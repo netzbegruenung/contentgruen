@@ -1,0 +1,108 @@
+[
+  {
+    "statement": "Ja, der Klimawandel ist real, aber dieser ganze Umweltkram geht zu weit und zu schnell.",
+    "commentaries": [
+      {
+        "text": "Im Alltag spüren viele Menschen bereits die Auswirkungen des Klimawandels. Hitzewellen, Dürren und Überschwemmungen führen zu höheren Lebensmittelpreisen und zerstören Lebensgrundlagen. Klimaschutzmaßnahmen können helfen, diese Entwicklungen einzudämmen und zukünftige Schäden zu verhindern.",
+        "title": "Alltägliche Auswirkungen des Klimawandels",
+        "long_text": "Der Klimawandel ist nicht nur eine theoretische Bedrohung, sondern bereits spürbar. Landwirte verlieren Ernten durch Dürren, Häuser werden durch Überschwemmungen zerstört, und steigende Temperaturen beeinflussen die Gesundheit. Je länger wir warten, desto größer wird der Schaden – und desto teurer wird es, die Folgen zu bewältigen.",
+        "short_text": "Klimawandel wirkt sich auf Preise und Lebensgrundlagen aus – schneller Handeln kann helfen.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass die wirtschaftlichen Vorteile von Klimaschutzmaßnahmen enorm sind. Schätzungen zufolge könnten Einsparungen durch den Klimaschutz in Europa bis 2030 rund 1 Billion Euro betragen, dank günstigerer Energiepreise und geringerer Gesundheitskosten.",
+        "title": "Wirtschaftliche Vorteile von Klimaschutz",
+        "long_text": "Langfristige Klimaschutzmaßnahmen sind kostengünstiger als das Ignorieren des Problems. Europa könnte durch die Begrenzung der globalen Erwärmung auf 1,5 Grad bis 2030 etwa 1 Billion Euro einsparen. Diese Einsparungen entstehen durch niedrigere Energiepreise, weniger Gesundheitsprobleme und die Vermeidung extremer Klimafolgen.",
+        "short_text": "Klimaschutz spart bis 2030 etwa 1 Billion Euro ein.",
+        "references": [
+          {
+            "text": "Wirtschaftliche Vorteile von Klimaschutz",
+            "reference_string": "https://caneurope.org/content/uploads/2024/01/CAN-Europe-co-benefits-of-climate-action_REPORT.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Klimaschutzmaßnahmen sind viel zu teuer und schaden unserer Wirtschaft.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sehen viele Menschen, wie die steigenden Energiepreise ihre Haushalte belasten. Erneuerbare Energien bieten eine langfristige Lösung, um diese Preisschwankungen zu verhindern und stabile, bezahlbare Energie bereitzustellen.",
+        "title": "Erneuerbare Energien stabilisieren Energiepreise",
+        "long_text": "Die Energiepreise sind in den letzten Jahren stark gestiegen, vor allem durch die Abhängigkeit von fossilen Brennstoffen. Investitionen in erneuerbare Energien wie Solar- und Windkraft helfen dabei, diese Schwankungen zu reduzieren und eine stabile und kostengünstige Energieversorgung sicherzustellen.",
+        "short_text": "Erneuerbare Energien bieten langfristig stabile und bezahlbare Energie.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Studie sind erneuerbare Energien mittlerweile die günstigste Energiequelle. Im Vergleich dazu haben fossile Brennstoffe zu Inflation und steigenden Energiepreisen geführt. Die Umstellung auf erneuerbare Energien reduziert langfristig die Kosten für Verbraucher und Wirtschaft.",
+        "title": "Kostenvergleich fossile vs. erneuerbare Energien",
+        "long_text": "Erneuerbare Energien wie Solar- und Windkraft sind heute die günstigste Form der Energieerzeugung. Während fossile Brennstoffe zu Preisschwankungen und Inflation geführt haben, bieten erneuerbare Energien stabile und erschwingliche Preise. Dadurch wird die Wirtschaft weniger von globalen Krisen beeinflusst.",
+        "short_text": "Erneuerbare Energien sind heute günstiger als fossile Brennstoffe.",
+        "references": [
+          {
+            "text": "Studie zu erneuerbaren Energien",
+            "reference_string": "https://www.iea.org/reports/renewable-energy-market-update-june-2023/how-much-money-are-european-consumers-saving-thanks-to-renewables"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Es bringt doch nichts, wenn nur Europa Maßnahmen ergreift. Die großen Verschmutzer wie China und die USA machen nichts.",
+    "commentaries": [
+      {
+        "text": "Auch im Alltag profitieren wir davon, dass Europa in Klimaschutz investiert. Der Ausbau erneuerbarer Energien in Europa hat die Abhängigkeit von teuren fossilen Brennstoffen wie Gas verringert und die Energiesicherheit verbessert. Je mehr Länder mitziehen, desto stabiler wird die Versorgung.",
+        "title": "Energetische Unabhängigkeit für Europa",
+        "long_text": "Europa hat in den letzten Jahren große Fortschritte gemacht, um seine Abhängigkeit von fossilen Brennstoffen zu reduzieren. Besonders durch den Krieg in der Ukraine und die damit verbundene Gasversorgungskrise wurde deutlich, wie wichtig es ist, auf erneuerbare Energien zu setzen. Diese Entwicklung sichert nicht nur die Energieversorgung, sondern macht Europa unabhängiger von globalen Krisen.",
+        "short_text": "Erneuerbare Energien machen Europa unabhängiger von globalen Krisen.",
+        "references": []
+      },
+      {
+        "text": "Die USA und China haben ebenfalls begonnen, massiv in erneuerbare Energien zu investieren. China ist mittlerweile der weltweit größte Produzent von Solarenergie, und die USA haben mit dem Inflation Reduction Act ein umfangreiches Investitionsprogramm für grüne Technologien gestartet.",
+        "title": "Internationale Klimamaßnahmen",
+        "long_text": "China und die USA gehören mittlerweile zu den größten Investoren in erneuerbare Energien. China ist der größte Produzent von Solarenergie, während die USA mit dem Inflation Reduction Act Milliarden in den Ausbau grüner Technologien investieren. Diese Länder erkennen zunehmend, dass Klimaschutz auch wirtschaftliche Chancen bietet.",
+        "short_text": "China und die USA investieren massiv in erneuerbare Energien.",
+        "references": [
+          {
+            "text": "China und USA in erneuerbare Energien",
+            "reference_string": "https://www.solarpowereurope.org/insights/thematic-reports/eu-solar-jobs-report-2023-1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Es gibt wichtigere Probleme als Klimawandel, wie Armut und Arbeitslosigkeit.",
+    "commentaries": [
+      {
+        "text": "Klimaschutzmaßnahmen helfen im Alltag auch direkt den Menschen, die unter Energiearmut leiden. Über 50 Millionen Europäer*innen leben in Energiearmut. Durch den Ausbau erneuerbarer Energien und Energieeffizienzprogramme wird die Stromversorgung sicherer und erschwinglicher.",
+        "title": "Bekämpfung von Energiearmut",
+        "long_text": "Viele Europäer*innen können sich ihre Stromrechnungen nicht leisten und sind von Energiearmut betroffen. Klimaschutzmaßnahmen wie die Förderung von Solarenergie oder Hausrenovierungen verbessern die Energieeffizienz und machen Strom für alle zugänglicher. Das hilft besonders denjenigen, die es am meisten brauchen.",
+        "short_text": "Klimaschutz kann Energiearmut bekämpfen und bezahlbaren Strom sichern.",
+        "references": []
+      },
+      {
+        "text": "Die Solarindustrie ist ein stark wachsender Arbeitsmarkt. 2021 gab es in der EU 470.000 Jobs in der Solarbranche, 2022 bereits 650.000. In den kommenden Jahren könnte diese Zahl auf eine Million anwachsen. Klimaschutz schafft also neue Arbeitsplätze und hilft, Arbeitslosigkeit zu verringern.",
+        "title": "Wachsender Arbeitsmarkt durch grüne Technologien",
+        "long_text": "Klimaschutz schafft nicht nur eine nachhaltigere Zukunft, sondern auch neue Arbeitsplätze. Die Solarbranche in der EU wächst rapide: Zwischen 2021 und 2022 stieg die Zahl der Arbeitsplätze von 470.000 auf 650.000, und bis 2026 werden bis zu eine Million Jobs erwartet. Klimaschutz hilft also, Arbeitslosigkeit zu reduzieren.",
+        "short_text": "Die Solarindustrie schafft tausende neue Arbeitsplätze.",
+        "references": [
+          {
+            "text": "Bericht über Solarjobs",
+            "reference_string": "https://www.solarpowereurope.org/insights/thematic-reports/eu-solar-jobs-report-2023-1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Klimakrise wird übertrieben, die Temperaturen schwanken doch schon immer.",
+    "commentaries": [
+      {
+        "text": "Im Alltag spüren wir, dass extreme Wetterereignisse häufiger und intensiver werden. Hitzewellen, Dürren und Starkregen haben in den letzten Jahren zugenommen und beeinträchtigen Ernten, die Wasserversorgung und die Gesundheit der Menschen. Diese Veränderungen sind nicht nur natürliche Schwankungen.",
+        "title": "Zunahme extremer Wetterereignisse",
+        "references": []
+      }
+    ]
+  }
+]

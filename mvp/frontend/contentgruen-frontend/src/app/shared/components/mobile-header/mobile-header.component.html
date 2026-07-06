@@ -1,0 +1,59 @@
+<div class="mobile-header">
+  <div class="mobile-header-left">
+    <button
+      *ngIf="showBackButton"
+      mat-icon-button
+      (click)="goBack()"
+      class="back-button"
+      aria-label="Zurück">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div *ngIf="!showBackButton" class="home-spacer"></div>
+  </div>
+
+  <h2 class="mobile-header-title">{{ pageTitle }}</h2>
+
+  <div class="mobile-header-actions">
+    <!-- Avatar with Material icon fallback for anonymous users -->
+    <div class="mobile-header-avatar-container"
+         (click)="openUserMenu()"
+         role="button"
+         tabindex="0"
+         [attr.aria-label]="userInfo?.isAuthenticated ? 'Profilmenü öffnen' : 'Anmelden'">
+      <img *ngIf="userInfo?.isAuthenticated"
+           [src]="selectedProfilePictureUrl"
+           alt="Profilbild"
+           class="mobile-header-avatar">
+      <img *ngIf="!userInfo?.isAuthenticated"
+           src="/icons/Profile_avatar_placeholder_large.png"
+           alt="Nicht angemeldet"
+           class="mobile-header-avatar anonymous-avatar-icon">
+    </div>
+
+    <!-- Contribute button or My Contributions button -->
+    <button
+      *ngIf="showContributeButton"
+      mat-icon-button
+      (click)="onContributeClick()"
+      class="contribute-button"
+      [attr.aria-label]="userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen'">
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button
+      *ngIf="showContributionsButton"
+      mat-icon-button
+      (click)="onContributionsClick()"
+      class="contributions-button"
+      aria-label="Meine Beiträge">
+      <mat-icon>folder_open</mat-icon>
+    </button>
+
+    <button
+      mat-icon-button
+      (click)="openMobileMenu()"
+      class="menu-button"
+      aria-label="Menü öffnen">
+      <mat-icon>menu</mat-icon>
+    </button>
+  </div>
+</div>

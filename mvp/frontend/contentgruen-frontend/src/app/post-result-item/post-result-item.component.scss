@@ -1,0 +1,168 @@
+// Import shared base styles
+@use '../shared/styles/result-item-base' as base;
+@use '../shared/styles/animations' as animations;
+
+// Host element styles - critical for proper sizing in carousel
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// Include base styles
+@include base.result-item-base;
+@include base.mat-avatar;
+
+// Header specific to post (reuses the generictext accent var)
+.post-header {
+  @include base.result-header(--generictext-bg);
+  align-items: center;
+  padding: 8px 16px !important;
+
+  .mat-mdc-card-header-text {
+    margin: 0;
+  }
+
+  [mat-card-avatar] {
+    margin-bottom: 0 !important;
+  }
+}
+
+.post-header-info {
+  @include base.result-header-info;
+}
+
+.post-title {
+  @include base.result-title;
+}
+
+.post-subtitle {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.content-type-emoji {
+  @include base.content-type-emoji;
+}
+
+// Content section
+.post-content {
+  @include base.result-content;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0 !important;
+}
+
+.post-text {
+  @include base.result-text;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-bottom: 0;
+}
+
+.post-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--spacing-sm);
+}
+
+.post-engagement {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--spacing-sm);
+  opacity: 0.8;
+
+  .engagement-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// Action buttons
+.post-action-buttons {
+  @include base.result-action-buttons-grid;
+
+  .post-copy-button {
+    justify-self: center;
+  }
+
+  .post-menu-button {
+    justify-self: end;
+  }
+}
+
+.post-vote-button {
+  @include base.result-vote-menu-button;
+}
+
+.post-copy-button {
+  @include base.result-copy-button-enhanced;
+
+  &.copy-success {
+    @include animations.copy-success-animation;
+    background-color: #4caf50 !important;
+    color: white !important;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      @include animations.pulse-glow-animation;
+    }
+  }
+}
+
+.post-menu-button {
+  @include base.result-vote-menu-button;
+}
+
+// Reference link styles (for the source link)
+@include base.reference-link-styles;
+
+// Metadata section
+.post-metadata {
+  @include base.result-metadata-footer;
+}
+
+// Badge styles
+.post-badges {
+  @include base.result-badges;
+}
+
+// Statement section styles
+@include base.result-statement-section;
+
+// Include mobile responsive styles
+@include base.result-item-mobile;
+
+@media (max-width: 599px) {
+  .content-type-emoji {
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .post-vote-button,
+  .post-menu-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 50%;
+    padding: 0;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+}

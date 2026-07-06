@@ -1,0 +1,106 @@
+.mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 4px;
+  background-color: white;
+  border-bottom: 1px solid var(--divider);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  min-width: 48px;
+}
+
+.back-button {
+  margin-left: 4px;
+}
+
+.home-spacer {
+  width: 48px;
+  height: 48px;
+}
+
+.mobile-header-title {
+  flex: 1;
+  margin: 0;
+  font-family: GrueneType, Roboto, sans-serif;
+  font-size: 28px; /* Match h2 mobile size */
+  font-weight: 400; /* Match h2 weight */
+  color: var(--primary-dark);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+  line-height: 1.1; /* Match h2 line-height */
+  letter-spacing: 0.00735em; /* Match h2 letter-spacing */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Align to left */
+}
+
+.mobile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+.contribute-button,
+.contributions-button {
+  color: rgba(0, 0, 0, 0.87); /* Standard Material Design icon color */
+}
+
+.mobile-header-avatar-container {
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+}
+
+.mobile-header-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  transition: opacity 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+.mobile-header-avatar:active {
+  opacity: 0.8;
+}
+
+.mobile-header-avatar.anonymous-avatar-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.7;
+  filter: grayscale(100%);
+  object-fit: contain;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.menu-button {
+  margin-right: 4px;
+}
+
+/* Ensure proper touch targets */
+.mobile-header button {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* For very small screens */
+@media (max-width: 360px) {
+  .mobile-header-title {
+    font-size: 20px; /* Slightly smaller but still prominent */
+  }
+
+  /* Avatar stays same size as buttons - 48x48px total */
+}

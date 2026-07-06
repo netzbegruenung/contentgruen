@@ -1,0 +1,89 @@
+[
+  {
+    "statement": "Die Grünen wollen uns das Fleischessen verbieten und unsere Essgewohnheiten vorschreiben.",
+    "commentaries": [
+      {
+        "text": "Die Grünen haben kein generelles Fleischverbot gefordert, sondern setzen sich für eine Reduzierung des Fleischkonsums ein, um Umwelt und Gesundheit zu fördern. Sie schlagen beispielsweise einen 'Veggie Day' vor, an dem einmal pro Woche in öffentlichen Kantinen vegetarische Gerichte angeboten werden.",
+        "title": "Kein Fleischverbot, sondern Förderung von Alternativen",
+        "long_text": "Die Grünen streben kein Verbot des Fleischkonsums an, sondern möchten durch Initiativen wie den 'Veggie Day' das Bewusstsein für gesunde und umweltfreundliche Ernährung schärfen. Dabei geht es um freiwillige Angebote und nicht um Zwang.",
+        "short_text": "Förderung von vegetarischen Alternativen ohne Zwang.",
+        "references": [
+          {
+            "text": "taz.de: Fleischverzicht als Wahlkampfthema: Grüne fordern Veggie Day",
+            "reference_string": "https://taz.de/Fleischverzicht-als-Wahlkampfthema/%215061858/"
+          }
+        ]
+      },
+      {
+        "text": "Studien zeigen, dass ein hoher Fleischkonsum mit Gesundheitsrisiken wie Herz-Kreislauf-Erkrankungen und bestimmten Krebsarten verbunden ist. Die Deutsche Gesellschaft für Ernährung empfiehlt daher, den Fleischkonsum zu reduzieren und mehr pflanzliche Lebensmittel in die Ernährung zu integrieren.",
+        "title": "Gesundheitliche Vorteile einer fleischreduzierten Ernährung",
+        "long_text": "Ein übermäßiger Verzehr von Fleisch kann das Risiko für verschiedene Krankheiten erhöhen. Die Deutsche Gesellschaft für Ernährung rät daher zu einem maßvollen Fleischkonsum und betont die Vorteile einer pflanzenbetonten Ernährung für die Gesundheit.",
+        "short_text": "Reduzierter Fleischkonsum fördert die Gesundheit.",
+        "references": [
+          {
+            "text": "Volksverpetzer.de: Wahn: Rechte drehen wieder durch & fantasieren 'Fleischverbot'",
+            "reference_string": "https://www.volksverpetzer.de/faktencheck/wahn-rechte-drehen-wieder-durch-fantasieren-fleischverbot/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Ein fleischloser Tag in der Woche bringt doch nichts für die Umwelt.",
+    "commentaries": [
+      {
+        "text": "Ein fleischloser Tag pro Woche kann bereits einen positiven Einfluss auf die Umwelt haben. Die Produktion von Fleisch verursacht hohe Treibhausgasemissionen und benötigt große Mengen an Wasser und Land. Durch einen reduzierten Fleischkonsum können diese Ressourcen geschont und die Umweltbelastung verringert werden.",
+        "title": "Umweltvorteile durch reduzierten Fleischkonsum",
+        "long_text": "Die Fleischproduktion trägt erheblich zu Treibhausgasemissionen bei und beansprucht viele natürliche Ressourcen. Bereits ein fleischloser Tag pro Woche kann helfen, den ökologischen Fußabdruck zu verkleinern und einen Beitrag zum Umweltschutz zu leisten.",
+        "short_text": "Weniger Fleischkonsum schont die Umwelt.",
+        "references": [
+          {
+            "text": "Deutsches Ärzteblatt: Ernährung und Klima: Fleischfrei gesund und klimafreundlich essen – die Evidenz fehlt",
+            "reference_string": "https://www.aerzteblatt.de/archiv/214649/Ernaehrung-und-Klima-Fleischfrei-gesund-und-klimafreundlich-essen-die-Evidenz-fehlt"
+          }
+        ]
+      },
+      {
+        "text": "Laut Umweltbundesamt verursacht die Produktion von einem Kilogramm Rindfleisch etwa 13 Kilogramm CO₂-Äquivalente. Wenn jeder Deutsche einmal pro Woche auf Fleisch verzichten würde, könnten jährlich Millionen Tonnen CO₂ eingespart werden.",
+        "title": "CO₂-Einsparungen durch reduzierten Fleischkonsum",
+        "long_text": "Die Fleischproduktion ist mit hohen Treibhausgasemissionen verbunden. Durch einen wöchentlichen fleischlosen Tag könnten in Deutschland signifikante Mengen an CO₂ eingespart werden, was einen wichtigen Beitrag zum Klimaschutz darstellt.",
+        "short_text": "Wöchentlicher Fleischverzicht spart CO₂ ein.",
+        "references": [
+          {
+            "text": "Deutsches Ärzteblatt: Ernährung und Klima: Fleischfrei gesund und klimafreundlich essen – die Evidenz fehlt",
+            "reference_string": "https://www.aerzteblatt.de/archiv/214649/Ernaehrung-und-Klima-Fleischfrei-gesund-und-klimafreundlich-essen-die-Evidenz-fehlt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Vegetarische Ernährung ist ungesund und führt zu Mangelerscheinungen.",
+    "commentaries": [
+      {
+        "text": "Eine ausgewogene vegetarische Ernährung kann alle notwendigen Nährstoffe liefern. Viele Menschen berichten von positiven Effekten wie mehr Energie und besserer Haut. Es ist wichtig, auf eine vielfältige Ernährung zu achten und gegebenenfalls Nahrungsergänzungsmittel wie Vitamin B12 einzunehmen.",
+        "title": "Gesundheitliche Vorteile einer ausgewogenen vegetarischen Ernährung",
+        "long_text": "Viele Menschen, die auf eine vegetarische Ernährung umgestellt haben, berichten von positiven Veränderungen wie gesteigerter Energie und verbesserter Haut. Wichtig ist, auf eine abwechslungsreiche Ernährung zu achten und bei Bedarf Nahrungsergänzungsmittel wie Vitamin B12 einzunehmen, um Mangelerscheinungen zu vermeiden.",
+        "short_text": "Ausgewogene vegetarische Ernährung fördert die Gesundheit.",
+        "references": [
+          {
+            "text": "Bessergesundleben.de: 10 Veränderungen in deinem Körper, wenn du kein Fleisch mehr isst",
+            "reference_string": "https://bessergesundleben.de/10-veraenderungen-in-deinem-koerper-wenn-du-kein-fleisch-mehr-isst/"
+          }
+        ]
+      },
+      {
+        "text": "Die Deutsche Gesellschaft für Ernährung stellt klar, dass eine gut geplante vegetarische Ernährung für alle Altersgruppen geeignet ist und eine ausreichende Nährstoffversorgung gewährleistet. Studien belegen, dass Vegetarier im Durchschnitt ein geringeres Risiko für Herzkrankheiten und Bluthochdruck haben.",
+        "title": "Studien zu gesundheitlichen Vorteilen vegetarischer Ernährung",
+        "long_text": "Laut der Deutschen Gesellschaft für Ernährung ist eine vegetarische Ernährung für alle Altersgruppen geeignet und bietet gesundheitliche Vorteile wie ein geringeres Risiko für Herzkrankheiten und Bluthochdruck. Die Versorgung mit Nährstoffen ist bei ausgewogener Ernährung gesichert.",
+        "short_text": "Gesundheitsvorteile durch vegetarische Ernährung.",
+        "references": [
+          {
+            "text": "Deutsche Gesellschaft für Ernährung: Gesundheitsvorteile der vegetarischen Ernährung",
+            "reference_string": "https://www.dge.de"
+          }
+        ]
+      }
+    ]
+  }
+]

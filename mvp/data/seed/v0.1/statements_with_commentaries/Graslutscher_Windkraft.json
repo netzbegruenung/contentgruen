@@ -1,0 +1,112 @@
+[
+  {
+    "statement": "Windkraft funktioniert nicht, weil der Wind nicht immer weht und sie damit unzuverlässig ist.",
+    "commentaries": [
+      {
+        "text": "Im Alltag erleben wir, dass Windkraftanlagen immer zuverlässiger werden. Moderne Speichertechnologien ermöglichen es, den Strom auch dann zu nutzen, wenn der Wind mal nicht weht. Außerdem ist die Windkraft nur ein Teil eines vielfältigen Energiemixes, der auf verschiedene erneuerbare Quellen setzt.",
+        "title": "Windkraft als Teil eines Energiemixes",
+        "long_text": "Windkraftanlagen sind heute durch fortschrittliche Speichertechnologien zuverlässiger geworden. Auch bei windstillen Zeiten kann gespeicherter Strom genutzt werden. Zusammen mit anderen erneuerbaren Energien wie Solar- oder Wasserkraft sorgt das für eine stabile Versorgung.",
+        "short_text": "Speichertechnologien machen Windkraft zuverlässig.",
+        "references": []
+      },
+      {
+        "text": "Laut Berichten wird Windenergie zunehmend stabiler und kostengünstiger. In Deutschland deckt sie bereits einen großen Teil des Strombedarfs und hat sich als wichtigste Quelle erneuerbarer Energien etabliert. Auch das Fraunhofer-Institut bestätigt die Zuverlässigkeit durch fortschrittliche Technologien.",
+        "title": "Fakten zur Zuverlässigkeit von Windkraft",
+        "long_text": "Windkraft ist eine verlässliche Energiequelle geworden, die in Deutschland bereits einen großen Teil des Stroms liefert. Laut dem Fraunhofer-Institut werden durch die Integration von Speichern und Netzstabilisierungssystemen auch windstille Zeiten überbrückt.",
+        "short_text": "Windenergie deckt einen großen Teil des Strombedarfs in Deutschland.",
+        "references": [
+          {
+            "text": "Fraunhofer-Bericht zur Zuverlässigkeit von Windenergie",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Windkraftanlagen zerstören die Landschaft und sind eine Gefahr für Vögel.",
+    "commentaries": [
+      {
+        "text": "Im Alltag profitieren viele Menschen von Windkraft, da sie eine umweltfreundliche Energiequelle ist. Viele Projekte setzen sich zudem für den Schutz von Vögeln ein, indem sie geeignete Standorte für die Anlagen auswählen und technische Anpassungen vornehmen, um Kollisionen zu vermeiden.",
+        "title": "Windkraft und Schutz der Umwelt",
+        "long_text": "Windkraftanlagen werden heute unter Berücksichtigung von Umwelt- und Naturschutzaspekten errichtet. Es gibt zahlreiche Schutzmaßnahmen, um Vogelpopulationen zu schützen, wie die Auswahl geeigneter Standorte und technologische Verbesserungen, die Kollisionen reduzieren.",
+        "short_text": "Schutzmaßnahmen machen Windkraft umweltfreundlicher.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass die Auswirkungen von Windkraftanlagen auf Vögel minimal sind, insbesondere im Vergleich zu anderen menschlichen Aktivitäten wie dem Straßenverkehr oder der Nutzung fossiler Brennstoffe, die massiv zur Zerstörung von Lebensräumen beitragen.",
+        "title": "Fakten zu den Umweltauswirkungen von Windkraft",
+        "long_text": "Der Einfluss von Windkraftanlagen auf Vögel ist laut Studien gering. Andere menschliche Aktivitäten wie Verkehr oder der Abbau fossiler Brennstoffe haben weit größere negative Auswirkungen auf die Umwelt. Windkraft trägt zur Verringerung der Kohlenstoffemissionen bei und schützt so langfristig die Biodiversität.",
+        "short_text": "Windkraft hat geringere Auswirkungen auf Vögel als andere menschliche Aktivitäten.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Windkraft ist zu teuer und treibt die Energiekosten in die Höhe.",
+    "commentaries": [
+      {
+        "text": "Viele Haushalte spüren die steigenden Kosten fossiler Brennstoffe im Alltag. Erneuerbare Energien wie Windkraft helfen, langfristig stabile und niedrigere Energiepreise zu sichern, da sie unabhängig von den volatilen globalen Märkten für fossile Brennstoffe sind.",
+        "title": "Stabile Energiekosten durch Windkraft",
+        "long_text": "Fossile Brennstoffe sind preisschwankend und oft teuer. Windkraft hingegen ermöglicht stabile und vorhersehbare Energiekosten, da die Energieressourcen kostenlos und unbegrenzt verfügbar sind. Dies schützt Haushalte langfristig vor Preisschwankungen.",
+        "short_text": "Windkraft sorgt für stabile und niedrigere Energiekosten.",
+        "references": []
+      },
+      {
+        "text": "Windenergie gehört mittlerweile zu den kostengünstigsten Energiequellen weltweit. Laut dem Global Wind Energy Council sind die Kosten für Windkraft in den letzten Jahren stark gesunken, und sie bietet eine wirtschaftlich wettbewerbsfähige Lösung im Vergleich zu fossilen Brennstoffen.",
+        "title": "Fakten zu den Kosten von Windkraft",
+        "long_text": "Studien des Global Wind Energy Council zeigen, dass Windkraft eine der günstigsten Energiequellen ist. Die Kosten für die Installation und Wartung von Windkraftanlagen sind in den letzten Jahren stark gesunken, was sie zu einer wirtschaftlich attraktiven Alternative zu fossilen Brennstoffen macht.",
+        "short_text": "Windkraft ist eine der günstigsten Energiequellen.",
+        "references": [
+          {
+            "text": "Global Wind Energy Council Report",
+            "reference_string": "https://gwec.net"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Windkraft ist ineffizient, weil sie nicht immer Strom liefert.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sorgen moderne Speichersysteme dafür, dass der erzeugte Windstrom auch genutzt werden kann, wenn der Wind nicht weht. Das heißt, auch an windstillen Tagen kann auf gespeicherten Strom zurückgegriffen werden, um eine stabile Energieversorgung sicherzustellen.",
+        "title": "Speichertechnologien sichern die Versorgung",
+        "long_text": "Durch den Ausbau von Energiespeichern können Windkraftanlagen eine kontinuierliche Stromversorgung gewährleisten, auch wenn der Wind nicht weht. Diese Speicherlösungen sind entscheidend, um erneuerbare Energien voll auszuschöpfen und die Versorgungssicherheit zu gewährleisten.",
+        "short_text": "Speichersysteme machen Windenergie effizient und zuverlässig.",
+        "references": []
+      },
+      {
+        "text": "Technologische Fortschritte bei der Speicherung und Netzstabilisierung machen Windkraft zu einer zuverlässigen Energiequelle. Laut dem Fraunhofer-Institut tragen Energiespeicher maßgeblich dazu bei, Schwankungen in der Stromproduktion auszugleichen und eine stabile Versorgung zu sichern.",
+        "title": "Fakten zur Effizienz von Windkraft",
+        "long_text": "Moderne Energiespeichersysteme sind der Schlüssel zur effizienten Nutzung von Windenergie. Laut dem Fraunhofer-Institut können diese Systeme die Schwankungen in der Produktion ausgleichen und sorgen dafür, dass der erzeugte Strom effizient genutzt wird, selbst wenn der Wind nicht weht.",
+        "short_text": "Speichertechnologien machen Windkraft effizient.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut Bericht zu Speichertechnologien",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Windkraftanlagen machen Lärm und stören die Anwohner.",
+    "commentaries": [
+      {
+        "text": "Im Alltag haben viele Windparks in der Nähe von Wohngebieten gezeigt, dass moderne Windkraftanlagen sehr leise arbeiten. Außerdem werden viele Anlagen so geplant, dass sie weit genug von Wohngebieten entfernt stehen, um keine Lärmbelastung zu verursachen.",
+        "title": "Moderne Windkraftanlagen sind leise",
+        "long_text": "Moderne Windkraftanlagen sind sehr leise und oft kaum hörbar, selbst in der Nähe von Wohngebieten. Durch sorgfältige Planung und Standortwahl kann die Lärmbelastung minimiert werden. Viele Anwohner berichten, dass die Geräusche von Windkraftanlagen nicht störend sind.",
+        "short_text": "Moderne Windkraftanlagen sind leise und stören Anwohner nicht.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass moderne Windkraftanlagen so entwickelt wurden, dass sie nur geringe Lärmemissionen verursachen. Laut Untersuchungen des Umweltbundesamtes ist der von Windkraftanlagen erzeugte Schall meist unterhalb der für Menschen störenden Schwelle.",
+        "title": "Fakten zu Lärmemissionen von Windkraftanlagen",
+        "long_text": "Moderne Windkraftanlagen sind so konstruiert, dass sie nur geringe Geräusche verursachen. Studien des Umweltbundesamtes bestätigen, dass die Lärmemissionen unterhalb der Schwelle liegen, die für Menschen als störend empfunden wird. Windkraft ist also auch in der Nähe von Wohngebieten umwelt- und menschenfreundlich.",
+        "short_text": "Windkraftanlagen verursachen nur minimale Geräusche.",
+        "references": []
+      }
+    ]
+  }
+]

@@ -1,0 +1,289 @@
+/* Main container */
+.reference-input-container {
+    width: 100%;
+    margin: var(--spacing-md) 0;
+    box-sizing: border-box;
+}
+
+/* Input group */
+.reference-input-group {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    width: 100%;
+    padding: 16px 12px 12px 12px;  /* More top padding for label space */
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-sizing: border-box;
+}
+
+.reference-fields-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;  /* Add small gap between fields */
+    min-width: 0;
+    overflow: hidden;
+}
+
+.reference-url-field,
+.reference-description-field {
+    width: 100%;
+    margin: 0;
+}
+
+.reference-url-field {
+    margin-top: 4px;  /* Add top margin specifically for URL field */
+}
+
+.reference-url-field {
+    margin-bottom: 8px;  /* Slightly more space between fields */
+}
+
+/* Material form field overrides - consolidated */
+.reference-url-field ::ng-deep .mat-form-field-wrapper,
+.reference-description-field ::ng-deep .mat-form-field-wrapper {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.reference-url-field ::ng-deep .mat-mdc-text-field-wrapper {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    padding-top: 12px !important;  /* Extra space for URL field label */
+}
+
+.reference-description-field ::ng-deep .mat-mdc-text-field-wrapper {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    padding-top: 8px !important;  /* Space for description field label */
+}
+
+.reference-url-field ::ng-deep .mat-form-field-subscript-wrapper,
+.reference-description-field ::ng-deep .mat-form-field-subscript-wrapper,
+.reference-url-field ::ng-deep .mat-mdc-form-field-subscript-wrapper,
+.reference-description-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.add-reference-button {
+    height: 56px;
+    width: 56px;
+    min-width: 56px;
+    align-self: center;
+}
+
+/* Autocomplete suggestions */
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+}
+
+.suggestion-icon,
+.reference-icon {
+    margin-right: var(--spacing-sm);
+    color: var(--md-sys-color-primary);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.suggestion-content,
+.reference-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.suggestion-title,
+.reference-url {
+    font-size: 14px;
+    color: var(--md-sys-color-on-surface);
+}
+
+.suggestion-meta,
+.reference-description {
+    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-top: 2px;
+}
+
+.reference-description {
+    font-style: italic;
+}
+
+.reference-url {
+    word-break: break-word;
+    font-weight: 500;
+}
+
+/* Selected references */
+.selected-references {
+    margin-top: var(--spacing-md);
+}
+
+.reference-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.reference-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm);
+    background: var(--md-sys-color-surface-container-low);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    transition: background-color 0.2s;
+}
+
+.reference-item:hover {
+    background: var(--md-sys-color-surface-container);
+}
+
+.reference-item.new-reference {
+    background-color: rgba(76, 175, 80, 0.08);
+    border-color: #4CAF50;
+    border-left: 3px solid #4CAF50;
+}
+
+.reference-item.existing-reference {
+    background-color: rgba(33, 150, 243, 0.08);
+    border-color: #2196F3;
+    border-left: 3px solid #2196F3;
+}
+
+.reference-item.pending-reference {
+    background-color: rgba(255, 152, 0, 0.08);
+    border-color: #FF9800;
+    border-left: 3px solid #FF9800;
+    opacity: 0.8;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 0.8;
+    }
+}
+
+.reference-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    flex: 1;
+    min-width: 0;
+}
+
+.reference-icon {
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.reference-icon mat-spinner {
+    margin: 2px;
+}
+
+/* Badges and counters */
+.usage-badge,
+.reference-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: var(--spacing-xs);
+}
+
+.usage-badge {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+.reference-badge {
+    background: #2196F3;
+    color: white;
+}
+
+.reference-badge.pending {
+    background: #FF9800;
+    color: white;
+}
+
+.reference-count {
+    margin-top: var(--spacing-xs);
+    font-size: 12px;
+    color: var(--md-sys-color-on-surface-variant);
+    text-align: right;
+}
+
+/* Status messages */
+.status-message {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    margin-top: var(--spacing-sm);
+    font-size: 13px;
+}
+
+.status-message mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.status-message.info {
+    background: var(--md-sys-color-info-container);
+    color: var(--md-sys-color-on-info-container);
+}
+
+.status-message.warning {
+    background: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .reference-input-group {
+        padding: var(--spacing-xs);
+    }
+
+    .add-reference-button {
+        height: 48px;
+        width: 48px;
+        min-width: 48px;
+    }
+}
+
+@media (max-width: 480px) {
+    .reference-input-group {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .add-reference-button {
+        align-self: flex-end;
+    }
+}

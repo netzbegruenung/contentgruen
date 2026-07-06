@@ -1,0 +1,3 @@
+# Not managed in this repository
+# Production configuration is part of the netzbegruenung saltstack configuration:
+# https://git.verdigado.com/verdigado-Privileged/Salt/src/branch/master/states/contentgruen/files/docker-compose.yml

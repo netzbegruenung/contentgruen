@@ -1,0 +1,207 @@
+<div class="add-generictext-container">
+    <!-- Content Type Indicator -->
+    <div class="content-type-indicator">
+        <div class="content-type-badge">
+            <span class="content-type-icon">📄</span>
+            <div class="content-type-text">
+                <h2 class="content-type-title">Hintergrundinfo</h2>
+                <p class="content-type-description">Fakten, Zahlen und Hintergrundinformationen zum Thema</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 1: Reply Context Section -->
+    <div class="context-section-wrapper" *ngIf="!generictextLoading && !responseId && !generictextError">
+        <div class="context-section">
+            <div class="section-header">
+                <span class="step-indicator">1</span>
+                <h3>Kontext festlegen</h3>
+            </div>
+
+            <!-- Toggle for reply type -->
+            <div class="reply-toggle">
+                <mat-slide-toggle
+                    [checked]="isReplyToStatement"
+                    (change)="toggleReplyType($event.checked)"
+                    color="primary">
+                    <span class="toggle-label">
+                        <mat-icon class="toggle-icon">{{ isReplyToStatement ? 'reply' : 'article' }}</mat-icon>
+                        {{ isReplyToStatement ? 'Dies ist eine Antwort auf eine Aussage' : 'Dies ist ein eigenständiger Beitrag' }}
+                    </span>
+                </mat-slide-toggle>
+            </div>
+
+            <!-- Statement input area (shown when toggle is ON) -->
+            <div *ngIf="isReplyToStatement" class="statement-input-area">
+                <div class="input-instruction">
+                    <mat-icon class="info-icon">help_outline</mat-icon>
+                    <div class="instruction-text">
+                        <p class="instruction-title">Worauf antwortest du?</p>
+                        <p class="instruction-detail">Gib die Aussage ein, auf die deine Hintergrundinfo reagiert</p>
+                        <p class="instruction-example">Beispiele: "Die Grünen wollen uns das Autofahren verbieten" oder "Klimaschutz zerstört Arbeitsplätze"</p>
+                    </div>
+                </div>
+
+                <mat-form-field appearance="outline" class="statement-field">
+                    <mat-label>Aussage, auf die geantwortet wird</mat-label>
+                    <textarea
+                        matInput
+                        [(ngModel)]="statementInput"
+                        (blur)="updateStatement()"
+                        rows="3"
+                        placeholder="Gib hier die Aussage ein, auf die du antworten möchtest...">
+                    </textarea>
+                    <mat-hint>Diese Aussage wird gespeichert und kann für weitere Inhalte wiederverwendet werden</mat-hint>
+                </mat-form-field>
+
+                <!-- Visual preview of the statement if entered -->
+                <div *ngIf="statementText" class="statement-preview">
+                    <div class="preview-header">
+                        <mat-icon class="quote-icon">format_quote</mat-icon>
+                        <span>Aussage, auf die geantwortet wird:</span>
+                    </div>
+                    <div class="statement-quote-box">
+                        <div class="statement-quote">{{ statementText }}</div>
+                    </div>
+                    <button mat-button color="warn" (click)="clearStatement()" class="clear-btn">
+                        <mat-icon>clear</mat-icon>
+                        Aussage löschen
+                    </button>
+                    <!-- Visual connection indicator -->
+                    <div class="connection-indicator">
+                        <mat-icon>arrow_downward</mat-icon>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Removed visual reply indicator - sections flow naturally -->
+    </div>
+
+    <!-- Step 2: Main Content - Two Columns -->
+    <div class="content-wrapper" [class.connected-sections]="isReplyToStatement && statementText">
+        <div class="form-column">
+            <!-- Input State: Form -->
+            <form *ngIf="!generictextLoading && !responseId && !generictextError" [formGroup]="generictextForm"
+                (ngSubmit)="saveGenericTextForm()">
+
+                <div class="form-section">
+                    <div class="section-header">
+                        <span class="step-indicator">2</span>
+                        <h3>Deine Hintergrundinfo</h3>
+                    </div>
+                </div>
+
+                <div class="form-fields">
+                    <div class="form-group">
+                        <label class="input-label">Titel*</label>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Gib einen aussagekräftigen Titel ein</mat-label>
+                            <input matInput #titel maxlength="50" formControlName="title" id="title" type="text" />
+                            <mat-hint align="end">{{titel.value.length || 0}}/50</mat-hint>
+                            <mat-error *ngIf="generictextForm.get('title')?.hasError('required')">
+                                Titel ist erforderlich
+                            </mat-error>
+                            <mat-error *ngIf="generictextForm.get('title')?.hasError('minlength')">
+                                Titel muss mindestens 3 Zeichen lang sein
+                            </mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">Text*</label>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Gib den Text deiner Hintergrundinfo ein</mat-label>
+                            <textarea matInput #text maxLength="2000" rows="8"
+                                formControlName="text" id="text"></textarea>
+                            <mat-hint align="end">{{text.value.length || 0}}/2000</mat-hint>
+                            <mat-error *ngIf="generictextForm.get('text')?.hasError('required')">
+                                Text ist erforderlich
+                            </mat-error>
+                            <mat-error *ngIf="generictextForm.get('text')?.hasError('minlength')">
+                                Text muss mindestens 10 Zeichen lang sein
+                            </mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="form-group references-section">
+                        <label class="input-label">Quellenangaben (optional)</label>
+                        <app-reference-input
+                            formControlName="references"
+                            placeholder="Quelle hinzufügen (URL oder Beschreibung)"
+                            (referenceAdded)="onReferenceAdded($event)"
+                            (referenceRemoved)="onReferenceRemoved($event)">
+                        </app-reference-input>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button mat-stroked-button type="button" (click)="navigateBack()" class="cancel-btn">
+                        <mat-icon>close</mat-icon>
+                        Formular zurücksetzen
+                    </button>
+                    <button mat-raised-button color="primary" type="submit" [disabled]="!generictextForm.valid"
+                        class="submit-btn">
+                        <mat-icon>save</mat-icon>
+                        Hintergrundinfo speichern
+                    </button>
+                </div>
+            </form>
+
+            <!-- Loading State -->
+            <div *ngIf="generictextLoading" class="state-container loading-state" #loadingContainer>
+                <mat-spinner diameter="50"></mat-spinner>
+                <h3>Speichere Hintergrundinfo...</h3>
+                <p>Bitte wartn einen Moment</p>
+            </div>
+
+            <!-- Success State -->
+            <div *ngIf="generictextSaved && responseId" class="state-container success-state" #successContainer>
+                <mat-icon class="success-icon">check_circle</mat-icon>
+                <h3>Hintergrundinfo erfolgreich gespeichert!</h3>
+                <p>Deine Hintergrundinfo wurde erfolgreich hinzugefügt und kann nun von anderen genutzt werden.</p>
+                <div class="action-buttons">
+                    <button mat-raised-button color="primary" (click)="navigateToGenerictext(responseId)">
+                        <mat-icon>visibility</mat-icon>
+                        Hintergrundinfo ansehen
+                    </button>
+                    <button mat-stroked-button color="primary" (click)="reset()">
+                        <mat-icon>add</mat-icon>
+                        Weitere Hintergrundinfo hinzufügen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div *ngIf="generictextError" class="state-container error-state">
+                <mat-icon class="error-icon">error</mat-icon>
+                <h3>Speichern fehlgeschlagen</h3>
+                <p class="error-message">{{ generictextError }}</p>
+                <div class="action-buttons">
+                    <button mat-raised-button color="primary" (click)="reset()">
+                        <mat-icon>refresh</mat-icon>
+                        Erneut versuchen
+                    </button>
+                    <button mat-button (click)="navigateBack()">
+                        Abbrechen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Column -->
+        <div class="preview-column">
+            <div class="preview-header">
+                <h3>Vorschau</h3>
+                <mat-icon matTooltip="So wird deine Hintergrundinfo in den Suchergebnissen angezeigt">info</mat-icon>
+            </div>
+            <div class="preview-content">
+                <app-generictext-result-item
+                    *ngIf="previewResult"
+                    [result_input]="previewResult"
+                    [isPreview]="true">
+                </app-generictext-result-item>
+            </div>
+        </div>
+    </div>
+</div>

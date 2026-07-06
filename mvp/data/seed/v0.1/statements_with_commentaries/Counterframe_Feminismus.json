@@ -1,0 +1,110 @@
+[
+  {
+    "statement": "Feminismus ist zu weit gegangen, heute wird alles als sexistisch angesehen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag zeigt sich, dass viele Frauen immer noch Angst haben, Belästigungen oder Übergriffe zu melden, weil sie Repressalien fürchten. Solange Frauen nicht in allen Bereichen des Lebens die gleichen Möglichkeiten und Freiheiten haben, ist die Arbeit des Feminismus noch lange nicht abgeschlossen.",
+        "title": "Alltägliche Realität von Frauen",
+        "long_text": "Frauen erleben häufig Situationen, in denen sie Belästigung oder Diskriminierung erfahren und aus Angst vor negativen Konsequenzen schweigen. Solange diese Realität für viele besteht, bleibt der Einsatz für Gleichberechtigung und ein respektvolles Miteinander essentiell.",
+        "short_text": "Belästigung bleibt oft ungemeldet – ein Zeichen, dass Gleichberechtigung weiterhin nötig ist.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Studie verdienen Frauen in Deutschland immer noch durchschnittlich 17,7 % weniger als Männer, und in Ländern wie Estland beträgt dieser Unterschied sogar 21 %. Diese Zahlen zeigen, dass es weiterhin systemische Ungleichheiten gibt, die durch feministische Bewegungen adressiert werden müssen.",
+        "title": "Fakten zur Lohnungleichheit",
+        "long_text": "Die Geschlechterungleichheit in der Bezahlung ist ein hartes Faktum: Frauen verdienen in vielen Ländern Europas weniger als Männer für die gleiche Arbeit. In Deutschland beträgt dieser Unterschied 17,7 %, was zeigt, dass wirtschaftliche Gleichberechtigung noch nicht erreicht ist.",
+        "short_text": "Frauen verdienen in Deutschland im Durchschnitt 17,7 % weniger als Männer.",
+        "references": [
+          {
+            "text": "Gender Pay Gap in Europa",
+            "reference_string": "https://www.euronews.com/next/2024/03/08/gender-pay-gap-in-europe-how-do-countries-compare-on-narrowing-the-divide"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Frauen haben bereits genug Rechte, es braucht keinen Feminismus mehr.",
+    "commentaries": [
+      {
+        "text": "Auch wenn gesetzliche Gleichstellung in vielen Ländern existiert, erleben Frauen im Alltag weiterhin Diskriminierung und Gewalt. Gerade in Bereichen wie dem Zugang zu Führungspositionen oder der Vereinbarkeit von Familie und Beruf sind Frauen nach wie vor benachteiligt.",
+        "title": "Diskriminierung im Alltag",
+        "long_text": "Frauen erleben auch in modernen Gesellschaften weiterhin strukturelle Benachteiligung. So ist es oft schwieriger für sie, Führungspositionen zu erreichen oder sich beruflich frei zu entfalten, da die gesellschaftlichen Erwartungen sie stärker an familiäre Pflichten binden.",
+        "short_text": "Strukturelle Diskriminierung bleibt ein Problem – auch in modernen Gesellschaften.",
+        "references": []
+      },
+      {
+        "text": "Die geschlechtsspezifische Gewalt bleibt ein großes Problem: In Ländern wie Lettland gibt es 2,14 Morde an Frauen pro 100.000 Einwohner, in Deutschland liegt die Zahl bei 0,53. Diese Zahlen belegen, dass der Kampf gegen geschlechtsspezifische Gewalt und für Frauenrechte weitergehen muss.",
+        "title": "Statistiken zur Gewalt gegen Frauen",
+        "long_text": "Die geschlechtsspezifische Gewalt ist ein globales Problem. Selbst in Europa sterben Frauen aufgrund ihres Geschlechts an gewaltsamen Übergriffen. Die Statistik zeigt deutlich, dass der Schutz von Frauenrechten weiterhin Priorität haben muss.",
+        "short_text": "Frauen sind weltweit von Gewalt bedroht – das belegen Zahlen aus Europa.",
+        "references": [
+          {
+            "text": "Daten zur Gewalt gegen Frauen",
+            "reference_string": "https://www.europeandatajournalism.eu/cp_data_news/femicide-remains-all-too-common-in-italy-and-europe"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Gender Pay Gap ist übertrieben, Frauen entscheiden sich einfach öfter für schlechter bezahlte Berufe.",
+    "commentaries": [
+      {
+        "text": "Viele Frauen wählen Berufe in Pflege und Erziehung, weil diese besser mit familiären Verpflichtungen vereinbar sind. Aber genau diese Berufsfelder sind unterbezahlt und unterbewertet, obwohl sie für die Gesellschaft enorm wichtig sind. Dies zeigt, dass der Arbeitsmarkt strukturelle Ungleichheiten aufweist, die dringend behoben werden müssen.",
+        "title": "Berufswahl und Vereinbarkeit",
+        "long_text": "Frauen entscheiden sich oft für Berufe in sozialen Bereichen, weil diese besser mit den familiären Anforderungen vereinbar sind. Diese Berufe werden jedoch gesellschaftlich unterbewertet und schlecht entlohnt. Diese strukturellen Unterschiede müssen durch Reformen im Arbeitsmarkt beseitigt werden.",
+        "short_text": "Soziale Berufe sind schlecht bezahlt, obwohl sie gesellschaftlich unverzichtbar sind.",
+        "references": []
+      },
+      {
+        "text": "Fakten zeigen, dass der Gender Pay Gap nicht allein auf Berufswahl zurückzuführen ist: Selbst bei gleicher Position und Qualifikation verdienen Frauen im Durchschnitt weniger als Männer. In Deutschland beträgt der bereinigte Gender Pay Gap rund 6 %. Das zeigt, dass es noch immer unfaire Gehaltsstrukturen gibt.",
+        "title": "Fakten zur bereinigten Gender Pay Gap",
+        "long_text": "Auch bei gleicher Qualifikation und Position verdienen Frauen in Deutschland im Durchschnitt weniger als ihre männlichen Kollegen. Der bereinigte Gender Pay Gap liegt bei rund 6 %. Dies deutet darauf hin, dass es im Lohngefüge weiterhin ungerechtfertigte Unterschiede gibt.",
+        "short_text": "Frauen verdienen auch bei gleicher Position oft weniger als Männer.",
+        "references": [
+          {
+            "text": "Gender Pay Gap Statistiken",
+            "reference_string": "https://www.destatis.de/DE/Themen/Arbeit/Verdienste-Einkommen/Gender-Pay-Gap/_inhalt.html"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Feminismus führt nur dazu, dass Männer systematisch benachteiligt werden.",
+    "commentaries": [
+      {
+        "text": "Im Alltag spüren Frauen weiterhin mehr Ungerechtigkeiten, zum Beispiel bei der Verteilung von familiären Pflichten oder der ungleichen Bewertung ihrer Arbeit. Feminismus setzt sich dafür ein, diese Ungerechtigkeiten zu beheben und gleiche Chancen für alle zu schaffen, ohne dabei Männer zu benachteiligen.",
+        "title": "Gleichberechtigung im Alltag",
+        "long_text": "Frauen tragen im Alltag weiterhin einen größeren Anteil an der familiären Verantwortung und erhalten für ihre Arbeit oft weniger Anerkennung als Männer. Feminismus kämpft für eine gerechte Verteilung dieser Aufgaben und für gleiche Chancen – für alle Geschlechter.",
+        "short_text": "Feminismus zielt darauf ab, gleiche Chancen zu schaffen – für Männer und Frauen.",
+        "references": []
+      },
+      {
+        "text": "Die Statistiken zeigen, dass Frauen in vielen Bereichen strukturell benachteiligt sind: Sei es bei der Bezahlung oder bei der Repräsentation in Führungspositionen. Der Feminismus möchte diese Ungleichheiten beseitigen, ohne Männern Nachteile zu bringen.",
+        "title": "Strukturelle Benachteiligung von Frauen",
+        "long_text": "Frauen sind sowohl auf dem Arbeitsmarkt als auch in anderen gesellschaftlichen Bereichen strukturell benachteiligt. Der Feminismus zielt darauf ab, diese Ungerechtigkeiten zu korrigieren, ohne die Rechte von Männern zu beschneiden.",
+        "short_text": "Strukturelle Ungleichheiten betreffen Frauen stark, und Feminismus will diese aufheben.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Wokeness und radikaler Feminismus führen zu Zensur, man darf nichts mehr sagen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag geht es nicht um Zensur, sondern darum, respektvoll miteinander zu sprechen. Es gibt keine Einschränkung der Meinungsfreiheit, solange niemand diskriminiert wird. Ein respektvoller Umgangston sorgt dafür, dass alle Menschen ihre Meinung frei äußern können, ohne Angst vor Beleidigungen zu haben.",
+        "title": "Respekt im Alltag",
+        "long_text": "Respektvolles Miteinander ist keine Zensur. Es gibt keine rechtlichen Einschränkungen der Meinungsfreiheit, solange niemand aufgrund von Geschlecht, Herkunft oder anderen Merkmalen diskriminiert wird. Feminismus fordert einen fairen Umgang miteinander, damit jeder frei sprechen kann.",
+        "short_text": "Respektvolle Kommunikation ist kein Angriff auf die Meinungsfreiheit.",
+        "references": []
+      },
+      {
+        "text": "In vielen Ländern gibt es nach wie vor keine vollständige Gleichberechtigung, und Frauen haben nicht die gleichen Rechte wie Männer. Zum Beispiel haben in den USA nach der Aufhebung von Roe v. Wade Millionen von Frauen das Recht auf reproduktive Selbstbestimmung verloren. Feminismus wehrt sich gegen diese Ungerechtigkeiten und setzt sich für mehr Freiheit ein.",
+        "title": "Zahlen zur Ungleichheit",
+        "references": []
+      }
+    ]
+  }
+]

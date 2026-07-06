@@ -1,0 +1,49 @@
+<h2 mat-dialog-title>Referenz bereits vorhanden</h2>
+
+<mat-dialog-content>
+  <div class="duplicate-info">
+    <p><strong>Diese Referenz existiert bereits in der gemeinsamen Datenbank:</strong></p>
+    <div class="reference-url">{{ data.referenceString }}</div>
+
+    <div class="description-comparison">
+      <div class="existing-description" *ngIf="data.existingDescription">
+        <p class="label">Aktuelle gemeinsame Beschreibung:</p>
+        <div class="description-box">{{ data.existingDescription }}</div>
+      </div>
+
+      <div class="new-description">
+        <p class="label">Deine Beschreibung (editierbar):</p>
+        <mat-form-field appearance="outline" class="full-width">
+          <textarea matInput
+                    [(ngModel)]="editableDescription"
+                    rows="2"
+                    placeholder="Beschreibung eingeben">
+          </textarea>
+        </mat-form-field>
+        <div class="info-text">
+          <mat-icon>info</mat-icon>
+          <span>Wenn du deine Beschreibung verwendest, wird diese <strong>für alle Nutzer</strong> aktualisiert (kollaborative Verbesserung).</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="question">Was möchtest du tun?</p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">
+    <mat-icon>close</mat-icon>
+    Abbrechen
+  </button>
+
+  <button mat-raised-button color="primary" (click)="useExisting()">
+    <mat-icon>check</mat-icon>
+    Vorhandene Beschreibung beibehalten
+  </button>
+
+  <button mat-raised-button color="accent" (click)="useNew()">
+    <mat-icon>group</mat-icon>
+    Beschreibung für alle aktualisieren
+  </button>
+</mat-dialog-actions>

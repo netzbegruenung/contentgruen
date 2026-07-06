@@ -1,0 +1,100 @@
+<div class="component-box">
+
+    <div class="registration-info-container">
+        <mat-accordion>
+            <mat-expansion-panel class="registration-expansion-panel" [expanded]="isRegistrationInfoExpanded">
+                <mat-expansion-panel-header>
+                    <mat-panel-title class="registration-panel-title">
+                        <mat-icon class="info-icon">info</mat-icon>
+                        <span>Aktuell ist keine Selbstregistrierung möglich</span>
+                        <span class="expansion-hint">{{ isRegistrationInfoExpanded ? 'Weniger anzeigen' : 'Mehr Informationen' }}</span>
+                    </mat-panel-title>
+                </mat-expansion-panel-header>
+
+                <div class="registration-content">
+                    <p class="registration-intro">
+                        Du hast folgende Möglichkeiten, Zugang zu ContentGrün zu erhalten:
+                    </p>
+                    <div class="registration-options">
+                        <div class="registration-option">
+                            <mat-icon class="option-icon">group</mat-icon>
+                            <div class="option-text">
+                                <strong>Mitgliedschaft bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a></strong>
+                                <p>Werde Mitglied bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a> und nutze deinen Account zur Anmeldung bei ContentGrün über Keycloak.</p>
+                            </div>
+                        </div>
+                        <div class="registration-option">
+                            <mat-icon class="option-icon">email</mat-icon>
+                            <div class="option-text">
+                                <strong>ContentGrün Beta-Account für Grüne Mitglieder</strong>
+                                <p>Falls eine Mitgliedschaft für dich nicht umsetzbar ist, du aber gerne mitwirken möchtest, beantrage manuell einen ContentGrün Beta-Zugang: Kontaktiere uns per Mail an <a [href]="getMailtoLink()" class="email-link">accounts&#64;contentgruen.de</a> und nenne uns dabei den Grünen Kreisverband, in dem du Mitglied bist.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </mat-expansion-panel>
+        </mat-accordion>
+    </div>
+
+
+    <div class="login-selector-container" *ngIf="!isLoading">
+        <!-- Always show both login options -->
+        <div class="login-options">
+
+            <!-- Keycloak Login Option -->
+            <div class="login-option-card mat-elevation-z2" [class.disabled-option]="!authModes.keycloakEnabled">
+                <button mat-raised-button
+                        class="login-option-button keycloak-button"
+                        [disabled]="!authModes.keycloakEnabled"
+                        (click)="loginWithKeycloak()">
+                    <mat-icon class="login-icon">vpn_key</mat-icon>
+                    <div class="button-content">
+                        <span class="button-title">Netzbegrünung Login</span>
+                        <span class="button-subtitle">SSO über Keycloak</span>
+                    </div>
+                </button>
+                <p class="login-description">
+                    Melde dich mit deinem Netzbegrünung-Account an.
+                    Verwende deine bestehenden Zugangsdaten.
+                </p>
+                <p class="disabled-notice" *ngIf="!authModes.keycloakEnabled">
+                    <mat-icon class="notice-icon">info_outline</mat-icon>
+                    Diese Anmeldeoption ist in dieser Umgebung nicht verfügbar.
+                </p>
+            </div>
+
+            <div class="divider-container">
+                <span class="divider-text">oder</span>
+            </div>
+
+            <!-- ContentGrün Login Option -->
+            <div class="login-option-card mat-elevation-z2" [class.disabled-option]="!authModes.managedAuthEnabled">
+                <button mat-raised-button
+                        class="login-option-button contentgruen-button"
+                        [disabled]="!authModes.managedAuthEnabled"
+                        (click)="loginWithContentGruen()">
+                    <mat-icon class="login-icon">account_circle</mat-icon>
+                    <div class="button-content">
+                        <span class="button-title">ContentGrün Login</span>
+                        <span class="button-subtitle">Direktanmeldung</span>
+                    </div>
+                </button>
+                <p class="login-description">
+                    Melde dich direkt mit deinem ContentGrün-Account an.
+                    Verwende deine E-Mail-Adresse und dein Passwort.
+                </p>
+                <p class="disabled-notice" *ngIf="!authModes.managedAuthEnabled">
+                    <mat-icon class="notice-icon">info_outline</mat-icon>
+                    Diese Anmeldeoption ist in dieser Umgebung nicht verfügbar.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+
+    <div class="loading-container" *ngIf="isLoading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Lade Anmeldeoptionen...</p>
+    </div>
+</div>

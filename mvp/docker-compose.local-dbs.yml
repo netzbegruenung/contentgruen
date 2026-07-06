@@ -1,0 +1,44 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    container_name: contentgruen-qdrant
+    restart: always
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrant_storage_local:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-app:
+    image: postgres:16-alpine
+    container_name: contentgruen-app-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: contentgruen_app
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_app_local:/var/lib/postgresql/data
+      - ./backend/app-database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  qdrant_storage_local:
+    name: contentgruen_qdrant_storage_local
+  pgdata_app_local:
+    name: contentgruen_pgdata_app_local

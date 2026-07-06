@@ -1,0 +1,122 @@
+[
+  {
+    "statement": "Erneuerbare Energien sind nicht wirklich umweltfreundlich, da sie viele Rohstoffe wie Kupfer und Aluminium benötigen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag hilft uns der Ausbau erneuerbarer Energien, die Abhängigkeit von fossilen Brennstoffen zu verringern, was langfristig die Umwelt schützt. Rohstoffe wie Kupfer und Aluminium werden auch in vielen anderen Bereichen verwendet, doch gerade erneuerbare Energien bieten die Möglichkeit, den CO2-Ausstoß erheblich zu senken.",
+        "title": "Erneuerbare Energien als umweltfreundlichere Alternative",
+        "long_text": "Obwohl die Produktion erneuerbarer Energien Rohstoffe wie Kupfer und Aluminium erfordert, helfen sie dabei, fossile Brennstoffe langfristig zu ersetzen und den CO2-Ausstoß erheblich zu senken.",
+        "short_text": "Erneuerbare Energien reduzieren die Abhängigkeit von fossilen Brennstoffen.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Analyse wird der Großteil von Rohstoffen wie Kupfer in der Elektronik- und Bauindustrie verwendet. Erneuerbare Energien nutzen im Vergleich nur einen Bruchteil dieser Ressourcen, und die Umweltvorteile durch vermiedene CO2-Emissionen sind wesentlich größer.",
+        "title": "Fakten zu Rohstoffverbrauch und Umweltvorteilen",
+        "long_text": "Nur etwa ein Drittel der globalen Kupferproduktion wird für Windkraftanlagen benötigt. Der Großteil wird in anderen Industrien verwendet. Die Vorteile der Reduktion von CO2-Emissionen überwiegen jedoch deutlich.",
+        "short_text": "Der Anteil erneuerbarer Energien an der Rohstoffnutzung ist relativ gering.",
+        "references": [
+          {
+            "text": "Kitco zu globaler Kupferproduktion",
+            "reference_string": "https://www.kitco.com"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Energiewende schadet ärmeren Ländern durch den Abbau von Rohstoffen wie Kobalt und Lithium.",
+    "commentaries": [
+      {
+        "text": "Im Alltag können wir von erneuerbaren Energien profitieren, ohne arme Länder auszubeuten. Es gibt zahlreiche Initiativen, die sich für nachhaltigen Rohstoffabbau einsetzen, und durch Recycling von Materialien in Batterien wird der Bedarf an neuen Rohstoffen reduziert.",
+        "title": "Nachhaltige und faire Lösungen für den Rohstoffabbau",
+        "long_text": "Der Ausbau von Recycling und nachhaltigen Abbaumethoden sorgt dafür, dass erneuerbare Energien langfristig fairer und umweltfreundlicher werden, was auch den Menschen in ärmeren Ländern zugutekommt.",
+        "short_text": "Nachhaltigkeit und Recycling reduzieren den Rohstoffbedarf.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass nur etwa vier Prozent des weltweit geförderten Kobalts und Nickels für Batterien verwendet werden. Ein Großteil geht in die Stahlproduktion. Zudem gibt es Anstrengungen, den Anteil von Kobalt in Batterien zu minimieren.",
+        "title": "Fakten zum Rohstoffverbrauch erneuerbarer Energien",
+        "long_text": "Nur ein kleiner Teil der weltweit geförderten Rohstoffe wie Kobalt wird für erneuerbare Energien verwendet. Die Industrie arbeitet zudem an der Reduzierung dieser Materialien durch Innovationen.",
+        "short_text": "Nur ein kleiner Teil der globalen Rohstoffproduktion geht in Batterien.",
+        "references": [
+          {
+            "text": "Natural Resources Canada zu Kobalt und Nickel",
+            "reference_string": "https://www.nrcan.gc.ca"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Energiewende ist teuer und erhöht die Strompreise für alle.",
+    "commentaries": [
+      {
+        "text": "Im Alltag können erneuerbare Energien dazu beitragen, die Stromkosten langfristig zu stabilisieren. Durch den Ausbau von Solar- und Windkraft sinken die Produktionskosten kontinuierlich, was den Strommarkt entlastet.",
+        "title": "Langfristige Einsparungen durch erneuerbare Energien",
+        "long_text": "Die anfänglichen Investitionen in erneuerbare Energien führen zu niedrigeren Strompreisen, sobald die Infrastruktur etabliert ist. Wind- und Solarenergie werden immer günstiger und tragen zur Stabilisierung des Energiemarkts bei.",
+        "short_text": "Erneuerbare Energien senken langfristig die Kosten.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Studie der Internationalen Energieagentur (IEA) sind Wind- und Solarenergie heute die günstigsten Energiequellen. Die Produktionskosten sind in den letzten Jahren stark gesunken, was langfristig für niedrigere Strompreise sorgt.",
+        "title": "Fakten zu den Kosten erneuerbarer Energien",
+        "long_text": "Wind- und Solarenergie sind laut IEA die günstigsten Energiequellen und ihre Kosten sinken weiterhin, was langfristig zu niedrigeren Strompreisen führt.",
+        "short_text": "Erneuerbare Energien werden immer günstiger.",
+        "references": [
+          {
+            "text": "IEA zu den Kosten von erneuerbaren Energien",
+            "reference_string": "https://www.iea.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Es gibt nicht genug Rohstoffe, um die Energiewende global umzusetzen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag erleben wir, dass Innovationen in der Batterietechnologie den Bedarf an kritischen Rohstoffen wie Kobalt reduzieren. Recyclingprogramme und die Entwicklung neuer Materialien verringern den Rohstoffbedarf weiter.",
+        "title": "Innovationen reduzieren den Rohstoffbedarf",
+        "long_text": "Technologische Innovationen und Recycling verringern den Rohstoffbedarf. Beispielsweise werden bereits heute Batterien entwickelt, die weniger Kobalt enthalten, und Recyclingprogramme gewinnen wertvolle Materialien zurück.",
+        "short_text": "Technologische Fortschritte verringern den Rohstoffverbrauch.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Studie des Fraunhofer ISE kann der Bedarf an kritischen Rohstoffen durch Recycling und Innovationen in der Materialwissenschaft drastisch reduziert werden. Viele der benötigten Rohstoffe werden bereits recycelt.",
+        "title": "Fakten zum Rohstoffverbrauch und Recycling",
+        "long_text": "Recycling und technologische Innovationen ermöglichen es, den Bedarf an Rohstoffen wie Kobalt und Lithium zu minimieren, was die Umsetzung der Energiewende erleichtert.",
+        "short_text": "Recycling verringert den Rohstoffbedarf der Energiewende.",
+        "references": [
+          {
+            "text": "Fraunhofer ISE zu Recycling und Rohstoffen",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Windkraftanlagen und Solarparks zerstören die Landschaft und beeinträchtigen die Natur.",
+    "commentaries": [
+      {
+        "text": "Im Alltag erleben wir, dass Windkraft- und Solaranlagen oft auf Flächen gebaut werden, die bereits landwirtschaftlich oder industriell genutzt werden. Dadurch wird die Landschaft weniger beeinträchtigt, als oft behauptet wird.",
+        "title": "Erneuerbare Energien und Flächennutzung",
+        "long_text": "Wind- und Solarparks werden zunehmend auf bereits genutzten Flächen installiert. Diese Projekte berücksichtigen Umwelt- und Landschaftsschutz, um Beeinträchtigungen der Natur zu minimieren.",
+        "short_text": "Wind- und Solarparks nutzen bereits beanspruchte Flächen.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass Windkraftanlagen weit weniger Fläche benötigen als konventionelle Kraftwerke. Zudem tragen sie dazu bei, die negativen Auswirkungen von fossilen Energien auf das Klima und die Umwelt zu reduzieren.",
+        "title": "Fakten zur Flächennutzung und Umweltverträglichkeit",
+        "long_text": "Erneuerbare Energien wie Windkraft nutzen viel weniger Fläche als fossile Kraftwerke. Der positive Effekt auf das Klima und die Reduzierung von Umweltbelastungen überwiegen die möglichen lokalen Auswirkungen.",
+        "short_text": "Erneuerbare Energien sind umweltfreundlicher und platzsparender.",
+        "references": [
+          {
+            "text": "Fraunhofer ISE zur Flächennutzung von Windkraft",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  }
+]

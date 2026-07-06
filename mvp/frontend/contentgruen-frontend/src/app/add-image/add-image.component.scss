@@ -1,0 +1,180 @@
+.add-image-container {
+  padding: 16px;
+}
+
+.content-type-indicator {
+  margin-bottom: 24px;
+}
+
+.content-type-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.content-type-icon {
+  font-size: 32px;
+}
+
+.content-type-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.content-type-description {
+  margin: 0;
+  color: #757575;
+  font-size: 14px;
+}
+
+.content-wrapper {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.form-column {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-column {
+  flex: 1;
+  min-width: 280px;
+  position: sticky;
+  top: 16px;
+
+  @media (max-width: 768px) {
+    position: static;
+    width: 100%;
+  }
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.form-section {
+  margin-bottom: 16px;
+}
+
+.section-header {
+  h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.input-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #424242;
+}
+
+.ai-suggestion-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ai-suggest-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.caption-error-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e53935;
+  font-size: 13px;
+  margin-top: 4px;
+
+  mat-icon {
+    font-size: 16px;
+    height: 16px;
+    width: 16px;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  justify-content: flex-end;
+}
+
+.state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  text-align: center;
+  gap: 12px;
+}
+
+.loading-state {
+  color: #424242;
+}
+
+.success-state {
+  .success-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    color: #2e7d32;
+  }
+}
+
+.error-state {
+  .error-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    color: #e53935;
+  }
+}
+
+.error-message {
+  color: #e53935;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}

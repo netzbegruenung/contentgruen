@@ -1,0 +1,63 @@
+<div class="mobile-menu-content">
+    <div class="mobile-menu-header">
+        <div class="mobile-menu-user-header">
+            <img *ngIf="userInfo?.isAuthenticated"
+                [src]="selectedProfilePictureUrl"
+                alt="profile picture"
+                class="mobile-menu-avatar" />
+            <img *ngIf="!userInfo?.isAuthenticated"
+                src="/icons/Profile_avatar_placeholder_large.png"
+                alt="Nicht angemeldet"
+                class="mobile-menu-avatar anonymous-avatar" />
+            <div class="mobile-menu-username">
+                <span *ngIf="userInfo?.isAuthenticated">{{ userInfo?.userName }}</span>
+                <span *ngIf="!userInfo?.isAuthenticated">Nicht<br>angemeldet</span>
+            </div>
+        </div>
+        <button mat-icon-button (click)="close()" class="close-menu-button">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <div class="mobile-menu-user-info" *ngIf="userInfo?.isAuthenticated; else notLoggedInMenu">
+        <button mat-raised-button color="primary" (click)="onContributeClick()" class="mobile-menu-item">
+            <mat-icon>edit</mat-icon>
+            Beitragen
+        </button>
+        <button mat-button (click)="onContributionsClick()" class="mobile-menu-item">
+            <mat-icon>list</mat-icon>
+            Meine Beiträge
+        </button>
+        <button mat-button (click)="onLogoutClick()" class="mobile-menu-item">
+            <mat-icon>logout</mat-icon>
+            Abmelden
+        </button>
+    </div>
+    <ng-template #notLoggedInMenu>
+        <div class="mobile-menu-user-info">
+            <button mat-raised-button color="primary" (click)="onLoginClick()" class="mobile-menu-item">
+                <mat-icon>login</mat-icon>
+                Anmelden
+            </button>
+        </div>
+    </ng-template>
+
+    <!-- Footer section in mobile menu -->
+    <mat-divider class="mobile-menu-divider"></mat-divider>
+
+    <div class="mobile-menu-footer">
+        <button mat-button (click)="onHelpClick()" class="mobile-menu-item">
+            <mat-icon>help_outline</mat-icon>
+            Hilfe
+        </button>
+
+        <button mat-button class="mobile-menu-item">
+            <mat-icon>info</mat-icon>
+            Impressum
+        </button>
+
+        <div class="mobile-menu-about">
+            <p>ContentGrün ist ein Projekt von <a href="" target="_blank" rel="noopener">Sebastian Banach</a> im Rahmen von <a target="_blank" rel="noopener" href="https://netzbegruenung.de/">Netzbegrünung e.V.</a></p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,122 @@
+[
+  {
+    "statement": "Deutschland allein kann das Klima nicht retten, also warum sollten wir uns anstrengen?",
+    "commentaries": [
+      {
+        "text": "Im Alltag hilft jeder kleine Schritt. Wenn wir zum Beispiel auf erneuerbare Energien umsteigen oder Energiesparmaßnahmen umsetzen, profitieren wir direkt durch niedrigere Energiekosten und eine bessere Luftqualität. Jeder Beitrag zählt, denn viele kleine Schritte summieren sich zu einem großen Ganzen.",
+        "title": "Kleine Maßnahmen führen zu großen Ergebnissen",
+        "long_text": "Indem wir in Deutschland vorangehen, setzen wir ein positives Beispiel und motivieren andere Länder. Auch wenn wir alleine nicht das Klima retten können, tragen unsere Maßnahmen zu einer globalen Verbesserung bei und bringen gleichzeitig direkten Nutzen für uns selbst, wie günstigere Energie und bessere Luft.",
+        "short_text": "Klimaschutz in Deutschland verbessert auch direkt unser Leben.",
+        "references": []
+      },
+      {
+        "text": "Deutschland ist für rund 2 % der globalen CO2-Emissionen verantwortlich. Wenn wir nichts tun, trägt das zur Erderwärmung bei. Zudem könnten deutsche Technologien, wie Windkraft und Elektromobilität, weltweit Vorbildcharakter haben und so globale Maßnahmen beeinflussen.",
+        "title": "Fakten zu Deutschlands globalem Einfluss",
+        "long_text": "Deutschland ist einer der großen Industrienationen und trägt mit 2 % zu den weltweiten CO2-Emissionen bei. Wenn Deutschland innovative Lösungen entwickelt und implementiert, kann das globalen Einfluss auf andere Länder und Industrien haben.",
+        "short_text": "Deutschlands Maßnahmen beeinflussen die globalen Emissionen.",
+        "references": [
+          {
+            "text": "Umweltbundesamt zu Deutschlands CO2-Emissionen",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Es ist unfair, dass Deutschland so viel tun muss, während Länder wie China viel mehr CO2 ausstoßen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag profitieren wir in Deutschland direkt von Klimaschutzmaßnahmen. Weniger Abhängigkeit von fossilen Brennstoffen bedeutet niedrigere Heizkosten, eine bessere Luftqualität und weniger Verkehrsstau durch den Ausbau des öffentlichen Nahverkehrs.",
+        "title": "Direkte Vorteile für uns durch Klimaschutz",
+        "long_text": "Auch wenn andere Länder mehr Emissionen ausstoßen, profitieren wir hier in Deutschland direkt von den Maßnahmen. Weniger fossile Brennstoffe senken unsere Energiekosten und reduzieren die Luftverschmutzung, was auch unsere Gesundheit schützt.",
+        "short_text": "Klimaschutzmaßnahmen verbessern unseren Alltag in Deutschland.",
+        "references": []
+      },
+      {
+        "text": "China ist in absoluten Zahlen der größte Emittent, aber pro Kopf liegt Deutschland weit vorne. Jeder Deutsche emittiert rund doppelt so viel CO2 wie der globale Durchschnitt. Deutschland muss daher Verantwortung übernehmen und als reiche Industrienation vorangehen.",
+        "title": "Fakten zur Pro-Kopf-Emission",
+        "long_text": "Pro Kopf emittiert Deutschland deutlich mehr als der globale Durchschnitt, und als reiche Nation müssen wir Verantwortung übernehmen. China hat höhere absolute Emissionen, aber die Pro-Kopf-Verantwortung bleibt eine ethische Herausforderung für Deutschland.",
+        "short_text": "Pro-Kopf-Emissionen in Deutschland sind deutlich höher als in China.",
+        "references": [
+          {
+            "text": "Weltbank zu globalen CO2-Emissionen",
+            "reference_string": "https://data.worldbank.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Wirtschaft leidet unter den strengen Klimaschutzauflagen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sehen wir bereits, dass der Ausbau erneuerbarer Energien und die Förderung nachhaltiger Industrien viele neue Arbeitsplätze schaffen. Diese Branchen wachsen schnell und bieten sichere Jobs, während alte Industrien an Bedeutung verlieren.",
+        "title": "Neue Arbeitsplätze durch grüne Technologien",
+        "long_text": "Klimaschutzauflagen führen nicht zum Verlust von Arbeitsplätzen, sondern fördern den Wandel zu nachhaltigeren Industrien. Gerade in den Bereichen erneuerbare Energien, Elektromobilität und Energieeffizienz entstehen zahlreiche neue Arbeitsplätze.",
+        "short_text": "Erneuerbare Energien schaffen sichere und gut bezahlte Jobs.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Studie des Bundesumweltministeriums hat die Energiewende bereits über 300.000 neue Jobs in Deutschland geschaffen. Diese Zahl wird in den kommenden Jahren weiter steigen, da die Nachfrage nach grüner Technologie wächst.",
+        "title": "Fakten zu den wirtschaftlichen Vorteilen der Energiewende",
+        "long_text": "Die Energiewende in Deutschland hat über 300.000 Arbeitsplätze geschaffen. Durch den steigenden Bedarf an grüner Technologie und sauberen Energien werden diese Sektoren in den kommenden Jahren weiter wachsen.",
+        "short_text": "Energiewende schafft Hunderttausende neue Jobs.",
+        "references": [
+          {
+            "text": "Bundesumweltministerium zu Jobs durch die Energiewende",
+            "reference_string": "https://www.bmu.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Klimaschutz ist zu teuer und belastet vor allem den Mittelstand.",
+    "commentaries": [
+      {
+        "text": "Im Alltag können Unternehmen durch energieeffiziente Maßnahmen und den Umstieg auf erneuerbare Energien langfristig Geld sparen. Investitionen in Solarenergie und energieeffiziente Technologien senken die Betriebskosten und machen Unternehmen wettbewerbsfähiger.",
+        "title": "Energieeffizienz spart langfristig Kosten",
+        "long_text": "Viele mittelständische Unternehmen profitieren von energieeffizienten Technologien, die die Betriebskosten senken. Klimaschutzmaßnahmen, wie die Nutzung von Solarenergie, führen langfristig zu einer Stabilisierung der Energiekosten und machen Unternehmen unabhängiger von Preisschwankungen.",
+        "short_text": "Energieeffizienz hilft Unternehmen, Kosten zu senken.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Studie der Deutschen Energie-Agentur (dena) können Unternehmen durch die Implementierung energieeffizienter Maßnahmen bis zu 30 % ihrer Energiekosten einsparen. Diese Einsparungen stärken ihre Wettbewerbsfähigkeit und sichern Arbeitsplätze.",
+        "title": "Fakten zu Kosteneinsparungen durch Energieeffizienz",
+        "long_text": "Eine Studie der dena zeigt, dass Unternehmen, die auf energieeffiziente Technologien setzen, bis zu 30 % ihrer Energiekosten einsparen können. Diese Einsparungen helfen, die Wettbewerbsfähigkeit zu stärken und den Mittelstand zu entlasten.",
+        "short_text": "Energieeffizienz reduziert die Betriebskosten erheblich.",
+        "references": [
+          {
+            "text": "Deutsche Energie-Agentur zu Energieeinsparungen",
+            "reference_string": "https://www.dena.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Deutschland verursacht nur einen kleinen Teil der globalen Emissionen, deshalb ist es nicht wichtig, was wir tun.",
+    "commentaries": [
+      {
+        "text": "Im Alltag spüren wir, dass saubere Luft und weniger Lärm durch Maßnahmen wie den Ausbau des öffentlichen Nahverkehrs und der Elektromobilität direkte Vorteile für unsere Lebensqualität haben. Klimaschutz in Deutschland verbessert nicht nur das globale Klima, sondern auch unsere Städte und Gemeinden.",
+        "title": "Lokale Vorteile durch saubere Luft und weniger Lärm",
+        "long_text": "Maßnahmen wie der Ausbau des öffentlichen Verkehrs und der Umstieg auf Elektrofahrzeuge führen zu einer besseren Luftqualität und weniger Lärmbelästigung. Dies verbessert die Lebensqualität in unseren Städten und Gemeinden spürbar.",
+        "short_text": "Klimaschutz bringt lokale Vorteile wie saubere Luft und weniger Lärm.",
+        "references": []
+      },
+      {
+        "text": "Deutschland ist für 2 % der globalen CO2-Emissionen verantwortlich, das mag klein erscheinen, aber jeder Beitrag zählt. Wenn alle Länder mit ähnlichen Emissionen ihre Verantwortung abwälzen würden, wäre das Ziel der Klimaneutralität unerreichbar.",
+        "title": "Fakten zu Deutschlands Verantwortung",
+        "long_text": "Deutschland trägt 2 % zu den globalen Emissionen bei. Auch wenn dies im Vergleich gering erscheint, ist es entscheidend, dass alle Länder ihren Teil beitragen. Deutschland hat die technologische und wirtschaftliche Kapazität, den Wandel voranzutreiben.",
+        "short_text": "Auch kleine Beiträge sind entscheidend für den globalen Klimaschutz.",
+        "references": [
+          {
+            "text": "Umweltbundesamt zu Deutschlands CO2-Emissionen",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  }
+]

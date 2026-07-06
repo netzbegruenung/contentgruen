@@ -1,0 +1,20 @@
+<div class="workflow-container">
+    <div *ngIf="isLoadingStatement" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Statement wird vorbereitet...</p>
+    </div>
+
+    <div *ngIf="statementError" class="error-container">
+        <mat-icon>error</mat-icon>
+        <p>{{ statementError }}</p>
+        <button mat-raised-button (click)="findOrCreateStatement(searchQuery)">Erneut versuchen</button>
+    </div>
+
+    <app-add-commentary
+        *ngIf="!isLoadingStatement && !statementError"
+        (success)="onSuccess($event)"
+        (cancel)="onCancel()"
+        [statementText]="statementText || searchQuery"
+        [statementId]="statementId">
+    </app-add-commentary>
+</div>

@@ -1,0 +1,30 @@
+.inline-content {
+    display: flex;
+    align-items: center;
+}
+
+.inline-content img {
+    margin-right: 10px;
+}
+
+.login-box {
+    text-align: center;
+    margin: 50px auto;
+    padding: 50px;
+    max-width: 600px;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+    .login-box {
+        margin: 20px auto;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-box {
+        margin: 10px auto;
+        padding: 15px;
+    }
+}

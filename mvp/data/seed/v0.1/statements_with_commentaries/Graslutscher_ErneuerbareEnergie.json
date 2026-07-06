@@ -1,0 +1,122 @@
+[
+  {
+    "statement": "Erneuerbare Energien machen den Strom teurer und belasten die Verbraucher.",
+    "commentaries": [
+      {
+        "text": "Im Alltag profitieren wir von den sinkenden Preisen für Solar- und Windenergie. An besonders sonnigen oder windreichen Tagen sind die Strompreise sogar extrem niedrig. Langfristig helfen erneuerbare Energien, die Stromkosten stabil und erschwinglich zu halten.",
+        "title": "Günstigere Strompreise durch Erneuerbare Energien im Alltag",
+        "long_text": "Erneuerbare Energien bieten an Tagen mit guter Einspeisung durch Sonne und Wind rekordverdächtig günstigen Strom. Diese Preissenkungen entlasten die Verbraucher und sind ein großer Vorteil für energieintensive Betriebe.",
+        "short_text": "Erneuerbare Energien senken die Strompreise langfristig.",
+        "references": []
+      },
+      {
+        "text": "Laut Studien des Fraunhofer Instituts sinkt der Strompreis, wenn viel erneuerbarer Strom im Netz ist. Am 04. Juli 2022 war der Day-Ahead-Strompreis in Deutschland aufgrund von Solarstrom extrem niedrig, während er in Frankreich dreimal so hoch war.",
+        "title": "Fakten zu Strompreisen durch erneuerbare Energien",
+        "long_text": "Erneuerbare Energien sorgen für günstigere Strompreise, wie der 04. Juli 2022 zeigt. An Tagen mit viel Wind- und Solarstrom sinkt der Strompreis, was sowohl Privatkunden als auch Unternehmen zugutekommt.",
+        "short_text": "Erneuerbare Energien senken nachweislich die Strompreise.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut zu Strompreisen durch Erneuerbare",
+            "reference_string": "https://www.energy-charts.info"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Es bringt nichts, wenn Europa Erdöl einspart, weil es dann nur von anderen Ländern gekauft wird.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sehen wir, dass immer mehr Länder auf erneuerbare Energien und Elektromobilität setzen. Die globale Nachfrage nach fossilen Brennstoffen sinkt, weil nicht nur Europa, sondern auch andere Regionen auf nachhaltige Alternativen umsteigen.",
+        "title": "Weltweiter Umstieg auf Erneuerbare",
+        "long_text": "Viele Länder außerhalb Europas, darunter China, treiben den Ausbau der Elektromobilität und erneuerbarer Energien voran. Dadurch wird der weltweite Verbrauch fossiler Brennstoffe reduziert und der Umstieg beschleunigt.",
+        "short_text": "Nicht nur Europa, auch weltweit sinkt die Erdölnachfrage.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Analyse des Internationalen Rates für sauberen Transport (ICCT) plant die Mehrheit der globalen Automobilhersteller den Ausstieg aus der Verbrennungsmotorentechnologie bis 2035. China, ein wichtiger Markt, hat bereits höhere Quoten für Elektrofahrzeuge als Deutschland.",
+        "title": "Fakten zum globalen Rückgang der Erdölnachfrage",
+        "long_text": "Weltweit wird der Ausstieg aus der Nutzung von Erdöl vorangetrieben. Viele Autohersteller haben bereits feste Ausstiegsdaten festgelegt, und China ist weltweit führend bei der Produktion und Nutzung von Elektrofahrzeugen.",
+        "short_text": "Der Rückgang der Erdölnachfrage ist ein globales Phänomen.",
+        "references": [
+          {
+            "text": "Internationaler Rat für sauberen Transport zu globalem Ausstieg",
+            "reference_string": "https://theicct.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Erneuerbare Energien sind unzuverlässig, weil der Wind nicht immer weht und die Sonne nicht immer scheint.",
+    "commentaries": [
+      {
+        "text": "Im Alltag hilft uns ein Energiemix, der aus verschiedenen erneuerbaren Quellen besteht. Wenn der Wind nicht weht, liefert die Sonne Strom, und umgekehrt. Zudem helfen Speichertechnologien, Überschüsse zu speichern und bei Bedarf abzurufen.",
+        "title": "Energiemix und Speicherlösungen im Alltag",
+        "long_text": "Durch den Einsatz von Speichertechnologien und einer Kombination aus Wind-, Solar- und anderen erneuerbaren Energien können wir eine stabile und kontinuierliche Stromversorgung gewährleisten, selbst bei schwankendem Wetter.",
+        "short_text": "Ein Energiemix und Speicher garantieren Versorgungssicherheit.",
+        "references": []
+      },
+      {
+        "text": "Laut Fraunhofer ISE und anderen Studien tragen Speichertechnologien entscheidend zur Stabilität der erneuerbaren Energien bei. Diese Technologien ermöglichen es, überschüssigen Strom zu speichern und in Zeiten geringerer Produktion zu nutzen.",
+        "title": "Fakten zur Zuverlässigkeit erneuerbarer Energien",
+        "long_text": "Speichertechnologien und intelligente Netze sorgen dafür, dass erneuerbare Energien auch bei schwankender Produktion zuverlässig Strom liefern. Dies macht sie zu einer stabilen und nachhaltigen Energiequelle.",
+        "short_text": "Speichertechnologien machen erneuerbare Energien stabil.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut zu Speicherlösungen",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Erneuerbare Energien sind zu teuer und verursachen hohe Investitionskosten.",
+    "commentaries": [
+      {
+        "text": "Viele Menschen erleben im Alltag bereits die Vorteile von Erneuerbaren: Die Preise für Solar- und Windenergie sinken seit Jahren, und Haushalte profitieren von günstigem Strom aus erneuerbaren Quellen.",
+        "title": "Günstigere Energiepreise im Alltag",
+        "long_text": "Erneuerbare Energien werden immer günstiger. Viele Haushalte und Betriebe profitieren bereits von den sinkenden Strompreisen und niedrigeren Investitionskosten bei Solar- und Windkraftanlagen.",
+        "short_text": "Erneuerbare Energien sind langfristig kostengünstig.",
+        "references": []
+      },
+      {
+        "text": "Laut dem Global Wind Energy Council sind Wind- und Solarenergie heute die günstigsten Energiequellen. Die Kosten für die Installation von Windkraftanlagen sind in den letzten zehn Jahren um mehr als 30 % gesunken.",
+        "title": "Fakten zu den sinkenden Kosten erneuerbarer Energien",
+        "long_text": "Wind- und Solarenergie sind heute die kostengünstigsten Energiequellen, mit kontinuierlich sinkenden Investitions- und Betriebskosten. Das macht sie zu einer attraktiven Alternative zu fossilen Brennstoffen.",
+        "short_text": "Erneuerbare Energien sind heute die günstigsten Energiequellen.",
+        "references": [
+          {
+            "text": "Global Wind Energy Council zu den Kosten von Windenergie",
+            "reference_string": "https://gwec.net"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Es gibt nicht genug Speicherlösungen, um erneuerbare Energien effektiv zu nutzen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sehen wir bereits, dass immer mehr Speichertechnologien wie Batteriespeicher oder Pumpspeicherkraftwerke genutzt werden. Diese Technologien helfen, Überschüsse zu speichern und bei Bedarf abzurufen.",
+        "title": "Speichertechnologien für eine stabile Stromversorgung",
+        "long_text": "Moderne Speicherlösungen wie Batteriespeicher und Pumpspeicherkraftwerke ermöglichen eine flexible Nutzung von erneuerbaren Energien. Überschüssiger Strom wird gespeichert und kann bei Bedarf wieder ins Netz eingespeist werden.",
+        "short_text": "Speichertechnologien garantieren eine stabile Stromversorgung.",
+        "references": []
+      },
+      {
+        "text": "Laut einer Studie des Fraunhofer ISE hat Deutschland bereits große Fortschritte bei der Integration von Speichersystemen gemacht. Diese Systeme helfen, die Versorgungssicherheit zu erhöhen und die Abhängigkeit von fossilen Brennstoffen zu verringern.",
+        "title": "Fakten zu Speichertechnologien für erneuerbare Energien",
+        "long_text": "Deutschland investiert verstärkt in Speichersysteme wie Batteriespeicher und Pumpspeicherkraftwerke. Diese Technologien ermöglichen es, erneuerbare Energien effektiv zu nutzen und eine stabile Stromversorgung sicherzustellen.",
+        "short_text": "Speichersysteme machen erneuerbare Energien zuverlässig.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut zu Speichertechnologien",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  }
+]

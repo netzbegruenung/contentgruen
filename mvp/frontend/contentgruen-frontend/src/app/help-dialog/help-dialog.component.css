@@ -1,0 +1,21 @@
+.about-link-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.about-link-section p {
+    margin-bottom: 15px;
+    color: #666;
+}
+
+.about-link-section a {
+    display: inline-flex;
+    align-items: center;
+}
+
+.about-link-section mat-icon {
+    margin-right: 8px;
+}

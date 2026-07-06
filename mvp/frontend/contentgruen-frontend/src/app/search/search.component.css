@@ -1,0 +1,141 @@
+.search-container {
+    width: 100%;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.search-field {
+    width: 100%;
+}
+
+.search-button-container {
+    width: 100%;
+}
+
+.search-button {
+    width: 100%;
+    padding: 8px;
+    font-size: 1.15rem;
+    height: 40px;
+}
+
+::ng-deep mat-form-field.left .mdc-text-field {
+  background-color: var(--input-background);
+}
+
+.label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.mat-mdc-form-field {
+    width: 100%;
+}
+
+/* Style the suffix button */
+::ng-deep .mobile-search-button.mat-mdc-icon-button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+
+    &:not(:disabled) {
+        color: var(--primary-dark);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+    }
+
+    &:hover:not(:disabled) {
+        background-color: rgba(0, 137, 57, 0.1);
+    }
+}
+
+/* Add padding to the input field when suffix button is present */
+::ng-deep .compact-mode .mat-mdc-text-field-wrapper.mdc-text-field--with-trailing-icon .mat-mdc-form-field-infix {
+    padding-right: 8px;
+}
+
+/* Desktop compact mode - inline button layout */
+@media (min-width: 769px) {
+    .search-form-compact {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+
+    .search-form-compact .search-field {
+        flex: 1;
+    }
+
+    .search-form-compact .desktop-inline {
+        width: auto;
+        margin-top: 0;
+    }
+
+    .search-form-compact .desktop-inline .search-button {
+        width: auto;
+        padding: 0 24px;
+        height: 56px;
+    }
+
+    /* Hide mobile button on desktop */
+    .compact-mode .mobile-search-button {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-container {
+        margin-top: var(--spacing-md);
+    }
+
+    .search-form {
+        gap: var(--spacing-xs);
+    }
+
+    .search-button {
+        font-size: 1rem;
+        height: 44px;
+    }
+
+    /* Compact mode - hide desktop button on mobile */
+    .compact-mode .desktop-only {
+        display: none;
+    }
+
+    /* Show mobile search button as suffix in compact mode */
+    .compact-mode .mobile-search-button {
+        display: inline-flex;
+        color: var(--primary-dark);
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-button {
+        font-size: 0.95rem;
+        height: 42px;
+        padding: 10px 20px;
+    }
+
+    /* Ensure mobile button styling on small screens in compact mode */
+    .compact-mode .mobile-search-button {
+        font-size: 18px;
+    }
+}
+
+::ng-deep .mat-mdc-text-field-wrapper {
+    background-color: var(--input-background) !important;
+    box-shadow: none !important;
+}

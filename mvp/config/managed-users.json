@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "email": "test.user@example.com",
+      "passwordHash": "$2b$12$Bee4Pec5pIxKcDQkwQAF2.enRsSttg3b9QCghCx4EZmTUXEjttoCS",
+      "displayName": "Test User",
+      "userId": "user-001",
+      "createdAt": "2025-10-24T11:50:49.279792+00:00"
+    },
+    {
+      "email": "admin@contentgruen.com",
+      "passwordHash": "$2b$12$dAbiqOMOrlQOn0GfCe4O.uvbfFeL9PL4a8tnKmrI24sFzI/c4tRTa",
+      "displayName": "Admin User",
+      "userId": "user-002",
+      "createdAt": "2025-10-23T11:50:49.664106+00:00",
+      "isAdmin": true
+    }
+  ],
+  "metadata": {
+    "generated": "2025-10-25T11:50:49.664852+00:00",
+    "version": "1.0",
+    "totalUsers": 2
+  }
+}

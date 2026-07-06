@@ -1,0 +1,31 @@
+[
+    {
+        "statement": "Erneuerbare Energien sind genauso schlecht wie fossile Brennstoffe. Sie vernichten die Artenvielfalt und zerstören die Umwelt.",
+        "commentaries": [
+            {
+                "title": "Title 1",
+                "text": "Erneuerbare Energien sind der Schlüssel zur Bekämpfung des Klimawandels, der eine der größten Bedrohungen für die Artenvielfalt darstellt. Steigende Temperaturen zerstören Lebensräume im Meer und an Land.",
+                "long_text": "",
+                "short_text": "",
+                "references": [
+                    {
+                        "text": "Reference 1",
+                        "reference_string": "URL-A"
+                    }
+                ]
+            },
+            {
+                "title": "Title 2",
+                "text": "Studien zeigen, dass erneuerbare Energien im Vergleich zu fossilen Brennstoffen eine signifikant geringere Umweltbelastung aufweisen, einschließlich geringerer Treibhausgasemissionen und geringerer Auswirkungen auf die Artenvielfalt.",
+                "long_text": "",
+                "short_text": "",
+                "references": [
+                    {
+                        "text": "Reference 2",
+                        "reference_string": "URL-B"
+                    }
+                ]
+            }
+        ]
+    }
+]

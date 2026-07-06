@@ -1,0 +1,147 @@
+[
+  {
+    "statement": "Das Elterngeld belastet den Staatshaushalt und ist nicht nachhaltig finanzierbar.",
+    "commentaries": [
+      {
+        "text": "Das Elterngeld unterstützt junge Familien und hilft Eltern, Beruf und Familie besser zu vereinbaren. Gerade Familien mit geringem Einkommen profitieren, was langfristig die Chancengleichheit fördert.",
+        "title": "Unterstützung für junge Familien",
+        "long_text": "Das Elterngeld stärkt junge Familien, indem es ihnen finanzielle Sicherheit bietet. Diese Unterstützung ermöglicht es Eltern, mehr Zeit mit ihren Kindern zu verbringen, was besonders in den ersten Lebensjahren wichtig ist.",
+        "short_text": "Elterngeld unterstützt Familien und Chancengleichheit.",
+        "references": [
+          {
+            "text": "Familienministerium: Bedeutung des Elterngeldes",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Studien zeigen, dass das Elterngeld langfristig positive Effekte auf die Gesellschaft hat, da es die Erwerbsbeteiligung und wirtschaftliche Stabilität von Familien unterstützt. Rund 95 % der Familien profitieren weiterhin vom Elterngeld.",
+        "title": "Langfristige positive Effekte des Elterngeldes",
+        "long_text": "Das Elterngeld fördert die finanzielle und wirtschaftliche Stabilität von Familien und hat somit positive Effekte auf die Gesellschaft. Die Ausgaben sind nachhaltig angelegt, da sie das Arbeitskräftepotenzial sichern.",
+        "short_text": "Elterngeld stärkt Familien und Wirtschaft.",
+        "references": [
+          {
+            "text": "Familienministerium: Nachhaltigkeit des Elterngeldes",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Durch das Elterngeld arbeiten manche Eltern weniger, was der Wirtschaft schadet.",
+    "commentaries": [
+      {
+        "text": "Das Elterngeld ermöglicht es Eltern, eine bessere Balance zwischen Beruf und Familie zu finden. Eltern, die sich für eine Zeit auf die Familie konzentrieren können, sind später oft motivierter und produktiver.",
+        "title": "Förderung der Work-Life-Balance",
+        "long_text": "Elterngeld hilft Eltern, sich in den ersten Lebensjahren intensiver um ihre Kinder zu kümmern. Das führt zu einer ausgewogenen Work-Life-Balance und steigert langfristig die Motivation im Beruf.",
+        "short_text": "Elterngeld fördert Motivation und Work-Life-Balance.",
+        "references": [
+          {
+            "text": "Familienministerium: Vorteile der Elternzeit",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Daten zeigen, dass Eltern, die vom Elterngeld profitieren, nach der Elternzeit häufiger in den Beruf zurückkehren und die Erwerbsquote somit insgesamt steigt.",
+        "title": "Erwerbsquote steigt durch Elterngeld",
+        "long_text": "Das Elterngeld wirkt sich langfristig positiv auf die Arbeitsmarktintegration aus. Eltern kehren nach der Elternzeit oft in den Beruf zurück, wodurch die Erwerbsquote stabil bleibt.",
+        "short_text": "Positive Effekte auf die Erwerbsquote.",
+        "references": [
+          {
+            "text": "Bericht zur Erwerbsquote von Eltern",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Elterngeld ist ungerecht, weil nur Familien mit niedrigem Einkommen wirklich profitieren.",
+    "commentaries": [
+      {
+        "text": "Das Elterngeld hilft Familien unabhängig vom Einkommen, sich in den ersten Lebensmonaten intensiv um ihre Kinder zu kümmern. Es ist eine wertvolle Unterstützung, die allen Eltern zugutekommt.",
+        "title": "Unterstützung für alle Eltern",
+        "long_text": "Elterngeld ist eine Hilfe, die allen Familien zugutekommt. Es ermöglicht eine intensive Betreuung der Kinder in den ersten Lebensmonaten und unterstützt alle Eltern dabei, sich auf ihre Familie zu konzentrieren.",
+        "short_text": "Elterngeld unterstützt alle Familien.",
+        "references": [
+          {
+            "text": "Familienministerium: Elterngeld für alle Eltern",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Laut aktuellen Statistiken profitieren 95 % der Familien in Deutschland vom Elterngeld, ohne dass der Betrag gekürzt wird. Nur Haushalte mit sehr hohem Einkommen sind von Kürzungen betroffen.",
+        "title": "Elterngeld kommt 95 % der Familien zugute",
+        "long_text": "Das Elterngeld erreicht 95 % der Familien in Deutschland. Es ist eine gerechte Maßnahme, die nur Haushalte mit extrem hohem Einkommen ausschließt, um Ressourcen gezielt einzusetzen.",
+        "short_text": "95 % der Familien erhalten Elterngeld.",
+        "references": [
+          {
+            "text": "Familienministerium: Elterngeld-Verteilung",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Elterngeld fördert traditionelle Rollenbilder, da oft Frauen das Geld beziehen und zuhause bleiben.",
+    "commentaries": [
+      {
+        "text": "Das Elterngeld fördert die Gleichstellung, indem es beide Elternteile ermutigt, sich die Elternzeit zu teilen. Viele Väter entscheiden sich inzwischen für Elterngeldmonate und eine aktive Rolle in der Kindererziehung.",
+        "title": "Gleichstellung durch Elterngeld",
+        "long_text": "Das Elterngeld bietet die Möglichkeit, dass Väter und Mütter sich die Elternzeit teilen. Dadurch wird die Gleichstellung in der Familie gefördert, und immer mehr Väter nehmen aktiv an der Kindererziehung teil.",
+        "short_text": "Elterngeld fördert gleichberechtigte Elternschaft.",
+        "references": [
+          {
+            "text": "Familienministerium: Elterngeld und Gleichstellung",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Statistiken zeigen, dass der Anteil der Väter, die Elterngeldmonate in Anspruch nehmen, stetig steigt. Dies zeigt, dass das Elterngeld die gleichberechtigte Elternschaft fördert.",
+        "title": "Steigender Anteil von Vätern in Elternzeit",
+        "long_text": "Immer mehr Väter entscheiden sich für Elterngeldmonate, was die traditionelle Rollenverteilung durchbricht. Die Zahlen belegen, dass das Elterngeld eine moderne und gleichberechtigte Elternschaft unterstützt.",
+        "short_text": "Väteranteil in Elternzeit steigt stetig.",
+        "references": [
+          {
+            "text": "Bericht zur Inanspruchnahme des Elterngeldes durch Väter",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Elterngeld ist ineffektiv und hat keine langfristigen positiven Effekte auf die Familienplanung.",
+    "commentaries": [
+      {
+        "text": "Das Elterngeld gibt Eltern finanzielle Sicherheit in einer Zeit, in der das Einkommen oft sinkt. Dies erleichtert die Entscheidung für Kinder und unterstützt die Familienplanung in Deutschland.",
+        "title": "Elterngeld erleichtert die Familienplanung",
+        "long_text": "Elterngeld bietet finanzielle Unterstützung und gibt Eltern die Möglichkeit, sich in den ersten Monaten voll auf ihr Kind zu konzentrieren. Diese Sicherheit motiviert mehr Familien, Kinder zu bekommen.",
+        "short_text": "Elterngeld unterstützt Familienplanung.",
+        "references": [
+          {
+            "text": "Familienministerium: Auswirkungen des Elterngeldes auf die Familienplanung",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Statistiken zeigen, dass das Elterngeld die Geburtenrate in Deutschland positiv beeinflusst, da es Eltern ermöglicht, sich für Kinder zu entscheiden, ohne finanzielle Einbußen befürchten zu müssen.",
+        "title": "Positive Effekte auf die Geburtenrate",
+        "long_text": "Das Elterngeld hat langfristige positive Effekte auf die Geburtenrate in Deutschland, da es Eltern die notwendige finanzielle Stabilität bietet und so die Entscheidung für Kinder erleichtert.",
+        "short_text": "Elterngeld fördert Geburtenrate.",
+        "references": [
+          {
+            "text": "Statistische Berichte zur Geburtenrate und Elterngeld",
+            "reference_string": "/mnt/data/Elterngeld_230707_Statement.pdf"
+          }
+        ]
+      }
+    ]
+  }
+]

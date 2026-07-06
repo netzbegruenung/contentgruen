@@ -1,0 +1,89 @@
+[
+  {
+    "statement": "Ohne Atomkraftwerke wird die Stromversorgung unsicher und es wird zu Stromausfällen kommen.",
+    "commentaries": [
+      {
+        "text": "Die Abschaltung der Atomkraftwerke hat gezeigt, dass die Energieversorgung stabil bleibt, da wir inzwischen mehr Energie aus Wind und Sonne erzeugen. Die Menschen können sich darauf verlassen, dass genügend Strom vorhanden ist.",
+        "title": "Stabile Stromversorgung auch ohne Atomkraft",
+        "long_text": "Deutschland hat über den Winter hinweg bewiesen, dass die Stromversorgung ohne Atomkraft stabil bleibt. Die erneuerbaren Energien liefern heute schon einen großen Anteil, und ihre Kapazität wächst weiterhin.",
+        "short_text": "Stabile Energieversorgung auch ohne Atomkraft.",
+        "references": [
+          {
+            "text": "Atomkraft-Aus: Deutschland sichert Energieversorgung",
+            "reference_string": "/mnt/data/Atomkraft-Aus_230415_Kommentierung.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Zahlen zeigen, dass Atomstrom nur etwa 1,3 % des Endenergiebedarfs in Deutschland ausmacht. Dagegen liefern erneuerbare Energien bereits 19,2 % des Bedarfs und sichern somit die Versorgung nachhaltig.",
+        "title": "Erneuerbare Energien decken Großteil des Bedarfs",
+        "long_text": "Atomenergie deckte nur einen minimalen Anteil am Energiebedarf ab. Die Erneuerbaren haben längst die Kapazität, die bisherige Atomkraft zu ersetzen und die Versorgung nachhaltig zu sichern.",
+        "short_text": "Erneuerbare ersetzen Atomstrom zuverlässig.",
+        "references": [
+          {
+            "text": "Anteile der Energiequellen in Deutschland",
+            "reference_string": "/mnt/data/Atomkraft-Aus_230415_Kommentierung.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Atomkraft ist eine günstige Energiequelle im Vergleich zu Wind- und Sonnenenergie.",
+    "commentaries": [
+      {
+        "text": "Atomkraft ist im Betrieb teuer, besonders wenn man die Kosten für die Endlagerung des Atommülls einrechnet. Wind und Sonne liefern uns sauberen Strom ohne die teuren Langzeitfolgen, was langfristig die günstigere Lösung darstellt.",
+        "title": "Erneuerbare Energien sind langfristig günstiger",
+        "long_text": "Atomstrom ist mit versteckten Kosten belastet, etwa für die Endlagerung von Müll. Wind- und Solarstrom dagegen sind heute schon preiswerter und stellen keine Umweltgefahr dar.",
+        "short_text": "Erneuerbare Energien sind kostenfrei von Langzeitfolgen.",
+        "references": [
+          {
+            "text": "Kostenvergleich: Atomkraft vs. Erneuerbare Energien",
+            "reference_string": "/mnt/data/Atomkraft-Aus_230415_Kommentierung.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Studien belegen, dass Atomstrom mindestens doppelt so teuer ist wie Strom aus Windkraft, selbst ohne die vollständigen Entsorgungskosten. Erneuerbare Energien bieten also auch aus ökonomischer Sicht Vorteile.",
+        "title": "Windstrom ist günstiger als Atomstrom",
+        "long_text": "Die Kosten für Atomkraft steigen, insbesondere wenn man Endlagerung und Sicherheitsvorkehrungen einrechnet. Windenergie ist im Vergleich deutlich günstiger und eine nachhaltige Lösung.",
+        "short_text": "Windstrom ist günstiger als Atomstrom.",
+        "references": [
+          {
+            "text": "Kosten von Atomstrom und Windstrom",
+            "reference_string": "/mnt/data/Atomkraft-Aus_230415_Kommentierung.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Ohne Atomkraftwerke verliert Deutschland eine verlässliche und sichere Energiequelle.",
+    "commentaries": [
+      {
+        "text": "Mit dem Atomausstieg endet auch die Sorge vor einem möglichen Super-GAU. Die Menschen in Bayern können nun beruhigter leben, ohne die Angst, dass es zu einem nuklearen Unfall kommen könnte.",
+        "title": "Atomausstieg erhöht die Sicherheit",
+        "long_text": "Der Atomausstieg nimmt den Menschen in Deutschland die Last der Sorge vor schweren Atomunfällen. Die Sicherheit für die Bevölkerung wird durch den Ausstieg deutlich erhöht.",
+        "short_text": "Atomausstieg erhöht die öffentliche Sicherheit.",
+        "references": [
+          {
+            "text": "Sicherheitsaspekte des Atomausstiegs",
+            "reference_string": "/mnt/data/Atomkraft-Aus_230415_Kommentierung.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Die erneuerbaren Energien bieten eine stetig wachsende und zuverlässige Energiequelle. Sie liefern bereits einen höheren Anteil als Atomkraft und sind von globalen Konflikten unabhängig.",
+        "title": "Erneuerbare Energien als zuverlässige Quelle",
+        "long_text": "Erneuerbare Energien versorgen Deutschland sicher und unabhängig von globalen Risiken oder Lieferengpässen. Die Versorgungssicherheit wird durch Wind und Sonne gewährleistet.",
+        "short_text": "Erneuerbare als verlässliche Energiequelle.",
+        "references": [
+          {
+            "text": "Stabilität durch erneuerbare Energien",
+            "reference_string": "/mnt/data/Atomkraft-Aus_230415_Kommentierung.pdf"
+          }
+        ]
+      }
+    ]
+  }
+]

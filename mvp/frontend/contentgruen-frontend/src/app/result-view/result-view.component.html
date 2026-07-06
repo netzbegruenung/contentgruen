@@ -1,0 +1,163 @@
+<!-- Unified search box for all screen sizes -->
+<section class="full-width-section search-box">
+    <div class="search-box-content">
+        <app-search [searchQuery]="(searchQuery$ | async) || ''" [compactMode]="true"></app-search>
+    </div>
+</section>
+
+<!-- Loading Spinner -->
+<app-loading-spinner
+    [loading]="(loading$ | async) || false"
+    message="Suche läuft...">
+</app-loading-spinner>
+
+<!-- Error Message -->
+<app-error-message
+    [error]="(error$ | async) || ''"
+    [showRetry]="true"
+    [retryAction]="retrySearch">
+</app-error-message>
+
+<!-- Mobile view: Tab navigation and current section -->
+<div class="mobile-results-wrapper"
+     *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) as searchResponse">
+
+    <!-- Tab Bar Navigation -->
+    <div class="mobile-tab-bar" *ngIf="hasCommentaryResults || hasGenerictextResults">
+        <button class="tab-button"
+                [class.active]="currentSection === 'commentary'"
+                [disabled]="!hasCommentaryResults"
+                (click)="switchToSection('commentary')"
+                aria-label="Kommentare anzeigen">
+            <span class="tab-icon">💬</span>
+            <span class="tab-label">Kommentare</span>
+            <span class="tab-count" *ngIf="searchResponse.commentary_search_results_count > 0">
+                ({{searchResponse.commentary_search_results_count}})
+            </span>
+        </button>
+        <button class="tab-button"
+                [class.active]="currentSection === 'generictext'"
+                [disabled]="!hasGenerictextResults"
+                (click)="switchToSection('generictext')"
+                aria-label="Hintergrundinfos anzeigen">
+            <span class="tab-icon">📄</span>
+            <span class="tab-label">Hintergrund</span>
+            <span class="tab-count" *ngIf="searchResponse.generictext_search_results_count > 0">
+                ({{searchResponse.generictext_search_results_count}})
+            </span>
+        </button>
+    </div>
+
+    <!-- Content Container -->
+    <div class="mobile-results-container">
+        <!-- Commentary Section -->
+        <div *ngIf="currentSection === 'commentary' && hasCommentaryResults" class="mobile-section">
+            <app-result-carousel
+                [results]="searchResponse.commentary_search_results"
+                [itemComponent]="commentaryResultItemComponent"
+                [contentType]="'commentary'">
+            </app-result-carousel>
+        </div>
+
+        <!-- Generic Text Section -->
+        <div *ngIf="currentSection === 'generictext' && hasGenerictextResults" class="mobile-section">
+            <app-result-carousel
+                [results]="searchResponse.generictext_search_results"
+                [itemComponent]="generictextResultItemComponent"
+                [contentType]="'generictext'">
+            </app-result-carousel>
+        </div>
+
+        <!-- Mobile Empty State when no results in any category -->
+        <div *ngIf="!hasCommentaryResults && !hasGenerictextResults" class="mobile-empty-state">
+            <p class="search-query-info">Zu "{{searchQuery}}" haben wir noch keine passenden Inhalte</p>
+            <h3>Hilf der Community!</h3>
+            <div class="mobile-action-buttons">
+                <button mat-raised-button class="contentgruen-primary-dark" (click)="navigateToContribute('commentary')">
+                    <mat-icon>add</mat-icon> Kommentar hinzufügen
+                </button>
+                <button mat-raised-button class="contentgruen-primary-dark" (click)="navigateToContribute('generictext')">
+                    <mat-icon>add</mat-icon> Hintergrund hinzufügen
+                </button>
+            </div>
+            <mat-icon class="empty-icon">volunteer_activism</mat-icon>
+        </div>
+    </div>
+</div>
+
+<!-- Desktop view: Show both sections or unified empty state -->
+<div *ngIf="!isMobile && !(loading$ | async) && (searchResponse$ | async) as searchResponse">
+
+    <!-- Unified Empty State when both searches return no results -->
+    <section class="content-section" *ngIf="searchResponse.commentary_search_results_count === 0 && searchResponse.generictext_search_results_count === 0">
+        <div class="unified-empty-state">
+            <p class="search-query-info">Zu "{{searchQuery}}" haben wir noch keine passenden Inhalte</p>
+            <h2>Hilf der Community und teile dein Wissen!</h2>
+
+            <div class="action-buttons-top">
+                <button mat-raised-button class="contentgruen-primary-dark" (click)="navigateToContribute('commentary')">
+                    <mat-icon>add</mat-icon>💬 Fertigen Kommentar hinzufügen
+                </button>
+                <button mat-raised-button class="contentgruen-primary-dark" (click)="navigateToContribute('generictext')">
+                    <mat-icon>add</mat-icon>📄 Hintergrundinfo hinzufügen
+                </button>
+            </div>
+
+            <mat-icon class="empty-icon">volunteer_activism</mat-icon>
+
+            <div class="suggestions">
+                <p><strong>Tipps für deine Suche:</strong></p>
+                <ul>
+                    <li>Versuche andere Schlagwörter</li>
+                    <li>Formuliere eine konkrete Frage</li>
+                    <li>Nutze weniger spezifische Begriffe</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Show individual sections only when at least one has results -->
+    <ng-container *ngIf="searchResponse.commentary_search_results_count > 0 || searchResponse.generictext_search_results_count > 0">
+
+        <!-- Commentary Search Results Header/Info -->
+        <section class="content-section">
+            <app-commentary-search-results
+                [searchResponse]="searchResponse"
+                [loading]="(loading$ | async) || false"
+                [error]="(error$ | async) || ''"
+                [searchQuery]="searchQuery"
+                [showMinimalEmptyState]="searchResponse.generictext_search_results_count > 0">
+            </app-commentary-search-results>
+        </section>
+
+        <!-- Commentary Carousel - Full Width -->
+        <section class="carousel-section">
+            <app-result-carousel
+                *ngIf="searchResponse.commentary_search_results_count > 0"
+                [results]="searchResponse.commentary_search_results"
+                [itemComponent]="commentaryResultItemComponent">
+            </app-result-carousel>
+        </section>
+
+        <!-- Generic Text Search Results Header/Info -->
+        <section class="content-section">
+            <app-generictext-search-results
+                [searchResponse]="searchResponse"
+                [loading]="(loading$ | async) || false"
+                [error]="(error$ | async) || ''"
+                [searchQuery]="searchQuery"
+                [showMinimalEmptyState]="searchResponse.commentary_search_results_count > 0">
+            </app-generictext-search-results>
+        </section>
+
+        <!-- Generic Text Carousel - Full Width -->
+        <section class="carousel-section">
+            <app-result-carousel
+                *ngIf="searchResponse.generictext_search_results_count > 0"
+                [results]="searchResponse.generictext_search_results"
+                [itemComponent]="generictextResultItemComponent">
+            </app-result-carousel>
+        </section>
+
+    </ng-container>
+</div>

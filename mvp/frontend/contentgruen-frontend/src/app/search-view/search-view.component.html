@@ -1,0 +1,90 @@
+<app-metrics></app-metrics>
+
+<section class="content-section compact-intro">
+    <div class="hero-title">
+        ContentGrün – Nie wieder sprachlos
+    </div>
+    <div class="hero-subtitle">
+        Gemeinsam stark: Bewährte Argumente aus der Community.
+    </div>
+
+    <div class="hero-value-proposal">
+        👥 Echte Menschen  ➜  📝 Teilen Bewährtes  ➜  💪 Alle profitieren
+    </div>
+</section>
+
+<section class="full-width-section hero-section elevated">
+    <div class="hero-content">
+        <!-- Left Column: Search -->
+        <div class="hero-column search-column">
+            <h2>🔍 Suchen</h2>
+            <p class="column-description">
+                Post reinkopieren – Antwort finden – Verwenden!
+            </p>
+            <div class="example-section">
+                <span class="example-text">Beispiel probieren:
+                    <a (click)="performExampleSearch()" class="example-link">
+                        "Windräder töten die Vögel!"
+                    </a>
+                </span>
+            </div>
+            <app-search></app-search>
+        </div>
+
+        <!-- Right Column: Contribute -->
+        <div class="hero-column contribute-column">
+            <h2>✒️ Beitragen</h2>
+            <p class="column-description">
+                Teile dein Wissen mit der Community!
+            </p>
+            <div class="metrics-container">
+                    <div class="metric-card">
+                        <div class="metric-value">
+                            <span *ngIf="contentStats$ | async as stats; else loadingStatement">{{ stats?.statement_count || 0 }}</span>
+                            <ng-template #loadingStatement>...</ng-template>
+                        </div>
+                        <div class="metric-label">Aussagen</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">
+                            <span *ngIf="contentStats$ | async as stats; else loadingCommentary">{{ stats?.commentary_count || 0 }}</span>
+                            <ng-template #loadingCommentary>...</ng-template>
+                        </div>
+                        <div class="metric-label">Fertige Kommentare</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">
+                            <span *ngIf="contentStats$ | async as stats; else loadingGenericText">{{ getGenericTextCount(stats) }}</span>
+                            <ng-template #loadingGenericText>...</ng-template>
+                        </div>
+                        <div class="metric-label">Hintergrundinfos</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">
+                            <span *ngIf="contentStats$ | async as stats; else loadingReference">{{ stats?.reference_count || 0 }}</span>
+                            <ng-template #loadingReference>...</ng-template>
+                        </div>
+                        <div class="metric-label">Quellen</div>
+                    </div>
+            </div>
+            <div class="contribute-actions">
+                    <button mat-raised-button
+                            class="contribute-button contentgruen-primary-dark"
+                            (click)="navigateToContribute()"
+                            *ngIf="userInfo?.isAuthenticated">
+                        <mat-icon>edit</mat-icon> Beitragen
+                    </button>
+                    <button mat-raised-button
+                            class="contribute-button contentgruen-primary-dark"
+                            (click)="loginToContribute()"
+                            *ngIf="!userInfo?.isAuthenticated">
+                        <mat-icon>lock</mat-icon> Anmelden zum Beitragen
+                    </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<app-recent-content id="recent-content"></app-recent-content>
+
+<app-about-teaser></app-about-teaser>

@@ -1,0 +1,182 @@
+[
+    {
+        "statement": "Erneuerbare Energien sind zu teuer!",
+        "generic_texts": [
+            {
+                "text": "Eine umfassende Studie des Fraunhofer ISE von 2023 zeigt eindeutig: Die Gestehungskosten für Strom aus Photovoltaik-Anlagen liegen in Deutschland mittlerweile bei 3-11 Cent pro kWh, während neue Kohlekraftwerke 10-15 Cent und Gaskraftwerke 11-29 Cent kosten. Wind an Land produziert für 4-8 Cent. Die Studie analysierte über 100 Kraftwerksprojekte und berücksichtigt alle Kosten inklusive Finanzierung, Wartung und Rückbau. Besonders bemerkenswert: Die Kosten für Erneuerbare sind in den letzten 10 Jahren um 85% gefallen, während fossile Energieträger teurer wurden. Die Internationale Energieagentur bestätigt diesen Trend weltweit.",
+                "title": "Erneuerbare sind günstigste Energiequelle",
+                "references": [],
+                "metadata": {
+                    "usage_count": 4,
+                    "created_at": "2025-09-04T07:12:23.778017"
+                }
+            },
+            {
+                "text": "Pressemitteilung des Bundesministeriums für Wirtschaft und Klimaschutz vom 15.03.2024: Die EEG-Umlage wurde vollständig abgeschafft. Verbraucher sparen dadurch durchschnittlich 120 Euro pro Jahr. Gleichzeitig sank der Börsenstrompreis durch den Merit-Order-Effekt der Erneuerbaren um 2,3 Cent/kWh. Minister Habeck: 'Die Energiewende senkt bereits heute die Strompreise. Jede zusätzliche Windkraftanlage und jede neue Solaranlage reduziert die Abhängigkeit von teuren Gasimporten.' Die Analyse zeigt: An Tagen mit hoher Einspeisung Erneuerbarer Energien lag der Strompreis bis zu 40% unter dem Durchschnitt.",
+                "title": "Erneuerbare senken Strompreise deutlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-13T17:12:23.778017"
+                }
+            },
+            {
+                "text": "Aus dem Geschäftsbericht 2023 der EnBW Energie Baden-Württemberg AG: 'Unsere Investitionen in Erneuerbare Energien haben sich als hochprofitabel erwiesen. Die Amortisationszeit für unsere Offshore-Windparks beträgt nur noch 7 Jahre, für Solarparks sogar nur 5 Jahre. Die stabilen Erträge ohne Brennstoffkosten machen Erneuerbare zur attraktivsten Investition in unserem Portfolio. Wir planen, bis 2030 weitere 4 Milliarden Euro in Wind und Solar zu investieren.' Der Konzern erzielte mit seinem Erneuerbaren-Segment eine EBITDA-Marge von 42%, während das konventionelle Geschäft nur 12% erreichte.",
+                "title": "EnBW: Erneuerbare hochprofitabel",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-11T07:12:23.778017"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 2,
+            "created_at": "2025-09-13T21:02:23.778017"
+        }
+    },
+    {
+        "statement": "Die Energiewende zerstört Arbeitsplätze!",
+        "generic_texts": [
+            {
+                "text": "Studie der Internationalen Arbeitsorganisation (ILO) 'World Employment and Social Outlook 2023': Die globale Energiewende wird bis 2030 netto 24 Millionen neue Arbeitsplätze schaffen. In Deutschland arbeiten bereits 387.000 Menschen im Bereich Erneuerbare Energien, während in der Kohleindustrie nur noch 20.000 beschäftigt sind. Die Studie analysierte 163 Länder und alle Sektoren. Besonders positiv: Die neuen Jobs sind regional besser verteilt und bieten oft bessere Arbeitsbedingungen. Umschulungsprogramme für Kohlearbeiter zeigen Erfolgsquoten von über 85%.",
+                "title": "24 Millionen neue Jobs durch Energiewende",
+                "references": [],
+                "metadata": {
+                    "usage_count": 1,
+                    "created_at": "2025-09-12T01:12:23.778017"
+                }
+            },
+            {
+                "text": "Positionspapier des Deutschen Gewerkschaftsbunds (DGB) zur Energiewende, veröffentlicht im Januar 2024: 'Die Transformation der Energiewirtschaft ist eine historische Chance für gute Arbeit. Unsere Mitgliederbefragung zeigt: 73% der Beschäftigten in der Energiebranche sehen die Energiewende positiv. In den letzten 5 Jahren entstanden 120.000 neue, meist tarifgebundene Arbeitsplätze in Wind, Solar und Wasserstoff. Wir fordern massive Investitionen in Weiterbildung und einen Transformationsfonds von 20 Milliarden Euro. Die IG Metall meldet: Allein in der Windbranche fehlen 50.000 Fachkräfte.'",
+                "title": "Energiewende schafft gute Arbeitsplätze",
+                "references": [],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-11T17:12:23.778017"
+                }
+            },
+            {
+                "text": "Artikel aus dem Handelsblatt vom 22.02.2024: 'Fachkräftemangel bremst Energiewende - Handwerk meldet Rekordbedarf'. Der Zentralverband des Deutschen Handwerks berichtet von 200.000 offenen Stellen im Bereich Energiewende. Installateur-Meister verdienen mittlerweile bis zu 80.000 Euro jährlich. Auszubildende erhalten Prämien von bis zu 10.000 Euro. Ein Dachdecker aus München: 'Wir könnten doppelt so viele Solaranlagen installieren, wenn wir die Leute hätten. Die Auftragsbücher sind für 2 Jahre voll.' Das Handwerk fordert eine Ausbildungsoffensive und vereinfachte Anerkennung ausländischer Abschlüsse.",
+                "title": "200.000 offene Stellen in der Energiewende",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-02T14:12:23.778017"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 9,
+            "created_at": "2025-09-15T20:59:23.778017"
+        }
+    },
+    {
+        "statement": "Elektroautos sind gar nicht umweltfreundlich!",
+        "generic_texts": [
+            {
+                "text": "Lebenszyklusanalyse des Umweltbundesamtes (2024): Elektroautos sind über ihre gesamte Lebensdauer 70% klimafreundlicher als Verbrenner. Die Studie berücksichtigt Produktion, Batterie, Strommix und Recycling. Selbst mit dem aktuellen deutschen Strommix (60% erneuerbar) spart ein E-Auto 23 Tonnen CO2. Mit Ökostrom sind es 40 Tonnen. Die Batterie-Produktion macht nur 15% der Gesamtemissionen aus und wird durch effizientere Prozesse und Recycling weiter sinken. Neue LFP-Batterien halten 500.000 km. Das Amt empfiehlt: E-Autos sind die klimafreundlichste verfügbare Individualmobilität.",
+                "title": "E-Autos 70% klimafreundlicher als Verbrenner",
+                "references": [],
+                "metadata": {
+                    "usage_count": 2,
+                    "created_at": "2025-09-03T10:12:23.778017"
+                }
+            },
+            {
+                "text": "Forschungsbericht des Wuppertal Instituts für Klima, Umwelt, Energie (2023): 'Second-Life-Batterien revolutionieren Energiespeicher'. Ausgediente E-Auto-Batterien mit 70-80% Restkapazität werden als stationäre Stromspeicher genutzt. Das Projekt im Hamburger Hafen speichert mit alten Tesla-Batterien 2,5 MWh Windstrom. Die Wirtschaftlichkeitsanalyse zeigt: Second-Life-Nutzung verlängert die Batterie-Lebensdauer um 10-15 Jahre. Der Materialwert einer ausgedienten Batterie liegt bei 4.000 Euro. Recyclingquoten von Lithium, Kobalt und Nickel erreichen bereits 95%. Die Kreislaufwirtschaft macht E-Mobilität nachhaltig.",
+                "title": "Second-Life-Batterien als Stromspeicher",
+                "references": [],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-05T08:12:23.778017"
+                }
+            },
+            {
+                "text": "Gemeinsame Erklärung von ADAC, VDA und Umwelthilfe vom 10.01.2024: 'Elektromobilität ist alternativlos für Klimaschutz im Verkehr'. Die ungewöhnliche Allianz präsentierte Fakten: E-Autos haben einen Wirkungsgrad von 70-80%, Verbrenner nur 20-30%. Der ADAC testete 50 E-Modelle - alle übertrafen die Reichweiten-Angaben. Die Ladeinfrastruktur wächst exponentiell: 100.000 öffentliche Ladepunkte in Deutschland. Die Deutsche Umwelthilfe betont: 'Auch Rohstoffabbau für Batterien verursacht weniger Umweltschäden als Ölförderung.' Der VDA kündigt an: Ab 2030 nur noch E-Autos in der Neuzulassung.",
+                "title": "E-Mobilität alternativlos für Klimaschutz",
+                "references": [],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-08T20:12:23.778017"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 15,
+            "created_at": "2025-09-05T05:08:23.778017"
+        }
+    },
+    {
+        "statement": "Wärmepumpen funktionieren nicht im Altbau!",
+        "generic_texts": [
+            {
+                "text": "Feldstudie des Fraunhofer ISE 'Wärmepumpen in Bestandsgebäuden' (2024): 250 Altbauten wurden 3 Jahre mit Wärmepumpen betrieben und wissenschaftlich begleitet. Ergebnis: Auch in unsanierten Gebäuden von 1960 erreichten Wärmepumpen Jahresarbeitszahlen von 3,1 (310% Effizienz). Mit einfachen Maßnahmen wie Heizkörpervergrößerung stieg die Effizienz auf 3,8. Die Bewohner sparten durchschnittlich 1.800 Euro Heizkosten jährlich. Selbst bei -15°C liefen alle Anlagen zuverlässig. Die Studie räumt mit Vorurteilen auf: 'Wärmepumpen sind in 90% aller Bestandsgebäude wirtschaftlich einsetzbar.'",
+                "title": "Wärmepumpen funktionieren auch im Altbau",
+                "references": [],
+                "metadata": {
+                    "usage_count": 1,
+                    "created_at": "2025-09-07T15:12:23.778017"
+                }
+            },
+            {
+                "text": "Praxisbericht der Verbraucherzentrale NRW (März 2024): 'Wärmepumpen-Sprechstunde überlastet - Altbau-Besitzer wollen umsteigen'. Die Energieberater berichten von einem Ansturm: 5.000 Beratungen in 6 Monaten, 80% für Altbauten. Erfolgsbeispiel: Familie Müller, Haus Baujahr 1955, keine Dämmung. Mit Niedertemperatur-Heizkörpern und Luftwärmepumpe: Heizkosten halbiert. Die Verbraucherzentrale widerlegt Mythen: 'Fußbodenheizung ist NICHT nötig. Vorlauftemperatur 55°C reicht meist aus.' Die Förderung von bis zu 70% macht den Umstieg attraktiv. Warnung vor unseriösen Anbietern, die überdimensionierte Anlagen verkaufen.",
+                "title": "Altbau-Boom bei Wärmepumpen",
+                "references": [],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-11T19:12:23.778017"
+                }
+            },
+            {
+                "text": "Langzeitstudie der RWTH Aachen, Institut für Gebäude-Energetik (2023): '10 Jahre Wärmepumpen-Monitoring in Deutschland'. Die Auswertung von 3.500 Anlagen zeigt: Wärmepumpen in Altbauten haben sich in 10 Jahren massiv verbessert. Moderne Geräte erreichen Vorlauftemperaturen von 75°C - ausreichend für jeden Altbau. Die Kombination mit Photovoltaik senkt Betriebskosten um weitere 60%. Überraschend: Luftwärmepumpen sind in milden Wintern effizienter als Erdwärme. Die Lebensdauer beträgt 20-25 Jahre. Professor Schmidt: 'Die Technologie ist ausgereift. Jeder Heizungstausch ohne Wärmepumpe ist eine vertane Chance.'",
+                "title": "10 Jahre Wärmepumpen-Erfolg in Deutschland",
+                "references": [],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-14T01:12:23.778017"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 5,
+            "created_at": "2025-09-07T15:24:23.778017"
+        }
+    },
+    {
+        "statement": "Deutschland kann nicht alleine das Klima retten!",
+        "generic_texts": [
+            {
+                "text": "Sonderbericht des Weltklimarats IPCC 'Global Mitigation Pathways' (2023): Internationale Klimaschutz-Dynamik beschleunigt sich. 127 Länder mit Netto-Null-Zielen, die 88% der globalen Emissionen abdecken. China investiert 500 Milliarden Dollar jährlich in Erneuerbare - mehr als USA und EU zusammen. Indien: 50% Erneuerbare bis 2030. Die Analyse zeigt: Vorreiterländer lösen Dominoeffekte aus. Deutsche Technologien (Wind, Solar, Wasserstoff) werden weltweit eingesetzt. 'Jedes Land, das vorangeht, senkt die Kosten für alle anderen', so die Autoren. Der Kipppunkt für die globale Energiewende ist bereits überschritten.",
+                "title": "Globale Klimaschutz-Dynamik unumkehrbar",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-06T10:12:23.778017"
+                }
+            },
+            {
+                "text": "Rede von UN-Generalsekretär António Guterres auf dem Klimagipfel in Dubai (COP28), Dezember 2023: 'Die Energiewende ist keine Frage des Ob, sondern des Wie schnell. 2023 wurden weltweit 500 GW Erneuerbare zugebaut - ein historischer Rekord. Die Kosten für Solar sind in 10 Jahren um 90% gefallen. Dies ist keine deutsche oder europäische, sondern eine globale Revolution. Entwicklungsländer überspringen die fossile Phase. Kenia: 92% Erneuerbare. Costa Rica: 99%. Die reichen Länder müssen vorangehen und Technologien bereitstellen. Deutschland zeigt: Industrieland und Klimaschutz sind vereinbar.'",
+                "title": "Globale Energiewende nicht aufzuhalten",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-04T01:12:23.778017"
+                }
+            },
+            {
+                "text": "Analyse der Internationalen Energieagentur (IEA) 'Net Zero Roadmap Update 2024': Die weltweiten Investitionen in saubere Energie haben 2023 erstmals die 2-Billionen-Dollar-Marke überschritten. China baut jede Woche Solarkapazität equivalent zu einem Atomkraftwerk. Die USA investieren durch den Inflation Reduction Act 370 Milliarden in grüne Technologie. Europa: Green Deal mobilisiert 1 Billion Euro. Die IEA prognostiziert: Peak fossiler Energien vor 2030. Deutschlands Rolle: Technologieexport im Wert von 250 Milliarden Euro jährlich. 'Kein Land rettet allein das Klima, aber jedes Land, das nicht mitmacht, wird wirtschaftlich abgehängt.'",
+                "title": "2 Billionen Dollar für saubere Energie",
+                "references": [],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-15T12:12:23.778017"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 6,
+            "created_at": "2025-09-12T22:41:23.778017"
+        }
+    }
+]

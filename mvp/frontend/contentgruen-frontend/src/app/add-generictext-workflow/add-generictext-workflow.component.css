@@ -1,0 +1,39 @@
+.workflow-container {
+    padding: 0;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+}
+
+.loading-container mat-spinner {
+    margin-bottom: 20px;
+}
+
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+    padding: 20px;
+}
+
+.error-container mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 20px;
+}
+
+.error-container p {
+    margin-bottom: 20px;
+    color: #f44336;
+    font-size: 16px;
+}

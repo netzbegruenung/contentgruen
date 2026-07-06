@@ -1,0 +1,10 @@
+// This is a template file. The actual environment.ts is auto-generated.
+// For local development: copy from environment.local.ts
+// For Docker: copy from environment.docker.ts
+// For production: copy from environment.prod.ts
+
+export const environment = {
+  production: false,
+  baseUrl: '', // Empty for same-origin requests (Docker with nginx proxy)
+  useKeycloak: 'false'
+};

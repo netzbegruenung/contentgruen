@@ -1,0 +1,242 @@
+[
+  {
+    "statement": "E-Autos sind gar nicht so umweltfreundlich, weil sie bei der Produktion viel CO2 verursachen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag wird schnell klar, dass E-Autos während ihrer Nutzung erheblich weniger Emissionen verursachen. Die CO2-Emissionen der Produktion werden nach einigen Jahren ausgeglichen, vor allem wenn die Fahrzeuge mit Ökostrom geladen werden. So sind E-Autos nach wenigen Jahren deutlich umweltfreundlicher als Verbrenner.",
+        "title": "Langfristige Emissionsreduktion im Alltag",
+        "long_text": "Die Produktion von E-Autos ist zwar energieintensiv, aber durch den Betrieb mit Ökostrom werden diese Emissionen schnell ausgeglichen. Viele Fahrer von E-Autos erleben bereits nach wenigen Jahren, dass ihre Fahrzeuge umweltfreundlicher sind als Verbrenner. Der Umstieg auf E-Autos hilft, langfristig CO2 zu reduzieren.",
+        "short_text": "E-Autos gleichen ihre Produktions-Emissionen nach kurzer Zeit aus.",
+        "references": []
+      },
+      {
+        "text": "Laut Studien des Fraunhofer-Instituts wird der CO2-Ausstoß eines E-Autos bereits nach 1-2 Jahren Betrieb ausgeglichen. Im gesamten Lebenszyklus ist ein E-Auto deutlich umweltfreundlicher als ein Verbrenner, insbesondere wenn es mit Ökostrom betrieben wird.",
+        "title": "Fakten zur CO2-Bilanz von E-Autos",
+        "long_text": "Laut dem Fraunhofer-Institut gleicht ein E-Auto seine höheren Produktions-Emissionen innerhalb von 1-2 Jahren aus. Über den gesamten Lebenszyklus verursacht es dann deutlich weniger CO2-Emissionen als ein Verbrenner, insbesondere wenn der Strom aus erneuerbaren Energien stammt.",
+        "short_text": "E-Autos sind über ihren Lebenszyklus umweltfreundlicher.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut über CO2-Bilanz von E-Autos",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Batterien der E-Autos sind umweltschädlich und verursachen Ressourcenprobleme.",
+    "commentaries": [
+      {
+        "text": "Im Alltag verbessern sich die Batterietechnologien stetig. Hersteller setzen zunehmend auf Recycling und nachhaltige Abbaupraktiken, um die Auswirkungen zu minimieren. Zudem sind viele Menschen überrascht, wie langlebig E-Auto-Batterien sind – sie halten oft länger als der Rest des Fahrzeugs.",
+        "title": "Nachhaltige Batterienutzung im Alltag",
+        "long_text": "Die Batterieproduktion entwickelt sich stetig weiter. Recycling-Technologien und nachhaltiger Rohstoffabbau werden verbessert, um die Umweltbelastungen zu minimieren. Zudem zeigen Studien, dass E-Auto-Batterien oft länger als erwartet halten und somit einen geringeren Austauschbedarf haben.",
+        "short_text": "E-Auto-Batterien werden langlebiger und umweltfreundlicher.",
+        "references": []
+      },
+      {
+        "text": "Laut dem Umweltbundesamt werden bereits heute über 90 % der Materialien aus Batterien recycelt. Zukünftige Innovationen werden die Umweltauswirkungen weiter senken, während alternative Batterietechnologien weniger auf seltene Ressourcen angewiesen sein werden.",
+        "title": "Fakten zum Batterierecycling",
+        "long_text": "Aktuelle Recyclingverfahren ermöglichen es, über 90 % der Materialien von Batterien wiederzuverwerten. In Zukunft werden außerdem alternative Batterietechnologien den Ressourcenverbrauch verringern und die Umweltfreundlichkeit von E-Autos weiter erhöhen.",
+        "short_text": "Recycling macht Batterien umweltfreundlicher.",
+        "references": [
+          {
+            "text": "Umweltbundesamt über Batterierecycling",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "E-Autos verursachen viel höheren Stromverbrauch und belasten das Stromnetz.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sehen viele Menschen, dass E-Autos flexibel geladen werden können, oft nachts, wenn das Netz wenig ausgelastet ist. Zudem können E-Autos in Zukunft als Energiespeicher dienen und so zur Netzstabilität beitragen, indem sie überschüssigen Strom aufnehmen und bei Bedarf wieder abgeben.",
+        "title": "Flexibles Laden und Netzstabilität im Alltag",
+        "long_text": "E-Autos können nicht nur flexibel geladen werden, sondern in Zukunft auch als mobile Energiespeicher dienen. Das bedeutet, sie könnten überschüssigen Strom speichern und diesen bei Bedarf wieder ins Netz einspeisen, was zu einer Stabilisierung des Stromnetzes beitragen könnte.",
+        "short_text": "E-Autos tragen zur Netzstabilität bei.",
+        "references": []
+      },
+      {
+        "text": "Studien des Fraunhofer-Instituts zeigen, dass die Integration von E-Autos in das Stromnetz zu dessen Stabilisierung beitragen kann. Mit intelligenten Ladesystemen und dem Einsatz von E-Autos als Stromspeicher wird der Stromverbrauch effizient gemanagt.",
+        "title": "Fakten zur Netzstabilität durch E-Autos",
+        "long_text": "Laut dem Fraunhofer-Institut kann die flächendeckende Einführung von E-Autos das Stromnetz stabilisieren, anstatt es zu belasten. Durch intelligente Ladesysteme und die Möglichkeit, E-Autos als Stromspeicher zu nutzen, wird der Energieverbrauch effizient verwaltet.",
+        "short_text": "E-Autos stabilisieren das Stromnetz.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut zu E-Autos und Netzstabilität",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Der Strom für E-Autos kommt oft aus Kohle, was sie nicht klimafreundlicher als Verbrenner macht.",
+    "commentaries": [
+      {
+        "text": "Im Alltag laden viele Menschen ihre E-Autos bereits mit Ökostrom. Inzwischen gibt es zahlreiche Angebote, die garantieren, dass der Strom aus erneuerbaren Quellen stammt, was die Klimabilanz eines E-Autos erheblich verbessert.",
+        "title": "E-Autos im Alltag mit Ökostrom laden",
+        "long_text": "Viele E-Auto-Besitzer setzen bereits auf Ökostromtarife, um ihre Fahrzeuge klimafreundlich zu laden. Selbst wenn noch nicht jeder Strom zu 100 % aus erneuerbaren Quellen stammt, verbessert sich der Strommix stetig, sodass E-Autos auch langfristig deutlich umweltfreundlicher sind als Verbrenner.",
+        "short_text": "E-Autos können klimafreundlich mit Ökostrom betrieben werden.",
+        "references": []
+      },
+      {
+        "text": "Laut dem Bundesumweltministerium wird der Anteil erneuerbarer Energien im Strommix kontinuierlich ausgebaut. In Kombination mit Ökostromtarifen können E-Autos ihren CO2-Ausstoß signifikant senken und im Vergleich zu Verbrennern eine deutlich bessere Klimabilanz vorweisen.",
+        "title": "Fakten zur Stromquelle von E-Autos",
+        "long_text": "Das Bundesumweltministerium bestätigt, dass der Anteil erneuerbarer Energien im Stromnetz stetig steigt. Dadurch verbessert sich die Klimabilanz von E-Autos kontinuierlich, insbesondere wenn sie gezielt mit Ökostrom geladen werden.",
+        "short_text": "E-Autos profitieren von einem immer grüneren Strommix.",
+        "references": [
+          {
+            "text": "Bundesumweltministerium zur Entwicklung des Strommix",
+            "reference_string": "https://www.bmu.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Reichweite von E-Autos ist zu gering für den Alltag.",
+    "commentaries": [
+      {
+        "text": "Im Alltag zeigt sich, dass die Reichweite der meisten E-Autos für die tägliche Nutzung mehr als ausreichend ist. Viele Pendler legen weniger als 50 km pro Tag zurück, was mit den meisten modernen E-Autos problemlos möglich ist.",
+        "title": "Ausreichende Reichweite für den Alltag",
+        "long_text": "Die durchschnittliche Pendelstrecke in Deutschland liegt bei unter 50 km pro Tag, was von den meisten E-Autos ohne Probleme abgedeckt wird. Zudem gibt es immer mehr Schnellladestationen, die auch für längere Fahrten eine einfache und schnelle Ladeoption bieten.",
+        "short_text": "Die Reichweite moderner E-Autos reicht für den Alltag aus.",
+        "references": []
+      },
+      {
+        "text": "Laut dem ADAC haben moderne E-Autos eine durchschnittliche Reichweite von über 300 km. Für die meisten Fahrten im Alltag ist das mehr als ausreichend, und für längere Strecken gibt es immer mehr Schnellladestationen, die die Reichweite schnell wieder erhöhen.",
+        "title": "Fakten zur Reichweite von E-Autos",
+        "long_text": "Moderne E-Autos haben eine durchschnittliche Reichweite von über 300 km, was für die meisten Fahrten im Alltag mehr als ausreichend ist. Zudem wächst das Netz an Schnellladestationen stetig, sodass auch längere Strecken problemlos zurückgelegt werden können.",
+        "short_text": "Moderne E-Autos haben eine durchschnittliche Reichweite von über 300 km.",
+        "references": [
+          {
+            "text": "ADAC zu Reichweite von E-Autos",
+            "reference_string": "https://www.adac.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "E-Autos sind bei der Produktion nicht klimafreundlich, da die Herstellung der Batterien viel CO2 verursacht.",
+    "commentaries": [
+      {
+        "text": "Im Alltag zeigt sich, dass E-Autos während der Nutzung deutlich weniger Emissionen verursachen. Die höheren CO2-Emissionen bei der Produktion werden bereits nach wenigen Jahren ausgeglichen, vor allem, wenn die Fahrzeuge mit Ökostrom betrieben werden.",
+        "title": "Langfristige Vorteile von E-Autos im Alltag",
+        "long_text": "Die CO2-Emissionen, die bei der Produktion von E-Autos entstehen, werden nach wenigen Jahren Nutzung ausgeglichen. E-Autos, die mit Ökostrom betrieben werden, bieten langfristig einen deutlich kleineren CO2-Fußabdruck als Verbrenner.",
+        "short_text": "E-Autos gleichen ihre Produktions-Emissionen durch den Betrieb mit Ökostrom aus.",
+        "references": []
+      },
+      {
+        "text": "Studien des Fraunhofer-Instituts zeigen, dass die CO2-Emissionen eines E-Autos nach 1-2 Jahren Nutzung ausgeglichen sind. Im gesamten Lebenszyklus ist ein E-Auto umweltfreundlicher als ein Verbrenner.",
+        "title": "Fakten zur CO2-Bilanz von E-Autos",
+        "long_text": "Laut dem Fraunhofer-Institut gleicht ein E-Auto die höheren Emissionen bei der Herstellung innerhalb von 1-2 Jahren aus und verursacht über den gesamten Lebenszyklus weniger Emissionen als ein Auto mit Verbrennungsmotor.",
+        "short_text": "E-Autos gleichen ihre Produktions-Emissionen schnell aus.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut zur CO2-Bilanz von E-Autos",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Batterien von E-Autos sind umweltschädlich und verbrauchen zu viele Rohstoffe.",
+    "commentaries": [
+      {
+        "text": "Moderne Batterietechnologien werden immer nachhaltiger. Viele Hersteller setzen auf Recycling und umweltfreundlichere Abbaumethoden. E-Auto-Batterien sind langlebig und halten oft länger als das Fahrzeug selbst.",
+        "title": "Nachhaltige Batterietechnologien im Alltag",
+        "long_text": "Batterien in E-Autos sind langlebig und werden stetig weiterentwickelt, um nachhaltiger zu werden. Recyclingprozesse und umweltfreundliche Abbaumethoden tragen dazu bei, die Umweltauswirkungen zu minimieren.",
+        "short_text": "Batterien sind langlebig und Recycling macht sie umweltfreundlicher.",
+        "references": []
+      },
+      {
+        "text": "Das Umweltbundesamt bestätigt, dass mehr als 90 % der Materialien aus Batterien recycelt werden können. Zukünftige Innovationen werden den Ressourcenverbrauch weiter reduzieren.",
+        "title": "Fakten zum Recycling von E-Auto-Batterien",
+        "long_text": "Laut dem Umweltbundesamt werden 90 % der Rohstoffe aus Batterien recycelt. Zukünftige technologische Fortschritte werden den Ressourcenverbrauch weiter reduzieren und die Umweltfreundlichkeit von E-Autos weiter steigern.",
+        "short_text": "Über 90 % der Batterie-Rohstoffe werden recycelt.",
+        "references": [
+          {
+            "text": "Umweltbundesamt über Batterierecycling",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "E-Autos verbrauchen zu viel Strom und belasten das Netz.",
+    "commentaries": [
+      {
+        "text": "Viele E-Autos werden in der Praxis nachts geladen, wenn das Stromnetz weniger belastet ist. Zudem könnten E-Autos in Zukunft als Speicher für überschüssigen Strom dienen, was das Netz entlastet und stabilisiert.",
+        "title": "Stromversorgung und Netzstabilität im Alltag",
+        "long_text": "Durch intelligentes Lademanagement können E-Autos dann geladen werden, wenn das Netz weniger ausgelastet ist. In Zukunft könnten sie auch als Speicher dienen, um das Netz zu stabilisieren und überschüssigen Strom aufzunehmen.",
+        "short_text": "E-Autos können das Netz entlasten, nicht belasten.",
+        "references": []
+      },
+      {
+        "text": "Das Fraunhofer-Institut hat gezeigt, dass E-Autos in Zukunft zur Netzstabilisierung beitragen können. Mit intelligenten Ladesystemen und der Möglichkeit, als Speicher zu fungieren, wird der Stromverbrauch effizient gemanagt.",
+        "title": "Fakten zur Netzbelastung durch E-Autos",
+        "long_text": "Laut dem Fraunhofer-Institut tragen E-Autos zur Netzstabilisierung bei. Intelligente Ladesysteme und die Nutzung von E-Autos als Speicher ermöglichen eine effiziente Nutzung des Stromnetzes, ohne es zu belasten.",
+        "short_text": "E-Autos stabilisieren das Stromnetz.",
+        "references": [
+          {
+            "text": "Fraunhofer-Institut zu E-Autos und Netzstabilität",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Der Strom für E-Autos kommt oft aus Kohle, was sie nicht klimafreundlicher als Verbrenner macht.",
+    "commentaries": [
+      {
+        "text": "Im Alltag können E-Autos gezielt mit Ökostrom geladen werden. Viele Energieversorger bieten spezielle Ökostromtarife an, die sicherstellen, dass die Fahrzeuge klimafreundlich betrieben werden.",
+        "title": "Klimafreundlicher Betrieb von E-Autos im Alltag",
+        "long_text": "Durch Ökostromtarife können E-Auto-Besitzer sicherstellen, dass ihr Fahrzeug mit erneuerbarer Energie geladen wird. Das macht den Betrieb von E-Autos deutlich umweltfreundlicher als den von Verbrennungsmotoren, selbst wenn nicht der gesamte Strom aus erneuerbaren Quellen stammt.",
+        "short_text": "Mit Ökostrom sind E-Autos deutlich klimafreundlicher.",
+        "references": []
+      },
+      {
+        "text": "Das Bundesumweltministerium bestätigt, dass der Anteil erneuerbarer Energien im Strommix stetig steigt. E-Autos, die mit Ökostrom geladen werden, haben eine erheblich bessere Klimabilanz als Fahrzeuge mit fossilen Brennstoffen.",
+        "title": "Fakten zur Stromquelle für E-Autos",
+        "long_text": "Laut dem Bundesumweltministerium verbessert sich der Strommix in Deutschland kontinuierlich. Der steigende Anteil erneuerbarer Energien sorgt dafür, dass die Klimabilanz von E-Autos immer besser wird.",
+        "short_text": "E-Autos profitieren von einem grüner werdenden Strommix.",
+        "references": [
+          {
+            "text": "Bundesumweltministerium über den deutschen Strommix",
+            "reference_string": "https://www.bmu.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Reichweite von E-Autos ist zu gering und nicht alltagstauglich.",
+    "commentaries": [
+      {
+        "text": "Im Alltag reicht die Reichweite der meisten E-Autos für die täglichen Fahrten aus. Viele Menschen fahren weniger als 50 km pro Tag, was moderne E-Autos problemlos leisten. Außerdem gibt es immer mehr Schnellladestationen für längere Fahrten.",
+        "title": "Alltagstaugliche Reichweite von E-Autos",
+        "long_text": "Die meisten Pendler legen weniger als 50 km pro Tag zurück, was die Reichweite moderner E-Autos problemlos abdeckt. Für längere Fahrten stehen immer mehr Schnellladestationen zur Verfügung, die das Laden unterwegs erleichtern.",
+        "short_text": "Moderne E-Autos haben genug Reichweite für den Alltag.",
+        "references": []
+      },
+      {
+        "text": "Eine Studie der Internationalen Energieagentur zeigt, dass moderne E-Autos im Durchschnitt eine Reichweite von 300-400 km haben. Das reicht für den Großteil der täglichen Fahrten aus, und das Netz an Schnellladestationen wächst stetig.",
+        "title": "Fakten zur Reichweite moderner E-Autos",
+        "long_text": "Moderne E-Autos haben laut der Internationalen Energieagentur eine durchschnittliche Reichweite von 300-400 km pro Ladung. Dies ist ausreichend für den Großteil der täglichen Fahrten, und durch das wachsende Netz an Schnellladestationen sind auch längere Fahrten kein Problem.",
+        "short_text": "Moderne E-Autos haben ausreichend Reichweite für die meisten Fahrten.",
+        "references": [
+          {
+            "text": "Studie der Internationalen Energieagentur zur Reichweite von E-Autos",
+            "reference_string": "https://www.iea.org"
+          }
+        ]
+      }
+    ]
+  }
+]

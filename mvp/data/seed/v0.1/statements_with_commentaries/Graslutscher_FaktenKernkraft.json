@@ -1,0 +1,122 @@
+[
+  {
+    "statement": "Atomkraft ist klimafreundlich und sollte deshalb weiter betrieben werden, um den CO₂-Ausstoß zu senken.",
+    "commentaries": [
+      {
+        "text": "Atomkraftwerke erzeugen zwar weniger CO₂ als fossile Brennstoffe, aber der gesamte Lebenszyklus von Bau, Betrieb und Entsorgung ist nicht klimaneutral. Zudem haben Erneuerbare Energien Atomkraft in Deutschland bereits größtenteils ersetzt.",
+        "title": "Erneuerbare Energien als bessere Alternative",
+        "long_text": "Obwohl Atomkraftwerke weniger CO₂ emittieren als Kohlekraftwerke, sind sie nicht klimaneutral, wenn man den gesamten Lebenszyklus von Bau über Betrieb bis zur Entsorgung betrachtet. In Deutschland haben Erneuerbare Energien bereits die meisten Atomkraftwerke ersetzt und reduzieren den CO₂-Ausstoß langfristig nachhaltiger.",
+        "short_text": "Erneuerbare Energien ersetzen Atomkraft nachhaltig und klimafreundlicher.",
+        "references": [
+          {
+            "text": "Our World in Data",
+            "reference_string": "https://ourworldindata.org"
+          }
+        ]
+      },
+      {
+        "text": "Für Menschen auf dem Land ist es wichtig, auf stabile und sichere Energiequellen setzen zu können. Der Ausbau von Erneuerbaren Energien, wie Wind- und Solarenergie, bietet langfristig stabilere und umweltfreundlichere Lösungen als Atomkraft, die mit erheblichen Risiken verbunden ist.",
+        "title": "Sichere Energieversorgung auf dem Land",
+        "long_text": "Gerade für ländliche Regionen ist eine stabile Energieversorgung essenziell. Der Ausbau von Wind- und Solarenergie schafft hier langfristig eine zuverlässige und sichere Stromversorgung. Atomkraft hingegen bringt Risiken mit sich, die in ländlichen Gebieten schwerer abzusichern sind.",
+        "short_text": "Erneuerbare bieten sichere Energie für ländliche Regionen.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Ohne Atomkraftwerke sind wir auf teure Stromimporte angewiesen.",
+    "commentaries": [
+      {
+        "text": "Deutschland ist nicht auf französischen Atomstrom angewiesen. Tatsächlich exportiert Deutschland mehr Strom nach Frankreich als umgekehrt. Der Import erfolgt nur, wenn dieser Strom günstiger ist.",
+        "title": "Stromexporte nach Frankreich",
+        "long_text": "Deutschland importiert nur dann Strom, wenn dieser günstiger ist. Tatsächlich exportiert Deutschland in der Regel mehr Strom nach Frankreich, als es von dort importiert. Die Behauptung, dass Deutschland ohne Atomkraftwerke auf teure Importe angewiesen ist, entspricht nicht den Tatsachen.",
+        "short_text": "Deutschland exportiert mehr Strom nach Frankreich als es importiert.",
+        "references": [
+          {
+            "text": "Energy Charts",
+            "reference_string": "https://energy-charts.info"
+          }
+        ]
+      },
+      {
+        "text": "Für ländliche Gebiete, wo die Stromkosten oft ein wichtiges Thema sind, ist es entscheidend, dass wir auf kostengünstige und nachhaltige Energiequellen setzen. Der Ausbau Erneuerbarer Energien reduziert langfristig die Abhängigkeit von teuren Importen und sorgt für stabile Energiepreise.",
+        "title": "Kostengünstige Energieversorgung auf dem Land",
+        "long_text": "Ländliche Regionen profitieren von einer stabilen und kostengünstigen Energieversorgung. Der Ausbau von Wind- und Solarenergie verringert die Abhängigkeit von teuren Stromimporten und ermöglicht langfristig stabile und günstige Energiepreise, was besonders für das ländliche Umfeld wichtig ist.",
+        "short_text": "Erneuerbare Energien stabilisieren die Stromkosten auf dem Land.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Der Atomausstieg führt zu mehr Kohleverbrennung und somit höheren CO₂-Emissionen.",
+    "commentaries": [
+      {
+        "text": "Der Anstieg der Kohleverstromung nach dem Atomausstieg war nur temporär. Langfristig wird der Bedarf an Kohle durch den Ausbau der Erneuerbaren Energien ersetzt, die klimafreundlicher sind.",
+        "title": "Übergangsphase zur Kohleverstromung",
+        "long_text": "Der vorübergehende Anstieg der Kohleverstromung nach dem Atomausstieg war unvermeidbar, aber er ist nur eine Übergangsphase. Der fortschreitende Ausbau Erneuerbarer Energien ersetzt langfristig den Kohlebedarf und reduziert die CO₂-Emissionen deutlich nachhaltiger.",
+        "short_text": "Der Kohleanstieg ist temporär, Erneuerbare ersetzen langfristig.",
+        "references": [
+          {
+            "text": "Fraunhofer ISE",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      },
+      {
+        "text": "Auf dem Land sind Menschen auf eine saubere Umwelt angewiesen. Der Ausbau Erneuerbarer Energien schafft langfristig saubere Luft und schützt die Umwelt, was auch für die Lebensqualität in ländlichen Gebieten essenziell ist.",
+        "title": "Saubere Luft und Umweltschutz auf dem Land",
+        "long_text": "Für Menschen auf dem Land ist eine saubere Umwelt von zentraler Bedeutung. Durch den Ausbau der Erneuerbaren Energien können Kohlekraftwerke langfristig ersetzt werden, was nicht nur die CO₂-Emissionen reduziert, sondern auch die Luftqualität und somit die Lebensqualität in ländlichen Regionen verbessert.",
+        "short_text": "Erneuerbare Energien sichern saubere Luft auf dem Land.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Atomkraft ist eine sichere Energiequelle und moderner als Windkraft.",
+    "commentaries": [
+      {
+        "text": "Obwohl moderne Reaktoren sicherer sind als ältere Modelle, bleibt das Risiko eines Unfalls immer bestehen. Windkraft ist dagegen nicht nur sicherer, sondern auch nachhaltiger und trägt zum Schutz von Klima und Umwelt bei.",
+        "title": "Sicherheit und Nachhaltigkeit",
+        "long_text": "Auch moderne Atomkraftwerke haben ein Restrisiko, das nie vollständig eliminiert werden kann. Windkraft hingegen ist eine sichere und nachhaltige Energiequelle, die keine Gefahr für die Bevölkerung darstellt und gleichzeitig den Klimaschutz unterstützt.",
+        "short_text": "Windkraft ist sicherer und nachhaltiger.",
+        "references": [
+          {
+            "text": "Helmholtz-Zentrum",
+            "reference_string": "https://helmholtz-klima.de"
+          }
+        ]
+      },
+      {
+        "text": "In ländlichen Regionen ist die Sicherheit der Energieversorgung entscheidend. Windkraftanlagen bieten eine sichere und umweltfreundliche Alternative, die das Risiko schwerwiegender Unfälle vermeidet und gleichzeitig zur lokalen Energieautonomie beiträgt.",
+        "title": "Sichere Energieversorgung auf dem Land",
+        "long_text": "Für Menschen auf dem Land ist die Sicherheit der Energieversorgung besonders wichtig. Windkraftanlagen sind eine sichere Alternative, die keine Gefahr für die lokale Bevölkerung darstellt. Sie unterstützen die lokale Energieautonomie und tragen zum Schutz der Umwelt bei.",
+        "short_text": "Windkraftanlagen bieten Sicherheit für ländliche Regionen.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Deutschland verliert seine Wettbewerbsfähigkeit, wenn es auf Atomkraft verzichtet.",
+    "commentaries": [
+      {
+        "text": "Der Verzicht auf Atomkraft hat Deutschlands Innovationskraft im Bereich der Erneuerbaren Energien gestärkt. Deutschland ist heute ein führender Markt für Solar- und Windtechnologien, die weltweit immer mehr an Bedeutung gewinnen.",
+        "title": "Stärkung durch Erneuerbare Energien",
+        "long_text": "Deutschland hat seine Wettbewerbsfähigkeit durch den Ausbau der Erneuerbaren Energien nicht verloren, sondern gestärkt. Das Land ist heute ein Vorreiter im Bereich der Solar- und Windtechnologien, die global immer wichtiger werden und neue wirtschaftliche Chancen eröffnen.",
+        "short_text": "Erneuerbare stärken Deutschlands Wettbewerbsfähigkeit.",
+        "references": [
+          {
+            "text": "Fraunhofer ISE",
+            "reference_string": "https://www.ise.fraunhofer.de"
+          }
+        ]
+      },
+      {
+        "text": "Für ländliche Regionen in Deutschland bedeutet der Ausbau Erneuerbarer Energien neue wirtschaftliche Chancen. Lokale Unternehmen profitieren vom Bau und Betrieb von Wind- und Solaranlagen, was die regionale Wirtschaft stärkt.",
+        "title": "Wirtschaftliche Chancen für das Land",
+        "long_text": "In ländlichen Regionen eröffnet der Ausbau der Erneuerbaren Energien neue wirtschaftliche Perspektiven. Der Bau und Betrieb von Wind- und Solaranlagen schafft lokale Arbeitsplätze und stärkt die regionale Wirtschaft, was langfristig auch die Wettbewerbsfähigkeit Deutschlands fördert.",
+        "short_text": "Erneuerbare Energien schaffen Chancen in ländlichen Regionen.",
+        "references": []
+      }
+    ]
+  }
+]

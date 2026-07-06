@@ -1,0 +1,24 @@
+<div class="search-container" [class.compact-mode]="compactMode">
+    <form (ngSubmit)="onSearch()" class="search-form" [class.search-form-compact]="compactMode">
+        <mat-form-field appearance="outline" class="search-field">
+            <mat-label>
+                <span class="label">
+                    Aussage, Post, Text oder Schlagwort
+                </span>
+            </mat-label>
+            <input matInput [(ngModel)]="searchQuery" name="searchQuery" required>
+            <!-- Search button as suffix icon on mobile in compact mode -->
+            <button mat-icon-button matSuffix type="submit" class="mobile-search-button"
+                    *ngIf="compactMode"
+                    [disabled]="!searchQuery || !searchQuery.trim()">
+                <mat-icon>search</mat-icon>
+            </button>
+        </mat-form-field>
+        <!-- Search button: below input on main page, inline on results page desktop -->
+        <div class="search-button-container" [class.desktop-inline]="compactMode" [class.desktop-only]="compactMode">
+            <button mat-raised-button class="contentgruen-primary-dark search-button" type="submit">
+                <mat-icon>search</mat-icon> Suchen
+            </button>
+        </div>
+    </form>
+</div>

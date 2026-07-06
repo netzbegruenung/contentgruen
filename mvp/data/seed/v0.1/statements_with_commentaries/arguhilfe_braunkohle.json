@@ -1,0 +1,147 @@
+[
+  {
+    "statement": "Der Kohleausstieg führt zu Versorgungslücken und macht Deutschland energieabhängiger von anderen Ländern.",
+    "commentaries": [
+      {
+        "text": "Der vorgezogene Kohleausstieg geht Hand in Hand mit einem massiven Ausbau erneuerbarer Energien. So wird die Energieversorgung langfristig gesichert und Deutschland unabhängiger von fossilen Energien.",
+        "title": "Ausbau erneuerbarer Energien für Versorgungssicherheit",
+        "long_text": "Mit dem Kohleausstieg und dem gleichzeitigen Ausbau erneuerbarer Energien stellt Deutschland seine Energieversorgung auf eine stabile und unabhängige Basis. Dies reduziert langfristig die Abhängigkeit von fossilen Energien.",
+        "short_text": "Erneuerbare Energien sichern die Versorgung.",
+        "references": [
+          {
+            "text": "Informationen zum Ausbau erneuerbarer Energien",
+            "reference_string": "https://www.bmwi.de"
+          }
+        ]
+      },
+      {
+        "text": "Zahlen zeigen, dass die Abhängigkeit von Kohle in den nächsten Jahren durch verstärkten Ausbau von Wind- und Solarenergie deutlich sinken wird.",
+        "title": "Zahlen belegen sinkende Abhängigkeit von Kohle",
+        "long_text": "Die Kapazitäten für erneuerbare Energien werden stark erweitert, wodurch die Abhängigkeit von Kohle signifikant reduziert wird. Langfristig stärkt dies die Energiesicherheit Deutschlands.",
+        "short_text": "Langfristige Unabhängigkeit durch Erneuerbare.",
+        "references": [
+          {
+            "text": "Statistik zur Energiewende",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Der Kohleausstieg kostet Arbeitsplätze in den betroffenen Regionen und verschärft soziale Probleme.",
+    "commentaries": [
+      {
+        "text": "Es gibt spezielle Förderprogramme, die den Strukturwandel in den Kohleregionen unterstützen und neue Arbeitsplätze schaffen. Der Fokus liegt auf grünen und zukunftsfähigen Industrien.",
+        "title": "Förderprogramme für Strukturwandel und Arbeitsplätze",
+        "long_text": "Bund und Länder unterstützen den Strukturwandel in Kohleregionen aktiv. Mit gezielten Förderungen entstehen neue Arbeitsplätze in grünen Branchen, die den sozialen Zusammenhalt fördern.",
+        "short_text": "Förderungen schaffen neue Jobs.",
+        "references": [
+          {
+            "text": "Bericht zu Förderprogrammen in Kohleregionen",
+            "reference_string": "/mnt/data/luetzerath_Braunkohle_Argumentationshilfe.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Daten zeigen, dass Investitionen in erneuerbare Energien und grüne Technologien mehr Arbeitsplätze schaffen können als die Kohleindustrie langfristig bieten könnte.",
+        "title": "Mehr Arbeitsplätze durch grüne Technologien",
+        "long_text": "Studien belegen, dass der Ausbau erneuerbarer Energien und die Förderung umweltfreundlicher Technologien langfristig mehr Arbeitsplätze schaffen als die Kohleindustrie.",
+        "short_text": "Erneuerbare Energien schaffen Jobs.",
+        "references": [
+          {
+            "text": "Studien zu Jobpotenzialen in der Energiewende",
+            "reference_string": "https://www.bmwi.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Durch den vorgezogenen Kohleausstieg wird kurzfristig mehr Kohle verbrannt, was den CO2-Ausstoß erhöht.",
+    "commentaries": [
+      {
+        "text": "Der Ausstoß ist temporär höher, jedoch werden diese Emissionen durch den Erwerb und die Entwertung von CO2-Zertifikaten ausgeglichen. Insgesamt führt der Kohleausstieg bis 2030 zu einer erheblichen Reduzierung der Emissionen.",
+        "title": "Emissionen werden durch CO2-Zertifikate ausgeglichen",
+        "long_text": "Der kurzfristige Mehrverbrauch wird durch den CO2-Zertifikate-Handel kompensiert. Langfristig bleibt somit der Emissionspfad für das Erreichen der Klimaziele stabil.",
+        "short_text": "CO2-Ausgleich durch Zertifikate.",
+        "references": [
+          {
+            "text": "Kompensation von CO2-Emissionen",
+            "reference_string": "/mnt/data/luetzerath_Braunkohle_Argumentationshilfe.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Langfristig bleiben rund 280 Millionen Tonnen Kohle im Boden, was die Emissionen erheblich reduziert und den Klimazielen gerecht wird.",
+        "title": "Langfristige Emissionsreduktion durch Kohleeinsparung",
+        "long_text": "Durch den vorgezogenen Kohleausstieg bleiben große Mengen Kohle ungenutzt, was langfristig den CO2-Ausstoß erheblich reduziert und das Klima schützt.",
+        "short_text": "280 Mio. Tonnen Kohle bleiben im Boden.",
+        "references": [
+          {
+            "text": "Klimaschutz durch Kohleeinsparung",
+            "reference_string": "/mnt/data/luetzerath_Braunkohle_Argumentationshilfe.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Energieversorgung ist ohne Kohle nicht stabil und kann zu Blackouts führen.",
+    "commentaries": [
+      {
+        "text": "Mit dem Kohleausstieg wird der Ausbau von Speichern und Erneuerbaren beschleunigt, wodurch eine stabile Energieversorgung sichergestellt wird.",
+        "title": "Speicherausbau und Erneuerbare stabilisieren Netz",
+        "long_text": "Durch den verstärkten Ausbau von Energiespeichern und erneuerbaren Energiequellen wird die Energieversorgung stabil und verlässlich gestaltet, auch ohne Kohle.",
+        "short_text": "Stabilität durch Speicherausbau.",
+        "references": [
+          {
+            "text": "Speicherlösungen für stabile Energieversorgung",
+            "reference_string": "https://www.bdew.de"
+          }
+        ]
+      },
+      {
+        "text": "Statistiken zeigen, dass erneuerbare Energien mit ausreichend Speicherkapazitäten zuverlässig und stabil Strom liefern können. Dies minimiert das Risiko von Blackouts.",
+        "title": "Erneuerbare und Speicher sichern Versorgung",
+        "long_text": "Erneuerbare Energien in Kombination mit Speichern bieten eine zuverlässige Energiequelle, die auch ohne Kohle eine stabile Stromversorgung gewährleistet.",
+        "short_text": "Erneuerbare Energien sind zuverlässig.",
+        "references": [
+          {
+            "text": "Versorgungsstabilität durch erneuerbare Energien",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Kohle ist eine kostengünstige Energiequelle; ein Kohleausstieg wird die Strompreise in die Höhe treiben.",
+    "commentaries": [
+      {
+        "text": "Die Preise für fossile Energien wie Kohle schwanken stark und steigen langfristig. Erneuerbare Energien bieten stabile und oft günstigere Preise.",
+        "title": "Erneuerbare Energien stabilisieren die Preise",
+        "long_text": "Im Gegensatz zu Kohle, deren Preise starken Schwankungen unterworfen sind, bieten erneuerbare Energien eine stabilere Preisentwicklung. Dies entlastet langfristig die Verbraucher.",
+        "short_text": "Stabilität durch Erneuerbare.",
+        "references": [
+          {
+            "text": "Preisentwicklung bei erneuerbaren Energien",
+            "reference_string": "https://www.destatis.de"
+          }
+        ]
+      },
+      {
+        "text": "Studien belegen, dass erneuerbare Energien zunehmend günstiger werden, während die Preise für fossile Energien weiter steigen. Das macht sie langfristig kostengünstiger für Verbraucher.",
+        "title": "Erneuerbare Energien sind langfristig günstiger",
+        "long_text": "Der Kostenrückgang bei erneuerbaren Energien macht sie zunehmend erschwinglich. Langfristig ist der Kohleausstieg wirtschaftlich vorteilhafter für die Verbraucher.",
+        "short_text": "Erneuerbare sind langfristig kostengünstiger.",
+        "references": [
+          {
+            "text": "Langfristige Kostenanalyse zu Energieträgern",
+            "reference_string": "https://www.bmwi.de"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,147 @@
+[
+  {
+    "statement": "Gendern ist doof.",
+    "commentaries": [
+      {
+        "text": "Niemand muss gendern, aber es ermöglicht einen respektvollen Umgang mit allen Menschen und zeigt Wertschätzung für jede*n.",
+        "title": "Gendern als Zeichen des Respekts",
+        "long_text": "Das Gendern ist ein Werkzeug, um alle Menschen gleichermaßen anzusprechen und wertzuschätzen. Es mag ungewohnt wirken, hat jedoch einen großen Einfluss darauf, wie respektvoll wir miteinander umgehen.",
+        "short_text": "Gendern als Respektzeichen.",
+        "references": [
+          {
+            "text": "Argumentationshilfe zu Gendern",
+            "reference_string": "/mnt/data/Feminismus_2Bund_2BVielfalt_230818_Argumentationshilfe_2B_25281_2529.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Studien zeigen, dass inklusive Sprache das Zugehörigkeitsgefühl und das Selbstwertgefühl besonders bei marginalisierten Gruppen stärkt.",
+        "title": "Positive Effekte inklusiver Sprache",
+        "long_text": "Inklusive Sprache unterstützt das Zugehörigkeitsgefühl und fördert ein positives Selbstbild, was sich langfristig auf die Gesellschaft auswirkt.",
+        "short_text": "Inklusive Sprache stärkt Zugehörigkeit.",
+        "references": [
+          {
+            "text": "Studie zu Effekten inklusiver Sprache",
+            "reference_string": "https://www.genderforschung.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Gleichberechtigung ist doch erreicht.",
+    "commentaries": [
+      {
+        "text": "Im Vergleich zu früher hat sich viel verändert, aber Frauen verdienen immer noch weniger, übernehmen mehr Care-Arbeit und sind in Führungspositionen unterrepräsentiert.",
+        "title": "Lohnungleichheit und Unterrepräsentation",
+        "long_text": "Trotz vieler Fortschritte verdienen Frauen im Schnitt weniger als Männer und sind in Chefpositionen kaum vertreten. Die Gleichstellung ist daher noch nicht vollständig erreicht.",
+        "short_text": "Gleichberechtigung bleibt ein Ziel.",
+        "references": [
+          {
+            "text": "Berichte zur Lohnungleichheit",
+            "reference_string": "https://www.destatis.de"
+          }
+        ]
+      },
+      {
+        "text": "Statistiken belegen, dass Frauen durchschnittlich etwa 18 % weniger verdienen als Männer, was zeigt, dass Gleichstellung weiterhin ein Ziel bleiben muss.",
+        "title": "Statistische Daten zur Lohnlücke",
+        "long_text": "Laut Daten des Statistischen Bundesamtes verdienen Frauen im Durchschnitt 18 % weniger als Männer, was auf strukturelle Ungleichheiten hinweist.",
+        "short_text": "Frauen verdienen 18 % weniger.",
+        "references": [
+          {
+            "text": "Statistiken zur Lohnlücke",
+            "reference_string": "https://www.destatis.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Mittlerweile werden doch die Männer benachteiligt.",
+    "commentaries": [
+      {
+        "text": "Die Gleichstellung bringt Vorteile für alle. Männer profitieren auch, weil sie zum Beispiel mehr Zeit mit ihren Kindern verbringen können, was die Partnerschaft stärkt.",
+        "title": "Vorteile der Gleichstellung für alle",
+        "long_text": "Gleichstellung führt nicht zur Benachteiligung von Männern. Vielmehr profitieren Männer von der Möglichkeit, sich stärker in die Familie einzubringen und die Verantwortung zu teilen.",
+        "short_text": "Gleichstellung stärkt Familien.",
+        "references": [
+          {
+            "text": "Vorteile der Gleichstellung",
+            "reference_string": "/mnt/data/Feminismus_2Bund_2BVielfalt_230818_Argumentationshilfe_2B_25281_2529.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Untersuchungen zeigen, dass Männer von einer gleichberechtigten Partnerschaft profitieren, da sie weniger alleinige Last tragen und eine ausgewogenere Work-Life-Balance erreichen.",
+        "title": "Gleichberechtigung stärkt Männer",
+        "long_text": "Studien zeigen, dass Männer durch Gleichberechtigung eine gesündere Balance zwischen Beruf und Privatleben erreichen können und nicht mehr allein die finanzielle Last tragen.",
+        "short_text": "Gleichberechtigung verbessert Lebensqualität.",
+        "references": [
+          {
+            "text": "Studien zur Work-Life-Balance",
+            "reference_string": "https://www.bpb.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Qualität muss zählen und nicht das Geschlecht.",
+    "commentaries": [
+      {
+        "text": "Bisher ist es oft so, dass Männer bevorzugt werden, auch wenn Frauen genauso qualifiziert sind. Die Quote sorgt dafür, dass wirklich die Qualifikation zählt.",
+        "title": "Quote als Unterstützung für Gleichheit",
+        "long_text": "Die Quote gleicht die Chancen aus und verhindert, dass Frauen aufgrund ihres Geschlechts übergangen werden. So kommen endlich die Qualifikationen ins Spiel und nicht Vorurteile.",
+        "short_text": "Quote fördert faire Chancen.",
+        "references": [
+          {
+            "text": "Argumentationshilfe zur Frauenquote",
+            "reference_string": "/mnt/data/Feminismus_2Bund_2BVielfalt_230818_Argumentationshilfe_2B_25281_2529.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Daten belegen, dass Frauen häufig bei gleicher Qualifikation benachteiligt werden. Die Quote schafft einen Ausgleich, sodass Talente unabhängig vom Geschlecht gefördert werden.",
+        "title": "Quote fördert Chancengleichheit",
+        "long_text": "Untersuchungen zeigen, dass Frauen trotz gleicher Qualifikation oft benachteiligt werden. Die Quote fördert deshalb eine gerechtere Auswahl.",
+        "short_text": "Quote unterstützt faire Auswahl.",
+        "references": [
+          {
+            "text": "Studie zur Wirkung der Frauenquote",
+            "reference_string": "https://www.frauenquote.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Frauenquote ist Diskriminierung von Männern.",
+    "commentaries": [
+      {
+        "text": "Die Frauenquote nimmt Männern keine Chancen weg. Männer können sich weiterhin auf alle Stellen bewerben und ihre Qualifikationen beweisen.",
+        "title": "Chancengleichheit durch Frauenquote",
+        "long_text": "Die Frauenquote sorgt lediglich dafür, dass qualifizierte Frauen eine faire Chance bekommen. Männer werden dadurch nicht benachteiligt und haben nach wie vor die gleichen Möglichkeiten.",
+        "short_text": "Frauenquote schafft faire Chancen.",
+        "references": [
+          {
+            "text": "Erklärung zur Frauenquote",
+            "reference_string": "/mnt/data/Feminismus_2Bund_2BVielfalt_230818_Argumentationshilfe_2B_25281_2529.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Zahlen zeigen, dass die Frauenquote hilft, die Repräsentation von Frauen zu erhöhen, ohne dass Männer benachteiligt werden. Es entsteht eine gerechtere Verteilung der Chancen.",
+        "title": "Frauenquote als Chance für mehr Gerechtigkeit",
+        "long_text": "Die Einführung der Frauenquote hat dazu beigetragen, Frauen in Führungspositionen zu fördern, ohne dass Männer benachteiligt werden. Es entsteht eine gerechtere Auswahl und Verteilung.",
+        "short_text": "Frauenquote fördert gerechte Chancen.",
+        "references": [
+          {
+            "text": "Berichte zur Wirkung der Frauenquote",
+            "reference_string": "https://www.destatis.de"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,785 @@
+// Shared styles for contribution forms (add-commentary and add-generictext components)
+// This module contains common styles to reduce duplication
+
+@use 'breakpoints' as bp;
+
+// Base container
+@mixin contribution-container {
+  padding: 0;
+  width: 100%;
+  margin: 0;
+}
+
+// Content Type Indicator - Mobile Only
+@mixin content-type-indicator {
+  .content-type-indicator {
+    display: none; // Hidden by default on desktop
+    margin-bottom: 24px;
+
+    @include bp.mobile-only {
+      display: block; // Show on mobile
+      margin-bottom: 16px;
+    }
+  }
+
+  .content-type-badge {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-radius: 12px;
+
+    @include bp.mobile-only {
+      padding: 16px;
+      gap: 12px;
+      border-radius: 8px;
+    }
+  }
+
+  .content-type-icon {
+    font-size: 48px;
+    line-height: 1;
+
+    @include bp.mobile-only {
+      font-size: 36px;
+    }
+  }
+
+  .content-type-text {
+    flex: 1;
+  }
+
+  .content-type-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+
+    @include bp.mobile-only {
+      font-size: 1.2rem;
+    }
+  }
+
+  .content-type-description {
+    margin: 4px 0 0 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+
+    @include bp.mobile-only {
+      font-size: 0.85rem;
+    }
+  }
+}
+
+// Context Section Styles
+@mixin context-section {
+  .context-section-wrapper {
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .context-section {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    border: 2px solid #e8f5e9;
+    position: relative;
+    margin-bottom: 24px;
+
+    @include bp.mobile-only {
+      padding: 16px;
+      border: none;
+      border-radius: 0;
+      margin: 0 0 16px 0;
+      background: #f8f9fa;
+    }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f5f5f5;
+
+    @include bp.mobile-only {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.35rem;
+      color: var(--text-primary);
+      font-weight: 600;
+
+      @include bp.mobile-only {
+        font-size: 1.1rem;
+      }
+    }
+  }
+
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%);
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+
+    @include bp.mobile-only {
+      width: 28px;
+      height: 28px;
+      font-size: 14px;
+    }
+  }
+}
+
+// Toggle Switch Area
+@mixin reply-toggle {
+  .reply-toggle {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    display: inline-block;
+
+    @include bp.mobile-only {
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-left: 12px;
+
+    @include bp.mobile-only {
+      font-size: 1rem;
+      margin-left: 8px;
+    }
+  }
+
+  .toggle-icon {
+    font-size: 22px;
+    vertical-align: middle;
+    color: var(--primary-color);
+  }
+}
+
+// Statement Input Area
+@mixin statement-input {
+  .statement-input-area {
+    animation: slideIn 0.3s ease-out;
+    padding: 0;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .input-instruction {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: linear-gradient(135deg, #E3F2FD 0%, #F3F9FF 100%);
+    border-left: 4px solid #2196F3;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.1);
+
+    @include bp.mobile-only {
+      padding: 12px;
+      gap: 8px;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
+  .info-icon {
+    color: #2196F3;
+    flex-shrink: 0;
+    font-size: 24px;
+  }
+
+  .instruction-text {
+    flex: 1;
+  }
+
+  .instruction-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+
+    @include bp.mobile-only {
+      font-size: 0.95rem;
+    }
+  }
+
+  .instruction-detail {
+    color: var(--text-secondary);
+    margin: 0 0 8px 0;
+    font-size: 0.95rem;
+
+    @include bp.mobile-only {
+      font-size: 0.85rem;
+    }
+  }
+
+  .instruction-example {
+    color: var(--text-secondary);
+    font-style: italic;
+    margin: 0;
+    font-size: 0.9rem;
+
+    @include bp.mobile-only {
+      font-size: 0.85rem;
+    }
+  }
+
+  .statement-field {
+    width: 100%;
+
+    @include bp.mobile-only {
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+}
+
+// Statement Preview
+@mixin statement-preview {
+  .statement-preview {
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CD 100%);
+    border-radius: 12px;
+    border: 2px solid #FFE082;
+    position: relative;
+
+    @include bp.mobile-only {
+      border: 1px solid #FFE082;
+      border-radius: 8px;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
+  .connection-indicator {
+    position: absolute;
+    bottom: -32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e8f5e9;
+    z-index: 5;
+
+    @include bp.mobile-only {
+      display: none; // Hide on mobile
+    }
+
+    mat-icon {
+      color: var(--primary-color);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .quote-icon {
+    color: #ff9800;
+  }
+
+  .statement-quote-box {
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+
+  .statement-quote {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .clear-btn {
+    font-size: 0.9rem;
+  }
+}
+
+// Reply Indicator
+@mixin reply-indicator {
+  .reply-indicator {
+    display: flex;
+    justify-content: center;
+    margin: -1px 0 0 0;
+    padding: 20px 0;
+    position: relative;
+    z-index: 10;
+    background: white;
+    border-left: 2px solid #e8f5e9;
+    border-right: 2px solid #e8f5e9;
+  }
+
+  .reply-arrow-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    border: 1px solid var(--primary-color);
+    animation: fadeInScale 0.4s ease-out;
+
+    @include bp.mobile-only {
+      padding: 6px 12px;
+    }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .reply-arrow {
+    color: var(--primary-color);
+    font-size: 28px;
+    animation: bounce 2s infinite;
+
+    @include bp.mobile-only {
+      font-size: 20px;
+    }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+  }
+
+  .reply-text {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    @include bp.mobile-only {
+      font-size: 0.85rem;
+    }
+  }
+}
+
+// Main Content Wrapper
+@mixin content-wrapper {
+  .content-wrapper {
+    display: grid;
+    grid-template-columns: 3fr 2fr; // More space for form, less for preview
+    gap: var(--spacing-lg);
+    align-items: start;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: white;
+    padding: 32px;
+    border: 2px solid #e8f5e9;
+    border-radius: 16px;
+
+    &.connected-sections {
+      margin-top: -24px;
+
+      @include bp.mobile-only {
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+
+    @include bp.mobile-only {
+      width: 100%;
+      max-width: 100%;
+      padding: 16px;
+      gap: 0;
+      display: block;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      gap: var(--spacing-md);
+    }
+  }
+
+  .form-column {
+    // No background, border, or shadow - just structural
+
+    @include bp.mobile-only {
+      width: 100%;
+      max-width: 100%;
+      padding: 0;
+      box-sizing: border-box;
+    }
+  }
+
+  .preview-column {
+    position: sticky;
+    top: 24px;
+
+    @media (max-width: 1024px) {
+      position: relative;
+      top: 0;
+      order: 1; // Preview after form on mobile/tablet
+      margin-top: var(--spacing-xl);
+      max-width: 450px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @include bp.mobile-only {
+      display: block;
+      position: relative;
+      top: 0;
+      order: 1;
+      margin-top: var(--spacing-xl);
+      max-width: 450px;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0;
+      box-sizing: border-box;
+    }
+  }
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+
+    h3 {
+      margin: 0;
+      color: #666;
+      font-size: 1.1rem;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    mat-icon {
+      color: #999;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      cursor: help;
+    }
+  }
+}
+
+// Form Fields
+@mixin form-fields {
+  .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    @include bp.mobile-only {
+      padding: 0;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+
+    @include bp.mobile-only {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .form-section {
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f5f5f5;
+
+    @include bp.mobile-only {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+  }
+
+  .input-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+  }
+
+  mat-form-field {
+    width: 100%;
+
+    @include bp.mobile-only {
+      width: 100%;
+      max-width: calc(100% - 2px);
+      box-sizing: border-box;
+    }
+  }
+}
+
+// Form Actions
+@mixin form-actions {
+  .form-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e0e0e0;
+
+    @include bp.mobile-only {
+      flex-direction: column;
+      position: sticky;
+      bottom: 0;
+      background-color: white;
+      padding: var(--spacing-md);
+      border-top: 2px solid var(--divider);
+      z-index: 50;
+
+      button {
+        width: 100%;
+        min-height: 48px;
+      }
+    }
+  }
+
+  .cancel-btn {
+    color: #666;
+
+    mat-icon {
+      margin-right: 4px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .submit-btn {
+    min-width: 200px;
+    background-color: #46A046 !important;
+    color: white !important;
+
+    &:hover:not([disabled]) {
+      background-color: #3a8c3a !important;
+    }
+
+    mat-icon {
+      margin-right: 4px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// State Containers
+@mixin state-containers {
+  .state-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    text-align: center;
+    min-height: 400px;
+
+    h3 {
+      margin: 0 0 var(--spacing-sm) 0;
+      font-size: 1.3rem;
+      color: var(--text-primary);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin: 0 0 var(--spacing-lg) 0;
+    }
+  }
+
+  .loading-state mat-spinner {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .success-state .success-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: var(--success);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .error-state .error-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: var(--error);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .error-message {
+    color: var(--error);
+    background: rgba(211, 47, 47, 0.1);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+
+    button[mat-raised-button] {
+      background-color: #46A046 !important;
+      color: white !important;
+
+      &:hover {
+        background-color: #3a8c3a !important;
+      }
+    }
+
+    @include bp.mobile-only {
+      flex-direction: column;
+      width: 100%;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// Material Design Overrides
+@mixin material-overrides {
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      margin-top: var(--spacing-xs);
+    }
+
+    .mat-mdc-text-field-wrapper {
+      background-color: var(--surface) !important;
+    }
+
+    .mat-mdc-form-field-focus-overlay {
+      background-color: transparent !important;
+    }
+
+    .mdc-text-field--outlined:not(.mdc-text-field--disabled) {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: var(--divider) !important;
+      }
+    }
+
+    .mdc-text-field--outlined:not(.mdc-text-field--disabled):hover .mdc-notched-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: var(--primary) !important;
+      }
+    }
+
+    .mat-mdc-progress-spinner circle {
+      stroke: var(--primary) !important;
+    }
+  }
+}
+
+// References Section
+@mixin references-section {
+  .references-section {
+    margin-top: var(--spacing-sm);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .reference-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .reference-item mat-form-field {
+    width: 100%;
+  }
+
+  .add-reference-btn {
+    margin-top: var(--spacing-sm);
+  }
+}
+
+// Export all mixins as a single include
+@mixin contribution-form-styles {
+  @include content-type-indicator;
+  @include context-section;
+  @include reply-toggle;
+  @include statement-input;
+  @include statement-preview;
+  @include reply-indicator;
+  @include content-wrapper;
+  @include form-fields;
+  @include form-actions;
+  @include state-containers;
+  @include material-overrides;
+  @include references-section;
+}

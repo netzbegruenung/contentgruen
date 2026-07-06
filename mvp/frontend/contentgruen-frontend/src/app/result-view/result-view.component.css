@@ -1,0 +1,526 @@
+.inline-content {
+  display: flex;
+  align-items: center;
+}
+
+.inline-content img {
+  margin-right: 10px;
+}
+
+
+.search-box {
+  padding-top:40px;
+  padding-bottom:20px;
+}
+
+/* Reduce margin for search box in result view to save space */
+.full-width-section.search-box {
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Mobile-specific: Reduce vertical spacing */
+@media (max-width: 599px) {
+  .search-box {
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-xs);
+  }
+
+  .full-width-section.search-box {
+    margin-bottom: 0;
+  }
+
+  /* Remove Material form field subscript space in compact mode */
+  .search-box ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+
+  /* Adjust form field bottom spacing */
+  .search-box ::ng-deep .mat-mdc-text-field-wrapper {
+    margin-bottom: 0;
+  }
+
+  .search-box ::ng-deep .mat-mdc-form-field {
+    margin-bottom: 0;
+  }
+}
+
+.search-box-content {
+  padding: 0 var(--page-margin);
+}
+
+/* Mobile sticky header */
+.mobile-fixed-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-index-sticky);
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Mobile navigation bar */
+.mobile-nav-bar {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  padding: var(--spacing-sm) 0;
+}
+
+.mobile-nav-bar .back-button {
+  margin-right: 8px;
+}
+
+.mobile-nav-bar .mobile-title {
+  flex: 1;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--primary-dark);
+}
+
+/* Mobile navigation buttons */
+.mobile-nav-buttons {
+  display: flex;
+  align-items: center;
+}
+
+/* Contribute button spacing */
+.contribute-button {
+  margin-right: 8px !important;
+}
+
+/* Back button in desktop header */
+.back-button-desktop {
+  margin-right: 12px !important;
+}
+
+/* Desktop header styles */
+.desktop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) 0;
+}
+
+.header-content {
+  flex: 1;
+}
+
+.desktop-nav-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Sidenav container styles */
+.sidenav-container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* Flexbox layout for mobile content */
+mat-sidenav-content {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden; /* Prevent unnecessary scrolling on the main container */
+}
+
+/* Mobile sidenav styles */
+.mobile-sidenav {
+  width: 280px;
+  max-width: 85vw;
+  background: white;
+}
+
+.mobile-menu-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+.close-menu-button {
+  color: var(--text-secondary);
+}
+
+.mobile-menu-user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-menu-user-info h3 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.mobile-menu-item {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.mobile-menu-divider {
+  margin: 24px 0;
+}
+
+.mobile-menu-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-menu-about {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mobile-menu-about p {
+  margin: 0;
+}
+
+.mobile-menu-about a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.mobile-menu-about a:hover {
+  text-decoration: underline;
+}
+
+.mobile-fixed-header .search-box {
+  padding-top: var(--spacing-sm);
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* Mobile results container */
+.mobile-results-container {
+  /* Container for mobile results - maintains layout flow */
+  display: block;
+  width: 100%;
+}
+
+/* Mobile section - minimal styling to let carousel handle layout */
+.mobile-section {
+  /* Section wrapper - maintains layout flow */
+  display: block;
+  width: 100%;
+}
+
+/* Hide content sections on mobile - only show minimal info */
+.mobile-section .content-section {
+  display: none;
+}
+
+/* Removed mobile-carousel-wrapper - no longer needed */
+
+/* Mobile Tab Bar Navigation */
+.mobile-results-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.mobile-tab-bar {
+  display: flex;
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin-top: var(--spacing-xs); /* Small gap between search and tabs */
+}
+
+.tab-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  position: relative;
+  min-height: 48px;
+}
+
+.tab-button:hover:not(:disabled) {
+  background: rgba(0, 137, 57, 0.04);
+}
+
+.tab-button.active {
+  color: var(--primary-dark);
+  font-weight: 500;
+  border-bottom-color: var(--primary-dark);
+  background: rgba(0, 137, 57, 0.08);
+}
+
+.tab-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tab-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-weight: inherit;
+}
+
+.tab-count {
+  font-size: 12px;
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* Active tab indicator animation */
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary-dark);
+  animation: slide-in 0.3s ease;
+}
+
+@keyframes slide-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Mobile empty state */
+.mobile-empty-state {
+  padding: var(--spacing-lg);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.mobile-empty-state h3 {
+  color: var(--primary-dark);
+  margin: 0;
+}
+
+.mobile-empty-state .search-query-info {
+  color: rgba(0, 0, 0, 0.6);
+  font-style: italic;
+  margin: 0;
+}
+
+.mobile-empty-state .empty-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: var(--primary-light);
+  opacity: 0.5;
+}
+
+.mobile-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+  max-width: 300px;
+}
+
+.mobile-action-buttons button {
+  width: 100%;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .search-box {
+    padding-top: var(--spacing-sm);
+    padding-bottom: var(--spacing-xs);
+  }
+
+  .guidance h1 {
+    font-size: 36px;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .inline-content {
+    gap: var(--spacing-xs);
+  }
+}
+
+/* Unified Empty State Styles */
+.unified-empty-state {
+  text-align: center;
+  padding: 1rem 2rem 2rem 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.unified-empty-state .empty-icon {
+  font-size: 64px;
+  height: 64px;
+  width: 64px;
+  color: var(--text-secondary);
+  margin: 0 auto 1.5rem;
+  opacity: 0.5;
+}
+
+.unified-empty-state h2 {
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.unified-empty-state .search-query-info {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-bottom: 1.25rem;
+  font-weight: 500;
+}
+
+.unified-empty-state .action-buttons-top {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.unified-empty-state .action-buttons-top button {
+  min-width: 200px;
+}
+
+.unified-empty-state .suggestions {
+  margin: 1.5rem auto;
+  text-align: center;
+  max-width: 450px;
+}
+
+.unified-empty-state .suggestions p {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.unified-empty-state .suggestions ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+  text-align: left;
+  display: inline-block;
+}
+
+.unified-empty-state .suggestions li {
+  padding: 0.5rem 0;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.unified-empty-state .suggestions li:before {
+  content: "•";
+  color: var(--primary);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.unified-empty-state .alternative-searches {
+  margin: 1.5rem 0;
+}
+
+.unified-empty-state .alternative-searches p {
+  margin-bottom: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.unified-empty-state .popular-topics {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.unified-empty-state .topic-chip {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.unified-empty-state .topic-chip:hover {
+  transform: translateY(-2px);
+}
+
+.action-section-unified {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--divider-color);
+}
+
+.action-section-unified .motivation {
+  color: var(--primary);
+  font-style: italic;
+  margin: 0 auto 2rem;
+  max-width: 500px;
+  line-height: 1.6;
+  font-size: 1.1rem;
+}
+
+.action-section-unified .action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-section-unified .action-buttons button {
+  min-width: 200px;
+}
+
+@media (max-width: 768px) {
+  .unified-empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .action-section-unified .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .action-section-unified .action-buttons button {
+    width: 100%;
+    max-width: 300px;
+  }
+}

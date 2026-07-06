@@ -1,0 +1,147 @@
+[
+  {
+    "statement": "Ohne Atomkraft wird die Energieversorgung im Winter instabil und unsicher.",
+    "commentaries": [
+      {
+        "text": "Die Bedarfsanalyse der Übertragungsnetzbetreiber bestätigt, dass Deutschland auch ohne Atomkraft eine stabile Energieversorgung gewährleisten kann. Die Stromnetze sind sicher, und es wird keine Lastunterdeckung geben.",
+        "title": "Sichere Energieversorgung ohne Atomkraft",
+        "long_text": "Eine Bedarfsanalyse zeigt, dass Deutschland auch ohne Atomkraftwerke eine stabile Energieversorgung bieten kann. Die Netze sind gesichert, und es wird keine Energieknappheit erwartet.",
+        "short_text": "Stabile Energieversorgung trotz Atomausstieg.",
+        "references": [
+          {
+            "text": "Grüne: Energieversorgung nach dem Atomausstieg",
+            "reference_string": "https://www.gruene.de/artikel/das-zeitalter-sicherer-und-erneuerbarer-energien-beginnt-jetzt"
+          }
+        ]
+      },
+      {
+        "text": "Deutschland bleibt auch nach dem Atomausstieg Stromexporteur. Der Anteil erneuerbarer Energien ist hoch genug, um den Energiebedarf zu decken, und Versorgungssicherheit ist für den Winter gewährleistet.",
+        "title": "Deutschland bleibt Stromexporteur",
+        "long_text": "Dank der hohen Erzeugung aus erneuerbaren Energien bleibt Deutschland auch nach dem Ausstieg aus der Atomkraft ein Stromexporteur. Die Energieversorgung ist gesichert.",
+        "short_text": "Stromexport trotz Atomausstieg.",
+        "references": [
+          {
+            "text": "Grüne: Energieversorgung nach dem Atomausstieg",
+            "reference_string": "https://www.gruene.de/artikel/das-zeitalter-sicherer-und-erneuerbarer-energien-beginnt-jetzt"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Atomkraft ist eine günstige und effiziente Energiequelle im Vergleich zu Erneuerbaren.",
+    "commentaries": [
+      {
+        "text": "Die Kosten für erneuerbare Energien sinken stetig und bieten langfristig günstigere Strompreise für Verbraucher. Atomkraft hingegen ist teuer in Bau und Wartung.",
+        "title": "Erneuerbare Energien bieten langfristig günstigeren Strom",
+        "long_text": "Erneuerbare Energien sind kostengünstiger als Atomkraft, die hohe Bau- und Wartungskosten verursacht. Die Strompreise werden durch erneuerbare Energien stabiler und erschwinglicher.",
+        "short_text": "Erneuerbare Energien senken Stromkosten langfristig.",
+        "references": [
+          {
+            "text": "Grüne: Das Ende der Atomkraft und der Ausbau erneuerbarer Energien",
+            "reference_string": "https://www.gruene.de/artikel/das-zeitalter-sicherer-und-erneuerbarer-energien-beginnt-jetzt"
+          }
+        ]
+      },
+      {
+        "text": "Investitionen in Atomkraft sind langfristig unwirtschaftlich. Erneuerbare Energien wie Wind und Solar bieten kostengünstige Lösungen, da sie keine teuren Brennstoffe benötigen.",
+        "title": "Wirtschaftlichkeit erneuerbarer Energien",
+        "long_text": "Die hohen Fixkosten und langen Bauzeiten der Atomkraft machen sie im Vergleich zu Erneuerbaren unwirtschaftlich. Wind- und Solarenergie bieten nachhaltige und kostengünstige Alternativen.",
+        "short_text": "Erneuerbare Energien sind langfristig wirtschaftlicher.",
+        "references": [
+          {
+            "text": "Studien zur Kosteneffizienz erneuerbarer Energien",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Ohne Atomkraft droht Deutschland, abhängig von ausländischer Energie zu werden.",
+    "commentaries": [
+      {
+        "text": "Mit dem Ausbau erneuerbarer Energien macht sich Deutschland unabhängig von Energieimporten und fossilen Brennstoffen. Wind und Sonne bieten eine lokale und stabile Energiequelle.",
+        "title": "Erneuerbare Energien fördern Unabhängigkeit",
+        "long_text": "Der Ausbau erneuerbarer Energien ermöglicht Deutschland, seine Energie lokal zu erzeugen und somit unabhängiger von Importen fossiler Brennstoffe zu werden. Dies stärkt die Versorgungssicherheit.",
+        "short_text": "Erneuerbare stärken Energieunabhängigkeit.",
+        "references": [
+          {
+            "text": "Grüne: Erneuerbare Energien für mehr Unabhängigkeit",
+            "reference_string": "https://www.gruene.de/artikel/das-zeitalter-sicherer-und-erneuerbarer-energien-beginnt-jetzt"
+          }
+        ]
+      },
+      {
+        "text": "Deutschland steigert die Eigenproduktion durch erneuerbare Energien, die bereits die Hälfte des Strombedarfs decken. Bis 2030 sollen 80 Prozent der Energie erneuerbar sein.",
+        "title": "Energieziele für 2030",
+        "long_text": "Erneuerbare Energien decken schon jetzt einen Großteil des Strombedarfs. Das Ziel, bis 2030 80 Prozent erneuerbare Energien zu erreichen, reduziert die Importabhängigkeit weiter.",
+        "short_text": "Energieproduktion zu 80 Prozent erneuerbar bis 2030.",
+        "references": [
+          {
+            "text": "Ziele der Bundesregierung zur Energiewende",
+            "reference_string": "https://www.bundesregierung.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Atomkraft ist klimafreundlich und reduziert CO₂-Emissionen.",
+    "commentaries": [
+      {
+        "text": "Atomkraftwerke erzeugen CO₂-arme Energie, aber erneuerbare Energien sind ebenfalls emissionsfrei und verursachen keine radioaktiven Abfälle, die über Jahrtausende gefährlich bleiben.",
+        "title": "Erneuerbare sind ebenfalls CO₂-frei und sicher",
+        "long_text": "Während Atomkraft CO₂-arm ist, produzieren erneuerbare Energien wie Wind und Sonne keine schädlichen Abfälle. Die Sicherheit und Umweltauswirkungen machen sie zu einer besseren klimafreundlichen Wahl.",
+        "short_text": "Erneuerbare Energien sind sicher und emissionsfrei.",
+        "references": [
+          {
+            "text": "Grüne: Klimafreundliche Energie ohne Atomkraft",
+            "reference_string": "https://www.gruene.de/artikel/das-zeitalter-sicherer-und-erneuerbarer-energien-beginnt-jetzt"
+          }
+        ]
+      },
+      {
+        "text": "Atomkraft verursacht zwar geringe CO₂-Emissionen, jedoch entstehen hohe Umweltkosten durch den Abbau und die Lagerung radioaktiver Materialien. Erneuerbare Energien sind umweltfreundlicher.",
+        "title": "Umweltkosten der Atomkraft",
+        "long_text": "Der Abbau und die Entsorgung radioaktiver Abfälle verursachen langfristige Umweltbelastungen, die Atomkraft weniger umweltfreundlich machen. Erneuerbare Energien bieten eine emissionsfreie Alternative ohne solche Probleme.",
+        "short_text": "Erneuerbare Energien verursachen keine gefährlichen Abfälle.",
+        "references": [
+          {
+            "text": "Studien zur Umweltbelastung durch Atomkraft",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Der Atomausstieg wird zu höheren Strompreisen für Verbraucher führen.",
+    "commentaries": [
+      {
+        "text": "Erneuerbare Energien bieten langfristig stabile und günstige Preise, da sie unabhängig von fossilen Brennstoffen sind, die in Zukunft teurer werden. Der Atomausstieg hilft, diese Stabilität zu sichern.",
+        "title": "Langfristig stabile Strompreise durch Erneuerbare",
+        "long_text": "Da erneuerbare Energien keine teuren Brennstoffe benötigen, bieten sie langfristig stabilere und günstigere Strompreise für die Verbraucher als fossile Energien, die ständig teurer werden.",
+        "short_text": "Erneuerbare Energien stabilisieren Strompreise langfristig.",
+        "references": [
+          {
+            "text": "Grüne: Erneuerbare Energien und Strompreise",
+            "reference_string": "https://www.gruene.de/artikel/das-zeitalter-sicherer-und-erneuerbarer-energien-beginnt-jetzt"
+          }
+        ]
+      },
+      {
+        "text": "Investitionen in Wind- und Solarkraft ermöglichen eine bezahlbare Energiezukunft, da erneuerbare Energien nicht von den globalen Preisschwankungen fossiler Brennstoffe betroffen sind.",
+        "title": "Unabhängigkeit von Preisschwankungen",
+        "long_text": "Erneuerbare Energien schaffen Preisstabilität, da sie unabhängig von den schwankenden Kosten fossiler Brennstoffe sind. Der Atomausstieg stärkt die Energieunabhängigkeit und langfristige Preisstabilität.",
+        "short_text": "Erneuerbare Energien bieten preisliche Unabhängigkeit.",
+        "references": [
+          {
+            "text": "Studien zur Preisstabilität durch erneuerbare Energien",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  }
+]

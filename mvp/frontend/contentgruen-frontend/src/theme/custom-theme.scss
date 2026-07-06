@@ -1,0 +1,299 @@
+@use '@angular/material' as mat;
+@use 'sass:map';
+
+// Include Material core styles
+@include mat.core();
+
+// Custom color palettes based on your brand colors
+$contentgruen-green-palette: (
+  50: #e8f5e9,
+  100: #c8e6c9,
+  200: #a5d6a7,
+  300: #81c784,
+  400: #66bb6a,
+  500: #008939, // Main ContentGrün green
+  600: #007830,
+  700: #006627,
+  800: #005437, // Dark green from brand
+  900: #004225,
+  A100: #8abd24, // Light green accent
+  A200: #7fb520,
+  A400: #76ad1c,
+  A700: #6ca518,
+  contrast: (
+    50: rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: rgba(black, 0.87),
+    400: rgba(black, 0.87),
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(black, 0.87),
+    A200: rgba(black, 0.87),
+    A400: rgba(black, 0.87),
+    A700: white,
+  )
+);
+
+// Light green palette for accent
+$contentgruen-light-green-palette: (
+  50: #f5f9e9,
+  100: #e6f0c7,
+  200: #d5e6a2,
+  300: #c4dc7c,
+  400: #b7d560,
+  500: #8abd24, // Main light green
+  600: #7fb520,
+  700: #71a41c,
+  800: #639318,
+  900: #4a7a10,
+  A100: #e6f0c7,
+  A200: #c4dc7c,
+  A400: #8abd24,
+  A700: #639318,
+  contrast: (
+    50: rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: rgba(black, 0.87),
+    400: rgba(black, 0.87),
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(black, 0.87),
+    A200: rgba(black, 0.87),
+    A400: white,
+    A700: white,
+  )
+);
+
+// Define Material palettes using M3 syntax
+$contentgruen-primary: mat.m2-define-palette($contentgruen-green-palette, 500, 300, 800);
+$contentgruen-accent: mat.m2-define-palette($contentgruen-light-green-palette, 500, 300, 700);
+$contentgruen-warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+// Custom typography configuration with your fonts
+$contentgruen-typography: mat.m2-define-typography-config(
+  $font-family: 'PTSans, Roboto, sans-serif',
+  $headline-1: mat.m2-define-typography-level(80px, 88px, 400, 'GrueneType, Roboto, sans-serif', -0.01562em),
+  $headline-2: mat.m2-define-typography-level(60px, 66px, 400, 'GrueneType, Roboto, sans-serif', -0.00833em),
+  $headline-3: mat.m2-define-typography-level(48px, 56px, 400, 'GrueneType, Roboto, sans-serif', normal),
+  $headline-4: mat.m2-define-typography-level(40px, 44px, 400, 'GrueneType, Roboto, sans-serif', 0.00735em),
+  $headline-5: mat.m2-define-typography-level(30px, 33px, 400, 'GrueneType, Roboto, sans-serif', normal),
+  $headline-6: mat.m2-define-typography-level(25px, 32.5px, 700, 'PTSans-bold, Roboto, sans-serif', 0.0125em),
+  $subtitle-1: mat.m2-define-typography-level(20px, 26px, 700, 'PTSans-bold, Roboto, sans-serif', 0.00937em),
+  $subtitle-2: mat.m2-define-typography-level(18px, 23.4px, 700, 'PTSans-bold, Roboto, sans-serif', 0.00714em),
+  $body-1: mat.m2-define-typography-level(16px, 24px, 400, 'PTSans, Roboto, sans-serif', 0.03125em),
+  $body-2: mat.m2-define-typography-level(14px, 20px, 400, 'PTSans, Roboto, sans-serif', 0.01786em),
+  $caption: mat.m2-define-typography-level(12px, 20px, 400, 'PTSans, Roboto, sans-serif', 0.03333em),
+  $button: mat.m2-define-typography-level(14px, 14px, 500, 'PTSans-bold, Roboto, sans-serif', 0.08929em),
+  $overline: mat.m2-define-typography-level(10px, 16px, 400, 'PTSans, Roboto, sans-serif', 0.15em),
+);
+
+// Create light theme
+$contentgruen-light-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $contentgruen-primary,
+    accent: $contentgruen-accent,
+    warn: $contentgruen-warn,
+  ),
+  typography: $contentgruen-typography,
+  density: 0,
+));
+
+// Apply the theme
+@include mat.all-component-themes($contentgruen-light-theme);
+@include mat.typography-hierarchy($contentgruen-typography);
+
+// CSS Custom Properties for consistent theming
+:root {
+  // Primary colors from Material palette
+  --primary-main: #008939;
+  --primary-light: #8abd24;
+  --primary-dark: #005437;
+
+  // Accent colors
+  --accent-main: #8abd24;
+  --accent-light: #c4dc7c;
+  --accent-dark: #639318;
+
+  // Background colors
+  --bg-main: rgb(245, 241, 233);
+  --bg-card: white;
+  --bg-surface: white;
+
+  // Text colors following Material Design
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.60);
+  --text-disabled: rgba(0, 0, 0, 0.38);
+  --text-hint: rgba(0, 0, 0, 0.38);
+
+  // Spacing system (8px grid)
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  // Standard Material Design elevations
+  --elevation-0: none;
+  --elevation-1: 0 2px 1px -1px rgba(0,0,0,0.2), 0 1px 1px 0 rgba(0,0,0,0.14), 0 1px 3px 0 rgba(0,0,0,0.12);
+  --elevation-2: 0 3px 1px -2px rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 1px 5px 0 rgba(0,0,0,0.12);
+  --elevation-3: 0 3px 3px -2px rgba(0,0,0,0.2), 0 3px 4px 0 rgba(0,0,0,0.14), 0 1px 8px 0 rgba(0,0,0,0.12);
+  --elevation-4: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
+  --elevation-6: 0 3px 5px -1px rgba(0,0,0,0.2), 0 6px 10px 0 rgba(0,0,0,0.14), 0 1px 18px 0 rgba(0,0,0,0.12);
+  --elevation-8: 0 5px 5px -3px rgba(0,0,0,0.2), 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12);
+  --elevation-12: 0 7px 8px -4px rgba(0,0,0,0.2), 0 12px 17px 2px rgba(0,0,0,0.14), 0 5px 22px 4px rgba(0,0,0,0.12);
+  --elevation-16: 0 8px 10px -5px rgba(0,0,0,0.2), 0 16px 24px 2px rgba(0,0,0,0.14), 0 6px 30px 5px rgba(0,0,0,0.12);
+  --elevation-24: 0 11px 15px -7px rgba(0,0,0,0.2), 0 24px 38px 3px rgba(0,0,0,0.14), 0 9px 46px 8px rgba(0,0,0,0.12);
+
+  // Border radius
+  --border-radius-small: 4px;
+  --border-radius-medium: 8px;
+  --border-radius-large: 16px;
+
+  // Status colors
+  --error-bg: #ffebee;
+  --error-color: #c62828;
+  --error-border: #f44336;
+  --success-bg: #e8f5e9;
+  --success-color: var(--primary-dark);
+  --success-border: var(--primary-main);
+  --warning-bg: #fff3e0;
+  --warning-color: #e65100;
+  --warning-border: #ff9800;
+  --info-bg: #e3f2fd;
+  --info-color: #0d47a1;
+  --info-border: #2196f3;
+
+  // Content type colors
+  --commentary-bg: #e6f0d2; // Light green for commentary
+  --generictext-bg: #e3f2fd; // Light blue for generic text
+  --statement-bg: #f5f5f5; // Light gray for statements (if needed)
+
+  // Neutral colors
+  --divider-color: #e0e0e0;
+  --border-color: #ccc;
+  --hover-bg: #f5f5f5;
+  --selected-bg: #e6f0d2; // Keep for backward compatibility
+  --disabled-bg: #f5f5f5;
+  --disabled-color: rgba(0, 0, 0, 0.38);
+
+  // Surface colors
+  --surface-variant: #fafafa;
+  --surface-elevated: white;
+
+  // Transitions
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-standard: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Utility classes for common patterns
+.contentgruen-primary-bg {
+  background-color: var(--primary-main) !important;
+  color: white !important;
+}
+
+.contentgruen-primary-dark-bg {
+  background-color: var(--primary-dark) !important;
+  color: white !important;
+}
+
+.contentgruen-accent-bg {
+  background-color: var(--accent-main) !important;
+  color: white !important;
+}
+
+.contentgruen-surface-bg {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+// Material button customizations
+.mat-mdc-raised-button {
+  &.contentgruen-primary {
+    background-color: var(--primary-main) !important;
+    color: white !important;
+  }
+
+  &.contentgruen-primary-dark {
+    background-color: var(--primary-dark) !important;
+    color: white !important;
+  }
+
+  &.contentgruen-accent {
+    background-color: var(--accent-main) !important;
+    color: white !important;
+  }
+
+  &.contentgruen-surface {
+    background-color: var(--bg-card) !important;
+    color: var(--primary-dark) !important;
+  }
+}
+
+// Consistent button border radius
+.mat-mdc-raised-button,
+.mat-mdc-flat-button,
+.mat-mdc-stroked-button,
+.mat-mdc-button {
+  border-radius: var(--border-radius-medium) !important; // 8px for all standard buttons
+}
+
+// Consistent chip border radius (topic buttons)
+.mat-mdc-chip,
+.mat-mdc-chip-option,
+.mat-mdc-chip-listbox,
+.mdc-evolution-chip,
+.mdc-evolution-chip__action--primary,
+.mdc-evolution-chip__graphic,
+.mdc-evolution-chip__cell--primary {
+  border-radius: var(--border-radius-medium) !important; // 8px to match buttons
+}
+
+// Keep icon buttons and FABs circular with consistent elevation
+.mat-mdc-icon-button {
+  border-radius: 50% !important;
+  box-shadow: var(--elevation-2);
+  transition: box-shadow var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    box-shadow: var(--elevation-4);
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: var(--elevation-1);
+  }
+}
+
+.mat-mdc-fab,
+.mat-mdc-mini-fab {
+  border-radius: 50% !important;
+  box-shadow: var(--elevation-6);
+  transition: box-shadow var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    box-shadow: var(--elevation-8);
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: var(--elevation-4);
+  }
+}
+
+// Typography utility classes are now defined through Material's typography system above
+// No need for duplicate definitions here
+
+// Elevation utility classes
+@for $i from 0 through 24 {
+  .mat-elevation-z#{$i} {
+    @include mat.elevation($i);
+  }
+}

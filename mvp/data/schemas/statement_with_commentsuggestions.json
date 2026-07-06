@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "title": "Statements with Comment Suggestions Schema",
+  "description": "Schema for statements with comment suggestions",
+  "items": {
+    "type": "object",
+    "required": ["statement", "commentsuggestions"],
+    "properties": {
+      "statement": {
+        "type": "string",
+        "description": "A statement that expresses a claim or opinion",
+        "minLength": 10
+      },
+      "commentsuggestions": {
+        "type": "array",
+        "description": "Suggested comments/responses to counter the statement",
+        "items": {
+          "type": "string",
+          "minLength": 5
+        }
+      }
+    }
+  }
+}

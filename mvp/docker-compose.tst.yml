@@ -1,0 +1,102 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    container_name: contentgruen-qdrant
+    restart: always
+    ports:
+      - "127.0.0.1:6333:6333"  # Localhost-only for admin access and backup operations
+    volumes:
+      - qdrant_storage:/qdrant/storage
+      - /opt/contentgruen-backups:/backups  # Backup directory on host
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__LOG_LEVEL=INFO
+    networks:
+      - contentgruen
+
+  postgres-app:
+    image: git.verdigado.com/netzbegruenung-images/contentgruen-postgres-app:latest
+    container_name: contentgruen-app-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: contentgruen_app
+    ports:
+      - "127.0.0.1:5432:5432"  # Localhost-only for admin access and backup operations
+    volumes:
+      - pgdata_app:/var/lib/postgresql/data
+      # No init.sql mount needed - embedded in image!
+      - /opt/contentgruen-backups:/backups  # Backup directory on host
+    networks:
+      - contentgruen
+
+  contentgruen-semantic-search:
+    image: git.verdigado.com/netzbegruenung-images/contentgruen-semantic-search:latest
+    container_name: contentgruen-semantic-search
+    restart: unless-stopped
+    environment:
+      - SEMANTIC_SEARCH_QDRANT_URL=http://qdrant:6333
+      - SEMANTIC_SEARCH_QDRANT_COLLECTION=content_collection
+      - SEMANTIC_SEARCH_APP_DATABASE_URL=postgresql+psycopg2://app_user:changeme@postgres-app:5432/contentgruen_app
+      - DOCKER_CONTAINER=true
+      - SEMANTIC_SEARCH_DATA_PATH=/data/seed/v1.0
+      - SEMANTIC_SEARCH_METADATA_PATH=/metadata
+      - SEMANTIC_SEARCH_LOG_LEVEL=INFO
+    # No port mapping, only reachable internally via BFF
+    volumes:
+      - semantic_search_metadata:/metadata  # Persistent metadata storage
+      # No data mount needed - embedded in image!
+      - /opt/contentgruen-backups:/backups  # Backup directory on host
+    networks:
+      - contentgruen
+    depends_on:
+      - qdrant
+      - postgres-app
+
+  contentgruen-bff:
+    image: git.verdigado.com/netzbegruenung-images/contentgruen-bff:latest
+    container_name: contentgruen-bff
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Test
+      - BACKEND_URL=http://contentgruen-semantic-search:8000
+      - FRONTEND_URL=https://test.contentgruen.de
+      - USE_KEYCLOAK=false
+      - MANAGED_USERS_PATH=/config/managed-users.json
+      - ENABLE_MANAGED_AUTH=true
+    volumes:
+      - ./config:/config:ro  # Mount config directory for managed users
+    ports:
+      - '127.0.0.1:3001:5054' # From localhost: Via Nginx
+    networks:
+      - contentgruen
+    depends_on:
+      - contentgruen-semantic-search
+
+  contentgruen-frontend:
+    image: git.verdigado.com/netzbegruenung-images/contentgruen-frontend:latest
+    container_name: contentgruen-frontend
+    restart: unless-stopped
+    environment:
+      - API_BASE_URL=https://bff.test.contentgruen.de
+      - USE_KEYCLOAK=false
+    ports:
+      - '127.0.0.1:3000:80'
+    networks:
+      - contentgruen
+    depends_on:
+      - contentgruen-bff
+
+networks:
+  contentgruen:
+    driver: bridge
+
+volumes:
+  qdrant_storage:
+    driver: local
+  pgdata_app:
+    driver: local
+  semantic_search_metadata:
+    driver: local

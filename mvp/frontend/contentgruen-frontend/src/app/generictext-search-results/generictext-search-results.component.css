@@ -1,0 +1,166 @@
+/* Removed .loading-container - using global styles */
+
+/* Removed .error-container - using global styles */
+
+.result-info {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: var(--border-radius-medium);
+    margin-bottom: 10px;
+}
+
+.result-count {
+    font-size: 18px;
+    margin-right: 10px;
+}
+
+.result-count-number {
+    font-family: PTSans-bold, Roboto, sans-serif;
+}
+
+.action-call {
+    text-align: right;
+}
+
+.action-call-button {
+    margin-left: 10px;
+}
+/* Removed .dark-green-button - using global styles */
+
+.result-container-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+.result-container-wrapper app-result-list {
+    width: 100%;
+}
+
+.mat-spinner-color::ng-deep circle {
+    stroke: rgb(0, 84, 55) !important;
+}
+
+/* Empty State Improvements */
+.empty-state-improved {
+    text-align: center;
+    padding: 1rem 2rem 2rem 2rem;
+    background: var(--surface-variant);
+    border-radius: var(--border-radius-medium);
+    margin: 1rem 0;
+}
+
+.empty-icon {
+    font-size: 56px;
+    height: 56px;
+    width: 56px;
+    color: var(--text-secondary);
+    margin: 0 auto 1.2rem;
+    opacity: 0.6;
+}
+
+.empty-state-improved h3 {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    font-family: PTSans-bold, Roboto, sans-serif;
+    font-size: 1.4rem;
+}
+
+.empty-state-improved .search-query-info {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin-bottom: 1.25rem;
+    font-weight: 500;
+}
+
+.suggestions {
+    margin: 1.5rem 0;
+    text-align: center;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.suggestions p {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 0.5rem;
+    text-align: left;
+    display: inline-block;
+}
+
+.suggestions li {
+    padding: 0.5rem 0;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.suggestions li:before {
+    content: "•";
+    color: var(--primary);
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+.alternative-searches {
+    margin: 1.5rem 0;
+}
+
+.alternative-searches p {
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.popular-topics {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.topic-chip {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.topic-chip:hover {
+    transform: translateY(-2px);
+}
+
+.action-section {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.motivation {
+    color: var(--primary);
+    font-style: italic;
+    margin: 0 auto 1.5rem;
+    max-width: 500px;
+    line-height: 1.6;
+}
+
+/* Minimal empty state for when other component has results */
+.minimal-empty-state {
+    padding: 1.5rem 0;
+    background: transparent;
+}
+
+.minimal-empty-state .result-info {
+    background: var(--surface-variant);
+    padding: 1.5rem;
+    border-radius: var(--border-radius-medium);
+}

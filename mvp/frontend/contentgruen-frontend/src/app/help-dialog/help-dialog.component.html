@@ -1,0 +1,77 @@
+<div mat-dialog-title>
+    <h2>Hilfe zur Nutzung</h2>
+</div>
+<mat-dialog-content>
+
+    <p>
+        Das hier ist KEIN KI-Generator! <br>
+        ContentGrün ist eine Tauschbörse für bewährte Argumente. Alles was du hier findest, wurde von anderen Grünen in echten Diskussionen erprobt und geteilt.
+    </p>
+
+    <h3>So funktioniert ContentGrün</h3>
+
+    <ul>
+        <li>🔍 Suche nach Inhalten in der Datenbank, indem du Text oder Schlagwörter eingibst</li>
+        <li>📄 Finde so passende fertige Kommentare und Hintergrundinfos und nutze diese für deine Argumentation</li>
+        <li>✒️ Erstelle eigene fertige Kommentare oder Hintergrundinfos und teile dein Wissen mit anderen grünen
+            Mitgliedern</li>
+    </ul>
+
+    <p>
+        Die Suche funktioniert über eine Aussage-Antwort Zuordnung: Du kannst so z.B. direkt einen Social-Media-Post eingeben,
+        auf den du antworten möchtest - und findest nicht einfach Inhalte, die ähnlich zu deinem Eingabe-Post sind, sondern
+        passende Antworten darauf!
+    </p>
+
+    <h3>Was ist ein 💬 "fertiger Kommentar"?</h3>
+    <p>
+        Ein fertiger Kommentar ist ein bereits erstellter, direkt verwendbarer Text, den du als Antwort auf einen Social-Media-Post,
+        eine Nachricht oder in einer Diskussion sofort nutzen kannst.
+    </p>
+
+    <h3>Was ist eine 📄 "Hintergrundinfo"?</h3>
+    <p>
+        Eine Hintergrundinfo enthält Fakten, Zahlen und Hintergrundinformationen zu einem Thema.
+        Das kann z.B. ein Link zu einem Zeitungsartikel oder einer Studie, ein Zitat oder
+        detaillierte Sachinformationen sein.
+    </p>
+
+    <h3>Technische Details</h3>
+    <p>
+
+        ContentGrün nutzt die Techniken, die hinter Chat-GPT und Co stecken, um die Inhalte zu
+        analysieren und zu bewerten – ist dabei selbst aber keine KI.<br>
+        <br>
+        Die Suchfunktion arbeitet in drei Schritten:
+    </p>
+    <ol>
+        <li>Zu deiner Eingabe werden die passendsten bereits in ContentGrün gespeicherten „Aussagen“ ermittelt
+        </li>
+        <li>Aussagen sind mit Antwortaussagen verknüpft</li>
+        <li>Zu diesen Antwortaussagen werden die passendsten Inhalte aus der Datenbank geladen</li>
+    </ol>
+    <p>
+        Aussagen, Antworten und Inhalte werden dabei semantisch, d.h. in ihrer Bedeutung, analysiert und
+        bewertet. Die Datenbasis wird dabei durch die Beiträge der grünen Mitglieder kontinuierlich erweitert
+        und durch die Nutzung und Bewertung werden die Ergebnisse kontinuierlich verbessert.<br>
+        <br>
+        Für die semantische Suche nutzen wir die Vektordatenbank
+        <a target="_blank" href="https://qdrant.tech">Qdrant</a>
+        und mehrsprachige KI-Modelle.
+    </p>
+
+    <mat-divider></mat-divider>
+
+    <div class="about-link-section">
+        <p>
+            Möchtest du mehr über ContentGrün, die Vision dahinter und das Team erfahren?
+        </p>
+        <a mat-raised-button color="primary" (click)="navigateToAbout()">
+            <mat-icon>info</mat-icon>
+            Über ContentGrün
+        </a>
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button class="contentgruen-primary-dark" mat-button mat-dialog-close>Schließen</button>
+</mat-dialog-actions>

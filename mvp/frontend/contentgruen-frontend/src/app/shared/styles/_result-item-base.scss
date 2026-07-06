@@ -1,0 +1,751 @@
+// Base styles for result item components
+// Shared between commentary-result-item and generictext-result-item
+
+@use 'breakpoints' as bp;
+
+// Base card structure
+@mixin result-item-base {
+  .result-item {
+    flex: 1 1 auto;
+    width: 450px;
+    height: 650px;
+    scroll-snap-align: center;
+    margin-right: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    overflow: hidden;
+    box-sizing: border-box;
+    box-shadow: var(--elevation-2);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+// Header styles
+@mixin result-header($bg-var) {
+  height: 80px;
+  background-color: var($bg-var);
+  position: relative; // For badge positioning
+}
+
+// Score badge styles
+@mixin result-score {
+  color: white;
+  padding: 2px;
+  border-radius: var(--border-radius-small);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+  text-align: center;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: var(--elevation-4);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Header info layout
+@mixin result-header-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-left: var(--spacing-sm);
+}
+
+// Title styles
+@mixin result-title {
+  margin-right: 65px; // Just enough space for badges
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 19px;
+  line-height: 1.25;
+  width: 270px; // More space for title text
+  word-wrap: break-word;
+  min-height: 64px;
+  max-height: 64px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  flex-direction: row;
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+// Content container
+@mixin result-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// Text content
+@mixin result-text {
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1.3;
+  padding: var(--spacing-lg);
+  margin-top: 0;
+  margin-bottom: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+// Info bar
+@mixin result-info-bar($bg-var) {
+  width: 100%;
+  padding: 6px var(--spacing-xl);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background-color: var($bg-var);
+  margin-bottom: var(--spacing-md);
+}
+
+// Type display
+@mixin result-type {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 14px;
+}
+
+// References section
+@mixin result-references {
+  color: var(--text-secondary);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  height: 100px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+// Reference container
+@mixin result-reference-container {
+  display: flex;
+  align-items: flex-start;
+  font-size: 14px;
+  height: 100%;
+}
+
+// Reference list
+@mixin result-reference-list {
+  overflow-y: auto;
+  color: var(--text-secondary);
+  padding: 0;
+
+  ul {
+    margin: 0;
+    padding-left: 14px;
+    list-style-position: outside;
+  }
+
+  li {
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+}
+
+// Reference link styles
+@mixin reference-link-styles {
+  .reference-display-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+
+  .reference-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .reference-link {
+    color: var(--md-sys-color-primary);
+    text-decoration: underline;
+    cursor: help;
+    word-break: break-word;
+    flex: 1;
+
+    &:hover {
+      color: var(--md-sys-color-tertiary);
+      text-decoration: underline;
+    }
+  }
+}
+
+// Score details popup
+@mixin result-score-details {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.98);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-small);
+  box-shadow: var(--elevation-4);
+  backdrop-filter: blur(10px);
+}
+
+// Score detail item
+@mixin score-detail-item {
+  margin-bottom: var(--spacing-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  strong {
+    color: var(--text-primary);
+    margin-right: var(--spacing-xs);
+  }
+
+  em {
+    font-style: italic;
+    display: block;
+    margin-top: var(--spacing-xs);
+    padding-left: var(--spacing-md);
+  }
+}
+
+// Avatar styles
+@mixin mat-avatar {
+  .mat-mdc-card-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// Properties section
+@mixin result-properties {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+// Common emoji icon style
+@mixin content-type-emoji {
+  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Badge container and common badge styles
+@mixin result-badges {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 16px;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  z-index: 10;
+  align-items: center;
+
+  .badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    width: 36px;
+    height: 36px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+    cursor: default;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+
+    &.usage-badge {
+      background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+      color: var(--text-primary);
+      border: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    &.new-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    &.trending-badge {
+      background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+      font-size: 22px;
+    }
+
+    .badge-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 1;
+    }
+  }
+}
+
+// Action buttons grid layout
+@mixin result-action-buttons-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  margin-top: auto;
+  flex-shrink: 0;
+
+  .vote-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    justify-self: start;
+  }
+}
+
+// Vote and menu button styles
+@mixin result-vote-menu-button {
+  width: 40px;
+  height: 40px;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &.active-button {
+    background-color: var(--primary-main) !important;
+    color: white !important;
+  }
+
+  &:hover:not(.active-button) {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+// Enhanced copy button with animation
+@mixin result-copy-button-enhanced {
+  min-width: 180px;
+  height: 40px;
+  font-weight: 600;
+  padding: 0 24px;
+  position: relative;
+  overflow: hidden;
+
+  mat-icon {
+    margin-right: 6px;
+  }
+}
+
+// Metadata footer (below action buttons)
+@mixin result-metadata-footer {
+  padding: 0 var(--spacing-lg) var(--spacing-sm);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+
+  .metadata-text {
+    display: inline-block;
+    line-height: 1.3;
+  }
+}
+
+// Statement section styles
+@mixin result-statement-section {
+  .statement-container {
+    position: relative;
+    z-index: 10;
+  }
+
+  .statement-section {
+    background: rgba(0, 137, 57, 0.04);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    position: relative;
+    min-height: 36px;
+
+    &:hover {
+      background: rgba(0, 137, 57, 0.08);
+    }
+
+    &:focus {
+      outline: 2px solid var(--primary-main);
+      outline-offset: -2px;
+    }
+  }
+
+  .statement-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    color: var(--primary-dark);
+    flex-shrink: 0;
+  }
+
+  .statement-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-right: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .statement-preview {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-style: italic;
+  }
+
+  .expand-icon {
+    color: var(--primary-main);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin-left: 4px;
+
+    &.expanded {
+      transform: rotate(180deg);
+    }
+  }
+
+  .statement-expanded-overlay {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid rgba(0, 137, 57, 0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    padding: 16px 20px;
+    margin: 0;
+    overflow: hidden;
+    z-index: 100;
+  }
+
+  .statement-full-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 12px 0;
+    margin-bottom: 16px;
+  }
+
+  .statement-metadata {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .metadata-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.04);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: help;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(0, 137, 57, 0.08);
+    }
+
+    .metadata-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: var(--primary-main);
+    }
+  }
+
+  .metadata-help-hint {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    padding: 6px 8px;
+    background: rgba(0, 137, 57, 0.06);
+    border-radius: 4px;
+    text-align: center;
+    justify-content: center;
+
+    .help-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: var(--primary-main);
+    }
+  }
+
+  .collapse-statement-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 4px;
+    margin-left: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      color: var(--primary-dark);
+    }
+  }
+}
+
+// Fade in animation
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Mobile responsive mixin
+@mixin result-item-mobile {
+  @include bp.mobile-only {
+    .result-item {
+      width: 100%;
+      height: 500px; // Fixed height for consistent mobile experience
+      max-width: 100%;
+      max-height: 500px; // Prevent any stretching
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    // Apply to content class regardless of prefix
+    [class*="-content"] {
+      padding-bottom: var(--mobile-footer-height);
+    }
+
+    // Apply to header class regardless of prefix
+    [class*="-header"] {
+      height: 72px; /* Standard mobile header height */
+    }
+
+    // Apply to score class regardless of prefix
+    [class*="-score"] {
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+    }
+
+    // Apply to title class regardless of prefix
+    [class*="-title"] {
+      font-size: 14px;
+      width: 200px;
+      min-height: 50px;
+      max-height: 50px;
+    }
+
+    // Apply to text class regardless of prefix
+    [class*="-text"] {
+      font-size: 16px;
+      padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    // Apply to action buttons class regardless of prefix
+    [class*="-action-buttons"] {
+      gap: var(--spacing-xs);
+      margin-top: var(--spacing-sm);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    // Apply to vote button class regardless of prefix
+    [class*="-vote-button"] {
+      min-width: 44px;
+      font-size: 14px;
+    }
+
+    // Apply to copy button class regardless of prefix
+    [class*="-copy-button"] {
+      flex-grow: 1;
+      font-size: 13px;
+      padding: 0 var(--spacing-xs);
+    }
+
+    // Apply to info bar class regardless of prefix
+    [class*="-info-bar"] {
+      padding: 4px var(--spacing-md);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    // Apply to type class regardless of prefix
+    [class*="-type"] {
+      font-size: 12px;
+    }
+
+    // Apply to references class regardless of prefix
+    [class*="-references"] {
+      padding: var(--spacing-xs) var(--spacing-sm);
+      height: 60px;
+      overflow-y: auto;
+    }
+
+    // Apply to reference list class regardless of prefix
+    [class*="-reference-list"] {
+      font-size: 12px;
+    }
+
+    // Apply to actions class regardless of prefix
+    [class*="-actions"] {
+      padding: var(--spacing-sm) var(--spacing-md);
+      grid-template-columns: auto 1fr auto;
+      gap: var(--spacing-sm);
+      height: var(--mobile-footer-height);
+    }
+
+    // Apply to usage badge class regardless of prefix
+    [class*="-usage-badge"] {
+      font-size: 10px;
+      min-width: 50px;
+      min-height: 24px;
+      padding: 2px 6px;
+    }
+
+    // Apply to author text class regardless of prefix
+    [class*="-author-text"] {
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    // Apply to details button class regardless of prefix
+    [class*="-details-button"] {
+      font-size: 11px;
+      padding: 4px 8px;
+      min-width: 60px;
+    }
+
+    // Badge mobile adjustments
+    [class*="-badges"] {
+      right: 8px;
+      gap: 4px;
+
+      .badge {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+
+        &.trending-badge {
+          font-size: 16px;
+        }
+
+        .badge-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+
+    // Statement mobile adjustments
+    .statement-section {
+      padding: 3px 8px;
+      min-height: 24px;
+    }
+
+    .statement-label {
+      font-size: 11px;
+    }
+
+    .statement-preview {
+      font-size: 12px;
+    }
+
+    .statement-expanded-overlay {
+      padding: 10px 12px;
+    }
+
+    .statement-full-text {
+      font-size: 13px;
+      padding: 10px;
+    }
+
+    .statement-metadata {
+      gap: 8px;
+    }
+
+    .metadata-item {
+      font-size: 11px;
+    }
+
+    .metadata-help-hint {
+      display: flex;
+    }
+  }
+}

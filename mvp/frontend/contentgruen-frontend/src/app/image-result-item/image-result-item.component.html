@@ -1,0 +1,104 @@
+<mat-card class="result-item">
+
+    <mat-card-header class="image-header">
+        <div mat-card-avatar>
+            <span class="content-type-emoji" matTooltip="Bild" matTooltipPosition="below">
+                🖼️
+            </span>
+        </div>
+
+        <div class="image-header-info">
+            <mat-card-title class="image-title">
+                {{ result.image_result.title }}
+            </mat-card-title>
+        </div>
+
+        <!-- Badges -->
+        <div class="image-badges">
+            <span class="badge new-badge" *ngIf="showNewBadge"
+                  matTooltip="Neu"
+                  matTooltipPosition="left">
+                <mat-icon class="badge-icon">auto_awesome</mat-icon>
+            </span>
+            <span class="badge trending-badge" *ngIf="showTrendingBadge"
+                  matTooltip="Beliebt"
+                  matTooltipPosition="left">
+                🔥
+            </span>
+            <span class="badge usage-badge"
+                  [ngClass]="{'usage-count-animated': usageCountAnimated}"
+                  matTooltip="Verwendungen"
+                  matTooltipPosition="left">
+                {{ currentUsageCount }}x
+            </span>
+        </div>
+    </mat-card-header>
+
+    <mat-card-content class="image-content">
+
+        <!-- Image -->
+        <div class="image-wrapper">
+            <img [src]="result.image_result.image_url"
+                 [alt]="result.image_result.text || result.image_result.title"
+                 class="image-result-img"
+                 loading="lazy">
+        </div>
+
+        <!-- Caption -->
+        <p class="image-caption" *ngIf="result.image_result.text">
+            {{ result.image_result.text }}
+        </p>
+
+        <div class="image-action-buttons">
+            <div class="vote-buttons">
+                <button mat-icon-button class="image-vote-button" (click)="toggleLike()"
+                    [ngClass]="{'active-button': isLiked}"
+                    matTooltip="Gefällt mir"
+                    matTooltipPosition="above">
+                    <mat-icon>thumb_up</mat-icon>
+                </button>
+
+                <button mat-icon-button class="image-vote-button" (click)="toggleDislike()"
+                    [ngClass]="{'active-button': isDisliked}"
+                    matTooltip="Gefällt mir nicht"
+                    matTooltipPosition="above">
+                    <mat-icon>thumb_down</mat-icon>
+                </button>
+            </div>
+
+            <button mat-raised-button class="contentgruen-primary-dark image-copy-button"
+                (click)="copyImage()" [ngClass]="{'copy-success': copyAnimationActive}">
+                <mat-icon>content_copy</mat-icon>
+                <span>Bildunterschrift kopieren</span>
+            </button>
+
+            <button mat-icon-button
+                class="image-menu-button"
+                [matMenuTriggerFor]="actionMenu"
+                matTooltip="Mehr Optionen"
+                matTooltipPosition="above">
+                <mat-icon>more_vert</mat-icon>
+            </button>
+
+            <mat-menu #actionMenu="matMenu">
+                <button mat-menu-item (click)="openReportDialog()">
+                    <mat-icon>flag</mat-icon>
+                    <span>Inhalt melden</span>
+                </button>
+                <button mat-menu-item disabled>
+                    <mat-icon>info</mat-icon>
+                    <span>Details</span>
+                </button>
+            </mat-menu>
+        </div>
+
+        <div class="image-metadata">
+            <span class="metadata-text"
+                *ngIf="result.image_result.last_modified == result.image_result.created">
+                Von: {{ result.image_result.original_author }} ·
+                {{ result.image_result.created | relativeTime }}
+            </span>
+        </div>
+
+    </mat-card-content>
+</mat-card>

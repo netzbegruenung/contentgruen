@@ -1,0 +1,527 @@
+/* Main container - full width with buttons in margins */
+.results-list-container {
+  position: relative;
+  width: 100%;
+  padding: 0 var(--page-margin);
+  box-sizing: border-box;
+}
+
+/* Inner container - matches content width */
+.carousel-inner {
+  position: relative;
+  background-color: var(--surface);
+}
+
+/* Card table surface - Desktop only */
+.result-container:not(.mobile-container) {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  gap: 24px;
+  padding: 24px;
+  min-height: 650px;
+  background: var(--bg-main);
+  border-radius: var(--border-radius-medium);
+  box-shadow: inset 0 3px 6px 0 rgba(0, 0, 0, 0.12),
+              inset 0 2px 4px 0 rgba(0, 0, 0, 0.15),
+              inset 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.result-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card wrapper for proper shadow and spacing */
+.result-item-wrapper {
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
+}
+
+/* Spacing elements to show partial cards */
+.card-spacing-start,
+.card-spacing-end {
+  flex: 0 0 60px;
+  min-height: 1px;
+}
+
+/* Navigation buttons - positioned in the margins */
+.scroll-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--primary-main);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  box-shadow: var(--elevation-2);
+  z-index: 10;
+}
+
+.scroll-button.left {
+  left: calc((var(--page-margin) - 48px) / 2);
+}
+
+.scroll-button.right {
+  right: calc((var(--page-margin) - 48px) / 2);
+}
+
+.scroll-button:hover:not(:disabled) {
+  background-color: var(--primary-dark);
+  box-shadow: var(--elevation-4);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.scroll-button:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.scroll-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background-color: var(--on-surface-variant);
+}
+
+.scroll-button mat-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .scroll-button.left {
+    left: 8px;
+  }
+
+  .scroll-button.right {
+    right: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .results-list-container {
+    padding: 0 var(--page-margin);
+  }
+
+  .scroll-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .scroll-button mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .result-container {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .card-spacing-start,
+  .card-spacing-end {
+    flex: 0 0 40px;
+  }
+
+  .scroll-button.left {
+    left: 4px;
+  }
+
+  .scroll-button.right {
+    right: 4px;
+  }
+}
+
+/* Edge browser specific handling */
+@supports (-ms-ime-align: auto) {
+  .result-container {
+    scroll-snap-type: none;
+  }
+}
+
+/* ============================================ */
+/* MOBILE CAROUSEL - CLEAN IMPLEMENTATION     */
+/* ============================================ */
+
+.mobile-carousel-container {
+  position: relative;
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 0 15px 0;
+}
+
+.mobile-scroll-container {
+  width: 100vw;
+  max-width: 100vw;
+  height: 520px; /* Fixed height to match card + padding */
+  min-height: 520px; /* Prevent shrinking */
+  max-height: 520px; /* Prevent expanding */
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  box-sizing: border-box;
+
+  /* Break out of parent container to reach viewport edges */
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+}
+
+.mobile-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-card-item {
+  flex: 0 0 100vw;
+  width: 100vw;
+  height: 100%;
+  scroll-snap-align: start;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 24px; /* Use fixed value instead of var for box-sizing calculation */
+  box-sizing: border-box;
+}
+
+.mobile-card-item > * {
+  width: 100%;
+  max-width: 400px;
+  min-width: 0; /* Override flexbox automatic minimum size */
+  height: auto;
+  box-sizing: border-box;
+}
+
+/* Mobile Navigation for Clean Implementation */
+.mobile-carousel-container .mobile-navigation {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--spacing-sm) 0;
+  pointer-events: none;
+}
+
+.mobile-carousel-container .mobile-navigation > * {
+  pointer-events: auto;
+}
+
+.mobile-carousel-container .navigation-line {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-carousel-container .dot-indicators-with-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-carousel-container .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-disabled);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-carousel-container .dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background-color: var(--primary-main);
+}
+
+.mobile-carousel-container .inline-counter {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.mobile-carousel-container .swipe-hints {
+  position: absolute;
+  top: 265px; /* Half of 530px container height */
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.mobile-carousel-container .swipe-hint {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.3s ease;
+  color: var(--primary-main);
+}
+
+.mobile-carousel-container .swipe-hint:hover {
+  transform: scale(1.1);
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile carousel styles */
+.mobile-carousel {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mobile-container {
+  width: 100%;
+  max-width: 100%;
+  height: 500px;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  gap: 0;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  scrollbar-width: none;
+}
+
+.mobile-container::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for webkit browsers */
+}
+
+.mobile-card {
+  flex: 0 0 100% !important;
+  width: 100% !important;
+  height: 100%;
+  scroll-snap-align: start !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 var(--page-margin);
+  box-sizing: border-box;
+  transition: opacity 0.3s ease;
+  filter: none !important; /* Remove desktop drop-shadow for performance */
+}
+
+.mobile-card > * {
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.mobile-card:not(.active-card) {
+  opacity: 1; /* Keep full opacity for better visibility */
+}
+
+.mobile-card.active-card {
+  opacity: 1;
+  /* Could add subtle shadow for active state if needed */
+}
+
+/* Mobile navigation */
+.mobile-navigation {
+  position: relative; /* In document flow */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--spacing-sm) 0;
+  pointer-events: none;
+}
+
+.mobile-navigation > * {
+  pointer-events: auto;
+}
+
+/* Combined navigation line */
+.navigation-line {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dot-indicators-with-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-counter {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-disabled);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background-color: var(--primary-main);
+}
+
+.dot:hover:not(.active) {
+  background-color: var(--text-secondary);
+  transform: scale(1.2);
+}
+
+/* Swipe hints */
+.swipe-hints {
+  position: absolute;
+  top: 260px; /* Half of 520px container height */
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.swipe-hint {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.3s ease;
+  color: var(--primary-main);
+}
+
+.swipe-hint.left {
+  position: absolute;
+  left: 12px;
+}
+
+.swipe-hint.right {
+  position: absolute;
+  right: 12px;
+}
+
+.swipe-hint:hover {
+  transform: scale(1.1);
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.swipe-hint.left {
+  animation: pulseLeft 2s infinite;
+}
+
+.swipe-hint.right {
+  animation: pulseRight 2s infinite;
+}
+
+@keyframes pulseLeft {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
+@keyframes pulseRight {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+/* Adjust result item for mobile */
+@media (max-width: 599px) {
+  .results-list-container {
+    padding: 0;
+    overflow: hidden; /* Contain the scrolling container */
+    position: relative; /* Ensure navigation is positioned relative to this */
+    height: 100%;
+  }
+
+  .result-container:not(.mobile-container) {
+    height: 100%; /* Use full height from parent flexbox */
+    padding: 0;
+    gap: 0;
+  }
+
+  .mobile-container {
+    height: 520px !important; /* Fixed height matching scroll container */
+    min-height: 520px !important; /* Prevent shrinking */
+  }
+
+  .result-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .result-item-wrapper {
+    margin: 0;
+    filter: none; /* Remove drop shadow on mobile for performance */
+  }
+
+  /* Hide desktop scroll buttons completely on mobile */
+  .scroll-button {
+    display: none !important;
+  }
+
+  /* Ensure cards are properly sized on mobile */
+  .result-item-wrapper > * {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}

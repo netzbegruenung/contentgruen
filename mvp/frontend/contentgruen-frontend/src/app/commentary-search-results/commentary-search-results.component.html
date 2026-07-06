@@ -1,0 +1,66 @@
+<div>
+    <h2>Fertige Kommentare</h2>
+
+    <!-- Error State -->
+    <div *ngIf="!loading && error" class="error-container">
+        <span class="bold">Fehler bei der Abfrage der fertigen Kommentare 😵</span>
+        <br><br>
+        {{ error }}
+    </div>
+
+    <!-- Response with results -->
+    <div *ngIf="searchResponse && searchResponse.commentary_search_results_count > 0">
+        <div class="result-info">
+            <div class="result-count">
+                <span class="result-count-number">{{ searchResponse.commentary_search_results_count }}</span> passende fertige Kommentare gefunden.
+            </div>
+            <div class="action-call">
+                Hilf der Community:
+                <button mat-raised-button class="action-call-button contentgruen-primary-dark" (click)="navigateToContributeView()">
+                    <mat-icon>add</mat-icon>💬 Fertigen Kommentar hinzufügen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response with no results -->
+    <div *ngIf="searchResponse && searchResponse.commentary_search_results_count === 0">
+        <!-- Minimal empty state when other component has results -->
+        <div *ngIf="showMinimalEmptyState" class="minimal-empty-state">
+            <div class="result-info">
+                <div class="result-count">
+                    Keine passenden fertigen Kommentare gefunden.
+                </div>
+                <div class="action-call">
+                    Hilf der Community:
+                    <button mat-raised-button class="action-call-button contentgruen-primary-dark" (click)="navigateToContributeView()">
+                        <mat-icon>add</mat-icon>💬 Fertigen Kommentar hinzufügen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full empty state when both components have no results -->
+        <div *ngIf="!showMinimalEmptyState" class="empty-state-improved">
+            <p class="search-query-info">Zu "{{searchQuery}}" haben wir noch keine fertigen Kommentare</p>
+            <h3>Hilf der Community und teile deinen Kommentar!</h3>
+
+            <div class="action-section">
+                <button mat-raised-button class="contentgruen-primary-dark" (click)="navigateToContributeView()">
+                    <mat-icon>add</mat-icon>💬 Jetzt fertigen Kommentar hinzufügen
+                </button>
+            </div>
+
+            <mat-icon class="empty-icon">volunteer_activism</mat-icon>
+
+            <div class="suggestions">
+                <p><strong>Tipps für deine Suche:</strong></p>
+                <ul>
+                    <li>Versuche andere Schlagwörter</li>
+                    <li>Formuliere eine konkrete Frage</li>
+                    <li>Nutze weniger spezifische Begriffe</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

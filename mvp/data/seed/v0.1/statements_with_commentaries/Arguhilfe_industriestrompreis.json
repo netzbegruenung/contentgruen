@@ -1,0 +1,147 @@
+[
+  {
+    "statement": "Ein subventionierter Industriestrompreis ist unfair, weil er nur großen Unternehmen zugutekommt und den Mittelstand ausschließt.",
+    "commentaries": [
+      {
+        "text": "Das Modell von Robert Habeck sieht vor, dass auch mittelständische Unternehmen von einem grünen Industriestrompreis profitieren können. Das Ziel ist es, günstigen Strom durch erneuerbare Energien für alle zu ermöglichen.",
+        "title": "Grüner Industriestrompreis für alle zugänglich",
+        "long_text": "Das Konzept des grünen Industriestrompreises richtet sich nicht nur an Großkonzerne, sondern soll auch mittelständische Unternehmen durch subventionierte Preise und den Ausbau erneuerbarer Energien entlasten. Dadurch profitieren mehr Unternehmen, unabhängig von ihrer Größe.",
+        "short_text": "Grüner Strompreis für Groß und Klein.",
+        "references": [
+          {
+            "text": "Details zum grünen Industriestrompreis",
+            "reference_string": "/mnt/data/Industriestrompreis_230818_Wording_2Bund_2BArguhilfe.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Daten zeigen, dass 40 % der Industrieunternehmen Mittelständler sind und direkt vom Industriestrompreis profitieren können. Der Vorschlag schafft faire Bedingungen für alle Betriebe.",
+        "title": "Mittelstand profitiert ebenfalls",
+        "long_text": "Der grüne Industriestrompreis berücksichtigt den Mittelstand und sorgt dafür, dass auch diese Betriebe Zugang zu günstigem Strom haben. Fast die Hälfte der Industrieunternehmen sind Mittelständler, die direkt profitieren können.",
+        "short_text": "Mittelstand ist berücksichtigt.",
+        "references": [
+          {
+            "text": "Anteil mittelständischer Unternehmen in der Industrie",
+            "reference_string": "https://www.bmwi.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Ein Industriestrompreis bringt keine langfristige Planungssicherheit, da die Finanzierung und Umsetzung unklar sind.",
+    "commentaries": [
+      {
+        "text": "Habecks Modell sieht langfristige Stromverträge zwischen Unternehmen und Betreibern erneuerbarer Energien vor, was stabile und planbare Preise schafft. Der Ausbau erneuerbarer Energien bietet eine stabile Basis.",
+        "title": "Langfristige Verträge für Planungssicherheit",
+        "long_text": "Durch direkte Verträge zwischen Industrie und Betreibern erneuerbarer Energien wird eine stabile Versorgung gewährleistet. Dies gibt Unternehmen die Sicherheit, ihre Energiekosten langfristig planen zu können.",
+        "short_text": "Direkte Verträge bieten Stabilität.",
+        "references": [
+          {
+            "text": "Langfristige Energieplanung durch erneuerbare Verträge",
+            "reference_string": "/mnt/data/Industriestrompreis_230818_Wording_2Bund_2BArguhilfe.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Daten zeigen, dass erneuerbare Energien kosteneffizienter sind, sobald die Anlagen einmal aufgebaut sind. Sie sind unabhängig von fossilen Preisschwankungen und bieten langfristig stabile Energiepreise.",
+        "title": "Erneuerbare bieten stabile Preise",
+        "long_text": "Einmalige Investitionen in Wind- und Solaranlagen machen die Energieversorgung unabhängig von den volatilen Preisen fossiler Energieträger. Dies schafft stabile und planbare Stromkosten für die Industrie.",
+        "short_text": "Stabilität durch erneuerbare Energien.",
+        "references": [
+          {
+            "text": "Kostenentwicklung bei erneuerbaren Energien",
+            "reference_string": "https://www.bdew.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Markus Söders Ansatz, die Stromsteuer zu senken und Netzentgelte zu reduzieren, wäre eine bessere Lösung für günstigere Energiepreise.",
+    "commentaries": [
+      {
+        "text": "Eine Senkung der Stromsteuer bietet nur kurzfristige Entlastung und löst nicht das Grundproblem hoher Abhängigkeit von fossilen Energieträgern. Erneuerbare Energien bieten eine dauerhafte Lösung.",
+        "title": "Langfristige Entlastung durch Erneuerbare",
+        "long_text": "Der Ausbau erneuerbarer Energien senkt die Abhängigkeit von fossilen Energien und sorgt für dauerhaft niedrigere Preise. Eine Senkung der Stromsteuer wirkt hingegen nur kurzfristig und löst nicht die Ursache des Problems.",
+        "short_text": "Erneuerbare als dauerhafte Lösung.",
+        "references": [
+          {
+            "text": "Langfristige Strategien für stabile Energiepreise",
+            "reference_string": "/mnt/data/Industriestrompreis_230818_Wording_2Bund_2BArguhilfe.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Analysen zeigen, dass die langfristigen Kosten fossiler Energieversorgung steigen werden. Ein grüner Industriestrompreis bietet nachhaltige Preisstabilität.",
+        "title": "Erneuerbare bieten nachhaltige Preisstabilität",
+        "long_text": "Der grüne Industriestrompreis baut auf erneuerbaren Energien auf und bietet langfristige Preisvorteile. Fossile Energien werden immer teurer, während die erneuerbaren Energien auf stabilere Preise setzen können.",
+        "short_text": "Nachhaltige Stabilität durch Erneuerbare.",
+        "references": [
+          {
+            "text": "Langfristige Preisstabilität erneuerbarer Energien",
+            "reference_string": "https://www.destatis.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Einführung eines grünen Industriestrompreises wird für den Staat zu teuer und ist nicht finanzierbar.",
+    "commentaries": [
+      {
+        "text": "Einmal installierte Wind- und Solaranlagen verursachen kaum laufende Kosten und entlasten die Staatskasse. Der grüne Industriestrompreis ist eine langfristige Investition in die Zukunft.",
+        "title": "Langfristige Entlastung durch erneuerbare Energien",
+        "long_text": "Einmalige Investitionen in erneuerbare Energien verursachen nur geringe laufende Kosten. Langfristig kann der grüne Industriestrompreis so umgesetzt werden, dass die Staatskasse entlastet wird.",
+        "short_text": "Grüner Strom entlastet langfristig.",
+        "references": [
+          {
+            "text": "Kostenstruktur erneuerbarer Energien",
+            "reference_string": "/mnt/data/Industriestrompreis_230818_Wording_2Bund_2BArguhilfe.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Daten zeigen, dass subventionierte Preise in den ersten Jahren höhere Kosten verursachen, langfristig jedoch zu einer stabilen und kostengünstigen Energieversorgung führen.",
+        "title": "Langfristige Kostenvorteile durch Stabilität",
+        "long_text": "Die anfänglichen Investitionen sind zwar hoch, führen aber langfristig zu stabileren und günstigeren Energiepreisen, da die Abhängigkeit von schwankenden fossilen Energiekosten sinkt.",
+        "short_text": "Anfangsinvestition mit langfristigem Vorteil.",
+        "references": [
+          {
+            "text": "Kosteneffizienz erneuerbarer Energien",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Ein Industriestrompreis bringt keine Vorteile für das Klima und könnte einfach symbolische Politik sein.",
+    "commentaries": [
+      {
+        "text": "Ein grüner Industriestrompreis fördert die Nutzung erneuerbarer Energien und reduziert die CO2-Emissionen der Industrie. Dies ist ein wichtiger Schritt für die Erreichung der Klimaziele.",
+        "title": "Klimaziele durch grünen Industriestrompreis",
+        "long_text": "Der grüne Industriestrompreis zielt darauf ab, fossile Brennstoffe zu ersetzen und die Industrie klimafreundlich zu gestalten. Das hilft, die Klimaziele zu erreichen und den CO2-Ausstoß signifikant zu reduzieren.",
+        "short_text": "Grüner Strom für Klimaziele.",
+        "references": [
+          {
+            "text": "Klimaschutz durch grünen Industriestrompreis",
+            "reference_string": "/mnt/data/Industriestrompreis_230818_Wording_2Bund_2BArguhilfe.pdf"
+          }
+        ]
+      },
+      {
+        "text": "Studien belegen, dass die Industrie durch grünen Strom ihren CO2-Ausstoß erheblich senken kann. Dies ist kein Symbol, sondern eine konkrete Maßnahme für den Klimaschutz.",
+        "title": "Signifikante CO2-Reduktion in der Industrie",
+        "long_text": "Die CO2-Emissionen der Industrie können durch den Einsatz von grünem Strom um bis zu 30 % gesenkt werden. Der grüne Industriestrompreis ist daher ein wichtiger Baustein für den Klimaschutz.",
+        "short_text": "Grüner Strom senkt Emissionen.",
+        "references": [
+          {
+            "text": "Studien zur CO2-Reduktion in der Industrie",
+            "reference_string": "https://www.bundesregierung.de"
+          }
+        ]
+      }
+    ]
+  }
+]

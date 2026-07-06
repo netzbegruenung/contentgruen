@@ -1,0 +1,92 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.15.5
+    container_name: contentgruen-qdrant
+    restart: always
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrant_storage:/qdrant/storage
+      - /opt/contentgruen-backups:/backups  # Backup directory on host
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__LOG_LEVEL=INFO
+
+  postgres-app:
+    image: postgres:16-alpine
+    container_name: contentgruen-app-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: contentgruen_app
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_app:/var/lib/postgresql/data
+      - ./backend/app-database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - /opt/contentgruen-backups:/backups  # Backup directory on host
+  contentgruen-semantic-search:
+    build:
+      context: .
+      dockerfile: backend/semantic-search-service/Dockerfile
+    container_name: contentgruen-semantic-search
+    ports:
+      - "8000:8000"
+    environment:
+      - SEMANTIC_SEARCH_QDRANT_URL=http://qdrant:6333
+      - SEMANTIC_SEARCH_QDRANT_COLLECTION=content_collection
+      - SEMANTIC_SEARCH_APP_DATABASE_URL=postgresql+psycopg2://app_user:changeme@postgres-app:5432/contentgruen_app
+      - DOCKER_CONTAINER=true
+      - SEMANTIC_SEARCH_DATA_PATH=/data/seed/v1.0
+      - SEMANTIC_SEARCH_METADATA_PATH=/metadata
+      # Development logging: Verbose for debugging
+      - SEMANTIC_SEARCH_LOG_LEVEL=DEBUG
+    volumes:
+      - ./data:/data:ro  # Mount entire data directory (seed + schemas)
+      - semantic_search_metadata:/metadata  # Persistent metadata storage
+      - /opt/contentgruen-backups:/backups  # Backup directory on host
+    depends_on:
+      - qdrant
+      - postgres-app
+
+  contentgruen-bff:
+    build:
+      context: ./backend/BFF
+      dockerfile: Dockerfile
+    container_name: contentgruen-bff
+    ports:
+      - "5054:5054"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - BACKEND_URL=http://contentgruen-semantic-search:8000
+      - FRONTEND_URL=http://localhost
+      - USE_KEYCLOAK=false
+      - MANAGED_USERS_PATH=/config/managed-users.json
+    volumes:
+      - ./config:/config:ro  # Mount config directory for managed users
+
+  contentgruen-frontend:
+    build:
+      context: ./frontend/contentgruen-frontend
+      dockerfile: Dockerfile
+      args:
+        - NGINX_CONF=nginx.docker.conf
+        - BUILD_CONFIGURATION=development
+    container_name: contentgruen-frontend
+    environment:
+      - PRODUCTION=false
+      - API_BASE_URL=
+      - USE_KEYCLOAK=false
+    ports:
+      - "80:80"
+    depends_on:
+      - contentgruen-bff
+
+volumes:
+  # pgdata-semantic:  # DEPRECATED - replaced by qdrant_storage
+  qdrant_storage:
+  pgdata_app:
+  semantic_search_metadata:

@@ -1,0 +1,150 @@
+<div id="app-container">
+    <mat-sidenav-container class="sidenav-container">
+        <mat-sidenav #sidenav mode="over" position="end" class="mobile-sidenav">
+            <app-mobile-menu
+                [userInfo]="userInfo"
+                [selectedProfilePictureUrl]="selectedProfilePictureUrl"
+                (closeMenu)="sidenav.close()"
+                (contribute)="navigateToContributeView()"
+                (contributions)="navigateToContributionsView()"
+                (login)="login()"
+                (loginToContribute)="loginWithReturnUrl('/contribute')"
+                (logout)="logout()"
+                (help)="openHelpDialog()">
+            </app-mobile-menu>
+        </mat-sidenav>
+
+        <mat-sidenav-content>
+            <main class="main mat-elevation-z8">
+                <!-- Mobile Header - Only shown on mobile devices -->
+                <app-mobile-header
+                    *ngIf="isMobile || isTablet"
+                    [userInfo]="userInfo"
+                    [selectedProfilePictureUrl]="selectedProfilePictureUrl"
+                    (openMenu)="toggleMobileMenu()"
+                    (login)="login()"
+                    (loginToContribute)="loginWithReturnUrl('/contribute')"
+                    (logout)="logout()"
+                    (contribute)="navigateToContributeView()"
+                    (contributions)="navigateToContributionsView()">
+                </app-mobile-header>
+
+                <!-- Desktop Header - Hidden on mobile -->
+                <div class="component-box" *ngIf="!isMobile && !isTablet">
+                    <div class="header">
+                <div class="left-header-box">
+                    <h1 class="desktop-header-title">
+                        <button mat-icon-button
+                                *ngIf="showBackButton"
+                                (click)="navigateToSearchView()"
+                                class="mat-elevation-z1 back-button-header"
+                                aria-label="Zurück zur Startseite">
+                            <mat-icon>arrow_back</mat-icon>
+                        </button>
+                        {{ pageTitle }}
+                    </h1>
+                </div>
+
+                <div class="right-header-box">
+                    <!-- User info - to the left of avatar without login link -->
+                    <ng-container *ngIf="userInfo?.isAuthenticated; else notLoggedIn">
+                        <span class="user-info-compact">
+                            <span class="welcome-text">Hallo </span>
+                            <span class="text-bold">{{ userInfo?.userName }}</span>
+                        </span>
+                    </ng-container>
+                    <ng-template #notLoggedIn>
+                        <span class="user-info-compact">
+                            <span class="desktop-login-text">Nicht angemeldet</span>
+                        </span>
+                    </ng-template>
+
+                    <!-- Avatar - now on the right side, leftmost element -->
+                    <div class="avatar-container"
+                        role="button"
+                        tabindex="0"
+                        [attr.aria-label]="userInfo?.isAuthenticated ? 'Profilbild ändern' : 'Anmelden'"
+                        (click)="userInfo?.isAuthenticated ? regenerateProfilePicture() : login()"
+                        (keydown.enter)="userInfo?.isAuthenticated ? regenerateProfilePicture() : login()"
+                        (keydown.space)="userInfo?.isAuthenticated ? regenerateProfilePicture() : login()">
+                        <img *ngIf="userInfo?.isAuthenticated"
+                            [src]="selectedProfilePictureUrl"
+                            alt="profile picture"
+                            class="profile-avatar" />
+                        <img *ngIf="!userInfo?.isAuthenticated"
+                            src="/icons/Profile_avatar_placeholder_large.png"
+                            alt="Nicht angemeldet"
+                            class="profile-avatar anonymous-avatar-icon" />
+                    </div>
+
+                    <!-- Desktop buttons -->
+                    <ng-container *ngIf="!isMobile && !isTablet">
+                        <ng-container *ngIf="userInfo?.isAuthenticated">
+                            <span class="header-link text-emphasis"
+                            *ngIf="userInfo?.isAdmin"
+                            role="button" tabindex="0" aria-label="Admin Dashboard"
+                            (click)="navigateToAdminDashboard()"
+                            (keydown.enter)="navigateToAdminDashboard()"
+                            (keydown.space)="navigateToAdminDashboard()">📊 Admin</span>
+
+                            <span class="header-link text-emphasis"
+                            role="button" tabindex="0" aria-label="Abmelden"
+                            (click)="logout()"
+                            (keydown.enter)="logout()"
+                            (keydown.space)="logout()">Abmelden</span>
+
+                            <span class="header-link text-emphasis"
+                            role="button" tabindex="0" aria-label="Meine Beiträge anzeigen"
+                            (click)="navigateToContributionsView()"
+                            (keydown.enter)="navigateToContributionsView()"
+                            (keydown.space)="navigateToContributionsView()">Meine Beiträge</span>
+
+                            <button mat-raised-button class="dark-green-button" (click)="navigateToContributeView()">
+                                <mat-icon>edit</mat-icon> Beitragen
+                            </button>
+                        </ng-container>
+                        <ng-container *ngIf="!userInfo?.isAuthenticated">
+                            <button mat-raised-button class="dark-green-button" (click)="login()">
+                                Anmelden
+                            </button>
+                        </ng-container>
+                    </ng-container>
+
+                    <!-- Always visible buttons - Hide help button on mobile since it's in burger menu -->
+                    <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button"
+                        aria-label="Hilfe öffnen">
+                        <mat-icon>help_outline</mat-icon>
+                    </button>
+
+                    <!-- Contribute button - visible on mobile -->
+                    <button mat-icon-button
+                        (click)="userInfo?.isAuthenticated ? navigateToContributeView() : loginWithReturnUrl('/contribute')"
+                        class="mat-elevation-z1 mobile-contributions-button"
+                        [attr.aria-label]="userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen'"
+                        *ngIf="(isMobile || isTablet)">
+                        <mat-icon>edit</mat-icon>
+                    </button>
+
+                    <button mat-icon-button (click)="navigateToSearchView()" class="mat-elevation-z1"
+                        aria-label="Zur Startseite">
+                        <mat-icon>home</mat-icon>
+                    </button>
+
+                    <!-- Mobile menu button -->
+                    <button mat-icon-button (click)="toggleMobileMenu()" class="mobile-menu-button mat-elevation-z1"
+                        aria-label="Menü öffnen" *ngIf="isMobile || isTablet">
+                        <mat-icon>menu</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <router-outlet></router-outlet>
+        </div>
+
+        <app-footer></app-footer>
+    </main>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+</div>

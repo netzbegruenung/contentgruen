@@ -1,0 +1,378 @@
+#app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--bg-main);
+}
+
+main {
+    flex: 1;
+    background-color: var(--bg-card);
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    min-height: 100vh;
+}
+
+main * {
+    max-width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+}
+
+.left-header-box {
+    width: auto;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--spacing-md);
+    height: var(--header-height-desktop);
+}
+
+.desktop-header-title {
+    margin: 0;
+    font-size: var(--font-size-h2-desktop); /* Match h2 size: 40px */
+    font-weight: 400; /* Match h2 weight */
+    color: var(--primary-dark);
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.back-button-header {
+    margin-right: 0 !important;
+}
+
+.left-header-box .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.right-header-box {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--spacing-md);
+    height: var(--header-height-desktop);
+}
+
+.user-info-compact {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    white-space: nowrap;
+}
+
+.header-link {
+    text-decoration: underline;
+    transition: opacity var(--transition-fast);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.header-link:hover {
+    opacity: 0.8;
+}
+
+.help-text {
+    margin-top: 10px;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: var(--border-radius-medium);
+    font-size: 14px;
+    color: #333;
+}
+
+.help-icon {
+    cursor: help;
+}
+
+.home-icon {
+    cursor: pointer;
+}
+
+.avatar-container {
+    display: inline-block;
+    cursor: pointer;
+}
+
+.profile-avatar {
+    width: var(--avatar-size-desktop);
+    height: var(--avatar-size-desktop);
+    box-shadow: var(--elevation-4);
+    border-radius: 50%;
+    background-color: white;
+    cursor: pointer;
+    transition: transform var(--transition-standard), opacity var(--transition-standard);
+    flex-shrink: 0;
+}
+
+.profile-avatar.anonymous-avatar-icon {
+    background-color: transparent;
+    box-shadow: none;
+    object-fit: contain;
+}
+
+.profile-avatar:hover {
+    transform: scale(1.05);
+}
+
+.anonymous-avatar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #9e9e9e;
+    border: none;
+    overflow: hidden;
+    padding: 0;
+}
+
+.anonymous-avatar-icon mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    line-height: 1;
+    color: white;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .header {
+        flex-direction: row;
+        padding: var(--spacing-sm) 0;
+        position: relative;
+    }
+
+    .left-header-box {
+        width: auto;
+        flex: 1;
+        gap: var(--spacing-sm);
+        height: 60px;
+    }
+
+    .right-header-box {
+        width: auto;
+        gap: var(--spacing-xs);
+        height: 60px;
+    }
+
+    .profile-avatar {
+        width: var(--avatar-size-mobile);
+        height: var(--avatar-size-mobile);
+    }
+
+    .anonymous-avatar-icon mat-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Show login status text on mobile, but smaller */
+    .left-header-box span {
+        font-size: 14px;
+        line-height: 1.2;
+    }
+
+    .left-header-box .header-link {
+        display: inline;
+    }
+
+    /* Mobile hamburger menu button */
+    .mobile-menu-button {
+        display: block;
+    }
+
+    /* Hide help button on mobile since it's in burger menu */
+    .desktop-only-button {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: var(--spacing-sm) 0;
+    }
+
+    .profile-avatar {
+        width: var(--avatar-size-mobile);
+        height: var(--avatar-size-mobile);
+    }
+
+    .left-header-box,
+    .right-header-box {
+        height: var(--header-height-mobile);
+    }
+
+    /* Keep login status text visible but very compact */
+    .left-header-box span {
+        font-size: 12px;
+    }
+
+    .left-header-box .text-bold {
+        display: inline;
+        font-size: 12px;
+    }
+}
+
+/* Hide mobile menu button on desktop */
+@media (min-width: 769px) {
+    .mobile-menu-button {
+        display: none;
+    }
+}
+
+/* Show different text versions for mobile/desktop */
+.mobile-login-text {
+    display: none;
+}
+
+.mobile-only {
+    display: none;
+}
+
+/* Spacing for user info - replace br tags */
+.user-info-spacing {
+    margin-top: var(--spacing-xs);
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .mobile-login-text {
+        display: inline;
+    }
+
+    .desktop-login-text {
+        display: none;
+    }
+
+    .mobile-only {
+        display: block;
+    }
+
+    .desktop-only {
+        display: none;
+    }
+}
+
+@media (min-width: 769px) {
+    .desktop-login-text {
+        display: inline;
+    }
+
+    .mobile-only {
+        display: none;
+    }
+}
+
+/* Sidenav styles */
+.sidenav-container {
+    height: 100%;
+}
+
+.mobile-sidenav {
+    width: 280px;
+    background-color: var(--bg-card);
+}
+
+.mobile-menu-content {
+    padding: var(--spacing-md);
+}
+
+.mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.mobile-menu-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    box-shadow: var(--elevation-2);
+}
+
+.mobile-menu-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.mobile-menu-user-info h3 {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--primary-dark);
+}
+
+.mobile-menu-item {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.mobile-menu-item mat-icon {
+    margin-right: var(--spacing-sm);
+}
+
+.close-menu-button {
+    color: var(--text-secondary);
+}
+
+/* Mobile menu footer section */
+.mobile-menu-divider {
+    margin: var(--spacing-lg) 0;
+}
+
+.mobile-menu-footer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding-top: var(--spacing-md);
+}
+
+.mobile-menu-about {
+    padding: var(--spacing-md);
+    background-color: var(--surface-variant);
+    border-radius: var(--border-radius-medium);
+    margin-top: var(--spacing-md);
+}
+
+.mobile-menu-about p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.mobile-menu-about a {
+    color: var(--primary-main);
+    text-decoration: none;
+}
+
+.mobile-menu-about a:hover {
+    text-decoration: underline;
+}
+
+/* Ensure sidenav content takes full height */
+mat-sidenav-content {
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--bg-main);
+}
+
+/* Hide footer on mobile and tablet */
+@media (max-width: 959px) {
+    app-footer {
+        display: none;
+    }
+}

@@ -1,0 +1,107 @@
+[
+  {
+    "statement": "Die Grünen sind gegen Atomkraft und andere moderne Technologien, sie wollen uns in die Steinzeit zurückführen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sehen wir, dass erneuerbare Energien wie Wind- und Solarenergie bereits heute günstig und effizient genutzt werden können. Sie sind schneller zu installieren als Atomkraftwerke und machen uns unabhängig von teuren fossilen Energien oder autoritären Regimen.",
+        "title": "Erneuerbare Energien als Alltagslösung",
+        "long_text": "Erneuerbare Energien sind heute nicht nur die beste ökologische, sondern auch die wirtschaftlichste Option. Wind- und Solarenergie können schnell ausgebaut werden, während der Bau eines Atomkraftwerks Jahrzehnte dauert. Diese Technologien sind erprobt und helfen uns, unsere Energieversorgung schnell und unabhängig zu sichern.",
+        "short_text": "Erneuerbare Energien sind schneller, günstiger und unabhängiger als Atomkraft.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass Atomkraftwerke in der Regel mit hohen Kosten und langen Bauzeiten verbunden sind. Der Bau eines Kernkraftwerks dauert oft Jahrzehnte und überschreitet fast immer den Kostenrahmen, während erneuerbare Energien wie Solar- und Windkraft deutlich günstiger und schneller verfügbar sind.",
+        "title": "Fakten zu Atomkraft vs. Erneuerbare Energien",
+        "long_text": "Die Kosten für den Bau eines Atomkraftwerks sind im Vergleich zu erneuerbaren Energien enorm. Erneuerbare Energien wie Solar- und Windkraft sind nicht nur günstiger, sondern auch schneller einsatzbereit. Studien belegen, dass Atomkraftwerke oft über Jahrzehnte geplant werden, während erneuerbare Energieprojekte innerhalb weniger Jahre realisiert werden können.",
+        "short_text": "Atomkraft ist teurer und langsamer als erneuerbare Energien.",
+        "references": [
+          {
+            "text": "Studie zu Atomkraft und erneuerbaren Energien",
+            "reference_string": "https://www.bostonreview.net/articles/is-nuclear-power-our-best-bet-against-climate-change/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Grünen blockieren neue Technologien wie 5G, die wichtig für den Fortschritt sind.",
+    "commentaries": [
+      {
+        "text": "Viele Menschen wollen moderne Technologien wie 5G nutzen, aber sie sollen sicher und verantwortungsbewusst eingeführt werden. Die Grünen setzen sich dafür ein, dass solche Technologien so eingesetzt werden, dass die Gesundheit und das Wohlbefinden der Menschen im Alltag geschützt werden.",
+        "title": "Sicherheit im Umgang mit Technologie",
+        "long_text": "Moderne Technologien wie 5G bieten viele Vorteile, aber sie müssen verantwortungsvoll und sicher eingeführt werden. Die Grünen fordern klare Sicherheitsstandards und wollen sicherstellen, dass die Einführung neuer Technologien keine Gesundheitsrisiken für die Bevölkerung darstellt.",
+        "short_text": "Die Grünen unterstützen sichere und verantwortungsbewusste Technologieeinführung.",
+        "references": []
+      },
+      {
+        "text": "Die Einführung von 5G-Technologie kann wirtschaftliche Vorteile bringen, aber sie muss mit strengen Sicherheitsstandards verbunden sein. Zahlreiche Berichte zeigen, dass technologische Innovationen mit Vorsicht eingeführt werden müssen, um mögliche Risiken für Gesundheit und Umwelt zu minimieren.",
+        "title": "Fakten zur sicheren Technologieeinführung",
+        "long_text": "5G kann ein wichtiger Treiber für Innovation und wirtschaftliches Wachstum sein, aber nur, wenn es verantwortungsvoll und sicher eingeführt wird. Die Grünen setzen sich für eine Technologie ein, die nachhaltig und sicher für die Bevölkerung ist, und fordern umfassende Sicherheitsprüfungen, bevor neue Technologien großflächig eingesetzt werden.",
+        "short_text": "Technologie muss sicher und nachhaltig sein – das fordert die Grünen-Politik.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Ohne Kernkraft können wir die Klimaziele nicht erreichen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag haben viele Länder bereits gezeigt, dass sie ihre Klimaziele durch den Einsatz erneuerbarer Energien erreichen können. Wind, Sonne und Wasser sind die Technologien der Zukunft und helfen uns, Energie effizient und umweltfreundlich zu erzeugen.",
+        "title": "Erfolgreiche Beispiele durch Erneuerbare Energien",
+        "long_text": "Länder wie Deutschland und Dänemark zeigen, dass die Klimaziele durch den Einsatz von erneuerbaren Energien erreicht werden können. Diese Technologien sind schneller verfügbar und wirtschaftlich sinnvoller als Atomkraft. Sie sind der Weg, um die Energiewende erfolgreich zu gestalten und unsere Klimaziele zu erreichen.",
+        "short_text": "Erneuerbare Energien ermöglichen es uns, die Klimaziele ohne Atomkraft zu erreichen.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass Atomkraft im Vergleich zu erneuerbaren Energien keine wirtschaftlich sinnvolle Option ist. Der Bau neuer Atomkraftwerke dauert oft Jahrzehnte, während die Kosten die von erneuerbaren Energieprojekten um ein Vielfaches übersteigen.",
+        "title": "Fakten zu Kosten und Dauer von Atomkraft",
+        "long_text": "Die hohen Kosten und die langen Bauzeiten von Atomkraftwerken machen diese Technologie zu einer ineffizienten Option für die Erreichung der Klimaziele. Wind- und Solarenergie sind bereits heute die kostengünstigsten Energiequellen und können schneller eingesetzt werden, um die CO2-Emissionen zu senken.",
+        "short_text": "Erneuerbare Energien sind kostengünstiger und schneller verfügbar als Atomkraft.",
+        "references": [
+          {
+            "text": "Studien zu erneuerbaren Energien",
+            "reference_string": "https://www.bostonreview.net/articles/is-nuclear-power-our-best-bet-against-climate-change/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Grünen wollen den technologischen Fortschritt durch zu viele Regulierungen ausbremsen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag profitieren wir von Technologien, die nicht nur innovativ, sondern auch sicher sind. Die Grünen setzen sich dafür ein, dass technologische Innovationen im Einklang mit Umwelt- und Gesundheitsstandards entwickelt werden, um langfristig nachhaltige Lösungen zu schaffen.",
+        "title": "Fortschritt durch nachhaltige Innovation",
+        "long_text": "Technologische Innovation und Umweltschutz schließen sich nicht aus. Die Grünen unterstützen den technologischen Fortschritt, aber nur, wenn er sicher und nachhaltig ist. Regulierungen stellen sicher, dass neue Technologien der Gesellschaft und der Umwelt langfristig dienen.",
+        "short_text": "Technologische Innovation sollte nachhaltig und sicher sein.",
+        "references": []
+      },
+      {
+        "text": "Zahlreiche Berichte zeigen, dass eine regulierte Einführung von Technologien langfristig zu wirtschaftlichem Erfolg führt. Regulierungen verhindern Fehlentwicklungen und sorgen dafür, dass Innovationen nicht nur kurzfristige Gewinne bringen, sondern auch nachhaltig und sicher sind.",
+        "title": "Fakten zu reguliertem Fortschritt",
+        "long_text": "Regulierungen im Technologiebereich helfen, Innovationen sicher und nachhaltig einzuführen. Sie verhindern wirtschaftliche und ökologische Fehlentwicklungen und stellen sicher, dass neue Technologien langfristig positive Auswirkungen auf die Gesellschaft haben.",
+        "short_text": "Regulierter Fortschritt sorgt für langfristige Nachhaltigkeit und Sicherheit.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Die Grünen setzen auf Märchen-Technologien, die nicht ausgereift sind.",
+    "commentaries": [
+      {
+        "text": "Im Alltag setzen sich die Grünen für erprobte Technologien wie erneuerbare Energien ein, die bereits heute effizient und verfügbar sind. Diese Technologien helfen uns, den Energiebedarf zu decken und gleichzeitig das Klima zu schützen.",
+        "title": "Erprobte Technologien im Einsatz",
+        "long_text": "Die Grünen unterstützen Technologien, die sich bewährt haben und bereits heute zum Einsatz kommen. Wind-, Solar- und Wasserkraft sind nicht nur verfügbar, sondern auch wirtschaftlich konkurrenzfähig. Diese Technologien ermöglichen es uns, den Energiebedarf zu decken und gleichzeitig die CO2-Emissionen zu senken.",
+        "short_text": "Erneuerbare Energien sind bewährte Technologien und keine Utopie.",
+        "references": []
+      },
+      {
+        "text": "Technologien wie Wind- und Solarenergie sind die kostengünstigsten und am weitesten entwickelten Lösungen zur Senkung der CO2-Emissionen. Im Gegensatz zu unerprobten Technologien wie der Kernfusion sind sie sofort einsatzbereit und wirtschaftlich effizient.",
+        "title": "Fakten zu bewährten Technologien",
+        "long_text": "Erneuerbare Energien wie Wind und Solar sind die führenden Technologien, um die CO2-Emissionen zu senken. Im Gegensatz zu unerprobten und teuren Technologien wie der Kernfusion sind sie heute verfügbar und kostengünstig. Studien zeigen, dass diese Technologien bereits in vielen Ländern erfolgreich genutzt werden.",
+        "short_text": "Erneuerbare Energien sind bewährte und kostengünstige Lösungen.",
+        "references": []
+      }
+    ]
+  }
+]

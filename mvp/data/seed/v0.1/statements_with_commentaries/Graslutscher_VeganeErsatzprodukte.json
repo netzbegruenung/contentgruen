@@ -1,0 +1,122 @@
+[
+    {
+        "statement": "Vegane Ersatzprodukte sind ungesund, da sie stark verarbeitet und voller Chemikalien sind.",
+        "commentaries": [
+            {
+                "text": "Die Verarbeitung von Lebensmitteln betrifft nicht nur vegane Produkte. Auch tierische Produkte wie Fleisch und Käse durchlaufen intensive industrielle Prozesse und enthalten oft ähnliche Zusatzstoffe.",
+                "title": "Gleiche Verarbeitung bei tierischen Produkten",
+                "long_text": "Während vegane Ersatzprodukte oft kritisiert werden, weil sie verarbeitet sind, wird übersehen, dass viele tierische Produkte genauso stark verarbeitet werden. Diese Verarbeitungsprozesse sind nicht nur auf vegane Produkte beschränkt, sondern sind in der modernen Lebensmittelindustrie weit verbreitet.",
+                "short_text": "Die Verarbeitung betrifft nicht nur vegane, sondern auch tierische Produkte.",
+                "references": [
+                    {
+                        "text": "Ökotest Artikel zur Verarbeitung von Lebensmitteln",
+                        "reference_string": "https://www.oekotest.de"
+                    }
+                ]
+            },
+            {
+                "text": "Für Menschen auf dem Land ist die Verfügbarkeit von frischen, unverarbeiteten Lebensmitteln oft besser. Hier kann man auch ohne hochverarbeitete Produkte eine gesunde vegane Ernährung umsetzen.",
+                "title": "Lokale Ernährung auf dem Land",
+                "long_text": "Auf dem Land ist es oft leichter, direkt von lokalen Bauern frische und unverarbeitete Produkte zu beziehen, was eine vegane Ernährung ohne stark verarbeitete Ersatzprodukte ermöglicht. Dies trägt nicht nur zur Gesundheit bei, sondern unterstützt auch die lokale Landwirtschaft.",
+                "short_text": "Auf dem Land sind frische, unverarbeitete vegane Lebensmittel leicht zugänglich.",
+                "references": []
+            }
+        ]
+    },
+    {
+        "statement": "Tierische Produkte sind natürlicher und besser für die Gesundheit.",
+        "commentaries": [
+            {
+                "text": "Viele tierische Produkte enthalten Rückstände von Antibiotika und Hormonen, die der Gesundheit schaden können. Im Gegensatz dazu werden viele pflanzliche Produkte ohne solche Zusätze hergestellt.",
+                "title": "Rückstände in tierischen Produkten",
+                "long_text": "Die weit verbreitete Nutzung von Antibiotika und Hormonen in der Tierhaltung führt dazu, dass Rückstände in Fleisch und Milchprodukten landen können, was gesundheitliche Risiken birgt. Pflanzliche Alternativen bieten hier eine gesündere und weniger belastete Option.",
+                "short_text": "Tierische Produkte können gesundheitsschädliche Rückstände enthalten.",
+                "references": [
+                    {
+                        "text": "Bericht über Antibiotika in der Tierhaltung",
+                        "reference_string": "https://www.umweltbundesamt.de"
+                    }
+                ]
+            },
+            {
+                "text": "Viele Menschen auf dem Land setzen bereits auf naturbelassene pflanzliche Produkte aus eigenem Anbau oder regionalen Quellen, was eine gesunde Ernährung unterstützt.",
+                "title": "Gesunde Ernährung auf dem Land",
+                "long_text": "Auf dem Land nutzen viele Menschen die Möglichkeit, pflanzliche Produkte direkt aus eigenem Anbau oder von regionalen Anbietern zu beziehen. Diese naturbelassenen Produkte sind oft frei von den schädlichen Rückständen, die in vielen tierischen Produkten vorkommen.",
+                "short_text": "Pflanzliche Produkte aus regionalem Anbau sind gesund und naturbelassen.",
+                "references": []
+            }
+        ]
+    },
+    {
+        "statement": "Vegane Ernährung ist teuer und nicht für jeden erschwinglich.",
+        "commentaries": [
+            {
+                "text": "Eine ausgewogene vegane Ernährung kann mit Basislebensmitteln wie Hülsenfrüchten, Getreide und saisonalem Gemüse preiswert gestaltet werden. Diese sind oft günstiger als Fleisch und Milchprodukte.",
+                "title": "Kosten einer veganen Ernährung",
+                "long_text": "Die Kosten einer veganen Ernährung hängen stark von den ausgewählten Lebensmitteln ab. Hülsenfrüchte, Getreide, und regionales Gemüse sind oft sehr erschwinglich und können eine gesunde Basis für eine vegane Ernährung bilden, die preislich unter dem von Fleisch und Milchprodukten liegt.",
+                "short_text": "Vegan kann preiswert sein, wenn man auf Basislebensmittel setzt.",
+                "references": [
+                    {
+                        "text": "Studie zu den Kosten einer veganen Ernährung",
+                        "reference_string": "https://www.pcrm.org"
+                    }
+                ]
+            },
+            {
+                "text": "Auf dem Land ist der Zugang zu regionalen und selbst angebauten Lebensmitteln oft gegeben, was eine preiswerte vegane Ernährung ermöglicht.",
+                "title": "Preiswerte Ernährung auf dem Land",
+                "long_text": "Menschen auf dem Land haben oft den Vorteil, Zugang zu regionalen und selbst angebauten Lebensmitteln zu haben. Diese sind nicht nur frischer und gesünder, sondern oft auch günstiger, was eine erschwingliche vegane Ernährung ermöglicht.",
+                "short_text": "Regionale Lebensmittel auf dem Land sind erschwinglich und gesund.",
+                "references": []
+            }
+        ]
+    },
+    {
+        "statement": "Der Konsum von Fleisch gehört zur Kultur und Tradition.",
+        "commentaries": [
+            {
+                "text": "Kultur und Tradition sind wichtige Aspekte, aber sie können sich weiterentwickeln. Es gibt viele Möglichkeiten, traditionelle Gerichte pflanzlich neu zu interpretieren.",
+                "title": "Kulturelle Entwicklung",
+                "long_text": "Kulturelle Traditionen sind lebendig und wandeln sich mit der Zeit. Viele traditionelle Gerichte lassen sich heute mit pflanzlichen Zutaten zubereiten, ohne den kulturellen Wert zu verlieren. Dies zeigt, dass Tradition und Fortschritt Hand in Hand gehen können.",
+                "short_text": "Traditionelle Gerichte können pflanzlich interpretiert werden.",
+                "references": [
+                    {
+                        "text": "Artikel über pflanzliche Neuinterpretationen traditioneller Gerichte",
+                        "reference_string": "https://www.eater.com"
+                    }
+                ]
+            },
+            {
+                "text": "Auf dem Land gibt es bereits viele Beispiele für eine moderne Interpretation von Traditionen, die sowohl den Tierschutz respektieren als auch die lokale Kultur bewahren.",
+                "title": "Moderne Traditionen auf dem Land",
+                "long_text": "In ländlichen Regionen gibt es bereits viele Initiativen, die zeigen, dass Traditionen und Tierschutz vereinbar sind. Durch den Einsatz lokaler, pflanzlicher Produkte werden traditionelle Gerichte neu interpretiert, was sowohl die Kultur bewahrt als auch den Tierschutz fördert.",
+                "short_text": "Traditionen auf dem Land können tierfreundlich und modern sein.",
+                "references": []
+            }
+        ]
+    },
+    {
+        "statement": "Der Verzehr von tierischen Produkten ist notwendig für eine ausgewogene Ernährung.",
+        "commentaries": [
+            {
+                "text": "Zahlreiche Studien belegen, dass eine ausgewogene vegane Ernährung alle notwendigen Nährstoffe liefern kann, wenn sie richtig geplant wird.",
+                "title": "Studien zur veganen Ernährung",
+                "long_text": "Moderne Ernährungswissenschaften haben gezeigt, dass eine gut geplante vegane Ernährung in der Lage ist, alle notwendigen Nährstoffe bereitzustellen. Es gibt eine Vielzahl von Studien, die dies belegen und zeigen, dass eine solche Ernährung sogar gesundheitliche Vorteile bieten kann.",
+                "short_text": "Eine ausgewogene vegane Ernährung liefert alle notwendigen Nährstoffe.",
+                "references": [
+                    {
+                        "text": "Academy of Nutrition and Dietetics Stellungnahme zur veganen Ernährung",
+                        "reference_string": "https://www.eatright.org"
+                    }
+                ]
+            },
+            {
+                "text": "Auf dem Land, wo Zugang zu frischem Obst und Gemüse direkt vom Bauern gegeben ist, kann eine ausgewogene vegane Ernährung leicht umgesetzt werden.",
+                "title": "Frische Ernährung auf dem Land",
+                "long_text": "In ländlichen Gebieten, wo frische und unverarbeitete Lebensmittel direkt vom Bauern bezogen werden können, ist es einfach, eine ausgewogene vegane Ernährung umzusetzen. Diese Produkte sind reich an Nährstoffen und tragen zu einer gesunden Ernährung bei.",
+                "short_text": "Frische, regionale Produkte unterstützen eine ausgewogene vegane Ernährung auf dem Land.",
+                "references": []
+            }
+        ]
+    }
+]

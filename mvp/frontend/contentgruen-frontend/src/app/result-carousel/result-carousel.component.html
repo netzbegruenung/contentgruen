@@ -1,0 +1,82 @@
+<!-- Desktop Carousel -->
+<div class="results-list-container" *ngIf="!isMobile">
+    <!-- Desktop navigation buttons -->
+    <button (click)="scrollLeft()"
+            [disabled]="isAtStart"
+            class="scroll-button left"
+            aria-label="Previous card"
+            matTooltip="Previous card">
+        <mat-icon>chevron_left</mat-icon>
+    </button>
+
+    <!-- Desktop carousel container -->
+    <div #resultContainer
+         class="result-container">
+        <div class="card-spacing-start"></div>
+
+        <ng-container *ngFor="let result of results; let i = index; trackBy: trackByFn">
+            <div class="result-item-wrapper">
+                <ng-container *ngComponentOutlet="componentFor(result); injector: createInjector(result)"></ng-container>
+            </div>
+        </ng-container>
+
+        <div class="card-spacing-end"></div>
+    </div>
+
+    <!-- Desktop navigation button -->
+    <button (click)="scrollRight()"
+            [disabled]="isAtEnd"
+            class="scroll-button right"
+            aria-label="Next card"
+            matTooltip="Next card">
+        <mat-icon>chevron_right</mat-icon>
+    </button>
+</div>
+
+<!-- Mobile Carousel -->
+<div class="mobile-carousel-container" *ngIf="isMobile">
+    <!-- Mobile carousel scroll container -->
+    <div #mobileContainer
+         class="mobile-scroll-container"
+         appSwipeGesture
+         (swipeLeft)="onSwipeLeft()"
+         (swipeRight)="onSwipeRight()"
+         (swipeUp)="onSwipeUp()"
+         (swipeDown)="onSwipeDown()">
+
+        <ng-container *ngFor="let result of results; let i = index; trackBy: trackByFn">
+            <div class="mobile-card-item">
+                <ng-container *ngComponentOutlet="componentFor(result); injector: createInjector(result)"></ng-container>
+            </div>
+        </ng-container>
+    </div>
+
+    <!-- Mobile swipe hints - positioned relative to carousel container -->
+    <div class="swipe-hints">
+        <mat-icon class="swipe-hint left"
+                  *ngIf="currentIndex > 0"
+                  (click)="navigateMobileCard('prev')">
+            chevron_left
+        </mat-icon>
+        <mat-icon class="swipe-hint right"
+                  *ngIf="currentIndex < totalItems - 1"
+                  (click)="navigateMobileCard('next')">
+            chevron_right
+        </mat-icon>
+    </div>
+
+    <!-- Mobile navigation indicators -->
+    <div class="mobile-navigation">
+        <!-- Dot indicators with counter -->
+        <div class="navigation-line">
+            <div class="dot-indicators-with-counter">
+                <span *ngFor="let item of results; let i = index"
+                      class="dot"
+                      [class.active]="i === currentIndex"
+                      (click)="scrollToMobileIndex(i)">
+                </span>
+                <span class="inline-counter">{{ currentIndex + 1 }}/{{ totalItems }}</span>
+            </div>
+        </div>
+    </div>
+</div>

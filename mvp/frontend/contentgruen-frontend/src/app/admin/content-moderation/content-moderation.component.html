@@ -1,0 +1,228 @@
+<div class="moderation-container">
+  <div class="header">
+    <h1>Content Moderation</h1>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="loadReports()">
+      <mat-icon>refresh</mat-icon>
+      Aktualisieren
+    </button>
+  </div>
+
+  <!-- Status Filter -->
+  <div class="filter-section">
+    <mat-button-toggle-group
+      [value]="selectedStatus"
+      (change)="onStatusFilterChange($event.value)"
+      appearance="standard">
+      <mat-button-toggle value="pending">
+        <mat-icon>pending</mat-icon>
+        Ausstehend
+      </mat-button-toggle>
+      <mat-button-toggle value="reviewed">
+        <mat-icon>check_circle</mat-icon>
+        Geprüft
+      </mat-button-toggle>
+      <mat-button-toggle value="dismissed">
+        <mat-icon>cancel</mat-icon>
+        Abgelehnt
+      </mat-button-toggle>
+      <mat-button-toggle value="all">
+        <mat-icon>list</mat-icon>
+        Alle
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Lade Meldungen...</p>
+  </div>
+
+  <div *ngIf="error && !loading" class="error">
+    <mat-icon>error</mat-icon>
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="!loading && !error && reports.length === 0" class="empty-state">
+    <mat-icon class="large-icon">check_circle</mat-icon>
+    <h2>Keine ausstehenden Meldungen</h2>
+    <p>Aktuell gibt es keine gemeldeten Inhalte zur Überprüfung.</p>
+  </div>
+
+  <div *ngIf="!loading && !error && reports.length > 0" class="reports-table">
+    <table mat-table [dataSource]="reports" class="mat-elevation-z2" multiTemplateDataRows>
+      <!-- Expand Column -->
+      <ng-container matColumnDef="expand">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let report">
+          <button mat-icon-button (click)="toggleExpand(report); $event.stopPropagation()">
+            <mat-icon>{{ isExpanded(report) ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <!-- Content Type Column -->
+      <ng-container matColumnDef="content_type">
+        <th mat-header-cell *matHeaderCellDef>Typ</th>
+        <td mat-cell *matCellDef="let report">
+          <span class="content-type-badge">{{ getContentTypeLabel(report.content_type) }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Reason Column -->
+      <ng-container matColumnDef="reason">
+        <th mat-header-cell *matHeaderCellDef>Grund</th>
+        <td mat-cell *matCellDef="let report">
+          <div class="reason-cell">
+            <strong>{{ getReasonLabel(report.reason) }}</strong>
+            <p *ngIf="report.description" class="description">{{ report.description }}</p>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Reporter Column -->
+      <ng-container matColumnDef="reporter">
+        <th mat-header-cell *matHeaderCellDef>Gemeldet von</th>
+        <td mat-cell *matCellDef="let report">
+          <span *ngIf="report.reported_by_user_id">{{ report.reported_by_user_id }}</span>
+          <span *ngIf="!report.reported_by_user_id && report.reported_by_session_id" class="anonymous">
+            Anonym ({{ report.reported_by_session_id.substring(0, 8) }})
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Created Column -->
+      <ng-container matColumnDef="created">
+        <th mat-header-cell *matHeaderCellDef>Datum</th>
+        <td mat-cell *matCellDef="let report">
+          {{ formatDate(report.created) }}
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let report">
+          <span class="status-badge" [class]="'status-' + report.status">
+            {{ getStatusLabel(report.status) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Reviewed By Column -->
+      <ng-container matColumnDef="reviewed_by">
+        <th mat-header-cell *matHeaderCellDef>Geprüft von</th>
+        <td mat-cell *matCellDef="let report">
+          <span *ngIf="report.reviewed_by">{{ report.reviewed_by }}</span>
+          <span *ngIf="!report.reviewed_by" class="not-reviewed">-</span>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Aktionen</th>
+        <td mat-cell *matCellDef="let report">
+          <div class="action-buttons">
+            <button
+              mat-raised-button
+              color="warn"
+              (click)="deleteContent(report); $event.stopPropagation()"
+              matTooltip="Inhalt löschen">
+              <mat-icon>delete</mat-icon>
+              Löschen
+            </button>
+            <button
+              mat-button
+              (click)="dismissReport(report); $event.stopPropagation()"
+              matTooltip="Meldung verwerfen">
+              <mat-icon>close</mat-icon>
+              Verwerfen
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Expanded Content Row -->
+      <ng-container matColumnDef="expandedContent">
+        <td mat-cell *matCellDef="let report" [attr.colspan]="displayedColumns.length">
+          <div class="content-preview" [@expandCollapse]="isExpanded(report) ? 'expanded' : 'collapsed'">
+            <div *ngIf="isExpanded(report) && report.content" class="content-display">
+              <h3>Gemeldeter Inhalt:</h3>
+              <div class="content-info">
+                <p class="content-id"><strong>Content-ID:</strong> <code>{{ report.content_id }}</code></p>
+              </div>
+              <div class="content-wrapper">
+                <ng-container *ngIf="report.content_type === 'commentary'">
+                  <div class="content-item">
+                    <p><strong>Titel:</strong> {{ report.content.title }}</p>
+
+                    <div class="text-section">
+                      <p><strong>Text (Standard):</strong></p>
+                      <div class="text-content">{{ report.content.text }}</div>
+                    </div>
+
+                    <div class="text-section" *ngIf="report.content.short_text">
+                      <p><strong>Text (Kurzversion):</strong></p>
+                      <div class="text-content">{{ report.content.short_text }}</div>
+                    </div>
+
+                    <div class="text-section" *ngIf="report.content.long_text">
+                      <p><strong>Text (Langversion):</strong></p>
+                      <div class="text-content">{{ report.content.long_text }}</div>
+                    </div>
+
+                    <div class="text-section" *ngIf="report.content.statement_text">
+                      <p><strong>Verknüpfte Aussage:</strong></p>
+                      <div class="text-content statement-text">"{{ report.content.statement_text }}"</div>
+                      <p class="metadata" *ngIf="report.content.statement_id">
+                        <small>Statement-ID: {{ report.content.statement_id }}</small>
+                      </p>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="report.content_type === 'generictext'">
+                  <div class="content-item">
+                    <p><strong>Titel:</strong> {{ report.content.title }}</p>
+
+                    <div class="text-section">
+                      <p><strong>Text (Standard):</strong></p>
+                      <div class="text-content">{{ report.content.text }}</div>
+                    </div>
+
+                    <div class="text-section" *ngIf="report.content.short_text">
+                      <p><strong>Text (Kurzversion):</strong></p>
+                      <div class="text-content">{{ report.content.short_text }}</div>
+                    </div>
+
+                    <div class="text-section" *ngIf="report.content.long_text">
+                      <p><strong>Text (Langversion):</strong></p>
+                      <div class="text-content">{{ report.content.long_text }}</div>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="report.content_type === 'statement'">
+                  <div class="content-item">
+                    <div class="text-section">
+                      <p><strong>Aussage:</strong></p>
+                      <div class="text-content">{{ report.content.text }}</div>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+            <div *ngIf="isExpanded(report) && !report.content" class="content-not-found">
+              <mat-icon>warning</mat-icon>
+              <p>Inhalt konnte nicht geladen werden (möglicherweise bereits gelöscht)</p>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="report-row" (click)="toggleExpand(row)"></tr>
+      <tr mat-row *matRowDef="let row; columns: ['expandedContent']" class="expanded-row"></tr>
+    </table>
+  </div>
+</div>

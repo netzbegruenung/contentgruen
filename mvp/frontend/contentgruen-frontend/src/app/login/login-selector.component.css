@@ -1,0 +1,387 @@
+.component-box {
+    padding: 20px;
+}
+
+.welcome-section {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.welcome-section h1 {
+    margin-bottom: 20px;
+    color: #43a047;
+}
+
+.welcome-text {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.emphasis {
+    color: #43a047;
+    font-weight: 500;
+    border-bottom: 2px dotted #43a047;
+    cursor: help;
+}
+
+.login-prompt {
+    font-size: 16px;
+    color: #666;
+    margin-top: 30px;
+    font-weight: 500;
+}
+
+.inline-content {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+/* Registration Information Styles */
+.registration-info-container {
+    max-width: 1000px;
+    margin: 20px auto 30px;
+    padding: 0 20px;
+}
+
+.registration-expansion-panel {
+    background: #f8f9fa;
+    border-left: 4px solid #43a047;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.registration-expansion-panel .mat-expansion-panel-header {
+    background: #f8f9fa !important;
+    padding: 16px 24px;
+}
+
+.registration-expansion-panel .mat-expansion-panel-header:hover {
+    background: #f0f1f2 !important;
+}
+
+.registration-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #43a047;
+    font-size: 16px;
+    font-weight: 500;
+    width: 100%;
+}
+
+.registration-panel-title .info-icon {
+    color: #43a047;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.expansion-hint {
+    margin-left: auto;
+    color: #666;
+    font-size: 14px;
+    font-weight: normal;
+    padding-right: 24px;
+    white-space: nowrap;
+}
+
+.registration-content {
+    padding: 16px 24px 24px;
+}
+
+.registration-intro {
+    color: #333;
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.registration-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.registration-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.registration-option .option-icon {
+    color: #66bb6a;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.registration-option .option-text {
+    flex: 1;
+}
+
+.registration-option .option-text strong {
+    display: block;
+    color: #2e7d32;
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+.registration-option .option-text p {
+    color: #555;
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.registration-option .email-link {
+    color: #43a047;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px dotted #43a047;
+    transition: all 0.2s ease;
+}
+
+.registration-option .email-link:hover {
+    color: #2e7d32;
+    border-bottom-color: #2e7d32;
+}
+
+.login-selector-container {
+    margin-top: 30px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.login-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login-option-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.login-option-card:hover:not(.disabled-option) {
+    transform: translateY(-2px);
+}
+
+.login-option-card.disabled-option {
+    opacity: 0.7;
+    background: #f5f5f5;
+}
+
+.login-option-card.disabled-option .login-option-button {
+    cursor: not-allowed;
+}
+
+.login-option-card.disabled-option .login-description {
+    opacity: 0.6;
+}
+
+.disabled-notice {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    color: #856404;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.disabled-notice .notice-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #f39c12;
+}
+
+.login-option-button {
+    width: 100%;
+    height: 80px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-transform: none;
+}
+
+.keycloak-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.keycloak-button:disabled {
+    background: linear-gradient(135deg, #b0b0b0 0%, #9e9e9e 100%);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.contentgruen-button {
+    background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+    color: white;
+}
+
+.contentgruen-button:disabled {
+    background: linear-gradient(135deg, #b0b0b0 0%, #9e9e9e 100%);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.login-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+.button-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.button-title {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.button-subtitle {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+.login-description {
+    margin-top: 12px;
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+}
+
+.divider-container {
+    text-align: center;
+    position: relative;
+    margin: 20px 0;
+}
+
+.divider-container::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 1px;
+    background: #e0e0e0;
+}
+
+.divider-text {
+    background: white;
+    padding: 0 16px;
+    color: #999;
+    position: relative;
+    font-size: 14px;
+}
+
+.loading-container {
+    text-align: center;
+    padding: 40px;
+}
+
+.loading-container p {
+    margin-top: 20px;
+    color: #666;
+}
+
+@media (max-width: 600px) {
+    .component-box {
+        padding: 15px;
+    }
+
+    .registration-info-container {
+        padding: 0;
+        margin: 15px auto 20px;
+    }
+
+    .registration-expansion-panel .mat-expansion-panel-header {
+        padding: 12px 16px;
+    }
+
+    .registration-panel-title {
+        font-size: 14px;
+        gap: 8px;
+    }
+
+    .registration-panel-title .info-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+
+    .expansion-hint {
+        display: none;
+    }
+
+    .registration-content {
+        padding: 12px 16px 16px;
+    }
+
+    .registration-option {
+        padding: 10px;
+    }
+
+    .registration-option .option-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+    }
+
+    .registration-option .option-text strong {
+        font-size: 14px;
+    }
+
+    .registration-option .option-text p {
+        font-size: 13px;
+    }
+
+    .disabled-notice {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .disabled-notice .notice-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
+
+    .login-option-button {
+        height: 70px;
+        font-size: 14px;
+    }
+
+    .button-title {
+        font-size: 16px;
+    }
+
+    .login-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+    }
+}

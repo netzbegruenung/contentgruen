@@ -1,0 +1,92 @@
+[
+    {
+        "id": "6eb84f30-2816-48c3-b7eb-e5007374c310",
+        "text": "This is a test sentence.",
+        "content_type": "test"
+    },
+    {
+        "id": "7cb9dd9a-51c1-4522-9a1a-cc0b2824c1ce",
+        "text": "This is another test.",
+        "content_type": "test"
+    },
+    {
+        "id": "3a3b6218-3b74-4f16-b403-07a300ed6aa9",
+        "text": "And this is a third test sentence.",
+        "content_type": "test"
+    },
+    {
+        "id": "ed4b32a3-a343-4d67-bd41-6c90d4e67805",
+        "text": "Klimawandel",
+        "content_type": "test"
+    },
+    {
+        "id": "55d46e51-1a23-4080-bae2-76036464ac4e",
+        "text": "Artensterben",
+        "content_type": "test"
+    },
+    {
+        "id": "5aad176c-b4d3-4aaa-b01f-69016f3829b8",
+        "text": "Energiewende",
+        "content_type": "test"
+    },
+    {
+        "id": "62f40b88-5d8d-4c1d-bd8b-e12cb62aa7a1",
+        "text": "Verkehrswende",
+        "content_type": "test"
+    },
+    {
+        "id": "29f13932-e312-4ed9-9e6a-ac701a0b8e71",
+        "text": "Wir sollten mehr Flüsse renaturieren!",
+        "content_type": "test"
+    },
+    {
+        "id": "19d52d0c-68ea-41b3-b766-408495da02a0",
+        "text": "Darum fordern wir ein Tempolimit auf Autobahnen.",
+        "content_type": "test"
+    },
+    {
+        "id": "1d69a88f-5040-42ba-bbd6-d3df512d103d",
+        "text": "Wir brauchen mehr Radwege!",
+        "content_type": "test"
+    },
+    {
+        "id": "93882de7-0e79-4acf-a880-b8530dcd3f4c",
+        "text": "Wir sollten mehr Bäume pflanzen.",
+        "content_type": "test"
+    },
+    {
+        "id": "f0463c16-08cc-4557-a188-a8738d1d818e",
+        "text": "Wir sollten mehr Bäume fällen.",
+        "content_type": "test"
+    },
+    {
+        "id": "b05ca268-4df3-491a-9e43-92cf4c2d12d6",
+        "text": "Wir sollten mehr Bäume schützen.",
+        "content_type": "test"
+    },
+    {
+        "id": "dca1c686-9b94-4a20-ba01-78bc7c5346e5",
+        "text": "Durch den Klimawandel werden Starkregenereignisse häufiger.",
+        "content_type": "test"
+    },
+    {
+        "id": "8d6b03f7-ed2c-48c1-b8d8-88cc8a24058b",
+        "text": "Durch den Klimawandel werden Dürren häufiger.",
+        "content_type": "test"
+    },
+    {
+        "id": "87195040-941c-4be3-a99f-52c1a23e889f",
+        "text": "Durch den Klimawandel werden Stürme häufiger.",
+        "content_type": "test"
+    },
+    {
+        "id": "7b0d6fb2-7263-4dd8-9bf5-4f8b7f659dfd",
+        "text": "Durch den Klimawandel werden Hitzewellen häufiger.",
+        "content_type": "test"
+    },
+    {
+        "id": "8b0780f8-aa00-48dd-b92c-b4f534083ad6",
+        "text": "Durch den Klimawandel werden Überschwemmungen häufiger.",
+        "content_type": "test"
+    }
+]

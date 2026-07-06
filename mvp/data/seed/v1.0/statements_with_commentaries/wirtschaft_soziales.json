@@ -1,0 +1,280 @@
+[
+    {
+        "statement": "Die Grünen sind eine Verbotspartei!",
+        "commentaries": [
+            {
+                "text": "Kenne ich, das mit den Verboten nervt mich auch manchmal! Aber mal ehrlich: Ich freu mich, dass ich im Restaurant nicht mehr vollgequalmt werde. Und mein Nachbar spart mit seiner Wärmepumpe 800€ im Jahr - das ist doch eher ein Freiheitsgewinn, oder?",
+                "title": "Freiheit durch kluge Regeln",
+                "short_text": "Verstehe dich! Aber ohne Rauchverbot würden wir noch vollgequalmt. Und mein Nachbar spart mit Wärmepumpe 800€/Jahr - das ist Freiheit! 💪",
+                "long_text": "Verstehe total, dass sich niemand gern was vorschreiben lässt - geht mir genauso! Aber denk mal an die Gurtpflicht oder das Rauchverbot in Kneipen. Anfangs haben alle gemeckert, heute sind wir froh drüber. Bei uns im Viertel haben jetzt drei Familien Wärmepumpen - die sparen richtig Kohle und sind unabhängig von Gaspreisen. Das ist für mich echte Freiheit: selbst entscheiden können, woher meine Energie kommt, und nicht von Putin oder Scheichs abhängig sein.",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "Wärmepumpen-Förderung bis 70% möglich",
+                        "reference_string": "https://www.bafa.de/DE/Energie/Effiziente_Gebaeude/effiziente_gebaeude_node.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-13T22:21:42.415788"
+                }
+            },
+            {
+                "text": "Bei uns in der Straße hat letztens einer gemeint: 'Die Grünen verbieten mir alles!' Dann kam raus: Er kriegt 9.000€ Förderung für seine neue Heizung und sein E-Auto kann er günstiger laden als tanken. Verbote sehen anders aus, oder? 😄",
+                "title": "Nachbars Überraschung",
+                "short_text": "Mein Nachbar: 'Alles verboten!' Auch mein Nachbar: Kriegt 9.000€ Heizungsförderung und lädt E-Auto günstiger als tanken. 🤷‍♂️",
+                "long_text": "Lustige Geschichte aus unserer Nachbarschaft: Der Klaus hat monatelang über die 'Verbotspartei' geschimpft. Dann hat er sich mal informiert und festgestellt: 9.000€ Förderung für seine neue Heizung, Balkonkraftwerk ohne Genehmigung möglich, und sein E-Auto (das er sich eh kaufen wollte) lädt er für 3€ voll statt 80€ tanken. Jetzt ist er der größte Fan der Energiewende im ganzen Viertel! Manchmal sind vermeintliche 'Verbote' einfach nur bessere Alternativen, die sich noch nicht rumgesprochen haben.",
+                "style": "humorvoll",
+                "references": [
+                    {
+                        "text": "Förderübersicht Heizungstausch",
+                        "reference_string": "https://www.energiewechsel.de/KAENEF/Redaktion/DE/Dossier/beg.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-06T20:21:42.415788"
+                }
+            },
+            {
+                "text": "Deutschland ist Innovationsland - nicht Verbotsland. Wir haben das erste Auto erfunden, warum nicht auch die besten E-Autos bauen? 70% der Deutschen wollen mehr Klimaschutz. Das ist keine Verbotspolitik, sondern Zukunftssicherung.",
+                "title": "Innovation statt Stillstand",
+                "short_text": "Deutschland = Erfinderland! Vom Auto zum E-Auto. 70% wollen mehr Klimaschutz. Das ist Zukunft, nicht Verbot.",
+                "long_text": "Wir Deutschen haben das Auto erfunden, die Solarzelle, die Windkraft perfektioniert. Sollen wir jetzt echt stehenbleiben, während China und die USA durchstarten? 70% der Deutschen wollen mehr Klimaschutz - das ist demokratischer Wille, keine Diktatur. In meiner Stadt entstehen gerade 500 neue Jobs in der Batterieproduktion. Das sind keine Verbote, sondern Chancen. Wer hätte vor 20 Jahren gedacht, dass wir mal mit dem Handy bezahlen? Fortschritt fühlt sich am Anfang immer komisch an.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Umfrage: 70% für mehr Klimaschutz",
+                        "reference_string": "https://www.umweltbundesamt.de/themen/nachhaltigkeit-strategien-internationales/umweltbewusstsein-in-deutschland"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 3,
+                    "created_at": "2025-09-04T21:21:42.415788"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 5,
+            "created_at": "2025-09-11T22:11:42.415788"
+        }
+    },
+    {
+        "statement": "Die Grünen zerstören die Wirtschaft!",
+        "commentaries": [
+            {
+                "text": "Verstehe die Sorge - geht ja um unsere Jobs! Aber schau mal: Bei uns entstehen gerade 500 neue Arbeitsplätze in der Solarfabrik. Mein Schwager arbeitet jetzt bei einem Wärmepumpen-Hersteller - die kommen mit Aufträgen nicht hinterher. Wirtschaft wandelt sich, stirbt aber nicht.",
+                "title": "Neue Jobs statt alte Ängste",
+                "short_text": "Kenne die Sorge! Aber: 500 neue Jobs in unserer Solarfabrik. Schwager bei Wärmepumpen-Firma - Auftragsboom! Wandel ≠ Zerstörung",
+                "long_text": "Die Angst um Arbeitsplätze kann ich total nachvollziehen - hatte ich auch! Aber dann hab ich gesehen, was bei uns passiert: Die alte Fabrik macht jetzt Solarpanels statt Autozubehör - 500 neue Jobs, besser bezahlt. Mein Schwager ist von der Öl-Heizungsfirma zu einem Wärmepumpen-Hersteller gewechselt - verdient mehr und hat sichereren Job. Deutschland exportiert grüne Technologie für Milliarden. Das ist keine Zerstörung, sondern Modernisierung. Genau wie damals, als wir von Kohle auf andere Energien umgestiegen sind.",
+                "style": "persönlich",
+                "references": [
+                    {
+                        "text": "338.000 Arbeitsplätze in Erneuerbaren Energien",
+                        "reference_string": "https://www.bmwk.de/Redaktion/DE/Dossier/erneuerbare-energien.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-06T01:21:42.415788"
+                }
+            },
+            {
+                "text": "BMW, Mercedes, Volkswagen - alle setzen voll auf E-Mobilität. BASF baut die größte Wärmepumpe Europas. Siemens macht Milliarden mit Windkraft. Komisch, dass unsere erfolgreichsten Unternehmen alle auf grüne Technologie setzen, wenn die doch die Wirtschaft zerstört?",
+                "title": "Konzerne setzen auf Grün",
+                "short_text": "BMW, Mercedes, VW = voll auf E-Autos. BASF = größte Wärmepumpe Europas. Siemens = Windkraft-Milliarden. Zerstörung sieht anders aus.",
+                "long_text": "Interessant: Unsere erfolgreichsten Konzerne investieren Milliarden in grüne Technologie. BMW baut nur noch E-Plattformen, Mercedes will 2030 vollelektrisch sein, VW steckt 180 Milliarden in E-Mobilität. BASF baut gerade die größte Wärmepumpe Europas, Siemens macht Rekordgewinne mit Windkraft. Die wissen schon, warum sie das machen - die denken nicht ideologisch, sondern wirtschaftlich. Grüne Technologie IST die Wirtschaft der Zukunft. Wer das verpennt, wird von China überholt.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "VW investiert 180 Mrd. in E-Mobilität",
+                        "reference_string": "https://www.volkswagen-newsroom.com/de/storys/vw-investiert-180-milliarden-euro-in-zukunftstechnologien-17860"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 1,
+                    "created_at": "2025-09-03T21:21:42.415788"
+                }
+            },
+            {
+                "text": "Mein Onkel, der immer über die Grünen schimpfte, hat letztes Jahr seine Dachfläche an einen Solarpark-Betreiber vermietet. Kriegt jetzt 8.000€ im Jahr - ohne einen Finger zu rühren. Jetzt ist er der größte Energiewende-Fan der Familie! 😂",
+                "title": "Onkels Sinneswandel",
+                "short_text": "Onkel (früher Anti-Grün) vermietet Dach für Solar = 8.000€/Jahr ohne Arbeit. Jetzt größter Energiewende-Fan! 😂",
+                "long_text": "Muss immer lachen, wenn ich an meinen Onkel denke. Jahrelang hat er über die 'wirtschaftsfeindlichen Grünen' geschimpft. Letztes Jahr kam ein Solarfirma und bot ihm 8.000€ Jahrespacht für sein Scheunendach. Jetzt verdient er mehr mit seinem Dach als früher mit der halben Landwirtschaft! Sein Nachbar hat nachgezogen, die ganze Gemeinde profitiert von der Gewerbesteuer. Bei der letzten Familienfeier hat er allen erklärt, warum Erneuerbare Energien die beste Geldanlage sind. Manchmal muss man die Leute einfach machen lassen, dann merken sie selbst, dass Klimaschutz auch wirtschaftlich Sinn macht.",
+                "style": "humorvoll",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-07T08:21:42.415788"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 7,
+            "created_at": "2025-09-12T23:18:42.415788"
+        }
+    },
+    {
+        "statement": "Habeck hat keine Ahnung von Wirtschaft!",
+        "commentaries": [
+            {
+                "text": "Hab ich auch erst gedacht! Aber der Mann hat tatsächlich Philosophie UND Volkswirtschaft studiert. Und mal ehrlich: Nach der Gaspreiskrise letztes Jahr haben wir dank seiner Speicher-Strategie keine Blackouts gehabt. Meine Gasrechnung ist wieder normal. Scheint doch was zu können.",
+                "title": "Unterschätzt, aber erfolgreich",
+                "short_text": "Dachte ich auch! Aber: Volkswirtschaft studiert ✓ Gaskrise gemeistert ✓ Keine Blackouts ✓ Meine Gasrechnung wieder normal ✓",
+                "long_text": "Verstehe den Eindruck - Philosophen als Wirtschaftsminister klingt erstmal seltsam. Aber Habeck hat auch Volkswirtschaft studiert und als Minister bewiesen: In der größten Energiekrise seit Jahrzehnten keine Blackouts, keine Gasknappheit, obwohl alle Panik hatten. Die Gasspeicher waren voll, bevor der Winter kam. Intel baut für 30 Milliarden in Magdeburg, Northvolt in Schleswig-Holstein. Das sind die größten Industrieansiedlungen seit Jahrzehnten. Perfekt ist niemand, aber 'keine Ahnung' sieht anders aus.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Intel-Ansiedlung in Magdeburg",
+                        "reference_string": "https://www.intel.de/content/www/de/de/newsroom/news/intel-announces-initial-investment-over-30-billion-euros.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-10T17:21:42.415788"
+                }
+            },
+            {
+                "text": "Komisch nur, dass die Wirtschaftsweisen ihm gute Noten geben und selbst der BDI mit ihm arbeitet. Bei uns hat gerade ein Mittelständler erzählt: 'Seit Jahren der erste Minister, der wirklich zuhört und Bürokratie abbaut.' Aber klar, was wissen die schon...",
+                "title": "Wirtschaft lobt Habeck",
+                "short_text": "Wirtschaftsweise: Gute Noten. BDI arbeitet mit ihm. Mittelständler: 'Erster der zuhört!' Aber was wissen die schon... 🤷",
+                "long_text": "Interessanterweise sehen das viele Wirtschaftsvertreter anders. Die Wirtschaftsweisen attestieren ihm solide Arbeit, der BDI arbeitet konstruktiv mit ihm zusammen. Bei unserem Unternehmerstammtisch letztens meinte einer: 'Endlich mal ein Minister, der Mittelständler ernst nimmt und nicht nur Konzerne hofiert.' Die Investitionsprämie von 10% für alle Unternehmen? Habecks Idee. Die schnelleren Genehmigungsverfahren? Auch er. Klar kann man immer was kritisieren, aber 'keine Ahnung' würde anders aussehen.",
+                "style": "brückenbauend",
+                "references": [
+                    {
+                        "text": "Sachverständigenrat zur Wirtschaftspolitik",
+                        "reference_string": "https://www.sachverstaendigenrat-wirtschaft.de"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 10,
+                    "created_at": "2025-09-06T12:21:42.415788"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 11,
+            "created_at": "2025-09-12T07:33:42.415788"
+        }
+    },
+    {
+        "statement": "E-Autos sind eine Totgeburt!",
+        "commentaries": [
+            {
+                "text": "Dachte mein Kollege auch - bis er einen Probe gefahren ist. Jetzt spart er 200€ im Monat, lädt zuhause mit Solarstrom und meint: 'Nie wieder Ölwechsel!' In unserer Firma sind schon 5 umgestiegen. Die Zulassungszahlen sprechen auch eine klare Sprache.",
+                "title": "Kollegen überzeugt",
+                "short_text": "Kollege dachte das auch. Jetzt: -200€/Monat, lädt mit eigenem Solar, kein Ölwechsel. 5 Kollegen schon umgestiegen!",
+                "long_text": "Verstehe die Skepsis total - hatte ich auch! Aber in unserer Firma erlebe ich gerade das Gegenteil: 5 Kollegen sind umgestiegen, alle begeistert. Einer lädt mit seiner Solaranlage praktisch kostenlos, ein anderer spart 200€ monatlich weil er viel pendelt. Keine Ölwechsel, kaum Verschleiß, leise. Der Gebrauchtwagenhändler bei uns meint, er kommt mit E-Autos nicht hinterher, so groß ist die Nachfrage. Totgeburt sieht anders aus - eher wie die Smartphones vor 15 Jahren, als alle meinten 'braucht kein Mensch'.",
+                "style": "persönlich",
+                "references": [
+                    {
+                        "text": "E-Auto Zulassungen steigen kontinuierlich",
+                        "reference_string": "https://www.kba.de/DE/Statistik/Fahrzeuge/Neuzulassungen/neuzulassungen_node.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-04T22:21:42.415788"
+                }
+            },
+            {
+                "text": "Volkswagen investiert 180 Milliarden in E-Mobilität. Tesla ist der wertvollste Autohersteller der Welt. China dominiert den Markt. Aber klar, die haben alle keine Ahnung und nur du hast den Durchblick... 🙄",
+                "title": "Milliarden-Investments sprechen Bände",
+                "short_text": "VW: 180 Mrd. in E-Autos. Tesla: wertvollster Autohersteller. China: dominiert Markt. Alles Idioten außer du? 🙄",
+                "long_text": "Wenn E-Autos eine Totgeburt wären, warum investiert dann VW 180 Milliarden? Warum ist Tesla mehr wert als die nächsten 5 Autohersteller zusammen? Warum baut jeder deutsche Hersteller neue E-Plattformen? Die Manager dort sind keine Öko-Romantiker, sondern knallharte Geschäftsleute. Die sehen: Batterien werden günstiger, Reichweiten steigen, Ladeinfrastruktur wächst. In Norwegen sind 80% der Neuwagen elektrisch. Die Chinesen exportieren E-Autos in die ganze Welt. Wer da noch 'Totgeburt' sagt, hat die letzten 5 Jahre verschlafen.",
+                "style": "sarkastisch",
+                "references": [
+                    {
+                        "text": "Norwegen: 80% E-Auto-Quote bei Neuzulassungen",
+                        "reference_string": "https://www.adac.de/news/elektroauto-norwegen/"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 3,
+                    "created_at": "2025-09-03T02:21:42.415788"
+                }
+            },
+            {
+                "text": "In 10 Jahren lachen wir darüber. Wie damals als alle meinten, Smartphones setzen sich nie durch oder Internet ist nur was für Nerds. E-Autos sind jetzt schon günstiger im Unterhalt, in 5 Jahren auch in der Anschaffung. Die Entwicklung ist nicht aufzuhalten.",
+                "title": "Geschichte wiederholt sich",
+                "short_text": "In 10 Jahren lachen wir drüber. Wie bei 'Internet nur für Nerds'. E-Autos schon jetzt günstiger im Unterhalt!",
+                "long_text": "Erinnert mich an 2007, als das iPhone rauskam: 'Viel zu teuer! Akku hält nicht! Wer braucht Internet am Handy?' Heute hat jeder eins. Bei E-Autos läuft's genauso: Die Preise fallen rapide, Batterien werden besser, Ladeinfrastruktur wächst exponentiell. Schon heute sind E-Autos günstiger im Unterhalt - kein Öl, weniger Verschleißteile, günstigerer 'Treibstoff'. In 5 Jahren lacht keiner mehr drüber. Die Frage ist nur: Bauen wir die E-Autos oder kaufen wir sie aus China?",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Studie: E-Autos günstiger im Unterhalt",
+                        "reference_string": "https://www.adac.de/rund-ums-fahrzeug/auto-kaufen-verkaufen/autokosten/elektroauto-kostenvergleich/"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 3,
+                    "created_at": "2025-09-13T20:21:42.415788"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 14,
+            "created_at": "2025-09-14T07:42:42.415788"
+        }
+    },
+    {
+        "statement": "Wärmepumpen funktionieren nur im Neubau!",
+        "commentaries": [
+            {
+                "text": "Das dachte mein Nachbar auch - 1960er Altbau, keine Dämmung. Jetzt heizt er seit 2 Jahren mit Wärmepumpe und spart 1.200€ jährlich. Musste nur größere Heizkörper in 2 Räumen einbauen. Läuft einwandfrei, selbst bei -15 Grad letzten Winter.",
+                "title": "Altbau-Erfolgsgeschichte",
+                "short_text": "Nachbar: 60er Altbau, keine Dämmung. Wärmepumpe läuft seit 2 Jahren, spart 1.200€/Jahr. Sogar bei -15°C!",
+                "long_text": "Diese Mär hält sich hartnäckig, aber mein Nachbar beweist das Gegenteil: 1960er Altbau, original Fenster, kaum Dämmung. Hat sich trotzdem eine Wärmepumpe einbauen lassen. Ja, er musste in Wohnzimmer und Bad größere Heizkörper installieren, aber das war's. Läuft seit 2 Jahren problemlos, selbst bei -15 Grad letzten Winter war's warm. Spart 1.200€ im Jahr gegenüber der alten Ölheizung. Der Installateur meinte: '70% der Altbauten sind geeignet, man muss nur richtig planen.'",
+                "style": "persönlich",
+                "references": [
+                    {
+                        "text": "Fraunhofer-Studie: Wärmepumpen im Altbau",
+                        "reference_string": "https://www.ise.fraunhofer.de/de/forschungsprojekte/waermepumpen-im-bestand.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 10,
+                    "created_at": "2025-09-08T17:21:42.415788"
+                }
+            },
+            {
+                "text": "Fraunhofer-Institut sagt: 65% der Bestandsgebäude sind ohne große Umbauten geeignet. In der Schweiz laufen 50% der Wärmepumpen in Altbauten - haben die alle nur Neubauten? Die Technik hat sich massiv weiterentwickelt.",
+                "title": "Wissenschaft widerspricht",
+                "short_text": "Fraunhofer: 65% der Altbauten geeignet. Schweiz: 50% der Wärmepumpen in Altbauten. Mythos widerlegt!",
+                "long_text": "Die Wissenschaft sagt was anderes: Fraunhofer-Institut hat ermittelt, dass 65% der Bestandsgebäude ohne große Umbauten für Wärmepumpen geeignet sind. In der Schweiz, wo es auch nicht wärmer ist als bei uns, laufen bereits 50% aller Wärmepumpen in Altbauten. Die moderne Technik schafft Vorlauftemperaturen bis 70 Grad - das reicht für die meisten Altbauten. Klar, eine Burg von 1650 ist schwierig, aber der normale 60er-Jahre-Bau? Kein Problem. Man muss nur den richtigen Installateur finden, der sich auskennt.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Schweizer Erfahrungen mit Wärmepumpen",
+                        "reference_string": "https://www.fws.ch/waermepumpen-im-altbau/"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-10T16:21:42.415788"
+                }
+            },
+            {
+                "text": "Meine Eltern, beide 70+, haben letztes Jahr ihre Ölheizung im 1970er Haus getauscht. Wärmepumpe läuft super, sogar die alten Heizkörper konnten bleiben. Papa ist begeistert: 'Endlich kein Öltank-TÜV mehr!' Förderung war auch top: 45% vom Staat bezahlt.",
+                "title": "Eltern als Vorreiter",
+                "short_text": "Eltern (70+) haben Ölheizung im 70er-Haus getauscht. Wärmepumpe läuft super, alte Heizkörper blieben. 45% Förderung!",
+                "long_text": "Wenn meine 70-jährigen Eltern das hinkriegen, kann's so schwer nicht sein! Ihr 1970er Haus, null Dämmung außer neue Fenster. Der Energieberater meinte: 'Klappt problemlos.' Gesagt, getan - die Wärmepumpe läuft seit einem Jahr tadellos. Das Beste: Die alten Heizkörper konnten fast alle bleiben, nur im Bad kam ein größerer rein. Papa ist happy: 'Kein Öltank-TÜV mehr, kein Ölgeruch, keine Angst vor Preisspitzen.' Und 45% hat der Staat bezahlt. Mama meint, es war die beste Entscheidung seit langem.",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "Förderung bis 70% für Wärmepumpen",
+                        "reference_string": "https://www.bafa.de/DE/Energie/Effiziente_Gebaeude/Foerderprogramm_im_Ueberblick/foerderprogramm_im_ueberblick_node.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-12T05:21:42.415788"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 13,
+            "created_at": "2025-09-06T00:16:42.415788"
+        }
+    }
+]

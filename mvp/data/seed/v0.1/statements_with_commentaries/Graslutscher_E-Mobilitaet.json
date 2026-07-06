@@ -1,0 +1,98 @@
+[
+    {
+        "statement": "Elektroautos sind eine Sackgasse, weil sie zu aufwändig in der Herstellung sind und riesige Autos wie der Tesla sehr schwer und energieintensiv sind.",
+        "commentaries": [
+            {
+                "text": "Menschen auf dem Land sind oft auf Autos angewiesen, da der öffentliche Nahverkehr nicht ausreichend verfügbar ist. Elektroautos bieten hier eine emissionsfreie Alternative zu Verbrennern, die sowohl Umwelt als auch die Gesundheit der Bewohner schützen.",
+                "title": "Realität auf dem Land",
+                "long_text": "In ländlichen Gebieten sind Menschen oft auf individuelle Mobilität angewiesen, da öffentliche Verkehrsmittel selten sind. Elektroautos bieten eine praktikable und umweltfreundliche Alternative zu herkömmlichen Verbrennern, die durch lokale Emissionsfreiheit zur Verbesserung der Luftqualität beitragen können.",
+                "short_text": "Auf dem Land sind Elektroautos oft die einzige umweltfreundliche Alternative.",
+                "references": []
+            },
+            {
+                "text": "Während E-Autos aufgrund der Batterie schwerer sein können, sind sie durch ihren deutlich besseren Wirkungsgrad von etwa 85-90% gegenüber Verbrennungsmotoren (ca. 25%) viel effizienter und damit energie- und klimaschonender.",
+                "title": "Fakten zur Effizienz",
+                "long_text": "Der höhere Wirkungsgrad von Elektroautos, der bei etwa 85-90% liegt, macht sie im Vergleich zu Verbrennungsmotoren (ca. 25%) zu einer viel energieeffizienteren und klimaschonenderen Option, trotz des höheren Gewichts durch die Batterie.",
+                "short_text": "E-Autos sind trotz höherem Gewicht energieeffizienter.",
+                "references": [
+                    {
+                        "text": "Wirkungsgrad von Elektroautos",
+                        "reference_string": "https://www.sciencedirect.com/science/article/pii/S1364032118304483"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Elektroautos sind nur dann klimaneutral, wenn sie mit echtem Ökostrom geladen werden und auch ihre Herstellung vollständig klimaneutral ist.",
+        "commentaries": [
+            {
+                "text": "In ländlichen Gegenden können Elektroautos oft dann geladen werden, wenn die Sonne scheint und Photovoltaikanlagen Überschussstrom liefern. Das hilft, die Stromversorgung zu optimieren und trägt zur Reduzierung von CO2-Emissionen bei.",
+                "title": "Laden mit Ökostrom auf dem Land",
+                "long_text": "Menschen auf dem Land haben oft die Möglichkeit, ihre Elektroautos tagsüber mit eigenem Solarstrom zu laden. Dies trägt nicht nur zur Reduzierung von CO2-Emissionen bei, sondern optimiert auch die Nutzung von lokal erzeugtem, erneuerbarem Strom.",
+                "short_text": "Solarstrom auf dem Land für klimafreundliche Mobilität nutzen.",
+                "references": []
+            },
+            {
+                "text": "Der Strommix wird kontinuierlich grüner, und auch die Produktion von Elektroautos wird zunehmend auf erneuerbare Energien umgestellt, wodurch die CO2-Bilanz stetig verbessert wird.",
+                "title": "Strommix und Produktion werden grüner",
+                "long_text": "Dank der stetigen Verbesserung des Strommixes hin zu einem höheren Anteil an erneuerbaren Energien und der Umstellung der Automobilproduktion auf saubere Energien, wird die Klimabilanz von Elektroautos immer besser.",
+                "short_text": "Der Strommix wird grüner, die Produktion klimafreundlicher.",
+                "references": [
+                    {
+                        "text": "Grüner werdender Strommix",
+                        "reference_string": "https://energy-charts.info"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Der Ökostrom wird knapp und teuer bleiben, daher sollten wir das E-Auto als erstes aufgeben.",
+        "commentaries": [
+            {
+                "text": "Für Menschen auf dem Land, die auf individuelle Mobilität angewiesen sind, kann das Laden von Elektroautos gezielt dann stattfinden, wenn günstiger und reichlich vorhandener Ökostrom verfügbar ist, etwa bei starkem Wind oder viel Sonne.",
+                "title": "Gezieltes Laden auf dem Land",
+                "long_text": "Auf dem Land kann die Nutzung von Elektroautos flexibel an die Verfügbarkeit von Ökostrom angepasst werden. Bei starkem Wind oder viel Sonne kann Überschussstrom günstig genutzt werden, was auch für die ländliche Bevölkerung eine erschwingliche und nachhaltige Lösung darstellt.",
+                "short_text": "Laden auf dem Land, wenn der Ökostrom günstig ist.",
+                "references": []
+            },
+            {
+                "text": "Ökostrom ist bereits die günstigste Form der Energie im Strommix und wird mit dem Ausbau der erneuerbaren Energien noch preiswerter. Elektroautos können so auch langfristig kostengünstig betrieben werden.",
+                "title": "Kosten und Verfügbarkeit von Ökostrom",
+                "long_text": "Ökostrom ist die günstigste Energiequelle im Strommix, und mit dem weiteren Ausbau der erneuerbaren Energien wird er noch preiswerter. Damit bleibt auch der Betrieb von Elektroautos auf lange Sicht kostengünstig und nachhaltig.",
+                "short_text": "Ökostrom ist günstig und wird noch billiger.",
+                "references": [
+                    {
+                        "text": "Preisvorteile von Ökostrom",
+                        "reference_string": "https://energy-charts.info"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Durch das Gewicht der Elektroautos wird mehr Mikroplastik durch Reifenabrieb verursacht.",
+        "commentaries": [
+            {
+                "text": "Für Pendler auf dem Land könnte der Umstieg auf E-Autos in Kombination mit emissionsfreien Reifen eine Lösung sein, um sowohl Mobilität sicherzustellen als auch die Umweltbelastung durch Mikroplastik zu minimieren.",
+                "title": "Emissionsfreie Mobilität auf dem Land",
+                "long_text": "Im ländlichen Raum, wo Menschen oft auf ihr Auto angewiesen sind, können Elektroautos in Kombination mit Reifen, die weniger Abrieb verursachen, die Mobilität sicherstellen und gleichzeitig die Umweltbelastung durch Mikroplastik reduzieren.",
+                "short_text": "Mobilität auf dem Land ohne Mikroplastik.",
+                "references": []
+            },
+            {
+                "text": "Es gibt mittlerweile technische Fortschritte bei Reifen, die weniger Abrieb verursachen, wodurch das Problem des Mikroplastiks bei Elektroautos weiter reduziert werden kann.",
+                "title": "Technische Lösungen gegen Mikroplastik",
+                "long_text": "Technische Innovationen bei Reifen können den Abrieb und damit die Entstehung von Mikroplastik erheblich reduzieren. In Kombination mit Elektroautos, die bereits eine saubere Antriebsart bieten, kann so die Umweltbelastung deutlich verringert werden.",
+                "short_text": "Reifeninnovation reduziert Mikroplastik.",
+                "references": [
+                    {
+                        "text": "Neue Technologien bei Reifen",
+                        "reference_string": "https://www.tuv.com/germany/de/reifenabrieb-mikroplastik.html"
+                    }
+                ]
+            }
+        ]
+    }
+]

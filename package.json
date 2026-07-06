@@ -1,0 +1,14 @@
+{
+  "name": "contentgruen",
+  "version": "1.0.0",
+  "description": "ContentGrün development scripts",
+  "scripts": {
+    "build:frontend": "cd mvp/frontend/contentgruen-frontend && docker buildx build --platform linux/amd64 -f Dockerfile -t contentgruen-frontend-local .",
+    "build:bff": "cd mvp/backend/BFF && docker buildx build --platform linux/amd64 -f Dockerfile -t contentgruen-bff-local .",
+    "build:semantic-search": "cd mvp/backend/semantic-search-service && docker buildx build --platform linux/amd64 -f Dockerfile -t contentgruen-semantic-search-local .",
+    "build:all": "npm run build:frontend && npm run build:bff && npm run build:semantic-search",
+    "test:backend": "cd mvp/backend/semantic-search-service && docker run --rm -v \"${PWD}:/app\" -w /app python:3.13 /bin/bash -c \"pip install -r requirements.txt && cd app && python -m pytest tests/unit/ --ignore=tests/unit/services/test_seeding_implementation.py --tb=short -v\"",
+    "test:ci": "npm run test:backend && npm run build:all",
+    "clean": "docker rmi -f contentgruen-frontend-local contentgruen-bff-local contentgruen-semantic-search-local || true"
+  }
+}

@@ -1,0 +1,147 @@
+[
+  {
+    "statement": "Die Reform gefährdet kleine Krankenhäuser auf dem Land und verschlechtert die Versorgung.",
+    "commentaries": [
+      {
+        "text": "Die Reform stellt sicher, dass die Grundversorgung in ländlichen Gebieten nicht nur erhalten, sondern gestärkt wird. Geplant sind sektorenübergreifende Zentren, in denen kleinere stationäre Eingriffe und ambulante Behandlungen möglich sind, sodass die Anfahrtswege kurz bleiben und ein umfassenderes Versorgungsnetz entsteht.",
+        "title": "Stärkung der Versorgung auf dem Land",
+        "long_text": "Durch sektorenübergreifende Gesundheitszentren soll die Versorgung in ländlichen Gebieten gestärkt werden, indem stationäre und ambulante Leistungen in einem Zentrum gebündelt werden. Die Reform wird so gestaltet, dass Patienten auch in strukturschwachen Regionen eine schnelle und flexible Behandlung erhalten können.",
+        "short_text": "Sektorenübergreifende Versorger stärken ländliche Gesundheitsversorgung.",
+        "references": [
+          {
+            "text": "Bundesministerium für Gesundheit, Reformpläne für ländliche Gesundheitszentren",
+            "reference_string": "https://www.bundesgesundheitsministerium.de"
+          }
+        ]
+      },
+      {
+        "text": "80 % der Krankenhäuser in Bayern schreiben aktuell rote Zahlen, auch ohne Reform. Die Strukturförderung ist notwendig, um diese Einrichtungen langfristig finanziell abzusichern und die Versorgung nachhaltig zu gewährleisten.",
+        "title": "Notwendigkeit der Strukturförderung",
+        "long_text": "Die Finanzsituation bayerischer Krankenhäuser zeigt, dass eine Reform dringend notwendig ist. Die derzeitigen Verluste bedrohen die Existenz vieler Einrichtungen, und die Reform schafft langfristig finanzielle Stabilität durch die neue Vorhaltefinanzierung.",
+        "short_text": "Finanzielle Stabilität für Krankenhäuser durch Reform.",
+        "references": [
+          {
+            "text": "Deutsche Krankenhausgesellschaft: Finanzlage der Kliniken",
+            "reference_string": "https://www.dkgev.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Abschaffung der Fallpauschalen führt dazu, dass kleinere Kliniken schlechter gestellt werden.",
+    "commentaries": [
+      {
+        "text": "Die Umstellung auf eine Vorhaltefinanzierung bedeutet, dass kleine Kliniken entlastet werden, da sie nicht mehr gezwungen sind, möglichst viele Fälle abzuwickeln. Dies ermöglicht eine individuellere und angemessenere Versorgung.",
+        "title": "Entlastung durch Vorhaltefinanzierung",
+        "long_text": "Durch die Einführung der Vorhaltefinanzierung sinkt der Druck auf kleinere Krankenhäuser, ständig wirtschaftlich arbeiten zu müssen. Stattdessen wird ihre Existenz und ihr Betrieb durch die neue finanzielle Basis abgesichert.",
+        "short_text": "Kleine Kliniken werden durch Vorhaltefinanzierung entlastet.",
+        "references": [
+          {
+            "text": "Bundesgesundheitsministerium zur Krankenhausreform",
+            "reference_string": "https://www.bundesgesundheitsministerium.de"
+          }
+        ]
+      },
+      {
+        "text": "In anderen Ländern hat die Vorhaltefinanzierung bereits gezeigt, dass sie eine sichere, qualitativ hochwertige Grundversorgung gewährleistet und Kliniken stabilisiert.",
+        "title": "Erfolgreiches Modell aus anderen Ländern",
+        "long_text": "Erfahrungen aus Ländern, die ähnliche Mischmodelle eingeführt haben, belegen die hohe Effizienz und die bessere Versorgungssicherheit, insbesondere für kleinere Einrichtungen.",
+        "short_text": "Vorhaltefinanzierung als internationales Erfolgsmodell.",
+        "references": [
+          {
+            "text": "Studien zur internationalen Krankenhausfinanzierung",
+            "reference_string": "https://www.oecd.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Qualität der Versorgung wird durch weniger spezialisierte Kliniken in der Nähe leiden.",
+    "commentaries": [
+      {
+        "text": "Um die Qualität zu sichern, wird die Reform dafür sorgen, dass komplexe Behandlungen nur noch in spezialisierteren Einrichtungen durchgeführt werden, während die Grundversorgung in der Nähe erhalten bleibt. So haben Patienten die richtige Versorgung am passenden Ort.",
+        "title": "Bessere Qualität durch Spezialisierung",
+        "long_text": "Durch die Verlagerung spezialisierter Eingriffe in größere Zentren und die Stärkung der Grundversorgung vor Ort entsteht ein qualitativ hochwertiges Versorgungssystem, das für jeden Patienten die passende Leistung anbietet.",
+        "short_text": "Qualitätssicherung durch richtige Leistungszuweisung.",
+        "references": [
+          {
+            "text": "Bundesministerium für Gesundheit zur Reform",
+            "reference_string": "https://www.bundesgesundheitsministerium.de"
+          }
+        ]
+      },
+      {
+        "text": "Länder wie die Schweiz und Schweden haben bewiesen, dass Spezialisierung und regionale Zentren die Versorgungssicherheit und -qualität erhöhen.",
+        "title": "Erfolgsbeispiele aus der Schweiz und Schweden",
+        "long_text": "Die Reform folgt dem Beispiel anderer Länder, in denen spezialisierte Gesundheitszentren die Effizienz und Qualität der Patientenversorgung signifikant verbessert haben.",
+        "short_text": "Internationale Vorbilder zeigen Qualitätssteigerung.",
+        "references": [
+          {
+            "text": "OECD-Bericht zur Gesundheitsversorgung",
+            "reference_string": "https://www.oecd.org"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Das Gesundheitssystem wird noch mehr Bürokratie erfordern und die Versorgung verlangsamen.",
+    "commentaries": [
+      {
+        "text": "Die Reform zielt darauf ab, Bürokratie abzubauen. Durch die Einführung einer zentralen elektronischen Datenbank werden Dokumentationsprozesse vereinfacht und entlasten die Pflegekräfte spürbar.",
+        "title": "Bürokratieabbau für mehr Effizienz",
+        "long_text": "Durch ein zentrales System zur Datenerfassung und die Reduktion der Prüfaufwände kann mehr Zeit für die direkte Patientenversorgung aufgewendet werden.",
+        "short_text": "Reduzierte Bürokratie und mehr Zeit für Patienten.",
+        "references": [
+          {
+            "text": "Bundesgesundheitsministerium: Bürokratieabbau",
+            "reference_string": "https://www.bundesgesundheitsministerium.de"
+          }
+        ]
+      },
+      {
+        "text": "Mit dem neuen Dokumentationssystem entfällt viel Schreibarbeit, was die durchschnittliche Behandlungszeit pro Patient reduziert und die Effizienz steigert.",
+        "title": "Effizienzsteigerung durch Digitalisierung",
+        "long_text": "Das neue System zur digitalen Erfassung der Daten reduziert den bürokratischen Aufwand signifikant und sorgt so für eine schnellere Patientenbehandlung.",
+        "short_text": "Digitale Dokumentation verringert Aufwand.",
+        "references": [
+          {
+            "text": "Studien zur Effizienz digitaler Gesundheitsakte",
+            "reference_string": "https://www.dkgev.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Die Reform ist nur ein Mittel, um Gelder einzusparen, und wird keine echten Verbesserungen bringen.",
+    "commentaries": [
+      {
+        "text": "Die Reform ist keine Sparmaßnahme, sondern setzt gezielt auf die Verbesserung der Qualität und Effizienz im System, indem Gelder durch Vorhaltefinanzierung effizienter verteilt werden.",
+        "title": "Reform für Qualitätsverbesserung",
+        "long_text": "Der Fokus der Reform liegt auf der Qualität der Versorgung und auf einem nachhaltigen Umgang mit den finanziellen Mitteln. Einsparungen entstehen vor allem durch die bessere Strukturierung und die Stärkung kleinerer Versorger.",
+        "short_text": "Qualitätsfokus und bessere Mittelverwendung.",
+        "references": [
+          {
+            "text": "Bundesgesundheitsministerium: Reformziele",
+            "reference_string": "https://www.bundesgesundheitsministerium.de"
+          }
+        ]
+      },
+      {
+        "text": "In den letzten Jahren stiegen die Krankenhausausgaben um 50 %, ohne dass die Versorgungsqualität merklich verbessert wurde. Die Reform adressiert diese Ineffizienz und sichert langfristig ein besseres Gesundheitswesen.",
+        "title": "Effizienzsteigerung für bessere Versorgung",
+        "long_text": "Da Deutschland im EU-Vergleich Spitzenreiter bei den Krankenhausausgaben ist, zielt die Reform auf eine effizientere Nutzung der Ressourcen und eine gleichzeitige Qualitätssteigerung ab.",
+        "short_text": "Effizientere Nutzung der Gesundheitsausgaben.",
+        "references": [
+          {
+            "text": "Statistiken zur Krankenhausfinanzierung",
+            "reference_string": "https://de.statista.com"
+          }
+        ]
+      }
+    ]
+  }
+]

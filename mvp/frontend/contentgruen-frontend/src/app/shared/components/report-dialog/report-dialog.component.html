@@ -1,0 +1,52 @@
+<div class="report-dialog">
+  <h2 mat-dialog-title>Inhalt melden</h2>
+
+  <div mat-dialog-content *ngIf="!submitted">
+    <p class="description">
+      Bitte wählen Sie einen Grund für die Meldung dieses Inhalts.
+      Unser Team wird die Meldung überprüfen.
+    </p>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Grund</mat-label>
+      <mat-select [(ngModel)]="selectedReason">
+        <mat-option *ngFor="let reason of reasons" [value]="reason.value">
+          {{ reason.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Beschreibung (optional)</mat-label>
+      <textarea
+        matInput
+        [(ngModel)]="description"
+        rows="4"
+        placeholder="Zusätzliche Details..."></textarea>
+    </mat-form-field>
+
+    <div *ngIf="error" class="error-message">
+      {{ error }}
+    </div>
+  </div>
+
+  <div mat-dialog-content *ngIf="submitted" class="success-message">
+    <mat-icon class="success-icon">check_circle</mat-icon>
+    <p>Vielen Dank für Ihre Meldung!</p>
+    <p class="sub-message">Wir werden den Inhalt überprüfen.</p>
+  </div>
+
+  <div mat-dialog-actions align="end" *ngIf="!submitted">
+    <button mat-button (click)="cancel()" [disabled]="submitting">
+      Abbrechen
+    </button>
+    <button
+      mat-raised-button
+      color="warn"
+      (click)="submitReport()"
+      [disabled]="submitting || !selectedReason">
+      <span *ngIf="!submitting">Melden</span>
+      <mat-spinner *ngIf="submitting" diameter="20"></mat-spinner>
+    </button>
+  </div>
+</div>

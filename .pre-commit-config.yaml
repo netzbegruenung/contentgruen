@@ -1,0 +1,25 @@
+repos:
+  - repo: local
+    hooks:
+      - id: semantic-search-unit-tests
+        name: Run semantic search service unit tests
+        entry: bash -c 'cd mvp/backend/semantic-search-service && if [ -f "./venv/Scripts/python.exe" ]; then PYTHON="./venv/Scripts/python.exe"; else PYTHON="./venv/bin/python"; fi && $PYTHON -m pytest app/tests/unit/ --ignore=app/tests/unit/services/test_seeding_implementation.py --tb=short -q'
+        language: system
+        files: ^mvp/backend/semantic-search-service/
+        pass_filenames: false
+
+      - id: python-formatting
+        name: Format Python code with Black
+        entry: bash -c 'cd mvp/backend/semantic-search-service && if [ -f "./venv/Scripts/python.exe" ]; then PYTHON="./venv/Scripts/python.exe"; else PYTHON="./venv/bin/python"; fi && $PYTHON -m black app/'
+        language: system
+        files: ^mvp/backend/semantic-search-service/.*\.py$
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=600']

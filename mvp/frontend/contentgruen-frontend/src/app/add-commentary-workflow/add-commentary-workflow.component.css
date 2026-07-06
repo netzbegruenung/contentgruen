@@ -1,0 +1,12 @@
+.inline-content {
+    display: flex;
+    align-items: center;
+}
+
+.inline-content img {
+    margin-right: 10px;
+}
+
+.tabbed {
+    margin-left: 60px;
+}

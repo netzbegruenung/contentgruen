@@ -1,0 +1,219 @@
+<mat-card class="result-item">
+
+    <mat-card-header class="commentary-header">
+        <div mat-card-avatar>
+            <span class="content-type-emoji" matTooltip="Fertiger Kommentar" matTooltipPosition="below">
+                💬
+            </span>
+        </div>
+
+        <div class="commentary-header-info">
+            <mat-card-title class="commentary-title">
+                {{ result.commentary_result.title }}
+            </mat-card-title>
+        </div>
+
+        <!-- Badges -->
+        <div class="commentary-badges">
+            <span class="badge new-badge" *ngIf="showNewBadge"
+                  matTooltip="Neu"
+                  matTooltipPosition="left">
+                <mat-icon class="badge-icon">auto_awesome</mat-icon>
+            </span>
+            <span class="badge trending-badge" *ngIf="showTrendingBadge"
+                  matTooltip="Beliebt"
+                  matTooltipPosition="left">
+                🔥
+            </span>
+            <span class="badge usage-badge"
+                  [ngClass]="{'usage-count-animated': usageCountAnimated}"
+                  matTooltip="Verwendungen"
+                  matTooltipPosition="left">
+                {{ currentUsageCount }}x
+            </span>
+        </div>
+    </mat-card-header>
+
+    <!-- Statement Section Container -->
+    <div class="statement-container" *ngIf="hasStatement">
+      <!-- Collapsed Statement Section -->
+      <div class="statement-section"
+           (click)="toggleStatementExpanded()"
+           [attr.aria-expanded]="isStatementExpanded"
+           role="button"
+           tabindex="0"
+           (keydown.enter)="toggleStatementExpanded()"
+           (keydown.space)="$event.preventDefault(); toggleStatementExpanded()">
+
+        <mat-icon class="statement-icon">subdirectory_arrow_left</mat-icon>
+
+        <span class="statement-label">Antwort auf:</span>
+
+        <span class="statement-preview" *ngIf="!isStatementExpanded">
+          "{{ statementPreviewText }}"
+        </span>
+
+        <mat-icon class="expand-icon" [class.expanded]="isStatementExpanded">
+          {{ isStatementExpanded ? 'expand_less' : 'expand_more' }}
+        </mat-icon>
+      </div>
+
+      <!-- Expanded Statement Overlay -->
+      <div class="statement-expanded-overlay"
+           *ngIf="isStatementExpanded"
+           @expandCollapse>
+
+      <div class="statement-full-text">
+        "{{ statementFullText }}"
+      </div>
+
+      <div class="statement-metadata">
+        <div class="metadata-item"
+             matTooltip="Semantische Ähnlichkeit: Wie gut passt diese gefundene Aussage zu deiner Suchanfrage?"
+             matTooltipPosition="above"
+             matTooltipShowDelay="500"
+             [matTooltipTouchGestures]="'on'">
+          <mat-icon class="metadata-icon">manage_search</mat-icon>
+          <span>Suchübereinstimmung: {{ statementSimilarity }}%</span>
+        </div>
+        <div class="metadata-item"
+             matTooltip="Antwortqualität: Wie gut ist der Kommentar als Antwort auf diese Aussage bewertet?"
+             matTooltipPosition="above"
+             matTooltipShowDelay="500"
+             [matTooltipTouchGestures]="'on'">
+          <mat-icon class="metadata-icon">verified</mat-icon>
+          <span>Antwortqualität: {{ replyRelevance }}%</span>
+        </div>
+
+        <!-- Collapse icon -->
+        <button class="collapse-statement-btn"
+                (click)="$event.stopPropagation(); toggleStatementExpanded()"
+                aria-label="Aussage zuklappen">
+          <mat-icon>expand_less</mat-icon>
+        </button>
+      </div>
+
+      <!-- Mobile help hint -->
+      <div class="metadata-help-hint">
+        <mat-icon class="help-icon">info</mat-icon>
+        <span>Tippe auf die Werte für mehr Details</span>
+      </div>
+      </div>
+    </div>
+
+    <mat-card-content class="commentary-content">
+        <!-- Text Mode Toggle -->
+        <div class="text-mode-toggle" *ngIf="hasShortText || hasLongText">
+            <mat-button-toggle-group [value]="textMode" (change)="onTextModeChange($event.value)"
+                class="text-length-toggle" appearance="standard" [hideSingleSelectionIndicator]="true">
+                <mat-button-toggle value="short" *ngIf="hasShortText" matTooltip="Kurz">
+                    −
+                </mat-button-toggle>
+                <mat-button-toggle value="standard" matTooltip="Standard">
+                    − −
+                </mat-button-toggle>
+                <mat-button-toggle value="long" *ngIf="hasLongText" matTooltip="Lang">
+                    − − −
+                </mat-button-toggle>
+            </mat-button-toggle-group>
+        </div>
+
+        <p class="commentary-text">
+            {{ displayedText }}
+        </p>
+
+        <div class="commentary-references">
+            <div class="commentary-reference-container">
+                <div class="commentary-reference-list">
+                    <ul *ngIf="result.commentary_result.references.length <= 0">
+                        <li>
+                            Keine Quellen hinterlegt
+                        </li>
+                    </ul>
+                    <ul *ngIf="result.commentary_result.references.length > 0">
+                        <li *ngFor="let reference of result.commentary_result.references; let i = index"
+                            class="reference-display-item">
+                            <span class="reference-icon">📚</span>
+                            <!-- Display URL with description as tooltip if available -->
+                            <a *ngIf="reference.reference_text; else nonClickableReference"
+                               [href]="reference.reference_text"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="reference-link"
+                               [matTooltip]="reference.reference_description || 'Quelle ' + (i + 1)"
+                               matTooltipPosition="above">
+                                {{ reference.reference_text }}
+                            </a>
+                            <ng-template #nonClickableReference>
+                                <span class="reference-link"
+                                    [matTooltip]="reference.reference_description || 'Quelle ' + (i + 1)"
+                                    matTooltipPosition="above">
+                                    <!-- Fallback for preview mode or missing data -->
+                                    <ng-container
+                                        *ngIf="reference.reference_id && reference.reference_id.length === 36 && reference.reference_id.includes('-'); else showId">
+                                        Quelle {{ i + 1 }}
+                                    </ng-container>
+                                    <ng-template #showId>
+                                        {{ reference.reference_id }}
+                                    </ng-template>
+                                </span>
+                            </ng-template>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="commentary-action-buttons">
+            <div class="vote-buttons">
+                <button mat-icon-button class="commentary-vote-button" (click)="toggleLike()"
+                    [ngClass]="{'active-button': isLiked}"
+                    matTooltip="Gefällt mir"
+                    matTooltipPosition="above">
+                    <mat-icon>thumb_up</mat-icon>
+                </button>
+
+                <button mat-icon-button class="commentary-vote-button" (click)="toggleDislike()"
+                    [ngClass]="{'active-button': isDisliked}"
+                    matTooltip="Gefällt mir nicht"
+                    matTooltipPosition="above">
+                    <mat-icon>thumb_down</mat-icon>
+                </button>
+            </div>
+
+            <button mat-raised-button class="contentgruen-primary-dark commentary-copy-button"
+                (click)="copyCommentary()" [ngClass]="{'copy-success': copyAnimationActive}">
+                <mat-icon>content_copy</mat-icon>
+                <span>Kopieren</span>
+            </button>
+
+            <button mat-icon-button
+                class="commentary-menu-button"
+                [matMenuTriggerFor]="actionMenu"
+                matTooltip="Mehr Optionen"
+                matTooltipPosition="above">
+                <mat-icon>more_vert</mat-icon>
+            </button>
+
+            <mat-menu #actionMenu="matMenu">
+                <button mat-menu-item (click)="openReportDialog()">
+                    <mat-icon>flag</mat-icon>
+                    <span>Inhalt melden</span>
+                </button>
+                <button mat-menu-item disabled>
+                    <mat-icon>info</mat-icon>
+                    <span>Details</span>
+                </button>
+            </mat-menu>
+        </div>
+
+        <div class="commentary-metadata">
+            <span class="metadata-text"
+                *ngIf="result.commentary_result.last_modified == result.commentary_result.created">
+                Von: {{ result.commentary_result.original_author }} ·
+                {{ result.commentary_result.created | relativeTime }}
+            </span>
+        </div>
+
+    </mat-card-content>
+</mat-card>

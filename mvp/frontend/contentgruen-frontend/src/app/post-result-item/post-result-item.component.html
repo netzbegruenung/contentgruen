@@ -1,0 +1,158 @@
+<mat-card class="result-item">
+
+    <mat-card-header class="post-header">
+        <div mat-card-avatar>
+            <span class="content-type-emoji" matTooltip="Social-Media-Beitrag" matTooltipPosition="below">
+                📣
+            </span>
+        </div>
+
+        <div class="post-header-info">
+            <mat-card-title class="post-title">
+                {{ result.post_result.title }}
+            </mat-card-title>
+            <mat-card-subtitle class="post-subtitle">
+                {{ result.post_result.author }} · {{ result.post_result.platform }}
+            </mat-card-subtitle>
+        </div>
+
+        <!-- Badges -->
+        <div class="post-badges">
+            <span class="badge new-badge" *ngIf="showNewBadge"
+                  matTooltip="Neu"
+                  matTooltipPosition="left">
+                <mat-icon class="badge-icon">auto_awesome</mat-icon>
+            </span>
+            <span class="badge trending-badge" *ngIf="showTrendingBadge"
+                  matTooltip="Beliebt"
+                  matTooltipPosition="left">
+                🔥
+            </span>
+            <span class="badge usage-badge"
+                  [ngClass]="{'usage-count-animated': usageCountAnimated}"
+                  matTooltip="Verwendungen"
+                  matTooltipPosition="left">
+                {{ currentUsageCount }}x
+            </span>
+        </div>
+    </mat-card-header>
+
+    <!-- Statement Section Container -->
+    <div class="statement-container" *ngIf="hasStatement">
+      <div class="statement-section"
+           (click)="toggleStatementExpanded()"
+           [attr.aria-expanded]="isStatementExpanded"
+           role="button"
+           tabindex="0"
+           (keydown.enter)="toggleStatementExpanded()"
+           (keydown.space)="$event.preventDefault(); toggleStatementExpanded()">
+
+        <mat-icon class="statement-icon">subdirectory_arrow_left</mat-icon>
+        <span class="statement-label">Antwort auf:</span>
+        <span class="statement-preview" *ngIf="!isStatementExpanded">
+          "{{ statementPreviewText }}"
+        </span>
+        <mat-icon class="expand-icon" [class.expanded]="isStatementExpanded">
+          {{ isStatementExpanded ? 'expand_less' : 'expand_more' }}
+        </mat-icon>
+      </div>
+
+      <div class="statement-expanded-overlay" *ngIf="isStatementExpanded" @expandCollapse>
+        <div class="statement-full-text">
+          "{{ statementFullText }}"
+        </div>
+        <div class="statement-metadata">
+          <div class="metadata-item">
+            <mat-icon class="metadata-icon">manage_search</mat-icon>
+            <span>Suchübereinstimmung: {{ statementSimilarity }}%</span>
+          </div>
+          <div class="metadata-item">
+            <mat-icon class="metadata-icon">verified</mat-icon>
+            <span>Antwortqualität: {{ replyRelevance }}%</span>
+          </div>
+          <button class="collapse-statement-btn"
+                  (click)="$event.stopPropagation(); toggleStatementExpanded()"
+                  aria-label="Aussage zuklappen">
+            <mat-icon>expand_less</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <mat-card-content class="post-content">
+        <p class="post-text">
+            {{ result.post_result.text }}
+        </p>
+
+        <div class="post-source" *ngIf="result.post_result.url">
+            <span class="reference-icon">🔗</span>
+            <a [href]="result.post_result.url"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="reference-link"
+               matTooltip="Original-Beitrag öffnen"
+               matTooltipPosition="above">
+                {{ result.post_result.url }}
+            </a>
+        </div>
+
+        <div class="post-engagement"
+             matTooltip="Interaktionen auf der Plattform"
+             matTooltipPosition="above">
+            <mat-icon class="engagement-icon">favorite</mat-icon>
+            <span>{{ result.post_result.engagement }}</span>
+        </div>
+
+        <div class="post-action-buttons">
+            <div class="vote-buttons">
+                <button mat-icon-button class="post-vote-button" (click)="toggleLike()"
+                    [ngClass]="{'active-button': isLiked}"
+                    matTooltip="Gefällt mir"
+                    matTooltipPosition="above">
+                    <mat-icon>thumb_up</mat-icon>
+                </button>
+
+                <button mat-icon-button class="post-vote-button" (click)="toggleDislike()"
+                    [ngClass]="{'active-button': isDisliked}"
+                    matTooltip="Gefällt mir nicht"
+                    matTooltipPosition="above">
+                    <mat-icon>thumb_down</mat-icon>
+                </button>
+            </div>
+
+            <button mat-raised-button class="contentgruen-primary-dark post-copy-button"
+                (click)="copyPost()" [ngClass]="{'copy-success': copyAnimationActive}">
+                <mat-icon>content_copy</mat-icon>
+                <span>Kopieren</span>
+            </button>
+
+            <button mat-icon-button
+                class="post-menu-button"
+                [matMenuTriggerFor]="actionMenu"
+                matTooltip="Mehr Optionen"
+                matTooltipPosition="above">
+                <mat-icon>more_vert</mat-icon>
+            </button>
+
+            <mat-menu #actionMenu="matMenu">
+                <button mat-menu-item (click)="openReportDialog()">
+                    <mat-icon>flag</mat-icon>
+                    <span>Inhalt melden</span>
+                </button>
+                <button mat-menu-item disabled>
+                    <mat-icon>info</mat-icon>
+                    <span>Details</span>
+                </button>
+            </mat-menu>
+        </div>
+
+        <div class="post-metadata">
+            <span class="metadata-text"
+                *ngIf="result.post_result.last_modified == result.post_result.created">
+                Von: {{ result.post_result.original_author }} ·
+                {{ result.post_result.created | relativeTime }}
+            </span>
+        </div>
+
+    </mat-card-content>
+</mat-card>

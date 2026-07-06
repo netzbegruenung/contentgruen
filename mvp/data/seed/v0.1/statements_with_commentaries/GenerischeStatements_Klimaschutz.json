@@ -1,0 +1,172 @@
+[
+    {
+        "statement": "Der Klimawandel ist ein natürlicher Prozess, der schon immer passiert ist.",
+        "commentaries": [
+            {
+                "text": "Während es in der Erdgeschichte natürliche Klimaschwankungen gab, zeigen wissenschaftliche Beweise, dass der gegenwärtige Klimawandel durch menschliche Aktivitäten, insbesondere durch den Ausstoß von Treibhausgasen, beschleunigt wird.",
+                "title": "Unnatürlich beschleunigter Klimawandel",
+                "long_text": "Zahlreiche Studien, darunter Berichte des IPCC, belegen, dass der aktuelle Klimawandel in erster Linie durch den Menschen verursacht wird, vor allem durch die Verbrennung fossiler Brennstoffe. Die Geschwindigkeit der Erwärmung ist beispiellos im Vergleich zu früheren natürlichen Klimaveränderungen.",
+                "short_text": "Der aktuelle Klimawandel wird überwiegend durch menschliche Aktivitäten verursacht.",
+                "references": [
+                    {
+                        "text": "IPCC-Bericht zum menschengemachten Klimawandel",
+                        "reference_string": "https://www.ipcc.ch/report/ar6/wg1/"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Die Wissenschaftler sind sich nicht einig über den Klimawandel.",
+        "commentaries": [
+            {
+                "text": "Über 97 % der Klimawissenschaftler sind sich einig, dass der Klimawandel real ist und hauptsächlich durch menschliche Aktivitäten verursacht wird.",
+                "title": "Konsens in der Wissenschaft",
+                "long_text": "Es besteht ein breiter wissenschaftlicher Konsens darüber, dass der Klimawandel real ist und größtenteils durch menschliche Aktivitäten verursacht wird. Diese Einigkeit basiert auf umfassender Forschung und Datenanalyse.",
+                "short_text": "97 % der Wissenschaftler stimmen überein, dass der Klimawandel menschengemacht ist.",
+                "references": [
+                    {
+                        "text": "NASA: Konsens über den Klimawandel",
+                        "reference_string": "https://climate.nasa.gov/scientific-consensus/"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Ein paar Grad wärmer machen doch keinen großen Unterschied.",
+        "commentaries": [
+            {
+                "text": "Selbst ein Anstieg von 1,5 bis 2 Grad Celsius kann katastrophale Folgen haben, wie intensivere Stürme, Hitzewellen und den Verlust von Artenvielfalt.",
+                "title": "Kleine Temperaturänderungen, große Auswirkungen",
+                "long_text": "Bereits geringe Temperaturerhöhungen können schwerwiegende Folgen haben, darunter extreme Wetterereignisse, ein Anstieg des Meeresspiegels und negative Auswirkungen auf die Landwirtschaft und die globale Nahrungssicherheit.",
+                "short_text": "Schon 1,5 Grad mehr können katastrophale Folgen haben.",
+                "references": [
+                    {
+                        "text": "IPCC Sonderbericht über die Folgen einer globalen Erwärmung um 1,5°C",
+                        "reference_string": "https://www.ipcc.ch/sr15/"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Die Wirtschaft kann es sich nicht leisten, drastische Maßnahmen gegen den Klimawandel zu ergreifen.",
+        "commentaries": [
+            {
+                "text": "Die Kosten des Nichthandelns übersteigen die Kosten von Klimaschutzmaßnahmen bei weitem. Naturkatastrophen, die durch den Klimawandel verursacht werden, kosten bereits Milliarden.",
+                "title": "Klimaschutz ist wirtschaftlich sinnvoll",
+                "long_text": "Studien zeigen, dass die wirtschaftlichen Kosten durch Klimawandelfolgen, wie Stürme, Überschwemmungen und Ernteausfälle, deutlich höher sind als die Investitionen in Klimaschutz. Frühzeitiges Handeln kann langfristig finanzielle Stabilität sichern.",
+                "short_text": "Die Kosten des Nichthandelns übersteigen die Investitionen in Klimaschutzmaßnahmen.",
+                "references": [
+                    {
+                        "text": "Bericht der OECD zu den Kosten des Klimawandels",
+                        "reference_string": "https://www.oecd.org/environment/the-economic-consequences-of-climate-change-9789264235410-en.htm"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Technologie wird das Klimaproblem in Zukunft lösen.",
+        "commentaries": [
+            {
+                "text": "Technologie ist ein wichtiger Teil der Lösung, aber allein auf zukünftige technologische Innovationen zu setzen, verzögert notwendige Maßnahmen. Sofortiges Handeln ist unerlässlich, um die schlimmsten Auswirkungen zu vermeiden.",
+                "title": "Technologie allein reicht nicht aus",
+                "long_text": "Zwar kann Technologie bei der Reduktion von Emissionen helfen, jedoch brauchen wir jetzt Maßnahmen. Warten auf zukünftige technologische Durchbrüche kann die Krise verschärfen. Nur durch sofortiges Handeln in Kombination mit technologischen Lösungen können wir den Klimawandel erfolgreich bekämpfen.",
+                "short_text": "Technologie ist wichtig, aber wir müssen jetzt handeln.",
+                "references": [
+                    {
+                        "text": "Bericht der UN zum Stand des Klimawandels",
+                        "reference_string": "https://www.un.org/en/climatechange/reports"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Erneuerbare Energien sind nicht zuverlässig genug, um fossile Brennstoffe zu ersetzen.",
+        "commentaries": [
+            {
+                "text": "Erneuerbare Energien wie Solar- und Windkraft werden immer effizienter und zuverlässiger. Mit besserer Speicherung und Netzwerkintegration können sie fossile Brennstoffe effektiv ersetzen.",
+                "title": "Erneuerbare Energien sind zukunftsfähig",
+                "long_text": "Die Technologie für erneuerbare Energien entwickelt sich rasant, und es gibt Fortschritte bei der Speicherung von Energie sowie der Integration in bestehende Stromnetze. In vielen Regionen sind erneuerbare Energien bereits die kostengünstigste Energiequelle.",
+                "short_text": "Erneuerbare Energien werden immer zuverlässiger und können fossile Brennstoffe ersetzen.",
+                "references": [
+                    {
+                        "text": "Bericht der IRENA über den Status erneuerbarer Energien",
+                        "reference_string": "https://www.irena.org/publications"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Es gibt viel dringendere Probleme als den Klimawandel.",
+        "commentaries": [
+            {
+                "text": "Der Klimawandel verstärkt viele bestehende Probleme, wie Armut und Migration, und bedroht die globale Stabilität. Ohne Klimaschutz werden diese Probleme nur noch größer.",
+                "title": "Der Klimawandel verschärft andere Probleme",
+                "long_text": "Der Klimawandel wirkt sich auf zahlreiche globale Probleme aus. Er bedroht die Ernährungssicherheit, führt zu Wasserknappheit und vertreibt Millionen von Menschen aus ihren Heimatregionen. Eine verzögerte Reaktion auf den Klimawandel macht bestehende Probleme nur schwieriger zu lösen.",
+                "short_text": "Der Klimawandel verschärft viele der dringenden Probleme, die wir bereits haben.",
+                "references": [
+                    {
+                        "text": "UNHCR-Bericht über Klimaflüchtlinge",
+                        "reference_string": "https://www.unhcr.org/climate-change-and-disasters.html"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Es ist schon zu spät, um den Klimawandel aufzuhalten.",
+        "commentaries": [
+            {
+                "text": "Es ist noch nicht zu spät, um die schlimmsten Auswirkungen des Klimawandels zu verhindern. Jedes Zehntelgrad zählt, und durch ambitionierte Maßnahmen können wir die Erwärmung verlangsamen.",
+                "title": "Es ist noch nicht zu spät",
+                "long_text": "Zwar hat der Klimawandel bereits begonnen, aber durch schnelles und konsequentes Handeln können wir die schlimmsten Auswirkungen verhindern. Auch wenn einige Veränderungen nicht mehr rückgängig zu machen sind, können wir noch viel tun, um zukünftige Generationen zu schützen.",
+                "short_text": "Wir können immer noch handeln, um die schlimmsten Auswirkungen des Klimawandels zu verhindern.",
+                "references": [
+                    {
+                        "text": "IPCC-Bericht: Maßnahmen gegen den Klimawandel",
+                        "reference_string": "https://www.ipcc.ch/report/ar6/wg3/"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "Der Klimaschutz kostet zu viele Arbeitsplätze.",
+        "commentaries": [
+            {
+                "text": "Der Übergang zu einer grünen Wirtschaft schafft Millionen neuer Arbeitsplätze, insbesondere in den Bereichen erneuerbare Energien, Energieeffizienz und nachhaltige Technologien.",
+                "title": "Klimaschutz schafft Arbeitsplätze",
+                "long_text": "Der Ausbau von erneuerbaren Energien und nachhaltigen Technologien schafft neue Arbeitsplätze, während gleichzeitig eine nachhaltigere Wirtschaft gefördert wird. Der Übergang zur grünen Energie ist eine Chance, nicht ein Hindernis für die Beschäftigung.",
+                "short_text": "Grüne Technologien schaffen Millionen neuer Arbeitsplätze.",
+                "references": [
+                    {
+                        "text": "IRENA-Bericht: Beschäftigung im Bereich erneuerbare Energien",
+                        "reference_string": "https://www.irena.org/publications/2020/Sep/Renewable-Energy-and-Jobs"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "statement": "China und Indien sind die größten Verschmutzer. Warum sollten wir etwas tun, wenn sie es nicht tun?",
+        "commentaries": [
+            {
+                "text": "Auch wenn China und Indien große Emittenten sind, trägt jedes Land Verantwortung. Länder wie Deutschland und die USA haben eine historische Verantwortung und können durch Technologieexporte und Innovation eine führende Rolle spielen.",
+                "title": "Globale Verantwortung",
+                "long_text": "Der Klimawandel ist ein globales Problem, das kollektive Anstrengungen erfordert. Während China und Indien große Emittenten sind, haben westliche Länder wie die USA und die EU historisch die meisten Emissionen verursacht. Diese Länder haben zudem die Ressourcen und Technologien, um den Übergang zu einer nachhaltigen Wirtschaft weltweit zu unterstützen.",
+                "short_text": "Der Klimawandel ist ein globales Problem, und jeder muss seinen Teil beitragen.",
+                "references": [
+                    {
+                        "text": "Bericht der Weltbank: Verantwortung und Emissionen",
+                        "reference_string": "https://www.worldbank.org/en/topic/climatechange"
+                    }
+                ]
+            }
+        ]
+    }
+]

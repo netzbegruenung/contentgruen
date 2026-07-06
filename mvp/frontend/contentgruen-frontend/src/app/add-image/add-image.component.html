@@ -1,0 +1,161 @@
+<div class="add-image-container">
+    <!-- Content Type Indicator -->
+    <div class="content-type-indicator">
+        <div class="content-type-badge">
+            <span class="content-type-icon">🖼️</span>
+            <div class="content-type-text">
+                <h2 class="content-type-title">Bild hinzufügen</h2>
+                <p class="content-type-description">Politisch relevante Bilder mit Bildunterschrift</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="content-wrapper">
+        <div class="form-column">
+
+            <!-- Form -->
+            <form *ngIf="!imageLoading && !imageSaved && !imageError"
+                  [formGroup]="imageForm"
+                  (ngSubmit)="saveImageForm()">
+
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3>Bilddaten</h3>
+                    </div>
+                </div>
+
+                <div class="form-fields">
+
+                    <div class="form-group">
+                        <label class="input-label">Bild-URL*</label>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Öffentlich zugängliche URL des Bildes</mat-label>
+                            <input matInput formControlName="image_url" type="url"
+                                   placeholder="https://example.com/bild.jpg" />
+                            <mat-error *ngIf="imageForm.get('image_url')?.hasError('required')">
+                                Bild-URL ist erforderlich
+                            </mat-error>
+                            <mat-error *ngIf="imageForm.get('image_url')?.hasError('pattern')">
+                                Bitte eine gültige URL eingeben (https://...)
+                            </mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">Titel*</label>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Kurzer beschreibender Titel</mat-label>
+                            <input matInput #titleInput maxlength="200" formControlName="title" type="text" />
+                            <mat-hint align="end">{{ titleInput.value.length }}/200</mat-hint>
+                            <mat-error *ngIf="imageForm.get('title')?.hasError('required')">
+                                Titel ist erforderlich
+                            </mat-error>
+                            <mat-error *ngIf="imageForm.get('title')?.hasError('minlength')">
+                                Titel muss mindestens 3 Zeichen lang sein
+                            </mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="input-label">Bildunterschrift*</label>
+                        <mat-form-field appearance="outline">
+                            <mat-label>Beschreibe den politischen oder gesellschaftlichen Inhalt</mat-label>
+                            <textarea matInput #captionInput maxlength="2000" rows="5"
+                                      formControlName="caption"></textarea>
+                            <mat-hint align="end">{{ captionInput.value.length }}/2000</mat-hint>
+                            <mat-error *ngIf="imageForm.get('caption')?.hasError('required')">
+                                Bildunterschrift ist erforderlich
+                            </mat-error>
+                            <mat-error *ngIf="imageForm.get('caption')?.hasError('minlength')">
+                                Bildunterschrift muss mindestens 10 Zeichen lang sein
+                            </mat-error>
+                        </mat-form-field>
+
+                        <!-- AI caption suggestion button -->
+                        <div class="ai-suggestion-row">
+                            <button mat-stroked-button type="button"
+                                    [disabled]="imageUrlInvalid || captionLoading"
+                                    (click)="suggestCaption()"
+                                    class="ai-suggest-btn">
+                                <mat-icon>auto_awesome</mat-icon>
+                                <span *ngIf="!captionLoading">KI-Bildunterschrift vorschlagen</span>
+                                <span *ngIf="captionLoading">Vorschlag wird erstellt...</span>
+                            </button>
+                            <mat-spinner *ngIf="captionLoading" diameter="20"></mat-spinner>
+                        </div>
+
+                        <div *ngIf="captionError" class="caption-error-message">
+                            <mat-icon>warning</mat-icon>
+                            {{ captionError }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button mat-stroked-button type="button" (click)="navigateBack()" class="cancel-btn">
+                        <mat-icon>close</mat-icon>
+                        Abbrechen
+                    </button>
+                    <button mat-raised-button color="primary" type="submit"
+                            [disabled]="!imageForm.valid"
+                            class="submit-btn">
+                        <mat-icon>save</mat-icon>
+                        Bild speichern
+                    </button>
+                </div>
+            </form>
+
+            <!-- Loading State -->
+            <div *ngIf="imageLoading" class="state-container loading-state">
+                <mat-spinner diameter="50"></mat-spinner>
+                <h3>Bild wird gespeichert...</h3>
+                <p>Bitte warten Sie einen Moment</p>
+            </div>
+
+            <!-- Success State -->
+            <div *ngIf="imageSaved && responseId" class="state-container success-state">
+                <mat-icon class="success-icon">check_circle</mat-icon>
+                <h3>Bild erfolgreich gespeichert!</h3>
+                <p>Dein Bild wurde erfolgreich hinzugefügt und kann nun von anderen genutzt werden.</p>
+                <div class="action-buttons">
+                    <button mat-stroked-button color="primary" (click)="reset()">
+                        <mat-icon>add</mat-icon>
+                        Weiteres Bild hinzufügen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div *ngIf="imageError" class="state-container error-state">
+                <mat-icon class="error-icon">error</mat-icon>
+                <h3>Speichern fehlgeschlagen</h3>
+                <p class="error-message">{{ imageError }}</p>
+                <div class="action-buttons">
+                    <button mat-raised-button color="primary" (click)="reset()">
+                        <mat-icon>refresh</mat-icon>
+                        Erneut versuchen
+                    </button>
+                    <button mat-button (click)="navigateBack()">
+                        Abbrechen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Column -->
+        <div class="preview-column">
+            <div class="preview-header">
+                <h3>Vorschau</h3>
+                <mat-icon matTooltip="So wird dein Bild in den Suchergebnissen angezeigt">info</mat-icon>
+            </div>
+            <div class="preview-content">
+                <app-image-result-item
+                    *ngIf="previewResult"
+                    [result_input]="previewResult"
+                    [isPreview]="true">
+                </app-image-result-item>
+            </div>
+        </div>
+    </div>
+</div>

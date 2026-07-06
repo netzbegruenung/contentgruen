@@ -1,0 +1,201 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>MVP Metrics Dashboard</h1>
+    <p class="last-updated" *ngIf="lastUpdated">
+      Letzte Aktualisierung: {{ lastUpdated | date:'short' }}
+    </p>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <p>Lade Metriken...</p>
+  </div>
+
+  <div *ngIf="error" class="error">
+    <mat-icon>error</mat-icon>
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="metrics && !loading" class="metrics-grid">
+    <!-- 1. Daily Active Users -->
+    <mat-card class="metric-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>people</mat-icon>
+          Daily Active Users
+          <mat-icon
+            class="info-icon"
+            matTooltip="Anzahl eindeutiger Nutzer (eingeloggt) und anonymer Sessions, die heute mindestens eine Suche durchgeführt haben. Gezählt werden alle Einträge in der search_tracking-Tabelle für den heutigen Tag."
+            matTooltipPosition="right">
+            info_outline
+          </mat-icon>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="metric-value">
+          <span class="current">{{ metrics.daily_active_users }}</span>
+          <span class="divider">/</span>
+          <span class="goal">{{ metrics.daily_active_users_goal }}</span>
+        </div>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="(metrics.daily_active_users / metrics.daily_active_users_goal) * 100"
+          [color]="getProgressColor(metrics.daily_active_users_met)">
+        </mat-progress-bar>
+        <div class="status" [class.met]="metrics.daily_active_users_met" [class.not-met]="!metrics.daily_active_users_met">
+          <mat-icon>{{ metrics.daily_active_users_met ? 'check_circle' : 'warning' }}</mat-icon>
+          <span *ngIf="metrics.daily_active_users_met">Ziel erreicht!</span>
+          <span *ngIf="!metrics.daily_active_users_met">
+            Noch {{ metrics.daily_active_users_goal - metrics.daily_active_users }} fehlen
+          </span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- 2. Searches per User -->
+    <mat-card class="metric-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>search</mat-icon>
+          Searches per User
+          <mat-icon
+            class="info-icon"
+            matTooltip="Durchschnittliche Anzahl an Suchanfragen pro Nutzer/Session in den letzten 7 Tagen. Berechnet als: Gesamtanzahl aller Suchen geteilt durch Anzahl eindeutiger Nutzer/Sessions im Zeitraum."
+            matTooltipPosition="right">
+            info_outline
+          </mat-icon>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="metric-value">
+          <span class="current">{{ metrics.searches_per_user | number:'1.1-1' }}</span>
+          <span class="divider">/</span>
+          <span class="goal">{{ metrics.searches_per_user_goal | number:'1.1-1' }}</span>
+        </div>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="(metrics.searches_per_user / metrics.searches_per_user_goal) * 100"
+          [color]="getProgressColor(metrics.searches_per_user_met)">
+        </mat-progress-bar>
+        <div class="status" [class.met]="metrics.searches_per_user_met" [class.not-met]="!metrics.searches_per_user_met">
+          <mat-icon>{{ metrics.searches_per_user_met ? 'check_circle' : 'warning' }}</mat-icon>
+          <span *ngIf="metrics.searches_per_user_met">Ziel erreicht!</span>
+          <span *ngIf="!metrics.searches_per_user_met">Fast geschafft!</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- 3. Content Created This Week -->
+    <mat-card class="metric-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>edit</mat-icon>
+          Content This Week
+          <mat-icon
+            class="info-icon"
+            matTooltip="Anzahl neuer Inhalte (Kommentare, Statements, etc.), die in dieser Woche erstellt wurden. Gezählt werden Einträge in usage_tracking, deren first_used-Timestamp in den letzten 7 Tagen liegt."
+            matTooltipPosition="right">
+            info_outline
+          </mat-icon>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="metric-value">
+          <span class="current">{{ metrics.content_created_this_week }}</span>
+          <span class="divider">/</span>
+          <span class="goal">{{ metrics.content_created_goal }}</span>
+        </div>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="(metrics.content_created_this_week / metrics.content_created_goal) * 100"
+          [color]="getProgressColor(metrics.content_created_met)">
+        </mat-progress-bar>
+        <div class="status" [class.met]="metrics.content_created_met" [class.not-met]="!metrics.content_created_met">
+          <mat-icon>{{ metrics.content_created_met ? 'check_circle' : 'warning' }}</mat-icon>
+          <span *ngIf="metrics.content_created_met">Ziel erreicht!</span>
+          <span *ngIf="!metrics.content_created_met">
+            Noch {{ metrics.content_created_goal - metrics.content_created_this_week }} fehlen
+          </span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- 4. Usage Counter Trend -->
+    <mat-card class="metric-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>timeline</mat-icon>
+          Usage Counter Trend
+          <mat-icon
+            class="info-icon"
+            matTooltip="Gesamtsumme aller usage_count-Werte aus der usage_tracking-Tabelle - zeigt, wie oft Inhalte insgesamt verwendet wurden. Trend vergleicht aktuelle Woche mit Vorwoche: steigend (+10%), fallend (-10%) oder stabil."
+            matTooltipPosition="right">
+            info_outline
+          </mat-icon>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="metric-value large">
+          <span class="current">{{ metrics.usage_counter_total }}</span>
+          <span class="label">Total Nutzungen</span>
+        </div>
+        <div class="weekly-comparison">
+          <div class="week-value">
+            <span class="label">Diese Woche:</span>
+            <span class="value">{{ metrics.usage_counter_current_week }}</span>
+          </div>
+          <div class="week-value">
+            <span class="label">Letzte Woche:</span>
+            <span class="value">{{ metrics.usage_counter_previous_week }}</span>
+          </div>
+        </div>
+        <div class="trend" [style.color]="getTrendColor(metrics.usage_counter_trend)">
+          <mat-icon>{{ getTrendIcon(metrics.usage_counter_trend) }}</mat-icon>
+          <span class="trend-text">{{ metrics.usage_counter_trend | titlecase }}</span>
+        </div>
+        <div class="status" [class.met]="metrics.usage_counter_met" [class.not-met]="!metrics.usage_counter_met">
+          <mat-icon>{{ metrics.usage_counter_met ? 'check_circle' : 'info' }}</mat-icon>
+          <span *ngIf="metrics.usage_counter_met">Wächst kontinuierlich</span>
+          <span *ngIf="!metrics.usage_counter_met">Sollte steigen</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- 5. Helpful Rate -->
+    <mat-card class="metric-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>thumb_up</mat-icon>
+          "War hilfreich" Rate
+          <mat-icon
+            class="info-icon"
+            matTooltip="Prozentsatz der positiven Bewertungen (Likes) an allen abgegebenen Votes der letzten 7 Tage. Berechnet als: (Anzahl Likes / Gesamtanzahl Votes) × 100. Daten aus der votes-Tabelle."
+            matTooltipPosition="right">
+            info_outline
+          </mat-icon>
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="metric-value">
+          <span class="current">{{ metrics.helpful_rate | number:'1.0-0' }}%</span>
+          <span class="divider">/</span>
+          <span class="goal">{{ metrics.helpful_rate_goal | number:'1.0-0' }}%</span>
+        </div>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="metrics.helpful_rate"
+          [color]="getProgressColor(metrics.helpful_rate_met)">
+        </mat-progress-bar>
+        <div class="vote-details">
+          <span class="likes">👍 {{ metrics.helpful_like_count }}</span>
+          <span class="dislikes">👎 {{ metrics.helpful_dislike_count }}</span>
+          <span class="total">({{ metrics.helpful_total_votes }} Gesamt)</span>
+        </div>
+        <div class="status" [class.met]="metrics.helpful_rate_met" [class.not-met]="!metrics.helpful_rate_met">
+          <mat-icon>{{ metrics.helpful_rate_met ? 'check_circle' : 'warning' }}</mat-icon>
+          <span *ngIf="metrics.helpful_rate_met">Ziel erreicht!</span>
+          <span *ngIf="!metrics.helpful_rate_met">Noch nicht erreicht</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

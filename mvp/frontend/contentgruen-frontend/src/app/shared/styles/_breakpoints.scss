@@ -1,0 +1,190 @@
+// Centralized breakpoint system for ContentGrün
+// Based on Material Design breakpoints
+
+// Breakpoint values
+$breakpoint-xs: 0;
+$breakpoint-sm: 600px;
+$breakpoint-md: 960px;
+$breakpoint-lg: 1280px;
+$breakpoint-xl: 1920px;
+
+// Specific breakpoints for mobile optimization
+$breakpoint-mobile: 599px;
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1024px;
+
+// Breakpoint map for iteration
+$breakpoints: (
+  xs: $breakpoint-xs,
+  sm: $breakpoint-sm,
+  md: $breakpoint-md,
+  lg: $breakpoint-lg,
+  xl: $breakpoint-xl,
+  mobile: $breakpoint-mobile,
+  tablet: $breakpoint-tablet,
+  desktop: $breakpoint-desktop
+);
+
+// Media query mixins
+@mixin mobile-only {
+  @media (max-width: #{$breakpoint-mobile}) {
+    @content;
+  }
+}
+
+@mixin tablet-only {
+  @media (min-width: #{$breakpoint-sm}) and (max-width: #{$breakpoint-tablet}) {
+    @content;
+  }
+}
+
+@mixin tablet-and-below {
+  @media (max-width: #{$breakpoint-tablet}) {
+    @content;
+  }
+}
+
+@mixin desktop-and-above {
+  @media (min-width: #{$breakpoint-desktop}) {
+    @content;
+  }
+}
+
+// Generic breakpoint mixins
+@mixin breakpoint-up($size) {
+  @if map-has-key($breakpoints, $size) {
+    $breakpoint: map-get($breakpoints, $size);
+    @media (min-width: #{$breakpoint}) {
+      @content;
+    }
+  } @else {
+    @warn "Breakpoint '#{$size}' not found in $breakpoints map.";
+  }
+}
+
+@mixin breakpoint-down($size) {
+  @if map-has-key($breakpoints, $size) {
+    $breakpoint: map-get($breakpoints, $size);
+    @media (max-width: #{$breakpoint}) {
+      @content;
+    }
+  } @else {
+    @warn "Breakpoint '#{$size}' not found in $breakpoints map.";
+  }
+}
+
+@mixin breakpoint-between($lower, $upper) {
+  @if map-has-key($breakpoints, $lower) and map-has-key($breakpoints, $upper) {
+    $lower-breakpoint: map-get($breakpoints, $lower);
+    $upper-breakpoint: map-get($breakpoints, $upper);
+    @media (min-width: #{$lower-breakpoint}) and (max-width: #{$upper-breakpoint}) {
+      @content;
+    }
+  } @else {
+    @warn "Breakpoint not found in $breakpoints map.";
+  }
+}
+
+// Orientation mixins
+@mixin landscape {
+  @media (orientation: landscape) {
+    @content;
+  }
+}
+
+@mixin portrait {
+  @media (orientation: portrait) {
+    @content;
+  }
+}
+
+// High DPI screen mixin
+@mixin retina {
+  @media (-webkit-min-device-pixel-ratio: 2),
+         (min-resolution: 192dpi) {
+    @content;
+  }
+}
+
+// Touch device detection
+@mixin touch-device {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+}
+
+// Non-touch device detection
+@mixin non-touch-device {
+  @media (hover: hover) and (pointer: fine) {
+    @content;
+  }
+}
+
+// Container width constraints
+@mixin container-max-widths {
+  @include breakpoint-up(sm) {
+    max-width: 540px;
+  }
+  @include breakpoint-up(md) {
+    max-width: 720px;
+  }
+  @include breakpoint-up(lg) {
+    max-width: 960px;
+  }
+  @include breakpoint-up(xl) {
+    max-width: 1140px;
+  }
+}
+
+// Responsive font sizes
+@mixin responsive-font($min-size, $max-size, $min-vw: 320px, $max-vw: 1200px) {
+  font-size: $min-size;
+
+  @media (min-width: $min-vw) and (max-width: $max-vw) {
+    font-size: calc(#{$min-size} + (#{$max-size} - #{$min-size}) * ((100vw - #{$min-vw}) / (#{$max-vw} - #{$min-vw})));
+  }
+
+  @media (min-width: $max-vw) {
+    font-size: $max-size;
+  }
+}
+
+// Responsive spacing
+@mixin responsive-spacing($property, $mobile, $tablet, $desktop) {
+  #{$property}: $mobile;
+
+  @include tablet-and-below {
+    #{$property}: $tablet;
+  }
+
+  @include desktop-and-above {
+    #{$property}: $desktop;
+  }
+}
+
+// Hide/show utilities
+@mixin hide-on-mobile {
+  @include mobile-only {
+    display: none !important;
+  }
+}
+
+@mixin show-on-mobile {
+  display: none;
+
+  @include mobile-only {
+    display: block !important;
+  }
+}
+
+@mixin hide-on-tablet {
+  @include tablet-only {
+    display: none !important;
+  }
+}
+
+@mixin hide-on-desktop {
+  @include desktop-and-above {
+    display: none !important;
+  }
+}

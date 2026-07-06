@@ -1,0 +1,94 @@
+<div class="reference-input-container">
+    <!-- Two input fields: URL and optional description -->
+    <div class="reference-input-group">
+        <div class="reference-fields-container">
+            <mat-form-field appearance="outline" class="reference-url-field" subscriptSizing="fixed">
+                <mat-label>URL oder Quelle</mat-label>
+                <input
+                    matInput
+                    [formControl]="urlControl"
+                    (keydown)="onInputKeydown($event)"
+                    placeholder="https://example.com oder Buchquelle">
+                <mat-icon matPrefix>link</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="reference-description-field" subscriptSizing="fixed">
+                <mat-label>Beschreibung (optional)</mat-label>
+                <input
+                    matInput
+                    [formControl]="descriptionControl"
+                    (keydown)="onInputKeydown($event)"
+                    placeholder="Kurze Beschreibung der Quelle">
+                <mat-icon matPrefix>description</mat-icon>
+            </mat-form-field>
+        </div>
+
+        <!-- Add button vertically centered -->
+        <button
+            mat-fab
+            color="primary"
+            type="button"
+            class="add-reference-button"
+            (click)="addCustomReference()"
+            [disabled]="!urlControl.value || selectedReferences.length >= maxReferences"
+            matTooltip="Referenz hinzufügen">
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+
+    <!-- Selected references list -->
+    <div class="selected-references" *ngIf="selectedReferences.length > 0">
+        <div class="reference-list">
+            <div *ngFor="let ref of selectedReferences; let i = index"
+                 class="reference-item"
+                 [class.new-reference]="ref.is_new"
+                 [class.existing-reference]="!ref.is_new"
+                 [class.pending-reference]="ref.isPending">
+                <div class="reference-content">
+                    <mat-icon class="reference-icon"
+                              [matTooltip]="ref.isPending ? 'Wird hinzugefügt...' : (ref.is_new ? 'Neue Referenz' : 'Wiederverwendete Referenz')">
+                        <ng-container *ngIf="!ref.isPending">
+                            {{ ref.is_new ? 'add_link' : 'link' }}
+                        </ng-container>
+                        <mat-spinner *ngIf="ref.isPending" diameter="20"></mat-spinner>
+                    </mat-icon>
+                    <div class="reference-text">
+                        <span class="reference-url">{{ ref.reference_string }}</span>
+                        <span class="reference-description" *ngIf="ref.description">
+                            {{ ref.description }}
+                        </span>
+                        <span class="reference-badge" *ngIf="!ref.is_new && !ref.isPending">
+                            Wiederverwendet
+                        </span>
+                        <span class="reference-badge pending" *ngIf="ref.isPending">
+                            Wird hinzugefügt...
+                        </span>
+                    </div>
+                </div>
+                <button mat-icon-button
+                        color="warn"
+                        [disabled]="ref.isPending"
+                        type="button"
+                        (click)="removeReference(i)"
+                        matTooltip="Referenz entfernen">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </div>
+        </div>
+
+        <div class="reference-count">
+            {{ selectedReferences.length }} / {{ maxReferences }} Quellen hinzugefügt
+        </div>
+    </div>
+
+    <!-- Status messages -->
+    <div class="status-message info" *ngIf="selectedReferences.length === 0">
+        <mat-icon>info</mat-icon>
+        <span>Füge Quellen hinzu, um deine Aussagen zu belegen.</span>
+    </div>
+
+    <div class="status-message warning" *ngIf="selectedReferences.length >= maxReferences">
+        <mat-icon>warning</mat-icon>
+        <span>Maximale Anzahl an Quellen erreicht.</span>
+    </div>
+</div>

@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./mvp/backend/semantic-search-service/app"
+    ]
+}

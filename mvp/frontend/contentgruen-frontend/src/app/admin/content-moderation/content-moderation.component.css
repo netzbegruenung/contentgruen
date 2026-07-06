@@ -1,0 +1,291 @@
+.moderation-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.filter-section {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.filter-section mat-button-toggle-group {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.filter-section mat-icon {
+  margin-right: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.status-reviewed {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-dismissed {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.not-reviewed {
+  color: #999;
+  font-style: italic;
+}
+
+.loading, .error, .empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.loading mat-spinner {
+  margin: 0 auto 20px;
+}
+
+.loading p, .error p {
+  color: #666;
+  margin: 0;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+.error mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state .large-icon {
+  font-size: 80px;
+  width: 80px;
+  height: 80px;
+  color: #4caf50;
+  margin-bottom: 16px;
+}
+
+.empty-state h2 {
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  color: #666;
+}
+
+.reports-table {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.content-type-badge {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.reason-cell strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.reason-cell .description {
+  color: #666;
+  font-size: 13px;
+  margin: 0;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.anonymous {
+  color: #999;
+  font-style: italic;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-buttons button {
+  min-width: auto;
+}
+
+.action-buttons mat-icon {
+  margin-right: 4px;
+}
+
+.report-row {
+  cursor: pointer;
+}
+
+.report-row:hover {
+  background-color: #f5f5f5;
+}
+
+.expanded-row {
+  height: 0;
+}
+
+.content-preview {
+  overflow: hidden;
+}
+
+.content-display {
+  background-color: #f9f9f9;
+  border-left: 3px solid #1976d2;
+}
+
+.content-display h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.content-info {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+}
+
+.content-id {
+  margin: 0;
+  font-size: 13px;
+}
+
+.content-id code {
+  background-color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #1976d2;
+}
+
+.content-wrapper {
+  background-color: white;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.content-item p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.content-item strong {
+  color: #1976d2;
+  margin-right: 8px;
+}
+
+.text-section {
+  margin: 16px 0;
+  padding: 12px;
+  background-color: #fafafa;
+  border-radius: 4px;
+  border-left: 3px solid #e0e0e0;
+}
+
+.text-section p strong {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.text-content {
+  padding: 8px;
+  background-color: white;
+  border-radius: 3px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.statement-text {
+  font-style: italic;
+  border-left: 3px solid #4caf50;
+  background-color: #f1f8f4;
+}
+
+.metadata {
+  margin-top: 8px;
+  color: #666;
+}
+
+.metadata small {
+  font-size: 12px;
+}
+
+.content-not-found {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ff9800;
+  padding: 16px;
+  background-color: #fff3e0;
+  border-left: 3px solid #ff9800;
+}
+
+.content-not-found mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-buttons button {
+    width: 100%;
+  }
+
+  .content-item p {
+    font-size: 14px;
+  }
+}

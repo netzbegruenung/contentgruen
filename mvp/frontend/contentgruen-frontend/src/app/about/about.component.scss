@@ -1,0 +1,277 @@
+// Import centralized hero styles
+@use '../shared/styles/hero-styles' as *;
+
+.about-container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.hero-section {
+  @extend .hero-section-base;
+
+  .subtitle {
+    @extend .subtitle-secondary;
+  }
+}
+
+.content-section {
+  padding: 1.5rem var(--page-margin);
+
+  h2 {
+    /* Uses global h2 styles */
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    /* Uses global h3 styles */
+    margin-bottom: 1rem;
+  }
+
+  p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  ul {
+    margin: 1.5rem 0;
+    padding-left: 1.5rem;
+
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem var(--page-margin-mobile);
+
+    h2 {
+      margin-bottom: 1rem;
+    }
+  }
+}
+
+.personal-intro {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+
+  .profile-image-container {
+    flex-shrink: 0;
+
+    .profile-image {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #4caf50;
+
+      @media (max-width: 768px) {
+        width: 120px;
+        height: 120px;
+      }
+    }
+  }
+
+  .personal-content {
+    flex: 1;
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin: 0 0 0.25rem 0;
+    }
+
+    .role {
+      color: #4caf50;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+  }
+}
+
+.timeline {
+  position: relative;
+  padding-left: 2.4rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #81c784;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -2.5rem;
+      top: 0.25rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #4caf50;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px #4caf50;
+      transform: translateX(-5px);
+    }
+
+    h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem 0;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding-left: 1.9rem;
+
+    .timeline-item::before {
+      left: -2rem;
+      width: 10px;
+      height: 10px;
+      transform: translateX(-4px);
+    }
+  }
+}
+
+.vision-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+
+  .vision-item {
+    padding: 1.5rem;
+    background: #f5f5f5;
+    border-radius: 8px;
+
+    mat-icon {
+      font-size: 36px;
+      width: 36px;
+      height: 36px;
+      color: #4caf50;
+      margin-bottom: 0.75rem;
+    }
+
+    h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0.75rem 0 0.5rem 0;
+    }
+
+    p {
+      font-size: 0.95rem;
+      color: #666;
+      margin: 0;
+    }
+  }
+}
+
+.vision-text {
+  font-size: 1.05rem;
+  margin-bottom: 1.5rem;
+}
+
+.cta-section {
+  text-align: center;
+
+  p {
+    font-size: 1.05rem;
+    margin-bottom: 2rem;
+  }
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  a, button {
+    mat-icon {
+      margin-right: 0.5rem;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .secondary-button {
+    background-color: #f5f5f5;
+    color: #333;
+
+    &:hover {
+      background-color: #e0e0e0;
+    }
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: center;
+
+    a, button {
+      width: 100%;
+      max-width: 280px;
+    }
+  }
+}
+
+a {
+  color: #4caf50;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Mobile responsive adjustments
+@media (max-width: 599px) {
+  .content-section {
+    h2 {
+      /* Uses global responsive h2 styles */
+    }
+
+    p {
+      font-size: 0.95rem;
+    }
+  }
+}

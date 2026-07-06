@@ -1,0 +1,112 @@
+[
+  {
+    "statement": "Die Grünen machen den Benzin teurer und belasten die Autofahrer unnötig.",
+    "commentaries": [
+      {
+        "text": "Im Alltag erleben wir, dass hohe Benzinpreise oft durch globale Märkte und nicht durch politische Entscheidungen beeinflusst werden. Die Grünen setzen sich eher dafür ein, langfristige Alternativen wie Elektromobilität und öffentlichen Verkehr zu fördern, um diese Abhängigkeit zu verringern.",
+        "title": "Grüne fördern langfristige Alternativen",
+        "long_text": "Die Grünen haben den Benzinpreis nicht direkt beeinflusst. Vielmehr unterstützen sie den Ausbau alternativer Verkehrsmittel wie E-Mobilität und öffentliche Verkehrsmittel, um langfristig Kosten für fossile Brennstoffe zu senken und die Abhängigkeit zu reduzieren.",
+        "short_text": "Die Grünen fördern Alternativen zu fossilen Brennstoffen.",
+        "references": []
+      },
+      {
+        "text": "Fakt ist, dass die Steuern auf Benzin in den letzten Jahren nicht von den Grünen verändert wurden. Ein Großteil der Preissteigerungen ist auf Rohölpreise und Raffineriekosten zurückzuführen, wie auch 2021 vor dem Regierungswechsel.",
+        "title": "Fakten zu Benzinpreissteigerungen",
+        "long_text": "Die Steuern auf Benzin wurden von der neuen Regierung nicht verändert. Die Preissteigerungen sind hauptsächlich auf den Anstieg der globalen Rohölpreise und Raffineriekosten zurückzuführen, was schon 2021 zu Preiserhöhungen geführt hat.",
+        "short_text": "Benzinpreise steigen durch Rohölmärkte, nicht politische Entscheidungen.",
+        "references": [
+          {
+            "text": "Graslutscher zu Benzinpreisen und Rohölmärkten",
+            "reference_string": "https://graslutscher.de/was-die-gruenen-mit-dem-hoeheren-benzinpreis-zu-tun-haben/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Hohe Benzinpreise treffen vor allem Menschen, die auf das Auto angewiesen sind.",
+    "commentaries": [
+      {
+        "text": "Viele Menschen sind im Alltag auf das Auto angewiesen, besonders in ländlichen Gebieten. Hier könnten Alternativen wie Fahrgemeinschaften, Elektromobilität oder der Ausbau von Radwegen und öffentlichem Verkehr helfen, die Abhängigkeit von Benzin zu verringern.",
+        "title": "Praktische Alternativen für Autofahrer",
+        "long_text": "Die Einführung und der Ausbau alternativer Verkehrsmittel wie E-Autos oder besserer öffentlicher Verkehr können helfen, die Abhängigkeit von Benzin zu verringern, besonders für Pendler und Menschen im ländlichen Raum.",
+        "short_text": "Alternativen zu Benzin wie E-Autos und Fahrgemeinschaften unterstützen den Alltag.",
+        "references": []
+      },
+      {
+        "text": "Studien zeigen, dass nur etwa 20 % der Autofahrten berufsbedingt sind. Fast 40 % entfallen auf Freizeitfahrten, bei denen Einsparungen durch Verhaltensanpassungen möglich sind, z.B. durch weniger häufiges Fahren oder die Nutzung von Fahrrädern.",
+        "title": "Fakten zu Benzinverbrauch und Fahrverhalten",
+        "long_text": "Laut einer Studie des Umweltbundesamts entfallen nur 20 % der Autofahrten auf Arbeit oder Ausbildung, der Rest sind Freizeitfahrten. Hier könnten Verhaltensänderungen und alternative Verkehrsmittel den Benzinverbrauch und damit die Kosten reduzieren.",
+        "short_text": "Ein großer Teil der Autofahrten kann durch Alternativen ersetzt werden.",
+        "references": [
+          {
+            "text": "Umweltbundesamt zur Nutzung des Autos",
+            "reference_string": "https://www.umweltbundesamt.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Benzinpreise werden künstlich hochgehalten, um die Menschen zum Umstieg auf Elektroautos zu zwingen.",
+    "commentaries": [
+      {
+        "text": "Im Alltag sind steigende Benzinpreise oft das Resultat von Angebots- und Nachfrage-Schwankungen auf den globalen Rohstoffmärkten. Die Förderung von Elektromobilität durch staatliche Anreize zielt darauf ab, Menschen eine langfristig kostengünstigere Alternative zu bieten.",
+        "title": "Elektromobilität als langfristig günstige Alternative",
+        "long_text": "Elektroautos bieten langfristig eine kostengünstigere Alternative, besonders durch niedrigere Betriebskosten und staatliche Förderungen. Die Benzinpreise spiegeln oft Schwankungen auf den internationalen Märkten wider, nicht eine gezielte Preissteuerung.",
+        "short_text": "Elektromobilität wird gefördert, um langfristig die Mobilitätskosten zu senken.",
+        "references": []
+      },
+      {
+        "text": "Fakt ist, dass die Preisentwicklung für Benzin hauptsächlich durch Rohölmärkte und Raffineriekapazitäten bestimmt wird. Die Bundesregierung fördert zwar den Umstieg auf E-Autos, aber sie setzt die Benzinpreise nicht künstlich höher.",
+        "title": "Fakten zu globalen Rohölmärkten",
+        "long_text": "Die Benzinpreise sind stark von globalen Rohölmärkten abhängig. Die Regierung fördert Elektromobilität durch Zuschüsse und Steuererleichterungen, hat aber keinen direkten Einfluss auf die Preisbildung an Tankstellen.",
+        "short_text": "Benzinpreise sind globalen Märkten unterworfen, nicht politischen Entscheidungen.",
+        "references": []
+      }
+    ]
+  },
+  {
+    "statement": "Die CO2-Steuer belastet Autofahrer und treibt die Benzinpreise weiter in die Höhe.",
+    "commentaries": [
+      {
+        "text": "Im Alltag erleben viele, dass die CO2-Steuer dazu dient, umweltfreundliche Alternativen wie E-Autos und erneuerbare Energien zu fördern. Sie zielt darauf ab, die Umstellung auf nachhaltigere Optionen zu erleichtern und langfristig den Schadstoffausstoß zu reduzieren.",
+        "title": "CO2-Steuer fördert den Wandel zu Nachhaltigkeit",
+        "long_text": "Die CO2-Steuer unterstützt die Energiewende, indem sie den Verbrauch fossiler Brennstoffe teurer macht und somit Anreize für umweltfreundlichere Alternativen wie Elektromobilität und erneuerbare Energien schafft.",
+        "short_text": "Die CO2-Steuer soll den Umstieg auf erneuerbare Energien fördern.",
+        "references": []
+      },
+      {
+        "text": "Die CO2-Steuer erhöht den Benzinpreis um nur etwa 8,4 Cent pro Liter. Sie wurde eingeführt, um den CO2-Ausstoß zu bepreisen und ist im Vergleich zu den Auswirkungen von Rohölpreisen eher gering.",
+        "title": "Fakten zur CO2-Steuer auf Benzin",
+        "long_text": "Die CO2-Steuer erhöht den Benzinpreis nur um 8,4 Cent pro Liter. Ihr Ziel ist es, den CO2-Ausstoß zu verringern und den Umstieg auf umweltfreundlichere Energiequellen zu fördern. Im Vergleich zu den Rohstoffkosten ist der Einfluss der CO2-Steuer relativ klein.",
+        "short_text": "Die CO2-Steuer hat einen geringen Einfluss auf den Benzinpreis.",
+        "references": [
+          {
+            "text": "ADAC zur CO2-Steuer und Benzinpreisen",
+            "reference_string": "https://www.adac.de"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "statement": "Der Staat verdient durch die Umsatzsteuer mehr an den hohen Benzinpreisen und bereichert sich dadurch.",
+    "commentaries": [
+      {
+        "text": "Im Alltag betrifft die Umsatzsteuer viele Produkte, nicht nur Benzin. Wenn die Preise steigen, steigen auch die Steuereinnahmen, aber der Staat verwendet diese Einnahmen, um in Projekte wie den Ausbau der erneuerbaren Energien und der Infrastruktur zu investieren.",
+        "title": "Umsatzsteuer unterstützt Investitionen in erneuerbare Energien",
+        "long_text": "Die steigenden Einnahmen durch die Umsatzsteuer werden oft in den Ausbau der Infrastruktur und erneuerbare Energien reinvestiert, was langfristig zur Reduzierung der Abhängigkeit von fossilen Brennstoffen und zur Senkung der Mobilitätskosten beitragen soll.",
+        "short_text": "Die Einnahmen aus der Umsatzsteuer werden für nachhaltige Investitionen verwendet.",
+        "references": []
+      },
+      {
+        "text": "Fakt ist, dass die Umsatzsteuer nur auf den Endpreis angewendet wird. Wenn Verbraucher weniger Benzin verbrauchen, sinken auch die Einnahmen des Staates. Der Gewinn des Staates ist also nicht proportional zur Preissteigerung, sondern abhängig vom Verbrauch.",
+        "title": "Fakten zur Umsatzsteuer und Benzinpreisen",
+        "long_text": "Die Umsatzsteuer wird auf den Endpreis eines Produkts angewendet. Wenn Verbraucher weniger Benzin verbrauchen, sinken auch die Einnahmen des Staates. Die Steuereinnahmen dienen der Finanzierung von Projekten wie dem Ausbau erneuerbarer Energien.",
+        "short_text": "Die Umsatzsteuer-Einnahmen steigen nur durch höheren Verbrauch.",
+        "references": []
+      }
+    ]
+  }
+]

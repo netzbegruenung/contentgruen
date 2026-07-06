@@ -1,0 +1,44 @@
+<div class="component-box">
+    <div class="login-box">
+        <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="login-form">
+            <mat-form-field class="full-width" appearance="outline" *ngIf="!isManagedLogin">
+                <mat-label>Benutzername</mat-label>
+                <input matInput type="text" formControlName="username"
+                       autocomplete="username" aria-label="Benutzername" />
+                <mat-error *ngIf="loginForm.get('username')?.invalid">
+                    {{ getErrorMessage('username') }}
+                </mat-error>
+            </mat-form-field>
+
+            <mat-form-field class="full-width" appearance="outline" *ngIf="isManagedLogin">
+                <mat-label>E-Mail-Adresse</mat-label>
+                <input matInput type="email" formControlName="email"
+                       autocomplete="email" aria-label="E-Mail-Adresse" />
+                <mat-error *ngIf="loginForm.get('email')?.invalid">
+                    {{ getErrorMessage('email') }}
+                </mat-error>
+            </mat-form-field>
+
+            <mat-form-field class="full-width" appearance="outline">
+                <mat-label>Passwort</mat-label>
+                <input matInput type="password" formControlName="password"
+                       autocomplete="current-password" aria-label="Passwort" />
+                <mat-error *ngIf="loginForm.get('password')?.invalid">
+                    {{ getErrorMessage('password') }}
+                </mat-error>
+            </mat-form-field>
+
+            <div class="button-container">
+                <button mat-raised-button class="dark-green-button" type="submit"
+                        [disabled]="isLoading" aria-label="Anmelden">
+                    <mat-spinner *ngIf="isLoading" diameter="20" class="button-spinner"></mat-spinner>
+                    <span *ngIf="!isLoading">Anmelden</span>
+                </button>
+            </div>
+
+            <div *ngIf="errorMessage" class="error">
+                {{ errorMessage }}
+            </div>
+        </form>
+    </div>
+</div>

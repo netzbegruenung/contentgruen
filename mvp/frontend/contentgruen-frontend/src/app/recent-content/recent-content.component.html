@@ -1,0 +1,30 @@
+<!-- Recent Content Header -->
+<div class="recent-content-header">
+  <h2>Frisch aus der Community: Neueste Inhalte</h2>
+
+  <!-- Loading Spinner -->
+  <app-loading-spinner
+    [loading]="loading"
+    message="Lade neueste Inhalte...">
+  </app-loading-spinner>
+
+  <!-- Error Message -->
+  <app-error-message
+    [error]="error"
+    [showRetry]="true"
+    [retryAction]="retryLoad">
+  </app-error-message>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && !error && recentContent.length === 0" class="empty-state">
+    <p>Keine neuen Inhalte verfügbar.</p>
+  </div>
+</div>
+
+<!-- Recent Content Carousel - Unified -->
+<div *ngIf="!loading && !error && recentContent.length > 0">
+  <app-result-carousel
+    [results]="recentContent"
+    [itemComponentResolver]="resultComponentResolver">
+  </app-result-carousel>
+</div>

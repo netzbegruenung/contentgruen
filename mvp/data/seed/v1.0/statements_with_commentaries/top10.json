@@ -1,0 +1,626 @@
+[
+    {
+        "statement": "Die Grünen sind eine Verbotspartei",
+        "commentaries": [
+            {
+                "text": "Verstehe die Sorge total! Ging mir früher auch so. Dann hab ich gemerkt: Mein Balkonkraftwerk war verboten - jetzt erlaubt. Meine Monatskarte kostete 180€ - jetzt 49€. In unserer Straße haben schon 5 Leute Solaranlagen. Fühlt sich eher nach mehr Freiheit an, oder?",
+                "title": "Nachbarschafts-Perspektive",
+                "short_text": "Bei uns in der Straße: Mehr Freiheit durch Solar & 49€-Ticket",
+                "long_text": "Kenne das Gefühl, wenn ständig von Verboten geredet wird. Aber schau mal in unsere Nachbarschaft: Früher durfte keiner ein Balkonkraftwerk haben - jetzt hat jeder Zweite eins. Die Monatskarte kostete 180€, jetzt fahren wir für 49€ durchs ganze Land. Mein Nachbar spart 200€ im Jahr mit seiner kleinen Solaranlage. Das ist doch mehr Freiheit als früher, oder? Klar gibt's Regeln - aber die schaffen oft erst die Freiheit, die wir wollen.",
+                "style": "empathisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-07T20:21:42.413791"
+                }
+            },
+            {
+                "text": "Die CSU hat Gendern verboten. Die CDU hat Glühbirnen verboten. Söder wollte Ponys auf der Wiesn verbieten. Wir haben Solaranlagen auf Balkonen ERLAUBT. Merkste selbst, oder?",
+                "title": "Faktenhammer",
+                "short_text": "CSU verbietet mehr als wir.",
+                "long_text": "Schauen wir mal, wer wirklich verbietet: Die CSU hat das Gendern in Behörden verboten. Die CDU hat die Glühbirne verboten. Söder wollte sogar Ponys auf der Wiesn verbieten. Wir dagegen haben Balkonkraftwerke erlaubt, Bürokratie beim Solar abgebaut und das 49€-Ticket eingeführt. Wer ist hier die Verbotspartei?",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "CSU-Genderverbot in Bayern",
+                        "reference_string": "https://www.br.de/nachrichten/bayern/bayern-verbietet-gendern-in-behoerden,TzK3XbK"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 1,
+                    "created_at": "2025-09-13T12:21:42.413791"
+                }
+            },
+            {
+                "text": "Mein Schwager war auch skeptisch. Jetzt spart er 1.500€ im Jahr durchs 49€-Ticket und seine Solaranlage hat sich nach 5 Jahren amortisiert. Er sagt selbst: 'Hätte ich mal früher drauf gehört.' Manchmal sind Veränderungen echt eine Chance!",
+                "title": "Skeptiker-Story",
+                "short_text": "Mein Schwager: Vom Skeptiker zum Sparer",
+                "long_text": "True Story: Mein Schwager hat immer über die 'Verbotspartei' geschimpft. Letztes Jahr dann doch Balkonkraftwerk installiert (war ja jetzt erlaubt und super einfach). Spart 200€ im Jahr. Plus 49€-Ticket statt seiner 150€ Monatskarte. Macht zusammen fast 2.000€ Ersparnis. Neulich meinte er: 'Wenn das Verbote sind, gerne mehr davon!' 😄",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-11T19:21:42.413791"
+                }
+            },
+            {
+                "text": "BREAKING: Grüne verbieten das Verbieten von Verboten! CSU empört! Söder fordert Verbot des Verbots-Verbots! 🤡",
+                "title": "Satire-Alarm",
+                "short_text": "Verbots-Inception bei der CSU 🤡",
+                "long_text": "EILMELDUNG aus Bayern: Markus Söder ist empört, dass die Grünen sein Verbot von Verboten verbieten wollen. Er fordert nun ein Verbot des Verbots-Verbots. Die FDP will daraufhin Verbote verbieten, aber nur freiwillig. Merz findet alles verboten, was nach 1990 erfunden wurde. Willkommen in der deutschen Politik! 🎪",
+                "style": "humorvoll",
+                "references": [],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-04T02:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 8,
+            "created_at": "2025-09-01T23:12:42.413273"
+        }
+    },
+    {
+        "statement": "Habeck will mir meine Heizung verbieten",
+        "commentaries": [
+            {
+                "text": "Verstehe deine Sorge - ging unserem Nachbarn auch so! Der hat sich dann informiert: Seine 15 Jahre alte Heizung läuft noch locker 10-15 Jahre weiter. Wenn sie dann mal kaputt geht, gibt's bis zu 70% Förderung für was Neues. Er ist jetzt total entspannt. Die Panik war umsonst!",
+                "title": "Nachbars Erleichterung",
+                "short_text": "Nachbar hatte Panik - war unbegründet. Heizung läuft weiter!",
+                "long_text": "Kenne das Gefühl! Unser Nachbar war auch total panisch wegen seiner Gasheizung. Dann hat er sich schlau gemacht: Bestandsschutz für 20+ Jahre, niemand muss was rausreißen. Wenn die Heizung irgendwann den Geist aufgibt, gibt's mega Förderung - bis zu 70%! Sein Kumpel hat gerade 18.000€ bekommen und spart jetzt 200€ monatlich. Der Nachbar meinte: 'Hätte ich das früher gewusst, hätte ich mir die ganze Aufregung sparen können!'",
+                "style": "empathisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-09T19:21:42.413791"
+                }
+            },
+            {
+                "text": "Die CDU hat das Gesetz 2020 beschlossen. Habeck hat die Förderung von 30 auf 70% erhöht. Deine alte Heizung läuft noch 20 Jahre. Aber klar, erzähl weiter deine Märchen.",
+                "title": "Fakten-Check",
+                "short_text": "CDU-Gesetz, Habeck macht's bezahlbar.",
+                "long_text": "Das Gebäudeenergiegesetz (GEG) wurde 2020 von der CDU/CSU beschlossen - da war Habeck noch gar nicht im Amt. Er hat die Förderung massiv erhöht: bis zu 70% Zuschuss für neue Heizungen. Bestandsschutz: 20 Jahre. Niemand muss seine funktionierende Heizung rausreißen. Das sind die Fakten.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "GEG 2020 unter Merkel beschlossen",
+                        "reference_string": "https://www.bundesregierung.de/breg-de/themen/klimaschutz/neues-gebaeudeenergiegesetz-1684234"
+                    },
+                    {
+                        "text": "Förderung bis 70% durch Habeck",
+                        "reference_string": "https://www.bafa.de/DE/Energie/Effiziente_Gebaeude/effiziente_gebaeude_node.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 4,
+                    "created_at": "2025-09-09T16:21:42.413791"
+                }
+            },
+            {
+                "text": "Bei uns in der Straße haben jetzt drei Familien gewechselt - alle happy! Familie Müller: 18k Förderung bekommen. Familie Schmidt: Spart 180€/Monat. Familie Weber: 'Hätten wir schon vor Jahren machen sollen!' Und das Beste: Nie wieder Angst vor Putin-Preisen!",
+                "title": "Straßen-Erfolgsgeschichten",
+                "short_text": "3 Nachbarn gewechselt - alle sparen richtig Geld!",
+                "long_text": "In unserer Straße wird's zum Trend: Familie Müller hat letztes Jahr gewechselt - 18.000€ Förderung, amortisiert sich in 5 Jahren. Die Schmidts sparen 180€ monatlich seit dem Wechsel. Und die Webers? Die ärgern sich nur, dass sie nicht früher gewechselt haben. Alle drei sagen: Die Förderung macht's möglich, und die Unabhängigkeit von Gaspreisen ist unbezahlbar. Ach ja, und leiser ist die Wärmepumpe auch!",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-03T17:21:42.413791"
+                }
+            },
+            {
+                "text": "Breaking: Habeck kommt NICHT persönlich in deinen Keller! Deine 20 Jahre alte Heizung interessiert ihn null. Enttäuscht?",
+                "title": "Heizungshammer-Hysterie",
+                "short_text": "Habeck kommt nicht in deinen Keller!",
+                "long_text": "EILMELDUNG: Robert Habeck hat KEIN Interesse an deinem Heizungskeller! Wiederhole: Der Minister plant KEINE Kellerbesuche! Deine alte Heizung darf weiterlaufen bis sie den Geist aufgibt. Dann gibt's fette Förderung für was Neues. Aber diese Panik macht sich halt gut auf BILD-Titelseiten, ne?",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-02T14:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 17,
+            "created_at": "2025-09-08T21:31:42.413791"
+        }
+    },
+    {
+        "statement": "E-Autos sind auch nicht besser für die Umwelt",
+        "commentaries": [
+            {
+                "text": "Hatte ich auch gedacht! Dann hat mein Kollege vorgerechnet: Sein E-Auto stößt 40% weniger CO2 aus - selbst mit normalem Strommix. Mit seiner Solaranlage sogar 70% weniger. Plus: Er zahlt nur 4€ statt 12€ pro 100km. War für mich auch überraschend!",
+                "title": "Überraschende Rechnung",
+                "short_text": "Kollege zeigt: 40% weniger CO2, 70% weniger Kosten!",
+                "long_text": "Verstehe die Skepsis total - hatte ich auch! Mein Kollege hat's mir dann mal vorgerechnet: Selbst mit dem aktuellen Strommix sind's 40% weniger CO2 über die gesamte Lebensdauer (inkl. Batterieproduktion!). Mit Ökostrom sogar 70% weniger. Und finanziell? 4€ statt 12€ pro 100km. Nach 3 Jahren hat er die Mehrkosten raus. Hat mich echt überrascht - die Studien vom Umweltbundesamt bestätigen das auch.",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "UBA-Studie zu E-Auto CO2-Bilanz",
+                        "reference_string": "https://www.umweltbundesamt.de/themen/verkehr-laerm/verkehrsplanung/elektromobilitaet"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 4,
+                    "created_at": "2025-09-07T07:21:42.413791"
+                }
+            },
+            {
+                "text": "Mein Nachbar war Diesel-Fan. Jetzt E-Auto. Warum? 'Alter, die Beschleunigung! Und ich tanke für 0€ mit meiner Solaranlage!' Er bereut nur, nicht früher gewechselt zu haben. Sogar seine Frau darf jetzt nicht mehr ran 😄",
+                "title": "Vom Diesel-Fan zum E-Auto-Liebhaber",
+                "short_text": "Nachbar: 'Die Beschleunigung! Tanke für 0€!'",
+                "long_text": "Story aus der Nachbarschaft: Hartmut, absoluter Diesel-Verfechter, hat sich einen gebrauchten E-Golf geholt. 'Nur zum Testen'. Jetzt? Total begeistert! 'Die Beschleunigung ist der Hammer, kein Ölwechsel, keine Werkstatt, und ich lade mit dem Strom vom Dach!' Kostenpunkt: 4€/100km statt früher 12€. Seine Frau musste sich jetzt auch einen zulegen, weil er seinen nicht mehr hergibt. 😄",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-10T03:21:42.413791"
+                }
+            },
+            {
+                "text": "In unserer Firma sind jetzt 5 auf E-Auto umgestiegen. Alle sagen dasselbe: Nie wieder zurück! Leise, günstig im Unterhalt, und das Fahrgefühl... Probier's mal aus, viele Händler bieten Testwochenenden an!",
+                "title": "Firmen-Trend",
+                "short_text": "5 Kollegen umgestiegen - keiner will zurück!",
+                "long_text": "Bei uns in der Firma ist es zum Trend geworden: 5 Kollegen sind in den letzten 2 Jahren umgestiegen. Die Gründe? Unterschiedlich: Tom wegen der Kosten (spart 300€/Monat), Lisa wegen der Umwelt, Klaus wegen der Beschleunigung. Aber alle sagen: Nie wieder Verbrenner! Das Beste: Viele Autohäuser bieten Testwochenenden an. Einfach mal ausprobieren - kostet nichts und räumt mit vielen Vorurteilen auf!",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-13T06:21:42.413791"
+                }
+            },
+            {
+                "text": "Stimmt, sind nicht besser. Sind GEILER. 0-100 in 3 Sekunden. Kein Ölwechsel. Tanken während du schläfst. Aber klar, häng du an deinem Auspuff...",
+                "title": "Performance-Vergleich",
+                "short_text": "E-Auto = iPhone, Verbrenner = Nokia 3310",
+                "long_text": "E-Autos sind wie der Wechsel vom Nokia zum iPhone. Klar, das Nokia 'funktioniert auch noch'. Aber während du an der Tanke stehst, lade ich zuhause. Während du zur Werkstatt fährst, update ich per App. Während du den Motor warmfährst, bin ich schon am Ziel. Evolution, Baby!",
+                "style": "humorvoll",
+                "references": [],
+                "metadata": {
+                    "usage_count": 10,
+                    "created_at": "2025-09-12T15:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 16,
+            "created_at": "2025-09-05T17:36:42.413791"
+        }
+    },
+    {
+        "statement": "Die Grünen wollen uns das Fleisch verbieten",
+        "commentaries": [
+            {
+                "text": "Verstehe die Sorge! Esse selbst gerne mal ein gutes Steak. Der Punkt ist: Wenn das Kilo Hack nur 2,99€ kostet, stimmt was nicht - für die Tiere, die Bauern und unsere Gesundheit. Mein Metzger nimmt 8€, aber dafür weiß ich wo's herkommt. Qualität statt Masse - das schmeckt man auch!",
+                "title": "Qualitäts-Perspektive",
+                "short_text": "Esse selbst Fleisch - aber gutes vom lokalen Metzger!",
+                "long_text": "Klar verstehe ich das - niemand lässt sich gern vorschreiben, was er essen soll! Geht mir genauso. Ich esse selbst Fleisch, aber vom Metzger um die Ecke. Der kennt seine Bauern persönlich. Kostet mehr? Ja. Schmeckt besser? Definitiv! Und ich unterstütze lokale Betriebe statt Massentierhaltung. Das ist doch eigentlich das, was wir alle wollen: Wissen wo's herkommt, gute Qualität, faire Preise für Bauern. Niemand will dir dein Schnitzel verbieten - aber es sollte ein anständiges sein, oder?",
+                "style": "empathisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-08T20:21:42.413791"
+                }
+            },
+            {
+                "text": "Bei uns im Ort unterstützen immer mehr Leute den lokalen Metzger. Nicht aus Ideologie - sondern weil's einfach besser schmeckt! Und die Bauern in der Region können davon leben. Win-win für alle!",
+                "title": "Lokale Lösung",
+                "short_text": "Unser Dorf: Lokaler Metzger boomt - weil's besser schmeckt!",
+                "long_text": "Interessante Entwicklung bei uns: Der lokale Metzger hat immer mehr Kunden - nicht weil irgendwer was verbietet, sondern weil die Leute gemerkt haben: Das schmeckt ja richtig gut! Klar, kostet das Kilo 3€ mehr als beim Discounter. Aber dafür wissen wir: Die Tiere hatten ein gutes Leben, die Bauern werden fair bezahlt, und Antibiotika-Resistenzen sind kein Thema. Niemand wird gezwungen - die Leute entscheiden sich freiwillig für Qualität.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-14T10:21:42.413791"
+                }
+            },
+            {
+                "text": "Meine Schwiegermutter (75, CDU-Wählerin) sagt immer: 'Früher gab's auch nur sonntags Braten und der war was Besonderes!' Sie kauft jetzt auch beim Bauern direkt. Nicht wegen uns Grünen - sondern weil's besser ist.",
+                "title": "Generationen-Weisheit",
+                "short_text": "Oma (CDU): 'Sonntags Braten war was Besonderes!'",
+                "long_text": "Meine Schwiegermutter, 75, CDU seit immer, bringt's auf den Punkt: 'Früher gab's nur sonntags Fleisch und das war was Besonderes. Heute stopfen sich die Leute mit Billigfleisch voll und wundern sich über Zivilisationskrankheiten.' Sie kauft jetzt direkt beim Bauernhof - 2x die Woche gutes Fleisch statt täglich Ramsch. Ihre Worte: 'Das hat nichts mit Grün zu tun, das ist gesunder Menschenverstand!'",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 2,
+                    "created_at": "2025-09-10T06:21:42.413791"
+                }
+            },
+            {
+                "text": "EILMELDUNG: Habeck dringt NICHT in deine Küche ein! Deine Bratwurst ist sicher! Wiederhole: BRATWURST IST SICHER! 🌭",
+                "title": "Wurst-Alarm",
+                "short_text": "Bratwurst-Status: SICHER! 🌭",
+                "long_text": "⚠️ WURST-WARNUNG ⚠️ Aktuelle Bedrohungslage für deutsche Bratwurst: KEINE! Robert Habeck plant KEINE Küchen-Razzien! Annalena Baerbock will dir NICHT den Grill wegnehmen! Die einzige Gefahr für deine Wurst: Dass du sie wieder anbrennst lässt. 🔥🌭",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-07T14:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 8,
+            "created_at": "2025-09-02T16:14:42.413791"
+        }
+    },
+    {
+        "statement": "Wir brauchen Atomkraft statt dieser Erneuerbaren",
+        "commentaries": [
+            {
+                "text": "Hab ich früher auch gedacht! Dann hab ich die Zahlen gesehen: Neuer Atomstrom kostet 15 Cent/kWh, Solar nur 3 Cent. Und die Bauzeit? AKW: 15+ Jahre, Solarpark: 6 Monate. Finnland hat's gerade erlebt: 14 Jahre Verspätung, dreimal so teuer. Da ist Solar doch die bessere Wahl, oder?",
+                "title": "Kosten-Reality-Check",
+                "short_text": "War auch pro Atom - bis ich die Kosten sah: 5x teurer!",
+                "long_text": "Verstehe den Gedanken total - Atomkraft klingt erstmal nach stabiler Grundlast. Hab ich auch lange geglaubt! Aber schau dir mal die aktuellen Projekte an: Finnland's neues AKW - geplant 3 Milliarden, gekostet 11 Milliarden, 14 Jahre Verspätung. Frankreich: Halbe AKW-Flotte war letzten Sommer kaputt, Stromimporte aus Deutschland! Währenddessen: Solarstrom kostet nur noch 3 Cent/kWh. In 6 Monaten gebaut. Keine Endlager-Probleme. Wirtschaftlich macht Atom einfach keinen Sinn mehr.",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "Olkiluoto 3 Kosten und Verzögerungen",
+                        "reference_string": "https://www.tagesschau.de/wirtschaft/weltwirtschaft/finnland-atomkraft-olkiluoto-100.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 1,
+                    "created_at": "2025-09-03T10:21:42.413791"
+                }
+            },
+            {
+                "text": "Mein Schwager ist Ingenieur und war total pro Atomkraft. Jetzt hat er Solar auf dem Dach. Warum? 'Die Zahlen lügen nicht - Solar rechnet sich einfach!' Nach 6 Jahren hat er die Kosten raus, dann verdient er 20 Jahre lang.",
+                "title": "Ingenieur-Perspektive",
+                "short_text": "Ingenieur-Schwager: 'Solar rechnet sich einfach besser!'",
+                "long_text": "Mein Schwager, Maschinenbau-Ingenieur, war immer Pro-Atom. 'Grundlastfähig, CO2-arm' - seine Standard-Argumente. Letztes Jahr dann die Kehrtwende: Solaranlage aufs Dach. Seine Begründung: 'Ich hab's durchgerechnet. 12.000€ investiert, nach 6 Jahren break-even, dann 20 Jahre Gewinn. Ein neues AKW würde 15+ Jahre brauchen und 15 Cent/kWh kosten. Solar macht 3 Cent. Als Ingenieur muss ich sagen: Solar gewinnt!' Jetzt predigt er das in der ganzen Nachbarschaft. 😄",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-14T17:21:42.413791"
+                }
+            },
+            {
+                "text": "Schau nach Frankreich: 32 von 56 Reaktoren waren letzten Sommer kaputt. Die haben Strom aus Deutschland importiert - aus unseren Erneuerbaren! Währenddessen läuft Solar zuverlässig. Was ist zuverlässiger?",
+                "title": "Frankreich-Fiasko",
+                "short_text": "Frankreich: Halbe AKW-Flotte kaputt, importiert unseren Ökostrom!",
+                "long_text": "Das Atomland Frankreich zeigt gerade, wie's nicht läuft: Letzten Sommer waren 32 von 56 Reaktoren außer Betrieb - Wartung, Risse, Kühlwasser-Probleme. Die mussten massiv Strom importieren - ironischerweise aus Deutschland, von unseren Windrädern und Solarparks! Währenddessen produzieren Millionen Solaranlagen zuverlässig Strom. Bei meinen Eltern seit 15 Jahren ohne einen Tag Ausfall. Was ist da zuverlässiger?",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Frankreichs AKW-Probleme 2022",
+                        "reference_string": "https://www.tagesschau.de/wirtschaft/weltwirtschaft/frankreich-atomkraft-probleme-100.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 10,
+                    "created_at": "2025-09-03T02:21:42.413791"
+                }
+            },
+            {
+                "text": "Finnland: 15 Jahre Bauzeit, 11 Milliarden teurer. Frankreich: halbe AKW-Flotte kaputt. Deutschland: 'Lass mal Atomkraft!' 🤦‍♂️",
+                "title": "Internationale Pleiten",
+                "short_text": "Überall AKW-Chaos, Deutschland will rein?",
+                "long_text": "Finnland: Olkiluoto 3 - geplant 2009, fertig 2023, dreimal so teuer. Frankreich: 32 von 56 Reaktoren zeitweise abgeschaltet. Belgien: Risse im Reaktor. Schweiz: Beznau, ältestes AKW der Welt, läuft immer noch. Und Deutschland so: 'Geile Idee, lass machen!' 🤡",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 4,
+                    "created_at": "2025-09-14T08:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 7,
+            "created_at": "2025-09-13T13:43:42.413791"
+        }
+    },
+    {
+        "statement": "Grüne sind Kriegstreiber",
+        "commentaries": [
+            {
+                "text": "Verstehe deine Sehnsucht nach Frieden total - geht uns allen so! Die Frage ist nur: Wie erreichen wir echten Frieden? Wenn wir jetzt aufhören zu helfen, marschiert Putin weiter. Das hatten wir 1938 schon mal - Nachgeben hat's schlimmer gemacht. Echten Frieden gibt's nur, wenn Angreifer wissen: Das lohnt sich nicht.",
+                "title": "Frieden durch Stärke",
+                "short_text": "Wir alle wollen Frieden - aber echten, nicht erzwungenen.",
+                "long_text": "Ich verstehe die Sehnsucht nach Frieden so gut - niemand will Krieg! Die Frage ist: Wie kommen wir zu echtem Frieden? Die Geschichte zeigt: Wegschauen hilft Aggressoren. 1938 dachte man auch, Hitler würde nach dem Sudetenland aufhören. Wir wissen, wie das endete. Die Ukraine verteidigt ihr Land und unsere Werte. Wenn Putin dort durchkommt, ist Moldau als nächstes dran, dann die Balten. Echten Frieden gibt's nur, wenn sich Angriffe nicht lohnen. Das ist bitter, aber leider wahr.",
+                "style": "empathisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-06T07:21:42.413791"
+                }
+            },
+            {
+                "text": "Mein Opa hat mir immer gesagt: 'Wehret den Anfängen!' Er hat den Krieg erlebt. Er würde heute sagen: Die Ukraine kämpft unseren Kampf. Wegschauen macht es nur schlimmer.",
+                "title": "Generationen-Weisheit",
+                "short_text": "Opa (Kriegsgeneration): 'Wehret den Anfängen!'",
+                "long_text": "Mein Großvater, Jahrgang 1925, hat mir oft vom Krieg erzählt. Sein wichtigster Rat: 'Wehret den Anfängen! Diktatoren verstehen nur eine Sprache.' Er hat erlebt, was passiert, wenn man zu lange wegschaut. Wenn er noch leben würde, würde er sagen: Die Ukraine kämpft auch für unsere Freiheit. Denn wenn Putin dort durchkommt, macht er weiter. Das ist keine Kriegstreiberei - das ist die bittere Lehre aus unserer Geschichte.",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 2,
+                    "created_at": "2025-09-13T20:21:42.413791"
+                }
+            },
+            {
+                "text": "Die Lösung ist so einfach: Russland hört auf zu schießen, zieht ab, Krieg vorbei. Warum fordern die 'Friedensfreunde' das nie von Putin? Immer nur von der Ukraine, die sich verteidigt? Macht dich das nicht stutzig?",
+                "title": "Die einfache Lösung",
+                "short_text": "Krieg sofort vorbei wenn Russland aufhört. So einfach.",
+                "long_text": "Es gibt eine ganz einfache Lösung für sofortigen Frieden: Russland hört auf zu schießen und zieht ab. Krieg vorbei, niemand stirbt mehr. Komisch nur: Die selbsternannten 'Friedensfreunde' fordern das nie von Putin, immer nur Kapitulation von der Ukraine. Ein Land das sich verteidigt soll aufgeben, aber der Angreifer wird nicht kritisiert? Das ist kein Pazifismus, das ist Täter-Opfer-Umkehr.",
+                "style": "faktisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 10,
+                    "created_at": "2025-09-06T00:21:42.413791"
+                }
+            },
+            {
+                "text": "Ah ja, wir 'Kriegstreiber' liefern Helme. Putin bombt Kinderkrankenhäuser. Aber WIR sind die Bösen? Logik ist nicht so deins, wa?",
+                "title": "Realitätscheck",
+                "short_text": "Wir liefern Helme, Putin bombt Kinder.",
+                "long_text": "Lass mal rechnen: Putin überfällt Ukraine = Friedensmission? Wir liefern Verteidigungswaffen = Kriegstreiberei? Putin bombt Kraftwerke im Winter = legitim? Wir liefern Generatoren = Eskalation? In welchem Paralleluniversum lebst du eigentlich? 🤡",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 1,
+                    "created_at": "2025-09-09T19:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 10,
+            "created_at": "2025-09-06T12:09:42.413791"
+        }
+    },
+    {
+        "statement": "Die Grünen lassen alle Migranten rein",
+        "commentaries": [
+            {
+                "text": "Verstehe die Sorge um unkontrollierte Migration! Deshalb haben wir ja die Regeln verschärft: Abschiebungen sind um 27% gestiegen. Gleichzeitig holen wir gezielt Fachkräfte, die wir dringend brauchen - wie die Pflegerin meiner Mutter. Ohne sie wäre ich aufgeschmissen. Es geht um kontrollierte, sinnvolle Migration.",
+                "title": "Kontrollierte Migration",
+                "short_text": "Mehr Abschiebungen UND gezielte Fachkräfte - beides wichtig!",
+                "long_text": "Ich verstehe die Sorge vor unkontrollierter Zuwanderung total! Deshalb machen wir ja beides: Abschiebungen sind um 27% gestiegen - wer straffällig wird oder kein Bleiberecht hat, muss gehen. Gleichzeitig holen wir gezielt die Fachkräfte, die wir dringend brauchen. Bei meiner Mutter kümmert sich eine polnische Pflegerin - ohne sie wüsste ich nicht weiter. Mein Hausarzt kommt aus Syrien - super kompetent. Das ist der Unterschied: Nicht 'alle rein', sondern kontrolliert und nach klaren Regeln.",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "Abschiebezahlen 2023/2024",
+                        "reference_string": "https://www.bamf.de/DE/Themen/Statistik/statistik_node.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 3,
+                    "created_at": "2025-09-03T10:21:42.413791"
+                }
+            },
+            {
+                "text": "In unserem Krankenhaus arbeiten 40% Ärzte mit Migrationshintergrund. Ohne die könnten wir die Notaufnahme dichtmachen. Aber klar, schick alle weg - dann operierst du dich halt selbst.",
+                "title": "Krankenhaus-Realität",
+                "short_text": "40% unserer Ärzte haben Migrationshintergrund - ohne die geht's nicht!",
+                "long_text": "Kleiner Reality-Check aus unserem Kreiskrankenhaus: 40% der Ärzte haben Migrationshintergrund. Die Chefärztin der Notaufnahme kommt aus dem Iran, der beste Chirurg aus Ägypten. Ohne die müssten wir halb zusperren. In der Pflege noch extremer: 60% aus Osteuropa und Asien. Die arbeiten Schichten, die kein Deutscher mehr machen will. Aber klar, 'alle raus' - dann viel Spaß bei der Selbst-OP!",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Anteil Ärzte mit Migrationshintergrund",
+                        "reference_string": "https://www.bundesaerztekammer.de/baek/ueber-uns/aerztestatistik"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-10T17:21:42.413791"
+                }
+            },
+            {
+                "text": "Meine Tochter hat einen türkischen Mathelehrer - der Beste den sie je hatte. Unser Lieblings-Restaurant gehört einer syrischen Familie. Der Gemüsehändler zahlt mehr Steuern als Amazon. Das ist die Realität, nicht die Hetze von Facebook.",
+                "title": "Alltags-Bereicherung",
+                "short_text": "Türkischer Mathelehrer, syrisches Restaurant - mein Alltag ist bunter!",
+                "long_text": "Mal ganz persönlich: Der türkische Mathelehrer meiner Tochter ist der erste, bei dem sie Mathe versteht. Unser Lieblings-Restaurant wird von einer syrischen Familie geführt - bestes Essen der Stadt. Der vietnamesische Gemüsehändler hat während Corona durchgearbeitet, als alle anderen zu hatten. Das sind keine 'Wirtschaftsflüchtlinge' - das sind unsere Nachbarn, die unsere Gesellschaft bereichern. Klar gibt's auch Probleme - die lösen wir mit klaren Regeln, nicht mit Pauschal-Hetze.",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-04T21:21:42.413791"
+                }
+            },
+            {
+                "text": "Ohne Migranten: Keine Pflege, keine Ernte, kein Döner, keine Ärzte. Viel Spaß in deinem rein-deutschen Paradies mit Sauerkraut-Monopol.",
+                "title": "Deutschland ohne Migration",
+                "short_text": "Rein-deutsches Sauerkraut-Paradies?",
+                "long_text": "Stell dir vor: Deutschland ohne Migranten. Keine Pfleger*innen (Personalmangel: 200.000). Kein Spargel (wer erntet?). Keine Döner, keine Pizza. Halbe Krankenhäuser dicht (40% der Ärzte haben Migrationshintergrund). Klingt super, dein ethnisch reines Paradies! 🙄",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 5,
+                    "created_at": "2025-09-10T10:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 12,
+            "created_at": "2025-09-09T21:24:42.413791"
+        }
+    },
+    {
+        "statement": "Die Grünen verstehen nichts vom Leben normaler Leute",
+        "commentaries": [
+            {
+                "text": "Kann ich verstehen, dass es manchmal so wirkt! Aber schau mal konkret: Das 49€-Ticket spart Pendlern 1.500€ im Jahr. Stromsteuer runter spart 400€. Kindergeld erhöht. Das sind echte Entlastungen für normale Familien. Merz mit seinem Privatjet hat das übrigens alles abgelehnt...",
+                "title": "Konkrete Entlastungen",
+                "short_text": "1.500€ gespart durchs 49€-Ticket - das hilft normal Leuten!",
+                "long_text": "Verstehe, dass Politik oft abgehoben wirkt! Aber schauen wir mal, was wirklich passiert ist: 49€-Ticket spart Pendlern 1.500€ jährlich - das sind zwei Monatsmieten! Stromsteuer gesenkt: 400€ gespart. Kindergeld rauf. Mindestlohn erhöht. Mietpreisbremse verlängert. Das sind alles konkrete Hilfen für normale Familien. Die CDU wollte das 49€-Ticket übrigens kippen. Merz fliegt im Privatjet und erklärt uns das 'echte Leben'. Wer ist da abgehoben?",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "Entlastungen durch Ampel-Regierung",
+                        "reference_string": "https://www.bundesregierung.de/breg-de/schwerpunkte/entlastung-fuer-deutschland"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-11T14:21:42.413791"
+                }
+            },
+            {
+                "text": "Ich pendel jeden Tag 50km zur Arbeit. Früher: 180€ Monatskarte. Jetzt: 49€ Ticket. Macht 1.500€ im Jahr gespart - fast ein Monatsgehalt! Wer das wieder abschaffen will, hat keine Ahnung vom echten Leben.",
+                "title": "Pendler-Realität",
+                "short_text": "Spare als Pendler 1.500€/Jahr - danke, 49€-Ticket!",
+                "long_text": "Ganz ehrlich: Ich pendel jeden Tag 50km zur Arbeit. Früher hat mich die Monatskarte 180€ gekostet - nur für zwei Zonen! Jetzt: 49€ für ganz Deutschland. Ich spare 1.500€ im Jahr - das ist fast ein komplettes Monatsgehalt! Am Wochenende kann ich damit sogar meine Eltern besuchen. Die CDU wollte das Ticket abschaffen. Sorry, aber wer DAS will, weiß nicht was Pendeln bedeutet.",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 2,
+                    "created_at": "2025-09-12T14:21:42.413791"
+                }
+            },
+            {
+                "text": "Bei uns im Betrieb sind viele froh über das 49€-Ticket und die Entlastungen. Komisch: Die meisten Grünen-Wähler bei uns sind Handwerker und Krankenpfleger. Die Manager wählen CDU. Wer ist hier volksnah?",
+                "title": "Betriebsrealität",
+                "short_text": "Handwerker wählen Grün, Manager CDU - wer ist volksnah?",
+                "long_text": "Interessante Beobachtung aus unserem Betrieb: Die Grünen-Wähler sind hauptsächlich die Handwerker, Pfleger und Sachbearbeiter. Die nutzen das 49€-Ticket, freuen sich über den höheren Mindestlohn und die Solarförderung. Die Führungsetage? Wählt CDU/FDP, fährt Dienstwagen und wohnt im Eigenheim. Wer versteht hier mehr vom normalen Leben?",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 7,
+                    "created_at": "2025-09-07T22:21:42.413791"
+                }
+            },
+            {
+                "text": "Grüne Wähler: Handwerker, Krankenpfleger, Lehrer. CDU-Wähler: Merz mit Privatjet. Wer ist hier abgehoben?",
+                "title": "Wähler-Realität",
+                "short_text": "Merz im Privatjet erklärt uns das echte Leben.",
+                "long_text": "Friedrich Merz fliegt mit dem Privatjet zur Hochzeit und erklärt uns das 'normale' Leben. Christian Lindner heiratet auf Sylt mit Porsche-Kolonne. Aber die Grünen, die mit dem Fahrrad kommen, sind 'abgehoben'? Eure Logik möchte ich haben... 🤦‍♂️",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-15T04:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 2,
+            "created_at": "2025-09-14T09:30:42.413791"
+        }
+    },
+    {
+        "statement": "Deutschland kann das Klima nicht alleine retten",
+        "commentaries": [
+            {
+                "text": "Stimmt, alleine schaffen wir's nicht! Aber weißt du was? Deutsche Solartechnik hat weltweit Solar bezahlbar gemacht. Unsere Windräder drehen sich überall. Wenn wir vorangehen, folgen andere - und wir verdienen daran! China macht's vor: Die bauen Kohlekraftwerke UND dominieren den Solarmarkt. Wer zu spät kommt, kauft dann alles aus China...",
+                "title": "Technologie-Export",
+                "short_text": "Unsere Technik macht weltweit Klimaschutz möglich - und profitable!",
+                "long_text": "Klar können wir das Klima nicht alleine retten - sind ja 'nur' 2% der Emissionen. ABER: Deutsche Ingenieure haben Solar günstig gemacht. Deutsche Windtechnik läuft weltweit. Wasserstoff? Wir sind führend! Wenn wir vorangehen, verkaufen wir die Lösungen an die Welt. China hat das verstanden: Die dominieren schon den Solarmarkt. Entweder wir sind Vorreiter und verdienen daran, oder wir kaufen in 10 Jahren alles aus China. Was ist dir lieber?",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "Deutsche Cleantech-Exporte",
+                        "reference_string": "https://www.bmwk.de/Redaktion/DE/Dossier/erneuerbare-energien.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 8,
+                    "created_at": "2025-09-12T02:21:42.413791"
+                }
+            },
+            {
+                "text": "Mein Nachbar hat vor 6 Jahren Solar aufs Dach gebaut. Ist jetzt abbezahlt und er verdient jeden Monat 200€. Sagt selbst: 'Beste Entscheidung ever!' Klimaschutz, der sich rechnet - warum nicht?",
+                "title": "Nachbars Gewinn",
+                "short_text": "Nachbar verdient 200€/Monat mit Solar - Klimaschutz lohnt sich!",
+                "long_text": "True Story von nebenan: Nachbar hat 2018 für 12.000€ Solar installiert. Alle haben ihn belächelt. Jetzt? Anlage abbezahlt, er verdient jeden Monat 200€ mit Einspeisung und spart zusätzlich Stromkosten. Macht 3.000€ plus im Jahr - für die nächsten 20 Jahre! Er sagt: 'Klimaschutz hin oder her - das ist einfach ein geiles Geschäft!' Warum sollten wir das anderen überlassen?",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-14T11:21:42.413791"
+                }
+            },
+            {
+                "text": "Unsere Firma exportiert Umwelttechnik nach Indien und Afrika. Die kaufen das, weil's funktioniert UND Geld spart. Wir schaffen Arbeitsplätze hier und helfen dem Klima dort. Win-win! Aber klar, lass uns aufhören und China den Markt überlassen...",
+                "title": "Export-Erfolg",
+                "short_text": "Wir exportieren Klimatechnik weltweit - Jobs hier, Klimaschutz dort!",
+                "long_text": "Bei uns in der Firma läuft's super: Wir exportieren Wasseraufbereitung und Solartechnik nach Indien und Afrika. Die kaufen nicht aus Klimaschutz-Romantik, sondern weil's günstiger und zuverlässiger ist als Diesel-Generatoren. 300 Jobs bei uns in der Region, Millionen-Umsätze, und nebenbei hilft's dem Klima. Wenn wir damit aufhören, macht's China. Die lachen sich kaputt über unsere Technologie-Skepsis!",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-15T20:21:42.413791"
+                }
+            },
+            {
+                "text": "China baut Kohlekraftwerke UND ist Weltmarktführer bei Solar. Warum? Weil sie begriffen haben: Wer zu spät kommt, den bestraft der Markt.",
+                "title": "Globaler Wettbewerb",
+                "short_text": "China kapiert's, CDU nicht.",
+                "long_text": "Während die CDU noch über 'ob' diskutiert, macht China längst Kasse mit Klimatech. 80% aller Solarpanels, 70% aller Batterien. Die lachen sich kaputt über unsere 'Technologieoffenheit'. Entweder wir führen, oder wir kaufen in 10 Jahren alles aus China. Deine Wahl.",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 6,
+                    "created_at": "2025-09-02T12:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 16,
+            "created_at": "2025-09-08T06:03:42.413791"
+        }
+    },
+    {
+        "statement": "Die Grünen wollen uns das Gendern aufzwingen",
+        "commentaries": [
+            {
+                "text": "Verstehe den Frust über Sprachvorschriften total! Deshalb machen wir auch keine. Jeder soll sprechen wie er/sie will. Die CSU dagegen hat Gendern per Gesetz VERBOTEN. Die AfD will's überall verbieten. Wer zwingt hier wen? Wir sagen: Leben und leben lassen!",
+                "title": "Freiheit statt Zwang",
+                "short_text": "Wir zwingen niemanden - CSU verbietet per Gesetz!",
+                "long_text": "Ich verstehe total, dass niemand Sprachvorschriften will - geht mir genauso! Deshalb gibt's bei uns auch keine. Schau mal: Die CSU hat in Bayern per Gesetz das Gendern in Behörden und Schulen VERBOTEN. Die AfD will es komplett verbieten. Wir Grüne? Sagen: Macht wie ihr wollt! Manche gendern, manche nicht - wo ist das Problem? Das ist doch echte Freiheit: Jeder entscheidet selbst. Niemand wird gezwungen, niemand wird verboten.",
+                "style": "empathisch",
+                "references": [
+                    {
+                        "text": "Genderverbot in Bayern",
+                        "reference_string": "https://www.sueddeutsche.de/bayern/gendern-verbot-bayern-schulen-behoerden"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 4,
+                    "created_at": "2025-09-04T14:21:42.413791"
+                }
+            },
+            {
+                "text": "Bei uns in der Grünen-Geschäftsstelle gendert die Hälfte, die andere nicht. Null Problem! Jeder wie er mag. In Bayern dagegen: Genderverbot per Gesetz. Wer schränkt hier die Freiheit ein?",
+                "title": "Gelebte Praxis",
+                "short_text": "Bei uns: Hälfte gendert, Hälfte nicht - kein Drama!",
+                "long_text": "Kleiner Einblick aus der Praxis: In unserer Grünen-Geschäftsstelle gendert etwa die Hälfte, die andere nicht. Manche sagen 'Bürger*innen', andere 'Bürger'. Niemand korrigiert niemanden, jeder macht's wie er/sie will. Das ist gelebte Freiheit! In Bayern dagegen: Wer in der Behörde gendert, kriegt Ärger. DAS ist Sprachpolizei!",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 9,
+                    "created_at": "2025-09-09T11:21:42.413791"
+                }
+            },
+            {
+                "text": "Meine 70-jährige Mutter gendert nicht, meine Tochter schon. Beide Grünen-Wählerinnen. Beide respektieren sich. So einfach kann's sein! Nur die CSU macht daraus ein Staatstheater mit Verboten.",
+                "title": "Generationen-Harmonie",
+                "short_text": "Oma gendert nicht, Enkelin schon - beide bei uns willkommen!",
+                "long_text": "In unserer Familie ist's ganz entspannt: Meine Mutter (70) sagt 'Liebe Bürger', meine Tochter (25) sagt 'Liebe Bürger*innen'. Beide wählen Grün, beide respektieren die Entscheidung der anderen. Keine zwingt die andere. Das ist der Unterschied: Wir lassen jeden machen, die CSU/AfD verbietet. Wer ist hier tolerant?",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 2,
+                    "created_at": "2025-09-02T15:21:42.413791"
+                }
+            },
+            {
+                "text": "ALARM! Die Grünen zwingen dich zu... gar nichts! Aber die CSU verbietet dir Sternchen. Freiheit ist, wenn Söder entscheidet, wie du sprichst? 🤔",
+                "title": "Freiheits-Paradox",
+                "short_text": "Söder bestimmt deine Sprache = Freiheit?",
+                "long_text": "CSU: 'Freiheit statt Verbote!' Auch CSU: 'Genderverbot in allen Behörden!' AfD: 'Gegen Sprachpolizei!' Auch AfD: 'Genderverbot überall!' Grüne: 'Macht doch was ihr wollt.' Internet: 'DIKTATUR!!1!' Macht Sinn. Nicht. 🤡",
+                "style": "sarkastisch",
+                "references": [],
+                "metadata": {
+                    "usage_count": 4,
+                    "created_at": "2025-09-08T23:21:42.413791"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 7,
+            "created_at": "2025-09-02T08:21:42.413791"
+        }
+    }
+]

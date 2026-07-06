@@ -1,0 +1,317 @@
+// Import shared base styles
+@use '../shared/styles/result-item-base' as base;
+@use '../shared/styles/animations' as animations;
+
+// Host element styles - critical for proper sizing in carousel
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// Include base styles
+@include base.result-item-base;
+@include base.mat-avatar;
+
+// Header specific to commentary
+.commentary-header {
+  @include base.result-header(--commentary-bg);
+  align-items: center;
+  height: 56px;
+  padding: 8px 16px !important;
+
+  .mat-mdc-card-header-text {
+    margin: 0;
+  }
+
+  [mat-card-avatar] {
+    margin-bottom: 0 !important;
+  }
+}
+
+.commentary-score {
+  @include base.result-score;
+}
+
+.commentary-header-info {
+  @include base.result-header-info;
+}
+
+.commentary-title {
+  @include base.result-title;
+}
+
+.content-type-emoji {
+  @include base.content-type-emoji;
+}
+
+.commentary-properties {
+  @include base.result-properties;
+}
+
+// Content section
+.commentary-content {
+  @include base.result-content;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0 !important;
+}
+
+.commentary-text {
+  @include base.result-text;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-bottom: 0;
+}
+
+// Action buttons
+.commentary-action-buttons {
+  @include base.result-action-buttons-grid;
+
+  .commentary-copy-button {
+    justify-self: center;
+  }
+
+  .commentary-menu-button {
+    justify-self: end;
+  }
+}
+
+.commentary-vote-button {
+  @include base.result-vote-menu-button;
+}
+
+.commentary-copy-button {
+  @include base.result-copy-button-enhanced;
+
+  &.copy-success {
+    @include animations.copy-success-animation;
+    background-color: #4caf50 !important;
+    color: white !important;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      @include animations.pulse-glow-animation;
+    }
+  }
+}
+
+.commentary-menu-button {
+  @include base.result-vote-menu-button;
+}
+
+// Info bar
+.commentary-info-bar {
+  @include base.result-info-bar(--commentary-bg);
+}
+
+.commentary-type {
+  @include base.result-type;
+}
+
+// References
+.commentary-references {
+  @include base.result-references;
+  flex-shrink: 0;
+  border-top: 1px solid var(--divider-color);
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+}
+
+.commentary-reference-container {
+  @include base.result-reference-container;
+}
+
+.commentary-reference-list {
+  @include base.result-reference-list;
+}
+
+// Include reference link styles
+@include base.reference-link-styles;
+
+// Metadata section (now below action buttons)
+.commentary-metadata {
+  @include base.result-metadata-footer;
+}
+
+// Score details popup
+.commentary-score-details {
+  @include base.result-score-details;
+  animation: fadeInSlide var(--transition-standard);
+}
+
+.score-detail-item {
+  @include base.score-detail-item;
+}
+
+// Commentary-specific styles (text mode toggle)
+.text-mode-toggle {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.text-length-toggle {
+  width: 100%;
+  display: flex;
+  border: 1px solid var(--divider-color);
+  border-radius: var(--border-radius-small);
+  overflow: hidden;
+  background-color: var(--surface-color);
+
+  ::ng-deep .mat-button-toggle-group {
+    width: 100%;
+    height: 24px;
+    box-shadow: none;
+    display: flex;
+  }
+
+  ::ng-deep .mat-button-toggle {
+    flex: 1 1 0;
+    border: none;
+    width: 33.333%;
+  }
+
+  ::ng-deep .mat-button-toggle-button {
+    width: 100%;
+    height: 24px;
+    line-height: 24px;
+    font-size: 12px;
+    padding: 0 var(--spacing-sm);
+    transition: background-color 0.2s ease;
+  }
+
+  ::ng-deep .mat-button-toggle-checked .mat-button-toggle-button {
+    background-color: rgba(0, 0, 0, 0.08);
+    color: var(--text-primary);
+    font-weight: 500;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.12);
+    }
+  }
+
+  ::ng-deep .mat-button-toggle:not(.mat-button-toggle-checked) .mat-button-toggle-button:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+    line-height: 24px;
+    padding: 0;
+    font-weight: bold;
+  }
+
+  ::ng-deep .mat-pseudo-checkbox {
+    display: none !important;
+  }
+
+  ::ng-deep .mat-button-toggle-label-content::before {
+    display: none !important;
+  }
+}
+
+// Mobile-specific adjustments for text toggle
+@media (max-width: 599px) {
+  .text-length-toggle {
+    margin-bottom: var(--spacing-sm);
+
+    ::ng-deep .mat-button-toggle-button {
+      font-size: 11px;
+      height: 20px;
+      line-height: 20px;
+    }
+  }
+}
+
+// Badge styles
+.commentary-badges {
+  @include base.result-badges;
+}
+
+// Statement section styles
+@include base.result-statement-section;
+
+// Include mobile responsive styles
+@include base.result-item-mobile;
+
+// Mobile adjustments
+@media (max-width: 599px) {
+  .commentary-header {
+    height: 48px;
+  }
+
+  .content-type-emoji {
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .commentary-title {
+    margin-right: 95px;
+    font-size: 14px;
+    min-height: 40px;
+    max-height: 40px;
+  }
+
+  .commentary-action-buttons {
+    padding: 8px 0;
+    gap: 8px;
+
+    .vote-buttons {
+      gap: 8px;
+    }
+  }
+
+  .commentary-vote-button,
+  .commentary-menu-button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 50%;
+    padding: 0;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .commentary-copy-button {
+    height: 36px;
+    min-height: 36px;
+    font-size: 12px;
+    padding: 0 12px;
+    min-width: 140px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+
+    span {
+      font-size: 12px;
+    }
+  }
+
+  .commentary-metadata {
+    padding: 0 var(--spacing-sm) 8px;
+    font-size: 11px;
+    line-height: 1.2;
+
+    .metadata-text {
+      font-size: 11px;
+    }
+  }
+}

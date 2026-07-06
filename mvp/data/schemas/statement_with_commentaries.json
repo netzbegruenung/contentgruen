@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "title": "Statements with Commentaries Schema",
+  "description": "Schema for statements with commentary responses",
+  "items": {
+    "type": "object",
+    "required": ["statement", "commentaries"],
+    "properties": {
+      "statement": {
+        "type": "string",
+        "description": "A statement that expresses a claim or opinion",
+        "minLength": 10
+      },
+      "commentaries": {
+        "type": "array",
+        "description": "Commentary responses to the statement",
+        "items": {
+          "type": "object",
+          "required": ["text", "title"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Main commentary text",
+              "minLength": 10
+            },
+            "title": {
+              "type": "string",
+              "description": "Title/summary of the commentary",
+              "minLength": 5
+            },
+            "long_text": {
+              "type": "string",
+              "description": "Extended commentary text"
+            },
+            "short_text": {
+              "type": "string",
+              "description": "Brief summary text"
+            },
+            "references": {
+              "type": "array",
+              "description": "Supporting references",
+              "items": {
+                "type": "object",
+                "required": ["text", "reference_string"],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Reference description"
+                  },
+                  "reference_string": {
+                    "type": "string",
+                    "description": "URL or citation"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

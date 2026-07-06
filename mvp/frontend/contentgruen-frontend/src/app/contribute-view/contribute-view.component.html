@@ -1,0 +1,179 @@
+<!-- Desktop intro text -->
+<section class="content-section" *ngIf="!isMobile">
+    <p>
+        Füge eigene Beiträge zu ContentGrün hinzu – diese können dann von Anderen genutzt werden.<br>
+        So schaffen wir gemeinsam eine große, zugängliche Wissensbasis! 💚💪<br>
+        <br>
+        Wähle eine der folgenden Kategorien:
+    </p>
+</section>
+
+<!-- Mobile intro text only (no title/back button) -->
+<section class="content-section" *ngIf="isMobile && !showMobileForm">
+    <p>
+        Füge eigene Beiträge zu ContentGrün hinzu – diese können dann von Anderen genutzt werden.<br>
+        So schaffen wir gemeinsam eine große, zugängliche Wissensbasis! 💚💪<br>
+        <br>
+        Wähle eine der folgenden Kategorien:
+    </p>
+</section>
+
+<!-- Mobile Card Layout -->
+<div *ngIf="isMobile && !showMobileForm" class="mobile-cards-container" role="navigation" aria-label="Beitragstypen">
+    <mat-card class="content-type-card commentary-card"
+              (click)="selectMobileContentType('commentary')"
+              role="button"
+              tabindex="0"
+              aria-label="Fertigen Kommentar verfassen - Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media"
+              (keyup.enter)="selectMobileContentType('commentary')"
+              (keyup.space)="selectMobileContentType('commentary')">
+        <mat-card-header>
+            <div class="card-icon" aria-hidden="true">💬</div>
+            <mat-card-title>Fertiger Kommentar</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media</p>
+        </mat-card-content>
+        <mat-card-actions>
+            <button mat-button color="primary" aria-label="Kommentar verfassen">
+                Fertigen Kommentar verfassen
+                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+            </button>
+        </mat-card-actions>
+    </mat-card>
+
+    <mat-card class="content-type-card generictext-card"
+              (click)="selectMobileContentType('generictext')"
+              role="button"
+              tabindex="0"
+              aria-label="Hintergrundinfo verfassen - Fakten, Zahlen und Hintergrundinformationen zum Thema"
+              (keyup.enter)="selectMobileContentType('generictext')"
+              (keyup.space)="selectMobileContentType('generictext')">
+        <mat-card-header>
+            <div class="card-icon" aria-hidden="true">📄</div>
+            <mat-card-title>Hintergrundinfo</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>Fakten, Zahlen und Hintergrundinformationen zum Thema</p>
+        </mat-card-content>
+        <mat-card-actions>
+            <button mat-button color="primary" aria-label="Textbeitrag verfassen">
+                Hintergrundinfo verfassen
+                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+            </button>
+        </mat-card-actions>
+    </mat-card>
+
+    <mat-card class="content-type-card image-card"
+              (click)="selectMobileContentType('image')"
+              role="button"
+              tabindex="0"
+              aria-label="Bild hinzufügen - Politisch relevante Bilder mit Bildunterschrift"
+              (keyup.enter)="selectMobileContentType('image')"
+              (keyup.space)="selectMobileContentType('image')">
+        <mat-card-header>
+            <div class="card-icon" aria-hidden="true">🖼️</div>
+            <mat-card-title>Bild</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>Politisch relevante Bilder mit Bildunterschrift</p>
+        </mat-card-content>
+        <mat-card-actions>
+            <button mat-button color="primary" aria-label="Bild hinzufügen">
+                Bild hinzufügen
+                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+            </button>
+        </mat-card-actions>
+    </mat-card>
+</div>
+
+<!-- Mobile Form View -->
+<div *ngIf="isMobile && showMobileForm" class="mobile-form-container">
+    <div class="mobile-form-content">
+        <app-add-commentary-workflow
+            *ngIf="showMobileForm === 'commentary'"
+            [searchQuery]="searchQuery">
+        </app-add-commentary-workflow>
+
+        <app-add-generictext-workflow
+            *ngIf="showMobileForm === 'generictext'"
+            [searchQuery]="searchQuery">
+        </app-add-generictext-workflow>
+
+        <app-add-image-workflow
+            *ngIf="showMobileForm === 'image'">
+        </app-add-image-workflow>
+    </div>
+</div>
+
+<!-- Desktop Accordion Layout (unchanged) -->
+<div *ngIf="!isMobile" class="contribution-container">
+    <mat-accordion multi="true" class="accordion-container">
+
+        <!-- Kommentar -->
+        <mat-expansion-panel #commentaryPanel class="panel commentary-color mat-elevation-z2" [expanded]="isPanelActive('commentary')">
+            <mat-expansion-panel-header class="panel-header commentary-color">
+                <mat-panel-title>
+                    <h3>💬 Fertiger Kommentar</h3>
+                </mat-panel-title>
+                <mat-panel-description>
+                    Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media
+                </mat-panel-description>
+            </mat-expansion-panel-header>
+            <div class="panel-content">
+                <app-add-commentary-workflow [searchQuery]="searchQuery"></app-add-commentary-workflow>
+            </div>
+        </mat-expansion-panel>
+
+        <!-- Textbeitrag -->
+        <mat-expansion-panel #generictextPanel class="panel generictext-color mat-elevation-z2" [expanded]="isPanelActive('generictext')">
+            <mat-expansion-panel-header class="panel-header generictext-color">
+                <mat-panel-title>
+                    <h3>📄 Hintergrundinfo</h3>
+                </mat-panel-title>
+                <mat-panel-description>
+                    Fakten, Zahlen und Hintergrundinformationen zum Thema
+                </mat-panel-description>
+            </mat-expansion-panel-header>
+            <div class="panel-content">
+                <app-add-generictext-workflow [searchQuery]="searchQuery"></app-add-generictext-workflow>
+            </div>
+        </mat-expansion-panel>
+
+        <!-- Bild -->
+        <mat-expansion-panel #imagePanel class="panel image-color mat-elevation-z2" [expanded]="isPanelActive('image')">
+            <mat-expansion-panel-header class="panel-header image-color">
+                <mat-panel-title>
+                    <h3>🖼️ Bild</h3>
+                </mat-panel-title>
+                <mat-panel-description>
+                    Politisch relevante Bilder mit Bildunterschrift
+                </mat-panel-description>
+            </mat-expansion-panel-header>
+            <div class="panel-content">
+                <app-add-image-workflow></app-add-image-workflow>
+            </div>
+        </mat-expansion-panel>
+
+    </mat-accordion>
+</div>
+
+<section class="content-section roadmap-section">
+    <div class="coming-soon-card">
+        <h4>💡 Weitere Funktionen in Entwicklung</h4>
+        <p>
+            Wir arbeiten an weiteren Möglichkeiten, wie du zu ContentGrün beitragen kannst:
+            <br>
+            • Bestehende Inhalte bewerten und verbessern
+            <br>
+            • Inhalte miteinander verknüpfen
+            <br>
+            • Bildmaterial und Infografiken hinzufügen
+            <br>
+            <br>
+            <a href="mailto:feedback@contentgruen.de" class="feedback-link">
+                Hast du Ideen oder Feedback? Schreib uns!
+            </a>
+        </p>
+    </div>
+</section>

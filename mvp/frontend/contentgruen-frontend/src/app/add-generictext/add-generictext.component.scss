@@ -1,0 +1,28 @@
+// Import shared contribution form styles
+@use '../shared/styles/contribution-form' as contribution;
+
+// Apply all shared styles
+@include contribution.contribution-form-styles;
+
+// Component-specific container
+.add-generictext-container {
+  @include contribution.contribution-container;
+}
+
+// Generictext-specific badge colors
+.content-type-badge {
+  background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  border: 1px solid #90CAF9;
+}
+
+// Generictext-specific result item adjustments
+.preview-column app-generictext-result-item ::ng-deep .result-item {
+  margin: 0;
+  width: 100%;
+
+  @media (max-width: 600px) {
+    max-width: 100%;
+    width: 100%;
+    height: 500px; // Fixed height for mobile
+  }
+}

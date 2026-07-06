@@ -1,0 +1,106 @@
+mat-dialog-content {
+  min-width: 400px;
+  padding: 20px 24px !important;
+}
+
+.duplicate-info {
+  padding: 16px 0;
+}
+
+.reference-url {
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 14px;
+  margin: 8px 0 16px 0;
+  word-break: break-all;
+  border-left: 4px solid #2196f3;
+}
+
+.description-comparison {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.label {
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.description-box {
+  background: #fafafa;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  min-height: 40px;
+}
+
+.description-box.new {
+  background: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.new-description mat-form-field {
+  margin-top: 8px;
+}
+
+.question {
+  margin-top: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+mat-dialog-actions {
+  padding: 16px 24px !important;
+  margin: 0 !important;
+  gap: 8px;
+}
+
+mat-dialog-actions button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+mat-dialog-actions mat-icon {
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+}
+
+.info-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  background: #fff3cd;
+  border-radius: 4px;
+  border-left: 4px solid #ffc107;
+  font-size: 13px;
+  color: #856404;
+  line-height: 1.5;
+}
+
+.info-text mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+  color: #ffc107;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.info-text span {
+  flex: 1;
+  display: block;
+}
