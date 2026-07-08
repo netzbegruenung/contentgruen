@@ -64,7 +64,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'  # matches python:3.12-slim in semantic-search-service/Dockerfile
+          python-version: '3.13'  # matches python:3.13-slim in semantic-search-service/Dockerfile
           cache: 'pip'
           cache-dependency-path: mvp/backend/semantic-search-service/requirements.txt
 
