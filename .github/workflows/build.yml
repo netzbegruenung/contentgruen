@@ -1,0 +1,334 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'renovate.json'
+      - 'README.md'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: git.verdigado.com
+  REGISTRY_NAMESPACE: netzbegruenung-images
+
+jobs:
+  # Detects which image source paths have changed so we only build what's necessary.
+  # On workflow_dispatch (no diff available) all outputs default to 'true' → all 5 build.
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      bff: ${{ steps.filter.outputs.bff }}
+      semantic: ${{ steps.filter.outputs.semantic }}
+      postgres_semantic: ${{ steps.filter.outputs.postgres_semantic }}
+      postgres_app: ${{ steps.filter.outputs.postgres_app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'mvp/frontend/**'
+            bff:
+              - 'mvp/backend/BFF/**'
+            semantic:
+              - 'mvp/backend/semantic-search-service/**'
+            postgres_semantic:
+              - 'mvp/backend/postgres-semantic/**'
+            postgres_app:
+              - 'mvp/backend/postgres-app/**'
+
+  test:
+    name: Test Semantic Search Service
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.15.5
+        ports:
+          - 6333:6333
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # matches python:3.12-slim in semantic-search-service/Dockerfile
+          cache: 'pip'
+          cache-dependency-path: mvp/backend/semantic-search-service/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r mvp/backend/semantic-search-service/requirements.txt
+
+      - name: Run unit tests
+        working-directory: mvp/backend/semantic-search-service/app
+        # test_seeding_implementation.py requires live seed data files not available in CI
+        run: python -m pytest tests/unit/ --ignore=tests/unit/services/test_seeding_implementation.py --tb=short -v --junitxml=unit-test-results.xml
+
+      - name: Run integration tests
+        working-directory: mvp/backend/semantic-search-service/app
+        env:
+          QDRANT_URL: http://localhost:6333
+        # tests/integration/api requires a running full stack (BFF + auth) not available in CI
+        run: python -m pytest tests/integration/ --ignore=tests/integration/api --tb=short -v --junitxml=integration-test-results.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: mvp/backend/semantic-search-service/app/*-test-results.xml
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: mvp/frontend/contentgruen-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: mvp/frontend/contentgruen-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare environment file
+        # environment.ts is not committed; copy local config so the build resolves the import
+        run: |
+          test -f src/environments/environment.ts || \
+            cp src/environments/environment.local.ts src/environments/environment.ts
+
+      - name: Run tests
+        run: npx ng test --watch=false --browsers=ChromeHeadless --progress=false
+
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    needs: [changes, test, test-frontend]
+    # Build only when frontend paths changed (or manual trigger); never push from PRs
+    if: |
+      github.event_name != 'pull_request' &&
+      (needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Verdigado registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.VERDIGADO_REGISTRY_USER }}
+          password: ${{ secrets.VERDIGADO_REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-frontend
+          tags: |
+            # :main — moves with every push; watched by the tst deployment
+            type=raw,value=main
+            # :sha-abc1234 — immutable short SHA; for rollback and traceability
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: mvp/frontend/contentgruen-frontend
+          file: mvp/frontend/contentgruen-frontend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-bff:
+    name: Build BFF Image
+    runs-on: ubuntu-latest
+    needs: [changes, test]
+    if: |
+      github.event_name != 'pull_request' &&
+      (needs.changes.outputs.bff == 'true' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Verdigado registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.VERDIGADO_REGISTRY_USER }}
+          password: ${{ secrets.VERDIGADO_REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-bff
+          tags: |
+            type=raw,value=main
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: mvp/backend/BFF
+          file: mvp/backend/BFF/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-semantic-search:
+    name: Build Semantic Search Image
+    runs-on: ubuntu-latest
+    needs: [changes, test]
+    if: |
+      github.event_name != 'pull_request' &&
+      (needs.changes.outputs.semantic == 'true' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Verdigado registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.VERDIGADO_REGISTRY_USER }}
+          password: ${{ secrets.VERDIGADO_REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-semantic-search
+          tags: |
+            type=raw,value=main
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          # Context must be mvp/ (not the service dir) — the Dockerfile COPYs from
+          # backend/semantic-search-service/, scripts/backup/, and data/, all relative to mvp/
+          context: mvp
+          file: mvp/backend/semantic-search-service/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-postgres-semantic:
+    name: Build Postgres Semantic Image
+    runs-on: ubuntu-latest
+    needs: [changes, test]
+    if: |
+      github.event_name != 'pull_request' &&
+      (needs.changes.outputs.postgres_semantic == 'true' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Verdigado registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.VERDIGADO_REGISTRY_USER }}
+          password: ${{ secrets.VERDIGADO_REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-postgres-semantic
+          tags: |
+            type=raw,value=main
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: mvp/backend/postgres-semantic
+          file: mvp/backend/postgres-semantic/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-postgres-app:
+    name: Build Postgres App Image
+    runs-on: ubuntu-latest
+    needs: [changes, test]
+    if: |
+      github.event_name != 'pull_request' &&
+      (needs.changes.outputs.postgres_app == 'true' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Verdigado registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.VERDIGADO_REGISTRY_USER }}
+          password: ${{ secrets.VERDIGADO_REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-postgres-app
+          tags: |
+            type=raw,value=main
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: mvp/backend/postgres-app
+          file: mvp/backend/postgres-app/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
