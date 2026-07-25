@@ -16,7 +16,7 @@ use existing comments/background info, and contribute their own.
 
 * [x] Login via Keycloak (production) and dummy auth (dev/test)
 * [x] Anonymous / public search — search and view results without logging in (contribution stays behind login)
-* [x] Semantic search using Qdrant and E5 multilingual embeddings (dev/test pin v1.15.5; production runs v1.18.2)
+* [x] Semantic search using Qdrant v1.18.2 and E5 multilingual embeddings
 * [x] Content-type-aware encoding, polarity filtering, and keyword-overlap score boosting
 * [x] Content contribution workflows (commentaries, background info / generic text, statements, images)
 * [x] Image content type with AI-assisted caption suggestion (GPT-4o mini) and async background description worker — note: no OpenAI key is configured in production, so image ingestion there currently falls back to plain user-entered text
