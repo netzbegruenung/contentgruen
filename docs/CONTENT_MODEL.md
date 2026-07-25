@@ -1,16 +1,22 @@
-# ContentGrün Content Model — Target Architecture
+# ContentGrün Content Model — Architecture
 
-> Status: **design / target state** (not yet implemented). This document describes where the
-> content-type architecture should head as the number of content types grows. For the *current*
-> conceptual definitions of each type, see [CONTENT_TYPES_ARCHITECTURE.md](./CONTENT_TYPES_ARCHITECTURE.md).
+> Status: **largely implemented.** This document describes the content-type architecture and
+> the reasoning behind it. The registry, the ingestion seam, the `SearchOrchestrator` and the
+> frontend content-type registry all ship today; `post` and `image` are built entirely through
+> this path.
+>
+> **Still open:** `statement`, `reference`, `commentary` and `generic_text` retain hand-written
+> service and repository classes. Registry specs exist for `commentary` and `generic_text` but
+> nothing resolves them yet, so those two are declared twice. Do not copy the hand-written
+> pattern for new types — use the registry path described below.
 
 ## Motivation
 
-Today, `commentary` and `generic_text` are near-identical clones maintained separately through
+`commentary` and `generic_text` grew as near-identical clones, maintained separately through
 every layer of every tier (frontend components, Python services/repositories/DTOs, the search
-handler). Adding a new type means copying ~500 lines of mechanism. The roadmap calls for **many**
+handler). Adding a new type meant copying ~500 lines of mechanism. The roadmap calls for **many**
 more types — speeches, debates, newspapers, papers, song texts, images, graphics — so the cost of
-that duplication compounds with every type, and the copies have already drifted.
+that duplication compounds with every type, and the copies had already drifted.
 
 The goal of this document is an architecture where **adding a content type is cheap** and each type
 **keeps room to diverge**, without re-cloning the engine.
@@ -73,10 +79,11 @@ The foundation already exists and should be leaned on, not rebuilt:
 
 ### What changes
 
-**1. A content-type registry replaces the per-type class tower.**
-Today each type drags a `Service + ServiceInterface + Repository + RepoInterface + Factory` chain
-where most layers are empty/pass-through (see the analysis: empty `I*Repository` markers, no-op
-`initialize_with_initial_data`, a single-implementation `IRepositoryFactory`). Replace it with one
+**1. A content-type registry replaces the per-type class tower.** *(shipped —
+`domain/content_registry.py`)*
+Each legacy type drags a `Service + ServiceInterface + Repository + RepoInterface + Factory` chain
+where most layers are empty/pass-through (empty `I*Repository` markers, no-op
+`initialize_with_initial_data`, a single-implementation `IRepositoryFactory`). It is replaced by one
 declarative registry entry per type:
 
 ```python
@@ -131,11 +138,12 @@ class SpeechContentDbEntry(BaseContentDbEntry):
     spoken_at: datetime
 ```
 
-**4. The search handler becomes type-agnostic.** The ~580-line `api/v1/search.py` with its
+**4. The search handler is type-agnostic.** *(shipped —
+`services/search/search_orchestrator.py`)* The former ~580-line `api/v1/search.py`, with its
 duplicated commentary/generictext branches and the four-times-repeated scoring formula
-(`statement_score*0.7 + relevance*0.3`) collapses into one `SearchOrchestrator` that loops over the
-requested content types, applying one shared `compute_combined_score()` and one
-`enrich(item)` step. New types are searched automatically — no new branch.
+(`statement_score*0.7 + relevance*0.3`), collapsed into one `SearchOrchestrator` that loops over the
+requested content types, applying one shared scoring step and one `enrich(item)` step. `search.py`
+is now ~280 lines and new types are searched automatically — no new branch.
 
 ### Asynchronous ingestion for AI-dependent types
 
@@ -153,9 +161,9 @@ POST image ──▶ persist row {status: PENDING_DESCRIPTION, image_url} ──
         (human review before publish)
 ```
 
-The `ContentStatus` enum already models lifecycle states; add `PENDING_DESCRIPTION` /
-`DESCRIPTION_FAILED`. The search engine simply ignores items without an embedding — no special-casing
-in the query path.
+*(shipped — `services/vision/image_description_worker.py`.)* The `ContentStatus` enum carries
+`PENDING_DESCRIPTION` and `DESCRIPTION_FAILED` alongside the other lifecycle states. The search
+engine simply ignores items without an embedding — no special-casing in the query path.
 
 ## Frontend design (Angular)
 
@@ -196,15 +204,15 @@ BaseResultItemComponent           ← voting, auth handling, badges, score (the 
 Same treatment for the add-forms and search-results headers: shared base behavior + a per-type
 config (label, icon, count selector, extra form controls).
 
-**3. A content-type registry on the frontend too** — one place mapping
-`content_type → { icon, label, resultComponent, addComponent }` — so a new type is registered once
-and picked up by search results, recent-content, and contribution menus automatically. This also
-retires the false-abstraction `unified-result-item` (which currently just `*ngIf`-switches between
-the two concrete components).
+**3. A content-type registry on the frontend too** *(shipped — `shared/content-type-registry.ts`)*
+— one place mapping `content_type → { icon, label, resultComponent, resultField }` — so a new type is
+registered once and picked up by search results, recent-content, and contribution menus
+automatically. This also retired the false-abstraction `unified-result-item`.
 
-**4. A shared HTTP layer** (orthogonal but enabling): an `X-Session-Id` interceptor, an
+**4. A shared HTTP layer** *(still open)*: an `X-Session-Id` interceptor, an
 `ApiUrlService` for the `/api/v1` base, and a reusable `handleHttpError` operator — removing the
-per-service URL/header/error duplication that every type's service currently re-copies.
+per-service URL/header/error duplication that every type's service still re-copies. Today
+`X-Session-Id` is set per-service in `search.service.ts` and `moderation.service.ts`.
 
 ## What is shared vs per-type (the contract)
 
@@ -226,30 +234,35 @@ strategy (usually `DirectText`) + a template fragment. No engine changes, no clo
 
 ## Incremental migration path
 
-This is a refactor toward the target, done in safe, independently-shippable steps. The backend test
-suite (well-covered) is the safety net; verify a clean build after each frontend step.
+This was executed in safe, independently-shippable steps. Steps 1–8 are **done**; they are kept
+here because they document the order in which the architecture arrived and the reasoning for it.
+The backend test suite (well-covered) was the safety net.
 
-1. **Delete dead code first** (no behavior change): BFF `OLD_DtosFrontend/`, the dead frontend
+1. ✅ **Delete dead code first** (no behavior change): BFF `OLD_DtosFrontend/`, the dead frontend
    components (`social-wall`, `topics`, `editor-mode`, `add-statement-modal`, `add-reference`,
    `workflow/WorkflowOverlayComponent`), the empty backend `repositories/base/` and dead
    `implementations/txtai/` packages. Smaller surface before refactoring.
-2. **Introduce the shared DTO base** (`BaseContentResult`/`ContentReference`) and re-type the existing
+2. ✅ **Introduce the shared DTO base** (`BaseContentResult`/`ContentReference`) and re-type the existing
    commentary/generictext DTOs onto it. No runtime change; unblocks the component work.
-3. **Extract the frontend mechanism** into `BaseResultItemComponent` and have the existing two
+3. ✅ **Extract the frontend mechanism** into `BaseResultItemComponent` and have the existing two
    result-items extend it. Then retire `unified-result-item`. Repeat for search-results and add-forms.
-4. **Add the frontend content-type registry**; route search-results/recent-content/contribution menus
+4. ✅ **Add the frontend content-type registry**; route search-results/recent-content/contribution menus
    through it.
-5. **Backend: introduce the content-type registry + ingestion strategy**, instantiate the generic
+5. ✅ **Backend: introduce the content-type registry + ingestion strategy**, instantiate the generic
    `BaseContentService` from specs, and drop the empty per-type interfaces and the single-impl
    factory. Keep `StatementService` behavior as a strategy/subclass.
-6. **Backend: extract `SearchOrchestrator`** from `api/v1/search.py`; unify the per-type branches into
+6. ✅ **Backend: extract `SearchOrchestrator`** from `api/v1/search.py`; unify the per-type branches into
    one loop with shared scoring/enrichment helpers.
-7. **First new type via the new path** (e.g. `speech`) as a proof that adding a type is now a registry
-   entry + fields + fragment.
-8. **Image/graphic type** with the `AiVisionDescription` ingestion strategy and the async
+7. ✅ **First new type via the new path** — `post` (not `speech`) served as the proof that adding a
+   type is now a registry entry + fields + fragment.
+8. ✅ **Image/graphic type** with the `AiVisionDescription` ingestion strategy and the async
    description lifecycle — the worked example that validates the media path.
 
-Steps 1–2 are low-risk prep; 3–6 are the structural payoff; 7–8 prove the result.
+Steps 1–2 were low-risk prep; 3–6 were the structural payoff; 7–8 proved the result.
+
+**Remaining migration work:** move `commentary` and `generic_text` off their hand-written services
+onto the registry specs that already exist for them, then do the same for `statement` (keeping its
+dedup behavior as a strategy) and `reference`.
 
 ## Decisions
 
@@ -257,12 +270,15 @@ Steps 1–2 are low-risk prep; 3–6 are the structural payoff; 7–8 prove the 
   `generictextDtos.ts` "Evaluate usage of camel case and transformation in the backend") asked this
   question; it is now settled. The Python backend already serializes snake_case
   (`references_count`, `usage_count`, `content_type`), so the frontend DTOs adopt snake_case to
-  match — no per-field transformation, no `DtoMapper` boundary. This unblocks the shared
-  `BaseContentResult` DTO base. See [RUNG_1_PLAN.md](./RUNG_1_PLAN.md) step 0.
+  match — no per-field transformation, no `DtoMapper` boundary. This unblocked the shared
+  `BaseContentResult` DTO base (`services/dtos/commonDtos.ts`).
+- **AI vision provider — DECIDED.** OpenAI `gpt-4o-mini`, called from the search service at
+  ingestion time behind the `IngestionStrategy` interface, so the provider stays swappable.
+  Configured via `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`); without a key the image
+  type falls back to `DirectText`.
 
 ## Open decisions
-- **Which AI vision provider** for image descriptions, and where the call is configured (the BFF vs
-  the search service). Recommend the search service at ingestion time, behind the `IngestionStrategy`
-  interface so the provider is swappable.
 - **Reprocessing**: if the description model improves, do we re-derive text for existing images? (Make
   ingestion idempotent and re-runnable to allow it.)
+- **Legacy type migration**: whether to move `statement` and `reference` onto the registry, or leave
+  them as the two types with genuinely type-specific behavior.

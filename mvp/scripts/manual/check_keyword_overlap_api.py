@@ -4,7 +4,7 @@ Test script for the keyword overlap API endpoint.
 Run this after starting the semantic-search-service to verify keyword overlap boosting.
 
 Usage:
-    python test_keyword_overlap_api.py
+    python mvp/scripts/manual/check_keyword_overlap_api.py
 """
 
 import requests
@@ -83,7 +83,9 @@ def main():
     print("\n\n### TEST 2: Perfect Match - E-Autos ###")
     print("Expected: HIGH overlap → boost should increase score")
     test_keyword_overlap(
-        "E-Autos", "E-Autos sind auch nicht besser für die Umwelt", similarity_score=0.87
+        "E-Autos",
+        "E-Autos sind auch nicht besser für die Umwelt",
+        similarity_score=0.87,
     )
 
     # Test 3: Related but different - Verbrenner-Aus
@@ -161,9 +163,7 @@ def main():
     print("  • Low overlap (<50%) → penalize score")
     print("  • German stemming captures word variations (Auto/Autos/Autoindustrie)")
     print("  • Default boost strength: 0.3 (±30% score adjustment)")
-    print(
-        "\nConfiguration: SEMANTIC_SEARCH_ENABLE_KEYWORD_OVERLAP_BOOST=true/false"
-    )
+    print("\nConfiguration: SEMANTIC_SEARCH_ENABLE_KEYWORD_OVERLAP_BOOST=true/false")
     print("               SEMANTIC_SEARCH_KEYWORD_OVERLAP_BOOST_STRENGTH=0.0-1.0")
 
 

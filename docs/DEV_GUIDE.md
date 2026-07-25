@@ -12,7 +12,8 @@ It includes setup and test commands for all services, including how to run them 
 - `mvp/frontend/` → Angular Web App
 - `mvp/backend/BFF/` → Backend-for-Frontend (.NET + YARP)
 - `mvp/backend/semantic-search-service/` → Semantic search backend (FastAPI + Qdrant + E5)
-- `mvp/docker-compose.yml` → Full containerized setup
+- `mvp/docker-compose.dev.yml` → Full containerized setup (local development)
+- `mvp/docker-compose.local-dbs.yml` → Databases only (Qdrant + PostgreSQL), for component-based development
 
 ---
 
@@ -26,7 +27,7 @@ The project uses pre-commit hooks to ensure code quality and run tests automatic
 
 1. **Install pre-commit globally** (recommended):
 ```bash
-# Using pip (Python 3.12+ recommended)
+# Using pip (Python 3.13+ recommended)
 pip install --user pre-commit
 
 # Or using pipx (if available)
@@ -146,9 +147,9 @@ Open: [http://localhost:5054](http://localhost:5054)
 ### 🧪 Manual API Tests
 
 ```bash
-curl -X POST http://127.0.0.1:5054/api/search_content \
+curl -X POST http://127.0.0.1:5054/api/v1/search/searchByText \
   -H "Content-Type: application/json" \
-  -d '{"query_text": "Windräder verschandeln die Landschaft"}'
+  -d '{"query_text": "Windräder verschandeln die Landschaft", "limit": 3}'
 ```
 
 ---
@@ -158,7 +159,7 @@ curl -X POST http://127.0.0.1:5054/api/search_content \
 ### 🧱 Install
 
 Requirements:
-- Python 3.12
+- Python 3.13
 - Pip
 - **Windows only**: Visual Studio 2022 Build Tools (see [Build Tools Requirements](#-build-tools-requirements-windows-only) below)
 
@@ -171,7 +172,7 @@ pip install -r requirements.txt
 
 #### 🔨 Build Tools Requirements (Windows only)
 
-Since Python 3.12, some packages (annoy, hnswlib) need to be compiled from source on Windows because pre-built wheels are not yet available. This requires:
+On Windows, some packages (annoy, hnswlib) may need to be compiled from source because pre-built wheels are not yet available. This requires:
 
 1. Download [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 2. Install these components (approximately 5GB):
@@ -199,7 +200,7 @@ pytest
 ### 🧪 API Test via curl
 
 ```bash
-curl -X POST http://127.0.0.1:8000/search_content \
+curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
   -H "Content-Type: application/json" \
   -d '{"query_text": "Solarenergie macht unsere Umwelt kaputt", "limit": 3}'
 ```
@@ -222,13 +223,13 @@ To run all services together:
 
 ```bash
 cd mvp
-docker compose build
-docker compose up
+docker compose -f docker-compose.dev.yml build
+docker compose -f docker-compose.dev.yml up
 ```
 
 Then access:
 
-* Frontend: [http://localhost:3000](http://localhost:3000)
+* Frontend: [http://localhost](http://localhost)
 * BFF (.NET): [http://localhost:5054](http://localhost:5054)
 * Semantic Search: [http://localhost:8000/docs](http://localhost:8000/docs)
 
@@ -238,7 +239,7 @@ Then access:
 
 ### ❌ Semantic Search Service: Build Errors when installing packages from requirements.txt
 
-**This is especially common with Python 3.12+ on Windows**
+**This is especially common on Windows**
 
 If you see:
 
@@ -278,17 +279,25 @@ More info: [PyTorch issue #131662](https://github.com/pytorch/pytorch/issues/131
 
 ## 📄 Manual Test Payloads (Semantic Search Service)
 
+The single search entry point is `POST /api/v1/search/searchByText`. It returns matching
+commentaries, generic texts, posts and images for a free-text query.
+
 ```bash
-curl -X POST http://127.0.0.1:8000/search_reply_suggestions \
+curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
   -H "Content-Type: application/json" \
   -d '{"query_text": "Windräder verschandeln die Landschaft", "limit": 3}'
 ```
 
+Anonymous requests should send a session header so usage and reporting can be tracked:
+
 ```bash
-curl -X POST http://127.0.0.1:8000/search_potential_new_reply_suggestions \
+curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
   -H "Content-Type: application/json" \
-  -d '{"statement_id": "8cb492b4-d226-4cfc-904a-830946cefc36"}'
+  -H "X-Session-Id: 8cb492b4-d226-4cfc-904a-830946cefc36" \
+  -d '{"query_text": "Solarenergie macht unsere Umwelt kaputt", "limit": 3}'
 ```
+
+The full endpoint list is in the Swagger UI at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ---
 

@@ -35,7 +35,7 @@ Then access:
 * Frontend: [http://localhost:80](http://localhost:80)
 * BFF: [http://localhost:5054](http://localhost:5054)
 * Semantic Search: [http://localhost:8000/docs](http://localhost:8000/docs)
-* PostgreSQL: `localhost:5432` (for debugging)
+* PostgreSQL: `localhost:5433` (for debugging; container listens on 5432)
 
 > All containers run isolated and talk via Docker network.
 
@@ -51,22 +51,23 @@ We run a public test system at:
 
 ### Server Details
 
-- **Host:** `188.245.188.134` (Hetzner VPS)
+- **Host:** Hetzner VPS — hostname and credentials are not published here.
+  Ask in the project channel if you need access.
 - **OS:** Ubuntu 24.04 LTS
 - **Access:** SSH with key authentication
 - **Management:** Manual (not in SaltStack)
 
 ### Deployment Process
 
-1. **SSH to server:**
+1. **SSH to the test server** (host and user from the project channel):
    ```bash
-   ssh root@188.245.188.134
+   ssh <user>@<test-host>
    ```
 
-2. **Update docker-compose.yml:**
+2. **Update the compose file:**
    ```bash
-   cd /root
-   nano docker-compose.yml  # Use docker-compose.tst.yml from repo
+   cd <deployment-dir>
+   nano docker-compose.yml  # Use mvp/docker-compose.tst.yml from this repo
    ```
 
 3. **Deploy:**
@@ -106,10 +107,12 @@ TLS certificates are managed by Certbot with automatic renewal.
 
 In production, ContentGrün is accessed via subdomains routed by an external Nginx reverse proxy:
 
-| Domain/Subdomain        | Target Service     |
-| ----------------------- | ------------------ |
-| `contentgruen.de`       | Angular Frontend   |
-| `bff.contentgruen.de`   | .NET API Gateway   |
+| Domain/Subdomain                    | Target Service     |
+| ----------------------------------- | ------------------ |
+| `contentgruen.netzbegruenung.de`    | Angular Frontend   |
+| `bff.contentgruen.de`               | .NET API Gateway   |
+
+`contentgruen.de` currently redirects to `contentgruen.netzbegruenung.de`.
 
 Server and Nginx are managed via the Netzbegruenung/Verdigado SaltStack:
 > https://git.verdigado.com/verdigado-Privileged/Salt/src/branch/master/states/contentgruen
@@ -119,23 +122,29 @@ Renewal is handled via certbot by the default nginx-reverse-proxy from the SaltS
 
 ### 📂 Data & Persistence
 
-| Service          | Storage Location                           | Note                           |
-| ---------------- | ------------------------------------------ | ------------------------------ |
-| PostgreSQL       | Docker volume `pgdata-semantic`           | Vector embeddings & metadata   |
-| Semantic Search  | Docker volume `semantic_search_metadata`  | Index metadata                 |
-| TLS certs        | `/etc/letsencrypt/`                       | Managed outside containers     |
+| Service          | Storage Location                           | Note                                    |
+| ---------------- | ------------------------------------------ | --------------------------------------- |
+| Qdrant           | Docker volume (Salt-managed)              | Content and vector embeddings           |
+| PostgreSQL       | Docker volume (Salt-managed)              | Application data (votes, usage, reports)|
+| Semantic Search  | Docker volume `semantic_search_metadata`  | Index metadata                          |
+| TLS certs        | `/etc/letsencrypt/`                       | Managed outside containers              |
+
+> Exact production volume names are defined in the SaltStack state, not in this repository.
 
 ### 🚧 Updating Production
 
-A CI pipeline is set up in the Netzbegruenung/Verdigado Woodpecker:
-> https://ci.netzbegruenung.verdigado.net/repos/958
+CI runs on GitHub Actions:
+- `.github/workflows/build.yml` — builds on every push to `main` and on pull requests,
+  publishing `:main` and `:sha-<short>` tags (watched by the test deployment).
+- `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
+  `:stable` (watched by the production deployment).
 
-Images are automatically built from main and pushed into the Netzbegruenung/Verdigado registry:
+Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages
 
 **Deployment Schedule:**
-- Automatic: Every Friday by Netzbegruenung/Verdigado admin
-- Manual: Contact Sven or admin team for urgent deployments
+- Automatic: Weekly by the Netzbegruenung/Verdigado admin team
+- Manual: Ask in the project channel for urgent deployments
 
 ---
 
@@ -160,23 +169,24 @@ docker system prune -a --volumes -f
 ContentGrün uses an automated backup system that backs up both Qdrant vector data and PostgreSQL metadata.
 
 **First-time setup:**
-```bash
-cd /opt/contentgruen/mvp/scripts/backup  # Adjust path to your deployment
-sudo ./setup-backup-system.sh
-```
+
+No setup script is required — `backup.sh` creates `/opt/contentgruen-backups/{daily,weekly}/`
+on first run. In production the cron schedule is provisioned by SaltStack.
 
 **Create backup:**
 ```bash
 cd /opt/contentgruen/mvp/scripts/backup
-./backup.sh                    # Regular backup
-./backup.sh --compress         # Compressed backup
+./backup.sh
 ```
 
 **Restore from backup:**
+
+Paths are resolved relative to `/opt/contentgruen-backups/`:
 ```bash
 cd /opt/contentgruen/mvp/scripts/backup
-./restore.sh                   # Restore latest backup
-./restore.sh backup_YYYYMMDD_HHMMSS  # Restore specific backup
+./restore.sh daily/latest                    # Latest daily backup
+./restore.sh weekly/latest                   # Latest weekly backup
+./restore.sh daily/backup_YYYYMMDD_HHMMSS    # A specific backup
 ```
 
 **Test backup/restore:**
@@ -191,8 +201,10 @@ cd /opt/contentgruen/mvp/scripts/backup
 - ✅ Backup metadata with checksums for integrity verification
 
 **Storage location:**
-- Backups are stored in `/opt/contentgruen-backups/` on the host
-- Automatic cleanup keeps last 7 backups (configurable via `KEEP_BACKUPS` env var)
+- Backups are stored in `/opt/contentgruen-backups/{daily,weekly}/` on the host
+- Runs on Sunday additionally produce a weekly backup
+- Automatic rotation keeps the last 7 daily and 4 weekly backups
+  (`KEEP_DAILY` / `KEEP_WEEKLY` at the top of `backup.sh`)
 - Each backup includes: `qdrant_snapshot.tar`, `postgresql.sql`, `metadata.json`
 
 **Important notes:**
@@ -254,10 +266,10 @@ sudo certbot renew --force-renewal
 
 ```bash
 # Check if PostgreSQL is running
-docker exec contentgruen-postgres-semantic pg_isready
+docker exec contentgruen-app-postgres pg_isready
 
 # Connect to database
-docker exec -it contentgruen-postgres-semantic psql -U semantic_search
+docker exec -it contentgruen-app-postgres psql -U app_user -d contentgruen_app
 ```
 
 ---
@@ -265,7 +277,6 @@ docker exec -it contentgruen-postgres-semantic psql -U semantic_search
 ## 🔮 What's next?
 
 * Monitoring setup (Uptime Robot, Prometheus + Grafana)
-* Automated backups with rotation
 * Unified test/prod deployment via GitOps
 * Migration to Kubernetes (long-term)
 
@@ -276,7 +287,8 @@ docker exec -it contentgruen-postgres-semantic psql -U semantic_search
 Talk to us in the Chatbegrünung channel:
 - 📢 `#ProjektContentGrün`
 - 🔗 [chatbegruenung.de](https://chatbegruenung.de/channel/ProjektContentGruen)
-- 👤 Contact: Sebastian Banach (Test System), Sven (Production)
+
+Ask in the channel for test-system or production access — the maintainers are reachable there.
 
 ---
 
@@ -287,4 +299,4 @@ Thanks for helping make it more stable and useful!
 
 ---
 
-*Last updated: August 9, 2025*
+*Last updated: 2026-07-25*

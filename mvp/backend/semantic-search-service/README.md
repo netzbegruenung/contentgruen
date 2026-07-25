@@ -98,4 +98,3 @@ black --diff .                  # Show what would change
 For more details on testing architecture and patterns, see:
 - `app/tests/README.md` - Testing overview
 - `app/tests/TESTING_GUIDE.md` - Detailed testing guide
-- `app/tests/ARCHITECTURE_GUIDE.md` - Testing architecture patterns

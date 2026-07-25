@@ -6,12 +6,14 @@ This file helps AI assistants (like Claude) understand the ContentGrün project 
 - **NO EMOJIS** in commit messages
 - **NO CLAUDE REFERENCES** in commit messages (no "Generated with Claude", no "Co-Authored-By: Claude")
 - Keep commit messages professional and focused on the changes
-- **Forgejo/Gitea repository, NOT GitHub** — host is `git.verdigado.com`. Do not use `gh`.
-- **Create PRs via AGit push over SSH:**
-  - `git pr [target-branch]` → opens/updates a PR (pushes `HEAD:refs/for/<target,default main>` with `-o topic=<branch>`)
-  - `git pr-update [target-branch]` → same with `-o force-push=true` to update an existing PR
-- **Every git-over-SSH op (fetch/push) requires a physical YubiKey touch** — when a push/fetch "hangs", the key is waiting; touch it when it blinks (~90s window).
-- **PR comments/reviews can be posted via the Forgejo HTTP API** using a stored, repo-scoped fine-grained PAT (read + issue-comment only; no code write). The token lives only in the agent sandbox at `~/.config/forgejo/token` (perms 600) and is **not** committed to the repo. Push/pull stay touch-gated SSH; only API read/comment uses the PAT. If no token is present, fall back to delivering the review in chat for manual pasting.
+- **GitHub repository** — `github.com/netzbegruenung/contentgruen`, which is what `origin` points at.
+  Use the `gh` CLI for PRs, issues, and reviews.
+  (The project was hosted on Forgejo at `git.verdigado.com` before the public open-source release;
+  that host now only serves the container registry used by CI.)
+- **Create PRs the normal way:**
+  - `git push -u origin <branch>` then `gh pr create --base main`
+  - `gh pr view` / `gh pr checks` / `gh pr comment` for the rest
+- Never push directly to `main`; always branch and open a PR.
 
 ## Quick Start Commands
 
@@ -61,6 +63,8 @@ Frontend (Angular) → BFF (.NET) → Semantic Search (Python) → Qdrant + Post
     [Port 4200/80]   [Port 5054]        [Port 8000]         [Ports 6333, 5433]
 ```
 
+Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
+
 ## Key Directories
 
 - `mvp/frontend/contentgruen-frontend/` - Angular frontend
@@ -93,7 +97,7 @@ Frontend (Angular) → BFF (.NET) → Semantic Search (Python) → Qdrant + Post
 
 ### Service Configuration
 - **BFF**: `USE_KEYCLOAK=false` for local/test
-- **API**: `SEMANTIC_SEARCH_PGVECTOR_URL` for database
+- **API**: `SEMANTIC_SEARCH_APP_DATABASE_URL` (PostgreSQL), `SEMANTIC_SEARCH_QDRANT_URL` (Qdrant)
 - **Frontend**: `baseUrl` empty for Docker, `http://localhost:5054` for local
 
 ## Authentication Modes
@@ -120,7 +124,7 @@ Frontend (Angular) → BFF (.NET) → Semantic Search (Python) → Qdrant + Post
 - `clean restart` - Clean and restart all services (→ see Clean Restart)
 - `view api docs` - Open API documentation links (→ see View API Documentation)
 - `deploy test` - Deploy to test environment (→ see Test Environment)
-- `check ports` - Check for port conflicts using test-setup.bat
+- `check ports` - Check for port conflicts (→ see Check Ports)
 - `reset db` - Reset database to clean state
 - `backup data` - Create backup of Qdrant and PostgreSQL
 - `restore data` - Restore from backup
@@ -155,7 +159,7 @@ run-tests.bat   # Windows
 
 When user requests "test backend":
 ```bash
-cd mvp/backend/semantic-search-service
+cd mvp/backend/semantic-search-service/app
 pytest
 ```
 
@@ -168,10 +172,9 @@ ng test
 ### Review Pull Request
 When user requests "Review PR" or "review pr":
 1. Review the current branch against `main`.
-2. Gather the diff from **local refs** (no fetch, no YubiKey touch needed):
-   - `git log origin/main..HEAD` and `git diff origin/main...HEAD`
+2. Gather the diff:
+   - `git fetch origin main`, then `git log origin/main..HEAD` and `git diff origin/main...HEAD`
    - For a large diff, dump it to a file and read it in sections rather than truncating.
-   - Note: this reviews against the *local* `origin/main`. If `main` may have moved, a `git fetch` (touch-gated) is needed first — tell the user.
 3. Analyze all changed files thoroughly
 4. Perform comprehensive code review covering:
    - Architecture compliance
@@ -186,11 +189,10 @@ When user requests "Review PR" or "review pr":
    - Areas to consider
    - Risk assessment
    - Recommendation (Approve/Request Changes)
-6. **Post the review** as a PR comment via the Forgejo API when the stored PAT (`~/.config/forgejo/token`) is present:
-   - Resolve the PR number: AGit PRs have head ref `refs/pull/<N>/head` (NOT the local branch name), so match by title or ask the user for the number rather than by `head.ref`.
-   - `POST https://git.verdigado.com/api/v1/repos/Netzbegruenung/contentgruen/issues/<N>/comments` with body `{"body": "<review markdown>"}` and header `Authorization: token <PAT>`.
-   - Load the token from the file; never echo it or pass it through chat/shell history.
-   - If no token is present, fall back to delivering the review in chat for the user to paste manually.
+6. **Post the review** as a PR comment with the `gh` CLI:
+   - `gh pr comment <N> --body-file <file>`, or `gh pr review <N> --comment --body-file <file>`
+   - Resolve the PR number with `gh pr list` or `gh pr view --json number` from the branch.
+   - If `gh` is not authenticated, fall back to delivering the review in chat for the user to paste manually.
 
 ### View API Documentation
 When user requests "view api docs":
@@ -199,7 +201,7 @@ When user requests "view api docs":
 
 ### Database Access
 ```bash
-docker exec -it semantic-search-postgres psql -U semantic_search
+docker exec -it contentgruen-app-postgres psql -U app_user -d contentgruen_app
 ```
 
 ### View Logs
@@ -222,8 +224,9 @@ docker-compose -f docker-compose.dev.yml up -d
 ### Check Ports
 When user requests "check ports":
 ```bash
-test-setup.bat  # Windows
-netstat -tuln | grep -E '(4200|5054|8000|5432)'  # Linux/Mac
+mvp/scripts/setup/check-environment.bat  # Windows
+bash mvp/scripts/setup/check-environment.sh  # Linux/Mac
+netstat -tuln | grep -E '(4200|5054|8000|5433|6333)'  # Linux/Mac
 ```
 
 ### Reset Database
@@ -248,9 +251,10 @@ cd mvp/scripts/backup
 When user requests "restore data" or "restore backup":
 ```bash
 cd mvp/scripts/backup
-./restore.sh /opt/contentgruen-backups/daily/latest   # Restore latest daily
-./restore.sh /opt/contentgruen-backups/weekly/latest  # Restore latest weekly
-./restore.sh /opt/contentgruen-backups/daily/backup_YYYYMMDD_HHMMSS  # Restore specific
+# Paths are resolved relative to /opt/contentgruen-backups/ -- pass a relative path
+./restore.sh daily/latest                    # Restore latest daily
+./restore.sh weekly/latest                   # Restore latest weekly
+./restore.sh daily/backup_YYYYMMDD_HHMMSS    # Restore specific
 ```
 
 When user requests "test backup" or "test backup restore":
@@ -271,16 +275,16 @@ cd mvp/scripts/backup
 
 ### Run All Tests
 ```bash
-# Python tests
-cd mvp/backend/semantic-search-service
+# Python tests (pytest.ini lives in app/)
+cd mvp/backend/semantic-search-service/app
 pytest
 
 # Angular tests
 cd mvp/frontend/contentgruen-frontend
 ng test
 
-# .NET tests
-cd mvp/backend/BFF
+# .NET tests (test project is BFF.Tests; run from the solution directory)
+cd mvp/backend
 dotnet test
 ```
 
@@ -298,7 +302,7 @@ dotnet test
 ## Troubleshooting
 
 ### Port Conflicts
-Check with: `test-setup.bat` or `netstat -tuln | grep [port]`
+Check with `bash mvp/scripts/setup/check-environment.sh` (or `check-environment.bat` on Windows), or `netstat -tuln | grep [port]`
 
 ### Docker Issues
 ```bash
@@ -342,7 +346,7 @@ See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed system architect
 - Tests mirror source structure
 
 ### Adding a New Content Type
-As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a FE fragment)** — no per-type service/repository clone and no new search branch (see `docs/CONTENT_MODEL.md`, `docs/RUNG_1_PLAN.md`).
+As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a FE fragment)** — no per-type service/repository clone and no new search branch (see `docs/CONTENT_MODEL.md`).
 1. Create the model in `domain/models/` (`<Type>DbEntry(BaseContentDbEntry)`, `<Type>SearchResult`) and add the `ContentType` enum member.
 2. Register a `ContentTypeSpec` entry in `domain/content_registry.py` (reuse `create_registry_repository` — the generic `RegistryQdrantRepository`; no new repository subclass).
 3. Add a `get_<type>_service` dependency in `dependencies.py` that builds the generic service from the spec, and add an `api/v1/<type>.py` router (ingestion/input is the only type-specific seam) wired in `main.py`.
@@ -350,16 +354,16 @@ As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a F
 5. Frontend: one entry in `shared/content-type-registry.ts` + a `<Type>ResultItem` fragment.
 6. Tests-first against live Qdrant in `tests/integration/` (round-trip + orchestrator parity), plus a headless-Chrome FE render/vote test.
 
-Legacy types (`commentary`, `generic_text`, `statement`) still have hand-written service/repository classes; do not copy that pattern for new types — prefer the registry path above.
+Legacy types (`statement`, `reference`, `commentary`, `generic_text`) still have hand-written service/repository classes; do not copy that pattern for new types — prefer the registry path above. Note that `commentary` and `generic_text` also have registry specs that nothing resolves yet.
 
 ### Testing Requirements
-- Always run tests before committing (`pytest` / `make test-dev`)
+- Always run tests before committing (`pytest` from `app/`, or `make test-backend-fast`)
 - Mock repository interfaces in service tests; use `TestEmbeddingsManager`, not ad-hoc mocks
 - Test positive and negative cases; naming: `test_method_name_scenario`
 - See `mvp/backend/semantic-search-service/app/tests/TESTING_GUIDE.md` for details
 
 ### Pre-commit Hooks
-The project uses pre-commit hooks that auto-format code (Black/Prettier) and run tests.
+The project uses pre-commit hooks that auto-format Python code (Black) and run the backend unit tests.
 They may reformat files and fail on the first commit attempt, then pass on the second — this is
 intentional. Don't bypass with `--no-verify` except in emergencies. The `safe-commit.sh`/`.bat`
 helpers automate the retry.

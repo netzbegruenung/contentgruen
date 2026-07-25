@@ -9,7 +9,7 @@ ContentGrün is a progressive content platform with semantic search capabilities
 ### 1. Local Development
 - **Purpose**: Active development with hot-reload
 - **Access**: http://localhost:4200 (frontend), http://localhost:5054 (BFF), http://localhost:8000 (API)
-- **Infrastructure**: Services run locally, only PostgreSQL in Docker
+- **Infrastructure**: Services run locally, only Qdrant and PostgreSQL in Docker (`docker-compose.local-dbs.yml`)
 - **Authentication**: Dummy auth (testuser/Liebe>Hass!)
 
 ### 2. Docker Development
@@ -22,12 +22,12 @@ ContentGrün is a progressive content platform with semantic search capabilities
 - **Purpose**: Integration testing and demos
 - **Access**: https://test.contentgruen.de
 - **Infrastructure**: Docker containers on test server
-- **Authentication**: Basic auth or dummy auth
-- **Management**: Manual deployment
+- **Authentication**: Dummy auth (testuser/Liebe>Hass!)
+- **Management**: Manual deployment via `docker-compose.tst.yml`
 
 ### 4. Production Environment
 - **Purpose**: Live system for Netzbegrünung members
-- **Access**: https://contentgruen.netzbegruenung.de (future: contentgruen.de)
+- **Access**: https://contentgruen.netzbegruenung.de (contentgruen.de redirects here)
 - **Infrastructure**: Docker containers managed by SaltStack
 - **Authentication**: Keycloak SSO integration
 - **Management**: SaltStack automation
@@ -58,10 +58,14 @@ ContentGrün is a progressive content platform with semantic search capabilities
                                 └───────┬───────┘
                                         ▼
                     ┌──────────────────────────────────────┐
-                    │          Qdrant (Vector DB)          │
-                    │  Port: 6333  │  PostgreSQL (Metadata) │
-                    │              │  Port: 5433            │
+                    │  Qdrant (Vector DB)  │  PostgreSQL     │
+                    │  Port: 6333          │  (application   │
+                    │                      │   data)         │
+                    │                      │  Port: 5433→5432│
                     └──────────────────────────────────────┘
+
+Host ports are shown. In Docker, PostgreSQL is published on host port 5433 and
+listens on 5432 inside the container.
 ```
 
 ## Component Details
@@ -103,12 +107,16 @@ ContentGrün is a progressive content platform with semantic search capabilities
   - Service layer for business logic
   - Dependency injection for testability
 
-### PostgreSQL + pgvector
-- **Purpose**: Unified storage for all content with vector embeddings
-- **Schema**: Single table with content type discrimination
+### PostgreSQL
+- **Purpose**: Application data — votes, usage tracking, search tracking, moderation reports.
+  Content and its vector embeddings live in Qdrant, not in PostgreSQL.
+- **Image**: `postgres:16-alpine` (service `postgres-app`, container `contentgruen-app-postgres`)
 - **Access**:
-  - Local/Docker: localhost:5432
+  - Local/Docker: localhost:5433 (container port 5432)
   - Test/Prod: Internal Docker network
+
+> A `pgvector`-based image is also built and published (`mvp/backend/postgres-semantic/`)
+> for deployments that need it. It is not used by any compose file in this repository.
 
 ## Nginx Configuration
 
@@ -154,7 +162,7 @@ ContentGrün is a progressive content platform with semantic search capabilities
 
 ### Docker Compose Files
 - **docker-compose.dev.yml**: Full stack for local Docker development
-- **docker-compose.postgres.yml**: PostgreSQL only for local development
+- **docker-compose.local-dbs.yml**: Qdrant + PostgreSQL only, for local component-based development
 - **docker-compose.tst.yml**: Test environment configuration
 - **docker-compose.prd.yml**: Reference to SaltStack managed production
 
@@ -167,7 +175,7 @@ ContentGrün is a progressive content platform with semantic search capabilities
 1. **User Request** → Frontend (Angular/nginx)
 2. **API Call** → BFF (authentication & routing)
 3. **Business Logic** → Semantic Search Service
-4. **Data Storage** → PostgreSQL + pgvector
+4. **Data Storage** → Qdrant (content + vectors) and PostgreSQL (application data)
 5. **Response** → Back through the chain
 
 ## Environment Variables
@@ -184,9 +192,18 @@ ContentGrün is a progressive content platform with semantic search capabilities
 - `FRONTEND_URL` - Frontend URL for redirects
 
 ### Semantic Search
-- `SEMANTIC_SEARCH_PGVECTOR_URL` - PostgreSQL connection
+
+All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
+
+- `SEMANTIC_SEARCH_QDRANT_URL` - Qdrant endpoint
+- `SEMANTIC_SEARCH_QDRANT_COLLECTION` - Qdrant collection name
+- `SEMANTIC_SEARCH_APP_DATABASE_URL` - PostgreSQL connection string
+- `SEMANTIC_SEARCH_DATA_PATH` - Seed data path
+- `SEMANTIC_SEARCH_METADATA_PATH` - Persistent metadata storage path
 - `SEMANTIC_SEARCH_LOG_LEVEL` - DEBUG/INFO
-- `SEEDING_METADATA_PATH` - Metadata storage path
+- `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`) - enables AI image captioning; without it
+  the image type falls back to direct text ingestion
+- `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts
 
@@ -199,8 +216,9 @@ ContentGrün is a progressive content platform with semantic search capabilities
 - Uses docker-compose.dev.yml
 
 ### Utilities
-- `test-setup.bat` - Checks prerequisites
-- `reset-to-docker.bat` - Resets environment config
+- `mvp/scripts/setup/check-environment.sh/.bat` - Checks prerequisites
+- `mvp/scripts/utils/switch-to-docker.sh/.bat` and `switch-to-local.sh/.bat` - Switch the active frontend environment config
+- `mvp/scripts/utils/clean-all.sh/.bat` - Removes containers, volumes and build artifacts
 - `safe-commit.bat/.sh` - Handles pre-commit hooks
 
 ## Network Architecture
@@ -253,8 +271,9 @@ ContentGrün is a progressive content platform with semantic search capabilities
 - Hot-reload development
 
 ### Test/Production
-- Woodpecker CI for automated builds
-- Container registry at git.verdigado.com
+- GitHub Actions for automated builds (`.github/workflows/build.yml` on `main` and pull requests,
+  `.github/workflows/release.yml` on `v*` tags)
+- Container registry at git.verdigado.com (`netzbegruenung-images`)
 - SaltStack for production deployment
 
 ## Storage & Persistence
@@ -265,5 +284,5 @@ ContentGrün is a progressive content platform with semantic search capabilities
 
 ### Production
 - PostgreSQL with persistent volumes
-- Backup strategy (planned)
+- Backup & restore with rotation (`mvp/scripts/backup/`), scheduled via SaltStack
 - Migration tooling (planned)
