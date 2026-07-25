@@ -20,14 +20,16 @@ ContentGrün is a progressive content platform with semantic search capabilities
 
 ### 3. Test Environment
 - **Purpose**: Integration testing and demos
-- **Access**: https://test.contentgruen.de
+- **Access**: https://contentgruen-test.netzbegruenung.de (SaltStack-managed).
+  The older manually-managed https://test.contentgruen.de is being discontinued.
 - **Infrastructure**: Docker containers on test server
 - **Authentication**: Dummy auth (testuser/Liebe>Hass!)
 - **Management**: Manual deployment via `docker-compose.tst.yml`
 
 ### 4. Production Environment
 - **Purpose**: Live system for Netzbegrünung members
-- **Access**: https://contentgruen.netzbegruenung.de (contentgruen.de redirects here)
+- **Access**: https://contentgruen.netzbegruenung.de and
+  https://contentgruen.netzbegruenung.verdigado.net (contentgruen.de redirects here, upstream of SaltStack)
 - **Infrastructure**: Docker containers managed by SaltStack
 - **Authentication**: Keycloak SSO integration
 - **Management**: SaltStack automation
@@ -115,8 +117,9 @@ listens on 5432 inside the container.
   - Local/Docker: localhost:5433 (container port 5432)
   - Test/Prod: Internal Docker network
 
-> A `pgvector`-based image is also built and published (`mvp/backend/postgres-semantic/`)
-> for deployments that need it. It is not used by any compose file in this repository.
+> A `pgvector`-based image is still built and published by CI
+> (`mvp/backend/postgres-semantic/`), but it is used by **nothing** — not by any compose file
+> here, and not by the production SaltStack state. Treat it as a dead build artifact.
 
 ## Nginx Configuration
 
@@ -137,8 +140,9 @@ listens on 5432 inside the container.
 - **Frontend Container nginx**: Serves static files
 - **External nginx** (SaltStack managed):
   - TLS termination
-  - Routes contentgruen.de → frontend container
-  - Routes bff.contentgruen.de → BFF container
+  - Routes contentgruen.netzbegruenung.de and contentgruen.netzbegruenung.verdigado.net
+    → frontend container (127.0.0.1:3000)
+  - Routes bff.contentgruen.netzbegruenung.de → BFF container (127.0.0.1:3001)
   - Keycloak integration
 
 ## Authentication Flow
@@ -278,7 +282,9 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - GitHub Actions for automated builds (`.github/workflows/build.yml` on `main` and pull requests,
   `.github/workflows/release.yml` on `v*` tags)
 - Container registry at git.verdigado.com (`netzbegruenung-images`)
-- SaltStack for production deployment
+- Test: tracks the floating `:main` tag via a Watchtower sidecar
+- Production: SaltStack, with images pinned by digest and bumped by Renovate — deploys happen
+  when the Salt compose file is rewritten, not on a tag push
 
 ## Storage & Persistence
 

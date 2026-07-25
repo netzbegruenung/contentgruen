@@ -43,13 +43,24 @@ Then access:
 
 ## 🧪 Test System
 
-We run a public test system at:
+> **In transition.** The test environment is moving to SaltStack management. The manually
+> managed system described below is being **discontinued**.
+
+### Current (SaltStack-managed)
+
+- 🔗 Frontend: https://contentgruen-test.netzbegruenung.de
+- **Management:** SaltStack, alongside production
+- **Images:** floating `:main` tag, pulled automatically by a Watchtower sidecar, so every
+  merge to `main` reaches this environment without a Salt run
+- **Backups:** disabled (`enable_backup: false` in the Salt pillar)
+
+### Legacy (manual, being discontinued)
 
 - 🔗 Frontend: [https://test.contentgruen.de](https://test.contentgruen.de)
 - 🔗 BFF API: [https://bff.test.contentgruen.de](https://bff.test.contentgruen.de)
 - 🔗 API Docs: [https://bff.test.contentgruen.de/docs](https://bff.test.contentgruen.de/docs)
 
-### Server Details
+### Server Details (legacy system)
 
 - **Host:** Hetzner VPS — hostname and credentials are not published here.
   Ask in the project channel if you need access.
@@ -57,7 +68,7 @@ We run a public test system at:
 - **Access:** SSH with key authentication
 - **Management:** Manual (not in SaltStack)
 
-### Deployment Process
+### Deployment Process (legacy system)
 
 1. **SSH to the test server** (host and user from the project channel):
    ```bash
@@ -77,7 +88,7 @@ We run a public test system at:
    docker compose logs -f  # Check for errors
    ```
 
-### Service Configuration
+### Service Configuration (legacy system)
 
 Services are configured to only listen on localhost and are proxied via Nginx:
 - Frontend: `127.0.0.1:3000` → nginx → `https://test.contentgruen.de`
@@ -85,7 +96,7 @@ Services are configured to only listen on localhost and are proxied via Nginx:
 - Semantic Search: Internal only (accessed via BFF)
 - PostgreSQL: Internal only
 
-### Nginx Configuration
+### Nginx Configuration (legacy system)
 
 Located in `/etc/nginx/sites-available/`:
 - `test.contentgruen.de.conf` - Frontend proxy
@@ -107,12 +118,17 @@ TLS certificates are managed by Certbot with automatic renewal.
 
 In production, ContentGrün is accessed via subdomains routed by an external Nginx reverse proxy:
 
-| Domain/Subdomain                    | Target Service     |
-| ----------------------------------- | ------------------ |
-| `contentgruen.netzbegruenung.de`    | Angular Frontend   |
-| `bff.contentgruen.de`               | .NET API Gateway   |
+| Domain/Subdomain                                | Target Service          |
+| ----------------------------------------------- | ----------------------- |
+| `contentgruen.netzbegruenung.de`                | Angular Frontend (:3000)|
+| `contentgruen.netzbegruenung.verdigado.net`     | Angular Frontend (:3000)|
+| `bff.contentgruen.netzbegruenung.de`            | .NET API Gateway (:3001)|
 
-`contentgruen.de` currently redirects to `contentgruen.netzbegruenung.de`.
+The two frontend hostnames share one nginx server block. Port 80 is a blanket redirect to
+HTTPS.
+
+`contentgruen.de` redirects to `contentgruen.netzbegruenung.de`. That redirect is **not** part
+of the SaltStack state — it is handled upstream (registrar/DNS level).
 
 Server and Nginx are managed via the Netzbegruenung/Verdigado SaltStack:
 > https://git.verdigado.com/verdigado-Privileged/Salt/src/branch/master/states/contentgruen
@@ -122,25 +138,37 @@ Renewal is handled via certbot by the default nginx-reverse-proxy from the SaltS
 
 ### 📂 Data & Persistence
 
-| Service          | Storage Location                           | Note                                    |
-| ---------------- | ------------------------------------------ | --------------------------------------- |
-| Qdrant           | Docker volume (Salt-managed)              | Content and vector embeddings           |
-| PostgreSQL       | Docker volume (Salt-managed)              | Application data (votes, usage, reports)|
-| Semantic Search  | Docker volume `semantic_search_metadata`  | Index metadata                          |
-| TLS certs        | `/etc/letsencrypt/`                       | Managed outside containers              |
+Compose runs with a working directory of `/opt/contentgruen`, so Docker prefixes the declared
+volume names with `contentgruen_`:
 
-> Exact production volume names are defined in the SaltStack state, not in this repository.
+| Service          | Docker volume                            | Note                                    |
+| ---------------- | ---------------------------------------- | --------------------------------------- |
+| Qdrant           | `contentgruen_qdrant_storage`            | Content and vector embeddings           |
+| PostgreSQL       | `contentgruen_pgdata_app`                | Application data (votes, usage, reports)|
+| Semantic Search  | `contentgruen_semantic_search_metadata`  | Index metadata                          |
+| TLS certs        | `/etc/letsencrypt/`                      | Managed outside containers              |
+
+The production database is `contentgruen_app`, user `app_user`; the password comes from a
+Passbolt-backed Salt pillar.
 
 ### 🚧 Updating Production
 
 CI runs on GitHub Actions:
 - `.github/workflows/build.yml` — builds on every push to `main` and on pull requests,
-  publishing `:main` and `:sha-<short>` tags (watched by the test deployment).
+  publishing `:main` and `:sha-<short>` tags. The SaltStack-managed test environment tracks
+  `:main` via Watchtower.
 - `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
-  `:stable` (watched by the production deployment).
+  `:stable`.
 
 Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages
+
+**How production actually updates:** the Salt compose file pins each image by digest
+(`:latest@sha256:…`). A Renovate bot raises the digest bumps; production changes only when
+that compose file is rewritten and Salt re-runs `docker compose pull` + `down`/`up`. There is
+no Watchtower in production.
+
+> Note: nothing currently consumes the `:stable` tag that `release.yml` publishes.
 
 **Deployment Schedule:**
 - Automatic: Weekly by the Netzbegruenung/Verdigado admin team

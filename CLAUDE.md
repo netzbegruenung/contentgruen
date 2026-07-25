@@ -291,7 +291,8 @@ dotnet test
 ## Deployment
 
 ### Test Environment
-- URL: https://test.contentgruen.de
+- URL: https://contentgruen-test.netzbegruenung.de (SaltStack-managed, tracks the `:main` image tag)
+- Legacy URL: https://test.contentgruen.de (manual deployment, being discontinued)
 - Deployment: Manual via docker-compose.tst.yml
 
 ### Production Environment

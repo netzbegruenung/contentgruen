@@ -6,8 +6,9 @@ Licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
 ## Live Systems
 
-- **Test System**: [https://test.contentgruen.de](https://test.contentgruen.de)
+- **Test System**: https://contentgruen-test.netzbegruenung.de
   Login: `testuser` / Password: `Liebe>Hass!`
+  (The older [test.contentgruen.de](https://test.contentgruen.de) is being discontinued.)
 
 - **Production**: [https://contentgruen.netzbegruenung.de](https://contentgruen.netzbegruenung.de)
   Uses Netzbegruenung Keycloak for authentication.

@@ -16,10 +16,10 @@ use existing comments/background info, and contribute their own.
 
 * [x] Login via Keycloak (production) and dummy auth (dev/test)
 * [x] Anonymous / public search — search and view results without logging in (contribution stays behind login)
-* [x] Semantic search using Qdrant 1.15 and E5 multilingual embeddings
+* [x] Semantic search using Qdrant and E5 multilingual embeddings (dev/test pin v1.15.5; production runs v1.18.2)
 * [x] Content-type-aware encoding, polarity filtering, and keyword-overlap score boosting
 * [x] Content contribution workflows (commentaries, background info / generic text, statements, images)
-* [x] Image content type with AI-assisted caption suggestion (GPT-4o mini) and async background description worker
+* [x] Image content type with AI-assisted caption suggestion (GPT-4o mini) and async background description worker — note: no OpenAI key is configured in production, so image ingestion there currently falls back to plain user-entered text
 * [x] Post content type (social media posts: Facebook / Instagram / TikTok)
 * [x] `ContentTypeSpec` registry — adding a new content type is a spec + model + frontend fragment, not a 500-line clone
 * [x] Content reporting and moderation system (incl. anonymous reporting with session tracking)
@@ -74,6 +74,7 @@ Candidate features:
 
 ## Environments
 
-* **Test:** https://test.contentgruen.de — deploy via `mvp/docker-compose.tst.yml`
-* **Production:** https://contentgruen.netzbegruenung.de — automated via SaltStack.
-  https://contentgruen.de currently redirects here.
+* **Test:** https://contentgruen-test.netzbegruenung.de — SaltStack-managed, tracks `:main`.
+  The older https://test.contentgruen.de (manual, `mvp/docker-compose.tst.yml`) is being discontinued.
+* **Production:** https://contentgruen.netzbegruenung.de — SaltStack-managed, images pinned by
+  digest and bumped by Renovate. https://contentgruen.de redirects here.
