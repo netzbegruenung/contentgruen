@@ -1,23 +1,24 @@
 @echo off
 echo =====================================
-echo Starting PostgreSQL with pgvector
+echo Starting local databases (Qdrant + PostgreSQL)
 echo =====================================
 echo.
 
 cd /d "%~dp0\..\.."
 
-echo Starting PostgreSQL container...
-docker-compose -f docker-compose.postgres.yml up -d
+echo Starting database containers...
+docker compose -f docker-compose.local-dbs.yml up -d
 
 if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Failed to start PostgreSQL
+    echo [ERROR] Failed to start the databases
     exit /b 1
 )
 
 echo.
-echo PostgreSQL is running on port 5432
-echo Connection string: postgresql://semantic_search:semantic_search@localhost:5432/semantic_search
+echo Qdrant is running on port 6333
+echo PostgreSQL is running on port 5433
+echo Connection string: postgresql://app_user:changeme@localhost:5433/contentgruen_app
 echo.
-echo To stop: docker-compose -f docker-compose.postgres.yml down
-echo To reset: docker-compose -f docker-compose.postgres.yml down -v
+echo To stop: docker compose -f docker-compose.local-dbs.yml down
+echo To reset: docker compose -f docker-compose.local-dbs.yml down -v
 echo =====================================

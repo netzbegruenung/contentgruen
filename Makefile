@@ -49,8 +49,7 @@ build-semantic-search:
 		.
 
 # Build all application services.
-# Note: CI additionally builds the contentgruen-postgres-app and
-# contentgruen-postgres-semantic images; those are not built locally.
+# Note: CI additionally builds the contentgruen-postgres-app image; it is not built locally.
 build-all: build-frontend build-bff build-semantic-search
 	@echo "✅ All services built successfully!"
 

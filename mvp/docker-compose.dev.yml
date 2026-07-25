@@ -26,7 +26,7 @@ services:
       - "5433:5432"
     volumes:
       - pgdata_app:/var/lib/postgresql/data
-      - ./backend/app-database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/postgres-app/init.sql:/docker-entrypoint-initdb.d/init.sql
       - /opt/contentgruen-backups:/backups  # Backup directory on host
   contentgruen-semantic-search:
     build:

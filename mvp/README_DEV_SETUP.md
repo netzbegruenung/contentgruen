@@ -29,7 +29,7 @@ cd mvp
 
 This will:
 - Build and start all services in Docker containers
-- PostgreSQL with pgvector on port 5432
+- Qdrant on port 6333 and PostgreSQL on port 5433
 - Semantic Search Service on port 8000
 - BFF (.NET) on port 5054
 - Frontend (Angular) on port 80
@@ -177,11 +177,12 @@ Environment files:
 │  (Angular)  │     │   (.NET)    │     │   (FastAPI)      │
 └─────────────┘     └─────────────┘     └──────────────────┘
                                                   │
-                                                  ▼
-                                         ┌──────────────────┐
-                                         │   PostgreSQL     │
-                                         │   + pgvector     │
-                                         └──────────────────┘
+                                      ┌───────────┴───────────┐
+                                      ▼                       ▼
+                              ┌──────────────┐      ┌──────────────────┐
+                              │    Qdrant    │      │   PostgreSQL     │
+                              │  (vectors)   │      │ (application data)│
+                              └──────────────┘      └──────────────────┘
 ```
 
 ## Ports Summary

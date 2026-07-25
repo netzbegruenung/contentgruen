@@ -65,10 +65,10 @@ Starts all services in Docker containers:
 - All services networked together
 
 ### run-docker-postgres
-Starts only PostgreSQL with pgvector extension:
-- Useful for local development with database only
-- Port 5432
-- Persistent volume for data
+Starts only the databases (`docker-compose.local-dbs.yml`):
+- Useful for local development where the app services run on the host
+- Qdrant on port 6333, PostgreSQL on port 5433
+- Persistent volumes for data
 
 ## Test Scripts (`scripts/test/`)
 

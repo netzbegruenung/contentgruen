@@ -117,9 +117,9 @@ listens on 5432 inside the container.
   - Local/Docker: localhost:5433 (container port 5432)
   - Test/Prod: Internal Docker network
 
-> A `pgvector`-based image is still built and published by CI
-> (`mvp/backend/postgres-semantic/`), but it is used by **nothing** — not by any compose file
-> here, and not by the production SaltStack state. Treat it as a dead build artifact.
+> The schema is defined once, in `mvp/backend/postgres-app/init.sql`. It is baked into the
+> `contentgruen-postgres-app` image used by test and production, and bind-mounted by the local
+> compose files, so every environment provisions the same tables.
 
 ## Nginx Configuration
 

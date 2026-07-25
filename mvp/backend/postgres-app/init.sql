@@ -1,13 +1,10 @@
 -- Initialize ContentGrün Application Database
 -- This database stores application-specific data separate from the Qdrant vector database
 
--- Create application user if not exists
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
-        CREATE USER app_user WITH PASSWORD 'app_secure_pass_2024!';
-    END IF;
-END $$;
+-- The application user and database are created by the postgres entrypoint from
+-- POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB. Do not create the role here: a
+-- hardcoded password would become the live credential in any environment that does
+-- not set POSTGRES_USER.
 
 -- Create usage tracking table
 CREATE TABLE IF NOT EXISTS usage_tracking (

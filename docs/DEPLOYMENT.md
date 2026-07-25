@@ -158,7 +158,7 @@ CI runs on GitHub Actions:
   publishing `:main` and `:sha-<short>` tags. The SaltStack-managed test environment tracks
   `:main` via Watchtower.
 - `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
-  `:stable`.
+  `:stable` for all four images.
 
 Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages

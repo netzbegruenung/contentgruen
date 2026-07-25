@@ -6,24 +6,25 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo "====================================="
-echo "Starting PostgreSQL with pgvector"
+echo "Starting local databases (Qdrant + PostgreSQL)"
 echo "====================================="
 echo
 
 cd "$(dirname "$0")/../.."
 
-echo "Starting PostgreSQL container..."
-docker-compose -f docker-compose.postgres.yml up -d
+echo "Starting database containers..."
+docker compose -f docker-compose.local-dbs.yml up -d
 
 if [ $? -ne 0 ]; then
-    echo -e "${RED}[ERROR]${NC} Failed to start PostgreSQL"
+    echo -e "${RED}[ERROR]${NC} Failed to start the databases"
     exit 1
 fi
 
 echo
-echo -e "${GREEN}PostgreSQL is running on port 5432${NC}"
-echo "Connection string: postgresql://semantic_search:semantic_search@localhost:5432/semantic_search"
+echo -e "${GREEN}Qdrant is running on port 6333${NC}"
+echo -e "${GREEN}PostgreSQL is running on port 5433${NC}"
+echo "Connection string: postgresql://app_user:changeme@localhost:5433/contentgruen_app"
 echo
-echo "To stop: docker-compose -f docker-compose.postgres.yml down"
-echo "To reset: docker-compose -f docker-compose.postgres.yml down -v"
+echo "To stop: docker compose -f docker-compose.local-dbs.yml down"
+echo "To reset: docker compose -f docker-compose.local-dbs.yml down -v"
 echo "====================================="
