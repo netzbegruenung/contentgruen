@@ -189,7 +189,11 @@ listens on 5432 inside the container.
 - `ASPNETCORE_ENVIRONMENT` - Development/Production
 - `USE_KEYCLOAK` - true/false
 - `BACKEND_URL` - Semantic search service URL
-- `FRONTEND_URL` - Frontend URL for redirects
+- `FRONTEND_URL` - Origin the SPA is served from. Drives the OIDC redirect *and* the CORS
+  allowlist, so each environment trusts only its own frontend. **Required** outside
+  `Development`; startup fails if it is missing.
+- `CORS_ALLOWED_ORIGINS` - Optional, comma-separated extra CORS origins for cases where more
+  than one hostname serves the SPA. Unset in all current environments.
 
 ### Semantic Search
 
