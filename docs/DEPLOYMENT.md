@@ -158,7 +158,14 @@ CI runs on GitHub Actions:
   publishing `:main` and `:sha-<short>` tags. The SaltStack-managed test environment tracks
   `:main` via Watchtower.
 - `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
-  `:stable` for all four images.
+  `:latest` for all four images.
+
+Both run the same test suites first, defined once in `.github/workflows/tests-backend.yml`
+and `tests-frontend.yml` and called by each; images are pushed only if they pass.
+
+`:latest` is produced by `docker/metadata-action`'s `latest=auto` flavor: it moves for normal
+release tags but is skipped for prereleases (`v1.2.3-rc.1`), so release candidates can be
+tagged without moving production.
 
 Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages
@@ -168,7 +175,9 @@ Images are pushed into the Netzbegruenung/Verdigado registry:
 that compose file is rewritten and Salt re-runs `docker compose pull` + `down`/`up`. There is
 no Watchtower in production.
 
-> Note: nothing currently consumes the `:stable` tag that `release.yml` publishes.
+> Because production pins `:latest`, the `latest=auto` flavor in `release.yml` is load-bearing.
+> Disabling it, or moving the tag rules away from `type=semver`, would stop `:latest` moving
+> and silently freeze production updates with no failing build to signal it.
 
 **Deployment Schedule:**
 - Automatic: Weekly by the Netzbegruenung/Verdigado admin team
