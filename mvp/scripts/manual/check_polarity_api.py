@@ -4,7 +4,7 @@ Test script for the polarity API endpoint.
 Run this after starting the semantic-search-service to verify polarity filtering.
 
 Usage:
-    python test_polarity_api.py
+    python mvp/scripts/manual/check_polarity_api.py
 """
 
 import requests
@@ -103,9 +103,7 @@ def main():
 
     # Test 4: Neutral query
     print("\n\n### TEST 4: Neutral Query ###")
-    test_polarity(
-        "Klimaschutz", "Klimaschutz ist sehr wichtig", similarity_score=0.80
-    )
+    test_polarity("Klimaschutz", "Klimaschutz ist sehr wichtig", similarity_score=0.80)
 
     # Test 5: Action verbs - matching
     print("\n\n### TEST 5: Action Verbs - Matching ###")
@@ -164,7 +162,9 @@ def main():
     print("=" * 80)
     print("\nNote: The polarity filtering system is designed to:")
     print("  • Detect negations (nicht, kein, nie, etc.)")
-    print("  • Identify stance words (wichtig, überbewertet, fördern, verhindern, etc.)")
+    print(
+        "  • Identify stance words (wichtig, überbewertet, fördern, verhindern, etc.)"
+    )
     print("  • Apply penalties to contradictory results (positive vs negative)")
     print("  • Allow neutral queries/results without penalty")
     print("  • Reduce scores by 20-80% depending on confidence in polarity detection")

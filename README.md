@@ -6,11 +6,13 @@ Licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
 ## Live Systems
 
-- **Test System**: [https://test.contentgruen.de](https://test.contentgruen.de)
+- **Test System**: https://contentgruen-test.netzbegruenung.de
   Login: `testuser` / Password: `Liebe>Hass!`
+  (The older [test.contentgruen.de](https://test.contentgruen.de) is being discontinued.)
 
 - **Production**: [https://contentgruen.netzbegruenung.de](https://contentgruen.netzbegruenung.de)
-  Uses Netzbegruenung Keycloak for authentication
+  Uses Netzbegruenung Keycloak for authentication.
+  `contentgruen.de` currently redirects here.
 
 ## Project Overview
 
@@ -27,8 +29,8 @@ See `architecture.png` for a system overview.
 ```bash
 git clone https://github.com/netzbegruenung/contentgruen.git
 cd contentgruen/mvp
-docker compose build
-docker compose up
+docker compose -f docker-compose.dev.yml build
+docker compose -f docker-compose.dev.yml up
 ```
 
 Access the app at [http://localhost](http://localhost). See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup.
@@ -38,10 +40,13 @@ Access the app at [http://localhost](http://localhost). See [CONTRIBUTING.md](./
 | File | Description |
 |------|-------------|
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup and contribution guide |
-| [`STATUS.md`](./STATUS.md) | Current roadmap and priorities |
+| [`STATUS.md`](./STATUS.md) | Current status and priorities |
 | [`docs/DEV_GUIDE.md`](./docs/DEV_GUIDE.md) | Development and testing guide |
 | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | Deployment instructions |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | System architecture |
+| [`docs/CONTENT_MODEL.md`](./docs/CONTENT_MODEL.md) | Content-type architecture |
+| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Long-term direction |
 
 ## Community
 
-Questions, ideas, and bug reports go in the [issue tracker](https://git.verdigado.com/Netzbegruenung/contentgruen/issues).
+Questions, ideas, and bug reports go in the [issue tracker](https://github.com/netzbegruenung/contentgruen/issues).

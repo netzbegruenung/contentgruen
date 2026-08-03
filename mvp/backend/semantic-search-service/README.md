@@ -5,9 +5,10 @@
 We use a repository pattern approach with individual repositories per content type and additional aggregated repositories as required.
 As of now we have one shared content repository containing all content types as the only aggregated repository.
 
-The service uses PostgreSQL with pgvector for unified content storage and semantic search capabilities.
+Content and its vector embeddings are stored in Qdrant. PostgreSQL holds application data
+(votes, usage tracking, moderation reports).
 
-Entities are modeled as pydantic models in app/index_managers/models
+Entities are modeled as pydantic models in `app/domain/models/`.
 
 ## Development Setup
 
@@ -98,4 +99,3 @@ black --diff .                  # Show what would change
 For more details on testing architecture and patterns, see:
 - `app/tests/README.md` - Testing overview
 - `app/tests/TESTING_GUIDE.md` - Detailed testing guide
-- `app/tests/ARCHITECTURE_GUIDE.md` - Testing architecture patterns

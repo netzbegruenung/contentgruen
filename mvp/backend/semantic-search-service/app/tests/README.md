@@ -11,33 +11,39 @@ pip install -r requirements.txt
 pre-commit install
 
 # Verify setup
-make test-dev
+make test-backend-fast
 ```
 
 ## Daily Workflow
 
 ```bash
 # Quick verification (most common)
-make test-dev
+make test-backend-fast
 
-# Full validation (before commits)
-make test-full
+# Full validation, in the CI container image
+make test-backend
 
-# Test-driven development
-make test-watch
-
-# Commit (tests run automatically)
+# Commit (tests run automatically via pre-commit)
 git commit -m "Changes"
 ```
 
 ## Test Commands
 
 ```bash
-make test-dev           # Fast unit tests
-make test-full          # Tests + coverage + linting
-make test-html          # HTML coverage report
-make test-file FILE=... # Specific test file
-make test-pattern PATTERN=... # Pattern matching
+# Fast unit tests (local venv)
+make test-backend-fast
+
+# Unit tests in the CI container image (python:3.13)
+make test-backend
+
+# Full CI simulation (tests + all image builds)
+make test-ci
+
+# Or invoke pytest directly from mvp/backend/semantic-search-service/app:
+pytest                                  # Unit tests (pytest.ini testpaths)
+pytest tests/unit/path/to/test_x.py     # Specific test file
+pytest -k "pattern"                     # Pattern matching
+pytest tests/integration/               # Integration tests (needs Qdrant on :6333)
 make clean              # Clean artifacts
 make help               # All commands
 ```
@@ -45,14 +51,15 @@ make help               # All commands
 ## Documentation
 
 - **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Writing and running tests
-- **[ARCHITECTURE_GUIDE.md](./ARCHITECTURE_GUIDE.md)** - System architecture
 
 ## Status
 
-- ✅ **186/186 unit tests passing**
+- ✅ **379 unit tests collected** — CI runs 366 of them (the seeding implementation suite is excluded); 355 pass, 11 skip
+- ✅ **85 integration tests** — CI runs the 8 that need only Qdrant; the 77 under
+  `tests/integration/api/` need a full stack (BFF + auth) and are skipped there
 - ✅ **Dependency injection architecture**
 - ✅ **Pre-commit hooks integrated**
-- ✅ **Woodpecker CI automated**
+- ✅ **GitHub Actions CI automated**
 - ✅ **No external test dependencies**
 
 ## Legacy Commands
@@ -77,7 +84,7 @@ pytest -m unit
 tests/
 ├── conftest.py                    # Shared fixtures and configuration
 ├── fixtures/                      # Test utilities
-│   └── test_embeddings_manager.py # In-memory embeddings for testing
+│   └── embeddings_manager.py      # In-memory embeddings for testing
 ├── unit/                          # Unit tests
 │   ├── repositories/              # Repository layer tests
 │   └── services/                  # Service layer tests
@@ -122,7 +129,6 @@ After architectural improvements:
 For questions or issues:
 1. Check the documentation guides
 2. Review existing test examples
-3. Consult [LESSONS_LEARNED.md](./LESSONS_LEARNED.md) for common pitfalls
 4. Create an issue with a minimal reproducible example
 
 ---

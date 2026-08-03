@@ -1,0 +1,48 @@
+name: Tests (Semantic Search Service)
+
+# Reusable: called by both build.yml (push/PR) and release.yml (v* tags) so the
+# release path runs exactly the same suite as the build path, with no second copy
+# to drift. Not triggered directly.
+on:
+  workflow_call:
+
+jobs:
+  test:
+    name: Test Semantic Search Service
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.18.2
+        ports:
+          - 6333:6333
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'  # matches python:3.13-slim in semantic-search-service/Dockerfile
+          cache: 'pip'
+          cache-dependency-path: mvp/backend/semantic-search-service/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r mvp/backend/semantic-search-service/requirements.txt
+
+      - name: Run unit tests
+        working-directory: mvp/backend/semantic-search-service/app
+        # test_seeding_implementation.py requires live seed data files not available in CI
+        run: python -m pytest tests/unit/ --ignore=tests/unit/services/test_seeding_implementation.py --tb=short -v --junitxml=unit-test-results.xml
+
+      - name: Run integration tests
+        working-directory: mvp/backend/semantic-search-service/app
+        env:
+          QDRANT_URL: http://localhost:6333
+        # tests/integration/api requires a running full stack (BFF + auth) not available in CI
+        run: python -m pytest tests/integration/ --ignore=tests/integration/api --tb=short -v --junitxml=integration-test-results.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: mvp/backend/semantic-search-service/app/*-test-results.xml

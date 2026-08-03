@@ -331,7 +331,7 @@ class TestRepositoryFactoryIntegration:
 
     def test_factories_with_different_embeddings_managers(self, test_settings):
         """Test factories with different embeddings managers create isolated repositories."""
-        from tests.fixtures.test_embeddings_manager import TestEmbeddingsManager
+        from tests.fixtures.embeddings_manager import TestEmbeddingsManager
 
         # Create two different embeddings managers
         embeddings1 = TestEmbeddingsManager()

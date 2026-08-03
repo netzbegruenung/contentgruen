@@ -19,8 +19,8 @@ Issues and pull requests are managed there.
 ```bash
 git clone https://github.com/netzbegruenung/contentgruen.git
 cd contentgruen/mvp
-docker compose build
-docker compose up
+docker compose -f docker-compose.dev.yml build
+docker compose -f docker-compose.dev.yml up
 ```
 
 - **Frontend**: [http://localhost](http://localhost)
@@ -62,7 +62,7 @@ cd mvp/backend/semantic-search-service
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+cd app && uvicorn main:app --reload
 ```
 
 > First start may download models from Hugging Face – requires internet access.
@@ -72,14 +72,14 @@ See [docs/DEV_GUIDE.md](docs/DEV_GUIDE.md) for full details.
 ## Testing
 
 ```bash
-# Python
-cd mvp/backend/semantic-search-service && pytest
+# Python (pytest.ini lives in app/)
+cd mvp/backend/semantic-search-service/app && pytest
 
 # Angular
 cd mvp/frontend/contentgruen-frontend && ng test
 
-# .NET
-cd mvp/backend/BFF && dotnet test
+# .NET (test project is BFF.Tests, run from the solution directory)
+cd mvp/backend && dotnet test
 ```
 
 ## Contribution Flow
@@ -101,8 +101,10 @@ Questions and discussion go in the [issue tracker](https://github.com/netzbegrue
 ```
 mvp/frontend/                      Angular web app
 mvp/backend/BFF/                   .NET API gateway
+mvp/backend/BFF.Tests/             .NET unit tests
 mvp/backend/semantic-search-service/  Python search backend (FastAPI, Qdrant)
-mvp/docker-compose.yml             Full containerized setup
+mvp/docker-compose.dev.yml         Full containerized setup (local development)
+mvp/docker-compose.local-dbs.yml   Databases only, for component-based development
 ```
 
 See [STATUS.md](./STATUS.md) for the current roadmap.

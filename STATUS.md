@@ -1,6 +1,6 @@
 # Project Status – ContentGrün
 
-> Last updated: 2026-07-02
+> Last updated: 2026-07-25
 
 Current Objective: **Polish the MVP and grow usage**
 
@@ -16,34 +16,34 @@ use existing comments/background info, and contribute their own.
 
 * [x] Login via Keycloak (production) and dummy auth (dev/test)
 * [x] Anonymous / public search — search and view results without logging in (contribution stays behind login)
-* [x] Semantic search using Qdrant 1.15 and E5 multilingual embeddings
+* [x] Semantic search using Qdrant v1.18.2 and E5 multilingual embeddings
 * [x] Content-type-aware encoding, polarity filtering, and keyword-overlap score boosting
 * [x] Content contribution workflows (commentaries, background info / generic text, statements, images)
-* [x] Image content type with AI-assisted caption suggestion (GPT-4o mini) and async background description worker
+* [x] Image content type with AI-assisted caption suggestion (GPT-4o mini) and async background description worker — note: no OpenAI key is configured in production, so image ingestion there currently falls back to plain user-entered text
 * [x] Post content type (social media posts: Facebook / Instagram / TikTok)
 * [x] `ContentTypeSpec` registry — adding a new content type is a spec + model + frontend fragment, not a 500-line clone
 * [x] Content reporting and moderation system (incl. anonymous reporting with session tracking)
 * [x] Admin area with MVP metrics dashboard
-* [x] PostgreSQL + pgvector persistence
+* [x] PostgreSQL persistence for application data (votes, usage tracking, moderation); vectors live in Qdrant
 * [x] Backup & restore (with rotation; automated in prod via SaltStack)
 * [x] Start page value proposition, recent-content display, help dialog, branding/favicon
-* [x] CI/CD via Woodpecker; test and production systems deployed
+* [x] CI/CD via GitHub Actions (build on `main`/PRs, tagged releases); test and production systems deployed
 
 ## Open Core Tasks
 
 | Task                          | Status   | Notes                                                       |
 | ----------------------------- | -------- | ----------------------------------------------------------- |
-| Mobile UI optimization        | ☐ open   | Branch `feature/optimize-ui-for-mobile` in progress         |
+| Mobile UI optimization        | ☐ open   | In progress                                                  |
 | Post add-form                 | ☐ open   | Post result item shipped but no contribution form yet       |
-| Frontend test suite           | ☐ open   | Backend well covered; frontend needs real unit tests        |
+| Frontend test suite           | ☐ open   | Backend well covered; frontend specs exist but are thin     |
 | Seed content for launch       | ☐ open   | Chicken-and-egg: pre-fill, then grow actively               |
 | Production monitoring/logging | ☐ open   | No realistic prod observability yet                         |
-| Content status feature        | ☐ open   | Branch `feature/add-feature-content-status`                 |
-| Export/import backup          | ☐ open   | Branch `feature/implement-export-import-backup`             |
+| Content status feature        | ☐ open   | Not started in this repository                              |
+| Export/import backup          | ☐ open   | Not started in this repository                              |
 
 ## Growth / Engagement Backlog
 
-Candidate features captured in [`CLAUDE_NEXT_PROMPTS.md`](./CLAUDE_NEXT_PROMPTS.md):
+Candidate features:
 
 * Simple user registration (with manual Kreisverband approval, rate limiting)
 * Trending content feed (top 10 of the week by usage, 🔥 badge)
@@ -74,5 +74,7 @@ Candidate features captured in [`CLAUDE_NEXT_PROMPTS.md`](./CLAUDE_NEXT_PROMPTS.
 
 ## Environments
 
-* **Test:** https://test.contentgruen.de — deploy via `docker-compose.tst.yml`
-* **Production:** https://contentgruen.netzbegruenung.de (also https://contentgruen.de) — automated via SaltStack
+* **Test:** https://contentgruen-test.netzbegruenung.de — SaltStack-managed, tracks `:main`.
+  The older https://test.contentgruen.de (manual, `mvp/docker-compose.tst.yml`) is being discontinued.
+* **Production:** https://contentgruen.netzbegruenung.de — SaltStack-managed, images pinned by
+  digest and bumped by Renovate. https://contentgruen.de redirects here.

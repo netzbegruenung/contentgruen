@@ -4,8 +4,8 @@ Integration-test harness that exercises the REAL Qdrant wiring.
 Unlike the mocked unit suite (which injects ``TestEmbeddingsManager`` and therefore
 passes real-wiring bugs straight through), these fixtures boot the actual
 ``QdrantEmbeddingsManager`` against a live Qdrant instance. They are the honest gate
-required for the rung-1 Steps 5-6 work (registry refactor + Post type); see
-``docs/RUNG_1_PLAN.md`` "Verification requirements for Steps 5-6".
+for the content-registry work (registry refactor + Post/Image types); see
+``docs/CONTENT_MODEL.md``.
 
 The whole module self-skips when Qdrant is not reachable, so a Docker-less CI/unit
 run stays green. Point at a different instance with ``QDRANT_URL``.

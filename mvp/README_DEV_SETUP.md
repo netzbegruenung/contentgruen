@@ -29,7 +29,7 @@ cd mvp
 
 This will:
 - Build and start all services in Docker containers
-- PostgreSQL with pgvector on port 5432
+- Qdrant on port 6333 and PostgreSQL on port 5433
 - Semantic Search Service on port 8000
 - BFF (.NET) on port 5054
 - Frontend (Angular) on port 80
@@ -72,10 +72,10 @@ This will:
 
 If you prefer to start services individually:
 
-#### Start PostgreSQL only:
+#### Start the databases only (Qdrant + PostgreSQL):
 ```bash
 cd mvp
-docker-compose -f docker-compose.postgres.yml up -d
+docker compose -f docker-compose.local-dbs.yml up -d
 ```
 
 #### Start Semantic Search Service:
@@ -85,7 +85,8 @@ python -m venv venv
 # Windows: venv\Scripts\activate
 # Unix: source venv/bin/activate
 pip install -r requirements.txt
-export SEMANTIC_SEARCH_PGVECTOR_URL="postgresql+psycopg2://semantic_search:changeme@localhost:5432/semantic_search"
+export SEMANTIC_SEARCH_APP_DATABASE_URL="postgresql+psycopg2://app_user:changeme@localhost:5433/contentgruen_app"
+export SEMANTIC_SEARCH_QDRANT_URL="http://localhost:6333"
 cd app
 uvicorn main:app --reload
 ```
@@ -120,7 +121,7 @@ npm start
 
 ### From Local to Docker:
 1. Stop all local services (Ctrl+C in each terminal)
-2. Reset environment: `reset-to-docker.bat` (Windows only)
+2. Reset environment: `mvp/scripts/utils/switch-to-docker.bat` (Windows) or `bash mvp/scripts/utils/switch-to-docker.sh`
 3. Run: `run-docker.bat` or `./run-docker.sh`
 
 ## Environment Configuration
@@ -176,11 +177,12 @@ Environment files:
 │  (Angular)  │     │   (.NET)    │     │   (FastAPI)      │
 └─────────────┘     └─────────────┘     └──────────────────┘
                                                   │
-                                                  ▼
-                                         ┌──────────────────┐
-                                         │   PostgreSQL     │
-                                         │   + pgvector     │
-                                         └──────────────────┘
+                                      ┌───────────┴───────────┐
+                                      ▼                       ▼
+                              ┌──────────────┐      ┌──────────────────┐
+                              │    Qdrant    │      │   PostgreSQL     │
+                              │  (vectors)   │      │ (application data)│
+                              └──────────────┘      └──────────────────┘
 ```
 
 ## Ports Summary

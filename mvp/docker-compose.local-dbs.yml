@@ -1,6 +1,6 @@
 services:
   qdrant:
-    image: qdrant/qdrant:v1.15.5
+    image: qdrant/qdrant:v1.18.2
     container_name: contentgruen-qdrant
     restart: always
     ports:
@@ -30,7 +30,7 @@ services:
       - "5433:5432"
     volumes:
       - pgdata_app_local:/var/lib/postgresql/data
-      - ./backend/app-database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/postgres-app/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app_user"]
       interval: 5s

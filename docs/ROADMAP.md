@@ -1,9 +1,12 @@
 # ContentGrün Roadmap — From Pre-MVP to the Full Platform
 
 > Status: **strategy / direction** (not a commitment). Companion to
-> [CONTENT_MODEL.md](./CONTENT_MODEL.md), which describes the target *architecture*.
-> This document describes the *path*: how to get from the current pre-launch MVP to the
-> long-term vision, one independently-useful step at a time.
+> [CONTENT_MODEL.md](./CONTENT_MODEL.md), which describes the *architecture*.
+> This document describes the *path*: how to get from the MVP to the long-term vision, one
+> independently-useful step at a time.
+>
+> Rungs 0–2 are complete — see [Current position](#current-position-as-of-july-2026) at the end.
+> The rung descriptions below are kept as written, as the record of what each step was for.
 
 ## The vision (the direction, not a plan)
 
@@ -39,26 +42,26 @@ commit to at a time.
 Each rung lists its goal, what you build, what it leans on, a rough agent-assisted cost, and the
 **gate** that must be true before climbing to the next rung.
 
-### Rung 0 — Launch & dogfood *(you are basically here)*
+### Rung 0 — Launch & dogfood ✅
 - **Do now, change nothing.** Ship the current MVP, use it yourself daily, write down every friction
   point. Real usage is the forcing function for everything above it — better signal than any
   refactor instinct.
 - **Cost:** this week.
 - **Gate:** you have a concrete friction list from real use.
 
-### Rung 1 — Make it sound, proven by a third type (Post)
+### Rung 1 — Make it sound, proven by a third type (Post) ✅
 - Delete the verified dead code (`social-wall`, `topics`, `editor-mode`, `add-statement-modal`,
   `add-reference`, `workflow/`, BFF `OLD_DtosFrontend/`, empty `repositories/base/`, dead `txtai/`).
-- Pin a **search-ranking characterization test** — there is currently **none** for the search
-  endpoint; write it *before* touching `search.py`.
+- Pin a **search-ranking characterization test** before touching `search.py`
+  (now `app/tests/unit/api/test_search_ranking.py`).
 - Add **Post** (FB/Insta/TikTok) by **extracting the shared base while adding it**, so the feature
   pays for the refactor (rule of three: Post is the legitimate third instance).
-- Decide **snake_case end-to-end** (it blocks the shared DTO base; don't defer it a third time).
+- Decide **snake_case end-to-end** (it blocks the shared DTO base; don't defer it a third time) — decided, see CONTENT_MODEL.md.
 - **Lean:** existing engine; Post is text-bearing (platform/author/url/engagement = extra fields).
 - **Cost:** 3–6 weeks, agent-heavy. **Gate:** adding a content type now feels cheap, not like a
   500-line clone.
 
-### Rung 2 — Multimodal ingestion, the cheap way first
+### Rung 2 — Multimodal ingestion, the cheap way first ✅
 - **Captioned images first:** user types the text → `DirectText` → flows through everything you
   already have. **No AI, no queue.** (This is "erstmal generisch Bild.")
 - *Then*, as a separate explicit step, build the **async vision/ASR pipeline once** — the home for
@@ -67,7 +70,7 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 - **Lean:** all AI happens at **ingestion**; search stays cheap and deterministic.
 - **Cost:** 2–3 months. **Gate:** a non-text type is searchable and the engine treats it uniformly.
 
-### Rung 3 — Analysis layer: tag, describe, mood/stance
+### Rung 3 — Analysis layer: tag, describe, mood/stance ⬅ next
 - **Discipline shift: build a small labeled eval set *before* you trust any output.** Without eval
   you cannot tell if it's good.
 - Lean on **semantic search + light classification, not generation** — most tagging/mood can be

@@ -313,7 +313,7 @@ class TestCommentaryService:
         from repositories.implementations.qdrant.qdrant_repository_factory import (
             QdrantRepositoryFactory,
         )
-        from tests.fixtures.test_embeddings_manager import TestEmbeddingsManager
+        from tests.fixtures.embeddings_manager import TestEmbeddingsManager
         from domain.models.content_status import ContentStatus
         from domain.models.content_origin import ContentOrigin
 

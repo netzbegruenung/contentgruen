@@ -18,14 +18,17 @@ Creates timestamped backup in `/opt/contentgruen-backups/daily/` with automatic 
 ```bash
 cd mvp/scripts/backup # Or place restore script on server
 
+# Paths are resolved relative to /opt/contentgruen-backups/ -- pass a relative
+# path, not an absolute one.
+
 # Restore latest daily backup
-./restore.sh /opt/contentgruen-backups/daily/latest
+./restore.sh daily/latest
 
 # Restore latest weekly backup
-./restore.sh /opt/contentgruen-backups/weekly/latest
+./restore.sh weekly/latest
 
 # Restore specific backup
-./restore.sh /opt/contentgruen-backups/daily/backup_20250106_030000
+./restore.sh daily/backup_20250106_030000
 ```
 
 ### Test Backup/Restore
@@ -161,7 +164,7 @@ ssh -L 6333:localhost:6333 user@server
 2. **Copy backup files to** `/opt/contentgruen-backups/`
 3. **Start containers:** `docker-compose up -d`
 4. **Extract restore script:** `docker cp contentgruen-semantic-search:/scripts/backup/restore.sh /opt/contentgruen/restore.sh && chmod 755 /opt/contentgruen/restore.sh`
-5. **Restore data:** `/opt/contentgruen/restore.sh /opt/contentgruen-backups/daily/latest`
+5. **Restore data:** `/opt/contentgruen/restore.sh daily/latest`
 
 ### Partial Recovery
 

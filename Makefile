@@ -20,9 +20,9 @@ help:
 	@echo "Utility commands:"
 	@echo "  clean                  Remove local test images"
 
-# Build individual services (matching Woodpecker exactly)
+# Build individual services (matching the GitHub Actions build workflow)
 build-frontend:
-	@echo "🔨 Building frontend (matching Woodpecker CI)..."
+	@echo "🔨 Building frontend (matching GitHub Actions CI)..."
 	cd mvp/frontend/contentgruen-frontend && \
 	docker buildx build \
 		--platform linux/amd64 \
@@ -31,7 +31,7 @@ build-frontend:
 		.
 
 build-bff:
-	@echo "🔨 Building BFF (matching Woodpecker CI)..."
+	@echo "🔨 Building BFF (matching GitHub Actions CI)..."
 	cd mvp/backend/BFF && \
 	docker buildx build \
 		--platform linux/amd64 \
@@ -40,7 +40,7 @@ build-bff:
 		.
 
 build-semantic-search:
-	@echo "🔨 Building semantic search service (matching Woodpecker CI)..."
+	@echo "🔨 Building semantic search service (matching GitHub Actions CI)..."
 	cd mvp/backend/semantic-search-service && \
 	docker buildx build \
 		--platform linux/amd64 \
@@ -48,15 +48,16 @@ build-semantic-search:
 		-t contentgruen-semantic-search-local:latest \
 		.
 
-# Build all services
+# Build all application services.
+# Note: CI additionally builds the contentgruen-postgres-app image; it is not built locally.
 build-all: build-frontend build-bff build-semantic-search
 	@echo "✅ All services built successfully!"
 
-# Test backend (matching Woodpecker test step)
+# Test backend (matching the GitHub Actions test job)
 test-backend:
-	@echo "🧪 Running backend tests (matching Woodpecker CI)..."
+	@echo "🧪 Running backend tests (matching GitHub Actions CI)..."
 	@echo "Note: On Windows, use 'make test-backend-fast' for better performance"
-	@echo "This command replicates the exact Woodpecker CI environment"
+	@echo "This command replicates the CI test environment (python:3.13)"
 	cd mvp/backend/semantic-search-service && \
 	docker run --rm \
 		-v "$(CURDIR)/mvp/backend/semantic-search-service:/app" \

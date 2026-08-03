@@ -14,14 +14,16 @@ The service automatically detects whether it's running in Docker or locally:
 
 ### 1. Docker (Production/Test)
 
-Configuration is provided via environment variables in `docker-compose.yml`:
+Configuration is provided via environment variables in `mvp/docker-compose.dev.yml`:
 
 ```yaml
 environment:
   - DOCKER_CONTAINER=true
   - SEMANTIC_SEARCH_DATA_PATH=/data/seed/v1.0
   - SEMANTIC_SEARCH_METADATA_PATH=/metadata
-  - SEMANTIC_SEARCH_PGVECTOR_URL=postgresql+psycopg2://...
+  - SEMANTIC_SEARCH_QDRANT_URL=http://qdrant:6333
+  - SEMANTIC_SEARCH_QDRANT_COLLECTION=content_collection
+  - SEMANTIC_SEARCH_APP_DATABASE_URL=postgresql+psycopg2://...
 ```
 
 ### 2. Local Development
@@ -55,9 +57,11 @@ nano .env
 | `DOCKER_CONTAINER` | Set to `true` when running in Docker | `false` |
 | `SEMANTIC_SEARCH_DATA_PATH` | Path to seed data directory | Auto-detected |
 | `SEMANTIC_SEARCH_METADATA_PATH` | Path for seeding metadata | Auto-detected |
-| `SEMANTIC_SEARCH_PGVECTOR_URL` | PostgreSQL connection string | localhost:5432 |
-| `APP_DATABASE_URL` | App database connection string | localhost:5433 |
+| `SEMANTIC_SEARCH_QDRANT_URL` | Qdrant endpoint | `http://localhost:6333` |
+| `SEMANTIC_SEARCH_QDRANT_COLLECTION` | Qdrant collection name | `content_collection` |
+| `SEMANTIC_SEARCH_APP_DATABASE_URL` | App database connection string | localhost:5433 |
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
+| `OPENAI_API_KEY` | Enables AI image captioning (alias: `SEMANTIC_SEARCH_OPENAI_API_KEY`) | unset |
 
 ## Path Validation
 

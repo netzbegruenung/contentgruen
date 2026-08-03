@@ -1,0 +1,37 @@
+name: Tests (Frontend)
+
+# Reusable: called by both build.yml (push/PR) and release.yml (v* tags) so the
+# release path runs exactly the same suite as the build path, with no second copy
+# to drift. Not triggered directly.
+on:
+  workflow_call:
+
+jobs:
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: mvp/frontend/contentgruen-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: mvp/frontend/contentgruen-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare environment file
+        # environment.ts is not committed; copy local config so the build resolves the import
+        run: |
+          test -f src/environments/environment.ts || \
+            cp src/environments/environment.local.ts src/environments/environment.ts
+
+      - name: Run tests
+        run: npx ng test --watch=false --browsers=ChromeHeadless --progress=false

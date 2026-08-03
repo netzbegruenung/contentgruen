@@ -21,7 +21,19 @@ using var loggerFactory = LoggerFactory.Create(loggingBuilder => loggingBuilder.
 var startupLogger = loggerFactory.CreateLogger("Startup");
 startupLogger.LogInformation("USE_KEYCLOAK is set to: {UseKeycloak}", useKeycloak);
 
-var frontendUrl = builder.Configuration.GetValue<string>("FRONTEND_URL", defaultValue: "http://localhost:4200");
+// FRONTEND_URL is the origin the browser loads the SPA from. It drives the OIDC redirect,
+// the dummy-auth CORS header, and the CORS allowlist below. Required outside Development so a
+// missing value fails at startup instead of silently redirecting users to localhost.
+var frontendUrl = builder.Configuration.GetValue<string>("FRONTEND_URL");
+if (string.IsNullOrWhiteSpace(frontendUrl))
+{
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("FRONTEND_URL configuration is missing.");
+    }
+    frontendUrl = "http://localhost:4200";
+}
+frontendUrl = frontendUrl.TrimEnd('/');
 
 if (useKeycloak)
 {
@@ -131,10 +143,6 @@ else
     builder.Services.AddAuthorization();
 
     // Keep the dummy auth for backward compatibility if managed users are not configured
-    if (frontendUrl == null)
-    {
-        throw new InvalidOperationException("FRONTEND_URL configuration is missing.");
-    }
     builder.Services.AddSingleton<IStartupFilter>(new DummyAuthStartupFilter(frontendUrl));
 }
 
@@ -301,23 +309,34 @@ builder.Services.AddReverseProxy()
     });
 
 
-// Add CORS policy
+// Add CORS policy.
+// The browser sends the *frontend's* origin, so FRONTEND_URL is the source of truth and each
+// environment trusts only its own frontend. CORS_ALLOWED_ORIGINS (comma-separated) adds extra
+// origins without a rebuild -- e.g. a second domain during a migration.
+var corsOrigins = new[] { frontendUrl }
+    .Concat((builder.Configuration.GetValue<string>("CORS_ALLOWED_ORIGINS") ?? string.Empty)
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin.TrimEnd('/')) // a trailing slash never matches an Origin header
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
+if (builder.Environment.IsDevelopment())
+{
+    corsOrigins = corsOrigins
+        .Concat(["http://localhost:4200", "http://localhost"])
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+}
+
+startupLogger.LogInformation("CORS allowed origins: {Origins}", string.Join(", ", corsOrigins));
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
         policy =>
         {
-            policy.WithOrigins(
-                "http://localhost:4200",        // Local development
-                "http://localhost",             // Local dockerized development
-                "http://188.245.188.134",       // Testsystem IP (HTTP)
-                "https://188.245.188.134",      // Testsystem IP (HTTPS)
-                "http://contentgruen.de",       // Testsystem domain (HTTP)
-                "https://contentgruen.de",      // Testsystem domain (HTTPS)
-                "http://test.contentgruen.de",       // Testsystem domain (HTTP)
-                "https://test.contentgruen.de",      // Testsystem domain (HTTPS)
-                "http://contentgruen.netzbegruenung.de",       // Production domain (HTTP)
-                "https://contentgruen.netzbegruenung.de")      // Production domain (HTTPS)
+            policy.WithOrigins(corsOrigins)
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials();

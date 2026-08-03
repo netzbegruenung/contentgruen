@@ -12,7 +12,6 @@ All scripts are located in the `mvp/scripts/` directory and organized by categor
 | **Check environment** | `scripts\setup\check-environment.bat` | `scripts/setup/check-environment.sh` |
 | **Install dependencies** | `scripts\setup\install-dependencies.bat` | `scripts/setup/install-dependencies.sh` |
 | **Clean everything** | `scripts\utils\clean-all.bat` | `scripts/utils/clean-all.sh` |
-| **Setup backup system** | N/A (Linux/Unix only) | `scripts/backup/setup-backup-system.sh` |
 | **Create backup** | N/A (Linux/Unix only) | `scripts/backup/backup.sh` |
 | **Restore backup** | N/A (Linux/Unix only) | `scripts/backup/restore.sh` |
 | **Test backup/restore** | N/A (Linux/Unix only) | `scripts/backup/test-backup-restore.sh` |
@@ -34,7 +33,6 @@ mvp/scripts/
 │   ├── check-environment.*   # Verify development environment
 │   └── install-dependencies.*  # Install all project dependencies
 ├── backup/                 # Backup and restore (Linux/Unix only)
-│   ├── setup-backup-system.sh   # Initialize backup system
 │   ├── backup.sh          # Create backup of Qdrant + PostgreSQL
 │   ├── restore.sh         # Restore from backup
 │   ├── test-backup-restore.sh  # Test backup/restore workflow
@@ -67,10 +65,10 @@ Starts all services in Docker containers:
 - All services networked together
 
 ### run-docker-postgres
-Starts only PostgreSQL with pgvector extension:
-- Useful for local development with database only
-- Port 5432
-- Persistent volume for data
+Starts only the databases (`docker-compose.local-dbs.yml`):
+- Useful for local development where the app services run on the host
+- Qdrant on port 6333, PostgreSQL on port 5433
+- Persistent volumes for data
 
 ## Test Scripts (`scripts/test/`)
 
@@ -118,33 +116,20 @@ Run this after cloning the repository or after running `clean-all`.
 
 ## Backup Scripts (`scripts/backup/`) - Linux/Unix Only
 
-### setup-backup-system
-First-time backup system initialization:
-- Checks Docker installation and daemon status
-- Verifies required commands (curl, readlink, stat, md5sum)
-- Creates `/opt/contentgruen-backups/` directory
-- Sets proper permissions (755)
-- Checks disk space availability
-- Verifies ContentGrün containers are running
-
-**Usage:**
-```bash
-sudo scripts/backup/setup-backup-system.sh
-```
-
 ### backup
 Creates a complete backup of Qdrant and PostgreSQL:
 - Qdrant vector database (content + embeddings)
 - PostgreSQL metadata (usage tracking)
 - Backup metadata with checksums
-- Stored in `/opt/contentgruen-backups/backup_YYYYMMDD_HHMMSS/`
-- Automatic cleanup of old backups (keeps last 7)
+- Stored in `/opt/contentgruen-backups/daily/backup_YYYYMMDD_HHMMSS/`
+- On Sundays, additionally copied to `/opt/contentgruen-backups/weekly/`
+- Creates the backup directories on first run
+- Automatic rotation keeps the last 7 daily and 4 weekly backups
+  (`KEEP_DAILY` / `KEEP_WEEKLY` at the top of the script)
 
 **Usage:**
 ```bash
-scripts/backup/backup.sh                # Regular backup
-scripts/backup/backup.sh --compress     # Compressed backup
-KEEP_BACKUPS=5 scripts/backup/backup.sh # Keep only 5 backups
+scripts/backup/backup.sh
 ```
 
 ### restore
@@ -158,8 +143,10 @@ Restores data from a backup:
 
 **Usage:**
 ```bash
-scripts/backup/restore.sh                     # Restore latest backup
-scripts/backup/restore.sh backup_20250916_103000  # Restore specific backup
+# Paths are resolved relative to /opt/contentgruen-backups/
+scripts/backup/restore.sh daily/latest                    # Restore latest daily backup
+scripts/backup/restore.sh weekly/latest                   # Restore latest weekly backup
+scripts/backup/restore.sh daily/backup_20250916_103000    # Restore a specific backup
 ```
 
 ### test-backup-restore

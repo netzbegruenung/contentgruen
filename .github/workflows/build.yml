@@ -30,7 +30,6 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       bff: ${{ steps.filter.outputs.bff }}
       semantic: ${{ steps.filter.outputs.semantic }}
-      postgres_semantic: ${{ steps.filter.outputs.postgres_semantic }}
       postgres_app: ${{ steps.filter.outputs.postgres_app }}
     steps:
       - uses: actions/checkout@v4
@@ -44,79 +43,15 @@ jobs:
               - 'mvp/backend/BFF/**'
             semantic:
               - 'mvp/backend/semantic-search-service/**'
-            postgres_semantic:
-              - 'mvp/backend/postgres-semantic/**'
             postgres_app:
               - 'mvp/backend/postgres-app/**'
 
+  # Test suites live in reusable workflows so release.yml runs the identical suite.
   test:
-    name: Test Semantic Search Service
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    services:
-      qdrant:
-        image: qdrant/qdrant:v1.15.5
-        ports:
-          - 6333:6333
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'  # matches python:3.13-slim in semantic-search-service/Dockerfile
-          cache: 'pip'
-          cache-dependency-path: mvp/backend/semantic-search-service/requirements.txt
-
-      - name: Install dependencies
-        run: pip install -r mvp/backend/semantic-search-service/requirements.txt
-
-      - name: Run unit tests
-        working-directory: mvp/backend/semantic-search-service/app
-        # test_seeding_implementation.py requires live seed data files not available in CI
-        run: python -m pytest tests/unit/ --ignore=tests/unit/services/test_seeding_implementation.py --tb=short -v --junitxml=unit-test-results.xml
-
-      - name: Run integration tests
-        working-directory: mvp/backend/semantic-search-service/app
-        env:
-          QDRANT_URL: http://localhost:6333
-        # tests/integration/api requires a running full stack (BFF + auth) not available in CI
-        run: python -m pytest tests/integration/ --ignore=tests/integration/api --tb=short -v --junitxml=integration-test-results.xml
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: mvp/backend/semantic-search-service/app/*-test-results.xml
+    uses: ./.github/workflows/tests-backend.yml
 
   test-frontend:
-    name: Test Frontend
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: mvp/frontend/contentgruen-frontend
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: mvp/frontend/contentgruen-frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Prepare environment file
-        # environment.ts is not committed; copy local config so the build resolves the import
-        run: |
-          test -f src/environments/environment.ts || \
-            cp src/environments/environment.local.ts src/environments/environment.ts
-
-      - name: Run tests
-        run: npx ng test --watch=false --browsers=ChromeHeadless --progress=false
+    uses: ./.github/workflows/tests-frontend.yml
 
   build-frontend:
     name: Build Frontend Image
@@ -242,48 +177,6 @@ jobs:
           # backend/semantic-search-service/, scripts/backup/, and data/, all relative to mvp/
           context: mvp
           file: mvp/backend/semantic-search-service/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  build-postgres-semantic:
-    name: Build Postgres Semantic Image
-    runs-on: ubuntu-latest
-    needs: [changes, test]
-    if: |
-      github.event_name != 'pull_request' &&
-      (needs.changes.outputs.postgres_semantic == 'true' || github.event_name == 'workflow_dispatch')
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Verdigado registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.VERDIGADO_REGISTRY_USER }}
-          password: ${{ secrets.VERDIGADO_REGISTRY_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-postgres-semantic
-          tags: |
-            type=raw,value=main
-            type=sha,prefix=sha-,format=short
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: mvp/backend/postgres-semantic
-          file: mvp/backend/postgres-semantic/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

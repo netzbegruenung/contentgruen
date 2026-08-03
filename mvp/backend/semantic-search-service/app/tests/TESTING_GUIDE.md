@@ -10,7 +10,7 @@ tests/
 ├── integration/                   # Integration tests
 │   └── api/v1/                    # API endpoint tests
 ├── fixtures/                      # Test utilities
-│   └── test_embeddings_manager.py # In-memory test backend
+│   └── embeddings_manager.py      # In-memory test backend
 └── conftest.py                    # Shared fixtures
 ```
 
@@ -19,12 +19,23 @@ tests/
 ### Quick Commands
 
 ```bash
-make test-dev           # Fast unit tests (recommended)
-make test-full          # Full suite with coverage
-make test-html          # HTML coverage report
-make test-watch         # Watch mode for TDD
-make test-file FILE=... # Specific test file
-make test-pattern PATTERN=... # Pattern matching
+# Fast unit tests (local venv)
+make test-backend-fast
+
+# Unit tests in the CI container image (python:3.13)
+make test-backend
+
+# Full CI simulation (tests + all image builds)
+make test-ci
+```
+
+Or invoke pytest directly from `mvp/backend/semantic-search-service/app`:
+
+```bash
+pytest                                  # Unit tests (pytest.ini testpaths)
+pytest tests/unit/path/to/test_x.py     # Specific test file
+pytest -k "pattern"                     # Pattern matching
+pytest tests/integration/               # Integration tests (needs Qdrant on :6333)
 ```
 
 ### Setup (One-Time)
@@ -117,9 +128,13 @@ Tests use **TestEmbeddingsManager** instead of mocking:
 
 ## Coverage
 
+Coverage is **not enabled by default** — `pytest-cov` is not in `requirements.txt` and the
+coverage `addopts` line in `app/pytest.ini` is commented out. To enable it:
+
 ```bash
-make test-html    # Generate HTML report
-make test-coverage # Terminal coverage report
+pip install pytest-cov
+# from mvp/backend/semantic-search-service/app
+pytest --cov=. --cov-report=html --cov-report=term-missing
 ```
 
 Coverage reports show:
@@ -160,13 +175,14 @@ pytest -x              # Stop on first failure
 
 ## CI Integration
 
-Tests run automatically in Woodpecker CI on:
-- Push to main branch
+Tests run automatically in GitHub Actions (`.github/workflows/build.yml`) on:
+- Push to the `main` branch
 - Pull request creation/updates
-- Manual pipeline execution
+- Manual dispatch (`workflow_dispatch`)
 
-Pipeline includes:
-- Dependency installation
+The `test` job includes:
+- Dependency installation (Python 3.13)
 - Unit test execution
-- JUnit report generation
-- Automatic PR blocking on failures
+- Integration test execution against a Qdrant service container
+- JUnit report generation (uploaded as artifacts)
+- Blocking image builds on failures

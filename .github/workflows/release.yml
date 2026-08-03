@@ -1,11 +1,15 @@
 name: Release
 
 # Triggered by pushing a SemVer tag (e.g. git tag v1.2.3 && git push --tags).
-# All 5 images are always built — they're versioned as a single deployable unit.
+# All 4 images are always built — they're versioned as a single deployable unit.
 # Tags produced per image:
 #   :v1.2.3  — exact version (immutable)
 #   :1.2     — minor alias (moves within a minor line)
-#   :stable  — moves with every release; watched by the prd deployment
+#   :latest  — moves with every non-prerelease release; the prd deployment pins
+#              this by digest and Renovate raises the bumps (see flavor below)
+#
+# Images are pushed only after the full test suite passes — the same reusable
+# workflows build.yml uses, so a tag cannot ship what main would have rejected.
 
 on:
   push:
@@ -23,9 +27,18 @@ env:
   REGISTRY_NAMESPACE: netzbegruenung-images
 
 jobs:
+  # Same suites as build.yml. A release must not be able to publish images that
+  # would have failed on main.
+  test:
+    uses: ./.github/workflows/tests-backend.yml
+
+  test-frontend:
+    uses: ./.github/workflows/tests-frontend.yml
+
   build-frontend:
     name: Release Frontend Image
     runs-on: ubuntu-latest
+    needs: [test, test-frontend]
     permissions:
       contents: read
     steps:
@@ -45,13 +58,16 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-frontend
+          # latest=auto is metadata-action's default, stated explicitly because the
+          # prd deployment pins :latest by digest. It publishes :latest for normal
+          # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates
+          # never move production. Disabling this silently freezes prd updates.
+          flavor: latest=auto
           tags: |
             # :v1.2.3 — strips the leading 'v' from the git tag
             type=semver,pattern={{version}}
             # :1.2 — minor alias; lets Renovate/Salt pin to a minor line
             type=semver,pattern={{major}}.{{minor}}
-            # :stable — moves with every release; watched by the prd deployment
-            type=raw,value=stable
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -68,6 +84,7 @@ jobs:
   build-bff:
     name: Release BFF Image
     runs-on: ubuntu-latest
+    needs: [test, test-frontend]
     permissions:
       contents: read
     steps:
@@ -87,10 +104,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-bff
+          # latest=auto is metadata-action's default, stated explicitly because the
+          # prd deployment pins :latest by digest. It publishes :latest for normal
+          # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates
+          # never move production. Disabling this silently freezes prd updates.
+          flavor: latest=auto
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=stable
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -107,6 +128,7 @@ jobs:
   build-semantic-search:
     name: Release Semantic Search Image
     runs-on: ubuntu-latest
+    needs: [test, test-frontend]
     permissions:
       contents: read
     steps:
@@ -126,10 +148,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-semantic-search
+          # latest=auto is metadata-action's default, stated explicitly because the
+          # prd deployment pins :latest by digest. It publishes :latest for normal
+          # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates
+          # never move production. Disabling this silently freezes prd updates.
+          flavor: latest=auto
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=stable
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -145,48 +171,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-postgres-semantic:
-    name: Release Postgres Semantic Image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Verdigado registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.VERDIGADO_REGISTRY_USER }}
-          password: ${{ secrets.VERDIGADO_REGISTRY_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-postgres-semantic
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=stable
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: mvp/backend/postgres-semantic
-          file: mvp/backend/postgres-semantic/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   build-postgres-app:
     name: Release Postgres App Image
     runs-on: ubuntu-latest
+    needs: [test, test-frontend]
     permissions:
       contents: read
     steps:
@@ -206,10 +194,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-postgres-app
+          # latest=auto is metadata-action's default, stated explicitly because the
+          # prd deployment pins :latest by digest. It publishes :latest for normal
+          # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates
+          # never move production. Disabling this silently freezes prd updates.
+          flavor: latest=auto
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=stable
 
       - name: Build and push
         uses: docker/build-push-action@v6

@@ -4,7 +4,7 @@ Test script for the similarity API endpoint.
 Run this after starting the semantic-search-service to verify the implementation.
 
 Usage:
-    python test_similarity_api.py
+    python mvp/scripts/manual/check_similarity_api.py
 """
 
 import requests
@@ -19,7 +19,7 @@ def test_similarity(text1: str, text2: str, mode: str = "default"):
         "text1": text1,
         "text2": text2,
         "prefix_mode": mode,
-        "include_embeddings": False
+        "include_embeddings": False,
     }
 
     print(f"\n{'='*80}")
@@ -35,7 +35,7 @@ def test_similarity(text1: str, text2: str, mode: str = "default"):
         print(f"✅ Similarity Score: {result['similarity_score']:.4f}")
         print(f"   Text1 prefix: {result['text1_prefix']}")
         print(f"   Text2 prefix: {result['text2_prefix']}")
-        return result['similarity_score']
+        return result["similarity_score"]
     else:
         print(f"❌ Error: {response.status_code}")
         print(response.text)

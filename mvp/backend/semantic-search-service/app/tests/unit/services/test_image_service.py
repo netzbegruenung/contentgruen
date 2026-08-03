@@ -255,7 +255,7 @@ class TestImageService:
         from repositories.implementations.qdrant.qdrant_repository_factory import (
             QdrantRepositoryFactory,
         )
-        from tests.fixtures.test_embeddings_manager import TestEmbeddingsManager
+        from tests.fixtures.embeddings_manager import TestEmbeddingsManager
 
         em1 = TestEmbeddingsManager()
         em2 = TestEmbeddingsManager()
