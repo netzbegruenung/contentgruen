@@ -8,7 +8,6 @@ backend/BFF/
 
 # Other backend services
 backend/postgres-app/
-backend/postgres-semantic/
 
 # Docker compose files
 docker-compose*.yml

@@ -10,7 +10,7 @@ tests/
 ├── integration/                   # Integration tests
 │   └── api/v1/                    # API endpoint tests
 ├── fixtures/                      # Test utilities
-│   └── test_embeddings_manager.py # In-memory test backend
+│   └── embeddings_manager.py      # In-memory test backend
 └── conftest.py                    # Shared fixtures
 ```
 

@@ -84,7 +84,7 @@ pytest -m unit
 tests/
 ├── conftest.py                    # Shared fixtures and configuration
 ├── fixtures/                      # Test utilities
-│   └── test_embeddings_manager.py # In-memory embeddings for testing
+│   └── embeddings_manager.py      # In-memory embeddings for testing
 ├── unit/                          # Unit tests
 │   ├── repositories/              # Repository layer tests
 │   └── services/                  # Service layer tests
