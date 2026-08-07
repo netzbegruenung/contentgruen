@@ -345,12 +345,31 @@ builder.Services.AddCors(options =>
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+                             | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost;
+
+    // The default known-proxy list covers loopback only, so the Docker bridge gateway counts as an
+    // unknown proxy and X-Forwarded-Proto gets dropped -- the app then treats every request as
+    // plain http. Clearing both lists switches the proxy check off instead of pinning a CIDR,
+    // which would break as soon as Docker hands out a different bridge network.
+    //
+    // This is safe only as long as the container port stays bound to 127.0.0.1 and nginx remains
+    // the sole route in, so no external client can set these headers itself. Revisit if the
+    // published port or the reverse proxy in front of it ever changes.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+// Must run before anything that reads the request scheme or issues cookies -- notably
+// UseHttpsRedirection below and the OIDC handler, whose correlation and nonce cookies default to
+// SameSite=None with SecurePolicy=SameAsRequest. Without the forwarded scheme those cookies go out
+// without the Secure flag, browsers reject them, and the Keycloak callback fails correlation.
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -395,8 +414,6 @@ app.UseAuthorization();
 
 // Map controllers for the new AuthController
 app.MapControllers();
-
-app.UseForwardedHeaders();
 
 // Note: /login endpoint removed to allow Angular routing to handle login page
 // Authentication is now handled through AuthController endpoints:
