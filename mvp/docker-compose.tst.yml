@@ -68,6 +68,7 @@ services:
       - ENABLE_MANAGED_AUTH=true
     volumes:
       - ./config:/config:ro  # Mount config directory for managed users
+      - bff_dataprotection_keys:/keys  # Persist DataProtection keys across container recreates
     ports:
       - '127.0.0.1:3001:5054' # From localhost: Via Nginx
     networks:
@@ -99,4 +100,6 @@ volumes:
   pgdata_app:
     driver: local
   semantic_search_metadata:
+    driver: local
+  bff_dataprotection_keys:
     driver: local

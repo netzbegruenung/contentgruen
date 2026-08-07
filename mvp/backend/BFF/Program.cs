@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -359,6 +360,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
+
+// Without an explicit key ring, DataProtection writes to ~/.aspnet/DataProtection-Keys inside the
+// container layer, so every recreate mints new keys and invalidates every ContentGruenAuthCookie
+// along with any in-flight OIDC correlation cookie. /keys is expected to be a mounted volume; if
+// it is not, the directory is simply created in the container layer and behaviour matches today's.
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
+    .SetApplicationName("contentgruen-bff");
 
 var app = builder.Build();
 

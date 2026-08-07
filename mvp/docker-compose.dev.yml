@@ -67,6 +67,7 @@ services:
       - MANAGED_USERS_PATH=/config/managed-users.json
     volumes:
       - ./config:/config:ro  # Mount config directory for managed users
+      - bff_dataprotection_keys:/keys  # Persist DataProtection keys across container recreates
 
   contentgruen-frontend:
     build:
@@ -90,3 +91,4 @@ volumes:
   qdrant_storage:
   pgdata_app:
   semantic_search_metadata:
+  bff_dataprotection_keys:
