@@ -100,19 +100,23 @@ public class AuthController : ControllerBase
         });
     }
 
+    // GET as well as POST: the frontend starts this flow with a top-level navigation
+    // (window.location.href), which is always a GET. Without the GET route the request falls
+    // through to the YARP catch-all route and is rejected there with 401 instead of reaching
+    // this action at all.
+    [HttpGet("login/keycloak")]
     [HttpPost("login/keycloak")]
-    public async Task<IActionResult> LoginKeycloak([FromQuery] string? returnUrl = null)
+    public IActionResult LoginKeycloak([FromQuery] string? returnUrl = null)
     {
         var frontendUrl = _configuration.GetValue<string>("FRONTEND_URL", "http://localhost:4200");
         var redirectUrl = string.IsNullOrEmpty(returnUrl) ? frontendUrl : returnUrl;
 
-        // Trigger Keycloak authentication
-        await HttpContext.ChallengeAsync(OpenIdConnectDefaults.AuthenticationScheme, new AuthenticationProperties
-        {
-            RedirectUri = redirectUrl
-        });
-
-        return Ok(new { message = "Redirecting to Keycloak..." });
+        // Trigger Keycloak authentication. Returning the challenge as the action result keeps the
+        // 302 the OIDC handler produces -- calling ChallengeAsync and then returning Ok() would
+        // overwrite that status with 200 and leave a Location header no browser follows.
+        return Challenge(
+            new AuthenticationProperties { RedirectUri = redirectUrl },
+            OpenIdConnectDefaults.AuthenticationScheme);
     }
 
     [HttpPost("logout")]
