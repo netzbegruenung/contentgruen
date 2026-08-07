@@ -577,7 +577,6 @@ public class DummyAuthStartupFilter : IStartupFilter
 
                         Console.WriteLine($"DummyAuthStartupFilter: Received login request");
                         Console.WriteLine($"DummyAuthStartupFilter: Username: {loginRequest?.Username}");
-                        Console.WriteLine($"DummyAuthStartupFilter: Password: {loginRequest?.Password}");
 
                         if (loginRequest?.Username == _dummyUsername && loginRequest?.Password == _dummyPassword)
                         {
