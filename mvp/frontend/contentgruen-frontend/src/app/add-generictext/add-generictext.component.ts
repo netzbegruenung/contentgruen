@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -41,6 +42,18 @@ interface GenericTextFormValues {
     styleUrls: ['./add-generictext.component.scss'],
     providers: [
         { provide: 'RESULT', useValue: null }
+    ],
+    animations: [
+        trigger('expandCollapse', [
+            transition(':enter', [
+                style({ height: '0', opacity: 0, overflow: 'hidden' }),
+                animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', style({ height: '*', opacity: 1 })),
+            ]),
+            transition(':leave', [
+                style({ overflow: 'hidden' }),
+                animate('200ms cubic-bezier(0.4, 0, 0.2, 1)', style({ height: '0', opacity: 0 })),
+            ]),
+        ]),
     ]
 })
 export class AddGenerictextComponent implements OnDestroy {
@@ -66,6 +79,11 @@ export class AddGenerictextComponent implements OnDestroy {
     isReplyToStatement: boolean = false;
     statementInput: string = '';
     private statementUpdateSubject = new Subject<string>();
+
+    // Sources start hidden to keep the initial form minimal.
+    // NOTE: if an edit mode is added later, initialise this from the loaded values
+    // (e.g. showReferences = references.length > 0) so filled fields stay visible.
+    showReferences = false;
 
     constructor(
         private fb: FormBuilder,
@@ -116,6 +134,12 @@ export class AddGenerictextComponent implements OnDestroy {
 
     onReferenceRemoved(reference: ReferenceEntry): void {
         // Reference removed event - handled by form control
+    }
+
+    // One-way reveal: re-creating app-reference-input would drop the server ids of
+    // already added references, so the section stays open once it has been opened.
+    revealReferences(): void {
+        this.showReferences = true;
     }
 
     updatePreview(formValues: GenericTextFormValues): void {
@@ -213,6 +237,7 @@ export class AddGenerictextComponent implements OnDestroy {
         this.responseId = '';
         this.generictextSaved = false;
         this.generictextError = null;
+        this.showReferences = false;
         this.generictextForm.reset();
         this.updatePreview(this.generictextForm.value);
     }
