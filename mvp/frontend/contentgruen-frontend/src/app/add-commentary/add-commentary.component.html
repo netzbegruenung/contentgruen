@@ -124,25 +124,47 @@
                         </mat-form-field>
                     </div>
 
-                    <div class="form-group">
-                        <label class="input-label">Langtext (optional)</label>
-                        <mat-form-field appearance="outline">
-                            <mat-label>Ausführlicher Text</mat-label>
-                            <textarea matInput #long_text maxLength="2000" rows="4" formControlName="long_text"></textarea>
-                            <mat-hint align="end">{{long_text.value.length || 0}}/2000</mat-hint>
-                        </mat-form-field>
+                    <!-- Optional text variants, collapsed by default -->
+                    <button mat-button type="button" class="optional-toggle"
+                            (click)="toggleTextVariants()"
+                            [attr.aria-expanded]="showTextVariants"
+                            aria-controls="text-variants-block">
+                        <mat-icon>{{ showTextVariants ? 'expand_less' : 'expand_more' }}</mat-icon>
+                        <span>Weitere Textvarianten</span>
+                    </button>
+
+                    <div id="text-variants-block" class="optional-block"
+                         *ngIf="showTextVariants" @expandCollapse>
+                        <div class="form-group">
+                            <label class="input-label">Langtext</label>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Ausführlicher Text</mat-label>
+                                <textarea matInput #long_text maxLength="2000" rows="4" formControlName="long_text"></textarea>
+                                <mat-hint align="end">{{long_text.value.length || 0}}/2000</mat-hint>
+                            </mat-form-field>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="input-label">Kurztext</label>
+                            <mat-form-field appearance="outline">
+                                <mat-label>Kurze Zusammenfassung</mat-label>
+                                <textarea matInput #short_text maxLength="100" rows="2" formControlName="short_text"></textarea>
+                                <mat-hint align="end">{{short_text.value.length || 0}}/100</mat-hint>
+                            </mat-form-field>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="input-label">Kurztext (optional)</label>
-                        <mat-form-field appearance="outline">
-                            <mat-label>Kurze Zusammenfassung</mat-label>
-                            <textarea matInput #short_text maxLength="100" rows="2" formControlName="short_text"></textarea>
-                            <mat-hint align="end">{{short_text.value.length || 0}}/100</mat-hint>
-                        </mat-form-field>
-                    </div>
+                    <!-- Sources, revealed on demand -->
+                    <button mat-stroked-button type="button" class="add-reference-trigger"
+                            *ngIf="!showReferences"
+                            (click)="revealReferences()"
+                            matTooltip="Quellenangaben hinzufügen (optional)">
+                        <mat-icon>menu_book</mat-icon>
+                        <span>+ Quelle</span>
+                    </button>
 
-                    <div class="form-group references-section">
+                    <div class="form-group references-section"
+                         *ngIf="showReferences" @expandCollapse>
                         <label class="input-label">Quellenangaben (optional)</label>
                         <app-reference-input
                             formControlName="references"

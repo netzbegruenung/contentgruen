@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -42,6 +43,18 @@ interface CommentaryFormValues {
     ],
     providers: [
         { provide: 'RESULT', useValue: null }
+    ],
+    animations: [
+        trigger('expandCollapse', [
+            transition(':enter', [
+                style({ height: '0', opacity: 0, overflow: 'hidden' }),
+                animate('300ms cubic-bezier(0.4, 0, 0.2, 1)', style({ height: '*', opacity: 1 })),
+            ]),
+            transition(':leave', [
+                style({ overflow: 'hidden' }),
+                animate('200ms cubic-bezier(0.4, 0, 0.2, 1)', style({ height: '0', opacity: 0 })),
+            ]),
+        ]),
     ]
 })
 export class AddCommentaryComponent implements OnDestroy {
@@ -67,6 +80,12 @@ export class AddCommentaryComponent implements OnDestroy {
     isReplyToStatement: boolean = false;
     statementInput: string = '';
     private statementUpdateSubject = new Subject<string>();
+
+    // Optional form sections start collapsed to keep the initial form minimal.
+    // NOTE: if an edit mode is added later, initialise these from the loaded values
+    // (e.g. showTextVariants = !!long_text || !!short_text) so filled fields stay visible.
+    showTextVariants = false;
+    showReferences = false;
 
     constructor(
         private fb: FormBuilder,
@@ -119,6 +138,18 @@ export class AddCommentaryComponent implements OnDestroy {
 
     onReferenceRemoved(reference: ReferenceEntry): void {
         // Reference removed event - handled by form control
+    }
+
+    // Collapsing only removes the fields from the DOM - the form controls keep their
+    // values, so nothing entered here is lost when the section is closed again.
+    toggleTextVariants(): void {
+        this.showTextVariants = !this.showTextVariants;
+    }
+
+    // One-way reveal: re-creating app-reference-input would drop the server ids of
+    // already added references, so the section stays open once it has been opened.
+    revealReferences(): void {
+        this.showReferences = true;
     }
 
     updatePreview(formValues: CommentaryFormValues): void {
@@ -251,6 +282,8 @@ export class AddCommentaryComponent implements OnDestroy {
         this.responseId = '';
         this.commentaryError = null;
         this.commentarySaved = false;
+        this.showTextVariants = false;
+        this.showReferences = false;
     }
 
     // New inline methods for statement handling

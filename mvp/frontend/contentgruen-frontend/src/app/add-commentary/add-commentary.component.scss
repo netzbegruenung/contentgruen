@@ -202,3 +202,20 @@
     background-color: #3a8c3a !important;
   }
 }
+
+// Collapsible optional sections
+.optional-toggle {
+  align-self: flex-start;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.optional-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.add-reference-trigger {
+  align-self: flex-start;
+}

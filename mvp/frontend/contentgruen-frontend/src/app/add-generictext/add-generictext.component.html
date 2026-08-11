@@ -124,7 +124,17 @@
                         </mat-form-field>
                     </div>
 
-                    <div class="form-group references-section">
+                    <!-- Sources, revealed on demand -->
+                    <button mat-stroked-button type="button" class="add-reference-trigger"
+                            *ngIf="!showReferences"
+                            (click)="revealReferences()"
+                            matTooltip="Quellenangaben hinzufügen (optional)">
+                        <mat-icon>menu_book</mat-icon>
+                        <span>+ Quelle</span>
+                    </button>
+
+                    <div class="form-group references-section"
+                         *ngIf="showReferences" @expandCollapse>
                         <label class="input-label">Quellenangaben (optional)</label>
                         <app-reference-input
                             formControlName="references"
