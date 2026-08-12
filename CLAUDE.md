@@ -15,15 +15,37 @@ This file helps AI assistants (like Claude) understand the ContentGrün project 
   - `gh pr view` / `gh pr checks` / `gh pr comment` for the rest
 - Never push directly to `main`; always branch and open a PR.
 
+## Dev-VM (Agenten-Sandbox)
+
+Wegwerf-Sandbox, kein Mensch entwickelt hier interaktiv: alles läuft in Docker Compose
+(`mvp/docker-compose.dev.yml`, Projekt `contentgruen-dev`) und darf jederzeit gelöscht und
+neu aufgebaut werden. Dev-Loop über `mvp/run-local.sh` — aus jedem Verzeichnis aufrufbar,
+nichts im Vordergrund, Exit != 0 bei Fehler:
+
+    up | status | reset | wipe | seed | test | logs <dienst> | down
+
+- `reset` (~30s, Volumes bleiben) = Default nach Code-Änderungen.
+- `wipe` (~2 min, `down -v` + Rebuild + Seeding) nur bei Schema-/Seed-Problemen.
+- `status` ist maschinenlesbar und schlägt auch bei leerer `content_collection` fehl.
+- Ports: Frontend 8080, BFF 5054, Semantic 8000, Qdrant 6333/6334, PostgreSQL 5433.
+  Rootless Docker kann keine Ports < 1024 binden — daher 8080 statt 80.
+- VM-Voraussetzung (nicht im Repo): `docker buildx` >= 0.17 in `~/.docker/cli-plugins/`;
+  das Debian-Paket 0.13 ist zu alt für Compose 2.40 und lässt jeden Build scheitern.
+
 ## Quick Start Commands
 
 ### Start Development Environment
 
-**Local Mode (Recommended for Development):**
+**Dev-Stack in Docker (Linux, siehe Dev-VM oben):**
+```bash
+mvp/run-local.sh up
+# Access: http://localhost:8080
+```
+
+**Local Mode (Windows, Dienste ausserhalb von Docker):**
 ```bash
 cd mvp
-run-local.bat   # Windows (or scripts/dev/run-local.bat)
-./run-local.sh  # Linux/Mac (or scripts/dev/run-local.sh)
+run-local.bat   # (or scripts/dev/run-local.bat)
 # Access: http://localhost:4200
 ```
 
@@ -135,10 +157,8 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 ### Start Development Environment
 When user requests "start local" or "start":
 ```bash
-cd mvp
-run-local.bat   # Windows
-./run-local.sh  # Linux/Mac
-# Access: http://localhost:4200
+mvp/run-local.sh up        # Linux/Mac: Docker dev stack -> http://localhost:8080
+cd mvp && run-local.bat    # Windows: services outside Docker -> http://localhost:4200
 ```
 
 When user requests "start docker":
