@@ -129,7 +129,6 @@ async def add_commentary(
                             x_user,
                             ContentStatus.PENDING_REVIEW,
                             ContentOrigin.MANUALLY_CREATED,
-                            check_duplicate=False,  # We already checked
                         )
                     )
                     new_reference_ids.append(reference_id)
