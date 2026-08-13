@@ -50,7 +50,14 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     descriptionControl = new FormControl('');
     selectedReferences: ReferenceEntry[] = [];
 
+    // Das Beschreibungsfeld bleibt Teil des Datenmodells, wird aber erst auf
+    // Anforderung eingeblendet - der Normalfall ist eine Quelle ohne Beschreibung.
+    showDescription = false;
+
     private destroy$ = new Subject<void>();
+    // Verhindert, dass ein waehrend des Uebernehmens ausgeloester Blur ein
+    // zweites Mal denselben Text uebernimmt.
+    private isCommitting = false;
     private onChange: (value: any[]) => void = () => {};
     private onTouched: () => void = () => {};
 
@@ -127,8 +134,13 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     // Component methods
 
     addCustomReference(): void {
+        if (this.isCommitting) {
+            return;
+        }
+
         const url = this.urlControl.value?.trim();
-        const description = this.descriptionControl.value?.trim();
+        // Leere Beschreibung nicht als leeren String weiterreichen
+        const description = this.descriptionControl.value?.trim() || undefined;
 
         // Validate input
         if (!this.isValidInput(url)) {
@@ -146,25 +158,64 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
             return;
         }
 
-        // Show immediate feedback
-        this.snackBar.open('Referenz wird hinzugefügt...', '', {
-            duration: 0,  // Keep open until replaced
-            panelClass: ['info-snackbar']
-        });
+        this.isCommitting = true;
+        try {
+            // Show immediate feedback
+            this.snackBar.open('Referenz wird hinzugefügt...', '', {
+                duration: 0,  // Keep open until replaced
+                panelClass: ['info-snackbar']
+            });
 
-        // Add reference immediately with temporary ID and pending state
-        const tempRef: ReferenceEntry = {
-            id: 'temp-' + Date.now(),
-            reference_string: url,
-            description: description,
-            is_new: true,
-            isPending: true
-        };
-        this.addReference(tempRef);
-        this.clearInputs();
+            // Add reference immediately with temporary ID and pending state
+            const tempRef: ReferenceEntry = {
+                id: 'temp-' + Date.now(),
+                reference_string: url,
+                description: description,
+                is_new: true,
+                isPending: true
+            };
+            this.addReference(tempRef);
+            this.clearInputs();
 
-        // Check server for global duplicates and add reference
-        this.checkAndAddReference(url, description, tempRef);
+            // Check server for global duplicates and add reference
+            this.checkAndAddReference(url, description, tempRef);
+        } finally {
+            this.isCommitting = false;
+        }
+    }
+
+    /**
+     * Uebernimmt den noch im Eingabefeld stehenden Text als Quelle.
+     *
+     * Laeuft synchron: Chip und Formularwert stehen sofort, der Server-Roundtrip
+     * laeuft im Hintergrund weiter. Die Eltern-Formulare rufen das vor dem
+     * Speichern auf, damit eine getippte, aber nicht bestaetigte Quelle nicht
+     * stumm verloren geht.
+     *
+     * @returns true, wenn dadurch eine Quelle uebernommen wurde
+     */
+    flushPendingInput(): boolean {
+        const countBefore = this.selectedReferences.length;
+        this.addCustomReference();
+        return this.selectedReferences.length > countBefore;
+    }
+
+    /**
+     * Blur uebernimmt die Eingabe - ausser der Fokus wandert innerhalb der
+     * Komponente an eine Stelle, die nichts uebernehmen soll: ins
+     * Beschreibungsfeld, auf den Beschreibung-einblenden-Link oder auf die
+     * Entfernen-Buttons der bereits gesetzten Quellen.
+     */
+    onInputBlur(event: FocusEvent): void {
+        const nextFocus = event.relatedTarget as HTMLElement | null;
+        if (nextFocus && nextFocus.closest('.no-commit-zone')) {
+            return;
+        }
+        this.addCustomReference();
+    }
+
+    revealDescription(): void {
+        this.showDescription = true;
     }
 
     private isValidInput(url: string | undefined): boolean {
@@ -315,6 +366,8 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     private clearInputs(): void {
         this.urlControl.setValue('');
         this.descriptionControl.setValue('');
+        // Das naechste, leere Feld startet wieder ohne Beschreibung.
+        this.showDescription = false;
     }
 
     private addReference(reference: ReferenceEntry): void {

@@ -1,43 +1,49 @@
 <div class="reference-input-container">
-    <!-- Two input fields: URL and optional description -->
+    <!-- Ein prominentes Feld; Enter oder Verlassen des Feldes uebernimmt die Quelle. -->
     <div class="reference-input-group">
         <div class="reference-fields-container">
             <mat-form-field appearance="outline" class="reference-url-field" subscriptSizing="fixed">
-                <mat-label>URL oder Quelle</mat-label>
+                <mat-label>Woher stammt das?</mat-label>
                 <input
                     matInput
+                    class="reference-source-input"
                     [formControl]="urlControl"
                     (keydown)="onInputKeydown($event)"
-                    placeholder="https://example.com oder Buchquelle">
+                    (blur)="onInputBlur($event)"
+                    placeholder="z.B. Instagram-Reel von @account, Juli 2026 — oder eine URL">
                 <mat-icon matPrefix>link</mat-icon>
             </mat-form-field>
 
-            <mat-form-field appearance="outline" class="reference-description-field" subscriptSizing="fixed">
+            <!-- Beschreibung erst auf Anforderung; das Feld selbst bleibt Teil des Datenmodells. -->
+            <mat-form-field
+                *ngIf="showDescription"
+                appearance="outline"
+                class="reference-description-field no-commit-zone"
+                subscriptSizing="fixed">
                 <mat-label>Beschreibung (optional)</mat-label>
                 <input
                     matInput
+                    class="reference-description-input"
                     [formControl]="descriptionControl"
                     (keydown)="onInputKeydown($event)"
+                    (blur)="onInputBlur($event)"
                     placeholder="Kurze Beschreibung der Quelle">
                 <mat-icon matPrefix>description</mat-icon>
             </mat-form-field>
-        </div>
 
-        <!-- Add button vertically centered -->
-        <button
-            mat-fab
-            color="primary"
-            type="button"
-            class="add-reference-button"
-            (click)="addCustomReference()"
-            [disabled]="!urlControl.value || selectedReferences.length >= maxReferences"
-            matTooltip="Referenz hinzufügen">
-            <mat-icon>add</mat-icon>
-        </button>
+            <button
+                *ngIf="!showDescription"
+                mat-button
+                type="button"
+                class="description-toggle no-commit-zone"
+                (click)="revealDescription()">
+                Beschreibung hinzufügen
+            </button>
+        </div>
     </div>
 
     <!-- Selected references list -->
-    <div class="selected-references" *ngIf="selectedReferences.length > 0">
+    <div class="selected-references no-commit-zone" *ngIf="selectedReferences.length > 0">
         <div class="reference-list">
             <div *ngFor="let ref of selectedReferences; let i = index"
                  class="reference-item"
