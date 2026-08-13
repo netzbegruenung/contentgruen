@@ -71,14 +71,21 @@
     padding: 0 !important;
 }
 
-/* Link unter dem Feld, der die Beschreibung einblendet */
+/* Link am Chip, der das Beschreibungsfeld dieser Quelle einblendet */
 .description-toggle {
     align-self: flex-start;
     padding: 0 4px;
+    margin-top: 2px;
     font-size: 12px;
     line-height: 20px;
     min-width: 0;
     color: var(--md-sys-color-primary);
+}
+
+/* Beschreibungsfeld am Chip: schmaler als das Quellenfeld oben */
+.reference-item .reference-description-field {
+    margin-top: 4px;
+    font-size: 13px;
 }
 
 /* Autocomplete suggestions */

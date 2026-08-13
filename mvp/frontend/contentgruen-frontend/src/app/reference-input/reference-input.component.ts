@@ -1,4 +1,14 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, forwardRef } from '@angular/core';
+import {
+    Component,
+    Input,
+    Output,
+    EventEmitter,
+    OnInit,
+    OnDestroy,
+    forwardRef,
+    ViewChild,
+    ElementRef
+} from '@angular/core';
 import { FormControl, NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -47,12 +57,27 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     @Output() referenceRemoved = new EventEmitter<ReferenceEntry>();
 
     urlControl = new FormControl('');
+    // Ein einziges Beschreibungsfeld, das jeweils an der gerade bearbeiteten
+    // Quelle eingeblendet wird - die Beschreibung gehoert an den Chip, nicht
+    // ans Eingabefeld (dort wuerde sie sich auf die naechste Quelle beziehen).
     descriptionControl = new FormControl('');
     selectedReferences: ReferenceEntry[] = [];
 
-    // Das Beschreibungsfeld bleibt Teil des Datenmodells, wird aber erst auf
-    // Anforderung eingeblendet - der Normalfall ist eine Quelle ohne Beschreibung.
-    showDescription = false;
+    // Index der Quelle, deren Beschreibung gerade bearbeitet wird; null = keine.
+    editingDescriptionIndex: number | null = null;
+
+    // Der Setter feuert, sobald das eingeblendete Feld im DOM steht. Der Fokus
+    // selbst muss aus der laufenden Change Detection heraus verschoben werden -
+    // er aendert den Zustand des Material-Feldes.
+    private focusDescriptionOnRender = false;
+
+    @ViewChild('chipDescriptionInput')
+    set chipDescriptionInput(field: ElementRef<HTMLInputElement> | undefined) {
+        if (field && this.focusDescriptionOnRender) {
+            this.focusDescriptionOnRender = false;
+            setTimeout(() => field.nativeElement.focus());
+        }
+    }
 
     private destroy$ = new Subject<void>();
     // Verhindert, dass ein waehrend des Uebernehmens ausgeloester Blur ein
@@ -81,6 +106,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     // ControlValueAccessor implementation
     writeValue(value: any[]): void {
         if (value && Array.isArray(value)) {
+            this.cancelDescriptionEdit();
             // Handle both string array (legacy) and object array
             this.selectedReferences = value.map(ref => {
                 if (typeof ref === 'string') {
@@ -121,13 +147,16 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
         }
     }
 
+    /**
+     * Nur das URL-Feld haengt an der Obergrenze. Das Beschreibungsfeld gehoert
+     * zu den bereits gesetzten Quellen und muss auch bei 10/10 noch bedienbar
+     * sein - sonst laesst sich die letzte Quelle nie mehr beschreiben.
+     */
     private _syncInputDisabledState(): void {
         if (this.selectedReferences.length >= this.maxReferences) {
             this.urlControl.disable();
-            this.descriptionControl.disable();
         } else {
             this.urlControl.enable();
-            this.descriptionControl.enable();
         }
     }
 
@@ -139,8 +168,6 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
         }
 
         const url = this.urlControl.value?.trim();
-        // Leere Beschreibung nicht als leeren String weiterreichen
-        const description = this.descriptionControl.value?.trim() || undefined;
 
         // Validate input
         if (!this.isValidInput(url)) {
@@ -166,11 +193,12 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
                 panelClass: ['info-snackbar']
             });
 
-            // Add reference immediately with temporary ID and pending state
+            // Add reference immediately with temporary ID and pending state.
+            // Neue Quellen entstehen ohne Beschreibung; die wird bei Bedarf
+            // nachtraeglich am Chip ergaenzt.
             const tempRef: ReferenceEntry = {
                 id: 'temp-' + Date.now(),
                 reference_string: url,
-                description: description,
                 is_new: true,
                 isPending: true
             };
@@ -178,7 +206,7 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
             this.clearInputs();
 
             // Check server for global duplicates and add reference
-            this.checkAndAddReference(url, description, tempRef);
+            this.checkAndAddReference(url, undefined, tempRef);
         } finally {
             this.isCommitting = false;
         }
@@ -192,19 +220,24 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
      * Speichern auf, damit eine getippte, aber nicht bestaetigte Quelle nicht
      * stumm verloren geht.
      *
-     * @returns true, wenn dadurch eine Quelle uebernommen wurde
+     * Uebernimmt ausserdem eine offen stehende Beschreibung am Chip - sonst
+     * ginge die dritte Variante desselben stillen Verlusts durch: Text getippt,
+     * Feld noch offen, gespeichert.
+     *
+     * @returns true, wenn dadurch noch etwas uebernommen wurde
      */
     flushPendingInput(): boolean {
+        const descriptionAdopted = this.commitDescriptionEdit();
         const countBefore = this.selectedReferences.length;
         this.addCustomReference();
-        return this.selectedReferences.length > countBefore;
+        return this.selectedReferences.length > countBefore || descriptionAdopted;
     }
 
     /**
      * Blur uebernimmt die Eingabe - ausser der Fokus wandert innerhalb der
-     * Komponente an eine Stelle, die nichts uebernehmen soll: ins
-     * Beschreibungsfeld, auf den Beschreibung-einblenden-Link oder auf die
-     * Entfernen-Buttons der bereits gesetzten Quellen.
+     * Komponente an eine Stelle, die nichts uebernehmen soll: in die Liste der
+     * bereits gesetzten Quellen mit ihren Entfernen-Buttons, Beschreibung-
+     * Buttons und Beschreibungsfeldern.
      */
     onInputBlur(event: FocusEvent): void {
         const nextFocus = event.relatedTarget as HTMLElement | null;
@@ -214,8 +247,65 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
         this.addCustomReference();
     }
 
-    revealDescription(): void {
-        this.showDescription = true;
+    /**
+     * Blendet das Beschreibungsfeld an der angegebenen Quelle ein - vorhandener
+     * Text steht darin und ist editierbar.
+     */
+    startDescriptionEdit(index: number): void {
+        // Ein eventuell woanders offenes Feld zuerst uebernehmen.
+        this.commitDescriptionEdit();
+
+        const reference = this.selectedReferences[index];
+        if (!reference) {
+            return;
+        }
+
+        this.editingDescriptionIndex = index;
+        this.descriptionControl.setValue(reference.description ?? '');
+        this.focusDescriptionOnRender = true;
+    }
+
+    /**
+     * Schreibt die offene Beschreibung an ihre Quelle zurueck und schliesst das
+     * Feld.
+     *
+     * @returns true, wenn dadurch eine Beschreibung geaendert wurde
+     */
+    commitDescriptionEdit(): boolean {
+        const index = this.editingDescriptionIndex;
+        if (index === null) {
+            return false;
+        }
+
+        const reference = this.selectedReferences[index];
+        this.editingDescriptionIndex = null;
+        // Leere Beschreibung nicht als leeren String weiterreichen
+        const description = this.descriptionControl.value?.trim() || undefined;
+        this.descriptionControl.setValue('');
+
+        if (!reference || reference.description === description) {
+            return false;
+        }
+
+        reference.description = description;
+        this.updateFormValue();
+        return true;
+    }
+
+    /** Schliesst das Beschreibungsfeld, ohne die Aenderung zu uebernehmen. */
+    cancelDescriptionEdit(): void {
+        this.editingDescriptionIndex = null;
+        this.descriptionControl.setValue('');
+    }
+
+    onDescriptionKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.commitDescriptionEdit();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            this.cancelDescriptionEdit();
+        }
     }
 
     private isValidInput(url: string | undefined): boolean {
@@ -365,9 +455,6 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
 
     private clearInputs(): void {
         this.urlControl.setValue('');
-        this.descriptionControl.setValue('');
-        // Das naechste, leere Feld startet wieder ohne Beschreibung.
-        this.showDescription = false;
     }
 
     private addReference(reference: ReferenceEntry): void {
@@ -389,6 +476,14 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
     }
 
     removeReference(index: number): void {
+        // Das offene Beschreibungsfeld haengt an einem Index - beim Entfernen
+        // darf es nicht auf die falsche Quelle rutschen.
+        if (this.editingDescriptionIndex === index) {
+            this.cancelDescriptionEdit();
+        } else if (this.editingDescriptionIndex !== null && this.editingDescriptionIndex > index) {
+            this.editingDescriptionIndex--;
+        }
+
         const removed = this.selectedReferences.splice(index, 1)[0];
         this.updateFormValue();
         this._syncInputDisabledState();
