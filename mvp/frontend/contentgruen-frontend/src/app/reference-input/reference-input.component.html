@@ -13,32 +13,6 @@
                     placeholder="z.B. Instagram-Reel von @account, Juli 2026 — oder eine URL">
                 <mat-icon matPrefix>link</mat-icon>
             </mat-form-field>
-
-            <!-- Beschreibung erst auf Anforderung; das Feld selbst bleibt Teil des Datenmodells. -->
-            <mat-form-field
-                *ngIf="showDescription"
-                appearance="outline"
-                class="reference-description-field no-commit-zone"
-                subscriptSizing="fixed">
-                <mat-label>Beschreibung (optional)</mat-label>
-                <input
-                    matInput
-                    class="reference-description-input"
-                    [formControl]="descriptionControl"
-                    (keydown)="onInputKeydown($event)"
-                    (blur)="onInputBlur($event)"
-                    placeholder="Kurze Beschreibung der Quelle">
-                <mat-icon matPrefix>description</mat-icon>
-            </mat-form-field>
-
-            <button
-                *ngIf="!showDescription"
-                mat-button
-                type="button"
-                class="description-toggle no-commit-zone"
-                (click)="revealDescription()">
-                Beschreibung hinzufügen
-            </button>
         </div>
     </div>
 
@@ -60,9 +34,38 @@
                     </mat-icon>
                     <div class="reference-text">
                         <span class="reference-url">{{ ref.reference_string }}</span>
-                        <span class="reference-description" *ngIf="ref.description">
+                        <span class="reference-description"
+                              *ngIf="ref.description && editingDescriptionIndex !== i">
                             {{ ref.description }}
                         </span>
+
+                        <!-- Beschreibung gehoert an die Quelle: nachtragbar und editierbar,
+                             auch lange nachdem der Chip entstanden ist. -->
+                        <mat-form-field
+                            *ngIf="editingDescriptionIndex === i"
+                            appearance="outline"
+                            class="reference-description-field"
+                            subscriptSizing="fixed">
+                            <mat-label>Beschreibung (optional)</mat-label>
+                            <input
+                                matInput
+                                #chipDescriptionInput
+                                class="reference-description-input"
+                                [formControl]="descriptionControl"
+                                (keydown)="onDescriptionKeydown($event)"
+                                (blur)="commitDescriptionEdit()"
+                                placeholder="Kurze Beschreibung der Quelle">
+                        </mat-form-field>
+
+                        <button
+                            *ngIf="editingDescriptionIndex !== i"
+                            mat-button
+                            type="button"
+                            class="description-toggle"
+                            (click)="startDescriptionEdit(i)">
+                            {{ ref.description ? 'Beschreibung bearbeiten' : 'Beschreibung hinzufügen' }}
+                        </button>
+
                         <span class="reference-badge" *ngIf="!ref.is_new && !ref.isPending">
                             Wiederverwendet
                         </span>
