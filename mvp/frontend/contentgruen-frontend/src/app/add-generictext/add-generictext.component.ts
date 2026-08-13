@@ -63,6 +63,7 @@ export class AddGenerictextComponent implements OnDestroy {
     @Output() cancel = new EventEmitter<void>();
     @ViewChild('successContainer', { read: ElementRef }) successContainer?: ElementRef;
     @ViewChild('loadingContainer', { read: ElementRef }) loadingContainer?: ElementRef;
+    @ViewChild(ReferenceInputComponent) referenceInput?: ReferenceInputComponent;
 
     private destroy$ = new Subject<void>();
 
@@ -256,6 +257,10 @@ export class AddGenerictextComponent implements OnDestroy {
 
 
     saveGenericTextForm() {
+        // Noch nicht bestaetigte Quelleneingabe uebernehmen, bevor der Formularwert
+        // gelesen wird - sonst geht sie beim Speichern stumm verloren.
+        this.referenceInput?.flushPendingInput();
+
         if (this.generictextForm.valid) {
             const formValues = this.generictextForm.value;
 
