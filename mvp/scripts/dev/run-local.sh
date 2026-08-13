@@ -185,7 +185,7 @@ cmd_status() {
 cmd_reset() {
     info "reset: recreating containers, keeping volumes"
     dc down >&2 || { err "compose down failed"; exit 1; }
-    if ! dc up -d >&2; then
+    if ! dc up -d --build >&2; then
         err "compose up failed"
         status_print
         exit 1
