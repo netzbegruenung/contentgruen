@@ -1,23 +1,43 @@
+# Development stack for the agent sandbox VM.
+# Every service has a healthcheck so `depends_on: condition: service_healthy`
+# gives a deterministic startup order and `run-local.sh up` can wait on it.
+# Healthcheck commands only use binaries that actually exist in each image:
+#   qdrant   -> bash (/dev/tcp; the image has no curl/wget and no qdrant-healthcheck)
+#   postgres -> pg_isready
+#   semantic -> python (no curl in the image)
+#   bff      -> bash (/dev/tcp; the BFF exposes no health endpoint)
+#   frontend -> wget (busybox)
+name: contentgruen-dev
+
 services:
   qdrant:
     image: qdrant/qdrant:v1.18.2
     container_name: contentgruen-qdrant
-    restart: always
+    restart: unless-stopped
     ports:
       - "6333:6333"  # REST API
       - "6334:6334"  # gRPC
     volumes:
       - qdrant_storage:/qdrant/storage
-      - /opt/contentgruen-backups:/backups  # Backup directory on host
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__LOG_LEVEL=INFO
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - 'exec 3<>/dev/tcp/127.0.0.1/6333; printf "GET /readyz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3; grep -q "200 OK" <&3'
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   postgres-app:
     image: postgres:16-alpine
     container_name: contentgruen-app-postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: changeme
@@ -27,12 +47,21 @@ services:
     volumes:
       - pgdata_app:/var/lib/postgresql/data
       - ./backend/postgres-app/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - /opt/contentgruen-backups:/backups  # Backup directory on host
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'pg_isready -U app_user -d contentgruen_app'
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
   contentgruen-semantic-search:
     build:
       context: .
       dockerfile: backend/semantic-search-service/Dockerfile
     container_name: contentgruen-semantic-search
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
@@ -42,32 +71,62 @@ services:
       - DOCKER_CONTAINER=true
       - SEMANTIC_SEARCH_DATA_PATH=/data/seed/v1.0
       - SEMANTIC_SEARCH_METADATA_PATH=/metadata
+      # The E5 model is baked into the image at build time. Offline mode skips the
+      # startup round-trips to huggingface.co that would otherwise stall the boot.
+      - HF_HUB_OFFLINE=1
       # Development logging: Verbose for debugging
       - SEMANTIC_SEARCH_LOG_LEVEL=DEBUG
     volumes:
       - ./data:/data:ro  # Mount entire data directory (seed + schemas)
       - semantic_search_metadata:/metadata  # Persistent metadata storage
-      - /opt/contentgruen-backups:/backups  # Backup directory on host
+    healthcheck:
+      # /api/v1/health always answers 200, so the JSON status field is what counts.
+      test:
+        - CMD
+        - python
+        - -c
+        - 'import json,urllib.request;s=json.load(urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health",timeout=5))["status"];raise SystemExit(0 if s in ("healthy","degraded") else 1)'
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
     depends_on:
-      - qdrant
-      - postgres-app
+      qdrant:
+        condition: service_healthy
+      postgres-app:
+        condition: service_healthy
 
   contentgruen-bff:
     build:
       context: ./backend/BFF
       dockerfile: Dockerfile
     container_name: contentgruen-bff
+    restart: unless-stopped
     ports:
       - "5054:5054"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - BACKEND_URL=http://contentgruen-semantic-search:8000
-      - FRONTEND_URL=http://localhost
+      # Must match the published frontend port below - drives CORS and the auth redirect.
+      - FRONTEND_URL=http://localhost:8080
       - USE_KEYCLOAK=false
       - MANAGED_USERS_PATH=/config/managed-users.json
     volumes:
       - ./config:/config:ro  # Mount config directory for managed users
       - bff_dataprotection_keys:/keys  # Persist DataProtection keys across container recreates
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - 'exec 3<>/dev/tcp/127.0.0.1/5054'
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      contentgruen-semantic-search:
+        condition: service_healthy
 
   contentgruen-frontend:
     build:
@@ -77,17 +136,31 @@ services:
         - NGINX_CONF=nginx.docker.conf
         - BUILD_CONFIGURATION=development
     container_name: contentgruen-frontend
+    restart: unless-stopped
     environment:
       - PRODUCTION=false
       - API_BASE_URL=
       - USE_KEYCLOAK=false
     ports:
-      - "80:80"
+      # Host 8080: rootless Docker cannot bind privileged ports (<1024).
+      - "8080:80"
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1/
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     depends_on:
-      - contentgruen-bff
+      contentgruen-bff:
+        condition: service_healthy
 
 volumes:
-  # pgdata-semantic:  # DEPRECATED - replaced by qdrant_storage
   qdrant_storage:
   pgdata_app:
   semantic_search_metadata:
