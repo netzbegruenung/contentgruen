@@ -23,14 +23,20 @@ class CommentaryReference(BaseModel):
         Unique identifier for the reference
     created: datetime
         Timestamp the reference was linked to the commentary
+    description: Optional[str]
+        Notiz zu dieser Quelle, die nur fuer diesen Beitrag gilt. Sie haengt
+        bewusst an der Verknuepfung und nicht an der Referenz: dieselbe Quelle
+        kann in einem anderen Beitrag eine andere Notiz tragen.
     reference_text: Optional[str]
         The actual reference URL (populated when fetching for display)
     reference_description: Optional[str]
-        The reference description if available
+        Wird beim Lesen befuellt: die Notiz dieses Beitrags, sonst der Text der
+        Referenz.
     """
 
     reference_id: uuid.UUID
     created: datetime.datetime
+    description: Optional[str] = None
     reference_text: Optional[str] = None
     reference_description: Optional[str] = None
 

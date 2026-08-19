@@ -141,8 +141,8 @@ describe('ReferenceInputComponent', () => {
         });
     });
 
-    // Punkt 2/3: Die Beschreibung haengt am Chip, nicht am Eingabefeld.
-    describe('Beschreibung am Chip', () => {
+    // Punkt 2/3: Die Notiz haengt am Chip, nicht am Eingabefeld.
+    describe('Notiz am Chip', () => {
         it('should add a description to an existing chip after the fact', () => {
             const emitted: any[] = [];
             component.writeValue([{ reference_string: 'Broschuere der Ortsgruppe, Mai 2026' }]);
@@ -152,7 +152,7 @@ describe('ReferenceInputComponent', () => {
             const toggle: HTMLButtonElement = fixture.nativeElement
                 .querySelector('.reference-item .description-toggle');
             expect(toggle).withContext('Link am Chip vorhanden').toBeTruthy();
-            expect(toggle.textContent).toContain('Beschreibung hinzufügen');
+            expect(toggle.textContent).toContain('Notiz hinzufügen');
 
             toggle.click();
             fixture.detectChanges();
@@ -188,7 +188,7 @@ describe('ReferenceInputComponent', () => {
 
             const toggle: HTMLButtonElement = fixture.nativeElement
                 .querySelector('.reference-item .description-toggle');
-            expect(toggle.textContent).toContain('Beschreibung bearbeiten');
+            expect(toggle.textContent).toContain('Notiz bearbeiten');
 
             component.startDescriptionEdit(0);
 

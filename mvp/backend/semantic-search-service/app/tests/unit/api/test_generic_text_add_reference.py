@@ -17,7 +17,7 @@ fails here instead of turning into a 500 at runtime.
 """
 
 import uuid
-from unittest.mock import create_autospec
+from unittest.mock import MagicMock, create_autospec
 
 import pytest
 from fastapi.testclient import TestClient
@@ -30,6 +30,7 @@ from services.content.reference_service import ReferenceService
 
 NEW_REFERENCE_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
 NEW_GENERIC_TEXT_ID = uuid.UUID("66666666-7777-8888-9999-000000000000")
+EXISTING_REFERENCE_ID = uuid.UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 
 REQUEST_BODY = {
     "generictext": {
@@ -95,3 +96,44 @@ def test_add_generic_text_with_unknown_reference_is_stored(services):
     assert [ref.reference_id for ref in generic_text_arg.references] == [
         NEW_REFERENCE_ID
     ]
+    assert (
+        generic_text_arg.references[0].description == "Eine bislang unbekannte Quelle"
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.api
+def test_reused_reference_keeps_the_note_of_this_contribution(services):
+    """
+    Wird eine bereits vorhandene Quelle wiederverwendet, gehoert die am Chip
+    eingegebene Notiz trotzdem an diesen Beitrag.
+
+    Der Reuse-Zweig legt keine Referenz an, uebernahm deshalb frueher auch die
+    Notiz nicht - angezeigt wurde dann der globale Referenztext (die URL). Die
+    Notiz haengt jetzt an der Verknuepfung und ueberlebt die Wiederverwendung.
+    """
+    reference_service, generic_text_service = services
+
+    vorhandene_referenz = MagicMock()
+    vorhandene_referenz.id = EXISTING_REFERENCE_ID
+    reference_service.find_exact_match.return_value = vorhandene_referenz
+
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/generic_text/addGenericText",
+        json=REQUEST_BODY,
+        headers={"X-User": "testuser"},
+    )
+
+    assert response.status_code == 200, response.text
+
+    # Keine zweite Referenz - der Reuse-Zweig hat gegriffen.
+    reference_service.add_reference.assert_not_called()
+
+    generic_text_arg = generic_text_service.add_generic_text.call_args.args[0]
+    assert [ref.reference_id for ref in generic_text_arg.references] == [
+        EXISTING_REFERENCE_ID
+    ]
+    assert (
+        generic_text_arg.references[0].description == "Eine bislang unbekannte Quelle"
+    )
