@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, Header, Request
+from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import List, Optional
-import hashlib
 
 from core.config import settings
 from core.logging import get_logger
@@ -65,7 +64,6 @@ async def read_test():
 @router.post("/searchByText", response_model=SearchResponse)
 async def search_by_text(
     request: SearchByTextRequest,
-    http_request: Request,
     statement_service: StatementService = Depends(get_statement_service),
     commentary_service: CommentaryService = Depends(get_commentary_service),
     generictext_service: GenericTextService = Depends(get_generic_text_service),
@@ -185,12 +183,14 @@ async def search_by_text(
                 result_field="post_result",
             ),
             *(
-                [ContentTypeSearchSpec(
-                    content_type=ContentType.IMAGE,
-                    service=image_service,
-                    result_cls=ImageSearchResult,
-                    result_field="image_result",
-                )]
+                [
+                    ContentTypeSearchSpec(
+                        content_type=ContentType.IMAGE,
+                        service=image_service,
+                        result_cls=ImageSearchResult,
+                        result_field="image_result",
+                    )
+                ]
                 if image_service is not None
                 else []
             ),
@@ -248,23 +248,14 @@ async def search_by_text(
                 + len(image_search_results)
             )
 
-            # Get client IP and hash it for privacy
-            client_ip = http_request.client.host if http_request.client else None
-            if "X-Forwarded-For" in http_request.headers:
-                client_ip = (
-                    http_request.headers["X-Forwarded-For"].split(",")[0].strip()
-                )
-
-            ip_hash = None
-            if client_ip:
-                ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()
-
+            # Neither the query text nor the client IP is handed on: the search
+            # text was stored in full without ever being read back, and the IP
+            # hash was written but never evaluated. The user or session id is
+            # turned into a daily pseudonym inside the tracking service.
             search_tracking_service.track_search(
-                query_text=request.query_text,
                 results_count=total_results,
                 session_id=x_session_id,
                 user_id=validated_user if validated_user != "anonymous" else None,
-                ip_hash=ip_hash,
             )
         except Exception as e:
             # Don't fail the search if tracking fails

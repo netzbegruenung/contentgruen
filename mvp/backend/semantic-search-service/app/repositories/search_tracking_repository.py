@@ -6,7 +6,7 @@ Handles database operations for search analytics.
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
-from sqlalchemy import func, distinct, and_, or_
+from sqlalchemy import func, distinct, and_
 from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import get_app_database
@@ -23,21 +23,16 @@ class SearchTrackingRepository:
 
     def track_search(
         self,
-        query_text: str,
         results_count: int,
-        session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        ip_hash: Optional[str] = None,
+        actor_hash: Optional[str] = None,
     ) -> bool:
         """
         Track a search event.
 
         Args:
-            query_text: The search query text
             results_count: Number of results returned
-            session_id: Optional session identifier
-            user_id: Optional user identifier
-            ip_hash: Optional hashed IP address
+            actor_hash: Daily pseudonym of the searching actor, already derived by
+                SearchTrackingService. Never a raw user or session id.
 
         Returns:
             bool: True if tracking was successful
@@ -45,17 +40,12 @@ class SearchTrackingRepository:
         try:
             with self.db.get_session() as session:
                 search_event = SearchEvent(
-                    query_text=query_text,
                     results_count=results_count,
-                    session_id=session_id,
-                    user_id=user_id,
-                    ip_hash=ip_hash,
+                    actor_hash=actor_hash,
                 )
                 session.add(search_event)
                 session.commit()
-                logger.debug(
-                    f"Tracked search: '{query_text[:50]}...' for user/session: {user_id or session_id}"
-                )
+                logger.debug(f"Tracked search with {results_count} results")
                 return True
         except Exception as e:
             logger.error(f"Error tracking search event: {e}", exc_info=True)
@@ -65,57 +55,38 @@ class SearchTrackingRepository:
         self, start_date: datetime, end_date: Optional[datetime] = None
     ) -> int:
         """
-        Get count of unique active users (both authenticated and anonymous sessions).
+        Get count of unique active actors (authenticated users and anonymous
+        sessions alike, which the pseudonym no longer tells apart).
+
+        Exact for a single day. For a longer window it counts active actor-days,
+        because the pseudonym rotates at midnight UTC by design.
 
         Args:
             start_date: Start of period
             end_date: End of period (defaults to now)
 
         Returns:
-            int: Count of unique users/sessions
+            int: Count of distinct actors
         """
         if end_date is None:
             end_date = datetime.utcnow()
 
         try:
             with self.db.get_session() as session:
-                # Count distinct authenticated users
-                user_count = (
-                    session.query(func.count(distinct(SearchEvent.user_id)))
+                total = (
+                    session.query(func.count(distinct(SearchEvent.actor_hash)))
                     .filter(
                         and_(
                             SearchEvent.timestamp >= start_date,
                             SearchEvent.timestamp <= end_date,
-                            SearchEvent.user_id.isnot(None),
-                            SearchEvent.user_id != "anonymous",
+                            SearchEvent.actor_hash.isnot(None),
                         )
                     )
                     .scalar()
                     or 0
                 )
 
-                # Count distinct anonymous sessions
-                session_count = (
-                    session.query(func.count(distinct(SearchEvent.session_id)))
-                    .filter(
-                        and_(
-                            SearchEvent.timestamp >= start_date,
-                            SearchEvent.timestamp <= end_date,
-                            SearchEvent.session_id.isnot(None),
-                            or_(
-                                SearchEvent.user_id.is_(None),
-                                SearchEvent.user_id == "anonymous",
-                            ),
-                        )
-                    )
-                    .scalar()
-                    or 0
-                )
-
-                total = user_count + session_count
-                logger.debug(
-                    f"Active users {start_date} to {end_date}: {user_count} users + {session_count} sessions = {total}"
-                )
+                logger.debug(f"Active actors {start_date} to {end_date}: {total}")
                 return total
         except Exception as e:
             logger.error(f"Error getting unique active users: {e}", exc_info=True)
@@ -123,7 +94,10 @@ class SearchTrackingRepository:
 
     def get_searches_per_user(self, days: int = 7) -> Dict[str, Any]:
         """
-        Get search statistics per user/session.
+        Get search statistics per active actor.
+
+        Counted per actor-day rather than per person: the pseudonym rotates daily,
+        so an actor searching on three days of the window contributes three entries.
 
         Args:
             days: Number of days to analyze
@@ -135,47 +109,22 @@ class SearchTrackingRepository:
             start_date = datetime.utcnow() - timedelta(days=days)
 
             with self.db.get_session() as session:
-                # Get search counts per user
-                user_searches = (
+                actor_searches = (
                     session.query(
-                        SearchEvent.user_id,
+                        SearchEvent.actor_hash,
                         func.count(SearchEvent.id).label("search_count"),
                     )
                     .filter(
                         and_(
                             SearchEvent.timestamp >= start_date,
-                            SearchEvent.user_id.isnot(None),
-                            SearchEvent.user_id != "anonymous",
+                            SearchEvent.actor_hash.isnot(None),
                         )
                     )
-                    .group_by(SearchEvent.user_id)
+                    .group_by(SearchEvent.actor_hash)
                     .all()
                 )
 
-                # Get search counts per session (anonymous)
-                session_searches = (
-                    session.query(
-                        SearchEvent.session_id,
-                        func.count(SearchEvent.id).label("search_count"),
-                    )
-                    .filter(
-                        and_(
-                            SearchEvent.timestamp >= start_date,
-                            SearchEvent.session_id.isnot(None),
-                            or_(
-                                SearchEvent.user_id.is_(None),
-                                SearchEvent.user_id == "anonymous",
-                            ),
-                        )
-                    )
-                    .group_by(SearchEvent.session_id)
-                    .all()
-                )
-
-                # Combine counts
-                all_counts = [count for _, count in user_searches] + [
-                    count for _, count in session_searches
-                ]
+                all_counts = [count for _, count in actor_searches]
 
                 if not all_counts:
                     return {
