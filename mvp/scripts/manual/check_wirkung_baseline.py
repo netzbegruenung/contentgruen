@@ -28,15 +28,27 @@ Benutzung:
     # Einzeltext
     python mvp/scripts/manual/check_wirkung_baseline.py --text "..." [--titel "..."]
 
-    # Baseline-Lauf: 3 handangelegte Dev-DB-Beitraege + 10 zufaellige Seed-Kommentare
+    # Baseline-Lauf aus der eingefrorenen Korpusdatei -- braucht KEINE Dev-DB.
+    # Das ist der Weg, wenn der Key nicht auf die Dev-VM darf: Datei mitnehmen,
+    # Lauf auf dem eigenen Rechner, nur `openai` als Abhaengigkeit.
+    python mvp/scripts/manual/check_wirkung_baseline.py \\
+        --korpus-datei mvp/scripts/manual/wirkung_korpus.json --out ergebnis.json
+
+    # Korpus frisch aus der Dev-DB ziehen (braucht laufenden Stack + requests)
     python mvp/scripts/manual/check_wirkung_baseline.py --korpus --out ergebnis.json
 
+    # Korpus aus der Dev-DB einfrieren, ohne die API zu rufen
+    python mvp/scripts/manual/check_wirkung_baseline.py --korpus \\
+        --korpus-export mvp/scripts/manual/wirkung_korpus.json
+
     # Prompts ansehen, ohne die API zu rufen (braucht keinen Key)
-    python mvp/scripts/manual/check_wirkung_baseline.py --korpus --dry-run
+    python mvp/scripts/manual/check_wirkung_baseline.py --korpus-datei ... --dry-run
 
 --korpus liest direkt aus Qdrant (Default http://localhost:6333) und setzt damit --
 wie die uebrigen Skripte in diesem Verzeichnis -- einen laufenden Dev-Stack voraus.
 Die Auswahl der 10 Seed-Kommentare ist ueber --seed reproduzierbar.
+--korpus-datei liest dieselben Eintraege aus einer eingefrorenen JSON-Datei und
+kommt ohne Qdrant und ohne `requests` aus.
 """
 
 from __future__ import annotations
@@ -51,8 +63,6 @@ import sys
 import unicodedata
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
-
-import requests
 
 # --------------------------------------------------------------------------------
 # Prompt
@@ -352,6 +362,9 @@ class Eintrag:
 
 
 def _scroll(qdrant: str, collection: str, filt: Optional[Dict]) -> List[Dict]:
+    # Lazy, damit der Datei-Pfad (--korpus-datei) ohne `requests` auskommt.
+    import requests
+
     rumpf: Dict[str, Any] = {"limit": 1000, "with_payload": True, "with_vector": False}
     if filt:
         rumpf["filter"] = filt
@@ -402,6 +415,47 @@ def lade_korpus(
 
     return [zu_eintrag(p, "handangelegt") for p in handgemacht] + [
         zu_eintrag(p, "seed") for p in gezogen
+    ]
+
+
+def schreibe_korpus(eintraege: List[Eintrag], pfad: str, seed: int) -> None:
+    """Korpus einfrieren, damit der Lauf ohne Dev-DB wiederholbar ist."""
+    with open(pfad, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "seed": seed,
+                "anzahl": len(eintraege),
+                "eintraege": [
+                    {
+                        "gruppe": e.gruppe,
+                        "quelle": e.quelle,
+                        "typ": e.typ,
+                        "titel": e.titel,
+                        "text": e.text,
+                    }
+                    for e in eintraege
+                ],
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+
+def lade_korpus_datei(pfad: str) -> List[Eintrag]:
+    """Dieselben Eintraege aus der eingefrorenen Datei -- ohne Qdrant, ohne requests."""
+    with open(pfad, encoding="utf-8") as f:
+        daten = json.load(f)
+    roh = daten["eintraege"] if isinstance(daten, dict) else daten
+    return [
+        Eintrag(
+            gruppe=e.get("gruppe", "datei"),
+            quelle=e.get("quelle", "-"),
+            typ=e.get("typ", ""),
+            titel=(e.get("titel") or "").strip(),
+            text=(e.get("text") or "").strip(),
+        )
+        for e in roh
     ]
 
 
@@ -495,6 +549,14 @@ def main() -> int:
     p.add_argument(
         "--korpus", action="store_true", help="Baseline-Lauf ueber die Dev-DB"
     )
+    p.add_argument(
+        "--korpus-datei",
+        help="Baseline-Lauf aus eingefrorener JSON-Datei (ohne Dev-DB)",
+    )
+    p.add_argument(
+        "--korpus-export",
+        help="Ausgewaehlten Korpus hierhin schreiben und beenden",
+    )
     p.add_argument("--qdrant", default="http://localhost:6333")
     p.add_argument("--collection", default="content_collection")
     p.add_argument(
@@ -509,7 +571,12 @@ def main() -> int:
     p.add_argument("--out", help="Rohergebnisse als JSON hierhin schreiben")
     args = p.parse_args()
 
-    if args.korpus:
+    if args.korpus_datei:
+        eintraege = lade_korpus_datei(args.korpus_datei)
+        if not eintraege:
+            print(f"Korpusdatei {args.korpus_datei} ist leer.", file=sys.stderr)
+            return 1
+    elif args.korpus:
         eintraege = lade_korpus(
             args.qdrant, args.collection, args.seed, args.anzahl_seed
         )
@@ -519,8 +586,13 @@ def main() -> int:
     elif args.text:
         eintraege = [Eintrag("einzeln", "-", args.typ, args.titel, args.text.strip())]
     else:
-        p.error("entweder --text oder --korpus angeben")
+        p.error("entweder --text, --korpus oder --korpus-datei angeben")
         return 2
+
+    if args.korpus_export:
+        schreibe_korpus(eintraege, args.korpus_export, args.seed)
+        print(f"{len(eintraege)} Entwuerfe eingefroren: {args.korpus_export}")
+        return 0
 
     if args.dry_run:
         print(f"--- SYSTEM-PROMPT ({len(SYSTEM_PROMPT)} Zeichen) ---")
@@ -537,7 +609,7 @@ def main() -> int:
 
     for e in eintraege:
         drucke_eintrag(e)
-    if args.korpus:
+    if args.korpus or args.korpus_datei:
         drucke_zusammenfassung(eintraege)
 
     if args.out:

@@ -1,0 +1,97 @@
+{
+  "seed": 20260819,
+  "anzahl": 13,
+  "eintraege": [
+    {
+      "gruppe": "handangelegt",
+      "quelle": "8c58e8d9",
+      "typ": "generic_text",
+      "titel": "Quellentest gt7",
+      "text": "Testbeitrag zur Untersuchung der Quellenanzeige, ausreichend lang fuer die Validierung."
+    },
+    {
+      "gruppe": "handangelegt",
+      "quelle": "ecc77343",
+      "typ": "generic_text",
+      "titel": "Quellentest verify2",
+      "text": "Testbeitrag zur Untersuchung der Quellenanzeige, ausreichend lang fuer die Validierung."
+    },
+    {
+      "gruppe": "handangelegt",
+      "quelle": "4a321404",
+      "typ": "commentary",
+      "titel": "Testinhalt Quellen-Flush",
+      "text": "Testinhalt Quellen-Flush"
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "b243f9a0",
+      "typ": "commentary",
+      "titel": "Onkels Sinneswandel",
+      "text": "Mein Onkel, der immer über die Grünen schimpfte, hat letztes Jahr seine Dachfläche an einen Solarpark-Betreiber vermietet. Kriegt jetzt 8.000€ im Jahr - ohne einen Finger zu rühren. Jetzt ist er der größte Energiewende-Fan der Familie! 😂"
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "9793bf9e",
+      "typ": "commentary",
+      "titel": "Gemeinsam stark statt allein schwach",
+      "text": "Verstehe den Frust über Brüssel-Bürokratie! Aber mal ehrlich: Ohne EU würden wir gegen USA und China untergehen. Mein Bruder arbeitet bei einem Mittelständler - die exportieren 70% nach EU-Länder, zollfrei. Das sind tausende Jobs bei uns. Europe United statt America First macht uns stark!"
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "bdcbe55c",
+      "typ": "commentary",
+      "titel": "Dorf-Geschichte",
+      "text": "Bei uns im Dorf war das auch großes Thema! Dann hat der Förster erklärt: Durch den Klimawandel sterben hier ganze Vogelpopulationen aus - Dürre, keine Insekten mehr. Die 3 Windräder am Waldrand? Da ist in 5 Jahren kein toter Vogel gefunden worden. Jetzt sind die meisten überzeugt."
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "d5e68247",
+      "typ": "commentary",
+      "titel": "Faktenhammer",
+      "text": "Die CSU hat Gendern verboten. Die CDU hat Glühbirnen verboten. Söder wollte Ponys auf der Wiesn verbieten. Wir haben Solaranlagen auf Balkonen ERLAUBT. Merkste selbst, oder?"
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "3fc9162a",
+      "typ": "commentary",
+      "titel": "Freiheit statt Zwang",
+      "text": "Verstehe den Frust über Sprachvorschriften total! Deshalb machen wir auch keine. Jeder soll sprechen wie er/sie will. Die CSU dagegen hat Gendern per Gesetz VERBOTEN. Die AfD will's überall verbieten. Wer zwingt hier wen? Wir sagen: Leben und leben lassen!"
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "703945bd",
+      "typ": "commentary",
+      "titel": "Nachbars Gewinn",
+      "text": "Mein Nachbar hat vor 6 Jahren Solar aufs Dach gebaut. Ist jetzt abbezahlt und er verdient jeden Monat 200€. Sagt selbst: 'Beste Entscheidung ever!' Klimaschutz, der sich rechnet - warum nicht?"
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "e2c1c3b5",
+      "typ": "commentary",
+      "titel": "Wem nützt EU-Bashing?",
+      "text": "Putin freut sich über jeden EU-Kritiker. China reibt sich die Hände. Die USA lachen über ein zersplittertes Europa. Aber wir diskutieren über Gurkenkrümmung (die es übrigens nie gab). Divide et impera - und wir fallen drauf rein."
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "9250b175",
+      "typ": "commentary",
+      "titel": "Realitätscheck",
+      "text": "Ah ja, wir 'Kriegstreiber' liefern Helme. Putin bombt Kinderkrankenhäuser. Aber WIR sind die Bösen? Logik ist nicht so deins, wa?"
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "eeeafa6e",
+      "typ": "commentary",
+      "titel": "Sicherheit beginnt bei Prävention",
+      "text": "Meine Tochter geht abends joggen - dank LED-Beleuchtung im Park (Grüne Initiative). Sohn macht Gewaltpräventionskurs in der Schule (Grünes Programm). Prävention ist auch Sicherheit! Nicht nur mehr Knäste bauen."
+    },
+    {
+      "gruppe": "seed",
+      "quelle": "45c6f1d4",
+      "typ": "commentary",
+      "titel": "Nachbars Erleichterung",
+      "text": "Verstehe deine Sorge - ging unserem Nachbarn auch so! Der hat sich dann informiert: Seine 15 Jahre alte Heizung läuft noch locker 10-15 Jahre weiter. Wenn sie dann mal kaputt geht, gibt's bis zu 70% Förderung für was Neues. Er ist jetzt total entspannt. Die Panik war umsonst!"
+    }
+  ]
+}
