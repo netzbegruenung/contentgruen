@@ -7,9 +7,10 @@ Kriterien trennscharf genug, um zwischen einem schwachen und einem tragfaehigen
 Entwurf zu unterscheiden, ohne bei harmlosen Texten ueberall etwas zu finden?
 
 Es ist bewusst standalone: kein Import aus dem app-Paket, kein Endpunkt, keine
-Aenderung an Produktivcode. Vorbild fuer die OpenAI-Anbindung ist
-app/services/vision/caption_suggestion_service.py (AsyncOpenAI, Key aus der
-Umgebung, harter Fehler bei Fehlkonfiguration).
+Aenderung an Produktivcode. Der Zuschnitt der Anbindung folgt
+app/services/vision/caption_suggestion_service.py (asynchroner Client, Key aus
+der Umgebung, harter Fehler bei Fehlkonfiguration) -- gerufen wird aber die
+Anthropic-API (AsyncAnthropic, Default-Modell claude-sonnet-4-5).
 
 Zwei Dinge werden ABSICHTLICH im Code entschieden und nicht dem Modell ueberlassen:
 
@@ -20,9 +21,17 @@ Zwei Dinge werden ABSICHTLICH im Code entschieden und nicht dem Modell ueberlass
    deterministische Funktion der drei Detektoren. Wuerde man ihn das Modell
    beurteilen lassen, korrelierte er mit den Detektoren und wiederholte sie nur.
 
+Modell:
+    Default claude-sonnet-4-5, umstellbar mit --model. Welche Zusatzparameter
+    rausgehen, entscheidet modell_parameter() -- ab claude-sonnet-5 lehnt die API
+    `temperature` ab, und wo von sich aus gedacht wird, braucht `max_tokens` Luft
+    fuer Denken UND Antwort. --no-temperature erzwingt das Weglassen fuer ein
+    Modell, das die Liste noch nicht kennt.
+
 Key:
-    OPENAI_API_KEY oder SEMANTIC_SEARCH_OPENAI_API_KEY
-    (dieselben zwei Namen wie core/config.py, damit es keine dritte Konvention gibt)
+    ANTHROPIC_API_KEY oder SEMANTIC_SEARCH_ANTHROPIC_API_KEY
+    (dasselbe Paar wie in core/config.py: der blanke SDK-Name plus die
+    Projekt-Praefixform, damit es keine dritte Konvention gibt)
 
 Benutzung:
     # Einzeltext
@@ -30,7 +39,7 @@ Benutzung:
 
     # Baseline-Lauf aus der eingefrorenen Korpusdatei -- braucht KEINE Dev-DB.
     # Das ist der Weg, wenn der Key nicht auf die Dev-VM darf: Datei mitnehmen,
-    # Lauf auf dem eigenen Rechner, nur `openai` als Abhaengigkeit.
+    # Lauf auf dem eigenen Rechner, nur `anthropic` als Abhaengigkeit.
     python mvp/scripts/manual/check_wirkung_baseline.py \\
         --korpus-datei mvp/scripts/manual/wirkung_korpus.json --out ergebnis.json
 
@@ -257,13 +266,73 @@ def _rollup(stufen: List[str]) -> Dict[str, str]:
     return {"nachbartest": "bestanden", "gesamtstufe": "keine"}
 
 
-def nachbereiten(roh: Dict[str, Any], quelle: str) -> Dict[str, Any]:
+def _als_objekt(wert: Any) -> Optional[Dict[str, Any]]:
+    """Ein Objekt -- auch wenn das Modell es als JSON-String geliefert hat.
+
+    Ohne schema-erzwungene Werkzeugargumente kommt ein verschachteltes Objekt
+    gelegentlich als String zurueck ('{"stufe": ...}' statt {"stufe": ...}).
+    Das Parsen holt dieselbe Information verlustfrei zurueck.
+
+    None heisst: daraus wird kein Objekt. Dann ist das Urteil kaputt und der
+    Eintrag gehoert in die Fehlerspalte -- nicht stillschweigend nach
+    "bestanden", denn das hiesse, einen ungeprueften Entwurf durchzuwinken.
+    """
+    if isinstance(wert, dict):
+        return wert
+    if isinstance(wert, str) and wert.strip():
+        try:
+            geparst = json.loads(wert)
+        except json.JSONDecodeError:
+            return None
+        if isinstance(geparst, dict):
+            return geparst
+    return None
+
+
+def nachbereiten(roh: Any, quelle: str) -> Dict[str, Any]:
     """Enforce the citation requirement, then compute the roll-up."""
+    # Was hier ankommt, hat kein Schema hinter sich, solange --model kein
+    # strict-faehiges Modell ist. Jede Ebene wird einzeln geprueft, und jede
+    # Reparatur wird vermerkt, damit sie im Ergebnis sichtbar bleibt.
+    repariert: List[str] = []
+
+    antwort = _als_objekt(roh)
+    if antwort is None:
+        raise ValueError(f"Antwort ist kein Objekt, sondern {type(roh).__name__}")
+    if antwort is not roh:
+        repariert.append("antwort")
+
+    detektoren_roh = antwort.get("detektoren")
+    detektoren_obj = _als_objekt(detektoren_roh)
+    if detektoren_obj is None:
+        raise ValueError(
+            "Feld 'detektoren' ist kein Objekt, sondern "
+            f"{type(detektoren_roh).__name__}: {str(detektoren_roh)[:120]!r}"
+        )
+    if detektoren_obj is not detektoren_roh:
+        repariert.append("detektoren")
+
     detektoren: Dict[str, Any] = {}
     for schluessel in ("unterstellung", "kein_eigener_punkt", "snark"):
-        d = dict(roh.get("detektoren", {}).get(schluessel) or {})
+        wert = detektoren_obj.get(schluessel)
+        if wert is None:
+            # Fehlender Detektor bleibt wie bisher tolerant: nichts gemeldet.
+            d: Dict[str, Any] = {}
+        else:
+            geprueft = _als_objekt(wert)
+            if geprueft is None:
+                raise ValueError(
+                    f"Detektor '{schluessel}' ist kein Objekt, sondern "
+                    f"{type(wert).__name__}: {str(wert)[:120]!r}"
+                )
+            if geprueft is not wert:
+                repariert.append(schluessel)
+            d = geprueft
         stufe_modell = d.get("stufe", "keine")
         beleg = d.get("beleg", "") or ""
+        if not isinstance(beleg, str):  # Beleg als Zahl/Liste ist kein Zitat
+            repariert.append(f"{schluessel}.beleg")
+            beleg = ""
         beleg_ok = _beleg_gilt(beleg, quelle) if stufe_modell != "keine" else True
         detektoren[schluessel] = {
             "stufe": stufe_modell if beleg_ok else "keine",
@@ -276,7 +345,12 @@ def nachbereiten(roh: Dict[str, Any], quelle: str) -> Dict[str, Any]:
 
     ergebnis = _rollup([d["stufe"] for d in detektoren.values()])
     ergebnis["detektoren"] = detektoren
-    ergebnis["hinweis"] = (roh.get("hinweis") or "").strip()
+    hinweis = antwort.get("hinweis") or ""
+    if not isinstance(hinweis, str):
+        repariert.append("hinweis")
+        hinweis = ""
+    ergebnis["hinweis"] = hinweis.strip()
+    ergebnis["repariert"] = repariert
     if ergebnis["gesamtstufe"] == "keine":
         # Nothing survived the citation check -- a hint would have nothing to point at.
         ergebnis["hinweis"] = ""
@@ -284,60 +358,161 @@ def nachbereiten(roh: Dict[str, Any], quelle: str) -> Dict[str, Any]:
 
 
 # --------------------------------------------------------------------------------
-# OpenAI
+# Anthropic
 # --------------------------------------------------------------------------------
+
+WERKZEUG_NAME = "wirkungspruefung"
+
+MODELLE_MIT_STRICT = (
+    "claude-sonnet-5",
+    "claude-opus-5",
+    "claude-opus-4-8",
+    "claude-fable-5",
+    "claude-mythos-5",
+    "claude-haiku-4-5",
+    "claude-opus-4-5",
+    "claude-opus-4-1",
+)
+"""Modelle, die `strict` auf einem Werkzeug annehmen (Strict Tool Use).
+
+Ohne `strict` sind die Werkzeugargumente nicht schema-validiert: das Modell
+darf ein verschachteltes Objekt auch als JSON-String liefern, und genau das
+passiert bei claude-sonnet-5 sporadisch. Mit `strict` erzwingt die API die
+Struktur, statt dass das Skript sie hinterher reparieren muss.
+
+Wieder eine Positivliste. claude-sonnet-4-5 gehoert nicht dazu -- dort faengt
+die Reparatur in _als_objekt() den Fall ab.
+"""
+
+
+def werkzeug_fuer(model: str) -> Dict[str, Any]:
+    """Erzwungener Werkzeugaufruf statt json_schema-Antwortformat.
+
+    claude-sonnet-4-5 unterstuetzt `output_config.format` (Structured Outputs)
+    nicht -- das gibt es erst ab Sonnet 5 / Opus 4.8 aufwaerts. Ein Werkzeug mit
+    `tool_choice` auf genau diesen Namen ist der Weg, der auf jedem Modell
+    dasselbe Schema erzwingt. RESPONSE_SCHEMA wandert unveraendert ins
+    `input_schema` -- es erfuellt die Anforderungen von `strict` bereits
+    (additionalProperties: false und required auf jeder Ebene).
+    """
+    werkzeug: Dict[str, Any] = {
+        "name": WERKZEUG_NAME,
+        "description": (
+            "Meldet das Pruefergebnis fuer genau einen Entwurf. "
+            "Das einzige erlaubte Ausgabeformat."
+        ),
+        "input_schema": RESPONSE_SCHEMA,
+    }
+    if model.strip().lower().startswith(MODELLE_MIT_STRICT):
+        werkzeug["strict"] = True
+    return werkzeug
+
+
+MODELLE_MIT_TEMPERATURE = (
+    "claude-sonnet-4-5",
+    "claude-sonnet-4-6",
+    "claude-opus-4-1",
+    "claude-opus-4-5",
+    "claude-opus-4-6",
+    "claude-haiku-4-5",
+)
+"""Modelle, die `temperature` noch annehmen.
+
+Bewusst eine Positivliste und keine Sperrliste: die Menge der alten Modelle ist
+abgeschlossen, die der neuen waechst mit jedem Release. Ein unbekanntes Modell
+bekommt daher keine `temperature` -- das laeuft ueberall, waehrend der
+umgekehrte Default bei jedem neuen Modell in einen 400er liefe.
+
+Ab claude-sonnet-5 / claude-opus-4-7 lehnt die API `temperature` ab
+("temperature is deprecated for this model"). Der Ersatz fuer Reproduzierbarkeit
+ist keiner: temperature=0 hat identische Ausgaben ohnehin nie garantiert.
+"""
+
+MODELLE_MIT_DENKEN = (
+    "claude-sonnet-5",
+    "claude-opus-5",
+    "claude-fable-5",
+    "claude-mythos-5",
+)
+"""Modelle, die ohne `thinking`-Parameter von sich aus denken.
+
+`max_tokens` deckelt Denken UND Antwort zusammen. Wer hier mit dem knappen
+Budget der aelteren Modelle anfragt, bekommt eine Antwort, die vollstaendig im
+Denken aufgeht -- und damit gar keinen Werkzeugaufruf. Deshalb mehr Luft statt
+abgeschaltetem Denken: `thinking: {"type": "disabled"}` waere bei
+claude-fable-5 selbst ein 400er.
+"""
+
+MAX_TOKENS_KNAPP = 1500
+MAX_TOKENS_MIT_DENKEN = 8000
+
+
+def modell_parameter(model: str, ohne_temperature: bool = False) -> Dict[str, Any]:
+    """Die Parameter, die genau dieses Modell annimmt."""
+    m = model.strip().lower()
+    denkt = m.startswith(MODELLE_MIT_DENKEN)
+    parameter: Dict[str, Any] = {
+        "max_tokens": MAX_TOKENS_MIT_DENKEN if denkt else MAX_TOKENS_KNAPP,
+        "tools": [werkzeug_fuer(model)],
+    }
+    if m.startswith(MODELLE_MIT_TEMPERATURE) and not ohne_temperature:
+        parameter["temperature"] = 0
+    return parameter
 
 
 def api_key_aus_umgebung() -> str:
     """Same two variable names as core/config.py. Hard error, no silent fallback."""
-    key = os.getenv("OPENAI_API_KEY") or os.getenv("SEMANTIC_SEARCH_OPENAI_API_KEY")
+    key = os.getenv("ANTHROPIC_API_KEY") or os.getenv(
+        "SEMANTIC_SEARCH_ANTHROPIC_API_KEY"
+    )
     if not key or not key.strip():
         raise SystemExit(
             "FEHLER: kein API-Key gesetzt.\n"
-            "  Setze OPENAI_API_KEY oder SEMANTIC_SEARCH_OPENAI_API_KEY.\n"
+            "  Setze ANTHROPIC_API_KEY oder SEMANTIC_SEARCH_ANTHROPIC_API_KEY.\n"
             "  Ohne Key laeuft nur --dry-run (zeigt die Prompts, ruft nichts auf)."
         )
     return key.strip()
 
 
-async def pruefe_einen(client, model: str, titel: str, text: str, typ: str) -> Dict:
+async def pruefe_einen(
+    client, model: str, titel: str, text: str, typ: str, parameter: Dict[str, Any]
+) -> Dict:
     """One draft, one API call. Returns the raw model JSON."""
     nachricht = build_user_message(titel, text, typ)
-    anfrage = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": nachricht},
-        ],
-        "temperature": 0,
-        "max_tokens": 700,
-    }
-    try:
-        antwort = await client.chat.completions.create(
-            **anfrage,
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "wirkungspruefung",
-                    "strict": True,
-                    "schema": RESPONSE_SCHEMA,
-                },
-            },
-        )
-    except Exception as e:
-        # Aeltere Snapshots koennen strict json_schema ablehnen; json_object reicht,
-        # weil die Struktur ohnehin in nachbereiten() geprueft wird.
-        if "json_schema" not in str(e) and "response_format" not in str(e):
-            raise
-        print(f"  (Hinweis: json_schema abgelehnt, Fallback auf json_object: {e})")
-        antwort = await client.chat.completions.create(
-            **anfrage, response_format={"type": "json_object"}
+    antwort = await client.messages.create(
+        model=model,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": nachricht}],
+        tool_choice={"type": "tool", "name": WERKZEUG_NAME},
+        **parameter,
+    )
+
+    for block in antwort.content:
+        if getattr(block, "type", "") == "tool_use" and block.name == WERKZEUG_NAME:
+            return dict(block.input)
+
+    # Kein Werkzeugaufruf trotz tool_choice. Der haeufigste Grund ist eine
+    # abgeschnittene Antwort -- dann ist das Argument-JSON unvollstaendig und der
+    # Block faellt weg. Das ist ein Fehler des Laufs, keine Bewertung.
+    if antwort.stop_reason == "max_tokens":
+        raise ValueError(
+            f"Antwort bei max_tokens ({parameter['max_tokens']}) abgeschnitten "
+            "-- kein Ergebnis"
         )
 
-    inhalt = antwort.choices[0].message.content or ""
-    if not inhalt.strip():
-        raise ValueError("Leere Antwort vom Modell")
-    return json.loads(inhalt)
+    # Reserve: manche Modelle antworten trotzdem als Text. Die Struktur wird
+    # ohnehin in nachbereiten() geprueft, ein Parse-Versuch kostet also nichts.
+    text_bloecke = [
+        b.text for b in antwort.content if getattr(b, "type", "") == "text" and b.text
+    ]
+    if text_bloecke:
+        geparst = _als_objekt("\n".join(text_bloecke))
+        if geparst is not None:
+            return geparst
+
+    raise ValueError(
+        f"Kein Werkzeugaufruf in der Antwort (stop_reason={antwort.stop_reason})"
+    )
 
 
 # --------------------------------------------------------------------------------
@@ -487,6 +662,11 @@ def drucke_eintrag(e: Eintrag) -> None:
             print(f'         Beleg: "{d["beleg"]}"')
         if d["begruendung"] and d["stufe"] != "keine":
             print(f"         {d['begruendung']}")
+    if r.get("repariert"):
+        print(
+            "  !  Struktur repariert (als JSON-String geliefert): "
+            + ", ".join(r["repariert"])
+        )
     print(f"  => NACHBARTEST: {r['nachbartest']}  (Gesamt: {r['gesamtstufe']})")
     if r["hinweis"]:
         print(f"  => HINWEIS: {r['hinweis']}")
@@ -515,6 +695,12 @@ def drucke_zusammenfassung(eintraege: List[Eintrag]) -> None:
         if d["verworfen_ohne_beleg"]
     )
     print(f"\nOhne gueltigen Beleg verworfene Urteile: {verworfen}")
+    repariert = sum(1 for e in eintraege if (e.ergebnis or {}).get("repariert"))
+    if repariert:
+        print(f"Antworten mit repariertem JSON: {repariert}")
+    kaputt = sum(1 for e in eintraege if e.fehler)
+    if kaputt:
+        print(f"Eintraege ohne Ergebnis (Fehler): {kaputt}")
 
 
 # --------------------------------------------------------------------------------
@@ -522,21 +708,81 @@ def drucke_zusammenfassung(eintraege: List[Eintrag]) -> None:
 # --------------------------------------------------------------------------------
 
 
-async def lauf(eintraege: List[Eintrag], model: str, parallel: int) -> None:
-    from openai import AsyncOpenAI
+async def lauf(
+    eintraege: List[Eintrag], model: str, parallel: int, ohne_temperature: bool = False
+) -> None:
+    try:
+        import anthropic
+    except ModuleNotFoundError as ex:  # haeufigster Fehlstart auf einem neuen Rechner
+        raise SystemExit(
+            "FEHLER: Paket 'anthropic' fehlt.\n"
+            "  pip install anthropic\n"
+            "  Ohne das Paket laeuft nur --dry-run."
+        ) from ex
 
-    client = AsyncOpenAI(api_key=api_key_aus_umgebung())
+    parameter = modell_parameter(model, ohne_temperature)
+    anzeige = [f"{k}={v}" for k, v in sorted(parameter.items()) if k != "tools"]
+    anzeige.append(
+        "strict=True"
+        if parameter["tools"][0].get("strict")
+        else "strict=nicht moeglich"
+    )
+    print(
+        f"Modell {model}: "
+        + ", ".join(anzeige)
+        + ("" if "temperature" in parameter else " (temperature wird nicht gesendet)")
+    )
+
     sperre = asyncio.Semaphore(parallel)
+    # Ein falscher Key oder eine falsche Modell-ID trifft jeden Aufruf gleich.
+    # Sobald so ein Fehler auftritt, laufen die restlichen Entwuerfe nicht mehr
+    # los -- sonst steht derselbe Konfigurationsfehler dreizehnmal im Protokoll.
+    abbruch: Dict[str, str] = {}
 
-    async def einer(e: Eintrag) -> None:
-        async with sperre:
-            try:
-                e.roh = await pruefe_einen(client, model, e.titel, e.text, e.typ)
-                e.ergebnis = nachbereiten(e.roh, pruefbarer_text(e.titel, e.text))
-            except Exception as ex:  # noqa: BLE001 -- Baseline soll weiterlaufen
-                e.fehler = f"{type(ex).__name__}: {ex}"
+    async with anthropic.AsyncAnthropic(api_key=api_key_aus_umgebung()) as client:
 
-    await asyncio.gather(*(einer(e) for e in eintraege))
+        async def einer(e: Eintrag) -> None:
+            async with sperre:
+                if abbruch:
+                    e.fehler = f"nicht ausgefuehrt ({abbruch['grund']})"
+                    return
+                try:
+                    e.roh = await pruefe_einen(
+                        client, model, e.titel, e.text, e.typ, parameter
+                    )
+                    e.ergebnis = nachbereiten(e.roh, pruefbarer_text(e.titel, e.text))
+                except anthropic.NotFoundError as ex:
+                    abbruch["grund"] = f"Modell '{model}' nicht verfuegbar"
+                    e.fehler = f"{abbruch['grund']}: {ex}"
+                except (
+                    anthropic.AuthenticationError,
+                    anthropic.PermissionDeniedError,
+                ) as ex:
+                    abbruch["grund"] = "Key abgelehnt (401/403)"
+                    e.fehler = f"{abbruch['grund']}: {ex}"
+                except anthropic.BadRequestError as ex:
+                    # 400 trifft meist alle Entwuerfe (Schema, Parameter); nur bei
+                    # Ueberlaenge eines einzelnen Textes ist es ein Einzelfall.
+                    if "temperature" in str(ex):
+                        abbruch["grund"] = (
+                            f"'{model}' lehnt temperature ab "
+                            "-- Modell in MODELLE_MIT_TEMPERATURE streichen "
+                            "oder --no-temperature setzen"
+                        )
+                        e.fehler = f"{abbruch['grund']}: {ex}"
+                    else:
+                        e.fehler = f"Anfrage abgelehnt (400): {ex}"
+                except anthropic.RateLimitError as ex:
+                    # Das SDK hat bereits zweimal nachgefasst.
+                    e.fehler = f"Rate Limit (429), auch nach Retries: {ex}"
+                except anthropic.APIStatusError as ex:
+                    e.fehler = f"HTTP {ex.status_code}: {ex}"
+                except anthropic.APIConnectionError as ex:
+                    e.fehler = f"Verbindung fehlgeschlagen: {ex}"
+                except Exception as ex:  # noqa: BLE001 -- Baseline soll weiterlaufen
+                    e.fehler = f"{type(ex).__name__}: {ex}"
+
+        await asyncio.gather(*(einer(e) for e in eintraege))
 
 
 def main() -> int:
@@ -563,8 +809,13 @@ def main() -> int:
         "--seed", type=int, default=20260819, help="Auswahl der Seed-Kommentare"
     )
     p.add_argument("--anzahl-seed", type=int, default=10)
-    p.add_argument("--model", default="gpt-4o-mini")
+    p.add_argument("--model", default="claude-sonnet-4-5")
     p.add_argument("--parallel", type=int, default=4)
+    p.add_argument(
+        "--no-temperature",
+        action="store_true",
+        help="temperature auch dann weglassen, wenn das Modell sie annehmen wuerde",
+    )
     p.add_argument(
         "--dry-run", action="store_true", help="Prompts zeigen, nichts rufen"
     )
@@ -605,7 +856,7 @@ def main() -> int:
         print(f"{len(eintraege)} Entwuerfe, kein API-Aufruf (--dry-run).")
         return 0
 
-    asyncio.run(lauf(eintraege, args.model, args.parallel))
+    asyncio.run(lauf(eintraege, args.model, args.parallel, args.no_temperature))
 
     for e in eintraege:
         drucke_eintrag(e)
