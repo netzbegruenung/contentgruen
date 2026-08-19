@@ -7,6 +7,8 @@
                 (closeMenu)="sidenav.close()"
                 (contribute)="navigateToContributeView()"
                 (contributions)="navigateToContributionsView()"
+                (rawInput)="navigateToRawInputView()"
+                (rawInputList)="navigateToRawInputListView()"
                 (login)="login()"
                 (loginToContribute)="loginWithReturnUrl('/contribute')"
                 (logout)="logout()"
@@ -94,6 +96,12 @@
                             (keydown.space)="logout()">Abmelden</span>
 
                             <span class="header-link text-emphasis"
+                            role="button" tabindex="0" aria-label="Fangkorb anzeigen"
+                            (click)="navigateToRawInputListView()"
+                            (keydown.enter)="navigateToRawInputListView()"
+                            (keydown.space)="navigateToRawInputListView()">🧺 Fangkorb</span>
+
+                            <span class="header-link text-emphasis"
                             role="button" tabindex="0" aria-label="Meine Beiträge anzeigen"
                             (click)="navigateToContributionsView()"
                             (keydown.enter)="navigateToContributionsView()"
@@ -111,6 +119,17 @@
                     </ng-container>
 
                     <!-- Always visible buttons - Hide help button on mobile since it's in burger menu -->
+                    <!-- Schnell einwerfen: der Fangkorb lebt davon, immer einen Klick
+                         entfernt zu sein - deshalb ein eigener Knopf statt eines Wegs
+                         durch die Beitragsauswahl. -->
+                    <button mat-icon-button
+                        *ngIf="userInfo?.isAuthenticated"
+                        (click)="navigateToRawInputView()"
+                        class="mat-elevation-z1"
+                        aria-label="Schnell einwerfen">
+                        <mat-icon>bolt</mat-icon>
+                    </button>
+
                     <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button"
                         aria-label="Hilfe öffnen">
                         <mat-icon>help_outline</mat-icon>

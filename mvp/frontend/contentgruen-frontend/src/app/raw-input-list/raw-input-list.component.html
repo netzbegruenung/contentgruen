@@ -1,0 +1,84 @@
+<div class="component-box">
+    <div class="guidance">
+        <div class="info-message">
+            <p>
+                Der Fangkorb sammelt Rohmaterial: Links, Bilder und Notizen, die noch
+                niemand ausgearbeitet hat. Alle sehen alles - wer Zeit hat, macht einen
+                Beitrag daraus.
+            </p>
+        </div>
+
+        <div class="fangkorb-aktionen">
+            <button mat-raised-button color="primary" (click)="zumEinwerfen()">
+                <mat-icon>add</mat-icon>
+                Etwas einwerfen
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="component-box">
+    <div *ngIf="isLoading">
+        <p>Lade Fangkorb …</p>
+        <div class="loading-container">
+            <mat-spinner class="mat-spinner-color"></mat-spinner>
+        </div>
+    </div>
+
+    <div *ngIf="!isLoading && ladefehler" class="fangkorb-fehler">
+        <p>⚠️ Der Fangkorb konnte nicht geladen werden. Bitte lade die Seite neu.</p>
+    </div>
+
+    <div *ngIf="!isLoading && !ladefehler">
+        <div *ngIf="totalRecords === 0" class="fangkorb-leer">
+            <p>Noch nichts drin. Wirf den ersten Fund ein.</p>
+        </div>
+
+        <table mat-table [dataSource]="dataSource" class="fangkorb-tabelle"
+               *ngIf="totalRecords > 0">
+            <ng-container matColumnDef="inhalt">
+                <th mat-header-cell *matHeaderCellDef> Einwurf </th>
+                <td mat-cell *matCellDef="let element">
+                    <span class="einwurf-vorschau">{{ vorschau(element) }}</span>
+                    <a *ngIf="element.url" [href]="element.url" target="_blank"
+                       rel="noopener noreferrer" class="einwurf-link"
+                       aria-label="Link in neuem Tab oeffnen">
+                        <mat-icon class="link-icon">open_in_new</mat-icon>
+                    </a>
+                    <mat-icon *ngIf="element.image_url" class="bild-icon"
+                              aria-label="Enthaelt eine Bild-Adresse">image</mat-icon>
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="submitted_by">
+                <th mat-header-cell *matHeaderCellDef> Von </th>
+                <td mat-cell *matCellDef="let element"> {{ einwerferBeschriftung(element) }} </td>
+            </ng-container>
+
+            <ng-container matColumnDef="created_at">
+                <th mat-header-cell *matHeaderCellDef> Eingeworfen </th>
+                <td mat-cell *matCellDef="let element">
+                    {{ element.created_at | date: 'dd.MM.yyyy, HH:mm' }}
+                </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef> Stand </th>
+                <td mat-cell *matCellDef="let element">
+                    <span class="status-chip" [attr.data-status]="element.status">
+                        {{ statusBeschriftung(element.status) }}
+                    </span>
+                </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <mat-paginator *ngIf="totalRecords > 0"
+                       [length]="totalRecords" [pageSize]="pageSize"
+                       [pageSizeOptions]="[10, 20, 50, 100]"
+                       (page)="onPageChange($event)">
+        </mat-paginator>
+    </div>
+</div>

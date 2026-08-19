@@ -332,3 +332,50 @@ mat-panel-title h3 {
         padding: 12px 16px;
     }
 }
+
+
+/* Fangkorb-Aufruf */
+.fangkorb-card {
+    background: linear-gradient(135deg, rgb(245, 238, 215) 0%, rgb(238, 229, 196) 100%);
+}
+
+.fangkorb-hinweis {
+    padding-bottom: 0;
+}
+
+.fangkorb-karte {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 16px);
+    padding: var(--spacing-lg, 24px);
+    border-radius: 12px;
+    cursor: pointer;
+    background: linear-gradient(135deg, rgb(245, 238, 215) 0%, rgb(238, 229, 196) 100%);
+    transition: box-shadow var(--transition-fast, 0.2s);
+}
+
+.fangkorb-karte:hover,
+.fangkorb-karte:focus-visible {
+    box-shadow: var(--elevation-2, 0 2px 8px rgba(0, 0, 0, 0.15));
+}
+
+.fangkorb-icon {
+    font-size: 40px;
+    line-height: 1;
+}
+
+.fangkorb-text {
+    flex: 1;
+}
+
+.fangkorb-text h4 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.fangkorb-text p {
+    margin: 0;
+    color: var(--text-secondary, #4a4a4a);
+    line-height: 1.5;
+}

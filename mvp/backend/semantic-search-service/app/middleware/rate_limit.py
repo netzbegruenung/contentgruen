@@ -37,6 +37,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 "/addStatement",
                 "/addReference",
                 "/suggestCaption",
+                # Der Fangkorb ist per Konstruktion schnell zu bedienen und
+                # damit auch schnell zu fluten.
+                "/addRawInput",
             ]
         ):
             # Extract user identifier from X-User header

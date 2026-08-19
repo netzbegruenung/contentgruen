@@ -24,6 +24,8 @@ export class MobileMenuComponent {
   @Output() closeMenu = new EventEmitter<void>();
   @Output() contribute = new EventEmitter<void>();
   @Output() contributions = new EventEmitter<void>();
+  @Output() rawInput = new EventEmitter<void>();
+  @Output() rawInputList = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
   @Output() loginToContribute = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
@@ -40,6 +42,16 @@ export class MobileMenuComponent {
 
   onContributionsClick(): void {
     this.contributions.emit();
+    this.close();
+  }
+
+  onRawInputClick(): void {
+    this.rawInput.emit();
+    this.close();
+  }
+
+  onRawInputListClick(): void {
+    this.rawInputList.emit();
     this.close();
   }
 

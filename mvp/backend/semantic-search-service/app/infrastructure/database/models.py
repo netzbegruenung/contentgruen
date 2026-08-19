@@ -153,3 +153,102 @@ class ContentReport(Base):
             name="check_reporter_exists",
         ),
     )
+
+
+class RawInput(Base):
+    """
+    Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh und
+    unverarbeitet.
+
+    Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/ROHINPUT.md):
+    Rohinput wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
+    eine spaetere Zuweisung ("ich nehm das") ist ein Wettlauf zweier Nutzer um
+    dieselbe Zeile, den nur eine Transaktion entscheidet.
+
+    submitted_by ist absichtlich nullable: der geplante Instagram-Share-Eingang
+    kommt ohne Browser-Session an. Heute schreibt der Web-Eingang immer eine
+    Nutzerkennung.
+    """
+
+    __tablename__ = "raw_inputs"
+
+    id = Column(
+        SQLUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    content = Column(Text, nullable=True)
+    url = Column(Text, nullable=True)
+    image_url = Column(Text, nullable=True)
+    submitted_by = Column(String(255), nullable=True)
+    source_channel = Column(String(50), server_default="web", nullable=False)
+    status = Column(String(20), server_default="open", nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index("idx_raw_inputs_status", "status"),
+        Index("idx_raw_inputs_created_at", "created_at"),
+        Index("idx_raw_inputs_submitted_by", "submitted_by"),
+        # Ein leerer Einwurf ist kein Einwurf. Es ist die einzige inhaltliche
+        # Pflicht, die der Fangkorb vertraegt - alles Weitere waere schon
+        # Destillieren.
+        CheckConstraint(
+            "(content IS NOT NULL OR url IS NOT NULL OR image_url IS NOT NULL)",
+            name="check_raw_input_not_empty",
+        ),
+    )
+
+
+class RawInputContentLink(Base):
+    """
+    Verknuepfung zwischen einem Einwurf und dem Beitrag, der daraus entstanden ist.
+
+    **Heute schreibt niemand in diese Tabelle** - die Verarbeitung ist nicht
+    gebaut. Sie existiert trotzdem von Anfang an, weil die Beziehung n:m ist: ein
+    Thread kann einen Kommentar *und* eine Hintergrundinfo hervorbringen, und ein
+    Beitrag kann aus mehreren Einwuerfen entstehen. Ein Feld
+    ``resulting_content_id`` auf ``raw_inputs`` waere billiger und genau die
+    Blockade, die spaeter teuer wird (docs/ROHINPUT.md, Abschnitt 6).
+
+    ``content_id`` zeigt auf einen Qdrant-Punkt und ist deshalb kein Fremdschluessel;
+    ``raw_input_id`` ist einer, mit ON DELETE CASCADE - nicht, weil Einwuerfe
+    geloescht wuerden (sie werden es nicht), sondern damit ein Loeschen aus
+    Datenschutzgruenden keine Verweise auf Nichts hinterlaesst.
+
+    ``created_by`` haelt fest, *wer* verarbeitet hat. Das ist die Rolle, die
+    ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung dafuer,
+    spaeter Finder und Bearbeiter getrennt anzuerkennen.
+    """
+
+    __tablename__ = "raw_input_content_links"
+
+    id = Column(
+        SQLUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    raw_input_id = Column(
+        SQLUUID(as_uuid=True),
+        ForeignKey("raw_inputs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    content_id = Column(SQLUUID(as_uuid=True), nullable=False)
+    created_by = Column(String(255), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index("idx_raw_input_links_raw_input_id", "raw_input_id"),
+        Index("idx_raw_input_links_content_id", "content_id"),
+        # Dieselbe Paarung nur einmal - zweimal "verarbeitet" zaehlt spaeter sonst
+        # doppelt.
+        Index(
+            "idx_raw_input_links_unique",
+            "raw_input_id",
+            "content_id",
+            unique=True,
+        ),
+    )

@@ -1,0 +1,66 @@
+.mat-spinner-color::ng-deep circle {
+  stroke: rgb(0, 84, 55) !important;
+}
+
+.fangkorb-aktionen {
+  margin-top: 20px;
+}
+
+.fangkorb-tabelle {
+  width: 100%;
+}
+
+.einwurf-vorschau {
+  display: inline-block;
+  max-width: 46ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.einwurf-link {
+  vertical-align: middle;
+  margin-left: 8px;
+  color: var(--primary-main);
+}
+
+.link-icon,
+.bild-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+  vertical-align: middle;
+}
+
+.bild-icon {
+  margin-left: 8px;
+  color: var(--text-secondary);
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--border-radius-small, 4px);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--surface-variant, #eef2e6);
+  color: var(--text-secondary, #4a4a4a);
+}
+
+.status-chip[data-status='open'] {
+  background: var(--primary-light, #dcebc3);
+  color: var(--primary-dark, #005437);
+}
+
+.fangkorb-leer,
+.fangkorb-fehler {
+  padding: 24px 0;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+@media (max-width: 768px) {
+  .einwurf-vorschau {
+    max-width: 22ch;
+  }
+}

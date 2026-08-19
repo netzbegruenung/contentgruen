@@ -174,6 +174,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.navigationService.navigateToContributions();
   }
 
+  navigateToRawInputView(): void {
+    this.navigationService.navigateToRawInput();
+  }
+
+  navigateToRawInputListView(): void {
+    this.navigationService.navigateToRawInputList();
+  }
+
   navigateToSearchView(): void {
     this.router.navigate(['/search']);
   }

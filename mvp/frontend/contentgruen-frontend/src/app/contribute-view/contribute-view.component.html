@@ -18,8 +18,53 @@
     </p>
 </section>
 
+<!-- Fangkorb-Aufruf: steht ueber der Auswahl, weil er die Auswahl gerade
+     ueberspringt - keine Kategorie, kein Ausarbeiten, nur ablegen. -->
+<section class="content-section fangkorb-hinweis" *ngIf="!isMobile">
+    <div class="fangkorb-karte" role="button" tabindex="0"
+         aria-label="Schnell einwerfen - Rohmaterial ohne Ausarbeiten ablegen"
+         (click)="navigateToRawInput()"
+         (keyup.enter)="navigateToRawInput()"
+         (keyup.space)="navigateToRawInput()">
+        <div class="fangkorb-icon" aria-hidden="true">🧺</div>
+        <div class="fangkorb-text">
+            <h4>Keine Zeit zum Ausarbeiten?</h4>
+            <p>
+                Wirf den Link, das Bild oder einen Satz einfach in den Fangkorb -
+                in drei Sekunden, ohne Kategorie. Jemand macht spaeter einen Beitrag daraus.
+            </p>
+        </div>
+        <button mat-button color="primary" aria-label="Zum Einwerfen">
+            Schnell einwerfen
+            <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+        </button>
+    </div>
+</section>
+
 <!-- Mobile Card Layout -->
 <div *ngIf="isMobile && !showMobileForm" class="mobile-cards-container" role="navigation" aria-label="Beitragstypen">
+    <mat-card class="content-type-card fangkorb-card"
+              (click)="navigateToRawInput()"
+              role="button"
+              tabindex="0"
+              aria-label="Schnell einwerfen - Rohmaterial ohne Ausarbeiten ablegen"
+              (keyup.enter)="navigateToRawInput()"
+              (keyup.space)="navigateToRawInput()">
+        <mat-card-header>
+            <div class="card-icon" aria-hidden="true">🧺</div>
+            <mat-card-title>Schnell einwerfen</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>Link, Bild oder ein Satz - roh, ohne Ausarbeiten. Jemand macht spaeter einen Beitrag daraus</p>
+        </mat-card-content>
+        <mat-card-actions>
+            <button mat-button color="primary" aria-label="Zum Einwerfen">
+                Zum Fangkorb
+                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+            </button>
+        </mat-card-actions>
+    </mat-card>
+
     <mat-card class="content-type-card commentary-card"
               (click)="selectMobileContentType('commentary')"
               role="button"

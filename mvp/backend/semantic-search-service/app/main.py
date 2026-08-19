@@ -36,6 +36,7 @@ from api.v1.test import router as test_router
 from api.v1.generic_text import router as generic_text_router
 from api.v1.post import router as post_router
 from api.v1.image import router as image_router
+from api.v1.raw_input import router as raw_input_router
 from api.v1.seeding import router as seeding_router
 from api.v1.usage import router as usage_router
 from api.v1.voting import router as voting_router
@@ -45,7 +46,6 @@ from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
 from services.vision.image_description_worker import start_description_worker
 from utils.rate_limiter import report_rate_limiter
 import asyncio
-
 
 # This is a workaround for a dependency issue: "OMP: Error #15: Initializing libomp140.x86_64.dll, but found libomp140.x86_64.dll already initialized.""
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -108,6 +108,7 @@ async def lifespan(app: FastAPI):
         from dependencies import get_image_service
         from domain.content_registry import REGISTRY
         from domain.models.content_type import ContentType
+
         try:
             _image_svc = get_image_service()
             if _image_svc is None:
@@ -115,7 +116,9 @@ async def lifespan(app: FastAPI):
                     "⚠️ Image description worker not started: embeddings manager unavailable"
                 )
             else:
-                start_description_worker(_image_svc, REGISTRY[ContentType.IMAGE].ingestion)
+                start_description_worker(
+                    _image_svc, REGISTRY[ContentType.IMAGE].ingestion
+                )
                 logger.info("✅ Image description worker started")
         except Exception as e:
             logger.warning(f"⚠️ Image description worker could not start: {e}")
@@ -182,6 +185,7 @@ app.include_router(
 )
 app.include_router(post_router, prefix="/api/v1/post", tags=["post"])
 app.include_router(image_router, prefix="/api/v1/image", tags=["image"])
+app.include_router(raw_input_router, prefix="/api/v1/rawinput", tags=["rawinput"])
 app.include_router(seeding_router, prefix="/api/v1", tags=["seeding"])
 app.include_router(usage_router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])

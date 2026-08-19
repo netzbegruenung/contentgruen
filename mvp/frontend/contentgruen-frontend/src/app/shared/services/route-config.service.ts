@@ -57,6 +57,22 @@ export class RouteConfigService {
           showContributionsButton: false
         };
 
+      case ROUTES.RAW_INPUT:
+        return {
+          pageTitle: PAGE_TITLES.RAW_INPUT,
+          showBackButton: true,
+          showContributeButton: false,
+          showContributionsButton: false
+        };
+
+      case ROUTES.RAW_INPUT_LIST:
+        return {
+          pageTitle: PAGE_TITLES.RAW_INPUT_LIST,
+          showBackButton: true,
+          showContributeButton: true,
+          showContributionsButton: false
+        };
+
       case ROUTES.LOGIN:
       case '/login':
       case '/login-selector':
