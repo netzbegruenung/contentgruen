@@ -1,10 +1,15 @@
 """Regression test for /addGenericText with a source that does not exist yet.
 
-The reference the user types into the contribution form is created with
-ContentStatus.PENDING_REVIEW, and the repository search filter excludes that
-status, so find_exact_match() never finds it again. The endpoint therefore
-always takes the "create a new reference" branch - which must call
-ReferenceService.add_reference() with its real signature.
+The endpoint has two branches: reuse an existing reference, or create a new
+one. This test pins the create branch (find_exact_match returns None), which
+must call ReferenceService.add_reference() with its real signature.
+
+Historisch war das der Normalfall: Referenzen entstanden mit PENDING_REVIEW,
+und der Suchfilter des Repositories schliesst genau diesen Status aus, sodass
+find_exact_match() sie nie wiederfand. Seit der Anlage-Status an
+NEW_CONTENT_STATUS haengt, greift ueblicherweise der Reuse-Zweig - der
+Create-Zweig bleibt aber erreichbar (Quelle erstmals im Formular getippt) und
+muss weiter tragen.
 
 The reference service mock is autospecced on purpose: it binds the call in the
 router against the real signature, so an argument the service does not accept

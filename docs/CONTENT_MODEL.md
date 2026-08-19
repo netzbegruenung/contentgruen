@@ -157,8 +157,8 @@ POST image ──▶ persist row {status: PENDING_DESCRIPTION, image_url} ──
                        │
                  success ▼                         failure ▼
         text + embedding stored,            status: DESCRIPTION_FAILED
-        status: PENDING_REVIEW              (retryable; surfaced in moderation)
-        (human review before publish)
+        status: NEW_CONTENT_STATUS          (retryable; surfaced in moderation)
+        (sofort auffindbar)
 ```
 
 *(shipped — `services/vision/image_description_worker.py`.)* The `ContentStatus` enum carries

@@ -15,7 +15,7 @@ from dtos.reference import (
 )
 from services.content.reference_service import ReferenceService
 from domain.models.reference import Reference
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 from middleware.rate_limiter import (
     check_reference_creation_rate_limit,
@@ -154,7 +154,7 @@ async def add_reference(
         reference_id, was_new, message = await reference_service.add_reference(
             reference,
             x_user,
-            ContentStatus.PENDING_REVIEW,
+            NEW_CONTENT_STATUS,
             ContentOrigin.MANUALLY_CREATED,
         )
 

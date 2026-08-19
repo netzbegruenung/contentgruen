@@ -16,7 +16,7 @@ from dtos.post import (
 from services.content.base_content_service import BaseContentService
 from domain.models.post import PostDbEntry
 from domain.models.author_entry import AuthorEntry
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 
 router = APIRouter()
@@ -111,7 +111,7 @@ async def add_post(
             original_author=x_user,
             last_modified_by=x_user,
             authors=[AuthorEntry(name=x_user)],
-            status=ContentStatus.PENDING_REVIEW,
+            status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
         # Fall back to the title for the embedded text if the body is empty.

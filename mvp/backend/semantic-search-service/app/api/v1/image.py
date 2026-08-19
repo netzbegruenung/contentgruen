@@ -16,7 +16,7 @@ from services.content.base_content_service import BaseContentService
 from services.vision.caption_suggestion_service import CaptionSuggestionService
 from domain.models.image import ImageDbEntry
 from domain.models.author_entry import AuthorEntry
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import ContentStatus, NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 
 router = APIRouter()
@@ -76,7 +76,7 @@ async def add_image(
     """
     Create an image entry.
 
-    Phase A (caption provided): stores immediately at PENDING_REVIEW. Returns 201.
+    Phase A (caption provided): stores immediately at NEW_CONTENT_STATUS. Returns 201.
     Phase B (no caption): stores at PENDING_DESCRIPTION for async worker processing.
     Returns 202 Accepted with the assigned id and status.
     """
@@ -86,7 +86,7 @@ async def add_image(
 
         now = datetime.datetime.now(datetime.timezone.utc)
         initial_status = (
-            ContentStatus.PENDING_REVIEW
+            NEW_CONTENT_STATUS
             if caption_provided
             else ContentStatus.PENDING_DESCRIPTION
         )
