@@ -7,13 +7,22 @@ This file helps AI assistants (like Claude) understand the ContentGrün project 
 - **NO CLAUDE REFERENCES** in commit messages (no "Generated with Claude", no "Co-Authored-By: Claude")
 - Keep commit messages professional and focused on the changes
 - **GitHub repository** — `github.com/netzbegruenung/contentgruen`, which is what `origin` points at.
-  Use the `gh` CLI for PRs, issues, and reviews.
   (The project was hosted on Forgejo at `git.verdigado.com` before the public open-source release;
   that host now only serves the container registry used by CI.)
-- **Create PRs the normal way:**
-  - `git push -u origin <branch>` then `gh pr create --base main`
-  - `gh pr view` / `gh pr checks` / `gh pr comment` for the rest
-- Never push directly to `main`; always branch and open a PR.
+- **The `gh` CLI is not authenticated on the dev VM and will not be** — see
+  [Remote access](#remote-access-ssh--yubikey) below. `gh pr create`, `gh pr view`,
+  `gh pr checks`, `gh pr comment` and `gh api` all fail with a login prompt. Do not run
+  `gh auth login`, and do not add a token or credential helper to work around it — that
+  would reintroduce exactly the bypass this setup removes.
+- **Pushing works, but every push needs a human.** `origin` is SSH only, the key is a
+  FIDO2 YubiKey forwarded from the maintainer's machine, and each connection needs a
+  physical touch. Prepare and push freely, but expect the command to block until someone
+  presses the key — announce a push before running it rather than firing it at an
+  unattended terminal.
+- **Opening a PR is the maintainer's step.** Push the branch, then hand over the compare
+  URL — `https://github.com/netzbegruenung/contentgruen/compare/main...<branch>?expand=1`,
+  which the push output also prints — together with a suggested title and body.
+- Never push directly to `main`; always branch and hand over a PR link.
 
 ## Dev-VM (Agenten-Sandbox)
 
@@ -31,6 +40,35 @@ nichts im Vordergrund, Exit != 0 bei Fehler:
   Rootless Docker kann keine Ports < 1024 binden — daher 8080 statt 80.
 - VM-Voraussetzung (nicht im Repo): `docker buildx` >= 0.17 in `~/.docker/cli-plugins/`;
   das Debian-Paket 0.13 ist zu alt für Compose 2.40 und lässt jeden Build scheitern.
+
+### Remote access (SSH + YubiKey)
+
+Die Sandbox begrenzt Rechenzeit und Dateisystem — nicht Identität. Ein Push lässt sich
+nicht dadurch zurücknehmen, dass man die VM neu aufsetzt. Deshalb liegt hier bewusst
+**kein Credential, das ohne Menschen schreiben kann**:
+
+- Kein privater SSH-Key auf der VM, kein `gh`-Token, kein Credential-Helper, keine
+  `~/.netrc`. Der einzige Weg zu `origin` ist SSH über den **weitergereichten Agent**
+  des Maintainers mit einem `ED25519-SK`-Key (FIDO2). Jede Verbindung = eine Signatur =
+  ein Touch. Ein Agent-Forward erlaubt das *Anfordern* einer Signatur, nicht deren
+  Erteilung — die bleibt am Stick.
+- Konsequenz für Agenten: Alles Lokale (Branches, Commits, Tests, Dev-Stack) läuft ohne
+  Rückfrage. Alles, was die VM verlässt, blockiert bis jemand drückt.
+
+Damit das in langlebigen tmux-Sessions funktioniert, hängt der Agent-Socket an einem
+**stabilen Pfad** statt am pro Verbindung wechselnden `/tmp/ssh-XXXX/agent.NNN`:
+
+- `~/.ssh/rc` zieht `~/.ssh/agent.sock` bei jedem SSH-Login auf den aktuellen Socket nach.
+- `~/.zshenv` exportiert `SSH_AUTH_SOCK=~/.ssh/agent.sock` — `.zshenv` liest auch jede
+  nicht-interaktive zsh, also greift es für die frischen Shells, die Agent-Harnesses pro
+  Tool-Aufruf starten.
+- `SSH_AUTH_SOCK` ist aus tmux' `update-environment` entfernt, damit tmux seine beim
+  Anlegen der Session eingefrorene Kopie nicht in neue Panes injiziert.
+
+Diese drei Dateien liegen auf der VM, nicht im Repo. Symptom, wenn eins davon fehlt:
+`git push` scheitert mit `Permission denied (publickey)` **statt** den YubiKey blinken zu
+lassen — der Key ist dann nicht weg, es zeigt nur etwas auf einen toten Socket. Prüfen mit
+`readlink -f "$SSH_AUTH_SOCK"` und einem Abgleich gegen die lebenden `/tmp/ssh-*/agent.*`.
 
 ## Quick Start Commands
 
@@ -141,7 +179,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 - `run tests` - Execute full test suite (→ see Run All Tests)
 - `test backend` - Run Python backend tests only
 - `test frontend` - Run Angular frontend tests only
-- `review pr` - Review open PR and post comment (→ see Review Pull Request)
+- `review pr` - Review open PR, deliver the review in chat (→ see Review Pull Request)
 - `check logs` - Show recent logs from all services (→ see View Logs)
 - `clean restart` - Clean and restart all services (→ see Clean Restart)
 - `view api docs` - Open API documentation links (→ see View API Documentation)
@@ -209,10 +247,12 @@ When user requests "Review PR" or "review pr":
    - Areas to consider
    - Risk assessment
    - Recommendation (Approve/Request Changes)
-6. **Post the review** as a PR comment with the `gh` CLI:
-   - `gh pr comment <N> --body-file <file>`, or `gh pr review <N> --comment --body-file <file>`
-   - Resolve the PR number with `gh pr list` or `gh pr view --json number` from the branch.
-   - If `gh` is not authenticated, fall back to delivering the review in chat for the user to paste manually.
+6. **Deliver the review in chat.** Posting it is the maintainer's step — `gh` is not
+   authenticated on the dev VM (see [Git Guidelines](#important-git-guidelines)), so
+   `gh pr comment` / `gh pr review` are not available and no workaround should be added.
+   - Write the review to a file as well, so it can be pasted without re-reading the chat.
+   - Note which PR it belongs to. The number cannot be resolved via `gh pr list`; take it
+     from the user, or name the branch and let them match it.
 
 ### View API Documentation
 When user requests "view api docs":
