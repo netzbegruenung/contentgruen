@@ -32,3 +32,13 @@ class IStatementRepository(
             List of statement search results that meet the criteria
         """
         pass
+
+    @abstractmethod
+    async def count_curated(self) -> int:
+        """
+        Count statements, leaving out search queries nobody has answered yet.
+
+        Returns:
+            Number of statements that carry curated substance
+        """
+        pass

@@ -45,7 +45,7 @@ from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from domain.models.content_status import ContentStatus
-from domain.models.content_origin import ContentOrigin
+from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
 
 logger = get_logger(__name__)
 
@@ -107,12 +107,14 @@ async def search_by_text(
             replysuggestions=[],
         )
         try:
+            # SEARCH_QUERY trennt die Suchanfrage vom kuratierten Material, und der
+            # Autor ist ein Systemwert: wer gesucht hat, haengt nicht am Statement.
             statement_was_new, statement_id, statement_text = (
                 await statement_service.add_statement(
                     statement,
-                    validated_user,
+                    SEARCH_QUERY_AUTHOR,
                     ContentStatus.RELEASED_INTERNAL,
-                    ContentOrigin.MANUALLY_CREATED,
+                    ContentOrigin.SEARCH_QUERY,
                 )
             )
         except Exception as e:

@@ -226,3 +226,86 @@ class TestStatementRepository:
         real_results = await repository.search("climate", limit=10)
         assert len(real_results) == 1
         assert await repository.count() == 1
+
+
+@pytest.mark.unit
+class TestCountCurated:
+    """
+    Zaehlkriterium fuer den Startseiten-Zaehler "Aussagen".
+
+    Ausgeschlossen wird nur, was aus einer Suchanfrage stammt *und* noch ohne
+    Antwortvorschlag ist. Ein reiner Herkunftsfilter waere falsch: das Frontend
+    haengt neue Antworten ueber findOrCreateStatement an ein vorhandenes,
+    hinreichend aehnliches Statement, und wer aus der Ergebnisansicht heraus
+    einen Beitrag ergaenzt, landet dadurch im Regelfall genau auf dem Statement,
+    das die eigene Suche angelegt hat.
+    """
+
+    @pytest.fixture
+    def repository_mit_zaehler(self, test_settings, test_embeddings_manager):
+        from unittest.mock import AsyncMock, MagicMock
+        from repositories.implementations.qdrant.statement_repository import (
+            StatementRepository,
+        )
+
+        client = MagicMock()
+        client.count = AsyncMock(return_value=MagicMock(count=16))
+
+        # async_client ist am TestEmbeddingsManager schreibgeschuetzt; hier zaehlt
+        # ohnehin nur, welchen Filter das Repository an Qdrant reicht.
+        manager = MagicMock()
+        manager.async_client = client
+        manager.collection_name = "content_collection"
+
+        repository = StatementRepository(
+            test_settings, embeddings_manager=test_embeddings_manager
+        )
+        repository._shared_manager = manager
+        return repository, client
+
+    @pytest.mark.asyncio
+    async def test_zaehlt_nur_statements(self, repository_mit_zaehler):
+        repository, client = repository_mit_zaehler
+
+        assert await repository.count_curated() == 16
+
+        count_filter = client.count.call_args.kwargs["count_filter"]
+        must_keys = {bedingung.key: bedingung for bedingung in count_filter.must}
+        assert must_keys["content_type"].match.value == "statement"
+
+    @pytest.mark.asyncio
+    async def test_schliesst_nur_unbeantwortete_suchanfragen_aus(
+        self, repository_mit_zaehler
+    ):
+        repository, client = repository_mit_zaehler
+
+        await repository.count_curated()
+
+        count_filter = client.count.call_args.kwargs["count_filter"]
+        assert len(count_filter.must_not) == 1
+
+        # Beide Bedingungen muessen zusammen zutreffen, damit ausgeschlossen wird.
+        ausschluss = count_filter.must_not[0]
+        bedingungen = {bedingung.key: bedingung for bedingung in ausschluss.must}
+        assert bedingungen["origin"].match.value == "search_query"
+        assert bedingungen["replysuggestions_count"].range.lt == 1
+
+    @pytest.mark.asyncio
+    async def test_gibt_null_zurueck_statt_zu_scheitern(
+        self, test_settings, test_embeddings_manager
+    ):
+        """Der Zaehler ist Beiwerk - er darf die Startseite nicht mitreissen."""
+        from unittest.mock import AsyncMock, MagicMock
+        from repositories.implementations.qdrant.statement_repository import (
+            StatementRepository,
+        )
+
+        manager = MagicMock()
+        manager.async_client.count = AsyncMock(side_effect=RuntimeError("Qdrant weg"))
+
+        repository = StatementRepository(
+            test_settings, embeddings_manager=test_embeddings_manager
+        )
+        repository._shared_manager = manager
+
+        assert await repository.count_curated() == 0

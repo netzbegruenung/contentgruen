@@ -210,7 +210,7 @@ export class AddGenerictextComponent implements OnDestroy {
     findOrCreateStatement(text: string): void {
         this.logger.debug('Finding or creating statement:', text);
 
-        this.statementService.findOrCreateStatement(text).subscribe({
+        this.statementService.findOrCreateStatement(text, 'manually_created').subscribe({
             next: (response) => {
                 this.statementId = response.statement_id;
                 this.statementText = response.statement_text;

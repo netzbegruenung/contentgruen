@@ -15,6 +15,7 @@ from dtos.statement import (
     SearchStatementByTextRequest,
     StatementSearchResponse,
     StatementGetAllResponse,
+    StatementSource,
 )
 from services.content.statement_service import StatementService
 from domain.models.statement import Statement
@@ -22,8 +23,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 from domain.models.content_status import ContentStatus
-from domain.models.content_origin import ContentOrigin
-
+from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 
 router = APIRouter()
 
@@ -112,13 +112,22 @@ async def add_statement(
             replysuggestions=request.statement.replysuggestions,
         )
 
+        # Suchanfragen bekommen einen Systemautor: sie fallen automatisch an,
+        # sobald jemand sucht, und sind keine Autorenleistung. Nur der
+        # ausdrueckliche Weg ueber "Beitrag ergaenzen" nennt die Person.
+        author = (
+            SEARCH_QUERY_AUTHOR
+            if request.source is StatementSource.SEARCH_QUERY
+            else x_user
+        )
+
         # Add statement to the statement index - statements don't require review and are released directly
         statement_was_new, statement_id, statement_text = (
             await statement_service.add_statement(
                 statement,
-                x_user,
+                author,
                 ContentStatus.RELEASED_INTERNAL,  # TODO add moderation system
-                ContentOrigin.MANUALLY_CREATED,  # TODO parametrize for ai generated content
+                request.source.to_content_origin(),
             )
         )
 

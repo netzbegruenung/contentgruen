@@ -7,6 +7,7 @@ from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from repositories.implementations.qdrant.base_repository import QdrantBaseRepository
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
+from domain.models.content_origin import ContentOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,58 @@ class StatementRepository(
         # Statements are created dynamically by ContentOrchestrator when processing
         # statements_with_commentaries and statements_with_commentsuggestions data
         pass
+
+    async def count_curated(self) -> int:
+        """
+        Zaehlt Statements ohne die unbeantworteten Suchanfragen.
+
+        Nicht "origin != search_query": das Frontend haengt eine neue Antwort
+        ueber findOrCreateStatement an ein bereits vorhandenes, hinreichend
+        aehnliches Statement. Wer aus der Ergebnisansicht heraus einen Beitrag
+        ergaenzt, landet deshalb im Regelfall auf genau dem Statement, das die
+        eigene Suche vorher angelegt hat. Ein reiner Herkunftsfilter wuerde also
+        gerade die kuratierten Aussagen unterschlagen.
+
+        Massgeblich ist stattdessen, ob eine Aussage beantwortet ist:
+        ausgeschlossen wird nur, was aus einer Suchanfrage stammt *und* bis
+        heute ohne Antwortvorschlag geblieben ist. Der Zaehler auf der
+        Startseite zeigt damit gepflegte Substanz, und eine Suchanfrage zaehlt
+        in dem Moment mit, in dem ihr jemand Inhalt zur Seite stellt.
+        """
+        from qdrant_client.models import (
+            Filter,
+            FieldCondition,
+            MatchValue,
+            Range,
+        )
+
+        unbeantwortete_suchanfrage = Filter(
+            must=[
+                FieldCondition(
+                    key="origin",
+                    match=MatchValue(value=ContentOrigin.SEARCH_QUERY.value),
+                ),
+                FieldCondition(key="replysuggestions_count", range=Range(lt=1)),
+            ]
+        )
+
+        try:
+            result = await self._shared_manager.async_client.count(
+                collection_name=self._shared_manager.collection_name,
+                count_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="content_type",
+                            match=MatchValue(value=self.content_type),
+                        )
+                    ],
+                    must_not=[unbeantwortete_suchanfrage],
+                ),
+            )
+            return result.count
+        except Exception as e:
+            logger.error(f"Failed to count curated statements: {e}", exc_info=True)
+            return 0
 
     async def search_statements_with_replies(
         self, query_text: str, limit: int, min_replysuggestions_count: int = 0

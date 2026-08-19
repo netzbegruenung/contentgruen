@@ -8,7 +8,8 @@ import {
   AddStatementRequest,
   AddStatementResponse,
   SearchStatementByTextRequest,
-  StatementSearchResponse
+  StatementSearchResponse,
+  StatementSource
 } from './dtos/statementDtos';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
@@ -28,11 +29,18 @@ export class StatementService {
 
   /**
    * Finds an existing statement or creates a new one if it doesn't exist
+   *
+   * Beide Aufrufsituationen laufen ueber diese eine Methode und denselben
+   * Endpunkt; unterschieden werden sie allein ueber `source`. Davon haengt ab,
+   * ob die Person als Autorin am Statement haengt - deshalb ist der Parameter
+   * verpflichtend und hat keine Voreinstellung.
+   *
    * @param text The statement text to find or create
+   * @param source Ob der Text aus dem Suchfeld stammt oder ausdruecklich benannt wurde
    * @returns Observable with the statement details
    */
-  findOrCreateStatement(text: string): Observable<AddStatementResponse> {
-    this.logger.debug('Finding or creating statement:', text);
+  findOrCreateStatement(text: string, source: StatementSource): Observable<AddStatementResponse> {
+    this.logger.debug('Finding or creating statement:', text, source);
 
     // First, search for an existing statement with high similarity
     return this.searchStatements(text, 1).pipe(
@@ -55,7 +63,8 @@ export class StatementService {
             statement: {
               text: text,
               replysuggestions: []
-            }
+            },
+            source: source
           });
         }
       }),
@@ -66,7 +75,8 @@ export class StatementService {
           statement: {
             text: text,
             replysuggestions: []
-          }
+          },
+          source: source
         });
       })
     );

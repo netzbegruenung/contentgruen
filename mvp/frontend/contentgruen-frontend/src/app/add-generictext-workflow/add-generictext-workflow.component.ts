@@ -51,7 +51,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
     this.isLoadingStatement = true;
     this.statementError = null;
 
-    this.statementService.findOrCreateStatement(text).subscribe({
+    this.statementService.findOrCreateStatement(text, 'manually_created').subscribe({
       next: (response) => {
         this.statementId = response.statement_id;
         this.statementText = response.statement_text;
