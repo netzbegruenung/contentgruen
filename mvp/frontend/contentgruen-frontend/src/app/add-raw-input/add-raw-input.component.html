@@ -1,0 +1,81 @@
+<div class="einwurf-container">
+
+    <div class="einwurf-kopf">
+        <div class="einwurf-badge">
+            <span class="einwurf-icon" aria-hidden="true">🧺</span>
+            <div class="einwurf-text">
+                <h2 class="einwurf-titel">Schnell einwerfen</h2>
+                <p class="einwurf-beschreibung">
+                    Link, Screenshot-Adresse oder ein Satz - roh, ohne Ausarbeiten.
+                    Jemand macht spaeter einen Beitrag daraus.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <form [formGroup]="einwurfForm" (ngSubmit)="einwerfen()" class="einwurf-formular">
+
+        <div class="form-group">
+            <mat-form-field appearance="outline" class="einwurf-feld">
+                <mat-label>Link einfuegen oder in einem Satz sagen, worum es geht</mat-label>
+                <textarea matInput
+                          #einwurfFeld
+                          rows="4"
+                          maxlength="5000"
+                          formControlName="einwurf"
+                          placeholder="https://... oder: Guter Thread zu Waermepumpen-Foerderung"
+                          aria-label="Einwurf"></textarea>
+                <mat-hint align="end">{{ einwurfFeld.value.length }}/5000</mat-hint>
+            </mat-form-field>
+        </div>
+
+        <div class="form-group bild-zeile">
+            <button mat-button type="button" class="bild-schalter"
+                    (click)="bildFeldUmschalten()"
+                    [attr.aria-expanded]="zeigeBildFeld"
+                    aria-label="Bild-Adresse hinzufuegen">
+                <mat-icon>{{ zeigeBildFeld ? 'expand_less' : 'add_photo_alternate' }}</mat-icon>
+                Bild-Adresse {{ zeigeBildFeld ? 'weglassen' : 'hinzufuegen' }}
+            </button>
+
+            <mat-form-field appearance="outline" *ngIf="zeigeBildFeld" class="einwurf-feld">
+                <mat-label>Adresse eines Bildes im Netz</mat-label>
+                <input matInput type="url" formControlName="imageUrl"
+                       placeholder="https://example.org/bild.png" />
+                <mat-hint>Hochladen geht noch nicht - nur eine bereits erreichbare Adresse.</mat-hint>
+            </mat-form-field>
+        </div>
+
+        <div class="einwurf-aktionen">
+            <button mat-raised-button color="primary" type="submit"
+                    class="einwerfen-knopf"
+                    [disabled]="istLeer || wirdGespeichert">
+                <mat-icon *ngIf="!wirdGespeichert">save</mat-icon>
+                <mat-spinner *ngIf="wirdGespeichert" diameter="20" class="knopf-spinner"></mat-spinner>
+                Einwerfen
+            </button>
+
+            <button mat-button type="button" (click)="zumFangkorb()">
+                <mat-icon>inventory_2</mat-icon>
+                Fangkorb ansehen
+            </button>
+        </div>
+
+        <div class="einwurf-rueckmeldung" role="status" aria-live="polite">
+            <p *ngIf="eingeworfen > 0 && !fehler" class="erfolg">
+                ✅ Drin. {{ eingeworfen === 1 ? 'Ein Einwurf' : eingeworfen + ' Einwuerfe' }} in dieser Sitzung -
+                das Feld ist wieder frei fuer den naechsten.
+            </p>
+            <p *ngIf="fehler" class="fehler">⚠️ {{ fehler }}</p>
+        </div>
+
+    </form>
+
+    <div class="einwurf-fussnote">
+        <p>
+            Der Fangkorb ist ein gemeinsamer Vorrat: Andere sehen deine Einwuerfe und
+            koennen sie ausarbeiten.
+        </p>
+    </div>
+
+</div>

@@ -93,6 +93,14 @@ export class ContributeViewComponent implements OnDestroy {
     this.navigationService.navigateToStart();
   }
 
+  /**
+   * Der Fangkorb ist kein vierter Beitragstyp, sondern der Weg daran vorbei:
+   * er fuehrt aus dieser Auswahl heraus statt in ein weiteres Formular.
+   */
+  navigateToRawInput(): void {
+    this.router.navigate(['/einwerfen']);
+  }
+
   navigateToAddCommentaryWorkflow() {
     this.router.navigate(['/workflow/add-commentary']);
   }

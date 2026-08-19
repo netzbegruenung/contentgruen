@@ -70,6 +70,12 @@ class TestAPIImports:
 
         assert seeding.router is not None
 
+    def test_import_raw_input_api(self):
+        """Test that raw_input API module imports without errors."""
+        from api.v1 import raw_input
+
+        assert raw_input.router is not None
+
     def test_import_metrics_api(self):
         """Test that metrics API module imports without errors."""
         from api.v1 import metrics

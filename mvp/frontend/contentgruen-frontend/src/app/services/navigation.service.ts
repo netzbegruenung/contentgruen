@@ -35,6 +35,14 @@ export class NavigationService {
     this.router.navigate(['/contributions']);
   }
 
+  navigateToRawInput(): void {
+    this.router.navigate(['/einwerfen']);
+  }
+
+  navigateToRawInputList(): void {
+    this.router.navigate(['/fangkorb']);
+  }
+
   navigateToLogin(): void {
     this.router.navigate(['/login']);
   }

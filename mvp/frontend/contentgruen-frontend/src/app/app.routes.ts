@@ -20,6 +20,16 @@ export const routes: Routes = [
         canActivate: [AuthGuard]
     },
     {
+        path: 'einwerfen',
+        loadComponent: () => import('./add-raw-input/add-raw-input.component').then(m => m.AddRawInputComponent),
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'fangkorb',
+        loadComponent: () => import('./raw-input-list/raw-input-list.component').then(m => m.RawInputListComponent),
+        canActivate: [AuthGuard]
+    },
+    {
         path: 'contributions',
         loadComponent: () => import('./contributions-view/contributions-view.component').then(m => m.ContributionsViewComponent),
         canActivate: [AuthGuard]

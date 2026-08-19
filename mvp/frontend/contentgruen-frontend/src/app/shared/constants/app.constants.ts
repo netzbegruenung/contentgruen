@@ -51,6 +51,8 @@ export const PAGE_TITLES = {
   SEARCH_RESULTS: 'Suchergebnisse',
   CONTRIBUTE: 'Beitrag verfassen',
   CONTRIBUTIONS: 'Meine Beiträge',
+  RAW_INPUT: 'Schnell einwerfen',
+  RAW_INPUT_LIST: 'Fangkorb',
   COMMENTARY: 'Fertiger Kommentar',
   GENERIC_TEXT: 'Hintergrundinfo',
   LOGIN: 'Anmelden',
@@ -63,6 +65,8 @@ export const ROUTES = {
   RESULT: '/result',
   CONTRIBUTE: '/contribute',
   CONTRIBUTIONS: '/contributions',
+  RAW_INPUT: '/einwerfen',
+  RAW_INPUT_LIST: '/fangkorb',
   LOGIN: '/login',
   HELP: '/help'
 };

@@ -1,0 +1,107 @@
+.einwurf-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--spacing-lg, 24px);
+}
+
+.einwurf-kopf {
+    margin-bottom: var(--spacing-lg, 24px);
+}
+
+.einwurf-badge {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md, 16px);
+    background: linear-gradient(135deg, rgb(232, 240, 222) 0%, rgb(218, 232, 205) 100%);
+    border-radius: 12px;
+    padding: var(--spacing-lg, 24px);
+}
+
+.einwurf-icon {
+    font-size: 40px;
+    line-height: 1;
+}
+
+.einwurf-titel {
+    margin: 0 0 4px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary, #1a1a1a);
+}
+
+.einwurf-beschreibung {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-secondary, #4a4a4a);
+}
+
+.einwurf-formular {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 16px);
+}
+
+.einwurf-feld {
+    width: 100%;
+}
+
+.bild-zeile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm, 8px);
+}
+
+.bild-schalter {
+    padding-left: 0;
+}
+
+.einwurf-aktionen {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 16px);
+    flex-wrap: wrap;
+}
+
+.einwerfen-knopf {
+    min-width: 160px;
+    min-height: 48px;
+}
+
+.knopf-spinner {
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.einwurf-rueckmeldung {
+    min-height: 24px;
+}
+
+.einwurf-rueckmeldung .erfolg {
+    margin: 0;
+    color: var(--text-secondary, #4a4a4a);
+}
+
+.einwurf-rueckmeldung .fehler {
+    margin: 0;
+    color: #b3261e;
+}
+
+.einwurf-fussnote {
+    margin-top: var(--spacing-lg, 24px);
+    padding-top: var(--spacing-md, 16px);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 14px;
+    color: var(--text-secondary, #4a4a4a);
+}
+
+@media (max-width: 768px) {
+    .einwurf-container {
+        padding: var(--spacing-md, 16px);
+    }
+
+    .einwurf-aktionen button {
+        width: 100%;
+    }
+}
