@@ -263,3 +263,78 @@ class TestBaseRepositoryMethods:
         count = await repository.count()
 
         assert count == 3
+
+
+@pytest.mark.unit
+class TestAutorenzuordnungOhneSuchanfragen:
+    """
+    Was einer Person zugeordnet wird, blendet Statements aus Suchanfragen aus.
+
+    Eine Suchanfrage faellt automatisch an, sobald jemand das Suchfeld benutzt -
+    sie ist kein Beitrag. Der Ausschluss sitzt bewusst im Repository und nicht
+    in api/v1/contribution.py, weil get_by_author ausser "Meine Beitraege" auch
+    die Nutzungsstatistik speist (repositories/usage_tracking_repository.py,
+    get_user_statistics). Er greift zusaetzlich zum Systemautor, damit auch
+    Altbestand aussen vor bleibt, an dem noch eine Person haengt.
+    """
+
+    @pytest.fixture
+    def repository_mit_client(self, test_settings, test_embeddings_manager):
+        from unittest.mock import AsyncMock
+
+        client = MagicMock()
+        client.scroll = AsyncMock(return_value=([], None))
+        client.count = AsyncMock(return_value=MagicMock(count=0))
+
+        manager = MagicMock()
+        manager.async_client = client
+        manager.collection_name = "content_collection"
+
+        repository = TestBaseRepository(
+            "test_index",
+            "statement",
+            test_settings,
+            MockDbEntry,
+            MockSearchResult,
+            test_embeddings_manager,
+        )
+        repository._shared_manager = manager
+        return repository, client
+
+    @staticmethod
+    def _suchanfragen_ausgeschlossen(such_filter) -> bool:
+        return any(
+            bedingung.key == "origin" and bedingung.match.value == "search_query"
+            for bedingung in (such_filter.must_not or [])
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_blendet_suchanfragen_aus(self, repository_mit_client):
+        repository, client = repository_mit_client
+
+        await repository.get_by_author("testuser", limit=10, offset=0)
+
+        such_filter = client.scroll.call_args.kwargs["scroll_filter"]
+        assert self._suchanfragen_ausgeschlossen(such_filter)
+
+    @pytest.mark.asyncio
+    async def test_get_count_by_author_blendet_suchanfragen_aus(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+
+        await repository.get_count_by_author("testuser")
+
+        such_filter = client.count.call_args.kwargs["count_filter"]
+        assert self._suchanfragen_ausgeschlossen(such_filter)
+
+    @pytest.mark.asyncio
+    async def test_autor_bleibt_das_hauptkriterium(self, repository_mit_client):
+        repository, client = repository_mit_client
+
+        await repository.get_by_author("testuser", limit=10, offset=0)
+
+        such_filter = client.scroll.call_args.kwargs["scroll_filter"]
+        bedingungen = {bedingung.key: bedingung for bedingung in such_filter.must}
+        assert bedingungen["original_author"].match.value == "testuser"
+        assert bedingungen["content_type"].match.value == "statement"

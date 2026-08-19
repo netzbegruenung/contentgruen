@@ -205,7 +205,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    */
   private performSearchWithStatement(): void {
     // First, ensure the statement exists
-    this.statementService.findOrCreateStatement(this.searchQuery).subscribe({
+    this.statementService.findOrCreateStatement(this.searchQuery, 'search_query').subscribe({
       next: (statementResponse) => {
         if (statementResponse.statement_was_new) {
           this.logger.info('Created new statement for search query:', statementResponse.statement_id);

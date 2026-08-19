@@ -19,12 +19,32 @@ from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
 from domain.models.content_status import ContentStatus
+from domain.models.content_origin import ContentOrigin
 from utils.data_utils import DataSource
 
 logger = logging.getLogger(__name__)
 
 TContentDbEntry = TypeVar("TContentDbEntry", bound=BaseContentDbEntry)
 TContentSearchResult = TypeVar("TContentSearchResult", bound=BaseContentSearchResult)
+
+
+def _search_query_origin_conditions() -> list:
+    """
+    must_not-Bedingung, die Statements aus Suchanfragen ausschliesst.
+
+    Gedacht fuer alles, was Inhalte einer Person zuordnet (get_by_author,
+    get_count_by_author). Eine Suchanfrage faellt automatisch an und hat keinen
+    Autor - sie ist kein Beitrag und darf in "Meine Beitraege" nicht auftauchen.
+    Der Filter greift zusaetzlich zum Systemautor aus SEARCH_QUERY_AUTHOR, damit
+    auch Altbestand aussen vor bleibt, an dem noch eine Person haengt.
+    """
+    from qdrant_client.models import FieldCondition, MatchValue
+
+    return [
+        FieldCondition(
+            key="origin", match=MatchValue(value=ContentOrigin.SEARCH_QUERY.value)
+        )
+    ]
 
 
 class QdrantBaseRepository(
@@ -326,7 +346,9 @@ class QdrantBaseRepository(
                     )
                 )
 
-            search_filter = Filter(must=must_conditions)
+            search_filter = Filter(
+                must=must_conditions, must_not=_search_query_origin_conditions()
+            )
 
             # Scroll through results with pagination
             all_results = []
@@ -396,7 +418,9 @@ class QdrantBaseRepository(
                     )
                 )
 
-            search_filter = Filter(must=must_conditions)
+            search_filter = Filter(
+                must=must_conditions, must_not=_search_query_origin_conditions()
+            )
 
             # Count with filter
             result = await self._shared_manager.async_client.count(

@@ -123,7 +123,7 @@ async def get_metrics(
         metrics = GetMetricsResponse(
             content_count=content_count,
             content_count_last_week=0,
-            statement_count=await statement_service.count(),
+            statement_count=await statement_service.count_curated(),
             statement_count_last_week=0,
             commentary_count=await commentary_service.count(),
             commentary_count_last_week=0,

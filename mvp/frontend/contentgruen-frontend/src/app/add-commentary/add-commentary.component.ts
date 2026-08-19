@@ -312,7 +312,7 @@ export class AddCommentaryComponent implements OnDestroy {
     }
 
     findOrCreateStatement(statementText: string): void {
-        this.statementService.findOrCreateStatement(statementText).subscribe({
+        this.statementService.findOrCreateStatement(statementText, 'manually_created').subscribe({
             next: (response) => {
                 this.statementId = response.statement_id;
                 this.statementText = response.statement_text;

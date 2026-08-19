@@ -74,6 +74,15 @@ class StatementService(
             sanitized_query_text, limit, min_replysuggestions_count
         )
 
+    async def count_curated(self) -> int:
+        """
+        Anzahl der Statements ohne die unbeantworteten Suchanfragen.
+
+        Grundlage des Zaehlers "Aussagen" auf der Startseite; die Begruendung
+        des Kriteriums steht in StatementRepository.count_curated.
+        """
+        return await self._repository.count_curated()
+
     async def _check_statement_similarity(
         self, statement_text: str
     ) -> tuple[Optional[float], Optional[uuid.UUID]]:
