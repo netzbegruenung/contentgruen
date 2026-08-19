@@ -94,24 +94,29 @@ class UsageEvent(Base):
 
 
 class SearchEvent(Base):
-    """Track search events for analytics and metrics."""
+    """Track search events for analytics and metrics.
+
+    Holds no personally identifiable data. The columns query_text, user_id,
+    session_id and ip_hash were dropped: query_text and ip_hash were written but
+    never read by any query, and user_id/session_id are replaced by actor_hash.
+
+    actor_hash is a keyed SHA-256 over the user or session id plus the UTC date,
+    so it cannot be resolved back to a person and cannot be correlated across day
+    boundaries. See SearchTrackingService._derive_actor_hash.
+    """
 
     __tablename__ = "search_events"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    session_id = Column(String(255), nullable=True)
-    user_id = Column(String(255), nullable=True)
-    query_text = Column(Text, nullable=False)
+    actor_hash = Column(String(64), nullable=True)
     results_count = Column(Integer, default=0, nullable=False)
     timestamp = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    ip_hash = Column(String(64), nullable=True)
 
     # Indexes for performance
     __table_args__ = (
-        Index("idx_search_events_session_id", "session_id"),
-        Index("idx_search_events_user_id", "user_id"),
+        Index("idx_search_events_actor_hash", "actor_hash"),
         Index("idx_search_events_timestamp", "timestamp"),
     )
 

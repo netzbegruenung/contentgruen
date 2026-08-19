@@ -47,11 +47,14 @@ class MetricsService:
         """
         Get count of unique active users for a week.
 
+        Returns active user-days rather than distinct people: the search pseudonym
+        rotates daily so that activity cannot be linked across days.
+
         Args:
             start_date: Start of the week (defaults to 7 days ago)
 
         Returns:
-            int: Count of unique users/sessions
+            int: Count of active user-days
         """
         if start_date is None:
             start_date = date.today() - timedelta(days=7)
@@ -64,6 +67,8 @@ class MetricsService:
     def get_searches_per_user(self, days: int = 7) -> Dict[str, Any]:
         """
         Get search statistics per user/session.
+
+        Averaged over active user-days, see SearchesPerUserResponse.
 
         Args:
             days: Number of days to analyze

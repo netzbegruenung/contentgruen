@@ -61,7 +61,11 @@ class DailyActiveUsersResponse(BaseModel):
 
 
 class SearchesPerUserResponse(BaseModel):
-    """Response model for searches per user statistics."""
+    """Response model for searches per user statistics.
+
+    total_users counts active user-days, not distinct people: search events carry a
+    pseudonym that rotates daily, so nobody can be followed across the window.
+    """
 
     period_days: int
     average: float

@@ -125,6 +125,13 @@ class Settings(BaseSettings):
         admin_list = [u.strip() for u in self.admin_users.split(",") if u.strip()]
         return user_id in admin_list
 
+    # Secret key for the daily search-actor pseudonym (see SearchTrackingService).
+    # Set SEMANTIC_SEARCH_ACTOR_HASH_SECRET in production so the daily-active-user
+    # count stays correct across service restarts. If it is left unset a random
+    # secret is generated per process: privacy-safe, but every restart starts a new
+    # pseudonym space and inflates the DAU count for that day.
+    actor_hash_secret: Optional[str] = None
+
     # Usage tracking and cleanup configuration
     enable_usage_cleanup: bool = True
     usage_retention_days: int = 90
