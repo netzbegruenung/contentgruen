@@ -94,7 +94,11 @@ class SearchOrchestrator:
         return spec.result_cls(**kwargs)
 
     async def _enrich_references(self, content_result) -> None:
-        """Populate each reference's URL/description from the reference service."""
+        """Populate each reference's URL/description from the reference service.
+
+        Die Notiz dieses Beitrags hat Vorrang vor dem Text der Referenz: sie
+        gilt nur hier, waehrend der Referenztext global ist.
+        """
         if not content_result or not getattr(content_result, "references", None):
             return
         for ref in content_result.references:
@@ -102,7 +106,9 @@ class SearchOrchestrator:
                 reference_data = await self._reference_service.get(ref.reference_id)
                 if reference_data:
                     ref.reference_text = reference_data.reference_string
-                    ref.reference_description = reference_data.text
+                    ref.reference_description = (
+                        getattr(ref, "description", None) or reference_data.text
+                    )
             except Exception as e:
                 logger.warning(f"Failed to fetch reference {ref.reference_id}: {e}")
 

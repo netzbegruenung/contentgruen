@@ -98,7 +98,10 @@ async def add_commentary(
 
         print(f"X-User header: {x_user}")
 
-        new_reference_ids = []
+        # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
+        # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
+        # anders beschrieben sein.
+        new_references = []
         if request.references is not None and len(request.references) > 0:
             # Create or find reference entries with duplicate detection
             for ref_input in request.references:
@@ -113,7 +116,7 @@ async def add_commentary(
                     logger.info(
                         f"Reusing existing reference {reference_id}: {ref_input.reference_string}"
                     )
-                    new_reference_ids.append(reference_id)
+                    new_references.append((reference_id, ref_input.description))
                 else:
                     # Reference doesn't exist - create new one
                     reference_item = Reference(
@@ -131,14 +134,16 @@ async def add_commentary(
                             ContentOrigin.MANUALLY_CREATED,
                         )
                     )
-                    new_reference_ids.append(reference_id)
+                    new_references.append((reference_id, ref_input.description))
                     logger.info(
                         f"Created new reference {reference_id}: {ref_input.reference_string}"
                     )
 
-        for reference_id in new_reference_ids:
+        for reference_id, description in new_references:
             commentary_reference = CommentaryReference(
-                reference_id=reference_id, created=datetime.datetime.now()
+                reference_id=reference_id,
+                created=datetime.datetime.now(),
+                description=description,
             )
 
             if not request.commentary.references:

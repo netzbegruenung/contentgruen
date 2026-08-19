@@ -39,14 +39,15 @@
                             {{ ref.description }}
                         </span>
 
-                        <!-- Beschreibung gehoert an die Quelle: nachtragbar und editierbar,
-                             auch lange nachdem der Chip entstanden ist. -->
+                        <!-- Notiz gehoert an die Quelle in diesem Beitrag: nachtragbar und
+                             editierbar, auch lange nachdem der Chip entstanden ist. Sie gilt
+                             nur hier, auch wenn die Quelle wiederverwendet wird. -->
                         <mat-form-field
                             *ngIf="editingDescriptionIndex === i"
                             appearance="outline"
                             class="reference-description-field"
                             subscriptSizing="fixed">
-                            <mat-label>Beschreibung (optional)</mat-label>
+                            <mat-label>Notiz (optional)</mat-label>
                             <input
                                 matInput
                                 #chipDescriptionInput
@@ -54,7 +55,7 @@
                                 [formControl]="descriptionControl"
                                 (keydown)="onDescriptionKeydown($event)"
                                 (blur)="commitDescriptionEdit()"
-                                placeholder="Kurze Beschreibung der Quelle">
+                                placeholder="Notiz zu dieser Quelle">
                         </mat-form-field>
 
                         <button
@@ -63,7 +64,7 @@
                             type="button"
                             class="description-toggle"
                             (click)="startDescriptionEdit(i)">
-                            {{ ref.description ? 'Beschreibung bearbeiten' : 'Beschreibung hinzufügen' }}
+                            {{ ref.description ? 'Notiz bearbeiten' : 'Notiz hinzufügen' }}
                         </button>
 
                         <span class="reference-badge" *ngIf="!ref.is_new && !ref.isPending">

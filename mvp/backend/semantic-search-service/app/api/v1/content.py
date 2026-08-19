@@ -152,9 +152,10 @@ async def get_recent_content(
                         reference_data = await reference_service.get(ref.reference_id)
                         if reference_data:
                             ref.reference_text = reference_data.reference_string
+                            # Notiz dieses Beitrags vor globalem Referenztext.
                             ref.reference_description = (
-                                reference_data.text
-                            )  # Use text field for description
+                                getattr(ref, "description", None) or reference_data.text
+                            )
                             logger.debug(
                                 f"Enriched reference {ref.reference_id} with URL and description"
                             )
@@ -176,9 +177,10 @@ async def get_recent_content(
                         reference_data = await reference_service.get(ref.reference_id)
                         if reference_data:
                             ref.reference_text = reference_data.reference_string
+                            # Notiz dieses Beitrags vor globalem Referenztext.
                             ref.reference_description = (
-                                reference_data.text
-                            )  # Use text field for description
+                                getattr(ref, "description", None) or reference_data.text
+                            )
                             logger.debug(
                                 f"Enriched reference {ref.reference_id} with URL and description"
                             )
