@@ -60,6 +60,23 @@ class ContentStatus(Enum):
     """Background worker failed to generate a caption; human review required."""
 
 
+NEW_CONTENT_STATUS = ContentStatus.RELEASED_INTERNAL
+"""
+Status, mit dem neu eingestellte Inhalte angelegt werden - der eine Ort, an dem
+diese Entscheidung faellt. Alle Ingestion-Pfade in api/v1 (und der Bild-Worker)
+beziehen sich hierauf, statt einen Status selbst zu waehlen.
+
+RELEASED_INTERNAL, weil die Suche PENDING_REVIEW herausfiltert
+(repositories/implementations/qdrant/base_repository.py) und selbst eingestellte
+Beitraege sonst erst nach einer Moderation auffindbar waeren, die es noch nicht
+gibt. Es ist derselbe Status, den Seeding (services/orchestration/
+content_orchestrator.py) und Statements (api/v1/search.py) schon verwenden.
+
+Sobald es eine Moderation gibt, wird hier wieder PENDING_REVIEW eingetragen -
+der Filter dafuer ist absichtlich unveraendert geblieben.
+"""
+
+
 def is_valid_transition(
     current_status: ContentStatus, new_status: ContentStatus
 ) -> bool:

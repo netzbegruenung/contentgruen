@@ -2,7 +2,7 @@
 Unit tests for the image description worker state machine.
 
 Tests verify:
-- Empty derived text transitions the item to DESCRIPTION_FAILED (not PENDING_REVIEW)
+- Empty derived text transitions the item to DESCRIPTION_FAILED (not NEW_CONTENT_STATUS)
 - Transient OpenAI errors (connection, 5xx) leave the item at PENDING_DESCRIPTION
 - Permanent errors transition to DESCRIPTION_FAILED
 - RateLimitError breaks the current batch and re-polls after sleep
@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
 
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import ContentStatus, NEW_CONTENT_STATUS
 from domain.models.content_type import ContentType
 from domain.models.content_origin import ContentOrigin
 from domain.models.image import ImageDbEntry
@@ -186,8 +186,8 @@ class TestWorkerStateMachine:
             item_id, ContentStatus.DESCRIPTION_FAILED
         )
 
-    async def test_valid_caption_promotes_to_pending_review(self):
-        """Good caption → PENDING_REVIEW via service.add()."""
+    async def test_valid_caption_promotes_to_new_content_status(self):
+        """Good caption → NEW_CONTENT_STATUS via service.add()."""
         item_id = uuid.uuid4()
         entry = _make_pending_image(item_id)
 
@@ -206,5 +206,5 @@ class TestWorkerStateMachine:
         image_service.update_status.assert_not_called()
         image_service.add.assert_called_once()
         updated = image_service.add.call_args[0][0]
-        assert updated.status == ContentStatus.PENDING_REVIEW
+        assert updated.status == NEW_CONTENT_STATUS
         assert updated.text == "Windräder in Niedersachsen"

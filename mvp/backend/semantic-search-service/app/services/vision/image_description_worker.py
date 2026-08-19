@@ -3,7 +3,7 @@ Async background worker that processes PENDING_DESCRIPTION images.
 
 The worker polls `image_service.get_by_status(PENDING_DESCRIPTION)` on a fixed
 interval, calls the configured IngestionStrategy (AiVisionDescription) to derive a
-German caption, then upserts the enriched entry and moves it to PENDING_REVIEW.
+German caption, then upserts the enriched entry and moves it to NEW_CONTENT_STATUS.
 
 On failure it sets DESCRIPTION_FAILED. On OpenAI rate-limit it backs off 60 s and
 re-picks up remaining items on the next poll cycle. The loop is idempotent: a hard
@@ -16,7 +16,7 @@ current ingestion volume; switch to ARQ/Celery when throughput justifies the cos
 import asyncio
 import logging
 
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import ContentStatus, NEW_CONTENT_STATUS
 from domain.protocols import ContentInput
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ async def _description_worker(
                     updated = entry.model_copy(
                         update={
                             "text": result.text,
-                            "status": ContentStatus.PENDING_REVIEW,
+                            "status": NEW_CONTENT_STATUS,
                             **result.extra,
                         }
                     )

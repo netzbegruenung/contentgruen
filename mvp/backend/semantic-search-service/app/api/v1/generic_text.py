@@ -15,7 +15,7 @@ from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from domain.models.generic_text import GenericTextDbEntry, GenericTextReference
 from domain.models.reference import Reference
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 
 
@@ -162,7 +162,7 @@ async def add_generic_text(
                         await reference_service.add_reference(
                             reference_item,
                             x_user,
-                            ContentStatus.PENDING_REVIEW,
+                            NEW_CONTENT_STATUS,
                             ContentOrigin.MANUALLY_CREATED,
                         )
                     )
@@ -186,7 +186,7 @@ async def add_generic_text(
         success, generic_text_id, text = await generic_text_service.add_generic_text(
             request.generictext,
             x_user,
-            ContentStatus.PENDING_REVIEW,
+            NEW_CONTENT_STATUS,
             ContentOrigin.MANUALLY_CREATED,
         )
 

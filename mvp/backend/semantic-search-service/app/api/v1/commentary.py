@@ -13,7 +13,7 @@ from services.content.commentary_service import CommentaryService
 from domain.models.commentary import CommentaryReference
 from services.content.reference_service import ReferenceService
 from domain.models.reference import Reference
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 
 
@@ -127,7 +127,7 @@ async def add_commentary(
                         await reference_service.add_reference(
                             reference_item,
                             x_user,
-                            ContentStatus.PENDING_REVIEW,
+                            NEW_CONTENT_STATUS,
                             ContentOrigin.MANUALLY_CREATED,
                         )
                     )
@@ -151,7 +151,7 @@ async def add_commentary(
             await commentary_service.add_commentary(
                 request.commentary,
                 x_user,
-                ContentStatus.PENDING_REVIEW,
+                NEW_CONTENT_STATUS,
                 ContentOrigin.MANUALLY_CREATED,
             )
         )
