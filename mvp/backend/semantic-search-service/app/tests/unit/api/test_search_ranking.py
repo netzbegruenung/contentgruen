@@ -421,19 +421,62 @@ class TestSearchRanking:
         assert results[0]["score"] == pytest.approx(0.935)
         assert results[0]["generictext_result"]["id"] == str(sugg)
 
-    def test_direct_matches_cannot_clear_threshold(self, search_client):
+    def test_direct_match_above_threshold_is_kept(self, search_client):
         """
-        Direct (non-statement) hits are weighted * 0.7. Even a perfect 1.0 cosine
-        becomes 0.7, which is below the 0.8 threshold -- so the direct-search
-        fallback currently never contributes results. This pins that quirk.
+        Der Schwellwert prueft den Rohscore, nicht den mit DIRECT_MATCH_PENALTY
+        gedaempften Wert. Vorher wurde 0.9 * 0.7 = 0.63 gegen 0.8 geprueft und der
+        Treffer verworfen; da die Penalty konstant 0.7 ist, haette der Rohscore
+        ueber 1.143 liegen muessen - fuer eine Kosinus-Aehnlichkeit unerreichbar.
+        Der Zweig konnte dadurch nie etwas liefern.
         """
-        perfect = _commentary_search_hit(score=1.0)
-        client = search_client(statement_results=[], direct_commentaries=[perfect])
+        hit = _commentary_search_hit(score=0.90)
+        client = search_client(statement_results=[], direct_commentaries=[hit])
+
+        resp = client.post(SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10})
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["commentary_search_results_count"] == 1
+        # Die Penalty wirkt weiterhin auf das Ranking: 0.90 * 0.7 = 0.63.
+        assert data["commentary_search_results"][0]["score"] == pytest.approx(0.63)
+
+    def test_direct_match_at_threshold_is_dropped(self, search_client):
+        """Der Vergleich bleibt strikt: ein Rohscore von genau 0.8 faellt heraus."""
+        edge = _commentary_search_hit(score=0.80)
+        client = search_client(statement_results=[], direct_commentaries=[edge])
 
         resp = client.post(SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10})
 
         assert resp.status_code == 200
         assert resp.json()["commentary_search_results_count"] == 0
+
+    def test_statement_based_outranks_direct_at_equal_raw_score(self, search_client):
+        """
+        Bei gleichem Rohscore steht der statement-basierte Treffer vorn - genau
+        dafuer ist die Penalty da. Statement: 0.9*0.7 + 0.9*0.3 = 0.9;
+        direkt: 0.9 * 0.7 = 0.63.
+        """
+        sugg = uuid.uuid4()
+        statements = [
+            _statement_result(0.90, [_reply(ContentType.COMMENTARY, 0.90, sugg)], "S")
+        ]
+        direct = _commentary_search_hit(score=0.90)
+        client = search_client(
+            statement_results=statements, direct_commentaries=[direct]
+        )
+
+        resp = client.post(SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10})
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["commentary_search_results_count"] == 2
+        scores = [r["score"] for r in data["commentary_search_results"]]
+        assert scores == sorted(scores, reverse=True)
+        assert data["commentary_search_results"][0]["commentary_result"]["id"] == str(
+            sugg
+        )
+        assert scores[0] == pytest.approx(0.90)
+        assert scores[1] == pytest.approx(0.63)
 
     def test_results_sorted_and_truncated_to_limit(self, search_client):
         """With more passing results than `limit`, only the top-scoring `limit` remain."""
