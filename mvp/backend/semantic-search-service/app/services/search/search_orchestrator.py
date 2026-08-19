@@ -190,9 +190,18 @@ class SearchOrchestrator:
                 if content_result.id in statement_based_ids:
                     continue
 
-                direct_score = content_result.score * DIRECT_MATCH_PENALTY
-                if direct_score <= MINIMUM_SCORE_THRESHOLD:
+                # Der Schwellwert entscheidet ueber die Aufnahme und prueft deshalb
+                # den Rohscore. Frueher lief der Vergleich gegen den bereits mit
+                # DIRECT_MATCH_PENALTY gedaempften Wert - bei einer Penalty von 0.7
+                # und einer Schwelle von 0.8 haette der Rohscore ueber 1.143 liegen
+                # muessen, was eine Kosinus-Aehnlichkeit nie erreicht. Der Zweig
+                # konnte dadurch nie etwas liefern.
+                if content_result.score <= MINIMUM_SCORE_THRESHOLD:
                     continue
+
+                # Die Penalty bleibt und wirkt weiter auf das Ranking: ein direkter
+                # Treffer steht hinter einem statement-basierten mit gleichem Score.
+                direct_score = content_result.score * DIRECT_MATCH_PENALTY
 
                 await self._enrich_references(content_result)
 
