@@ -32,7 +32,7 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
   @Output() contribute = new EventEmitter<void>();
   @Output() contributions = new EventEmitter<void>();
 
-  pageTitle: string = 'ContentGrün';
+  pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   showContributeButton: boolean = false;
   showContributionsButton: boolean = false;

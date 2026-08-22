@@ -22,7 +22,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   template: `
     <div class="admin-container">
       <mat-toolbar color="primary" class="admin-toolbar">
-        <span>🌱 ContentGrün Admin</span>
+        <span>🌱 Gut gesagt – Admin</span>
         <span class="spacer"></span>
         <button mat-button (click)="backToApp()">
           <mat-icon>arrow_back</mat-icon>

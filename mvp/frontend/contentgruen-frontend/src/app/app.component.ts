@@ -47,8 +47,8 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
-  title = 'ContentGrün';
-  pageTitle: string = 'ContentGrün';
+  title = 'Gut gesagt';
+  pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   private destroy$ = new Subject<void>();
   isMobile: boolean = false;

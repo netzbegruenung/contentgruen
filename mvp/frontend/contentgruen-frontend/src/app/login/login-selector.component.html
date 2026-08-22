@@ -13,21 +13,21 @@
 
                 <div class="registration-content">
                     <p class="registration-intro">
-                        Du hast folgende Möglichkeiten, Zugang zu ContentGrün zu erhalten:
+                        Du hast folgende Möglichkeiten, Zugang zu Gut gesagt zu erhalten:
                     </p>
                     <div class="registration-options">
                         <div class="registration-option">
                             <mat-icon class="option-icon">group</mat-icon>
                             <div class="option-text">
                                 <strong>Mitgliedschaft bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a></strong>
-                                <p>Werde Mitglied bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a> und nutze deinen Account zur Anmeldung bei ContentGrün über Keycloak.</p>
+                                <p>Werde Mitglied bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a> und nutze deinen Account zur Anmeldung bei Gut gesagt über Keycloak.</p>
                             </div>
                         </div>
                         <div class="registration-option">
                             <mat-icon class="option-icon">email</mat-icon>
                             <div class="option-text">
-                                <strong>ContentGrün Beta-Account für Grüne Mitglieder</strong>
-                                <p>Falls eine Mitgliedschaft für dich nicht umsetzbar ist, du aber gerne mitwirken möchtest, beantrage manuell einen ContentGrün Beta-Zugang: Kontaktiere uns per Mail an <a [href]="getMailtoLink()" class="email-link">accounts&#64;contentgruen.de</a> und nenne uns dabei den Grünen Kreisverband, in dem du Mitglied bist.</p>
+                                <strong>Beta-Account für Grüne Mitglieder</strong>
+                                <p>Falls eine Mitgliedschaft für dich nicht umsetzbar ist, du aber gerne mitwirken möchtest, beantrage manuell einen Beta-Zugang für Gut gesagt: Kontaktiere uns per Mail an <a [href]="getMailtoLink()" class="email-link">accounts&#64;contentgruen.de</a> und nenne uns dabei den Grünen Kreisverband, in dem du Mitglied bist.</p>
                             </div>
                         </div>
                     </div>
@@ -75,12 +75,12 @@
                         (click)="loginWithContentGruen()">
                     <mat-icon class="login-icon">account_circle</mat-icon>
                     <div class="button-content">
-                        <span class="button-title">ContentGrün Login</span>
+                        <span class="button-title">Anmelden</span>
                         <span class="button-subtitle">Direktanmeldung</span>
                     </div>
                 </button>
                 <p class="login-description">
-                    Melde dich direkt mit deinem ContentGrün-Account an.
+                    Melde dich direkt mit deinem Account bei Gut gesagt an.
                     Verwende deine E-Mail-Adresse und dein Passwort.
                 </p>
                 <p class="disabled-notice" *ngIf="!authModes.managedAuthEnabled">
