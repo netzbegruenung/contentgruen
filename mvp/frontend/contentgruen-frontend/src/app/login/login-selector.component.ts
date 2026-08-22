@@ -63,7 +63,7 @@ export class LoginSelectorComponent implements OnInit {
         },
         error: (err) => {
           console.error('Failed to fetch auth modes:', err);
-          // Default to ContentGrün login on error
+          // Default to Gut gesagt login on error
           this.authModes.managedAuthEnabled = true;
           this.isLoading = false;
         }
@@ -78,7 +78,7 @@ export class LoginSelectorComponent implements OnInit {
   }
 
   loginWithGutGesagt(): void {
-    // Navigate to ContentGrün managed login with return URL
+    // Navigate to Gut gesagt managed login with return URL
     this.router.navigate(['/login/managed'], { queryParams: { returnUrl: this.returnUrl } });
   }
 

@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     try:
-        logger.info("🚀 Starting ContentGrün Semantic Search Service v1.0.0")
+        logger.info("🚀 Starting Gut gesagt Semantic Search Service v1.0.0")
 
         # Initialize QdrantEmbeddingsManager with settings (fast)
         shared_manager = get_qdrant_embeddings_manager(settings)
@@ -140,7 +140,7 @@ async def lifespan(app: FastAPI):
     finally:
         # Shutdown
         try:
-            logger.info("Shutting down ContentGrün Semantic Search Service")
+            logger.info("Shutting down Gut gesagt Semantic Search Service")
             manager = get_embeddings_manager()
             await manager.shutdown()
             close_app_database()

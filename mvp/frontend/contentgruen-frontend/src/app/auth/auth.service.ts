@@ -59,7 +59,7 @@ export class AuthService {
     );
   }
 
-  // ContentGrün managed login with email and password
+  // Gut gesagt managed login with email and password
   loginWithManagedAuth(email: string, password: string): Observable<any> {
     return this.http.post<any>(`${environment.baseUrl}/api/auth/login/managed`, { email, password }, {
       withCredentials: true // Ensure cookies are sent/received

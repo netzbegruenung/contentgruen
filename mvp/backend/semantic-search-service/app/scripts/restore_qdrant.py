@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ContentGrün Qdrant Restore Script
+Gut gesagt Qdrant Restore Script
 Restores a Qdrant collection from a snapshot file
 """
 

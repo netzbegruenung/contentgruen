@@ -1,5 +1,5 @@
 """
-Health check and statistics endpoints for monitoring ContentGrün.
+Health check and statistics endpoints for monitoring Gut gesagt.
 """
 
 import os
