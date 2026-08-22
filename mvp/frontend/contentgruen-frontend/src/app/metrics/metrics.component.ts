@@ -32,13 +32,13 @@ export class MetricsComponent implements OnInit {
   }
 
   private checkFirstVisit(): void {
-    const hasVisited = localStorage.getItem('contentgruen-metrics-seen');
+    const hasVisited = localStorage.getItem('gutgesagt-metrics-seen');
     if (!hasVisited) {
       this.isFirstVisit = true;
       this.isExpanded = true; // Auto-expand for first-time visitors
       // Mark as seen after a short delay to ensure they see it
       setTimeout(() => {
-        localStorage.setItem('contentgruen-metrics-seen', 'true');
+        localStorage.setItem('gutgesagt-metrics-seen', 'true');
       }, 3000);
     }
   }

@@ -25,7 +25,7 @@ export class SearchService {
   }
 
   private getOrCreateSessionId(): string {
-    const storageKey = 'contentgruen_session_id';
+    const storageKey = 'gutgesagt_session_id';
     let sessionId = localStorage.getItem(storageKey);
 
     if (!sessionId) {

@@ -8,7 +8,7 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class SessionService {
-  private readonly STORAGE_KEY = 'contentgruen_session_id';
+  private readonly STORAGE_KEY = 'gutgesagt_session_id';
   private sessionId: string | null = null;
 
   constructor() {
