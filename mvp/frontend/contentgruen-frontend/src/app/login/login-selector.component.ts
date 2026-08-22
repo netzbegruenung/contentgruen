@@ -77,7 +77,7 @@ export class LoginSelectorComponent implements OnInit {
     window.location.href = `${environment.baseUrl}/api/auth/login/keycloak`;
   }
 
-  loginWithContentGruen(): void {
+  loginWithGutGesagt(): void {
     // Navigate to ContentGrün managed login with return URL
     this.router.navigate(['/login/managed'], { queryParams: { returnUrl: this.returnUrl } });
   }
