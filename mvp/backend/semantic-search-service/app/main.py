@@ -153,7 +153,7 @@ logger.info("🔧 Initializing FastAPI app")
 
 # Initialize FastAPI app with lifespan management
 app = FastAPI(
-    title="ContentGrün API",
+    title="Gut gesagt API",
     description="Semantic search API with unified embeddings",
     version="1.0.0",
     lifespan=lifespan,
