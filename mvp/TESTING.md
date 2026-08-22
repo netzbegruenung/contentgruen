@@ -1,4 +1,4 @@
-# Testing Guide for ContentGrün
+# Testing Guide for Gut gesagt
 
 ## Quick Test Commands
 

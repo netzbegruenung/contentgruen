@@ -1,4 +1,4 @@
-# ContentGrün Content Model — Architecture
+# Gut gesagt Content Model — Architecture
 
 > Status: **largely implemented.** This document describes the content-type architecture and
 > the reasoning behind it. The registry, the ingestion seam, the `SearchOrchestrator` and the

@@ -1,7 +1,7 @@
 
-# 👨‍💻 Developer Guide – ContentGrün
+# 👨‍💻 Developer Guide – Gut gesagt
 
-This guide provides advanced usage instructions for developing, testing, and debugging ContentGrün.
+This guide provides advanced usage instructions for developing, testing, and debugging Gut gesagt.
 
 It includes setup and test commands for all services, including how to run them isolated, with or without Docker.
 

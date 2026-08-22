@@ -1,4 +1,4 @@
-# ContentGrün Scripts Guide
+# Gut gesagt Scripts Guide
 
 All scripts are located in the `mvp/scripts/` directory and organized by category.
 
@@ -164,7 +164,7 @@ scripts/backup/test-backup-restore.sh
 ```
 
 **Note:** Backup scripts are Linux/Unix only and require:
-- Docker running with ContentGrün containers
+- Docker running with Gut gesagt containers
 - `/opt/contentgruen-backups/` directory (created by setup script)
 - GNU coreutils (stat, md5sum, readlink)
 

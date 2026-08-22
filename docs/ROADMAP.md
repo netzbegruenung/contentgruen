@@ -1,4 +1,4 @@
-# ContentGrün Roadmap — From Pre-MVP to the Full Platform
+# Gut gesagt Roadmap — From Pre-MVP to the Full Platform
 
 > Status: **strategy / direction** (not a commitment). Companion to
 > [CONTENT_MODEL.md](./CONTENT_MODEL.md), which describes the *architecture*.

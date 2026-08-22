@@ -1,6 +1,6 @@
-# ContentGrün
+# Gut gesagt
 
-**ContentGrün** is a semantic content platform for green political activism – helping users find and share relevant political content through AI-powered search.
+**Gut gesagt** is a semantic content platform for green political activism – helping users find and share relevant political content through AI-powered search.
 
 Licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
@@ -16,7 +16,7 @@ Licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
 ## Project Overview
 
-ContentGrün is a containerized web application with three main components:
+Gut gesagt is a containerized web application with three main components:
 
 - **Frontend** (Angular) – served via Nginx
 - **BFF** (Backend-for-Frontend, .NET + YARP) – authentication & API gateway

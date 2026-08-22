@@ -1,8 +1,8 @@
-# ContentGrün Architecture Documentation
+# Gut gesagt Architecture Documentation
 
 ## Overview
 
-ContentGrün is a progressive content platform with semantic search capabilities for green political activism. The application runs in multiple environments with different configurations.
+Gut gesagt is a progressive content platform with semantic search capabilities for green political activism. The application runs in multiple environments with different configurations.
 
 ## Environment Overview
 
