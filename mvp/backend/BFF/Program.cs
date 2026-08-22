@@ -86,11 +86,11 @@ if (useKeycloak)
             },
             OnTokenValidated = async context =>
             {
-                Console.WriteLine("Token validated");
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+
+                logger.LogDebug("Token validated");
                 if (context.Principal != null)
                 {
-                    Console.WriteLine($"Claims: {string.Join(", ", context.Principal.Claims.Select(c => $"{c.Type}: {c.Value}"))}");
-
                     // Create a ClaimsPrincipal from the validated token
                     var claims = context.Principal.Claims;
 
@@ -98,24 +98,21 @@ if (useKeycloak)
                     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                     var principal = new ClaimsPrincipal(identity);
 
-                    Console.WriteLine($"Claims Principal: {string.Join(", ", principal.Claims.Select(c => $"{c.Type}: {c.Value}"))}");
-
                     // Issue the authentication cookie
                     await context.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-                    Console.WriteLine("Authentication cookie issued");
+                    logger.LogDebug("Authentication cookie issued");
                 }
                 else
                 {
-                    Console.WriteLine("No claims found, context.Principal is null.");
+                    logger.LogWarning("No claims found, context.Principal is null.");
                 }
 
                 // Set the redirection target after successful login
                 if (context.Properties != null)
                 {
-                    Console.WriteLine($"RedirectURL before: {context.Properties.RedirectUri}");
                     context.Properties.RedirectUri = frontendUrl;
-                    Console.WriteLine($"RedirectURL after: {context.Properties.RedirectUri}");
+                    logger.LogDebug("Redirect target after login set to the configured frontend URL");
                 }
             }
         };
@@ -381,9 +378,9 @@ app.MapControllers();
 
 
 // Endpoint for frontend to retrieve user info
-app.MapGet("/api/user-info", (HttpContext context) =>
+app.MapGet("/api/user-info", (HttpContext context, ILogger<Program> logger) =>
 {
-    Console.WriteLine("/api/user-info called");
+    logger.LogDebug("/api/user-info called");
 
     if (context.User.Identity?.IsAuthenticated == true)
     {
@@ -396,7 +393,7 @@ app.MapGet("/api/user-info", (HttpContext context) =>
                      context.User.HasClaim("role", "admin") ||
                      context.User.HasClaim(ClaimTypes.Role, "admin");
 
-        Console.WriteLine("/api/user-info   User is authenticated, return ok and user info");
+        logger.LogDebug("/api/user-info   User is authenticated, return ok and user info");
         return Results.Ok(new
         {
             IsAuthenticated = true,
@@ -406,31 +403,19 @@ app.MapGet("/api/user-info", (HttpContext context) =>
             Claims = claims
         });
     }
-    Console.WriteLine("/api/user-info   User is not authenticated, return unauthorized");
+    logger.LogDebug("/api/user-info   User is not authenticated, return unauthorized");
     return Results.Unauthorized();
 });
 
 
 // Endpoint for frontend to check user login status
-app.MapGet("/api/check-session", (HttpContext context) =>
+app.MapGet("/api/check-session", (HttpContext context, ILogger<Program> logger) =>
 {
-    Console.WriteLine($"/api/check-session called");
+    var isAuthenticated = context.User.Identity?.IsAuthenticated == true;
 
-    if (context.User.Claims.Any())
-    {
-        Console.WriteLine("/api/check-session   Claims:");
-        foreach (var claim in context.User.Claims)
-        {
-            Console.WriteLine($"/api/check-session   {claim.Type}: {claim.Value}");
-        }
-    }
+    logger.LogDebug("/api/check-session called, returning IsAuthenticated: {IsAuthenticated}", isAuthenticated);
 
-    var cookies = context.Request.Headers["Cookie"];
-    Console.WriteLine($"/api/check-session   Cookies: {cookies}");
-
-    Console.WriteLine($"/api/check-session   Returning IsAuthenticated: {context.User.Identity?.IsAuthenticated}");
-
-    return context.User.Identity?.IsAuthenticated == true
+    return isAuthenticated
         ? Results.Ok()
         : Results.Unauthorized();
 });
@@ -501,9 +486,11 @@ public class DummyAuthStartupFilter : IStartupFilter
         {
             builder.Use(async (context, next) =>
             {
+                var logger = context.RequestServices.GetRequiredService<ILogger<DummyAuthStartupFilter>>();
+
                 if (context.Request.Path.StartsWithSegments("/login") && context.Request.Method == "POST")
                 {
-                    Console.WriteLine("DummyAuthStartupFilter: Login endpoint called");
+                    logger.LogDebug("DummyAuthStartupFilter: Login endpoint called");
 
                     context.Response.Headers.Append("Access-Control-Allow-Origin", _frontendUrl);
                     context.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
@@ -524,8 +511,7 @@ public class DummyAuthStartupFilter : IStartupFilter
                         var loginRequest = System.Text.Json.JsonSerializer.Deserialize<LoginRequest>(body);
 
 
-                        Console.WriteLine($"DummyAuthStartupFilter: Received login request");
-                        Console.WriteLine($"DummyAuthStartupFilter: Username: {loginRequest?.Username}");
+                        logger.LogDebug("DummyAuthStartupFilter: Received login request");
 
                         if (loginRequest?.Username == _dummyUsername && loginRequest?.Password == _dummyPassword)
                         {
@@ -541,12 +527,6 @@ public class DummyAuthStartupFilter : IStartupFilter
 
                             var principal = new ClaimsPrincipal(identity);
 
-                            Console.WriteLine("Created new Principal with claims:");
-                            foreach (var claim in principal.Claims)
-                            {
-                                Console.WriteLine($"  {claim.Type}: {claim.Value}");
-                            }
-
                             // Configure cookie options for proper cross-domain functionality
                             var authProperties = new AuthenticationProperties
                             {
@@ -556,7 +536,7 @@ public class DummyAuthStartupFilter : IStartupFilter
 
                             await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
-                            Console.WriteLine("Signed in with the principal, cookie should be set");
+                            logger.LogDebug("Signed in with the principal, cookie should be set");
 
                             // Ensure the cookie is properly set before responding
                             context.Response.StatusCode = 200; // OK
@@ -569,13 +549,13 @@ public class DummyAuthStartupFilter : IStartupFilter
                         }
 
                         // Invalid credentials
-                        Console.WriteLine("Invalid credentials provided.");
+                        logger.LogWarning("Invalid credentials provided.");
                         context.Response.StatusCode = 401; // Unauthorized
                         await context.Response.WriteAsync("Invalid username or password");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error processing login: {ex.Message}");
+                        logger.LogError(ex, "Error processing login");
                         context.Response.StatusCode = 500; // Internal Server Error
                         await context.Response.WriteAsync("An error occurred while processing the login.");
                     }
@@ -585,11 +565,11 @@ public class DummyAuthStartupFilter : IStartupFilter
 
                 if (context.Request.Path.StartsWithSegments("/logout"))
                 {
-                    Console.WriteLine("DummyAuthStartupFilter: Logout endpoint called");
+                    logger.LogDebug("DummyAuthStartupFilter: Logout endpoint called");
 
                     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-                    Console.WriteLine($"Signed out of context, redirecting to: {_frontendUrl}");
+                    logger.LogDebug("Signed out of context, redirecting to: {FrontendUrl}", _frontendUrl);
 
                     // Ensure proper redirect without double-encoding
                     context.Response.Headers["Location"] = _frontendUrl;
@@ -600,7 +580,7 @@ public class DummyAuthStartupFilter : IStartupFilter
                 // Maintain dummy user session if signed in
                 if (context.User.Identity?.IsAuthenticated == true)
                 {
-                    Console.WriteLine("DummyAuthStartupFilter: User is authenticated");
+                    logger.LogDebug("DummyAuthStartupFilter: User is authenticated");
 
                     // Generate an identity with claims replicating Keycloak behavior
                     var identity = new ClaimsIdentity(new[]
