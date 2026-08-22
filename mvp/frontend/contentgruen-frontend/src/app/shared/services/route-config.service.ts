@@ -85,7 +85,7 @@ export class RouteConfigService {
 
       case '/login/managed':
         return {
-          pageTitle: 'ContentGrün Login',
+          pageTitle: 'Gut gesagt – Login',
           showBackButton: true,
           showContributeButton: false,
           showContributionsButton: false

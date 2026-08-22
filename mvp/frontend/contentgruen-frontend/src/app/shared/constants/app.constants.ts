@@ -47,7 +47,7 @@ export const CONTENT_ICONS = {
 };
 
 export const PAGE_TITLES = {
-  HOME: 'ContentGrün',
+  HOME: 'Gut gesagt',
   SEARCH_RESULTS: 'Suchergebnisse',
   CONTRIBUTE: 'Beitrag verfassen',
   CONTRIBUTIONS: 'Meine Beiträge',
