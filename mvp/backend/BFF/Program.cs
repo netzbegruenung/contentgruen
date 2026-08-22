@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Transforms;
 using BFF.Services;
+using BFF.Proxy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -235,68 +236,16 @@ builder.Services.AddReverseProxy()
                 try
                 {
                     var httpContext = transformContext.HttpContext;
-                    var requestPath = httpContext.Request.Path.Value;
                     var logger = httpContext.RequestServices.GetRequiredService<ILogger<Program>>();
 
-                    logger.LogTrace("Processing request transform for path: {Path}", requestPath);
+                    logger.LogTrace("Processing request transform for path: {Path}", httpContext.Request.Path.Value);
 
-                    var userId = ClaimUtilities.GetUserId(httpContext.User);
-                    var path = httpContext.Request.Path.Value?.ToLower() ?? "";
-
-                    // Check if this is a public endpoint
-                    var isPublicEndpoint = new[] {
-                        "/api/v1/search/",
-                        "/api/v1/metrics/",
-                        "/api/metrics",
-                        "/api/v1/usage/content/",  // Allow anonymous usage tracking
-                        "/api/v1/usage/trending",   // Allow anonymous access to trending content
-                        "/api/v1/content/recent",   // Allow anonymous access to recent content
-                        "/api/v1/moderation/report" // Allow anonymous content reporting with session ID
-                    }
-                        .Any(endpoint => path.Contains(endpoint));
-
-                    if (!string.IsNullOrEmpty(userId))
-                    {
-                        // Forward the unique identifier in the `X-User` header
-                        transformContext.ProxyRequest.Headers.Add("X-User", userId);
-                        logger.LogDebug("Added X-User header for authenticated user: {UserId}", userId);
-
-                        // Forward admin status if user is admin
-                        var isAdmin = httpContext.User.HasClaim("isAdmin", "true") ||
-                                     httpContext.User.HasClaim("role", "admin") ||
-                                     httpContext.User.HasClaim(ClaimTypes.Role, "admin");
-                        if (isAdmin)
-                        {
-                            transformContext.ProxyRequest.Headers.Add("X-Is-Admin", "true");
-                            logger.LogDebug("Added X-Is-Admin header for admin user: {UserId}", userId);
-                        }
-                    }
-                    else if (isPublicEndpoint)
-                    {
-                        // For public endpoints, add anonymous user header
-                        transformContext.ProxyRequest.Headers.Add("X-User", "anonymous");
-                        logger.LogDebug("Added anonymous X-User header for public endpoint: {Path}", path);
-                    }
-                    else
-                    {
-                        logger.LogWarning("No user identifier found for protected endpoint: {Path}", path);
-                    }
-
-                    // Forward X-Session-Id header if present (for anonymous user tracking)
-                    if (httpContext.Request.Headers.TryGetValue("X-Session-Id", out var sessionId))
-                    {
-                        transformContext.ProxyRequest.Headers.Add("X-Session-Id", sessionId.ToString());
-                        logger.LogDebug("Forwarded X-Session-Id header: {SessionId}", sessionId);
-                    }
-
-                    // Log claims at trace level for debugging
-                    if (logger.IsEnabled(LogLevel.Trace))
-                    {
-                        foreach (var claim in transformContext.HttpContext.User.Claims)
-                        {
-                            logger.LogTrace("Claim: {Type} = {Value}", claim.Type, claim.Value);
-                        }
-                    }
+                    IdentityHeaderTransform.Apply(
+                        transformContext.ProxyRequest,
+                        httpContext.User,
+                        httpContext.Request.Path.Value,
+                        httpContext.Request.Headers,
+                        logger);
                 }
                 catch (Exception ex)
                 {
