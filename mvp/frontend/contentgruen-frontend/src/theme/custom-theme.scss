@@ -5,7 +5,7 @@
 @include mat.core();
 
 // Custom color palettes based on your brand colors
-$contentgruen-green-palette: (
+$gutgesagt-green-palette: (
   50: #e8f5e9,
   100: #c8e6c9,
   200: #a5d6a7,
@@ -39,7 +39,7 @@ $contentgruen-green-palette: (
 );
 
 // Light green palette for accent
-$contentgruen-light-green-palette: (
+$gutgesagt-light-green-palette: (
   50: #f5f9e9,
   100: #e6f0c7,
   200: #d5e6a2,
@@ -73,12 +73,12 @@ $contentgruen-light-green-palette: (
 );
 
 // Define Material palettes using M3 syntax
-$contentgruen-primary: mat.m2-define-palette($contentgruen-green-palette, 500, 300, 800);
-$contentgruen-accent: mat.m2-define-palette($contentgruen-light-green-palette, 500, 300, 700);
-$contentgruen-warn: mat.m2-define-palette(mat.$m2-red-palette);
+$gutgesagt-primary: mat.m2-define-palette($gutgesagt-green-palette, 500, 300, 800);
+$gutgesagt-accent: mat.m2-define-palette($gutgesagt-light-green-palette, 500, 300, 700);
+$gutgesagt-warn: mat.m2-define-palette(mat.$m2-red-palette);
 
 // Custom typography configuration with your fonts
-$contentgruen-typography: mat.m2-define-typography-config(
+$gutgesagt-typography: mat.m2-define-typography-config(
   $font-family: 'PTSans, Roboto, sans-serif',
   $headline-1: mat.m2-define-typography-level(80px, 88px, 400, 'GrueneType, Roboto, sans-serif', -0.01562em),
   $headline-2: mat.m2-define-typography-level(60px, 66px, 400, 'GrueneType, Roboto, sans-serif', -0.00833em),
@@ -96,19 +96,19 @@ $contentgruen-typography: mat.m2-define-typography-config(
 );
 
 // Create light theme
-$contentgruen-light-theme: mat.m2-define-light-theme((
+$gutgesagt-light-theme: mat.m2-define-light-theme((
   color: (
-    primary: $contentgruen-primary,
-    accent: $contentgruen-accent,
-    warn: $contentgruen-warn,
+    primary: $gutgesagt-primary,
+    accent: $gutgesagt-accent,
+    warn: $gutgesagt-warn,
   ),
-  typography: $contentgruen-typography,
+  typography: $gutgesagt-typography,
   density: 0,
 ));
 
 // Apply the theme
-@include mat.all-component-themes($contentgruen-light-theme);
-@include mat.typography-hierarchy($contentgruen-typography);
+@include mat.all-component-themes($gutgesagt-light-theme);
+@include mat.typography-hierarchy($gutgesagt-typography);
 
 // CSS Custom Properties for consistent theming
 :root {
@@ -196,44 +196,44 @@ $contentgruen-light-theme: mat.m2-define-light-theme((
 }
 
 // Utility classes for common patterns
-.contentgruen-primary-bg {
+.gutgesagt-primary-bg {
   background-color: var(--primary-main) !important;
   color: white !important;
 }
 
-.contentgruen-primary-dark-bg {
+.gutgesagt-primary-dark-bg {
   background-color: var(--primary-dark) !important;
   color: white !important;
 }
 
-.contentgruen-accent-bg {
+.gutgesagt-accent-bg {
   background-color: var(--accent-main) !important;
   color: white !important;
 }
 
-.contentgruen-surface-bg {
+.gutgesagt-surface-bg {
   background-color: var(--bg-card) !important;
   color: var(--text-primary) !important;
 }
 
 // Material button customizations
 .mat-mdc-raised-button {
-  &.contentgruen-primary {
+  &.gutgesagt-primary {
     background-color: var(--primary-main) !important;
     color: white !important;
   }
 
-  &.contentgruen-primary-dark {
+  &.gutgesagt-primary-dark {
     background-color: var(--primary-dark) !important;
     color: white !important;
   }
 
-  &.contentgruen-accent {
+  &.gutgesagt-accent {
     background-color: var(--accent-main) !important;
     color: white !important;
   }
 
-  &.contentgruen-surface {
+  &.gutgesagt-surface {
     background-color: var(--bg-card) !important;
     color: var(--primary-dark) !important;
   }
