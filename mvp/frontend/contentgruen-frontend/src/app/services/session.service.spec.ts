@@ -37,7 +37,7 @@ describe('SessionService', () => {
 
       expect(sessionId).toBeTruthy();
       expect(sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-      expect(localStorageSpy.setItem).toHaveBeenCalledWith('contentgruen_session_id', sessionId);
+      expect(localStorageSpy.setItem).toHaveBeenCalledWith('gutgesagt_session_id', sessionId);
     });
 
     it('should retrieve existing session ID from localStorage', () => {
@@ -48,7 +48,7 @@ describe('SessionService', () => {
       const sessionId = service.getSessionId();
 
       expect(sessionId).toBe(existingSessionId);
-      expect(localStorageSpy.getItem).toHaveBeenCalledWith('contentgruen_session_id');
+      expect(localStorageSpy.getItem).toHaveBeenCalledWith('gutgesagt_session_id');
     });
 
     it('should return the same session ID on multiple calls', () => {
@@ -73,7 +73,7 @@ describe('SessionService', () => {
 
       expect(newSessionId).not.toBe(oldSessionId);
       expect(newSessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-      expect(localStorageSpy.setItem).toHaveBeenCalledWith('contentgruen_session_id', newSessionId);
+      expect(localStorageSpy.setItem).toHaveBeenCalledWith('gutgesagt_session_id', newSessionId);
     });
 
     it('should use the new session ID after regeneration', () => {
@@ -95,7 +95,7 @@ describe('SessionService', () => {
       service = TestBed.inject(SessionService);
       service.clearSessionId();
 
-      expect(localStorageSpy.removeItem).toHaveBeenCalledWith('contentgruen_session_id');
+      expect(localStorageSpy.removeItem).toHaveBeenCalledWith('gutgesagt_session_id');
     });
 
     it('should generate a new session ID after clearing', () => {

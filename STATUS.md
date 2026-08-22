@@ -1,4 +1,4 @@
-# Project Status – ContentGrün
+# Project Status – Gut gesagt
 
 > Last updated: 2026-07-25
 
@@ -6,7 +6,7 @@ Current Objective: **Polish the MVP and grow usage**
 
 ## Goal of the MVP Release
 
-The MVP of ContentGrün targets active members of Netzbegrünung (10–50 users).
+The MVP of Gut gesagt targets active members of Netzbegrünung (10–50 users).
 It lets users perform semantic searches over a shared pool of vetted political content,
 use existing comments/background info, and contribute their own.
 
@@ -58,7 +58,7 @@ Candidate features:
 
 ## Strategic Decisions
 
-* MVP launches **without AI generation of argumentative replies** — ContentGrün is a curated exchange of human-vetted arguments, not a generator. AI is used only at ingestion time to assist with image captions.
+* MVP launches **without AI generation of argumentative replies** — Gut gesagt is a curated exchange of human-vetted arguments, not a generator. AI is used only at ingestion time to assist with image captions.
 * UI kept **simple and mobile-first** for the MVP.
 
 ## Next Steps (high → low priority)

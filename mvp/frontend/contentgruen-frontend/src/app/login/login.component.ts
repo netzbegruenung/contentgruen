@@ -66,7 +66,7 @@ export class LoginComponent {
         this.isLoading = true;
 
         if (this.isManagedLogin) {
-            // ContentGrün managed login
+            // Gut gesagt managed login
             const { email, password } = this.loginForm.value;
 
             this.authService.loginWithManagedAuth(email, password).subscribe({

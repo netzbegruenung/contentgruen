@@ -1,5 +1,5 @@
 """
-Qdrant repository implementations for ContentGrün semantic search.
+Qdrant repository implementations for Gut gesagt semantic search.
 
 This package provides Qdrant-based implementations of all repository interfaces,
 using Qdrant vector database for semantic search and storage.

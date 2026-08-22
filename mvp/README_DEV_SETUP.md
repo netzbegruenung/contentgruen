@@ -1,6 +1,6 @@
-# ContentGrün Development Setup
+# Gut gesagt Development Setup
 
-This guide explains how to run ContentGrün in different development modes.
+This guide explains how to run Gut gesagt in different development modes.
 
 ## Prerequisites
 

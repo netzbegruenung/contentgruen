@@ -25,7 +25,7 @@ class Post(BaseContent):
         Source platform of the post (e.g. "mastodon", "bluesky", "x").
     author: str
         Handle/name of the post's original author on the source platform
-        (distinct from the ContentGruen user who imported it).
+        (distinct from the Gut gesagt user who imported it).
     url: Optional[str]
         Permalink to the original post.
     engagement: int

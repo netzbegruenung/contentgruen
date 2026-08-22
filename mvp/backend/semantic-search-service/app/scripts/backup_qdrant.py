@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ContentGrün Qdrant Backup Script
+Gut gesagt Qdrant Backup Script
 Creates a snapshot of the Qdrant collection and saves it to backup directory
 """
 

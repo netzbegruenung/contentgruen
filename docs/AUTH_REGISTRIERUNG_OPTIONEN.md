@@ -315,7 +315,7 @@ Zwei deutlich verschiedene Untervarianten, die getrennt zu bewerten sind.
 
 #### (a1) Eigener Client im bestehenden Realm `user.netzbegruenung.de`
 
-**Beschreibung.** ContentGrün/GutGesagt bekommt einen eigenen OIDC-Client, damit
+**Beschreibung.** Gut gesagt bekommt einen eigenen OIDC-Client, damit
 Branding, Redirect-URIs und Scopes unabhängig sind. Self-Registration ist damit **nicht**
 erreichbar: „User registration“ ist in Keycloak eine **Realm**-Einstellung, kein
 Client-Attribut. Sie einzuschalten öffnet die Registrierung für *alle* Anwendungen, die an

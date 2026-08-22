@@ -1,6 +1,6 @@
 # CLAUDE.md - Project Guide for AI Assistants
 
-This file helps AI assistants (like Claude) understand the ContentGrün project structure and development workflow.
+This file helps AI assistants (like Claude) understand the Gut gesagt project structure and development workflow.
 
 ## IMPORTANT: Git Guidelines
 - **NO EMOJIS** in commit messages
@@ -106,7 +106,7 @@ run-tests.bat   # Windows (or scripts/test/run-all-tests.bat)
 
 ## Project Overview
 
-ContentGrün is a semantic content platform for green political activism, helping users find and share relevant political content through AI-powered search.
+Gut gesagt is a semantic content platform for green political activism, helping users find and share relevant political content through AI-powered search.
 
 ### Tech Stack
 - **Frontend**: Angular 20+ with Material Design

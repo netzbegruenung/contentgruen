@@ -1,6 +1,6 @@
-# 🚀 Deployment Guide – ContentGrün
+# 🚀 Deployment Guide – Gut gesagt
 
-This guide helps you deploy ContentGrün in a test or production environment using Docker and `docker-compose`.
+This guide helps you deploy Gut gesagt in a test or production environment using Docker and `docker-compose`.
 Prod Server is managed by Saltstack.
 
 We aim for a **clean, reproducible setup** with minimal manual steps.
@@ -116,7 +116,7 @@ TLS certificates are managed by Certbot with automatic renewal.
 
 ### 🌐 Domains & Routing
 
-In production, ContentGrün is accessed via subdomains routed by an external Nginx reverse proxy:
+In production, Gut gesagt is accessed via subdomains routed by an external Nginx reverse proxy:
 
 | Domain/Subdomain                                | Target Service          |
 | ----------------------------------------------- | ----------------------- |
@@ -203,7 +203,7 @@ docker system prune -a --volumes -f
 
 ### Backup and Restore System
 
-ContentGrün uses an automated backup system that backs up both Qdrant vector data and PostgreSQL metadata.
+Gut gesagt uses an automated backup system that backs up both Qdrant vector data and PostgreSQL metadata.
 
 **First-time setup:**
 
