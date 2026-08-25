@@ -42,27 +42,21 @@ class UsageTrackingService:
     def track_content_usage(
         self,
         content_id: str,
-        user_id: Optional[str] = None,
         session_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        device_category: Optional[str] = None,
     ) -> bool:
         """
         Track that a content item was used (copied).
 
         Args:
             content_id: String UUID of the content item
-            user_id: Optional user identifier
             session_id: Optional session identifier
-            ip_address: Optional IP address
-            user_agent: Optional user agent string
+            device_category: Grobe Geraetekategorie, bereits abgeleitet
 
         Returns:
             bool: True if tracking was successful
         """
-        logger.info(
-            f"Service: Tracking usage for content {content_id}, user: {user_id}"
-        )
+        logger.info(f"Service: Tracking usage for content {content_id}")
 
         # Validate content ID
         if not self._validate_content_id(content_id):
@@ -73,11 +67,9 @@ class UsageTrackingService:
             content_uuid = uuid.UUID(content_id)
             result = self.repository.track_usage(
                 content_id=content_uuid,
-                user_id=user_id,
                 event_type="copy",
                 session_id=session_id,
-                ip_address=ip_address,
-                user_agent=user_agent,
+                device_category=device_category,
             )
             logger.info(
                 f"Service: Repository returned {result} for content {content_id}"

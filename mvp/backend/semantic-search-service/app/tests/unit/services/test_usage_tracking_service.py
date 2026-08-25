@@ -30,20 +30,16 @@ class TestUsageTrackingService:
         """Test successful content usage tracking."""
         # Arrange
         content_id = str(uuid.uuid4())
-        user_id = "testuser"
         session_id = "session123"
-        ip_address = "192.168.1.1"
-        user_agent = "Mozilla/5.0"
+        device_category = "mobile"
 
         mock_repository.track_usage.return_value = True
 
         # Act
         result = service.track_content_usage(
             content_id=content_id,
-            user_id=user_id,
             session_id=session_id,
-            ip_address=ip_address,
-            user_agent=user_agent,
+            device_category=device_category,
         )
 
         # Assert
@@ -51,8 +47,32 @@ class TestUsageTrackingService:
         mock_repository.track_usage.assert_called_once()
         call_args = mock_repository.track_usage.call_args[1]
         assert str(call_args["content_id"]) == content_id
-        assert call_args["user_id"] == user_id
+        assert call_args["session_id"] == session_id
+        assert call_args["device_category"] == device_category
         assert call_args["event_type"] == "copy"
+
+    def test_track_content_usage_passes_no_person_bound_fields(
+        self, service, mock_repository
+    ):
+        """
+        Weder Nutzerkennung noch IP noch User-Agent duerfen das Repository
+        erreichen -- die Spalten dafuer gibt es nicht mehr.
+        """
+        mock_repository.track_usage.return_value = True
+
+        service.track_content_usage(
+            content_id=str(uuid.uuid4()),
+            session_id="session123",
+            device_category="desktop",
+        )
+
+        call_args = mock_repository.track_usage.call_args[1]
+        assert set(call_args) == {
+            "content_id",
+            "event_type",
+            "session_id",
+            "device_category",
+        }
 
     def test_track_content_usage_invalid_uuid(self, service, mock_repository):
         """Test tracking with invalid UUID format."""
