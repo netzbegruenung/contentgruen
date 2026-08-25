@@ -17,37 +17,30 @@ CREATE TABLE IF NOT EXISTS usage_tracking (
 );
 
 -- Create usage events table for detailed tracking
+--
+-- Bewusst ohne user_id, ip_hash und user_agent: keine der drei Spalten wurde je
+-- von einer Abfrage gelesen. user_id blieb ueberdies leer, weil das BFF den
+-- Header X-User setzt und die Dependency X-User-Id las. An die Stelle des
+-- User-Agent-Rohwerts tritt device_category mit "mobile", "tablet", "desktop"
+-- oder "unknown" (app/utils/device_category.py). Bestandsdatenbanken migriert
+-- migrations/2026-08-25-usage-events-datensparsamkeit.sql.
 CREATE TABLE IF NOT EXISTS usage_events (
     id SERIAL PRIMARY KEY,
     content_id UUID NOT NULL,
-    user_id VARCHAR(255),
     event_type VARCHAR(50) DEFAULT 'copy' NOT NULL,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     session_id VARCHAR(255),
-    ip_hash VARCHAR(64), -- Store hashed IP for analytics without privacy concerns
-    user_agent VARCHAR(500),
+    device_category VARCHAR(20),
     FOREIGN KEY (content_id) REFERENCES usage_tracking(content_id) ON DELETE CASCADE
 );
 
--- Create user statistics view
-CREATE OR REPLACE VIEW user_usage_statistics AS
-SELECT
-    ut.user_id,
-    COUNT(DISTINCT ut.content_id) as unique_contents_contributed,
-    SUM(t.usage_count) as total_usage_count,
-    MAX(t.last_used) as last_content_used,
-    MIN(t.first_used) as first_content_used
-FROM usage_tracking t
-JOIN (
-    SELECT DISTINCT content_id, user_id
-    FROM usage_events
-    WHERE user_id IS NOT NULL
-) ut ON t.content_id = ut.content_id
-GROUP BY ut.user_id;
+-- Die frueher hier definierte View user_usage_statistics ist entfallen: sie
+-- gruppierte nach usage_events.user_id. Kein Anwendungscode hat sie je benutzt
+-- (die Nutzerstatistik in /api/v1/usage/users/{id}/usage-stats kommt aus Qdrant
+-- und usage_tracking, siehe repositories/usage_tracking_repository.py).
 
 -- Create indexes for performance
 CREATE INDEX idx_usage_events_content_id ON usage_events(content_id);
-CREATE INDEX idx_usage_events_user_id ON usage_events(user_id);
 CREATE INDEX idx_usage_events_timestamp ON usage_events(timestamp DESC);
 CREATE INDEX idx_usage_events_content_timestamp ON usage_events(content_id, timestamp DESC); -- Composite index for time-based queries
 CREATE INDEX idx_usage_tracking_usage_count ON usage_tracking(usage_count DESC);

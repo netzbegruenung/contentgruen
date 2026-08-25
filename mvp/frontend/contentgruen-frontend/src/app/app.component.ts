@@ -55,24 +55,27 @@ export class AppComponent implements OnInit, OnDestroy {
   isTablet: boolean = false;
 
   selectedProfilePictureUrl: string = '';
+  // Lokal ausgeliefert statt von der DiceBear-API: sonst ginge bei jedem
+  // Seitenaufruf die IP-Adresse an einen Drittanbieter. Erzeugt von
+  // scripts/generate-avatars.mjs.
   anonymousAvatars: string[] = [
-    'https://api.dicebear.com/7.x/initials/svg?seed=question&chars=%3F&backgroundColor=e0e0e0',
-    'https://api.dicebear.com/7.x/shapes/svg?seed=anon&backgroundColor=e0e0e0'
+    '/avatars/anon-question.svg',
+    '/avatars/anon-shapes.svg'
   ];
   currentAnonymousIndex: number = 0;
   profilePictures: string[] = [
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female1&backgroundColor=b6e3f4&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female2&backgroundColor=ffd5dc&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female3&backgroundColor=c0aede&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female4&backgroundColor=ffdfbf&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female5&backgroundColor=d1f4e0&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female6&backgroundColor=ffc0cb&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male1&backgroundColor=aec6cf&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male2&backgroundColor=ffb6c1&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male3&backgroundColor=ffd700&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male4&backgroundColor=98fb98&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male5&backgroundColor=dda0dd&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male6&backgroundColor=f0e68c&mouth=smile&eyes=happy",
+    '/avatars/female1.svg',
+    '/avatars/female2.svg',
+    '/avatars/female3.svg',
+    '/avatars/female4.svg',
+    '/avatars/female5.svg',
+    '/avatars/female6.svg',
+    '/avatars/male1.svg',
+    '/avatars/male2.svg',
+    '/avatars/male3.svg',
+    '/avatars/male4.svg',
+    '/avatars/male5.svg',
+    '/avatars/male6.svg',
   ];
 
   userInfo: UserInfo | null = null;
@@ -211,9 +214,18 @@ export class AppComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
+  /**
+   * Nur bekannte, lokal ausgelieferte Avatare akzeptieren. In sessionStorage
+   * kann noch eine alte DiceBear-CDN-URL aus einer frueheren Sitzung
+   * liegen; die wuerde den Drittabruf sonst weiter ausloesen.
+   */
+  private isKnownAvatar(url: string | null): url is string {
+    return !!url && (this.profilePictures.includes(url) || this.anonymousAvatars.includes(url));
+  }
+
   private setRandomProfilePicture(): void {
     const sessionProfilePicture = sessionStorage.getItem('profilePicture');
-    if (sessionProfilePicture) {
+    if (this.isKnownAvatar(sessionProfilePicture)) {
       // Use the session-stored profile picture
       this.selectedProfilePictureUrl = sessionProfilePicture;
       this.logger.debug('Using stored profile picture:', this.selectedProfilePictureUrl);

@@ -6,6 +6,7 @@ import { SearchByTextRequest, SearchResponse } from './dtos/searchDtos';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { StateManagementService } from './state-management.service';
+import { SessionService } from './session.service';
 import { throwError } from 'rxjs';
 
 @Injectable({
@@ -13,32 +14,13 @@ import { throwError } from 'rxjs';
 })
 export class SearchService {
   private searchApiUrl = `${environment.baseUrl}/api/v1/search/searchByText`;
-  private sessionId: string;
 
   constructor(
     private http: HttpClient,
     private logger: LoggingService,
-    private stateService: StateManagementService
-  ) {
-    // Get or create session ID for tracking
-    this.sessionId = this.getOrCreateSessionId();
-  }
-
-  private getOrCreateSessionId(): string {
-    const storageKey = 'gutgesagt_session_id';
-    let sessionId = localStorage.getItem(storageKey);
-
-    if (!sessionId) {
-      sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-      localStorage.setItem(storageKey, sessionId);
-    }
-
-    return sessionId;
-  }
+    private stateService: StateManagementService,
+    private sessionService: SessionService
+  ) { }
 
   search(queryText: string, limit: number): Observable<SearchResponse> {
     this.logger.debug('Searching for:', queryText);
@@ -52,9 +34,11 @@ export class SearchService {
       limit: limit
     };
 
-    // Add session ID header for metrics tracking
+    // Bei jedem Request frisch abfragen statt einmal im Konstruktor zu cachen:
+    // beim Abmelden wird die Session-ID neu vergeben, und ein gecachter Wert
+    // wuerde die alte Kennung ueber die Abmeldung hinweg weitersenden.
     const headers = new HttpHeaders({
-      'X-Session-Id': this.sessionId
+      'X-Session-Id': this.sessionService.getSessionId()
     });
 
     return this.http.post<SearchResponse>(this.searchApiUrl, requestPayload, { headers }).pipe(

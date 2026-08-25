@@ -3,14 +3,14 @@ API endpoints for usage tracking functionality.
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends, Request, Header
+from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, validator
 import uuid
-import hashlib
 from datetime import datetime, timedelta
 
 from dependencies import get_settings, get_current_user_optional
+from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
 from services.cleanup.usage_cleanup_service import get_cleanup_service
 from core.config import Settings
@@ -77,10 +77,8 @@ class CleanupResultResponse(BaseModel):
 @router.post("/content/{content_id}/usage", response_model=TrackUsageResponse)
 async def track_content_usage(
     content_id: str,
-    request: Request,
     body: TrackUsageRequest,
     user_agent: Optional[str] = Header(None),
-    current_user: Optional[str] = Depends(get_current_user_optional),
     settings: Settings = Depends(get_settings),
 ):
     """
@@ -88,9 +86,13 @@ async def track_content_usage(
 
     This endpoint should be called when a user clicks the copy button.
     It increments the usage counter for the specified content.
+
+    Der User-Agent wird sofort zu einer groben Geraetekategorie verdichtet; der
+    Rohwert wird nicht weitergereicht und nicht gespeichert. Die IP-Adresse wird
+    gar nicht mehr angefasst.
     """
     logger.info(
-        f"Tracking usage for content {content_id}, user: {current_user}, session: {body.session_id}"
+        f"Tracking usage for content {content_id}, session: {body.session_id}"
     )
     try:
         # Validate content_id format
@@ -108,28 +110,16 @@ async def track_content_usage(
             # Remove any potentially malicious characters
             body.session_id = body.session_id[:255]  # Truncate to max length
 
-        # Get client IP (consider proxy headers) and hash it for privacy
-        client_ip = request.client.host if request.client else None
-        if "X-Forwarded-For" in request.headers:
-            client_ip = request.headers["X-Forwarded-For"].split(",")[0].strip()
-
-        # Hash IP for privacy (store only hash, not actual IP)
-        ip_hash = None
-        if client_ip:
-            ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()
-
-        # Sanitize user agent
-        if user_agent and len(user_agent) > 500:
-            user_agent = user_agent[:500]
+        # User-Agent hier verdichten, nicht weiter unten: ab dieser Zeile
+        # existiert der Rohwert im weiteren Ablauf nicht mehr.
+        device_category = derive_device_category(user_agent)
 
         # Track usage
         logger.info(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
-            user_id=current_user,
             session_id=body.session_id,
-            ip_address=ip_hash,  # Pass hash instead of raw IP
-            user_agent=user_agent,
+            device_category=device_category,
         )
 
         if not success:

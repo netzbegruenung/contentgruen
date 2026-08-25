@@ -63,7 +63,22 @@ class UsageTracking(Base):
 
 
 class UsageEvent(Base):
-    """Track individual usage events for analytics."""
+    """Track individual usage events for analytics.
+
+    Die Spalten user_id, ip_hash und user_agent sind entfallen. Keine davon
+    wurde je von einer Abfrage gelesen:
+
+    - user_id kam ueber den Live-Pfad nie an. Die Dependency las den Header
+      X-User-Id, das BFF setzt X-User -- die Spalte blieb leer.
+    - ip_hash war ein ungesalzener SHA-256 ueber die IP (sogar zweimal
+      angewandt) und damit ueber den IPv4-Raum zurueckrechenbar.
+    - user_agent stand als Rohwert mit bis zu 500 Zeichen darin; an seine Stelle
+      tritt device_category mit "mobile", "tablet", "desktop" oder "unknown"
+      (siehe utils/device_category.py).
+
+    Was bleibt, traegt die Nutzungszaehlung: welcher Inhalt, welche Art
+    Ereignis, wann, und eine Sitzungskennung fuer die Abgrenzung.
+    """
 
     __tablename__ = "usage_events"
 
@@ -73,14 +88,12 @@ class UsageEvent(Base):
         ForeignKey("usage_tracking.content_id", ondelete="CASCADE"),
         nullable=False,
     )
-    user_id = Column(String(255), nullable=True)
     event_type = Column(String(50), default="copy", nullable=False)
     timestamp = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     session_id = Column(String(255), nullable=True)
-    ip_hash = Column(String(64), nullable=True)  # Store hashed IP for privacy
-    user_agent = Column(String(500), nullable=True)
+    device_category = Column(String(20), nullable=True)
 
     # Relationship to tracking
     tracking = relationship("UsageTracking", back_populates="events")
@@ -88,7 +101,6 @@ class UsageEvent(Base):
     # Indexes for performance
     __table_args__ = (
         Index("idx_usage_events_content_id", "content_id"),
-        Index("idx_usage_events_user_id", "user_id"),
         Index("idx_usage_events_timestamp", "timestamp"),
     )
 

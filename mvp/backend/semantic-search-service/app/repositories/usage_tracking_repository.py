@@ -3,7 +3,6 @@ Repository for managing usage tracking data.
 Handles all database operations for usage statistics.
 """
 
-import hashlib
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
@@ -28,28 +27,26 @@ class UsageTrackingRepository:
     def track_usage(
         self,
         content_id: uuid.UUID,
-        user_id: Optional[str] = None,
         event_type: str = "copy",
         session_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        device_category: Optional[str] = None,
     ) -> bool:
         """
         Track a usage event for a content item.
 
         Args:
             content_id: UUID of the content item
-            user_id: Optional user identifier
             event_type: Type of usage event (default: "copy")
             session_id: Optional session identifier
-            ip_address: Optional IP address (will be hashed)
-            user_agent: Optional user agent string
+            device_category: Grobe Geraetekategorie, bereits vom Aufrufer
+                abgeleitet (utils.device_category). Der User-Agent-Rohwert
+                kommt hier nicht mehr an.
 
         Returns:
             bool: True if tracking was successful
         """
         logger.info(
-            f"Repository: Tracking usage for content {content_id}, user: {user_id}, event: {event_type}"
+            f"Repository: Tracking usage for content {content_id}, event: {event_type}"
         )
         try:
             with self.db.get_session() as session:
@@ -67,19 +64,12 @@ class UsageTrackingRepository:
                 # Increment usage count
                 tracking.increment_usage()
 
-                # Hash IP address for privacy
-                ip_hash = None
-                if ip_address:
-                    ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()
-
                 # Create usage event record
                 event = UsageEvent(
                     content_id=content_id,
-                    user_id=user_id,
                     event_type=event_type,
                     session_id=session_id,
-                    ip_hash=ip_hash,
-                    user_agent=user_agent[:500] if user_agent else None,  # Limit length
+                    device_category=device_category,
                 )
                 session.add(event)
 
