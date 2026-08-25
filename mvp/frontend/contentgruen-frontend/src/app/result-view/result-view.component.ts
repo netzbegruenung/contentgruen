@@ -92,23 +92,25 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   // Avatar properties
   selectedProfilePictureUrl: string = '';
+  // Lokal ausgeliefert statt von der DiceBear-API, siehe
+  // scripts/generate-avatars.mjs.
   anonymousAvatars: string[] = [
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=anon-female&backgroundColor=e0e0e0&mouth=smile&eyes=happy',
-    'https://api.dicebear.com/7.x/avataaars/svg?seed=anon-male&backgroundColor=e0e0e0&mouth=smile&eyes=happy'
+    '/avatars/anon-female.svg',
+    '/avatars/anon-male.svg'
   ];
   profilePictures: string[] = [
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female1&backgroundColor=b6e3f4&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female2&backgroundColor=ffd5dc&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female3&backgroundColor=c0aede&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female4&backgroundColor=ffdfbf&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female5&backgroundColor=d1f4e0&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=female6&backgroundColor=ffc0cb&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male1&backgroundColor=aec6cf&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male2&backgroundColor=ffb6c1&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male3&backgroundColor=ffd700&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male4&backgroundColor=98fb98&mouth=smile&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male5&backgroundColor=dda0dd&mouth=twinkle&eyes=happy",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=male6&backgroundColor=f0e68c&mouth=smile&eyes=happy",
+    '/avatars/female1.svg',
+    '/avatars/female2.svg',
+    '/avatars/female3.svg',
+    '/avatars/female4.svg',
+    '/avatars/female5.svg',
+    '/avatars/female6.svg',
+    '/avatars/male1.svg',
+    '/avatars/male2.svg',
+    '/avatars/male3.svg',
+    '/avatars/male4.svg',
+    '/avatars/male5.svg',
+    '/avatars/male6.svg',
   ];
 
   constructor(
@@ -279,13 +281,22 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     return this.userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen';
   }
 
+  /**
+   * Nur bekannte, lokal ausgelieferte Avatare akzeptieren. In sessionStorage
+   * kann noch eine alte DiceBear-CDN-URL aus einer frueheren Sitzung
+   * liegen; die wuerde den Drittabruf sonst weiter ausloesen.
+   */
+  private isKnownAvatar(url: string | null): url is string {
+    return !!url && (this.profilePictures.includes(url) || this.anonymousAvatars.includes(url));
+  }
+
   private initializeAvatar(): void {
     const storedAvatar = sessionStorage.getItem('userAvatar');
     const storedAnonymous = sessionStorage.getItem('anonymousAvatar');
 
-    if (this.userInfo?.isAuthenticated && storedAvatar) {
+    if (this.userInfo?.isAuthenticated && this.isKnownAvatar(storedAvatar)) {
       this.selectedProfilePictureUrl = storedAvatar;
-    } else if (!this.userInfo?.isAuthenticated && storedAnonymous) {
+    } else if (!this.userInfo?.isAuthenticated && this.isKnownAvatar(storedAnonymous)) {
       this.selectedProfilePictureUrl = storedAnonymous;
     } else {
       this.updateAvatarForAuthStatus();
@@ -295,7 +306,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   private updateAvatarForAuthStatus(): void {
     if (!this.userInfo?.isAuthenticated) {
       const storedAnonymous = sessionStorage.getItem('anonymousAvatar');
-      if (storedAnonymous) {
+      if (this.isKnownAvatar(storedAnonymous)) {
         this.selectedProfilePictureUrl = storedAnonymous;
       } else {
         const randomIndex = Math.floor(Math.random() * this.anonymousAvatars.length);
@@ -304,7 +315,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
       }
     } else {
       const storedAvatar = sessionStorage.getItem('userAvatar');
-      if (storedAvatar) {
+      if (this.isKnownAvatar(storedAvatar)) {
         this.selectedProfilePictureUrl = storedAvatar;
       } else {
         const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
