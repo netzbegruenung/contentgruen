@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { SessionService } from '../services/session.service';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 export interface UserInfo {
@@ -26,7 +27,11 @@ export class AuthService {
   private userInfoSubject = new BehaviorSubject<UserInfo | null>(null);
   userInfo$ = this.userInfoSubject.asObservable()
 
-  constructor(private http: HttpClient, private router: Router) { }
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private sessionService: SessionService
+  ) { }
 
   login() {
     // Always navigate to the login selector page
@@ -89,6 +94,13 @@ export class AuthService {
     return this.http.get<any>(`${environment.baseUrl}/api/auth/modes`);
   }
 
+  /**
+   * Beim Abmelden bekommt der Browser eine neue Session-ID. Sonst truege er die
+   * alte Kennung weiter und verbaende die anonyme Nutzung nach der Abmeldung mit
+   * der angemeldeten davor. Die Neuvergabe steht in beiden Zweigen: der
+   * Erfolgsfall laedt die Seite ohnehin neu, der Fehlerfall navigiert nur --
+   * ohne die Zeile behielten laufende Dienste dort die alte ID.
+   */
   logout() {
     // Use the API logout endpoint which properly handles both Keycloak and managed users
     this.http.post(`${environment.baseUrl}/api/auth/logout`, {}, {
@@ -97,6 +109,7 @@ export class AuthService {
       next: (response: any) => {
         // Clear local user info
         this.setUserInfo({ isAuthenticated: false, userId: null, userName: null, claims: null });
+        this.sessionService.regenerateSessionId();
 
         // Navigate to home or login page
         const redirectUrl = response?.redirectUrl || '/';
@@ -106,6 +119,7 @@ export class AuthService {
         console.error('Logout failed:', err);
         // Fallback to clearing user info and redirecting
         this.setUserInfo({ isAuthenticated: false, userId: null, userName: null, claims: null });
+        this.sessionService.regenerateSessionId();
         this.router.navigate(['/']);
       }
     });

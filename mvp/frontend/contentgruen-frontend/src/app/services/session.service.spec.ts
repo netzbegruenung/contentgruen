@@ -4,13 +4,21 @@ import { SessionService } from './session.service';
 describe('SessionService', () => {
   let service: SessionService;
   let localStorageSpy: jasmine.SpyObj<Storage>;
+  let originalLocalStorage: PropertyDescriptor | undefined;
 
   beforeEach(() => {
+    // Den echten Descriptor merken: window.localStorage wird hier global
+    // ersetzt, und ohne Wiederherstellung sieht jedes danach laufende Spec den
+    // Spy statt des echten Speichers -- inklusive der fehlenden Methoden, die
+    // der Spy nicht nachbildet.
+    originalLocalStorage = Object.getOwnPropertyDescriptor(window, 'localStorage');
+
     // Create a spy for localStorage
     localStorageSpy = jasmine.createSpyObj('localStorage', ['getItem', 'setItem', 'removeItem']);
     Object.defineProperty(window, 'localStorage', {
       value: localStorageSpy,
-      writable: true
+      writable: true,
+      configurable: true
     });
 
     TestBed.configureTestingModule({});
@@ -20,6 +28,10 @@ describe('SessionService', () => {
     localStorageSpy.getItem.calls.reset();
     localStorageSpy.setItem.calls.reset();
     localStorageSpy.removeItem.calls.reset();
+
+    if (originalLocalStorage) {
+      Object.defineProperty(window, 'localStorage', originalLocalStorage);
+    }
   });
 
   describe('Session ID Generation', () => {
