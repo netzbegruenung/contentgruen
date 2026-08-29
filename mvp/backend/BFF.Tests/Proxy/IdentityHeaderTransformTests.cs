@@ -137,6 +137,64 @@ public class IdentityHeaderTransformTests
         Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
     }
 
+    [Theory]
+    [InlineData("X-User-Id")]
+    [InlineData("X-User-Name")]
+    [InlineData("X-Roles")]
+    [InlineData("X-Is-Authenticated")]
+    public void Apply_StripsEveryClientControlledIdentityHeader(string header)
+    {
+        // X-User-Id war der konkrete Fall: nicht entfernt, aber vom Semantic-Service
+        // gelesen -- ein anonymer Aufrufer konnte sich damit eine fremde Identitaet geben.
+        var proxyRequest = ProxyRequestCarrying((header, ClientSuppliedUser));
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AnonymousUser(),
+            PublicPath,
+            new HeaderDictionary(),
+            Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, header));
+    }
+
+    [Fact]
+    public void Apply_AuthenticatedUser_StripsClientControlledHeadersToo()
+    {
+        // Auch der Zweig mit angemeldetem Nutzer darf nichts vom Client stehen lassen.
+        var proxyRequest = ProxyRequestCarrying(
+            ("X-User-Id", ClientSuppliedUser),
+            ("X-Roles", "admin"));
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AuthenticatedUser("echte-kennung"),
+            ProtectedPath,
+            new HeaderDictionary(),
+            Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, "X-User-Id"));
+        Assert.Empty(ValuesOf(proxyRequest, "X-Roles"));
+        Assert.Equal(new[] { "echte-kennung" }, ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
+    }
+
+    [Fact]
+    public void ClientControlledIdentityHeaders_CoversUserAndAdminHeader()
+    {
+        // Die beiden urspruenglich einzeln entfernten Header muessen in der Liste bleiben,
+        // sonst faellt die Absicherung beim Umbau still hinten runter.
+        Assert.Contains(IdentityHeaderTransform.UserHeader, IdentityHeaderTransform.ClientControlledIdentityHeaders);
+        Assert.Contains(IdentityHeaderTransform.AdminHeader, IdentityHeaderTransform.ClientControlledIdentityHeaders);
+    }
+
+    [Fact]
+    public void ClientControlledIdentityHeaders_DoesNotContainSessionHeader()
+    {
+        // X-Session-Id ist bewusst clientseitig (anonyme Votes und Meldungen) und traegt
+        // keine Rechte. Er darf nicht versehentlich mit gestrippt werden.
+        Assert.DoesNotContain(IdentityHeaderTransform.SessionHeader, IdentityHeaderTransform.ClientControlledIdentityHeaders);
+    }
+
     [Fact]
     public void Apply_SessionIdHeader_IsReplacedNotAppended()
     {

@@ -6,11 +6,13 @@ namespace BFF.Proxy;
 /// Setzt die Header, aus denen das Backend Nutzeridentitaet und Adminrechte ableitet.
 ///
 /// YARP kopiert per Default saemtliche eingehenden Header in den Proxy-Request. Ein Client
-/// kann X-User und X-Is-Admin also selbst mitschicken; sie stehen bereits auf dem
-/// Proxy-Request, bevor dieser Code laeuft. Deshalb werden sie hier zuerst bedingungslos
-/// entfernt -- vor jeder Verzweigung, damit auch die Pfade ohne angemeldeten Nutzer nichts
-/// vom Client durchreichen -- und danach ausschliesslich aus den Claims des BFF gesetzt.
-/// Gesetzt wird ersetzend, damit beim Backend garantiert genau ein Wert ankommt.
+/// kann Identitaets- und Rechte-Header also selbst mitschicken; sie stehen bereits auf dem
+/// Proxy-Request, bevor dieser Code laeuft. Deshalb wird die Liste in
+/// <see cref="ClientControlledIdentityHeaders"/> hier zuerst bedingungslos entfernt -- vor
+/// jeder Verzweigung, damit auch die Pfade ohne angemeldeten Nutzer nichts vom Client
+/// durchreichen -- und danach werden X-User und X-Is-Admin ausschliesslich aus den Claims
+/// des BFF gesetzt. Gesetzt wird ersetzend, damit beim Backend garantiert genau ein Wert
+/// ankommt.
 /// </summary>
 public static class IdentityHeaderTransform
 {
@@ -19,6 +21,30 @@ public static class IdentityHeaderTransform
     public const string SessionHeader = "X-Session-Id";
 
     public const string AnonymousUser = "anonymous";
+
+    /// <summary>
+    /// Header, ueber die der Client keine Aussage treffen darf. Sie werden bedingungslos
+    /// entfernt, bevor irgendetwas gesetzt wird.
+    ///
+    /// Eine Aufzaehlung statt Einzelaufrufe, weil genau hier der Fehler entstanden ist:
+    /// X-User und X-Is-Admin wurden entfernt, X-User-Id nicht -- und der Semantic-Service
+    /// las X-User-Id (dependencies.get_current_user_optional). Ein anonymer Aufrufer
+    /// konnte sich damit per Header eine fremde Identitaet geben. X-User-Id wird
+    /// inzwischen nirgends mehr gelesen; er bleibt hier trotzdem stehen, damit ein
+    /// Wiedereinfuehren des Headers nicht erneut zur Luecke wird.
+    ///
+    /// Wer einen neuen Identitaets- oder Rechte-Header einfuehrt, traegt ihn hier ein.
+    /// Nicht enthalten ist X-Session-Id: das ist bewusst clientseitig (siehe unten).
+    /// </summary>
+    public static readonly string[] ClientControlledIdentityHeaders =
+    {
+        UserHeader,
+        AdminHeader,
+        "X-User-Id",
+        "X-User-Name",
+        "X-Roles",
+        "X-Is-Authenticated"
+    };
 
     /// <summary>
     /// Endpunkte, die ohne Anmeldung erreichbar sind und einen anonymen Nutzer bekommen.
@@ -42,8 +68,10 @@ public static class IdentityHeaderTransform
         ILogger logger)
     {
         // Zuerst und ohne Bedingung: der Client darf ueber Identitaet und Rechte nichts aussagen.
-        proxyRequest.Headers.Remove(UserHeader);
-        proxyRequest.Headers.Remove(AdminHeader);
+        foreach (var header in ClientControlledIdentityHeaders)
+        {
+            proxyRequest.Headers.Remove(header);
+        }
 
         var normalizedPath = path?.ToLower() ?? "";
         var userId = ClaimUtilities.GetUserId(user);
