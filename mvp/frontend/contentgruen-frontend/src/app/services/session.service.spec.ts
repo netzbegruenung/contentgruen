@@ -52,6 +52,35 @@ describe('SessionService', () => {
       expect(localStorageSpy.setItem).toHaveBeenCalledWith('gutgesagt_session_id', sessionId);
     });
 
+    it('should not use Math.random for session IDs', () => {
+      // Math.random ist nicht kryptografisch sicher: der Zustand des Generators
+      // laesst sich aus wenigen Ausgaben rekonstruieren, kuenftige Werte sind
+      // dann vorhersagbar. Fuer eine Kennung, die anonyme Meldungen und
+      // Nutzungsereignisse zusammenhaelt, ist das die falsche Eigenschaft.
+      //
+      // Die Formatpruefungen in den anderen Specs wuerden einen Rueckfall auf
+      // Math.random nicht bemerken -- der alte Code erzeugte dieselbe UUID-Form.
+      const randomSpy = spyOn(Math, 'random').and.callThrough();
+      localStorageSpy.getItem.and.returnValue(null);
+
+      service = TestBed.inject(SessionService);
+      service.regenerateSessionId();
+
+      expect(randomSpy).not.toHaveBeenCalled();
+    });
+
+    it('should produce distinct session IDs on repeated generation', () => {
+      localStorageSpy.getItem.and.returnValue(null);
+      service = TestBed.inject(SessionService);
+
+      const ids = new Set<string>();
+      for (let i = 0; i < 100; i++) {
+        ids.add(service.regenerateSessionId());
+      }
+
+      expect(ids.size).toBe(100);
+    });
+
     it('should retrieve existing session ID from localStorage', () => {
       const existingSessionId = '12345678-1234-4234-8234-123456789012';
       localStorageSpy.getItem.and.returnValue(existingSessionId);

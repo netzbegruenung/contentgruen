@@ -30,6 +30,7 @@ sie fluechtig und pseudonymisiert.
 
 import hashlib
 import secrets
+import uuid
 from typing import Optional
 
 from fastapi import Request
@@ -82,3 +83,34 @@ def derive_client_key(request: Request) -> str:
 
     digest = hashlib.sha256(_SALT + address.encode("utf-8")).hexdigest()
     return f"ip:{digest[:16]}"
+
+
+def normalize_session_id(session_id: Optional[str]) -> Optional[str]:
+    """
+    Nimmt eine clientseitige Session-Kennung an, wenn sie wie eine aussieht.
+
+    Was diese Pruefung *nicht* leistet: Sicherheit. Der Wert kommt vom Client,
+    und wer ihn wechseln will, erzeugt eben gueltige UUIDs -- seit dieser
+    Aenderung erzeugt die SPA selbst welche. Deshalb haengt seit dem Umbau von
+    /moderation/report auch keine Entscheidung mehr an diesem Wert.
+
+    Was sie leistet, ist Hygiene: der Wert landet in einer Spalte, die anonyme
+    Meldungen zusammenhaelt und im Moderationsposteingang angezeigt wird. Ohne
+    Pruefung kann dort auf einer Route ohne Anmeldung beliebiger Text mit bis zu
+    255 Zeichen stehen.
+
+    Ein unpassender Wert wird verworfen, nicht abgewiesen: eine kaputte Kennung
+    darf niemanden seine Meldung kosten (DSA Art. 16). Der Aufrufer wird dann
+    behandelt, als haette er gar keine geschickt.
+    """
+    if not session_id:
+        return None
+
+    candidate = session_id.strip()
+    try:
+        # Akzeptiert die kanonische Form mit Bindestrichen ebenso wie ohne.
+        uuid.UUID(candidate)
+    except (ValueError, AttributeError):
+        return None
+
+    return candidate

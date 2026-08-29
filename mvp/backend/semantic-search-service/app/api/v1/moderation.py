@@ -13,7 +13,7 @@ from core.config import Settings
 from core.logging import get_logger
 from dependencies import get_settings, get_current_user_optional, require_admin
 from utils.rate_limiter import report_rate_limiter
-from utils.client_identity import derive_client_key
+from utils.client_identity import derive_client_key, normalize_session_id
 
 logger = get_logger(__name__)
 
@@ -144,7 +144,11 @@ async def report_content(
         # erreichbar sein soll. Ein Zufallstoken je Meldung erfuellt die
         # Bedingung, ohne irgendetwas ueber den Melder auszusagen; insbesondere
         # ist er nicht aus der Adresse abgeleitet.
-        reporter_session = x_session_id
+        # Nur eine wohlgeformte Kennung uebernehmen. Das ist Hygiene, keine
+        # Sicherheitsmassnahme -- an diesem Wert haengt seit dem Umbau des
+        # Rate-Limits keine Entscheidung mehr. Ein unpassender Wert wird
+        # verworfen statt die Meldung abzuweisen.
+        reporter_session = normalize_session_id(x_session_id)
         if not is_authenticated and not reporter_session:
             reporter_session = f"anon:{uuid.uuid4()}"
 

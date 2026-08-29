@@ -18,6 +18,7 @@ from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
 from utils import client_identity
+from utils.client_identity import normalize_session_id
 from utils.rate_limiter import RateLimiter
 
 REPORT_URL = "/api/v1/moderation/report"
@@ -218,3 +219,57 @@ class TestClientKeyDerivation:
         request = Mock(headers={}, client=None)
 
         assert client_identity.derive_client_key(request) == "ip:unknown"
+
+
+class TestSessionIdNormalisation:
+    """
+    Formatpruefung der clientseitigen Session-Kennung.
+
+    Bewusst Hygiene und keine Sicherheitsmassnahme: der Wert kommt vom Client,
+    und wer ihn wechseln will, erzeugt gueltige UUIDs. Er darf deshalb auch
+    keine Meldung kosten, wenn er unpassend ist.
+    """
+
+    def test_uuid_is_accepted(self):
+        value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+
+        assert normalize_session_id(value) == value
+
+    def test_surrounding_whitespace_is_trimmed(self):
+        assert (
+            normalize_session_id("  3f2504e0-4f89-41d3-9a0c-0305e82c3301  ")
+            == "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+        )
+
+    @pytest.mark.parametrize(
+        "value",
+        ["A", "", "   ", "sess-1", "<script>alert(1)</script>", "X" * 255],
+    )
+    def test_non_uuid_values_are_discarded(self, value):
+        assert normalize_session_id(value) is None
+
+    def test_none_stays_none(self):
+        assert normalize_session_id(None) is None
+
+    def test_malformed_header_does_not_reject_the_report(self, client):
+        """Eine kaputte Kennung darf die Meldung nicht kosten."""
+        response = client.post(
+            REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"}
+        )
+
+        assert response.status_code == 200
+
+    def test_malformed_header_is_not_stored(self, client, service):
+        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"})
+
+        stored = service.report_content.await_args.kwargs["session_id"]
+        assert stored != "A"
+        # Stattdessen ein Zufallstoken, damit der CHECK der Tabelle erfuellt ist.
+        assert stored.startswith("anon:")
+
+    def test_valid_header_is_stored_unchanged(self, client, service):
+        value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+
+        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": value})
+
+        assert service.report_content.await_args.kwargs["session_id"] == value
