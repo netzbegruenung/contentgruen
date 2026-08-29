@@ -156,6 +156,24 @@ app = FastAPI(
     description="Semantic search API with unified embeddings",
     version="1.0.0",
     lifespan=lifespan,
+    # Starlette beantwortet einen Pfad, der sich nur im abschliessenden Slash von
+    # einer Route unterscheidet, mit 307 und einem Location-Header -- und zwar
+    # bevor irgendeine Auth-Dependency laeuft. Location enthaelt dabei den
+    # absoluten Ziel-URL, also den internen Dienstnamen samt Port
+    # (http://localhost:8000/...). GET /api/v1/moderation/reports/ verriet so die
+    # interne Topologie an einen unauthentifizierten Aufrufer.
+    #
+    # Abgeschaltet statt den Header nachtraeglich im BFF umzuschreiben: die
+    # Umleitung entsteht hier, und eine Korrektur am Proxy wirkt nur fuer den Weg
+    # ueber den Proxy. Ohne sie gibt es keinen Location-Header, den irgendein
+    # Ingress vergessen koennte zu bereinigen.
+    #
+    # Preis: ein Pfad ohne Slash trifft eine mit "/" registrierte Route nicht mehr
+    # (und umgekehrt). Betroffen sind nur die Index-Stubs "@router.get('/')" der
+    # Content-Router; das Frontend nutzt deren URLs ausschliesslich als Basis und
+    # haengt immer einen Pfad an, und alle Healthchecks rufen /api/v1/health ohne
+    # Slash auf.
+    redirect_slashes=False,
 )
 
 # Add rate limiting middleware for content creation endpoints
