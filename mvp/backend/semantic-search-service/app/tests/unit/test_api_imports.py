@@ -82,6 +82,7 @@ class TestAPIImports:
 
         assert metrics.router is not None
 
+
 @pytest.mark.unit
 @pytest.mark.skip(
     reason="Main app import works but has issues in pytest environment - individual API tests are sufficient"

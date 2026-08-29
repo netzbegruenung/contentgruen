@@ -61,7 +61,12 @@ async def _description_worker(
                 except Exception as e:
                     # Import here to avoid hard dependency when openai is not installed.
                     try:
-                        from openai import RateLimitError, APIConnectionError, APIStatusError
+                        from openai import (
+                            RateLimitError,
+                            APIConnectionError,
+                            APIStatusError,
+                        )
+
                         if isinstance(e, RateLimitError):
                             logger.warning(
                                 "OpenAI rate limit hit; pausing description worker for 60 s"

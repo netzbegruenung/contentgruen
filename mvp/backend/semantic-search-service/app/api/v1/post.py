@@ -44,9 +44,7 @@ async def get_by_id(
         raise
     except ValueError as e:
         logger.info(f"Post with id {post_id} not found: {e}")
-        raise HTTPException(
-            status_code=404, detail=f"Post with id {post_id} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Post with id {post_id} not found")
     except Exception as e:
         logger.error(f"Error fetching post with id {post_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))

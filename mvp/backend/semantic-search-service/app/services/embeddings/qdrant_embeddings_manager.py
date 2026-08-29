@@ -163,9 +163,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                     )
                     logger.info("✅ Created payload index for status field")
                 except Exception as e:
-                    logger.warning(
-                        f"⚠️ Could not create payload index for status: {e}"
-                    )
+                    logger.warning(f"⚠️ Could not create payload index for status: {e}")
 
                 logger.info(
                     f"✅ Collection {self.collection_name} created successfully"

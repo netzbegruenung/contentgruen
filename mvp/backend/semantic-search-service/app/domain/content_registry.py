@@ -51,7 +51,9 @@ class ContentTypeSpec:
 
 
 class _RegistryContentService(
-    BaseContentService[IBaseContentRepository, BaseContentDbEntry, BaseContentSearchResult]
+    BaseContentService[
+        IBaseContentRepository, BaseContentDbEntry, BaseContentSearchResult
+    ]
 ):
     """Concrete, behavior-free ``BaseContentService`` built from a spec.
 
@@ -104,18 +106,24 @@ REGISTRY: Dict[ContentType, ContentTypeSpec] = {
             ImageDbEntry,
             ImageSearchResult,
         ),
-        ingestion=AiVisionDescription(
-            # The module is imported lazily (via __import__) to avoid pulling openai
-            # at module load when OPENAI_API_KEY is not configured (e.g. in test envs).
-            # The IIFE runs once at registry-import time, not on first service request.
-            (lambda: __import__(
-                "services.vision.caption_suggestion_service",
-                fromlist=["CaptionSuggestionService"]
-            ).CaptionSuggestionService(
-                api_key=_settings.openai_api_key or "",
-                model=_settings.openai_vision_model,
-            ))()
-        ) if _settings.openai_api_key else DirectText(),
+        ingestion=(
+            AiVisionDescription(
+                # The module is imported lazily (via __import__) to avoid pulling openai
+                # at module load when OPENAI_API_KEY is not configured (e.g. in test envs).
+                # The IIFE runs once at registry-import time, not on first service request.
+                (
+                    lambda: __import__(
+                        "services.vision.caption_suggestion_service",
+                        fromlist=["CaptionSuggestionService"],
+                    ).CaptionSuggestionService(
+                        api_key=_settings.openai_api_key or "",
+                        model=_settings.openai_vision_model,
+                    )
+                )()
+            )
+            if _settings.openai_api_key
+            else DirectText()
+        ),
     ),
 }
 
