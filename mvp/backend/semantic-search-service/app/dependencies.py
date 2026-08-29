@@ -207,11 +207,19 @@ def get_voting_service() -> VotingService:
     return voting_service_instance
 
 
-def get_current_user_optional(x_user_id: Optional[str] = Header(None)) -> Optional[str]:
+def get_current_user_optional(
+    x_user_id: Optional[str] = Header(None, alias="X-User"),
+) -> Optional[str]:
     """
     Optional authentication dependency.
-    Returns the user ID from the X-User-Id header if present, None otherwise.
+    Returns the user ID from the X-User header if present, None otherwise.
     Used for tracking anonymous vs authenticated usage.
+
+    Der Alias ist zwingend: ohne ihn leitet FastAPI den Header-Namen aus dem
+    Parameternamen ab (x_user_id -> X-User-Id). Das BFF setzt aber X-User, also
+    kam hier fuer jeden echten Request None an -- und /usage-stats hat den
+    Eigentuemer seiner eigenen Daten mit 403 abgewiesen. Siehe require_admin
+    unten, das denselben Header schon immer korrekt liest.
     """
     return x_user_id
 
