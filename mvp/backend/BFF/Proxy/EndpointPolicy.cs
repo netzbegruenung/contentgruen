@@ -24,11 +24,20 @@ public static class EndpointPolicy
     public static readonly string[] AllowAnonymous =
     {
         "/api/v1/search/",
-        "/api/v1/content/recent",   // anonymer Zugriff auf neue Inhalte
-        "/api/v1/usage/content/",   // anonyme Nutzungserfassung
-        "/api/v1/usage/trending",   // anonymer Zugriff auf Trending
-        "/api/v1/moderation/report" // anonyme Meldung mit Session-ID
+        "/api/v1/content/recent",        // anonymer Zugriff auf neue Inhalte
+        "/api/v1/usage/content/",        // anonyme Nutzungserfassung
+        "/api/v1/usage/trending",        // anonymer Zugriff auf Trending
+        "/api/v1/moderation/report",     // anonyme Meldung mit Session-ID
+        // Nur dieser eine Metrics-Endpunkt, nicht das ganze Praefix: /getMetrics
+        // liefert Bestandszaehler fuer die Startseite, die uebrigen sechs sind
+        // Betriebskennzahlen und im Backend admin-only. Der frueher hier stehende
+        // Eintrag "/api/v1/metrics/" haette alle sieben durchgelassen.
+        "/api/v1/metrics/getMetrics"
     };
+    // Nicht uebernommen: "/api/metrics" stand in allen vier Listen, existiert aber
+    // nicht -- der Pfad antwortet 404. Ebenso "/api/user-info" und
+    // "/api/check-session": das sind Minimal-APIs, die vor dem Proxy gemappt werden
+    // und diesen Gate nie durchlaufen.
 
     /// <summary>
     /// Endpunkte, die am Rand gar nicht erreichbar sind -- unabhaengig von Anmeldung
@@ -72,13 +81,15 @@ public static class EndpointPolicy
             return false;
         }
 
-        var normalizedPath = path.ToLowerInvariant();
-        return endpoints.Any(endpoint => IsPrefixAtSegmentBoundary(normalizedPath, endpoint));
+        // Case-insensitiv vergleichen, statt den Pfad vorab kleinzuschreiben: sonst
+        // muessten alle Eintraege oben lowercase sein, und ein Eintrag mit Grossbuchstabe
+        // (etwa "/api/v1/metrics/getMetrics") wuerde still nie matchen.
+        return endpoints.Any(endpoint => IsPrefixAtSegmentBoundary(path, endpoint));
     }
 
     private static bool IsPrefixAtSegmentBoundary(string path, string endpoint)
     {
-        if (!path.StartsWith(endpoint, StringComparison.Ordinal))
+        if (!path.StartsWith(endpoint, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }

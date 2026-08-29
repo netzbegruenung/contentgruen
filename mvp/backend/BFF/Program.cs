@@ -138,12 +138,13 @@ else
                        options.Cookie.HttpOnly = true; // Prevent client-side JavaScript access
                    });
 
-    // Authorization
-    builder.Services.AddAuthorization();
-
     // Keep the dummy auth for backward compatibility if managed users are not configured
     builder.Services.AddSingleton<IStartupFilter>(new DummyAuthStartupFilter(frontendUrl));
 }
+
+// Authorization -- in beiden Betriebsarten, weil der Auth-Gate in der Proxy-Pipeline
+// jetzt ebenfalls in beiden laeuft. Vorher stand die Registrierung nur im else-Zweig.
+builder.Services.AddAuthorization();
 
 
 // Read the backend URL from an environment variable (use localhost:8000 as default for local dev)
@@ -439,46 +440,30 @@ app.MapGet("/api/check-session", (HttpContext context, ILogger<Program> logger) 
         : Results.Unauthorized();
 });
 
-if (useKeycloak)
+// Der Auth-Gate stand bisher in einem if (useKeycloak); der else-Zweig mappte den Proxy
+// ohne jede Pruefung. Damit haing die Frage, ob ueberhaupt etwas Anmeldung verlangt, an
+// einer Betriebsart-Variablen statt an der Endpunkt-Definition. Er gilt jetzt in beiden
+// Modi -- die Anmeldung selbst kommt entweder von Keycloak oder von Managed Auth bzw.
+// der Dummy-Auth, aber ob sie noetig ist, entscheidet allein EndpointPolicy.
+app.MapReverseProxy(proxyPipeline =>
 {
-    // Map reverse proxy with conditional authorization
-    app.MapReverseProxy(proxyPipeline =>
+    proxyPipeline.UseAuthorization();
+    proxyPipeline.Use(async (context, next) =>
     {
-        // Add authorization conditionally based on the path
-        proxyPipeline.UseAuthorization();
-        proxyPipeline.Use(async (context, next) =>
+        // Request.Path ist der Pfad ohne Query-String, und EndpointPolicy matcht auf
+        // Praefix an einer Segmentgrenze. Das bisherige Contains haette bei einem
+        // angehaengten "?next=/api/v1/search/" den Gate geoeffnet.
+        if (!EndpointPolicy.IsAnonymousAllowed(context.Request.Path.Value)
+            && context.User.Identity?.IsAuthenticated != true)
         {
-            var path = context.Request.Path.Value?.ToLower() ?? "";
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsync("Authentication required");
+            return;
+        }
 
-            // List of public endpoints that don't require authentication
-            var publicEndpoints = new[]
-            {
-                "/api/v1/search/",
-                "/api/v1/metrics/",
-                "/api/metrics",
-                "/api/v1/content/recent",
-                "/api/v1/moderation/report"
-            };
-
-            // Check if this is a public endpoint
-            var isPublicEndpoint = publicEndpoints.Any(endpoint => path.Contains(endpoint));
-
-            if (!isPublicEndpoint && context.User.Identity?.IsAuthenticated != true)
-            {
-                // Require authentication for non-public endpoints
-                context.Response.StatusCode = 401;
-                await context.Response.WriteAsync("Authentication required");
-                return;
-            }
-
-            await next();
-        });
+        await next();
     });
-}
-else
-{
-    app.MapReverseProxy();
-}
+});
 
 
 app.Run();

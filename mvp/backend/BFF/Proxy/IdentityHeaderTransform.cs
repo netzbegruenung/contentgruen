@@ -46,20 +46,6 @@ public static class IdentityHeaderTransform
         "X-Is-Authenticated"
     };
 
-    /// <summary>
-    /// Endpunkte, die ohne Anmeldung erreichbar sind und einen anonymen Nutzer bekommen.
-    /// </summary>
-    private static readonly string[] PublicEndpoints =
-    {
-        "/api/v1/search/",
-        "/api/v1/metrics/",
-        "/api/metrics",
-        "/api/v1/usage/content/",   // Allow anonymous usage tracking
-        "/api/v1/usage/trending",   // Allow anonymous access to trending content
-        "/api/v1/content/recent",   // Allow anonymous access to recent content
-        "/api/v1/moderation/report" // Allow anonymous content reporting with session ID
-    };
-
     public static void Apply(
         HttpRequestMessage proxyRequest,
         ClaimsPrincipal user,
@@ -73,7 +59,6 @@ public static class IdentityHeaderTransform
             proxyRequest.Headers.Remove(header);
         }
 
-        var normalizedPath = path?.ToLower() ?? "";
         var userId = ClaimUtilities.GetUserId(user);
 
         if (!string.IsNullOrEmpty(userId))
@@ -90,14 +75,18 @@ public static class IdentityHeaderTransform
                 logger.LogDebug("Set X-Is-Admin header for admin user: {UserId}", userId);
             }
         }
-        else if (PublicEndpoints.Any(endpoint => normalizedPath.Contains(endpoint)))
+        // Dieselbe Menge, die auch der Auth-Gate in Program.cs verwendet. Vorher lag hier
+        // eine eigene Liste, die sich von jener unterschied: /api/v1/usage/content/,
+        // /api/v1/usage/trending und /api/v1/content/recent standen nur hier, /api/metrics
+        // in beiden -- obwohl es den Pfad gar nicht gibt.
+        else if (EndpointPolicy.IsAnonymousAllowed(path))
         {
             SetSingleValue(proxyRequest, UserHeader, AnonymousUser);
-            logger.LogDebug("Set anonymous X-User header for public endpoint: {Path}", normalizedPath);
+            logger.LogDebug("Set anonymous X-User header for public endpoint: {Path}", path);
         }
         else
         {
-            logger.LogWarning("No user identifier found for protected endpoint: {Path}", normalizedPath);
+            logger.LogWarning("No user identifier found for protected endpoint: {Path}", path);
         }
 
         // X-Session-Id ist bewusst clientseitig (anonyme Votes und Meldungen) und traegt keine
