@@ -31,7 +31,7 @@ class VotingService:
                 vote_type=VoteType.LIKE.value,
             )
 
-            logger.info(f"Set like from user {user_id} for content {content_id}")
+            logger.debug(f"Set like from user {user_id} for content {content_id}")
 
             return VoteResponse(
                 content_id=content_id,
@@ -59,7 +59,7 @@ class VotingService:
 
             if existing_vote and existing_vote.vote_type == VoteType.LIKE.value:
                 self.vote_repository.delete_vote(user_id, content_id)
-                logger.info(
+                logger.debug(
                     f"Removed like from user {user_id} for content {content_id}"
                 )
 
@@ -90,7 +90,7 @@ class VotingService:
                 vote_type=VoteType.DISLIKE.value,
             )
 
-            logger.info(f"Set dislike from user {user_id} for content {content_id}")
+            logger.debug(f"Set dislike from user {user_id} for content {content_id}")
 
             return VoteResponse(
                 content_id=content_id,
@@ -118,7 +118,7 @@ class VotingService:
 
             if existing_vote and existing_vote.vote_type == VoteType.DISLIKE.value:
                 self.vote_repository.delete_vote(user_id, content_id)
-                logger.info(
+                logger.debug(
                     f"Removed dislike from user {user_id} for content {content_id}"
                 )
 

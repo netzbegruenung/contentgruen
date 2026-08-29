@@ -96,7 +96,9 @@ async def report_content(
 
         # Check rate limit
         if await report_rate_limiter.is_rate_limited(rate_limit_identifier):
-            logger.warning(
+            # Kennung kann eine X-Session-Id sein; auf DEBUG, damit sie auf prod
+            # (LOG_LEVEL=INFO) nicht geschrieben wird.
+            logger.debug(
                 f"Rate limit exceeded for report from: {rate_limit_identifier}"
             )
             raise HTTPException(

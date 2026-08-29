@@ -75,14 +75,17 @@ async def search_by_text(
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
     try:
-        logger.info(
-            f"🔍 Search request: query='{request.query_text}', limit={request.limit}"
-        )
+        # Der Suchtext wird bewusst nicht protokolliert: er ist der sensibelste
+        # Einzelwert der Plattform. Auch nicht auf DEBUG -- der Dev-Stack laeuft
+        # mit SEMANTIC_SEARCH_LOG_LEVEL=DEBUG.
+        logger.info(f"Search request (limit={request.limit})")
 
         # Handle both authenticated and anonymous users
         if x_user:
             validated_user = require_auth(x_user, operation="read")
-            logger.debug(f"👤 Authorized user: {validated_user}")
+            # Ohne Kennung: zusammen mit der Zeile darueber waere sonst genau die
+            # Verknuepfung "wer hat wonach gesucht" im Log, die hier vermieden wird.
+            logger.debug("👤 Authorized user search")
         else:
             validated_user = "anonymous"
             logger.debug("👤 Anonymous user search")

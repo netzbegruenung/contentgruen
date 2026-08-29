@@ -52,7 +52,10 @@ public class AuthController : ControllerBase
 
         if (user == null)
         {
-            _logger.LogWarning("Failed login attempt for: {Email}", request.Email);
+            // Ohne E-Mail: ein Tippfehler im Formular wuerde sonst die Adresse einer
+            // unbeteiligten Person ins Log schreiben. Dass ein Versuch fehlschlug,
+            // ist die Information, die zaehlt.
+            _logger.LogWarning("Failed login attempt via managed auth");
             return Unauthorized(new { message = "Invalid email or password" });
         }
 
@@ -88,7 +91,7 @@ public class AuthController : ControllerBase
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
-        _logger.LogInformation("User {Email} logged in successfully via managed auth", user.Email);
+        _logger.LogInformation("User {UserId} logged in successfully via managed auth", user.UserId);
 
         return Ok(new
         {

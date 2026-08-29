@@ -73,8 +73,7 @@ class RawInputRepository:
                 session.commit()
                 session.refresh(raw_input)
                 logger.info(
-                    f"Rohinput {raw_input.id} angelegt "
-                    f"(Kanal: {source_channel}, von: {submitted_by or 'ohne Kennung'})"
+                    f"Rohinput {raw_input.id} angelegt (Kanal: {source_channel})"
                 )
                 return self._to_dict(raw_input)
         except Exception as e:

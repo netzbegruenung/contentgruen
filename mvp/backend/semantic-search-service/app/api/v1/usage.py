@@ -91,9 +91,7 @@ async def track_content_usage(
     Rohwert wird nicht weitergereicht und nicht gespeichert. Die IP-Adresse wird
     gar nicht mehr angefasst.
     """
-    logger.info(
-        f"Tracking usage for content {content_id}, session: {body.session_id}"
-    )
+    logger.debug(f"Tracking usage for content {content_id}")
     try:
         # Validate content_id format
         try:
@@ -115,7 +113,7 @@ async def track_content_usage(
         device_category = derive_device_category(user_agent)
 
         # Track usage
-        logger.info(f"Calling usage service for content {content_id}")
+        logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
             session_id=body.session_id,

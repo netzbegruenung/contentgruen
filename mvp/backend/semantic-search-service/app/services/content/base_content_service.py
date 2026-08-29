@@ -76,7 +76,7 @@ class BaseContentService(
         sanitized_query_text = query_text.replace(";", ",").replace("'", '"')
 
         logger.debug(
-            f"BaseContentService ({self._repository_class.__name__}): Searching for items similar to '{sanitized_query_text}'"
+            f"BaseContentService ({self._repository_class.__name__}): searching"
         )
         return await self._repository.search(sanitized_query_text, limit)
 

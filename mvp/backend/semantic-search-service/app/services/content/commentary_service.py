@@ -17,6 +17,10 @@ from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 
+from core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class CommentaryService(
     BaseContentService[ICommentaryRepository, CommentaryDbEntry, CommentarySearchResult]
@@ -61,7 +65,7 @@ class CommentaryService(
         Returns:
             - Tuple of (similarity_score, content_id) for most similar commentary, or (None, None)
         """
-        print(f"Checking for similar existing commentaries to '{commentary_text}'")
+        logger.debug("Checking for similar existing commentaries")
 
         similar_commentaries = await self.search(commentary_text, limit=1)
         if similar_commentaries and similar_commentaries[0].score:
@@ -115,7 +119,7 @@ class CommentaryService(
         )
 
         if is_too_similar and existing_commentary:
-            print(
+            logger.debug(
                 f"Input commentary is too similar to existing commentary with ID {existing_commentary.id}. "
                 f"Similarity score: {existing_commentary.score:.3f} > threshold: {self.settings.commentary_similarity_threshold}"
             )

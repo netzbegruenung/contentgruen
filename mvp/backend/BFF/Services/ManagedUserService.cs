@@ -123,7 +123,7 @@ public class ManagedUserService
         // Check rate limiting
         if (IsRateLimited(email))
         {
-            _logger.LogWarning("Authentication rate limit exceeded for user: {Email}", email);
+            _logger.LogWarning("Authentication rate limit exceeded");
             return null;
         }
 
@@ -134,7 +134,7 @@ public class ManagedUserService
         if (user == null)
         {
             RecordFailedAttempt(email);
-            _logger.LogWarning("Authentication failed - user not found: {Email}", email);
+            _logger.LogWarning("Authentication failed - user not found");
             return null;
         }
 
@@ -144,20 +144,20 @@ public class ManagedUserService
             if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 ClearFailedAttempts(email);
-                _logger.LogInformation("Authentication successful for user: {Email}, UserId: {UserId}", email, user.UserId);
+                _logger.LogInformation("Authentication successful for user: {UserId}", user.UserId);
                 return user;
             }
             else
             {
                 RecordFailedAttempt(email);
-                _logger.LogWarning("Authentication failed - invalid password for user: {Email}", email);
+                _logger.LogWarning("Authentication failed - invalid password for user: {UserId}", user.UserId);
                 return null;
             }
         }
         catch (Exception ex)
         {
             RecordFailedAttempt(email);
-            _logger.LogError(ex, "Authentication error for user: {Email}", email);
+            _logger.LogError(ex, "Authentication error during managed auth");
             return null;
         }
     }

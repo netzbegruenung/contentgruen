@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from datetime import date, datetime
 from pydantic import BaseModel, Field
@@ -102,19 +102,16 @@ class HelpfulRateResponse(BaseModel):
 # Retrieves the metrics of the system for display
 @router.get("/getMetrics", response_model=GetMetricsResponse)
 async def get_metrics(
-    request: Request,
     statement_service: StatementService = Depends(get_statement_service),
     commentary_service: CommentaryService = Depends(get_commentary_service),
     reference_service: ReferenceService = Depends(get_reference_service),
     settings: Settings = Depends(get_settings),
 ) -> GetMetricsResponse:
     try:
-        print("/getMetrics was called")
-
-        headers = request.headers  # Get all headers
-        print("Received headers:")
-        for header, value in headers.items():
-            print(f"{header}: {value}")
+        # Der frueher hier stehende Dump saemtlicher eingehender Header ist ersatzlos
+        # entfernt: er schrieb bei jedem Aufruf das Session-Cookie im Klartext in die
+        # Container-Logs.
+        logger.debug("/getMetrics was called")
 
         repository_factory = QdrantRepositoryFactory()
         content_repository = repository_factory.create_content_repository(settings)
@@ -135,7 +132,7 @@ async def get_metrics(
 
         return metrics
     except Exception as e:
-        print("Error in getMetrics: ", e)
+        logger.error(f"Error in getMetrics: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

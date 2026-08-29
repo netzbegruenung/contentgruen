@@ -58,9 +58,8 @@ class ContentReportRepository:
                 session.add(report)
                 session.commit()
                 session.refresh(report)
-                logger.info(
-                    f"Created report {report.id} for content {content_id} by {reported_by_user_id or reported_by_session_id}"
-                )
+                # Wer gemeldet hat, steht in der Zeile selbst; im Log ist es Dublette.
+                logger.info(f"Created report {report.id} for content {content_id}")
                 return report
         except Exception as e:
             logger.error(f"Error creating content report: {e}", exc_info=True)

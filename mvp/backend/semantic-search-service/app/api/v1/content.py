@@ -34,7 +34,7 @@ async def get_all(
     settings: Settings = Depends(get_settings),
 ) -> ContentGetAllResponse:
     try:
-        print("/getAll was called")
+        logger.debug("/getAll was called")
 
         offset = (page - 1) * page_size
         repository_factory = QdrantRepositoryFactory()
@@ -44,7 +44,7 @@ async def get_all(
         )
         total_count = await content_repository.count()
 
-        print(f"/getAll got {len(content_index_results)} results from content_index")
+        logger.debug(f"/getAll got {len(content_index_results)} results")
 
         # Enrich results with usage statistics
         usage_service = get_usage_service()
@@ -59,7 +59,7 @@ async def get_all(
 
         return response
     except Exception as e:
-        print("Error in /getAll: ", e)
+        logger.error(f"Error in /getAll: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -70,14 +70,14 @@ async def search_content(
     settings: Settings = Depends(get_settings),
 ) -> ContentSearchResponse:
     try:
-        print("/searchContent was called, request: ", request)
+        logger.debug("/searchContent was called")
 
         repository_factory = QdrantRepositoryFactory()
         content_repository = repository_factory.create_content_repository(settings)
         content_index_results: List[ContentSearchResult] = (
             await content_repository.search(request.query_text, request.limit)
         )
-        print("/searchContent content_index_results: ", content_index_results)
+        logger.debug(f"/searchContent got {len(content_index_results)} results")
 
         # Enrich results with usage statistics
         usage_service = get_usage_service()
@@ -90,7 +90,7 @@ async def search_content(
 
         return response
     except Exception as e:
-        print("Error in search_content: ", e)
+        logger.error(f"Error in search_content: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

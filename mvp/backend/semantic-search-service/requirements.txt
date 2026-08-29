@@ -101,3 +101,5 @@ pytest-xdist>=3.6.0
 # Code quality
 pre-commit>=3.0.0
 black>=23.0.0
+# T201 (kein print()) -- siehe pyproject.toml
+ruff>=0.6.0

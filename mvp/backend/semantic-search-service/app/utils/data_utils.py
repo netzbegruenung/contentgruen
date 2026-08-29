@@ -3,6 +3,9 @@ from typing import Any, List, Dict, Optional, Callable
 import os
 import json
 from jsonschema import validate
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class DataSource(Enum):
@@ -25,37 +28,37 @@ class DataLoader:
         Returns:
             List[Dict[str, Any]]: A list of dictionaries representing the loaded and validated data.
         """
-        print(f"Retrieving data from JSON files in folder: {data_folder_path}")
+        logger.info(f"Retrieving data from JSON files in folder: {data_folder_path}")
 
         data: List[Dict[str, Any]] = []
 
         try:
             os.listdir(data_folder_path)
         except FileNotFoundError as e:
-            print(f"Folder not found: {data_folder_path}. Error: {e}")
+            logger.error(f"Folder not found: {data_folder_path}. Error: {e}")
             return data
 
         for filename in os.listdir(data_folder_path):
             json_file_path = os.path.join(data_folder_path, filename)
-            print(f"Reading data from {json_file_path}")
+            logger.debug(f"Reading data from {json_file_path}")
             try:
                 with open(json_file_path, "r", encoding="utf-8") as f:
                     current_data = json.load(f)
                     validate(current_data, data_schema)
             except FileNotFoundError as e:
-                print(f"File not found: {json_file_path}. Error: {e}")
+                logger.error(f"File not found: {json_file_path}. Error: {e}")
                 continue
             except json.JSONDecodeError as e:
-                print(f"Error decoding JSON from {json_file_path}. Error: {e}")
+                logger.error(f"Error decoding JSON from {json_file_path}. Error: {e}")
                 continue
             except Exception as e:
-                print(f"An error occurred: {str(e)}")
+                logger.error(f"An error occurred: {str(e)}", exc_info=True)
                 continue
 
-            print(f"Read {len(current_data)} items from {json_file_path}")
+            logger.debug(f"Read {len(current_data)} items from {json_file_path}")
             data.extend(current_data)
 
-        print(f"Read a total of {len(data)} items from all files in folder")
+        logger.info(f"Read a total of {len(data)} items from all files in folder")
 
         return data
 
@@ -77,18 +80,18 @@ class DataLoader:
         Returns:
             List[Dict[str, Any]]: A list of dictionaries representing the loaded and validated data.
         """
-        print(f"Retrieving data from JSON files in folder: {data_folder_path}")
+        logger.info(f"Retrieving data from JSON files in folder: {data_folder_path}")
 
         data: List[Dict[str, Any]] = []
 
         try:
             all_files = [f for f in os.listdir(data_folder_path) if f.endswith(".json")]
         except FileNotFoundError as e:
-            print(f"Folder not found: {data_folder_path}. Error: {e}")
+            logger.error(f"Folder not found: {data_folder_path}. Error: {e}")
             return data
 
         total_files = len(all_files)
-        print(f"Found {total_files} JSON files to process")
+        logger.info(f"Found {total_files} JSON files to process")
 
         for file_index, filename in enumerate(all_files):
             json_file_path = os.path.join(data_folder_path, filename)
@@ -97,23 +100,23 @@ class DataLoader:
             if progress_callback:
                 progress_callback(filename, file_index, total_files)
 
-            print(f"Reading data from {json_file_path}")
+            logger.debug(f"Reading data from {json_file_path}")
             try:
                 with open(json_file_path, "r", encoding="utf-8") as f:
                     current_data = json.load(f)
                     validate(current_data, data_schema)
             except FileNotFoundError as e:
-                print(f"File not found: {json_file_path}. Error: {e}")
+                logger.error(f"File not found: {json_file_path}. Error: {e}")
                 continue
             except json.JSONDecodeError as e:
-                print(f"Error decoding JSON from {json_file_path}. Error: {e}")
+                logger.error(f"Error decoding JSON from {json_file_path}. Error: {e}")
                 continue
             except Exception as e:
-                print(f"An error occurred: {str(e)}")
+                logger.error(f"An error occurred: {str(e)}", exc_info=True)
                 continue
 
-            print(f"Read {len(current_data)} items from {json_file_path}")
+            logger.debug(f"Read {len(current_data)} items from {json_file_path}")
             data.extend(current_data)
 
-        print(f"Read a total of {len(data)} items from all files in folder")
+        logger.info(f"Read a total of {len(data)} items from all files in folder")
         return data
