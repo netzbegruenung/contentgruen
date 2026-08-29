@@ -1,5 +1,12 @@
 services:
   qdrant:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 10m x 3 = 30 MB je Dienst.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     image: qdrant/qdrant:v1.18.2
     container_name: contentgruen-qdrant
     restart: always
@@ -16,6 +23,13 @@ services:
       - contentgruen
 
   postgres-app:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 10m x 3 = 30 MB je Dienst.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     image: git.verdigado.com/netzbegruenung-images/contentgruen-postgres-app:latest
     container_name: contentgruen-app-postgres
     restart: always
@@ -33,6 +47,13 @@ services:
       - contentgruen
 
   contentgruen-semantic-search:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 10m x 3 = 30 MB je Dienst.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     image: git.verdigado.com/netzbegruenung-images/contentgruen-semantic-search:latest
     container_name: contentgruen-semantic-search
     restart: unless-stopped
@@ -56,6 +77,13 @@ services:
       - postgres-app
 
   contentgruen-bff:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 10m x 3 = 30 MB je Dienst.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     image: git.verdigado.com/netzbegruenung-images/contentgruen-bff:latest
     container_name: contentgruen-bff
     restart: unless-stopped
@@ -77,6 +105,13 @@ services:
       - contentgruen-semantic-search
 
   contentgruen-frontend:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 10m x 3 = 30 MB je Dienst.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     image: git.verdigado.com/netzbegruenung-images/contentgruen-frontend:latest
     container_name: contentgruen-frontend
     restart: unless-stopped
