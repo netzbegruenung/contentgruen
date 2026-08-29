@@ -1,3 +1,6 @@
+import asyncio
+import time
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from datetime import date, datetime
@@ -9,6 +12,7 @@ from dependencies import (
     get_reference_service,
     get_statement_service,
     get_settings,
+    require_admin,
 )
 from services.content.commentary_service import CommentaryService
 from repositories.implementations.qdrant.qdrant_repository_factory import (
@@ -23,6 +27,20 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+# /getMetrics ist anonym erreichbar und loest vier count-Abfragen gegen Qdrant aus.
+# Die RateLimitMiddleware greift hier nicht -- sie limitiert ausschliesslich POSTs auf
+# einer Namensliste (/addStatement und Geschwister). Ohne Cache laesst sich der
+# Endpunkt also unbegrenzt oft abrufen und multipliziert dabei die Qdrant-Last.
+#
+# Bestandszaehler aendern sich langsam; 60 Sekunden Verzoegerung ist fuer die Anzeige
+# auf der Startseite nicht wahrnehmbar. Der Cache liegt im Prozess (ein Container, ein
+# Wert) und braucht deshalb kein Redis.
+_METRICS_CACHE_TTL_SECONDS = 60
+_metrics_cache: Optional[tuple[float, GetMetricsResponse]] = None
+# Ohne Lock wuerden bei abgelaufenem Cache alle gleichzeitig wartenden Requests die
+# Zaehlung parallel ausloesen -- genau die Spitze, die der Cache verhindern soll.
+_metrics_cache_lock = asyncio.Lock()
 
 
 # Response Models for MVP Metrics
@@ -99,7 +117,11 @@ class HelpfulRateResponse(BaseModel):
     helpful_rate: float
 
 
-# Retrieves the metrics of the system for display
+# Bewusst oeffentlich: /getMetrics liefert nur aggregierte Bestandszaehler
+# (content_count, statement_count, commentary_count, reference_count -- die
+# uebrigen Felder sind im Code hart 0) und wird von der Startseite aufgerufen,
+# die ueber den PublicGuard auch anonym erreichbar ist. Die Betriebskennzahlen
+# stehen in den Endpunkten darunter, die admin-only sind.
 @router.get("/getMetrics", response_model=GetMetricsResponse)
 async def get_metrics(
     statement_service: StatementService = Depends(get_statement_service),
@@ -107,38 +129,71 @@ async def get_metrics(
     reference_service: ReferenceService = Depends(get_reference_service),
     settings: Settings = Depends(get_settings),
 ) -> GetMetricsResponse:
+    global _metrics_cache
+
     try:
         # Der frueher hier stehende Dump saemtlicher eingehender Header ist ersatzlos
         # entfernt: er schrieb bei jedem Aufruf das Session-Cookie im Klartext in die
         # Container-Logs.
         logger.debug("/getMetrics was called")
 
-        repository_factory = QdrantRepositoryFactory()
-        content_repository = repository_factory.create_content_repository(settings)
-        content_count = await content_repository.count()
+        cached = _metrics_cache
+        if (
+            cached is not None
+            and time.monotonic() - cached[0] < _METRICS_CACHE_TTL_SECONDS
+        ):
+            return cached[1]
 
-        metrics = GetMetricsResponse(
-            content_count=content_count,
-            content_count_last_week=0,
-            statement_count=await statement_service.count_curated(),
-            statement_count_last_week=0,
-            commentary_count=await commentary_service.count(),
-            commentary_count_last_week=0,
-            reference_count=await reference_service.count(),
-            reference_count_last_week=0,
-            requested_commentary_count=0,
-            active_users_count=0,
-        )
+        async with _metrics_cache_lock:
+            # Erneut pruefen: waehrend des Wartens auf den Lock kann ein anderer
+            # Request den Cache bereits gefuellt haben.
+            cached = _metrics_cache
+            if (
+                cached is not None
+                and time.monotonic() - cached[0] < _METRICS_CACHE_TTL_SECONDS
+            ):
+                return cached[1]
 
-        return metrics
+            repository_factory = QdrantRepositoryFactory()
+            content_repository = repository_factory.create_content_repository(settings)
+            content_count = await content_repository.count()
+
+            metrics = GetMetricsResponse(
+                content_count=content_count,
+                content_count_last_week=0,
+                statement_count=await statement_service.count_curated(),
+                statement_count_last_week=0,
+                commentary_count=await commentary_service.count(),
+                commentary_count_last_week=0,
+                reference_count=await reference_service.count(),
+                reference_count_last_week=0,
+                requested_commentary_count=0,
+                active_users_count=0,
+            )
+
+            _metrics_cache = (time.monotonic(), metrics)
+            return metrics
     except Exception as e:
         logger.error(f"Error in getMetrics: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# MVP Metrics Endpoints
+# MVP Metrics Endpoints -- alle admin-only.
+#
+# Sie liefern Betriebskennzahlen: taegliche aktive Nutzer, Suchvolumen pro
+# Nutzer, Content-Zuwachs und Vote-Verhaeltnisse. Bis hierher waren sie ohne
+# jede Auth-Dependency erreichbar.
+#
+# require_admin prueft X-Is-Admin, das der IdentityHeaderTransform aus den
+# Claims setzt -- dieselbe Grundlage wie der AdminGuard im Frontend. Es braucht
+# dafuer kein SEMANTIC_SEARCH_ADMIN_USERS; diese Variable gilt nur fuer die
+# Cleanup-Endpunkte in api/v1/usage.py, die mit settings.is_admin_user() gegen
+# eine Namensliste pruefen.
 @router.get("/mvp-dashboard", response_model=MVPMetricsResponse)
-async def get_mvp_dashboard_metrics(settings: Settings = Depends(get_settings)):
+async def get_mvp_dashboard_metrics(
+    settings: Settings = Depends(get_settings),
+    admin_user: str = Depends(require_admin),
+):
     """
     Get comprehensive MVP dashboard metrics.
 
@@ -163,6 +218,7 @@ async def get_mvp_dashboard_metrics(settings: Settings = Depends(get_settings)):
 async def get_daily_active_users(
     target_date: Optional[date] = Query(None, description="Date to check (YYYY-MM-DD)"),
     settings: Settings = Depends(get_settings),
+    admin_user: str = Depends(require_admin),
 ):
     """
     Get count of unique active users for a specific day.
@@ -191,6 +247,7 @@ async def get_daily_active_users(
 async def get_searches_per_user(
     days: int = Query(7, ge=1, le=90, description="Number of days to analyze"),
     settings: Settings = Depends(get_settings),
+    admin_user: str = Depends(require_admin),
 ):
     """
     Get search statistics per user/session.
@@ -217,6 +274,7 @@ async def get_searches_per_user(
 async def get_content_created(
     weeks: int = Query(4, ge=1, le=12, description="Number of weeks to analyze"),
     settings: Settings = Depends(get_settings),
+    admin_user: str = Depends(require_admin),
 ):
     """
     Get content creation statistics by week.
@@ -243,6 +301,7 @@ async def get_content_created(
 async def get_usage_trend(
     weeks: int = Query(4, ge=2, le=12, description="Number of weeks to analyze"),
     settings: Settings = Depends(get_settings),
+    admin_user: str = Depends(require_admin),
 ):
     """
     Get usage counter trend by week.
@@ -281,6 +340,7 @@ async def get_usage_trend(
 async def get_helpful_rate(
     days: int = Query(7, ge=1, le=90, description="Number of days to analyze"),
     settings: Settings = Depends(get_settings),
+    admin_user: str = Depends(require_admin),
 ):
     """
     Get the "War hilfreich" rate (percentage of likes vs total votes).
