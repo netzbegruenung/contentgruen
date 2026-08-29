@@ -42,6 +42,22 @@ public class AuthController : ControllerBase
     [HttpPost("login/managed")]
     public async Task<IActionResult> LoginManaged([FromBody] LoginRequest request)
     {
+        // ENABLE_MANAGED_AUTH wurde bisher nur in GetAuthModes() gelesen, also von einem
+        // reinen Auskunfts-Endpunkt, an dem sich das Frontend orientiert, welche
+        // Login-Formulare es zeichnet. Diese Action pruefte den Schalter nicht:
+        // ValidateUserAsync liest managed-users.json unabhaengig davon. Mit
+        // ENABLE_MANAGED_AUTH=false verschwand also nur der Button, waehrend ein
+        // direkter POST auf diese Route weiterhin ein gueltiges Auth-Cookie bekam.
+        //
+        // Managed Auth bleibt bewusst aktiv -- es ist der Zugangsweg fuer Menschen ohne
+        // Vereinsmitgliedschaft, die der Keycloak-Realm nicht abdeckt. Der Guard steht
+        // hier, damit der Schalter tut, was sein Name sagt, wenn ihn jemand umlegt.
+        if (!await _managedUserService.IsEnabledAsync())
+        {
+            _logger.LogWarning("Managed auth login attempted while managed auth is disabled");
+            return NotFound();
+        }
+
         if (request?.Email == null || request.Password == null)
         {
             return BadRequest(new { message = "Email and password are required" });
