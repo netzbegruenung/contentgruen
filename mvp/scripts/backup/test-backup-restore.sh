@@ -168,7 +168,10 @@ API_HEALTH="0"
 MAX_RETRIES=30
 RETRY_COUNT=0
 while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
-    API_HEALTH=$(docker exec $APP_CONTAINER curl -s http://localhost:8000/api/v1/test 2>/dev/null | grep -c "ok" 2>/dev/null || echo "0")
+    # grep auf "healthy": der frueher hier verwendete Debug-Endpunkt /api/v1/test
+    # antwortete {"message": "This is a test endpoint"} und enthielt das gesuchte
+    # "ok" nie -- die Schleife lief also immer in den Timeout.
+    API_HEALTH=$(docker exec $APP_CONTAINER curl -s http://localhost:8000/api/v1/health 2>/dev/null | grep -c "healthy" 2>/dev/null || echo "0")
     API_HEALTH=$(echo "$API_HEALTH" | tr -d '\n\r ')
     if [ "$API_HEALTH" -gt "0" ]; then
         break

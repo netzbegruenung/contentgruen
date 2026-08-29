@@ -31,7 +31,6 @@ from api.v1.reference import router as reference_router
 # from api.v1.scores import router as scores_router
 from api.v1.search import router as search_router
 from api.v1.statement import router as statement_router
-from api.v1.test import router as test_router
 
 from api.v1.generic_text import router as generic_text_router
 from api.v1.post import router as post_router
@@ -179,7 +178,6 @@ app.include_router(reference_router, prefix="/api/v1/reference", tags=["referenc
 # app.include_router(scores_router, prefix="/api/v1/scores", tags=["scores"])
 app.include_router(search_router, prefix="/api/v1/search", tags=["search"])
 app.include_router(statement_router, prefix="/api/v1/statement", tags=["statement"])
-app.include_router(test_router, prefix="/api/v1/test", tags=["test"])
 app.include_router(
     generic_text_router, prefix="/api/v1/generic_text", tags=["generic_text"]
 )

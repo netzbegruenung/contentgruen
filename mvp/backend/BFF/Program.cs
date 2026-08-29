@@ -362,6 +362,25 @@ app.Use(async (context, next) =>
     }
 });
 
+// Endpunkte, die am Rand nicht erreichbar sein sollen, moeglichst frueh abweisen --
+// vor Routing, Authentifizierung und Proxy, und bewusst ausserhalb jeder
+// USE_KEYCLOAK-Verzweigung, damit die Sperre in jeder Betriebsart gilt.
+// 404 statt 403: dass es die Route ueberhaupt gibt, ist keine Information, die
+// nach aussen gehoert.
+app.Use(async (context, next) =>
+{
+    if (EndpointPolicy.IsBlocked(context.Request.Path.Value))
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning("Blocked request to internal endpoint: {Path}", context.Request.Path);
+
+        context.Response.StatusCode = 404;
+        return;
+    }
+
+    await next();
+});
+
 // Use routing first, then authentication and authorization middleware
 app.UseRouting();
 app.UseAuthentication();

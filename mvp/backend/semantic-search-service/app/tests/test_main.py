@@ -15,13 +15,6 @@ def test_read_main():
     assert response.status_code == 404  # Assuming the root endpoint is not defined
 
 
-def test_test_router():
-    response = client.get("/api/v1/test")
-    assert (
-        response.status_code == 200
-    )  # Assuming the test router is defined and returns 200
-
-
 def test_content_router():
     response = client.get("/api/v1/content")
     assert (

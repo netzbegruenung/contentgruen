@@ -8,6 +8,13 @@ repos:
         files: ^mvp/backend/semantic-search-service/
         pass_filenames: false
 
+      - id: python-lint
+        name: "Lint Python code with Ruff (T201: kein print)"
+        entry: bash -c 'cd mvp/backend/semantic-search-service && if [ -f "./venv/Scripts/python.exe" ]; then PYTHON="./venv/Scripts/python.exe"; else PYTHON="./venv/bin/python"; fi && $PYTHON -m ruff check app/'
+        language: system
+        files: ^mvp/backend/semantic-search-service/.*\.py$
+        pass_filenames: false
+
       - id: python-formatting
         name: Format Python code with Black
         entry: bash -c 'cd mvp/backend/semantic-search-service && if [ -f "./venv/Scripts/python.exe" ]; then PYTHON="./venv/Scripts/python.exe"; else PYTHON="./venv/bin/python"; fi && $PYTHON -m black app/'
