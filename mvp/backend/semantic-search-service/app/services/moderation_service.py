@@ -62,6 +62,17 @@ class ModerationService:
 
         try:
             content_uuid = UUID(content_id)
+
+            # Doppelmeldung desselben Nutzers zum selben Inhalt: nichts anlegen,
+            # aber als Erfolg melden. Der Melder hat getan, was er tun sollte;
+            # ein Fehler waere irrefuehrend, und eine zweite Zeile im
+            # Moderationsposteingang hilft niemandem.
+            if user_id and self.report_repo.has_report_from_user(
+                content_id=content_uuid, user_id=user_id
+            ):
+                logger.info(f"Duplicate report for content {content_id} ignored")
+                return True
+
             report = self.report_repo.create_report(
                 content_id=content_uuid,
                 content_type=content_type,
@@ -78,6 +89,35 @@ class ModerationService:
         except Exception as e:
             logger.error(f"Error reporting content: {e}", exc_info=True)
             return False
+
+    async def content_exists(self, content_id: str) -> bool:
+        """
+        Existiert der gemeldete Inhalt ueberhaupt?
+
+        Bisher wurde nur das UUID-Format geprueft, weshalb eine nie existierende
+        Kennung eine Meldung erzeugte. Das laesst den Moderationsposteingang mit
+        Zeilen fluten, die auf nichts zeigen, und macht ihn als Arbeitsvorrat
+        unbrauchbar.
+
+        Args:
+            content_id: UUID des Inhalts als String
+
+        Returns:
+            bool: True, wenn der Inhalt in Qdrant liegt
+        """
+        try:
+            UUID(content_id)
+        except ValueError:
+            return False
+
+        try:
+            entry = await self.embeddings_manager.get_by_id(content_id)
+            return entry is not None
+        except Exception as e:
+            logger.error(f"Error checking content existence: {e}", exc_info=True)
+            # Im Zweifel durchlassen: eine Meldung zu verlieren waere schlimmer
+            # als eine ins Leere zeigende anzunehmen.
+            return True
 
     async def get_pending_reports(
         self, limit: int = 50, offset: int = 0

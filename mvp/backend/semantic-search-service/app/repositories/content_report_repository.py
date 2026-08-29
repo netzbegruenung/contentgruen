@@ -65,6 +65,39 @@ class ContentReportRepository:
             logger.error(f"Error creating content report: {e}", exc_info=True)
             raise
 
+    def has_report_from_user(self, content_id: UUID, user_id: str) -> bool:
+        """
+        Hat dieser angemeldete Nutzer diesen Inhalt bereits gemeldet?
+
+        Nur fuer angemeldete Melder: bei anonymen Meldungen gibt es keine
+        belastbare Kennung, auf die sich eine Deduplizierung stuetzen koennte --
+        die dortige Begrenzung leistet das Rate-Limit auf der Adresse.
+
+        Args:
+            content_id: UUID des gemeldeten Inhalts
+            user_id: Kennung des Melders
+
+        Returns:
+            bool: True, wenn bereits eine Meldung dieses Nutzers zu diesem Inhalt
+            vorliegt
+        """
+        try:
+            with self.db.get_session() as session:
+                existing = (
+                    session.query(ContentReport)
+                    .filter(
+                        ContentReport.content_id == content_id,
+                        ContentReport.reported_by_user_id == user_id,
+                    )
+                    .first()
+                )
+                return existing is not None
+        except Exception as e:
+            logger.error(f"Error checking existing report: {e}", exc_info=True)
+            # Im Zweifel nicht deduplizieren: eine doppelte Meldung ist harmloser
+            # als eine verschluckte.
+            return False
+
     def get_pending_reports(
         self, limit: int = 50, offset: int = 0
     ) -> List[Dict[str, Any]]:
