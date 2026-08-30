@@ -312,8 +312,19 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // container layer, so every recreate mints new keys and invalidates every ContentGruenAuthCookie
 // along with any in-flight OIDC correlation cookie. /keys is expected to be a mounted volume; if
 // it is not, the directory is simply created in the container layer and behaviour matches today's.
+//
+// Der Pfad ist ueberschreibbar, weil er sonst als absoluter Pfad im Code steht: der Testhost
+// muesste dann /keys auf der Maschine anlegen duerfen, auf der die Tests laufen. Ein leerer oder
+// nur aus Leerzeichen bestehender Wert zaehlt als nicht gesetzt -- eine durchgereichte, aber
+// unbefuellte Variable darf den Schluesselring nicht ins Arbeitsverzeichnis verschieben.
+var dataProtectionKeysPath = builder.Configuration.GetValue<string>("DATAPROTECTION_KEYS_PATH");
+if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    dataProtectionKeysPath = "/keys";
+}
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath.Trim()))
     .SetApplicationName("contentgruen-bff");
 
 var app = builder.Build();
@@ -630,3 +641,10 @@ public class ClaimUtilities
     }
 
 }
+
+/// <summary>
+/// Nur damit der Testhost den Einstiegspunkt findet: Top-Level-Statements erzeugen eine
+/// interne Program-Klasse, auf die WebApplicationFactory&lt;Program&gt; aus einer anderen
+/// Assembly nicht zugreifen kann. Siehe BFF.Tests/Proxy/AuthGatePipelineTests.cs.
+/// </summary>
+public partial class Program { }

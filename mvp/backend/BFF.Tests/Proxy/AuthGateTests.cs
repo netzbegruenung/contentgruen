@@ -1,129 +1,47 @@
 using Xunit;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using System.Security.Claims;
-using System.Threading.Tasks;
 using BFF.Proxy;
 
 namespace BFF.Tests.Proxy;
 
 /// <summary>
-/// Der Auth-Gate der Proxy-Pipeline.
+/// Die Pfadentscheidung hinter dem Auth-Gate, isoliert betrachtet.
 ///
-/// Er stand bis zu dieser Aenderung in einem <c>if (useKeycloak)</c>; der else-Zweig
-/// mappte den Proxy ohne jede Pruefung. Ob ueberhaupt etwas eine Anmeldung verlangt,
-/// hing damit an einer Betriebsart-Variablen statt an der Endpunkt-Definition. Die
-/// Tests laufen deshalb ueber beide USE_KEYCLOAK-Werte -- das Ergebnis muss identisch
-/// sein, weil der Gate die Variable gar nicht mehr liest.
-///
-/// Nachgebildet wird hier die Entscheidungslogik der Middleware aus Program.cs; der
-/// vollstaendige Host laesst sich in einem Unit-Test nicht sinnvoll hochziehen.
+/// Diese Datei hat frueher die Entscheidungslogik der Middleware aus Program.cs
+/// nachgebaut und dann den Nachbau geprueft. Das war die Zusicherung, die gerade nicht
+/// gebraucht wird: die Tests waeren gruen geblieben, wenn jemand den Gate aus
+/// MapReverseProxy entfernt oder wieder hinter if (useKeycloak) gestellt haette.
+/// Der Gate selbst wird jetzt in AuthGatePipelineTests durch die echte Pipeline
+/// geschickt. Hier bleibt nur, was EndpointPolicy fuer sich genommen zusichert.
 /// </summary>
 public class AuthGateTests
 {
-    private const string AuthenticatedScheme = "TestAuth";
-
-    /// <summary>
-    /// Wortgleich zur Middleware in Program.cs: 401, wenn der Pfad nicht anonym
-    /// erlaubt ist und niemand angemeldet ist.
-    /// </summary>
-    private static async Task<int> RunGate(string path, bool authenticated, bool useKeycloak)
+    [Theory]
+    [InlineData("/api/v1/search/searchByText")]
+    [InlineData("/api/v1/content/recent")]
+    [InlineData("/api/v1/usage/content/abc/usage")]
+    [InlineData("/api/v1/usage/trending")]
+    [InlineData("/api/v1/moderation/report")]
+    [InlineData("/api/v1/metrics/getMetrics")]
+    public void PublicPath_IsAnonymousAllowed(string path)
     {
-        var context = new DefaultHttpContext();
-        context.Request.Path = path;
-        context.RequestServices = new ServiceCollection()
-            .AddSingleton<ILogger<AuthGateTests>>(NullLogger<AuthGateTests>.Instance)
-            .BuildServiceProvider();
-
-        context.User = authenticated
-            ? new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim("sub", "u1") }, AuthenticatedScheme))
-            : new ClaimsPrincipal(new ClaimsIdentity());
-
-        // useKeycloak wird bewusst ignoriert: genau das ist die Zusicherung.
-        _ = useKeycloak;
-
-        var nextCalled = false;
-        if (!EndpointPolicy.IsAnonymousAllowed(context.Request.Path.Value)
-            && context.User.Identity?.IsAuthenticated != true)
-        {
-            context.Response.StatusCode = 401;
-        }
-        else
-        {
-            nextCalled = true;
-            context.Response.StatusCode = 200;
-        }
-
-        await Task.CompletedTask;
-        Assert.Equal(context.Response.StatusCode == 200, nextCalled);
-        return context.Response.StatusCode;
-    }
-
-    public static TheoryData<string, bool> PublicPathsBothModes()
-    {
-        var data = new TheoryData<string, bool>();
-        foreach (var path in new[]
-                 {
-                     "/api/v1/search/searchByText",
-                     "/api/v1/content/recent",
-                     "/api/v1/usage/content/abc/usage",
-                     "/api/v1/usage/trending",
-                     "/api/v1/moderation/report",
-                     "/api/v1/metrics/getMetrics"
-                 })
-        {
-            data.Add(path, true);
-            data.Add(path, false);
-        }
-
-        return data;
-    }
-
-    public static TheoryData<string, bool> ProtectedPathsBothModes()
-    {
-        var data = new TheoryData<string, bool>();
-        foreach (var path in new[]
-                 {
-                     "/api/v1/statement/addStatement",
-                     "/api/v1/commentary/addCommentary",
-                     "/api/v1/generic_text/addGenericText",
-                     "/api/v1/contribution/getContributionsOfUser",
-                     "/api/v1/rawinput/addRawInput",
-                     "/api/v1/voting/like",
-                     "/api/v1/moderation/reports",
-                     "/api/v1/usage/cleanup/run",
-                     "/api/v1/metrics/mvp-dashboard",
-                     "/api/v1/metrics/helpful-rate"
-                 })
-        {
-            data.Add(path, true);
-            data.Add(path, false);
-        }
-
-        return data;
+        Assert.True(EndpointPolicy.IsAnonymousAllowed(path));
     }
 
     [Theory]
-    [MemberData(nameof(PublicPathsBothModes))]
-    public async Task PublicEndpoint_IsReachableAnonymously_InBothAuthModes(string path, bool useKeycloak)
+    [InlineData("/api/v1/statement/addStatement")]
+    [InlineData("/api/v1/commentary/addCommentary")]
+    [InlineData("/api/v1/generic_text/addGenericText")]
+    [InlineData("/api/v1/contribution/getContributionsOfUser")]
+    [InlineData("/api/v1/rawinput/addRawInput")]
+    [InlineData("/api/v1/voting/like")]
+    [InlineData("/api/v1/moderation/reports")]
+    [InlineData("/api/v1/usage/cleanup/run")]
+    [InlineData("/api/v1/metrics/mvp-dashboard")]
+    [InlineData("/api/v1/metrics/helpful-rate")]
+    public void ProtectedPath_IsNotAnonymousAllowed(string path)
     {
-        Assert.Equal(200, await RunGate(path, authenticated: false, useKeycloak));
-    }
-
-    [Theory]
-    [MemberData(nameof(ProtectedPathsBothModes))]
-    public async Task ProtectedEndpoint_IsUnauthorizedAnonymously_InBothAuthModes(string path, bool useKeycloak)
-    {
-        Assert.Equal(401, await RunGate(path, authenticated: false, useKeycloak));
-    }
-
-    [Theory]
-    [MemberData(nameof(ProtectedPathsBothModes))]
-    public async Task ProtectedEndpoint_IsReachableWhenAuthenticated_InBothAuthModes(string path, bool useKeycloak)
-    {
-        Assert.Equal(200, await RunGate(path, authenticated: true, useKeycloak));
+        Assert.False(EndpointPolicy.IsAnonymousAllowed(path));
     }
 
     [Theory]
