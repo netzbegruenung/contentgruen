@@ -30,7 +30,13 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GetAuthModes()
     {
         var useKeycloak = _configuration.GetValue<bool>("USE_KEYCLOAK", true);
-        var enableManagedAuth = await _managedUserService.IsEnabledAsync();
+
+        // Der Endpunkt beantwortet "welches Formular kann das Frontend zeichnen", nicht
+        // "steht der Schalter auf an". Deshalb zaehlt hier beides: ein Button, hinter
+        // dem keine Nutzerdatei liegt, koennte nie zu einer Anmeldung fuehren. Welcher
+        // der beiden Gruende vorliegt, steht im Log -- siehe HasConfiguredUsersAsync.
+        var enableManagedAuth = _managedUserService.IsEnabled()
+                                && await _managedUserService.HasConfiguredUsersAsync();
 
         return Ok(new AuthModesResponse
         {
@@ -52,7 +58,11 @@ public class AuthController : ControllerBase
         // Managed Auth bleibt bewusst aktiv -- es ist der Zugangsweg fuer Menschen ohne
         // Vereinsmitgliedschaft, die der Keycloak-Realm nicht abdeckt. Der Guard steht
         // hier, damit der Schalter tut, was sein Name sagt, wenn ihn jemand umlegt.
-        if (!await _managedUserService.IsEnabledAsync())
+        //
+        // Gefragt wird ausschliesslich nach dem Schalter. Eine fehlende oder leere
+        // Nutzerdatei fuehrt weiter unten zu 401, nicht zu 404 -- sonst behauptet diese
+        // Logzeile "abgeschaltet", waehrend in Wirklichkeit nur der Mount fehlt.
+        if (!_managedUserService.IsEnabled())
         {
             _logger.LogWarning("Managed auth login attempted while managed auth is disabled");
             return NotFound();

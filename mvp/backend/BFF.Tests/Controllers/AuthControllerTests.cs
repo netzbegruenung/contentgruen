@@ -35,10 +35,8 @@ public class AuthControllerTests : IDisposable
     {
         _mockUserServiceLogger = new Mock<ILogger<ManagedUserService>>();
 
-        // Eine echte Nutzerdatei, damit die Login-Tests den Pfad hinter dem
-        // ENABLE_MANAGED_AUTH-Guard erreichen. Ohne Datei meldet IsEnabledAsync()
-        // "keine Nutzer konfiguriert" und LoginManaged antwortet 404, bevor
-        // irgendeine Anmeldelogik laeuft -- die Tests haben dann nichts geprueft.
+        // Eine echte Nutzerdatei, damit die Login-Tests bis zur Passwortpruefung
+        // kommen und nicht schon an "unbekannte E-Mail" haengenbleiben.
         _usersFilePath = WriteUsersFile(new
         {
             users = new[]
@@ -215,6 +213,22 @@ public class AuthControllerTests : IDisposable
         var result = await _controller.LoginManaged(request);
 
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task LoginManaged_ReturnsUnauthorized_WhenUserFileIsMissing()
+    {
+        // Der Diagnosefehler: fehlende Nutzerdatei ist kein abgeschaltetes Feature.
+        // 404 hiesse "diesen Anmeldeweg gibt es nicht" und schickte die Fehlersuche
+        // zum Schalter statt zum Mount. 401 sagt, was wirklich los ist.
+        var serviceWithoutFile = BuildUserService("non-existent.json", managedAuthEnabled: true);
+        _controller = BuildController(serviceWithoutFile, ControllerConfig(useKeycloak: true));
+
+        var request = new LoginRequest { Email = KnownEmail, Password = KnownPassword };
+
+        var result = await _controller.LoginManaged(request);
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
     }
 
     [Fact]

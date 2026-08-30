@@ -185,18 +185,38 @@ public class ManagedUserService
             string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task<bool> IsEnabledAsync()
+    /// <summary>
+    /// Ob Managed Auth eingeschaltet ist -- allein der Schalter, nicht die Datenlage.
+    ///
+    /// Bis hierher hat diese Methode beides vermischt und auch dann false geliefert,
+    /// wenn nur keine Nutzer konfiguriert waren. Damit zeigte die Diagnose in die
+    /// falsche Richtung: ein fehlgeschlagener ./config-Mount auf prod meldete sich als
+    /// "managed auth is disabled", obwohl niemand den Schalter angefasst hatte -- und
+    /// ein frischer Checkout ohne managed-users.json ebenso.
+    /// </summary>
+    public bool IsEnabled()
     {
-        // Check if managed auth is enabled
-        var enabled = _configuration.GetValue<bool>("ENABLE_MANAGED_AUTH", true);
+        return _configuration.GetValue<bool>("ENABLE_MANAGED_AUTH", true);
+    }
 
-        if (!enabled)
+    /// <summary>
+    /// Ob ueberhaupt Nutzer konfiguriert sind, unabhaengig vom Schalter.
+    ///
+    /// Getrennt von <see cref="IsEnabled"/>, damit "abgeschaltet" und "Datei fehlt
+    /// oder ist leer" zwei unterscheidbare Zustaende bleiben. LoadUsersAsync
+    /// protokolliert bei fehlender Datei bereits alle probierten Pfade; die Warnung
+    /// hier deckt zusaetzlich den Fall einer vorhandenen, aber leeren Datei ab.
+    /// </summary>
+    public async Task<bool> HasConfiguredUsersAsync()
+    {
+        var config = await LoadUsersAsync();
+
+        if (config.Users.Count == 0 && IsEnabled())
         {
-            return false;
+            _logger.LogWarning(
+                "Managed auth is enabled but no users are configured. Check MANAGED_USERS_PATH and the config mount.");
         }
 
-        // Check if we have any users configured
-        var config = await LoadUsersAsync();
         return config.Users.Count > 0;
     }
 }
