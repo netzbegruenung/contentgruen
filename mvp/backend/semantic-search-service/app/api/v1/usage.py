@@ -14,6 +14,7 @@ from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
 from services.cleanup.usage_cleanup_service import get_cleanup_service
 from core.config import Settings
+from core.logging import log_pseudonym
 
 logger = logging.getLogger(__name__)
 
@@ -199,7 +200,8 @@ async def get_user_usage_stats(
         raise
     except Exception as e:
         logger.error(
-            f"Error getting usage stats for user {user_id}: {e}", exc_info=True
+            f"Error getting usage stats for user {log_pseudonym(user_id)}: {e}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 

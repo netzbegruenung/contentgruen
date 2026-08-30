@@ -36,7 +36,7 @@ def set_like(
     If user already liked, returns success with current state.
     If user had disliked, replaces with like.
     """
-    logger.debug(f"Setting like for content {content_id} by user {user_id}")
+    logger.debug(f"Setting like for content {content_id}")
     try:
         result = voting_service.set_like(user_id, content_id)
         logger.debug("Like set successfully")
@@ -66,7 +66,7 @@ def remove_like(
     Remove a like for a content item. Idempotent operation.
     If no like exists, returns success with current state.
     """
-    logger.debug(f"Removing like for content {content_id} by user {user_id}")
+    logger.debug(f"Removing like for content {content_id}")
     try:
         result = voting_service.remove_like(user_id, content_id)
         logger.debug("Like removed successfully")
@@ -94,7 +94,7 @@ def set_dislike(
     If user already disliked, returns success with current state.
     If user had liked, replaces with dislike.
     """
-    logger.debug(f"Setting dislike for content {content_id} by user {user_id}")
+    logger.debug(f"Setting dislike for content {content_id}")
     try:
         result = voting_service.set_dislike(user_id, content_id)
         logger.debug("Dislike set successfully")
@@ -124,7 +124,7 @@ def remove_dislike(
     Remove a dislike for a content item. Idempotent operation.
     If no dislike exists, returns success with current state.
     """
-    logger.debug(f"Removing dislike for content {content_id} by user {user_id}")
+    logger.debug(f"Removing dislike for content {content_id}")
     try:
         result = voting_service.remove_dislike(user_id, content_id)
         logger.debug("Dislike removed successfully")

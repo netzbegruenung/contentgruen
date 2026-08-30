@@ -3,7 +3,6 @@ Rate limiting middleware for API endpoints
 """
 
 import time
-import hashlib
 import logging
 from typing import Dict, Optional
 from collections import defaultdict, deque
@@ -11,20 +10,9 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException, Request
 from threading import Lock
 
+from core.logging import log_pseudonym
+
 logger = logging.getLogger(__name__)
-
-
-def _pseudonym(user: str) -> str:
-    """
-    Kurzes Pseudonym fuer Log-Zeilen.
-
-    Fuer die Missbrauchsanalyse muss man wiederkehrende Ausloeser unterscheiden
-    koennen, nicht wissen, wer sie sind. Acht Hex-Zeichen reichen dafuer und
-    machen die Zeile fuer sich genommen nicht mehr personenbeziehbar.
-    """
-    if user == "anonymous":
-        return user
-    return hashlib.sha256(user.encode("utf-8")).hexdigest()[:8]
 
 
 class RateLimiter:
@@ -92,7 +80,7 @@ async def check_reference_creation_rate_limit(request: Request):
     if not reference_creation_limiter.check_rate_limit(user):
         reset_time = reference_creation_limiter.get_reset_time(user)
         logger.warning(
-            f"Rate limit exceeded for user {_pseudonym(user)} on reference creation"
+            f"Rate limit exceeded for user {log_pseudonym(user)} on reference creation"
         )
         raise HTTPException(
             status_code=429,
@@ -111,7 +99,7 @@ async def check_reference_search_rate_limit(request: Request):
     if not reference_search_limiter.check_rate_limit(user):
         reset_time = reference_search_limiter.get_reset_time(user)
         logger.warning(
-            f"Rate limit exceeded for user {_pseudonym(user)} on reference search"
+            f"Rate limit exceeded for user {log_pseudonym(user)} on reference search"
         )
         raise HTTPException(
             status_code=429,
@@ -129,7 +117,7 @@ async def check_voting_rate_limit(request: Request):
 
     if not voting_limiter.check_rate_limit(user):
         reset_time = voting_limiter.get_reset_time(user)
-        logger.warning(f"Rate limit exceeded for user {_pseudonym(user)} on voting")
+        logger.warning(f"Rate limit exceeded for user {log_pseudonym(user)} on voting")
         raise HTTPException(
             status_code=429,
             detail=f"Rate limit exceeded. Please try again in {reset_time} seconds.",

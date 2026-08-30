@@ -108,7 +108,7 @@ async def get_recent_content(
     """
     try:
         logger.info(f"=== /api/v1/content/recent endpoint called ===")
-        logger.debug(f"Request parameters: limit={limit}, user={x_user}")
+        logger.debug(f"Request parameters: limit={limit}")
 
         repository_factory = QdrantRepositoryFactory()
 
