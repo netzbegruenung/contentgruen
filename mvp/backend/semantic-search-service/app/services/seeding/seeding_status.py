@@ -8,6 +8,9 @@ import uuid
 import logging
 
 
+logger = logging.getLogger(__name__)
+
+
 class SeedingStatus(Enum):
     """Seeding operation status."""
 
@@ -260,7 +263,7 @@ class SeedingMetadata:
             with open(self.metadata_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            print(f"Error saving seeding progress: {e}")
+            logger.error(f"Error saving seeding progress: {e}", exc_info=True)
 
     async def load_progress(self) -> Optional[SeedingProgress]:
         """Load seeding progress from file."""
@@ -271,7 +274,7 @@ class SeedingMetadata:
         except FileNotFoundError:
             return None
         except Exception as e:
-            print(f"Error loading seeding progress: {e}")
+            logger.error(f"Error loading seeding progress: {e}", exc_info=True)
             return None
 
     async def save_file_statuses(self, file_statuses: List[SeedingFileStatus]) -> None:
@@ -283,7 +286,7 @@ class SeedingMetadata:
             with open(file_status_path, "w") as f:
                 json.dump(file_data, f, indent=2)
         except Exception as e:
-            print(f"Error saving file statuses: {e}")
+            logger.error(f"Error saving file statuses: {e}", exc_info=True)
 
     async def load_file_statuses(self) -> List[SeedingFileStatus]:
         """Load file processing statuses."""
@@ -295,7 +298,7 @@ class SeedingMetadata:
         except FileNotFoundError:
             return []
         except Exception as e:
-            print(f"Error loading file statuses: {e}")
+            logger.error(f"Error loading file statuses: {e}", exc_info=True)
             return []
 
     async def clear_metadata(self) -> None:
@@ -310,4 +313,4 @@ class SeedingMetadata:
             if os.path.exists(file_status_path):
                 os.remove(file_status_path)
         except Exception as e:
-            print(f"Error clearing metadata: {e}")
+            logger.error(f"Error clearing metadata: {e}", exc_info=True)

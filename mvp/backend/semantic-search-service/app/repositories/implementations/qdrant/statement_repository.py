@@ -159,7 +159,7 @@ class StatementRepository(
             )
 
             logger.info(
-                f"Search results for query '{query_text}': {len(search_results)} items "
+                f"Search results: {len(search_results)} items "
                 f"(filtered for min_replysuggestions_count >= {min_replysuggestions_count})"
             )
 

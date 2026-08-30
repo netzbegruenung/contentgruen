@@ -6,11 +6,13 @@ namespace BFF.Proxy;
 /// Setzt die Header, aus denen das Backend Nutzeridentitaet und Adminrechte ableitet.
 ///
 /// YARP kopiert per Default saemtliche eingehenden Header in den Proxy-Request. Ein Client
-/// kann X-User und X-Is-Admin also selbst mitschicken; sie stehen bereits auf dem
-/// Proxy-Request, bevor dieser Code laeuft. Deshalb werden sie hier zuerst bedingungslos
-/// entfernt -- vor jeder Verzweigung, damit auch die Pfade ohne angemeldeten Nutzer nichts
-/// vom Client durchreichen -- und danach ausschliesslich aus den Claims des BFF gesetzt.
-/// Gesetzt wird ersetzend, damit beim Backend garantiert genau ein Wert ankommt.
+/// kann Identitaets- und Rechte-Header also selbst mitschicken; sie stehen bereits auf dem
+/// Proxy-Request, bevor dieser Code laeuft. Deshalb wird die Liste in
+/// <see cref="ClientControlledIdentityHeaders"/> hier zuerst bedingungslos entfernt -- vor
+/// jeder Verzweigung, damit auch die Pfade ohne angemeldeten Nutzer nichts vom Client
+/// durchreichen -- und danach werden X-User und X-Is-Admin ausschliesslich aus den Claims
+/// des BFF gesetzt. Gesetzt wird ersetzend, damit beim Backend garantiert genau ein Wert
+/// ankommt.
 /// </summary>
 public static class IdentityHeaderTransform
 {
@@ -21,17 +23,27 @@ public static class IdentityHeaderTransform
     public const string AnonymousUser = "anonymous";
 
     /// <summary>
-    /// Endpunkte, die ohne Anmeldung erreichbar sind und einen anonymen Nutzer bekommen.
+    /// Header, ueber die der Client keine Aussage treffen darf. Sie werden bedingungslos
+    /// entfernt, bevor irgendetwas gesetzt wird.
+    ///
+    /// Eine Aufzaehlung statt Einzelaufrufe, weil genau hier der Fehler entstanden ist:
+    /// X-User und X-Is-Admin wurden entfernt, X-User-Id nicht -- und der Semantic-Service
+    /// las X-User-Id (dependencies.get_current_user_optional). Ein anonymer Aufrufer
+    /// konnte sich damit per Header eine fremde Identitaet geben. X-User-Id wird
+    /// inzwischen nirgends mehr gelesen; er bleibt hier trotzdem stehen, damit ein
+    /// Wiedereinfuehren des Headers nicht erneut zur Luecke wird.
+    ///
+    /// Wer einen neuen Identitaets- oder Rechte-Header einfuehrt, traegt ihn hier ein.
+    /// Nicht enthalten ist X-Session-Id: das ist bewusst clientseitig (siehe unten).
     /// </summary>
-    private static readonly string[] PublicEndpoints =
+    public static readonly string[] ClientControlledIdentityHeaders =
     {
-        "/api/v1/search/",
-        "/api/v1/metrics/",
-        "/api/metrics",
-        "/api/v1/usage/content/",   // Allow anonymous usage tracking
-        "/api/v1/usage/trending",   // Allow anonymous access to trending content
-        "/api/v1/content/recent",   // Allow anonymous access to recent content
-        "/api/v1/moderation/report" // Allow anonymous content reporting with session ID
+        UserHeader,
+        AdminHeader,
+        "X-User-Id",
+        "X-User-Name",
+        "X-Roles",
+        "X-Is-Authenticated"
     };
 
     public static void Apply(
@@ -42,10 +54,11 @@ public static class IdentityHeaderTransform
         ILogger logger)
     {
         // Zuerst und ohne Bedingung: der Client darf ueber Identitaet und Rechte nichts aussagen.
-        proxyRequest.Headers.Remove(UserHeader);
-        proxyRequest.Headers.Remove(AdminHeader);
+        foreach (var header in ClientControlledIdentityHeaders)
+        {
+            proxyRequest.Headers.Remove(header);
+        }
 
-        var normalizedPath = path?.ToLower() ?? "";
         var userId = ClaimUtilities.GetUserId(user);
 
         if (!string.IsNullOrEmpty(userId))
@@ -62,14 +75,18 @@ public static class IdentityHeaderTransform
                 logger.LogDebug("Set X-Is-Admin header for admin user: {UserId}", userId);
             }
         }
-        else if (PublicEndpoints.Any(endpoint => normalizedPath.Contains(endpoint)))
+        // Dieselbe Menge, die auch der Auth-Gate in Program.cs verwendet. Vorher lag hier
+        // eine eigene Liste, die sich von jener unterschied: /api/v1/usage/content/,
+        // /api/v1/usage/trending und /api/v1/content/recent standen nur hier, /api/metrics
+        // in beiden -- obwohl es den Pfad gar nicht gibt.
+        else if (EndpointPolicy.IsAnonymousAllowed(path))
         {
             SetSingleValue(proxyRequest, UserHeader, AnonymousUser);
-            logger.LogDebug("Set anonymous X-User header for public endpoint: {Path}", normalizedPath);
+            logger.LogDebug("Set anonymous X-User header for public endpoint: {Path}", path);
         }
         else
         {
-            logger.LogWarning("No user identifier found for protected endpoint: {Path}", normalizedPath);
+            logger.LogWarning("No user identifier found for protected endpoint: {Path}", path);
         }
 
         // X-Session-Id ist bewusst clientseitig (anonyme Votes und Meldungen) und traegt keine

@@ -14,6 +14,7 @@ from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
 from services.cleanup.usage_cleanup_service import get_cleanup_service
 from core.config import Settings
+from core.logging import log_pseudonym
 
 logger = logging.getLogger(__name__)
 
@@ -91,9 +92,7 @@ async def track_content_usage(
     Rohwert wird nicht weitergereicht und nicht gespeichert. Die IP-Adresse wird
     gar nicht mehr angefasst.
     """
-    logger.info(
-        f"Tracking usage for content {content_id}, session: {body.session_id}"
-    )
+    logger.debug(f"Tracking usage for content {content_id}")
     try:
         # Validate content_id format
         try:
@@ -115,7 +114,7 @@ async def track_content_usage(
         device_category = derive_device_category(user_agent)
 
         # Track usage
-        logger.info(f"Calling usage service for content {content_id}")
+        logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
             session_id=body.session_id,
@@ -201,7 +200,8 @@ async def get_user_usage_stats(
         raise
     except Exception as e:
         logger.error(
-            f"Error getting usage stats for user {user_id}: {e}", exc_info=True
+            f"Error getting usage stats for user {log_pseudonym(user_id)}: {e}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 

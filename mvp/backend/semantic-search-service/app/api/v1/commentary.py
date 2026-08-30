@@ -52,7 +52,9 @@ async def get_by_id(
         return commentary
 
     except Exception as e:
-        print(f"Error fetching commentary with id {commentary_id}: {e}")
+        logger.error(
+            f"Error fetching commentary with id {commentary_id}: {e}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -63,14 +65,12 @@ async def search_commentaries(
     commentary_service: CommentaryService = Depends(get_commentary_service),
 ) -> CommentarySearchResponse:
     try:
-        print("/searchCommentaries was called, request: ", request)
+        logger.debug("/searchCommentaries was called")
 
         commentary_index_results = await commentary_service.search(
             request.query_text, request.limit
         )
-        print(
-            "/searchCommentaries commentary_index_results: ", commentary_index_results
-        )
+        logger.debug(f"/searchCommentaries got {len(commentary_index_results)} results")
 
         response: CommentarySearchResponse = CommentarySearchResponse(
             results=commentary_index_results
@@ -78,7 +78,7 @@ async def search_commentaries(
 
         return response
     except Exception as e:
-        print("Error in search_commentaries: ", e)
+        logger.error(f"Error in search_commentaries: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -91,12 +91,10 @@ async def add_commentary(
     x_user: str = Header(...),
 ) -> AddCommentaryResponse:
     try:
-        print("/addCommentary was called, request: ", request)
+        logger.debug("/addCommentary was called")
 
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
-
-        print(f"X-User header: {x_user}")
 
         # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
         # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
@@ -169,10 +167,10 @@ async def add_commentary(
     except HTTPException:
         raise
     except ValueError as e:
-        print(f"Validation error in add_commentary: {e}")
+        logger.warning(f"Validation error in add_commentary: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        print(f"Unexpected error in add_commentary: {e}")
+        logger.error(f"Unexpected error in add_commentary: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while adding commentary. Please try again later.",

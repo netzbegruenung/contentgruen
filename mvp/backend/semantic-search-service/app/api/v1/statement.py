@@ -18,12 +18,15 @@ from dtos.statement import (
     StatementSource,
 )
 from services.content.statement_service import StatementService
+from core.logging import get_logger
 from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 from domain.models.content_status import ContentStatus
 from domain.models.content_origin import SEARCH_QUERY_AUTHOR
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -42,16 +45,14 @@ async def get_all(
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> StatementGetAllResponse:
     try:
-        print("/getAll was called")
+        logger.debug("/getAll was called")
 
         offset = (page - 1) * page_size
         statement_index_results = await statement_service.get_all(
             limit=page_size, offset=offset
         )
 
-        print(
-            f"/getAll got {len(statement_index_results)} results from statement_index"
-        )
+        logger.debug(f"/getAll got {len(statement_index_results)} results")
 
         response = StatementGetAllResponse(
             results_count=len(statement_index_results),
@@ -61,7 +62,7 @@ async def get_all(
 
         return response
     except Exception as e:
-        print("Error in /getAll: ", e)
+        logger.error(f"Error in /getAll: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -72,12 +73,12 @@ async def search_statements(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> StatementSearchResponse:
     try:
-        print("/searchStatements was called, request: ", request)
+        logger.debug("/searchStatements was called")
 
         statement_index_results = await statement_service.search(
             request.query_text, request.limit
         )
-        print("/searchStatements statement_index_results: ", statement_index_results)
+        logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 
         response: StatementSearchResponse = StatementSearchResponse(
             results=statement_index_results
@@ -85,7 +86,7 @@ async def search_statements(
 
         return response
     except Exception as e:
-        print("Error in /searchStatements: ", e)
+        logger.error(f"Error in /searchStatements: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -97,12 +98,10 @@ async def add_statement(
     x_user: str = Header(...),
 ) -> AddStatementResponse:
     try:
-        print("/addStatement was called, request: ", request)
+        logger.debug("/addStatement was called")
 
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
-
-        print(f"X-User header: {x_user}")
 
         # TODO: Validate ReplySuggestions
 
@@ -142,7 +141,7 @@ async def add_statement(
 
     except Exception as e:
         # Improve error handling by returning specific exception types
-        print("Error in /addStatement: ", e)
+        logger.error(f"Error in /addStatement: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -156,7 +155,7 @@ async def add_replysuggestion_to_statement(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> AddReplysuggestionToStatementResponse:
     try:
-        print("/addReplysuggestionToStatement was called, request: ", request)
+        logger.debug("/addReplysuggestionToStatement was called")
 
         # Use content_type directly from the request - no need to look it up
         success = await statement_service.add_statementreplysuggestion_to_statement(
@@ -173,7 +172,7 @@ async def add_replysuggestion_to_statement(
 
     except Exception as e:
         # Improve error handling by returning specific exception types
-        print("Error in /addReplysuggestionToStatement: ", e)
+        logger.error(f"Error in /addReplysuggestionToStatement: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -183,7 +182,7 @@ def get_topics(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> GetTopicsResponse:
     try:
-        print("statement/getTopics was called")
+        logger.debug("statement/getTopics was called")
 
         statement_index_topics = statement_service.get_topics()
 
@@ -191,7 +190,7 @@ def get_topics(
 
         return response
     except Exception as e:
-        print("Error in get_statement_topics: ", e)
+        logger.error(f"Error in get_statement_topics: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -202,7 +201,7 @@ def get_statement_topics(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> GetStatementsOfTopicResponse:
     try:
-        print("/getStatementsOfTopic was called, request: ", request)
+        logger.debug("/getStatementsOfTopic was called")
 
         statement_index_results = statement_service.get_items_of_topic(
             request.topic, request.limit
@@ -214,7 +213,7 @@ def get_statement_topics(
 
         return response
     except Exception as e:
-        print("Error in get_statement_topics: ", e)
+        logger.error(f"Error in get_statement_topics: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -224,7 +223,7 @@ def get_categories(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> GetCategoriesResponse:
     try:
-        print("statement/getTopics was called")
+        logger.debug("statement/getTopics was called")
 
         statement_index_categories = statement_service.get_categories()
 
@@ -234,7 +233,7 @@ def get_categories(
 
         return response
     except Exception as e:
-        print("Error in get_statement_topics: ", e)
+        logger.error(f"Error in get_statement_topics: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -245,7 +244,7 @@ def get_statements_of_category(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> GetStatementsOfCategoryResponse:
     try:
-        print("/getStatementsOfCategory was called, request: ", request)
+        logger.debug("/getStatementsOfCategory was called")
 
         statement_index_results = statement_service.get_items_of_category(
             request.category, request.limit
@@ -257,5 +256,5 @@ def get_statements_of_category(
 
         return response
     except Exception as e:
-        print("Error in get_statements_of_category: ", e)
+        logger.error(f"Error in get_statements_of_category: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

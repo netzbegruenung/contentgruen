@@ -11,6 +11,13 @@ name: contentgruen-dev
 
 services:
   qdrant:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     image: qdrant/qdrant:v1.18.2
     container_name: contentgruen-qdrant
     restart: unless-stopped
@@ -35,6 +42,13 @@ services:
       start_period: 10s
 
   postgres-app:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     image: postgres:16-alpine
     container_name: contentgruen-app-postgres
     restart: unless-stopped
@@ -57,6 +71,13 @@ services:
       start_period: 10s
 
   contentgruen-semantic-search:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     build:
       context: .
       dockerfile: backend/semantic-search-service/Dockerfile
@@ -97,6 +118,13 @@ services:
         condition: service_healthy
 
   contentgruen-bff:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     build:
       context: ./backend/BFF
       dockerfile: Dockerfile
@@ -129,6 +157,13 @@ services:
         condition: service_healthy
 
   contentgruen-frontend:
+    # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
+    # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     build:
       context: ./frontend/contentgruen-frontend
       dockerfile: Dockerfile

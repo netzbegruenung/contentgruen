@@ -1,0 +1,23 @@
+[tool.ruff]
+# Nur Linting -- formatiert wird weiterhin mit Black (siehe .pre-commit-config.yaml).
+line-length = 88
+target-version = "py311"
+src = ["app"]
+
+[tool.ruff.lint]
+# Bewusst schmal gehalten: die Regel, um die es geht, ist T201.
+#
+# print() umgeht die Log-Konfiguration vollstaendig -- kein Level, kein Format, kein
+# exc_info. Auf prod laeuft SEMANTIC_SEARCH_LOG_LEVEL=INFO, ein logger.debug() wird
+# dort also gar nicht erst geschrieben; ein print() dagegen immer. Genau darum sind
+# ueber print() Nutzerkennungen, Suchtexte und komplette Request-Header in den
+# Container-Logs gelandet.
+#
+# T201 haelt den aufgeraeumten Zustand. Ohne die Regel waechst die Zahl mit dem
+# naechsten Feature wieder.
+select = ["T201"]
+
+[tool.ruff.lint.per-file-ignores]
+# Entwickler-Skripte unter scripts/ und der Test-Runner geben bewusst auf stdout aus.
+"app/run_tests.py" = ["T201"]
+"app/tests/**" = ["T201"]

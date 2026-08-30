@@ -82,12 +82,6 @@ class TestAPIImports:
 
         assert metrics.router is not None
 
-    def test_import_test_api(self):
-        """Test that test API module imports without errors."""
-        from api.v1 import test
-
-        assert test.router is not None
-
 
 @pytest.mark.unit
 @pytest.mark.skip(

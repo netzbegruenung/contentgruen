@@ -72,7 +72,9 @@ async def test_post_roundtrip_via_registry(
 ):
     """Post stored & retrieved purely through the registry-built generic service."""
     spec = REGISTRY[ContentType.POST]
-    service = create_content_service(spec, integration_settings, real_repository_factory)
+    service = create_content_service(
+        spec, integration_settings, real_repository_factory
+    )
 
     item_id = uuid.uuid4()
     entry = _make_post_db_entry(
@@ -119,7 +121,9 @@ async def test_post_search_parity_via_orchestrator(
 ):
     """A Post flows through the type-agnostic SearchOrchestrator via only a spec."""
     spec = REGISTRY[ContentType.POST]
-    service = create_content_service(spec, integration_settings, real_repository_factory)
+    service = create_content_service(
+        spec, integration_settings, real_repository_factory
+    )
 
     post_id = uuid.uuid4()
     await service._upsert(

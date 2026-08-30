@@ -177,7 +177,7 @@ echo -n "Checking database connection... "
 docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "SELECT COUNT(*) FROM usage_tracking;" > /dev/null 2>&1 && echo -e "${GREEN}OK${NC}" || echo -e "${YELLOW}WARNING: Database may be empty${NC}"
 
 echo -n "Checking application health... "
-docker exec "$APP_CONTAINER" curl -s http://localhost:8000/api/v1/test > /dev/null 2>&1 && echo -e "${GREEN}OK${NC}" || echo -e "${YELLOW}WARNING: Health check failed${NC}"
+docker exec "$APP_CONTAINER" curl -s http://localhost:8000/api/v1/health > /dev/null 2>&1 && echo -e "${GREEN}OK${NC}" || echo -e "${YELLOW}WARNING: Health check failed${NC}"
 
 # Summary
 echo -e "\n${GREEN}========================================${NC}"

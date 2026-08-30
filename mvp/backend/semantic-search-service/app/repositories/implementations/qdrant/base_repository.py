@@ -146,9 +146,9 @@ class QdrantBaseRepository(
             content_desc = (
                 f"all content types" if self.content_type is None else self.content_type
             )
+            # Ohne query_text: derselbe Suchtext wie in api/v1/search.py.
             logger.info(
-                f"Search results for query '{query_text}' in {content_desc}: "
-                f"found {len(search_results)} results"
+                f"Search in {content_desc}: found {len(search_results)} results"
             )
 
             # Convert to result models
@@ -392,7 +392,7 @@ class QdrantBaseRepository(
                 f"all content types" if self.content_type is None else self.content_type
             )
             logger.info(
-                f"Search results for user '{user_id}' in {content_desc}: {len(all_results)} items"
+                f"Search results by author in {content_desc}: {len(all_results)} items"
             )
 
             return all_results

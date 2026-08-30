@@ -67,14 +67,42 @@ export class SessionService {
   }
 
   /**
-   * Generate a UUID v4 compliant session ID.
+   * Erzeugt eine UUID v4 als Session-Kennung.
+   *
+   * crypto.randomUUID() statt Math.random(): Math.random() ist nicht
+   * kryptografisch sicher -- die Werte stammen aus einem vorhersagbaren
+   * Generator, dessen Zustand sich aus wenigen Ausgaben rekonstruieren laesst.
+   * Fuer eine Kennung, die anonyme Meldungen und Nutzungsereignisse
+   * zusammenhaelt, ist Ratbarkeit die falsche Eigenschaft.
+   *
+   * crypto.randomUUID() gibt es in allen Browsern, die diese Anwendung
+   * unterstuetzt, allerdings nur in einem sicheren Kontext (HTTPS oder
+   * localhost). Der Fallback deckt den Rest ab und nutzt weiterhin
+   * crypto.getRandomValues, also ebenfalls keine Math.random-Werte.
+   *
    * @private
    */
   private generateSessionId(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+
+    // Fallback fuer nicht-sichere Kontexte: dieselbe UUID-v4-Form, aber aus
+    // crypto.getRandomValues statt aus Math.random.
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+
+    // Version (4) und Variante (10xx) nach RFC 4122 setzen.
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    return [
+      hex.slice(0, 8),
+      hex.slice(8, 12),
+      hex.slice(12, 16),
+      hex.slice(16, 20),
+      hex.slice(20),
+    ].join('-');
   }
 }

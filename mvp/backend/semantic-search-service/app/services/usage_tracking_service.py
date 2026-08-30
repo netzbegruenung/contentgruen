@@ -238,45 +238,6 @@ class UsageTrackingService:
         except Exception as e:
             logger.error(f"Error initializing usage for {content_id}: {e}")
 
-    def batch_track_usage(
-        self,
-        content_ids: List[str],
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-    ) -> bool:
-        """
-        Track usage for multiple content items at once.
-
-        Args:
-            content_ids: List of content ID strings
-            user_id: Optional user identifier
-            session_id: Optional session identifier
-
-        Returns:
-            bool: True if all tracking was successful
-        """
-        valid_ids = []
-        for content_id in content_ids:
-            if self._validate_content_id(content_id):
-                valid_ids.append(uuid.UUID(content_id))
-            else:
-                logger.warning(f"Skipping invalid content ID in batch: {content_id}")
-
-        if not valid_ids:
-            logger.error("No valid content IDs in batch")
-            return False
-
-        try:
-            return self.repository.batch_track_usage(
-                content_ids=valid_ids,
-                user_id=user_id,
-                event_type="copy",
-                session_id=session_id,
-            )
-        except Exception as e:
-            logger.error(f"Error in batch tracking: {e}")
-            return False
-
     def cleanup_old_events(self, days_to_keep: int = 90) -> int:
         """
         Clean up old usage events from the database.

@@ -189,7 +189,7 @@ docker exec contentgruen-app-postgres psql -U app_user -d contentgruen_app \
   -c "SELECT COUNT(*) FROM usage_tracking;"
 
 # Check application health
-curl http://localhost:8000/api/v1/test
+curl http://localhost:8000/api/v1/health
 ```
 
 ## Troubleshooting

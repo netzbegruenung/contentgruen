@@ -37,7 +37,9 @@ class ContentTypeSearchSpec:
     """Ties a content type to the pieces search needs to handle it uniformly."""
 
     content_type: ContentType
-    service: object  # BaseContentService-like: async get(id) / async search(query, limit)
+    service: (
+        object  # BaseContentService-like: async get(id) / async search(query, limit)
+    )
     result_cls: Type  # the per-type search-result wrapper DTO
     result_field: str  # name of the nested content field on the wrapper (e.g. "commentary_result")
 
@@ -89,7 +91,9 @@ class SearchOrchestrator:
             spec.result_field: content_result,
         }
         if polarity_info is not None:
-            kwargs["polarity_mismatch_detected"] = polarity_info.polarity_mismatch_detected
+            kwargs["polarity_mismatch_detected"] = (
+                polarity_info.polarity_mismatch_detected
+            )
             kwargs["original_score"] = polarity_info.original_score
         return spec.result_cls(**kwargs)
 

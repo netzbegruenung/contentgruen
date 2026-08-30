@@ -112,7 +112,7 @@ public class ManagedUserServiceTests
     }
 
     [Fact]
-    public async Task IsEnabledAsync_ReturnsFalse_WhenDisabledInConfiguration()
+    public void IsEnabled_ReturnsFalse_WhenDisabledInConfiguration()
     {
         // Arrange
         var configBuilder = new ConfigurationBuilder();
@@ -124,22 +124,49 @@ public class ManagedUserServiceTests
         var service = new ManagedUserService(_mockLogger.Object, configBuilder.Build());
 
         // Act
-        var result = await service.IsEnabledAsync();
+        var result = service.IsEnabled();
 
         // Assert
         Assert.False(result);
     }
 
     [Fact]
-    public async Task IsEnabledAsync_ReturnsFalse_WhenNoUsersConfigured()
+    public void IsEnabled_ReturnsTrue_WhenSwitchIsOn_EvenWithoutConfiguredUsers()
+    {
+        // _service zeigt auf eine nicht existierende Datei. Frueher meldete der Guard
+        // hier false und LoginManaged antwortete 404 -- ein fehlender ./config-Mount
+        // sah damit aus wie ein umgelegter Schalter. Der Schalter steht auf an, also
+        // sagt der Schalter-Guard an.
+        Assert.True(_service.IsEnabled());
+    }
+
+    [Fact]
+    public async Task HasConfiguredUsersAsync_ReturnsFalse_WhenConfigFileIsMissing()
     {
         // Arrange - service already configured with non-existent file
 
         // Act
-        var result = await _service.IsEnabledAsync();
+        var result = await _service.HasConfiguredUsersAsync();
 
         // Assert
         Assert.False(result);
+    }
+
+    [Fact]
+    public async Task HasConfiguredUsersAsync_LogsWarning_WhenEnabledButEmpty()
+    {
+        // Die Zeile, die auf prod den Unterschied macht: sie benennt die Datenlage,
+        // nicht den Schalter.
+        await _service.HasConfiguredUsersAsync();
+
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("no users are configured")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.AtLeastOnce);
     }
 
     [Fact]

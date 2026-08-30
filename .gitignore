@@ -11,8 +11,12 @@ mvp/temp_data/
 
 # Never commit plaintext passwords
 **/user-passwords.txt
-# But do commit the generated JSON with hashes
-!/mvp/config/managed-users.json
+# Auch die generierte JSON nicht: sie enthaelt die E-Mail-Adressen der ueber
+# Managed Auth angelegten Menschen (Zugangsweg ohne Vereinsmitgliedschaft) und
+# gehoert damit nicht in ein oeffentliches Repository. Die bcrypt-Hashes sind
+# nicht das Problem, die Adressen sind es. Erzeugt wird die Datei mit
+# mvp/config/generate-user-config.py; auf den Servern kommt sie aus SaltStack.
+/mvp/config/managed-users.json
 
 # Claude temporary files
 commit.txt

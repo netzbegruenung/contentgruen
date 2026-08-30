@@ -2,8 +2,10 @@
 API endpoints for content moderation and reporting.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Header, Query
-from typing import Optional
+import uuid
+
+from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 from services.moderation_service import get_moderation_service
@@ -11,6 +13,7 @@ from core.config import Settings
 from core.logging import get_logger
 from dependencies import get_settings, get_current_user_optional, require_admin
 from utils.rate_limiter import report_rate_limiter
+from utils.client_identity import derive_client_key, normalize_session_id
 
 logger = get_logger(__name__)
 
@@ -23,13 +26,24 @@ class ReportContentRequest(BaseModel):
 
     content_id: str = Field(..., description="UUID of the content to report")
     content_type: str = Field(
-        ..., description="Type of content (commentary, generictext, etc.)"
+        ...,
+        max_length=50,
+        description="Type of content (commentary, generictext, etc.)",
     )
-    reason: str = Field(
-        ..., description="Reason for report (spam, inappropriate, duplicate, other)"
+    # Literal statt str: die Pruefung lag bisher nur im Service, der bei einem
+    # unbekannten Grund False zurueckgab und damit ein 400 ohne Begruendung
+    # erzeugte. Als Schema-Typ steht der erlaubte Wertebereich in der API-Doku
+    # und der Fehler nennt ihn.
+    reason: Literal["spam", "inappropriate", "duplicate", "other"] = Field(
+        ..., description="Reason for report"
     )
+    # 1000 Zeichen. Ohne Obergrenze wurde ein 5000-Zeichen-Text angenommen und
+    # in eine Text-Spalte ohne Laengenbegrenzung geschrieben -- auf einer Route,
+    # die bewusst ohne Anmeldung erreichbar ist.
     description: Optional[str] = Field(
-        None, description="Optional detailed description"
+        None,
+        max_length=1000,
+        description="Optional detailed description (max 1000 characters)",
     )
 
 
@@ -75,6 +89,7 @@ class ReportStatsResponse(BaseModel):
 @router.post("/report", response_model=ReportContentResponse)
 async def report_content(
     request: ReportContentRequest,
+    http_request: Request,
     x_user_id: Optional[str] = Header(None, alias="X-User"),
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
     settings: Settings = Depends(get_settings),
@@ -82,37 +97,67 @@ async def report_content(
     """
     Report a content item.
 
-    Anyone can report content (authenticated or anonymous).
-    Reports are tracked by user_id or session_id.
-    Rate limited to 5 reports per 15 minutes per user/session.
+    Die Route bleibt bewusst ohne Anmeldung erreichbar: DSA Art. 16 verlangt ein
+    leicht zugaengliches Meldeverfahren, und wer etwa eine Urheberrechts-
+    verletzung meldet, ist typischerweise kein Nutzer der Plattform.
+
+    Das Rate-Limit haengt deshalb an der Adresse des Aufrufers, nicht mehr an
+    X-Session-Id. Der Session-Header wird von der SPA selbst erzeugt und in
+    localStorage gehalten; wer je Anfrage einen neuen Wert schickt, hatte damit
+    gar kein Limit. Er dient weiterhin der Zuordnung anonymer Meldungen, aber
+    keiner Sicherheitsentscheidung mehr.
+
+    Fuer angemeldete Melder gilt zusaetzlich ein Limit auf der Nutzerkennung und
+    eine Deduplizierung auf (Nutzer, Inhalt).
     """
     try:
-        # Determine identifier for rate limiting (prefer user_id, fallback to session_id)
-        rate_limit_identifier = (
-            x_user_id
-            if x_user_id and x_user_id != "anonymous"
-            else x_session_id or "unknown"
-        )
+        is_authenticated = bool(x_user_id and x_user_id != "anonymous")
 
-        # Check rate limit
-        if await report_rate_limiter.is_rate_limited(rate_limit_identifier):
-            logger.warning(
-                f"Rate limit exceeded for report from: {rate_limit_identifier}"
-            )
-            raise HTTPException(
-                status_code=429,
-                detail="Too many reports. Please wait before submitting another report.",
-            )
+        # Die Adresse begrenzt jeden Aufrufer, auch den anonymen. Der Schluessel
+        # ist ein prozesslokaler Hash und wird weder gespeichert noch geloggt.
+        rate_limit_keys = [derive_client_key(http_request)]
+        if is_authenticated:
+            rate_limit_keys.append(f"user:{x_user_id}")
+
+        for key in rate_limit_keys:
+            if await report_rate_limiter.is_rate_limited(key):
+                logger.info("Rate limit exceeded for content report")
+                raise HTTPException(
+                    status_code=429,
+                    detail="Too many reports. Please wait before submitting another report.",
+                )
+
+        moderation_service = get_moderation_service()
+
+        # Existenz pruefen, bevor irgendetwas angelegt wird. Vorher genuegte ein
+        # gueltiges UUID-Format, sodass Meldungen zu nie existierenden Kennungen
+        # im Posteingang landeten.
+        if not await moderation_service.content_exists(request.content_id):
+            raise HTTPException(status_code=404, detail="Content not found")
 
         logger.info(f"Content report received: {request.content_id} - {request.reason}")
 
-        moderation_service = get_moderation_service()
+        # Meldungen brauchen eine Melder-Kennung: der Service verlangt sie, und die
+        # Tabelle hat einen CHECK darauf. Wer ohne Anmeldung und ohne
+        # X-Session-Id meldet -- etwa direkt gegen die API statt ueber die SPA --
+        # bekam deshalb 400, obwohl die Route ausdruecklich ohne Anmeldung
+        # erreichbar sein soll. Ein Zufallstoken je Meldung erfuellt die
+        # Bedingung, ohne irgendetwas ueber den Melder auszusagen; insbesondere
+        # ist er nicht aus der Adresse abgeleitet.
+        # Nur eine wohlgeformte Kennung uebernehmen. Das ist Hygiene, keine
+        # Sicherheitsmassnahme -- an diesem Wert haengt seit dem Umbau des
+        # Rate-Limits keine Entscheidung mehr. Ein unpassender Wert wird
+        # verworfen statt die Meldung abzuweisen.
+        reporter_session = normalize_session_id(x_session_id)
+        if not is_authenticated and not reporter_session:
+            reporter_session = f"anon:{uuid.uuid4()}"
+
         success = await moderation_service.report_content(
             content_id=request.content_id,
             content_type=request.content_type,
             reason=request.reason,
-            user_id=x_user_id if x_user_id and x_user_id != "anonymous" else None,
-            session_id=x_session_id,
+            user_id=x_user_id if is_authenticated else None,
+            session_id=reporter_session,
             description=request.description,
         )
 

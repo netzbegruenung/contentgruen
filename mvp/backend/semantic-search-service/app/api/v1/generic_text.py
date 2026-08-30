@@ -55,7 +55,9 @@ async def get_by_id(
         return generic_text
 
     except Exception as e:
-        print(f"Error fetching generic text with id {generic_text_id}: {e}")
+        logger.error(
+            f"Error fetching generic text with id {generic_text_id}: {e}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -67,15 +69,13 @@ async def get_all(
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> GenericTextGetAllResponse:
     try:
-        print("/getAll was called")
+        logger.debug("/getAll was called")
 
         offset = (page - 1) * page_size
         generic_text_index_results: List[GenericTextDbEntry] = (
             await generic_text_service.get_all(limit=page_size, offset=offset)
         )
-        print(
-            f"/getAll got {len(generic_text_index_results)} results from generic_text_index"
-        )
+        logger.debug(f"/getAll got {len(generic_text_index_results)} results")
 
         response: GenericTextGetAllResponse = GenericTextGetAllResponse(
             results_count=len(generic_text_index_results),
@@ -85,7 +85,7 @@ async def get_all(
 
         return response
     except Exception as e:
-        print("Error in /getAll: ", e)
+        logger.error(f"Error in /getAll: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -96,14 +96,13 @@ async def search_generic_text(
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
 ) -> GenericTextSearchResponse:
     try:
-        print("/searchGenericText was called, request: ", request)
+        logger.debug("/searchGenericText was called")
 
         generic_text_index_results = await generic_text_service.search(
             request.query_text, request.limit
         )
-        print(
-            "/searchGenericText generic_text_index_results: ",
-            generic_text_index_results,
+        logger.debug(
+            f"/searchGenericText got {len(generic_text_index_results)} results"
         )
 
         response: GenericTextSearchResponse = GenericTextSearchResponse(
@@ -112,7 +111,7 @@ async def search_generic_text(
 
         return response
     except Exception as e:
-        print("Error in search_generic_text: ", e)
+        logger.error(f"Error in search_generic_text: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -125,12 +124,10 @@ async def add_generic_text(
     x_user: str = Header(...),
 ) -> AddGenericTextResponse:
     try:
-        print("/addGenericText was called, request: ", request)
+        logger.debug("/addGenericText was called")
 
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
-
-        print(f"X-User header: {x_user}")
 
         # Handle references first if provided.
         # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
@@ -206,10 +203,10 @@ async def add_generic_text(
     except HTTPException:
         raise
     except ValueError as e:
-        print(f"Validation error in add_generic_text: {e}")
+        logger.warning(f"Validation error in add_generic_text: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        print(f"Unexpected error in add_generic_text: {e}")
+        logger.error(f"Unexpected error in add_generic_text: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while adding generic text. Please try again later.",

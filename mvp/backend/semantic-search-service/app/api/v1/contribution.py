@@ -8,6 +8,9 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from dtos.contribution import GetContributionsOfUserResponse
 from domain.models.content import ContentDbEntry
 from core.config import Settings
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 router = APIRouter()
@@ -28,12 +31,10 @@ async def search_content(
     settings: Settings = Depends(get_settings),
 ) -> GetContributionsOfUserResponse:
     try:
-        print("/getContributionsOfUser was called")
+        logger.debug("/getContributionsOfUser was called")
 
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
-
-        print(f"X-User header: {x_user}")
 
         offset = (page - 1) * page_size
 
@@ -48,8 +49,8 @@ async def search_content(
         )
         total_count = await content_repository.getCountByAuthor(user_id=x_user)
 
-        print(
-            f"/getContributionsOfUser got {len(content_index_results)} results from content_index"
+        logger.debug(
+            f"/getContributionsOfUser got {len(content_index_results)} results"
         )
 
         response: GetContributionsOfUserResponse = GetContributionsOfUserResponse(
@@ -60,7 +61,7 @@ async def search_content(
 
         return response
     except Exception as e:
-        print("Error in /getContributionsOfUser: ", e)
+        logger.error(f"Error in /getContributionsOfUser: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
