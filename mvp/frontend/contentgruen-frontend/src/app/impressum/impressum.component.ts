@@ -17,4 +17,7 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./impressum.component.scss']
 })
 export class ImpressumComponent {
+  // TODO: Platzhalter durch die tatsaechlichen Angaben ersetzen.
+  readonly KONTAKT_MAIL = '[E-Mail-Adresse]';
+  readonly MSTV_VERANTWORTLICH = '[Name der verantwortlichen Person, Anschrift wie oben]';
 }

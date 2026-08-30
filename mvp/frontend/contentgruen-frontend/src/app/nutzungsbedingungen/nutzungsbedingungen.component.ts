@@ -17,4 +17,6 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./nutzungsbedingungen.component.scss']
 })
 export class NutzungsbedingungenComponent {
+  // TODO: Platzhalter durch die tatsaechlichen Angaben ersetzen.
+  readonly KONTAKT_MAIL = '[E-Mail-Adresse]';
 }
