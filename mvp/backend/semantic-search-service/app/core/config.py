@@ -100,6 +100,17 @@ class Settings(BaseSettings):
 
     # OpenAI vision API (caption suggestion + async image description)
     # Accepts bare OPENAI_API_KEY (SDK default) or the prefixed SEMANTIC_SEARCH_OPENAI_API_KEY.
+    #
+    # PRIVACY WARNING -- setting this key starts a transfer to a third country.
+    # The key is the only switch: with it set, domain/content_registry.py picks
+    # AiVisionDescription instead of DirectText (decided once at module import), and image
+    # URLs go to OpenAI in the USA. That happens not only on the explicit
+    # POST /api/v1/image/suggestCaption, but unprompted from the background worker
+    # (services/vision/image_description_worker.py), which is started for every image in
+    # PENDING_DESCRIPTION and needs no user interaction at all.
+    # The privacy policy assumes this transfer does not take place. Before setting the key
+    # anywhere it must be extended with a section on third-country transfer (Art. 44 ff.
+    # GDPR), which also requires a data processing agreement and Art. 46 safeguards.
     openai_api_key: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices(

@@ -60,6 +60,16 @@ if (useKeycloak)
         options.Cookie.SameSite = SameSiteMode.None;    // Allow cross-site cookies between bff and frontend
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Enforce HTTPS
         options.Cookie.HttpOnly = true; // Prevent client-side JavaScript from accessing the cookie
+
+        // Explicit lifetime so the privacy policy can name a duration that is actually in the code.
+        // Without this the framework default of 14 days applies -- far more than the purpose needs
+        // for a ticket that carries the full Keycloak claims and, via SaveTokens below, the tokens
+        // themselves. Eight hours matches managed auth (AuthController.cs) so both production login
+        // paths share one number. Sliding, so that someone working through a long session is not
+        // signed out mid-edit: whether the OIDC challenge would silently renew depends on the
+        // Keycloak SSO session lifetime, which is configured outside this repository.
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
     }
     ) // Cookie for session handling
     .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
@@ -98,7 +108,9 @@ if (useKeycloak)
                     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                     var principal = new ClaimsPrincipal(identity);
 
-                    // Issue the authentication cookie
+                    // Issue the authentication cookie. Deliberately without AuthenticationProperties:
+                    // an ExpiresUtc set here would override ExpireTimeSpan and split the cookie
+                    // lifetime across two places. The lifetime lives on the cookie handler above.
                     await context.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
                     logger.LogDebug("Authentication cookie issued");
