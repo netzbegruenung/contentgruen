@@ -10,9 +10,10 @@ namespace BFF.Proxy;
 /// Proxy-Request, bevor dieser Code laeuft. Deshalb wird die Liste in
 /// <see cref="ClientControlledIdentityHeaders"/> hier zuerst bedingungslos entfernt -- vor
 /// jeder Verzweigung, damit auch die Pfade ohne angemeldeten Nutzer nichts vom Client
-/// durchreichen -- und danach werden X-User und X-Is-Admin ausschliesslich aus den Claims
-/// des BFF gesetzt. Gesetzt wird ersetzend, damit beim Backend garantiert genau ein Wert
-/// ankommt.
+/// durchreichen -- und danach werden X-User und X-Is-Admin ausschliesslich serverseitig
+/// bestimmt: aus den Claims des angemeldeten Nutzers und der konfigurierten
+/// Admin-Allowlist, beides zusammengefasst in <see cref="AdminPolicy"/>. Gesetzt wird
+/// ersetzend, damit beim Backend garantiert genau ein Wert ankommt.
 /// </summary>
 public static class IdentityHeaderTransform
 {
@@ -46,11 +47,19 @@ public static class IdentityHeaderTransform
         "X-Is-Authenticated"
     };
 
+    /// <param name="adminUserIds">
+    /// Die konfigurierte Admin-Allowlist (ADMIN_USER_IDS), bereits zerlegt. Bewusst ein
+    /// Parameter und keine Konfigurationsabfrage in dieser Klasse: nur weil Apply
+    /// ausschliesslich mit dem arbeitet, was ihm uebergeben wird, laesst es sich in
+    /// IdentityHeaderTransformTests ohne Host aufrufen. Ohne Standardwert, damit eine
+    /// kuenftige zweite Aufrufstelle die Liste nicht stillschweigend weglassen kann.
+    /// </param>
     public static void Apply(
         HttpRequestMessage proxyRequest,
         ClaimsPrincipal user,
         string? path,
         IHeaderDictionary incomingHeaders,
+        IReadOnlyCollection<string> adminUserIds,
         ILogger logger)
     {
         // Zuerst und ohne Bedingung: der Client darf ueber Identitaet und Rechte nichts aussagen.
@@ -66,10 +75,7 @@ public static class IdentityHeaderTransform
             SetSingleValue(proxyRequest, UserHeader, userId);
             logger.LogDebug("Set X-User header for authenticated user: {UserId}", userId);
 
-            var isAdmin = user.HasClaim("isAdmin", "true") ||
-                          user.HasClaim("role", "admin") ||
-                          user.HasClaim(ClaimTypes.Role, "admin");
-            if (isAdmin)
+            if (AdminPolicy.IsAdmin(user, adminUserIds))
             {
                 SetSingleValue(proxyRequest, AdminHeader, "true");
                 logger.LogDebug("Set X-Is-Admin header for admin user: {UserId}", userId);

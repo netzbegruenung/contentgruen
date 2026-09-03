@@ -145,9 +145,10 @@ Browser ──Cookie "ContentGruenAuthCookie"──▶ BFF
                                              │  ClaimUtilities.GetUserId()  → "sub" | NameIdentifier
                                              │  ClaimUtilities.GetUserName() → Name | "name" | GivenName
                                              ▼
-                              YARP-Transform (Program.cs:243–283)
+                              YARP-Transform (IdentityHeaderTransform.cs)
                                              │  Header  X-User: <sub>
-                                             │  Header  X-Is-Admin: true   (nur wenn Admin-Claim)
+                                             │  Header  X-Is-Admin: true   (Admin-Claim oder
+                                             │                              ADMIN_USER_IDS)
                                              ▼
                                      Python Semantic-Search-Service
 ```
@@ -243,7 +244,7 @@ erhöht. Aufwand grob **10–16 h** (Tabelle, Repository, Anpassung von
 | --- | --- | --- | --- |
 | Stabile ID | **ja, zwingend** | Keycloak `sub`, bzw. `userId` aus `managed-users.json` | `X-User`, `original_author`, `votes.user_id` |
 | Anzeigename | ja, für die Oberfläche | Claims `name`/`given_name`, bzw. `displayName` | `/api/user-info` → `UserInfo.userName` (`src/app/auth/auth.service.ts:7–13`), Kopfzeile |
-| Admin-Kennzeichen | ja | Claim `isAdmin`/`role=admin`, bzw. `isAdmin` in der JSON | `X-Is-Admin` (`Program.cs:265–272`), `require_admin` (`dependencies.py:219–235`), `AdminGuard` |
+| Admin-Kennzeichen | ja | Claim `isAdmin`/`role=admin`, bzw. `isAdmin` in der JSON, **oder** die Kennung steht in `ADMIN_USER_IDS` | `AdminPolicy.IsAdmin` (`BFF/Proxy/AdminPolicy.cs:56`) → `X-Is-Admin` (`BFF/Proxy/IdentityHeaderTransform.cs:78`) und `/api/user-info` (`Program.cs:457`), ausgewertet in `require_admin` (`dependencies.py:233`) und im `AdminGuard` |
 | E-Mail | **nein** | Scope `email` wird angefordert, `ManagedUser.Email` existiert | wird nirgends gelesen außer als Login-Kennung im hauseigenen Pfad |
 | Rolle/Zuordnung („KV Bayreuth“) | **existiert nicht** | — | — |
 

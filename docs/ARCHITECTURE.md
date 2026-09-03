@@ -198,6 +198,18 @@ listens on 5432 inside the container.
   `Development`; startup fails if it is missing.
 - `CORS_ALLOWED_ORIGINS` - Optional, comma-separated extra CORS origins for cases where more
   than one hostname serves the SPA. Unset in all current environments.
+- `ADMIN_USER_IDS` - Optional, comma-separated user ids that get admin rights in addition to
+  anyone carrying an admin claim (`AdminPolicy`). Values are compared to the same string the
+  BFF forwards as `X-User`, i.e. the Keycloak `sub` claim or the `userId` field from
+  `managed-users.json` - not e-mail addresses, not usernames. Comparison is ordinal and
+  case-sensitive, matching how the Python service compares `SEMANTIC_SEARCH_ADMIN_USERS`;
+  set both to the same value so one entry means one person on both sides. Unset means no
+  extra admins and is not an error - the claim alone decides, as before. Whitespace around
+  entries is trimmed.
+
+  It exists because the claim route needs a Keycloak protocol mapper: `OnTokenValidated`
+  copies token claims unchanged, so a flat `isAdmin`/`role` claim has to come from the realm
+  configuration, which lives outside this repository.
 
 ### Semantic Search
 

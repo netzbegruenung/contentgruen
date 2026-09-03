@@ -37,6 +37,23 @@ if (string.IsNullOrWhiteSpace(frontendUrl))
 }
 frontendUrl = frontendUrl.TrimEnd('/');
 
+// ADMIN_USER_IDS (kommasepariert) nennt Nutzerkennungen, die Adminrechte bekommen, ohne dass
+// ein Claim sie ausweist. Gebraucht wird das, weil der Keycloak-Weg dafuer einen
+// Protocol-Mapper im Realm braucht -- Konfiguration, die ausserhalb dieses Repos liegt und
+// nicht jedem zur Verfuegung steht, der die Anwendung betreibt.
+//
+// Einmal hier zerlegt statt pro Request: die Liste aendert sich nur mit einem Neustart, und
+// beide Verbraucher -- der YARP-Transform weiter unten und die Minimal-API /api/user-info --
+// sind Closures, die diese Variable erfassen. Ungesetzt ergibt eine leere Liste, und dann
+// entscheidet allein der Claim; das ist der Normalfall und kein Fehler.
+var adminUserIds = AdminPolicy.ParseAllowlist(builder.Configuration.GetValue<string>("ADMIN_USER_IDS"));
+
+// Nur die Anzahl, nicht die Kennungen: Nutzerkennungen sind personenbezogen und gehoeren
+// nicht ins Log (siehe die Bereinigung der Logausgaben in derselben Haertungsrunde). Ganz
+// weglassen laesst sich die Zeile aber nicht, sonst bliebe ein Tippfehler im
+// Variablennamen unsichtbar -- die Liste waere dann still leer.
+startupLogger.LogInformation("Admin allowlist: {Count} configured user ids", adminUserIds.Length);
+
 if (useKeycloak)
 {
     // Read Keycloak configuration from appsettings.json
@@ -255,6 +272,7 @@ builder.Services.AddReverseProxy()
                         httpContext.User,
                         httpContext.Request.Path.Value,
                         httpContext.Request.Headers,
+                        adminUserIds,
                         logger);
                 }
                 catch (Exception ex)
@@ -431,10 +449,12 @@ app.MapGet("/api/user-info", (HttpContext context, ILogger<Program> logger) =>
         var userName = ClaimUtilities.GetUserName(context.User);
         var claims = context.User.Claims.ToDictionary(c => c.Type, c => c.Value);
 
-        // Check if user is admin (from claims)
-        var isAdmin = context.User.HasClaim("isAdmin", "true") ||
-                     context.User.HasClaim("role", "admin") ||
-                     context.User.HasClaim(ClaimTypes.Role, "admin");
+        // Dieselbe Entscheidung wie im IdentityHeaderTransform, und deshalb aus derselben
+        // Quelle: das Frontend zeichnet seinen AdminGuard aus diesem Wert, das Backend
+        // seine admin-only-Endpunkte aus X-Is-Admin. Liefen die beiden Pruefungen
+        // auseinander, saehe jemand den Adminbereich, dessen Aufrufe darin 403 ergeben --
+        // oder umgekehrt.
+        var isAdmin = AdminPolicy.IsAdmin(context.User, adminUserIds);
 
         logger.LogDebug("/api/user-info   User is authenticated, return ok and user info");
         return Results.Ok(new
