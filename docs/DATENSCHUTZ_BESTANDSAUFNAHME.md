@@ -3,7 +3,7 @@
 > **Zweck:** belegte Faktenbasis für die Datenschutzerklärung. Keine juristische Bewertung,
 > keine Empfehlung — nur, was im Code steht, mit Fundstelle.
 >
-> **Stand:** Commit `fae44b4` (`main`)
+> **Stand:** Commit `c776202` (`main`)
 > **Erstanalyse:** 2026-08-25 gegen `95b565e0d37d5ee9d0a20249f2031a7e1b9851e4`
 > **Fortgeschrieben:** 2026-09-03 gegen `fae44b4`. Alle Zeilennummern beziehen sich auf
 > `fae44b4`; wo eine Aussage der Erstanalyse durch die zwischenzeitlichen Änderungen
@@ -16,6 +16,11 @@
 > überwiegend aus der Erstanalyse stammten: `models.py` ist seit `95b565e` um 12 Zeilen
 > gewachsen, wodurch alle Angaben ab `search_events` um denselben Betrag danebenlagen.
 > Beides ist korrigiert.
+> **Nachgezogen auf `c776202`:** 2026-09-04. Seit `fae44b4` sind PR #31 (Rechtstexte)
+> und PR #33 (Admin-Allowlist im BFF) gemergt. #33 fügt eine neue Weiche für
+> Adminrechte hinzu und verschiebt die Zeilennummern in `BFF/Program.cs` und
+> `BFF/Proxy/IdentityHeaderTransform.cs`; beides ist eingearbeitet (Teil 0, 1.2, 1.4,
+> Teil 4 · 4-K). Alle übrigen Zeilenangaben wurden erneut aufgelöst.
 
 ## Lesehilfe
 
@@ -48,6 +53,8 @@ Belege stehen jeweils im betroffenen Abschnitt.
 | **#27** Datenminimierung | `usage_events` verliert die Spalten `user_id`, `ip_hash` und `user_agent`; an deren Stelle tritt `device_category`. Die View `user_usage_statistics` entfällt | **1.2 neu geschrieben**, **1.8 entfällt**, Befunde **E-1** und **E-2** erledigt |
 | **#29** Härtung Phase 2 | Auth-Gate gilt in beiden Betriebsarten; `EndpointPolicy` als einzige Endpunktliste; Metrik-Endpunkte admin-only; Debug-Router `api/v1/test.py` gelöscht; alle 93 `print()` entfernt; Suchtext nicht mehr protokolliert; Nutzerkennungen in Logs nur noch als 8-stelliges Pseudonym; E-Mail-Adressen aus den BFF-Logs entfernt; `X-User-Id` wird am Proxy entfernt und die Dependency liest `X-User`; Rate-Limit auf `/moderation/report` auf einen flüchtigen Adress-Hash umgestellt; `managed-users.json` aus dem Git genommen | **1.10 neu geschrieben**, Anhang A überwiegend erledigt |
 | **#32** Voraussetzungen | Cookie-Laufzeit im Keycloak-Zweig explizit 8 h gleitend; Session-ID in `localStorage` rotiert nach 30 Tagen und kommt aus `crypto.randomUUID()`; Warnhinweis zum OpenAI-Key in `core/config.py` und `CLAUDE.md` | **1.11 aktualisiert**, Befunde **B-1**, **B-2** erledigt |
+| **#31** Rechtstexte | Impressum und Nutzungsbedingungen mit den bestätigten Vereinsangaben neu gefasst; `docs/RECHTSTEXTE_LUECKEN.md` fortgeschrieben. **Die Datenschutzerklärung ist unverändert** — sie ist Gegenstand des folgenden Schritts | Teil 3 unverändert gültig |
+| **#33** Admin-Allowlist | `AdminPolicy` fasst die vorher doppelt vorhandene Adminprüfung zusammen; neu ist die Umgebungsvariable `ADMIN_USER_IDS`, über die Kennungen **ohne Claim** Adminrechte bekommen | **1.2 und 1.4 ergänzt**, neue Frage **4-K**. Zeilennummern in `Program.cs` und `IdentityHeaderTransform.cs` verschoben |
 
 **Unverändert geblieben und weiterhin gültig** sind die drei Befunde, an denen die
 Datenschutzerklärung am meisten hängt:
@@ -140,6 +147,9 @@ und mit `VACUUM FULL` (`:57`) physisch entfernt.
 | `GET /api/v1/usage/trending` | **öffentlich** | `api/v1/usage.py:209-211`; `EndpointPolicy.cs:29` |
 | `GET /api/v1/usage/users/{user_id}/usage-stats` | Admin-Prüfung `settings.is_admin_user` — **seit PR #29 wirksam**, siehe unten | `api/v1/usage.py:175-207` |
 | `GET /api/v1/metrics/mvp-dashboard`, `/usage-trend`, `/helpful-rate` (aggregiert) | **`Depends(require_admin)`** — vorher ohne jede Auth-Dependency und öffentlich am BFF | `api/v1/metrics.py:192-195, 300-304, 339-343`; nur `/getMetrics` steht noch in `EndpointPolicy.cs:34` |
+
+Wer als Admin gilt, entscheidet seit PR #33 nicht mehr allein ein Claim, sondern zusätzlich
+die Umgebungsvariable `ADMIN_USER_IDS` (siehe 1.4 und Teil 4, 4-K).
 | Backup-Dumps | Dateisystemzugriff | s. 1.12 |
 
 Die View `user_usage_statistics` ist entfallen (1.8).
@@ -154,8 +164,8 @@ Behoben an beiden Enden:
 
 - `app/dependencies.py:217` deklariert `Header(None, alias="X-User")`, ebenso
   `require_admin` (`:234-235`). Die Kommentare `:225-229` halten die alte Fehlerklasse fest.
-- `BFF/Proxy/IdentityHeaderTransform.cs:43` nimmt `X-User-Id` in die Liste der Header auf,
-  die der Transform bedingungslos entfernt (`:59`). Ein Client kann sich damit nicht mehr
+- `BFF/Proxy/IdentityHeaderTransform.cs:44` nimmt `X-User-Id` in die Liste der Header auf,
+  die der Transform bedingungslos entfernt (`:68`). Ein Client kann sich damit nicht mehr
   per Header eine fremde Identität geben (vormals Anhang A, A-2).
 
 **Folge:** Die Admin-Prüfung in `api/v1/usage.py:189,245,275` greift jetzt tatsächlich,
@@ -316,9 +326,28 @@ eine vollständig anonyme Meldung ist per Schema ausgeschlossen.
 **Wer kann lesen:** `GET /api/v1/moderation/reports` und `/stats`, `PUT …/dismiss`, `DELETE` —
 alle vier mit `Depends(require_admin)` (`api/v1/moderation.py:191,229,267,300`).
 `require_admin` (`app/dependencies.py:233-249`) prüft `X-User` ≠ leer/`anonymous`
-**und** `X-Is-Admin: true`; letzteres setzt nur das BFF aus Claims
-(`IdentityHeaderTransform.cs:56-63`) und entfernt einen mitgeschickten Wert vorher
-bedingungslos (`:46`). Das ist der einzige Speicher mit funktionierender Admin-Schranke.
+**und** `X-Is-Admin: true`; letzteres setzt ausschließlich das BFF
+(`IdentityHeaderTransform.cs:74-82`) und entfernt einen mitgeschickten Wert vorher
+bedingungslos (`:47`). Das ist der einzige Speicher mit funktionierender Admin-Schranke.
+
+**Seit PR #33 gibt es zwei Wege zu diesem Header** (`BFF/Proxy/AdminPolicy.cs:56-79`),
+mit ODER verknüpft:
+
+1. ein Claim am angemeldeten Nutzer (`isAdmin=true`, `role=admin`, `ClaimTypes.Role=admin`) —
+   bei Managed Auth aus dem Feld `isAdmin` der `managed-users.json`, bei Keycloak nur, wenn
+   ein Protocol-Mapper im Realm ihn ins Token legt;
+2. die Nutzerkennung steht in der Umgebungsvariablen `ADMIN_USER_IDS`
+   (`BFF/Program.cs:49`, einmal beim Start zerlegt).
+
+Verglichen wird gegen denselben Wert, den das BFF als `X-User` weiterreicht
+(`AdminPolicy.cs:76`), ordinal und mit Groß-/Kleinschreibung. Datenschutzrelevant ist das,
+weil an dieser Entscheidung der **Moderationsposteingang** hängt — also die Freitexte der
+Meldungen und die Melderkennungen — und die sechs Betriebskennzahlen-Endpunkte. Wer in der
+Liste steht, entscheidet die Deployment-Konfiguration; im Repo ist sie leer
+(`docker-compose.dev.yml:143`). **Teil 4, Frage 4-K.**
+
+Ein Nebeneffekt fürs Log: beim Start wird nur die **Anzahl** der Einträge protokolliert,
+nicht die Kennungen (`Program.cs:55`, mit Begründung).
 
 **Schreiben:** `POST /api/v1/moderation/report` ist **öffentlich**
 (`BFF/Proxy/EndpointPolicy.cs:30`) — anonymes Melden ist ausdrücklich vorgesehen, der
@@ -359,7 +388,7 @@ löscht den *gemeldeten Inhalt* aus Qdrant, nicht die Meldung.
 `app/api/v1/raw_input.py:30-40` (`_einwerfende_person`): der Wert des `X-User`-Headers;
 `"anonymous"` und leer werden bewusst zu `None`. `X-User` ist der Keycloak-`sub` bzw. bei
 Managed/Dummy-Auth `user-001`/`user-002`/`test-user-id-1`
-(`BFF/Program.cs:642-646` `ClaimUtilities.GetUserId` — `sub`, ersatzweise `NameIdentifier`).
+(`BFF/Program.cs:662-666` `ClaimUtilities.GetUserId` — `sub`, ersatzweise `NameIdentifier`).
 Kein Klarname, keine E-Mail.
 
 ### Wer bekommt das zu sehen
@@ -384,7 +413,7 @@ Schutzstufe davor:
   (`BFF/Proxy/EndpointPolicy.cs:24-35`) und ist damit am BFF nur angemeldet erreichbar.
   **Seit PR #29 gilt das in beiden Betriebsarten:** der Auth-Gate hängt nicht mehr an
   `USE_KEYCLOAK`, sondern läuft als eigene Middleware in der Proxy-Pipeline
-  (`BFF/Program.cs:466-486`). Die Erstanalyse hatte hier den gravierenderen Stand
+  (`BFF/Program.cs:486-509`). Die Erstanalyse hatte hier den gravierenderen Stand
   beschrieben — bei `USE_KEYCLOAK=false` wurde der Proxy vorher ohne
   Autorisierungspipeline gemappt und es schützte nur der clientseitige Frontend-Guard
   (vormals Anhang A, A-1). **ERLEDIGT.**
@@ -578,7 +607,7 @@ Mit erledigt: der Debug-Router `app/api/v1/test.py` (485 Zeilen), dessen
 — einschließlich des durchgereichten Cookie-Headers mit dem Auth-Ticket. Die Datei ist
 gelöscht, der Pfad `/api/v1/test` steht zusätzlich in `EndpointPolicy.Blocked`
 (`BFF/Proxy/EndpointPolicy.cs:56-60`) und wird vor Routing und Authentifizierung mit 404
-abgewiesen (`BFF/Program.cs:394-407`) — als Riegel für den Fall, dass er zurückkehrt.
+abgewiesen (`BFF/Program.cs:412-424`) — als Riegel für den Fall, dass er zurückkehrt.
 Ein Ruff-Regelsatz hält `print` fern (`pyproject.toml`, Regel `T201`, im Pre-Commit-Hook).
 
 ### 1.10.2 Logger im Python-Backend
@@ -628,9 +657,9 @@ Rate-Limit. Auf `fae44b4` steht dort entweder gar keine Kennung oder die interne
 | „Authentication error during managed auth" — ohne Kennung | Error | `ManagedUserService.cs:160` |
 | „Managed auth login attempted while disabled" / „Failed login attempt via managed auth" — ohne Kennung | Warning | `Controllers/AuthController.cs:67,84` |
 | „User {UserId} logged in successfully via managed auth" | Information | `AuthController.cs:120` |
-| Nutzerkennung beim Header-Setzen | Debug | `Proxy/IdentityHeaderTransform.cs:67,75` |
-| Pfad eines geschützten Endpunkts ohne Nutzer | Warning | `IdentityHeaderTransform.cs:89` |
-| Pfad eines am Rand gesperrten Endpunkts | Warning | `Program.cs:399` |
+| Nutzerkennung beim Header-Setzen | Debug | `Proxy/IdentityHeaderTransform.cs:76,81` |
+| Pfad eines geschützten Endpunkts ohne Nutzer | Warning | `IdentityHeaderTransform.cs:95` |
+| Pfad eines am Rand gesperrten Endpunkts | Warning | `Program.cs:417` |
 
 `Console.WriteLine` kommt in keiner `*.cs` mehr vor.
 
@@ -679,9 +708,9 @@ Erhebungsmethode: Grep über `fe/` nach `localStorage`, `sessionStorage`, `docum
 
 | Name | Gesetzt von | Inhalt | Flags | Lebensdauer |
 |------|-------------|--------|-------|-------------|
-| `ContentGruenAuthCookie` (Keycloak-Modus) | `BFF/Program.cs:59` | ASP.NET-Cookie-Auth-Ticket, DataProtection-verschlüsselt; enthält **alle Keycloak-Claims** (`sub`, `email`, Name — Scopes `openid`,`profile`,`email`, `Program.cs:82-84`) **plus die Tokens**, da `options.SaveTokens = true` (`:81`) | `HttpOnly` (`:62`), `Secure = Always` (`:61`), `SameSite = None` (`:60`) | **8 Stunden, gleitend** — `ExpireTimeSpan = TimeSpan.FromHours(8)`, `SlidingExpiration = true` (`Program.cs:71-72`) |
-| `ContentGruenAuthCookie` (Managed-Modus) | `BFF/Program.cs:147` | Claims `NameIdentifier`, `Name`, `name`, `Email`, `sub`, `auth_method`, `user_id`, ggf. `Role=admin`/`isAdmin` (`AuthController.cs:91-104`) | `HttpOnly` (`:150`), `SecurePolicy = SameAsRequest` (`:149` — **über http also ohne `Secure`**), `SameSite = Lax` (`:148`) | **8 Stunden**, persistent (`AuthController.cs:108-111`) |
-| dito, Dummy-Login (**nur Dev**) | `Program.cs:147` | Claims `name`, `GivenName`, `Surname`, `NameIdentifier=test-user-id-1` | wie oben | **1 Stunde**, persistent (`Program.cs:560-561`) |
+| `ContentGruenAuthCookie` (Keycloak-Modus) | `BFF/Program.cs:76` | ASP.NET-Cookie-Auth-Ticket, DataProtection-verschlüsselt; enthält **alle Keycloak-Claims** (`sub`, `email`, Name — Scopes `openid`,`profile`,`email`, `Program.cs:99-101`) **plus die Tokens**, da `options.SaveTokens = true` (`:98`) | `HttpOnly` (`:79`), `Secure = Always` (`:78`), `SameSite = None` (`:77`) | **8 Stunden, gleitend** — `ExpireTimeSpan = TimeSpan.FromHours(8)`, `SlidingExpiration = true` (`Program.cs:88-89`) |
+| `ContentGruenAuthCookie` (Managed-Modus) | `BFF/Program.cs:164` | Claims `NameIdentifier`, `Name`, `name`, `Email`, `sub`, `auth_method`, `user_id`, ggf. `Role=admin`/`isAdmin` (`AuthController.cs:91-104`) | `HttpOnly` (`:167`), `SecurePolicy = SameAsRequest` (`:166` — **über http also ohne `Secure`**), `SameSite = Lax` (`:165`) | **8 Stunden**, persistent (`AuthController.cs:108-111`) |
+| dito, Dummy-Login (**nur Dev**) | `Program.cs:164` | Claims `name`, `GivenName`, `Surname`, `NameIdentifier=test-user-id-1` | wie oben | **1 Stunde**, persistent (`Program.cs:580-581`) |
 | OIDC-Korrelations-/Nonce-Cookies | ASP.NET-OIDC-Handler | Flow-State | Framework-Default `SameSite=None`, `Secure` abhängig vom weitergereichten Schema | Sekunden bis Minuten |
 
 > **Erledigt gegenüber der Erstanalyse:** Der Keycloak-Zweig setzte weder `ExpireTimeSpan`
@@ -691,7 +720,7 @@ Erhebungsmethode: Grep über `fe/` nach `localStorage`, `sessionStorage`, `docum
 > Datenschutzerklärung kann eine Zahl nennen, die im Code steht. Formulierung im Text:
 > **„8 Stunden ab der letzten Nutzung"** — gleitend, nicht absolut.
 
-Ein **Schlüsselring** liegt unter `/keys` (`Program.cs`, `SetApplicationName("contentgruen-bff")`).
+Ein **Schlüsselring** liegt unter `/keys` (`Program.cs:356-358`, `SetApplicationName("contentgruen-bff")`).
 Ohne gemountetes Volume entwertet jeder Container-Neustart alle bestehenden Cookies.
 
 ### localStorage — überlebt das Schließen des Browsers
@@ -705,7 +734,7 @@ Ohne gemountetes Volume entwertet jeder Container-Neustart alle bestehenden Cook
 Wohin die Session-ID geht: als Header `X-Session-Id` bei jeder Suche
 (`search.service.ts:41`) und bei jeder Meldung (`moderation.service.ts`), im Body beim
 Nutzungs-Tracking (`usage-tracking.service.ts`). Das BFF reicht den Header unverändert
-durch (`IdentityHeaderTransform.cs:93-99`). Gespeichert wird er in
+durch (`IdentityHeaderTransform.cs:98-104`). Gespeichert wird er in
 `usage_events.session_id` (1.2) und `content_reports.reported_by_session_id` (1.4); in
 `search_events` fließt er nur noch in den Tagespseudonym-Hash ein (1.3). Auf dem Meldeweg
 wird er vorher als UUID validiert und andernfalls verworfen
@@ -749,7 +778,7 @@ Endgerätespeicherung im Sinne des § 25 TDDDG.
 | Speicher | Inhalt | Beleg | Personenbezug |
 |----------|--------|-------|---------------|
 | `/metadata` (Volume `semantic_search_metadata`) | Seeding-Status: Dateinamen, Zähler, Zeitstempel, PID | `app/services/seeding/seeding_status.py:260-261,283-284`, `seeding_service.py:161-162`; Volume `docker-compose.tst.yml:70` | **nein** — Grep über `services/seeding/` nach Schreibpfaden zeigt nur Dateilisten und Fortschrittszähler |
-| `/keys` | DataProtection-Schlüsselring | `BFF/Program.cs:314-316` | nein, aber sicherheitsrelevant |
+| `/keys` | DataProtection-Schlüsselring | `BFF/Program.cs:356-358` | nein, aber sicherheitsrelevant |
 | `/opt/contentgruen-backups/daily|weekly` | **vollständige Kopien** von Qdrant-Snapshot und PostgreSQL-Dump | `mvp/scripts/backup/backup.sh`; Host-Mount `docker-compose.tst.yml:45,72` | **ja — enthält alles aus 1.1–1.9** |
 | `mvp/config/managed-users.json` | Konten: E-Mail, bcrypt-Hash, Anzeigename, UserId, `isAdmin` | **seit PR #29 nicht mehr im Git** (`.gitignore:19`); getrackt ist nur noch `managed-users.example.json` mit zwei Testkonten. Gemountet `docker-compose.tst.yml` (`./config:/config:ro`) | **ja**, sofern in der Zielumgebung echte Konten eingetragen sind — Teil 4, 4-D. Die beiden Beispielkonten (`test.user@example.com`, `admin@contentgruen.com`) und die historisch eingecheckte Datei bleiben in der Git-Historie |
 
@@ -772,7 +801,7 @@ Frontend-Quellen; Durchsicht von `src/index.html`.
 | ~~2-A~~ | ~~**api.dicebear.com** (Avatare)~~ | — | — | — | **nein, entfallen.** Die 26 fest verdrahteten `api.dicebear.com`-URLs sind durch 16 lokale SVG-Dateien (12 Profilbilder, 4 Anonym-Varianten) unter `mvp/frontend/contentgruen-frontend/public/avatars/` ersetzt, erzeugt von `scripts/generate-avatars.mjs`; referenziert als `/avatars/*.svg` (`fe/app/app.component.ts:61-78`, `fe/app/result-view/result-view.component.ts`). Damit geht beim Seitenaufruf **keine** IP mehr an Dicebear. Die Erstanalyse hatte das als den einzigen unbedingten Drittabruf geführt |
 | 2-B | **beliebige Bild-Hosts** | IP + User-Agent des **Betrachters** gehen an den Host des jeweiligen Bildes | `<img [src]="result.image_result.image_url">` in `fe/app/image-result-item/image-result-item.component.html:41`; Wert stammt aus `domain/models/image.py:37`, vom Beitragenden frei eingegeben (`fe/app/add-image/add-image.component.html:34`) | abhängig vom eingetragenen Host — nicht vorhersagbar | **ja**, sobald ein Bildbeitrag im Suchergebnis erscheint. Suche ist öffentlich → betrifft auch nicht angemeldete Besucher |
 | 2-C | **OpenAI** (`gpt-4o-mini`) | **Bild-URL** und ein fester deutscher Prompt. Nicht übermittelt: Nutzerkennung, Session-ID, IP. OpenAI ruft das Bild anschließend **selbst** beim Host ab | `app/services/vision/caption_suggestion_service.py:17,26-38`; Prompt `:6-10`; Client `AsyncOpenAI` `:2`. Zwei Auslöser: (a) `POST /api/v1/image/suggestCaption` (`app/api/v1/image.py:138-150`, angemeldet, rate-limited `middleware/rate_limit.py:39`), (b) Hintergrund-Worker für `PENDING_DESCRIPTION` (`services/vision/image_description_worker.py:37-39`, gestartet `app/main.py:119-122`) | **ja, USA** | **abhängig von `OPENAI_API_KEY` — siehe Befund V-1** |
-| 2-D | **Keycloak** (Netzbegrünung) | Authorization-Code-Flow, Scopes `openid`, `profile`, `email`; zurück kommen `sub`, `email`, Name | `BFF/Program.cs:75-127`, Scopes `:82-84`, Callback `:85` | nein (EU, **UNSICHER** — Authority steht nicht im Repo, s. Teil 4) | **nur bei `USE_KEYCLOAK=true`**. Beide Compose-Dateien im Repo setzen `false` (`docker-compose.dev.yml:140,178`, `docker-compose.tst.yml:94,120`); Code-Default ist `true` (`Program.cs:19`) |
+| 2-D | **Keycloak** (Netzbegrünung) | Authorization-Code-Flow, Scopes `openid`, `profile`, `email`; zurück kommen `sub`, `email`, Name | `BFF/Program.cs:92-147`, Scopes `:99-101`, Callback `:102` | nein (EU, **UNSICHER** — Authority steht nicht im Repo, s. Teil 4) | **nur bei `USE_KEYCLOAK=true`**. Beide Compose-Dateien im Repo setzen `false` (`docker-compose.dev.yml:140,180`, `docker-compose.tst.yml:94,120`); Code-Default ist `true` (`Program.cs:19`) |
 | 2-E | **Anthropic** (`claude-sonnet-4-5`) | Beitragstexte aus einer Korpusdatei | `mvp/scripts/manual/check_wirkung_baseline.py` (auf `fae44b4` unverändert vorhanden) | ja, USA | **nein — toter Pfad für die Anwendung.** Ein manuell auszuführendes Skript unter `scripts/manual/`, von keinem Anwendungscode importiert; `anthropic` steht **nicht** in `mvp/backend/semantic-search-service/requirements.txt` (dort nur `openai>=1.35.0`, Zeile 30) |
 | 2-F | Qdrant-Snapshot-API | Vollständige Sammlung inkl. aller Payloads | `app/scripts/backup_qdrant.py:87`, `restore_qdrant.py:73` | nein — `localhost`/Docker-intern | ja, beim Backup |
 | — | Google Fonts | — | vormals `index.html` | — | **nein, entfernt.** `src/index.html` (14 Zeilen) enthält keinen externen Link mehr; Schriften liegen in `public/fonts/` (11 Dateien), Einbindung `src/styles/fonts.css`. Grep nach `fonts.googleapis`/`fonts.gstatic` in `src/` und `public/`: nur ein historischer Kommentar `styles/fonts.css:4`. **Bestätigt D-N10 der Lückenliste** |
@@ -836,11 +865,11 @@ unverändert) und `docs/RECHTSTEXTE_LUECKEN.md` (221 Zeilen, Stand 2026-08-19).
 | **W-3** | „Sie können sich auf dieser Website **registrieren**" mit Erhebungsliste Benutzername/E-Mail/Passwort/Zeitpunkt | Es gibt keine Registrierungsroute. Zugänge werden manuell in `managed-users.json` angelegt oder kommen über Keycloak | Text `:126-140` ⟷ `fe/app/app.routes.ts` (keine Register-Route), `mvp/config/managed-users.example.json`. Deckungsgleich mit Lückenliste X1 |
 | **W-4** | „Daten, die Sie in ein **Kontaktformular** eingeben" | Kein Kontaktformular im Frontend | Text `:26-27` ⟷ Lückenliste X2, von mir nicht widerlegt |
 | **W-5** | Cookie-Abschnitt kennt nur „Sitzungscookies" und „Authentifizierungscookies" | Zusätzlich **drei localStorage-Schlüssel** und **vier sessionStorage-Schlüssel** | Text `:93-106` ⟷ 1.11 dieses Berichts. Aktuelle Namen: `gutgesagt_session_id`, `gutgesagt_session_id_created_at`, `gutgesagt-metrics-seen` |
-| **W-6** | „Authentifizierungscookies … für die **Dauer Ihrer Sitzung**" | Persistente Cookies mit fester Lebensdauer: **8 h gleitend in beiden Produktionswegen** (Keycloak und Managed), 1 h im Dummy-Modus. Sie überleben das Schließen des Browsers — `IsPersistent = true`. Die Zahl steht jetzt im Code und ist im Text nennbar | Text `:105` ⟷ `BFF/Program.cs:71-72`, `BFF/Controllers/AuthController.cs:108-111` |
+| **W-6** | „Authentifizierungscookies … für die **Dauer Ihrer Sitzung**" | Persistente Cookies mit fester Lebensdauer: **8 h gleitend in beiden Produktionswegen** (Keycloak und Managed), 1 h im Dummy-Modus. Sie überleben das Schließen des Browsers — `IsPersistent = true`. Die Zahl steht jetzt im Code und ist im Text nennbar | Text `:105` ⟷ `BFF/Program.cs:88-89`, `BFF/Controllers/AuthController.cs:108-111` |
 | **W-7** | „Kommentar- und Beitragsfunktion … werden neben Ihrem Kommentar auch Zeitpunkt und **Nutzername** gespeichert" | **Unverändert.** Gespeichert werden zusätzlich `last_modified_by`, `authors[]` und die **vollständige `edit_history[]`** mit Editor und Zeitstempel je Änderung — und all das ist für **nicht angemeldete** Besucher über die öffentliche Suche abrufbar und sichtbar gerendert | Text `:142-147` ⟷ `app/domain/models/base_content.py:87-90`, `app/dtos/search.py:46,58,70,82`, `fe/app/commentary-result-item/commentary-result-item.component.html:213` und die drei Parallelstellen. Die Lückenliste (D-N3) lässt die Sichtbarkeitsfrage offen — **der Code beantwortet sie: öffentlich** |
 | **W-8** | Text nennt Server-Log-Felder (Browsertyp, OS, Referrer, Hostname, Uhrzeit, IP) und stellt fest: „Eine **Zusammenführung** dieser Daten mit anderen Datenquellen wird nicht vorgenommen" | **Deutlich entschärft.** Suchtexte, E-Mail-Adressen und Session-IDs stehen nicht mehr im Anwendungslog; Nutzerkennungen nur noch als 8-stelliges Pseudonym. Es bleibt: derselbe Logstream trägt die nginx-Zugriffe mit voller IP und die Anwendungszeilen mit Pseudonym, mit denselben Zeitstempeln. Als Restrisiko benennbar, nicht mehr als offener Widerspruch | Text `:113-122` ⟷ 1.10 dieses Berichts |
 | **W-9** | Rechte-Abschnitt sagt Auskunft, Berichtigung, **Löschung**, Einschränkung, Übertragbarkeit zu | **Unverändert: es gibt keinen Codepfad, der die Daten einer Person findet oder löscht.** Neu ist `docs/LOESCHKONZEPT.md` — eine Handprozedur aus SQL- und Qdrant-Kommandos, die das Dokument selbst als „Vorsorge, keine erprobte Prozedur" bezeichnet und die nie an echten Daten gelaufen ist. Löschen kann per Code weiterhin nur: die Moderation einen einzelnen Inhalt, und eine Person ihre eigene Stimme | Text `:196-212` ⟷ `docs/LOESCHKONZEPT.md:3-8`, Grep über alle DELETE-Pfade (Anhang B, M-4) |
-| **W-10** | „Diese Seite nutzt … eine SSL- bzw. TLS-Verschlüsselung" | Trifft für Produktion zu (Reverse Proxy). Im BFF ist der Cookie im Managed-Modus auf `SecurePolicy = SameAsRequest` gesetzt (`Program.cs:149`) — über http ginge er ohne `Secure`-Flag hinaus. Praktisch nur im Dev-Betrieb relevant | Text `:218-224` ⟷ `BFF/Program.cs:149` |
+| **W-10** | „Diese Seite nutzt … eine SSL- bzw. TLS-Verschlüsselung" | Trifft für Produktion zu (Reverse Proxy). Im BFF ist der Cookie im Managed-Modus auf `SecurePolicy = SameAsRequest` gesetzt (`Program.cs:166`) — über http ginge er ohne `Secure`-Flag hinaus. Praktisch nur im Dev-Betrieb relevant | Text `:218-224` ⟷ `BFF/Program.cs:166` |
 | **W-11** | *(neu)* Der Text nennt **keine** Speicherdauer, **keine** Rechtsgrundlage außer für Server-Logs und Dritt-Inhalte, **keinen** Verantwortlichen (Platzhalter), **kein** Widerspruchsrecht nach Art. 21 und **keine** Empfänger | Alles davon ist Pflichtangabe nach Art. 13 DSGVO | Lückenliste D1–D12, D-M1 bis D-M8 |
 
 ## 3.2 Korrekturen und Ergänzungen zu `docs/RECHTSTEXTE_LUECKEN.md`
@@ -897,13 +926,13 @@ production". Die Lückenliste lässt dieselbe Frage offen (`:127`: „Aktiv in P
 
 ### 4-C · `USE_KEYCLOAK`
 **Dienst:** `contentgruen-bff` · **Im Repo:** `false` in beiden Compose-Dateien
-(`docker-compose.dev.yml:140` BFF / `:178` Frontend, `docker-compose.tst.yml:94` BFF / `:120`
+(`docker-compose.dev.yml:140` BFF / `:180` Frontend, `docker-compose.tst.yml:94` BFF / `:120`
 für tst); **Code-Default ist `true`** (`BFF/Program.cs:19`)
 
 | Wert | Konsequenz |
 |------|-----------|
-| `true` | Anmeldung über Netzbegrünung-Keycloak. Claims `sub`, `email`, Name kommen ins Auth-Cookie, zusätzlich die Tokens (`SaveTokens = true`, `Program.cs:71`). Der Reverse-Proxy erhält eine Autorisierungspipeline (`Program.cs:426-460`). **Für die Erklärung:** IdP benennen, Verantwortlichkeitsabgrenzung/AVV klären |
-| `false` | Managed Auth aus `managed-users.json` (E-Mail + bcrypt). Die früheren Nebenwirkungen sind mit PR #29 weg: E-Mail-Adressen stehen nicht mehr im Log (1.10.3), und der Auth-Gate gilt unabhängig von dieser Variablen (`Program.cs:466-486`). Für die Erklärung bleibt: ein weiterer Speicher mit E-Mail und Passwort-Hash, siehe 4-D |
+| `true` | Anmeldung über Netzbegrünung-Keycloak. Claims `sub`, `email`, Name kommen ins Auth-Cookie, zusätzlich die Tokens (`SaveTokens = true`, `Program.cs:98`). Der Reverse-Proxy erhält eine Autorisierungspipeline (`Program.cs:491-509`). **Für die Erklärung:** IdP benennen, Verantwortlichkeitsabgrenzung/AVV klären |
+| `false` | Managed Auth aus `managed-users.json` (E-Mail + bcrypt). Die früheren Nebenwirkungen sind mit PR #29 weg: E-Mail-Adressen stehen nicht mehr im Log (1.10.3), und der Auth-Gate gilt unabhängig von dieser Variablen (`Program.cs:486-509`). Für die Erklärung bleibt: ein weiterer Speicher mit E-Mail und Passwort-Hash, siehe 4-D |
 | nicht gesetzt | wie `true` |
 
 ### 4-D · Inhalt der produktiven `managed-users.json`
@@ -943,7 +972,7 @@ personenbezogenen Daten; bei Auslagerung ein weiterer Empfänger mit AVV-Pflicht
 
 ### 4-G · Keycloak-Realm, Issuer, Client-ID/-Secret
 **Dienst:** `contentgruen-bff`, Konfigurationsabschnitt `Keycloak`
-(`BFF/Program.cs:67-69,122,124`) · **Im Repo:** keine Werte
+(`BFF/Program.cs:60-63,151,153`) · **Im Repo:** keine Werte
 
 Fragen: Welche Authority-URL, welcher Realm, wer betreibt ihn? Konsequenz: Standort der
 Verarbeitung, Verantwortlichkeitsabgrenzung bzw. AVV mit Netzbegrünung/Verdigado,
@@ -972,6 +1001,20 @@ Fragen: Sind in Produktion Ports veröffentlicht? Ist Qdrant durch einen API-Key
 (im Repo ist **keiner** konfiguriert)? Konsequenz: Wenn Port 8000 erreichbar ist, kann jeder
 die Auth des BFF umgehen — inklusive `X-User-Id` selbst setzen (Befund E-1) und
 `GET /api/v1/rawinput/getRawInputs` samt Einwerferkennungen abrufen.
+
+### 4-K · `ADMIN_USER_IDS`
+**Dienst:** `contentgruen-bff` · **Im Repo:** leer gesetzt (`docker-compose.dev.yml:143`),
+in `docker-compose.tst.yml` gar nicht · Doku `docs/ARCHITECTURE.md:201-213`
+
+| Wert | Konsequenz |
+|------|-----------|
+| gesetzt | Die genannten Kennungen bekommen Adminrechte **ohne Claim**: Zugriff auf den Moderationsposteingang (Freitexte der Meldungen, Melderkennungen, 1.4) und auf die sechs Betriebskennzahlen-Endpunkte. Für die Erklärung heißt das: es gibt einen Kreis von Personen, die gemeldete Inhalte samt Melderkennung einsehen — und wer dazugehört, steht nicht im Repo |
+| leer/nicht gesetzt | Es entscheidet allein der Claim, also wie vor PR #33. Bei Managed Auth kommt er aus `managed-users.json` (4-D), bei Keycloak nur über einen Protocol-Mapper im Realm (4-G) |
+
+Zu klären ist außerdem, ob `ADMIN_USER_IDS` (BFF) und `SEMANTIC_SEARCH_ADMIN_USERS`
+(Python, 4-H) auf dieselben Kennungen gesetzt sind. Sie steuern verschiedene Endpunkte und
+werden beide exakt verglichen; abweichende Listen bedeuten, dass jemand den Adminbereich
+sieht, dessen Aufrufe darin scheitern — oder umgekehrt.
 
 ### 4-J · PostgreSQL-Zugangsdaten
 **Dienst:** `postgres-app` · **Im Repo:** Klartext `changeme`
@@ -1005,10 +1048,10 @@ Stand ist hier je Befund vermerkt.
 
 | # | Befund | Stand auf `fae44b4` |
 |---|--------|---------------------|
-| **A-1** | Bei `USE_KEYCLOAK=false` wurde der Reverse Proxy **ohne Autorisierungspipeline** gemappt — kein API-Pfad war am Proxy geschützt | **ERLEDIGT.** Der Auth-Gate läuft als eigene Middleware in der Proxy-Pipeline und gilt in beiden Betriebsarten (`BFF/Program.cs:466-486`) |
-| **A-2** | `IdentityHeaderTransform` entfernte `X-User` und `X-Is-Admin`, **nicht** `X-User-Id`; ein Client konnte sich per Header eine fremde Identität geben | **ERLEDIGT.** `X-User-Id` steht in der Entfernungsliste (`IdentityHeaderTransform.cs:43`), und die Dependency liest `X-User` (`dependencies.py:217`) |
-| **A-3** | Vier **verschiedene** Public-Endpoint-Listen mit drei Bedeutungen und abweichenden Einträgen | **ERLEDIGT.** `BFF/Proxy/EndpointPolicy.cs` ist die einzige serverseitige Quelle und speist Gate und Transform; `mvp/shared/PublicEndpoints.cs` (toter Code) ist gelöscht. Die Frontend-Liste bleibt bewusst eigenständig — sie beantwortet die Frage „Redirect auf /login ja/nein" |
-| **A-4** | `api/v1/seeding.py` hat auf keinem seiner 8 Endpunkte eine Auth-Dependency, obwohl vier Docstrings „allows administrators" behaupten | **Am Rand geschlossen, im Router offen.** `/api/v1/seeding` steht in `EndpointPolicy.Blocked` und wird vor Routing mit 404 abgewiesen (`EndpointPolicy.cs:56-59`, `Program.cs:394-407`). Der Router selbst hat weiterhin keine Dependency; wer Port 8000 direkt erreicht, erreicht ihn (Teil 4, 4-I) |
+| **A-1** | Bei `USE_KEYCLOAK=false` wurde der Reverse Proxy **ohne Autorisierungspipeline** gemappt — kein API-Pfad war am Proxy geschützt | **ERLEDIGT.** Der Auth-Gate läuft als eigene Middleware in der Proxy-Pipeline und gilt in beiden Betriebsarten (`BFF/Program.cs:486-509`) |
+| **A-2** | `IdentityHeaderTransform` entfernte `X-User` und `X-Is-Admin`, **nicht** `X-User-Id`; ein Client konnte sich per Header eine fremde Identität geben | **ERLEDIGT.** `X-User-Id` steht in der Entfernungsliste (`IdentityHeaderTransform.cs:44`), und die Dependency liest `X-User` (`dependencies.py:217`) |
+| **A-3** | Vier **verschiedene** Public-Endpoint-Listen mit drei Bedeutungen und abweichenden Einträgen | **ERLEDIGT.** `BFF/Proxy/EndpointPolicy.cs` ist die einzige serverseitige Quelle und speist Gate und Transform; `mvp/shared/PublicEndpoints.cs` (toter Code) ist gelöscht. Die Frontend-Liste bleibt bewusst eigenständig — sie beantwortet die Frage „Redirect auf /login ja/nein". PR #33 hat dieselbe Konsolidierung für die Adminprüfung nachgeholt: sie stand wörtlich zweimal im Quelltext und liegt jetzt in `BFF/Proxy/AdminPolicy.cs` |
+| **A-4** | `api/v1/seeding.py` hat auf keinem seiner 8 Endpunkte eine Auth-Dependency, obwohl vier Docstrings „allows administrators" behaupten | **Am Rand geschlossen, im Router offen.** `/api/v1/seeding` steht in `EndpointPolicy.Blocked` und wird vor Routing mit 404 abgewiesen (`EndpointPolicy.cs:56-59`, `Program.cs:412-424`). Der Router selbst hat weiterhin keine Dependency; wer Port 8000 direkt erreicht, erreicht ihn (Teil 4, 4-I) |
 | **A-5** | Session-IDs wurden mit `Math.random()` erzeugt | **ERLEDIGT.** `crypto.randomUUID()` mit `crypto.getRandomValues`-Fallback (`session.service.ts:113-137`) |
 | **A-6** | Der Debug-Router `api/v1/test.py` war unbedingt gemountet und gab über `/headers` alle eingehenden Header inklusive Cookie auf stdout aus | **ERLEDIGT.** Datei gelöscht (485 Zeilen), Pfad zusätzlich am Rand gesperrt |
 | **A-7** | `mvp/config/managed-users.json` war im Git getrackt und enthielt zwei bcrypt-Hashes, einer für ein Konto mit `isAdmin: true` | **Teilweise.** Die Datei steht in `.gitignore:19`; getrackt ist `managed-users.example.json` mit denselben zwei Beispielkonten. Die Hashes und die frühere Datei bleiben in der Git-Historie |
