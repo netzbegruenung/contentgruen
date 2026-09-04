@@ -263,12 +263,28 @@ public class IdentityHeaderTransformTests
         Assert.Equal(new[] { "true" }, ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
     }
 
-    [Fact]
-    public void Apply_AllowlistWithNonEmptyEntries_DoesNotHelpAnonymousCaller()
+    /// <param name="expectedUser">
+    /// Was der BFF selbst setzt: auf dem geschuetzten Pfad nichts (null), auf dem
+    /// oeffentlichen die Sentinel-Kennung "anonymous". In beiden Faellen darf vom Client
+    /// nichts uebrig bleiben.
+    /// </param>
+    [Theory]
+    [InlineData(ProtectedPath, null)]
+    [InlineData(PublicPath, IdentityHeaderTransform.AnonymousUser)]
+    public void Apply_AllowlistWithNonEmptyEntries_DoesNotHelpAnonymousCaller(string path, string? expectedUser)
     {
         // Die Allowlist darf keinen Weg an der bedingungslosen Entfernung weiter oben
         // vorbei oeffnen: ohne angemeldeten Nutzer gibt es keine Kennung, die in einer
         // Liste stehen koennte -- auch dann nicht, wenn der Client eine behauptet.
+        //
+        // Beide Pfade, weil nur der oeffentliche Zweig selbst ein X-User setzt und die
+        // Allowlist dort gar nicht gefragt wird. Heute stimmt das; der Test haelt es fest
+        // fuer den Umbau, der die Admin-Entscheidung ueber die Verzweigung zieht.
+        //
+        // "anonymous" steht bewusst mit in der Liste: die Sentinel-Kennung des
+        // oeffentlichen Zweigs ist eine Zeichenkette wie jede andere, und ein Eintrag
+        // dieses Namens -- versehentlich oder nicht -- darf nicht jeden anonymen Aufrufer
+        // zum Admin machen.
         var proxyRequest = ProxyRequestCarrying(
             (IdentityHeaderTransform.UserHeader, "kennung-in-liste"),
             (IdentityHeaderTransform.AdminHeader, "true"));
@@ -276,12 +292,14 @@ public class IdentityHeaderTransformTests
         IdentityHeaderTransform.Apply(
             proxyRequest,
             AnonymousUser(),
-            ProtectedPath,
+            path,
             new HeaderDictionary(),
-            new[] { "kennung-in-liste" },
+            new[] { "kennung-in-liste", IdentityHeaderTransform.AnonymousUser },
             Logger);
 
-        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
+        Assert.Equal(
+            expectedUser is null ? Array.Empty<string>() : new[] { expectedUser },
+            ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
         Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
     }
 
