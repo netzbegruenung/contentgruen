@@ -40,7 +40,9 @@ async def get_by_id(
         raise
     except ValueError as e:
         logger.info(f"Image with id {image_id} not found: {e}")
-        raise HTTPException(status_code=404, detail=f"Image with id {image_id} not found")
+        raise HTTPException(
+            status_code=404, detail=f"Image with id {image_id} not found"
+        )
     except Exception as e:
         logger.error(f"Error fetching image with id {image_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -107,12 +109,14 @@ async def add_image(
 
         if caption_provided:
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=201,
                 content={"id": str(image_id)},
             )
         else:
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
                 status_code=202,
                 content={"id": str(image_id), "status": "pending_description"},

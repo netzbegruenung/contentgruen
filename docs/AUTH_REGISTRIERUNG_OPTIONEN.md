@@ -103,8 +103,11 @@ Wichtig für alles Weitere: neben Keycloak existiert bereits eine vollständige
 - `mvp/backend/BFF/Models/ManagedUser.cs` — `email`, `passwordHash`, `displayName`,
   `userId`, `createdAt`, `isAdmin`
 - `mvp/backend/BFF/Controllers/AuthController.cs:43–104` — `POST /api/auth/login/managed`
-- `mvp/config/managed-users.json` — die Nutzerbasis, **eine im Repo eingecheckte
-  JSON-Datei** (`.gitignore:15` nimmt sie ausdrücklich von der Ignore-Regel aus)
+- `mvp/config/managed-users.json` — die Nutzerbasis, eine JSON-Datei neben dem
+  Compose-Stack. **Nicht im Repo**: sie enthält die E-Mail-Adressen der so angelegten
+  Menschen. Für den Dev-Stack liegt `managed-users.example.json` mit zwei Testkonten
+  daneben (`cp managed-users.example.json managed-users.json`); auf den Servern kommt
+  die echte Datei aus SaltStack.
 - `mvp/config/generate-user-config.py` — erzeugt diese Datei aus einer lokalen
   `user-passwords.txt` im Format `email:passwort:anzeigename`
 - Mount: `./config:/config:ro` in `docker-compose.dev.yml:114` und `.tst.yml:69`
@@ -825,8 +828,8 @@ Ausdrücklich als ungeprüft gekennzeichnet, weil außerhalb dieses Repositories
   Custom-Attribute unterstützt bzw. erlaubt.** Das ist eine Frage der Realm-Konfiguration
   und der Betreiber-Bereitschaft, nicht des Codes.
 - **Ob auf den Produktionsmaschinen ein SMTP-Relay verfügbar ist.**
-- **Der Inhalt des produktiven `managed-users.json`.** Die eingecheckte Datei enthält zwei
-  offensichtliche Testkonten (`test.user@example.com`, `admin@contentgruen.com`); im
+- **Der Inhalt des produktiven `managed-users.json`.** Die Beispieldatei im Repo enthält
+  zwei offensichtliche Testkonten (`test.user@example.com`, `admin@contentgruen.com`); im
   Produktions-Compose wird `./config` gemountet, dessen Inhalt auf dem Server liegt.
 
 ---

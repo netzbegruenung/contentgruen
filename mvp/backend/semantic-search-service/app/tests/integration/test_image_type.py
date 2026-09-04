@@ -66,7 +66,9 @@ def _make_image_entry(
 async def test_image_roundtrip_phase_a(integration_settings, real_repository_factory):
     """Phase A: caption provided — entry stored, searchable, fields preserved."""
     spec = REGISTRY[ContentType.IMAGE]
-    service = create_content_service(spec, integration_settings, real_repository_factory)
+    service = create_content_service(
+        spec, integration_settings, real_repository_factory
+    )
 
     item_id = uuid.uuid4()
     entry = _make_image_entry(
@@ -85,7 +87,10 @@ async def test_image_roundtrip_phase_a(integration_settings, real_repository_fac
     assert fetched.content_type == ContentType.IMAGE
     assert fetched.title == "Windkraft Niedersachsen"
     assert fetched.image_url == "https://example.com/wind.jpg"
-    assert fetched.text == "Windräder auf einer grünen Wiese in Niedersachsen bei Sonnenuntergang"
+    assert (
+        fetched.text
+        == "Windräder auf einer grünen Wiese in Niedersachsen bei Sonnenuntergang"
+    )
     assert fetched.description_model is None
     assert fetched.status == ContentStatus.APPROVED
 
@@ -96,7 +101,9 @@ async def test_image_roundtrip_phase_a(integration_settings, real_repository_fac
 async def test_image_roundtrip_phase_b(integration_settings, real_repository_factory):
     """Phase B: no caption — entry stored as PENDING_DESCRIPTION, retrievable by id."""
     spec = REGISTRY[ContentType.IMAGE]
-    service = create_content_service(spec, integration_settings, real_repository_factory)
+    service = create_content_service(
+        spec, integration_settings, real_repository_factory
+    )
 
     item_id = uuid.uuid4()
     entry = _make_image_entry(
@@ -128,7 +135,9 @@ async def test_image_phase_b_to_phase_a_update(
 ):
     """Simulates the AI worker filling in a caption for a PENDING_DESCRIPTION image."""
     spec = REGISTRY[ContentType.IMAGE]
-    service = create_content_service(spec, integration_settings, real_repository_factory)
+    service = create_content_service(
+        spec, integration_settings, real_repository_factory
+    )
 
     item_id = uuid.uuid4()
     phase_b_entry = _make_image_entry(

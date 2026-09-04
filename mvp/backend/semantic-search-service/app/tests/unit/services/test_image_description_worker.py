@@ -61,9 +61,13 @@ class TestWorkerStateMachine:
             # Raise to break out of the infinite loop after one cycle
             raise StopAsyncIteration
 
-        with patch("services.vision.image_description_worker.asyncio.sleep", fake_sleep):
+        with patch(
+            "services.vision.image_description_worker.asyncio.sleep", fake_sleep
+        ):
             try:
-                await _description_worker(image_service, ingestion_strategy, poll_interval_s=1)
+                await _description_worker(
+                    image_service, ingestion_strategy, poll_interval_s=1
+                )
             except StopAsyncIteration:
                 pass
 

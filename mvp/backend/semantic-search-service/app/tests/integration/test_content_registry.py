@@ -41,7 +41,9 @@ async def test_registry_has_specs_for_existing_types():
         assert spec.search_result_model is not None
 
 
-async def test_commentary_roundtrip_parity(integration_settings, real_repository_factory):
+async def test_commentary_roundtrip_parity(
+    integration_settings, real_repository_factory
+):
     """A commentary written via CommentaryService is readable via the registry service."""
     concrete = CommentaryService(integration_settings, real_repository_factory)
     item_id = uuid.uuid4()
@@ -55,7 +57,9 @@ async def test_commentary_roundtrip_parity(integration_settings, real_repository
     assert ok and returned_id == item_id
 
     spec = REGISTRY[ContentType.COMMENTARY]
-    generic = create_content_service(spec, integration_settings, real_repository_factory)
+    generic = create_content_service(
+        spec, integration_settings, real_repository_factory
+    )
 
     fetched = await generic.get(item_id)
     assert fetched is not None
@@ -67,7 +71,9 @@ async def test_commentary_roundtrip_parity(integration_settings, real_repository
     assert any(h.id == item_id for h in hits)
 
 
-async def test_generic_text_roundtrip_parity(integration_settings, real_repository_factory):
+async def test_generic_text_roundtrip_parity(
+    integration_settings, real_repository_factory
+):
     """A generic_text written via GenericTextService is readable via the registry service."""
     concrete = GenericTextService(integration_settings, real_repository_factory)
     item_id = uuid.uuid4()
@@ -81,7 +87,9 @@ async def test_generic_text_roundtrip_parity(integration_settings, real_reposito
     assert ok and returned_id == item_id
 
     spec = REGISTRY[ContentType.GENERIC_TEXT]
-    generic = create_content_service(spec, integration_settings, real_repository_factory)
+    generic = create_content_service(
+        spec, integration_settings, real_repository_factory
+    )
 
     fetched = await generic.get(item_id)
     assert fetched is not None

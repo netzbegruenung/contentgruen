@@ -83,6 +83,28 @@ preflight() {
         err "cannot talk to the Docker daemon"
         exit 2
     fi
+    ensure_managed_users
+}
+
+# managed-users.json ist gitignored (es ist die Datei mit den echten Hashes), die
+# Beispieldatei daneben ist versioniert. Ohne diesen Schritt hat ein frischer
+# Checkout keine Nutzerdatei: der Compose-Mount ist ein Verzeichnis-Mount
+# (./config:/config:ro), faellt also nicht auf, und der Dev-Login antwortet
+# stattdessen mit einem toten Login-Selector.
+ensure_managed_users() {
+    local target="$MVP_DIR/config/managed-users.json"
+    local example="$MVP_DIR/config/managed-users.example.json"
+
+    [ -f "$target" ] && return 0
+    if [ ! -f "$example" ]; then
+        warn "neither $target nor $example exists -- managed login will not work"
+        return 0
+    fi
+    if cp "$example" "$target"; then
+        info "created config/managed-users.json from the example (dev credentials)"
+    else
+        warn "could not create $target -- managed login will not work"
+    fi
 }
 
 # --- state helpers -----------------------------------------------------------

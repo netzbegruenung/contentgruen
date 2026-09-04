@@ -19,6 +19,10 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from domain.models.content import ContentDbEntry
 from core.config import Settings
 
+from core.logging import get_logger
+
+logger = get_logger(__name__)
+
 router = APIRouter()
 
 
@@ -40,7 +44,7 @@ async def get_replysuggestion_candidates(
     commentary_service: CommentaryService = Depends(get_commentary_service),
 ) -> ReplySuggestionCandidatesResponse:
     try:
-        print(
+        logger.debug(
             f"/replysuggestionCandidates was called, statement_id: {statement_id}, limit: {limit}"
         )
 
@@ -58,20 +62,22 @@ async def get_replysuggestion_candidates(
             for suggestion in statement_result.replysuggestions
             if suggestion.relevance > 0.6  # TODO: Make this a parameter
         ]
-        print("good_reply_suggestions: ", good_reply_suggestions)
+        logger.debug(f"{len(good_reply_suggestions)} good reply suggestions")
 
         # choose a random good reply suggestion
         if len(good_reply_suggestions) > 0:
             randomindex = random.randint(0, len(good_reply_suggestions) - 1)
             chosen_reply_suggestion = good_reply_suggestions[randomindex]
-            print("Chosen good reply suggestion: ", chosen_reply_suggestion)
+            logger.debug(f"Chosen good reply suggestion: {chosen_reply_suggestion.id}")
 
         else:
             chosen_reply_suggestion = None
-            print("No good existing reply suggestion found")
+            logger.debug("No good existing reply suggestion found")
 
         if chosen_reply_suggestion:
-            print("Retrieving commentarys similar to the chosen reply suggestion")
+            logger.debug(
+                "Retrieving commentarys similar to the chosen reply suggestion"
+            )
 
             # get text of the replysuggestions by getting from the content index
             repository_factory = QdrantRepositoryFactory()
@@ -86,7 +92,7 @@ async def get_replysuggestion_candidates(
                     chosen_reply_suggestion_content.text, limit
                 )
             )
-            print("commentary_result: ", commentary_results)
+            logger.debug(f"Found {len(commentary_results)} similar commentaries")
 
         # ### Approach 2: Find similar statements and TBD
 
@@ -163,7 +169,7 @@ async def get_replysuggestion_candidates(
 
     except Exception as e:
         # TODO Improve error handling be returning specific expection types for e.g. not found
-        print("Error: ", e)
+        logger.error(f"Error in /replysuggestionCandidates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

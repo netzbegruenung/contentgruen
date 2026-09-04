@@ -105,9 +105,8 @@ class KeywordOverlapService:
         query_keywords = extract_keywords(query_text)
 
         if self.log_adjustments:
-            logger.info(
-                f"Query keywords: {query_keywords} (from: '{query_text[:50]}...')"
-            )
+            # Auch die extrahierten Schlagworte sind der Suchtext, nur zerlegt.
+            logger.info(f"Extracted {len(query_keywords)} query keywords")
 
         # Analyze and adjust results
         keyword_metadata = {}

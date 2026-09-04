@@ -36,10 +36,10 @@ def set_like(
     If user already liked, returns success with current state.
     If user had disliked, replaces with like.
     """
-    logger.info(f"Setting like for content {content_id} by user {user_id}")
+    logger.debug(f"Setting like for content {content_id}")
     try:
         result = voting_service.set_like(user_id, content_id)
-        logger.info(f"Like set successfully: {result}")
+        logger.debug("Like set successfully")
         return result
     except ValueError as e:
         logger.warning(f"Like validation error: {e}")
@@ -66,10 +66,10 @@ def remove_like(
     Remove a like for a content item. Idempotent operation.
     If no like exists, returns success with current state.
     """
-    logger.info(f"Removing like for content {content_id} by user {user_id}")
+    logger.debug(f"Removing like for content {content_id}")
     try:
         result = voting_service.remove_like(user_id, content_id)
-        logger.info(f"Like removed successfully: {result}")
+        logger.debug("Like removed successfully")
         return result
     except ConnectionError as e:
         logger.error(f"Database connection error: {e}")
@@ -94,10 +94,10 @@ def set_dislike(
     If user already disliked, returns success with current state.
     If user had liked, replaces with dislike.
     """
-    logger.info(f"Setting dislike for content {content_id} by user {user_id}")
+    logger.debug(f"Setting dislike for content {content_id}")
     try:
         result = voting_service.set_dislike(user_id, content_id)
-        logger.info(f"Dislike set successfully: {result}")
+        logger.debug("Dislike set successfully")
         return result
     except ValueError as e:
         logger.warning(f"Dislike validation error: {e}")
@@ -124,10 +124,10 @@ def remove_dislike(
     Remove a dislike for a content item. Idempotent operation.
     If no dislike exists, returns success with current state.
     """
-    logger.info(f"Removing dislike for content {content_id} by user {user_id}")
+    logger.debug(f"Removing dislike for content {content_id}")
     try:
         result = voting_service.remove_dislike(user_id, content_id)
-        logger.info(f"Dislike removed successfully: {result}")
+        logger.debug("Dislike removed successfully")
         return result
     except ConnectionError as e:
         logger.error(f"Database connection error: {e}")

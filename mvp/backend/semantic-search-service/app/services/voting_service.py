@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional, Dict
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from core.logging import get_logger
+from core.logging import get_logger, log_pseudonym
 from domain.models.vote import Vote, VoteCreate, VoteResponse, VoteType
 from repositories.vote_repository import VoteRepository
 
@@ -31,7 +31,9 @@ class VotingService:
                 vote_type=VoteType.LIKE.value,
             )
 
-            logger.info(f"Set like from user {user_id} for content {content_id}")
+            logger.debug(
+                f"Set like from user {log_pseudonym(user_id)} for content {content_id}"
+            )
 
             return VoteResponse(
                 content_id=content_id,
@@ -59,8 +61,8 @@ class VotingService:
 
             if existing_vote and existing_vote.vote_type == VoteType.LIKE.value:
                 self.vote_repository.delete_vote(user_id, content_id)
-                logger.info(
-                    f"Removed like from user {user_id} for content {content_id}"
+                logger.debug(
+                    f"Removed like from user {log_pseudonym(user_id)} for content {content_id}"
                 )
 
             return VoteResponse(
@@ -90,7 +92,9 @@ class VotingService:
                 vote_type=VoteType.DISLIKE.value,
             )
 
-            logger.info(f"Set dislike from user {user_id} for content {content_id}")
+            logger.debug(
+                f"Set dislike from user {log_pseudonym(user_id)} for content {content_id}"
+            )
 
             return VoteResponse(
                 content_id=content_id,
@@ -118,8 +122,8 @@ class VotingService:
 
             if existing_vote and existing_vote.vote_type == VoteType.DISLIKE.value:
                 self.vote_repository.delete_vote(user_id, content_id)
-                logger.info(
-                    f"Removed dislike from user {user_id} for content {content_id}"
+                logger.debug(
+                    f"Removed dislike from user {log_pseudonym(user_id)} for content {content_id}"
                 )
 
             return VoteResponse(

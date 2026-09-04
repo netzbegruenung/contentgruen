@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 using BFF.Controllers;
 using BFF.Services;
 using BFF.Models;
@@ -14,33 +17,45 @@ using System.Security.Claims;
 
 namespace BFF.Tests.Controllers;
 
-public class AuthControllerTests
+public class AuthControllerTests : IDisposable
 {
+    private const string KnownEmail = "test@example.com";
+    private const string KnownPassword = "Test123!";
+    private const string KnownUserId = "user-001";
+
     private readonly Mock<ILogger<ManagedUserService>> _mockUserServiceLogger;
-    private readonly IConfiguration _userServiceConfig;
     private readonly ManagedUserService _userService;
     private readonly IConfiguration _configuration;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
     private AuthController _controller;
     private readonly DefaultHttpContext _httpContext;
+    private readonly string _usersFilePath;
 
     public AuthControllerTests()
     {
         _mockUserServiceLogger = new Mock<ILogger<ManagedUserService>>();
 
-        // Setup user service configuration with no users
-        var userServiceConfigBuilder = new ConfigurationBuilder();
-        userServiceConfigBuilder.AddInMemoryCollection(new Dictionary<string, string>
+        // Eine echte Nutzerdatei, damit die Login-Tests bis zur Passwortpruefung
+        // kommen und nicht schon an "unbekannte E-Mail" haengenbleiben.
+        _usersFilePath = WriteUsersFile(new
         {
-            { "MANAGED_USERS_PATH", "non-existent.json" },
-            { "ENABLE_MANAGED_AUTH", "true" }
+            users = new[]
+            {
+                new
+                {
+                    email = KnownEmail,
+                    passwordHash = BCrypt.Net.BCrypt.HashPassword(KnownPassword),
+                    displayName = "Test User",
+                    userId = KnownUserId,
+                    isAdmin = false
+                }
+            }
         });
-        _userServiceConfig = userServiceConfigBuilder.Build();
-        _userService = new ManagedUserService(_mockUserServiceLogger.Object, _userServiceConfig);
 
-        // Default controller configuration
+        _userService = BuildUserService(_usersFilePath, managedAuthEnabled: true);
+
         var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string>
+        configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
         {
             { "USE_KEYCLOAK", "true" },
             { "FRONTEND_URL", "http://localhost:4200" }
@@ -56,75 +71,98 @@ public class AuthControllerTests
             .Returns(authServiceMock.Object);
         _httpContext.RequestServices = serviceProviderMock.Object;
 
-        _controller = new AuthController(_userService, _configuration, _mockLogger.Object)
+        _controller = BuildController(_userService, _configuration);
+    }
+
+    public void Dispose()
+    {
+        if (File.Exists(_usersFilePath))
         {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = _httpContext
-            }
+            File.Delete(_usersFilePath);
+        }
+    }
+
+    private static string WriteUsersFile(object config)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"managed-users-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, JsonSerializer.Serialize(config));
+        return path;
+    }
+
+    private ManagedUserService BuildUserService(string usersPath, bool managedAuthEnabled)
+    {
+        var builder = new ConfigurationBuilder();
+        builder.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            { "MANAGED_USERS_PATH", usersPath },
+            { "ENABLE_MANAGED_AUTH", managedAuthEnabled ? "true" : "false" }
+        });
+        return new ManagedUserService(_mockUserServiceLogger.Object, builder.Build());
+    }
+
+    private AuthController BuildController(ManagedUserService userService, IConfiguration configuration) =>
+        new AuthController(userService, configuration, _mockLogger.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = _httpContext }
         };
+
+    private static IConfiguration ControllerConfig(bool useKeycloak)
+    {
+        var builder = new ConfigurationBuilder();
+        builder.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            { "USE_KEYCLOAK", useKeycloak ? "true" : "false" },
+            { "FRONTEND_URL", "http://localhost:4200" }
+        });
+        return builder.Build();
     }
 
     [Fact]
     public async Task GetAuthModes_ReturnsCorrectModes_WhenBothEnabled()
     {
-        // Arrange
-        var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string>
-        {
-            { "USE_KEYCLOAK", "true" },
-            { "FRONTEND_URL", "http://localhost:4200" }
-        });
-        _controller = new AuthController(_userService, configBuilder.Build(), _mockLogger.Object)
-        {
-            ControllerContext = new ControllerContext { HttpContext = _httpContext }
-        };
+        _controller = BuildController(_userService, ControllerConfig(useKeycloak: true));
 
-        // Act
         var result = await _controller.GetAuthModes();
 
-        // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<AuthModesResponse>(okResult.Value);
         Assert.True(response.KeycloakEnabled);
-        Assert.False(response.ManagedAuthEnabled); // No users configured
+        Assert.True(response.ManagedAuthEnabled);
     }
 
     [Fact]
     public async Task GetAuthModes_ReturnsOnlyManaged_WhenKeycloakDisabled()
     {
-        // Arrange
-        var configBuilder = new ConfigurationBuilder();
-        configBuilder.AddInMemoryCollection(new Dictionary<string, string>
-        {
-            { "USE_KEYCLOAK", "false" },
-            { "FRONTEND_URL", "http://localhost:4200" }
-        });
-        _controller = new AuthController(_userService, configBuilder.Build(), _mockLogger.Object)
-        {
-            ControllerContext = new ControllerContext { HttpContext = _httpContext }
-        };
+        _controller = BuildController(_userService, ControllerConfig(useKeycloak: false));
 
-        // Act
         var result = await _controller.GetAuthModes();
 
-        // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<AuthModesResponse>(okResult.Value);
         Assert.False(response.KeycloakEnabled);
-        Assert.False(response.ManagedAuthEnabled); // No users configured
+        Assert.True(response.ManagedAuthEnabled);
+    }
+
+    [Fact]
+    public async Task GetAuthModes_ReportsManagedDisabled_WhenNoUsersConfigured()
+    {
+        var emptyService = BuildUserService("non-existent.json", managedAuthEnabled: true);
+        _controller = BuildController(emptyService, ControllerConfig(useKeycloak: true));
+
+        var result = await _controller.GetAuthModes();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<AuthModesResponse>(okResult.Value);
+        Assert.False(response.ManagedAuthEnabled);
     }
 
     [Fact]
     public async Task LoginManaged_ReturnsBadRequest_WhenCredentialsMissing()
     {
-        // Arrange
         var request = new LoginRequest { Email = null, Password = null };
 
-        // Act
         var result = await _controller.LoginManaged(request);
 
-        // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.NotNull(badRequestResult.Value);
     }
@@ -132,45 +170,88 @@ public class AuthControllerTests
     [Fact]
     public async Task LoginManaged_ReturnsUnauthorized_WhenInvalidCredentials()
     {
-        // Arrange
-        var request = new LoginRequest { Email = "test@example.com", Password = "wrongpassword" };
+        var request = new LoginRequest { Email = KnownEmail, Password = "wrongpassword" };
 
-        // Act
         var result = await _controller.LoginManaged(request);
 
-        // Assert
         var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
         Assert.NotNull(unauthorizedResult.Value);
+    }
+
+    [Fact]
+    public async Task LoginManaged_ReturnsUnauthorized_WhenUserUnknown()
+    {
+        var request = new LoginRequest { Email = "niemand@example.com", Password = KnownPassword };
+
+        var result = await _controller.LoginManaged(request);
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
     }
 
     [Fact]
     public async Task LoginManaged_ReturnsOk_WhenValidCredentials()
     {
-        // Arrange
-        // This test would need actual file-based testing or a refactored service with interface
-        // For MVP, we'll skip the actual validation test and only test the response structure
-        var request = new LoginRequest { Email = "test@example.com", Password = "Test123!" };
+        var request = new LoginRequest { Email = KnownEmail, Password = KnownPassword };
 
-        // Act
         var result = await _controller.LoginManaged(request);
 
-        // Assert
-        // Since we don't have actual users, this should return unauthorized
-        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
-        Assert.NotNull(unauthorizedResult.Value);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(okResult.Value);
+    }
+
+    [Fact]
+    public async Task LoginManaged_ReturnsNotFound_WhenManagedAuthDisabled()
+    {
+        // Der Kern der Aenderung: ENABLE_MANAGED_AUTH=false wurde bisher nur in
+        // GetAuthModes() ausgewertet. Ein direkter POST auf diese Route lieferte
+        // trotzdem ein gueltiges Auth-Cookie -- abgeschaltet war nur der Button.
+        var disabledService = BuildUserService(_usersFilePath, managedAuthEnabled: false);
+        _controller = BuildController(disabledService, ControllerConfig(useKeycloak: true));
+
+        var request = new LoginRequest { Email = KnownEmail, Password = KnownPassword };
+
+        var result = await _controller.LoginManaged(request);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task LoginManaged_ReturnsUnauthorized_WhenUserFileIsMissing()
+    {
+        // Der Diagnosefehler: fehlende Nutzerdatei ist kein abgeschaltetes Feature.
+        // 404 hiesse "diesen Anmeldeweg gibt es nicht" und schickte die Fehlersuche
+        // zum Schalter statt zum Mount. 401 sagt, was wirklich los ist.
+        var serviceWithoutFile = BuildUserService("non-existent.json", managedAuthEnabled: true);
+        _controller = BuildController(serviceWithoutFile, ControllerConfig(useKeycloak: true));
+
+        var request = new LoginRequest { Email = KnownEmail, Password = KnownPassword };
+
+        var result = await _controller.LoginManaged(request);
+
+        Assert.IsType<UnauthorizedObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task GetAuthModes_ReportsManagedDisabled_WhenFlagIsFalse()
+    {
+        var disabledService = BuildUserService(_usersFilePath, managedAuthEnabled: false);
+        _controller = BuildController(disabledService, ControllerConfig(useKeycloak: true));
+
+        var result = await _controller.GetAuthModes();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<AuthModesResponse>(okResult.Value);
+        Assert.False(response.ManagedAuthEnabled);
     }
 
     [Fact]
     public async Task Logout_ReturnsOk_Always()
     {
-        // Arrange
         var claims = new[] { new Claim("auth_method", "managed") };
         _httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims));
 
-        // Act
         var result = await _controller.Logout();
 
-        // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
     }

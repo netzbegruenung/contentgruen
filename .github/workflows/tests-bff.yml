@@ -1,0 +1,45 @@
+name: Tests (BFF)
+
+# Reusable: called by both build.yml (push/PR) and release.yml (v* tags) so the
+# release path runs exactly the same suite as the build path, with no second copy
+# to drift. Not triggered directly.
+on:
+  workflow_call:
+
+jobs:
+  test-bff:
+    name: Test BFF
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        # Solution level, not BFF/ -- dotnet test needs the solution to find BFF.Tests
+        working-directory: mvp/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'  # matches mcr.microsoft.com/dotnet/sdk:9.0 in BFF/Dockerfile
+          # No cache: setup-dotnet's NuGet cache requires a packages.lock.json, which this
+          # solution does not use. Restore takes ~10s, so there is little to win here.
+
+      - name: Restore dependencies
+        run: dotnet restore ContentGruen.sln
+
+      - name: Run tests
+        # No services needed. AuthGatePipelineTests boots a real host, but points BACKEND_URL
+        # at 127.0.0.1:1 so every request that passes the auth gate fails to connect and YARP
+        # answers 502 -- there is nothing to start and nothing to wait for. It also sets
+        # DATAPROTECTION_KEYS_PATH to a temp dir itself, so the runner needs no writable /keys.
+        # Both are set via UseSetting, and Program.cs reads configuration before environment.
+        run: dotnet test ContentGruen.sln --no-restore --nologo --logger "trx;LogFileName=bff-test-results.trx" --results-directory TestResults
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          # Not 'test-results' -- tests-backend.yml already uploads under that name and both
+          # run in the same build.yml run, where upload-artifact@v4 rejects a duplicate name.
+          name: bff-test-results
+          path: mvp/backend/TestResults/*.trx

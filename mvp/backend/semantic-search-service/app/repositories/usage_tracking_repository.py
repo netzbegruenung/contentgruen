@@ -194,14 +194,20 @@ class UsageTrackingRepository:
             }
 
     def get_trending_content(
-        self, limit: int = 10, days: int = 7
+        self, limit: int = 10, hours: int = 24
     ) -> List[Dict[str, Any]]:
         """
         Get trending content based on recent usage.
 
+        Das Fenster ist in Stunden angegeben, weil der Service es so fuehrt und
+        "trending" auf 24 Stunden gemeint ist. Vorher nahm diese Methode days
+        entgegen, waehrend der Service hours uebergab -- der Aufruf warf einen
+        TypeError, den der Service-Handler abfing, sodass /api/v1/usage/trending
+        durchgehend 500 lieferte.
+
         Args:
             limit: Maximum number of items to return
-            days: Number of days to consider for trending
+            hours: Size of the time window in hours
 
         Returns:
             List of trending content with usage stats
@@ -209,7 +215,7 @@ class UsageTrackingRepository:
         from datetime import timedelta
 
         with self.db.get_session() as session:
-            since_date = datetime.utcnow() - timedelta(days=days)
+            since_date = datetime.utcnow() - timedelta(hours=hours)
 
             trending = (
                 session.query(

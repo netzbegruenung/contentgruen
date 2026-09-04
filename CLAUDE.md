@@ -160,6 +160,18 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 - **API**: `SEMANTIC_SEARCH_APP_DATABASE_URL` (PostgreSQL), `SEMANTIC_SEARCH_QDRANT_URL` (Qdrant)
 - **Frontend**: `baseUrl` empty for Docker, `http://localhost:5054` for local
 
+> **Datenschutz-Warnung — `OPENAI_API_KEY` / `SEMANTIC_SEARCH_OPENAI_API_KEY`.**
+> Ein gesetzter Key aktiviert einen **automatischen Transfer von Bild-URLs an OpenAI in
+> den USA** — nicht nur beim expliziten `POST /api/v1/image/suggestCaption`, sondern
+> ungefragt durch den Hintergrund-Worker
+> (`services/vision/image_description_worker.py`), der jedes Bild im Status
+> `PENDING_DESCRIPTION` abarbeitet. Der Key ist die einzige Weiche
+> (`domain/content_registry.py`, ausgewertet einmal beim Modulimport).
+> **Die Datenschutzerklärung geht davon aus, dass dieser Transfer nicht stattfindet.**
+> Bevor der Key irgendwo gesetzt wird, muss sie um einen Abschnitt zum Drittlandtransfer
+> (Art. 44 ff. DSGVO) erweitert werden; zusätzlich sind ein AV-Vertrag und Garantien nach
+> Art. 46 DSGVO nötig. Siehe auch den Hinweis an der Stelle selbst in `core/config.py`.
+
 ## Authentication Modes
 
 ### Dummy Auth (Development)

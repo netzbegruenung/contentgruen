@@ -4,6 +4,9 @@ from typing import Dict, Any
 
 from services.seeding.seeding_service import get_seeding_service
 from services.seeding.seeding_status import SeedingStatus
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/seeding", tags=["seeding"])
 
@@ -145,7 +148,7 @@ async def start_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
             try:
                 await seeding_service.start_seeding()
             except Exception as e:
-                print(f"Seeding failed: {e}")
+                logger.error(f"Seeding failed: {e}", exc_info=True)
                 raise
 
         background_tasks.add_task(run_seeding)

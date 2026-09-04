@@ -60,6 +60,16 @@ if (useKeycloak)
         options.Cookie.SameSite = SameSiteMode.None;    // Allow cross-site cookies between bff and frontend
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Enforce HTTPS
         options.Cookie.HttpOnly = true; // Prevent client-side JavaScript from accessing the cookie
+
+        // Explicit lifetime so the privacy policy can name a duration that is actually in the code.
+        // Without this the framework default of 14 days applies -- far more than the purpose needs
+        // for a ticket that carries the full Keycloak claims and, via SaveTokens below, the tokens
+        // themselves. Eight hours matches managed auth (AuthController.cs) so both production login
+        // paths share one number. Sliding, so that someone working through a long session is not
+        // signed out mid-edit: whether the OIDC challenge would silently renew depends on the
+        // Keycloak SSO session lifetime, which is configured outside this repository.
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
     }
     ) // Cookie for session handling
     .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
@@ -98,7 +108,9 @@ if (useKeycloak)
                     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                     var principal = new ClaimsPrincipal(identity);
 
-                    // Issue the authentication cookie
+                    // Issue the authentication cookie. Deliberately without AuthenticationProperties:
+                    // an ExpiresUtc set here would override ExpireTimeSpan and split the cookie
+                    // lifetime across two places. The lifetime lives on the cookie handler above.
                     await context.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
                     logger.LogDebug("Authentication cookie issued");
@@ -138,12 +150,13 @@ else
                        options.Cookie.HttpOnly = true; // Prevent client-side JavaScript access
                    });
 
-    // Authorization
-    builder.Services.AddAuthorization();
-
     // Keep the dummy auth for backward compatibility if managed users are not configured
     builder.Services.AddSingleton<IStartupFilter>(new DummyAuthStartupFilter(frontendUrl));
 }
+
+// Authorization -- in beiden Betriebsarten, weil der Auth-Gate in der Proxy-Pipeline
+// jetzt ebenfalls in beiden laeuft. Vorher stand die Registrierung nur im else-Zweig.
+builder.Services.AddAuthorization();
 
 
 // Read the backend URL from an environment variable (use localhost:8000 as default for local dev)
@@ -311,8 +324,19 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // container layer, so every recreate mints new keys and invalidates every ContentGruenAuthCookie
 // along with any in-flight OIDC correlation cookie. /keys is expected to be a mounted volume; if
 // it is not, the directory is simply created in the container layer and behaviour matches today's.
+//
+// Der Pfad ist ueberschreibbar, weil er sonst als absoluter Pfad im Code steht: der Testhost
+// muesste dann /keys auf der Maschine anlegen duerfen, auf der die Tests laufen. Ein leerer oder
+// nur aus Leerzeichen bestehender Wert zaehlt als nicht gesetzt -- eine durchgereichte, aber
+// unbefuellte Variable darf den Schluesselring nicht ins Arbeitsverzeichnis verschieben.
+var dataProtectionKeysPath = builder.Configuration.GetValue<string>("DATAPROTECTION_KEYS_PATH");
+if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    dataProtectionKeysPath = "/keys";
+}
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo("/keys"))
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath.Trim()))
     .SetApplicationName("contentgruen-bff");
 
 var app = builder.Build();
@@ -360,6 +384,25 @@ app.Use(async (context, next) =>
         logger.LogError(ex, "Unhandled exception in proxy middleware");
         throw;
     }
+});
+
+// Endpunkte, die am Rand nicht erreichbar sein sollen, moeglichst frueh abweisen --
+// vor Routing, Authentifizierung und Proxy, und bewusst ausserhalb jeder
+// USE_KEYCLOAK-Verzweigung, damit die Sperre in jeder Betriebsart gilt.
+// 404 statt 403: dass es die Route ueberhaupt gibt, ist keine Information, die
+// nach aussen gehoert.
+app.Use(async (context, next) =>
+{
+    if (EndpointPolicy.IsBlocked(context.Request.Path.Value))
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning("Blocked request to internal endpoint: {Path}", context.Request.Path);
+
+        context.Response.StatusCode = 404;
+        return;
+    }
+
+    await next();
 });
 
 // Use routing first, then authentication and authorization middleware
@@ -420,46 +463,30 @@ app.MapGet("/api/check-session", (HttpContext context, ILogger<Program> logger) 
         : Results.Unauthorized();
 });
 
-if (useKeycloak)
+// Der Auth-Gate stand bisher in einem if (useKeycloak); der else-Zweig mappte den Proxy
+// ohne jede Pruefung. Damit haing die Frage, ob ueberhaupt etwas Anmeldung verlangt, an
+// einer Betriebsart-Variablen statt an der Endpunkt-Definition. Er gilt jetzt in beiden
+// Modi -- die Anmeldung selbst kommt entweder von Keycloak oder von Managed Auth bzw.
+// der Dummy-Auth, aber ob sie noetig ist, entscheidet allein EndpointPolicy.
+app.MapReverseProxy(proxyPipeline =>
 {
-    // Map reverse proxy with conditional authorization
-    app.MapReverseProxy(proxyPipeline =>
+    proxyPipeline.UseAuthorization();
+    proxyPipeline.Use(async (context, next) =>
     {
-        // Add authorization conditionally based on the path
-        proxyPipeline.UseAuthorization();
-        proxyPipeline.Use(async (context, next) =>
+        // Request.Path ist der Pfad ohne Query-String, und EndpointPolicy matcht auf
+        // Praefix an einer Segmentgrenze. Das bisherige Contains haette bei einem
+        // angehaengten "?next=/api/v1/search/" den Gate geoeffnet.
+        if (!EndpointPolicy.IsAnonymousAllowed(context.Request.Path.Value)
+            && context.User.Identity?.IsAuthenticated != true)
         {
-            var path = context.Request.Path.Value?.ToLower() ?? "";
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsync("Authentication required");
+            return;
+        }
 
-            // List of public endpoints that don't require authentication
-            var publicEndpoints = new[]
-            {
-                "/api/v1/search/",
-                "/api/v1/metrics/",
-                "/api/metrics",
-                "/api/v1/content/recent",
-                "/api/v1/moderation/report"
-            };
-
-            // Check if this is a public endpoint
-            var isPublicEndpoint = publicEndpoints.Any(endpoint => path.Contains(endpoint));
-
-            if (!isPublicEndpoint && context.User.Identity?.IsAuthenticated != true)
-            {
-                // Require authentication for non-public endpoints
-                context.Response.StatusCode = 401;
-                await context.Response.WriteAsync("Authentication required");
-                return;
-            }
-
-            await next();
-        });
+        await next();
     });
-}
-else
-{
-    app.MapReverseProxy();
-}
+});
 
 
 app.Run();
@@ -626,3 +653,10 @@ public class ClaimUtilities
     }
 
 }
+
+/// <summary>
+/// Nur damit der Testhost den Einstiegspunkt findet: Top-Level-Statements erzeugen eine
+/// interne Program-Klasse, auf die WebApplicationFactory&lt;Program&gt; aus einer anderen
+/// Assembly nicht zugreifen kann. Siehe BFF.Tests/Proxy/AuthGatePipelineTests.cs.
+/// </summary>
+public partial class Program { }

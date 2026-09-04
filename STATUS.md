@@ -19,7 +19,7 @@ use existing comments/background info, and contribute their own.
 * [x] Semantic search using Qdrant v1.18.2 and E5 multilingual embeddings
 * [x] Content-type-aware encoding, polarity filtering, and keyword-overlap score boosting
 * [x] Content contribution workflows (commentaries, background info / generic text, statements, images)
-* [x] Image content type with AI-assisted caption suggestion (GPT-4o mini) and async background description worker — note: no OpenAI key is configured in production, so image ingestion there currently falls back to plain user-entered text
+* [x] Image content type with AI-assisted caption suggestion (GPT-4o mini) and async background description worker — gated entirely on `OPENAI_API_KEY` / `SEMANTIC_SEARCH_OPENAI_API_KEY`; unset, image ingestion falls back to plain user-entered text, which is the state production is deployed in today. Setting the key anywhere starts a third-country transfer to OpenAI — read the privacy warning at the field in `core/config.py` first
 * [x] Post content type (social media posts: Facebook / Instagram / TikTok)
 * [x] `ContentTypeSpec` registry — adding a new content type is a spec + model + frontend fragment, not a 500-line clone
 * [x] Content reporting and moderation system (incl. anonymous reporting with session tracking)

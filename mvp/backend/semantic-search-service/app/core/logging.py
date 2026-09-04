@@ -4,6 +4,7 @@ Optimized logging configuration following clean code principles.
 Separates concerns, uses dependency injection, and maintains testability.
 """
 
+import hashlib
 import logging
 import sys
 import io
@@ -162,3 +163,21 @@ def get_logger(name: str) -> logging.Logger:
     if _logger_factory is None:
         raise RuntimeError("Logging not initialized. Call initialize_logging() first.")
     return _logger_factory.get_logger(name)
+
+
+def log_pseudonym(user: str) -> str:
+    """
+    Kurzes Pseudonym fuer eine Nutzerkennung in Log-Zeilen.
+
+    Fuer die Fehler- und Missbrauchsanalyse muss man wiederkehrende Akteure
+    unterscheiden koennen, nicht wissen, wer sie sind. Acht Hex-Zeichen reichen
+    dafuer und machen die Zeile fuer sich genommen nicht mehr personenbeziehbar.
+
+    Bewusst kein Ersatz fuer die rotierenden Pseudonyme in SearchTrackingService:
+    das hier ist ein ungesalzener Hash, also ueber Zeilen hinweg verkettbar und
+    bei bekanntem Kennungsraum zurueckrechenbar. Fuer eine fluechtige Logzeile
+    ist das der richtige Kompromiss, fuer gespeicherte Daten nicht.
+    """
+    if not user or user == "anonymous":
+        return "anonymous"
+    return hashlib.sha256(user.encode("utf-8")).hexdigest()[:8]

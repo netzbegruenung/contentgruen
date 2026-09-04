@@ -12,6 +12,10 @@ from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
+from core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 # Global manager instances
 statement_service_instance: Optional[StatementService] = None
@@ -41,13 +45,15 @@ def initialize_services() -> None:
     """
     global content_orchestrator_instance
     if content_orchestrator_instance is not None:
-        print("ContentOrchestrator already initialized. Skipping initialize_services()")
+        logger.debug(
+            "ContentOrchestrator already initialized. Skipping initialize_services()"
+        )
         return
 
-    print(f"===== Starting Lightweight Content Service Initialization =====")
+    logger.info("===== Starting Lightweight Content Service Initialization =====")
 
     settings_instance = get_settings()
-    print("got settings...")
+    logger.debug("got settings...")
 
     # Create content service instances (lightweight - no data loading)
     global statement_service_instance
@@ -64,7 +70,7 @@ def initialize_services() -> None:
 
     global voting_service_instance
     voting_service_instance = VotingService()
-    print("created content service instances...")
+    logger.debug("created content service instances...")
 
     # Create the content orchestrator instance (without triggering data load)
     content_orchestrator_instance = ContentOrchestrator(
@@ -74,12 +80,12 @@ def initialize_services() -> None:
         reference_service=reference_service_instance,
         generic_text_service=generic_text_service_instance,
     )
-    print("created content orchestrator instance...")
+    logger.debug("created content orchestrator instance...")
 
     # NOTE: Removed blocking initialize_repositories() call
     # Data loading is now handled by SeedingService in background
 
-    print(f"===== Finished Lightweight Content Service Initialization =====")
+    logger.info("===== Finished Lightweight Content Service Initialization =====")
 
 
 # Dependency injection functions
@@ -207,11 +213,19 @@ def get_voting_service() -> VotingService:
     return voting_service_instance
 
 
-def get_current_user_optional(x_user_id: Optional[str] = Header(None)) -> Optional[str]:
+def get_current_user_optional(
+    x_user_id: Optional[str] = Header(None, alias="X-User"),
+) -> Optional[str]:
     """
     Optional authentication dependency.
-    Returns the user ID from the X-User-Id header if present, None otherwise.
+    Returns the user ID from the X-User header if present, None otherwise.
     Used for tracking anonymous vs authenticated usage.
+
+    Der Alias ist zwingend: ohne ihn leitet FastAPI den Header-Namen aus dem
+    Parameternamen ab (x_user_id -> X-User-Id). Das BFF setzt aber X-User, also
+    kam hier fuer jeden echten Request None an -- und /usage-stats hat den
+    Eigentuemer seiner eigenen Daten mit 403 abgewiesen. Siehe require_admin
+    unten, das denselben Header schon immer korrekt liest.
     """
     return x_user_id
 

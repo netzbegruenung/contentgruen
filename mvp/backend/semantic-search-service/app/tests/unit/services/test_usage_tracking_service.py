@@ -170,6 +170,36 @@ class TestUsageTrackingService:
             limit=limit, hours=24
         )
 
+    def test_get_trending_content_call_matches_repository_signature(
+        self, service, mock_repository
+    ):
+        """
+        Der Aufruf muss zur echten Repository-Signatur passen.
+
+        Der Test darueber pruefte gegen ein Mock und hielt damit exakt den
+        kaputten Aufruf fest: der Service uebergab hours=, die Signatur nahm
+        days=. Ein Mock nimmt jedes Schluesselwort an, im Betrieb warf es einen
+        TypeError und /api/v1/usage/trending lieferte durchgehend 500.
+
+        inspect.signature().bind() prueft denselben Aufruf gegen die echte
+        Methode, ohne eine Datenbank zu brauchen.
+        """
+        import inspect
+
+        from repositories.usage_tracking_repository import UsageTrackingRepository
+
+        # Der Trending-Cache ist ein prozessweiter Singleton und ueberdauert die
+        # Service-Fixture; ohne Invalidierung antwortet der Aufruf je nach
+        # Testreihenfolge aus dem Cache und erreicht das Repository nie.
+        service.invalidate_trending_cache()
+
+        service.get_trending_content(limit=5)
+        _, kwargs = mock_repository.get_trending_content.call_args
+
+        signature = inspect.signature(UsageTrackingRepository.get_trending_content)
+        # self weglassen: gebunden wird der Aufruf an die ungebundene Methode.
+        signature.bind(None, **kwargs)
+
     def test_initialize_content_usage(self, service, mock_repository):
         """Test initializing content usage with a specific count."""
         # Arrange

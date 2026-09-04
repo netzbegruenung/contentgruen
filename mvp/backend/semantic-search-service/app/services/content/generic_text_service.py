@@ -17,6 +17,10 @@ from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 
+from core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class GenericTextService(
     BaseContentService[
@@ -78,7 +82,7 @@ class GenericTextService(
         """
         # TODO: Perform similarity check (see StatementService for example)
 
-        print(f"Adding generic text '{generic_text.title}'")
+        logger.debug("Adding generic text")
 
         # Default description text to title if not provided
         if not generic_text.text:

@@ -382,7 +382,7 @@ class ContentOrchestrator:
 
         # Phase 2: Shared data initialization with progress tracking
         if should_load_shared:
-            print(
+            logger.info(
                 "Loaded initial data from JSON files for at least one repository, executing shared initialization logic"
             )
             await self._initialize_shared_data_with_progress(progress_callback)
@@ -427,7 +427,7 @@ class ContentOrchestrator:
     ) -> None:
         """Initialize shared data with proper progress tracking."""
         total_work_items = self._calculate_total_work_items()
-        print(f"Total work items to process: {total_work_items}")
+        logger.info(f"Total work items to process: {total_work_items}")
 
         progress_tracker = ProgressTracker(total_work_items, progress_callback)
 
@@ -564,16 +564,16 @@ class ContentOrchestrator:
         self, progress_tracker: ProgressTracker
     ) -> None:
         """Process statements with commentaries."""
-        print("=== Initializing shared data: statements with commentaries ===")
+        logger.info("=== Initializing shared data: statements with commentaries ===")
 
         data = self._load_commentaries_data()
         if not data:
-            print("No initial data found for statements with commentaries")
+            logger.info("No initial data found for statements with commentaries")
             return
 
         for item_index, item in enumerate(data):
             if self._should_stop_processing():
-                print(
+                logger.info(
                     f"Stop requested during commentaries processing at item {item_index + 1}/{len(data)}"
                 )
                 return
@@ -590,16 +590,16 @@ class ContentOrchestrator:
         self, progress_tracker: ProgressTracker
     ) -> None:
         """Process statements with generic texts."""
-        print("=== Initializing shared data: statements with generic texts ===")
+        logger.info("=== Initializing shared data: statements with generic texts ===")
 
         data = self._load_generictexts_data()
         if not data:
-            print("No initial data found for statements with generic texts")
+            logger.info("No initial data found for statements with generic texts")
             return
 
         for item_index, item in enumerate(data):
             if self._should_stop_processing():
-                print(
+                logger.info(
                     f"Stop requested during generic texts processing at item {item_index + 1}/{len(data)}"
                 )
                 return
@@ -682,9 +682,9 @@ class ContentOrchestrator:
         # Other services can be added here when topic support is implemented
         try:
             self.statement_service.refresh_topics()
-            print("Successfully refreshed topics for statement service")
+            logger.info("Successfully refreshed topics for statement service")
         except Exception as e:
-            print(f"Warning: Could not refresh topics for statement service: {e}")
+            logger.warning(f"Could not refresh topics for statement service: {e}")
 
     def load_processed_fingerprints(self, fingerprints: Set[str]) -> None:
         """Load previously processed content fingerprints for idempotent seeding."""

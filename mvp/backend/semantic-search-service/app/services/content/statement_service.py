@@ -67,7 +67,7 @@ class StatementService(
         sanitized_query_text = query_text.replace(";", ",").replace("'", '"')
 
         logger.debug(
-            f"Searching for statements similar to '{sanitized_query_text}' with at least {min_replysuggestions_count} reply suggestions"
+            f"Searching for statements with at least {min_replysuggestions_count} reply suggestions"
         )
 
         return await self._repository.search_statements_with_replies(
@@ -92,7 +92,7 @@ class StatementService(
         Returns:
             - Tuple of (similarity_score, content_id) for most similar statement, or (None, None)
         """
-        logger.debug(f"Checking for similar existing statements to '{statement_text}'")
+        logger.debug("Checking for similar existing statements")
 
         similar_statements = await self.search(statement_text, limit=1)
         if similar_statements and similar_statements[0].score:
@@ -180,7 +180,7 @@ class StatementService(
         try:
             await super()._upsert(statement_input)
             logger.info(
-                f"Successfully created new statement with ID {statement_input.id}: '{statement_input.text[:50]}...'"
+                f"Successfully created new statement with ID {statement_input.id}"
             )
             return True, statement_input.id, statement_input.text
         except Exception as e:

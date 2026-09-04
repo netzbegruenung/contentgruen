@@ -30,7 +30,13 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GetAuthModes()
     {
         var useKeycloak = _configuration.GetValue<bool>("USE_KEYCLOAK", true);
-        var enableManagedAuth = await _managedUserService.IsEnabledAsync();
+
+        // Der Endpunkt beantwortet "welches Formular kann das Frontend zeichnen", nicht
+        // "steht der Schalter auf an". Deshalb zaehlt hier beides: ein Button, hinter
+        // dem keine Nutzerdatei liegt, koennte nie zu einer Anmeldung fuehren. Welcher
+        // der beiden Gruende vorliegt, steht im Log -- siehe HasConfiguredUsersAsync.
+        var enableManagedAuth = _managedUserService.IsEnabled()
+                                && await _managedUserService.HasConfiguredUsersAsync();
 
         return Ok(new AuthModesResponse
         {
@@ -42,6 +48,26 @@ public class AuthController : ControllerBase
     [HttpPost("login/managed")]
     public async Task<IActionResult> LoginManaged([FromBody] LoginRequest request)
     {
+        // ENABLE_MANAGED_AUTH wurde bisher nur in GetAuthModes() gelesen, also von einem
+        // reinen Auskunfts-Endpunkt, an dem sich das Frontend orientiert, welche
+        // Login-Formulare es zeichnet. Diese Action pruefte den Schalter nicht:
+        // ValidateUserAsync liest managed-users.json unabhaengig davon. Mit
+        // ENABLE_MANAGED_AUTH=false verschwand also nur der Button, waehrend ein
+        // direkter POST auf diese Route weiterhin ein gueltiges Auth-Cookie bekam.
+        //
+        // Managed Auth bleibt bewusst aktiv -- es ist der Zugangsweg fuer Menschen ohne
+        // Vereinsmitgliedschaft, die der Keycloak-Realm nicht abdeckt. Der Guard steht
+        // hier, damit der Schalter tut, was sein Name sagt, wenn ihn jemand umlegt.
+        //
+        // Gefragt wird ausschliesslich nach dem Schalter. Eine fehlende oder leere
+        // Nutzerdatei fuehrt weiter unten zu 401, nicht zu 404 -- sonst behauptet diese
+        // Logzeile "abgeschaltet", waehrend in Wirklichkeit nur der Mount fehlt.
+        if (!_managedUserService.IsEnabled())
+        {
+            _logger.LogWarning("Managed auth login attempted while managed auth is disabled");
+            return NotFound();
+        }
+
         if (request?.Email == null || request.Password == null)
         {
             return BadRequest(new { message = "Email and password are required" });
@@ -52,7 +78,10 @@ public class AuthController : ControllerBase
 
         if (user == null)
         {
-            _logger.LogWarning("Failed login attempt for: {Email}", request.Email);
+            // Ohne E-Mail: ein Tippfehler im Formular wuerde sonst die Adresse einer
+            // unbeteiligten Person ins Log schreiben. Dass ein Versuch fehlschlug,
+            // ist die Information, die zaehlt.
+            _logger.LogWarning("Failed login attempt via managed auth");
             return Unauthorized(new { message = "Invalid email or password" });
         }
 
@@ -88,7 +117,7 @@ public class AuthController : ControllerBase
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
-        _logger.LogInformation("User {Email} logged in successfully via managed auth", user.Email);
+        _logger.LogInformation("User {UserId} logged in successfully via managed auth", user.UserId);
 
         return Ok(new
         {
