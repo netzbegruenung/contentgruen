@@ -842,7 +842,7 @@ Ausdrücklich als ungeprüft gekennzeichnet, weil außerhalb dieses Repositories
 | Auth-Schalter | `mvp/backend/BFF/Program.cs:18`, `:39`, `:489` |
 | OIDC-Konfiguration | `mvp/backend/BFF/Program.cs:42–128` |
 | Claim-Extraktion | `mvp/backend/BFF/Program.cs:683–698` |
-| `X-User`-Weitergabe | `mvp/backend/BFF/Program.cs:243–283` |
+| `X-User`-Weitergabe | `mvp/backend/BFF/Proxy/IdentityHeaderTransform.cs:57–106` |
 | Öffentliche Endpunkte | `mvp/backend/BFF/Program.cs:247–258`, `:501–511` |
 | Anmelde-Endpunkte | `mvp/backend/BFF/Controllers/AuthController.cs:30`, `:43`, `:109`, `:123` |
 | Hauseigene Nutzerverwaltung | `mvp/backend/BFF/Services/ManagedUserService.cs`, `Models/ManagedUser.cs` |
@@ -854,7 +854,7 @@ Ausdrücklich als ungeprüft gekennzeichnet, weil außerhalb dieses Repositories
 | Stimmen-Tabelle | `app/repositories/vote_repository.py:23–34` |
 | Nutzungsereignisse | `app/repositories/usage_tracking_repository.py:28–83`, `:137 ff.` |
 | User-ID-Validierung | `app/auth/authorization.py:16–93` |
-| Admin-Prüfung | `app/dependencies.py:219–235` |
+| Admin-Prüfung | `mvp/backend/BFF/Proxy/AdminPolicy.cs:56–79`, `app/dependencies.py:233–249` |
 | Rate-Limiting | `app/middleware/rate_limit.py`, `app/utils/rate_limiter.py` |
 | Rechtstexte | `src/app/{impressum,datenschutz,nutzungsbedingungen}/*.component.html` |
 | Deployment und Salt | `docs/DEPLOYMENT.md:113–176` |

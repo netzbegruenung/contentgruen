@@ -12,6 +12,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace BFF.Tests.Proxy;
@@ -66,7 +67,7 @@ public class AuthGatePipelineTests
         };
     }
 
-    private static WebApplicationFactory<Program> CreateHost(bool useKeycloak) =>
+    private static WebApplicationFactory<Program> CreateHost(bool useKeycloak, string? adminUserIds = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             // Bewusst hermetisch: der Host laeuft nicht auf BFF/appsettings.json, sondern
@@ -79,6 +80,13 @@ public class AuthGatePipelineTests
 
             // Kein erreichbares Backend: alles, was den Gate passiert, endet in 502.
             builder.UseSetting("BACKEND_URL", "http://127.0.0.1:1");
+
+            // Nur setzen, wenn ein Test die Allowlist braucht: im Betrieb ist die ungesetzte
+            // Variable der Normalfall, und genau den soll der Negativfall abbilden.
+            if (adminUserIds is not null)
+            {
+                builder.UseSetting("ADMIN_USER_IDS", adminUserIds);
+            }
 
             // Nur Attrappen. Die Authority muss https sein, sonst wirft der
             // OpenIdConnect-Handler beim ersten Request, bevor der Gate laeuft.
@@ -201,5 +209,54 @@ public class AuthGatePipelineTests
         Assert.Equal(
             HttpStatusCode.Unauthorized,
             await Request(useKeycloak, "/api/v1/moderation/reports", authenticated: false));
+    }
+
+    /// <summary>
+    /// Liest isAdmin aus /api/user-info -- ueber denselben Host und denselben Testnutzer
+    /// (sub=test-user) wie die Gate-Tests oben.
+    ///
+    /// Nicht geprueft wird die Entscheidung selbst; die liegt in AdminPolicy und ist dort
+    /// am reinen Aufruf abgedeckt. Geprueft wird die Verdrahtung dazwischen: dass Program.cs
+    /// die Konfiguration unter genau dem Namen ADMIN_USER_IDS liest und die zerlegte Liste
+    /// in der Closure von /api/user-info ankommt. Ein Tippfehler im Schluessel liesse jeden
+    /// anderen Test gruen -- die Liste waere still leer, und das Frontend zeichnete seinen
+    /// AdminGuard fuer niemanden.
+    ///
+    /// USE_KEYCLOAK=true, obwohl die Betriebsart fuer /api/user-info nichts entscheidet:
+    /// nur im else-Zweig registriert Program.cs den DummyAuthStartupFilter, der context.User
+    /// bei jedem angemeldeten Request durch den Dummy-Nutzer (test-user-id-1) ersetzt. Der
+    /// liefe zwar vor dem TestUserStartupFilter und saehe noch keinen angemeldeten Nutzer --
+    /// aber an dieser Reihenfolge soll die Aussage des Tests nicht haengen.
+    /// </summary>
+    private static async Task<bool> UserInfoIsAdmin(string? adminUserIds)
+    {
+        using var factory = CreateHost(useKeycloak: true, adminUserIds);
+        using var client = factory.CreateClient(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/user-info");
+        request.Headers.Add(TestUserHeader, "1");
+
+        using var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return payload.RootElement.GetProperty("isAdmin").GetBoolean();
+    }
+
+    [Fact]
+    public async Task UserInfo_ReportsAdmin_WhenTheUserIdIsListedInAdminUserIds()
+    {
+        // test-user ist der sub-Claim des Testnutzers und damit genau der Wert, den
+        // ClaimUtilities.GetUserId gegen die Allowlist haelt.
+        Assert.True(await UserInfoIsAdmin("test-user"));
+    }
+
+    [Fact]
+    public async Task UserInfo_ReportsNoAdmin_WhenAdminUserIdsIsUnset()
+    {
+        // Der Normalfall, und das unveraenderte Verhalten von vor der Variablen: ohne
+        // Allowlist entscheidet allein der Claim, und der Testnutzer traegt keinen.
+        Assert.False(await UserInfoIsAdmin(adminUserIds: null));
     }
 }

@@ -207,6 +207,15 @@ listens on 5432 inside the container.
   extra admins and is not an error - the claim alone decides, as before. Whitespace around
   entries is trimmed.
 
+  The id to enter is the `userId` field of `GET /api/user-info`, read while that person is
+  logged in: it is exactly the string this check compares, whereas reading a `sub` claim by
+  hand is a detour - .NET's inbound claim mapping renames `sub` to `nameidentifier` before
+  the application sees it. The list is parsed once at startup, so changing it only takes
+  effect after the BFF container is restarted. Never put `test-user-id-1` on the list: that
+  is the id handed out by the dummy login that is active whenever `USE_KEYCLOAK=false`, and
+  its password is documented in this repository (`mvp/backend/BFF/Program.cs:526-527`,
+  `:571`).
+
   It exists because the claim route needs a Keycloak protocol mapper: `OnTokenValidated`
   copies token claims unchanged, so a flat `isAdmin`/`role` claim has to come from the realm
   configuration, which lives outside this repository.
