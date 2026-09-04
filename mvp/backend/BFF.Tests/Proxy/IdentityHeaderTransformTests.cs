@@ -22,6 +22,13 @@ public class IdentityHeaderTransformTests
 
     private static readonly ILogger Logger = NullLogger.Instance;
 
+    /// <summary>
+    /// Der Normalfall: ADMIN_USER_IDS ist nicht gesetzt, es entscheidet allein der Claim.
+    /// Als benannte Konstante an jeder Aufrufstelle statt als Standardwert an Apply --
+    /// so ist an jedem Test ablesbar, welche Allowlist gilt.
+    /// </summary>
+    private static readonly string[] NoAllowlist = Array.Empty<string>();
+
     private static ClaimsPrincipal AuthenticatedUser(string userId, bool isAdmin = false)
     {
         var claims = new List<Claim> { new Claim("sub", userId) };
@@ -59,6 +66,7 @@ public class IdentityHeaderTransformTests
             AuthenticatedUser("echte-kennung"),
             ProtectedPath,
             new HeaderDictionary(),
+            NoAllowlist,
             Logger);
 
         Assert.Equal(new[] { "echte-kennung" }, ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
@@ -76,6 +84,7 @@ public class IdentityHeaderTransformTests
             AuthenticatedUser("echte-kennung"),
             ProtectedPath,
             new HeaderDictionary(),
+            NoAllowlist,
             Logger);
 
         Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
@@ -92,6 +101,7 @@ public class IdentityHeaderTransformTests
             AuthenticatedUser("echte-kennung", isAdmin: true),
             ProtectedPath,
             new HeaderDictionary(),
+            NoAllowlist,
             Logger);
 
         Assert.Equal(new[] { "true" }, ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
@@ -111,6 +121,7 @@ public class IdentityHeaderTransformTests
             AnonymousUser(),
             ProtectedPath,
             new HeaderDictionary(),
+            NoAllowlist,
             Logger);
 
         Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
@@ -129,6 +140,7 @@ public class IdentityHeaderTransformTests
             AnonymousUser(),
             PublicPath,
             new HeaderDictionary(),
+            NoAllowlist,
             Logger);
 
         Assert.Equal(
@@ -153,6 +165,7 @@ public class IdentityHeaderTransformTests
             AnonymousUser(),
             PublicPath,
             new HeaderDictionary(),
+            NoAllowlist,
             Logger);
 
         Assert.Empty(ValuesOf(proxyRequest, header));
@@ -171,6 +184,7 @@ public class IdentityHeaderTransformTests
             AuthenticatedUser("echte-kennung"),
             ProtectedPath,
             new HeaderDictionary(),
+            NoAllowlist,
             Logger);
 
         Assert.Empty(ValuesOf(proxyRequest, "X-User-Id"));
@@ -196,6 +210,100 @@ public class IdentityHeaderTransformTests
     }
 
     [Fact]
+    public void Apply_UserIdInAllowlist_SetsAdminHeaderWithoutAnyClaim()
+    {
+        // Der Zweck der Variablen: Adminrechte ohne einen Claim, den nur die
+        // Realm-Konfiguration in Keycloak liefern koennte.
+        var proxyRequest = ProxyRequestCarrying();
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AuthenticatedUser("kennung-in-liste"),
+            ProtectedPath,
+            new HeaderDictionary(),
+            new[] { "andere-kennung", "kennung-in-liste" },
+            Logger);
+
+        Assert.Equal(new[] { "true" }, ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
+    }
+
+    [Fact]
+    public void Apply_UserIdNotInAllowlistAndNoClaim_SetsNoAdminHeader()
+    {
+        var proxyRequest = ProxyRequestCarrying();
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AuthenticatedUser("kennung-ohne-rechte"),
+            ProtectedPath,
+            new HeaderDictionary(),
+            new[] { "andere-kennung" },
+            Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
+        Assert.Equal(new[] { "kennung-ohne-rechte" }, ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
+    }
+
+    [Fact]
+    public void Apply_AdminClaimAndUserIdNotInAllowlist_StaysAdmin()
+    {
+        // Die Allowlist kommt als ODER dazu; sie ersetzt die Claim-Pruefung nicht. Ohne
+        // diesen Test wuerde ein Umbau, der beides vertauscht, allen Managed-Auth-Admins
+        // still die Rechte nehmen.
+        var proxyRequest = ProxyRequestCarrying();
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AuthenticatedUser("kennung-mit-claim", isAdmin: true),
+            ProtectedPath,
+            new HeaderDictionary(),
+            new[] { "voellig-andere-kennung" },
+            Logger);
+
+        Assert.Equal(new[] { "true" }, ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
+    }
+
+    /// <param name="expectedUser">
+    /// Was der BFF selbst setzt: auf dem geschuetzten Pfad nichts (null), auf dem
+    /// oeffentlichen die Sentinel-Kennung "anonymous". In beiden Faellen darf vom Client
+    /// nichts uebrig bleiben.
+    /// </param>
+    [Theory]
+    [InlineData(ProtectedPath, null)]
+    [InlineData(PublicPath, IdentityHeaderTransform.AnonymousUser)]
+    public void Apply_AllowlistWithNonEmptyEntries_DoesNotHelpAnonymousCaller(string path, string? expectedUser)
+    {
+        // Die Allowlist darf keinen Weg an der bedingungslosen Entfernung weiter oben
+        // vorbei oeffnen: ohne angemeldeten Nutzer gibt es keine Kennung, die in einer
+        // Liste stehen koennte -- auch dann nicht, wenn der Client eine behauptet.
+        //
+        // Beide Pfade, weil nur der oeffentliche Zweig selbst ein X-User setzt und die
+        // Allowlist dort gar nicht gefragt wird. Heute stimmt das; der Test haelt es fest
+        // fuer den Umbau, der die Admin-Entscheidung ueber die Verzweigung zieht.
+        //
+        // "anonymous" steht bewusst mit in der Liste: die Sentinel-Kennung des
+        // oeffentlichen Zweigs ist eine Zeichenkette wie jede andere, und ein Eintrag
+        // dieses Namens -- versehentlich oder nicht -- darf nicht jeden anonymen Aufrufer
+        // zum Admin machen.
+        var proxyRequest = ProxyRequestCarrying(
+            (IdentityHeaderTransform.UserHeader, "kennung-in-liste"),
+            (IdentityHeaderTransform.AdminHeader, "true"));
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AnonymousUser(),
+            path,
+            new HeaderDictionary(),
+            new[] { "kennung-in-liste", IdentityHeaderTransform.AnonymousUser },
+            Logger);
+
+        Assert.Equal(
+            expectedUser is null ? Array.Empty<string>() : new[] { expectedUser },
+            ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.AdminHeader));
+    }
+
+    [Fact]
     public void Apply_SessionIdHeader_IsReplacedNotAppended()
     {
         var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.SessionHeader, "kopie-von-yarp"));
@@ -209,6 +317,7 @@ public class IdentityHeaderTransformTests
             AnonymousUser(),
             PublicPath,
             incoming,
+            NoAllowlist,
             Logger);
 
         Assert.Equal(new[] { "session-abc" }, ValuesOf(proxyRequest, IdentityHeaderTransform.SessionHeader));

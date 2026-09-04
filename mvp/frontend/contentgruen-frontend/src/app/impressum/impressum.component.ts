@@ -17,4 +17,6 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./impressum.component.scss']
 })
 export class ImpressumComponent {
+  readonly KONTAKT_MAIL = 'backoffice@netzbegruenung.de';
+  readonly MSTV_VERANTWORTLICH = 'Sebastian Banach (Anschrift wie oben)';
 }

@@ -198,6 +198,27 @@ listens on 5432 inside the container.
   `Development`; startup fails if it is missing.
 - `CORS_ALLOWED_ORIGINS` - Optional, comma-separated extra CORS origins for cases where more
   than one hostname serves the SPA. Unset in all current environments.
+- `ADMIN_USER_IDS` - Optional, comma-separated user ids that get admin rights in addition to
+  anyone carrying an admin claim (`AdminPolicy`). Values are compared to the same string the
+  BFF forwards as `X-User`, i.e. the Keycloak `sub` claim or the `userId` field from
+  `managed-users.json` - not e-mail addresses, not usernames. Comparison is ordinal and
+  case-sensitive, matching how the Python service compares `SEMANTIC_SEARCH_ADMIN_USERS`;
+  set both to the same value so one entry means one person on both sides. Unset means no
+  extra admins and is not an error - the claim alone decides, as before. Whitespace around
+  entries is trimmed.
+
+  The id to enter is the `userId` field of `GET /api/user-info`, read while that person is
+  logged in: it is exactly the string this check compares, whereas reading a `sub` claim by
+  hand is a detour - .NET's inbound claim mapping renames `sub` to `nameidentifier` before
+  the application sees it. The list is parsed once at startup, so changing it only takes
+  effect after the BFF container is restarted. Never put `test-user-id-1` on the list: that
+  is the id handed out by the dummy login that is active whenever `USE_KEYCLOAK=false`, and
+  its password is documented in this repository (`mvp/backend/BFF/Program.cs:526-527`,
+  `:571`).
+
+  It exists because the claim route needs a Keycloak protocol mapper: `OnTokenValidated`
+  copies token claims unchanged, so a flat `isAdmin`/`role` claim has to come from the realm
+  configuration, which lives outside this repository.
 
 ### Semantic Search
 
