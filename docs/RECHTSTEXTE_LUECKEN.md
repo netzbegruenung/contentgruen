@@ -39,10 +39,10 @@ Legende Pflicht-Spalte:
 | I8 | 35 | `[Position/Funktion]` | „Vertreten durch" — Zeile unter dem Namen | OPTIONAL | ✓ Vertretungsberechtigter Vorstand nach § 26 BGB |
 | I9 | 44 | `[Amtsgericht Ort]` | „Register…: **Registergericht:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG (nur bei Registereintrag) | ✓ Amtsgericht Augsburg |
 | I10 | 45 | `[HRB/VR Nummer]` | „**Registernummer:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG | ✓ VR 201634 |
-| I11 | 55 | `[DE-Nummer]` | „USt-IdNr. gemäß § 27a UStG" | **BEDINGT** § 5 Abs. 1 Nr. 6 DDG (nur wenn vorhanden) | ______________ |
+| I11 | — | — (Abschnitt mit der Neufassung entfallen) | USt-IdNr. gemäß § 27a UStG | **BEDINGT** § 5 Abs. 1 Nr. 6 DDG (nur wenn vorhanden) | **offen** — Rückfrage an Vorstand: hat der Verein eine USt-IdNr.? Falls ja, ist sie nach § 5 Abs. 1 Nr. 6 DDG aufzunehmen |
 | I12 | 64 | `[Name der verantwortlichen Person]` | „Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV" | **BEDINGT** § 18 Abs. 2 MStV (bei journalistisch-redaktionellen Angeboten) | ✓ Sebastian Banach |
 | I13 | 65 | `[Anschrift wie oben]` | Anschrift der inhaltlich verantwortlichen Person | **BEDINGT** § 18 Abs. 2 MStV | ✓ Anschrift wie oben (Vereinsanschrift) |
-| I14 | 136 | `[Datum der letzten Aktualisierung]` | „**Stand:**" im Update-Hinweis | OPTIONAL | ______________ |
+| I14 | 136 | `[Datum der letzten Aktualisierung]` | „**Stand:**" im Update-Hinweis | OPTIONAL | ✓ September 2026 |
 
 **I1–I10, I12 und I13 sind erledigt (03.09.2026).** Die Angaben sind vom Vorstand
 bestätigt (Quelle: Korbinian Gall, 03.09.2026) und in `impressum.component.html`
@@ -50,8 +50,10 @@ sowie `impressum.component.ts` eingetragen. Damit ist auch die Grundsatzfrage au
 „Reihenfolge zum Ausfüllen" Nr. 1 entschieden: Anbieter ist der Verein, nicht
 Sebastian Banach als Privatperson. Er ist ausschließlich nach § 18 Abs. 2 MStV
 inhaltlich verantwortlich (I12/I13), unter der Vereinsanschrift.
-Offen bleiben I11 (USt-IdNr. — mit der Neufassung ersatzlos entfallen) und I14
-(Stand-Datum, jetzt „September 2026").
+I14 ist mit „September 2026" ebenfalls erledigt. Offen bleibt allein I11: Der
+Abschnitt zur USt-IdNr. ist mit der Neufassung entfallen — zu klären ist per
+Rückfrage an den Vorstand, ob der Verein eine USt-IdNr. hat; falls ja, ist sie
+nach § 5 Abs. 1 Nr. 6 DDG wieder aufzunehmen.
 
 \* I5 Telefon: § 5 Abs. 1 Nr. 2 DDG verlangt „Angaben, die eine schnelle elektronische Kontaktaufnahme
 und unmittelbare Kommunikation ermöglichen". E-Mail allein genügt nach EuGH C-298/07, wenn ein
@@ -251,7 +253,9 @@ Unabhängig vom Ausfüllen bleiben zwei inhaltliche Blocker:
   Textaussage muss unabhängig davon neu formuliert werden.
 - **D-N9** (OpenAI-Bildbeschreibung, falls in Prod aktiviert) — offen. Ein gesetzter
   `OPENAI_API_KEY` löst einen Drittlandtransfer aus, den die Erklärung nicht abdeckt;
-  siehe die Warnung in `core/config.py` und in `CLAUDE.md`.
+  siehe die Warnung in `core/config.py:101–120` und in `CLAUDE.md`. Zeile D-N9 oben
+  hält fest, dass in `docker-compose.prd.yml`/`.tst.yml` derzeit kein `OPENAI`-Env
+  gesetzt ist, der Code aber live ist.
 
 D-N10 (Google Fonts) ist mit PR #14 erledigt, die Suchprotokollierung aus D-N4
 weitgehend entschärft.
