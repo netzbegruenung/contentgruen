@@ -9,6 +9,8 @@ Arbeitsgrundlage, damit die offenen Punkte sichtbar sind; die fertigen Texte geh
 vor Veröffentlichung durch jemanden mit juristischer Qualifikation geprüft.
 
 Stand der Analyse: 2026-08-19
+Zeilenangaben beziehen sich auf den Stand vom 19.08.2026; die Neufassung in diesem
+Branch weicht davon ab.
 Geprüfte Dateien:
 - `mvp/frontend/contentgruen-frontend/src/app/impressum/impressum.component.html` (14 Platzhalter)
 - `mvp/frontend/contentgruen-frontend/src/app/datenschutz/datenschutz.component.html` (12 Platzhalter)
@@ -27,20 +29,31 @@ Legende Pflicht-Spalte:
 
 | # | Zeile | Platzhalter | Kontext / wofür | Pflicht? | Eintrag |
 |---|-------|-------------|-----------------|----------|---------|
-| I1 | 11 | `[Vollständiger Name/Organisation]` | „Anbieter" — Blockadresse | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ______________ |
-| I2 | 12 | `[Straße und Hausnummer]` | „Anbieter" — ladungsfähige Anschrift | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ______________ |
-| I3 | 13 | `[PLZ]` | „Anbieter" | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ______________ |
-| I4 | 13 | `[Ort]` | „Anbieter" | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ______________ |
-| I5 | 23 | `[Telefonnummer]` | „Kontakt: **Telefon:** …" | OPTIONAL* | ______________ |
-| I6 | 24 | `[E-Mail-Adresse]` | „Kontakt: **E-Mail:** …" | **PFLICHT** § 5 Abs. 1 Nr. 2 DDG | ______________ |
-| I7 | 34 | `[Name der vertretungsberechtigten Person(en)]` | „Vertreten durch" | **BEDINGT** § 5 Abs. 1 Nr. 1 DDG (bei jur. Person zwingend) | ______________ |
-| I8 | 35 | `[Position/Funktion]` | „Vertreten durch" — Zeile unter dem Namen | OPTIONAL | ______________ |
-| I9 | 44 | `[Amtsgericht Ort]` | „Register…: **Registergericht:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG (nur bei Registereintrag) | ______________ |
-| I10 | 45 | `[HRB/VR Nummer]` | „**Registernummer:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG | ______________ |
-| I11 | 55 | `[DE-Nummer]` | „USt-IdNr. gemäß § 27a UStG" | **BEDINGT** § 5 Abs. 1 Nr. 6 DDG (nur wenn vorhanden) | ______________ |
-| I12 | 64 | `[Name der verantwortlichen Person]` | „Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV" | **BEDINGT** § 18 Abs. 2 MStV (bei journalistisch-redaktionellen Angeboten) | ______________ |
-| I13 | 65 | `[Anschrift wie oben]` | Anschrift der inhaltlich verantwortlichen Person | **BEDINGT** § 18 Abs. 2 MStV | ______________ |
-| I14 | 136 | `[Datum der letzten Aktualisierung]` | „**Stand:**" im Update-Hinweis | OPTIONAL | ______________ |
+| I1 | 11 | `[Vollständiger Name/Organisation]` | „Anbieter" — Blockadresse | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ NETZBEGRÜNUNG — Verein für grüne Netzkultur e. V. (c/o Max Pfeuffer) |
+| I2 | 12 | `[Straße und Hausnummer]` | „Anbieter" — ladungsfähige Anschrift | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ Heilig-Kreuz-Straße 16 |
+| I3 | 13 | `[PLZ]` | „Anbieter" | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ 86609 |
+| I4 | 13 | `[Ort]` | „Anbieter" | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ Donauwörth |
+| I5 | 23 | `[Telefonnummer]` | „Kontakt: **Telefon:** …" | OPTIONAL* | ✓ +49 906 299940-0 |
+| I6 | 24 | `[E-Mail-Adresse]` | „Kontakt: **E-Mail:** …" | **PFLICHT** § 5 Abs. 1 Nr. 2 DDG | ✓ backoffice@netzbegruenung.de |
+| I7 | 34 | `[Name der vertretungsberechtigten Person(en)]` | „Vertreten durch" | **BEDINGT** § 5 Abs. 1 Nr. 1 DDG (bei jur. Person zwingend) | ✓ Jennifer Herbert, Korbinian Gall |
+| I8 | 35 | `[Position/Funktion]` | „Vertreten durch" — Zeile unter dem Namen | OPTIONAL | ✓ Vertretungsberechtigter Vorstand nach § 26 BGB |
+| I9 | 44 | `[Amtsgericht Ort]` | „Register…: **Registergericht:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG (nur bei Registereintrag) | ✓ Amtsgericht Augsburg |
+| I10 | 45 | `[HRB/VR Nummer]` | „**Registernummer:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG | ✓ VR 201634 |
+| I11 | — | — (Abschnitt mit der Neufassung entfallen) | USt-IdNr. gemäß § 27a UStG | **BEDINGT** § 5 Abs. 1 Nr. 6 DDG (nur wenn vorhanden) | **offen** — Rückfrage an Vorstand: hat der Verein eine USt-IdNr.? Falls ja, ist sie nach § 5 Abs. 1 Nr. 6 DDG aufzunehmen |
+| I12 | 64 | `[Name der verantwortlichen Person]` | „Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV" | **BEDINGT** § 18 Abs. 2 MStV (bei journalistisch-redaktionellen Angeboten) | ✓ Sebastian Banach |
+| I13 | 65 | `[Anschrift wie oben]` | Anschrift der inhaltlich verantwortlichen Person | **BEDINGT** § 18 Abs. 2 MStV | ✓ Anschrift wie oben (Vereinsanschrift) |
+| I14 | 136 | `[Datum der letzten Aktualisierung]` | „**Stand:**" im Update-Hinweis | OPTIONAL | ✓ September 2026 |
+
+**I1–I10, I12 und I13 sind erledigt (03.09.2026).** Die Angaben sind vom Vorstand
+bestätigt (Quelle: Korbinian Gall, 03.09.2026) und in `impressum.component.html`
+sowie `impressum.component.ts` eingetragen. Damit ist auch die Grundsatzfrage aus
+„Reihenfolge zum Ausfüllen" Nr. 1 entschieden: Anbieter ist der Verein, nicht
+Sebastian Banach als Privatperson. Er ist ausschließlich nach § 18 Abs. 2 MStV
+inhaltlich verantwortlich (I12/I13), unter der Vereinsanschrift.
+I14 ist mit „September 2026" ebenfalls erledigt. Offen bleibt allein I11: Der
+Abschnitt zur USt-IdNr. ist mit der Neufassung entfallen — zu klären ist per
+Rückfrage an den Vorstand, ob der Verein eine USt-IdNr. hat; falls ja, ist sie
+nach § 5 Abs. 1 Nr. 6 DDG wieder aufzunehmen.
 
 \* I5 Telefon: § 5 Abs. 1 Nr. 2 DDG verlangt „Angaben, die eine schnelle elektronische Kontaktaufnahme
 und unmittelbare Kommunikation ermöglichen". E-Mail allein genügt nach EuGH C-298/07, wenn ein
@@ -208,14 +221,41 @@ ausformulieren** — der Stand ändert sich gerade.
 
 ## Reihenfolge zum Ausfüllen
 
-1. **Zuerst D1–D4 / I1–I4 klären**: Wer ist Anbieter und Verantwortlicher — Netzbegrünung e. V. oder
-   Sebastian Banach als Privatperson? Davon hängen I7–I13, D7–D11 und die AVV-Frage (D-N7) ab.
-2. Danach die Kontaktdaten (I5–I6, D5–D6).
+1. ~~**Zuerst D1–D4 / I1–I4 klären**: Wer ist Anbieter und Verantwortlicher — Netzbegrünung e. V. oder
+   Sebastian Banach als Privatperson?~~ **Entschieden 03.09.2026: Anbieter und Verantwortlicher
+   ist NETZBEGRÜNUNG — Verein für grüne Netzkultur e. V.** Damit sind I1–I10 und I12/I13
+   erledigt; D7–D11 und die AVV-Frage (D-N7) bleiben offen, weil die Datenschutzerklärung
+   noch nicht überarbeitet ist.
+2. ~~Danach die Kontaktdaten (I5–I6, D5–D6).~~ I5–I6 erledigt (03.09.2026), D5–D6 offen.
 3. Dann die Entscheidungen zu Streichen/Ersetzen (X1–X5, I-E).
 4. Zuletzt die neuen Abschnitte D-N1 bis D-N12 und die Fristen (D-M1).
 
-Blocker für einen echten Produktivbetrieb, unabhängig vom Ausfüllen:
-**D-N4** (`usage_events` protokolliert personenbezogen und der Text behauptet das
-Gegenteil) und **D-N9** (OpenAI-Bildbeschreibung, falls in Prod aktiviert).
+---
+
+## Offene Launch-Blocker (Stand 03.09.2026)
+
+**Die Datenschutzerklärung ist unverändert der Platzhaltertext.** Sie ist auf `main`
+identisch mit dem Stand dieser Analyse und wird unter der Route `/datenschutz`
+(`app.routes.ts:71`) ausgeliefert, also auch in Produktion. Unbefüllt sind unter
+anderem die verantwortliche Stelle (`datenschutz.component.html:54–59`: Name,
+Anschrift, Telefon, E-Mail) und die Aufsichtsbehörde (Z. 80–84), das Stand-Datum
+steht als `[Datum der letzten Aktualisierung]` (Z. 232) — und Z. 234 trägt den für
+Besucher **sichtbaren** Hinweis „Dies ist eine Platzhalter-Datenschutzerklärung".
+Impressum und Nutzungsbedingungen sind damit fertig, die Datenschutzerklärung nicht;
+sie ist der verbleibende Rechtstext-Blocker vor einem öffentlichen Launch.
+
+Unabhängig vom Ausfüllen bleiben zwei inhaltliche Blocker:
+
+- **D-N4** (`usage_events` protokolliert personenbezogen, während der Text „lediglich
+  anonymisierte Nutzungsstatistiken" behauptet) — **vermutlich erledigt, zu
+  verifizieren**: Commit `67e50dd` („usage_events: personenbeziehbare Spalten
+  entfernen") deutet darauf hin, wurde hier aber nicht am Code nachgeprüft. Die
+  Textaussage muss unabhängig davon neu formuliert werden.
+- **D-N9** (OpenAI-Bildbeschreibung, falls in Prod aktiviert) — offen. Ein gesetzter
+  `OPENAI_API_KEY` löst einen Drittlandtransfer aus, den die Erklärung nicht abdeckt;
+  siehe die Warnung in `core/config.py:101–120` und in `CLAUDE.md`. Zeile D-N9 oben
+  hält fest, dass in `docker-compose.prd.yml`/`.tst.yml` derzeit kein `OPENAI`-Env
+  gesetzt ist, der Code aber live ist.
+
 D-N10 (Google Fonts) ist mit PR #14 erledigt, die Suchprotokollierung aus D-N4
 weitgehend entschärft.

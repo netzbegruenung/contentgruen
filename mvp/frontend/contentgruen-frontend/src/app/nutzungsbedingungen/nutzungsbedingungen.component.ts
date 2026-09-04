@@ -17,4 +17,5 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./nutzungsbedingungen.component.scss']
 })
 export class NutzungsbedingungenComponent {
+  readonly KONTAKT_MAIL = 'backoffice@netzbegruenung.de';
 }
