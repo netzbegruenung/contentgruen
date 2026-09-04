@@ -3,9 +3,19 @@
 > **Zweck:** belegte Faktenbasis für die Datenschutzerklärung. Keine juristische Bewertung,
 > keine Empfehlung — nur, was im Code steht, mit Fundstelle.
 >
-> **Stand:** Commit `95b565e0d37d5ee9d0a20249f2031a7e1b9851e4` (`main`, sauberer Arbeitsbaum)
-> **Analysedatum:** 2026-08-25
-> **Nicht committet.** Am Code wurde nichts geändert.
+> **Stand:** Commit `fae44b4` (`main`)
+> **Erstanalyse:** 2026-08-25 gegen `95b565e0d37d5ee9d0a20249f2031a7e1b9851e4`
+> **Fortgeschrieben:** 2026-09-03 gegen `fae44b4`. Alle Zeilennummern beziehen sich auf
+> `fae44b4`; wo eine Aussage der Erstanalyse durch die zwischenzeitlichen Änderungen
+> hinfällig geworden ist, steht das ausdrücklich dabei statt sie stillschweigend zu
+> ersetzen. Am Code wurde für diese Aufnahme nichts geändert.
+> **Fundstellen nachgeprüft:** 2026-09-04. Jede der rund 430 Zeilenangaben im Dokument
+> wurde maschinell aufgelöst und gegen `fae44b4` gelesen (Anhang B, M-14). Ergebnis:
+> ein inhaltlicher Fehler (`/metrics/helpful-rate` war in 1.7 noch als öffentlich
+> geführt — er ist seit PR #29 admin-only) und rund 80 verschobene Zeilenangaben, die
+> überwiegend aus der Erstanalyse stammten: `models.py` ist seit `95b565e` um 12 Zeilen
+> gewachsen, wodurch alle Angaben ab `search_events` um denselben Betrag danebenlagen.
+> Beides ist korrigiert.
 
 ## Lesehilfe
 
@@ -14,7 +24,8 @@
 - **UNSICHER** markiert jede Stelle, an der ich mir nicht sicher bin, mit Begründung.
 - **NICHT IM REPO ENTSCHEIDBAR** = hängt an Deployment-Konfiguration (SaltStack-Pillar), die
   außerhalb dieses Repos liegt. Alle diese Punkte sind in **Teil 4** gebündelt.
-- Zeilennummern beziehen sich auf den oben genannten Commit.
+- Zeilennummern beziehen sich auf den oben genannten Commit `fae44b4`.
+- **ERLEDIGT** markiert einen Befund der Erstanalyse, den der Code inzwischen behebt.
 
 Pfadabkürzungen in den Tabellen:
 
@@ -23,6 +34,29 @@ Pfadabkürzungen in den Tabellen:
 | `app/` | `mvp/backend/semantic-search-service/app/` |
 | `BFF/` | `mvp/backend/BFF/` |
 | `fe/` | `mvp/frontend/contentgruen-frontend/src/` |
+
+---
+
+# Teil 0 — Was sich seit der Erstanalyse geändert hat
+
+Zwischen `95b565e` (25.08.) und `fae44b4` sind drei Pull Requests gemergt, die
+unmittelbar an den hier beschriebenen Verarbeitungen ansetzen. Die Kurzfassung; die
+Belege stehen jeweils im betroffenen Abschnitt.
+
+| PR | Was | Folge für diese Aufnahme |
+|----|-----|--------------------------|
+| **#27** Datenminimierung | `usage_events` verliert die Spalten `user_id`, `ip_hash` und `user_agent`; an deren Stelle tritt `device_category`. Die View `user_usage_statistics` entfällt | **1.2 neu geschrieben**, **1.8 entfällt**, Befunde **E-1** und **E-2** erledigt |
+| **#29** Härtung Phase 2 | Auth-Gate gilt in beiden Betriebsarten; `EndpointPolicy` als einzige Endpunktliste; Metrik-Endpunkte admin-only; Debug-Router `api/v1/test.py` gelöscht; alle 93 `print()` entfernt; Suchtext nicht mehr protokolliert; Nutzerkennungen in Logs nur noch als 8-stelliges Pseudonym; E-Mail-Adressen aus den BFF-Logs entfernt; `X-User-Id` wird am Proxy entfernt und die Dependency liest `X-User`; Rate-Limit auf `/moderation/report` auf einen flüchtigen Adress-Hash umgestellt; `managed-users.json` aus dem Git genommen | **1.10 neu geschrieben**, Anhang A überwiegend erledigt |
+| **#32** Voraussetzungen | Cookie-Laufzeit im Keycloak-Zweig explizit 8 h gleitend; Session-ID in `localStorage` rotiert nach 30 Tagen und kommt aus `crypto.randomUUID()`; Warnhinweis zum OpenAI-Key in `core/config.py` und `CLAUDE.md` | **1.11 aktualisiert**, Befunde **B-1**, **B-2** erledigt |
+
+**Unverändert geblieben und weiterhin gültig** sind die drei Befunde, an denen die
+Datenschutzerklärung am meisten hängt:
+
+- **E-3** — die Retention-Einstellungen werden in falscher Schreibweise gelesen; wirksam
+  sind unverändert 90 Tage, täglich 02:00, weder abschaltbar noch konfigurierbar.
+- **S-3** — für `search_events` existiert Löschcode ohne Aufrufer. Keine Frist.
+- **Q-1/Q-2** — jede Suchanfrage wird dauerhaft als Inhalt in Qdrant gespeichert, und die
+  Autorenkennung jedes Beitrags ist über die öffentliche Suche für jeden abrufbar.
 
 ---
 
@@ -35,16 +69,16 @@ Mechanismen, die Tabellen anlegen:
 
 | # | Mechanismus | Beleg | Legt an |
 |---|-------------|-------|---------|
-| 1 | `init.sql`, in das Postgres-Image gebacken, läuft nur bei leerem Datenverzeichnis | `mvp/backend/postgres-app/init.sql` (74 Zeilen) | `usage_tracking`, `usage_events`, View `user_usage_statistics`, 6 Indizes, 1 Trigger |
+| 1 | `init.sql`, in das Postgres-Image gebacken, läuft nur bei leerem Datenverzeichnis | `mvp/backend/postgres-app/init.sql` (67 Zeilen) | `usage_tracking`, `usage_events`, 5 Indizes, 1 Trigger. Die früher hier definierte View `user_usage_statistics` ist mit PR #27 entfallen (`init.sql:37-40`) |
 | 2 | SQLAlchemy `Base.metadata.create_all` beim ersten DB-Zugriff | `app/infrastructure/database/connection.py:48`, aufgerufen aus `:87` | **alle 6** ORM-Tabellen: `usage_tracking`, `usage_events`, `search_events`, `content_reports`, `raw_inputs`, `raw_input_content_links` |
 | 3 | Rohes DDL zur Laufzeit | `app/repositories/vote_repository.py:20-40`, aufgerufen aus `app/services/voting_service.py:18` | `votes` + 3 Indizes |
-| 4 | Handmigrationen für Bestandsumgebungen | `mvp/backend/postgres-app/migrations/2026-08-19-rohinput-fangkorb.sql`, `…-search-events-pseudonymisieren.sql` | dieselben Tabellen wie (2), plus `TRUNCATE`/`DROP COLUMN` auf `search_events` |
+| 4 | Handmigrationen für Bestandsumgebungen | `migrations/2026-08-19-rohinput-fangkorb.sql`, `…-search-events-pseudonymisieren.sql`, `2026-08-25-usage-events-datensparsamkeit.sql` | dieselben Tabellen wie (2), plus `TRUNCATE`/`DROP COLUMN` auf `search_events` und `DROP COLUMN`/`DROP VIEW` auf `usage_events` |
 
 **Konsequenz:** `init.sql` deckt **2 von 7** Tabellen ab. Wer das Schema aus `init.sql` liest,
 sieht `search_events`, `content_reports`, `raw_inputs`, `raw_input_content_links` und `votes`
 nicht.
 
-**Gefundene Tabellen: 7** (+ 1 View). Suchmethoden dafür in Anhang B.
+**Gefundene Tabellen: 7.** Die eine View ist entfallen (1.8). Suchmethoden dafür in Anhang B.
 
 ---
 
@@ -54,100 +88,92 @@ Aggregatzähler pro Inhalt, kein Personenbezug.
 
 | Feld | Typ | Definiert in | Personenbezug | Wer schreibt | Wer kann lesen | Wirksame Löschfrist |
 |------|-----|--------------|---------------|--------------|----------------|---------------------|
-| `content_id` | UUID PK | `app/infrastructure/database/models.py:35`; `init.sql:11` | nein — Inhalts-ID | `app/repositories/usage_tracking_repository.py:64` | öffentlich über `GET /api/v1/usage/content/{id}` (`app/api/v1/usage.py:158`, in der BFF-Public-Liste `BFF/Proxy/IdentityHeaderTransform.cs:31`) | **keine** |
+| `content_id` | UUID PK | `app/infrastructure/database/models.py:35`; `init.sql:11` | nein — Inhalts-ID | `app/repositories/usage_tracking_repository.py:61,65` | öffentlich über `GET /api/v1/usage/content/{id}` (`app/api/v1/usage.py:147`, in `BFF/Proxy/EndpointPolicy.cs:28`) | **keine** |
 | `usage_count` | Integer | `models.py:36`; `init.sql:12` | nein | `models.py:54-62` (`increment_usage`) | dito | **keine** |
 | `last_used` / `first_used` | Timestamptz | `models.py:37-38`; `init.sql:13-14` | nein | `models.py:60-62` | dito | **keine** |
-| `created_at` / `updated_at` | Timestamptz | `models.py:39-47`; `init.sql:15-16` | nein | Server-Default + Trigger `init.sql:66-69` | dito | **keine** |
+| `created_at` / `updated_at` | Timestamptz | `models.py:39-47`; `init.sql:15-16` | nein | Server-Default + Trigger `init.sql:59-62` | dito | **keine** |
 
-**Löschfrist explizit ausgeschlossen:** `app/repositories/usage_tracking_repository.py:278-280` —
+**Löschfrist explizit ausgeschlossen:** `app/repositories/usage_tracking_repository.py:274-276` —
 „usage_tracking aggregate counters are **preserved forever**". Der einzige Cleanup-Pfad rührt
 diese Tabelle nicht an.
 
 ---
 
-## 1.2 PostgreSQL — `usage_events`  ⚠️ der personenbezogenste Speicher
+## 1.2 PostgreSQL — `usage_events`
 
 Ein Ereignis pro Kopiervorgang eines Inhalts.
 
+> **Neu geschrieben gegenüber der Erstanalyse.** PR #27 hat die drei personenbeziehbaren
+> Spalten entfernt: `user_id`, `ip_hash` und `user_agent`. Migration
+> `mvp/backend/postgres-app/migrations/2026-08-25-usage-events-datensparsamkeit.sql`
+> (`DROP COLUMN` für die ersten beiden, Umbenennung von `user_agent` nach
+> `device_category` mit `USING NULL`, anschließend `VACUUM FULL`), neues Schema in
+> `app/infrastructure/database/models.py:65-105` und `mvp/backend/postgres-app/init.sql:19-35`.
+> Damit ist dies **nicht mehr der personenbezogenste Speicher** der Anlage; das ist jetzt
+> `raw_inputs` (1.5) beziehungsweise der Qdrant-Payload (1.9).
+
 | Feld | Typ | Definiert in | Personenbezug | Wer schreibt (Codepfad) | Wer kann lesen | Wirksame Löschfrist |
 |------|-----|--------------|---------------|--------------------------|----------------|---------------------|
-| `id` | BigInteger PK | `models.py:70`; `init.sql:21` | nein | ORM | s.u. | 90 Tage |
-| `content_id` | UUID FK→`usage_tracking` | `models.py:71-75`; `init.sql:22` | nein (aber verknüpfend) | `usage_tracking_repository.py:77` | s.u. | 90 Tage |
-| `user_id` | VARCHAR(255) | `models.py:76`; `init.sql:23` | **ja, wenn gefüllt** — Keycloak-`sub` bzw. `user-00x`; siehe Befund unten | `usage_tracking_repository.py:78` ← `services/usage_tracking_service.py:76` ← `api/v1/usage.py:129` (`current_user`) | s.u. | 90 Tage |
-| `event_type` | VARCHAR(50), default `copy` | `models.py:77`; `init.sql:24` | nein | `usage_tracking_repository.py:79` | s.u. | 90 Tage |
-| `timestamp` | Timestamptz | `models.py:78-80`; `init.sql:25` | nein für sich | Server-Default | s.u. | 90 Tage |
-| `session_id` | VARCHAR(255) | `models.py:81`; `init.sql:26` | **pseudonym** — client-erzeugte UUID aus `localStorage`, unbefristet stabil (siehe 1.10) | `usage_tracking_repository.py:80` ← `api/v1/usage.py:130` ← Request-Body `session_id` | s.u. | 90 Tage |
-| `ip_hash` | VARCHAR(64) | `models.py:82`; `init.sql:27` | **pseudonym** — SHA-256 **ohne Salt**, doppelt angewendet (Befund unten) | `usage_tracking_repository.py:71-73` ← `api/v1/usage.py:111-119,131` | s.u. | 90 Tage |
-| `user_agent` | VARCHAR(500) | `models.py:83`; `init.sql:28` | **ja, mittelbar** — Browser/OS/Version, auf 500 Zeichen gekürzt | `usage_tracking_repository.py:82` ← `api/v1/usage.py:82,122-123,132` | s.u. | 90 Tage |
+| `id` | BigInteger PK | `models.py:85`; `init.sql:28` | nein | ORM | s.u. | 90 Tage |
+| `content_id` | UUID FK→`usage_tracking` | `models.py:86-90`; `init.sql:29` | nein (aber verknüpfend) | `usage_tracking_repository.py:69` | s.u. | 90 Tage |
+| `event_type` | VARCHAR(50), default `copy` | `models.py:91`; `init.sql:30` | nein | `usage_tracking_repository.py:70` | s.u. | 90 Tage |
+| `timestamp` | Timestamptz | `models.py:92-94`; `init.sql:31` | nein für sich | Server-Default | s.u. | 90 Tage |
+| `session_id` | VARCHAR(255) | `models.py:95`; `init.sql:32` | **pseudonym** — client-erzeugte UUID aus `localStorage`, seit PR #32 nach 30 Tagen rotierend (siehe 1.11) | `usage_tracking_repository.py:71` ← `api/v1/usage.py:120` ← Request-Body `session_id` | s.u. | 90 Tage |
+| `device_category` | VARCHAR(20) | `models.py:96`; `init.sql:33` | **nein** — genau vier Werte: `mobile`, `tablet`, `desktop`, `unknown` | `usage_tracking_repository.py:72` ← `api/v1/usage.py:114,121`, abgeleitet in `app/utils/device_category.py` | s.u. | 90 Tage |
+
+### Was **nicht mehr** gespeichert wird
+
+| Entfallene Spalte | Was sie enthielt | Ersatz |
+|-------------------|------------------|--------|
+| `user_id` | Keycloak-`sub` bzw. `user-00x`; blieb über den Live-Pfad ohnehin immer `NULL` (Befund E-1) | keiner — die Nutzungserfassung ist jetzt ausdrücklich kontounabhängig |
+| `ip_hash` | ungesalzenes, doppelt angewandtes SHA-256 über die Client-IP (Befund E-2) | keiner. Die IP wird an keiner Stelle mehr persistiert; sie geht nur noch flüchtig in den Rate-Limit-Schlüssel für Meldungen ein (1.4) |
+| `user_agent` | Rohwert, bis zu 500 Zeichen | `device_category` — vier Werte, der Rohwert verlässt `utils/device_category.py` nicht (`api/v1/usage.py:82,114`) |
+
+Bestandswerte wurden verworfen, nicht umgerechnet (Begründung in der Migration `:22-24`),
+und mit `VACUUM FULL` (`:57`) physisch entfernt.
 
 ### Wer kann lesen
 
 | Weg | Auth-Stufe | Beleg |
 |-----|-----------|-------|
-| `GET /api/v1/usage/content/{id}` (nur Zähler) | **öffentlich** | `api/v1/usage.py:158`; BFF-Public-Liste `IdentityHeaderTransform.cs:31` |
-| `GET /api/v1/usage/trending` | **öffentlich** | `api/v1/usage.py:219`; `IdentityHeaderTransform.cs:32` |
-| `GET /api/v1/usage/users/{user_id}/usage-stats` | Admin-Prüfung `settings.is_admin_user` — **wirkungslos, siehe unten** | `api/v1/usage.py:186-203` |
-| `GET /api/v1/metrics/mvp-dashboard`, `/usage-trend`, `/helpful-rate` (aggregiert) | **öffentlich, gar keine Auth-Dependency** | `api/v1/metrics.py:143-144, 245-248, 283-286`; `IdentityHeaderTransform.cs:29` |
-| View `user_usage_statistics` (JOIN über `user_id`) | nur direkter DB-Zugriff | `init.sql:33-46` |
-| Backup-Dumps | Dateisystemzugriff | s. 1.11 |
+| `GET /api/v1/usage/content/{id}` (nur Zähler) | **öffentlich** | `api/v1/usage.py:147-149`; `BFF/Proxy/EndpointPolicy.cs:28` |
+| `GET /api/v1/usage/trending` | **öffentlich** | `api/v1/usage.py:209-211`; `EndpointPolicy.cs:29` |
+| `GET /api/v1/usage/users/{user_id}/usage-stats` | Admin-Prüfung `settings.is_admin_user` — **seit PR #29 wirksam**, siehe unten | `api/v1/usage.py:175-207` |
+| `GET /api/v1/metrics/mvp-dashboard`, `/usage-trend`, `/helpful-rate` (aggregiert) | **`Depends(require_admin)`** — vorher ohne jede Auth-Dependency und öffentlich am BFF | `api/v1/metrics.py:192-195, 300-304, 339-343`; nur `/getMetrics` steht noch in `EndpointPolicy.cs:34` |
+| Backup-Dumps | Dateisystemzugriff | s. 1.12 |
 
-### Befund E-1 — `user_id` wird über den Live-Pfad **nie** gefüllt (KONFIGURIERT ≠ WIRKSAM)
+Die View `user_usage_statistics` ist entfallen (1.8).
 
-`api/v1/usage.py:83` bezieht `current_user` aus `Depends(get_current_user_optional)`.
-`app/dependencies.py:210` deklariert dort den Parameter `x_user_id: Optional[str] = Header(None)`.
-FastAPI leitet daraus den Headernamen **`X-User-Id`** ab (Unterstriche → Bindestriche).
+### Befund E-1 — ERLEDIGT: die Dependency liest jetzt `X-User`
 
-Das BFF setzt aber **`X-User`** — `BFF/Proxy/IdentityHeaderTransform.cs:17`, gesetzt in `:53`
-bzw. `:67`. Ein Header `X-User-Id` wird **nirgends im Repo** erzeugt: repo-weiter Grep über
-`*.cs`, `*.ts`, `*.py`, `*.yml`, `*.conf` nach `x-user-id`/`x_user_id` liefert ausschließlich
-`dependencies.py:210,213,216` (die Definition selbst) sowie `dependencies.py:220` und
-`api/v1/moderation.py:78`, die beide `alias="X-User"` explizit setzen.
+Die Erstanalyse hatte belegt, dass `app/dependencies.py` den Header `X-User-Id` deklarierte,
+während das BFF `X-User` setzt — `usage_events.user_id` blieb dadurch immer `NULL`, und
+`settings.is_admin_user()` bekam immer `None`.
 
-Empirisch nachgeprüft (FastAPI-`TestClient` gegen eine Nachbildung derselben Dependency):
+Behoben an beiden Enden:
 
-```
-mit Header X-User      ->  {'u': None}
-mit Header X-User-Id   ->  {'u': 'alice'}
-```
+- `app/dependencies.py:217` deklariert `Header(None, alias="X-User")`, ebenso
+  `require_admin` (`:234-235`). Die Kommentare `:225-229` halten die alte Fehlerklasse fest.
+- `BFF/Proxy/IdentityHeaderTransform.cs:43` nimmt `X-User-Id` in die Liste der Header auf,
+  die der Transform bedingungslos entfernt (`:59`). Ein Client kann sich damit nicht mehr
+  per Header eine fremde Identität geben (vormals Anhang A, A-2).
 
-**Wirksam:** `usage_events.user_id` ist über den regulären Weg Frontend → BFF → Backend
-immer `NULL`. Die Nutzungsprotokollierung läuft faktisch nur über `session_id`, `ip_hash`
-und `user_agent`.
+**Folge:** Die Admin-Prüfung in `api/v1/usage.py:189,245,275` greift jetzt tatsächlich,
+sofern `SEMANTIC_SEARCH_ADMIN_USERS` gesetzt ist (Teil 4, 4-H). Die Spalte `user_id`, um
+die es ursprünglich ging, gibt es nicht mehr.
 
-*Einschränkung (UNSICHER in eine Richtung):* Das gilt für den Weg über das BFF. Wer die
-Semantic-Search-API direkt erreicht, kann `X-User-Id` selbst setzen und den Wert damit
-beliebig befüllen — der Transform entfernt nur `X-User` und `X-Is-Admin`
-(`IdentityHeaderTransform.cs:45-46`), nicht `X-User-Id`. Im Dev-Compose ist Port 8000
-veröffentlicht (`mvp/docker-compose.dev.yml:65-66`); im Test-Compose nicht
-(`docker-compose.tst.yml:47`: „No port mapping, only reachable internally via BFF"). Für
-Produktion: Teil 4.
+### Befund E-2 — ERLEDIGT: es wird keine IP mehr gespeichert
 
-**Nebenwirkung derselben Ursache:** `settings.is_admin_user(current_user)` in
-`api/v1/usage.py:200,255,285` bekommt dadurch immer `None` und liefert immer `False`
-(`app/core/config.py:123`). Diese drei Endpunkte antworten also konstant 403 — die
-Admin-Sicht auf `usage_events` ist über die API nicht erreichbar.
+`api/v1/usage.py` bildet keinen IP-Hash mehr; die Spalte ist weg. Die einzige verbliebene
+IP-Verarbeitung im Backend ist `app/utils/client_identity.py` für das Rate-Limit auf dem
+anonymen Meldeweg (1.4): Salt zufällig pro Prozess (`:40`), SHA-256, auf 16 Hex-Zeichen
+gekürzt (`:85`), nur im Arbeitsspeicher des gleitenden Fensters. Weder Datenbank noch Log
+sehen den Wert; das Modul dokumentiert das ausdrücklich (`:14-28`).
 
-### Befund E-2 — `ip_hash` ist ungesalzen und wird doppelt gehasht
+### Befund E-3 — UNVERÄNDERT: die 90 Tage sind ein Fallback, kein konfigurierter Wert
 
-1. `api/v1/usage.py:112-114` bestimmt die Client-IP (bevorzugt erstes Element von `X-Forwarded-For`).
-2. `api/v1/usage.py:117-119`: `ip_hash = sha256(client_ip)` — **kein Salt, kein Key**.
-3. `api/v1/usage.py:131` übergibt diesen Hex-String als Parameter `ip_address=` weiter.
-4. `app/repositories/usage_tracking_repository.py:71-73` hasht den empfangenen Wert **erneut**:
-   `ip_hash = sha256(ip_address)`.
-
-Gespeichert wird also `SHA256(hex(SHA256(ip)))`. Beide Stufen sind schlüssellos und
-deterministisch; der IPv4-Raum ist vollständig durchrechenbar. Der Kommentar
-`init.sql:27` („hashed IP for analytics **without privacy concerns**") und
-`models.py:82` („Store hashed IP for privacy") beschreiben eine Schutzwirkung, die
-ein ungesalzener Hash über einen erschöpfbaren Wertebereich nicht hat.
-
-*Zum Vergleich:* `search_events.actor_hash` macht es anders — HMAC mit Secret plus
-Tagesrotation (1.4).
-
-### Befund E-3 — die 90 Tage sind ein Fallback, kein konfigurierter Wert
-
-`app/core/config.py:136-139` definiert vier Einstellungen in Kleinschreibung
-(Pydantic-Feldnamen, `env_prefix = "SEMANTIC_SEARCH_"`, `config.py:165`):
+`app/core/config.py:146-150` definiert vier Einstellungen in Kleinschreibung
+(Pydantic-Feldnamen, `env_prefix = "SEMANTIC_SEARCH_"`):
 
 ```
 enable_usage_cleanup: bool = True
@@ -175,14 +201,16 @@ SEMANTIC_SEARCH_USAGE_RETENTION_DAYS=30 gesetzt
 
 **Wirksam ist demnach: 90 Tage, täglich 02:00 UTC, nicht abschaltbar, nicht über die
 Umgebung veränderbar.** Ein `SEMANTIC_SEARCH_USAGE_RETENTION_DAYS` im Salt-Pillar hätte
-keine Wirkung — das ist auch für Teil 4 relevant: Die Frist ist **nicht** deployment-abhängig,
-sie steht fest.
+keine Wirkung. Für die Datenschutzerklärung ist das die günstige Richtung: die Frist ist
+gerade deshalb belastbar, weil sie fest verdrahtet ist. Als Fehler bleibt sie trotzdem
+stehen — wer sie ändern will, muss den Code ändern, und wer sie über den Pillar zu ändern
+glaubt, irrt sich still.
 
-Der Scheduler läuft: `app/main.py:103` ruft `start_cleanup_scheduler()` beim Startup, plus
-ein sofortiger Lauf beim Start (`usage_cleanup_service.py:98-99`).
+Der Scheduler läuft: `app/main.py:102` ruft `start_cleanup_scheduler()` beim Startup, plus
+ein sofortiger Lauf beim Start (`usage_cleanup_service.py:97-99`).
 
 Gelöscht wird ausschließlich aus `usage_events`
-(`usage_tracking_repository.py:297-301`, Filter `timestamp < cutoff`).
+(`usage_tracking_repository.py:291-296`, Filter `timestamp < cutoff`).
 
 ---
 
@@ -190,20 +218,23 @@ Gelöscht wird ausschließlich aus `usage_events`
 
 | Feld | Typ | Definiert in | Personenbezug | Wer schreibt | Wer kann lesen | Wirksame Löschfrist |
 |------|-----|--------------|---------------|--------------|----------------|---------------------|
-| `id` | BigInteger PK | `models.py:110` | nein | ORM | s.u. | **keine** |
-| `actor_hash` | VARCHAR(64), nullable | `models.py:111` | **pseudonym, tagesrotierend** — Details unten | `app/repositories/search_tracking_repository.py:44` ← `services/search_tracking_service.py:98-105` ← `api/v1/search.py:257-261` | s.u. | **keine** |
-| `results_count` | Integer | `models.py:112` | nein | `search_tracking_repository.py:44` | s.u. | **keine** |
-| `timestamp` | Timestamptz | `models.py:113-115` | nein für sich | Server-Default | s.u. | **keine** |
+| `id` | BigInteger PK | `models.py:122` | nein | ORM | s.u. | **keine** |
+| `actor_hash` | VARCHAR(64), nullable | `models.py:123` | **pseudonym, tagesrotierend** — Details unten | `app/repositories/search_tracking_repository.py:44` ← `services/search_tracking_service.py:98-105` ← `api/v1/search.py:256-264` | s.u. | **keine** |
+| `results_count` | Integer | `models.py:124` | nein | `search_tracking_repository.py:44` | s.u. | **keine** |
+| `timestamp` | Timestamptz | `models.py:125-127` | nein für sich | Server-Default | s.u. | **keine** |
 
 **Nicht (mehr) vorhanden:** `query_text`, `user_id`, `session_id`, `ip_hash` — entfernt durch
 `migrations/2026-08-19-search-events-pseudonymisieren.sql:30-33`, Bestandsdaten per
 `TRUNCATE` (`:25`) plus `VACUUM FULL` (`:42`) verworfen. Begründung im ORM dokumentiert
-(`models.py:97-106`).
+(`models.py:109-118`).
 
 **Lesen:** ausschließlich aggregiert über `GET /api/v1/metrics/daily-active-users`
-(`api/v1/metrics.py:165-168`) und `/searches-per-user` (`:193-196`) — **beide ohne jede
-Auth-Dependency**, und `/api/v1/metrics/` steht in der BFF-Public-Liste
-(`IdentityHeaderTransform.cs:29`). Die zugrundeliegenden Queries:
+(`api/v1/metrics.py:217-221`) und `/searches-per-user` (`:246-250`). Beide verlangen seit
+PR #29 `Depends(require_admin)`; am BFF ist von `/api/v1/metrics/` nur noch der einzelne
+Pfad `/getMetrics` ohne Anmeldung erreichbar (`BFF/Proxy/EndpointPolicy.cs:30-34`, mit
+Begründung). Vorher stand das ganze Präfix in der Public-Liste und keiner der sechs
+Betriebskennzahlen-Endpunkte hatte eine Auth-Dependency — die DAU-Zahlen waren damit
+weltweit lesbar (vormals Anhang A, A-9). Die zugrundeliegenden Queries:
 `search_tracking_repository.py:77-82` (COUNT DISTINCT) und `:114-123` (GROUP BY).
 
 ### Befund S-1 — Pseudonymisierung ist implementiert wie beschrieben
@@ -221,13 +252,13 @@ return hmac.new(secret, f"{actor_id}|{day}", sha256).hexdigest()  # :68-72
 - HMAC-SHA256, nicht nacktes SHA-256 ✓
 - UTC-Datum im Nachrichtentext → tägliche Rotation ✓ (Test: `app/tests/unit/services/test_search_tracking_service.py:38-45`)
 - Suchtext wird nicht übergeben — `track_search()` nimmt ihn gar nicht entgegen
-  (`search_tracking_service.py:83-84`, Aufruf `api/v1/search.py:257-261`) ✓
+  (`search_tracking_service.py:83-84`, Aufruf `api/v1/search.py:256-264`) ✓
 - Der Hash enthält die Kennung nicht (Test `:54-62`) ✓
 
 ### Befund S-2 — das Secret ist im Repo nirgends gesetzt; der Fallback ist zufällig pro Prozess
 
-`app/core/config.py:133`: `actor_hash_secret: Optional[str] = None`, Env-Name wäre
-`SEMANTIC_SEARCH_ACTOR_HASH_SECRET` (Prefix `config.py:165`).
+`app/core/config.py:144`: `actor_hash_secret: Optional[str] = None`, Env-Name wäre
+`SEMANTIC_SEARCH_ACTOR_HASH_SECRET` (Prefix `config.py:176`).
 
 Repo-weiter Grep nach `ACTOR_HASH_SECRET` über `*.yml`, `*.yaml`, `*.env*`, `*.sh`, `*.md`:
 **kein Treffer.** Weder `docker-compose.dev.yml` noch `docker-compose.tst.yml` setzen es.
@@ -235,7 +266,7 @@ Repo-weiter Grep nach `ACTOR_HASH_SECRET` über `*.yml`, `*.yaml`, `*.env*`, `*.
 Wenn nicht gesetzt, greift `_FALLBACK_SECRET = secrets.token_hex(32)`
 (`search_tracking_service.py:25`) — einmal pro **Prozess**.
 
-Was das bedeutet (Kommentar `config.py:128-132` beschreibt es korrekt):
+Was das bedeutet (Kommentar `config.py:139-143` beschreibt es korrekt):
 - Datenschutzseitig **unkritischer**, nicht kritischer: der Schlüssel existiert nur im
   Arbeitsspeicher und ist nach einem Neustart unwiederbringlich weg. Aus den gespeicherten
   Hashes lässt sich dann selbst mit Kenntnis aller Nutzerkennungen nichts mehr rekonstruieren.
@@ -249,9 +280,12 @@ Ob in Produktion gesetzt: **Teil 4, Frage 4-A.**
 `app/repositories/search_tracking_repository.py:187-211` implementiert `cleanup_old_events()`
 (DELETE auf `SearchEvent` älter als `days_to_keep`).
 
-Aufrufer: **keiner.** Der einzige Cleanup-Pfad ist
-`services/cleanup/usage_cleanup_service.py:52` → `services/usage_tracking_service.py:300`
-→ `repositories/usage_tracking_repository.py:297` — also ausschließlich `usage_events`.
+Aufrufer: **keiner — auch auf `fae44b4` nicht.** Repo-weiter Grep nach `cleanup_old_events`
+liefert fünf Treffer: die beiden Definitionen (`search_tracking_repository.py:187`,
+`usage_tracking_repository.py:270`) und den einen Aufrufpfad
+`services/cleanup/usage_cleanup_service.py:52` → `services/usage_tracking_service.py:241,253`
+→ `repositories/usage_tracking_repository.py:270` sowie den manuellen Endpunkt
+`api/v1/usage.py:290`. Alle vier zeigen auf `usage_events`.
 Grep nach `cleanup_old_events` über das gesamte Repo (Anhang B, Methode M-4) findet nur
 Definitionen und den einen `usage`-Aufrufpfad.
 
@@ -263,31 +297,43 @@ Definitionen und den einen `usage`-Aufrufpfad.
 
 | Feld | Typ | Definiert in | Personenbezug | Wer schreibt | Wer kann lesen | Wirksame Löschfrist |
 |------|-----|--------------|---------------|--------------|----------------|---------------------|
-| `id` | UUID PK | `models.py:129-133` | nein | `app/repositories/content_report_repository.py:49` | s.u. | **keine** |
-| `content_id` | UUID | `models.py:134` | nein | `content_report_repository.py:50` | s.u. | **keine** |
-| `content_type` | VARCHAR(50) | `models.py:135` | nein | `:51` | s.u. | **keine** |
-| `reported_by_user_id` | VARCHAR(255) | `models.py:136` | **ja** — Keycloak-`sub`/`user-00x`; `"anonymous"` wird zu `NULL` normalisiert | `api/v1/moderation.py:114` → `content_report_repository.py:53` | s.u. | **keine** |
-| `reported_by_session_id` | VARCHAR(255) | `models.py:137` | **pseudonym** — localStorage-UUID | `api/v1/moderation.py:115` → `:54` | s.u. | **keine** |
-| `reason` | VARCHAR(100) | `models.py:138` | nein | `:52` | s.u. | **keine** |
-| `description` | **Text, Freitext** | `models.py:139` | **potenziell ja** — Nutzereingabe, kein Filter | `:55` | s.u. | **keine** |
-| `status` | VARCHAR(20) | `models.py:140` | nein | `:56` | s.u. | **keine** |
-| `created` | Timestamptz | `models.py:141` | nein | Server-Default | s.u. | **keine** |
-| `reviewed_by` | VARCHAR(255) | `models.py:142` | **ja** — Kennung der moderierenden Person | Moderationspfad | s.u. | **keine** |
-| `reviewed_at` | Timestamptz | `models.py:143` | nein | dito | s.u. | **keine** |
-| `resolution_notes` | **Text, Freitext** | `models.py:144` | **potenziell ja** | dito | s.u. | **keine** |
+| `id` | UUID PK | `models.py:141-145` | nein | `app/repositories/content_report_repository.py:49` | s.u. | **keine** |
+| `content_id` | UUID | `models.py:146` | nein | `content_report_repository.py:50` | s.u. | **keine** |
+| `content_type` | VARCHAR(50) | `models.py:147` | nein | `:51` | s.u. | **keine** |
+| `reported_by_user_id` | VARCHAR(255) | `models.py:148` | **ja** — Keycloak-`sub`/`user-00x`; `"anonymous"` wird zu `NULL` normalisiert | `api/v1/moderation.py:159` → `content_report_repository.py:53` | s.u. | **keine** |
+| `reported_by_session_id` | VARCHAR(255) | `models.py:149` | **pseudonym** — localStorage-UUID | `api/v1/moderation.py:160` → `:54` | s.u. | **keine** |
+| `reason` | VARCHAR(100) | `models.py:150` | nein | `:52` | s.u. | **keine** |
+| `description` | **Text, Freitext** | `models.py:151` | **potenziell ja** — Nutzereingabe, kein Filter | `:55` | s.u. | **keine** |
+| `status` | VARCHAR(20) | `models.py:152` | nein | `:56` | s.u. | **keine** |
+| `created` | Timestamptz | `models.py:153` | nein | Server-Default | s.u. | **keine** |
+| `reviewed_by` | VARCHAR(255) | `models.py:154` | **ja** — Kennung der moderierenden Person | Moderationspfad | s.u. | **keine** |
+| `reviewed_at` | Timestamptz | `models.py:155` | nein | dito | s.u. | **keine** |
+| `resolution_notes` | **Text, Freitext** | `models.py:156` | **potenziell ja** | dito | s.u. | **keine** |
 
-Constraint `models.py:151-154`: mindestens eine der beiden Melderkennungen muss gesetzt sein —
+Constraint `models.py:163-166`: mindestens eine der beiden Melderkennungen muss gesetzt sein —
 eine vollständig anonyme Meldung ist per Schema ausgeschlossen.
 
 **Wer kann lesen:** `GET /api/v1/moderation/reports` und `/stats`, `PUT …/dismiss`, `DELETE` —
-alle vier mit `Depends(require_admin)` (`api/v1/moderation.py:146,184,222,255`).
-`require_admin` (`app/dependencies.py:219-235`) prüft `X-User` ≠ leer/`anonymous`
+alle vier mit `Depends(require_admin)` (`api/v1/moderation.py:191,229,267,300`).
+`require_admin` (`app/dependencies.py:233-249`) prüft `X-User` ≠ leer/`anonymous`
 **und** `X-Is-Admin: true`; letzteres setzt nur das BFF aus Claims
 (`IdentityHeaderTransform.cs:56-63`) und entfernt einen mitgeschickten Wert vorher
 bedingungslos (`:46`). Das ist der einzige Speicher mit funktionierender Admin-Schranke.
 
 **Schreiben:** `POST /api/v1/moderation/report` ist **öffentlich**
-(`IdentityHeaderTransform.cs:34`) — anonymes Melden mit Session-ID ist vorgesehen.
+(`BFF/Proxy/EndpointPolicy.cs:30`) — anonymes Melden ist ausdrücklich vorgesehen, der
+Router begründet es mit Art. 16 DSA (`api/v1/moderation.py:97-112`).
+
+**Seit PR #29 zusätzlich (alles in `api/v1/moderation.py:89-181`):**
+
+| Was | Beleg | Datenschutzrelevanz |
+|-----|-------|---------------------|
+| Das Rate-Limit hängt nicht mehr an `X-Session-Id`, sondern an einem flüchtigen Hash der Client-Adresse | `:116-128`, `utils/client_identity.py:73-85` | Die IP wird verarbeitet, aber nicht gespeichert und nicht geloggt: Salt zufällig pro Prozess, 16 Hex-Zeichen, nur im Fenster des Limiters |
+| Angemeldete Melder unterliegen zusätzlich einem Limit auf der Kennung | `:119-120` | — |
+| Doppelmeldung derselben Person zum selben Inhalt legt keine zweite Zeile an | `services/moderation_service.py:66-73`, `repositories/content_report_repository.py:67-97` | weniger gespeicherte Daten |
+| Der gemeldete Inhalt muss existieren, bevor eine Zeile entsteht | `:132-136`, `moderation_service.py:93-119` | verhindert Zeilen ohne Bezugsobjekt |
+| `X-Session-Id` wird nur übernommen, wenn es eine UUID ist, sonst verworfen | `:151`, `client_identity.py:88-116` | in der Spalte steht kein beliebiger Freitext mehr |
+| Die Melderkennung steht nicht mehr in der Logzeile | `content_report_repository.py:60-62` | s. 1.10 |
 
 **Löschfrist: keine.** Grep über `repositories/`, `services/`, `api/` nach DELETE-Pfaden
 (Anhang B, M-4) findet für `ContentReport` keinen. `moderation_service.py:134-152`
@@ -299,21 +345,21 @@ löscht den *gemeldeten Inhalt* aus Qdrant, nicht die Meldung.
 
 | Feld | Typ | Definiert in | Personenbezug | Wer schreibt | Wer kann lesen | Wirksame Löschfrist |
 |------|-----|--------------|---------------|--------------|----------------|---------------------|
-| `id` | UUID PK | `models.py:175-179`; Migration `:27` | nein | `app/repositories/raw_input_repository.py:64` | s.u. | **keine** |
-| `content` | **Text, Freitext** (max. 5000, `dtos/raw_input.py:51`) | `models.py:180`; Migration `:28` | **potenziell ja** — freier Satz | `raw_input_repository.py:65` | s.u. | **keine** |
-| `url` | Text (max. 2000) | `models.py:181`; Migration `:29` | **potenziell ja** — Link auf fremde Beiträge/Profile | `:66` | s.u. | **keine** |
-| `image_url` | Text (max. 2000) | `models.py:182`; Migration `:30` | **potenziell ja** — Bild Dritter | `:67` | s.u. | **keine** |
-| `submitted_by` | VARCHAR(255), nullable | `models.py:183`; Migration `:32` | **ja** — Keycloak-`sub`/`user-00x` | `api/v1/raw_input.py:55` → `raw_input_repository.py:68` | s.u. | **keine** |
-| `source_channel` | VARCHAR(50), default `web` | `models.py:184` | nein | `:69` | s.u. | **keine** |
-| `status` | VARCHAR(20), default `open` | `models.py:185` | nein | `:70` | s.u. | **keine** |
-| `created_at` | Timestamptz | `models.py:186-188` | nein | Server-Default | s.u. | **keine** |
+| `id` | UUID PK | `models.py:187-191`; Migration `:27` | nein | `app/repositories/raw_input_repository.py:64` | s.u. | **keine** |
+| `content` | **Text, Freitext** (max. 5000, `dtos/raw_input.py:51`) | `models.py:192`; Migration `:28` | **potenziell ja** — freier Satz | `raw_input_repository.py:65` | s.u. | **keine** |
+| `url` | Text (max. 2000) | `models.py:193`; Migration `:29` | **potenziell ja** — Link auf fremde Beiträge/Profile | `:66` | s.u. | **keine** |
+| `image_url` | Text (max. 2000) | `models.py:194`; Migration `:30` | **potenziell ja** — Bild Dritter | `:67` | s.u. | **keine** |
+| `submitted_by` | VARCHAR(255), nullable | `models.py:195`; Migration `:32` | **ja** — Keycloak-`sub`/`user-00x` | `api/v1/raw_input.py:55` → `raw_input_repository.py:68` | s.u. | **keine** |
+| `source_channel` | VARCHAR(50), default `web` | `models.py:196` | nein | `:69` | s.u. | **keine** |
+| `status` | VARCHAR(20), default `open` | `models.py:197` | nein | `:70` | s.u. | **keine** |
+| `created_at` | Timestamptz | `models.py:198-200` | nein | Server-Default | s.u. | **keine** |
 
 ### Wer wird als Einwerfer gespeichert
 
 `app/api/v1/raw_input.py:30-40` (`_einwerfende_person`): der Wert des `X-User`-Headers;
 `"anonymous"` und leer werden bewusst zu `None`. `X-User` ist der Keycloak-`sub` bzw. bei
 Managed/Dummy-Auth `user-001`/`user-002`/`test-user-id-1`
-(`BFF/Program.cs:615-619` `ClaimUtilities.GetUserId` — `sub`, ersatzweise `NameIdentifier`).
+(`BFF/Program.cs:642-646` `ClaimUtilities.GetUserId` — `sub`, ersatzweise `NameIdentifier`).
 Kein Klarname, keine E-Mail.
 
 ### Wer bekommt das zu sehen
@@ -334,14 +380,16 @@ Template `raw-input-list.component.html:53`, Fallback-Beschriftung
 Schutzstufe davor:
 - Frontend-Route `/fangkorb` liegt hinter `AuthGuard` (`fe/app/app.routes.ts:28-30`).
 - Der Router selbst hat **keine** Auth-Dependency (`api/v1/raw_input.py:67-72`).
-- `/api/v1/rawinput/` steht in **keiner** BFF-Public-Liste
-  (`IdentityHeaderTransform.cs:26-35`, `BFF/Program.cs:435-442`) — bei `USE_KEYCLOAK=true`
-  greift damit die YARP-Autorisierung. Bei `USE_KEYCLOAK=false` wird der Proxy **ohne**
-  Autorisierungspipeline gemappt (`BFF/Program.cs:461`: `app.MapReverseProxy();`), dann
-  schützt nur noch der Frontend-Guard, der clientseitig ist. Beide Compose-Dateien im Repo
-  setzen `false` (`docker-compose.dev.yml:112`, `docker-compose.tst.yml:66`).
+- `/api/v1/rawinput/` steht **nicht** in `EndpointPolicy.AllowAnonymous`
+  (`BFF/Proxy/EndpointPolicy.cs:24-35`) und ist damit am BFF nur angemeldet erreichbar.
+  **Seit PR #29 gilt das in beiden Betriebsarten:** der Auth-Gate hängt nicht mehr an
+  `USE_KEYCLOAK`, sondern läuft als eigene Middleware in der Proxy-Pipeline
+  (`BFF/Program.cs:466-486`). Die Erstanalyse hatte hier den gravierenderen Stand
+  beschrieben — bei `USE_KEYCLOAK=false` wurde der Proxy vorher ohne
+  Autorisierungspipeline gemappt und es schützte nur der clientseitige Frontend-Guard
+  (vormals Anhang A, A-1). **ERLEDIGT.**
 
-**Löschfrist: keine.** Der ORM-Kommentar sagt es selbst (`models.py:216-218`): Einwürfe
+**Löschfrist: keine.** Der ORM-Kommentar sagt es selbst (`models.py:228-230`): Einwürfe
 werden nicht gelöscht; der Fremdschlüssel mit `ON DELETE CASCADE` existiert nur, damit ein
 *späteres* Löschen aus Datenschutzgründen keine Verweise auf Nichts hinterlässt.
 
@@ -351,14 +399,14 @@ werden nicht gelöscht; der Fremdschlüssel mit `ON DELETE CASCADE` existiert nu
 
 | Feld | Typ | Definiert in | Personenbezug | Wer schreibt | Wer kann lesen | Wirksame Löschfrist |
 |------|-----|--------------|---------------|--------------|----------------|---------------------|
-| `id` | UUID PK | `models.py:227-231` | nein | **niemand** | — | **keine** |
-| `raw_input_id` | UUID FK→`raw_inputs` ON DELETE CASCADE | `models.py:232-236` | nein | **niemand** | — | Kaskade beim Löschen des Einwurfs |
-| `content_id` | UUID (kein FK, zeigt nach Qdrant) | `models.py:237` | nein | **niemand** | — | **keine** |
-| `created_by` | VARCHAR(255) | `models.py:238` | **ja** (wenn je gefüllt) | **niemand** | — | **keine** |
-| `created_at` | Timestamptz | `models.py:239-241` | nein | **niemand** | — | **keine** |
+| `id` | UUID PK | `models.py:239-243` | nein | **niemand** | — | **keine** |
+| `raw_input_id` | UUID FK→`raw_inputs` ON DELETE CASCADE | `models.py:244-248` | nein | **niemand** | — | Kaskade beim Löschen des Einwurfs |
+| `content_id` | UUID (kein FK, zeigt nach Qdrant) | `models.py:249` | nein | **niemand** | — | **keine** |
+| `created_by` | VARCHAR(255) | `models.py:250` | **ja** (wenn je gefüllt) | **niemand** | — | **keine** |
+| `created_at` | Timestamptz | `models.py:251-253` | nein | **niemand** | — | **keine** |
 
 **Die Tabelle ist heute leer.** Der ORM-Docstring stellt es ausdrücklich fest
-(`models.py:208-209`: „**Heute schreibt niemand in diese Tabelle** — die Verarbeitung ist
+(`models.py:220-221`: „**Heute schreibt niemand in diese Tabelle** — die Verarbeitung ist
 nicht gebaut"), die Migration ebenso
 (`2026-08-19-rohinput-fangkorb.sql:9-10`). Grep nach `RawInputContentLink` über das ganze
 Repo findet nur die Modelldefinition und die Migration — keinen Schreibpfad, keinen Leser.
@@ -390,9 +438,15 @@ angelegt (`app/repositories/vote_repository.py:20-40`, aufgerufen aus
 - eigene Stimme: `GET /api/v1/voting/content/{id}` (`api/v1/voting.py:140-144`),
   `POST /votes/batch` (`:159-163`) — jeweils auf `X-User` gefiltert
 - Summen ohne Personenbezug: `GET /api/v1/voting/content/{id}/stats` (`:169-171`)
-- aggregiert und **öffentlich**: `/api/v1/metrics/helpful-rate` (`api/v1/metrics.py:283-286`)
-- `/api/v1/voting/` steht **nicht** in der BFF-Public-Liste (`IdentityHeaderTransform.cs:26-35`),
-  wohl aber in der Frontend-Liste (`fe/app/shared/public-endpoints.ts`) — siehe Anhang A, A-3
+- aggregiert, aber **nicht mehr öffentlich**: `/api/v1/metrics/helpful-rate` verlangt seit
+  PR #29 `Depends(require_admin)` (`api/v1/metrics.py:339-343`) und steht am BFF nicht in
+  `EndpointPolicy.AllowAnonymous` (`EndpointPolicy.cs:24-36`). Die Erstanalyse hatte den
+  Endpunkt als öffentlich geführt; das traf für `95b565e` zu, für `fae44b4` nicht mehr
+- `/api/v1/voting/` steht **nicht** in `EndpointPolicy.AllowAnonymous` (`BFF/Proxy/EndpointPolicy.cs:24-35`),
+  wohl aber in der Frontend-Liste (`fe/app/shared/public-endpoints.ts`). Das ist seit PR #29
+  kein Widerspruch mehr, sondern gewollt: die Frontend-Liste entscheidet nur, ob auf
+  `/login` umgeleitet wird, und der Kommentar in `EndpointPolicy.cs:11-16` hält den
+  Unterschied fest
 
 **Löschung:** Es gibt `delete_vote` (`vote_repository.py:93-96`), aber nur als
 nutzergesteuertes Zurücknehmen einer Stimme (`DELETE /api/v1/voting/…`, `voting.py:55,113`).
@@ -400,15 +454,16 @@ Keine zeit- oder kontobasierte Löschung. **Wirksame Löschfrist: keine.**
 
 ---
 
-## 1.8 PostgreSQL — View `user_usage_statistics`
+## 1.8 PostgreSQL — View `user_usage_statistics` — **ENTFALLEN**
 
-`init.sql:33-46`. Aggregiert `usage_tracking` × DISTINCT(`content_id`,`user_id`) aus
-`usage_events`, gruppiert nach `ut.user_id`. Enthält damit `user_id` im Klartext.
+Die View gruppierte nach `usage_events.user_id` und enthielt diese Kennung im Klartext.
+Sie ist mit PR #27 gefallen: `DROP VIEW IF EXISTS user_usage_statistics` in
+`migrations/2026-08-25-usage-events-datensparsamkeit.sql:36`, und `init.sql:37-40`
+dokumentiert an ihrer Stelle, warum sie nicht wiederkommt. Anwendungscode hat sie nie
+benutzt — die Nutzerstatistik hinter `/api/v1/usage/users/{id}/usage-stats` liest Qdrant
+und `usage_tracking`.
 
-Nur bei direktem Datenbankzugriff lesbar — Grep über `app/` nach
-`user_usage_statistics` findet **keinen** Anwendungscode, der die View benutzt.
-Da `usage_events.user_id` faktisch `NULL` bleibt (Befund E-1) und die View auf
-`WHERE user_id IS NOT NULL` filtert (`init.sql:44`), liefert sie derzeit leere Ergebnisse.
+Für die Datenschutzerklärung: nichts zu beschreiben.
 
 ---
 
@@ -431,9 +486,9 @@ Collection, unterschieden über `content_type` (`qdrant_embeddings_manager.py:32
 | `text` | `base_content.py:29` | **potenziell ja** — Freitext des Beitrags **und** jeder Suchanfrage (s.u.) | Add-Endpunkte; `api/v1/search.py:105-119` | **öffentlich** über `POST /api/v1/search/searchByText` | **keine** |
 | `content_type` | `base_content.py:30` | nein | dito | öffentlich | **keine** |
 | `id`, `created`, `last_modified` | `base_content.py:84-86` | nein für sich | dito | öffentlich | **keine** |
-| `original_author` | `base_content.py:87` | **ja** — Keycloak-`sub`; bei Suchanfragen `system:suchanfrage` | `api/v1/post.py:111`, `api/v1/image.py:99`, `services/content/{statement,commentary,generic_text,reference}_service.py:167/131/94/128` | **öffentlich, und sichtbar gerendert** (s.u.) | **keine** |
-| `last_modified_by` | `base_content.py:88` | **ja** | `api/v1/post.py:112`, `api/v1/image.py:100` | öffentlich; in `/contributions` als Spalte (`fe/app/contributions-view/contributions-view.component.html:67-69`) | **keine** |
-| `authors[]` (`AuthorEntry.name`, `.role`) | `base_content.py:89`, `domain/models/author_entry.py:17-18` | **ja** | `api/v1/post.py:113`, `api/v1/image.py:101` | öffentlich | **keine** |
+| `original_author` | `base_content.py:87` | **ja** — Keycloak-`sub`; bei Suchanfragen `system:suchanfrage` | `api/v1/post.py:109`, `api/v1/image.py:101`, `services/content/{statement,commentary,generic_text,reference}_service.py:167/131/94/128` | **öffentlich, und sichtbar gerendert** (s.u.) | **keine** |
+| `last_modified_by` | `base_content.py:88` | **ja** | `api/v1/post.py:110`, `api/v1/image.py:102` | öffentlich; in `/contributions` als Spalte (`fe/app/contributions-view/contributions-view.component.html:67-69`) | **keine** |
+| `authors[]` (`AuthorEntry.name`, `.role`) | `base_content.py:89`, `domain/models/author_entry.py:17-18` | **ja** | `api/v1/post.py:111`, `api/v1/image.py:103` | öffentlich | **keine** |
 | `edit_history[]` (`EditEntry.editor`, `.timestamp`, `.action`) | `base_content.py:90`, `domain/models/edit_entry.py:22-24` | **ja — vollständige Bearbeitungshistorie mit Kennung und Zeitstempel** | Content-Services | öffentlich | **keine** |
 | `status`, `origin`, `visibility` | `base_content.py:91-92,100` | nein | dito | öffentlich | **keine** |
 | `most_similar_*`, `report_count`, `is_archived`, `report_flagged`, `rejection_reason`, `block_reason` | `base_content.py:93-99` | nein | dito | öffentlich | **keine** |
@@ -447,8 +502,8 @@ Collection, unterschieden über `content_type` (`qdrant_embeddings_manager.py:32
 | `image` | `image_url` | `domain/models/image.py:37` | URL eines Fremdbildes; wird im Browser direkt geladen (Teil 2) |
 | `image` | `description_model` | `image.py:39` | Modellname der KI-Beschreibung |
 | `commentary`, `generic_text` | `title`, `long_text`, `short_text`, `references[]` | `commentary.py:74-80`, `generic_text.py:71-77` | Freitext |
-| `statement` | `replysuggestions[]` | `statement.py:69` | Freitext |
-| `reference` | `reference_string` | `reference.py:18` | Freitext/Quellenangabe |
+| `statement` | `replysuggestions[]` | `statement.py:75` | Freitext |
+| `reference` | `reference_string` | `reference.py:24` | Freitext/Quellenangabe |
 
 ### Befund Q-1 — jede Suchanfrage wird als Inhalt in Qdrant gespeichert
 
@@ -468,8 +523,8 @@ zur Person. Das ist eine bewusste Konstruktion, keine Lücke, aber sie gehört i
 
 ### Befund Q-2 — Autorenkennung ist für nicht angemeldete Besucher sichtbar
 
-`POST /api/v1/search/searchByText` ist ein Public-Endpoint (`IdentityHeaderTransform.cs:28`,
-`BFF/Program.cs:435-442`). Die Antwort-DTOs betten das **vollständige** DB-Entry ein —
+`POST /api/v1/search/searchByText` ist ein Public-Endpoint (`BFF/Proxy/EndpointPolicy.cs:26`).
+Die Antwort-DTOs betten das **vollständige** DB-Entry ein —
 `app/dtos/search.py:46` (`commentary_result: CommentaryDbEntry`), `:58`
 (`generictext_result: GenericTextDbEntry`), analog `post`/`image` (`dtos/search.py:6-7`).
 Damit gehen `original_author`, `last_modified_by`, `authors[]` und `edit_history[]` an
@@ -487,9 +542,10 @@ Angezeigt wird der Rohwert des `X-User`-Headers, also die Keycloak-`sub` (eine U
 
 ### Löschung in Qdrant
 
-- `delete_by_id` / `delete_by_filter` existieren (`qdrant_embeddings_manager.py:465,477`).
-- Aufgerufen nur aus `services/moderation_service.py:152` (`delete_content`), erreichbar über
-  `DELETE /api/v1/moderation/…` mit `require_admin` (`api/v1/moderation.py:178-184`).
+- `delete_by_id` / `delete_by_filter` existieren (`qdrant_embeddings_manager.py:463,475`).
+- Aufgerufen nur aus `services/moderation_service.py:174-192` (`delete_content`), erreichbar
+  über `DELETE /api/v1/moderation/content/{id}` mit `require_admin`
+  (`api/v1/moderation.py:223-229`).
 - **Keine** zeit- oder kontobasierte Löschung. Kein Pfad, der die Beiträge einer Person löscht
   oder deren Kennung anonymisiert.
 
@@ -498,104 +554,119 @@ Angezeigt wird der Rohwert des `X-User`-Headers, also die Keycloak-`sub` (eine U
 **Qdrant-Zugangsschutz:** Grep über die Compose-Dateien nach `QDRANT__SERVICE__API_KEY`/
 `api_key`: kein Treffer — im Repo ist **keine** Qdrant-Authentifizierung konfiguriert.
 Im Dev-Compose sind 6333/6334 auf dem Host veröffentlicht
-(`docker-compose.dev.yml:17-19`); im Test-Compose nicht. Produktion: Teil 4.
+(`docker-compose.dev.yml:24-26`); im Test-Compose nicht. Produktion: Teil 4.
 
 ---
 
 ## 1.10 Logs (stdout der Container)
 
-Es gibt **zwei** Wege, wie Text auf stdout landet: das konfigurierte Logging und nackte
-`print()`-Aufrufe, die kein Loglevel filtert.
+> **Neu geschrieben gegenüber der Erstanalyse.** PR #29 hat den Logpfad umgebaut. Was
+> hier stand — 93 filterlose `print()`, Suchtexte auf INFO, E-Mail-Adressen an sieben
+> Stellen im BFF, ein Debug-Endpunkt, der alle eingehenden Header samt Cookie ausgab — ist
+> überwiegend nicht mehr da. Der Abschnitt beschreibt den Stand `fae44b4` und hält daneben
+> fest, was entfallen ist.
 
-### 1.10.1 `print()` im Python-Backend — filterlos
+### 1.10.1 `print()` im Python-Backend — **ENTFALLEN**
 
-**93** `print()`-Aufrufe in `api/`, `services/`, `repositories/`, `core/`, `domain/`
-(Zählmethode: Anhang B, M-5). Die mit Personenbezug:
+Zählung über `api/`, `services/`, `repositories/`, `core/`, `domain/`, `middleware/`,
+`utils/` nach `^\s*print(` (Anhang B, M-5): **0 Treffer**. In der Erstanalyse waren es 93,
+darunter die Nutzerkennung im Klartext und der vollständige Request inklusive Such- und
+Beitragstext.
 
-| Was landet auf stdout | Fundstelle |
-|-----------------------|------------|
-| **Nutzerkennung** (`X-User`) im Klartext | `app/api/v1/contribution.py:36`, `app/api/v1/generic_text.py:133`, `app/api/v1/commentary.py:99`, `app/api/v1/statement.py:105` — jeweils `print(f"X-User header: {x_user}")` |
-| **vollständiger Request** inkl. Suchtext bzw. Beitragstext | `api/v1/statement.py:75,100,159,205,248`, `api/v1/commentary.py:66,94`, `api/v1/generic_text.py:99,128`, `api/v1/content.py:73`, `api/v1/test.py:47` |
-| **sämtliche eingehende Header** — Name und Wert, Zeile für Zeile | `api/v1/test.py:35-37` (`GET /api/v1/test/headers`) |
-
-Zu `test.py:35-37`: YARP kopiert per Default alle eingehenden Header in den Proxy-Request;
-der Transform entfernt ausschließlich `X-User` und `X-Is-Admin`
-(`IdentityHeaderTransform.cs:45-46`). Der **Cookie-Header mit `ContentGruenAuthCookie`**
-wird also mit weitergereicht und von diesem Endpunkt ins Log geschrieben. Der Router ist
-unbedingt gemountet (`app/main.py:34,182`).
-
-*Einschränkung:* Der Cookie ist DataProtection-verschlüsselt (`BFF/Program.cs:314-316`);
-im Log steht Chiffrat, nicht Klartext. Es ist trotzdem ein gültiges Sitzungstoken.
+Mit erledigt: der Debug-Router `app/api/v1/test.py` (485 Zeilen), dessen
+`GET /api/v1/test/headers` sämtliche eingehenden Header Zeile für Zeile auf stdout schrieb
+— einschließlich des durchgereichten Cookie-Headers mit dem Auth-Ticket. Die Datei ist
+gelöscht, der Pfad `/api/v1/test` steht zusätzlich in `EndpointPolicy.Blocked`
+(`BFF/Proxy/EndpointPolicy.cs:56-60`) und wird vor Routing und Authentifizierung mit 404
+abgewiesen (`BFF/Program.cs:394-407`) — als Riegel für den Fall, dass er zurückkehrt.
+Ein Ruff-Regelsatz hält `print` fern (`pyproject.toml`, Regel `T201`, im Pre-Commit-Hook).
 
 ### 1.10.2 Logger im Python-Backend
 
-Loglevel: `app/core/config.py:76` `log_level: str = "INFO"`; gesetzt auf `DEBUG` im Dev-Compose
-(`docker-compose.dev.yml:78`) und auf `INFO` im Test-Compose (`docker-compose.tst.yml:46`).
-Alles Folgende steht auf **INFO** oder darunter, wird also in beiden Umgebungen ausgegeben.
+Loglevel: `app/core/config.py:76` `log_level: str = "INFO"`; `DEBUG` im Dev-Compose
+(`docker-compose.dev.yml:99`), `INFO` im Test-Compose.
+
+**Der Suchtext wird auf dem Anfragepfad nicht mehr protokolliert.** `api/v1/search.py:78-83`
+loggt nur noch `Search request (limit=…)`, mit ausdrücklicher Begründung im Kommentar; die
+Zeile darunter (`:86-91`) vermerkt Angemeldet/Anonym ohne Kennung, damit im Log nicht doch
+wieder „wer hat wonach gesucht" zusammenläuft. Die früheren Ausgaben in
+`services/content/base_content_service.py`, `statement_service.py`,
+`repositories/implementations/qdrant/base_repository.py` und
+`services/keyword_overlap_service.py` sind entfernt.
+
+**Nutzerkennungen laufen über `log_pseudonym()`** (`app/core/logging.py:168-182`): die
+ersten 8 Hex-Zeichen eines SHA-256 über die Kennung, `anonymous` bleibt `anonymous`. Der
+Docstring benennt die Grenze selbst — ungesalzen, also über Zeilen hinweg verkettbar und
+bei bekanntem Kennungsraum zurückrechenbar; für eine flüchtige Logzeile der Kompromiss,
+für gespeicherte Daten nicht.
+
+Was danach noch mit Personenbezug im Log landen kann:
 
 | Was | Level | Fundstelle |
 |-----|-------|------------|
-| **vollständiger Suchtext** — `query='…'` | INFO | `app/api/v1/search.py:78-79` |
-| Suchtext (leicht ersetzt: `;`→`,`, `'`→`"`) | DEBUG | `app/services/content/base_content_service.py:78-79`, `services/content/statement_service.py:69-70` |
-| Suchtext in Trefferzeilen | INFO/DEBUG | `repositories/implementations/qdrant/base_repository.py:150`, `…/statement_repository.py:162` |
-| Suchtext im Fehlerfall | ERROR | `repositories/implementations/qdrant/statement_repository.py:173` |
-| Suchtext-Keywords | DEBUG | `services/keyword_overlap_service.py:109` |
-| **Nutzerkennung + Session-ID** beim Nutzungs-Tracking | INFO | `app/api/v1/usage.py:92-93`; nochmals `services/usage_tracking_service.py:63-64,82-83` |
-| **Nutzerkennung** bei jeder Stimmabgabe | INFO | `app/api/v1/voting.py:39,69,97,127` und `services/voting_service.py:34,93` |
-| **Einwerfer-Kennung** beim Fangkorb-Einwurf | INFO | `app/repositories/raw_input_repository.py:75-77` |
-| **Melder-Kennung bzw. Session-ID** bei jeder Meldung | INFO | `app/repositories/content_report_repository.py:61-63` |
-| Nutzerkennung bei manuellem Cleanup | INFO | `app/api/v1/usage.py:294-295` |
-| Nutzerkennung bei `/recent` | DEBUG | `app/api/v1/content.py:111` |
-| Nutzerkennung bei Suche | DEBUG | `app/api/v1/search.py:85` |
+| Nutzerkennung als 8-stelliges Pseudonym bei jeder Stimmabgabe | INFO | `services/voting_service.py:35,65,96,126` |
+| dito bei Rate-Limit-Überschreitungen | WARNING | `middleware/rate_limiter.py:83,102,120` |
+| dito im Fehlerfall der Nutzungsstatistik | ERROR | `api/v1/usage.py:203` |
+| **Suchtext im Klartext** — einzige verbliebene Stelle, nur im Ausnahmezweig | ERROR | `repositories/implementations/qdrant/statement_repository.py:173` (`logger.error(f"Query: {query_text}")`) |
+| Freitext-Bruchstücke aus Ausnahmen (`exc_info=True`) | ERROR | verteilt; nicht Frame für Frame geprüft, siehe Anhang B, blinder Fleck 6 |
 
-**Bemerkenswert:** der Suchtext wurde aus `search_events` bewusst entfernt
-(Migration `…-search-events-pseudonymisieren.sql:3-9`, ORM-Kommentar `models.py:99-101`) —
-über `api/v1/search.py:78-79` steht er weiterhin bei **jeder** Suche im Containerlog, auf
-INFO.
+Nicht mehr geloggt: Session-IDs, Einwerfer- und Melderkennungen
+(`repositories/raw_input_repository.py`, `repositories/content_report_repository.py:60-62`).
 
 ### 1.10.3 Logs im BFF (.NET)
 
-`Console.WriteLine` gibt es **nicht mehr** — Grep über alle `*.cs` unter `mvp/backend/BFF/`:
-kein Treffer. `/api/check-session` gibt nur noch den Bool aus
-(`BFF/Program.cs:414-416`, Level Debug).
-
-Was bleibt:
+**Die E-Mail-Adressen sind weg.** Die Erstanalyse hatte sieben Stellen aufgeführt, an denen
+die eingegebene Adresse ins Log ging — bei jedem Login, jedem Fehlversuch und jedem
+Rate-Limit. Auf `fae44b4` steht dort entweder gar keine Kennung oder die interne `UserId`:
 
 | Was | Level | Fundstelle |
 |-----|-------|------------|
-| **E-Mail-Adresse** bei fehlgeschlagenem Login | Warning | `BFF/Controllers/AuthController.cs:55` |
-| **E-Mail-Adresse** bei erfolgreichem Login | Information | `BFF/Controllers/AuthController.cs:91` |
-| **E-Mail-Adresse** bei überschrittenem Auth-Rate-Limit | Warning | `BFF/Services/ManagedUserService.cs:126` |
-| **E-Mail-Adresse** „user not found" | Warning | `ManagedUserService.cs:137` |
-| **E-Mail-Adresse + UserId** bei erfolgreicher Authentifizierung | Information | `ManagedUserService.cs:147` |
-| **E-Mail-Adresse** „invalid password" | Warning | `ManagedUserService.cs:153` |
-| **E-Mail-Adresse** im Fehlerfall | Error | `ManagedUserService.cs:160` |
-| Nutzerkennung beim Header-Setzen | Debug | `IdentityHeaderTransform.cs:54,62` |
-| Pfad eines geschützten Endpunkts ohne Nutzer | **Warning** | `IdentityHeaderTransform.cs:72` |
+| „Authentication rate limit exceeded" — ohne Kennung | Warning | `BFF/Services/ManagedUserService.cs:126` |
+| „Authentication failed - user not found" — ohne Kennung | Warning | `ManagedUserService.cs:137` |
+| „Authentication successful for user: {UserId}" | Information | `ManagedUserService.cs:147` |
+| „invalid password for user: {UserId}" | Warning | `ManagedUserService.cs:153` |
+| „Authentication error during managed auth" — ohne Kennung | Error | `ManagedUserService.cs:160` |
+| „Managed auth login attempted while disabled" / „Failed login attempt via managed auth" — ohne Kennung | Warning | `Controllers/AuthController.cs:67,84` |
+| „User {UserId} logged in successfully via managed auth" | Information | `AuthController.cs:120` |
+| Nutzerkennung beim Header-Setzen | Debug | `Proxy/IdentityHeaderTransform.cs:67,75` |
+| Pfad eines geschützten Endpunkts ohne Nutzer | Warning | `IdentityHeaderTransform.cs:89` |
+| Pfad eines am Rand gesperrten Endpunkts | Warning | `Program.cs:399` |
 
-Das betrifft nur den Managed-Auth-Pfad (`USE_KEYCLOAK=false`). Im Keycloak-Modus laufen die
-Anmeldedaten nicht durch das BFF.
+`Console.WriteLine` kommt in keiner `*.cs` mehr vor.
+
+**Folge für die Datenschutzerklärung:** Die `UserId` ist bei Managed Auth `user-001` und
+bei Keycloak die `sub`-UUID — kein Klarname und keine Adresse, aber eine über Zeilen
+hinweg stabile Kennung. `docs/LOESCHKONZEPT.md` behauptet unter „Was nicht gelöscht wird"
+noch, `docker logs` enthalte „Kennung, E-Mail und Client-IP"; für die E-Mail trifft das
+seit PR #29 nicht mehr zu. **Die Zeile ist beim Nachziehen der Rechtstexte zu korrigieren.**
 
 ### 1.10.4 Webserver-Logs
 
-Die nginx-Konfigurationen im Repo setzen **weder** `access_log` **noch** `log_format` —
-geprüft: `mvp/frontend/contentgruen-frontend/nginx.conf` (26 Zeilen),
-`nginx.docker.conf` (65 Zeilen), `mvp/tst-server-config/frontend-nginx.conf` (44),
-`backend-nginx.conf` (53). Damit gilt der nginx-Default (`access_log` an, Kombiformat
-**mit Client-IP**). Sie reichen die IP zusätzlich nach innen weiter:
-`proxy_set_header X-Real-IP $remote_addr` und `X-Forwarded-For`
-(`nginx.docker.conf:17-18,27-28,36-37`; `tst-server-config/frontend-nginx.conf:35-36`;
-`backend-nginx.conf:35-36`).
+Die nginx-Konfigurationen setzen **weiterhin weder** `access_log` **noch** `log_format` —
+geprüft auf `fae44b4`: `mvp/frontend/contentgruen-frontend/nginx.conf`,
+`nginx.docker.conf`, `mvp/tst-server-config/frontend-nginx.conf`, `backend-nginx.conf`.
+Damit gilt der nginx-Default (`access_log` an, Kombiformat **mit Client-IP**). Die IP wird
+zusätzlich nach innen weitergereicht: `proxy_set_header X-Real-IP $remote_addr` und
+`X-Forwarded-For` (`nginx.docker.conf:17-18,27-28,36-37`;
+`tst-server-config/frontend-nginx.conf:35-36`; `backend-nginx.conf:35-36`). Das Backend
+liest `X-Real-IP` für den Rate-Limit-Schlüssel (`utils/client_identity.py:47`), das BFF
+wertet `X-Forwarded-*` aus (`BFF/Program.cs`, `UseForwardedHeaders()`).
 
-Das BFF wertet `X-Forwarded-*` aus (`BFF/Program.cs:326` `UseForwardedHeaders()`), mit
-geleerten `KnownNetworks`/`KnownProxies` (`:306-307`) — begründet `:299-305`.
+**Neu: Rotation in beiden Compose-Dateien im Repo.** Jeder Dienst hat jetzt einen
+`logging:`-Block mit `json-file`, `max-size` und `max-file: 3` —
+`docker-compose.dev.yml` 20 MB je Datei (`:16-20,47-51,76-80,123-127`),
+`docker-compose.tst.yml` 10 MB (`:5-9,28-32,52-56,82-86,110-114`). Das begrenzt den
+Plattenverbrauch, ist aber **keine Aufbewahrungsfrist**: wie lange eine Zeile überlebt,
+hängt am Durchsatz, nicht an einem Datum.
 
-**Kein `logging:`-Block, kein Rotationslimit** in `docker-compose.dev.yml` oder
-`docker-compose.tst.yml` (Grep nach `logging`/`max-size`: nur ein Kommentar
-`docker-compose.dev.yml:77` und Netzwerk-/Volume-`driver`-Einträge). Es gilt der Docker-Default
-`json-file`, unbegrenzt.
+**Und es gilt nicht für Produktion.** Prod und tst werden über SaltStack ausgerollt, mit
+einer Compose-Datei aus einem anderen Repository; die Rotation aus diesem Repo greift dort
+nicht. Nach Auskunft des Maintainers ist sie in Salt **nicht** umgesetzt. Für Produktion
+gilt damit der Docker-Default `json-file` **ohne Begrenzung**, bzw. was der Host
+voreinstellt.
 
-**Wirksame Löschfrist für Logs: im Repo keine.** Alles Weitere: Teil 4, Frage 4-E.
+**Wirksame Löschfrist für Logs: im Repo keine, in Produktion nicht begrenzt.**
+Alles Weitere: Teil 4, Frage 4-E.
 
 ---
 
@@ -608,51 +679,68 @@ Erhebungsmethode: Grep über `fe/` nach `localStorage`, `sessionStorage`, `docum
 
 | Name | Gesetzt von | Inhalt | Flags | Lebensdauer |
 |------|-------------|--------|-------|-------------|
-| `ContentGruenAuthCookie` (Keycloak-Modus) | `BFF/Program.cs:59` | ASP.NET-Cookie-Auth-Ticket, DataProtection-verschlüsselt; enthält **alle Keycloak-Claims** (`sub`, `email`, Name — Scopes `openid`,`profile`,`email`, `Program.cs:72-74`; Übernahme `:95-102`) **plus die Tokens**, da `options.SaveTokens = true` (`:71`) | `HttpOnly` (`:62`), `Secure = Always` (`:61`), `SameSite = None` (`:60`) | keine explizite Setzung → ASP.NET-Default 14 Tage. **UNSICHER:** ich habe keine `ExpireTimeSpan`-Zuweisung für diesen Zweig gefunden; der Default ist mein Schluss aus dem Framework, nicht aus dem Repo |
-| `ContentGruenAuthCookie` (Managed/Dummy-Modus) | `BFF/Program.cs:135` | Claims `NameIdentifier`, `Name`, `name`, `Email`, `sub`, `auth_method`, `user_id`, ggf. `Role=admin` (`AuthController.cs:60-76`) | `HttpOnly` (`:138`), `SecurePolicy = SameAsRequest` (`:137` — **über http also ohne `Secure`**), `SameSite = Lax` (`:136`) | **8 Stunden**, persistent (`AuthController.cs:81-83`) |
-| dito, Dummy-Login | `Program.cs:135` | Claims `name`, `GivenName`, `Surname`, `NameIdentifier=test-user-id-1` (`Program.cs:519-525`) | wie oben | **1 Stunde**, persistent (`Program.cs:531-535`) |
-| OIDC-Korrelations-/Nonce-Cookies | ASP.NET-OIDC-Handler, indirekt über `Program.cs:65-127` | Flow-State | Framework-Default `SameSite=None`, `Secure` abhängig vom weitergereichten Schema (`Program.cs:322-325`) | Sekunden bis Minuten |
+| `ContentGruenAuthCookie` (Keycloak-Modus) | `BFF/Program.cs:59` | ASP.NET-Cookie-Auth-Ticket, DataProtection-verschlüsselt; enthält **alle Keycloak-Claims** (`sub`, `email`, Name — Scopes `openid`,`profile`,`email`, `Program.cs:82-84`) **plus die Tokens**, da `options.SaveTokens = true` (`:81`) | `HttpOnly` (`:62`), `Secure = Always` (`:61`), `SameSite = None` (`:60`) | **8 Stunden, gleitend** — `ExpireTimeSpan = TimeSpan.FromHours(8)`, `SlidingExpiration = true` (`Program.cs:71-72`) |
+| `ContentGruenAuthCookie` (Managed-Modus) | `BFF/Program.cs:147` | Claims `NameIdentifier`, `Name`, `name`, `Email`, `sub`, `auth_method`, `user_id`, ggf. `Role=admin`/`isAdmin` (`AuthController.cs:91-104`) | `HttpOnly` (`:150`), `SecurePolicy = SameAsRequest` (`:149` — **über http also ohne `Secure`**), `SameSite = Lax` (`:148`) | **8 Stunden**, persistent (`AuthController.cs:108-111`) |
+| dito, Dummy-Login (**nur Dev**) | `Program.cs:147` | Claims `name`, `GivenName`, `Surname`, `NameIdentifier=test-user-id-1` | wie oben | **1 Stunde**, persistent (`Program.cs:560-561`) |
+| OIDC-Korrelations-/Nonce-Cookies | ASP.NET-OIDC-Handler | Flow-State | Framework-Default `SameSite=None`, `Secure` abhängig vom weitergereichten Schema | Sekunden bis Minuten |
 
-Ein **Schlüsselring** liegt unter `/keys` (`Program.cs:314-316`,
-`SetApplicationName("contentgruen-bff")`). Ohne gemountetes Volume entwertet jeder
-Container-Neustart alle bestehenden Cookies (`:310-313`).
+> **Erledigt gegenüber der Erstanalyse:** Der Keycloak-Zweig setzte weder `ExpireTimeSpan`
+> noch `SlidingExpiration`; es galt der Framework-Default von 14 Tagen, und die Aufnahme
+> musste ihn als **UNSICHER** markieren, weil er nicht im Repo stand. PR #32 setzt
+> beides explizit. Beide Produktions-Anmeldewege haben damit dieselbe Laufzeit, und die
+> Datenschutzerklärung kann eine Zahl nennen, die im Code steht. Formulierung im Text:
+> **„8 Stunden ab der letzten Nutzung"** — gleitend, nicht absolut.
+
+Ein **Schlüsselring** liegt unter `/keys` (`Program.cs`, `SetApplicationName("contentgruen-bff")`).
+Ohne gemountetes Volume entwertet jeder Container-Neustart alle bestehenden Cookies.
 
 ### localStorage — überlebt das Schließen des Browsers
 
 | Schlüssel | Inhalt | Gesetzt in | Lebensdauer |
 |-----------|--------|------------|-------------|
-| `gutgesagt_session_id` | UUID v4, **pseudonymer Dauer-Identifikator** | `fe/app/services/session.service.ts:11,40,63` und — zweite, identische Implementierung — `fe/app/services/search.service.ts:28-37` | **unbegrenzt**, siehe Befund B-1 |
+| `gutgesagt_session_id` | UUID v4, pseudonyme Gerätekennung | `fe/app/services/session.service.ts:95` | **30 Tage**, danach wird beim nächsten Lesen eine neue vergeben (`:17,58-83`) |
+| `gutgesagt_session_id_created_at` | Zeitstempel der Vergabe, Epoch-ms | `session.service.ts:96` | wie oben |
 | `gutgesagt-metrics-seen` | `"true"`, ob das Metrik-Panel schon gesehen wurde | `fe/app/metrics/metrics.component.ts:35,41` | unbegrenzt |
 
 Wohin die Session-ID geht: als Header `X-Session-Id` bei jeder Suche
-(`search.service.ts:56-58`) und bei jeder Meldung (`moderation.service.ts:70`), im Body beim
-Nutzungs-Tracking (`usage-tracking.service.ts:109-110`). Das BFF reicht den Header
-unverändert durch (`IdentityHeaderTransform.cs:77-82`). Gespeichert wird er in
+(`search.service.ts:41`) und bei jeder Meldung (`moderation.service.ts`), im Body beim
+Nutzungs-Tracking (`usage-tracking.service.ts`). Das BFF reicht den Header unverändert
+durch (`IdentityHeaderTransform.cs:93-99`). Gespeichert wird er in
 `usage_events.session_id` (1.2) und `content_reports.reported_by_session_id` (1.4); in
-`search_events` fließt er nur noch in den Tagespseudonym-Hash ein (1.3).
+`search_events` fließt er nur noch in den Tagespseudonym-Hash ein (1.3). Auf dem Meldeweg
+wird er vorher als UUID validiert und andernfalls verworfen
+(`utils/client_identity.py:88-116`).
 
-**Befund B-1:** `SessionService` hat `clearSessionId()` (`session.service.ts:49-52`) und
-`regenerateSessionId()` (`:38-43`) — Grep über `fe/` (ohne Specs) findet **keinen Aufrufer**
-für beide. Die Session-ID wird auch beim Logout nicht zurückgesetzt. Sie ist damit ein
-dauerhafter, geräteübergreifend eindeutiger Identifikator, der anonyme und angemeldete
-Nutzung desselben Browsers verbindet.
+**Befund B-1 — ERLEDIGT.** Die Kennung wurde bisher nur beim Abmelden neu vergeben, und für
+`clearSessionId()`/`regenerateSessionId()` fand sich kein Aufrufer; wer sich nie abmeldete,
+behielt sie unbegrenzt. PR #32 prüft beim Lesen das Alter (`session.service.ts:76-83`) und
+vergibt nach 30 Tagen neu. Bestehende Kennungen haben keinen Zeitstempel und gelten
+deshalb als abgelaufen. Die zweite, eigenständige Implementierung in `search.service.ts`
+ist entfallen — der Dienst injiziert jetzt den `SessionService` (`search.service.ts:9,22,41`).
 
-**Befund B-2:** Erzeugt wird sie mit `Math.random()`
-(`session.service.ts:74-78`, `search.service.ts:32-36`), nicht mit `crypto.randomUUID()`.
-Für Datenschutz ohne Belang, für Ratbarkeit relevant — siehe Anhang A, A-5.
+**Befund B-2 — ERLEDIGT.** Erzeugt wird sie mit `crypto.randomUUID()`, mit einem Fallback
+über `crypto.getRandomValues()` für nicht-sichere Kontexte
+(`session.service.ts:113-137`) — nicht mehr mit `Math.random()`.
+
+**Was bleibt:** Die Kennung ist innerhalb ihrer 30 Tage ein stabiler, geräteweiter
+Identifikator, der anonyme und angemeldete Nutzung desselben Browsers verbindet. In
+`content_reports` stehen `reported_by_user_id` und `reported_by_session_id` nebeneinander
+(1.4) — das ist die einzige Stelle im System, an der eine Session-ID einer Person zugeordnet
+werden kann, und `docs/LOESCHKONZEPT.md` baut den Löschlauf ausdrücklich darauf auf.
+**Für die Datenschutzerklärung heißt das: „pseudonym", nicht „anonym".**
 
 ### sessionStorage — wird beim Schließen des Tabs verworfen
 
 | Schlüssel | Inhalt | Gesetzt in |
 |-----------|--------|------------|
-| `profilePicture` | Dicebear-URL des gewählten Avatars | `fe/app/app.component.ts:232` |
-| `anonymousAvatar` | Dicebear-URL des Anonym-Avatars | `app.component.ts:237,250`, `result-view.component.ts:303` |
-| `userAvatar` | Dicebear-URL | `result-view.component.ts:312` |
+| `profilePicture` | Pfad des gewählten Avatars (`/avatars/*.svg`, lokal ausgeliefert) | `fe/app/app.component.ts:244` |
+| `anonymousAvatar` | Pfad des Anonym-Avatars | `app.component.ts:249,262`, `result-view.component.ts:314` |
+| `userAvatar` | Pfad des Nutzer-Avatars | `result-view.component.ts:323` |
 | `loginReturnUrl` | Ziel-URL nach dem Login | `login.component.ts:35,47`, `login-selector.component.ts:39,75` |
 
-Alle vier ohne eigenen Personenbezug (Avatare sind aus festen Seeds erzeugt, nicht aus
-Nutzerdaten — `app.component.ts:58-76`), aber sie sind Endgerätespeicherung im Sinne des
-§ 25 TDDDG.
+Alle vier ohne eigenen Personenbezug (die Avatare sind eine feste Liste lokaler
+SVG-Dateien, nicht aus Nutzerdaten erzeugt — `app.component.ts:60-78`), aber sie sind
+Endgerätespeicherung im Sinne des § 25 TDDDG.
 
 ---
 
@@ -660,10 +748,10 @@ Nutzerdaten — `app.component.ts:58-76`), aber sie sind Endgerätespeicherung i
 
 | Speicher | Inhalt | Beleg | Personenbezug |
 |----------|--------|-------|---------------|
-| `/metadata` (Volume `semantic_search_metadata`) | Seeding-Status: Dateinamen, Zähler, Zeitstempel, PID | `app/services/seeding/seeding_status.py:260-261,283-284`, `seeding_service.py:161-162`; Volume `docker-compose.tst.yml:49` | **nein** — Grep über `services/seeding/` nach Schreibpfaden zeigt nur Dateilisten und Fortschrittszähler |
+| `/metadata` (Volume `semantic_search_metadata`) | Seeding-Status: Dateinamen, Zähler, Zeitstempel, PID | `app/services/seeding/seeding_status.py:260-261,283-284`, `seeding_service.py:161-162`; Volume `docker-compose.tst.yml:70` | **nein** — Grep über `services/seeding/` nach Schreibpfaden zeigt nur Dateilisten und Fortschrittszähler |
 | `/keys` | DataProtection-Schlüsselring | `BFF/Program.cs:314-316` | nein, aber sicherheitsrelevant |
-| `/opt/contentgruen-backups/daily|weekly` | **vollständige Kopien** von Qdrant-Snapshot und PostgreSQL-Dump | `mvp/scripts/backup/backup.sh`; Host-Mount `docker-compose.tst.yml:31,51` | **ja — enthält alles aus 1.1–1.9** |
-| `mvp/config/managed-users.json` | 2 Konten: E-Mail, bcrypt-Hash, Anzeigename, UserId, `isAdmin` | im Git getrackt; gemountet `docker-compose.tst.yml:70` (`./config:/config:ro`) | **ja** (Testkonten `test.user@example.com`, `admin@contentgruen.com`) |
+| `/opt/contentgruen-backups/daily|weekly` | **vollständige Kopien** von Qdrant-Snapshot und PostgreSQL-Dump | `mvp/scripts/backup/backup.sh`; Host-Mount `docker-compose.tst.yml:45,72` | **ja — enthält alles aus 1.1–1.9** |
+| `mvp/config/managed-users.json` | Konten: E-Mail, bcrypt-Hash, Anzeigename, UserId, `isAdmin` | **seit PR #29 nicht mehr im Git** (`.gitignore:19`); getrackt ist nur noch `managed-users.example.json` mit zwei Testkonten. Gemountet `docker-compose.tst.yml` (`./config:/config:ro`) | **ja**, sofern in der Zielumgebung echte Konten eingetragen sind — Teil 4, 4-D. Die beiden Beispielkonten (`test.user@example.com`, `admin@contentgruen.com`) und die historisch eingecheckte Datei bleiben in der Git-Historie |
 
 **Backup-Aufbewahrung — die einzige zweite wirksame Frist im System:**
 `mvp/scripts/backup/backup.sh:24-25` — `KEEP_DAILY=7`, `KEEP_WEEKLY=4`; Rotation
@@ -681,14 +769,21 @@ Frontend-Quellen; Durchsicht von `src/index.html`.
 
 | # | Empfänger | Welche Daten | Codepfad | Drittland | Produktiv aktiv? |
 |---|-----------|--------------|----------|-----------|------------------|
-| 2-A | **api.dicebear.com** (Avatare) | Bei **jedem Seitenaufruf mit Avatar**: IP-Adresse, User-Agent, Referer des Besuchers — auch **nicht angemeldeter** | 26 fest verdrahtete URLs in `fe/app/app.component.ts:59-76` und `fe/app/result-view/result-view.component.ts:96-112`; gerendert als `<img [src]>` in `fe/app/app.component.html:73`, `fe/app/shared/components/mobile-menu/mobile-menu.html:5`, `fe/app/shared/components/mobile-header/mobile-header.component.html:24` | **ja** — Dicebear ist ein externer Dienst; Betreiberstandort aus dem Repo nicht bestimmbar | **ja, immer.** Der Aufruf hängt an keiner Konfiguration. **Nicht in RECHTSTEXTE_LUECKEN.md verzeichnet** — siehe Teil 3, W-8 |
+| ~~2-A~~ | ~~**api.dicebear.com** (Avatare)~~ | — | — | — | **nein, entfallen.** Die 26 fest verdrahteten `api.dicebear.com`-URLs sind durch 16 lokale SVG-Dateien (12 Profilbilder, 4 Anonym-Varianten) unter `mvp/frontend/contentgruen-frontend/public/avatars/` ersetzt, erzeugt von `scripts/generate-avatars.mjs`; referenziert als `/avatars/*.svg` (`fe/app/app.component.ts:61-78`, `fe/app/result-view/result-view.component.ts`). Damit geht beim Seitenaufruf **keine** IP mehr an Dicebear. Die Erstanalyse hatte das als den einzigen unbedingten Drittabruf geführt |
 | 2-B | **beliebige Bild-Hosts** | IP + User-Agent des **Betrachters** gehen an den Host des jeweiligen Bildes | `<img [src]="result.image_result.image_url">` in `fe/app/image-result-item/image-result-item.component.html:41`; Wert stammt aus `domain/models/image.py:37`, vom Beitragenden frei eingegeben (`fe/app/add-image/add-image.component.html:34`) | abhängig vom eingetragenen Host — nicht vorhersagbar | **ja**, sobald ein Bildbeitrag im Suchergebnis erscheint. Suche ist öffentlich → betrifft auch nicht angemeldete Besucher |
-| 2-C | **OpenAI** (`gpt-4o-mini`) | **Bild-URL** und ein fester deutscher Prompt. Nicht übermittelt: Nutzerkennung, Session-ID, IP. OpenAI ruft das Bild anschließend **selbst** beim Host ab | `app/services/vision/caption_suggestion_service.py:17,26-38`; Prompt `:6-10`; Client `AsyncOpenAI` `:2`. Zwei Auslöser: (a) `POST /api/v1/image/suggestCaption` (`app/api/v1/image.py:134-146`, angemeldet, rate-limited `middleware/rate_limit.py:39`), (b) Hintergrund-Worker für `PENDING_DESCRIPTION` (`services/vision/image_description_worker.py:37-39`, gestartet `app/main.py:119-122`) | **ja, USA** | **abhängig von `OPENAI_API_KEY` — siehe Befund V-1** |
-| 2-D | **Keycloak** (Netzbegrünung) | Authorization-Code-Flow, Scopes `openid`, `profile`, `email`; zurück kommen `sub`, `email`, Name | `BFF/Program.cs:65-127`, Scopes `:72-74`, Callback `:75` | nein (EU, **UNSICHER** — Authority steht nicht im Repo, s. Teil 4) | **nur bei `USE_KEYCLOAK=true`**. Beide Compose-Dateien im Repo setzen `false` (`docker-compose.dev.yml:112`, `docker-compose.tst.yml:66`); Code-Default ist `true` (`Program.cs:19`) |
-| 2-E | **Anthropic** (`claude-sonnet-4-5`) | Beitragstexte aus einer Korpusdatei | `mvp/scripts/manual/check_wirkung_baseline.py` | ja, USA | **nein — toter Pfad für die Anwendung.** Ein manuell auszuführendes Skript unter `scripts/manual/`, von keinem Anwendungscode importiert; `anthropic` steht **nicht** in `mvp/backend/semantic-search-service/requirements.txt` (dort nur `openai>=1.35.0`, Zeile 30) |
+| 2-C | **OpenAI** (`gpt-4o-mini`) | **Bild-URL** und ein fester deutscher Prompt. Nicht übermittelt: Nutzerkennung, Session-ID, IP. OpenAI ruft das Bild anschließend **selbst** beim Host ab | `app/services/vision/caption_suggestion_service.py:17,26-38`; Prompt `:6-10`; Client `AsyncOpenAI` `:2`. Zwei Auslöser: (a) `POST /api/v1/image/suggestCaption` (`app/api/v1/image.py:138-150`, angemeldet, rate-limited `middleware/rate_limit.py:39`), (b) Hintergrund-Worker für `PENDING_DESCRIPTION` (`services/vision/image_description_worker.py:37-39`, gestartet `app/main.py:119-122`) | **ja, USA** | **abhängig von `OPENAI_API_KEY` — siehe Befund V-1** |
+| 2-D | **Keycloak** (Netzbegrünung) | Authorization-Code-Flow, Scopes `openid`, `profile`, `email`; zurück kommen `sub`, `email`, Name | `BFF/Program.cs:75-127`, Scopes `:82-84`, Callback `:85` | nein (EU, **UNSICHER** — Authority steht nicht im Repo, s. Teil 4) | **nur bei `USE_KEYCLOAK=true`**. Beide Compose-Dateien im Repo setzen `false` (`docker-compose.dev.yml:140,178`, `docker-compose.tst.yml:94,120`); Code-Default ist `true` (`Program.cs:19`) |
+| 2-E | **Anthropic** (`claude-sonnet-4-5`) | Beitragstexte aus einer Korpusdatei | `mvp/scripts/manual/check_wirkung_baseline.py` (auf `fae44b4` unverändert vorhanden) | ja, USA | **nein — toter Pfad für die Anwendung.** Ein manuell auszuführendes Skript unter `scripts/manual/`, von keinem Anwendungscode importiert; `anthropic` steht **nicht** in `mvp/backend/semantic-search-service/requirements.txt` (dort nur `openai>=1.35.0`, Zeile 30) |
 | 2-F | Qdrant-Snapshot-API | Vollständige Sammlung inkl. aller Payloads | `app/scripts/backup_qdrant.py:87`, `restore_qdrant.py:73` | nein — `localhost`/Docker-intern | ja, beim Backup |
 | — | Google Fonts | — | vormals `index.html` | — | **nein, entfernt.** `src/index.html` (14 Zeilen) enthält keinen externen Link mehr; Schriften liegen in `public/fonts/` (11 Dateien), Einbindung `src/styles/fonts.css`. Grep nach `fonts.googleapis`/`fonts.gstatic` in `src/` und `public/`: nur ein historischer Kommentar `styles/fonts.css:4`. **Bestätigt D-N10 der Lückenliste** |
-| — | Analyse-/Tracking-Dienste | — | — | — | **nicht gefunden.** Kein Matomo, kein Google Analytics, kein Sentry: Grep nach `http(s)://` über alle `*.ts`/`*.html`/`*.scss` in `fe/src` ergibt außer 2-A/2-B nur redaktionelle Links (netzbegruenung.de, qdrant.tech, chatbegruenung.de, ec.europa.eu) |
+| — | Analyse-/Tracking-Dienste | — | — | — | **nicht gefunden.** Kein Matomo, kein Google Analytics, kein Sentry. Grep nach `http(s)://` über alle `*.ts`/`*.html`/`*.scss` in `fe/src` auf `fae44b4` liefert außer 2-B nur redaktionelle Links (netzbegruenung.de, contentgruen, qdrant.tech, ec.europa.eu) und Beispiel-URLs in Formularhinweisen (`example.com/bild.jpg`) |
+
+**Damit ist 2-B der einzige verbliebene Abruf, den der Browser der Nutzenden an einen
+Dritten richtet:** die Bild-URLs, die Beitragende selbst eintragen. Er lässt sich nicht
+vorab benennen, weil der Host vom eingetragenen Link abhängt, und er trifft auch nicht
+angemeldete Besucher, weil die Suche öffentlich ist. Für die Erklärung heißt das: Abschnitt
+„Einbindung von Diensten Dritter" wird **nicht** ersatzlos gestrichen, aber er beschreibt
+nur noch diesen einen Fall.
 
 ### Befund V-1 — der OpenAI-Pfad wird **beim Modulimport** festgelegt
 
@@ -709,52 +804,67 @@ Daraus folgt:
 - Ein zur Laufzeit nachgereichter Key ändert nichts; ein Neustart ist nötig.
 
 Der Key wird aus `OPENAI_API_KEY` **oder** `SEMANTIC_SEARCH_OPENAI_API_KEY` gelesen
-(`app/core/config.py:103-108`, `AliasChoices`). Grep über alle `*.yml`/`*.yaml`/`*.env*` im
+(`app/core/config.py:114-119`, `AliasChoices`). Grep über alle `*.yml`/`*.yaml`/`*.env*` im
 Repo nach `OPENAI`: **kein Treffer.** In Dev und Test ist der Pfad damit inaktiv.
 Für Produktion: Teil 4, Frage 4-B.
+
+**Neu seit PR #32:** An beiden Stellen, an denen jemand liest, der den Key setzen würde,
+steht jetzt eine Warnung — am Feld selbst (`app/core/config.py:104-113`) und bei den
+Umgebungsvariablen in `CLAUDE.md`. Inhalt: die Datenschutzerklärung geht davon aus, dass
+dieser Transfer nicht stattfindet, und müsste vorher um einen Abschnitt zum
+Drittlandtransfer (Art. 44 ff. DSGVO) erweitert werden; zusätzlich sind ein AV-Vertrag und
+Garantien nach Art. 46 DSGVO nötig. `STATUS.md` behauptet den Nichtbetrieb nicht mehr als
+Tatsache, sondern als Konfigurationsaussage mit Verweis auf diese Warnung.
+
+Der Hintergrund-Worker läuft unverändert und wird beim Startup gestartet
+(`app/main.py:105-123`); ob er etwas an OpenAI schickt, entscheidet allein die
+Ingestion-Strategie aus dem Registry.
 
 ---
 
 # Teil 3 — Widersprüche zwischen Code und den vorhandenen Rechtstexten
 
-Geprüft gegen `fe/app/datenschutz/datenschutz.component.html` (240 Zeilen) und
-`docs/RECHTSTEXTE_LUECKEN.md` (221 Zeilen, Stand 2026-08-19).
+Geprüft gegen `fe/app/datenschutz/datenschutz.component.html` (240 Zeilen, auf `fae44b4`
+unverändert) und `docs/RECHTSTEXTE_LUECKEN.md` (221 Zeilen, Stand 2026-08-19).
 
 ## 3.1 Der Datenschutztext behauptet etwas, das der Code nicht einhält
 
-| # | Text sagt | Code sagt | Belege |
-|---|-----------|-----------|--------|
-| **W-1** | „Wir erheben lediglich **anonymisierte** Nutzungsstatistiken" | `usage_events` speichert `session_id` (dauerhafte localStorage-UUID), `ip_hash` (ungesalzenes SHA-256) und `user_agent` im Klartext, verknüpft mit `content_id` und Zeitstempel. Das ist pseudonym, nicht anonym | Text `datenschutz.component.html:156-158` ⟷ `app/infrastructure/database/models.py:76-83`; Hash-Bildung `app/api/v1/usage.py:117-119` + `repositories/usage_tracking_repository.py:71-73` |
-| **W-2** | „Diese Website verwendet **keine Analyse-Tools von Drittanbietern**" (formal richtig) und Abschnitt 5 beschreibt Drittanbieter-Einbindung **abstrakt, ohne einen einzigen zu nennen** | Zwei konkrete, laufende Drittabrufe aus dem Browser: **api.dicebear.com** und beliebige **Bild-Hosts** | Text `:156-157` und `:164-177` ⟷ `fe/app/app.component.ts:59-76`, `fe/app/app.component.html:73`, `fe/app/image-result-item/image-result-item.component.html:41` |
-| **W-3** | „Sie können sich auf dieser Website **registrieren**" mit Erhebungsliste Benutzername/E-Mail/Passwort/Zeitpunkt | Es gibt keine Registrierungsroute. Zugänge werden manuell in `managed-users.json` angelegt oder kommen über Keycloak | Text `:126-140` ⟷ `fe/app/app.routes.ts` (keine Register-Route), `mvp/config/managed-users.json`. Deckungsgleich mit Lückenliste X1 |
+| # | Text sagt | Code sagt (Stand `fae44b4`) | Belege |
+|---|-----------|------------------------------|--------|
+| **W-1** | „Wir erheben lediglich **anonymisierte** Nutzungsstatistiken" | **Weiterhin unzutreffend, aber aus anderem Grund.** IP-Hash und User-Agent sind aus `usage_events` verschwunden, `user_id` ebenfalls. Geblieben ist `session_id` — eine bis zu 30 Tage stabile Gerätekennung, verknüpft mit Inhalt und Zeitstempel — und über `content_reports` gibt es eine Zeile, die genau diese Kennung neben einer Nutzerkennung führt. Das ist pseudonym, nicht anonym | Text `datenschutz.component.html:156-158` ⟷ `models.py:96` (`session_id`), `models.py:150-151` (`content_reports`), `fe/app/services/session.service.ts:17` |
+| **W-2** | „Diese Website verwendet **keine Analyse-Tools von Drittanbietern**" (formal richtig) und Abschnitt 5 beschreibt Drittanbieter-Einbindung **abstrakt, ohne einen einzigen zu nennen** | **Nur noch ein realer Fall.** Dicebear ist entfallen (Teil 2, 2-A); es bleiben die von Beitragenden eingetragenen Bild-Hosts, die der Browser jedes Betrachters direkt anspricht | Text `:156-157` und `:164-177` ⟷ `fe/app/image-result-item/image-result-item.component.html:41` |
+| **W-3** | „Sie können sich auf dieser Website **registrieren**" mit Erhebungsliste Benutzername/E-Mail/Passwort/Zeitpunkt | Es gibt keine Registrierungsroute. Zugänge werden manuell in `managed-users.json` angelegt oder kommen über Keycloak | Text `:126-140` ⟷ `fe/app/app.routes.ts` (keine Register-Route), `mvp/config/managed-users.example.json`. Deckungsgleich mit Lückenliste X1 |
 | **W-4** | „Daten, die Sie in ein **Kontaktformular** eingeben" | Kein Kontaktformular im Frontend | Text `:26-27` ⟷ Lückenliste X2, von mir nicht widerlegt |
-| **W-5** | Cookie-Abschnitt kennt nur „Sitzungscookies" und „Authentifizierungscookies" | Zusätzlich **zwei localStorage-Schlüssel** (unbegrenzt haltbar, überleben den Browserneustart) und **vier sessionStorage-Schlüssel** | Text `:93-106` ⟷ 1.11 dieses Berichts. Die Lückenliste (X5) nennt dabei noch die alten Schlüsselnamen `contentgruen-metrics-seen`; seit PR #24 heißen sie `gutgesagt-metrics-seen` (`fe/app/metrics/metrics.component.ts:35,41`) und `gutgesagt_session_id` (`session.service.ts:11`) |
-| **W-6** | „Authentifizierungscookies … für die **Dauer Ihrer Sitzung**" | Persistente Cookies mit fester Lebensdauer: 8 h (Managed), 1 h (Dummy), Framework-Default (Keycloak). Sie überleben das Schließen des Browsers — `IsPersistent = true` | Text `:105` ⟷ `BFF/Controllers/AuthController.cs:81-83`, `BFF/Program.cs:531-535` |
-| **W-7** | „Kommentar- und Beitragsfunktion … werden neben Ihrem Kommentar auch Zeitpunkt und **Nutzername** gespeichert" | Gespeichert werden zusätzlich `last_modified_by`, `authors[]` und die **vollständige `edit_history[]`** mit Editor und Zeitstempel je Änderung — und all das ist für **nicht angemeldete** Besucher über die öffentliche Suche abrufbar und sichtbar gerendert | Text `:142-147` ⟷ `app/domain/models/base_content.py:87-90`, `app/domain/models/edit_entry.py:22-24`, `app/dtos/search.py:46,58`, `fe/app/commentary-result-item/commentary-result-item.component.html:213`. Die Lückenliste (D-N3) benennt die Edit-History, aber lässt die Sichtbarkeitsfrage offen („☐ nur intern ☐ öffentlich") — **der Code beantwortet sie: öffentlich** |
-| **W-8** | Text nennt Server-Log-Felder (Browsertyp, OS, Referrer, Hostname, Uhrzeit, IP) und stellt fest: „Eine **Zusammenführung** dieser Daten mit anderen Datenquellen wird nicht vorgenommen" | Die Anwendungslogs enthalten Suchtexte, Nutzerkennungen, Session-IDs, Einwerfer- und Melderkennungen — im selben Logstream wie die Zugriffe, mit denselben Zeitstempeln. Ob das eine „Zusammenführung" ist, ist Bewertungssache; **faktisch liegen die Daten nebeneinander vor** | Text `:113-122` ⟷ 1.10 dieses Berichts |
-| **W-9** | Rechte-Abschnitt sagt Auskunft, Berichtigung, **Löschung**, Einschränkung, Übertragbarkeit zu | Es gibt **keinen** Codepfad, der die Daten einer Person findet oder löscht. Kein Export, kein Konto-Löschen, keine Anonymisierung von `original_author`. Löschen kann nur: die Moderation einen einzelnen Inhalt (`api/v1/moderation.py:178-184`), und eine Person ihre eigene Stimme (`api/v1/voting.py:55,113`) | Text `:196-212` ⟷ Grep über alle DELETE-Pfade (Anhang B, M-4). Auch `STATUS.md:42` führt „Export/import backup" als **offen** |
-| **W-10** | „Diese Seite nutzt … eine SSL- bzw. TLS-Verschlüsselung" | Trifft für Produktion zu (Reverse Proxy). Im BFF ist der Cookie im Managed-Modus aber auf `SecurePolicy = SameAsRequest` gesetzt (`:137`) — über http ginge er ohne `Secure`-Flag hinaus | Text `:218-224` ⟷ `BFF/Program.cs:137`. Praktisch nur im Dev-Betrieb relevant |
+| **W-5** | Cookie-Abschnitt kennt nur „Sitzungscookies" und „Authentifizierungscookies" | Zusätzlich **drei localStorage-Schlüssel** und **vier sessionStorage-Schlüssel** | Text `:93-106` ⟷ 1.11 dieses Berichts. Aktuelle Namen: `gutgesagt_session_id`, `gutgesagt_session_id_created_at`, `gutgesagt-metrics-seen` |
+| **W-6** | „Authentifizierungscookies … für die **Dauer Ihrer Sitzung**" | Persistente Cookies mit fester Lebensdauer: **8 h gleitend in beiden Produktionswegen** (Keycloak und Managed), 1 h im Dummy-Modus. Sie überleben das Schließen des Browsers — `IsPersistent = true`. Die Zahl steht jetzt im Code und ist im Text nennbar | Text `:105` ⟷ `BFF/Program.cs:71-72`, `BFF/Controllers/AuthController.cs:108-111` |
+| **W-7** | „Kommentar- und Beitragsfunktion … werden neben Ihrem Kommentar auch Zeitpunkt und **Nutzername** gespeichert" | **Unverändert.** Gespeichert werden zusätzlich `last_modified_by`, `authors[]` und die **vollständige `edit_history[]`** mit Editor und Zeitstempel je Änderung — und all das ist für **nicht angemeldete** Besucher über die öffentliche Suche abrufbar und sichtbar gerendert | Text `:142-147` ⟷ `app/domain/models/base_content.py:87-90`, `app/dtos/search.py:46,58,70,82`, `fe/app/commentary-result-item/commentary-result-item.component.html:213` und die drei Parallelstellen. Die Lückenliste (D-N3) lässt die Sichtbarkeitsfrage offen — **der Code beantwortet sie: öffentlich** |
+| **W-8** | Text nennt Server-Log-Felder (Browsertyp, OS, Referrer, Hostname, Uhrzeit, IP) und stellt fest: „Eine **Zusammenführung** dieser Daten mit anderen Datenquellen wird nicht vorgenommen" | **Deutlich entschärft.** Suchtexte, E-Mail-Adressen und Session-IDs stehen nicht mehr im Anwendungslog; Nutzerkennungen nur noch als 8-stelliges Pseudonym. Es bleibt: derselbe Logstream trägt die nginx-Zugriffe mit voller IP und die Anwendungszeilen mit Pseudonym, mit denselben Zeitstempeln. Als Restrisiko benennbar, nicht mehr als offener Widerspruch | Text `:113-122` ⟷ 1.10 dieses Berichts |
+| **W-9** | Rechte-Abschnitt sagt Auskunft, Berichtigung, **Löschung**, Einschränkung, Übertragbarkeit zu | **Unverändert: es gibt keinen Codepfad, der die Daten einer Person findet oder löscht.** Neu ist `docs/LOESCHKONZEPT.md` — eine Handprozedur aus SQL- und Qdrant-Kommandos, die das Dokument selbst als „Vorsorge, keine erprobte Prozedur" bezeichnet und die nie an echten Daten gelaufen ist. Löschen kann per Code weiterhin nur: die Moderation einen einzelnen Inhalt, und eine Person ihre eigene Stimme | Text `:196-212` ⟷ `docs/LOESCHKONZEPT.md:3-8`, Grep über alle DELETE-Pfade (Anhang B, M-4) |
+| **W-10** | „Diese Seite nutzt … eine SSL- bzw. TLS-Verschlüsselung" | Trifft für Produktion zu (Reverse Proxy). Im BFF ist der Cookie im Managed-Modus auf `SecurePolicy = SameAsRequest` gesetzt (`Program.cs:149`) — über http ginge er ohne `Secure`-Flag hinaus. Praktisch nur im Dev-Betrieb relevant | Text `:218-224` ⟷ `BFF/Program.cs:149` |
+| **W-11** | *(neu)* Der Text nennt **keine** Speicherdauer, **keine** Rechtsgrundlage außer für Server-Logs und Dritt-Inhalte, **keinen** Verantwortlichen (Platzhalter), **kein** Widerspruchsrecht nach Art. 21 und **keine** Empfänger | Alles davon ist Pflichtangabe nach Art. 13 DSGVO | Lückenliste D1–D12, D-M1 bis D-M8 |
 
 ## 3.2 Korrekturen und Ergänzungen zu `docs/RECHTSTEXTE_LUECKEN.md`
 
-Die Lückenliste ist überwiegend präzise. Vier Punkte muss sie fortschreiben:
+Die Lückenliste ist überwiegend präzise. Sechs Punkte muss sie fortschreiben:
 
-| # | Lückenliste sagt | Tatsächlicher Stand | Beleg |
-|---|------------------|---------------------|-------|
-| **L-1** | X4/D-N10: nach dem Wegfall von Google Fonts bleibe „**kein** realer Anwendungsfall übrig, der Abschnitt kann ersatzlos gestrichen werden" (`:107`, `:171`) | **Falsch.** Es bleiben **zwei**: api.dicebear.com (immer aktiv, auch anonym) und beliebige externe Bild-Hosts in Suchergebnissen. Abschnitt 5 muss also nicht gestrichen, sondern konkretisiert werden | `fe/app/app.component.ts:59-76`, `fe/app/app.component.html:73`, `fe/app/image-result-item/image-result-item.component.html:41` — vgl. Teil 2, 2-A und 2-B |
-| **L-2** | D-M1: Speicherdauer/Löschfristen „kommt im gesamten Dokument nicht vor … Suchverlauf: ___" (`:89`) | Teilweise beantwortbar: **`usage_events` = 90 Tage** (fest verdrahtet, nicht konfigurierbar, Befund E-3). **`search_events`, `content_reports`, `raw_inputs`, `votes`, Qdrant, `usage_tracking` = keine Frist.** Backups halten alles zusätzlich bis zu 4 Wochen | `services/cleanup/usage_cleanup_service.py:172`, `repositories/usage_tracking_repository.py:278-280,297-301`, `scripts/backup/backup.sh:24-25` |
-| **L-3** | D-N4: „Bei jedem Kopieren … wird festgehalten, **wer** welchen Beitrag wann genutzt hat" (`:121`) | Zu korrigieren: **`user_id` bleibt leer** (Befund E-1, empirisch bestätigt). Festgehalten wird *welcher Browser* (Session-ID, IP-Hash, User-Agent), nicht *welches Konto*. Für den Text macht das einen Unterschied — die Verarbeitung ist pseudonym-gerätebezogen, nicht kontobezogen | `app/dependencies.py:210` ⟷ `BFF/Proxy/IdentityHeaderTransform.cs:17,53,67` |
-| **L-4** | Der Fangkorb (`raw_inputs`) kommt **gar nicht** vor | Die Liste datiert auf 2026-08-19, der Fangkorb wurde am 2026-08-22 gemergt (PR #19, Merge `c957750`). Fehlender D-N-Eintrag: Freitext + Fremd-URLs + `submitted_by`, ohne Löschfrist, für **alle** angemeldeten Nutzenden namentlich einsehbar | 1.5 dieses Berichts |
+| # | Lückenliste sagt | Tatsächlicher Stand auf `fae44b4` | Beleg |
+|---|------------------|-----------------------------------|-------|
+| **L-1** | X4/D-N10: nach dem Wegfall von Google Fonts bleibe „**kein** realer Anwendungsfall übrig, der Abschnitt kann ersatzlos gestrichen werden" (`:107`, `:171`) | **Fast richtig — es bleibt einer.** Die Erstanalyse hatte hier zwei genannt (Dicebear und Bild-Hosts); Dicebear ist seither entfallen. Übrig bleiben die von Beitragenden eingetragenen Bild-Hosts, die der Browser jedes Betrachters direkt anspricht. Abschnitt 5 also **konkretisieren, nicht streichen** — auf genau diesen Fall | `fe/app/image-result-item/image-result-item.component.html:41`, `app/domain/models/image.py:37` |
+| **L-2** | D-M1: Speicherdauer/Löschfristen „kommt im gesamten Dokument nicht vor … Suchverlauf: ___" (`:89`) | Teilweise beantwortbar: **`usage_events` = 90 Tage** (fest verdrahtet, nicht konfigurierbar, Befund E-3). **`search_events`, `content_reports`, `raw_inputs`, `votes`, Qdrant, `usage_tracking` = keine Frist.** Die Session-ID im Browser rotiert nach 30 Tagen. Backups halten alles zusätzlich bis zu 4 Wochen. Logs: in Produktion nicht begrenzt | `services/cleanup/usage_cleanup_service.py:172`, `repositories/usage_tracking_repository.py:274-276,291-296`, `fe/app/services/session.service.ts:17`, `scripts/backup/backup.sh:24-25` |
+| **L-3** | D-N4: „Bei jedem Kopieren … wird festgehalten, **wer** welchen Beitrag wann genutzt hat" (`:121`) | **Überholt.** Die Spalten `user_id`, `ip_hash` und `user_agent` gibt es nicht mehr (PR #27). Festgehalten wird: welcher Inhalt, welche Art Ereignis, wann, aus welcher Geräteklasse und unter welcher Sitzungskennung. Also *welches Gerät*, nicht *welches Konto* und nicht *welche Adresse* | `models.py:83-105`, `migrations/2026-08-25-usage-events-datensparsamkeit.sql` |
+| **L-4** | Der Fangkorb (`raw_inputs`) kommt **gar nicht** vor | Die Liste datiert auf 2026-08-19, der Fangkorb wurde am 2026-08-22 gemergt (PR #19). Fehlender D-N-Eintrag: Freitext + Fremd-URLs + `submitted_by`, ohne Löschfrist, für **alle** angemeldeten Nutzenden namentlich einsehbar | 1.5 dieses Berichts |
+| **L-5** | *(neu)* X3 begründet die Aussage „nicht anonymisiert" mit `user_id`, `ip_hash` und `user_agent` in `usage_events` | Diese Begründung trägt nicht mehr — die drei Spalten sind weg. Die **Schlussfolgerung** bleibt trotzdem richtig, jetzt getragen von `session_id` allein (W-1). Die Zeile ist umzuschreiben, nicht zu streichen | `models.py:96` |
+| **L-6** | *(neu)* Die Liste kennt vier Public-Endpoint-Listen und ein ungeschütztes `/api/v1/metrics/` | Beides erledigt: `BFF/Proxy/EndpointPolicy.cs` ist die einzige serverseitige Quelle, die Frontend-Liste beantwortet ausdrücklich eine andere Frage; von den Metriken ist nur noch `/getMetrics` anonym erreichbar, die übrigen sechs sind admin-only | `EndpointPolicy.cs:1-35`, `api/v1/metrics.py:192-343` |
 
 Bestätigt und unverändert: **X1** (keine Registrierung), **X2** (kein Kontaktformular),
-**X3** (Aussage „anonymisiert" trifft für `usage_events` weiter nicht zu),
 **D-N4b** (`search_events` pseudonymisiert wie beschrieben),
 **D-N8** (Embeddings lokal — `SentenceTransformer` im eigenen Container, kein
 ausgehender Aufruf; Teil 2 bestätigt das durch Ausschluss),
-**D-N10** (Google Fonts entfernt),
+**D-N10** (Google Fonts entfernt; `src/index.html` ist auf `fae44b4` weiterhin frei von
+externen Links, Schriften liegen in `public/fonts/`),
 **Abschnitt 5** (keine Consent-Checkbox — Grep über `fe/app` nach
 `mat-checkbox|consent|einwillig|zustimm|akzeptier|nutzungsbedingung` findet außerhalb der
-Rechtstextseiten nur den Footer-Link `fe/app/footer/footer.component.html:25-26`).
+Rechtstextseiten nur den Footer-Link).
 
 ---
 
@@ -774,7 +884,7 @@ Dienst → Konsequenz je Wert.**
 
 ### 4-B · `OPENAI_API_KEY` bzw. `SEMANTIC_SEARCH_OPENAI_API_KEY`
 **Dienst:** `contentgruen-semantic-search` · **Im Repo:** nirgends gesetzt
-(`app/core/config.py:103-108`)
+(`app/core/config.py:114-119`)
 
 | Wert | Konsequenz |
 |------|-----------|
@@ -787,30 +897,41 @@ production". Die Lückenliste lässt dieselbe Frage offen (`:127`: „Aktiv in P
 
 ### 4-C · `USE_KEYCLOAK`
 **Dienst:** `contentgruen-bff` · **Im Repo:** `false` in beiden Compose-Dateien
-(`docker-compose.dev.yml:112`, `docker-compose.tst.yml:143` für das Frontend / `:66`, `:85`
+(`docker-compose.dev.yml:140` BFF / `:178` Frontend, `docker-compose.tst.yml:94` BFF / `:120`
 für tst); **Code-Default ist `true`** (`BFF/Program.cs:19`)
 
 | Wert | Konsequenz |
 |------|-----------|
 | `true` | Anmeldung über Netzbegrünung-Keycloak. Claims `sub`, `email`, Name kommen ins Auth-Cookie, zusätzlich die Tokens (`SaveTokens = true`, `Program.cs:71`). Der Reverse-Proxy erhält eine Autorisierungspipeline (`Program.cs:426-460`). **Für die Erklärung:** IdP benennen, Verantwortlichkeitsabgrenzung/AVV klären |
-| `false` | Managed Auth aus `managed-users.json` (E-Mail + bcrypt). **E-Mail-Adressen erscheinen in den Container-Logs** (7 Stellen, 1.10.3). Der Proxy wird **ohne** Autorisierungspipeline gemappt (`Program.cs:461`) — jeder API-Pfad steht offen, siehe Anhang A, A-1 |
+| `false` | Managed Auth aus `managed-users.json` (E-Mail + bcrypt). Die früheren Nebenwirkungen sind mit PR #29 weg: E-Mail-Adressen stehen nicht mehr im Log (1.10.3), und der Auth-Gate gilt unabhängig von dieser Variablen (`Program.cs:466-486`). Für die Erklärung bleibt: ein weiterer Speicher mit E-Mail und Passwort-Hash, siehe 4-D |
 | nicht gesetzt | wie `true` |
 
 ### 4-D · Inhalt der produktiven `managed-users.json`
-**Dienst:** `contentgruen-bff`, Mount `./config:/config:ro`
-(`docker-compose.tst.yml:70`) · **Im Repo:** zwei Testkonten
+**Dienst:** `contentgruen-bff`, Mount `./config:/config:ro` · **Im Repo:** seit PR #29 gar
+nicht mehr — die Datei steht in `.gitignore:19`, getrackt ist nur
+`managed-users.example.json` mit zwei Testkonten
 
 Frage: liegen dort echte Personen (Name + E-Mail) — und wenn ja, wie viele und wie lange nach
 Ende der Nutzung? Konsequenz: dann ist ein weiterer personenbezogener Speicher zu beschreiben,
 inklusive Löschfrist, die es im Code nicht gibt.
 
 ### 4-E · Logging-Konfiguration des Docker-Hosts
-**Dienst:** alle · **Im Repo:** kein `logging:`-Block, keine `max-size`, keine `max-file`
+**Dienst:** alle · **Im Repo:** seit PR #29 hat jeder Dienst in `docker-compose.dev.yml`
+und `docker-compose.tst.yml` einen `logging:`-Block (`json-file`, `max-size` 20 MB bzw.
+10 MB, `max-file: 3`). **Produktion und tst laufen jedoch über eine SaltStack-eigene
+Compose-Datei aus einem anderen Repository; nach Auskunft des Maintainers ist die Rotation
+dort nicht umgesetzt.**
 
-Fragen: Welcher Log-Treiber? Werden Container-Logs zentral gesammelt (journald, Loki, …)?
-Welche Rotation/Aufbewahrung? Konsequenz: **das ist die Löschfrist für alles aus 1.10** —
-Suchtexte, Nutzerkennungen, Session-IDs, E-Mail-Adressen. Ohne diese Antwort ist die
-Zeile „Server-Logs: ___ Tage" der Lückenliste (D-M1) nicht ausfüllbar.
+Fragen: Welcher Log-Treiber setzt Salt? Werden Container-Logs zentral gesammelt (journald,
+Loki, …)? Welche Rotation, welche Aufbewahrung — und wird die nginx-`access_log` des
+Reverse Proxy mit ihren vollen IP-Adressen mitgeschnitten und wie lange gehalten?
+
+Konsequenz: **das ist die Löschfrist für alles aus 1.10.** Der Inhalt ist seit PR #29
+deutlich kleiner — keine Suchtexte, keine E-Mail-Adressen, Nutzerkennungen nur als
+Pseudonym —, aber die nginx-Zugriffslogs mit voller Client-IP sind unverändert da.
+Solange die Antwort fehlt, ist die einzig ehrliche Angabe in der Erklärung, dass die
+Aufbewahrung nicht begrenzt ist und sich nach der Voreinstellung des Hosts richtet.
+**Größte verbliebene Lücke in D-M1.**
 
 ### 4-F · Backup-Cron und Ablageort
 **Dienst:** Host bzw. `contentgruen-postgres-app` · **Im Repo:**
@@ -830,18 +951,22 @@ und welche Claims tatsächlich geliefert werden.
 
 ### 4-H · `SEMANTIC_SEARCH_ADMIN_USERS`
 **Dienst:** `contentgruen-semantic-search` · **Im Repo:** nirgends gesetzt, Default `""`
-(`app/core/config.py:112`)
+(`app/core/config.py:123`)
 
 | Wert | Konsequenz |
 |------|-----------|
-| gesetzt | Die Endpunkte `/api/v1/usage/users/{id}/usage-stats`, `/cleanup/status`, `/cleanup/run` wären für diese Kennungen gedacht — **greifen aber trotzdem nie**, weil `current_user` wegen Befund E-1 immer `None` ist |
-| leer/nicht gesetzt | `is_admin_user()` liefert immer `False` (`config.py:123`) → diese drei Endpunkte antworten konstant 403 |
+| gesetzt | Die Endpunkte `/api/v1/usage/users/{id}/usage-stats`, `/cleanup/status`, `/cleanup/run` sind für diese Kennungen erreichbar — **seit PR #29 tatsächlich**, weil die Dependency nun `X-User` liest (Befund E-1 erledigt). Wer dort steht, kann die Nutzungsstatistik zu einer beliebigen Kennung abrufen |
+| leer/nicht gesetzt | `is_admin_user()` liefert immer `False` (`config.py:134`) → diese drei Endpunkte antworten konstant 403. **Das ist der Stand, den das Repo herstellt** |
+
+Zu unterscheiden davon ist `require_admin` (`dependencies.py:233-249`), das den vom BFF aus
+den Claims gesetzten Header `X-Is-Admin` prüft — davon hängen Moderationsposteingang und
+die sechs Metrik-Endpunkte ab, und das funktioniert unabhängig von dieser Variablen.
 
 ### 4-I · Erreichbarkeit von Qdrant, PostgreSQL und der Semantic-Search-API
 **Dienste:** `qdrant`, `postgres-app`, `contentgruen-semantic-search` · **Im Repo:**
-Dev veröffentlicht 6333/6334, 5433 und 8000 (`docker-compose.dev.yml:17-19,45-46,65-66`);
-Test veröffentlicht PostgreSQL auf `127.0.0.1:5432` (`docker-compose.tst.yml:27`) und
-Semantic Search gar nicht (`:47`)
+Dev veröffentlicht 6333/6334, 5433 und 8000 (`docker-compose.dev.yml:24-26,59-60,86-87`);
+Test veröffentlicht PostgreSQL auf `127.0.0.1:5432` (`docker-compose.tst.yml:41`) und
+Semantic Search gar nicht (`:68`)
 
 Fragen: Sind in Produktion Ports veröffentlicht? Ist Qdrant durch einen API-Key geschützt
 (im Repo ist **keiner** konfiguriert)? Konsequenz: Wenn Port 8000 erreichbar ist, kann jeder
@@ -850,7 +975,7 @@ die Auth des BFF umgehen — inklusive `X-User-Id` selbst setzen (Befund E-1) un
 
 ### 4-J · PostgreSQL-Zugangsdaten
 **Dienst:** `postgres-app` · **Im Repo:** Klartext `changeme`
-(`docker-compose.tst.yml:24,42`; `docker-compose.dev.yml:70`; Default auch
+(`docker-compose.tst.yml:38,63`; `docker-compose.dev.yml:57,91`; Default auch
 `app/core/config.py:27`)
 
 Frage: Wird in Produktion ein anderes Passwort gesetzt? Konsequenz: falls nicht, ist der
@@ -860,33 +985,36 @@ Speicher aus 1.1–1.8 mit einem im Repo öffentlich lesbaren Passwort erreichba
 
 # Teil 5 — Die vorab genannten Punkte, geprüft
 
-| Vorannahme | Ergebnis |
-|------------|----------|
-| „`usage_events` enthält `user_id`, `session_id`, `ip_hash`, `user_agent`, verknüpft mit `content_id`" | **Stimmt und ist vollständig** — die Tabelle hat genau 8 Spalten (`models.py:70-83`): dazu `id`, `event_type`, `timestamp`. **Aber:** `user_id` wird über den Live-Pfad nie gefüllt (Befund E-1), und `ip_hash` ist ungesalzen und doppelt gehasht (Befund E-2) |
-| „Eine Retention-Einstellung wird unter anderem Namen gelesen, deshalb greift immer der Fallback" | **Bestätigt und größer als vermutet:** nicht eine, sondern **alle vier** Cleanup-Einstellungen (`usage_cleanup_service.py:172,184,189,190` gegen `config.py:136-139`). **Wirksam: 90 Tage, täglich 02:00, nicht abschaltbar, über die Umgebung nicht änderbar** (Befund E-3, empirisch verifiziert) |
-| „Für mehrere Tabellen existiert vermutlich gar keine Löschlogik" | **Bestätigt.** Von 7 Tabellen hat **eine** eine wirksame Frist: `usage_events` (90 Tage). Ohne jede Löschung: `usage_tracking` (ausdrücklich „preserved forever", `usage_tracking_repository.py:279`), `search_events` (Löschcode vorhanden, **kein Aufrufer** — Befund S-3), `content_reports`, `raw_inputs`, `raw_input_content_links`, `votes`. Qdrant ebenso |
-| „Fangkorb: wer wird als Einwerfer gespeichert, wer sieht das?" | Gespeichert wird der `X-User`-Wert = Keycloak-`sub` bzw. `user-00x`; `"anonymous"` → `NULL` (`api/v1/raw_input.py:30-40,55`). **Gesehen wird es von jeder angemeldeten Person** — `getRawInputs` liefert bewusst alle Einwürfe (`:76-77`), das DTO trägt `submitted_by` (`dtos/raw_input.py:97`), das Frontend zeigt es als Tabellenspalte (`raw-input-list.component.ts:52`, `.html:53`) |
-| „Suchereignisse sollen pseudonymisiert sein (rotierender Actor-Hash) — stimmt das, kommt das Secret aus der Umgebung, was passiert ohne?" | **Implementiert wie beschrieben** (Befund S-1): HMAC-SHA256 über `<Kennung>|<UTC-Datum>`, Suchtext wird gar nicht erst übergeben, durch 7 Unit-Tests abgesichert. Das Secret **kann** aus `SEMANTIC_SEARCH_ACTOR_HASH_SECRET` kommen, ist im Repo aber **nirgends gesetzt**. Ohne Secret: zufälliger 32-Byte-Schlüssel pro Prozess (`search_tracking_service.py:25`) → datenschutzseitig stärker, statistisch unbrauchbar (Befund S-2) |
-| „Bildbeschriftung per KI: aktiv, und wovon abhängig?" | Hängt **allein** an `OPENAI_API_KEY`/`SEMANTIC_SEARCH_OPENAI_API_KEY`, ausgewertet **einmal beim Modulimport** (`content_registry.py:107-118`, Befund V-1). Im Repo nirgends gesetzt → in Dev und Test **inaktiv**. Übermittelt wird die **Bild-URL** plus fester Prompt, **keine** Nutzerkennung. OpenAI lädt das Bild danach selbst beim Host. Produktion: Teil 4, 4-B |
+| Vorannahme | Ergebnis auf `fae44b4` |
+|------------|------------------------|
+| „`usage_events` enthält `user_id`, `session_id`, `ip_hash`, `user_agent`, verknüpft mit `content_id`" | **Traf für `95b565e` zu, für `fae44b4` nicht mehr.** Die Tabelle hat jetzt sechs Spalten (`models.py:85-96`): `id`, `content_id`, `event_type`, `timestamp`, `session_id`, `device_category`. `user_id`, `ip_hash` und `user_agent` sind mit PR #27 gefallen, Bestandswerte per `VACUUM FULL` physisch entfernt |
+| „Eine Retention-Einstellung wird unter anderem Namen gelesen, deshalb greift immer der Fallback" | **Bestätigt, größer als vermutet, und weiterhin so:** nicht eine, sondern **alle vier** Cleanup-Einstellungen (`usage_cleanup_service.py:172,184,189,190` gegen `config.py:146-150`). **Wirksam: 90 Tage, täglich 02:00, nicht abschaltbar, über die Umgebung nicht änderbar** (Befund E-3, empirisch verifiziert) |
+| „Für mehrere Tabellen existiert vermutlich gar keine Löschlogik" | **Bestätigt, unverändert.** Von 7 Tabellen hat **eine** eine wirksame Frist: `usage_events` (90 Tage). Ohne jede Löschung: `usage_tracking` (ausdrücklich „preserved forever", `usage_tracking_repository.py:274-276`), `search_events` (Löschcode vorhanden, **kein Aufrufer** — Befund S-3), `content_reports`, `raw_inputs`, `raw_input_content_links`, `votes`. Qdrant ebenso |
+| „Fangkorb: wer wird als Einwerfer gespeichert, wer sieht das?" | **Unverändert.** Gespeichert wird der `X-User`-Wert = Keycloak-`sub` bzw. `user-00x`; `"anonymous"` → `NULL` (`api/v1/raw_input.py:30-40,55`). **Gesehen wird es von jeder angemeldeten Person** — `getRawInputs` liefert bewusst alle Einwürfe, das DTO trägt `submitted_by` (`dtos/raw_input.py:97`), das Frontend zeigt es als Tabellenspalte (`raw-input-list.component.ts:52`). Neu ist nur, dass die Route jetzt in **beiden** Betriebsarten Anmeldung verlangt |
+| „Suchereignisse sollen pseudonymisiert sein (rotierender Actor-Hash) — stimmt das, kommt das Secret aus der Umgebung, was passiert ohne?" | **Implementiert wie beschrieben** (Befund S-1), unverändert: HMAC-SHA256 über `<Kennung>\|<UTC-Datum>`, Suchtext wird gar nicht erst übergeben. Das Secret **kann** aus `SEMANTIC_SEARCH_ACTOR_HASH_SECRET` kommen, ist im Repo aber **nirgends gesetzt**. Ohne Secret: zufälliger 32-Byte-Schlüssel pro Prozess → datenschutzseitig stärker, statistisch unbrauchbar (Befund S-2). Neu: die Metrik-Endpunkte, die darauf lesen, sind admin-only |
+| „Bildbeschriftung per KI: aktiv, und wovon abhängig?" | **Unverändert.** Hängt **allein** an `OPENAI_API_KEY`/`SEMANTIC_SEARCH_OPENAI_API_KEY`, ausgewertet **einmal beim Modulimport** (`content_registry.py:107-127`, Befund V-1). Im Repo nirgends gesetzt → in Dev und Test **inaktiv**. Übermittelt wird die **Bild-URL** plus fester Prompt, **keine** Nutzerkennung. Neu ist die Warnung an der Konfigurationsstelle (PR #32). Produktion: Teil 4, 4-B |
+| *(neu)* „Nutzungsprotokollierung ist anonym" | **Nein, pseudonym.** `session_id` bleibt eine bis zu 30 Tage stabile Gerätekennung; `content_reports` führt sie neben einer Nutzerkennung. Siehe W-1 |
+| *(neu)* „Server-Logs enthalten Suchtexte und E-Mail-Adressen" | **Nicht mehr.** Beides ist mit PR #29 entfernt; geblieben sind die nginx-Zugriffslogs mit voller IP und eine einzelne Suchtext-Ausgabe im Fehlerzweig (`statement_repository.py:173`) |
 
 ---
 
 # Anhang A — Sicherheitsbefunde ohne Datenschutzbezug
 
-Aufgefallen während der Analyse, nicht weiterverfolgt.
+Aufgefallen während der Erstanalyse. PR #29 hat den größten Teil davon aufgegriffen; der
+Stand ist hier je Befund vermerkt.
 
-| # | Befund | Beleg |
-|---|--------|-------|
-| **A-1** | Bei `USE_KEYCLOAK=false` wird der Reverse Proxy **ohne Autorisierungspipeline** gemappt (`app.MapReverseProxy();`) — kein API-Pfad ist am Proxy geschützt. Beide Compose-Dateien im Repo setzen `false` | `BFF/Program.cs:461` gegen `:426-460` |
-| **A-2** | `IdentityHeaderTransform` entfernt `X-User` und `X-Is-Admin`, **nicht** `X-User-Id`. YARP reicht unbekannte Header durch. Ein Client kann damit `usage_events.user_id` und die `is_admin_user`-Prüfungen in `api/v1/usage.py:200,255,285` selbst befüllen | `IdentityHeaderTransform.cs:45-46` ⟷ `app/dependencies.py:210` |
-| **A-3** | Vier **verschiedene** Public-Endpoint-Listen: `IdentityHeaderTransform.cs:26-35` (7 Einträge), `BFF/Program.cs:435-442` (5), `mvp/shared/PublicEndpoints.cs:8-15` (5, wieder andere — und toter Code: nicht in `ContentGruen.sln`, von nirgends referenziert), `fe/app/shared/public-endpoints.ts` (9) | s. Fundstellen |
-| **A-4** | `api/v1/seeding.py` hat auf keinem seiner 8 Endpunkte eine Auth-Dependency, obwohl vier Docstrings „allows administrators" behaupten. `POST /start`, `/reset`, `/stop` sind darunter | `app/api/v1/seeding.py:124,166,224,258`; gemountet `app/main.py:189` |
-| **A-5** | Session-IDs werden mit `Math.random()` erzeugt, nicht mit `crypto.randomUUID()`. Sie autorisieren anonyme Meldungen und Nutzungs-Tracking | `fe/app/services/session.service.ts:74-78`, `fe/app/services/search.service.ts:32-36` |
-| **A-6** | Der Debug-Router `api/v1/test.py` (18 KB) ist unbedingt gemountet und gibt über `/headers` alle eingehenden Header inklusive Cookie auf stdout aus | `app/main.py:34,182`; `app/api/v1/test.py:32-38` |
-| **A-7** | `mvp/config/managed-users.json` ist im Git getrackt und enthält zwei bcrypt-Hashes, einer davon für ein Konto mit `isAdmin: true` | Datei im Working Tree, `git ls-files` erfasst sie |
-| **A-8** | PostgreSQL-Passwort `changeme` im Klartext in `docker-compose.tst.yml:24,42`, im Dev-Compose `:70` und als Default in `app/core/config.py:27` | s. Fundstellen |
-| **A-9** | Die Metrik-Endpunkte haben **keine** Auth-Dependency und `/api/v1/metrics/` steht in der BFF-Public-Liste. DAU-Zahlen, Suchen-pro-Nutzer-Verteilung, „helpful rate" sind damit weltweit lesbar | `app/api/v1/metrics.py:143-144,165-168,193-196,219-222,245-248,283-286`; `IdentityHeaderTransform.cs:29` |
-| **A-10** | `POST /api/v1/post/addPost` und `/api/v1/image/addImage` unterliegen **keinem** Rate-Limit — die Liste umfasst nur 6 andere Schreibpfade | `app/middleware/rate_limit.py:34-43` |
+| # | Befund | Stand auf `fae44b4` |
+|---|--------|---------------------|
+| **A-1** | Bei `USE_KEYCLOAK=false` wurde der Reverse Proxy **ohne Autorisierungspipeline** gemappt — kein API-Pfad war am Proxy geschützt | **ERLEDIGT.** Der Auth-Gate läuft als eigene Middleware in der Proxy-Pipeline und gilt in beiden Betriebsarten (`BFF/Program.cs:466-486`) |
+| **A-2** | `IdentityHeaderTransform` entfernte `X-User` und `X-Is-Admin`, **nicht** `X-User-Id`; ein Client konnte sich per Header eine fremde Identität geben | **ERLEDIGT.** `X-User-Id` steht in der Entfernungsliste (`IdentityHeaderTransform.cs:43`), und die Dependency liest `X-User` (`dependencies.py:217`) |
+| **A-3** | Vier **verschiedene** Public-Endpoint-Listen mit drei Bedeutungen und abweichenden Einträgen | **ERLEDIGT.** `BFF/Proxy/EndpointPolicy.cs` ist die einzige serverseitige Quelle und speist Gate und Transform; `mvp/shared/PublicEndpoints.cs` (toter Code) ist gelöscht. Die Frontend-Liste bleibt bewusst eigenständig — sie beantwortet die Frage „Redirect auf /login ja/nein" |
+| **A-4** | `api/v1/seeding.py` hat auf keinem seiner 8 Endpunkte eine Auth-Dependency, obwohl vier Docstrings „allows administrators" behaupten | **Am Rand geschlossen, im Router offen.** `/api/v1/seeding` steht in `EndpointPolicy.Blocked` und wird vor Routing mit 404 abgewiesen (`EndpointPolicy.cs:56-59`, `Program.cs:394-407`). Der Router selbst hat weiterhin keine Dependency; wer Port 8000 direkt erreicht, erreicht ihn (Teil 4, 4-I) |
+| **A-5** | Session-IDs wurden mit `Math.random()` erzeugt | **ERLEDIGT.** `crypto.randomUUID()` mit `crypto.getRandomValues`-Fallback (`session.service.ts:113-137`) |
+| **A-6** | Der Debug-Router `api/v1/test.py` war unbedingt gemountet und gab über `/headers` alle eingehenden Header inklusive Cookie auf stdout aus | **ERLEDIGT.** Datei gelöscht (485 Zeilen), Pfad zusätzlich am Rand gesperrt |
+| **A-7** | `mvp/config/managed-users.json` war im Git getrackt und enthielt zwei bcrypt-Hashes, einer für ein Konto mit `isAdmin: true` | **Teilweise.** Die Datei steht in `.gitignore:19`; getrackt ist `managed-users.example.json` mit denselben zwei Beispielkonten. Die Hashes und die frühere Datei bleiben in der Git-Historie |
+| **A-8** | PostgreSQL-Passwort `changeme` im Klartext in beiden Compose-Dateien und als Default in `core/config.py` | **UNVERÄNDERT** (`docker-compose.dev.yml:57,91`, `docker-compose.tst.yml:38,63`, `core/config.py:27`). Für Produktion: Teil 4, 4-J |
+| **A-9** | Die Metrik-Endpunkte hatten **keine** Auth-Dependency und `/api/v1/metrics/` stand in der BFF-Public-Liste — DAU-Zahlen und „helpful rate" weltweit lesbar | **ERLEDIGT.** Sechs der sieben Endpunkte verlangen `require_admin` (`api/v1/metrics.py:192-343`); am BFF ist nur noch `/getMetrics` anonym (`EndpointPolicy.cs:30-34`) |
+| **A-10** | `POST /api/v1/post/addPost` und `/api/v1/image/addImage` unterliegen **keinem** Rate-Limit | **UNVERÄNDERT.** Die Liste in `middleware/rate_limit.py:31-44` umfasst sechs andere Schreibpfade; `/addRawInput` ist neu dazugekommen, `addPost` und `addImage` fehlen weiterhin |
 
 ---
 
@@ -909,6 +1037,7 @@ Aufgefallen während der Analyse, nicht weiterverfolgt.
 | M-11 | Retention-Bug | empirischer Gegentest mit `pydantic_settings` und identischer Feld-/Prefix-Konstellation |
 | M-12 | Auth-Stufe je Endpunkt | `grep -n "^@router\|Depends(\|Header("` je Router-Datei, abgeglichen mit den vier Public-Listen und den Frontend-Guards in `app.routes.ts` |
 | M-13 | Dateisystem-Persistenz | `grep -rn "open(.*'w'\|json.dump\|\.write("` über `services/ repositories/ core/ api/` |
+| M-14 | Fundstellen-Abgleich | Skript über das Dokument selbst: jede Angabe der Form `` `datei:zeile` `` (und jede Fortsetzung `` `:zeile` ``) auflösen, Datei öffnen, Zeile lesen und gegen die Behauptung der Zeile halten. Deckt Verschiebungen und Verwechslungen auf, nicht aber eine Fundstelle, die auf die falsche, zufällig passende Stelle zeigt |
 
 ## Was diese Methoden nicht erfassen — mögliche blinde Flecken
 
@@ -945,6 +1074,16 @@ Aufgefallen während der Analyse, nicht weiterverfolgt.
    `Header(`-Deklarationen im Backend gegen die vom BFF gesetzten Namen wäre die nächste
    Prüfung.**
 
+8. **Die Fortschreibung auf `fae44b4` ist keine zweite Vollerhebung.** Sie geht vom Diff
+   `95b565e..fae44b4` aus und prüft gezielt die Stellen nach, an denen die Erstanalyse
+   etwas behauptet hat. Ein Speicher oder ein ausgehender Aufruf, den die Erstanalyse
+   übersehen hatte und der seither unverändert geblieben ist, fällt dabei nicht auf. Die
+   Greps zu Logausgaben, `print()`, Browser-Speicher, externen URLs und Löschpfaden habe
+   ich vollständig wiederholt; die Payload- und Endpunkt-Durchsicht (M-9, M-12) nicht.
+   Der Fundstellen-Abgleich (M-14) prüft, ob eine Zeilenangabe auf die behauptete Stelle
+   zeigt — er prüft nicht, ob an einer *nicht* zitierten Stelle etwas steht, das der
+   Aufnahme widerspricht.
+
 ---
 
-*Ende der Bestandsaufnahme. Am Code wurde nichts geändert; diese Datei ist nicht committet.*
+*Ende der Bestandsaufnahme. Am Code wurde für diese Aufnahme nichts geändert.*
