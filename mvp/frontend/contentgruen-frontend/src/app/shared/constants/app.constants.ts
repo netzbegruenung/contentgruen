@@ -53,6 +53,7 @@ export const PAGE_TITLES = {
   CONTRIBUTIONS: 'Meine Beiträge',
   RAW_INPUT: 'Schnell einwerfen',
   RAW_INPUT_LIST: 'Fangkorb',
+  SHARE_TARGET: 'Geteilter Inhalt',
   COMMENTARY: 'Fertiger Kommentar',
   GENERIC_TEXT: 'Hintergrundinfo',
   LOGIN: 'Anmelden',
@@ -67,6 +68,7 @@ export const ROUTES = {
   CONTRIBUTIONS: '/contributions',
   RAW_INPUT: '/einwerfen',
   RAW_INPUT_LIST: '/fangkorb',
+  SHARE_TARGET: '/teilen',
   LOGIN: '/login',
   HELP: '/help'
 };

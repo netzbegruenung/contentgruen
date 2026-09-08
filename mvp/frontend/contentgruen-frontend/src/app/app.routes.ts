@@ -50,6 +50,14 @@ export const routes: Routes = [
         canActivate: [AuthGuard]
     },
     {
+        // Ziel des Android-Teilen-Menues (share_target im Manifest). Bewusst ohne
+        // Guard: die Diagnose soll zeigen, was ankommt, und nicht vorher auf /login
+        // umleiten. Der Login-Zwang kommt mit der echten Uebernahme in Schritt 2 --
+        // dann wird diese Route auf die Fangkorb-Komponente umgehaengt.
+        path: 'teilen',
+        loadComponent: () => import('./share-target-debug/share-target-debug.component').then(m => m.ShareTargetDebugComponent)
+    },
+    {
         path: 'login',
         loadComponent: () => import('./login/login-selector.component').then(m => m.LoginSelectorComponent)
     },
