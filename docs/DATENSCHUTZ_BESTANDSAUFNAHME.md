@@ -636,7 +636,7 @@ Was danach noch mit Personenbezug im Log landen kann:
 | Nutzerkennung als 8-stelliges Pseudonym bei jeder Stimmabgabe | INFO | `services/voting_service.py:35,65,96,126` |
 | dito bei Rate-Limit-Überschreitungen | WARNING | `middleware/rate_limiter.py:83,102,120` |
 | dito im Fehlerfall der Nutzungsstatistik | ERROR | `api/v1/usage.py:203` |
-| **Suchtext im Klartext** — einzige verbliebene Stelle, nur im Ausnahmezweig | ERROR | `repositories/implementations/qdrant/statement_repository.py:173` (`logger.error(f"Query: {query_text}")`) |
+| ~~**Suchtext im Klartext** im Ausnahmezweig~~ — **ERLEDIGT (04.09.2026)** | — | war `repositories/implementations/qdrant/statement_repository.py:173` (`logger.error(f"Query: {query_text}")`); die Zeile ist entfernt, der Fehlerzweig protokolliert jetzt Fehlerklasse und Suchparameter (`content_type`, `limit`, `min_replysuggestions_count`), nicht den Text. Damit stimmt die Zusage der Datenschutzerklärung, dass in den Anwendungslogs nicht steht, wonach jemand gesucht hat |
 | Freitext-Bruchstücke aus Ausnahmen (`exc_info=True`) | ERROR | verteilt; nicht Frame für Frame geprüft, siehe Anhang B, blinder Fleck 6 |
 
 Nicht mehr geloggt: Session-IDs, Einwerfer- und Melderkennungen
@@ -694,7 +694,26 @@ nicht. Nach Auskunft des Maintainers ist sie in Salt **nicht** umgesetzt. Für P
 gilt damit der Docker-Default `json-file` **ohne Begrenzung**, bzw. was der Host
 voreinstellt.
 
-**Wirksame Löschfrist für Logs: im Repo keine, in Produktion nicht begrenzt.**
+**Nachtrag 04.09.2026 — zwei Schichten, zwei Antworten.** Die Frage nach der
+nginx-`access_log` ist für die **vorgelagerte** Schicht beantwortet: Auf dem Prod-Host
+liegt der Reverse Proxy außerhalb von Docker, seine Zugriffsprotokolle werden per
+`logrotate` täglich umgebrochen und nach **14 Tagen** gelöscht (Auskunft und Prüfung des
+Maintainers am Host, 04.09.2026 — im Repo nicht belegbar, weil die Salt-Konfiguration in
+einem anderen Repository liegt). **Nur diese Schicht sieht die echte Client-IP**, und nur
+für sie nennt die Datenschutzerklärung die 14 Tage.
+
+Für die **Container**-Schicht bleibt es bei „nicht begrenzt": Das Frontend-Image ist
+`nginx:alpine` (`mvp/frontend/contentgruen-frontend/Dockerfile:31`), dessen
+`access.log` per Image-Symlink auf stdout zeigt und damit im `json-file`-Treiber landet —
+in Produktion ohne Rotation (siehe oben). Weil weder `real_ip` noch ein eigenes
+`log_format` gesetzt ist, steht in diesen Zeilen als `$remote_addr` die Adresse des
+vorgelagerten Proxys, **nicht die des Besuchers**; Zeitpunkt, Pfad, Referrer und
+User-Agent stehen sehr wohl darin. Die Datenschutzerklärung führt diese Zeilen deshalb als
+eigenen Unterabschnitt „Zugriffe innerhalb der Anwendung" mit **keiner Löschfrist**.
+
+**Wirksame Löschfrist für Logs: im Repo keine; in Produktion 14 Tage für die
+Zugriffsprotokolle des vorgelagerten Proxys, für alles aus dem `json-file`-Treiber
+(Container-Zugriffe und Anwendungslogs) nicht begrenzt.**
 Alles Weitere: Teil 4, Frage 4-E.
 
 ---
@@ -951,16 +970,24 @@ und `docker-compose.tst.yml` einen `logging:`-Block (`json-file`, `max-size` 20 
 Compose-Datei aus einem anderen Repository; nach Auskunft des Maintainers ist die Rotation
 dort nicht umgesetzt.**
 
-Fragen: Welcher Log-Treiber setzt Salt? Werden Container-Logs zentral gesammelt (journald,
-Loki, …)? Welche Rotation, welche Aufbewahrung — und wird die nginx-`access_log` des
-Reverse Proxy mit ihren vollen IP-Adressen mitgeschnitten und wie lange gehalten?
+**Teilweise beantwortet (04.09.2026).** Der vorgelagerte Reverse Proxy läuft auf dem
+Prod-Host außerhalb von Docker; seine Zugriffsprotokolle — die einzigen mit der echten
+Client-IP — werden per `logrotate` täglich umgebrochen und nach **14 Tagen** gelöscht.
+Grundlage ist die Prüfung des Maintainers am Host; im Repo ist sie **nicht** belegbar, weil
+die Salt-Konfiguration in einem anderen Repository liegt. Die Datenschutzerklärung nennt
+diese 14 Tage ausdrücklich nur für diese Schicht.
 
-Konsequenz: **das ist die Löschfrist für alles aus 1.10.** Der Inhalt ist seit PR #29
+Offen bleiben: Welcher Log-Treiber setzt Salt für die Container? Werden Container-Logs
+zentral gesammelt (journald, Loki, …)? Welche Rotation, welche Aufbewahrung? Solange die
+Antwort fehlt, gilt für alles aus dem `json-file`-Treiber — Anwendungslogs **und** die
+Zugriffszeilen der Container-nginx — der Docker-Default ohne Begrenzung.
+
+Konsequenz: **das ist die Löschfrist für den Rest von 1.10.** Der Inhalt ist seit PR #29
 deutlich kleiner — keine Suchtexte, keine E-Mail-Adressen, Nutzerkennungen nur als
-Pseudonym —, aber die nginx-Zugriffslogs mit voller Client-IP sind unverändert da.
-Solange die Antwort fehlt, ist die einzig ehrliche Angabe in der Erklärung, dass die
-Aufbewahrung nicht begrenzt ist und sich nach der Voreinstellung des Hosts richtet.
-**Größte verbliebene Lücke in D-M1.**
+Pseudonym —, und in den Container-Zugriffszeilen steht die Adresse des Proxys statt der des
+Besuchers (1.10.4). Die ehrliche Angabe in der Erklärung bleibt deshalb, dass für diese
+Protokolle keine Frist eingerichtet ist; genau so steht es dort. **Verbliebene Lücke in
+D-M1** — kleiner als zuvor, aber nicht geschlossen.
 
 ### 4-F · Backup-Cron und Ablageort
 **Dienst:** Host bzw. `contentgruen-postgres-app` · **Im Repo:**
@@ -1037,7 +1064,7 @@ Speicher aus 1.1–1.8 mit einem im Repo öffentlich lesbaren Passwort erreichba
 | „Suchereignisse sollen pseudonymisiert sein (rotierender Actor-Hash) — stimmt das, kommt das Secret aus der Umgebung, was passiert ohne?" | **Implementiert wie beschrieben** (Befund S-1), unverändert: HMAC-SHA256 über `<Kennung>\|<UTC-Datum>`, Suchtext wird gar nicht erst übergeben. Das Secret **kann** aus `SEMANTIC_SEARCH_ACTOR_HASH_SECRET` kommen, ist im Repo aber **nirgends gesetzt**. Ohne Secret: zufälliger 32-Byte-Schlüssel pro Prozess → datenschutzseitig stärker, statistisch unbrauchbar (Befund S-2). Neu: die Metrik-Endpunkte, die darauf lesen, sind admin-only |
 | „Bildbeschriftung per KI: aktiv, und wovon abhängig?" | **Unverändert.** Hängt **allein** an `OPENAI_API_KEY`/`SEMANTIC_SEARCH_OPENAI_API_KEY`, ausgewertet **einmal beim Modulimport** (`content_registry.py:107-127`, Befund V-1). Im Repo nirgends gesetzt → in Dev und Test **inaktiv**. Übermittelt wird die **Bild-URL** plus fester Prompt, **keine** Nutzerkennung. Neu ist die Warnung an der Konfigurationsstelle (PR #32). Produktion: Teil 4, 4-B |
 | *(neu)* „Nutzungsprotokollierung ist anonym" | **Nein, pseudonym.** `session_id` bleibt eine bis zu 30 Tage stabile Gerätekennung; `content_reports` führt sie neben einer Nutzerkennung. Siehe W-1 |
-| *(neu)* „Server-Logs enthalten Suchtexte und E-Mail-Adressen" | **Nicht mehr.** Beides ist mit PR #29 entfernt; geblieben sind die nginx-Zugriffslogs mit voller IP und eine einzelne Suchtext-Ausgabe im Fehlerzweig (`statement_repository.py:173`) |
+| *(neu)* „Server-Logs enthalten Suchtexte und E-Mail-Adressen" | **Nicht mehr.** Beides ist mit PR #29 entfernt; die letzte Suchtext-Ausgabe im Fehlerzweig (`statement_repository.py:173`) ist am 04.09.2026 nachgezogen. Geblieben sind die Zugriffslogs des vorgelagerten Proxys mit voller IP (1.10.4) |
 
 ---
 

@@ -169,6 +169,15 @@ class StatementRepository(
             ]
 
         except Exception as e:
-            logger.error(f"Error during search: {e}", exc_info=True)
-            logger.error(f"Query: {query_text}")
+            # Der Suchtext gehoert auch in den Fehlerzweig nicht ins Log -- er ist
+            # dort so schutzwuerdig wie auf dem Anfragepfad (api/v1/search.py:78-83),
+            # und die Datenschutzerklaerung sagt zu, dass in den Anwendungslogs
+            # nicht steht, wonach jemand gesucht hat. Zum Einordnen des Fehlers
+            # genuegen die Fehlerklasse und die Suchparameter.
+            logger.error(
+                f"Error during search: {e} "
+                f"(content_type={self.content_type}, limit={limit}, "
+                f"min_replysuggestions_count={min_replysuggestions_count})",
+                exc_info=True,
+            )
             raise

@@ -90,7 +90,10 @@
         Bei der Anmeldung übermittelt der Identitätsdienst an diese Plattform eine
         Nutzerkennung, Ihre E-Mail-Adresse und Ihren Namen. Diese Angaben werden zusammen mit
         den Anmeldezeugnissen in einem verschlüsselten Cookie in Ihrem Browser abgelegt und
-        beim Aufruf jeder Seite mitgeschickt. Auf unseren Servern legen wir davon nichts ab.
+        beim Aufruf jeder Seite mitgeschickt. <strong>Ihre E-Mail-Adresse und Ihren Namen
+        legen wir auf unseren Servern nicht ab.</strong> Ihre Nutzerkennung dagegen schon —
+        überall dort, wo etwas von Ihnen stammt: an Beiträgen, Bewertungen, Meldungen und
+        Einwürfen. Was das bedeutet, steht unten unter „Beiträge, die Sie einstellen".
       </p>
       <p>
         <strong>Zweck:</strong> Sie anzumelden und Ihnen die Funktionen zuzuordnen, die ein
@@ -360,18 +363,35 @@
     <section class="legal-section">
       <h2>Protokolldateien</h2>
 
-      <h3>Zugriffe auf den Webserver</h3>
+      <h3>Zugriffe auf den vorgelagerten Webserver</h3>
       <p>
         Wie jeder Webserver hält auch unserer fest, welche Seite wann von wo aufgerufen wurde.
-        Diese Zugriffsprotokolle enthalten unter anderem die <strong>vollständige
-        IP-Adresse</strong>, den Zeitpunkt, die aufgerufene Adresse, die verweisende Seite und
-        Angaben zu Browser und Betriebssystem.
+        Ihre Anfrage erreicht zuerst den vorgelagerten Webserver; dessen Zugriffsprotokolle
+        enthalten unter anderem die <strong>vollständige IP-Adresse</strong>, den Zeitpunkt,
+        die aufgerufene Adresse, die verweisende Seite und Angaben zu Browser und
+        Betriebssystem.
       </p>
       <p>
         <strong>Zweck:</strong> technischer Betrieb, Fehlersuche und Abwehr von Angriffen.<br>
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO.<br>
-        <strong>Dauer:</strong> Die Zugriffsprotokolle werden täglich umgebrochen und nach
+        <strong>Dauer:</strong> Diese Protokolle werden täglich umgebrochen und nach
         <strong>14 Tagen automatisch gelöscht</strong>.
+      </p>
+
+      <h3>Zugriffe innerhalb der Anwendung</h3>
+      <p>
+        Hinter dem vorgelagerten Webserver schreibt der Webserver der Anwendung dieselben
+        Zugriffe ein zweites Mal mit. <strong>Ihre eigene IP-Adresse steht dort nicht</strong>
+        — an ihrer Stelle steht die Adresse des vorgelagerten Webservers. Festgehalten werden
+        Zeitpunkt, aufgerufene Adresse, verweisende Seite und Angaben zu Browser und
+        Betriebssystem.
+      </p>
+      <p>
+        <strong>Zweck:</strong> technischer Betrieb und Fehlersuche.<br>
+        <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO.<br>
+        <strong>Dauer: keine Löschfrist.</strong> Diese Zeilen laufen in denselben Sammelstrom
+        wie die Protokolle der Anwendung, und für den ist bisher keine feste Frist
+        eingerichtet.
       </p>
 
       <h3>Protokolle der Anwendung</h3>
@@ -384,14 +404,14 @@
       <p>
         <strong>Zweck:</strong> Fehlersuche und Betrieb.<br>
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO.<br>
-        <strong>Dauer:</strong> Für diese Protokolle ist derzeit <strong>keine feste Frist
-        eingerichtet</strong>. Eine Volumenbegrenzung ist in Vorbereitung.
+        <strong>Dauer: keine Löschfrist.</strong> Für diese Protokolle ist bisher keine feste
+        Frist eingerichtet. Eine Volumenbegrenzung ist in Vorbereitung.
       </p>
       <p>
-        Beide Protokollarten laufen auf demselben Server zusammen. Wir führen sie nicht
+        Diese Protokolle laufen auf demselben Server zusammen. Wir führen sie nicht
         zusammen und werten sie nicht personenbezogen aus. Ausschließen können wir aber nicht,
-        dass sich aus gleichen Zeitstempeln in beiden Protokollen ein Zusammenhang herstellen
-        ließe — deshalb sagen wir es hier, statt das Gegenteil zu behaupten.
+        dass sich aus gleichen Zeitstempeln über die Protokolle hinweg ein Zusammenhang
+        herstellen ließe — deshalb sagen wir es hier, statt das Gegenteil zu behaupten.
       </p>
     </section>
 
