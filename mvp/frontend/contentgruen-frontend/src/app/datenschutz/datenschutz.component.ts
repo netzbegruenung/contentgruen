@@ -17,4 +17,16 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./datenschutz.component.scss']
 })
 export class DatenschutzComponent {
+  readonly KONTAKT_MAIL = 'backoffice@netzbegruenung.de';
+
+  // Der Datenschutzbeauftragte ist ueber die Vereinsadresse erreichbar, nicht privat.
+  readonly DSB_KONTAKT = 'Sven Seeberg, erreichbar über backoffice@netzbegruenung.de';
+
+  // Zustaendig ist die Aufsichtsbehoerde am Sitz des Verantwortlichen: der Verein sitzt in
+  // Donauwoerth, das Vereinsregister liegt beim Amtsgericht Augsburg -- beides Bayern, und
+  // fuer nichtoeffentliche Stellen ist dort das BayLDA zustaendig.
+  readonly BEHOERDE_NAME = 'Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)';
+  readonly BEHOERDE_ANSCHRIFT = 'Promenade 18, 91522 Ansbach';
+  readonly BEHOERDE_TELEFON = '+49 981 180093-0';
+  readonly BEHOERDE_URL = 'https://www.lda.bayern.de';
 }
