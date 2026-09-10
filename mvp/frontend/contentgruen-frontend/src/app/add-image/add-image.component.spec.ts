@@ -1,37 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AddGenerictextComponent } from './add-generictext.component';
 import { provideHttpClient } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { provideRouter } from '@angular/router';
 
-describe('AddGenerictextComponent', () => {
-  let component: AddGenerictextComponent;
-  let fixture: ComponentFixture<AddGenerictextComponent>;
+import { AddImageComponent } from './add-image.component';
+
+describe('AddImageComponent', () => {
+  let fixture: ComponentFixture<AddImageComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [
-        AddGenerictextComponent,
-        BrowserAnimationsModule,
-        MatSnackBarModule
-      ],
+      imports: [AddImageComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([])
       ]
-    })
-    .compileComponents();
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(AddGenerictextComponent);
-    component = fixture.componentInstance;
+    fixture = TestBed.createComponent(AddImageComponent);
     fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
   });
 
   it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {

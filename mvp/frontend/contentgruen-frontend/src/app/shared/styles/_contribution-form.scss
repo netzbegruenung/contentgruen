@@ -578,6 +578,31 @@
 
 // Form Actions
 @mixin form-actions {
+  // Hinweis zu CC0 und Nutzungsbedingungen. Steht bewusst ausserhalb von
+  // .form-actions: die Leiste wird auf Mobil zur Sticky-Bar am unteren Rand,
+  // und der Hinweis soll mitscrollen statt sie dauerhaft zu vergroessern.
+  .submit-hint {
+    margin: 24px 0 0;
+    padding-top: 24px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  // Trennlinie wandert an den Hinweis, damit Hinweis und Knopf als ein Block
+  // lesen. Auf Mobil behaelt die Sticky-Bar ihre eigene Oberkante.
+  .submit-hint + .form-actions {
+    margin-top: 12px;
+    padding-top: 0;
+    border-top: none;
+
+    @include bp.mobile-only {
+      padding-top: var(--spacing-md);
+      border-top: 2px solid var(--divider);
+    }
+  }
+
   .form-actions {
     display: flex;
     gap: 16px;

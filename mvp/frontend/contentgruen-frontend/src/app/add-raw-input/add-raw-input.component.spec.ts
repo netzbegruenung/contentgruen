@@ -64,6 +64,15 @@ describe('AddRawInputComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
+    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+      'a[href="/nutzungsbedingungen"]'
+    );
+
+    expect(link).toBeTruthy();
+    expect(link!.target).toBe('_blank');
+  });
+
   it('wirft nichts ein, solange nichts dasteht', () => {
     component.einwurfForm.setValue({ einwurf: '   ', imageUrl: '' });
 

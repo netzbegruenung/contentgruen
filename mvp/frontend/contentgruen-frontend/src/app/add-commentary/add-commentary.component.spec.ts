@@ -5,7 +5,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { CommentaryService } from '../services/commentary.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
@@ -26,6 +26,7 @@ describe('AddCommentaryComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         {
           provide: ActivatedRoute,
           useValue: {
@@ -48,6 +49,15 @@ describe('AddCommentaryComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
+    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+      'a[href="/nutzungsbedingungen"]'
+    );
+
+    expect(link).toBeTruthy();
+    expect(link!.target).toBe('_blank');
   });
 
   it('should keep long_text in the payload after the text variants section is collapsed again', fakeAsync(() => {

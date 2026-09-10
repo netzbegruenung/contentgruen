@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AddCommentaryWorkflowComponent } from './add-commentary-workflow.component';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -20,7 +20,9 @@ describe('AddCommentaryWorkflowComponent', () => {
         MatSnackBarModule
       ],
       providers: [
-        { provide: Router, useValue: { navigate: jasmine.createSpy('navigate') } }
+        // Echter Router statt Stub: das eingebettete Formular verlinkt seit dem
+        // Hinweis ueber dem Absenden-Knopf die Nutzungsbedingungen per routerLink.
+        provideRouter([])
       ]
     })
     .compileComponents();
