@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, OnDestroy, ViewChild, ElementRe
 import { trigger, transition, style, animate } from '@angular/animations';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CommentaryService } from '../services/commentary.service';
 import { StatementService } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
@@ -39,7 +39,8 @@ interface CommentaryFormValues {
         FormsModule,
         MatSlideToggleModule,
         CommentaryResultItemComponent,
-        ReferenceInputComponent
+        ReferenceInputComponent,
+        RouterLink
     ],
     providers: [
         { provide: 'RESULT', useValue: null }

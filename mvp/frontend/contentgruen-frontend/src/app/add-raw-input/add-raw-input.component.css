@@ -57,6 +57,13 @@
     padding-left: 0;
 }
 
+.einwurf-hinweis {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-secondary, #4a4a4a);
+}
+
 .einwurf-aktionen {
     display: flex;
     align-items: center;

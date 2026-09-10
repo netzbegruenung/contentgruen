@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ImageService } from '../services/image.service';
@@ -22,6 +22,7 @@ import { takeUntil } from 'rxjs/operators';
     CommonModule,
     FormsModule,
     ImageResultItemComponent,
+    RouterLink,
   ],
   templateUrl: './add-image.component.html',
   styleUrls: ['./add-image.component.scss'],

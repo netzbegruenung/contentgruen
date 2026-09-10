@@ -6,7 +6,7 @@ import { SHARE_EINWURF_SCHLUESSEL } from '../share-target/share-target.guard';
 import { urlsInTextBereinigen } from '../shared/url-bereinigen';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 
@@ -39,7 +39,7 @@ export function einwurfZerlegen(eingabe: string): AddRawInputRequest {
 @Component({
   selector: 'app-add-raw-input',
   standalone: true,
-  imports: [...SHARED_IMPORTS, CommonModule],
+  imports: [...SHARED_IMPORTS, CommonModule, RouterLink],
   templateUrl: './add-raw-input.component.html',
   styleUrls: ['./add-raw-input.component.css'],
 })
