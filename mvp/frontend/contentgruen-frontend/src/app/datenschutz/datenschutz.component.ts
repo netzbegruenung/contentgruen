@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterModule } from '@angular/router';
+import { LEGAL_ENTITY } from '../shared/legal-entity';
 
 @Component({
   selector: 'app-datenschutz',
@@ -17,10 +18,11 @@ import { RouterModule } from '@angular/router';
   styleUrls: ['./datenschutz.component.scss']
 })
 export class DatenschutzComponent {
-  readonly KONTAKT_MAIL = 'backoffice@netzbegruenung.de';
+  readonly VEREIN = LEGAL_ENTITY;
+  readonly KONTAKT_MAIL = LEGAL_ENTITY.KONTAKT_MAIL;
 
   // Der Datenschutzbeauftragte ist ueber die Vereinsadresse erreichbar, nicht privat.
-  readonly DSB_KONTAKT = 'Sven Seeberg, erreichbar über backoffice@netzbegruenung.de';
+  readonly DSB_KONTAKT = `Sven Seeberg, erreichbar über ${LEGAL_ENTITY.KONTAKT_MAIL}`;
 
   // Zustaendig ist die Aufsichtsbehoerde am Sitz des Verantwortlichen: der Verein sitzt in
   // Donauwoerth, das Vereinsregister liegt beim Amtsgericht Augsburg -- beides Bayern, und

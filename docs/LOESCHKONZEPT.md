@@ -33,7 +33,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    kein Filterlauf.
 4. **Konto.** Keycloak-Konto im Realm löschen, bzw. Eintrag aus
    `mvp/config/managed-users.json` entfernen und das BFF neu starten (Cache 5 min).
-   Die Datei ist eingecheckt (`.gitignore:15`); die Adresse bleibt in der Git-Historie.
+   Die Datei ist seit PR #29 **nicht mehr eingecheckt** (`.gitignore:19`); getrackt ist nur
+   `managed-users.example.json`. Die Adresse bleibt trotzdem in der Git-Historie, weil die
+   Datei dort bis PR #29 lag.
 
 ## Drei Fallen
 
@@ -61,8 +63,14 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   gelöschte Daten leben dort bis zu 28 Tage weiter. Selektives Editieren von
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
-- **Logs.** `docker logs` enthält Kennung, E-Mail und Client-IP; einzelne Zeilen aus
-  dem `json-file`-Treiber zu entfernen ist nicht vorgesehen.
+- **Logs.** Der Inhalt ist seit PR #29 kleiner, als hier früher stand: **E-Mail-Adressen
+  stehen nicht mehr im Log**, Suchtexte seit dem Nachtrag vom 08.09.2026 auch nicht mehr im
+  Fehlerzweig, und Nutzerkennungen erscheinen nur noch als achtstelliges Pseudonym
+  (`app/core/logging.py`, `log_pseudonym()`). Was bleibt: dieses Pseudonym in den
+  Anwendungszeilen und die vollen Client-IPs in den Zugriffsprotokollen des vorgelagerten
+  Reverse Proxy. Für Letztere gilt eine Frist — `logrotate` auf dem Prod-Host, 14 Tage;
+  alles aus dem `json-file`-Treiber ist unbegrenzt. Einzelne Zeilen daraus zu entfernen ist
+  nicht vorgesehen. Einordnung und Belege: `docs/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
 
 ## Kommandos
 

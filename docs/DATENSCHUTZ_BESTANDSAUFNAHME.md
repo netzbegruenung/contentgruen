@@ -321,7 +321,16 @@ Definitionen und den einen `usage`-Aufrufpfad.
 | `resolution_notes` | **Text, Freitext** | `models.py:156` | **potenziell ja** | dito | s.u. | **keine** |
 
 Constraint `models.py:163-166`: mindestens eine der beiden Melderkennungen muss gesetzt sein —
-eine vollständig anonyme Meldung ist per Schema ausgeschlossen.
+eine Zeile ohne jede Melderkennung ist per Schema ausgeschlossen.
+
+**Und deshalb gibt es einen Ersatzwert.** Wer ohne Anmeldung **und** ohne `X-Session-Id`
+meldet — etwa direkt gegen die API statt über die SPA —, bekam an diesem Constraint einen
+400, obwohl die Route ausdrücklich ohne Anmeldung erreichbar sein soll. `api/v1/moderation.py:150-152`
+setzt für genau diesen Fall `reported_by_session_id = f"anon:{uuid.uuid4()}"`: ein
+Zufallstoken je Meldung, ausdrücklich **nicht** aus der Adresse abgeleitet
+(Begründung im Kommentar `:141-149`). Es erfüllt die Bedingung, ohne etwas über den Melder
+auszusagen, und ist über zwei Meldungen hinweg nicht verknüpfbar. **Eine faktisch anonyme
+Meldung ist damit möglich**; ausgeschlossen ist nur die leere Spalte.
 
 **Wer kann lesen:** `GET /api/v1/moderation/reports` und `/stats`, `PUT …/dismiss`, `DELETE` —
 alle vier mit `Depends(require_admin)` (`api/v1/moderation.py:191,229,267,300`).
@@ -953,6 +962,26 @@ für tst); **Code-Default ist `true`** (`BFF/Program.cs:19`)
 | `true` | Anmeldung über Netzbegrünung-Keycloak. Claims `sub`, `email`, Name kommen ins Auth-Cookie, zusätzlich die Tokens (`SaveTokens = true`, `Program.cs:98`). Der Reverse-Proxy erhält eine Autorisierungspipeline (`Program.cs:491-509`). **Für die Erklärung:** IdP benennen, Verantwortlichkeitsabgrenzung/AVV klären |
 | `false` | Managed Auth aus `managed-users.json` (E-Mail + bcrypt). Die früheren Nebenwirkungen sind mit PR #29 weg: E-Mail-Adressen stehen nicht mehr im Log (1.10.3), und der Auth-Gate gilt unabhängig von dieser Variablen (`Program.cs:486-509`). Für die Erklärung bleibt: ein weiterer Speicher mit E-Mail und Passwort-Hash, siehe 4-D |
 | nicht gesetzt | wie `true` |
+
+**Beantwortet (10.09.2026).** In Produktion ist `USE_KEYCLOAK=true`; angemeldet wird über
+den Netzbegrünung-Realm. Das `false` in beiden Compose-Dateien gilt nur für Dev und tst
+(Auskunft des Maintainers). Die Datenschutzerklärung benennt den Identitätsdienst deshalb
+als den üblichen Weg und den handangelegten Zugang als Ausnahmefall.
+
+**Neu aufgetaucht: das erledigt Managed Auth nicht.** `USE_KEYCLOAK` entscheidet nur, welches
+Authentifizierungsschema registriert wird (`Program.cs:57` gegen `:159`) — der Login-Endpunkt
+`POST /api/auth/login/managed` ist ein BFF-eigener Controller (`AuthController.cs:12,48`),
+läuft nicht über den Proxy und hängt an einer **eigenen** Weiche:
+`ManagedUserService.IsEnabled()` liest `ENABLE_MANAGED_AUTH`, **Default `true`**
+(`ManagedUserService.cs:197-200`). Auch mit Keycloak bleibt der Weg also offen, solange die
+Variable nicht ausdrücklich auf `false` steht; das Cookie-Schema, in das er anmeldet, ist im
+Keycloak-Zweig registriert (`Program.cs:74`).
+
+**Frage 4-C-2: Ist `ENABLE_MANAGED_AUTH` in Produktion auf `false` gesetzt?** Konsequenz bei
+`false`: Der Abschnitt „Zugang, den wir selbst anlegen" beschreibt eine Verarbeitung, die
+nicht stattfindet — für die Erklärung unschädlich, aber zu streichen, sobald es feststeht.
+Bei `true` oder nicht gesetzt: Der Abschnitt ist zutreffend, und 4-D bleibt in vollem Umfang
+zu beantworten.
 
 ### 4-D · Inhalt der produktiven `managed-users.json`
 **Dienst:** `contentgruen-bff`, Mount `./config:/config:ro` · **Im Repo:** seit PR #29 gar
