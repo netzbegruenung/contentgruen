@@ -193,6 +193,45 @@ class TestEinwerfendePerson:
 
 @pytest.mark.unit
 @pytest.mark.api
+class TestHerkunftskanal:
+    """
+    source_channel sagt, wie ein Einwurf hereinkam. Der Wert ist selbst berichtet
+    und traegt keine Rechte - geprueft wird nur, dass nichts Erfundenes durchkommt.
+    """
+
+    def test_ohne_angabe_zaehlt_der_einwurf_als_web(self, client, repository):
+        client.post(ADD_URL, json={"content": "x"}, headers={"X-User": "testuser"})
+
+        assert repository.create.call_args.kwargs["source_channel"] == (
+            RawInputSource.WEB.value
+        )
+
+    def test_share_wird_uebernommen(self, client, repository):
+        """Der Weg ueber das Android-Teilen-Menue."""
+        antwort = client.post(
+            ADD_URL,
+            json={"url": "https://example.org/a", "source_channel": "share"},
+            headers={"X-User": "testuser"},
+        )
+
+        assert antwort.status_code == 201
+        assert repository.create.call_args.kwargs["source_channel"] == (
+            RawInputSource.SHARE.value
+        )
+
+    def test_erfundener_kanal_wird_abgewiesen(self, client, repository):
+        antwort = client.post(
+            ADD_URL,
+            json={"content": "x", "source_channel": "brieftaube"},
+            headers={"X-User": "testuser"},
+        )
+
+        assert antwort.status_code == 422
+        repository.create.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.api
 class TestFangkorbListe:
     def test_liste_ist_leer_wenn_nichts_da_ist(self, client, repository):
         antwort = client.get(LIST_URL)

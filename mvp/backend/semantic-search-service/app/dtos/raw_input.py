@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from domain.models.raw_input import RawInputStatus
+from domain.models.raw_input import RawInputSource, RawInputStatus
 from utils.url_validator import validate_url_security
 
 
@@ -58,6 +58,11 @@ class AddRawInputRequest(BaseModel):
         default=None,
         max_length=2000,
         description="URL eines bereits erreichbaren Bildes",
+    )
+
+    source_channel: Optional[RawInputSource] = Field(
+        default=None,
+        description="Kanal, ueber den der Einwurf hereinkam. Ohne Angabe: web",
     )
 
     @field_validator("content", "url", "image_url", mode="before")
