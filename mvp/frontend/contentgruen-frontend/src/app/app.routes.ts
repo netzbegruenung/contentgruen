@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './auth/auth.guard';
 import { AdminGuard } from './auth/admin.guard';
 import { PublicGuard } from './auth/public.guard';
+import { ShareTargetGuard } from './share-target/share-target.guard';
 
 export const routes: Routes = [
     {
@@ -48,6 +49,21 @@ export const routes: Routes = [
         path: 'workflow/add-image',
         loadComponent: () => import('./add-image-workflow/add-image-workflow.component').then(m => m.AddImageWorkflowComponent),
         canActivate: [AuthGuard]
+    },
+    {
+        // Ziel des Android-Teilen-Menues (share_target im Manifest).
+        //
+        // Der Guard leitet ohne Zwischenseite auf /einwerfen weiter und legt die
+        // geteilten Daten unterwegs ab; die Komponente hier wird nur gerendert,
+        // wenn ?debug in der Adresse steht. Dass die Route ueberhaupt eine
+        // Komponente hat, ist also der Diagnose-Fall, nicht der Normalfall.
+        //
+        // Ohne AuthGuard: den stellt /einwerfen, und weil die Nutzlast im
+        // sessionStorage liegt statt in der Adresse, ueberlebt sie den Umweg
+        // ueber /login von selbst.
+        path: 'teilen',
+        canActivate: [ShareTargetGuard],
+        loadComponent: () => import('./share-target-debug/share-target-debug.component').then(m => m.ShareTargetDebugComponent)
     },
     {
         path: 'login',

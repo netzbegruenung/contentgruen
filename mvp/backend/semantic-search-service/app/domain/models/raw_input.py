@@ -44,11 +44,19 @@ class RawInputSource(str, Enum):
     """
     Kanal, ueber den der Einwurf hereinkam.
 
-    Aktuell gibt es genau einen Eingang. Das Feld existiert trotzdem von Anfang
-    an, weil der geplante Instagram-Share-Eingang ohne Browser-Session ankommt
-    und sich von einem Web-Einwurf unterscheiden lassen muss - ohne Feld waere
-    das eine Migration auf einer dann bereits gefuellten Tabelle.
+    Das Feld existierte von Anfang an, bevor es einen zweiten Kanal gab -- eine
+    Migration auf einer bereits gefuellten Tabelle waere teurer gewesen als ein
+    Feld, das eine Weile nur einen Wert kennt. Inzwischen gibt es den zweiten.
     """
 
     WEB = "web"
     """Ueber das Einwurf-Formular im Frontend."""
+
+    SHARE = "share"
+    """
+    Ueber das Android-Teilen-Menue (PWA Share Target).
+
+    Landet ebenfalls im Einwurf-Formular und damit auf demselben Endpunkt -- der
+    Unterschied ist nicht technisch, sondern der, den man spaeter wissen will:
+    wie viele Einwuerfe ueber das Teilen hereinkamen und wie viele von Hand.
+    """

@@ -53,7 +53,7 @@ async def add_raw_input(
             url=request.url,
             image_url=request.image_url,
             submitted_by=_einwerfende_person(x_user),
-            source_channel=RawInputSource.WEB.value,
+            source_channel=(request.source_channel or RawInputSource.WEB).value,
         )
         return AddRawInputResponse(id=raw_input["id"])
     except Exception as e:

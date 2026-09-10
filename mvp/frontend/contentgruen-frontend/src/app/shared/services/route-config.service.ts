@@ -73,6 +73,14 @@ export class RouteConfigService {
           showContributionsButton: false
         };
 
+      case ROUTES.SHARE_TARGET:
+        return {
+          pageTitle: PAGE_TITLES.SHARE_TARGET,
+          showBackButton: true,
+          showContributeButton: false,
+          showContributionsButton: false
+        };
+
       case ROUTES.LOGIN:
       case '/login':
       case '/login-selector':

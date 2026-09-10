@@ -4,14 +4,18 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
+/** Spiegelt RawInputSource im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
+export type RawInputSource = 'web' | 'share';
+
 /**
- * Ein Einwurf in den Fangkorb. Mindestens eines der drei Felder muss gesetzt
- * sein; alles Weitere waere schon Destillieren und passiert spaeter.
+ * Ein Einwurf in den Fangkorb. Mindestens eines der drei Inhaltsfelder muss
+ * gesetzt sein; alles Weitere waere schon Destillieren und passiert spaeter.
  */
 export interface AddRawInputRequest {
   content?: string;
   url?: string;
   image_url?: string;
+  source_channel?: RawInputSource;
 }
 
 export interface AddRawInputResponse {

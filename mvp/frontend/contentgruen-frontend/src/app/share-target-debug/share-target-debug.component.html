@@ -1,0 +1,96 @@
+<div class="diagnose">
+  <mat-card class="hinweis">
+    <mat-card-content>
+      <strong>Diagnose-Ansicht (Schritt 0).</strong>
+      Hier wird nichts gespeichert und nichts an den Fangkorb geschickt. Diese Seite
+      zeigt nur, was das Teilen-Menü tatsächlich übergeben hat.
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card *ngIf="ohneParameter" class="warnung">
+    <mat-card-content>
+      <strong>Es kam kein einziger Parameter an.</strong>
+      Entweder wurde diese Adresse direkt aufgerufen, oder die teilende App hat
+      nichts mitgegeben. Für die Verifikation zählt nur ein Aufruf über
+      „Teilen“ aus Instagram heraus.
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header><mat-card-title>Kontext</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <dl>
+        <dt>Anzeigemodus</dt>
+        <dd>
+          {{ anzeigeModus }}
+          <span class="anmerkung" *ngIf="anzeigeModus === 'browser'">
+            – nicht aus dem installierten Fenster gestartet
+          </span>
+        </dd>
+        <dt>Volle URL</dt>
+        <dd class="umbrechen">{{ volleUrl }}</dd>
+        <dt>User-Agent</dt>
+        <dd class="umbrechen">{{ userAgent }}</dd>
+      </dl>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header><mat-card-title>Übergebene Parameter</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <p *ngIf="ohneParameter" class="anmerkung">Keine.</p>
+      <table *ngIf="!ohneParameter" class="parameter-tabelle">
+        <thead>
+          <tr><th>Name</th><th>Wert</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let zeile of parameter">
+            <td>
+              <code>{{ zeile.name }}</code>
+              <span class="unerwartet" *ngIf="!zeile.erwartet">nicht angemeldet</span>
+            </td>
+            <td class="umbrechen">{{ zeile.wert }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Die drei angemeldeten Felder noch einmal einzeln: hier ist das Fehlen
+           die eigentliche Information, und ein fehlender Wert taucht in der
+           Tabelle oben per Definition nicht auf. -->
+      <dl class="erwartete">
+        <dt><code>title</code></dt>
+        <dd [class.fehlt]="!title">{{ title || 'nicht gesendet' }}</dd>
+        <dt><code>text</code></dt>
+        <dd [class.fehlt]="!text">{{ text || 'nicht gesendet' }}</dd>
+        <dt><code>url</code></dt>
+        <dd [class.fehlt]="!url">{{ url || 'nicht gesendet' }}</dd>
+      </dl>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Was der Fangkorb daraus machen würde</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="anmerkung">
+        Der <code>text</code>-Parameter durch dieselbe Zerlegung, die das
+        Einwurf-Formular heute schon benutzt.
+      </p>
+      <pre *ngIf="zerlegung">{{ zerlegung | json }}</pre>
+      <p *ngIf="!zerlegung" class="fehlt">Kein <code>text</code>-Parameter vorhanden.</p>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-header><mat-card-title>Bericht</mat-card-title></mat-card-header>
+    <mat-card-content>
+      <pre class="bericht">{{ bericht }}</pre>
+      <button mat-raised-button class="dark-green-button" (click)="berichtKopieren()">
+        <mat-icon>content_copy</mat-icon>
+        In die Zwischenablage
+      </button>
+      <span class="anmerkung" *ngIf="kopiert">kopiert</span>
+    </mat-card-content>
+  </mat-card>
+</div>

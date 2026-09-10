@@ -1,0 +1,85 @@
+.diagnose {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hinweis {
+  background-color: #e8f5e9;
+}
+
+.warnung {
+  background-color: #fff3e0;
+}
+
+/* Die Werte kommen von aussen und koennen beliebig lang sein -- ohne Umbruch
+   schiebt eine einzige lange URL das Layout auf dem Telefon quer. */
+.umbrechen {
+  overflow-wrap: anywhere;
+}
+
+dl {
+  margin: 0;
+}
+
+dt {
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+dd {
+  margin: 0 0 4px 0;
+}
+
+.parameter-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.parameter-tabelle th,
+.parameter-tabelle td {
+  text-align: left;
+  vertical-align: top;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.erwartete {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 8px;
+}
+
+.unerwartet {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background-color: #fff3e0;
+  font-size: 0.75rem;
+}
+
+.fehlt {
+  color: #757575;
+  font-style: italic;
+}
+
+.anmerkung {
+  color: #757575;
+  font-size: 0.875rem;
+}
+
+pre {
+  background-color: #f5f5f5;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bericht {
+  font-size: 0.8rem;
+}

@@ -1,7 +1,9 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RawInputService, AddRawInputRequest } from '../services/raw-input.service';
+import { SHARE_EINWURF_SCHLUESSEL } from '../share-target/share-target.guard';
+import { urlsInTextBereinigen } from '../shared/url-bereinigen';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
 import { Router } from '@angular/router';
@@ -41,7 +43,7 @@ export function einwurfZerlegen(eingabe: string): AddRawInputRequest {
   templateUrl: './add-raw-input.component.html',
   styleUrls: ['./add-raw-input.component.css'],
 })
-export class AddRawInputComponent implements OnDestroy {
+export class AddRawInputComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   einwurfForm: FormGroup;
@@ -51,6 +53,13 @@ export class AddRawInputComponent implements OnDestroy {
   /** Anzahl der Einwuerfe in dieser Sitzung - das Formular bleibt ja offen. */
   eingeworfen = 0;
   zeigeBildFeld = false;
+  /**
+   * Ob der aktuelle Feldinhalt aus dem Teilen-Menue stammt. Steuert nur den
+   * Herkunftskanal des naechsten Einwurfs und wird danach zurueckgesetzt: das
+   * Formular bleibt offen, und was jemand danach von Hand eintippt, ist wieder
+   * ein Web-Einwurf.
+   */
+  ausShare = false;
 
   constructor(
     private fb: FormBuilder,
@@ -63,6 +72,34 @@ export class AddRawInputComponent implements OnDestroy {
       einwurf: [''],
       imageUrl: [''],
     });
+  }
+
+  ngOnInit(): void {
+    const geteilt = this.geteiltenEinwurfHolen();
+    if (geteilt) {
+      this.einwurfForm.patchValue({ einwurf: geteilt });
+      this.ausShare = true;
+    }
+  }
+
+  /**
+   * Holt einen ueber das Teilen-Menue hereingereichten Einwurf und raeumt ihn weg.
+   *
+   * Einmalig mit Absicht: bleibt der Wert liegen, befuellt sich das Formular auch
+   * beim naechsten regulaeren Aufruf wieder mit demselben Link. Der Zugriff kann
+   * werfen (privater Modus, blockierte Seitendaten) -- dann gibt es eben keine
+   * Vorbelegung, aber das Formular funktioniert.
+   */
+  private geteiltenEinwurfHolen(): string | null {
+    try {
+      const wert = sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL);
+      if (wert) {
+        sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL);
+      }
+      return wert;
+    } catch {
+      return null;
+    }
   }
 
   /** Leer ist leer - die einzige Pflicht, die der Fangkorb kennt. */
@@ -84,13 +121,20 @@ export class AddRawInputComponent implements OnDestroy {
     }
 
     const { einwurf, imageUrl } = this.einwurfForm.value;
+    // Tracking-Parameter fliegen hier raus und nicht erst im Share-Pfad: dieselbe
+    // Adresse von Hand eingefuegt haette sonst dasselbe Problem -- pro Einwurf ein
+    // anderer Link, und ein fremdes Token in der Datenbank.
     const anfrage: AddRawInputRequest = einwurf?.trim()
-      ? einwurfZerlegen(einwurf)
+      ? einwurfZerlegen(urlsInTextBereinigen(einwurf))
       : {};
 
     const bild = imageUrl?.trim();
     if (bild) {
       anfrage.image_url = bild;
+    }
+
+    if (this.ausShare) {
+      anfrage.source_channel = 'share';
     }
 
     this.wirdGespeichert = true;
@@ -104,6 +148,7 @@ export class AddRawInputComponent implements OnDestroy {
         // ist der Normalfall, nicht die Ausnahme.
         this.einwurfForm.reset({ einwurf: '', imageUrl: '' });
         this.zeigeBildFeld = false;
+        this.ausShare = false;
       },
       error: (error) => {
         this.logger.error('Einwurf fehlgeschlagen', error);
