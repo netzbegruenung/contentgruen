@@ -8,11 +8,11 @@
     <section class="legal-section">
       <h2>Anbieter</h2>
       <p>
-        <strong>NETZBEGRÜNUNG — Verein für grüne Netzkultur e.&nbsp;V.</strong><br>
-        c/o Max Pfeuffer<br>
-        Heilig-Kreuz-Straße 16<br>
-        86609 Donauwörth<br>
-        Deutschland
+        <strong>{{ VEREIN.NAME }}</strong><br>
+        {{ VEREIN.ADRESSZUSATZ }}<br>
+        {{ VEREIN.STRASSE }}<br>
+        {{ VEREIN.PLZ_ORT }}<br>
+        {{ VEREIN.LAND }}
       </p>
     </section>
 
@@ -21,7 +21,7 @@
     <section class="legal-section">
       <h2>Kontakt</h2>
       <p>
-        <strong>Telefon:</strong> +49 906 299940-0<br>
+        <strong>Telefon:</strong> {{ VEREIN.TELEFON }}<br>
         <strong>E-Mail:</strong>
         <a href="mailto:{{ KONTAKT_MAIL }}">{{ KONTAKT_MAIL }}</a>
       </p>
@@ -32,7 +32,7 @@
     <section class="legal-section">
       <h2>Vertreten durch</h2>
       <p>
-        Jennifer Herbert und Korbinian Gall<br>
+        {{ VEREIN.VORSTAND }}<br>
         Vertretungsberechtigter Vorstand nach § 26 BGB (Anschrift wie oben)
       </p>
     </section>

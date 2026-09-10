@@ -12,17 +12,17 @@
         Sinne von Artikel 4 Nummer 7 der Datenschutz-Grundverordnung (DSGVO) ist:
       </p>
       <p class="contact-info">
-        <strong>NETZBEGRÜNUNG — Verein für grüne Netzkultur e.&nbsp;V.</strong><br>
-        c/o Max Pfeuffer<br>
-        Heilig-Kreuz-Straße 16<br>
-        86609 Donauwörth<br>
-        Deutschland<br>
+        <strong>{{ VEREIN.NAME }}</strong><br>
+        {{ VEREIN.ADRESSZUSATZ }}<br>
+        {{ VEREIN.STRASSE }}<br>
+        {{ VEREIN.PLZ_ORT }}<br>
+        {{ VEREIN.LAND }}<br>
         <br>
-        Telefon: +49 906 299940-0<br>
+        Telefon: {{ VEREIN.TELEFON }}<br>
         E-Mail: <a href="mailto:{{ KONTAKT_MAIL }}">{{ KONTAKT_MAIL }}</a>
       </p>
       <p>
-        Vertreten durch den Vorstand nach § 26 BGB: Jennifer Herbert und Korbinian Gall.
+        Vertreten durch den Vorstand nach § 26 BGB: {{ VEREIN.VORSTAND }}.
         Weitere Angaben finden Sie im <a routerLink="/impressum">Impressum</a>.
       </p>
     </section>
@@ -82,9 +82,9 @@
 
       <h3>Anmeldung über die Netzbegrünung</h3>
       <p>
-        Die Anmeldung läuft über den Identitätsdienst der Netzbegrünung. Das ist derselbe
-        Verein, der auch für diese Plattform verantwortlich ist — Ihre Anmeldedaten gehen
-        also nicht an einen Dritten.
+        <strong>Das ist der übliche Weg.</strong> Die Anmeldung läuft über den
+        Identitätsdienst der Netzbegrünung — denselben Verein, der auch für diese Plattform
+        verantwortlich ist. Ihre Anmeldedaten gehen also nicht an einen Dritten.
       </p>
       <p>
         Bei der Anmeldung übermittelt der Identitätsdienst an diese Plattform eine
@@ -107,8 +107,9 @@
 
       <h3>Zugang, den wir selbst anlegen</h3>
       <p>
-        Für Personen ohne Netzbegrünung-Konto können wir einen Zugang von Hand anlegen. Eine
-        Selbstregistrierung gibt es nicht. Gespeichert werden dafür Ihre E-Mail-Adresse, ein
+        <strong>Der Ausnahmefall.</strong> Für Personen ohne Netzbegrünung-Konto können wir
+        einen Zugang von Hand anlegen; eine Selbstregistrierung gibt es nicht. Gespeichert
+        werden dafür Ihre E-Mail-Adresse, ein
         Anzeigename, eine interne Kennung und Ihr Passwort — Letzteres nicht im Klartext,
         sondern als kryptografische Prüfsumme, aus der sich das Passwort nicht
         zurückrechnen lässt. Diese Angaben liegen in einer Konfigurationsdatei auf dem Server.
@@ -440,6 +441,13 @@
         Ihrer letzten Nutzung</strong>. Es ist kein reines Sitzungscookie:
         <strong>Es überlebt das Schließen des Browsers</strong>, solange die acht Stunden nicht
         abgelaufen sind. Ohne dieses Cookie funktioniert die Anmeldung nicht.
+      </p>
+      <p>
+        Während des Anmeldevorgangs selbst setzt die Software zusätzlich <strong>zwei
+        kurzlebige Cookies</strong>, die den Ablauf gegen Manipulation absichern: Sie halten
+        fest, dass die Antwort des Identitätsdienstes zu der Anmeldung gehört, die Sie eben
+        begonnen haben. Sie enthalten keine Angaben über Sie, gelten nur Sekunden bis Minuten
+        und werden nach der Anmeldung verworfen.
       </p>
 
       <h3>Sitzungskennung</h3>
