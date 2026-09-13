@@ -11,8 +11,24 @@
 }
 
 .footer span {
-    white-space: nowrap;
     font-size: 16px;
+}
+
+/*
+ * Mobil steht jede Angabe auf einer eigenen Zeile; die Trennstriche entfallen.
+ * Der Satz "Ein Projekt von ..." darf umbrechen, sonst laeuft er bei 360 px
+ * ueber den Rand.
+ */
+@media (max-width: 599px) {
+    .footer {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .footer .trenner {
+        display: none;
+    }
 }
 
 .footer a {

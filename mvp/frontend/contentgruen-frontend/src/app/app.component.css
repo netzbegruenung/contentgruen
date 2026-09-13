@@ -369,10 +369,3 @@ mat-sidenav-content {
     overflow-y: auto;
     background-color: var(--bg-main);
 }
-
-/* Hide footer on mobile and tablet */
-@media (max-width: 959px) {
-    app-footer {
-        display: none;
-    }
-}
