@@ -3,7 +3,7 @@ DTOs fuer den Fangkorb (Rohinput).
 
 Die einzige inhaltliche Pflicht beim Einwerfen ist, dass ueberhaupt etwas
 dasteht. Kein Titel, keine Kategorie, kein Zieltyp - all das ist Destillieren
-und passiert erst im Destillier-Ablauf (Entwurfssatz, Status, Verknuepfung).
+und passiert erst im Destillier-Ablauf (Satz, Status, Verknuepfung).
 """
 
 import datetime
@@ -12,12 +12,16 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from domain.models.content_type import ContentType
 from domain.models.raw_input import RawInputSource, RawInputStatus
 from utils.url_validator import validate_url_security
 
 # Der Entwurfssatz wird der Titel des Beitrags und hat deshalb dasselbe Limit
 # wie der Titel von Kommentar und Hintergrundinfo.
 SATZ_LIMIT = 120
+
+# Die Beitragstypen, die aus dem Destillier-Ablauf entstehen koennen.
+BEITRAGSTYPEN = (ContentType.COMMENTARY, ContentType.GENERIC_TEXT)
 
 
 def _normalisieren(wert: Optional[str]) -> Optional[str]:
@@ -54,7 +58,7 @@ class AddRawInputRequest(BaseModel):
     content: Optional[str] = Field(
         default=None,
         max_length=5000,
-        description="Freitext: der eine Satz oder eine Notiz zum Link",
+        description="Hinweis fuer andere: Freitext zum Link oder der Fund selbst",
     )
     url: Optional[str] = Field(
         default=None, max_length=2000, description="Link auf den Beitrag"
@@ -118,14 +122,21 @@ class UpdateRawInputStatusRequest(BaseModel):
     Statuswechsel aus dem Destillier-Ablauf.
 
     Nur zwei Ziele: ``discarded`` (ohne content_id) und ``processed`` (nur mit
-    content_id - der Beitrag, der entstanden ist). ``in_progress`` wird bewusst
-    nicht vergeben: es gibt keine Sperre.
+    content_id - der Beitrag, der entstanden ist). ``in_progress`` wird hier nicht
+    vergeben: das setzt der erste gespeicherte Satz.
+
+    ``content_type`` ist bei processed optional, damit eine noch zwischengespeicherte
+    aeltere App-Version nicht scheitert; ohne ihn bleibt die Karte ungefaerbt.
     """
 
     status: RawInputStatus
     content_id: Optional[uuid.UUID] = Field(
         default=None,
         description="Der entstandene Beitrag; Pflicht bei processed",
+    )
+    content_type: Optional[ContentType] = Field(
+        default=None,
+        description="Typ des entstandenen Beitrags (commentary oder generic_text)",
     )
 
     @model_validator(mode="after")
@@ -134,21 +145,53 @@ class UpdateRawInputStatusRequest(BaseModel):
             raise ValueError("status muss discarded oder processed sein")
         if self.status == RawInputStatus.PROCESSED and self.content_id is None:
             raise ValueError("processed braucht die content_id des Beitrags")
-        if self.status == RawInputStatus.DISCARDED and self.content_id is not None:
-            raise ValueError("discarded nimmt keine content_id an")
+        if self.status == RawInputStatus.DISCARDED and (
+            self.content_id is not None or self.content_type is not None
+        ):
+            raise ValueError(
+                "discarded nimmt keine content_id und keinen content_type an"
+            )
+        if self.content_type is not None and self.content_type not in BEITRAGSTYPEN:
+            raise ValueError("content_type muss commentary oder generic_text sein")
         return self
 
 
 ###   Responses   ###
 
 
+class RawInputDraftResponse(BaseModel):
+    """Ein Satz zu einem Einwurf, mit Person und Zeitpunkt der letzten Aenderung."""
+
+    id: str
+    user_id: str
+    sentence: str
+    updated_at: datetime.datetime
+
+
+class RawInputLinkResponse(BaseModel):
+    """
+    Ein Beitrag, der aus dem Einwurf entstanden ist.
+
+    ``draft_id`` ist der ausformulierte Satz; None, wenn die Person ihren Satz
+    spaeter geleert hat. ``content_type`` ist None bei Verknuepfungen aus der Zeit
+    vor Fangkorb v2.
+    """
+
+    content_id: str
+    content_type: Optional[str] = None
+    draft_id: Optional[str] = None
+    processed_by: Optional[str] = None
+    processed_at: datetime.datetime
+
+
 class RawInputResponse(BaseModel):
     """
     Ein Einwurf, wie ihn der Fangkorb ausliefert.
 
-    ``own_draft`` ist der Entwurfssatz der anfragenden Person, nicht der anderer.
-    Die processed-Felder beschreiben die erste Verknuepfung mit einem Beitrag;
-    in der Tabelle heissen sie created_by/created_at.
+    ``drafts`` sind alle Saetze aller Personen, aelteste Aenderung zuerst - sie sind
+    fuer alle Angemeldeten sichtbar. ``own_draft`` ist daraus der Satz der
+    anfragenden Person. ``links`` sind alle entstandenen Beitraege, aelteste
+    zuerst; die processed-Felder beschreiben davon den ersten.
     """
 
     id: str
@@ -159,10 +202,13 @@ class RawInputResponse(BaseModel):
     source_channel: str
     status: RawInputStatus
     created_at: datetime.datetime
+    destilled_by: Optional[str] = None
     own_draft: Optional[str] = None
     processed_content_id: Optional[str] = None
     processed_by: Optional[str] = None
     processed_at: Optional[datetime.datetime] = None
+    drafts: List[RawInputDraftResponse] = Field(default_factory=list)
+    links: List[RawInputLinkResponse] = Field(default_factory=list)
 
 
 class AddRawInputResponse(BaseModel):

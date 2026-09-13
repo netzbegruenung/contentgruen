@@ -1,10 +1,10 @@
 """
 Fangkorb-Endpunkte: einwerfen, auflisten, einzeln lesen und destillieren.
 
-Destillieren heisst: einen Satz formulieren (Entwurf, je Person), dann entweder
-verwerfen oder einen Beitrag daraus machen und den Einwurf damit verknuepfen.
+Drei Stufen: Einwerfen, Destillieren (einen Satz formulieren, je Person),
+Ausformulieren (einen Beitrag daraus machen und den Einwurf damit verknuepfen).
 Eine Sperre gibt es bewusst nicht - mehrere Leute duerfen denselben Einwurf
-gleichzeitig destillieren.
+gleichzeitig destillieren, und alle Saetze sind fuer alle Angemeldeten sichtbar.
 """
 
 import logging
@@ -95,8 +95,10 @@ async def get_raw_inputs(
     Den Fangkorb auflisten: eigene Einwuerfe zuerst, dann neueste zuerst.
 
     Absichtlich alle Einwuerfe, nicht nur die eigenen: der Fangkorb ist ein
-    gemeinsamer Vorrat. Die anfragende Person bestimmt nur die Reihenfolge und
-    welcher Entwurfssatz mitkommt (ihr eigener).
+    gemeinsamer Vorrat. Je Einwurf kommen Status, ``destilled_by``, alle Saetze
+    (Text, Person, Zeitpunkt) und alle verknuepften Beitraege (Typ, ID,
+    ``draft_id``) mit. Die anfragende Person bestimmt nur die Reihenfolge und
+    welcher Satz als ``own_draft`` mitkommt.
     """
     try:
         offset = (page - 1) * page_size
@@ -125,7 +127,7 @@ async def get_raw_input(
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> RawInputResponse:
     """
-    Einen Einwurf lesen, mit eigenem Entwurfssatz.
+    Einen Einwurf lesen, mit allen Saetzen und dem eigenen als ``own_draft``.
 
     Die Destillier-Ansicht laedt hierueber nach einem PWA-Neustart alles, was sie
     braucht - in der Adresse steht nur die ID.
@@ -150,8 +152,10 @@ async def save_draft(
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> DraftResponse:
     """
-    Den eigenen Entwurfssatz speichern; ein leerer Satz loescht ihn.
+    Den eigenen Satz speichern; ein leerer Satz loescht ihn.
 
+    Der erste Satz macht einen offenen Einwurf zu ``in_progress`` und traegt
+    ``destilled_by`` ein; wird der letzte Satz geloescht, ist er wieder offen.
     Wird oft aufgerufen (verzoegert beim Tippen, beim Verlassen des Felds, beim
     Wegwechseln der App) und ist deshalb idempotent und nicht gedrosselt.
     """
@@ -179,13 +183,18 @@ async def update_status(
     Verwerfen (nur die einwerfende Person) oder als verarbeitet markieren.
 
     ``processed`` schreibt in derselben Transaktion die Verknuepfung mit dem
-    entstandenen Beitrag. Erlaubt: discarded aus open, processed aus open oder
-    discarded; eine Wiederholung desselben Ziels ist unschaedlich.
+    entstandenen Beitrag, seinem Typ und dem Satz der verarbeitenden Person.
+    Erlaubt: discarded aus open oder in_progress, processed aus open, in_progress
+    oder discarded; eine Wiederholung desselben Ziels ist unschaedlich.
     """
     person = _angemeldete_person(x_user)
     try:
         row = repository.set_status(
-            raw_input_id, request.status, person, request.content_id
+            raw_input_id,
+            request.status,
+            person,
+            request.content_id,
+            request.content_type.value if request.content_type else None,
         )
         return RawInputResponse(**row)
     except EinwurfNichtGefunden:

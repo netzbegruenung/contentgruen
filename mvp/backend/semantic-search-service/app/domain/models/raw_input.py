@@ -17,20 +17,26 @@ from enum import Enum
 
 class RawInputStatus(str, Enum):
     """
-    Bearbeitungsstand eines Einwurfs.
+    Bearbeitungsstand eines Einwurfs - drei Stufen: Einwerfen, Destillieren,
+    Ausformulieren.
 
-    Der Eingang setzt OPEN, der Destillier-Ablauf setzt DISCARDED oder PROCESSED
-    (siehe ``uebergang_erlaubt``). IN_PROGRESS bleibt der Andockpunkt fuer eine
-    spaetere Queue mit Zuweisung und wird heute von nichts geschrieben.
+    Der Eingang setzt OPEN. Der erste gespeicherte Satz macht daraus IN_PROGRESS,
+    das Loeschen des letzten Satzes wieder OPEN (``status_nach_satz``,
+    ``status_ohne_saetze``). Der Destillier-Ablauf setzt DISCARDED oder PROCESSED
+    (``uebergang_erlaubt``).
 
-    OPEN -> PROCESSED | DISCARDED,  DISCARDED -> PROCESSED
+    OPEN <-> IN_PROGRESS (ueber Saetze)
+    OPEN | IN_PROGRESS -> PROCESSED | DISCARDED,  DISCARDED -> PROCESSED
     """
 
     OPEN = "open"
-    """Liegt im Fangkorb, niemand hat ihn angefasst."""
+    """Liegt im Fangkorb, niemand hat einen Satz dazu gespeichert."""
 
     IN_PROGRESS = "in_progress"
-    """Jemand arbeitet daran. Wird nicht vergeben: es gibt bewusst keine Sperre."""
+    """
+    Destilliert: mindestens ein Satz ist gespeichert, ein Beitrag noch nicht.
+    Keine Sperre - andere duerfen weitere Saetze formulieren.
+    """
 
     PROCESSED = "processed"
     """Daraus ist mindestens ein Beitrag entstanden (siehe raw_input_content_links)."""
@@ -67,23 +73,53 @@ class RawInputSource(str, Enum):
 # demselben Einwurf entstehen (keine Sperre, Verknuepfung ist n:m).
 _ERLAUBTE_VORGAENGER = {
     RawInputStatus.DISCARDED: frozenset(
-        {RawInputStatus.OPEN, RawInputStatus.DISCARDED}
+        {RawInputStatus.OPEN, RawInputStatus.IN_PROGRESS, RawInputStatus.DISCARDED}
     ),
     RawInputStatus.PROCESSED: frozenset(
-        {RawInputStatus.OPEN, RawInputStatus.DISCARDED, RawInputStatus.PROCESSED}
+        {
+            RawInputStatus.OPEN,
+            RawInputStatus.IN_PROGRESS,
+            RawInputStatus.DISCARDED,
+            RawInputStatus.PROCESSED,
+        }
     ),
 }
 
 
 def uebergang_erlaubt(von: RawInputStatus, nach: RawInputStatus) -> bool:
     """
-    Ob ein Einwurf von ``von`` nach ``nach`` wechseln darf.
+    Ob ein Einwurf per Statuswechsel von ``von`` nach ``nach`` wechseln darf.
 
-    discarded nur aus open (ein verarbeiteter Einwurf wird nicht nachtraeglich
-    verworfen); processed aus open oder discarded (andere duerfen Verworfenes
-    trotzdem destillieren). Zurueck nach open oder nach in_progress fuehrt nichts.
+    discarded aus open oder in_progress (ein verarbeiteter Einwurf wird nicht
+    nachtraeglich verworfen); processed aus open, in_progress oder discarded
+    (andere duerfen Verworfenes trotzdem destillieren). open und in_progress sind
+    kein Ziel eines Statuswechsels - die ergeben sich aus den Saetzen.
     """
     return von in _ERLAUBTE_VORGAENGER.get(nach, frozenset())
+
+
+def status_nach_satz(aktuell: RawInputStatus) -> RawInputStatus:
+    """
+    Der Status, nachdem jemand einen nicht-leeren Satz gespeichert hat.
+
+    Nur ein offener Einwurf wird dadurch destilliert. Verworfenes bleibt verworfen
+    (grau, andere duerfen trotzdem destillieren), Verarbeitetes bleibt verarbeitet.
+    """
+    if aktuell == RawInputStatus.OPEN:
+        return RawInputStatus.IN_PROGRESS
+    return aktuell
+
+
+def status_ohne_saetze(aktuell: RawInputStatus) -> RawInputStatus:
+    """
+    Der Status, nachdem der letzte Satz zu einem Einwurf geloescht wurde.
+
+    Nur ein destillierter Einwurf faellt zurueck auf offen; verworfene und
+    verarbeitete behalten ihren Stand.
+    """
+    if aktuell == RawInputStatus.IN_PROGRESS:
+        return RawInputStatus.OPEN
+    return aktuell
 
 
 class EinwurfNichtGefunden(LookupError):

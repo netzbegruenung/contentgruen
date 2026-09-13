@@ -1,12 +1,15 @@
 """
-Das Schema des Fangkorbs festnageln - besonders die Teile, die heute nichts tut.
+Das Schema des Fangkorbs festnageln.
 
-``raw_input_content_links`` ist leer und wird von keinem Codepfad beschrieben:
-die Verarbeitung ist nicht gebaut. Genau deshalb steht hier ein Test. Eine
-ungenutzte Tabelle ist die erste, die jemand beim Aufraeumen "vereinfacht" - etwa
-zu einem Feld ``resulting_content_id`` auf ``raw_inputs``. Das waere billiger und
-genau die Blockade, die docs/ROHINPUT.md (Abschnitt 6) benennt: ein Einwurf kann
-mehrere Beitraege hervorbringen und ein Beitrag aus mehreren Einwuerfen entstehen.
+``raw_input_content_links`` ist die n:m-Verknuepfung zwischen Einwurf und
+Beitrag. Eine schmale Tabelle ist die erste, die jemand beim Aufraeumen
+"vereinfacht" - etwa zu einem Feld ``resulting_content_id`` auf ``raw_inputs``.
+Das waere billiger und genau die Blockade, die docs/ROHINPUT.md (Abschnitt 6)
+benennt: ein Einwurf kann mehrere Beitraege hervorbringen und ein Beitrag aus
+mehreren Einwuerfen entstehen.
+
+Neue Spalten an bestehenden Tabellen legt ``create_all`` nicht an; wer hier eine
+Spalte ergaenzt, braucht ein Migrationsskript in mvp/backend/postgres-app/migrations.
 """
 
 import pytest
@@ -26,14 +29,19 @@ class TestRawInputSchema:
             "source_channel",
             "status",
             "created_at",
+            "destilled_by",
         }
 
     def test_submitted_by_ist_nullable(self):
         """Ein NOT NULL hier verbaut den spaeteren Share-Eingang ohne Sitzung."""
         assert RawInput.__table__.columns["submitted_by"].nullable is True
 
+    def test_destilled_by_ist_nullable(self):
+        """Offene Einwuerfe hat noch niemand destilliert."""
+        assert RawInput.__table__.columns["destilled_by"].nullable is True
+
     def test_status_ist_ein_eigenes_feld(self):
-        """Der Andockpunkt der spaeteren Queue - kein abgeleiteter Zustand."""
+        """Der Bearbeitungsstand wird geschrieben, nicht bei jedem Lesen abgeleitet."""
         status = RawInput.__table__.columns["status"]
         assert status.nullable is False
         assert "open" in str(status.server_default.arg)
@@ -64,6 +72,8 @@ class TestVerknuepfungstabelle:
             "content_id",
             "created_by",
             "created_at",
+            "draft_id",
+            "content_type",
         }
 
     def test_verknuepfung_ist_n_zu_m(self):
@@ -92,6 +102,21 @@ class TestVerknuepfungstabelle:
     def test_wer_verarbeitet_hat_wird_festgehalten(self):
         """Die Rolle, die last_modified_by am Beitrag nicht bewahrt."""
         assert "created_by" in RawInputContentLink.__table__.columns
+
+    def test_geleerter_satz_loescht_die_verknuepfung_nicht(self):
+        """
+        Ein leerer Satz loescht seine Zeile in raw_input_drafts. Die Verknuepfung
+        mit dem Beitrag muss das ueberleben - nur draft_id wird leer.
+        """
+        spalte = RawInputContentLink.__table__.columns["draft_id"]
+        (fremdschluessel,) = list(spalte.foreign_keys)
+        assert spalte.nullable is True
+        assert fremdschluessel.column.table.name == "raw_input_drafts"
+        assert fremdschluessel.ondelete == "SET NULL"
+
+    def test_beitragstyp_ist_optional(self):
+        """Verknuepfungen aus der Zeit vor Fangkorb v2 kennen keinen Typ."""
+        assert RawInputContentLink.__table__.columns["content_type"].nullable is True
 
 
 @pytest.mark.unit

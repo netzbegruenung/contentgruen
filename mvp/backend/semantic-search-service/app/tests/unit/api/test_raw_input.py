@@ -312,9 +312,61 @@ class TestFangkorbListe:
 
         assert daten["results"][0]["own_draft"] == "Mein Satz"
         assert daten["results"][0]["processed_by"] is None
+        assert daten["results"][0]["drafts"] == []
+        assert daten["results"][0]["links"] == []
         assert daten["results"][1]["processed_content_id"] == inhalt_id
         assert daten["results"][1]["processed_by"] == "bob"
         assert daten["results"][1]["processed_at"].startswith("2026-09-13T18:00")
+
+    def test_liste_liefert_alle_saetze_und_verknuepften_beitraege(
+        self, client, repository
+    ):
+        """Spec Fangkorb v2, Abschnitt A: alles, was die Karte braucht."""
+        am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
+        satz_id = str(uuid.uuid4())
+        inhalt_id = str(uuid.uuid4())
+        repository.get_all.return_value = [
+            _gespeicherter_einwurf(
+                status=RawInputStatus.PROCESSED.value,
+                destilled_by="bob",
+                drafts=[
+                    {
+                        "id": satz_id,
+                        "user_id": "bob",
+                        "sentence": "Waermepumpe lohnt sich auch im Altbau",
+                        "updated_at": am,
+                    }
+                ],
+                links=[
+                    {
+                        "content_id": inhalt_id,
+                        "content_type": "commentary",
+                        "draft_id": satz_id,
+                        "processed_by": "carol",
+                        "processed_at": am,
+                    }
+                ],
+            )
+        ]
+        repository.count.return_value = 1
+
+        (eintrag,) = client.get(LIST_URL, headers={"X-User": "alice"}).json()["results"]
+
+        assert eintrag["status"] == "processed"
+        assert eintrag["destilled_by"] == "bob"
+        (satz,) = eintrag["drafts"]
+        assert satz["user_id"] == "bob"
+        assert satz["sentence"] == "Waermepumpe lohnt sich auch im Altbau"
+        assert satz["updated_at"].startswith("2026-09-13T18:00")
+        assert eintrag["links"] == [
+            {
+                "content_id": inhalt_id,
+                "content_type": "commentary",
+                "draft_id": satz_id,
+                "processed_by": "carol",
+                "processed_at": eintrag["links"][0]["processed_at"],
+            }
+        ]
 
 
 @pytest.mark.unit
@@ -440,7 +492,7 @@ class TestStatuswechsel:
         assert antwort.status_code == 200
         assert antwort.json()["status"] == "discarded"
         repository.set_status.assert_called_once_with(
-            EINWURF_ID, RawInputStatus.DISCARDED, "alice", None
+            EINWURF_ID, RawInputStatus.DISCARDED, "alice", None, None
         )
 
     def test_verarbeitet_gibt_beitrag_und_bearbeitenden_zurueck(
@@ -457,14 +509,36 @@ class TestStatuswechsel:
 
         antwort = client.patch(
             STATUS_URL,
-            json={"status": "processed", "content_id": str(inhalt_id)},
+            json={
+                "status": "processed",
+                "content_id": str(inhalt_id),
+                "content_type": "commentary",
+            },
             headers={"X-User": "alice"},
         )
 
         assert antwort.status_code == 200
         assert antwort.json()["processed_by"] == "alice"
         repository.set_status.assert_called_once_with(
-            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id
+            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id, "commentary"
+        )
+
+    def test_verarbeitet_ohne_beitragstyp_bleibt_erlaubt(self, client, repository):
+        """Eine noch zwischengespeicherte aeltere App schickt keinen Typ mit."""
+        inhalt_id = uuid.uuid4()
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+        )
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={"status": "processed", "content_id": str(inhalt_id)},
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        repository.set_status.assert_called_once_with(
+            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id, None
         )
 
     @pytest.mark.parametrize(
@@ -475,6 +549,17 @@ class TestStatuswechsel:
             {"status": "in_progress"},
             {"status": "open"},
             {"status": "processed", "content_id": "keine-uuid"},
+            {"status": "discarded", "content_type": "commentary"},
+            {
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "image",
+            },
+            {
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "brieftaube",
+            },
         ],
     )
     def test_ungueltige_statuswechsel_werden_abgewiesen(
