@@ -7,6 +7,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 )
 from dtos.contribution import GetContributionsOfUserResponse
 from domain.models.content import ContentDbEntry
+from domain.models.content_type import ContentType
 from core.config import Settings
 from core.logging import get_logger
 
@@ -14,6 +15,16 @@ logger = get_logger(__name__)
 
 
 router = APIRouter()
+
+# "Meine Beitraege" zeigt nur ausformulierte Beitraege. Aussagen entstehen beim
+# Beitragen nebenbei (das Formular legt die beantwortete Aussage an), Herkunftsangaben
+# ueber die Herkunftseingabe - beide gehoeren nicht in die Liste.
+AUSFORMULIERTE_TYPEN = [
+    ContentType.COMMENTARY.value,
+    ContentType.GENERIC_TEXT.value,
+    ContentType.IMAGE.value,
+    ContentType.POST.value,
+]
 
 
 # Test endpoint to check if the API is running
@@ -45,9 +56,12 @@ async def search_content(
                 user_id=x_user,
                 limit=page_size,
                 offset=offset,
+                content_types=AUSFORMULIERTE_TYPEN,
             )
         )
-        total_count = await content_repository.getCountByAuthor(user_id=x_user)
+        total_count = await content_repository.getCountByAuthor(
+            user_id=x_user, content_types=AUSFORMULIERTE_TYPEN
+        )
 
         logger.debug(
             f"/getContributionsOfUser got {len(content_index_results)} results"

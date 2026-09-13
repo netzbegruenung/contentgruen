@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
+import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContributionsService } from '../services/contributions.service';
@@ -14,6 +14,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { typLabel } from '../shared/content-type-registry';
+import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 
 @Component({
   selector: 'app-contributions-view',
@@ -28,7 +29,10 @@ import { typLabel } from '../shared/content-type-registry';
   ],
   templateUrl: './contributions-view.component.html',
   styleUrls: ['./contributions-view.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  // Hier und nicht in app.config.ts: dort zoege der Import den Paginator samt
+  // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
+  providers: [{ provide: MatPaginatorIntl, useClass: DeutscherPaginatorIntl }]
 })
 export class ContributionsViewComponent implements OnInit, OnDestroy {
   readonly typLabel = typLabel;
