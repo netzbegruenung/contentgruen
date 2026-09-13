@@ -1,0 +1,69 @@
+.destillieren {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.zustand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 0;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+.einwurf {
+  margin-bottom: 16px;
+}
+
+.einwurf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  color: var(--primary-main);
+  word-break: break-all;
+}
+
+.einwurf-link mat-icon {
+  flex-shrink: 0;
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.einwurf-notiz {
+  white-space: pre-line;
+}
+
+.einwurf-stand {
+  color: var(--text-secondary, #4a4a4a);
+  font-style: italic;
+}
+
+.satz-feld {
+  width: 100%;
+}
+
+.knoepfe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.fehler {
+  color: var(--warn-color, #b00020);
+}
+
+.satz-vorschau {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.typen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}

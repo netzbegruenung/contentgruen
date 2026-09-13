@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { SimpleChange } from '@angular/core';
 import { AddGenerictextComponent } from './add-generictext.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -32,6 +33,23 @@ describe('AddGenerictextComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('uebernimmt Satz und Link aus dem Destillier-Ablauf', () => {
+    component.vorbefuellung = {
+      rohinputId: 'id-1',
+      titel: 'Erneuerbare senken Strompreise deutlich',
+      url: 'https://example.org/studie',
+    };
+    component.ngOnChanges({
+      vorbefuellung: new SimpleChange(null, component.vorbefuellung, true),
+    });
+
+    expect(component.generictextForm.value.title).toBe('Erneuerbare senken Strompreise deutlich');
+    expect(component.generictextForm.value.references).toEqual([
+      { reference_string: 'https://example.org/studie' },
+    ]);
+    expect(component.showReferences).toBeTrue();
   });
 
   it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {

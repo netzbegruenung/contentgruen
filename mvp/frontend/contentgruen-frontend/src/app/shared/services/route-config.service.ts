@@ -116,6 +116,16 @@ export class RouteConfigService {
   }
 
   private getDynamicRouteConfig(route: string, defaultConfig: RouteConfig): RouteConfig {
+    // /destillieren und /destillieren/:id
+    if (route === ROUTES.DESTILLIEREN || route.startsWith(`${ROUTES.DESTILLIEREN}/`)) {
+      return {
+        pageTitle: PAGE_TITLES.DESTILLIEREN,
+        showBackButton: true,
+        showContributeButton: false,
+        showContributionsButton: false
+      };
+    }
+
     if (route.startsWith('/commentary/')) {
       return {
         ...defaultConfig,

@@ -429,6 +429,21 @@ As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a F
 
 Legacy types (`statement`, `reference`, `commentary`, `generic_text`) still have hand-written service/repository classes; do not copy that pattern for new types — prefer the registry path above. Note that `commentary` and `generic_text` also have registry specs that nothing resolves yet.
 
+### Titel von Beiträgen: Behauptung, kein Thema
+Der Titel eines **Kommentars** und einer **Hintergrundinfo** ist genau ein Satz, der eine
+Behauptung mit Haltung aufstellt: 3–120 Zeichen. Frage und Thema gehören ins **Statement**,
+auf das der Beitrag antwortet, nicht in den Titel. Im Destillier-Ablauf ist das Satz-Feld
+„Was ist der Punkt? Ein Satz.“ genau dieser Titel.
+
+- **Richtig:** „Wärmepumpe lohnt sich auch im Altbau“, „Wärmepumpen rechnen sich im Altbau,
+  wenn man die Förderung mitrechnet“
+- **Falsch:** Fragen („Lohnt sich Wärmepumpe im Altbau?“), Themen („Wärmepumpen im Altbau“),
+  Etiketten („Faktenhammer“, „Nachbars Gewinn“)
+
+**Limit und Kartenhöhe gehören zusammen:** Die Titelbox der Suchkarte ist fest auf diese Länge
+ausgemessen. Wer das Limit ändert, misst die Karte neu. Die Regel nicht ohne
+Produktentscheidung lockern. Bildtitel (≤ 200, beschreibend) und Post-Titel folgen ihr nicht.
+
 ### Testing Requirements
 - Always run tests before committing (`pytest` from `app/`, or `make test-backend-fast`)
 - Mock repository interfaces in service tests; use `TestEmbeddingsManager`, not ad-hoc mocks

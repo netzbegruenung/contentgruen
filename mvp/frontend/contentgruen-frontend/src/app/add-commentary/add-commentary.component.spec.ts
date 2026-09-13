@@ -10,6 +10,7 @@ import { of } from 'rxjs';
 import { CommentaryService } from '../services/commentary.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { CommentaryResult } from '../services/dtos/searchDtos';
+import { SimpleChange } from '@angular/core';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -120,4 +121,35 @@ describe('AddCommentaryComponent', () => {
     const payload: AddCommentaryRequest = addSpy.calls.mostRecent().args[0];
     expect(payload.commentary.long_text).toBe('Ausführliche Fassung des Kommentars.');
   }));
+
+  describe('Vorbefuellung aus dem Destillier-Ablauf', () => {
+    function vorbefuellen(url: string | null): void {
+      component.vorbefuellung = {
+        rohinputId: 'id-1',
+        titel: 'Waermepumpe lohnt sich auch im Altbau',
+        url,
+      };
+      component.ngOnChanges({
+        vorbefuellung: new SimpleChange(null, component.vorbefuellung, true),
+      });
+    }
+
+    it('uebernimmt den Satz als Titel und den Link als Herkunft', () => {
+      vorbefuellen('https://example.org/p');
+
+      expect(component.commentaryForm.value.title).toBe('Waermepumpe lohnt sich auch im Altbau');
+      expect(component.commentaryForm.value.references).toEqual([
+        { reference_string: 'https://example.org/p' },
+      ]);
+      expect(component.showReferences).toBeTrue();
+    });
+
+    it('laesst die Quellen zu, wenn der Einwurf keinen Link hat', () => {
+      vorbefuellen(null);
+
+      expect(component.commentaryForm.value.title).toBe('Waermepumpe lohnt sich auch im Altbau');
+      expect(component.commentaryForm.value.references).toEqual([]);
+      expect(component.showReferences).toBeFalse();
+    });
+  });
 });
