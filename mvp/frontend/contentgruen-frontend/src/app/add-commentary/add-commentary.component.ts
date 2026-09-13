@@ -97,7 +97,7 @@ export class AddCommentaryComponent implements OnDestroy {
         private router: Router
     ) {
         this.commentaryForm = this.fb.group({
-            title: ['', [Validators.required, Validators.minLength(3)]],
+            title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
             text: ['', [Validators.required, Validators.minLength(10)]],
             references: [[]],  // Changed from FormArray to simple array control
             long_text: [''],
