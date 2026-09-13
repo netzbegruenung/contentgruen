@@ -42,4 +42,23 @@ describe('AddGenerictextComponent', () => {
     expect(link).toBeTruthy();
     expect(link!.target).toBe('_blank');
   });
+
+  // Titel = Behauptung in einem Satz. Das Limit ist auf die Titelbox der
+  // Suchkarte ausgemessen und muss mit dem Backend-Modell uebereinstimmen.
+  it('begrenzt den Titel auf 120 Zeichen', () => {
+    const titel = component.generictextForm.get('title')!;
+
+    titel.setValue('a'.repeat(120));
+    expect(titel.hasError('maxlength')).toBeFalse();
+
+    titel.setValue('a'.repeat(121));
+    expect(titel.hasError('maxlength')).toBeTrue();
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input#title');
+    expect(input.maxLength).toBe(120);
+  });
+
+  it('fragt im Titelfeld nach dem Punkt in einem Satz', () => {
+    expect(fixture.nativeElement.textContent).toContain('Was ist der Punkt? Ein Satz.');
+  });
 });

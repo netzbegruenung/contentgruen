@@ -96,14 +96,17 @@
                     <div class="form-group">
                         <label class="input-label">Titel*</label>
                         <mat-form-field appearance="outline">
-                            <mat-label>Gib einen aussagekräftigen Titel ein</mat-label>
-                            <input matInput #titel maxlength="50" formControlName="title" id="title" type="text" />
-                            <mat-hint align="end">{{titel.value.length || 0}}/50</mat-hint>
+                            <mat-label>Was ist der Punkt? Ein Satz.</mat-label>
+                            <input matInput #titel maxlength="120" formControlName="title" id="title" type="text" />
+                            <mat-hint align="end">{{titel.value.length || 0}} / 120</mat-hint>
                             <mat-error *ngIf="commentaryForm.get('title')?.hasError('required')">
                                 Titel ist erforderlich
                             </mat-error>
                             <mat-error *ngIf="commentaryForm.get('title')?.hasError('minlength')">
                                 Titel muss mindestens 3 Zeichen lang sein
+                            </mat-error>
+                            <mat-error *ngIf="commentaryForm.get('title')?.hasError('maxlength')">
+                                Titel darf höchstens 120 Zeichen lang sein
                             </mat-error>
                         </mat-form-field>
                     </div>

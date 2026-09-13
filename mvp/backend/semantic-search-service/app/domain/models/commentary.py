@@ -71,8 +71,11 @@ class Commentary(BaseContent):
 
     content_type: ContentType = ContentType.COMMENTARY
 
+    # Der Titel ist eine Behauptung in einem Satz, kein Thema und keine Frage
+    # (die gehoeren ins Statement). 120 Zeichen passen gemessen in die feste
+    # 4-Zeilen-Titelbox der Suchkarte; Limit und Kartenhoehe gehoeren zusammen.
     title: str = Field(
-        ..., min_length=3, max_length=50, description="Title of the commentary"
+        ..., min_length=3, max_length=120, description="Title of the commentary"
     )
     long_text: Optional[str] = None
     short_text: Optional[str] = None

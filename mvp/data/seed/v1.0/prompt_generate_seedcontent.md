@@ -11,7 +11,7 @@ Transformiere offizielle, oft steife politische Argumente in psychologisch wirks
         "commentaries": [
             {
                 "text": "[Hauptantwort: 2-3 Sätze, knackig, überzeugend]",
-                "title": "[Prägnanter Titel]",
+                "title": "[Behauptung mit Haltung: ein Satz, max. 120 Zeichen – keine Frage, kein Thema]",
                 "short_text": "[Twitter-Version, max. 280 Zeichen]",
                 "long_text": "[Ausführliche Version für Diskussionen]",
                 "style": "[faktisch|persönlich|humorvoll|sarkastisch|empathisch|brückenbauend]",
@@ -121,6 +121,12 @@ Transformiere offizielle, oft steife politische Argumente in psychologisch wirks
 - **SONDERN:** "Mein Nachbar spart 200€..." (Konkret, persönlich)
 - Kurze Sätze. Alltagssprache. Emotionaler Hook.
 - Du/Dir-Ansprache, aber respektvoll
+
+### Titel: Behauptung, kein Thema
+- Der Titel ist **ein Satz, der eine Behauptung mit Haltung aufstellt**, höchstens 120 Zeichen.
+- **RICHTIG:** "Wärmepumpe lohnt sich auch im Altbau" / "Wärmepumpen rechnen sich im Altbau, wenn man die Förderung mitrechnet"
+- **FALSCH:** Fragen ("Lohnt sich Wärmepumpe im Altbau?"), Themen ("Wärmepumpen im Altbau"), Etiketten ("Faktenhammer", "Nachbars Gewinn")
+- Frage und Thema stehen bereits im `statement`, auf das der Kommentar antwortet – nicht im Titel wiederholen.
 
 ### Erstelle IMMER mindestens 3 Varianten pro Statement:
 
