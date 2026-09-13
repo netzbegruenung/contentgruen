@@ -80,6 +80,23 @@ describe('AddCommentaryComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Was ist der Punkt? Ein Satz.');
   });
 
+  // Die Textfelder tragen ihr Limit im Formularmodell und nicht nur als
+  // maxLength im Template: das sperrt nur die Eingabe, vorbefuellte Werte
+  // kaemen sonst ungeprueft durch.
+  it('begrenzt Haupttext, Langtext und Kurztext im Formular', () => {
+    const grenzen: [string, number][] = [['text', 500], ['long_text', 2000], ['short_text', 100]];
+
+    for (const [feld, limit] of grenzen) {
+      const control = component.commentaryForm.get(feld)!;
+
+      control.setValue('a'.repeat(limit));
+      expect(control.hasError('maxlength')).withContext(feld).toBeFalse();
+
+      control.setValue('a'.repeat(limit + 1));
+      expect(control.hasError('maxlength')).withContext(feld).toBeTrue();
+    }
+  });
+
   it('should keep long_text in the payload after the text variants section is collapsed again', fakeAsync(() => {
     const commentaryService = TestBed.inject(CommentaryService);
     const addSpy = spyOn(commentaryService, 'addCommentary')

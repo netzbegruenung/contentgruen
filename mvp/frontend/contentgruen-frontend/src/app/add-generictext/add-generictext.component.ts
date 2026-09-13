@@ -99,7 +99,7 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
     ) {
         this.generictextForm = this.fb.group({
             title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
-            text: ['', [Validators.required, Validators.minLength(10)]],
+            text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(2000)]],
             references: [[]]  // Changed from FormArray to simple array control
         });
 
