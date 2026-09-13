@@ -55,6 +55,14 @@ describe('MobileMenuComponent', () => {
     });
   });
 
+  it('nennt im Fusstext zuerst den Anbieter, dann den Entwickler', () => {
+    const text = (fixture.nativeElement.querySelector('.mobile-menu-about') as HTMLElement)
+      .textContent!.replace(/\s+/g, ' ')
+      .trim();
+    expect(text).toBe('Ein Projekt von Netzbegrünung e.V., entwickelt von Sebastian Banach');
+    expect(link('.anbieter-link').getAttribute('href')).toBe('https://netzbegruenung.de/');
+  });
+
   it('verlinkt den Entwickler auf /about statt auf eine leere Adresse im neuen Tab', () => {
     const about = link('.about-link');
     expect(about.getAttribute('href')).toBe('/about');
