@@ -7,7 +7,6 @@ import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { RecentContentComponent } from '../recent-content/recent-content.component';
-import { MetricsComponent } from '../metrics/metrics.component';
 import { MetricsService } from '../services/metrics.service';
 import { AboutTeaserComponent } from '../about-teaser/about-teaser.component';
 import { AuthService, UserInfo } from '../auth/auth.service';
@@ -28,7 +27,6 @@ import { typLabel } from '../shared/content-type-registry';
     MatButtonModule,
     MatIconModule,
     RecentContentComponent,
-    MetricsComponent,
     AboutTeaserComponent,
   ],
   templateUrl: './search-view.component.html',
