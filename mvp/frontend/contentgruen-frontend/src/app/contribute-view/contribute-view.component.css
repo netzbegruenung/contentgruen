@@ -88,6 +88,10 @@ mat-expansion-panel-header {
     background-color: var(--generictext-bg) !important;
 }
 
+.image-color {
+    background-color: var(--image-bg) !important;
+}
+
 .contribution-container {
     min-width: 600px;
     margin-top: var(--spacing-lg);
@@ -256,6 +260,10 @@ mat-panel-title h3 {
 
 .generictext-card {
     background: linear-gradient(135deg, var(--generictext-bg) 0%, rgb(212, 234, 251) 100%);
+}
+
+.image-card {
+    background: linear-gradient(135deg, var(--image-bg) 0%, rgb(225, 215, 240) 100%);
 }
 
 .content-type-card mat-card-header {
