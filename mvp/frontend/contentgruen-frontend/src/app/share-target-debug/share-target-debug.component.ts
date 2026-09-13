@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
-import { einwurfZerlegen } from '../add-raw-input/add-raw-input.component';
-import { AddRawInputRequest } from '../services/raw-input.service';
+import { GeteilterEinwurf, einwurfAusShareDaten } from '../share-target/share-target.guard';
 
 /**
  * Diagnose-Ansicht fuer das Android-Teilen-Menue -- Schritt 0.
@@ -52,10 +51,11 @@ export class ShareTargetDebugComponent implements OnInit {
   url: string | null = null;
 
   /**
-   * Was ``einwurfZerlegen`` aus dem text-Parameter machen wuerde -- die Funktion,
-   * die das Einwurf-Formular heute schon benutzt. Nur zur Anschauung.
+   * Was ``einwurfAusShareDaten`` aus title, text und url machen wuerde -- dieselbe
+   * Trennung, mit der das Teilen-Menue das Einwurf-Formular befuellt. Nur zur
+   * Anschauung.
    */
-  zerlegung: AddRawInputRequest | null = null;
+  zerlegung: GeteilterEinwurf | null = null;
 
   /** Anzeigekontext: aus dem installierten Fenster heraus oder aus dem Browser-Tab. */
   anzeigeModus = '';
@@ -93,8 +93,8 @@ export class ShareTargetDebugComponent implements OnInit {
     this.text = suchteil.get('text');
     this.url = suchteil.get('url');
 
-    if (this.text) {
-      this.zerlegung = einwurfZerlegen(this.text);
+    if (this.title || this.text || this.url) {
+      this.zerlegung = einwurfAusShareDaten({ title: this.title, text: this.text, url: this.url });
     }
   }
 
@@ -135,8 +135,8 @@ export class ShareTargetDebugComponent implements OnInit {
       }
     }
 
-    zeilen.push('', 'Zerlegung des text-Parameters:');
-    zeilen.push(this.zerlegung ? `  ${JSON.stringify(this.zerlegung)}` : '  (kein text-Parameter)');
+    zeilen.push('', 'Trennung fuer das Einwurf-Formular:');
+    zeilen.push(this.zerlegung ? `  ${JSON.stringify(this.zerlegung)}` : '  (weder title noch text noch url)');
 
     return zeilen.join('\n');
   }

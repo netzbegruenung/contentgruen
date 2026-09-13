@@ -28,8 +28,17 @@ const TRACKING_PARAMETER = [
 /** Praefixe, bei denen jeder Parameter mit diesem Anfang entfernt wird. */
 const TRACKING_PRAEFIXE = ['utm_'];
 
-/** Dieselbe Erkennung wie im Einwurf-Formular, damit beide dasselbe als URL ansehen. */
+/**
+ * Erkennt Adressen im Freitext. Bewusst schlicht: der Server prueft eine Adresse
+ * noch einmal richtig. Beide Muster muessen dasselbe als Adresse ansehen.
+ */
+const URL_MUSTER = /https?:\/\/[^\s]+/i;
 const URL_MUSTER_GLOBAL = /https?:\/\/[^\s]+/gi;
+
+/** Die erste Adresse im Text, oder null. */
+export function ersteAdresse(text: string | null | undefined): string | null {
+  return text?.match(URL_MUSTER)?.[0] ?? null;
+}
 
 function istTrackingParameter(name: string): boolean {
   const klein = name.toLowerCase();

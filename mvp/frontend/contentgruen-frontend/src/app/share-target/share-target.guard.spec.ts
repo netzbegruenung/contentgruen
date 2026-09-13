@@ -18,41 +18,53 @@ describe('einwurfAusShareDaten', () => {
       einwurfAusShareDaten({
         text: 'https://www.instagram.com/reel/DdGvZ__grj9/?stkn=MWxkZmRocDVzZXpubg==',
       }),
-    ).toBe('https://www.instagram.com/reel/DdGvZ__grj9/');
+    ).toEqual({ url: 'https://www.instagram.com/reel/DdGvZ__grj9/', titel: null, text: null });
   });
 
-  it('stellt den Titel in die erste Zeile, wenn einer dabei ist', () => {
+  it('trennt den Seitentitel vom Link', () => {
     // Der Chrome-Fall aus dem Geraete-Test: title + text.
     expect(
       einwurfAusShareDaten({
         title: 'AfD klar vor SPD | tagesschau.de',
         text: 'https://www.tagesschau.de/inland/x-100.html',
       }),
-    ).toBe('AfD klar vor SPD | tagesschau.de\nhttps://www.tagesschau.de/inland/x-100.html');
+    ).toEqual({
+      url: 'https://www.tagesschau.de/inland/x-100.html',
+      titel: 'AfD klar vor SPD | tagesschau.de',
+      text: null,
+    });
   });
 
-  it('nimmt den url-Parameter mit, falls eine App ihn doch benutzt', () => {
-    expect(einwurfAusShareDaten({ url: 'https://example.org/a' })).toBe('https://example.org/a');
-  });
-
-  it('schreibt die Adresse nicht zweimal hin, wenn text und url dasselbe liefern', () => {
+  it('behaelt Text neben der Adresse, ohne die Adresse', () => {
     expect(
-      einwurfAusShareDaten({
-        text: 'https://example.org/a',
-        url: 'https://example.org/a',
-      }),
+      einwurfAusShareDaten({ text: 'Schau mal https://example.org/a?utm_source=x hier' }),
+    ).toEqual({ url: 'https://example.org/a', titel: null, text: 'Schau mal hier' });
+  });
+
+  it('wiederholt den Titel nicht, wenn text dasselbe sagt', () => {
+    expect(
+      einwurfAusShareDaten({ title: 'Ein Titel', text: 'Ein Titel https://example.org/a' }),
+    ).toEqual({ url: 'https://example.org/a', titel: 'Ein Titel', text: null });
+  });
+
+  it('nimmt den url-Parameter, falls eine App ihn doch benutzt', () => {
+    expect(einwurfAusShareDaten({ url: 'https://example.org/a?utm_source=x' })).toEqual({
+      url: 'https://example.org/a',
+      titel: null,
+      text: null,
+    });
+  });
+
+  it('bevorzugt die Adresse aus text vor dem url-Parameter', () => {
+    expect(
+      einwurfAusShareDaten({ text: 'https://example.org/a', url: 'https://example.org/a' }).url,
     ).toBe('https://example.org/a');
   });
 
-  it('bereinigt auch den url-Parameter', () => {
-    expect(einwurfAusShareDaten({ url: 'https://example.org/a?utm_source=x' })).toBe(
-      'https://example.org/a',
-    );
-  });
-
-  it('ergibt eine leere Zeichenkette, wenn nichts brauchbares dabei ist', () => {
-    expect(einwurfAusShareDaten({})).toBe('');
-    expect(einwurfAusShareDaten({ title: '  ', text: null, url: undefined })).toBe('');
+  it('liefert lauter null, wenn nichts brauchbares dabei ist', () => {
+    const leer = { url: null, titel: null, text: null };
+    expect(einwurfAusShareDaten({})).toEqual(leer);
+    expect(einwurfAusShareDaten({ title: '  ', text: null, url: undefined })).toEqual(leer);
   });
 });
 
@@ -71,15 +83,17 @@ describe('ShareTargetGuard', () => {
     sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL);
   });
 
-  it('leitet auf das Einwurf-Formular weiter und legt den Einwurf ab', () => {
+  it('leitet auf das Einwurf-Formular weiter und legt den getrennten Einwurf ab', () => {
     const ergebnis = guard.canActivate(
-      snapshotMit({ text: 'https://www.instagram.com/reel/ABC/?stkn=xy' }),
+      snapshotMit({ title: 'Ein Titel', text: 'https://www.instagram.com/reel/ABC/?stkn=xy' }),
     );
 
     expect(router.serializeUrl(ergebnis as never)).toBe('/einwerfen');
-    expect(sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL)).toBe(
-      'https://www.instagram.com/reel/ABC/',
-    );
+    expect(JSON.parse(sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL)!)).toEqual({
+      url: 'https://www.instagram.com/reel/ABC/',
+      titel: 'Ein Titel',
+      text: null,
+    });
   });
 
   it('leitet auch dann weiter, wenn gar nichts geteilt wurde -- dann ohne Ablage', () => {

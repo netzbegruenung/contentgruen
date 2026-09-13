@@ -1,4 +1,4 @@
-import { trackingParameterEntfernen, urlsInTextBereinigen } from './url-bereinigen';
+import { ersteAdresse, trackingParameterEntfernen, urlsInTextBereinigen } from './url-bereinigen';
 
 describe('trackingParameterEntfernen', () => {
   it('entfernt das stkn von Instagram und laesst das Fragezeichen nicht stehen', () => {
@@ -75,5 +75,19 @@ describe('urlsInTextBereinigen', () => {
   it('laesst Text ohne Adresse unangetastet', () => {
     expect(urlsInTextBereinigen('nur ein Gedanke')).toBe('nur ein Gedanke');
     expect(urlsInTextBereinigen('')).toBe('');
+  });
+});
+
+describe('ersteAdresse', () => {
+  it('findet die erste Adresse mitten im Text', () => {
+    expect(ersteAdresse('Schau mal https://example.org/a und https://example.org/b')).toBe(
+      'https://example.org/a',
+    );
+  });
+
+  it('liefert null ohne Adresse', () => {
+    expect(ersteAdresse('nur ein Gedanke')).toBeNull();
+    expect(ersteAdresse('')).toBeNull();
+    expect(ersteAdresse(null)).toBeNull();
   });
 });

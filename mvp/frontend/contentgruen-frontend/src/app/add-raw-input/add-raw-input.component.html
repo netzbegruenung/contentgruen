@@ -6,7 +6,7 @@
             <div class="einwurf-text">
                 <h2 class="einwurf-titel">Schnell einwerfen</h2>
                 <p class="einwurf-beschreibung">
-                    Link, Screenshot-Adresse oder ein Satz - roh, ohne Ausarbeiten.
+                    Ein Link, ein Hinweis oder beides - roh, ohne Ausarbeiten.
                     Jemand macht spaeter einen Beitrag daraus.
                 </p>
             </div>
@@ -15,36 +15,39 @@
 
     <form [formGroup]="einwurfForm" (ngSubmit)="einwerfen()" class="einwurf-formular">
 
-        <div class="form-group">
-            <mat-form-field appearance="outline" class="einwurf-feld">
-                <mat-label>Link einfuegen oder in einem Satz sagen, worum es geht</mat-label>
-                <textarea matInput
-                          #einwurfFeld
-                          rows="4"
-                          maxlength="5000"
-                          formControlName="einwurf"
-                          placeholder="https://... oder: Guter Thread zu Waermepumpen-Foerderung"
-                          aria-label="Einwurf"></textarea>
-                <mat-hint align="end">{{ einwurfFeld.value.length }}/5000</mat-hint>
-            </mat-form-field>
-        </div>
+        <mat-form-field appearance="outline" class="einwurf-feld">
+            <mat-label>Link</mat-label>
+            <input matInput
+                   id="einwurf-link"
+                   type="url"
+                   inputmode="url"
+                   autocomplete="off"
+                   formControlName="link"
+                   placeholder="https://..." />
+            <mat-hint>Pflicht, wenn du keinen Hinweis schreibst.</mat-hint>
+            <mat-error>Bitte nur einen Link, der mit http:// oder https:// beginnt.</mat-error>
+        </mat-form-field>
 
-        <div class="form-group bild-zeile">
-            <button mat-button type="button" class="bild-schalter"
-                    (click)="bildFeldUmschalten()"
-                    [attr.aria-expanded]="zeigeBildFeld"
-                    aria-label="Bild-Adresse hinzufuegen">
-                <mat-icon>{{ zeigeBildFeld ? 'expand_less' : 'add_photo_alternate' }}</mat-icon>
-                Bild-Adresse {{ zeigeBildFeld ? 'weglassen' : 'hinzufuegen' }}
+        <mat-form-field appearance="outline" class="einwurf-feld hinweis-feld"
+                        [class.vorbelegt]="istVorbelegt">
+            <mat-label>Hinweis für andere</mat-label>
+            <textarea matInput
+                      #hinweisFeld
+                      id="einwurf-hinweis"
+                      rows="4"
+                      [attr.maxlength]="hinweisLimit"
+                      formControlName="hinweis"></textarea>
+            <button *ngIf="istVorbelegt" matSuffix mat-icon-button type="button"
+                    class="vorbelegung-entfernen"
+                    aria-label="Vorschlag aus dem Teilen entfernen"
+                    (click)="vorbelegungEntfernen()">
+                <mat-icon>close</mat-icon>
             </button>
-
-            <mat-form-field appearance="outline" *ngIf="zeigeBildFeld" class="einwurf-feld">
-                <mat-label>Adresse eines Bildes im Netz</mat-label>
-                <input matInput type="url" formControlName="imageUrl"
-                       placeholder="https://example.org/bild.png" />
-                <mat-hint>Hochladen geht noch nicht - nur eine bereits erreichbare Adresse.</mat-hint>
-            </mat-form-field>
-        </div>
+            <mat-hint *ngIf="istVorbelegt" class="vorbelegung-hinweis">
+                Vorschlag aus dem Teilen
+            </mat-hint>
+            <mat-hint align="end">{{ hinweisFeld.value.length }}/{{ hinweisLimit }}</mat-hint>
+        </mat-form-field>
 
         <p class="einwurf-hinweis">
             Mit dem Absenden stellst du deine eigenen Formulierungen unter CC0
@@ -56,7 +59,7 @@
         <div class="einwurf-aktionen">
             <button mat-raised-button color="primary" type="submit"
                     class="einwerfen-knopf"
-                    [disabled]="istLeer || wirdGespeichert">
+                    [disabled]="!kannEinwerfen">
                 <mat-icon *ngIf="!wirdGespeichert">save</mat-icon>
                 <mat-spinner *ngIf="wirdGespeichert" diameter="20" class="knopf-spinner"></mat-spinner>
                 Einwerfen
@@ -71,7 +74,7 @@
         <div class="einwurf-rueckmeldung" role="status" aria-live="polite">
             <p *ngIf="eingeworfen > 0 && !fehler" class="erfolg">
                 ✅ Drin. {{ eingeworfen === 1 ? 'Ein Einwurf' : eingeworfen + ' Einwuerfe' }} in dieser Sitzung -
-                das Feld ist wieder frei fuer den naechsten.
+                die Felder sind wieder frei fuer den naechsten.
             </p>
             <p *ngIf="fehler" class="fehler">⚠️ {{ fehler }}</p>
         </div>

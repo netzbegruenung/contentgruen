@@ -74,11 +74,11 @@
     </mat-card-header>
     <mat-card-content>
       <p class="anmerkung">
-        Der <code>text</code>-Parameter durch dieselbe Zerlegung, die das
-        Einwurf-Formular heute schon benutzt.
+        <code>title</code>, <code>text</code> und <code>url</code> durch dieselbe Trennung,
+        mit der das Teilen-Menü das Einwurf-Formular befüllt.
       </p>
       <pre *ngIf="zerlegung">{{ zerlegung | json }}</pre>
-      <p *ngIf="!zerlegung" class="fehlt">Kein <code>text</code>-Parameter vorhanden.</p>
+      <p *ngIf="!zerlegung" class="fehlt">Weder <code>title</code> noch <code>text</code> noch <code>url</code> vorhanden.</p>
     </mat-card-content>
   </mat-card>
 

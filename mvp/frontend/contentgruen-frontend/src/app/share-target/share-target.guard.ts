@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, Router, UrlTree } from '@angular/router';
-import { urlsInTextBereinigen } from '../shared/url-bereinigen';
+import { ersteAdresse, urlsInTextBereinigen } from '../shared/url-bereinigen';
 
 /**
  * Nimmt die Daten aus dem Android-Teilen-Menue entgegen und leitet ins
@@ -9,7 +9,7 @@ import { urlsInTextBereinigen } from '../shared/url-bereinigen';
  * Ein Guard und keine Komponente, weil es keine Zwischenseite geben soll: der
  * Guard laeuft, bevor irgendetwas gerendert wird, legt die Daten ab und liefert
  * direkt einen UrlTree auf /einwerfen. Sichtbar ist fuer die teilende Person nur
- * das Formular -- mit vorbefuelltem Feld und einem Tastendruck bis "Einwerfen".
+ * das Formular -- mit vorbefuellten Feldern und einem Tastendruck bis "Einwerfen".
  *
  * Der Login-Zwang steht bewusst nicht hier, sondern bleibt der AuthGuard an
  * /einwerfen. Weil die Nutzlast im sessionStorage liegt und nicht in der Adresse,
@@ -27,37 +27,44 @@ export interface ShareDaten {
   url?: string | null;
 }
 
+/** Der geteilte Einwurf, schon nach den Feldern des Formulars getrennt. */
+export interface GeteilterEinwurf {
+  /** Die erste Adresse aus text oder url, ohne Tracking-Parameter. Wird der Link. */
+  url: string | null;
+  /** Der Seitentitel. Chrome schickt einen mit, Instagram nicht. Nur ein Vorschlag. */
+  titel: string | null;
+  /** Was im text-Parameter ausser der Adresse noch stand. Nur ein Vorschlag. */
+  text: string | null;
+}
+
 /**
- * Baut aus den geteilten Feldern den Text fuer das Einwurf-Feld.
+ * Trennt die geteilten Felder in Link und Vorschlaege fuer den Hinweis.
  *
  * Der Geraete-Test hat gezeigt, dass beide Quellen die Adresse im
  * ``text``-Parameter liefern und nie in ``url`` -- Chrome legt zusaetzlich einen
  * ``title`` bei, Instagram nicht. ``url`` wird trotzdem beruecksichtigt, weil das
- * Manifest den Parameter anmeldet und andere Apps ihn benutzen koennen; doppelt
- * taucht die Adresse dabei nicht auf.
+ * Manifest den Parameter anmeldet und andere Apps ihn benutzen koennen.
  *
- * Der Titel kommt in die erste Zeile: ``einwurfZerlegen`` im Formular zieht die
- * Adresse selbst heraus und legt den ganzen Text als ``content`` ab -- genau die
- * gewuenschte Aufteilung, ohne dass hier etwas ueber das Datenmodell wissen muss.
+ * Titel und uebriger Text sind nichts, was die teilende Person geschrieben hat.
+ * Das Formular zeigt sie deshalb nur als markierte, loeschbare Vorbelegung.
  */
-export function einwurfAusShareDaten(daten: ShareDaten): string {
+export function einwurfAusShareDaten(daten: ShareDaten): GeteilterEinwurf {
   const text = urlsInTextBereinigen((daten.text ?? '').trim());
-  const url = urlsInTextBereinigen((daten.url ?? '').trim());
+  const urlParameter = urlsInTextBereinigen((daten.url ?? '').trim());
   const titel = (daten.title ?? '').trim();
 
-  const zeilen: string[] = [];
-  if (titel) {
-    zeilen.push(titel);
-  }
-  if (text) {
-    zeilen.push(text);
-  }
-  // Nur, wenn die Adresse nicht ohnehin schon im Text steht.
-  if (url && !text.includes(url)) {
-    zeilen.push(url);
-  }
+  const url = ersteAdresse(text) ?? ersteAdresse(urlParameter);
+  const ohneAdresse = url ? text.split(url).join(' ') : text;
+  const rest = ohneAdresse
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .trim();
 
-  return zeilen.join('\n');
+  return {
+    url,
+    titel: titel || null,
+    text: rest && rest !== titel ? rest : null,
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -78,7 +85,7 @@ export class ShareTargetGuard implements CanActivate {
       url: route.queryParamMap.get('url'),
     });
 
-    if (einwurf) {
+    if (einwurf.url || einwurf.titel || einwurf.text) {
       this.ablegen(einwurf);
     }
 
@@ -88,11 +95,11 @@ export class ShareTargetGuard implements CanActivate {
   /**
    * sessionStorage ist im privaten Modus und bei blockierten Seitendaten nicht
    * beschreibbar und wirft dann. Das darf den Weg ins Formular nicht abbrechen --
-   * schlimmstenfalls steht dort ein leeres Feld statt eines vorbefuellten.
+   * schlimmstenfalls steht dort ein leeres Formular statt eines vorbefuellten.
    */
-  private ablegen(einwurf: string): void {
+  private ablegen(einwurf: GeteilterEinwurf): void {
     try {
-      sessionStorage.setItem(SHARE_EINWURF_SCHLUESSEL, einwurf);
+      sessionStorage.setItem(SHARE_EINWURF_SCHLUESSEL, JSON.stringify(einwurf));
     } catch {
       // Absichtlich still: siehe oben.
     }
