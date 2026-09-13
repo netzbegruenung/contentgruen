@@ -1,41 +1,52 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RawInputService, AddRawInputRequest } from '../services/raw-input.service';
-import { SHARE_EINWURF_SCHLUESSEL } from '../share-target/share-target.guard';
-import { urlsInTextBereinigen } from '../shared/url-bereinigen';
+import {
+  GeteilterEinwurf,
+  SHARE_EINWURF_SCHLUESSEL,
+  einwurfAusShareDaten,
+} from '../share-target/share-target.guard';
+import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
 import { Router, RouterLink } from '@angular/router';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 
-/**
- * Erkennt die erste http(s)-URL in einem Text.
- * Bewusst schlicht: der Server prueft die URL noch einmal richtig.
- */
-const URL_MUSTER = /https?:\/\/[^\s]+/i;
+export const HINWEIS_LIMIT = 5000;
 
 /**
- * Ein Textfeld, zwei Bedeutungen: Wer einen Link einwirft, soll ihn nicht erst
- * als Link deklarieren muessen.
- *
- * - nur eine URL          -> url
- * - URL mit Text drumherum -> url (die erste) und content (alles)
- * - kein Link             -> content
+ * Womit ein Seitentitel im Hinweis-Feld als Vorbelegung erkennbar bleibt -- im
+ * Formular und, falls die Person ihn stehen laesst, auch spaeter im Fangkorb.
  */
-export function einwurfZerlegen(eingabe: string): AddRawInputRequest {
-  const text = (eingabe || '').trim();
-  const treffer = text.match(URL_MUSTER);
+export const SEITENTITEL_PRAEFIX = 'Seitentitel: ';
 
-  if (!treffer) {
-    return { content: text };
-  }
+/** Ein Link und nur ein Link. Der Server prueft ihn noch einmal richtig. */
+const NUR_EIN_LINK = /^https?:\/\/\S+$/i;
 
-  const url = treffer[0];
-  return url === text ? { url } : { url, content: text };
+function nurEinLink(control: AbstractControl): ValidationErrors | null {
+  const wert = (control.value ?? '').trim();
+  return wert && !NUR_EIN_LINK.test(wert) ? { keinLink: true } : null;
 }
 
+/** Der Vorschlag fuer das Hinweis-Feld aus einem geteilten Einwurf, oder null. */
+export function hinweisVorschlag(geteilt: GeteilterEinwurf): string | null {
+  const zeilen = [
+    geteilt.titel ? `${SEITENTITEL_PRAEFIX}${geteilt.titel}` : null,
+    geteilt.text,
+  ].filter((zeile): zeile is string => !!zeile);
+  return zeilen.length ? zeilen.join('\n').slice(0, HINWEIS_LIMIT) : null;
+}
+
+/**
+ * Einwerfen: zwei Felder, Link und Hinweis fuer andere. Eines davon genuegt.
+ *
+ * Keine Kategorien, keine Labels, keine Schalter -- alles Weitere ist schon
+ * Destillieren. Kommt der Einwurf aus dem Teilen-Menue, steht der Link im
+ * Link-Feld; Seitentitel und uebriger Text stehen als markierte Vorbelegung im
+ * Hinweis-Feld und werden nur gespeichert, wenn die Person sie stehen laesst.
+ */
 @Component({
   selector: 'app-add-raw-input',
   standalone: true,
@@ -46,13 +57,14 @@ export function einwurfZerlegen(eingabe: string): AddRawInputRequest {
 export class AddRawInputComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
+  readonly hinweisLimit = HINWEIS_LIMIT;
+
   einwurfForm: FormGroup;
 
   wirdGespeichert = false;
   fehler: string | null = null;
   /** Anzahl der Einwuerfe in dieser Sitzung - das Formular bleibt ja offen. */
   eingeworfen = 0;
-  zeigeBildFeld = false;
   /**
    * Ob der aktuelle Feldinhalt aus dem Teilen-Menue stammt. Steuert nur den
    * Herkunftskanal des naechsten Einwurfs und wird danach zurueckgesetzt: das
@@ -60,6 +72,8 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
    * ein Web-Einwurf.
    */
   ausShare = false;
+  /** Der Text, mit dem das Hinweis-Feld aus dem Teilen vorbelegt wurde. */
+  vorbelegung: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -69,15 +83,16 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
     private router: Router,
   ) {
     this.einwurfForm = this.fb.group({
-      einwurf: [''],
-      imageUrl: [''],
+      link: ['', nurEinLink],
+      hinweis: ['', Validators.maxLength(HINWEIS_LIMIT)],
     });
   }
 
   ngOnInit(): void {
     const geteilt = this.geteiltenEinwurfHolen();
     if (geteilt) {
-      this.einwurfForm.patchValue({ einwurf: geteilt });
+      this.vorbelegung = hinweisVorschlag(geteilt);
+      this.einwurfForm.patchValue({ link: geteilt.url ?? '', hinweis: this.vorbelegung ?? '' });
       this.ausShare = true;
     }
   }
@@ -88,51 +103,81 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
    * Einmalig mit Absicht: bleibt der Wert liegen, befuellt sich das Formular auch
    * beim naechsten regulaeren Aufruf wieder mit demselben Link. Der Zugriff kann
    * werfen (privater Modus, blockierte Seitendaten) -- dann gibt es eben keine
-   * Vorbelegung, aber das Formular funktioniert.
+   * Vorbelegung, aber das Formular funktioniert. Liegt noch Klartext einer
+   * aelteren Version dort, wird er wie ein geteilter Text zerlegt.
    */
-  private geteiltenEinwurfHolen(): string | null {
+  private geteiltenEinwurfHolen(): GeteilterEinwurf | null {
+    let wert: string | null;
     try {
-      const wert = sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL);
+      wert = sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL);
       if (wert) {
         sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL);
       }
-      return wert;
     } catch {
       return null;
     }
-  }
-
-  /** Leer ist leer - die einzige Pflicht, die der Fangkorb kennt. */
-  get istLeer(): boolean {
-    const { einwurf, imageUrl } = this.einwurfForm.value;
-    return !einwurf?.trim() && !imageUrl?.trim();
-  }
-
-  bildFeldUmschalten(): void {
-    this.zeigeBildFeld = !this.zeigeBildFeld;
-    if (!this.zeigeBildFeld) {
-      this.einwurfForm.get('imageUrl')?.setValue('');
+    if (!wert) {
+      return null;
     }
+
+    try {
+      const gelesen = JSON.parse(wert) as Partial<GeteilterEinwurf> | null;
+      if (gelesen && typeof gelesen === 'object') {
+        return {
+          url: typeof gelesen.url === 'string' ? gelesen.url : null,
+          titel: typeof gelesen.titel === 'string' ? gelesen.titel : null,
+          text: typeof gelesen.text === 'string' ? gelesen.text : null,
+        };
+      }
+    } catch {
+      // Kein JSON: Klartext einer aelteren Version, siehe unten.
+    }
+    return einwurfAusShareDaten({ text: wert });
+  }
+
+  get link(): string {
+    return (this.einwurfForm.value.link ?? '').trim();
+  }
+
+  get hinweis(): string {
+    return (this.einwurfForm.value.hinweis ?? '').trim();
+  }
+
+  /** Beide Felder leer - die einzige Pflicht, die der Fangkorb kennt. */
+  get istLeer(): boolean {
+    return !this.link && !this.hinweis;
+  }
+
+  get kannEinwerfen(): boolean {
+    return !this.istLeer && this.einwurfForm.valid && !this.wirdGespeichert;
+  }
+
+  /** Solange der Vorschlag unveraendert dasteht, ist er als Vorbelegung markiert. */
+  get istVorbelegt(): boolean {
+    return !!this.vorbelegung && this.einwurfForm.value.hinweis === this.vorbelegung;
+  }
+
+  vorbelegungEntfernen(): void {
+    this.einwurfForm.patchValue({ hinweis: '' });
+    this.vorbelegung = null;
   }
 
   einwerfen(): void {
-    if (this.istLeer || this.wirdGespeichert) {
+    if (!this.kannEinwerfen) {
+      this.einwurfForm.markAllAsTouched();
       return;
     }
 
-    const { einwurf, imageUrl } = this.einwurfForm.value;
     // Tracking-Parameter fliegen hier raus und nicht erst im Share-Pfad: dieselbe
     // Adresse von Hand eingefuegt haette sonst dasselbe Problem -- pro Einwurf ein
     // anderer Link, und ein fremdes Token in der Datenbank.
-    const anfrage: AddRawInputRequest = einwurf?.trim()
-      ? einwurfZerlegen(urlsInTextBereinigen(einwurf))
-      : {};
-
-    const bild = imageUrl?.trim();
-    if (bild) {
-      anfrage.image_url = bild;
+    const anfrage: AddRawInputRequest = {};
+    if (this.link) {
+      anfrage.url = trackingParameterEntfernen(this.link);
     }
-
+    if (this.hinweis) {
+      anfrage.content = urlsInTextBereinigen(this.hinweis);
+    }
     if (this.ausShare) {
       anfrage.source_channel = 'share';
     }
@@ -146,8 +191,8 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
         this.eingeworfen += 1;
         // Formular bleibt offen und leer: drei Sachen hintereinander einwerfen
         // ist der Normalfall, nicht die Ausnahme.
-        this.einwurfForm.reset({ einwurf: '', imageUrl: '' });
-        this.zeigeBildFeld = false;
+        this.einwurfForm.reset({ link: '', hinweis: '' });
+        this.vorbelegung = null;
         this.ausShare = false;
       },
       error: (error) => {
@@ -155,7 +200,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
         this.wirdGespeichert = false;
         this.fehler =
           error?.status === 422
-            ? 'Damit kann der Fangkorb nichts anfangen. Bitte pruefe die Adresse.'
+            ? 'Damit kann der Fangkorb nichts anfangen. Bitte prüfe den Link.'
             : 'Der Einwurf konnte nicht gespeichert werden. Bitte versuche es erneut.';
       },
     });

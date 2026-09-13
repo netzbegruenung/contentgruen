@@ -120,7 +120,19 @@ describe('RawInputService', () => {
       expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
-    it('markiert als verarbeitet mit dem entstandenen Beitrag', () => {
+    it('markiert als verarbeitet mit dem entstandenen Beitrag und seinem Typ', () => {
+      service.updateStatus('id-1', 'processed', 'beitrag-1', 'commentary').subscribe();
+
+      const anfrage = httpMock.expectOne(`${basis}/id-1/status`);
+      expect(anfrage.request.body).toEqual({
+        status: 'processed',
+        content_id: 'beitrag-1',
+        content_type: 'commentary',
+      });
+      anfrage.flush(einwurf({ status: 'processed' }));
+    });
+
+    it('laesst den Typ weg, wenn keiner bekannt ist', () => {
       service.updateStatus('id-1', 'processed', 'beitrag-1').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/status`);
@@ -145,6 +157,22 @@ describe('RawInputService', () => {
       });
 
       expect(naechster?.id).toBe('id-naechster');
+    });
+
+    it('bietet auch Destilliertes an, solange es keinen eigenen Satz gibt', () => {
+      let naechster: RawInput | null | undefined;
+      service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));
+
+      httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush({
+        results_count: 2,
+        total_records_count: 2,
+        results: [
+          einwurf({ id: 'id-eigener-satz', status: 'in_progress', own_draft: 'meiner' }),
+          einwurf({ id: 'id-fremder-satz', status: 'in_progress' }),
+        ],
+      });
+
+      expect(naechster?.id).toBe('id-fremder-satz');
     });
 
     it('meldet null, wenn nichts mehr offen ist', () => {

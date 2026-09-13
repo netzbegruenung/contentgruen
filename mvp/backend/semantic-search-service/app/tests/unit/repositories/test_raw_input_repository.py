@@ -23,6 +23,8 @@ from domain.models.raw_input import (
 )
 from repositories.raw_input_repository import RawInputRepository
 
+AM = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
+
 
 def _sql(statement) -> str:
     """Ein Statement so kompilieren, wie PostgreSQL es bekaeme."""
@@ -42,7 +44,29 @@ def _zeile(**overrides):
     zeile.created_at = overrides.get(
         "created_at", datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
     )
+    zeile.destilled_by = overrides.get("destilled_by", None)
     return zeile
+
+
+def _entwurf(user_id, sentence, einwurf=None):
+    return SimpleNamespace(
+        id=uuid.uuid4(),
+        raw_input_id=einwurf or uuid.uuid4(),
+        user_id=user_id,
+        sentence=sentence,
+        updated_at=AM,
+    )
+
+
+def _verknuepfung(created_by, einwurf=None, draft_id=None, content_type="commentary"):
+    return SimpleNamespace(
+        raw_input_id=einwurf or uuid.uuid4(),
+        content_id=uuid.uuid4(),
+        content_type=content_type,
+        draft_id=draft_id,
+        created_by=created_by,
+        created_at=AM,
+    )
 
 
 @pytest.fixture
@@ -62,6 +86,16 @@ def repository(session):
         "repositories.raw_input_repository.get_app_database", return_value=datenbank
     ):
         return RawInputRepository()
+
+
+def _gesperrte_zeile(session, zeile):
+    """Die Abfragekette fuer eine per FOR UPDATE gelesene Einwurf-Zeile."""
+    query = MagicMock()
+    session.query.return_value = query
+    query.filter.return_value = query
+    query.with_for_update.return_value = query
+    query.one_or_none.return_value = zeile
+    return query
 
 
 @pytest.mark.unit
@@ -113,7 +147,14 @@ class TestGetAll:
     def test_get_all_liefert_dicts(self, repository, session):
         self._query_kette(session, [_zeile(content="a"), _zeile(content="b")])
 
-        ergebnis = repository.get_all(limit=10, offset=0)
+        with patch.object(
+            RawInputRepository,
+            "_mit_bearbeitungsstand",
+            side_effect=lambda s, rows, user: [
+                RawInputRepository._to_dict(r) for r in rows
+            ],
+        ):
+            ergebnis = repository.get_all(limit=10, offset=0)
 
         assert [e["content"] for e in ergebnis] == ["a", "b"]
         assert ergebnis[0]["status"] == RawInputStatus.OPEN.value
@@ -182,64 +223,109 @@ class TestGetAll:
 
 @pytest.mark.unit
 class TestBearbeitungsstand:
-    def test_to_dict_uebersetzt_verknuepfung_in_processed_felder(self):
-        inhalt_id = uuid.uuid4()
-        am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
-        verknuepfung = SimpleNamespace(
-            content_id=inhalt_id, created_by="bob", created_at=am
-        )
+    def test_to_dict_uebersetzt_erste_verknuepfung_in_processed_felder(self):
+        satz_id = uuid.uuid4()
+        zuerst = _verknuepfung("bob", draft_id=satz_id)
+        danach = _verknuepfung("carol", content_type="generic_text")
 
-        eintrag = RawInputRepository._to_dict(_zeile(), "Mein Satz", verknuepfung)
+        eintrag = RawInputRepository._to_dict(_zeile(), [], [zuerst, danach])
 
-        assert eintrag["own_draft"] == "Mein Satz"
-        assert eintrag["processed_content_id"] == str(inhalt_id)
+        assert eintrag["processed_content_id"] == str(zuerst.content_id)
         assert eintrag["processed_by"] == "bob"
-        assert eintrag["processed_at"] == am
+        assert eintrag["processed_at"] == AM
+        assert eintrag["links"] == [
+            {
+                "content_id": str(zuerst.content_id),
+                "content_type": "commentary",
+                "draft_id": str(satz_id),
+                "processed_by": "bob",
+                "processed_at": AM,
+            },
+            {
+                "content_id": str(danach.content_id),
+                "content_type": "generic_text",
+                "draft_id": None,
+                "processed_by": "carol",
+                "processed_at": AM,
+            },
+        ]
 
     def test_to_dict_ohne_verknuepfung_und_entwurf(self):
         eintrag = RawInputRepository._to_dict(_zeile())
 
         assert eintrag["own_draft"] is None
+        assert eintrag["destilled_by"] is None
         assert eintrag["processed_content_id"] is None
         assert eintrag["processed_by"] is None
         assert eintrag["processed_at"] is None
+        assert eintrag["drafts"] == []
+        assert eintrag["links"] == []
 
-    def test_erste_verknuepfung_ist_die_aelteste(self, session):
-        """Bei mehreren Beitraegen aus einem Einwurf zaehlt, wer zuerst verarbeitet hat."""
+    def test_to_dict_liefert_alle_saetze_und_den_eigenen(self):
+        """Alle Saetze sind fuer alle sichtbar; own_draft ist der eigene daraus."""
+        von_bob = _entwurf("bob", "Satz von Bob")
+        von_alice = _entwurf("alice", "Satz von Alice")
+
+        eintrag = RawInputRepository._to_dict(
+            _zeile(destilled_by="bob"), [von_bob, von_alice], [], "alice"
+        )
+
+        assert eintrag["destilled_by"] == "bob"
+        assert eintrag["own_draft"] == "Satz von Alice"
+        assert eintrag["drafts"] == [
+            {
+                "id": str(von_bob.id),
+                "user_id": "bob",
+                "sentence": "Satz von Bob",
+                "updated_at": AM,
+            },
+            {
+                "id": str(von_alice.id),
+                "user_id": "alice",
+                "sentence": "Satz von Alice",
+                "updated_at": AM,
+            },
+        ]
+
+    def test_ohne_person_kein_eigener_satz(self):
+        eintrag = RawInputRepository._to_dict(
+            _zeile(), [_entwurf("bob", "Satz")], [], None
+        )
+
+        assert eintrag["own_draft"] is None
+        assert len(eintrag["drafts"]) == 1
+
+    def test_verknuepfungen_werden_je_einwurf_gruppiert(self, session):
         einwurf = uuid.uuid4()
-        zuerst = SimpleNamespace(raw_input_id=einwurf, created_by="alice")
-        danach = SimpleNamespace(raw_input_id=einwurf, created_by="bob")
+        zuerst = _verknuepfung("alice", einwurf=einwurf)
+        danach = _verknuepfung("bob", einwurf=einwurf)
         query = MagicMock()
         session.query.return_value = query
         query.filter.return_value = query
         query.order_by.return_value = query
         query.all.return_value = [zuerst, danach]
 
-        erste = RawInputRepository._erste_verknuepfungen(session, [einwurf])
+        gruppiert = RawInputRepository._verknuepfungen(session, [einwurf])
 
-        assert erste == {einwurf: zuerst}
-        query.order_by.assert_called_once()
+        assert gruppiert == {einwurf: [zuerst, danach]}
+        assert "created_at" in _sql(query.order_by.call_args.args[0])
 
-    def test_ohne_person_gibt_es_keine_entwuerfe(self, session):
-        """Fremde Entwurfssaetze werden nie ausgeliefert."""
-        assert RawInputRepository._eigene_entwuerfe(session, [uuid.uuid4()], None) == {}
-        session.query.assert_not_called()
-
-    def test_entwuerfe_werden_auf_die_person_gefiltert(self, session):
+    def test_saetze_aller_personen_werden_gelesen(self, session):
         einwurf = uuid.uuid4()
+        von_bob = _entwurf("bob", "Satz", einwurf=einwurf)
         query = MagicMock()
         session.query.return_value = query
         query.filter.return_value = query
-        query.all.return_value = [
-            SimpleNamespace(raw_input_id=einwurf, sentence="Satz")
-        ]
+        query.order_by.return_value = query
+        query.all.return_value = [von_bob]
 
-        entwuerfe = RawInputRepository._eigene_entwuerfe(session, [einwurf], "alice")
+        gruppiert = RawInputRepository._entwuerfe(session, [einwurf])
 
-        assert entwuerfe == {einwurf: "Satz"}
+        assert gruppiert == {einwurf: [von_bob]}
         bedingungen = " ".join(_sql(b) for b in query.filter.call_args.args)
-        assert "raw_input_drafts.user_id =" in bedingungen
         assert "raw_input_drafts.raw_input_id IN" in bedingungen
+        assert "user_id" not in bedingungen
+        assert "updated_at" in _sql(query.order_by.call_args.args[0])
 
 
 @pytest.mark.unit
@@ -270,12 +356,9 @@ class TestGetById:
 
 @pytest.mark.unit
 class TestEntwurfSpeichern:
-    def _query_kette(self, session, vorhanden):
-        query = MagicMock()
-        session.query.return_value = query
-        query.filter.return_value = query
-        query.one_or_none.return_value = vorhanden
-        return query
+    @pytest.fixture(autouse=True)
+    def _zeitpunkt(self, session):
+        session.execute.return_value.scalar_one.return_value = AM
 
     def test_upsert_sql_zielt_auf_den_eindeutigen_index(self):
         """Nur gegen echtes PostgreSQL pruefbar ist, ob der Index dazu passt."""
@@ -288,33 +371,105 @@ class TestEntwurfSpeichern:
         assert sql.endswith("RETURNING raw_input_drafts.updated_at")
 
     def test_satz_wird_per_upsert_gespeichert(self, repository, session):
-        self._query_kette(session, (uuid.uuid4(),))
-        am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
-        session.execute.return_value.scalar_one.return_value = am
-        einwurf = uuid.uuid4()
+        zeile = _zeile()
+        _gesperrte_zeile(session, zeile)
 
-        ergebnis = repository.save_draft(einwurf, "alice", "Satz")
+        ergebnis = repository.save_draft(zeile.id, "alice", "Satz")
 
         assert ergebnis == {
-            "raw_input_id": str(einwurf),
+            "raw_input_id": str(zeile.id),
             "sentence": "Satz",
-            "updated_at": am,
+            "updated_at": AM,
         }
         (statement,) = session.execute.call_args.args
         assert "ON CONFLICT" in _sql(statement)
         session.commit.assert_called_once()
 
-    def test_leerer_satz_loescht_statt_zu_speichern(self, repository, session):
-        query = self._query_kette(session, (uuid.uuid4(),))
+    def test_erster_satz_macht_offenen_einwurf_destilliert(self, repository, session):
+        zeile = _zeile(status=RawInputStatus.OPEN.value)
+        query = _gesperrte_zeile(session, zeile)
 
-        ergebnis = repository.save_draft(uuid.uuid4(), "alice", None)
+        repository.save_draft(zeile.id, "alice", "Satz")
+
+        assert zeile.status == RawInputStatus.IN_PROGRESS.value
+        assert zeile.destilled_by == "alice"
+        query.with_for_update.assert_called_once()
+
+    def test_weiterer_satz_aendert_destilled_by_nicht(self, repository, session):
+        """destilled_by ist, wer als Erste/r einen Satz gespeichert hat."""
+        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value, destilled_by="bob")
+        _gesperrte_zeile(session, zeile)
+
+        repository.save_draft(zeile.id, "alice", "Mein Satz")
+
+        assert zeile.status == RawInputStatus.IN_PROGRESS.value
+        assert zeile.destilled_by == "bob"
+
+    @pytest.mark.parametrize(
+        "stand", [RawInputStatus.DISCARDED, RawInputStatus.PROCESSED]
+    )
+    def test_satz_aendert_verworfenes_und_verarbeitetes_nicht(
+        self, repository, session, stand
+    ):
+        zeile = _zeile(status=stand.value)
+        _gesperrte_zeile(session, zeile)
+
+        repository.save_draft(zeile.id, "alice", "Satz")
+
+        assert zeile.status == stand.value
+        assert zeile.destilled_by == "alice"
+
+    def test_leerer_satz_loescht_statt_zu_speichern(self, repository, session):
+        zeile = _zeile(status=RawInputStatus.OPEN.value)
+        query = _gesperrte_zeile(session, zeile)
+
+        ergebnis = repository.save_draft(zeile.id, "alice", None)
 
         assert ergebnis["sentence"] is None
         query.delete.assert_called_once_with(synchronize_session=False)
         session.execute.assert_not_called()
+        session.commit.assert_called_once()
+
+    def test_letzter_satz_geloescht_macht_wieder_offen(self, repository, session):
+        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value, destilled_by="alice")
+        query = _gesperrte_zeile(session, zeile)
+        query.first.return_value = None
+
+        repository.save_draft(zeile.id, "alice", None)
+
+        assert zeile.status == RawInputStatus.OPEN.value
+        assert zeile.destilled_by is None
+
+    def test_leerer_satz_laesst_stand_wenn_andere_saetze_bleiben(
+        self, repository, session
+    ):
+        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value, destilled_by="alice")
+        query = _gesperrte_zeile(session, zeile)
+        query.first.return_value = (uuid.uuid4(),)
+
+        repository.save_draft(zeile.id, "alice", None)
+
+        assert zeile.status == RawInputStatus.IN_PROGRESS.value
+        assert zeile.destilled_by == "alice"
+
+    @pytest.mark.parametrize(
+        "stand", [RawInputStatus.DISCARDED, RawInputStatus.PROCESSED]
+    )
+    def test_leerer_satz_setzt_verworfenes_und_verarbeitetes_nicht_zurueck(
+        self, repository, session, stand
+    ):
+        zeile = _zeile(status=stand.value, destilled_by="alice")
+        query = _gesperrte_zeile(session, zeile)
+        query.first.return_value = None
+
+        repository.save_draft(zeile.id, "alice", None)
+
+        assert zeile.status == stand.value
+        assert zeile.destilled_by == "alice"
+        query.first.assert_not_called()
 
     def test_unbekannter_einwurf_wirft(self, repository, session):
-        self._query_kette(session, None)
+        _gesperrte_zeile(session, None)
 
         with pytest.raises(EinwurfNichtGefunden):
             repository.save_draft(uuid.uuid4(), "alice", "Satz")
@@ -325,14 +480,6 @@ class TestEntwurfSpeichern:
 
 @pytest.mark.unit
 class TestStatusSetzen:
-    def _gesperrte_zeile(self, session, zeile):
-        query = MagicMock()
-        session.query.return_value = query
-        query.filter.return_value = query
-        query.with_for_update.return_value = query
-        query.one_or_none.return_value = zeile
-        return query
-
     @pytest.fixture(autouse=True)
     def _ohne_bearbeitungsstand(self):
         with patch.object(
@@ -343,19 +490,24 @@ class TestStatusSetzen:
     def test_verknuepfung_sql_ist_idempotent(self):
         sql = _sql(
             RawInputRepository._verknuepfung_einfuegen(
-                uuid.uuid4(), uuid.uuid4(), "alice"
+                uuid.uuid4(), uuid.uuid4(), "alice", uuid.uuid4(), "commentary"
             )
         )
 
         assert sql.startswith("INSERT INTO raw_input_content_links")
         assert "created_by" in sql
+        assert "draft_id" in sql
+        assert "content_type" in sql
         # SQLAlchemy haengt fuer den server-generierten Schluessel RETURNING an;
         # bei einem Konflikt kommt dann schlicht keine Zeile zurueck.
         assert "ON CONFLICT (raw_input_id, content_id) DO NOTHING" in sql
 
-    def test_einwerfer_verwirft_offenen_einwurf(self, repository, session):
-        zeile = _zeile(submitted_by="alice", status=RawInputStatus.OPEN.value)
-        query = self._gesperrte_zeile(session, zeile)
+    @pytest.mark.parametrize("stand", [RawInputStatus.OPEN, RawInputStatus.IN_PROGRESS])
+    def test_einwerfer_verwirft_offenen_oder_destillierten_einwurf(
+        self, repository, session, stand
+    ):
+        zeile = _zeile(submitted_by="alice", status=stand.value)
+        query = _gesperrte_zeile(session, zeile)
 
         repository.set_status(zeile.id, RawInputStatus.DISCARDED, "alice")
 
@@ -366,7 +518,7 @@ class TestStatusSetzen:
 
     def test_andere_duerfen_nicht_verwerfen(self, repository, session):
         zeile = _zeile(submitted_by="alice", status=RawInputStatus.OPEN.value)
-        self._gesperrte_zeile(session, zeile)
+        _gesperrte_zeile(session, zeile)
 
         with pytest.raises(AktionNichtErlaubt):
             repository.set_status(zeile.id, RawInputStatus.DISCARDED, "bob")
@@ -376,14 +528,14 @@ class TestStatusSetzen:
 
     def test_einwurf_ohne_einwerfer_kann_niemand_verwerfen(self, repository, session):
         zeile = _zeile(submitted_by=None, status=RawInputStatus.OPEN.value)
-        self._gesperrte_zeile(session, zeile)
+        _gesperrte_zeile(session, zeile)
 
         with pytest.raises(AktionNichtErlaubt):
             repository.set_status(zeile.id, RawInputStatus.DISCARDED, "bob")
 
     def test_verarbeitetes_wird_nicht_verworfen(self, repository, session):
         zeile = _zeile(submitted_by="alice", status=RawInputStatus.PROCESSED.value)
-        self._gesperrte_zeile(session, zeile)
+        _gesperrte_zeile(session, zeile)
 
         with pytest.raises(UebergangNichtErlaubt):
             repository.set_status(zeile.id, RawInputStatus.DISCARDED, "alice")
@@ -393,18 +545,37 @@ class TestStatusSetzen:
     def test_andere_verarbeiten_verworfenes_mit_verknuepfung(self, repository, session):
         """Verworfen heisst nicht gesperrt: andere duerfen trotzdem destillieren."""
         zeile = _zeile(submitted_by="alice", status=RawInputStatus.DISCARDED.value)
-        self._gesperrte_zeile(session, zeile)
+        query = _gesperrte_zeile(session, zeile)
+        query.scalar.return_value = None
         inhalt_id = uuid.uuid4()
 
         repository.set_status(zeile.id, RawInputStatus.PROCESSED, "bob", inhalt_id)
 
         assert zeile.status == RawInputStatus.PROCESSED.value
         (statement,) = session.execute.call_args.args
-        sql = _sql(statement)
-        assert "INSERT INTO raw_input_content_links" in sql
+        assert "INSERT INTO raw_input_content_links" in _sql(statement)
         assert statement.compile().params["created_by"] == "bob"
         assert statement.compile().params["content_id"] == inhalt_id
         session.commit.assert_called_once()
+
+    def test_verknuepfung_haelt_satz_und_beitragstyp_fest(self, repository, session):
+        """draft_id ist der Satz der verarbeitenden Person - die Karte zeigt ihn."""
+        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value)
+        query = _gesperrte_zeile(session, zeile)
+        satz_id = uuid.uuid4()
+        query.scalar.return_value = satz_id
+
+        repository.set_status(
+            zeile.id, RawInputStatus.PROCESSED, "bob", uuid.uuid4(), "generic_text"
+        )
+
+        assert zeile.status == RawInputStatus.PROCESSED.value
+        (statement,) = session.execute.call_args.args
+        parameter = statement.compile().params
+        assert parameter["draft_id"] == satz_id
+        assert parameter["content_type"] == "generic_text"
+        bedingungen = " ".join(_sql(b) for b in query.filter.call_args.args)
+        assert "raw_input_drafts.user_id =" in bedingungen
 
     def test_verarbeitet_ohne_beitrag_wirft_vor_der_datenbank(
         self, repository, session
@@ -415,7 +586,7 @@ class TestStatusSetzen:
         session.query.assert_not_called()
 
     def test_unbekannter_einwurf_wirft(self, repository, session):
-        self._gesperrte_zeile(session, None)
+        _gesperrte_zeile(session, None)
 
         with pytest.raises(EinwurfNichtGefunden):
             repository.set_status(uuid.uuid4(), RawInputStatus.DISCARDED, "alice")

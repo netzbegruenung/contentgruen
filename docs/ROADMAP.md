@@ -126,3 +126,18 @@ Rungs 0–2 are complete:
 **Next: dogfood rungs 1–2, then decide rung 3.** Use the platform actively, catalogue friction, and
 grow real content. Rung 3 (tagging, mood/stance analysis) requires a labelled eval set before any
 ML output can be trusted — the eval set is the gate, not the code. Do not start rung 3 without it.
+
+## Roadmap-Features
+
+Einzelne Funktionen, die feststehen, aber noch nicht gebaut sind.
+
+- **Detailansicht Beitrag**, Route `/beitrag/:id`, Einstiege Fangkorb-Karte und Suchergebnis;
+  Backend `commentary/getById` und `generictext/getById` existieren. Bis dahin führt der Knopf
+  „In der Suche anzeigen“ auf der ausformulierten Fangkorb-Karte als Übergangslösung auf
+  `/result?searchQuery=<Satz>` (`raw-input-list.component.html`).
+- **Löschlogik für raw_input_drafts und destilled_by bei Kontolöschung.** Sätze an fremden
+  Einwürfen und die Kennung als destillierende Person bleiben bisher stehen; die
+  Datenschutzerklärung sagt nur, dass eigene Einwürfe mitgelöscht werden.
+- **GET-Cache 5 min für rawinput-Pfade beobachten.** Der Fangkorb ist eine Mehrpersonen-Ansicht:
+  Sätze und Standwechsel anderer erscheinen bis zu 5 Minuten verzögert
+  (`auth/cache.interceptor.ts`). Bei spürbarer Reibung die rawinput-Pfade vom Cache ausnehmen.

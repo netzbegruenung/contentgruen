@@ -2,13 +2,15 @@
 Repository fuer den Fangkorb (Rohinput).
 
 Datenzugriff auf ``raw_inputs``, ``raw_input_drafts`` und
-``raw_input_content_links``: anlegen, auflisten, einzeln lesen, Entwurf speichern,
+``raw_input_content_links``: anlegen, auflisten, einzeln lesen, Satz speichern,
 Status setzen. Eine Zuweisung ("ich nehm das") gibt es bewusst nicht - mehrere
-Personen duerfen denselben Einwurf gleichzeitig destillieren.
+Personen duerfen denselben Einwurf gleichzeitig destillieren, und ihre Saetze
+sind fuer alle Angemeldeten sichtbar.
 """
 
 import logging
 import uuid
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence
 
 from sqlalchemy import case, desc, func
@@ -20,6 +22,8 @@ from domain.models.raw_input import (
     RawInputSource,
     RawInputStatus,
     UebergangNichtErlaubt,
+    status_nach_satz,
+    status_ohne_saetze,
     uebergang_erlaubt,
 )
 from infrastructure.database.connection import get_app_database
@@ -37,10 +41,25 @@ class RawInputRepository:
     @staticmethod
     def _to_dict(
         raw_input: RawInput,
-        eigener_entwurf: Optional[str] = None,
-        verknuepfung: Optional[RawInputContentLink] = None,
+        entwuerfe: Sequence[RawInputDraft] = (),
+        verknuepfungen: Sequence[RawInputContentLink] = (),
+        current_user: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """In ein Dict uebersetzen, solange die Session noch offen ist."""
+        """
+        In ein Dict uebersetzen, solange die Session noch offen ist.
+
+        ``entwuerfe`` und ``verknuepfungen`` kommen aelteste zuerst; die erste
+        Verknuepfung liefert die processed-Felder.
+        """
+        eigener_satz = next(
+            (
+                entwurf.sentence
+                for entwurf in entwuerfe
+                if current_user is not None and entwurf.user_id == current_user
+            ),
+            None,
+        )
+        erste = verknuepfungen[0] if verknuepfungen else None
         return {
             "id": str(raw_input.id),
             "content": raw_input.content,
@@ -50,13 +69,33 @@ class RawInputRepository:
             "source_channel": raw_input.source_channel,
             "status": raw_input.status,
             "created_at": raw_input.created_at,
-            "own_draft": eigener_entwurf,
+            "destilled_by": raw_input.destilled_by,
+            "own_draft": eigener_satz,
             # In der Tabelle created_by/created_at, nach aussen der Bearbeitungsstand.
-            "processed_content_id": (
-                str(verknuepfung.content_id) if verknuepfung else None
-            ),
-            "processed_by": verknuepfung.created_by if verknuepfung else None,
-            "processed_at": verknuepfung.created_at if verknuepfung else None,
+            "processed_content_id": str(erste.content_id) if erste else None,
+            "processed_by": erste.created_by if erste else None,
+            "processed_at": erste.created_at if erste else None,
+            "drafts": [
+                {
+                    "id": str(entwurf.id),
+                    "user_id": entwurf.user_id,
+                    "sentence": entwurf.sentence,
+                    "updated_at": entwurf.updated_at,
+                }
+                for entwurf in entwuerfe
+            ],
+            "links": [
+                {
+                    "content_id": str(verknuepfung.content_id),
+                    "content_type": verknuepfung.content_type,
+                    "draft_id": (
+                        str(verknuepfung.draft_id) if verknuepfung.draft_id else None
+                    ),
+                    "processed_by": verknuepfung.created_by,
+                    "processed_at": verknuepfung.created_at,
+                }
+                for verknuepfung in verknuepfungen
+            ],
         }
 
     def create(
@@ -71,7 +110,7 @@ class RawInputRepository:
         Einen Einwurf anlegen.
 
         Args:
-            content: Freitext - der eine Satz oder die Notiz zum Link
+            content: Hinweis fuer andere, oder der Fund selbst als Text
             url: Link auf den Beitrag draussen
             image_url: Bild-URL (kein Upload, siehe docs/ROHINPUT.md)
             submitted_by: Wer eingeworfen hat; None fuer Kanaele ohne Sitzung
@@ -113,8 +152,8 @@ class RawInputRepository:
 
         Absichtlich ohne Filter auf die einwerfende Person: der Fangkorb ist ein
         gemeinsamer Vorrat. ``current_user`` bestimmt nur die Reihenfolge und
-        welcher Entwurfssatz mitkommt. Sortiert wird in der Datenbank, weil die
-        Liste paginiert ist.
+        welcher Satz als ``own_draft`` mitkommt. Sortiert wird in der Datenbank,
+        weil die Liste paginiert ist.
 
         Args:
             limit: maximale Anzahl
@@ -146,7 +185,7 @@ class RawInputRepository:
     def get_by_id(
         self, raw_input_id: uuid.UUID, current_user: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Einen Einwurf mit eigenem Entwurf und erster Verknuepfung, oder None."""
+        """Einen Einwurf mit allen Saetzen und Verknuepfungen, oder None."""
         try:
             with self.db.get_session() as session:
                 row = (
@@ -177,26 +216,46 @@ class RawInputRepository:
         self, raw_input_id: uuid.UUID, user_id: str, sentence: Optional[str]
     ) -> Dict[str, Any]:
         """
-        Den eigenen Entwurfssatz speichern (Upsert) oder, wenn leer, loeschen.
+        Den eigenen Satz speichern (Upsert) oder, wenn leer, loeschen - und den
+        Stand des Einwurfs nachziehen.
+
+        Ein nicht-leerer Satz macht einen offenen Einwurf zu ``in_progress`` und
+        traegt die Person als ``destilled_by`` ein, falls dort noch niemand steht.
+        Wird der letzte verbliebene Satz geloescht, faellt ein destillierter
+        Einwurf auf ``open`` zurueck und ``destilled_by`` wird geleert. Die
+        Einwurf-Zeile ist dabei gesperrt (FOR UPDATE), damit zwei gleichzeitige
+        Speichervorgaenge sich den Stand nicht gegenseitig ueberschreiben.
 
         Raises:
             EinwurfNichtGefunden: den Einwurf gibt es nicht
         """
         try:
             with self.db.get_session() as session:
-                vorhanden = (
-                    session.query(RawInput.id)
+                row = (
+                    session.query(RawInput)
                     .filter(RawInput.id == raw_input_id)
+                    .with_for_update()
                     .one_or_none()
                 )
-                if vorhanden is None:
+                if row is None:
                     raise EinwurfNichtGefunden(raw_input_id)
+                aktuell = RawInputStatus(row.status)
 
                 if not sentence:
                     session.query(RawInputDraft).filter(
                         RawInputDraft.raw_input_id == raw_input_id,
                         RawInputDraft.user_id == user_id,
                     ).delete(synchronize_session=False)
+                    zurueck = status_ohne_saetze(aktuell)
+                    if zurueck != aktuell and not self._hat_saetze(
+                        session, raw_input_id
+                    ):
+                        row.status = zurueck.value
+                        row.destilled_by = None
+                        logger.info(
+                            f"Rohinput {raw_input_id}: letzter Satz geloescht, "
+                            f"{aktuell.value} -> {zurueck.value}"
+                        )
                     session.commit()
                     return {
                         "raw_input_id": str(raw_input_id),
@@ -207,6 +266,14 @@ class RawInputRepository:
                 updated_at = session.execute(
                     self._entwurf_upsert(raw_input_id, user_id, sentence)
                 ).scalar_one()
+                neu = status_nach_satz(aktuell)
+                if neu != aktuell:
+                    row.status = neu.value
+                    logger.info(
+                        f"Rohinput {raw_input_id}: {aktuell.value} -> {neu.value}"
+                    )
+                if row.destilled_by is None:
+                    row.destilled_by = user_id
                 session.commit()
                 return {
                     "raw_input_id": str(raw_input_id),
@@ -225,11 +292,16 @@ class RawInputRepository:
         neuer_status: RawInputStatus,
         user_id: str,
         content_id: Optional[uuid.UUID] = None,
+        content_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Status setzen; bei processed zugleich die Verknuepfung schreiben.
 
-        Beides in einer Transaktion, die Zeile ist dabei gesperrt (FOR UPDATE),
+        Die Verknuepfung haelt fest, wer verarbeitet hat, welcher Beitragstyp
+        entstanden ist und welcher Satz ausformuliert wurde - der der verarbeitenden
+        Person (``draft_id``), sofern sie einen gespeichert hat.
+
+        Alles in einer Transaktion, die Zeile ist dabei gesperrt (FOR UPDATE),
         damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Die
         Verknuepfung ist idempotent (ON CONFLICT DO NOTHING): ein wiederholter
         Aufruf nach verlorener Antwort schadet nicht.
@@ -267,8 +339,11 @@ class RawInputRepository:
 
                 row.status = neuer_status.value
                 if neuer_status == RawInputStatus.PROCESSED:
+                    draft_id = self._eigener_entwurf_id(session, raw_input_id, user_id)
                     session.execute(
-                        self._verknuepfung_einfuegen(raw_input_id, content_id, user_id)
+                        self._verknuepfung_einfuegen(
+                            raw_input_id, content_id, user_id, draft_id, content_type
+                        )
                     )
                 session.commit()
                 logger.info(
@@ -296,13 +371,21 @@ class RawInputRepository:
 
     @staticmethod
     def _verknuepfung_einfuegen(
-        raw_input_id: uuid.UUID, content_id: uuid.UUID, user_id: str
+        raw_input_id: uuid.UUID,
+        content_id: uuid.UUID,
+        user_id: str,
+        draft_id: Optional[uuid.UUID] = None,
+        content_type: Optional[str] = None,
     ):
         """INSERT ... ON CONFLICT (raw_input_id, content_id) DO NOTHING."""
         return (
             insert(RawInputContentLink)
             .values(
-                raw_input_id=raw_input_id, content_id=content_id, created_by=user_id
+                raw_input_id=raw_input_id,
+                content_id=content_id,
+                created_by=user_id,
+                draft_id=draft_id,
+                content_type=content_type,
             )
             .on_conflict_do_nothing(
                 index_elements=[
@@ -312,52 +395,80 @@ class RawInputRepository:
             )
         )
 
+    @staticmethod
+    def _hat_saetze(session, raw_input_id: uuid.UUID) -> bool:
+        """Ob zu dem Einwurf noch irgendein Satz gespeichert ist, von wem auch immer."""
+        return (
+            session.query(RawInputDraft.id)
+            .filter(RawInputDraft.raw_input_id == raw_input_id)
+            .first()
+            is not None
+        )
+
+    @staticmethod
+    def _eigener_entwurf_id(
+        session, raw_input_id: uuid.UUID, user_id: str
+    ) -> Optional[uuid.UUID]:
+        """Die Zeile des Satzes, den diese Person zu dem Einwurf gespeichert hat."""
+        return (
+            session.query(RawInputDraft.id)
+            .filter(
+                RawInputDraft.raw_input_id == raw_input_id,
+                RawInputDraft.user_id == user_id,
+            )
+            .scalar()
+        )
+
     def _mit_bearbeitungsstand(
         self, session, rows: Sequence[RawInput], current_user: Optional[str]
     ) -> List[Dict[str, Any]]:
-        """Eigenen Entwurf und erste Verknuepfung an die Zeilen haengen."""
+        """Alle Saetze und Verknuepfungen an die Zeilen haengen."""
         if not rows:
             return []
         ids = [row.id for row in rows]
-        entwuerfe = self._eigene_entwuerfe(session, ids, current_user)
-        verknuepfungen = self._erste_verknuepfungen(session, ids)
+        entwuerfe = self._entwuerfe(session, ids)
+        verknuepfungen = self._verknuepfungen(session, ids)
         return [
-            self._to_dict(row, entwuerfe.get(row.id), verknuepfungen.get(row.id))
+            self._to_dict(
+                row,
+                entwuerfe.get(row.id, []),
+                verknuepfungen.get(row.id, []),
+                current_user,
+            )
             for row in rows
         ]
 
     @staticmethod
-    def _eigene_entwuerfe(
-        session, ids: List[uuid.UUID], current_user: Optional[str]
-    ) -> Dict[uuid.UUID, str]:
-        """Entwurfssaetze der anfragenden Person - nie die anderer."""
-        if current_user is None:
-            return {}
+    def _entwuerfe(
+        session, ids: List[uuid.UUID]
+    ) -> Dict[uuid.UUID, List[RawInputDraft]]:
+        """Die Saetze aller Personen zu den Einwuerfen, aelteste Aenderung zuerst."""
         entwuerfe = (
             session.query(RawInputDraft)
-            .filter(
-                RawInputDraft.raw_input_id.in_(ids),
-                RawInputDraft.user_id == current_user,
-            )
+            .filter(RawInputDraft.raw_input_id.in_(ids))
+            .order_by(RawInputDraft.updated_at)
             .all()
         )
-        return {entwurf.raw_input_id: entwurf.sentence for entwurf in entwuerfe}
+        gruppiert: Dict[uuid.UUID, List[RawInputDraft]] = defaultdict(list)
+        for entwurf in entwuerfe:
+            gruppiert[entwurf.raw_input_id].append(entwurf)
+        return gruppiert
 
     @staticmethod
-    def _erste_verknuepfungen(
+    def _verknuepfungen(
         session, ids: List[uuid.UUID]
-    ) -> Dict[uuid.UUID, RawInputContentLink]:
-        """Je Einwurf die aelteste Verknuepfung - wer ihn zuerst verarbeitet hat."""
+    ) -> Dict[uuid.UUID, List[RawInputContentLink]]:
+        """Die Verknuepfungen zu den Einwuerfen, aelteste zuerst."""
         verknuepfungen = (
             session.query(RawInputContentLink)
             .filter(RawInputContentLink.raw_input_id.in_(ids))
             .order_by(RawInputContentLink.created_at)
             .all()
         )
-        erste: Dict[uuid.UUID, RawInputContentLink] = {}
+        gruppiert: Dict[uuid.UUID, List[RawInputContentLink]] = defaultdict(list)
         for verknuepfung in verknuepfungen:
-            erste.setdefault(verknuepfung.raw_input_id, verknuepfung)
-        return erste
+            gruppiert[verknuepfung.raw_input_id].append(verknuepfung)
+        return gruppiert
 
 
 # Globale Repository-Instanz

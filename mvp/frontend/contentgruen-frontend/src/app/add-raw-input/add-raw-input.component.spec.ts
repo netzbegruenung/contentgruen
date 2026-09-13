@@ -1,37 +1,32 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
-import { AddRawInputComponent, einwurfZerlegen } from './add-raw-input.component';
+import {
+  AddRawInputComponent,
+  SEITENTITEL_PRAEFIX,
+  hinweisVorschlag,
+} from './add-raw-input.component';
 import { RawInputService } from '../services/raw-input.service';
 import { SHARE_EINWURF_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
 
-describe('einwurfZerlegen', () => {
-  it('erkennt einen reinen Link als Link', () => {
-    expect(einwurfZerlegen('https://example.org/post')).toEqual({
-      url: 'https://example.org/post',
-    });
+describe('hinweisVorschlag', () => {
+  it('stellt den Seitentitel mit Praefix voran', () => {
+    expect(hinweisVorschlag({ url: 'https://example.org/a', titel: 'Ein Titel', text: null })).toBe(
+      `${SEITENTITEL_PRAEFIX}Ein Titel`,
+    );
   });
 
-  it('schneidet Leerraum vor der Erkennung ab', () => {
-    expect(einwurfZerlegen('  https://example.org/post  ')).toEqual({
-      url: 'https://example.org/post',
-    });
+  it('nimmt uebrigen Text dazu', () => {
+    expect(hinweisVorschlag({ url: null, titel: 'Ein Titel', text: 'noch was' })).toBe(
+      'Seitentitel: Ein Titel\nnoch was',
+    );
   });
 
-  it('behaelt bei Link mit Notiz beides', () => {
-    const ergebnis = einwurfZerlegen('Guter Thread https://example.org/p zu Waermepumpen');
-
-    expect(ergebnis.url).toBe('https://example.org/p');
-    expect(ergebnis.content).toBe('Guter Thread https://example.org/p zu Waermepumpen');
-  });
-
-  it('behandelt einen Satz ohne Link als Text', () => {
-    expect(einwurfZerlegen('Waermepumpen-Foerderung wurde gekuerzt')).toEqual({
-      content: 'Waermepumpen-Foerderung wurde gekuerzt',
-    });
+  it('hat ohne Titel und Text keinen Vorschlag', () => {
+    expect(hinweisVorschlag({ url: 'https://example.org/a', titel: null, text: null })).toBeNull();
   });
 });
 
@@ -40,148 +35,29 @@ describe('AddRawInputComponent', () => {
   let fixture: ComponentFixture<AddRawInputComponent>;
   let rawInputService: jasmine.SpyObj<RawInputService>;
 
-  beforeEach(async () => {
-    const serviceSpy = jasmine.createSpyObj('RawInputService', ['addRawInput']);
-    serviceSpy.addRawInput.and.returnValue(of({ id: 'neue-id' }));
-    const loggingSpy = jasmine.createSpyObj('LoggingService', ['debug', 'error', 'warn']);
-
-    await TestBed.configureTestingModule({
-      imports: [AddRawInputComponent, BrowserAnimationsModule],
-      providers: [
-        provideRouter([]),
-        { provide: RawInputService, useValue: serviceSpy },
-        { provide: LoggingService, useValue: loggingSpy },
-      ],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(AddRawInputComponent);
-    component = fixture.componentInstance;
-    rawInputService = TestBed.inject(RawInputService) as jasmine.SpyObj<RawInputService>;
-    fixture.detectChanges();
-  });
-
-  it('wird erstellt', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
-    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
-      'a[href="/nutzungsbedingungen"]'
-    );
-
-    expect(link).toBeTruthy();
-    expect(link!.target).toBe('_blank');
-  });
-
-  it('wirft nichts ein, solange nichts dasteht', () => {
-    component.einwurfForm.setValue({ einwurf: '   ', imageUrl: '' });
-
-    component.einwerfen();
-
-    expect(rawInputService.addRawInput).not.toHaveBeenCalled();
-  });
-
-  it('schickt einen Satz als Text', () => {
-    component.einwurfForm.setValue({ einwurf: 'Ein guter Fund', imageUrl: '' });
-
-    component.einwerfen();
-
-    expect(rawInputService.addRawInput).toHaveBeenCalledWith({ content: 'Ein guter Fund' });
-  });
-
-  it('nimmt eine Bild-Adresse allein an', () => {
-    component.einwurfForm.setValue({
-      einwurf: '',
-      imageUrl: 'https://example.org/bild.png',
-    });
-
-    component.einwerfen();
-
-    expect(rawInputService.addRawInput).toHaveBeenCalledWith({
-      image_url: 'https://example.org/bild.png',
-    });
-  });
-
-  it('laesst das Formular nach dem Einwerfen offen und leer', () => {
-    component.einwurfForm.setValue({ einwurf: 'Ein guter Fund', imageUrl: '' });
-
-    component.einwerfen();
-
-    expect(component.einwurfForm.value.einwurf).toBe('');
-    expect(component.eingeworfen).toBe(1);
-    expect(component.fehler).toBeNull();
-  });
-
-  it('zaehlt mehrere Einwuerfe in einer Sitzung', () => {
-    component.einwurfForm.setValue({ einwurf: 'eins', imageUrl: '' });
-    component.einwerfen();
-    component.einwurfForm.setValue({ einwurf: 'zwei', imageUrl: '' });
-    component.einwerfen();
-
-    expect(component.eingeworfen).toBe(2);
-  });
-
-  it('meldet einen abgewiesenen Einwurf verstaendlich', () => {
-    rawInputService.addRawInput.and.returnValue(throwError(() => ({ status: 422 })));
-    component.einwurfForm.setValue({ einwurf: 'x', imageUrl: '' });
-
-    component.einwerfen();
-
-    expect(component.fehler).toContain('Adresse');
-    expect(component.wirdGespeichert).toBeFalse();
-  });
-
-  it('entfernt Tracking-Parameter auch aus einer von Hand eingefuegten Adresse', () => {
-    component.einwurfForm.setValue({
-      einwurf: 'https://www.instagram.com/reel/ABC/?stkn=xyz',
-      imageUrl: '',
-    });
-
-    component.einwerfen();
-
-    expect(rawInputService.addRawInput).toHaveBeenCalledWith({
-      url: 'https://www.instagram.com/reel/ABC/',
-    });
-  });
-
-  it('behaelt die Eingabe, wenn das Speichern fehlschlaegt', () => {
-    rawInputService.addRawInput.and.returnValue(throwError(() => ({ status: 500 })));
-    component.einwurfForm.setValue({ einwurf: 'nicht verlieren', imageUrl: '' });
-
-    component.einwerfen();
-
-    expect(component.einwurfForm.value.einwurf).toBe('nicht verlieren');
-    expect(component.eingeworfen).toBe(0);
-  });
-});
-
-describe('AddRawInputComponent: Uebernahme aus dem Teilen-Menue', () => {
-  let component: AddRawInputComponent;
-  let fixture: ComponentFixture<AddRawInputComponent>;
-  let rawInputService: jasmine.SpyObj<RawInputService>;
-
   /**
-   * Die Vorbelegung passiert in ngOnInit, also muss der Wert liegen, bevor die
-   * Komponente entsteht -- deshalb hier kein Aufbau in beforeEach, sondern eine
-   * Funktion, die jeder Test selbst aufruft.
+   * Die Vorbelegung passiert in ngOnInit, also muss eine Ablage liegen, bevor die
+   * Komponente entsteht -- deshalb baut jeder Test die Komponente selbst.
    */
-  async function komponenteMitAblage(einwurf: string | null): Promise<void> {
-    if (einwurf === null) {
+  async function erstellen(ablage: string | null = null): Promise<void> {
+    if (ablage === null) {
       sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL);
     } else {
-      sessionStorage.setItem(SHARE_EINWURF_SCHLUESSEL, einwurf);
+      sessionStorage.setItem(SHARE_EINWURF_SCHLUESSEL, ablage);
     }
 
     const serviceSpy = jasmine.createSpyObj('RawInputService', ['addRawInput']);
     serviceSpy.addRawInput.and.returnValue(of({ id: 'neue-id' }));
-    const loggingSpy = jasmine.createSpyObj('LoggingService', ['debug', 'error', 'warn']);
 
     await TestBed.configureTestingModule({
-      imports: [AddRawInputComponent, BrowserAnimationsModule],
+      imports: [AddRawInputComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
         { provide: RawInputService, useValue: serviceSpy },
-        { provide: LoggingService, useValue: loggingSpy },
+        {
+          provide: LoggingService,
+          useValue: jasmine.createSpyObj('LoggingService', ['debug', 'error', 'warn']),
+        },
       ],
     }).compileComponents();
 
@@ -191,62 +67,240 @@ describe('AddRawInputComponent: Uebernahme aus dem Teilen-Menue', () => {
     fixture.detectChanges();
   }
 
-  beforeEach(() => TestBed.resetTestingModule());
+  function eingeben(link: string, hinweis: string): void {
+    component.einwurfForm.setValue({ link, hinweis });
+    fixture.detectChanges();
+  }
 
+  function text(): string {
+    return fixture.nativeElement.textContent;
+  }
+
+  beforeEach(() => TestBed.resetTestingModule());
   afterEach(() => sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL));
 
-  it('befuellt das Feld mit dem geteilten Einwurf', async () => {
-    await komponenteMitAblage('https://www.instagram.com/reel/ABC/');
+  describe('Felder', () => {
+    beforeEach(() => erstellen());
 
-    expect(component.einwurfForm.value.einwurf).toBe('https://www.instagram.com/reel/ABC/');
-    expect(component.ausShare).toBeTrue();
-  });
+    it('hat genau zwei Felder: Link und Hinweis fuer andere', () => {
+      const labels = Array.from(fixture.nativeElement.querySelectorAll('mat-label')).map((l) =>
+        (l as HTMLElement).textContent!.trim(),
+      );
 
-  it('raeumt die Ablage weg, damit der naechste Aufruf leer beginnt', async () => {
-    await komponenteMitAblage('https://example.org/a');
+      expect(labels).toEqual(['Link', 'Hinweis für andere']);
+      expect(fixture.nativeElement.querySelectorAll('input, textarea').length).toBe(2);
+      expect(text()).not.toContain('Bild-Adresse');
+    });
 
-    expect(sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL)).toBeNull();
-  });
+    it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
+      const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+        'a[href="/nutzungsbedingungen"]',
+      );
 
-  it('schickt share als Herkunftskanal mit', async () => {
-    await komponenteMitAblage('https://example.org/a');
+      expect(link).toBeTruthy();
+      expect(link!.target).toBe('_blank');
+    });
 
-    component.einwerfen();
+    it('wirft nichts ein, solange nichts dasteht', () => {
+      eingeben('  ', '   ');
 
-    expect(rawInputService.addRawInput).toHaveBeenCalledWith({
-      url: 'https://example.org/a',
-      source_channel: 'share',
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput).not.toHaveBeenCalled();
+    });
+
+    it('nimmt einen Hinweis ohne Link an', () => {
+      eingeben('', 'Waermepumpen-Foerderung wurde gekuerzt');
+
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+        content: 'Waermepumpen-Foerderung wurde gekuerzt',
+      });
+    });
+
+    it('nimmt einen Link ohne Hinweis an', () => {
+      eingeben('https://example.org/post', '');
+
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput).toHaveBeenCalledWith({ url: 'https://example.org/post' });
+    });
+
+    it('schickt Link und Hinweis getrennt', () => {
+      eingeben(' https://example.org/post ', ' Gute Antwort in den Kommentaren ');
+
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+        url: 'https://example.org/post',
+        content: 'Gute Antwort in den Kommentaren',
+      });
+    });
+
+    it('weist im Link-Feld alles ab, was nicht nur ein Link ist', () => {
+      eingeben('Guter Thread https://example.org/p', '');
+      component.einwurfForm.get('link')!.markAsTouched();
+      fixture.detectChanges();
+
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput).not.toHaveBeenCalled();
+      expect(component.kannEinwerfen).toBeFalse();
+      expect(text()).toContain('Bitte nur einen Link');
+    });
+
+    it('entfernt Tracking-Parameter aus dem Link und aus Adressen im Hinweis', () => {
+      eingeben(
+        'https://www.instagram.com/reel/ABC/?stkn=xyz',
+        'siehe auch https://example.org/b?utm_source=x',
+      );
+
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+        url: 'https://www.instagram.com/reel/ABC/',
+        content: 'siehe auch https://example.org/b',
+      });
+    });
+
+    it('laesst das Formular nach dem Einwerfen offen und leer und zaehlt mit', () => {
+      eingeben('https://example.org/a', 'eins');
+      component.einwerfen();
+      eingeben('', 'zwei');
+      component.einwerfen();
+
+      expect(component.einwurfForm.value).toEqual({ link: '', hinweis: '' });
+      expect(component.eingeworfen).toBe(2);
+      expect(component.fehler).toBeNull();
+    });
+
+    it('meldet einen abgewiesenen Einwurf verstaendlich', () => {
+      rawInputService.addRawInput.and.returnValue(throwError(() => ({ status: 422 })));
+      eingeben('https://example.org/a', '');
+
+      component.einwerfen();
+
+      expect(component.fehler).toContain('Link');
+      expect(component.wirdGespeichert).toBeFalse();
+    });
+
+    it('behaelt die Eingabe, wenn das Speichern fehlschlaegt', () => {
+      rawInputService.addRawInput.and.returnValue(throwError(() => ({ status: 500 })));
+      eingeben('https://example.org/a', 'nicht verlieren');
+
+      component.einwerfen();
+
+      expect(component.einwurfForm.value).toEqual({
+        link: 'https://example.org/a',
+        hinweis: 'nicht verlieren',
+      });
+      expect(component.eingeworfen).toBe(0);
     });
   });
 
-  it('uebernimmt Titel und Adresse getrennt in content und url', async () => {
-    await komponenteMitAblage('Ein Seitentitel\nhttps://example.org/a');
-
-    component.einwerfen();
-
-    expect(rawInputService.addRawInput).toHaveBeenCalledWith({
-      url: 'https://example.org/a',
-      content: 'Ein Seitentitel\nhttps://example.org/a',
-      source_channel: 'share',
+  describe('Uebernahme aus dem Teilen-Menue', () => {
+    const vomBrowser = JSON.stringify({
+      url: 'https://www.tagesschau.de/inland/x-100.html',
+      titel: 'AfD klar vor SPD | tagesschau.de',
+      text: null,
     });
-  });
 
-  it('zaehlt den naechsten Einwurf wieder als web', async () => {
-    await komponenteMitAblage('https://example.org/a');
-    component.einwerfen();
+    it('fuellt bei Instagram nur den Link', async () => {
+      await erstellen(
+        JSON.stringify({ url: 'https://www.instagram.com/reel/ABC/', titel: null, text: null }),
+      );
 
-    component.einwurfForm.setValue({ einwurf: 'von Hand getippt', imageUrl: '' });
-    component.einwerfen();
-
-    expect(rawInputService.addRawInput.calls.mostRecent().args[0]).toEqual({
-      content: 'von Hand getippt',
+      expect(component.einwurfForm.value).toEqual({
+        link: 'https://www.instagram.com/reel/ABC/',
+        hinweis: '',
+      });
+      expect(component.ausShare).toBeTrue();
+      expect(component.istVorbelegt).toBeFalse();
     });
-  });
 
-  it('befuellt nichts, wenn nichts abgelegt wurde', async () => {
-    await komponenteMitAblage(null);
+    it('legt den Seitentitel als markierte Vorbelegung ins Hinweis-Feld', async () => {
+      await erstellen(vomBrowser);
 
-    expect(component.einwurfForm.value.einwurf).toBe('');
-    expect(component.ausShare).toBeFalse();
+      expect(component.einwurfForm.value.link).toBe('https://www.tagesschau.de/inland/x-100.html');
+      expect(component.einwurfForm.value.hinweis).toBe(
+        'Seitentitel: AfD klar vor SPD | tagesschau.de',
+      );
+      expect(component.istVorbelegt).toBeTrue();
+      expect(fixture.nativeElement.querySelector('.hinweis-feld.vorbelegt')).toBeTruthy();
+      expect(text()).toContain('Vorschlag aus dem Teilen');
+    });
+
+    it('uebernimmt den Vorschlag, wenn er stehen bleibt', async () => {
+      await erstellen(vomBrowser);
+
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+        url: 'https://www.tagesschau.de/inland/x-100.html',
+        content: 'Seitentitel: AfD klar vor SPD | tagesschau.de',
+        source_channel: 'share',
+      });
+    });
+
+    it('entfernt den Vorschlag mit einem Griff', async () => {
+      await erstellen(vomBrowser);
+      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector(
+        'button.vorbelegung-entfernen',
+      );
+
+      knopf.click();
+      fixture.detectChanges();
+      component.einwerfen();
+
+      expect(fixture.nativeElement.querySelector('button.vorbelegung-entfernen')).toBeNull();
+      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+        url: 'https://www.tagesschau.de/inland/x-100.html',
+        source_channel: 'share',
+      });
+    });
+
+    it('markiert einen bearbeiteten Vorschlag nicht mehr als Vorbelegung', async () => {
+      await erstellen(vomBrowser);
+
+      eingeben('https://www.tagesschau.de/inland/x-100.html', 'Umfrage, lohnt eine Antwort');
+
+      expect(component.istVorbelegt).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.hinweis-feld.vorbelegt')).toBeNull();
+    });
+
+    it('raeumt die Ablage weg, damit der naechste Aufruf leer beginnt', async () => {
+      await erstellen(vomBrowser);
+
+      expect(sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL)).toBeNull();
+    });
+
+    it('zaehlt den naechsten Einwurf wieder als web', async () => {
+      await erstellen(vomBrowser);
+      component.einwerfen();
+
+      eingeben('', 'von Hand getippt');
+      component.einwerfen();
+
+      expect(rawInputService.addRawInput.calls.mostRecent().args[0]).toEqual({
+        content: 'von Hand getippt',
+      });
+    });
+
+    it('befuellt nichts, wenn nichts abgelegt wurde', async () => {
+      await erstellen(null);
+
+      expect(component.einwurfForm.value).toEqual({ link: '', hinweis: '' });
+      expect(component.ausShare).toBeFalse();
+    });
+
+    it('versteht noch die Klartext-Ablage einer aelteren Version', async () => {
+      await erstellen('Ein Seitentitel\nhttps://example.org/a');
+
+      expect(component.einwurfForm.value).toEqual({
+        link: 'https://example.org/a',
+        hinweis: 'Ein Seitentitel',
+      });
+    });
   });
 });

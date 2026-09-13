@@ -1,11 +1,11 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter, Router } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent } from './destillieren.component';
 import { DestillierUebergabeService } from './destillier-uebergabe.service';
-import { RawInput, RawInputService } from '../services/raw-input.service';
+import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 
@@ -257,6 +257,97 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('Alles destilliert');
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/fangkorb"]');
       expect(link).toBeTruthy();
+    });
+  });
+  describe('Saetze anderer', () => {
+    const saetze = [
+      { id: 's-1', user_id: 'bob-1234-5678-9abc', sentence: 'Satz von Bob', updated_at: '2026-09-13T12:00:00Z' },
+      { id: 's-2', user_id: 'alice', sentence: 'Mein Satz', updated_at: '2026-09-13T12:05:00Z' },
+    ];
+
+    it('zeigt vorhandene Saetze anderer oberhalb des eigenen Felds, nicht editierbar', async () => {
+      await erstellen(
+        'id-1',
+        einwurf({ status: 'in_progress', own_draft: 'Mein Satz', drafts: saetze }),
+      );
+      const fremde: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.fremder-satz'));
+      const feld: HTMLTextAreaElement = fixture.nativeElement.querySelector('textarea#satz');
+
+      expect(fremde.length).toBe(1);
+      expect(fremde[0].textContent).toContain('Satz von Bob');
+      expect(fremde[0].textContent).toContain('bob-1234');
+      expect(fixture.nativeElement.querySelector('.fremde-saetze textarea, .fremde-saetze input')).toBeNull();
+      expect(fremde[0].compareDocumentPosition(feld) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(component.satz.value).toBe('Mein Satz');
+    });
+
+    it('zeigt keinen Kasten, wenn nur der eigene Satz existiert', async () => {
+      await erstellen('id-1', einwurf({ status: 'in_progress', drafts: [saetze[1]] }));
+
+      expect(fixture.nativeElement.querySelector('.fremde-saetze')).toBeNull();
+    });
+  });
+
+  describe('Nachlese', () => {
+    it('fuehrt mit dem Zurueck-Pfeil im Satz-Schritt zum Fangkorb', async () => {
+      await erstellen('id-1');
+
+      expect(text()).toContain('Zurück zum Fangkorb');
+      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+    });
+
+    it('wartet mit dem Zurueck-Pfeil, bis der Satz gespeichert ist', async () => {
+      await erstellen('id-1');
+      const antwort = new Subject<DraftResponse>();
+      rawInputService.saveDraft.and.returnValue(antwort);
+      component.satz.setValue('Frisch getippt', { emitEvent: false });
+
+      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+
+      expect(rawInputService.saveDraft).toHaveBeenCalledOnceWith('id-1', 'Frisch getippt');
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      antwort.next({ raw_input_id: 'id-1', sentence: 'Frisch getippt', updated_at: null });
+      antwort.complete();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+    });
+
+    it('bleibt beim Zurueck-Pfeil stehen, wenn das Speichern scheitert', async () => {
+      await erstellen('id-1');
+      rawInputService.saveDraft.and.returnValue(throwError(() => new Error('offline')));
+      component.satz.setValue('Frisch getippt', { emitEvent: false });
+
+      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+      fixture.detectChanges();
+
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(text()).toContain('Der Satz konnte nicht gespeichert werden');
+    });
+
+    it('fuehrt mit dem Zurueck-Pfeil in der Typwahl zurueck zum Satz', async () => {
+      await erstellen('id-1');
+      component.schritt = 'typwahl';
+      fixture.detectChanges();
+
+      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+      fixture.detectChanges();
+
+      expect(component.schritt).toBe('satz');
+      expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb']);
+    });
+
+    it('erlaeutert in der Typwahl beide Typen und faerbt den gewaehlten', async () => {
+      await erstellen('id-1');
+      component.schritt = 'typwahl';
+      fixture.detectChanges();
+
+      expect(text()).toContain('Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media');
+      expect(text()).toContain('Fakten, Zahlen und Hintergrundinformationen zum Thema');
+      const gewaehlt: HTMLElement = fixture.nativeElement.querySelector('.typ.gewaehlt');
+      expect(gewaehlt.classList).toContain('typ-commentary');
     });
   });
 });

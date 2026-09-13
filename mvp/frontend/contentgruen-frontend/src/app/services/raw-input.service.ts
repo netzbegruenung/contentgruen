@@ -30,10 +30,33 @@ export interface AddRawInputResponse {
   id: string;
 }
 
+/** in_progress heisst im UI "destilliert": mindestens ein Satz, noch kein Beitrag. */
 export type RawInputStatus = 'open' | 'in_progress' | 'processed' | 'discarded';
 
 /** Die beiden Ziele, die der Destillier-Ablauf setzen darf. */
 export type DestillierStatus = 'discarded' | 'processed';
+
+/** Die Beitragstypen, die aus dem Destillier-Ablauf entstehen (ContentType im Backend). */
+export type BeitragsTyp = 'commentary' | 'generic_text';
+
+/** Ein Satz zu einem Einwurf. Fuer alle Angemeldeten sichtbar. */
+export interface RawInputDraft {
+  id: string;
+  user_id: string;
+  sentence: string;
+  updated_at: string;
+}
+
+/** Ein Beitrag, der aus einem Einwurf entstanden ist. */
+export interface RawInputLink {
+  content_id: string;
+  /** Null bei Verknuepfungen aus der Zeit vor Fangkorb v2. */
+  content_type: string | null;
+  /** Der ausformulierte Satz; null, wenn er spaeter geleert wurde. */
+  draft_id: string | null;
+  processed_by: string | null;
+  processed_at: string;
+}
 
 export interface RawInput {
   id: string;
@@ -45,12 +68,18 @@ export interface RawInput {
   source_channel: string;
   status: RawInputStatus;
   created_at: string;
-  /** Der eigene Entwurfssatz - nie der anderer. */
+  /** Wer als Erste/r einen Satz gespeichert hat. */
+  destilled_by?: string | null;
+  /** Der eigene Satz aus ``drafts``. */
   own_draft?: string | null;
   /** Erste Verknuepfung mit einem Beitrag, falls verarbeitet. */
   processed_content_id?: string | null;
   processed_by?: string | null;
   processed_at?: string | null;
+  /** Alle Saetze aller Personen, aelteste Aenderung zuerst. */
+  drafts?: RawInputDraft[];
+  /** Alle entstandenen Beitraege, aelteste zuerst. */
+  links?: RawInputLink[];
 }
 
 export interface GetRawInputsResponse {
@@ -89,7 +118,7 @@ export class RawInputService {
     });
   }
 
-  /** Ein Einwurf mit eigenem Entwurfssatz. */
+  /** Ein Einwurf mit allen Saetzen und dem eigenen als own_draft. */
   getRawInput(id: string): Observable<RawInput> {
     return this.http.get<RawInput>(this.einwurfUrl(id));
   }
@@ -124,27 +153,47 @@ export class RawInputService {
     }
   }
 
-  /** Verwerfen oder als verarbeitet markieren (dann mit dem entstandenen Beitrag). */
-  updateStatus(id: string, status: DestillierStatus, contentId?: string): Observable<RawInput> {
-    const body = contentId ? { status, content_id: contentId } : { status };
+  /**
+   * Verwerfen oder als verarbeitet markieren - dann mit dem entstandenen Beitrag
+   * und seinem Typ, nach dem sich die Fangkorb-Karte faerbt.
+   */
+  updateStatus(
+    id: string,
+    status: DestillierStatus,
+    contentId?: string,
+    contentType?: BeitragsTyp,
+  ): Observable<RawInput> {
+    const body: Record<string, string> = { status };
+    if (contentId) {
+      body['content_id'] = contentId;
+    }
+    if (contentType) {
+      body['content_type'] = contentType;
+    }
     return this.http
       .patch<RawInput>(`${this.einwurfUrl(id)}/status`, body)
       .pipe(tap(() => this.cacheLeeren()));
   }
 
   /**
-   * Der naechste Einwurf fuer den Destillier-Ablauf: offen, ohne eigenen Entwurf.
+   * Der naechste Einwurf fuer den Destillier-Ablauf: offen oder destilliert, ohne
+   * eigenen Entwurf.
    *
-   * Einwuerfe mit eigenem Entwurf hat man mit "Spaeter" zurueckgestellt; sie
-   * bleiben antippbar, werden aber nicht automatisch wieder angeboten. Die
-   * Reihenfolge (eigene zuerst, dann neueste) kommt vom Server.
+   * Destilliert heisst nur, dass jemand anderes schon einen Satz hat - es gibt
+   * keine Sperre, der eigene Satz kann trotzdem kommen. Einwuerfe mit eigenem
+   * Entwurf hat man mit "Spaeter" zurueckgestellt; sie bleiben antippbar, werden
+   * aber nicht automatisch wieder angeboten. Die Reihenfolge (eigene zuerst, dann
+   * neueste) kommt vom Server.
    */
   naechsterOffenerEinwurf(ausser?: string | null): Observable<RawInput | null> {
     return this.getRawInputs(1, 100).pipe(
       map(
         (daten) =>
           daten.results.find(
-            (einwurf) => einwurf.status === 'open' && !einwurf.own_draft && einwurf.id !== ausser,
+            (einwurf) =>
+              (einwurf.status === 'open' || einwurf.status === 'in_progress') &&
+              !einwurf.own_draft &&
+              einwurf.id !== ausser,
           ) ?? null,
       ),
     );

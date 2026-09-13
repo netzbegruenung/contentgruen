@@ -198,6 +198,10 @@ class RawInput(Base):
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Wer als Erste/r einen Satz gespeichert hat. Weitere Saetze anderer Personen
+    # aendern das nicht; wer den Beitrag gespeichert hat, steht an der Verknuepfung
+    # (raw_input_content_links.created_by).
+    destilled_by = Column(String(255), nullable=True)
 
     __table_args__ = (
         Index("idx_raw_inputs_status", "status"),
@@ -217,8 +221,9 @@ class RawInputContentLink(Base):
     """
     Verknuepfung zwischen einem Einwurf und dem Beitrag, der daraus entstanden ist.
 
-    **Heute schreibt niemand in diese Tabelle** - die Verarbeitung ist nicht
-    gebaut. Sie existiert trotzdem von Anfang an, weil die Beziehung n:m ist: ein
+    Geschrieben wird sie beim Speichern eines Beitrags aus dem Destillier-Ablauf
+    (``PATCH /rawinput/{id}/status``). Sie existiert von Anfang an, weil die
+    Beziehung n:m ist: ein
     Thread kann einen Kommentar *und* eine Hintergrundinfo hervorbringen, und ein
     Beitrag kann aus mehreren Einwuerfen entstehen. Ein Feld
     ``resulting_content_id`` auf ``raw_inputs`` waere billiger und genau die
@@ -251,10 +256,21 @@ class RawInputContentLink(Base):
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Welcher Satz ausformuliert wurde. SET NULL, weil ein geleerter Satz seine
+    # Zeile loescht - die Verknuepfung mit dem Beitrag bleibt trotzdem bestehen.
+    draft_id = Column(
+        SQLUUID(as_uuid=True),
+        ForeignKey("raw_input_drafts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # Typ des Beitrags (ContentType-Wert); die Fangkorb-Karte nimmt dessen Farbe an.
+    # NULL bei Verknuepfungen aus der Zeit vor Fangkorb v2.
+    content_type = Column(String(50), nullable=True)
 
     __table_args__ = (
         Index("idx_raw_input_links_raw_input_id", "raw_input_id"),
         Index("idx_raw_input_links_content_id", "content_id"),
+        Index("idx_raw_input_links_draft_id", "draft_id"),
         # Dieselbe Paarung nur einmal - zweimal "verarbeitet" zaehlt spaeter sonst
         # doppelt.
         Index(

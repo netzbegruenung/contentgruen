@@ -46,15 +46,14 @@
     width: 100%;
 }
 
-.bild-zeile {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-sm, 8px);
+/* Vorbelegung aus dem Teilen: abgesetzt, bis die Person sie uebernimmt oder aendert. */
+.vorbelegt textarea {
+    font-style: italic;
+    color: var(--text-secondary, #4a4a4a);
 }
 
-.bild-schalter {
-    padding-left: 0;
+.vorbelegung-hinweis {
+    font-style: italic;
 }
 
 .einwurf-hinweis {

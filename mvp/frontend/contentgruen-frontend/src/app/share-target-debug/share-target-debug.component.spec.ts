@@ -62,13 +62,14 @@ describe('ShareTargetDebugComponent', () => {
     expect(unerwartet[0].name).toBe('ueberraschung');
   });
 
-  it('zerlegt einen Text mit eingebettetem Link in url und content', () => {
+  it('trennt einen Text mit eingebettetem Link in Link und uebrigen Text', () => {
     suchteilSetzen('?text=Guter+Punkt+https%3A%2F%2Fexample.org%2Fp%2F1');
     const komponente = erzeugen();
 
     expect(komponente.zerlegung).toEqual({
       url: 'https://example.org/p/1',
-      content: 'Guter Punkt https://example.org/p/1',
+      titel: null,
+      text: 'Guter Punkt',
     });
   });
 
@@ -76,7 +77,7 @@ describe('ShareTargetDebugComponent', () => {
     suchteilSetzen('?text=nur+ein+Gedanke');
     const komponente = erzeugen();
 
-    expect(komponente.zerlegung).toEqual({ content: 'nur ein Gedanke' });
+    expect(komponente.zerlegung).toEqual({ url: null, titel: null, text: 'nur ein Gedanke' });
   });
 
   it('haelt im Bericht auch fest, dass gar nichts ankam', () => {
@@ -84,6 +85,6 @@ describe('ShareTargetDebugComponent', () => {
     const komponente = erzeugen();
 
     expect(komponente.bericht).toContain('Parameter:\n  (keine)');
-    expect(komponente.bericht).toContain('(kein text-Parameter)');
+    expect(komponente.bericht).toContain('(weder title noch text noch url)');
   });
 });

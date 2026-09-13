@@ -363,9 +363,11 @@ dotnet test
 ## Deployment
 
 ### Test Environment
-- URL: https://contentgruen-test.netzbegruenung.de (SaltStack-managed, tracks the `:main` image tag)
-- Legacy URL: https://test.contentgruen.de (manual deployment, being discontinued)
-- Deployment: Manual via docker-compose.tst.yml
+- URL: https://contentgruen-test.netzbegruenung.de (SaltStack-managed, runs the `:main` image tag)
+- Deployment: Manual — Salt `state.apply`, then `docker compose pull && docker compose up -d` on the host.
+  A new `:main` image is **not** rolled out automatically (Watchtower is inactive), so migrations can
+  run before the deploy.
+- Legacy URL: https://test.contentgruen.de (manual deployment via docker-compose.tst.yml, being discontinued)
 
 ### Production Environment
 - URL: https://contentgruen.netzbegruenung.de

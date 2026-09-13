@@ -101,7 +101,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onSuccess('beitrag-1');
 
-    expect(uebergabe.nachSpeichern).toHaveBeenCalledWith('id-1', 'beitrag-1');
+    expect(uebergabe.nachSpeichern).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
     expect(navigieren).not.toHaveBeenCalled();
   });
 

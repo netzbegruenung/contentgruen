@@ -14,6 +14,15 @@
     </div>
 
     <ng-container *ngIf="!laedt && einwurf">
+        <div class="kopfzeile">
+            <button mat-icon-button type="button" class="zurueck-pfeil"
+                    [attr.aria-label]="schritt === 'typwahl' ? 'Zurück zum Satz' : 'Zurück zum Fangkorb'"
+                    (click)="zurueck()">
+                <mat-icon>arrow_back</mat-icon>
+            </button>
+            <span class="kopfzeile-titel">{{ schritt === 'typwahl' ? 'Zurück zum Satz' : 'Zurück zum Fangkorb' }}</span>
+        </div>
+
         <section class="einwurf">
             <a *ngIf="einwurf.url" class="einwurf-link" [href]="einwurf.url"
                target="_blank" rel="noopener noreferrer">
@@ -30,6 +39,16 @@
         </section>
 
         <section *ngIf="schritt === 'satz'" class="satz">
+            <div *ngIf="fremdeSaetze.length" class="fremde-saetze">
+                <p class="fremde-saetze-titel">Sätze von anderen</p>
+                <ul>
+                    <li *ngFor="let fremd of fremdeSaetze" class="fremder-satz">
+                        <span class="satz-text">„{{ fremd.sentence }}“</span>
+                        <span class="person" [attr.title]="fremd.user_id">{{ kurzeKennung(fremd.user_id) }}</span>
+                    </li>
+                </ul>
+            </div>
+
             <mat-form-field appearance="outline" class="satz-feld">
                 <mat-label>Was ist der Punkt? Ein Satz.</mat-label>
                 <textarea matInput id="satz" rows="3" [formControl]="satz"
@@ -53,8 +72,12 @@
             <p class="satz-vorschau">„{{ satz.value.trim() }}“</p>
 
             <mat-radio-group class="typen" aria-label="Was wird daraus?" [(ngModel)]="typ">
-                <mat-radio-button value="commentary">Kommentar</mat-radio-button>
-                <mat-radio-button value="generictext">Hintergrundinfo</mat-radio-button>
+                <mat-radio-button *ngFor="let eintrag of typen" [value]="eintrag.wert"
+                                  class="typ" [ngClass]="'typ-' + eintrag.wert"
+                                  [class.gewaehlt]="typ === eintrag.wert">
+                    <span class="typ-name">{{ eintrag.name }}</span>
+                    <span class="typ-erlaeuterung">{{ eintrag.erlaeuterung }}</span>
+                </mat-radio-button>
             </mat-radio-group>
 
             <div class="knoepfe">
