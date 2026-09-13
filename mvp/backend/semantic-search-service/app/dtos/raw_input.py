@@ -1,18 +1,23 @@
 """
 DTOs fuer den Fangkorb (Rohinput).
 
-Die einzige inhaltliche Pflicht ist, dass ueberhaupt etwas dasteht. Kein Titel,
-keine Kategorie, kein Zieltyp - all das waere schon Destillieren und gehoert in
-die spaetere Verarbeitung, nicht in den Einwurf.
+Die einzige inhaltliche Pflicht beim Einwerfen ist, dass ueberhaupt etwas
+dasteht. Kein Titel, keine Kategorie, kein Zieltyp - all das ist Destillieren
+und passiert erst im Destillier-Ablauf (Entwurfssatz, Status, Verknuepfung).
 """
 
 import datetime
+import uuid
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from domain.models.raw_input import RawInputSource, RawInputStatus
 from utils.url_validator import validate_url_security
+
+# Der Entwurfssatz wird der Titel des Beitrags und hat deshalb dasselbe Limit
+# wie der Titel von Kommentar und Hintergrundinfo.
+SATZ_LIMIT = 120
 
 
 def _normalisieren(wert: Optional[str]) -> Optional[str]:
@@ -89,11 +94,62 @@ class AddRawInputRequest(BaseModel):
         return self
 
 
+class SaveDraftRequest(BaseModel):
+    """
+    Der Entwurfssatz: "Was ist der Punkt? Ein Satz."
+
+    Leer (oder nur Leerraum) loescht den eigenen Entwurf.
+    """
+
+    sentence: Optional[str] = Field(
+        default=None,
+        max_length=SATZ_LIMIT,
+        description="Der Satz, der spaeter der Titel des Beitrags wird",
+    )
+
+    @field_validator("sentence", mode="before")
+    @classmethod
+    def leerraum_abschneiden(cls, value):
+        return _normalisieren(value) if isinstance(value, str) else value
+
+
+class UpdateRawInputStatusRequest(BaseModel):
+    """
+    Statuswechsel aus dem Destillier-Ablauf.
+
+    Nur zwei Ziele: ``discarded`` (ohne content_id) und ``processed`` (nur mit
+    content_id - der Beitrag, der entstanden ist). ``in_progress`` wird bewusst
+    nicht vergeben: es gibt keine Sperre.
+    """
+
+    status: RawInputStatus
+    content_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="Der entstandene Beitrag; Pflicht bei processed",
+    )
+
+    @model_validator(mode="after")
+    def ziel_und_beitrag_passen(self):
+        if self.status not in (RawInputStatus.DISCARDED, RawInputStatus.PROCESSED):
+            raise ValueError("status muss discarded oder processed sein")
+        if self.status == RawInputStatus.PROCESSED and self.content_id is None:
+            raise ValueError("processed braucht die content_id des Beitrags")
+        if self.status == RawInputStatus.DISCARDED and self.content_id is not None:
+            raise ValueError("discarded nimmt keine content_id an")
+        return self
+
+
 ###   Responses   ###
 
 
 class RawInputResponse(BaseModel):
-    """Ein Einwurf, wie ihn der Fangkorb ausliefert."""
+    """
+    Ein Einwurf, wie ihn der Fangkorb ausliefert.
+
+    ``own_draft`` ist der Entwurfssatz der anfragenden Person, nicht der anderer.
+    Die processed-Felder beschreiben die erste Verknuepfung mit einem Beitrag;
+    in der Tabelle heissen sie created_by/created_at.
+    """
 
     id: str
     content: Optional[str] = None
@@ -103,6 +159,10 @@ class RawInputResponse(BaseModel):
     source_channel: str
     status: RawInputStatus
     created_at: datetime.datetime
+    own_draft: Optional[str] = None
+    processed_content_id: Optional[str] = None
+    processed_by: Optional[str] = None
+    processed_at: Optional[datetime.datetime] = None
 
 
 class AddRawInputResponse(BaseModel):
@@ -113,3 +173,11 @@ class GetRawInputsResponse(BaseModel):
     results_count: int
     results: List[RawInputResponse]
     total_records_count: int
+
+
+class DraftResponse(BaseModel):
+    """Der gespeicherte Entwurf; ``sentence`` ist None, wenn er geloescht wurde."""
+
+    raw_input_id: str
+    sentence: Optional[str] = None
+    updated_at: Optional[datetime.datetime] = None

@@ -264,3 +264,47 @@ class RawInputContentLink(Base):
             unique=True,
         ),
     )
+
+
+class RawInputDraft(Base):
+    """
+    Der Entwurfssatz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
+
+    Gehoert zu (Einwurf, Person) und nicht zum Einwurf allein: mehrere Leute
+    duerfen denselben Einwurf gleichzeitig destillieren, jede Person mit ihrem
+    eigenen Satz. Aus dem Satz wird spaeter der Titel des Beitrags; das Limit
+    (120 Zeichen, wie der Titel) prueft das DTO, nicht die Datenbank.
+
+    Gespeichert wird per Upsert auf den eindeutigen Index (raw_input_id, user_id).
+    Ein leerer Satz ist kein Entwurf: dann wird die Zeile geloescht statt ""
+    abzulegen, damit "hat einen eigenen Entwurf" genau eine Bedeutung hat.
+    """
+
+    __tablename__ = "raw_input_drafts"
+
+    id = Column(
+        SQLUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    raw_input_id = Column(
+        SQLUUID(as_uuid=True),
+        ForeignKey("raw_inputs.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    user_id = Column(String(255), nullable=False)
+    sentence = Column(Text, nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index("idx_raw_input_drafts_user_id", "user_id"),
+        # Genau ein Entwurf je Person und Einwurf - der Upsert haengt daran.
+        Index(
+            "idx_raw_input_drafts_unique",
+            "raw_input_id",
+            "user_id",
+            unique=True,
+        ),
+    )

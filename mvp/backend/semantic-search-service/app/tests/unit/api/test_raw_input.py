@@ -16,11 +16,21 @@ from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
 
 from api.v1.raw_input import router as raw_input_router
-from domain.models.raw_input import RawInputSource, RawInputStatus
+from domain.models.raw_input import (
+    AktionNichtErlaubt,
+    EinwurfNichtGefunden,
+    RawInputSource,
+    RawInputStatus,
+    UebergangNichtErlaubt,
+)
 from repositories.raw_input_repository import get_raw_input_repository
 
 ADD_URL = "/api/v1/rawinput/addRawInput"
 LIST_URL = "/api/v1/rawinput/getRawInputs"
+EINWURF_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
+EINZEL_URL = f"/api/v1/rawinput/{EINWURF_ID}"
+ENTWURF_URL = f"/api/v1/rawinput/{EINWURF_ID}/draft"
+STATUS_URL = f"/api/v1/rawinput/{EINWURF_ID}/status"
 
 app = FastAPI()
 app.include_router(raw_input_router, prefix="/api/v1/rawinput")
@@ -261,10 +271,249 @@ class TestFangkorbListe:
     def test_seitenwechsel_rechnet_offset_aus(self, client, repository):
         client.get(LIST_URL, params={"page": 3, "page_size": 10})
 
-        assert repository.get_all.call_args.kwargs == {"limit": 10, "offset": 20}
+        assert repository.get_all.call_args.kwargs == {
+            "limit": 10,
+            "offset": 20,
+            "current_user": None,
+        }
 
     def test_liste_ist_nicht_auf_eine_person_gefiltert(self, client, repository):
         """Der Fangkorb ist ein gemeinsamer Vorrat, nicht die eigene Ablage."""
         client.get(LIST_URL, headers={"X-User": "alice"})
 
         assert "submitted_by" not in repository.get_all.call_args.kwargs
+
+    def test_liste_sortiert_fuer_die_anfragende_person(self, client, repository):
+        """Eigene zuerst - dafuer muss das Repository wissen, wer fragt."""
+        client.get(LIST_URL, headers={"X-User": "alice"})
+
+        assert repository.get_all.call_args.kwargs["current_user"] == "alice"
+
+    def test_anonymous_sortiert_ohne_person(self, client, repository):
+        client.get(LIST_URL, headers={"X-User": "anonymous"})
+
+        assert repository.get_all.call_args.kwargs["current_user"] is None
+
+    def test_liste_liefert_entwurf_und_bearbeitungsstand(self, client, repository):
+        verarbeitet_am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
+        inhalt_id = str(uuid.uuid4())
+        repository.get_all.return_value = [
+            _gespeicherter_einwurf(own_draft="Mein Satz"),
+            _gespeicherter_einwurf(
+                status=RawInputStatus.PROCESSED.value,
+                processed_content_id=inhalt_id,
+                processed_by="bob",
+                processed_at=verarbeitet_am,
+            ),
+        ]
+        repository.count.return_value = 2
+
+        daten = client.get(LIST_URL, headers={"X-User": "alice"}).json()
+
+        assert daten["results"][0]["own_draft"] == "Mein Satz"
+        assert daten["results"][0]["processed_by"] is None
+        assert daten["results"][1]["processed_content_id"] == inhalt_id
+        assert daten["results"][1]["processed_by"] == "bob"
+        assert daten["results"][1]["processed_at"].startswith("2026-09-13T18:00")
+
+
+@pytest.mark.unit
+@pytest.mark.api
+class TestEinzelabruf:
+    def test_einzelabruf_liefert_einwurf_mit_eigenem_entwurf(self, client, repository):
+        repository.get_by_id.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), own_draft="Mein Satz"
+        )
+
+        antwort = client.get(EINZEL_URL, headers={"X-User": "alice"})
+
+        assert antwort.status_code == 200
+        assert antwort.json()["own_draft"] == "Mein Satz"
+        repository.get_by_id.assert_called_once_with(EINWURF_ID, "alice")
+
+    def test_einzelabruf_unbekannte_id_ist_404(self, client, repository):
+        repository.get_by_id.return_value = None
+
+        antwort = client.get(EINZEL_URL, headers={"X-User": "alice"})
+
+        assert antwort.status_code == 404
+
+    def test_einzelabruf_ungueltige_id_ist_422(self, client, repository):
+        antwort = client.get("/api/v1/rawinput/keine-uuid", headers={"X-User": "a"})
+
+        assert antwort.status_code == 422
+        repository.get_by_id.assert_not_called()
+
+    def test_einzelabruf_verdeckt_die_liste_nicht(self, client, repository):
+        """/getRawInputs steht vor /{id} und muss weiter die Liste liefern."""
+        antwort = client.get(LIST_URL)
+
+        assert antwort.status_code == 200
+        repository.get_all.assert_called_once()
+        repository.get_by_id.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.api
+class TestEntwurf:
+    def test_entwurf_wird_fuer_die_person_gespeichert(self, client, repository):
+        repository.save_draft.return_value = {
+            "raw_input_id": str(EINWURF_ID),
+            "sentence": "Waermepumpe lohnt sich auch im Altbau",
+            "updated_at": datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc),
+        }
+
+        antwort = client.put(
+            ENTWURF_URL,
+            json={"sentence": "  Waermepumpe lohnt sich auch im Altbau "},
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        assert antwort.json()["sentence"] == "Waermepumpe lohnt sich auch im Altbau"
+        repository.save_draft.assert_called_once_with(
+            EINWURF_ID, "alice", "Waermepumpe lohnt sich auch im Altbau"
+        )
+
+    def test_entwurf_120_zeichen_sind_erlaubt(self, client, repository):
+        repository.save_draft.return_value = {
+            "raw_input_id": str(EINWURF_ID),
+            "sentence": "a" * 120,
+            "updated_at": None,
+        }
+
+        antwort = client.put(
+            ENTWURF_URL, json={"sentence": "a" * 120}, headers={"X-User": "alice"}
+        )
+
+        assert antwort.status_code == 200
+
+    def test_entwurf_121_zeichen_werden_abgewiesen(self, client, repository):
+        """Der Satz wird der Titel - und der hat 120 Zeichen."""
+        antwort = client.put(
+            ENTWURF_URL, json={"sentence": "a" * 121}, headers={"X-User": "alice"}
+        )
+
+        assert antwort.status_code == 422
+        repository.save_draft.assert_not_called()
+
+    def test_leerer_satz_loescht_den_entwurf(self, client, repository):
+        repository.save_draft.return_value = {
+            "raw_input_id": str(EINWURF_ID),
+            "sentence": None,
+            "updated_at": None,
+        }
+
+        client.put(ENTWURF_URL, json={"sentence": "   "}, headers={"X-User": "alice"})
+
+        repository.save_draft.assert_called_once_with(EINWURF_ID, "alice", None)
+
+    @pytest.mark.parametrize("kopfzeilen", [{}, {"X-User": "anonymous"}])
+    def test_entwurf_ohne_anmeldung_ist_401(self, client, repository, kopfzeilen):
+        antwort = client.put(ENTWURF_URL, json={"sentence": "x"}, headers=kopfzeilen)
+
+        assert antwort.status_code == 401
+        repository.save_draft.assert_not_called()
+
+    def test_entwurf_zu_unbekanntem_einwurf_ist_404(self, client, repository):
+        repository.save_draft.side_effect = EinwurfNichtGefunden(EINWURF_ID)
+
+        antwort = client.put(
+            ENTWURF_URL, json={"sentence": "x"}, headers={"X-User": "alice"}
+        )
+
+        assert antwort.status_code == 404
+
+
+@pytest.mark.unit
+@pytest.mark.api
+class TestStatuswechsel:
+    def test_verwerfen_ruft_das_repository_ohne_beitrag(self, client, repository):
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=RawInputStatus.DISCARDED.value
+        )
+
+        antwort = client.patch(
+            STATUS_URL, json={"status": "discarded"}, headers={"X-User": "alice"}
+        )
+
+        assert antwort.status_code == 200
+        assert antwort.json()["status"] == "discarded"
+        repository.set_status.assert_called_once_with(
+            EINWURF_ID, RawInputStatus.DISCARDED, "alice", None
+        )
+
+    def test_verarbeitet_gibt_beitrag_und_bearbeitenden_zurueck(
+        self, client, repository
+    ):
+        inhalt_id = uuid.uuid4()
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID),
+            status=RawInputStatus.PROCESSED.value,
+            processed_content_id=str(inhalt_id),
+            processed_by="alice",
+            processed_at=datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc),
+        )
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={"status": "processed", "content_id": str(inhalt_id)},
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        assert antwort.json()["processed_by"] == "alice"
+        repository.set_status.assert_called_once_with(
+            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id
+        )
+
+    @pytest.mark.parametrize(
+        "koerper",
+        [
+            {"status": "processed"},
+            {"status": "discarded", "content_id": str(uuid.uuid4())},
+            {"status": "in_progress"},
+            {"status": "open"},
+            {"status": "processed", "content_id": "keine-uuid"},
+        ],
+    )
+    def test_ungueltige_statuswechsel_werden_abgewiesen(
+        self, client, repository, koerper
+    ):
+        antwort = client.patch(STATUS_URL, json=koerper, headers={"X-User": "alice"})
+
+        assert antwort.status_code == 422
+        repository.set_status.assert_not_called()
+
+    @pytest.mark.parametrize("kopfzeilen", [{}, {"X-User": "anonymous"}])
+    def test_statuswechsel_ohne_anmeldung_ist_401(self, client, repository, kopfzeilen):
+        antwort = client.patch(
+            STATUS_URL, json={"status": "discarded"}, headers=kopfzeilen
+        )
+
+        assert antwort.status_code == 401
+        repository.set_status.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "fehler, code",
+        [
+            (EinwurfNichtGefunden(EINWURF_ID), 404),
+            (AktionNichtErlaubt("nur Einwerfer"), 403),
+            (
+                UebergangNichtErlaubt(
+                    RawInputStatus.PROCESSED, RawInputStatus.DISCARDED
+                ),
+                409,
+            ),
+        ],
+    )
+    def test_fehler_aus_dem_repository_werden_uebersetzt(
+        self, client, repository, fehler, code
+    ):
+        repository.set_status.side_effect = fehler
+
+        antwort = client.patch(
+            STATUS_URL, json={"status": "discarded"}, headers={"X-User": "alice"}
+        )
+
+        assert antwort.status_code == code
