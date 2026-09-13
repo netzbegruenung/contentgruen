@@ -239,7 +239,7 @@
 @include base.result-statement-section;
 
 // Include mobile responsive styles
-@include base.result-item-mobile;
+@include base.result-item-mobile(commentary);
 
 // Mobile adjustments
 @media (max-width: 599px) {

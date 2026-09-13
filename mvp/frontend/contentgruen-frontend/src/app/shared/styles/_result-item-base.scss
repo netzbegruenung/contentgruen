@@ -589,7 +589,12 @@
 }
 
 // Mobile responsive mixin
-@mixin result-item-mobile {
+//
+// $prefix ist das Klassenpraefix der Karte (commentary, generictext, post).
+// Die Regeln treffen genau die Klassen dieser Karte. Vorher waren es
+// Teilstring-Selektoren wie [class*="-text"], die auch statement-full-text,
+// metadata-text oder content-type-emoji erwischten.
+@mixin result-item-mobile($prefix) {
   @include bp.mobile-only {
     .result-item {
       width: 100%;
@@ -600,112 +605,57 @@
       box-sizing: border-box;
     }
 
-    // Apply to content class regardless of prefix
-    [class*="-content"] {
+    .#{$prefix}-content {
       padding-bottom: var(--mobile-footer-height);
     }
 
-    // Apply to header class regardless of prefix. Nicht auf -header-info: das
-    // ist der Container der Titelbox und darf nicht auf eine Hoehe festgenagelt
-    // werden, sonst schneidet er den mehrzeiligen Titel ab.
-    [class*="-header"]:not([class*="-header-info"]) {
+    // Nur der Header selbst, nicht -header-info: das ist der Container der
+    // Titelbox und darf nicht auf eine Hoehe festgenagelt werden, sonst
+    // schneidet er den mehrzeiligen Titel ab.
+    .#{$prefix}-header {
       height: auto;
     }
 
-    // Apply to score class regardless of prefix
-    [class*="-score"] {
-      width: 32px;
-      height: 32px;
-      font-size: 14px;
-    }
-
-    // Apply to title class regardless of prefix
     // Hoehe kommt aus result-title (4 Zeilen in em), hier nur die Schriftgroesse.
-    [class*="-title"] {
+    .#{$prefix}-title {
       font-size: 14px;
       width: 200px;
     }
 
-    // Apply to text class regardless of prefix
-    [class*="-text"] {
+    .#{$prefix}-text {
       font-size: 16px;
       padding: var(--spacing-xs) var(--spacing-sm);
     }
 
-    // Apply to action buttons class regardless of prefix
-    [class*="-action-buttons"] {
+    .#{$prefix}-action-buttons {
       gap: var(--spacing-xs);
       margin-top: var(--spacing-sm);
       margin-bottom: var(--spacing-sm);
     }
 
-    // Apply to vote button class regardless of prefix
-    [class*="-vote-button"] {
+    .#{$prefix}-vote-button {
       min-width: 44px;
       font-size: 14px;
     }
 
-    // Apply to copy button class regardless of prefix
-    [class*="-copy-button"] {
+    .#{$prefix}-copy-button {
       flex-grow: 1;
       font-size: 13px;
       padding: 0 var(--spacing-xs);
     }
 
-    // Apply to info bar class regardless of prefix
-    [class*="-info-bar"] {
-      padding: 4px var(--spacing-md);
-      margin-bottom: var(--spacing-sm);
-    }
-
-    // Apply to type class regardless of prefix
-    [class*="-type"] {
-      font-size: 12px;
-    }
-
-    // Apply to references class regardless of prefix
-    [class*="-references"] {
+    .#{$prefix}-references {
       padding: var(--spacing-xs) var(--spacing-sm);
       height: 60px;
       overflow-y: auto;
     }
 
-    // Apply to reference list class regardless of prefix
-    [class*="-reference-list"] {
+    .#{$prefix}-reference-list {
       font-size: 12px;
     }
 
-    // Apply to actions class regardless of prefix
-    [class*="-actions"] {
-      padding: var(--spacing-sm) var(--spacing-md);
-      grid-template-columns: auto 1fr auto;
-      gap: var(--spacing-sm);
-      height: var(--mobile-footer-height);
-    }
-
-    // Apply to usage badge class regardless of prefix
-    [class*="-usage-badge"] {
-      font-size: 10px;
-      min-width: 50px;
-      min-height: 24px;
-      padding: 2px 6px;
-    }
-
-    // Apply to author text class regardless of prefix
-    [class*="-author-text"] {
-      font-size: 11px;
-      line-height: 1.3;
-    }
-
-    // Apply to details button class regardless of prefix
-    [class*="-details-button"] {
-      font-size: 11px;
-      padding: 4px 8px;
-      min-width: 60px;
-    }
-
     // Badge mobile adjustments
-    [class*="-badges"] {
+    .#{$prefix}-badges {
       right: 8px;
       gap: 4px;
 
