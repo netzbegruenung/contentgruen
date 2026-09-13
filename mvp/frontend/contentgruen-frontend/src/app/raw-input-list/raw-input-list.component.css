@@ -1,3 +1,5 @@
+/* Mobil zuerst: eine Spalte, volle Breite. Ab Tablet nur begrenzt und zentriert. */
+
 .mat-spinner-color::ng-deep circle {
   stroke: rgb(0, 84, 55) !important;
 }
@@ -6,71 +8,205 @@
   margin-top: 20px;
 }
 
-.fangkorb-tabelle {
-  width: 100%;
+.filterleiste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 16px;
+  margin-bottom: 16px;
 }
 
-.einwurf-zeile {
+.filtergruppe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #4a4a4a);
+  font: inherit;
+  font-size: 14px;
   cursor: pointer;
 }
 
-.einwurf-zeile:hover,
-.einwurf-zeile:focus-visible {
-  background: var(--surface-variant, #eef2e6);
-  outline: none;
+.filter-chip.aktiv {
+  border-color: var(--primary-dark, #005437);
+  background: var(--primary-light, #dcebc3);
+  color: var(--primary-dark, #005437);
+  font-weight: 500;
 }
 
-.einwurf-vorschau {
-  display: inline-block;
-  max-width: 46ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: middle;
+.filter-chip:focus-visible {
+  outline: 2px solid var(--primary-dark, #005437);
+  outline-offset: 2px;
+}
+
+.karten {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.einwurf-karte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.einwurf-karte:focus-visible {
+  outline: 2px solid var(--primary-dark, #005437);
+  outline-offset: 2px;
+}
+
+/* Ausformuliert: Farbe des entstandenen Beitragstyps, wie in der Suche. */
+.zustand-ausformuliert {
+  border-color: transparent;
+}
+
+.zustand-ausformuliert.typ-commentary {
+  background: var(--commentary-bg);
+}
+
+.zustand-ausformuliert.typ-generic_text {
+  background: var(--generictext-bg);
+}
+
+/* Verknuepfung aus der Zeit vor Fangkorb v2: Typ unbekannt, daher keine Typfarbe. */
+.zustand-ausformuliert.typ-unbekannt {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.zustand-verworfen {
+  opacity: 0.55;
+}
+
+.karten-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.plattform-chip,
+.verworfen-hinweis {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.plattform-chip {
+  background: var(--surface-variant, #eef2e6);
+  color: var(--text-secondary, #4a4a4a);
+}
+
+.verworfen-hinweis {
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  color: var(--text-secondary, #4a4a4a);
 }
 
 .einwurf-link {
-  vertical-align: middle;
-  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   color: var(--primary-main);
 }
 
-.link-icon,
-.bild-icon {
+.link-icon {
+  flex-shrink: 0;
   font-size: 18px;
   height: 18px;
   width: 18px;
-  vertical-align: middle;
 }
 
-.bild-icon {
-  margin-left: 8px;
-  color: var(--text-secondary);
+.link-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.status-chip {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: var(--border-radius-small, 4px);
-  font-size: 13px;
+.einwurf-hinweis {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-secondary, #4a4a4a);
+  white-space: pre-line;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.saetze {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.satz-text {
   font-weight: 500;
-  background: var(--surface-variant, #eef2e6);
+  line-height: 1.4;
+}
+
+.satz .person {
+  margin-left: 6px;
+}
+
+.personen {
+  margin: 0;
+  font-size: 13px;
   color: var(--text-secondary, #4a4a4a);
 }
 
-.status-chip[data-status='open'] {
-  background: var(--primary-light, #dcebc3);
+.person {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+.beitrag-link {
+  align-self: flex-start;
+  padding: 8px 0 2px;
   color: var(--primary-dark, #005437);
+  font-weight: 500;
+}
+
+.fangkorb-laedt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
 }
 
 .fangkorb-leer,
-.fangkorb-fehler {
-  padding: 24px 0;
+.fangkorb-fehler,
+.fangkorb-mehr {
+  padding: 16px 0;
   color: var(--text-secondary, #4a4a4a);
 }
 
-@media (max-width: 768px) {
-  .einwurf-vorschau {
-    max-width: 22ch;
+@media (min-width: 600px) {
+  .filterleiste,
+  .karten,
+  .fangkorb-mehr {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }

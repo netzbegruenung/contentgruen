@@ -72,12 +72,17 @@ describe('DestillierUebergabeService', () => {
     expect(ergebnis).toEqual({ rohinputId: 'id-1', titel: '', url: null });
   });
 
-  it('markiert nach dem Speichern als verarbeitet und springt weiter', () => {
+  it('markiert nach dem Speichern mit Beitragstyp als verarbeitet und springt weiter', () => {
     rawInputService.updateStatus.and.returnValue(of({ id: 'id-1' } as RawInput));
 
-    service.nachSpeichern('id-1', 'beitrag-1');
+    service.nachSpeichern('id-1', 'beitrag-1', 'generic_text');
 
-    expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'processed', 'beitrag-1');
+    expect(rawInputService.updateStatus).toHaveBeenCalledWith(
+      'id-1',
+      'processed',
+      'beitrag-1',
+      'generic_text',
+    );
     expect(router.navigate).toHaveBeenCalledWith(['/destillieren'], {
       queryParams: { nach: 'id-1' },
     });
@@ -86,7 +91,7 @@ describe('DestillierUebergabeService', () => {
   it('springt auch weiter, wenn das Markieren scheitert, und sagt es', () => {
     rawInputService.updateStatus.and.returnValue(throwError(() => new Error('kaputt')));
 
-    service.nachSpeichern('id-1', 'beitrag-1');
+    service.nachSpeichern('id-1', 'beitrag-1', 'commentary');
 
     expect(snackBar.open).toHaveBeenCalled();
     expect(snackBar.open.calls.mostRecent().args[0]).toContain('Beitrag ist gespeichert');

@@ -95,7 +95,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
 
     // Aus dem Destillier-Ablauf: Einwurf verknuepfen und den naechsten oeffnen.
     if (this.rohinputId) {
-      this.uebergabe.nachSpeichern(this.rohinputId, responseId);
+      this.uebergabe.nachSpeichern(this.rohinputId, responseId, 'commentary');
       return;
     }
 

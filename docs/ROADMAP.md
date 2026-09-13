@@ -126,3 +126,12 @@ Rungs 0–2 are complete:
 **Next: dogfood rungs 1–2, then decide rung 3.** Use the platform actively, catalogue friction, and
 grow real content. Rung 3 (tagging, mood/stance analysis) requires a labelled eval set before any
 ML output can be trusted — the eval set is the gate, not the code. Do not start rung 3 without it.
+
+## Roadmap-Features
+
+Einzelne Funktionen, die feststehen, aber noch nicht gebaut sind.
+
+- **Detailansicht Beitrag**, Route `/beitrag/:id`, Einstiege Fangkorb-Karte und Suchergebnis;
+  Backend `commentary/getById` und `generictext/getById` existieren. Bis dahin verlinkt die
+  ausformulierte Fangkorb-Karte als Übergangslösung auf `/result?searchQuery=<Satz>`
+  („In der Suche anzeigen“, `raw-input-list.component.html`).

@@ -4,7 +4,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { RawInputService } from '../services/raw-input.service';
+import { BeitragsTyp, RawInputService } from '../services/raw-input.service';
 import { LoggingService } from '../services/logging.service';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 
@@ -55,12 +55,13 @@ export class DestillierUebergabeService {
   /**
    * Der Beitrag ist gespeichert: Einwurf als verarbeitet markieren und weiter.
    *
+   * Der Typ geht mit, damit die Fangkorb-Karte die Farbe des Beitrags annimmt.
    * Scheitert das Markieren, ist der Beitrag trotzdem da. Der Einwurf bleibt
-   * dann offen und wird nicht automatisch wieder angeboten (er hat einen eigenen
-   * Entwurf) - im Fangkorb ist er weiter antippbar.
+   * dann destilliert und wird nicht automatisch wieder angeboten (er hat einen
+   * eigenen Entwurf) - im Fangkorb ist er weiter antippbar.
    */
-  nachSpeichern(rohinputId: string, contentId: string): void {
-    this.rawInputService.updateStatus(rohinputId, 'processed', contentId).subscribe({
+  nachSpeichern(rohinputId: string, contentId: string, typ: BeitragsTyp): void {
+    this.rawInputService.updateStatus(rohinputId, 'processed', contentId, typ).subscribe({
       next: () => {
         this.snackBar.open('Gespeichert. Weiter mit dem nächsten Einwurf.', undefined, {
           duration: 4000,

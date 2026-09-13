@@ -120,7 +120,19 @@ describe('RawInputService', () => {
       expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
-    it('markiert als verarbeitet mit dem entstandenen Beitrag', () => {
+    it('markiert als verarbeitet mit dem entstandenen Beitrag und seinem Typ', () => {
+      service.updateStatus('id-1', 'processed', 'beitrag-1', 'commentary').subscribe();
+
+      const anfrage = httpMock.expectOne(`${basis}/id-1/status`);
+      expect(anfrage.request.body).toEqual({
+        status: 'processed',
+        content_id: 'beitrag-1',
+        content_type: 'commentary',
+      });
+      anfrage.flush(einwurf({ status: 'processed' }));
+    });
+
+    it('laesst den Typ weg, wenn keiner bekannt ist', () => {
       service.updateStatus('id-1', 'processed', 'beitrag-1').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/status`);
