@@ -55,10 +55,23 @@ describe('einwurfAusShareDaten', () => {
     });
   });
 
-  it('bevorzugt die Adresse aus text vor dem url-Parameter', () => {
+  it('nimmt dieselbe Adresse in text und url nur einmal', () => {
     expect(
-      einwurfAusShareDaten({ text: 'https://example.org/a', url: 'https://example.org/a' }).url,
-    ).toBe('https://example.org/a');
+      einwurfAusShareDaten({ text: 'Schau https://example.org/a', url: 'https://example.org/a' }),
+    ).toEqual({ url: 'https://example.org/a', titel: null, text: 'Schau' });
+  });
+
+  it('nimmt eine abweichende Adresse aus url als Link und laesst die aus text im Hinweis', () => {
+    expect(
+      einwurfAusShareDaten({
+        text: 'Siehe https://example.org/text?utm_source=x',
+        url: 'https://example.org/param?utm_source=y',
+      }),
+    ).toEqual({
+      url: 'https://example.org/param',
+      titel: null,
+      text: 'Siehe https://example.org/text',
+    });
   });
 
   it('liefert lauter null, wenn nichts brauchbares dabei ist', () => {

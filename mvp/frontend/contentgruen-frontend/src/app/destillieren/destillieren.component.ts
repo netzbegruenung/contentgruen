@@ -217,8 +217,14 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       this.zurueckZumSatz();
       return;
     }
-    // Den Satz sichert ngOnDestroy beim Verlassen der Ansicht.
-    this.router.navigate(['/fangkorb']);
+    // Wie bei "Spaeter" erst das Speichern abwarten: Der Fangkorb laedt seine Liste
+    // sofort, und den gecachten Stand verwirft erst die Antwort auf das Speichern.
+    this.arbeitet = true;
+    this.fehler = null;
+    this.speichernWennGeaendert().subscribe({
+      next: () => this.router.navigate(['/fangkorb']),
+      error: (error) => this.speicherfehler(error),
+    });
   }
 
   ngOnDestroy(): void {

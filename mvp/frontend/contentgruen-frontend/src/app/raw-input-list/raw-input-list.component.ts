@@ -6,7 +6,7 @@ import {
   ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -52,13 +52,15 @@ const ZUSTAND: Record<RawInputStatus, KartenZustand> = {
  * der Server). Keine Gruppen - den Stand zeigt die Kartenoptik.
  *
  * Bewusst alle Einwuerfe und nicht nur die eigenen - der Vorrat ist gemeinsam.
- * Ein Tipp auf eine offene, destillierte oder verworfene Karte oeffnet den
- * Einwurf zum Destillieren; eine ausformulierte Karte fuehrt zum Beitrag.
+ * Ein Tipp auf eine Karte oeffnet den Einwurf zum Destillieren, auch eine
+ * ausformulierte: Aus einem Einwurf darf ein weiterer Beitrag entstehen. Nur
+ * verworfene Karten sind nicht antippbar. Zum Beitrag fuehrt auf ausformulierten
+ * Karten ein eigener Knopf.
  */
 @Component({
   selector: 'app-raw-input-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatProgressSpinnerModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule],
   templateUrl: './raw-input-list.component.html',
   styleUrls: ['./raw-input-list.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -160,11 +162,14 @@ export class RawInputListComponent implements OnInit, OnDestroy {
     return klassen;
   }
 
+  /** Verworfenes bleibt liegen, damit es nicht wieder auftaucht - kein Tipp-Ziel. */
+  antippbar(einwurf: RawInput): boolean {
+    return this.zustand(einwurf) !== 'verworfen';
+  }
+
   kartenBeschriftung(einwurf: RawInput): string {
     const zustand = this.zustand(einwurf);
-    return zustand === 'ausformuliert' && this.suchSatz(einwurf)
-      ? 'Einwurf, ausformuliert: in der Suche anzeigen'
-      : `Einwurf, ${zustand}: destillieren`;
+    return this.antippbar(einwurf) ? `Einwurf, ${zustand}: destillieren` : `Einwurf, ${zustand}`;
   }
 
   plattformName(einwurf: RawInput): string | null {
@@ -185,27 +190,36 @@ export class RawInputListComponent implements OnInit, OnDestroy {
 
   /**
    * Die Saetze, aus denen ein Beitrag wurde. Fehlt die Zuordnung (Satz spaeter
-   * geleert, Verknuepfung aus der Zeit vor v2), stehen alle vorhandenen Saetze da.
+   * geleert, Verknuepfung aus der Zeit vor v2), stehen alle vorhandenen Saetze da -
+   * nur zur Anzeige, gesucht wird damit nie (siehe suchSatz).
    */
   ausformulierteSaetze(einwurf: RawInput): RawInputDraft[] {
-    const ids = new Set((einwurf.links ?? []).map((link) => link.draft_id).filter(Boolean));
-    const saetze = this.alleSaetze(einwurf);
-    const zugeordnet = saetze.filter((satz) => ids.has(satz.id));
-    return zugeordnet.length ? zugeordnet : saetze;
+    const zugeordnet = this.zugeordneteSaetze(einwurf);
+    return zugeordnet.length ? zugeordnet : this.alleSaetze(einwurf);
   }
 
-  /** Womit die ausformulierte Karte die Suche aufruft. */
+  /**
+   * Womit "In der Suche anzeigen" sucht: der Satz, auf den eine Verknuepfung
+   * zeigt. Ohne solchen Satz kein Knopf - ein Satz, aus dem nie ein Beitrag wurde,
+   * wuerde die falsche Suche ausloesen und daraus ein Statement anlegen.
+   */
   suchSatz(einwurf: RawInput): string | null {
-    return this.ausformulierteSaetze(einwurf)[0]?.sentence ?? null;
+    return this.zugeordneteSaetze(einwurf)[0]?.sentence ?? null;
   }
 
   oeffnen(einwurf: RawInput): void {
-    const satz = this.zustand(einwurf) === 'ausformuliert' ? this.suchSatz(einwurf) : null;
-    if (satz) {
-      this.router.navigate(['/result'], { queryParams: { searchQuery: satz } });
+    if (!this.antippbar(einwurf)) {
       return;
     }
     this.router.navigate(['/destillieren', einwurf.id]);
+  }
+
+  inSucheAnzeigen(einwurf: RawInput, event: Event): void {
+    event.stopPropagation();
+    const satz = this.suchSatz(einwurf);
+    if (satz) {
+      this.router.navigate(['/result'], { queryParams: { searchQuery: satz } });
+    }
   }
 
   nachId(_index: number, einwurf: RawInput): string {
@@ -219,6 +233,15 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /** Die Saetze, auf die eine Verknuepfung zeigt, in der Reihenfolge der Verknuepfungen. */
+  private zugeordneteSaetze(einwurf: RawInput): RawInputDraft[] {
+    const saetze = this.alleSaetze(einwurf);
+    return (einwurf.links ?? [])
+      .map((link) => saetze.find((satz) => !!link.draft_id && satz.id === link.draft_id))
+      .filter((satz): satz is RawInputDraft => !!satz)
+      .filter((satz, index, liste) => liste.indexOf(satz) === index);
   }
 
   private filterSetzen(filter: FangkorbFilter): void {

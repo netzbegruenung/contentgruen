@@ -58,7 +58,8 @@
         <ul class="karten">
             <li *ngFor="let einwurf of sichtbar; trackBy: nachId">
                 <article class="einwurf-karte" [ngClass]="kartenKlassen(einwurf)"
-                         tabindex="0" role="link"
+                         [attr.tabindex]="antippbar(einwurf) ? 0 : null"
+                         [attr.role]="antippbar(einwurf) ? 'link' : null"
                          [attr.aria-label]="kartenBeschriftung(einwurf)"
                          (click)="oeffnen(einwurf)" (keyup.enter)="oeffnen(einwurf)">
 
@@ -70,13 +71,13 @@
                     <ng-container *ngIf="zustand(einwurf) !== 'ausformuliert'; else ausformuliert">
                         <a *ngIf="einwurf.url" class="einwurf-link" [href]="einwurf.url"
                            target="_blank" rel="noopener noreferrer"
-                           (click)="$event.stopPropagation()">
+                           (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
                             <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
                             <span class="link-text">{{ einwurf.url }}</span>
                         </a>
                         <a *ngIf="einwurf.image_url" class="einwurf-link" [href]="einwurf.image_url"
                            target="_blank" rel="noopener noreferrer"
-                           (click)="$event.stopPropagation()">
+                           (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
                             <mat-icon class="link-icon" aria-hidden="true">image</mat-icon>
                             <span class="link-text">Bild-Adresse</span>
                         </a>
@@ -118,9 +119,10 @@
                             Uebergangsloesung: Es gibt noch keine Detailansicht eines Beitrags.
                             Geplant ist /beitrag/:id, siehe docs/ROADMAP.md, "Roadmap-Features".
                         -->
-                        <a *ngIf="suchSatz(einwurf) as satz" class="beitrag-link"
-                           routerLink="/result" [queryParams]="{ searchQuery: satz }"
-                           (click)="$event.stopPropagation()">In der Suche anzeigen</a>
+                        <button *ngIf="suchSatz(einwurf)" type="button" mat-stroked-button
+                                class="beitrag-link"
+                                (click)="inSucheAnzeigen(einwurf, $event)"
+                                (keyup.enter)="$event.stopPropagation()">In der Suche anzeigen</button>
                     </ng-template>
                 </article>
             </li>

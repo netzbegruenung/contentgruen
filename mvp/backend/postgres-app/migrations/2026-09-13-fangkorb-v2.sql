@@ -20,6 +20,10 @@
 -- Dienstes laufen, sonst scheitert jeder Fangkorb-Aufruf. Neue Datenbanken
 -- brauchen es nicht. Es ist idempotent und darf mehrfach laufen.
 --
+-- raw_input_drafts legt das Skript selbst an, falls die Tabelle fehlt (Stand vor
+-- 2026-09-13-destillier-entwuerfe.sql): Der Fremdschluessel auf draft_id braucht
+-- sie. Die Definition ist genau die, die create_all erzeugt.
+--
 -- Nachtrag fuer vorhandene Daten, nach bestem Wissen:
 --   - destilled_by: die Person mit dem am fruehesten zuletzt geaenderten Satz.
 --     Wer wirklich zuerst gespeichert hat, ist nicht mehr feststellbar
@@ -33,6 +37,21 @@
 --     < mvp/backend/postgres-app/migrations/2026-09-13-fangkorb-v2.sql
 
 BEGIN;
+
+CREATE TABLE IF NOT EXISTS raw_input_drafts (
+    id UUID DEFAULT gen_random_uuid() NOT NULL,
+    raw_input_id UUID NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    sentence TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (raw_input_id) REFERENCES raw_inputs (id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_input_drafts_unique
+    ON raw_input_drafts (raw_input_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_raw_input_drafts_user_id
+    ON raw_input_drafts (user_id);
 
 ALTER TABLE raw_inputs
     ADD COLUMN IF NOT EXISTS destilled_by VARCHAR(255);

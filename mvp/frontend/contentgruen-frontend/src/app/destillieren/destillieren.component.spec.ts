@@ -1,11 +1,11 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter, Router } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent } from './destillieren.component';
 import { DestillierUebergabeService } from './destillier-uebergabe.service';
-import { RawInput, RawInputService } from '../services/raw-input.service';
+import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 
@@ -296,6 +296,35 @@ describe('DestillierenComponent', () => {
       fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
 
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+    });
+
+    it('wartet mit dem Zurueck-Pfeil, bis der Satz gespeichert ist', async () => {
+      await erstellen('id-1');
+      const antwort = new Subject<DraftResponse>();
+      rawInputService.saveDraft.and.returnValue(antwort);
+      component.satz.setValue('Frisch getippt', { emitEvent: false });
+
+      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+
+      expect(rawInputService.saveDraft).toHaveBeenCalledOnceWith('id-1', 'Frisch getippt');
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      antwort.next({ raw_input_id: 'id-1', sentence: 'Frisch getippt', updated_at: null });
+      antwort.complete();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+    });
+
+    it('bleibt beim Zurueck-Pfeil stehen, wenn das Speichern scheitert', async () => {
+      await erstellen('id-1');
+      rawInputService.saveDraft.and.returnValue(throwError(() => new Error('offline')));
+      component.satz.setValue('Frisch getippt', { emitEvent: false });
+
+      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+      fixture.detectChanges();
+
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(text()).toContain('Der Satz konnte nicht gespeichert werden');
     });
 
     it('fuehrt mit dem Zurueck-Pfeil in der Typwahl zurueck zum Satz', async () => {

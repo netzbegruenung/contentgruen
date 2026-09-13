@@ -29,7 +29,7 @@ export interface ShareDaten {
 
 /** Der geteilte Einwurf, schon nach den Feldern des Formulars getrennt. */
 export interface GeteilterEinwurf {
-  /** Die erste Adresse aus text oder url, ohne Tracking-Parameter. Wird der Link. */
+  /** Die Adresse aus url, sonst die erste aus text, ohne Tracking-Parameter. Wird der Link. */
   url: string | null;
   /** Der Seitentitel. Chrome schickt einen mit, Instagram nicht. Nur ein Vorschlag. */
   titel: string | null;
@@ -53,7 +53,9 @@ export function einwurfAusShareDaten(daten: ShareDaten): GeteilterEinwurf {
   const urlParameter = urlsInTextBereinigen((daten.url ?? '').trim());
   const titel = (daten.title ?? '').trim();
 
-  const url = ersteAdresse(text) ?? ersteAdresse(urlParameter);
+  // Schickt eine App eine andere Adresse in url als im Text, ist url der Link und
+  // die Adresse im Text bleibt Teil des Hinweises - verloren geht keine von beiden.
+  const url = ersteAdresse(urlParameter) ?? ersteAdresse(text);
   const ohneAdresse = url ? text.split(url).join(' ') : text;
   const rest = ohneAdresse
     .replace(/[ \t]+/g, ' ')

@@ -254,9 +254,33 @@ describe('RawInputListComponent', () => {
       expect(kommentar.querySelector('.personen')!.textContent).toContain('ausformuliert von');
       expect(kommentar.textContent).not.toContain('eingeworfen von');
 
-      const link = kommentar.querySelector('a.beitrag-link')!;
-      expect(link.textContent!.trim()).toBe('In der Suche anzeigen');
-      expect(link.getAttribute('href')).toBe('/result?searchQuery=Genommen');
+      const knopf: HTMLButtonElement = kommentar.querySelector('button.beitrag-link')!;
+      expect(knopf.textContent!.trim()).toBe('In der Suche anzeigen');
+      expect(hintergrund.querySelector('.beitrag-link')).toBeNull();
+      expect(alt.querySelector('.beitrag-link')).toBeNull();
+    });
+
+    it('zeigt ohne zugeordneten Satz die vorhandenen Saetze, aber keinen Suchknopf', () => {
+      erstellen([
+        einwurf({
+          status: 'processed',
+          drafts: [satz('s-1', 'bob', 'Nie ausformuliert')],
+          links: [
+            {
+              content_id: 'c-1',
+              content_type: 'commentary',
+              draft_id: 's-geleert',
+              processed_by: 'carol',
+              processed_at: '2026-09-13T13:00:00Z',
+            },
+          ],
+        }),
+      ]);
+      const [karte] = karten();
+
+      expect(karte.querySelector('.saetze')!.textContent).toContain('Nie ausformuliert');
+      expect(karte.querySelector('.beitrag-link')).toBeNull();
+      expect(component.suchSatz(component.sichtbar[0])).toBeNull();
     });
 
     it('dimmt eine verworfene Karte ab und sagt es dazu', () => {
@@ -269,36 +293,75 @@ describe('RawInputListComponent', () => {
   });
 
   describe('Tippen', () => {
-    it('oeffnet eine offene Karte zum Destillieren', () => {
-      erstellen([einwurf({ id: 'id-7' })]);
+    const ausformuliert = () =>
+      einwurf({
+        id: 'id-9',
+        status: 'processed',
+        drafts: [
+          satz('s-0', 'dave', 'Fremder Satz ohne Beitrag'),
+          satz('s-1', 'bob', 'Waermepumpe lohnt sich auch im Altbau'),
+        ],
+        links: [
+          {
+            content_id: 'c-1',
+            content_type: 'commentary',
+            draft_id: 's-1',
+            processed_by: 'bob',
+            processed_at: '2026-09-13T13:00:00Z',
+          },
+        ],
+      });
 
-      karten()[0].click();
-
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-7']);
-    });
-
-    it('oeffnet eine ausformulierte Karte in der Suche', () => {
+    it('oeffnet offene, destillierte und ausformulierte Karten zum Destillieren', () => {
       erstellen([
-        einwurf({
-          status: 'processed',
-          drafts: [satz('s-1', 'bob', 'Waermepumpe lohnt sich auch im Altbau')],
-          links: [
-            {
-              content_id: 'c-1',
-              content_type: 'commentary',
-              draft_id: 's-1',
-              processed_by: 'bob',
-              processed_at: '2026-09-13T13:00:00Z',
-            },
-          ],
-        }),
+        einwurf({ id: 'id-7' }),
+        einwurf({ id: 'id-8', status: 'in_progress' }),
+        ausformuliert(),
       ]);
 
-      karten()[0].click();
+      karten().forEach((karte) => karte.click());
 
-      expect(router.navigate).toHaveBeenCalledWith(['/result'], {
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-7']);
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-8']);
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-9']);
+      expect(router.navigate).toHaveBeenCalledTimes(3);
+      karten().forEach((karte) => {
+        expect(karte.getAttribute('role')).toBe('link');
+        expect(karte.getAttribute('tabindex')).toBe('0');
+      });
+    });
+
+    it('laesst eine verworfene Karte nicht antippen', () => {
+      erstellen([einwurf({ id: 'id-7', status: 'discarded' })]);
+      const [karte] = karten();
+
+      karte.click();
+      karte.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(karte.getAttribute('role')).toBeNull();
+      expect(karte.getAttribute('tabindex')).toBeNull();
+    });
+
+    it('sucht mit dem Knopf genau den ausformulierten Satz, ohne die Karte zu oeffnen', () => {
+      erstellen([ausformuliert()]);
+      const knopf: HTMLButtonElement = karten()[0].querySelector('button.beitrag-link')!;
+
+      knopf.click();
+      knopf.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/result'], {
         queryParams: { searchQuery: 'Waermepumpe lohnt sich auch im Altbau' },
       });
+    });
+
+    it('oeffnet mit Enter auf dem Link nicht zusaetzlich die Karte', () => {
+      erstellen([einwurf({ id: 'id-7', url: 'https://example.org/p' })]);
+      const link: HTMLAnchorElement = karten()[0].querySelector('a.einwurf-link')!;
+
+      link.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it('oeffnet den Link, ohne die Karte mitzuklicken', () => {
