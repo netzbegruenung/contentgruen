@@ -1,8 +1,5 @@
 import datetime
-from typing import Tuple
 import uuid
-
-from pydantic import BaseModel
 
 
 class ModelValidator:
@@ -42,16 +39,3 @@ class ModelValidator:
             raise TypeError(
                 f"Expected a datetime object or a string, but got {type(value)} instead."
             )
-
-
-class ModelInformationExtractor:
-
-    @staticmethod
-    def get_all_fields(input_model_class) -> Tuple[list[str], str]:
-        # Collect all fields from the class and its base classes
-        fields = {}
-        for cls in input_model_class.__mro__:
-            if issubclass(cls, BaseModel):
-                fields.update(cls.__annotations__)
-
-        return list(fields.keys()), ", ".join(fields.keys())

@@ -26,7 +26,6 @@ from tests.conftest import create_base_content_fields
 class MockDbEntry(BaseContentDbEntry):
     """Mock database entry for testing."""
 
-    # Additional fields that might be extracted by ModelInformationExtractor
     updated: Optional[datetime.datetime] = None
 
 

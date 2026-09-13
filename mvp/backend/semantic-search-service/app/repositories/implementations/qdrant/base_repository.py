@@ -10,7 +10,6 @@ import asyncio
 from core.config import Settings
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
-from domain.models.model_utils import ModelInformationExtractor
 from domain.models.base_content import (
     BaseContentDbEntry,
     BaseContentSearchResult,
@@ -75,13 +74,8 @@ class QdrantBaseRepository(
         self.content_search_result_model_class = content_search_result_model_class
         self.initial_data_author = settings.initial_data_author
 
-        self._embedding_fields, self._embedding_fields_str = (
-            ModelInformationExtractor.get_all_fields(content_db_entry_model_class)
-        )
-
         logger.info(
-            f"Configured {self.repository_name} (content_type: {self.content_type}) "
-            f"with fields: {self._embedding_fields_str}"
+            f"Configured {self.repository_name} (content_type: {self.content_type})"
         )
 
         # Use injected embeddings manager or get default singleton
