@@ -12,7 +12,6 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -54,7 +53,6 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   pageSize = 20;
   isLoading = true;
   ladefehler = false;
-  isMobile = false;
 
   private destroy$ = new Subject<void>();
 
@@ -63,18 +61,9 @@ export class RawInputListComponent implements OnInit, OnDestroy {
     private router: Router,
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
-    private breakpointObserver: BreakpointObserver,
   ) {}
 
   ngOnInit(): void {
-    this.breakpointObserver
-      .observe(['(max-width: 768px)'])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((result) => {
-        this.isMobile = result.matches;
-        this.cdr.markForCheck();
-      });
-
     this.fetchData(1, this.pageSize);
   }
 

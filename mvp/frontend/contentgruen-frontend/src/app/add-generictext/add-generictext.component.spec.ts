@@ -79,4 +79,17 @@ describe('AddGenerictextComponent', () => {
   it('fragt im Titelfeld nach dem Punkt in einem Satz', () => {
     expect(fixture.nativeElement.textContent).toContain('Was ist der Punkt? Ein Satz.');
   });
+
+  // Das Limit steht im Formularmodell und nicht nur als maxLength im
+  // Template: das sperrt nur die Eingabe, vorbefuellte Werte kaemen sonst
+  // ungeprueft durch.
+  it('begrenzt den Text im Formular auf 2000 Zeichen', () => {
+    const text = component.generictextForm.get('text')!;
+
+    text.setValue('a'.repeat(2000));
+    expect(text.hasError('maxlength')).toBeFalse();
+
+    text.setValue('a'.repeat(2001));
+    expect(text.hasError('maxlength')).toBeTrue();
+  });
 });

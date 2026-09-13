@@ -85,7 +85,11 @@ mat-expansion-panel-header {
 }
 
 .generictext-color {
-    background-color: rgb(205, 236, 240) !important;
+    background-color: var(--generictext-bg) !important;
+}
+
+.image-color {
+    background-color: var(--image-bg) !important;
 }
 
 .contribution-container {
@@ -255,7 +259,11 @@ mat-panel-title h3 {
 }
 
 .generictext-card {
-    background: linear-gradient(135deg, rgb(205, 236, 240) 0%, rgb(185, 225, 230) 100%);
+    background: linear-gradient(135deg, var(--generictext-bg) 0%, rgb(212, 234, 251) 100%);
+}
+
+.image-card {
+    background: linear-gradient(135deg, var(--image-bg) 0%, rgb(225, 215, 240) 100%);
 }
 
 .content-type-card mat-card-header {

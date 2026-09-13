@@ -124,6 +124,9 @@
                             <mat-error *ngIf="generictextForm.get('text')?.hasError('minlength')">
                                 Text muss mindestens 10 Zeichen lang sein
                             </mat-error>
+                            <mat-error *ngIf="generictextForm.get('text')?.hasError('maxlength')">
+                                Text darf höchstens 2000 Zeichen lang sein
+                            </mat-error>
                         </mat-form-field>
                     </div>
 

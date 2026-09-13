@@ -124,6 +124,9 @@
                             <mat-error *ngIf="commentaryForm.get('text')?.hasError('minlength')">
                                 Haupttext muss mindestens 10 Zeichen lang sein
                             </mat-error>
+                            <mat-error *ngIf="commentaryForm.get('text')?.hasError('maxlength')">
+                                Haupttext darf höchstens 500 Zeichen lang sein
+                            </mat-error>
                         </mat-form-field>
                     </div>
 
@@ -144,6 +147,9 @@
                                 <mat-label>Ausführlicher Text</mat-label>
                                 <textarea matInput #long_text maxLength="2000" rows="4" formControlName="long_text"></textarea>
                                 <mat-hint align="end">{{long_text.value.length || 0}}/2000</mat-hint>
+                                <mat-error *ngIf="commentaryForm.get('long_text')?.hasError('maxlength')">
+                                    Langtext darf höchstens 2000 Zeichen lang sein
+                                </mat-error>
                             </mat-form-field>
                         </div>
 
@@ -153,6 +159,9 @@
                                 <mat-label>Kurze Zusammenfassung</mat-label>
                                 <textarea matInput #short_text maxLength="100" rows="2" formControlName="short_text"></textarea>
                                 <mat-hint align="end">{{short_text.value.length || 0}}/100</mat-hint>
+                                <mat-error *ngIf="commentaryForm.get('short_text')?.hasError('maxlength')">
+                                    Kurztext darf höchstens 100 Zeichen lang sein
+                                </mat-error>
                             </mat-form-field>
                         </div>
                     </div>

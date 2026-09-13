@@ -101,10 +101,10 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
     ) {
         this.commentaryForm = this.fb.group({
             title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
-            text: ['', [Validators.required, Validators.minLength(10)]],
+            text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
             references: [[]],  // Changed from FormArray to simple array control
-            long_text: [''],
-            short_text: [''],
+            long_text: ['', [Validators.maxLength(2000)]],
+            short_text: ['', [Validators.maxLength(100)]],
         });
 
         // Listen to form changes to update the preview dynamically
