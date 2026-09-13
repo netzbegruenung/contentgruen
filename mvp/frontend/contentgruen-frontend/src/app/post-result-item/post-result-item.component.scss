@@ -34,6 +34,11 @@
 
 .post-title {
   @include base.result-title;
+  // Titel und Unterzeile teilen sich hier eine Zeile. Die Badge-Reservierung
+  // aus result-title wuerde den Titel auf 218px quetschen und die Unterzeile
+  // aus der Karte schieben; Post behaelt deshalb die bisherige Geometrie.
+  width: 270px;
+  margin-right: 65px;
 }
 
 .post-subtitle {

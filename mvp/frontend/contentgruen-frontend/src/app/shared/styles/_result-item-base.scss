@@ -76,13 +76,18 @@
 // nur das Sicherheitsnetz. Die Hoehe haengt ueber em an der Schriftgroesse,
 // mobil genuegt deshalb eine andere font-size. Limit und Hoehe gehoeren
 // zusammen: wer das Titel-Limit aendert, misst diese Box neu.
+//
+// Breite und Rand halten die Flaeche der Badges frei, die absolut rechts im
+// Header sitzen: bis zu drei (neu, beliebt, Verwendungen) je 36px mit 6px
+// Abstand = 120px, plus 8px Luft. Breite + Rand fuellen genau den Header neben
+// dem Avatar (450 - 2 * 16 Padding - 40 Avatar - 8 Abstand = 370px).
 @mixin result-title {
-  margin-right: 65px; // Just enough space for badges
+  margin-right: 128px; // 3 * 36px Badge + 2 * 6px Abstand + 8px Luft
   font-weight: 400;
   color: var(--text-primary);
   font-size: 16px;
   line-height: 1.4;
-  width: 270px; // More space for title text
+  width: 242px; // 370px abzueglich Badge-Flaeche
   word-wrap: break-word;
   min-height: calc(4 * 1.4em);
   max-height: calc(4 * 1.4em);
