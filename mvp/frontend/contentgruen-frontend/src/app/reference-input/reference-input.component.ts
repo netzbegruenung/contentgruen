@@ -22,6 +22,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { ReferenceDuplicateDialog } from '../reference-duplicate-dialog/reference-duplicate-dialog';
+import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 
 export interface ReferenceEntry {
     id?: string;
@@ -167,7 +168,11 @@ export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueA
             return;
         }
 
-        const url = this.urlControl.value?.trim();
+        // Tracking-Parameter fliegen vor dem Speichern raus, wie beim Einwurf: sonst
+        // ist derselbe Link je Teilen-Vorgang eine andere Herkunft. Freitext ohne
+        // Adresse bleibt unveraendert.
+        const eingabe = this.urlControl.value?.trim();
+        const url = eingabe ? trackingParameterEntfernen(eingabe) : eingabe;
 
         // Validate input
         if (!this.isValidInput(url)) {

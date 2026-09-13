@@ -44,6 +44,18 @@ describe('ReferenceInputComponent', () => {
         expect(component).toBeTruthy();
     });
 
+    it('entfernt Tracking-Parameter aus einer Adresse, bevor die Herkunft gespeichert wird', () => {
+        component.urlControl.setValue('https://youtu.be/abc123?si=XyZ&utm_source=share');
+
+        component.addCustomReference();
+
+        expect(component.selectedReferences.length).toBe(1);
+        expect(component.selectedReferences[0].reference_string).toBe('https://youtu.be/abc123');
+        const anfragen = JSON.stringify(referenceServiceStub.addReference.calls.allArgs());
+        expect(anfragen).not.toContain('si=');
+        expect(anfragen).not.toContain('utm_source');
+    });
+
     // Punkt 2: Chip entsteht beim Verlassen des Feldes, ohne "+"-Klick.
     describe('Uebernahme beim Verlassen des Feldes', () => {
         it('should add a reference chip when the source input loses focus', () => {
