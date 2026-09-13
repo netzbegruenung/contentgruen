@@ -4,7 +4,7 @@
             <p>
                 Der Fangkorb sammelt Rohmaterial: Links, Bilder und Notizen, die noch
                 niemand ausgearbeitet hat. Alle sehen alles - wer Zeit hat, macht einen
-                Beitrag daraus.
+                Beitrag daraus. Tippe auf einen Einwurf, um ihn zu destillieren.
             </p>
         </div>
 
@@ -42,6 +42,7 @@
                     <span class="einwurf-vorschau">{{ vorschau(element) }}</span>
                     <a *ngIf="element.url" [href]="element.url" target="_blank"
                        rel="noopener noreferrer" class="einwurf-link"
+                       (click)="$event.stopPropagation()"
                        aria-label="Link in neuem Tab oeffnen">
                         <mat-icon class="link-icon">open_in_new</mat-icon>
                     </a>
@@ -72,7 +73,11 @@
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                class="einwurf-zeile" tabindex="0" role="link"
+                aria-label="Einwurf destillieren"
+                (click)="zumDestillieren(row)"
+                (keyup.enter)="zumDestillieren(row)"></tr>
         </table>
 
         <mat-paginator *ngIf="totalRecords > 0"

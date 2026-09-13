@@ -11,7 +11,7 @@ mehrere Beitraege hervorbringen und ein Beitrag aus mehreren Einwuerfen entstehe
 
 import pytest
 
-from infrastructure.database.models import RawInput, RawInputContentLink
+from infrastructure.database.models import RawInput, RawInputContentLink, RawInputDraft
 
 
 @pytest.mark.unit
@@ -92,3 +92,40 @@ class TestVerknuepfungstabelle:
     def test_wer_verarbeitet_hat_wird_festgehalten(self):
         """Die Rolle, die last_modified_by am Beitrag nicht bewahrt."""
         assert "created_by" in RawInputContentLink.__table__.columns
+
+
+@pytest.mark.unit
+class TestEntwurfstabelle:
+    """
+    Der Entwurfssatz gehoert zu (Einwurf, Person). Der Upsert haengt am eindeutigen
+    Index; ohne ihn wuerde ON CONFLICT in PostgreSQL mit einem Fehler abbrechen.
+    """
+
+    def test_tabelle_existiert_mit_ihren_feldern(self):
+        assert set(RawInputDraft.__table__.columns.keys()) == {
+            "id",
+            "raw_input_id",
+            "user_id",
+            "sentence",
+            "updated_at",
+        }
+
+    def test_genau_ein_entwurf_je_person_und_einwurf(self):
+        eindeutige_indizes = {
+            tuple(spalte.name for spalte in index.columns)
+            for index in RawInputDraft.__table__.indexes
+            if index.unique
+        }
+        assert eindeutige_indizes == {("raw_input_id", "user_id")}
+
+    def test_person_und_satz_sind_pflicht(self):
+        """Ein leerer Satz wird geloescht, nicht als "" oder NULL abgelegt."""
+        assert RawInputDraft.__table__.columns["user_id"].nullable is False
+        assert RawInputDraft.__table__.columns["sentence"].nullable is False
+
+    def test_verweis_auf_den_einwurf_kaskadiert(self):
+        (fremdschluessel,) = list(
+            RawInputDraft.__table__.columns["raw_input_id"].foreign_keys
+        )
+        assert fremdschluessel.column.table.name == "raw_inputs"
+        assert fremdschluessel.ondelete == "CASCADE"

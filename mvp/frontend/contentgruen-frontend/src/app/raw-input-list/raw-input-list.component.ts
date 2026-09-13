@@ -27,11 +27,10 @@ const STATUS_BESCHRIFTUNG: Record<RawInputStatus, string> = {
 };
 
 /**
- * Der Fangkorb: alle Einwuerfe, neueste zuerst.
+ * Der Fangkorb: alle Einwuerfe, eigene zuerst, dann neueste (sortiert der Server).
  *
- * Bewusst alle und nicht nur die eigenen - der Vorrat ist gemeinsam, und diese
- * Liste ist die Vorstufe der spaeteren Bearbeitungs-Queue. Sie kann nichts
- * ausser anzeigen: Zuweisen und Verarbeiten sind nicht gebaut.
+ * Bewusst alle und nicht nur die eigenen - der Vorrat ist gemeinsam. Ein Tipp auf
+ * eine Zeile oeffnet den Einwurf zum Destillieren; zugewiesen wird nichts.
  */
 @Component({
   selector: 'app-raw-input-list',
@@ -121,6 +120,10 @@ export class RawInputListComponent implements OnInit, OnDestroy {
 
   zumEinwerfen(): void {
     this.router.navigate(['/einwerfen']);
+  }
+
+  zumDestillieren(einwurf: RawInput): void {
+    this.router.navigate(['/destillieren', einwurf.id]);
   }
 
   navigateToStart(): void {

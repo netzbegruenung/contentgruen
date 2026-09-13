@@ -31,6 +31,17 @@ export const routes: Routes = [
         canActivate: [AuthGuard]
     },
     {
+        // Ohne ID: oeffnet den naechsten offenen Einwurf oder zeigt "Alles destilliert".
+        path: 'destillieren',
+        loadComponent: () => import('./destillieren/destillieren.component').then(m => m.DestillierenComponent),
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'destillieren/:id',
+        loadComponent: () => import('./destillieren/destillieren.component').then(m => m.DestillierenComponent),
+        canActivate: [AuthGuard]
+    },
+    {
         path: 'contributions',
         loadComponent: () => import('./contributions-view/contributions-view.component').then(m => m.ContributionsViewComponent),
         canActivate: [AuthGuard]

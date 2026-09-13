@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnDestroy, SimpleChanges, ViewChild, ElementRef } from '@angular/core';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +19,7 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime } from 'rxjs/operators';
+import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
 
 interface CommentaryFormValues {
     title: string;
@@ -58,9 +59,11 @@ interface CommentaryFormValues {
         ]),
     ]
 })
-export class AddCommentaryComponent implements OnDestroy {
+export class AddCommentaryComponent implements OnChanges, OnDestroy {
     @Input() statementText: string = '';
     @Input() statementId: string = '';
+    /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft. */
+    @Input() vorbefuellung: Vorbefuellung | null = null;
     @Output() success = new EventEmitter<string>();
     @Output() cancel = new EventEmitter<void>();
     @ViewChild('successContainer', { read: ElementRef }) successContainer?: ElementRef;
@@ -97,7 +100,7 @@ export class AddCommentaryComponent implements OnDestroy {
         private router: Router
     ) {
         this.commentaryForm = this.fb.group({
-            title: ['', [Validators.required, Validators.minLength(3)]],
+            title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(120)]],
             text: ['', [Validators.required, Validators.minLength(10)]],
             references: [[]],  // Changed from FormArray to simple array control
             long_text: [''],
@@ -131,6 +134,25 @@ export class AddCommentaryComponent implements OnDestroy {
                     this.findOrCreateStatement(text.trim());
                 }
             });
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['vorbefuellung'] && this.vorbefuellung) {
+            this.vorbefuellungAnwenden(this.vorbefuellung);
+        }
+    }
+
+    // Titel = Satz aus dem Destillier-Ablauf, Herkunft = Link des Einwurfs. Beides
+    // bleibt im Formular aenderbar; die Quellen werden aufgeklappt, damit die
+    // uebernommene Herkunft sichtbar ist.
+    vorbefuellungAnwenden(vorbefuellung: Vorbefuellung): void {
+        this.commentaryForm.patchValue({
+            title: vorbefuellung.titel,
+            references: vorbefuellung.url ? [{ reference_string: vorbefuellung.url }] : [],
+        });
+        if (vorbefuellung.url) {
+            this.showReferences = true;
+        }
     }
 
     // Handle reference changes from autocomplete component

@@ -10,6 +10,16 @@
   width: 100%;
 }
 
+.einwurf-zeile {
+  cursor: pointer;
+}
+
+.einwurf-zeile:hover,
+.einwurf-zeile:focus-visible {
+  background: var(--surface-variant, #eef2e6);
+  outline: none;
+}
+
 .einwurf-vorschau {
   display: inline-block;
   max-width: 46ch;

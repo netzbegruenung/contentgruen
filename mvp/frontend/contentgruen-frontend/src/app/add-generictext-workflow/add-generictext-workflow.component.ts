@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,6 +10,10 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { StatementService } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { ContentRefreshService } from '../services/content-refresh.service';
+import {
+  DestillierUebergabeService,
+  Vorbefuellung,
+} from '../destillieren/destillier-uebergabe.service';
 
 @Component({
   standalone: true,
@@ -31,19 +35,32 @@ export class AddGenerictextWorkflowComponent implements OnInit {
   statementText: string = '';
   isLoadingStatement: boolean = false;
   statementError: string | null = null;
+  /** Gesetzt, wenn das Formular aus dem Destillier-Ablauf geoeffnet wurde. */
+  rohinputId: string | null = null;
+  vorbefuellung: Vorbefuellung | null = null;
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private statementService: StatementService,
     private logger: LoggingService,
     private contentRefreshService: ContentRefreshService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private uebergabe: DestillierUebergabeService
   ) { }
 
   ngOnInit(): void {
     // If we have a searchQuery, find or create the statement
     if (this.searchQuery && this.searchQuery.trim()) {
       this.findOrCreateStatement(this.searchQuery);
+    }
+
+    this.rohinputId = this.uebergabe.rohinputId(this.route);
+    if (this.rohinputId) {
+      this.uebergabe.vorbefuellungLaden(this.rohinputId).subscribe({
+        next: (vorbefuellung) => (this.vorbefuellung = vorbefuellung),
+        error: (error) => this.logger.error('Einwurf fuer die Vorbefuellung nicht ladbar', error),
+      });
     }
   }
 
@@ -76,6 +93,12 @@ export class AddGenerictextWorkflowComponent implements OnInit {
     // Trigger refresh of recent content
     this.contentRefreshService.triggerRefresh();
 
+    // Aus dem Destillier-Ablauf: Einwurf verknuepfen und den naechsten oeffnen.
+    if (this.rohinputId) {
+      this.uebergabe.nachSpeichern(this.rohinputId, responseId);
+      return;
+    }
+
     // Show thank you message with snackbar
     const snackBarRef = this.snackBar.open(
       'Vielen Dank! Dein Beitrag hilft der gesamten Community. Du kannst deine Beiträge und deren Nutzung auf der "Meine Beiträge" Seite verfolgen.',
@@ -98,6 +121,10 @@ export class AddGenerictextWorkflowComponent implements OnInit {
   }
 
   onCancel() {
+    if (this.rohinputId) {
+      this.uebergabe.zurueckZumEinwurf(this.rohinputId);
+      return;
+    }
     this.router.navigate(['/contribute']);
   }
 

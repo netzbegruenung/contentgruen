@@ -1,0 +1,67 @@
+<div class="component-box destillieren">
+    <div *ngIf="laedt" class="zustand">
+        <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <div *ngIf="!laedt && allesDestilliert" class="zustand alles-destilliert">
+        <p>Alles destilliert.</p>
+        <a mat-stroked-button color="primary" routerLink="/fangkorb">Zurück zum Fangkorb</a>
+    </div>
+
+    <div *ngIf="!laedt && !einwurf && fehler" class="zustand ladefehler">
+        <p>{{ fehler }}</p>
+        <a mat-stroked-button color="primary" routerLink="/fangkorb">Zurück zum Fangkorb</a>
+    </div>
+
+    <ng-container *ngIf="!laedt && einwurf">
+        <section class="einwurf">
+            <a *ngIf="einwurf.url" class="einwurf-link" [href]="einwurf.url"
+               target="_blank" rel="noopener noreferrer">
+                <mat-icon>open_in_new</mat-icon>
+                <span>{{ einwurf.url }}</span>
+            </a>
+            <p *ngIf="notiz" class="einwurf-notiz">{{ notiz }}</p>
+            <p *ngIf="einwurf.status === 'discarded'" class="einwurf-stand">
+                Verworfen – du kannst ihn trotzdem destillieren.
+            </p>
+            <p *ngIf="einwurf.status === 'processed'" class="einwurf-stand">
+                Daraus ist schon ein Beitrag entstanden. Ein weiterer ist möglich.
+            </p>
+        </section>
+
+        <section *ngIf="schritt === 'satz'" class="satz">
+            <mat-form-field appearance="outline" class="satz-feld">
+                <mat-label>Was ist der Punkt? Ein Satz.</mat-label>
+                <textarea matInput id="satz" rows="3" [formControl]="satz"
+                          [attr.maxlength]="satzLimit" (blur)="onBlur()"></textarea>
+                <mat-hint align="end">{{ satz.value.length }} / {{ satzLimit }}</mat-hint>
+            </mat-form-field>
+
+            <p *ngIf="fehler" class="fehler" role="alert">{{ fehler }}</p>
+
+            <div class="knoepfe">
+                <button mat-raised-button color="primary" type="button" class="weiter"
+                        [disabled]="!kannWeiter" (click)="weiter()">Weiter</button>
+                <button mat-stroked-button type="button" class="spaeter"
+                        [disabled]="arbeitet" (click)="spaeter()">Später</button>
+                <button *ngIf="istEigenerEinwurf" mat-button color="warn" type="button"
+                        class="verwerfen" [disabled]="arbeitet" (click)="verwerfen()">Verwerfen</button>
+            </div>
+        </section>
+
+        <section *ngIf="schritt === 'typwahl'" class="typwahl">
+            <p class="satz-vorschau">„{{ satz.value.trim() }}“</p>
+
+            <mat-radio-group class="typen" aria-label="Was wird daraus?" [(ngModel)]="typ">
+                <mat-radio-button value="commentary">Kommentar</mat-radio-button>
+                <mat-radio-button value="generictext">Hintergrundinfo</mat-radio-button>
+            </mat-radio-group>
+
+            <div class="knoepfe">
+                <button mat-raised-button color="primary" type="button" class="formular-oeffnen"
+                        (click)="formularOeffnen()">Formular öffnen</button>
+                <button mat-button type="button" class="zurueck" (click)="zurueckZumSatz()">Zurück</button>
+            </div>
+        </section>
+    </ng-container>
+</div>

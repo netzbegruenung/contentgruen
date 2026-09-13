@@ -27,7 +27,7 @@
 
 // Header styles
 @mixin result-header($bg-var) {
-  height: 80px;
+  height: auto; // Waechst mit der festen Titelbox (result-title)
   background-color: var($bg-var);
   position: relative; // For badge positioning
 }
@@ -69,20 +69,27 @@
 }
 
 // Title styles
+//
+// Der Titel ist eine Behauptung in einem Satz (max. 120 Zeichen), gesetzt wie
+// eine Aussage, nicht wie eine Ueberschrift. Die Box hat eine feste Hoehe von
+// vier Zeilen, damit Karten mit kurzem Titel nicht kollabieren; line-clamp ist
+// nur das Sicherheitsnetz. Die Hoehe haengt ueber em an der Schriftgroesse,
+// mobil genuegt deshalb eine andere font-size. Limit und Hoehe gehoeren
+// zusammen: wer das Titel-Limit aendert, misst diese Box neu.
 @mixin result-title {
   margin-right: 65px; // Just enough space for badges
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text-primary);
-  font-size: 19px;
-  line-height: 1.25;
+  font-size: 16px;
+  line-height: 1.4;
   width: 270px; // More space for title text
   word-wrap: break-word;
-  min-height: 64px;
-  max-height: 64px;
-  display: flex;
-  align-items: center;
+  min-height: calc(4 * 1.4em);
+  max-height: calc(4 * 1.4em);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
   overflow: hidden;
-  flex-direction: row;
   padding: 0;
   margin-top: 0;
   margin-bottom: 0;
@@ -593,9 +600,11 @@
       padding-bottom: var(--mobile-footer-height);
     }
 
-    // Apply to header class regardless of prefix
-    [class*="-header"] {
-      height: 72px; /* Standard mobile header height */
+    // Apply to header class regardless of prefix. Nicht auf -header-info: das
+    // ist der Container der Titelbox und darf nicht auf eine Hoehe festgenagelt
+    // werden, sonst schneidet er den mehrzeiligen Titel ab.
+    [class*="-header"]:not([class*="-header-info"]) {
+      height: auto;
     }
 
     // Apply to score class regardless of prefix
@@ -606,11 +615,10 @@
     }
 
     // Apply to title class regardless of prefix
+    // Hoehe kommt aus result-title (4 Zeilen in em), hier nur die Schriftgroesse.
     [class*="-title"] {
       font-size: 14px;
       width: 200px;
-      min-height: 50px;
-      max-height: 50px;
     }
 
     // Apply to text class regardless of prefix

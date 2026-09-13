@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { RawInputListComponent } from './raw-input-list.component';
@@ -111,6 +111,39 @@ describe('RawInputListComponent', () => {
       expect(component.statusBeschriftung('in_progress')).toBe('In Arbeit');
       expect(component.statusBeschriftung('processed')).toBe('Verarbeitet');
       expect(component.statusBeschriftung('discarded')).toBe('Verworfen');
+    });
+  });
+
+  describe('Destillieren', () => {
+    it('oeffnet einen Einwurf beim Tippen auf die Zeile', () => {
+      const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      rawInputService.getRawInputs.and.returnValue(
+        of({ results_count: 1, results: [einwurf({ id: 'id-7' })], total_records_count: 1 }),
+      );
+      fixture.detectChanges();
+
+      const zeile: HTMLElement = fixture.nativeElement.querySelector('tr.einwurf-zeile');
+      zeile.click();
+
+      expect(navigieren).toHaveBeenCalledWith(['/destillieren', 'id-7']);
+    });
+
+    it('oeffnet den Link, ohne die Zeile mitzuklicken', () => {
+      const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      rawInputService.getRawInputs.and.returnValue(
+        of({
+          results_count: 1,
+          results: [einwurf({ id: 'id-7', url: 'https://example.org/p' })],
+          total_records_count: 1,
+        }),
+      );
+      fixture.detectChanges();
+
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a.einwurf-link');
+      link.addEventListener('click', (event) => event.preventDefault());
+      link.click();
+
+      expect(navigieren).not.toHaveBeenCalled();
     });
   });
 });

@@ -68,10 +68,12 @@ class GenericText(BaseContent):
 
     content_type: ContentType = ContentType.GENERIC_TEXT
 
+    # Wie beim Kommentar: eine Behauptung in einem Satz, max. 120 Zeichen,
+    # abgestimmt auf die feste Titelbox der Suchkarte.
     title: str = Field(
         ...,
         min_length=3,
-        max_length=50,
+        max_length=120,
         description="Title of the generic text content",
     )
     references: List[GenericTextReference] = []

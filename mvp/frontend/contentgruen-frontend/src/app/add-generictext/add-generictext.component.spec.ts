@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { SimpleChange } from '@angular/core';
 import { AddGenerictextComponent } from './add-generictext.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -34,6 +35,23 @@ describe('AddGenerictextComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('uebernimmt Satz und Link aus dem Destillier-Ablauf', () => {
+    component.vorbefuellung = {
+      rohinputId: 'id-1',
+      titel: 'Erneuerbare senken Strompreise deutlich',
+      url: 'https://example.org/studie',
+    };
+    component.ngOnChanges({
+      vorbefuellung: new SimpleChange(null, component.vorbefuellung, true),
+    });
+
+    expect(component.generictextForm.value.title).toBe('Erneuerbare senken Strompreise deutlich');
+    expect(component.generictextForm.value.references).toEqual([
+      { reference_string: 'https://example.org/studie' },
+    ]);
+    expect(component.showReferences).toBeTrue();
+  });
+
   it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
     const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
       'a[href="/nutzungsbedingungen"]'
@@ -41,5 +59,24 @@ describe('AddGenerictextComponent', () => {
 
     expect(link).toBeTruthy();
     expect(link!.target).toBe('_blank');
+  });
+
+  // Titel = Behauptung in einem Satz. Das Limit ist auf die Titelbox der
+  // Suchkarte ausgemessen und muss mit dem Backend-Modell uebereinstimmen.
+  it('begrenzt den Titel auf 120 Zeichen', () => {
+    const titel = component.generictextForm.get('title')!;
+
+    titel.setValue('a'.repeat(120));
+    expect(titel.hasError('maxlength')).toBeFalse();
+
+    titel.setValue('a'.repeat(121));
+    expect(titel.hasError('maxlength')).toBeTrue();
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input#title');
+    expect(input.maxLength).toBe(120);
+  });
+
+  it('fragt im Titelfeld nach dem Punkt in einem Satz', () => {
+    expect(fixture.nativeElement.textContent).toContain('Was ist der Punkt? Ein Satz.');
   });
 });
