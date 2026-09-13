@@ -8,6 +8,7 @@ import {
   einwurfAusShareDaten,
 } from '../share-target/share-target.guard';
 import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
+import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
 import { Router, RouterLink } from '@angular/router';
@@ -58,6 +59,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   readonly hinweisLimit = HINWEIS_LIMIT;
+  readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
 
   einwurfForm: FormGroup;
 
