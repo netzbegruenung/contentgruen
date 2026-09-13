@@ -17,7 +17,6 @@
 .generictext-header {
   @include base.result-header(--generictext-bg);
   align-items: center;
-  height: 56px;
   padding: 8px 16px !important;
 
   .mat-mdc-card-header-text {
@@ -176,10 +175,6 @@
 
 // Mobile adjustments
 @media (max-width: 599px) {
-  .generictext-header {
-    height: 48px;
-  }
-
   .content-type-emoji {
     font-size: 20px;
     width: 32px;
@@ -189,8 +184,6 @@
   .generictext-title {
     margin-right: 95px;
     font-size: 14px;
-    min-height: 40px;
-    max-height: 40px;
   }
 
   .generictext-action-buttons {
