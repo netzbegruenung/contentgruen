@@ -23,6 +23,7 @@ import { LoggingService } from '../services/logging.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { BaseResultItemComponent } from '../shared/components/base-result-item/base-result-item.component';
+import { typLabel } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-generictext-result-item',
@@ -55,6 +56,7 @@ export class GenerictextResultItemComponent extends BaseResultItemComponent<Gene
   @Input() isPreview = false;
 
   protected readonly contentType = 'generictext';
+  readonly typName = typLabel('generictext');
 
   get content(): BaseContentResult {
     return this.result.generictext_result;

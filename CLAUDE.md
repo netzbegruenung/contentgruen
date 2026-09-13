@@ -426,7 +426,7 @@ As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a F
 2. Register a `ContentTypeSpec` entry in `domain/content_registry.py` (reuse `create_registry_repository` — the generic `RegistryQdrantRepository`; no new repository subclass).
 3. Add a `get_<type>_service` dependency in `dependencies.py` that builds the generic service from the spec, and add an `api/v1/<type>.py` router (ingestion/input is the only type-specific seam) wired in `main.py`.
 4. Add the type to the `/searchByText` spec list and the `SearchResponse` DTO — the `SearchOrchestrator` handles it generically.
-5. Frontend: one entry in `shared/content-type-registry.ts` + a `<Type>ResultItem` fragment.
+5. Frontend: one entry in `shared/content-type-registry.ts` (key, icon, German `label`, `resultField`) + a `<Type>ResultItem` fragment registered in `shared/content-type-components.ts`. The registry imports no components, so type names (`typLabel()`) stay out of the initial bundle.
 6. Tests-first against live Qdrant in `tests/integration/` (round-trip + orchestrator parity), plus a headless-Chrome FE render/vote test.
 
 Legacy types (`statement`, `reference`, `commentary`, `generic_text`) still have hand-written service/repository classes; do not copy that pattern for new types — prefer the registry path above. Note that `commentary` and `generic_text` also have registry specs that nothing resolves yet.

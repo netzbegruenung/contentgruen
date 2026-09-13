@@ -15,6 +15,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ContentRefreshService } from '../services/content-refresh.service';
+import { typLabel } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-search-view',
@@ -34,6 +35,7 @@ import { ContentRefreshService } from '../services/content-refresh.service';
   styleUrls: ['./search-view.component.scss']
 })
 export class SearchViewComponent implements OnInit, AfterViewInit {
+  readonly typLabel = typLabel;
   contentCount$: Observable<number> | undefined;
   contentStats$: Observable<any> | undefined;
   userInfo: UserInfo | null = null;

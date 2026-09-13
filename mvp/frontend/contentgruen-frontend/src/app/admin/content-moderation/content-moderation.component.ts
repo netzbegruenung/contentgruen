@@ -12,6 +12,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatBadgeModule } from '@angular/material/badge';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { ModerationService, ContentReport } from '../../services/moderation.service';
+import { typLabel } from '../../shared/content-type-registry';
 
 @Component({
   selector: 'app-content-moderation',
@@ -155,12 +156,7 @@ export class ContentModerationComponent implements OnInit {
   }
 
   getContentTypeLabel(type: string): string {
-    const labels: { [key: string]: string } = {
-      'commentary': 'Kommentar',
-      'generictext': 'Generic Text',
-      'statement': 'Statement'
-    };
-    return labels[type] || type;
+    return typLabel(type);
   }
 
   formatDate(dateString: string): string {

@@ -23,6 +23,7 @@ import { LoggingService } from '../services/logging.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { BaseResultItemComponent } from '../shared/components/base-result-item/base-result-item.component';
+import { typLabel } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-post-result-item',
@@ -55,6 +56,7 @@ export class PostResultItemComponent extends BaseResultItemComponent<PostSearchR
   @Input() isPreview = false;
 
   protected readonly contentType = 'post';
+  readonly typName = typLabel('post');
 
   get content(): BaseContentResult {
     return this.result.post_result;

@@ -15,6 +15,7 @@ import {
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
+import { typLabel } from '../shared/content-type-registry';
 import { DestillierUebergabeService, ROHINPUT_PARAM } from './destillier-uebergabe.service';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
@@ -31,12 +32,12 @@ const FORMULAR_PFAD: Record<Beitragstyp, string> = {
 export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterung: string }> = [
   {
     wert: 'commentary',
-    name: 'Kommentar',
+    name: typLabel('commentary'),
     erlaeuterung: 'Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media',
   },
   {
     wert: 'generictext',
-    name: 'Hintergrundinfo',
+    name: typLabel('generictext'),
     erlaeuterung: 'Fakten, Zahlen und Hintergrundinformationen zum Thema',
   },
 ];

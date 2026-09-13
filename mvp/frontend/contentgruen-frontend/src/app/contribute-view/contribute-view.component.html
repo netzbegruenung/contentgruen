@@ -74,7 +74,7 @@
               (keyup.space)="selectMobileContentType('commentary')">
         <mat-card-header>
             <div class="card-icon" aria-hidden="true">💬</div>
-            <mat-card-title>Fertiger Kommentar</mat-card-title>
+            <mat-card-title>{{ typLabel('commentary') }}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <p>Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media</p>
@@ -96,7 +96,7 @@
               (keyup.space)="selectMobileContentType('generictext')">
         <mat-card-header>
             <div class="card-icon" aria-hidden="true">📄</div>
-            <mat-card-title>Hintergrundinfo</mat-card-title>
+            <mat-card-title>{{ typLabel('generictext') }}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <p>Fakten, Zahlen und Hintergrundinformationen zum Thema</p>
@@ -118,7 +118,7 @@
               (keyup.space)="selectMobileContentType('image')">
         <mat-card-header>
             <div class="card-icon" aria-hidden="true">🖼️</div>
-            <mat-card-title>Bild</mat-card-title>
+            <mat-card-title>{{ typLabel('image') }}</mat-card-title>
         </mat-card-header>
         <mat-card-content>
             <p>Politisch relevante Bilder mit Bildunterschrift</p>
@@ -159,7 +159,7 @@
         <mat-expansion-panel #commentaryPanel class="panel commentary-color mat-elevation-z2" [expanded]="isPanelActive('commentary')">
             <mat-expansion-panel-header class="panel-header commentary-color">
                 <mat-panel-title>
-                    <h3>💬 Fertiger Kommentar</h3>
+                    <h3>💬 {{ typLabel('commentary') }}</h3>
                 </mat-panel-title>
                 <mat-panel-description>
                     Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media
@@ -174,7 +174,7 @@
         <mat-expansion-panel #generictextPanel class="panel generictext-color mat-elevation-z2" [expanded]="isPanelActive('generictext')">
             <mat-expansion-panel-header class="panel-header generictext-color">
                 <mat-panel-title>
-                    <h3>📄 Hintergrundinfo</h3>
+                    <h3>📄 {{ typLabel('generictext') }}</h3>
                 </mat-panel-title>
                 <mat-panel-description>
                     Fakten, Zahlen und Hintergrundinformationen zum Thema
@@ -189,7 +189,7 @@
         <mat-expansion-panel #imagePanel class="panel image-color mat-elevation-z2" [expanded]="isPanelActive('image')">
             <mat-expansion-panel-header class="panel-header image-color">
                 <mat-panel-title>
-                    <h3>🖼️ Bild</h3>
+                    <h3>🖼️ {{ typLabel('image') }}</h3>
                 </mat-panel-title>
                 <mat-panel-description>
                     Politisch relevante Bilder mit Bildunterschrift

@@ -13,6 +13,7 @@ import { AuthService } from '../auth/auth.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { typLabel } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-contributions-view',
@@ -30,6 +31,7 @@ import { takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContributionsViewComponent implements OnInit, OnDestroy {
+  readonly typLabel = typLabel;
   displayedColumns: string[] = ['content_type', 'text', 'usage_count', 'created', 'last_modified', 'last_modified_by'];
   dataSource = new MatTableDataSource<ContentResult>();
   totalRecords = 0;

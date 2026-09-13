@@ -55,7 +55,7 @@
                                 [formControl]="descriptionControl"
                                 (keydown)="onDescriptionKeydown($event)"
                                 (blur)="commitDescriptionEdit()"
-                                placeholder="Notiz zu dieser Quelle">
+                                placeholder="Notiz zu dieser Herkunft">
                         </mat-form-field>
 
                         <button
@@ -87,18 +87,18 @@
         </div>
 
         <div class="reference-count">
-            {{ selectedReferences.length }} / {{ maxReferences }} Quellen hinzugefügt
+            {{ selectedReferences.length }} / {{ maxReferences }} Herkunftsangaben hinzugefügt
         </div>
     </div>
 
     <!-- Status messages -->
     <div class="status-message info" *ngIf="selectedReferences.length === 0">
         <mat-icon>info</mat-icon>
-        <span>Füge Quellen hinzu, um deine Aussagen zu belegen.</span>
+        <span>Füge Herkunftsangaben hinzu, um deine Aussagen zu belegen.</span>
     </div>
 
     <div class="status-message warning" *ngIf="selectedReferences.length >= maxReferences">
         <mat-icon>warning</mat-icon>
-        <span>Maximale Anzahl an Quellen erreicht.</span>
+        <span>Maximale Anzahl an Herkunftsangaben erreicht.</span>
     </div>
 </div>

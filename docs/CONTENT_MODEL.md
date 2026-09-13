@@ -205,7 +205,9 @@ Same treatment for the add-forms and search-results headers: shared base behavio
 config (label, icon, count selector, extra form controls).
 
 **3. A content-type registry on the frontend too** *(shipped — `shared/content-type-registry.ts`)*
-— one place mapping `content_type → { icon, label, resultComponent, resultField }` — so a new type is
+— one place mapping `content_type → { icon, label, resultField }`, with the result-item component per
+key in `shared/content-type-components.ts` (kept apart so type names don't pull the cards into the
+initial bundle) — so a new type is
 registered once and picked up by search results, recent-content, and contribution menus
 automatically. This also retired the false-abstraction `unified-result-item`.
 

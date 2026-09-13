@@ -2,7 +2,7 @@
 
     <mat-card-header class="generictext-header">
         <div mat-card-avatar>
-            <span class="content-type-emoji" matTooltip="Hintergrundinfo" matTooltipPosition="below">
+            <span class="content-type-emoji" [matTooltip]="typName" matTooltipPosition="below">
                 📄
             </span>
         </div>
@@ -112,7 +112,7 @@
                     <ul
                         *ngIf="!result.generictext_result.references || result.generictext_result.references.length === 0">
                         <li>
-                            Keine Quellen hinterlegt
+                            Keine Herkunft hinterlegt
                         </li>
                     </ul>
                     <ul *ngIf="result.generictext_result.references && result.generictext_result.references.length > 0">
@@ -125,18 +125,18 @@
                                target="_blank"
                                rel="noopener noreferrer"
                                class="reference-link"
-                               [matTooltip]="reference.reference_description || 'Quelle ' + (i + 1)"
+                               [matTooltip]="reference.reference_description || 'Herkunft ' + (i + 1)"
                                matTooltipPosition="above">
                                 {{ reference.reference_text }}
                             </a>
                             <ng-template #nonClickableReference>
                                 <span class="reference-link"
-                                    [matTooltip]="reference.reference_description || 'Quelle ' + (i + 1)"
+                                    [matTooltip]="reference.reference_description || 'Herkunft ' + (i + 1)"
                                     matTooltipPosition="above">
                                     <!-- Fallback for preview mode or missing data -->
                                     <ng-container
                                         *ngIf="reference.reference_id && reference.reference_id.length === 36 && reference.reference_id.includes('-'); else showId">
-                                        Quelle {{ i + 1 }}
+                                        Herkunft {{ i + 1 }}
                                     </ng-container>
                                     <ng-template #showId>
                                         {{ reference.reference_id }}

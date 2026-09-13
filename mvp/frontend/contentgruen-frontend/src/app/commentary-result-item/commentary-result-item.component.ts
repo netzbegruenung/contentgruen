@@ -23,6 +23,7 @@ import { LoggingService } from '../services/logging.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { BaseResultItemComponent } from '../shared/components/base-result-item/base-result-item.component';
+import { typLabel } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-commentary-result-item',
@@ -54,6 +55,7 @@ import { BaseResultItemComponent } from '../shared/components/base-result-item/b
 })
 export class CommentaryResultItemComponent extends BaseResultItemComponent<CommentarySearchResult> {
   protected readonly contentType = 'commentary';
+  readonly typName = typLabel('commentary');
 
   // Commentary-specific: short/standard/long text variants
   textMode: 'short' | 'standard' | 'long' = 'standard';
