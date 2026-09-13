@@ -176,18 +176,24 @@ export class RawInputService {
   }
 
   /**
-   * Der naechste Einwurf fuer den Destillier-Ablauf: offen, ohne eigenen Entwurf.
+   * Der naechste Einwurf fuer den Destillier-Ablauf: offen oder destilliert, ohne
+   * eigenen Entwurf.
    *
-   * Einwuerfe mit eigenem Entwurf hat man mit "Spaeter" zurueckgestellt; sie
-   * bleiben antippbar, werden aber nicht automatisch wieder angeboten. Die
-   * Reihenfolge (eigene zuerst, dann neueste) kommt vom Server.
+   * Destilliert heisst nur, dass jemand anderes schon einen Satz hat - es gibt
+   * keine Sperre, der eigene Satz kann trotzdem kommen. Einwuerfe mit eigenem
+   * Entwurf hat man mit "Spaeter" zurueckgestellt; sie bleiben antippbar, werden
+   * aber nicht automatisch wieder angeboten. Die Reihenfolge (eigene zuerst, dann
+   * neueste) kommt vom Server.
    */
   naechsterOffenerEinwurf(ausser?: string | null): Observable<RawInput | null> {
     return this.getRawInputs(1, 100).pipe(
       map(
         (daten) =>
           daten.results.find(
-            (einwurf) => einwurf.status === 'open' && !einwurf.own_draft && einwurf.id !== ausser,
+            (einwurf) =>
+              (einwurf.status === 'open' || einwurf.status === 'in_progress') &&
+              !einwurf.own_draft &&
+              einwurf.id !== ausser,
           ) ?? null,
       ),
     );

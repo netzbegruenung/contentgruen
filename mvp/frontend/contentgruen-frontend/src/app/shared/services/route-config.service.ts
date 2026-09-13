@@ -117,10 +117,12 @@ export class RouteConfigService {
 
   private getDynamicRouteConfig(route: string, defaultConfig: RouteConfig): RouteConfig {
     // /destillieren und /destillieren/:id
+    // Ohne Pfeil in der Kopfleiste: der fuehrte zur Startseite. Die Ansicht hat einen
+    // eigenen, der aus dem Satz zum Fangkorb und aus der Typwahl zum Satz zurueckfuehrt.
     if (route === ROUTES.DESTILLIEREN || route.startsWith(`${ROUTES.DESTILLIEREN}/`)) {
       return {
         pageTitle: PAGE_TITLES.DESTILLIEREN,
-        showBackButton: true,
+        showBackButton: false,
         showContributeButton: false,
         showContributionsButton: false
       };

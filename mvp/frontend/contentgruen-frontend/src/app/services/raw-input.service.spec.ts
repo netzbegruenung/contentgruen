@@ -159,6 +159,22 @@ describe('RawInputService', () => {
       expect(naechster?.id).toBe('id-naechster');
     });
 
+    it('bietet auch Destilliertes an, solange es keinen eigenen Satz gibt', () => {
+      let naechster: RawInput | null | undefined;
+      service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));
+
+      httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush({
+        results_count: 2,
+        total_records_count: 2,
+        results: [
+          einwurf({ id: 'id-eigener-satz', status: 'in_progress', own_draft: 'meiner' }),
+          einwurf({ id: 'id-fremder-satz', status: 'in_progress' }),
+        ],
+      });
+
+      expect(naechster?.id).toBe('id-fremder-satz');
+    });
+
     it('meldet null, wenn nichts mehr offen ist', () => {
       let naechster: RawInput | null | undefined;
       service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));

@@ -6,9 +6,15 @@ import { Observable, of, Subject } from 'rxjs';
 import { debounceTime, map, takeUntil, tap } from 'rxjs/operators';
 
 import { SHARED_IMPORTS } from '../shared/shared-imports';
-import { RawInput, RawInputService, SATZ_LIMIT } from '../services/raw-input.service';
+import {
+  RawInput,
+  RawInputDraft,
+  RawInputService,
+  SATZ_LIMIT,
+} from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
+import { kurzeKennung } from '../shared/kennung';
 import { DestillierUebergabeService, ROHINPUT_PARAM } from './destillier-uebergabe.service';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
@@ -21,11 +27,27 @@ const FORMULAR_PFAD: Record<Beitragstyp, string> = {
   generictext: '/workflow/add-generictext',
 };
 
+/** Die Typwahl, mit denselben Erlaeuterungen wie auf der Beitragen-Seite. */
+export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterung: string }> = [
+  {
+    wert: 'commentary',
+    name: 'Kommentar',
+    erlaeuterung: 'Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media',
+  },
+  {
+    wert: 'generictext',
+    name: 'Hintergrundinfo',
+    erlaeuterung: 'Fakten, Zahlen und Hintergrundinformationen zum Thema',
+  },
+];
+
 /**
  * Destillieren: aus einem Einwurf in einem Satz den Punkt herausarbeiten.
  *
  * Erst der Satz, dann die Typwahl, dann das Beitragsformular. Wer den Satz nicht
  * formulieren kann, verwirft (nur beim eigenen Einwurf) oder stellt zurueck.
+ * Saetze anderer zum selben Einwurf stehen lesbar ueber dem eigenen Feld - es
+ * gibt keine Sperre, jeder formuliert seinen eigenen.
  *
  * Der Ablauf muss am Handy unterbrechbar sein: Der Satz wird verzoegert beim
  * Tippen, beim Verlassen des Felds, bei jedem Knopf und beim Wegwechseln der App
@@ -41,6 +63,8 @@ const FORMULAR_PFAD: Record<Beitragstyp, string> = {
 })
 export class DestillierenComponent implements OnInit, OnDestroy {
   readonly satzLimit = SATZ_LIMIT;
+  readonly typen = TYPEN;
+  readonly kurzeKennung = kurzeKennung;
 
   satz = new FormControl('', {
     nonNullable: true,
@@ -111,6 +135,17 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     return inhalt && inhalt !== this.einwurf?.url ? inhalt : null;
   }
 
+  /**
+   * Die Saetze anderer Personen zu diesem Einwurf. Solange die eigene Kennung
+   * nicht bekannt ist, lieber keine als den eigenen Satz doppelt.
+   */
+  get fremdeSaetze(): RawInputDraft[] {
+    if (!this.eigeneKennung) {
+      return [];
+    }
+    return (this.einwurf?.drafts ?? []).filter((satz) => satz.user_id !== this.eigeneKennung);
+  }
+
   onBlur(): void {
     this.entwurfSpeichern();
   }
@@ -174,6 +209,16 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
   zurueckZumSatz(): void {
     this.schritt = 'satz';
+  }
+
+  /** Der Pfeil oben: aus der Typwahl zurueck zum Satz, aus dem Satz zum Fangkorb. */
+  zurueck(): void {
+    if (this.schritt === 'typwahl') {
+      this.zurueckZumSatz();
+      return;
+    }
+    // Den Satz sichert ngOnDestroy beim Verlassen der Ansicht.
+    this.router.navigate(['/fangkorb']);
   }
 
   ngOnDestroy(): void {

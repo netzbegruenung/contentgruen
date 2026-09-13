@@ -12,6 +12,18 @@
   color: var(--text-secondary, #4a4a4a);
 }
 
+.kopfzeile {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 8px -8px;
+}
+
+.kopfzeile-titel {
+  font-size: 15px;
+  color: var(--text-secondary, #4a4a4a);
+}
+
 .einwurf {
   margin-bottom: 16px;
 }
@@ -41,6 +53,41 @@
   font-style: italic;
 }
 
+/* Saetze anderer: lesbar, aber deutlich nicht das eigene Feld. */
+.fremde-saetze {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--primary-light, #dcebc3);
+  border-radius: 4px;
+  background: var(--surface-variant, #eef2e6);
+}
+
+.fremde-saetze-titel {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+.fremde-saetze ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.satz-text {
+  line-height: 1.4;
+}
+
+.person {
+  margin-left: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-secondary, #4a4a4a);
+}
+
 .satz-feld {
   width: 100%;
 }
@@ -64,6 +111,39 @@
 .typen {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   margin: 16px 0;
+}
+
+/* Typwahl als Karten; die gewaehlte nimmt die Farbe ihres Beitragstyps an. */
+.typ {
+  display: block;
+  padding: 8px 12px 8px 4px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 12px;
+}
+
+.typ.gewaehlt {
+  border-color: transparent;
+}
+
+.typ-commentary.gewaehlt {
+  background: var(--commentary-bg);
+}
+
+.typ-generictext.gewaehlt {
+  background: var(--generictext-bg);
+}
+
+.typ-name {
+  display: block;
+  font-weight: 500;
+}
+
+.typ-erlaeuterung {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary, #4a4a4a);
 }

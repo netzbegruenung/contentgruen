@@ -21,6 +21,7 @@ import {
 } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
+import { kurzeKennung } from '../shared/kennung';
 import { Plattform, PLATTFORMEN, plattformAusUrl, plattformName } from '../shared/plattform';
 import {
   FangkorbFilter,
@@ -46,9 +47,6 @@ const ZUSTAND: Record<RawInputStatus, KartenZustand> = {
   discarded: 'verworfen',
 };
 
-/** Keycloak-Kennungen sind UUIDs; auf der Karte reicht der Anfang. */
-const KENNUNG_KURZ = 8;
-
 /**
  * Der Fangkorb als Kartenliste: ein Strom, eigene zuerst, dann neueste (sortiert
  * der Server). Keine Gruppen - den Stand zeigt die Kartenoptik.
@@ -67,6 +65,7 @@ const KENNUNG_KURZ = 8;
 })
 export class RawInputListComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
+  readonly kurzeKennung = kurzeKennung;
 
   einwuerfe: RawInput[] = [];
   sichtbar: RawInput[] = [];
@@ -177,13 +176,6 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   hinweis(einwurf: RawInput): string | null {
     const inhalt = einwurf.content?.trim();
     return inhalt && inhalt !== einwurf.url ? inhalt : null;
-  }
-
-  kurzeKennung(kennung: string | null | undefined): string {
-    if (!kennung) {
-      return 'ohne Kennung';
-    }
-    return kennung.length > KENNUNG_KURZ ? kennung.slice(0, KENNUNG_KURZ) : kennung;
   }
 
   /** Alle Saetze, je mit Person - fuer destillierte Karten. */

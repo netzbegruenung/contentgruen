@@ -99,6 +99,15 @@ describe('RawInputListComponent', () => {
   afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
 
   describe('Laden', () => {
+    it('erklaert oben die drei Schritte', () => {
+      erstellen([]);
+      const schritte = Array.from(
+        fixture.nativeElement.querySelectorAll('.dreiklang li strong') as NodeListOf<HTMLElement>,
+      ).map((schritt) => schritt.textContent!.trim());
+
+      expect(schritte).toEqual(['Einwerfen', 'Destillieren', 'Ausformulieren']);
+    });
+
     it('laedt die Einwuerfe auf einmal und zeigt Karten statt einer Tabelle', () => {
       erstellen([einwurf(), einwurf({ id: 'id-2' })]);
 

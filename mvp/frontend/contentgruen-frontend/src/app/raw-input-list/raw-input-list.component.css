@@ -4,6 +4,12 @@
   stroke: rgb(0, 84, 55) !important;
 }
 
+.dreiklang {
+  margin: 0 0 8px;
+  padding-left: 1.4em;
+  line-height: 1.6;
+}
+
 .fangkorb-aktionen {
   margin-top: 20px;
 }
