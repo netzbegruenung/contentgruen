@@ -3,8 +3,14 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
-import { LADE_GROESSE, RawInputListComponent } from './raw-input-list.component';
+import {
+  ERKLAERUNG_SCHLUESSEL,
+  LADE_GROESSE,
+  RawInputListComponent,
+} from './raw-input-list.component';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
+import { PLATTFORMEN } from '../shared/plattform';
+import { ERSTNUTZER_SATZ } from '../shared/fangkorb-texte';
 import {
   GetRawInputsResponse,
   RawInput,
@@ -71,6 +77,7 @@ describe('RawInputListComponent', () => {
 
   beforeEach(async () => {
     sessionStorage.removeItem(FILTER_SCHLUESSEL);
+    sessionStorage.removeItem(ERKLAERUNG_SCHLUESSEL);
     rawInputService = jasmine.createSpyObj('RawInputService', ['getRawInputs']);
 
     await TestBed.configureTestingModule({
@@ -96,18 +103,60 @@ describe('RawInputListComponent', () => {
     spyOn(router, 'navigate').and.resolveTo(true);
   });
 
-  afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
+  afterEach(() => {
+    sessionStorage.removeItem(FILTER_SCHLUESSEL);
+    sessionStorage.removeItem(ERKLAERUNG_SCHLUESSEL);
+  });
 
-  describe('Laden', () => {
-    it('erklaert oben die drei Schritte', () => {
+  describe('Kopf', () => {
+    function langfassung(): HTMLElement | null {
+      return fixture.nativeElement.querySelector('.dreiklang');
+    }
+
+    it('zeigt die drei Schritte in einer Zeile mit Erklaersatz', () => {
+      erstellen([]);
+      const zeile = fixture.nativeElement.querySelector('.dreischritt').textContent.replace(/\s+/g, ' ');
+
+      expect(zeile.trim()).toBe('Einwerfen → Destillieren → Ausformulieren');
+      expect(fixture.nativeElement.textContent).toContain('Jeder Schritt kann von jemand anderem kommen.');
+    });
+
+    it('klappt die Langfassung beim ersten Oeffnen auf und danach nicht mehr', () => {
       erstellen([]);
       const schritte = Array.from(
         fixture.nativeElement.querySelectorAll('.dreiklang li strong') as NodeListOf<HTMLElement>,
       ).map((schritt) => schritt.textContent!.trim());
-
       expect(schritte).toEqual(['Einwerfen', 'Destillieren', 'Ausformulieren']);
+      fixture.destroy();
+
+      erstellen([]);
+      expect(langfassung()).toBeNull();
+
+      klicken(fixture.nativeElement.querySelector('.erklaerung-umschalter'));
+      expect(langfassung()).toBeTruthy();
     });
 
+    it('zeigt Angemeldeten den Erstnutzer-Satz', () => {
+      erstellen([]);
+
+      expect(fixture.nativeElement.querySelector('.erstnutzer-satz').textContent).toContain(ERSTNUTZER_SATZ);
+    });
+
+    it('zeigt ohne Anmeldung keinen Erstnutzer-Satz', () => {
+      const auth = TestBed.inject(AuthService) as unknown as {
+        getCurrentUserId: () => string | null;
+        fetchUserInfo: () => unknown;
+      };
+      auth.getCurrentUserId = () => null;
+      auth.fetchUserInfo = () => of(null);
+
+      erstellen([]);
+
+      expect(fixture.nativeElement.querySelector('.erstnutzer-satz')).toBeNull();
+    });
+  });
+
+  describe('Laden', () => {
     it('laedt die Einwuerfe auf einmal und zeigt Karten statt einer Tabelle', () => {
       erstellen([einwurf(), einwurf({ id: 'id-2' })]);
 
@@ -387,14 +436,46 @@ describe('RawInputListComponent', () => {
       return component.sichtbar.map((e) => e.id);
     }
 
-    it('blendet eine abgewaehlte Plattform aus, Einwuerfe ohne Link bleiben', () => {
+    it('zeigt ohne Plattform-Filter keinen Chip gefuellt', () => {
+      erstellen(gemischt());
+
+      for (const plattform of PLATTFORMEN) {
+        const knopf = filterKnopf(plattform.name);
+        expect(knopf.classList).not.toContain('aktiv');
+        expect(knopf.getAttribute('aria-pressed')).toBe('false');
+      }
+      expect(karten().length).toBe(4);
+    });
+
+    it('zeigt bei gewaehlter Plattform nur deren Einwuerfe, Einwuerfe ohne Link bleiben', () => {
       erstellen(gemischt());
 
       klicken(filterKnopf('Instagram'));
 
-      expect(sichtbareIds()).toEqual(['yt', 'ohne-link', 'web']);
-      expect(filterKnopf('Instagram').getAttribute('aria-pressed')).toBe('false');
-      expect(karten().length).toBe(3);
+      expect(sichtbareIds()).toEqual(['insta', 'ohne-link']);
+      expect(filterKnopf('Instagram').getAttribute('aria-pressed')).toBe('true');
+      expect(filterKnopf('Instagram').classList).toContain('aktiv');
+      expect(filterKnopf('YouTube').getAttribute('aria-pressed')).toBe('false');
+      expect(karten().length).toBe(2);
+    });
+
+    it('nimmt mit einem weiteren Tipp eine Plattform dazu', () => {
+      erstellen(gemischt());
+
+      klicken(filterKnopf('Instagram'));
+      klicken(filterKnopf('YouTube'));
+
+      expect(sichtbareIds()).toEqual(['insta', 'yt', 'ohne-link']);
+    });
+
+    it('hebt den Plattform-Filter auf, wenn die letzte gewaehlte Plattform abgewaehlt wird', () => {
+      erstellen(gemischt());
+
+      klicken(filterKnopf('Instagram'));
+      klicken(filterKnopf('Instagram'));
+
+      expect(component.filter.plattformen).toEqual(PLATTFORMEN.map((eintrag) => eintrag.wert));
+      expect(sichtbareIds()).toEqual(['insta', 'yt', 'ohne-link', 'web']);
     });
 
     it('zeigt bei "nur offene" auch Destilliertes', () => {
@@ -430,7 +511,7 @@ describe('RawInputListComponent', () => {
       erstellen(gemischt());
 
       expect(component.filter.nurOffene).toBeTrue();
-      expect(component.filter.plattformen).toEqual(['instagram', 'youtube', 'web']);
+      expect(component.filter.plattformen).toEqual(['tiktok']);
       expect(filterKnopf('nur offene').getAttribute('aria-pressed')).toBe('true');
     });
   });

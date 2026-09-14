@@ -197,6 +197,12 @@ mat-panel-title h3 {
     margin: 0;
 }
 
+.einleitung .erstnutzer-satz {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
 /* Mobil: Typen als kompakte Zeilen, alle vier auf einem Bildschirm */
 .typ-zeilen {
     display: flex;

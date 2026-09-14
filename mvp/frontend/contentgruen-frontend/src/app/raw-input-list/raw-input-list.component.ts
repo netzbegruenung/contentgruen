@@ -23,7 +23,7 @@ import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
 import { Plattform, PLATTFORMEN, plattformAusUrl, plattformName } from '../shared/plattform';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { ERSTNUTZER_SATZ, FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import {
   FangkorbFilter,
   filterLaden,
@@ -37,6 +37,29 @@ import {
  * Liste das dazu.
  */
 export const LADE_GROESSE = 100;
+
+/**
+ * Schluessel im sessionStorage: Die Langfassung der Erklaerung stand in dieser
+ * Sitzung schon einmal offen.
+ */
+export const ERKLAERUNG_SCHLUESSEL = 'contentgruen.fangkorb.erklaerung-gesehen';
+
+/**
+ * Ob die Langfassung beim Oeffnen der Liste aufgeklappt ist: beim ersten Mal in
+ * der Sitzung ja, danach nicht mehr - wer sie gelesen hat, will die Karten sehen.
+ * Ohne Storage bleibt sie zu, sonst stuende sie jedes Mal offen.
+ */
+function erklaerungBeimOeffnen(): boolean {
+  try {
+    if (sessionStorage.getItem(ERKLAERUNG_SCHLUESSEL)) {
+      return false;
+    }
+    sessionStorage.setItem(ERKLAERUNG_SCHLUESSEL, '1');
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /** Die vier Kartenzustaende. in_progress heisst im UI "destilliert". */
 export type KartenZustand = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfen';
@@ -70,7 +93,9 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
   readonly kurzeKennung = kurzeKennung;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly erstnutzerSatz = ERSTNUTZER_SATZ;
 
+  erklaerungOffen = erklaerungBeimOeffnen();
   einwuerfe: RawInput[] = [];
   sichtbar: RawInput[] = [];
   gesamt = 0;
@@ -128,17 +153,52 @@ export class RawInputListComponent implements OnInit, OnDestroy {
       });
   }
 
+  // Kopf
+
+  /** Den Erstnutzer-Satz sehen nur Angemeldete. */
+  get angemeldet(): boolean {
+    return !!this.eigeneKennung;
+  }
+
+  erklaerungUmschalten(): void {
+    this.erklaerungOffen = !this.erklaerungOffen;
+  }
+
   // Filter
 
   plattformAktiv(plattform: Plattform): boolean {
     return this.filter.plattformen.includes(plattform);
   }
 
+  /** Alle Plattformen eingeblendet heisst: kein Plattform-Filter. */
+  get allePlattformenAktiv(): boolean {
+    return PLATTFORMEN.every((eintrag) => this.plattformAktiv(eintrag.wert));
+  }
+
+  /**
+   * Gefuellt ist ein Chip nur, wenn er wirklich filtert. Ohne Filter sehen alle
+   * Chips aus wie "nur offene" im Ruhezustand.
+   */
+  plattformGewaehlt(plattform: Plattform): boolean {
+    return !this.allePlattformenAktiv && this.plattformAktiv(plattform);
+  }
+
+  /**
+   * Ohne Filter waehlt ein Tipp genau diese Plattform. Mit Filter schaltet er sie
+   * dazu oder weg; wird die letzte abgewaehlt, gilt wieder kein Filter.
+   */
   plattformUmschalten(plattform: Plattform): void {
-    const aktiv = this.plattformAktiv(plattform);
-    const plattformen = PLATTFORMEN.map((eintrag) => eintrag.wert).filter((wert) =>
-      wert === plattform ? !aktiv : this.plattformAktiv(wert),
-    );
+    const alle = PLATTFORMEN.map((eintrag) => eintrag.wert);
+    let plattformen: Plattform[];
+    if (this.allePlattformenAktiv) {
+      plattformen = [plattform];
+    } else {
+      const gewaehlt = this.plattformAktiv(plattform);
+      plattformen = alle.filter((wert) => (wert === plattform ? !gewaehlt : this.plattformAktiv(wert)));
+      if (!plattformen.length) {
+        plattformen = alle;
+      }
+    }
     this.filterSetzen({ ...this.filter, plattformen });
   }
 

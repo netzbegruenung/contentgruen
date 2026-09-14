@@ -58,9 +58,11 @@ describe('ContributeViewComponent', () => {
       expect(component).toBeTruthy();
     });
 
-    it('leitet mit einem Satz ein', () => {
-      expect(fixture.nativeElement.querySelector('.einleitung').textContent.trim())
+    it('leitet mit einem Satz ein, darueber der Erstnutzer-Satz', () => {
+      expect(fixture.nativeElement.querySelector('.einleitung-satz').textContent.trim())
         .toBe('Wähle, was du beitragen willst:');
+      expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
+        .toContain('Gut gesagt ist neu.');
     });
 
     it('beschriftet den Fangkorb-Knopf mit Einwerfen und fuehrt zum Formular', () => {

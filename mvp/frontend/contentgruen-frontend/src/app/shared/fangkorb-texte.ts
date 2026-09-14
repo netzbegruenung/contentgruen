@@ -10,3 +10,11 @@ export const FANGKORB_KURZ = 'Ein Link, ein Hinweis oder beides – roh, ohne Au
  * nicht wieder auseinanderlaufen. Er beschreibt das Formular: Link und Hinweis.
  */
 export const FANGKORB_BESCHREIBUNG = `${FANGKORB_KURZ} Jemand macht später einen Beitrag daraus.`;
+
+/**
+ * Fuer Angemeldete, solange die Plattform jung ist: Wer jetzt etwas eintraegt,
+ * setzt die Massstaebe mit. Steht unter dem Fangkorb-Kopf und ueber der
+ * Typ-Auswahl auf der Beitragen-Seite.
+ */
+export const ERSTNUTZER_SATZ =
+  'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird.';

@@ -1,6 +1,7 @@
 <!-- Einleitung: ein Satz, auf Desktop und Handy gleich -->
 <section class="content-section einleitung" *ngIf="!isMobile || !showMobileForm">
-    <p>Wähle, was du beitragen willst:</p>
+    <p class="erstnutzer-satz">{{ erstnutzerSatz }}</p>
+    <p class="einleitung-satz">Wähle, was du beitragen willst:</p>
 </section>
 
 <!-- Fangkorb-Aufruf: steht ueber der Auswahl, weil er die Auswahl gerade

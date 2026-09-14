@@ -13,7 +13,7 @@ import { AddImageWorkflowComponent } from "../add-image-workflow/add-image-workf
 import { CommonModule } from '@angular/common';
 import { BreakpointService } from '../shared/services/breakpoint.service';
 import { typLabel } from '../shared/content-type-registry';
-import { FANGKORB_BESCHREIBUNG, FANGKORB_KURZ } from '../shared/fangkorb-texte';
+import { ERSTNUTZER_SATZ, FANGKORB_BESCHREIBUNG, FANGKORB_KURZ } from '../shared/fangkorb-texte';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -38,6 +38,8 @@ export class ContributeViewComponent implements OnDestroy {
   readonly typLabel = typLabel;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
   readonly fangkorbKurz = FANGKORB_KURZ;
+  /** Die Route verlangt eine Anmeldung, der Satz braucht deshalb keine eigene Pruefung. */
+  readonly erstnutzerSatz = ERSTNUTZER_SATZ;
   activePanel: string = '';
   searchQuery: string = '';
   isMobile: boolean = false;
