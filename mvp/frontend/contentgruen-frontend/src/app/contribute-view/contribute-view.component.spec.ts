@@ -92,6 +92,18 @@ describe('ContributeViewComponent', () => {
       expect(text()).not.toContain('Zum Fangkorb');
     });
 
+    it('setzt Einwerfen als eigenen Block ueber die Zwischenueberschrift Fertige Beitraege', () => {
+      const block: HTMLElement = fixture.nativeElement.querySelector('.einwerfen-block');
+      const ueberschrift: HTMLElement = fixture.nativeElement.querySelector('.typ-zwischenueberschrift');
+      const liste: HTMLElement = fixture.nativeElement.querySelector('nav.typ-liste');
+
+      expect(block.nextElementSibling).toBe(ueberschrift);
+      expect(ueberschrift.textContent!.trim()).toBe('Fertige Beiträge');
+      expect(ueberschrift.nextElementSibling).toBe(liste);
+      expect(liste.querySelectorAll('button.typ-zeile').length).toBe(3);
+      expect(fixture.nativeElement.querySelector('.einleitung-satz')).toBeNull();
+    });
+
     it('fuehrt mit der Einwerfen-Zeile zum Formular, nicht zur Liste', () => {
       zeilen()[0].click();
 

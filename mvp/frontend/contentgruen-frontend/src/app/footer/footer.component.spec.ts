@@ -37,6 +37,14 @@ describe('FooterComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('nennt Anbieter vor Entwickler, wie das Menue', () => {
+    const satz = Array.from(fixture.nativeElement.querySelectorAll('.footer > span') as NodeListOf<HTMLElement>)
+      .map((span) => span.textContent!.replace(/\s+/g, ' ').trim())
+      .find((text) => text.startsWith('Ein Projekt'));
+
+    expect(satz).toBe('Ein Projekt von Netzbegrünung e.V., entwickelt von Sebastian Banach');
+  });
+
   it('zeigt Version aus package.json und Commit', () => {
     const kennung: HTMLElement = fixture.nativeElement.querySelector('.build-kennung');
 

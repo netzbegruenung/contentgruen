@@ -1,7 +1,8 @@
 <!-- Einleitung: ein Satz, auf Desktop und Handy gleich -->
 <section class="content-section einleitung" *ngIf="!isMobile || !showMobileForm">
-    <p class="erstnutzer-satz">{{ erstnutzerSatz }}</p>
-    <p class="einleitung-satz">Wähle, was du beitragen willst:</p>
+    <p class="hinweis-box erstnutzer-satz">{{ erstnutzerSatz }}</p>
+    <!-- Mobil uebernimmt die Zwischenueberschrift "Fertige Beitraege" -->
+    <p class="einleitung-satz" *ngIf="!isMobile">Wähle, was du beitragen willst:</p>
 </section>
 
 <!-- Fangkorb-Aufruf: steht ueber der Auswahl, weil er die Auswahl gerade
@@ -24,9 +25,10 @@
     </div>
 </section>
 
-<!-- Mobil: eine kompakte Zeile je Typ, damit alle vier auf einen Bildschirm passen -->
-<nav *ngIf="isMobile && !showMobileForm" class="typ-zeilen" aria-label="Beitragstypen">
-    <button type="button" class="typ-zeile fangkorb-card" (click)="navigateToRawInput()">
+<!-- Mobil: Einwerfen als eigener Block, darunter die fertigen Beitragstypen als
+     kompakte Zeilen - alles auf einem Bildschirm -->
+<div *ngIf="isMobile && !showMobileForm" class="typ-zeilen">
+    <button type="button" class="typ-zeile einwerfen-block" (click)="navigateToRawInput()">
         <span class="typ-icon" aria-hidden="true">🧺</span>
         <span class="typ-text">
             <span class="typ-titel">Einwerfen</span>
@@ -34,6 +36,10 @@
         </span>
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
+
+    <h3 class="typ-zwischenueberschrift" id="fertige-beitraege">Fertige Beiträge</h3>
+
+    <nav class="typ-liste" aria-labelledby="fertige-beitraege">
 
     <button type="button" class="typ-zeile commentary-card" (click)="selectMobileContentType('commentary')">
         <span class="typ-icon" aria-hidden="true">💬</span>
@@ -61,7 +67,8 @@
         </span>
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
-</nav>
+    </nav>
+</div>
 
 <!-- Mobile Form View -->
 <div *ngIf="isMobile && showMobileForm" class="mobile-form-container">
