@@ -251,14 +251,8 @@
                 <h3>Vorschau</h3>
                 <mat-icon matTooltip="So wird dein fertiger Kommentar in den Suchergebnissen angezeigt">info</mat-icon>
             </div>
-            <app-commentary-result-item *ngIf="previewResult" [result_input]="{
-                commentary_result: previewResult,
-                score: 1.0,
-                statement_text: statementText,
-                statement_similarity_score: 0,
-                reply_relevance: 0
-                }">
-            </app-commentary-result-item>
+            <app-beitragskarte *ngIf="vorschauKarte as karte" [daten]="karte" [vorschau]="true">
+            </app-beitragskarte>
         </div>
     </div>
 </div>

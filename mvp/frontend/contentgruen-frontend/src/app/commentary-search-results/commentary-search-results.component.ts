@@ -1,6 +1,5 @@
 import { Component, Input } from '@angular/core';
 import { SearchResponse } from '../services/dtos/searchDtos';
-import { CommentaryResultItemComponent } from '../commentary-result-item/commentary-result-item.component';
 import { WorkflowService } from '../services/workflow.service'; // Import WorkflowService
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,8 +27,6 @@ export class CommentarySearchResultsComponent {
   @Input() error = '';                     // Input to display error messages
   @Input() searchQuery: string = '';       // Input for the search query
   @Input() showMinimalEmptyState: boolean = false; // Show minimal version when other component has results
-
-  commentaryResultItemComponent = CommentaryResultItemComponent; // Component type for result-carousel
 
   // Popular topics for empty state suggestions
   popularTopics: string[] = ['Klimaschutz', 'Mobilität', 'Energie', 'Soziales', 'Digitalisierung', 'Bildung'];

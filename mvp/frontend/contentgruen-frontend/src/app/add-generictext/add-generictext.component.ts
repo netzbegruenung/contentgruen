@@ -9,7 +9,8 @@ import { LoggingService } from '../services/logging.service';
 import { AddGenericTextRequest, AddGenericTextResponse } from '../services/dtos/generictextDtos';
 import { AddReplysuggestionToStatementRequest, AddReplysuggestionToStatementResponse } from '../services/dtos/statementDtos';
 import { GenerictextSearchResult } from '../services/dtos/searchDtos';
-import { GenerictextResultItemComponent } from '../generictext-result-item/generictext-result-item.component';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ReferenceInputComponent, ReferenceEntry } from '../reference-input/reference-input.component';
 import { ContentStatus } from '../services/dtos/content-status-enum';
 import { ContentOrigin } from '../services/dtos/content-origin-enum';
@@ -38,15 +39,12 @@ interface GenericTextFormValues {
         CommonModule,
         FormsModule,
         MatSlideToggleModule,
-        GenerictextResultItemComponent,
+        BeitragskarteComponent,
         ReferenceInputComponent,
         RouterLink
     ],
     templateUrl: './add-generictext.component.html',
     styleUrls: ['./add-generictext.component.scss'],
-    providers: [
-        { provide: 'RESULT', useValue: null }
-    ],
     animations: [
         trigger('expandCollapse', [
             transition(':enter', [
@@ -77,6 +75,18 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
 
     generictextForm: FormGroup;
     previewResult: GenerictextSearchResult | null = null;
+    private vorschauCache?: { quelle: GenerictextSearchResult; karte: KartenDaten };
+
+    /** Die Vorschau als KartenDaten, zwischengespeichert bis sich die Vorschau aendert. */
+    get vorschauKarte(): KartenDaten | null {
+        if (!this.previewResult) {
+            return null;
+        }
+        if (this.vorschauCache?.quelle !== this.previewResult) {
+            this.vorschauCache = { quelle: this.previewResult, karte: ausSuchergebnis(this.previewResult) };
+        }
+        return this.vorschauCache.karte;
+    }
 
     generictextLoading = false;
     generictextSaved = false;

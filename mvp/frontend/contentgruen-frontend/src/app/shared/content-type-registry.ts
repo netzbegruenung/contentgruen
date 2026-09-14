@@ -12,9 +12,9 @@
  * Das Label ist die einzige Quelle fuer den deutschen Typnamen im UI; gelesen wird
  * es ueber typLabel(). Aussage und Herkunft haben nur ein Label und keine Suchkarte.
  *
- * Die Suchkarten selbst stehen in content-type-components.ts. Diese Datei importiert
- * bewusst keine Komponenten: die App-Shell liest Typnamen (PAGE_TITLES), und ein
- * Komponenten-Import hier zoege alle Karten ins initiale Bundle.
+ * Es gibt eine Karte fuer alle Typen (beitragskarte/); sie liest Label und Symbol von
+ * hier. Diese Datei importiert bewusst keine Komponenten: die App-Shell liest Typnamen
+ * (PAGE_TITLES), und ein Komponenten-Import hier zoege die Karte ins initiale Bundle.
  */
 export interface ContentTypeConfig {
   /** Canonical registry key (frontend form). */
