@@ -95,9 +95,42 @@ describe('Filter im sessionStorage', () => {
   it('wirft unbekannte Plattformen und fremde Werte hinaus', () => {
     sessionStorage.setItem(
       FILTER_SCHLUESSEL,
-      JSON.stringify({ plattformen: ['instagram', 'myspace'], nurOffene: 'ja' }),
+      JSON.stringify({
+        plattformen: ['instagram', 'myspace'],
+        bekannte: ['instagram', 'youtube', 'tiktok', 'threads', 'x', 'bluesky', 'web', 'myspace'],
+        nurOffene: 'ja',
+      }),
     );
 
     expect(filterLaden()).toEqual(filter({ plattformen: ['instagram'] }));
+  });
+
+  it('blendet in einem Filter der Vorversion die neuen Plattformen ein', () => {
+    sessionStorage.setItem(
+      FILTER_SCHLUESSEL,
+      JSON.stringify({ plattformen: ['instagram', 'web'], nurOffene: true, nurMeine: false }),
+    );
+
+    expect(filterLaden()).toEqual(
+      filter({ plattformen: ['instagram', 'threads', 'x', 'bluesky', 'web'], nurOffene: true }),
+    );
+  });
+
+  it('blendet eine Plattform ein, die der gespeicherte Filter noch nicht kannte', () => {
+    sessionStorage.setItem(
+      FILTER_SCHLUESSEL,
+      JSON.stringify({
+        plattformen: ['youtube'],
+        bekannte: ['instagram', 'youtube', 'tiktok', 'threads', 'x', 'web'],
+      }),
+    );
+
+    expect(filterLaden().plattformen).toEqual(['youtube', 'bluesky']);
+  });
+
+  it('laesst abgewaehlte Plattformen abgewaehlt, die der Filter schon kannte', () => {
+    filterSpeichern(filter({ plattformen: ['x'] }));
+
+    expect(filterLaden().plattformen).toEqual(['x']);
   });
 });

@@ -304,6 +304,36 @@ body {
     border-left: 4px solid var(--info-border);
 }
 
+/*
+ * Hinweis zu CC0 und Nutzungsbedingungen ueber dem Absenden-Knopf. Gleiche
+ * Schrift in allen vier Formularen (Einwurf, Kommentar, Hintergrundinfo, Bild);
+ * Abstaende setzt jedes Formular selbst.
+ */
+.submit-hint {
+    font-size: 0.8em;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+/*
+ * Hinweisbox: grauer Grund, gruener Balken links. Werte wie .info-message in
+ * contributions-view; genutzt fuer den Erstnutzer-Satz auf Beitragen-Seite und
+ * im Fangkorb. Abstaende nach aussen setzt die jeweilige Stelle.
+ */
+.hinweis-box {
+    background-color: var(--surface-variant);
+    padding: 12px 16px;
+    border-radius: var(--border-radius-medium);
+    border-left: 4px solid var(--primary-main);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.hinweis-box p {
+    margin: 0;
+}
+
 /* Links */
 a {
     color: var(--primary-main);

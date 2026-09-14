@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { TextFieldModule } from '@angular/cdk/text-field';
 import { RawInputService, AddRawInputRequest } from '../services/raw-input.service';
 import {
   GeteilterEinwurf,
@@ -8,7 +9,8 @@ import {
   einwurfAusShareDaten,
 } from '../share-target/share-target.guard';
 import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
 import { Router, RouterLink } from '@angular/router';
@@ -51,7 +53,7 @@ export function hinweisVorschlag(geteilt: GeteilterEinwurf): string | null {
 @Component({
   selector: 'app-add-raw-input',
   standalone: true,
-  imports: [...SHARED_IMPORTS, CommonModule, RouterLink],
+  imports: [...SHARED_IMPORTS, CommonModule, RouterLink, TextFieldModule],
   templateUrl: './add-raw-input.component.html',
   styleUrls: ['./add-raw-input.component.css'],
 })
@@ -60,6 +62,8 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
 
   readonly hinweisLimit = HINWEIS_LIMIT;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly consentHinweis = CONSENT_HINWEIS;
+  readonly kettenIcons = KETTEN_ICONS;
 
   einwurfForm: FormGroup;
 

@@ -23,7 +23,7 @@ import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
 import { Plattform, PLATTFORMEN, plattformAusUrl, plattformName } from '../shared/plattform';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import {
   FangkorbFilter,
   filterLaden,
@@ -70,7 +70,10 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
   readonly kurzeKennung = kurzeKennung;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly kettenIcons = KETTEN_ICONS;
 
+  /** Die Langfassung hinter dem Hilfe-Icon; zu, bis jemand danach fragt. */
+  erklaerungOffen = false;
   einwuerfe: RawInput[] = [];
   sichtbar: RawInput[] = [];
   gesamt = 0;
@@ -128,17 +131,47 @@ export class RawInputListComponent implements OnInit, OnDestroy {
       });
   }
 
+  // Kopf
+
+  erklaerungUmschalten(): void {
+    this.erklaerungOffen = !this.erklaerungOffen;
+  }
+
   // Filter
 
   plattformAktiv(plattform: Plattform): boolean {
     return this.filter.plattformen.includes(plattform);
   }
 
+  /** Alle Plattformen eingeblendet heisst: kein Plattform-Filter. */
+  get allePlattformenAktiv(): boolean {
+    return PLATTFORMEN.every((eintrag) => this.plattformAktiv(eintrag.wert));
+  }
+
+  /**
+   * Gefuellt ist ein Chip nur, wenn er wirklich filtert. Ohne Filter sehen alle
+   * Chips aus wie "nur offene" im Ruhezustand.
+   */
+  plattformGewaehlt(plattform: Plattform): boolean {
+    return !this.allePlattformenAktiv && this.plattformAktiv(plattform);
+  }
+
+  /**
+   * Ohne Filter waehlt ein Tipp genau diese Plattform. Mit Filter schaltet er sie
+   * dazu oder weg; wird die letzte abgewaehlt, gilt wieder kein Filter.
+   */
   plattformUmschalten(plattform: Plattform): void {
-    const aktiv = this.plattformAktiv(plattform);
-    const plattformen = PLATTFORMEN.map((eintrag) => eintrag.wert).filter((wert) =>
-      wert === plattform ? !aktiv : this.plattformAktiv(wert),
-    );
+    const alle = PLATTFORMEN.map((eintrag) => eintrag.wert);
+    let plattformen: Plattform[];
+    if (this.allePlattformenAktiv) {
+      plattformen = [plattform];
+    } else {
+      const gewaehlt = this.plattformAktiv(plattform);
+      plattformen = alle.filter((wert) => (wert === plattform ? !gewaehlt : this.plattformAktiv(wert)));
+      if (!plattformen.length) {
+        plattformen = alle;
+      }
+    }
     this.filterSetzen({ ...this.filter, plattformen });
   }
 

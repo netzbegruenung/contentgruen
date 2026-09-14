@@ -369,3 +369,9 @@ mat-sidenav-content {
     overflow-y: auto;
     background-color: var(--bg-main);
 }
+
+/* Ketten-Icon (Emoji) im runden Header-Knopf, so gross wie ein mat-icon */
+.header-emoji {
+    font-size: 20px;
+    line-height: 1;
+}

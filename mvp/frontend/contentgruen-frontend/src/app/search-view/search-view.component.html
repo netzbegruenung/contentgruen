@@ -1,86 +1,49 @@
-<section class="content-section compact-intro">
+<!-- Titel und Untertitel auf Weiss, direkt darunter die Suche im schmalen gelben
+     Band: auf dem Handy soll das Suchfeld ohne Scrollen dastehen. -->
+<section class="start-hero">
+    <div class="hero-eyebrow">Gut gesagt</div>
     <div class="hero-title">
-        Gut gesagt – Nie wieder sprachlos
+        Nie wieder sprachlos
     </div>
     <div class="hero-subtitle">
         Gemeinsam stark: Bewährte Argumente aus der Community.
     </div>
+</section>
 
-    <div class="hero-value-proposal">
-        👥 Echte Menschen  ➜  📝 Teilen Bewährtes  ➜  💪 Alle profitieren
+<section class="such-band">
+    <div class="such-band-inhalt">
+        <p class="such-erklaerung">Post reinkopieren – Antwort finden – Verwenden!</p>
+
+        <app-search class="start-suche"></app-search>
+
+        <p class="beispiel-zeile">
+            Beispiel probieren:
+            <a (click)="performExampleSearch()" (keyup.enter)="performExampleSearch()"
+               tabindex="0" role="button" class="beispiel-link">„Windräder töten die Vögel!“</a>
+        </p>
     </div>
 </section>
 
-<section class="full-width-section hero-section elevated">
-    <div class="hero-content">
-        <!-- Left Column: Search -->
-        <div class="hero-column search-column">
-            <h2>🔍 Suchen</h2>
-            <p class="column-description">
-                Post reinkopieren – Antwort finden – Verwenden!
-            </p>
-            <div class="example-section">
-                <span class="example-text">Beispiel probieren:
-                    <a (click)="performExampleSearch()" class="example-link">
-                        "Windräder töten die Vögel!"
-                    </a>
-                </span>
-            </div>
-            <app-search></app-search>
-        </div>
+<!-- Zwei Wege zum Mitmachen. Beide Ziele sind geschuetzt; ohne Anmeldung leitet
+     der AuthGuard zum Login und danach zurueck. -->
+<section class="start-kacheln" aria-label="Mitmachen">
+    <a class="start-kachel" routerLink="/einwerfen">
+        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+        <span class="kachel-text">
+            <span class="kachel-titel">Einwerfen</span>
+            <span class="kachel-satz">{{ fangkorbKurz }}</span>
+        </span>
+        <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </a>
 
-        <!-- Right Column: Contribute -->
-        <div class="hero-column contribute-column">
-            <h2>✒️ Beitragen</h2>
-            <p class="column-description">
-                Teile dein Wissen mit der Community!
-            </p>
-            <div class="metrics-container">
-                    <div class="metric-card">
-                        <div class="metric-value">
-                            <span *ngIf="contentStats$ | async as stats; else loadingStatement">{{ stats?.statement_count || 0 }}</span>
-                            <ng-template #loadingStatement>...</ng-template>
-                        </div>
-                        <div class="metric-label">{{ typLabel('statement') }}</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">
-                            <span *ngIf="contentStats$ | async as stats; else loadingCommentary">{{ stats?.commentary_count || 0 }}</span>
-                            <ng-template #loadingCommentary>...</ng-template>
-                        </div>
-                        <div class="metric-label">{{ typLabel('commentary') }}</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">
-                            <span *ngIf="contentStats$ | async as stats; else loadingGenericText">{{ getGenericTextCount(stats) }}</span>
-                            <ng-template #loadingGenericText>...</ng-template>
-                        </div>
-                        <div class="metric-label">{{ typLabel('generictext') }}</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">
-                            <span *ngIf="contentStats$ | async as stats; else loadingReference">{{ stats?.reference_count || 0 }}</span>
-                            <ng-template #loadingReference>...</ng-template>
-                        </div>
-                        <div class="metric-label">{{ typLabel('reference') }}</div>
-                    </div>
-            </div>
-            <div class="contribute-actions">
-                    <button mat-raised-button
-                            class="contribute-button gutgesagt-primary-dark"
-                            (click)="navigateToContribute()"
-                            *ngIf="userInfo?.isAuthenticated">
-                        <mat-icon>edit</mat-icon> Beitragen
-                    </button>
-                    <button mat-raised-button
-                            class="contribute-button gutgesagt-primary-dark"
-                            (click)="loginToContribute()"
-                            *ngIf="!userInfo?.isAuthenticated">
-                        <mat-icon>lock</mat-icon> Anmelden zum Beitragen
-                    </button>
-            </div>
-        </div>
-    </div>
+    <a class="start-kachel" routerLink="/contribute">
+        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
+        <span class="kachel-text">
+            <span class="kachel-titel">Beitrag verfassen</span>
+            <span class="kachel-satz">Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>
+        </span>
+        <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </a>
 </section>
 
 <app-recent-content id="recent-content"></app-recent-content>

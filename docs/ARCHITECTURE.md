@@ -79,7 +79,7 @@ listens on 5432 inside the container.
   - **Docker/Test/Prod**: nginx container serving static files on port 80
 - **Environment Config**:
   - `environment.ts` - Active configuration
-  - `environment.local.ts` - Local development (baseUrl: http://localhost:5054)
+  - `environment.local.ts` - Local development (baseUrl: empty, `ng serve` proxies to the BFF via `proxy.conf.json`)
   - `environment.docker.ts` - Docker mode (baseUrl: empty for proxy)
   - `environment.prod.ts` - Production (uses placeholders replaced at runtime)
 

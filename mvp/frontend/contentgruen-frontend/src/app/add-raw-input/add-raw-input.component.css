@@ -5,35 +5,22 @@
 }
 
 .einwurf-kopf {
-    margin-bottom: var(--spacing-lg, 24px);
+    margin-bottom: var(--spacing-md, 16px);
 }
 
+/*
+ * Optik aus der globalen .hinweis-box (styles.css); hier nur das Emoji links
+ * neben dem Text. Kompakt, damit der Einwerfen-Knopf mobil ohne Scrollen sichtbar ist.
+ */
 .einwurf-badge {
     display: flex;
-    align-items: flex-start;
-    gap: var(--spacing-md, 16px);
-    background: linear-gradient(135deg, rgb(232, 240, 222) 0%, rgb(218, 232, 205) 100%);
-    border-radius: 12px;
-    padding: var(--spacing-lg, 24px);
+    align-items: center;
+    gap: 12px;
 }
 
 .einwurf-icon {
-    font-size: 40px;
+    font-size: 28px;
     line-height: 1;
-}
-
-.einwurf-titel {
-    margin: 0 0 4px 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text-primary, #1a1a1a);
-}
-
-.einwurf-beschreibung {
-    margin: 0;
-    font-size: 15px;
-    line-height: 1.5;
-    color: var(--text-secondary, #4a4a4a);
 }
 
 .einwurf-formular {
@@ -56,11 +43,9 @@
     font-style: italic;
 }
 
-.einwurf-hinweis {
+/* Schrift kommt aus der globalen .submit-hint, siehe styles.css. */
+.submit-hint {
     margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--text-secondary, #4a4a4a);
 }
 
 .einwurf-aktionen {
@@ -73,6 +58,12 @@
 .einwerfen-knopf {
     min-width: 160px;
     min-height: 48px;
+}
+
+.knopf-emoji {
+    margin-right: 8px;
+    font-size: 18px;
+    line-height: 1;
 }
 
 .knopf-spinner {
@@ -109,5 +100,11 @@
 
     .einwurf-aktionen button {
         width: 100%;
+    }
+}
+
+@media (max-width: 599px) {
+    .einwurf-formular {
+        gap: 12px;
     }
 }

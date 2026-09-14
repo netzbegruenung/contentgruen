@@ -5,6 +5,8 @@ import { of, throwError } from 'rxjs';
 
 import { LADE_GROESSE, RawInputListComponent } from './raw-input-list.component';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
+import { PLATTFORMEN } from '../shared/plattform';
+import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import {
   GetRawInputsResponse,
   RawInput,
@@ -98,16 +100,70 @@ describe('RawInputListComponent', () => {
 
   afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
 
-  describe('Laden', () => {
-    it('erklaert oben die drei Schritte', () => {
-      erstellen([]);
-      const schritte = Array.from(
-        fixture.nativeElement.querySelectorAll('.dreiklang li strong') as NodeListOf<HTMLElement>,
-      ).map((schritt) => schritt.textContent!.trim());
+  describe('Kopf', () => {
+    function langfassung(): HTMLElement | null {
+      return fixture.nativeElement.querySelector('.erklaerung');
+    }
 
+    it('zeigt die drei Schritte in einer Zeile, die Erklaerung erst ueber das Hilfe-Icon', () => {
+      erstellen([]);
+      const zeile = fixture.nativeElement.querySelector('.dreischritt-text').textContent.replace(/\s+/g, ' ');
+
+      expect(zeile.trim()).toBe(
+        `${KETTEN_ICONS.einwerfen} Einwerfen → ${KETTEN_ICONS.destillieren} Destillieren → ${KETTEN_ICONS.verfassen} Ausformulieren`,
+      );
+      expect(langfassung()).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Jeder Schritt kann von jemand anderem kommen.');
+
+      klicken(fixture.nativeElement.querySelector('.dreischritt .erklaerung-umschalter'));
+
+      expect(langfassung()!.textContent).toContain('Jeder Schritt kann von jemand anderem kommen.');
+      const schritte = Array.from(
+        langfassung()!.querySelectorAll('.dreiklang li strong') as NodeListOf<HTMLElement>,
+      ).map((schritt) => schritt.textContent!.trim());
       expect(schritte).toEqual(['Einwerfen', 'Destillieren', 'Ausformulieren']);
     });
 
+    it('beginnt auch beim zweiten Oeffnen mit zugeklappter Erklaerung', () => {
+      erstellen([]);
+      klicken(fixture.nativeElement.querySelector('.erklaerung-umschalter'));
+      fixture.destroy();
+
+      erstellen([]);
+
+      expect(langfassung()).toBeNull();
+    });
+
+    it('zeigt keinen Erstnutzer-Satz', () => {
+      erstellen([]);
+
+      expect(fixture.nativeElement.querySelector('.erstnutzer-satz')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Gut gesagt ist neu.');
+    });
+
+    it('fuehrt mit dem schwebenden Knopf zum Einwerfen', () => {
+      erstellen([]);
+      const fab: HTMLButtonElement = fixture.nativeElement.querySelector('button.einwerfen-fab');
+
+      expect(fab.getAttribute('aria-label')).toBe('Etwas einwerfen');
+      klicken(fab);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
+    });
+
+    it('stellt nur offene und nur meine vor die Plattform-Chips, in einer Leiste', () => {
+      erstellen([]);
+      const leiste: HTMLElement = fixture.nativeElement.querySelector('.filterleiste');
+      const chips = Array.from(leiste.querySelectorAll('.filter-chip') as NodeListOf<HTMLElement>).map(
+        (chip) => chip.textContent!.trim(),
+      );
+
+      expect(chips).toEqual(['nur offene', 'nur meine', ...PLATTFORMEN.map((eintrag) => eintrag.name)]);
+      expect(leiste.querySelector('.filter-trenner')).toBeTruthy();
+    });
+  });
+
+  describe('Laden', () => {
     it('laedt die Einwuerfe auf einmal und zeigt Karten statt einer Tabelle', () => {
       erstellen([einwurf(), einwurf({ id: 'id-2' })]);
 
@@ -387,14 +443,46 @@ describe('RawInputListComponent', () => {
       return component.sichtbar.map((e) => e.id);
     }
 
-    it('blendet eine abgewaehlte Plattform aus, Einwuerfe ohne Link bleiben', () => {
+    it('zeigt ohne Plattform-Filter keinen Chip gefuellt', () => {
+      erstellen(gemischt());
+
+      for (const plattform of PLATTFORMEN) {
+        const knopf = filterKnopf(plattform.name);
+        expect(knopf.classList).not.toContain('aktiv');
+        expect(knopf.getAttribute('aria-pressed')).toBe('false');
+      }
+      expect(karten().length).toBe(4);
+    });
+
+    it('zeigt bei gewaehlter Plattform nur deren Einwuerfe, Einwuerfe ohne Link bleiben', () => {
       erstellen(gemischt());
 
       klicken(filterKnopf('Instagram'));
 
-      expect(sichtbareIds()).toEqual(['yt', 'ohne-link', 'web']);
-      expect(filterKnopf('Instagram').getAttribute('aria-pressed')).toBe('false');
-      expect(karten().length).toBe(3);
+      expect(sichtbareIds()).toEqual(['insta', 'ohne-link']);
+      expect(filterKnopf('Instagram').getAttribute('aria-pressed')).toBe('true');
+      expect(filterKnopf('Instagram').classList).toContain('aktiv');
+      expect(filterKnopf('YouTube').getAttribute('aria-pressed')).toBe('false');
+      expect(karten().length).toBe(2);
+    });
+
+    it('nimmt mit einem weiteren Tipp eine Plattform dazu', () => {
+      erstellen(gemischt());
+
+      klicken(filterKnopf('Instagram'));
+      klicken(filterKnopf('YouTube'));
+
+      expect(sichtbareIds()).toEqual(['insta', 'yt', 'ohne-link']);
+    });
+
+    it('hebt den Plattform-Filter auf, wenn die letzte gewaehlte Plattform abgewaehlt wird', () => {
+      erstellen(gemischt());
+
+      klicken(filterKnopf('Instagram'));
+      klicken(filterKnopf('Instagram'));
+
+      expect(component.filter.plattformen).toEqual(PLATTFORMEN.map((eintrag) => eintrag.wert));
+      expect(sichtbareIds()).toEqual(['insta', 'yt', 'ohne-link', 'web']);
     });
 
     it('zeigt bei "nur offene" auch Destilliertes', () => {
@@ -430,7 +518,7 @@ describe('RawInputListComponent', () => {
       erstellen(gemischt());
 
       expect(component.filter.nurOffene).toBeTrue();
-      expect(component.filter.plattformen).toEqual(['instagram', 'youtube', 'web']);
+      expect(component.filter.plattformen).toEqual(['tiktok']);
       expect(filterKnopf('nur offene').getAttribute('aria-pressed')).toBe('true');
     });
   });

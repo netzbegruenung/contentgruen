@@ -99,7 +99,7 @@
                             role="button" tabindex="0" aria-label="Fangkorb anzeigen"
                             (click)="navigateToRawInputListView()"
                             (keydown.enter)="navigateToRawInputListView()"
-                            (keydown.space)="navigateToRawInputListView()">🧺 Fangkorb</span>
+                            (keydown.space)="navigateToRawInputListView()">{{ kettenIcons.fangkorb }} Fangkorb</span>
 
                             <span class="header-link text-emphasis"
                             role="button" tabindex="0" aria-label="Meine Beiträge anzeigen"
@@ -127,7 +127,7 @@
                         (click)="navigateToRawInputView()"
                         class="mat-elevation-z1"
                         aria-label="Schnell einwerfen">
-                        <mat-icon>bolt</mat-icon>
+                        <span class="header-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
                     </button>
 
                     <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button"

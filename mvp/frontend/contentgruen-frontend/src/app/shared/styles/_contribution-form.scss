@@ -581,13 +581,11 @@
   // Hinweis zu CC0 und Nutzungsbedingungen. Steht bewusst ausserhalb von
   // .form-actions: die Leiste wird auf Mobil zur Sticky-Bar am unteren Rand,
   // und der Hinweis soll mitscrollen statt sie dauerhaft zu vergroessern.
+  // Schrift und Farbe kommen aus der globalen .submit-hint (styles.css).
   .submit-hint {
     margin: 24px 0 0;
     padding-top: 24px;
     border-top: 1px solid #e0e0e0;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: var(--text-secondary);
   }
 
   // Trennlinie wandert an den Hinweis, damit Hinweis und Knopf als ein Block

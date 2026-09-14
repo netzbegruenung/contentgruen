@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
-  baseUrl: 'http://localhost:5054',
-  useKeycloak: 'false'
+  baseUrl: '', // Relative Aufrufe; ng serve leitet sie per proxy.conf.json an das BFF (5054)
+  useKeycloak: 'false',
+  gitSha: 'dev'
 };

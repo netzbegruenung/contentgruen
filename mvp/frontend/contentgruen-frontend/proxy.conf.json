@@ -1,0 +1,8 @@
+{
+  "/api": { "target": "http://localhost:5054", "secure": false },
+  "/content": { "target": "http://localhost:5054", "secure": false },
+  "/recent": { "target": "http://localhost:5054", "secure": false },
+  "/getMetrics": { "target": "http://localhost:5054", "secure": false },
+  "/report": { "target": "http://localhost:5054", "secure": false },
+  "/reports": { "target": "http://localhost:5054", "secure": false }
+}

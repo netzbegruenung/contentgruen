@@ -1,12 +1,10 @@
 <div class="einwurf-container">
 
+    <!-- Der Titel "Schnell einwerfen" steht schon im Header. -->
     <div class="einwurf-kopf">
-        <div class="einwurf-badge">
-            <span class="einwurf-icon" aria-hidden="true">🧺</span>
-            <div class="einwurf-text">
-                <h2 class="einwurf-titel">Schnell einwerfen</h2>
-                <p class="einwurf-beschreibung">{{ fangkorbBeschreibung }}</p>
-            </div>
+        <div class="hinweis-box einwurf-badge">
+            <span class="einwurf-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+            <p class="einwurf-beschreibung">{{ fangkorbBeschreibung }}</p>
         </div>
     </div>
 
@@ -31,7 +29,9 @@
             <textarea matInput
                       #hinweisFeld
                       id="einwurf-hinweis"
-                      rows="4"
+                      cdkTextareaAutosize
+                      cdkAutosizeMinRows="2"
+                      cdkAutosizeMaxRows="8"
                       [attr.maxlength]="hinweisLimit"
                       formControlName="hinweis"></textarea>
             <button *ngIf="istVorbelegt" matSuffix mat-icon-button type="button"
@@ -46,13 +46,8 @@
             <mat-hint align="end">{{ hinweisFeld.value.length }}/{{ hinweisLimit }}</mat-hint>
         </mat-form-field>
 
-        <p class="einwurf-hinweis">
-            Mit dem Absenden stellst du deine eigenen Formulierungen unter CC0
-            (gemeinfrei, unwiderruflich) und bestätigst, dass dein Einwurf den
-            <a routerLink="/nutzungsbedingungen" target="_blank"
-               rel="noopener">Nutzungsbedingungen</a> entspricht und keine
-            personenbezogenen Daten Dritter enthält, die hier nicht hingehören.
-        </p>
+        <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
+               rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
         <div class="einwurf-aktionen">
             <button mat-raised-button color="primary" type="submit"
                     class="einwerfen-knopf"
@@ -63,7 +58,7 @@
             </button>
 
             <button mat-button type="button" (click)="zumFangkorb()">
-                <mat-icon>inventory_2</mat-icon>
+                <span class="knopf-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
                 Fangkorb ansehen
             </button>
         </div>

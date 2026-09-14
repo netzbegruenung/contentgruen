@@ -45,6 +45,11 @@ COPY replace-env.sh /usr/share/nginx/html/
 RUN sed -i 's/\r$//' /usr/share/nginx/html/replace-env.sh
 RUN chmod +x /usr/share/nginx/html/replace-env.sh
 
+# Commit of this build, shown in the footer. CI passes github.sha; replace-env.sh
+# substitutes it at container start. Declared late so a new SHA only rebuilds this layer.
+ARG GIT_SHA=dev
+ENV GIT_SHA=${GIT_SHA}
+
 EXPOSE 80
 
 # Run the environment variable replacement script before starting Nginx

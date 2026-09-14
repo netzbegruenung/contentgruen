@@ -1,17 +1,20 @@
 /**
  * Die Plattform eines Links, rein aus dem Hostnamen abgeleitet.
  *
- * Zweck ist der Filter im Fangkorb: Wer kein Instagram-Konto hat, kann einen
- * Instagram-Einwurf nicht ansehen und blendet ihn aus. Deshalb gibt es nur die
- * Plattformen, die dafuer ein Konto verlangen, und fuer alles andere "Web".
+ * Zweck ist ein Herkunfts-Tag: Die Karte im Fangkorb zeigt, woher ein Einwurf
+ * stammt, und der Filter waehlt danach aus. Benannt sind die Plattformen, von
+ * denen haeufig eingeworfen wird; alles andere ist "Web".
  */
-export type Plattform = 'instagram' | 'youtube' | 'tiktok' | 'web';
+export type Plattform = 'instagram' | 'youtube' | 'tiktok' | 'threads' | 'x' | 'bluesky' | 'web';
 
 /** Alle Plattformen in Anzeigereihenfolge. */
 export const PLATTFORMEN: ReadonlyArray<{ wert: Plattform; name: string }> = [
   { wert: 'instagram', name: 'Instagram' },
   { wert: 'youtube', name: 'YouTube' },
   { wert: 'tiktok', name: 'TikTok' },
+  { wert: 'threads', name: 'Threads' },
+  { wert: 'x', name: 'X' },
+  { wert: 'bluesky', name: 'Bluesky' },
   { wert: 'web', name: 'Web' },
 ];
 
@@ -19,6 +22,9 @@ const DOMAINS: ReadonlyArray<[Plattform, string[]]> = [
   ['instagram', ['instagram.com']],
   ['youtube', ['youtube.com', 'youtu.be']],
   ['tiktok', ['tiktok.com']],
+  ['threads', ['threads.net', 'threads.com']],
+  ['x', ['x.com', 'twitter.com']],
+  ['bluesky', ['bsky.app']],
 ];
 
 /**

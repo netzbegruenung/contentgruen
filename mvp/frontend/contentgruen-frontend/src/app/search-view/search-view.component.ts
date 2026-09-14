@@ -1,20 +1,16 @@
-import { Component, ChangeDetectionStrategy, OnInit, AfterViewInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
 import { SearchComponent } from '../search/search.component';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { RecentContentComponent } from '../recent-content/recent-content.component';
-import { MetricsService } from '../services/metrics.service';
 import { AboutTeaserComponent } from '../about-teaser/about-teaser.component';
-import { AuthService, UserInfo } from '../auth/auth.service';
-import { Router, ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { typLabel } from '../shared/content-type-registry';
+import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
 
 @Component({
   selector: 'app-search-view',
@@ -23,43 +19,28 @@ import { typLabel } from '../shared/content-type-registry';
   imports: [
     ...SHARED_IMPORTS,
     SearchComponent,
-    MatTooltipModule,
     MatButtonModule,
     MatIconModule,
+    RouterLink,
     RecentContentComponent,
     AboutTeaserComponent,
   ],
   templateUrl: './search-view.component.html',
   styleUrls: ['./search-view.component.scss']
 })
-export class SearchViewComponent implements OnInit, AfterViewInit {
+export class SearchViewComponent implements AfterViewInit {
   readonly typLabel = typLabel;
-  contentCount$: Observable<number> | undefined;
-  contentStats$: Observable<any> | undefined;
-  userInfo: UserInfo | null = null;
+  readonly fangkorbKurz = FANGKORB_KURZ;
+  readonly kettenIcons = KETTEN_ICONS;
 
   constructor(
     private navigationService: NavigationService,
     private logger: LoggingService,
-    private metricsService: MetricsService,
-    private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
     private contentRefreshService: ContentRefreshService
   ) {
     this.logger.debug('SearchViewComponent created');
-  }
-
-  ngOnInit(): void {
-    this.contentCount$ = this.metricsService.getMetrics().pipe(
-      map(metrics => metrics.content_count || 0)
-    );
-
-    this.contentStats$ = this.metricsService.getMetrics();
-
-    this.authService.userInfo$.subscribe((userInfo: UserInfo | null) => {
-      this.userInfo = userInfo;
-    });
   }
 
   ngAfterViewInit(): void {
@@ -115,35 +96,6 @@ export class SearchViewComponent implements OnInit, AfterViewInit {
     });
 
     this.logger.debug('=== SEARCH VIEW: ngAfterViewInit END ===');
-  }
-
-
-  navigateToContributeView(): void {
-    this.navigationService.navigateToContribute();
-  }
-
-  navigateToContribute(): void {
-    this.logger.debug('Navigating to contribute');
-    this.navigationService.navigateToContribute();
-  }
-
-  login(): void {
-    this.logger.debug('Login requested from search view');
-    this.authService.login();
-  }
-
-  loginToContribute(): void {
-    this.logger.debug('Login requested from search view - navigating to contribute after login');
-    // Navigate to login with /contribute as returnUrl since this is "Anmelden zum Beitragen"
-    this.router.navigate(['/login'], { queryParams: { returnUrl: '/contribute' } });
-  }
-
-  getGenericTextCount(stats: any): number {
-    if (!stats) return 0;
-    // Calculate generictext count as: total content - (statements + commentaries)
-    // This assumes content_count includes all content types
-    const genericTextCount = (stats.content_count || 0) - ((stats.statement_count || 0) + (stats.commentary_count || 0));
-    return genericTextCount > 0 ? genericTextCount : 0;
   }
 
   performExampleSearch(): void {

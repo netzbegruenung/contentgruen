@@ -1,313 +1,177 @@
 // Import shared hero styles
 @use '../shared/styles/hero-styles' as *;
 
-// Hero section with two columns
-.hero-section {
-  margin-top: 20px;
-  background-color: rgb(246, 255, 124);
-  padding: var(--spacing-lg) 0;
-
-  @media (max-width: 768px) {
-    padding: var(--spacing-md) 0;
-  }
-}
-
-.hero-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  padding: 0 var(--page-margin);
-  max-width: 1400px;
+// Titel und Untertitel auf Weiss, mittig begrenzt
+.start-hero {
+  max-width: 720px;
   margin: 0 auto;
-  align-items: stretch;
+  padding: 20px var(--page-margin) 0;
+  text-align: center;
 
-  @media (max-width: 1024px) {
-    gap: 30px;
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 30px;
-  }
-
-  @media (max-width: 600px) {
-    padding: 0 15px;
+  @media (max-width: 599px) {
+    padding: 12px var(--page-margin-mobile) 0;
   }
 }
 
-.hero-column {
-  padding: 20px;
+// Markenname als kleine Zeile ueber der Ueberschrift
+.hero-eyebrow {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+}
 
-  h2 {
-    margin-bottom: 15px;
-    color: #1b5e20;
-    font-size: 32px;
-
-    @media (max-width: 1024px) {
-      font-size: 28px;
-    }
-
-    @media (max-width: 768px) {
-      font-size: 24px;
-    }
-
-    @media (max-width: 600px) {
-      font-size: 20px;
-    }
+// Claim und Untertitel mobil; nur hier, die geteilten _hero-styles bleiben
+@media (max-width: 599px) {
+  .start-hero .hero-title {
+    font-size: 34px;
   }
 
-  @media (max-width: 1024px) {
-    padding: 15px;
-  }
-
-  @media (max-width: 600px) {
-    padding: 12px;
+  .start-hero .hero-subtitle {
+    margin: 8px 0 16px;
+    font-size: 15px;
+    font-weight: normal;
+    color: var(--text-secondary, #555);
   }
 }
 
-.column-description {
-  font-size: 1.1rem;
-  margin-bottom: 15px;
-  color: #333;
+// Schmales gelbes Band: Erklaerzeile, Suchfeld, Knopf, Beispielzeile
+.such-band {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: rgb(246, 255, 124);
 
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-
-  @media (max-width: 600px) {
-    font-size: 0.95rem;
-    margin-bottom: 15px;
+  @media (max-width: 599px) {
+    margin-top: 12px;
   }
 }
 
-.example-section {
-  font-style: italic;
-  margin-top: 32px;
-  margin-bottom: 12px;
+.such-band-inhalt {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
 }
 
-.example-text {
-  font-size: 0.95rem;
-  color: #555;
+.such-erklaerung {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: normal;
+  color: var(--primary-dark);
+}
 
-  @media (max-width: 600px) {
-    font-size: 0.9rem;
+.start-suche {
+  display: block;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.beispiel-zeile {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #555);
+
+  @media (max-width: 599px) {
+    font-size: 0.85rem;
+    margin-top: 4px;
   }
 }
 
-.example-link {
-  color: #008939;
+.beispiel-link {
+  color: var(--primary-main, #008939);
   text-decoration: underline;
   cursor: pointer;
   font-weight: 500;
 
   &:hover {
-    color: #005437;
-    text-decoration: underline;
-  }
-
-  @media (max-width: 600px) {
-    font-size: 0.9rem;
+    color: var(--primary-dark);
   }
 }
 
-// Search column specific styles
-.search-column {
-  app-search {
-    display: block;
-  }
-}
-
-// Contribute column specific styles
-.contribute-column {
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
-
-  .metrics-container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    padding: 16px;
-    background: rgba(200, 230, 201, 0.4);
-    border-radius: 8px;
-    margin-bottom: 20px;
-    position: relative;
-
-    @media (max-width: 1024px) {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    @media (max-width: 600px) {
-      gap: 10px;
-      padding: 12px;
-    }
-  }
-
-  .metric-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 8px;
-    background: #f8f8f8;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    min-height: 60px;
-    justify-content: center;
-    cursor: default;
-    position: relative;
-
-    @media (max-width: 600px) {
-      padding: 10px;
-    }
-  }
-
-  .metric-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: #005437;
-    margin-bottom: 2px;
-
-    span {
-      animation: fadeInNumber 0.5s ease;
-    }
-
-    @media (max-width: 768px) {
-      font-size: 22px;
-    }
-
-    @media (max-width: 600px) {
-      font-size: 20px;
-    }
-  }
-
-  .metric-label {
-    font-size: 11px;
-    color: #999;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.8;
-
-    @media (max-width: 768px) {
-      font-size: 10px;
-    }
-
-    @media (max-width: 600px) {
-      font-size: 10px;
-    }
-  }
-}
-
-@keyframes fadeInNumber {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.contribute-actions {
-  display: flex;
-  flex-direction: column;
-  margin-top: 20px;
-}
-
-.contribute-button {
-  width: 100%;
-  padding: 8px;
-  font-size: 1.15rem;
-  height: 40px;
-
-  @media (max-width: 768px) {
-    padding: 10px 16px;
-    font-size: 1rem;
-  }
-
-  @media (max-width: 600px) {
-    padding: 8px 12px;
-    font-size: 0.95rem;
-  }
-}
-
-.contribute-hint {
-  text-align: center;
-  font-style: italic;
-  color: #555;
-  margin-top: 10px;
-
-  @media (max-width: 600px) {
-    font-size: 0.9rem;
-  }
-}
-
-button {
-  margin-right: 16px;
-  margin-bottom: 16px;
-}
-
-.hint-box {
-  background: rgba(234, 255, 235, 0.5);
-  padding: 15px;
-  padding-left: 35px;
-  margin: 20px 0;
-  font-size: 1.1rem;
-  border-left: 4px solid #4caf50;
-  border-radius: 4px;
-}
-
-.example-button {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  padding: 8px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 1rem;
-  margin-left: 10px;
-  transition: background-color 0.3s;
-  display: inline-block;
-
-  &:hover {
-    background-color: #388e3c;
-  }
-}
-
-.content-stats {
-  padding: 10px 0;
-  display: inline-block;
-  font-size: 1.1rem;
-  color: #555;
-}
-
-.content-grid {
+// Die zwei Kacheln: nebeneinander, gleich gross; mobil untereinander und flach
+.start-kacheln {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 720px;
+  margin: 24px auto var(--section-gap);
+  padding: 0 var(--page-margin);
 
-// Tablet responsive - stats
-.stat-number {
-  @media (max-width: 1024px) {
-    font-size: 1.6rem;
+  @media (max-width: 599px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 0 var(--page-margin-mobile);
   }
 }
 
-// Mobile responsive - tagline
-.main-tagline {
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
+// Weiss mit tannengruenem Rand; bewusst ohne Typfarben
+.start-kachel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 2px solid var(--primary-dark);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: box-shadow var(--transition-fast, 0.2s);
+
+  &:hover,
+  &:focus-visible {
+    box-shadow: var(--elevation-2, 0 2px 8px rgba(0, 0, 0, 0.15));
   }
 
-  @media (max-width: 600px) {
-    font-size: 1.1rem;
+  &:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
   }
+
+  @media (max-width: 599px) {
+    padding: 12px 16px;
+  }
+}
+
+.kachel-icon {
+  font-size: 32px;
+  line-height: 1;
+
+  @media (max-width: 599px) {
+    font-size: 28px;
+  }
+}
+
+.kachel-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kachel-titel {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary-dark);
+
+  @media (max-width: 599px) {
+    font-size: 16px;
+  }
+}
+
+.kachel-satz {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+
+  @media (max-width: 599px) {
+    font-size: 13px;
+  }
+}
+
+.kachel-pfeil {
+  flex-shrink: 0;
+  color: var(--primary-dark);
 }

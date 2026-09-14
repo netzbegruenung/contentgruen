@@ -77,7 +77,7 @@ mat-expansion-panel-header {
 }
 
 .commentary-color {
-    background-color: rgb(230, 240, 210) !important;
+    background-color: var(--commentary-bg) !important;
 }
 
 .reference-color {
@@ -193,28 +193,142 @@ mat-panel-title h3 {
     }
 }
 
-/* Mobile Card Layout Styles */
-.mobile-cards-container {
-    padding: var(--spacing-md);
+.einleitung p {
+    margin: 0;
+}
+
+/* Optik aus der globalen .hinweis-box (styles.css) */
+.einleitung .erstnutzer-satz {
+    margin-bottom: 12px;
+}
+
+/* Mobil: Typen als kompakte Zeilen, alle vier auf einem Bildschirm */
+.typ-zeilen {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
-    max-width: 100%;
+    gap: 12px;
+    max-width: 600px;
+    padding: var(--spacing-md) var(--page-margin);
 }
 
-.content-type-card {
+.typ-zeile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 16px 20px;
+    border: none;
+    border-radius: 12px;
+    font: inherit;
+    text-align: left;
+    color: var(--text-primary);
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
-    border-radius: 12px !important;
-    overflow: hidden;
 }
 
-.content-type-card:active {
+.typ-zeile:active {
     transform: scale(0.98);
 }
 
+/*
+ * Einwerfen und Fangkorb: weiss mit Rand wie die Startseiten-Kacheln statt
+ * Typfarbe. Das Padding ist um die 2 px Rand kleiner, damit die Kacheln so hoch
+ * bleiben wie die Typzeilen darunter.
+ */
+.rahmen-kachel {
+    padding: 14px 18px;
+    border: 2px solid var(--primary-dark);
+    background: #fff;
+}
+
+.typ-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/*
+ * Wie die Einleitung ("Waehle, was ..."), eine Stufe kleiner. Mehr Luft nach oben
+ * als nach unten, damit die Ueberschrift zu ihrem Abschnitt gehoert.
+ */
+.typ-zwischenueberschrift {
+    margin: 8px 0 -4px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: normal;
+    color: var(--text-primary);
+}
+
+.typ-zwischenueberschrift:first-child {
+    margin-top: 0;
+}
+
+.typ-zeile:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+}
+
+.typ-icon {
+    flex-shrink: 0;
+    font-size: 32px;
+    line-height: 1;
+}
+
+.typ-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.typ-titel {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.typ-satz {
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.typ-pfeil {
+    flex-shrink: 0;
+    color: var(--primary-dark);
+}
+
+@media (max-width: 599px) {
+    .typ-zeilen {
+        padding-top: 12px;
+    }
+
+    .typ-zeile {
+        padding: 12px 16px;
+    }
+
+    .rahmen-kachel {
+        padding: 10px 14px;
+    }
+
+    .typ-icon {
+        font-size: 28px;
+    }
+
+    .typ-titel {
+        font-size: 16px;
+    }
+
+    .typ-satz {
+        font-size: 13px;
+    }
+}
+
 .commentary-card {
-    background: linear-gradient(135deg, rgb(230, 240, 210) 0%, rgb(220, 235, 195) 100%);
+    background: linear-gradient(135deg, var(--commentary-bg) 0%, rgb(220, 235, 195) 100%);
 }
 
 .generictext-card {
@@ -223,56 +337,6 @@ mat-panel-title h3 {
 
 .image-card {
     background: linear-gradient(135deg, var(--image-bg) 0%, rgb(225, 215, 240) 100%);
-}
-
-.content-type-card mat-card-header {
-    padding: var(--spacing-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-}
-
-.card-icon {
-    font-size: 48px;
-    line-height: 1;
-    margin-right: var(--spacing-sm);
-}
-
-.content-type-card mat-card-title {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text-primary);
-}
-
-.content-type-card mat-card-content {
-    padding: 0 var(--spacing-lg) var(--spacing-md);
-}
-
-.content-type-card mat-card-content p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 16px;
-    line-height: 1.5;
-    font-weight: 500;
-}
-
-.content-type-card mat-card-actions {
-    padding: var(--spacing-md) var(--spacing-lg);
-    justify-content: flex-end;
-    display: flex;
-}
-
-.content-type-card mat-card-actions button {
-    font-weight: 500;
-    font-size: 16px;
-}
-
-.content-type-card mat-card-actions mat-icon {
-    margin-left: var(--spacing-xs);
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
 }
 
 /* Mobile Form Container */
@@ -288,24 +352,7 @@ mat-panel-title h3 {
     min-height: 100vh;
 }
 
-/* Ensure cards have proper touch targets on mobile */
-@media (max-width: 768px) {
-    .content-type-card {
-        min-height: 160px;
-    }
-
-    .content-type-card mat-card-actions button {
-        min-height: 48px;
-        padding: 12px 16px;
-    }
-}
-
-
 /* Fangkorb-Aufruf */
-.fangkorb-card {
-    background: linear-gradient(135deg, rgb(245, 238, 215) 0%, rgb(238, 229, 196) 100%);
-}
-
 .fangkorb-hinweis {
     padding-bottom: 0;
 }
