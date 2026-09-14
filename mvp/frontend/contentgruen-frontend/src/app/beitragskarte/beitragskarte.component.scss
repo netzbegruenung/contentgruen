@@ -5,7 +5,8 @@
 //
 // Keine feste Hoehe: im Karussell gleicht align-items: stretch die Reihe an, in
 // der Liste bestimmt der Inhalt. Der Titel bleibt eine Behauptung mit hoechstens
-// vier Zeilen (Bilder fuenf, weil Bildtitel beschreibend und laenger sind).
+// drei Zeilen (Bilder vier, Bildtitel sind beschreibend und laenger); die Titelbox
+// haelt mindestens zwei, im Karussell drei.
 
 :host {
   display: block;
@@ -14,7 +15,7 @@
 
 .karte {
   --karten-farbe: var(--statement-bg);
-  --titel-zeilen: 4;
+  --titel-zeilen: 3;
   --text-zeilen: 12;
 
   display: flex;
@@ -24,8 +25,8 @@
   overflow: hidden;
   background: var(--bg-card);
   color: var(--text-primary);
-  border-radius: var(--border-radius-medium);
-  box-shadow: var(--elevation-2);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .typ-commentary {
@@ -38,7 +39,7 @@
 
 .typ-image {
   --karten-farbe: var(--image-bg);
-  --titel-zeilen: 5;
+  --titel-zeilen: 4;
 }
 
 .typ-post {
@@ -57,7 +58,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-md);
   background: var(--karten-farbe);
 }
 
@@ -67,7 +68,7 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  font-size: 24px;
+  font-size: 28px;
 }
 
 .karte-titel {
@@ -75,18 +76,19 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--titel-zeilen);
   overflow: hidden;
+  min-height: calc(2 * 1.3em);
   margin: 0;
   font-family: inherit;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.4;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
   color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 
 @media (min-width: 600px) {
   .karte--voll .karte-titel {
-    min-height: calc(4 * 1.4em);
+    min-height: calc(3 * 1.3em);
   }
 }
 
@@ -140,7 +142,7 @@
   display: flex;
   align-items: center;
   min-height: 36px;
-  padding: var(--spacing-sm) 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: rgba(0, 137, 57, 0.04);
   cursor: pointer;
 
@@ -197,7 +199,7 @@
 
 .statement-details {
   overflow: hidden;
-  padding: 0 20px;
+  padding: 0 var(--spacing-md);
   border-bottom: 1px solid rgba(0, 137, 57, 0.3);
 }
 
@@ -259,13 +261,13 @@
   flex: 1 1 auto;
   flex-direction: column;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg) 0;
+  padding: var(--spacing-md) var(--spacing-md) 0;
 }
 
 .karte-text {
   margin: 0;
-  font-size: 18px;
-  line-height: 1.3;
+  font-size: 15px;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 
   &:not(.aufgeklappt) {
@@ -355,7 +357,7 @@
   line-height: 1.4;
 }
 
-// Kurz/Standard/Lang
+// Kurz/Mittel/Lang - nur ab 600 px
 
 .textlaenge {
   display: flex;
@@ -369,14 +371,14 @@
   }
 
   ::ng-deep .mat-button-toggle-button {
-    height: 24px;
-    font-size: 12px;
+    height: 28px;
+    font-size: 13px;
   }
 
   ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
     padding: 0;
-    font-weight: bold;
-    line-height: 24px;
+    font-weight: 600;
+    line-height: 28px;
   }
 
   ::ng-deep .mat-button-toggle-checked .mat-button-toggle-button {
@@ -393,7 +395,7 @@
 
 .karte-meta {
   margin: 0;
-  padding: 0 var(--spacing-lg) var(--spacing-sm);
+  padding: 0 var(--spacing-md) var(--spacing-sm);
   font-size: 12px;
   line-height: 1.3;
   text-align: center;
@@ -407,20 +409,6 @@
 
   .karte--voll {
     width: 100%;
-  }
-
-  .karte-kopf {
-    padding: 6px var(--spacing-sm) 6px 12px;
-  }
-
-  .karte-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 20px;
-  }
-
-  .karte-titel {
-    font-size: 14px;
   }
 
   .karte-badges {
@@ -445,27 +433,18 @@
 
   .statement-zeile {
     min-height: 24px;
-    padding: 3px var(--spacing-sm);
-  }
-
-  .statement-details {
-    padding: 0 12px;
+    padding: 3px var(--spacing-md);
   }
 
   .statement-hinweis {
     display: flex;
   }
 
-  .karte-inhalt {
-    padding: var(--spacing-sm) var(--spacing-md) 0;
-  }
-
-  .karte-text {
-    font-size: 16px;
+  .textlaenge {
+    display: none;
   }
 
   .karte-meta {
-    padding: 0 var(--spacing-sm) var(--spacing-sm);
     font-size: 11px;
   }
 }

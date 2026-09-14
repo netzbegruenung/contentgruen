@@ -61,9 +61,9 @@
                                  [value]="textModus"
                                  [hideSingleSelectionIndicator]="true"
                                  (change)="textModusSetzen($event.value)">
-            <mat-button-toggle value="short" *ngIf="daten.extra?.kurz" matTooltip="Kurz">−</mat-button-toggle>
-            <mat-button-toggle value="standard" matTooltip="Standard">− −</mat-button-toggle>
-            <mat-button-toggle value="long" *ngIf="daten.extra?.lang" matTooltip="Lang">− − −</mat-button-toggle>
+            <mat-button-toggle value="short" *ngIf="daten.extra?.kurz">Kurz</mat-button-toggle>
+            <mat-button-toggle value="standard">Mittel</mat-button-toggle>
+            <mat-button-toggle value="long" *ngIf="daten.extra?.lang">Lang</mat-button-toggle>
         </mat-button-toggle-group>
 
         <p class="post-herkunft" *ngIf="postHerkunft">{{ postHerkunft }}</p>

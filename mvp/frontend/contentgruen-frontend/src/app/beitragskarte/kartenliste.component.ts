@@ -25,10 +25,11 @@ import { KartenDaten, KartenVariante } from './karten-daten';
       .kartenliste {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-md);
+        gap: 16px;
         margin: 0;
-        padding: var(--spacing-sm) var(--page-margin) var(--spacing-md);
+        padding: 16px;
         list-style: none;
+        background: var(--kartenliste-bg);
       }
     `,
   ],

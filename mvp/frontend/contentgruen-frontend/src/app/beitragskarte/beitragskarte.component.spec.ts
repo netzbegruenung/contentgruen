@@ -162,7 +162,7 @@ describe('BeitragskarteComponent', () => {
       expect(icon.getAttribute('aria-label')).toBe('Kommentar');
     });
 
-    it('zeigt ein Bild mit Beschreibung und kuerzt den Titel auf fuenf Zeilen', () => {
+    it('zeigt ein Bild mit Beschreibung und kuerzt den Titel auf vier Zeilen', () => {
       zeigen(
         ausSuchergebnis(paket('image_result', { content_type: 'image', image_url: 'https://example.org/dach.jpg', text: 'Solardach' })),
       );
@@ -170,7 +170,7 @@ describe('BeitragskarteComponent', () => {
 
       expect(bild.getAttribute('src')).toBe('https://example.org/dach.jpg');
       expect(bild.alt).toBe('Solardach');
-      expect(getComputedStyle(element('.karte-titel')).webkitLineClamp).toBe('5');
+      expect(getComputedStyle(element('.karte-titel')).webkitLineClamp).toBe('4');
       expect(element('.kopieren-knopf').textContent).toContain('Bildunterschrift kopieren');
     });
 
@@ -333,6 +333,15 @@ describe('BeitragskarteComponent', () => {
 
       expect(element('.karte-text').textContent!.trim()).toBe('Kurzfassung');
       expect(aktionen().kopierText).toBe('Kurzfassung');
+    });
+
+    it('beschriftet den Umschalter mit Kurz, Mittel und Lang', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      const beschriftungen = Array.from(fixture.nativeElement.querySelectorAll('.textlaenge mat-button-toggle')).map(
+        (knopf) => (knopf as HTMLElement).textContent!.trim(),
+      );
+
+      expect(beschriftungen).toEqual(['Kurz', 'Mittel', 'Lang']);
     });
 
     it('zeigt ohne Kurz- und Langfassung keinen Umschalter', () => {
