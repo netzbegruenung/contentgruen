@@ -9,7 +9,13 @@
               [attr.aria-label]="typName"
               [matTooltip]="typName" matTooltipPosition="below">{{ emoji }}</span>
 
-        <h3 class="karte-titel">{{ titelAnzeige }}</h3>
+        <h3 class="karte-titel" *ngIf="!istEinwurf">{{ titelAnzeige }}</h3>
+
+        <!-- Der Einwurf hat keinen Titel: an seiner Stelle Plattform und Stand -->
+        <div class="karte-marker" *ngIf="istEinwurf">
+            <span class="plattform-chip" *ngIf="rohling?.plattform as name">{{ name }}</span>
+            <span class="verworfen-hinweis" *ngIf="rohling?.zustand === 'verworfen'">verworfen</span>
+        </div>
 
         <div class="karte-badges">
             <span class="badge badge-neu" *ngIf="istVoll && istNeu"
@@ -23,6 +29,41 @@
                   matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzung }}x</span>
         </div>
     </header>
+
+    <!-- Rohling: Einwurf oder Satz, unfertig -->
+    <div class="rohling-inhalt" *ngIf="rohling as rohling">
+        <ng-container *ngIf="istEinwurf">
+            <a *ngIf="rohling.link" class="einwurf-link" [href]="rohling.link"
+               target="_blank" rel="noopener noreferrer"
+               (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
+                <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
+                <span class="link-text">{{ rohling.link }}</span>
+            </a>
+            <a *ngIf="rohling.bildAdresse" class="einwurf-link" [href]="rohling.bildAdresse"
+               target="_blank" rel="noopener noreferrer"
+               (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
+                <mat-icon class="link-icon" aria-hidden="true">image</mat-icon>
+                <span class="link-text">Bild-Adresse</span>
+            </a>
+            <p *ngIf="rohling.hinweis as hinweis" class="einwurf-hinweis hinweis-box">{{ hinweis }}</p>
+        </ng-container>
+
+        <p class="personen">
+            <ng-container *ngFor="let beteiligt of rohling.beteiligte; let letzter = last">
+                {{ rolle(beteiligt.rolle) }}
+                <span class="person" [attr.title]="beteiligt.kennung">{{ kurzeKennung(beteiligt.kennung) }}</span>
+                <ng-container *ngIf="!letzter"> · </ng-container>
+            </ng-container>
+        </p>
+
+        <!--
+            Uebergangsloesung: Es gibt noch keine Detailansicht eines Beitrags.
+            Geplant ist /beitrag/:id, siehe docs/ROADMAP.md, "Roadmap-Features".
+        -->
+        <button *ngIf="rohling.suchSatz" type="button" mat-stroked-button class="beitrag-link"
+                (click)="sucheOeffnen($event)"
+                (keyup.enter)="$event.stopPropagation()">In der Suche anzeigen</button>
+    </div>
 
     <!-- Kompakt: nur Kopf und Datum -->
     <p class="karte-datum" *ngIf="istKompakt">{{ daten.erstellt | date: 'dd.MM.yyyy' }}</p>

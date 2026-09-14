@@ -489,3 +489,135 @@
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+// Rohling: dieselbe Karte, unfertig. Der Einwurf ist Rohmaterial (gestrichelte Kante,
+// grauer Kopf), ein Satz ohne Beitrag ist destilliert (durchgezogene Kante, grau),
+// ein Satz mit Beitrag traegt die Typfarbe wie die volle Karte.
+
+.karte--rohling {
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  box-shadow: none;
+
+  &[role='link'] {
+    cursor: pointer;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+  }
+
+  .karte-kopf {
+    padding: 12px;
+  }
+
+  .karte-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+  }
+
+  .karte-titel {
+    font-size: 16px;
+  }
+}
+
+.zustand-offen,
+.zustand-verworfen {
+  --karten-farbe: var(--statement-bg);
+  border-style: dashed;
+}
+
+.zustand-destilliert {
+  --karten-farbe: var(--statement-bg);
+  border-style: solid;
+}
+
+.zustand-ausformuliert {
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.zustand-verworfen {
+  opacity: 0.55;
+}
+
+.karte-marker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.plattform-chip,
+.verworfen-hinweis {
+  padding: 2px var(--spacing-sm);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.plattform-chip {
+  background: var(--bg-card);
+}
+
+.verworfen-hinweis {
+  border: 1px solid rgba(0, 0, 0, 0.24);
+}
+
+.rohling-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px var(--spacing-md);
+}
+
+.einwurf-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--primary-main);
+}
+
+.link-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.link-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Der Hinweis fuer andere steht in der globalen .hinweis-box, hier nur gekuerzt.
+.einwurf-hinweis {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.personen {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.person {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.beitrag-link {
+  align-self: flex-start;
+  margin-top: var(--spacing-xs);
+  color: var(--primary-dark);
+}

@@ -188,9 +188,9 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
  * (draft_id), ist daraus ein Beitrag geworden, sonst ist er destilliert. Der
  * Status des Einwurfs spielt dafuer keine Rolle, er steuert nur den Filter.
  *
- * Verknuepfungen ohne passenden Satz (aus der Zeit vor Fangkorb v2, oder der Satz
- * wurde spaeter geleert) bekommen eine eigene ausformulierte Karte ohne Titel,
- * damit der entstandene Beitrag nicht verschwindet. Gesucht wird mit ihr nie.
+ * Verknuepfungen ohne passenden Satz werden uebersprungen: Eine Karte ohne Titel und
+ * ohne Suche traegt nichts, und der Altbestand hat seit der Migration vom 13.09.2026
+ * eine draft_id. Uebrig bleiben nur Faelle, in denen der Satz spaeter geleert wurde.
  */
 export function ausEinwurf(einwurf: RawInput): KartenDaten[] {
   const verworfen = einwurf.status === 'discarded';
@@ -226,11 +226,7 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten[] {
     satzKarte(einwurf, satz, links.find((link) => link.draft_id === satz.id) ?? null, antippbar),
   );
 
-  const verwaisteKarten = links
-    .filter((link) => !saetze.some((satz) => satz.id === link.draft_id))
-    .map((link) => verwaisteKarte(einwurf, link, antippbar));
-
-  return [einwurfKarte, ...satzKarten, ...verwaisteKarten];
+  return [einwurfKarte, ...satzKarten];
 }
 
 function satzKarte(
@@ -264,32 +260,6 @@ function satzKarte(
       hinweis: null,
       beteiligte,
       suchSatz: link ? satz.sentence : null,
-    },
-  };
-}
-
-function verwaisteKarte(einwurf: RawInput, link: RawInputLink, antippbar: boolean): KartenDaten {
-  return {
-    id: link.content_id,
-    typ: resolveContentType(link.content_type) ?? null,
-    titel: null,
-    text: null,
-    erstellt: link.processed_at,
-    autor: link.processed_by,
-    autorName: null,
-    nutzung: null,
-    quellen: [],
-    rohling: {
-      art: 'satz',
-      einwurfId: einwurf.id,
-      zustand: 'ausformuliert',
-      antippbar,
-      plattform: null,
-      link: null,
-      bildAdresse: null,
-      hinweis: null,
-      beteiligte: [{ rolle: 'ausformuliert', kennung: link.processed_by }],
-      suchSatz: null,
     },
   };
 }

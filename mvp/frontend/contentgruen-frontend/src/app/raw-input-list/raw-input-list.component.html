@@ -1,10 +1,25 @@
 <div class="component-box">
     <div class="guidance">
         <div class="info-message">
-            <div class="dreischritt">
-                <!-- Leerzeichen im Emoji-Span: zwischen zwei Elementen entfernt Angular reinen Leerraum -->
-                <span class="dreischritt-text"><span aria-hidden="true">{{ kettenIcons.einwerfen }} </span><strong>Einwerfen</strong> → <span aria-hidden="true">{{ kettenIcons.destillieren }} </span><strong>Destillieren</strong> → <span aria-hidden="true">{{ kettenIcons.verfassen }} </span><strong>Ausformulieren</strong></span>
-                <button mat-icon-button type="button" class="erklaerung-umschalter"
+            <div class="fangkorb-kopf">
+                <div class="stepper" role="list" aria-label="So wird aus einem Fund ein Beitrag">
+                    <div class="stepper-schritt" role="listitem">
+                        <span class="stepper-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+                        <span class="stepper-wort">Einwerfen</span>
+                    </div>
+                    <mat-icon class="stepper-pfeil" aria-hidden="true">chevron_right</mat-icon>
+                    <div class="stepper-schritt" role="listitem">
+                        <span class="stepper-emoji" aria-hidden="true">{{ kettenIcons.destillieren }}</span>
+                        <span class="stepper-wort">Destillieren</span>
+                    </div>
+                    <mat-icon class="stepper-pfeil" aria-hidden="true">chevron_right</mat-icon>
+                    <div class="stepper-schritt" role="listitem">
+                        <span class="stepper-emoji" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
+                        <span class="stepper-wort">Ausformulieren</span>
+                    </div>
+                </div>
+
+                <button type="button" class="erklaerung-umschalter"
                         aria-controls="fangkorb-erklaerung"
                         [attr.aria-expanded]="erklaerungOffen"
                         [attr.aria-label]="erklaerungOffen ? 'Erklärung schließen' : 'So funktioniert der Fangkorb'"
@@ -68,76 +83,20 @@
             Keine Einwürfe für diese Filter.
         </p>
 
-        <ul class="karten">
-            <li *ngFor="let einwurf of sichtbar; trackBy: nachId">
-                <article class="einwurf-karte" [ngClass]="kartenKlassen(einwurf)"
-                         [attr.tabindex]="antippbar(einwurf) ? 0 : null"
-                         [attr.role]="antippbar(einwurf) ? 'link' : null"
-                         [attr.aria-label]="kartenBeschriftung(einwurf)"
-                         (click)="oeffnen(einwurf)" (keyup.enter)="oeffnen(einwurf)">
+        <ul *ngIf="stapel.length" class="karten">
+            <li *ngFor="let eintrag of stapel; trackBy: nachStapel" class="stapel">
+                <app-beitragskarte variante="rohling" [daten]="eintrag.einwurf"
+                                   (angetippt)="oeffnen($event)">
+                </app-beitragskarte>
 
-                    <div *ngIf="plattformName(einwurf) || zustand(einwurf) === 'verworfen'" class="karten-kopf">
-                        <span *ngIf="plattformName(einwurf) as name" class="plattform-chip">{{ name }}</span>
-                        <span *ngIf="zustand(einwurf) === 'verworfen'" class="verworfen-hinweis">verworfen</span>
-                    </div>
-
-                    <ng-container *ngIf="zustand(einwurf) !== 'ausformuliert'; else ausformuliert">
-                        <a *ngIf="einwurf.url" class="einwurf-link" [href]="einwurf.url"
-                           target="_blank" rel="noopener noreferrer"
-                           (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
-                            <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
-                            <span class="link-text">{{ einwurf.url }}</span>
-                        </a>
-                        <a *ngIf="einwurf.image_url" class="einwurf-link" [href]="einwurf.image_url"
-                           target="_blank" rel="noopener noreferrer"
-                           (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
-                            <mat-icon class="link-icon" aria-hidden="true">image</mat-icon>
-                            <span class="link-text">Bild-Adresse</span>
-                        </a>
-                        <p *ngIf="hinweis(einwurf) as text" class="einwurf-hinweis">{{ text }}</p>
-
-                        <ul *ngIf="zustand(einwurf) === 'destilliert' && alleSaetze(einwurf).length" class="saetze">
-                            <li *ngFor="let satz of alleSaetze(einwurf)" class="satz">
-                                <span class="satz-text">„{{ satz.sentence }}“</span>
-                                <span class="person" [attr.title]="satz.user_id">{{ kurzeKennung(satz.user_id) }}</span>
-                            </li>
-                        </ul>
-
-                        <p class="personen">
-                            eingeworfen von
-                            <span class="person" [attr.title]="einwurf.submitted_by">{{ kurzeKennung(einwurf.submitted_by) }}</span>
-                        </p>
-                    </ng-container>
-
-                    <ng-template #ausformuliert>
-                        <ul *ngIf="ausformulierteSaetze(einwurf).length" class="saetze">
-                            <li *ngFor="let satz of ausformulierteSaetze(einwurf)" class="satz">
-                                <span class="satz-text">„{{ satz.sentence }}“</span>
-                            </li>
-                        </ul>
-
-                        <p class="personen">
-                            <ng-container *ngIf="einwurf.destilled_by">
-                                destilliert von
-                                <span class="person" [attr.title]="einwurf.destilled_by">{{ kurzeKennung(einwurf.destilled_by) }}</span>
-                            </ng-container>
-                            <ng-container *ngIf="einwurf.destilled_by && einwurf.processed_by"> · </ng-container>
-                            <ng-container *ngIf="einwurf.processed_by">
-                                ausformuliert von
-                                <span class="person" [attr.title]="einwurf.processed_by">{{ kurzeKennung(einwurf.processed_by) }}</span>
-                            </ng-container>
-                        </p>
-
-                        <!--
-                            Uebergangsloesung: Es gibt noch keine Detailansicht eines Beitrags.
-                            Geplant ist /beitrag/:id, siehe docs/ROADMAP.md, "Roadmap-Features".
-                        -->
-                        <button *ngIf="suchSatz(einwurf)" type="button" mat-stroked-button
-                                class="beitrag-link"
-                                (click)="inSucheAnzeigen(einwurf, $event)"
-                                (keyup.enter)="$event.stopPropagation()">In der Suche anzeigen</button>
-                    </ng-template>
-                </article>
+                <ul *ngIf="eintrag.saetze.length" class="stapel-saetze">
+                    <li *ngFor="let karte of eintrag.saetze; trackBy: nachKarte">
+                        <app-beitragskarte variante="rohling" [daten]="karte"
+                                           (angetippt)="oeffnen($event)"
+                                           (inSuche)="inSucheAnzeigen($event)">
+                        </app-beitragskarte>
+                    </li>
+                </ul>
             </li>
         </ul>
 

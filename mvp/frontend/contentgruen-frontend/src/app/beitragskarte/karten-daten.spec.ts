@@ -254,7 +254,7 @@ describe('karten-daten', () => {
       expect(karten.slice(1).map((karte) => karte.typ)).toEqual(['commentary', 'generictext']);
     });
 
-    it('gibt einer Verknuepfung ohne passenden Satz eine eigene Karte ohne Titel und Suche', () => {
+    it('laesst Verknuepfungen ohne passenden Satz weg', () => {
       const karten = ausEinwurf(
         einwurf({
           status: 'processed',
@@ -263,15 +263,10 @@ describe('karten-daten', () => {
         }),
       );
 
-      expect(karten.length).toBe(4);
+      expect(karten.length).toBe(2);
       expect(karten[1].rohling!.zustand).toBe('destilliert');
-      const [geleert, alt] = karten.slice(2);
-      expect(geleert.rohling!.zustand).toBe('ausformuliert');
-      expect(geleert.titel).toBeNull();
-      expect(geleert.typ).toBe('commentary');
-      expect(geleert.rohling!.suchSatz).toBeNull();
-      expect(alt.id).toBe('c-alt');
-      expect(alt.typ).toBeNull();
+      expect(karten[1].rohling!.suchSatz).toBeNull();
+      expect(karten.map((karte) => karte.id)).not.toContain('c-alt');
     });
 
     it('macht einen verworfenen Einwurf samt Saetzen nicht antippbar', () => {

@@ -14,13 +14,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { animate, style, transition, trigger } from '@angular/animations';
+import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { KartenDaten, KartenVariante } from './karten-daten';
+import { KartenDaten, KartenVariante, RohlingDaten, RohlingRolle } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
+import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { kurzeKennung } from '../shared/kennung';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 
@@ -29,6 +31,12 @@ type TextModus = 'short' | 'standard' | 'long';
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
 
+const ROLLEN: Record<RohlingRolle, string> = {
+  eingeworfen: 'eingeworfen von',
+  destilliert: 'destilliert von',
+  ausformuliert: 'ausformuliert von',
+};
+
 /**
  * Die eine Karte fuer Beitraege, in drei Varianten (siehe KartenVariante).
  *
@@ -36,9 +44,10 @@ const BELIEBT_AB = 5;
  * bringen Suche, Meine Beitraege und Fangkorb darauf. Abstimmen, Kopieren und Melden
  * stecken in app-karten-aktionen und erscheinen nur in der vollen Variante.
  *
- * Die volle Karte hat Knoepfe und ist deshalb selbst kein Tipp-Ziel. Die kompakte
- * ist als Ganzes antippbar und meldet das ueber `angetippt`; wohin es geht,
- * entscheidet die Seite.
+ * Die volle Karte hat Knoepfe und ist deshalb selbst kein Tipp-Ziel. Kompakte Karten
+ * und nicht verworfene Rohlinge sind als Ganzes antippbar und melden das ueber
+ * `angetippt`; wohin es geht, entscheidet die Seite. Links und Knoepfe darin halten
+ * den Tipp mit stopPropagation von der Karte fern.
  *
  * Die Hoehe ergibt sich aus dem Inhalt. Langer Text wird gekuerzt und laesst sich mit
  * "mehr" aufklappen; ob gekuerzt wurde, misst die Karte am Element selbst.
@@ -48,6 +57,7 @@ const BELIEBT_AB = 5;
   standalone: true,
   imports: [
     CommonModule,
+    MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
     MatTooltipModule,
@@ -70,13 +80,17 @@ const BELIEBT_AB = 5;
   ],
 })
 export class BeitragskarteComponent implements OnChanges, OnDestroy {
+  readonly kurzeKennung = kurzeKennung;
+
   @Input() variante: KartenVariante = 'voll';
   @Input({ required: true }) daten!: KartenDaten;
   /** Formular-Vorschau: Aktionen sichtbar, aber ohne Wirkung. */
   @Input() vorschau = false;
 
-  /** Tipp auf eine antippbare Karte (kompakt). */
+  /** Tipp auf eine antippbare Karte (kompakt, Rohling). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
+  /** "In der Suche anzeigen" auf einem ausformulierten Rohling, mit dem Satz. */
+  @Output() inSuche = new EventEmitter<string>();
 
   nutzung: number | null = null;
   nutzungAnimiert = false;
@@ -132,16 +146,42 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.variante === 'kompakt';
   }
 
+  /** Die Rohling-Daten, nur in der Variante rohling. */
+  get rohling(): RohlingDaten | null {
+    return this.variante === 'rohling' ? (this.daten.rohling ?? null) : null;
+  }
+
+  get istEinwurf(): boolean {
+    return this.rohling?.art === 'einwurf';
+  }
+
   get kartenKlassen(): string[] {
-    return [`karte--${this.variante}`, `typ-${this.daten.typ ?? 'ohne'}`];
+    const klassen = [`karte--${this.variante}`, `typ-${this.daten.typ ?? 'ohne'}`];
+    if (this.rohling) {
+      klassen.push(`art-${this.rohling.art}`, `zustand-${this.rohling.zustand}`);
+    }
+    return klassen;
   }
 
   get typName(): string {
+    if (this.rohling) {
+      if (this.istEinwurf) {
+        return 'Einwurf';
+      }
+      return this.rohling.zustand === 'ausformuliert' && this.daten.typ ? typLabel(this.daten.typ) : 'Satz';
+    }
     return typLabel(this.daten.typ);
   }
 
   get emoji(): string {
-    return (this.daten.typ && CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji) || '📝';
+    const typEmoji = this.daten.typ ? CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji : undefined;
+    if (this.rohling) {
+      if (this.istEinwurf) {
+        return KETTEN_ICONS.einwerfen;
+      }
+      return this.rohling.zustand === 'ausformuliert' ? typEmoji || KETTEN_ICONS.verfassen : KETTEN_ICONS.destillieren;
+    }
+    return typEmoji || '📝';
   }
 
   /** Kompakt steht ohne Titel (Altbestand) der Text im Titelfeld. */
@@ -150,11 +190,19 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   get antippbar(): boolean {
-    return this.istKompakt;
+    return this.istKompakt || !!this.rohling?.antippbar;
   }
 
   get beschriftung(): string {
+    if (this.rohling) {
+      const wer = this.istEinwurf ? 'Einwurf' : `Satz „${this.daten.titel ?? ''}“`;
+      return this.rohling.antippbar ? `${wer}, ${this.rohling.zustand}: destillieren` : `${wer}, ${this.rohling.zustand}`;
+    }
     return `${this.typName}: ${this.titelAnzeige ?? ''}`;
+  }
+
+  rolle(rolle: RohlingRolle): string {
+    return ROLLEN[rolle];
   }
 
   get hatKurzOderLang(): boolean {
@@ -201,6 +249,13 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   antippen(): void {
     if (this.antippbar) {
       this.angetippt.emit(this.daten);
+    }
+  }
+
+  sucheOeffnen(event: Event): void {
+    event.stopPropagation();
+    if (this.rohling?.suchSatz) {
+      this.inSuche.emit(this.rohling.suchSatz);
     }
   }
 

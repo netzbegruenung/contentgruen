@@ -13,17 +13,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import {
-  RawInput,
-  RawInputDraft,
-  RawInputService,
-  RawInputStatus,
-} from '../services/raw-input.service';
+import { RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
-import { kurzeKennung } from '../shared/kennung';
-import { Plattform, PLATTFORMEN, plattformAusUrl, plattformName } from '../shared/plattform';
+import { Plattform, PLATTFORMEN } from '../shared/plattform';
 import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 import {
   FangkorbFilter,
   filterLaden,
@@ -38,37 +34,35 @@ import {
  */
 export const LADE_GROESSE = 100;
 
-/** Die vier Kartenzustaende. in_progress heisst im UI "destilliert". */
-export type KartenZustand = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfen';
-
-const ZUSTAND: Record<RawInputStatus, KartenZustand> = {
-  open: 'offen',
-  in_progress: 'destilliert',
-  processed: 'ausformuliert',
-  discarded: 'verworfen',
-};
+/** Ein Einwurf als Stapel: oben die Einwurf-Karte, darunter je Satz eine Karte. */
+export interface Stapel {
+  id: string;
+  einwurf: KartenDaten;
+  saetze: KartenDaten[];
+}
 
 /**
- * Der Fangkorb als Kartenliste: ein Strom, eigene zuerst, dann neueste (sortiert
- * der Server). Keine Gruppen - den Stand zeigt die Kartenoptik.
+ * Der Fangkorb als Liste von Stapeln: ein Strom, eigene zuerst, dann neueste
+ * (sortiert der Server). Keine Gruppen - den Stand zeigt die Kartenoptik.
+ *
+ * Der Einwurf ist Rohmaterial, die Saetze sind die Rohlinge: Aus einem Einwurf koennen
+ * mehrere Saetze und daraus verschiedene Beitraege werden. Den Zustand je Satz leitet
+ * ausEinwurf aus den Verknuepfungen ab; der Status des Einwurfs steuert nur den Filter.
  *
  * Bewusst alle Einwuerfe und nicht nur die eigenen - der Vorrat ist gemeinsam.
- * Ein Tipp auf eine Karte oeffnet den Einwurf zum Destillieren, auch eine
- * ausformulierte: Aus einem Einwurf darf ein weiterer Beitrag entstehen. Nur
- * verworfene Karten sind nicht antippbar. Zum Beitrag fuehrt auf ausformulierten
- * Karten ein eigener Knopf.
+ * Ein Tipp auf Einwurf oder Satz oeffnet den Einwurf zum Destillieren, auch mit
+ * vorhandenen Saetzen: fuer einen weiteren Satz. Verworfenes ist nicht antippbar.
  */
 @Component({
   selector: 'app-raw-input-list',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule, BeitragskarteComponent],
   templateUrl: './raw-input-list.component.html',
   styleUrls: ['./raw-input-list.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RawInputListComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
-  readonly kurzeKennung = kurzeKennung;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
   readonly kettenIcons = KETTEN_ICONS;
 
@@ -76,6 +70,8 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   erklaerungOffen = false;
   einwuerfe: RawInput[] = [];
   sichtbar: RawInput[] = [];
+  /** Die sichtbaren Einwuerfe als Karten, einmal je Filterlauf berechnet. */
+  stapel: Stapel[] = [];
   gesamt = 0;
   filter: FangkorbFilter = filterLaden();
   isLoading = true;
@@ -185,80 +181,24 @@ export class RawInputListComponent implements OnInit, OnDestroy {
 
   // Karten
 
-  zustand(einwurf: RawInput): KartenZustand {
-    return ZUSTAND[einwurf.status] ?? 'offen';
-  }
-
-  kartenKlassen(einwurf: RawInput): string[] {
-    const klassen = [`zustand-${this.zustand(einwurf)}`];
-    if (this.zustand(einwurf) === 'ausformuliert') {
-      klassen.push(`typ-${einwurf.links?.[0]?.content_type ?? 'unbekannt'}`);
-    }
-    return klassen;
-  }
-
-  /** Verworfenes bleibt liegen, damit es nicht wieder auftaucht - kein Tipp-Ziel. */
-  antippbar(einwurf: RawInput): boolean {
-    return this.zustand(einwurf) !== 'verworfen';
-  }
-
-  kartenBeschriftung(einwurf: RawInput): string {
-    const zustand = this.zustand(einwurf);
-    return this.antippbar(einwurf) ? `Einwurf, ${zustand}: destillieren` : `Einwurf, ${zustand}`;
-  }
-
-  plattformName(einwurf: RawInput): string | null {
-    const plattform = plattformAusUrl(einwurf.url);
-    return plattform ? plattformName(plattform) : null;
-  }
-
-  /** Der Hinweis fuer andere, sofern er mehr ist als der Link selbst. */
-  hinweis(einwurf: RawInput): string | null {
-    const inhalt = einwurf.content?.trim();
-    return inhalt && inhalt !== einwurf.url ? inhalt : null;
-  }
-
-  /** Alle Saetze, je mit Person - fuer destillierte Karten. */
-  alleSaetze(einwurf: RawInput): RawInputDraft[] {
-    return einwurf.drafts ?? [];
-  }
-
-  /**
-   * Die Saetze, aus denen ein Beitrag wurde. Fehlt die Zuordnung (Satz spaeter
-   * geleert, Verknuepfung aus der Zeit vor v2), stehen alle vorhandenen Saetze da -
-   * nur zur Anzeige, gesucht wird damit nie (siehe suchSatz).
-   */
-  ausformulierteSaetze(einwurf: RawInput): RawInputDraft[] {
-    const zugeordnet = this.zugeordneteSaetze(einwurf);
-    return zugeordnet.length ? zugeordnet : this.alleSaetze(einwurf);
-  }
-
-  /**
-   * Womit "In der Suche anzeigen" sucht: der Satz, auf den eine Verknuepfung
-   * zeigt. Ohne solchen Satz kein Knopf - ein Satz, aus dem nie ein Beitrag wurde,
-   * wuerde die falsche Suche ausloesen und daraus ein Statement anlegen.
-   */
-  suchSatz(einwurf: RawInput): string | null {
-    return this.zugeordneteSaetze(einwurf)[0]?.sentence ?? null;
-  }
-
-  oeffnen(einwurf: RawInput): void {
-    if (!this.antippbar(einwurf)) {
+  /** Einwurf und Satz fuehren beide zum Destillieren dieses Einwurfs. */
+  oeffnen(karte: KartenDaten): void {
+    if (!karte.rohling?.antippbar) {
       return;
     }
-    this.router.navigate(['/destillieren', einwurf.id]);
+    this.router.navigate(['/destillieren', karte.rohling.einwurfId]);
   }
 
-  inSucheAnzeigen(einwurf: RawInput, event: Event): void {
-    event.stopPropagation();
-    const satz = this.suchSatz(einwurf);
-    if (satz) {
-      this.router.navigate(['/result'], { queryParams: { searchQuery: satz } });
-    }
+  inSucheAnzeigen(satz: string): void {
+    this.router.navigate(['/result'], { queryParams: { searchQuery: satz } });
   }
 
-  nachId(_index: number, einwurf: RawInput): string {
-    return einwurf.id;
+  nachStapel(_index: number, eintrag: Stapel): string {
+    return eintrag.id;
+  }
+
+  nachKarte(_index: number, karte: KartenDaten): string {
+    return karte.id;
   }
 
   zumEinwerfen(): void {
@@ -268,15 +208,6 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  /** Die Saetze, auf die eine Verknuepfung zeigt, in der Reihenfolge der Verknuepfungen. */
-  private zugeordneteSaetze(einwurf: RawInput): RawInputDraft[] {
-    const saetze = this.alleSaetze(einwurf);
-    return (einwurf.links ?? [])
-      .map((link) => saetze.find((satz) => !!link.draft_id && satz.id === link.draft_id))
-      .filter((satz): satz is RawInputDraft => !!satz)
-      .filter((satz, index, liste) => liste.indexOf(satz) === index);
   }
 
   private filterSetzen(filter: FangkorbFilter): void {
@@ -289,6 +220,10 @@ export class RawInputListComponent implements OnInit, OnDestroy {
     this.sichtbar = this.einwuerfe.filter((einwurf) =>
       passtZumFilter(einwurf, this.filter, this.eigeneKennung),
     );
+    this.stapel = this.sichtbar.map((einwurf) => {
+      const [karte, ...saetze] = ausEinwurf(einwurf);
+      return { id: einwurf.id, einwurf: karte, saetze };
+    });
     this.cdr.markForCheck();
   }
 }
