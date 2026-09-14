@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, TypeVar, Generic, Optional
+from typing import List, TypeVar, Generic, Optional, Type
 import uuid
 
 from domain.models.base_content import (
@@ -108,6 +108,7 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         limit: int,
         offset: int,
         content_types: Optional[List[str]] = None,
+        eintrag_modell: Optional[Type[BaseContentDbEntry]] = None,
     ) -> List[TContentDbEntry]:
         """
         Retrieve items by a specific author with pagination.
@@ -117,6 +118,7 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
             limit: Maximum number of items to return
             offset: Number of items to skip
             content_types: Optional, nur Eintraege dieser Typen
+            eintrag_modell: Optional, Modell zum Lesen statt des Repository-Modells
 
         Returns:
             List of content items by the author

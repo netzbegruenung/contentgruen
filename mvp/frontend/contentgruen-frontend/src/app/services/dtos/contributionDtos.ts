@@ -22,5 +22,10 @@ export interface ContentResult {
     text: string;
     content_type: string;
     score: number;
-    usage_count?: number;
+    /** Titel des Beitrags; fehlt nur bei Altbestand ohne Titel im Payload. */
+    title?: string | null;
+    /** Nur bei Bildern gesetzt. */
+    image_url?: string | null;
+    /** Aus PostgreSQL nachgetragen, 0 ohne Nutzung. */
+    usage_count: number;
 }

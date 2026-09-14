@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Type
 import datetime
 import uuid
 import logging
@@ -175,8 +175,11 @@ class ContentRepository(
         limit: int,
         offset: int,
         content_types: Optional[List[str]] = None,
+        eintrag_modell: Optional[Type[ContentDbEntry]] = None,
     ) -> List[ContentDbEntry]:
-        return await self.get_by_author(user_id, limit, offset, content_types)
+        return await self.get_by_author(
+            user_id, limit, offset, content_types, eintrag_modell
+        )
 
     async def getCountByAuthor(
         self, user_id: str, content_types: Optional[List[str]] = None

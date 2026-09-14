@@ -5,9 +5,9 @@ from dependencies import get_settings
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
-from dtos.contribution import GetContributionsOfUserResponse
-from domain.models.content import ContentDbEntry
+from dtos.contribution import ContributionEntry, GetContributionsOfUserResponse
 from domain.models.content_type import ContentType
+from services.usage_tracking_service import get_usage_service
 from core.config import Settings
 from core.logging import get_logger
 
@@ -51,25 +51,27 @@ async def search_content(
 
         repository_factory = QdrantRepositoryFactory()
         content_repository = repository_factory.create_content_repository(settings)
-        content_index_results: List[ContentDbEntry] = (
-            await content_repository.getByAuthor(
-                user_id=x_user,
-                limit=page_size,
-                offset=offset,
-                content_types=AUSFORMULIERTE_TYPEN,
-            )
+        beitraege: List[ContributionEntry] = await content_repository.getByAuthor(
+            user_id=x_user,
+            limit=page_size,
+            offset=offset,
+            content_types=AUSFORMULIERTE_TYPEN,
+            eintrag_modell=ContributionEntry,
         )
         total_count = await content_repository.getCountByAuthor(
             user_id=x_user, content_types=AUSFORMULIERTE_TYPEN
         )
 
-        logger.debug(
-            f"/getContributionsOfUser got {len(content_index_results)} results"
+        logger.debug(f"/getContributionsOfUser got {len(beitraege)} results")
+
+        # Die Nutzung liegt in PostgreSQL; nachgetragen wie bei /content/recent.
+        mit_nutzung = get_usage_service().enrich_content_with_usage(
+            [beitrag.model_dump() for beitrag in beitraege]
         )
 
         response: GetContributionsOfUserResponse = GetContributionsOfUserResponse(
-            results_count=len(content_index_results),
-            results=content_index_results,
+            results_count=len(mit_nutzung),
+            results=mit_nutzung,
             total_records_count=total_count,
         )
 

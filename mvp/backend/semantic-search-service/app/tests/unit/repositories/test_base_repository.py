@@ -373,3 +373,44 @@ class TestAutorenzuordnungOhneSuchanfragen:
 
         such_filter = client.scroll.call_args.kwargs["scroll_filter"]
         assert self._typ_eingrenzungen(such_filter) == []
+
+    @staticmethod
+    def _punkt_mit_titel():
+        punkt = MagicMock()
+        punkt.id = str(uuid.uuid4())
+        punkt.payload = {
+            "text": "Text",
+            "content_type": "statement",
+            "title": "Titel aus dem Payload",
+            **create_base_content_fields(original_author="testuser"),
+        }
+        return punkt
+
+    @pytest.mark.asyncio
+    async def test_eintrag_modell_behaelt_typspezifische_felder(
+        self, repository_mit_client
+    ):
+        from dtos.contribution import ContributionEntry
+
+        repository, client = repository_mit_client
+        client.scroll.return_value = ([self._punkt_mit_titel()], None)
+
+        ergebnisse = await repository.get_by_author(
+            "testuser", limit=10, offset=0, eintrag_modell=ContributionEntry
+        )
+
+        assert len(ergebnisse) == 1
+        assert isinstance(ergebnisse[0], ContributionEntry)
+        assert ergebnisse[0].title == "Titel aus dem Payload"
+
+    @pytest.mark.asyncio
+    async def test_ohne_eintrag_modell_liest_das_repository_modell(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        client.scroll.return_value = ([self._punkt_mit_titel()], None)
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert isinstance(ergebnisse[0], MockDbEntry)
+        assert not hasattr(ergebnisse[0], "title")

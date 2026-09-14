@@ -358,8 +358,16 @@ class QdrantBaseRepository(
         limit: int,
         offset: int,
         content_types: Optional[List[str]] = None,
+        eintrag_modell: Optional[Type[BaseContentDbEntry]] = None,
     ) -> List[TContentDbEntry]:
-        """Async implementation of get_by_author."""
+        """
+        Async implementation of get_by_author.
+
+        eintrag_modell ersetzt das Modell des Repositorys beim Lesen des Payloads.
+        Das aggregierte Repository liest sonst mit ContentDbEntry und verliert dabei
+        die typspezifischen Felder (Titel, Bildadresse).
+        """
+        modell = eintrag_modell or self.content_db_entry_model_class
         try:
             search_filter = self._autoren_filter(user_id, content_types)
 
@@ -392,9 +400,7 @@ class QdrantBaseRepository(
 
                     payload = point.payload or {}
                     payload["id"] = str(point.id)
-                    all_results.append(
-                        self.content_db_entry_model_class.model_validate(payload)
-                    )
+                    all_results.append(modell.model_validate(payload))
                     points_collected += 1
 
                 current_offset = result[1]
