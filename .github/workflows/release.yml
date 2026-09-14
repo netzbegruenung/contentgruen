@@ -78,6 +78,9 @@ jobs:
           context: mvp/frontend/contentgruen-frontend
           file: mvp/frontend/contentgruen-frontend/Dockerfile
           platforms: linux/amd64
+          # Commit shown in the footer next to the package.json version
+          build-args: |
+            GIT_SHA=${{ github.sha }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
