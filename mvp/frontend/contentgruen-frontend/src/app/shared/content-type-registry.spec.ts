@@ -26,4 +26,12 @@ describe('content-type-registry', () => {
     expect(CONTENT_TYPE_REGISTRY['statement'].resultField).toBeUndefined();
     expect(CONTENT_TYPE_REGISTRY['reference'].resultField).toBeUndefined();
   });
+
+  it('gibt jedem Typ mit Suchkarte ein Symbol fuer den Kartenkopf', () => {
+    for (const config of Object.values(CONTENT_TYPE_REGISTRY)) {
+      if (config.resultField) {
+        expect(config.emoji).withContext(config.key).toBeTruthy();
+      }
+    }
+  });
 });

@@ -1,0 +1,57 @@
+<!--
+    In der Vorschau: aria-disabled und tabIndex ueber die Inputs von MatButton setzen.
+    Ein [attr.aria-disabled] am Knopf ueberschreibt MatButton mit seiner Host-Bindung.
+-->
+<div class="aktionen" [attr.aria-disabled]="vorschau || null">
+    <div class="stimmen">
+        <button mat-icon-button type="button" class="stimme-knopf"
+                [class.active-button]="isLiked"
+                [attr.aria-pressed]="isLiked"
+                [aria-disabled]="vorschau"
+                [tabIndex]="vorschau ? -1 : undefined"
+                aria-label="Gefällt mir"
+                matTooltip="Gefällt mir" matTooltipPosition="above"
+                (click)="toggleLike()">
+            <mat-icon>thumb_up</mat-icon>
+        </button>
+        <button mat-icon-button type="button" class="stimme-knopf"
+                [class.active-button]="isDisliked"
+                [attr.aria-pressed]="isDisliked"
+                [aria-disabled]="vorschau"
+                [tabIndex]="vorschau ? -1 : undefined"
+                aria-label="Gefällt mir nicht"
+                matTooltip="Gefällt mir nicht" matTooltipPosition="above"
+                (click)="toggleDislike()">
+            <mat-icon>thumb_down</mat-icon>
+        </button>
+    </div>
+
+    <button mat-raised-button type="button" class="gutgesagt-primary-dark kopieren-knopf"
+            [class.copy-success]="copyAnimationActive"
+            [aria-disabled]="vorschau"
+            [tabIndex]="vorschau ? -1 : undefined"
+            (click)="kopieren()">
+        <mat-icon>content_copy</mat-icon>
+        <span>{{ kopierBeschriftung }}</span>
+    </button>
+
+    <button mat-icon-button type="button" class="menue-knopf"
+            [matMenuTriggerFor]="menue"
+            [aria-disabled]="vorschau"
+            [tabIndex]="vorschau ? -1 : undefined"
+            aria-label="Mehr Optionen"
+            matTooltip="Mehr Optionen" matTooltipPosition="above">
+        <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #menue="matMenu">
+        <button mat-menu-item type="button" (click)="openReportDialog()">
+            <mat-icon>flag</mat-icon>
+            <span>Inhalt melden</span>
+        </button>
+        <button mat-menu-item type="button" disabled>
+            <mat-icon>info</mat-icon>
+            <span>Details</span>
+        </button>
+    </mat-menu>
+</div>

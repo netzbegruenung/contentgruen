@@ -24,6 +24,8 @@ export interface ContentTypeConfig {
   label: string;
   /** Name of the nested result field on a search-result wrapper; nur bei Typen mit Suchkarte. */
   resultField?: string;
+  /** Symbol im Kopf der Beitragskarte; nur bei Typen mit Suchkarte. */
+  emoji?: string;
 }
 
 export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
@@ -32,24 +34,28 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     icon: 'forum',
     label: 'Kommentar',
     resultField: 'commentary_result',
+    emoji: '💬',
   },
   generictext: {
     key: 'generictext',
     icon: 'description',
     label: 'Hintergrundinfo',
     resultField: 'generictext_result',
+    emoji: '📄',
   },
   post: {
     key: 'post',
     icon: 'campaign',
     label: 'Post',
     resultField: 'post_result',
+    emoji: '📣',
   },
   image: {
     key: 'image',
     icon: 'image',
     label: 'Bild',
     resultField: 'image_result',
+    emoji: '🖼️',
   },
   statement: {
     key: 'statement',
