@@ -15,18 +15,6 @@
   border: 1px solid #90CAF9;
 }
 
-// Generictext-specific result item adjustments
-.preview-column app-generictext-result-item ::ng-deep .result-item {
-  margin: 0;
-  width: 100%;
-
-  @media (max-width: 600px) {
-    max-width: 100%;
-    width: 100%;
-    height: 500px; // Fixed height for mobile
-  }
-}
-
 // Collapsible optional sections
 .add-reference-trigger {
   align-self: flex-start;

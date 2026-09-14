@@ -187,18 +187,26 @@ export interface ImageResult     extends BaseContentResult { image_url: string; 
 export interface SpeechResult    extends BaseContentResult { speaker: string; spoken_at: string; }
 ```
 
-**2. The result-item duplication becomes a deep base + thin per-type views — NOT a `[contentType]`
-flag with a forest of `*ngIf`.** A flag-driven blob gets worse with every type; polymorphism gets
-better. Voting, the 401/403/429 snackbar handling, debounce, badges, and score display live in an
-abstract `BaseResultItemComponent` (or a host component that projects a per-type fragment). Each type
-supplies only its presentation:
+**2. One card with variants instead of per-type result-items** *(shipped — `beitragskarte/`)*.
+The first iteration followed "deep base + thin per-type views": an abstract
+`BaseResultItemComponent` plus one component per type. In practice the four templates stayed
+copies of each other, every layout fix had to be made four times, and the same content needed three
+different looks (search, "Meine Beiträge", Fangkorb) that per-type components could not express.
+
+The frontend therefore has a single `app-beitragskarte` with three variants — `voll` (search,
+teaser), `kompakt` ("Meine Beiträge"), `rohling` (Fangkorb: raw input and its sentences) — fed by
+`KartenDaten`. Adapters turn the three wire shapes into that one shape; the card knows no data
+source. Types differ only in small body blocks, not in separate components. Voting, the
+401/403/429 handling, debounce, copy and report live in `app-karten-aktionen`, rendered only in
+`voll`:
 
 ```
-BaseResultItemComponent           ← voting, auth handling, badges, score (the mechanism, once)
- ├─ CommentaryResultItem          ← text-mode toggle (short/std/long) + 💬 label
- ├─ GenerictextResultItem         ← 📄 label
- ├─ ImageResultItem               ← <img> + caption (description), matched-on-text shown on demand
- └─ SpeechResultItem              ← speaker + date header
+beitragskarte/
+ ├─ karten-daten.ts               ← KartenDaten + ausSuchergebnis / ausBeitrag / ausEinwurf
+ ├─ beitragskarte.component       ← variante voll | kompakt | rohling; body block per type
+ │                                  (text with short/long, image, post)
+ ├─ karten-aktionen/              ← voting, auth/rate-limit handling, copy, report (voll only)
+ └─ kartenliste.component         ← cards on a grey ground: list (mobile) or grid (kompakt)
 ```
 
 Same treatment for the add-forms and search-results headers: shared base behavior + a per-type
@@ -223,16 +231,17 @@ per-service URL/header/error duplication that every type's service still re-copi
 | Embedding & vector search | ✅ engine | — |
 | Combined-score formula | ✅ one helper | — |
 | Reference / usage / vote enrichment | ✅ one helper | — |
-| Voting, auth/rate-limit handling (FE) | ✅ base component | — |
+| Voting, auth/rate-limit handling (FE) | ✅ `app-karten-aktionen` | — |
 | Persistence / Qdrant access | ✅ generic repo | — |
 | HTTP base URL / session / errors (FE) | ✅ interceptor + helper | — |
 | **How searchable_text is produced** | — | Seam 1 (ingestion) |
 | **Extra fields** | — | Seam 2 (model/DTO) |
-| **Display** | — | Seam 3 (template fragment) |
+| **Display** | — | Seam 3 (adapter fields + body block in the card) |
 | Special behavior (e.g. dedup) | — | optional behavior strategy |
 
 **Adding a new type =** one registry entry + a model/DTO with its extra fields + an ingestion
-strategy (usually `DirectText`) + a template fragment. No engine changes, no cloning.
+strategy (usually `DirectText`) + its fields in the card adapter and, only if it needs its own body,
+a block in `app-beitragskarte`. No engine changes, no cloning.
 
 ## Incremental migration path
 
@@ -248,6 +257,7 @@ The backend test suite (well-covered) was the safety net.
    commentary/generictext DTOs onto it. No runtime change; unblocks the component work.
 3. ✅ **Extract the frontend mechanism** into `BaseResultItemComponent` and have the existing two
    result-items extend it. Then retire `unified-result-item`. Repeat for search-results and add-forms.
+   *(Later superseded by the single card with variants, see §2 above.)*
 4. ✅ **Add the frontend content-type registry**; route search-results/recent-content/contribution menus
    through it.
 5. ✅ **Backend: introduce the content-type registry + ingestion strategy**, instantiate the generic
