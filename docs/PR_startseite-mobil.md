@@ -13,7 +13,7 @@ und der Kartenteil von `raw-input-list` sind unberührt.
 
 ## Prüfstand
 
-- `ng test`: nach jedem Block grün, zuletzt **354 SUCCESS** (11 skipped).
+- `ng test`: nach jedem Block (A–G) grün, zuletzt **354 SUCCESS** (11 skipped).
 - `ng build` (production): Initial total **964,39 kB** (Warngrenze 1 MB). Die Style-Budget-Warnungen
   gab es schon vorher; `contribute-view.component.css` ist dabei von 4,96 auf 4,82 kB geschrumpft.
 - Gemessen im Headless-Chrome bei **360×740**, mobil, angemeldet als `testuser`. Angegeben ist die
@@ -165,13 +165,65 @@ und der Kartenteil von `raw-input-list` sind unberührt.
 - Sieben Plattform-Chips plus zwei Filter ergeben bei 360 px drei Chip-Reihen (im Headless-Screenshot gesehen).
   Kandidat zum Nachschleifen.
 
+## G. Dev-Proxy für `ng serve`
+
+**Geändert**
+- `proxy.conf.json` im Frontend-Verzeichnis leitet `/api`, `/content`, `/recent`, `/getMetrics`,
+  `/report` und `/reports` an `http://localhost:5054` weiter (`secure: false`). Das sind die
+  Pfadpräfixe, die das Frontend über `environment.baseUrl` aufruft, ohne `/login` (siehe unten).
+- `angular.json`: `serve.options.proxyConfig: "proxy.conf.json"`.
+- `environment.local.ts`: `baseUrl: ''`. Die App ruft das BFF relativ auf, ohne CORS, und Cookies
+  bleiben same-origin.
+- Neu: `docs/DEV-SETUP.md` (Nutzerdatei, Backend-Container, `ng serve`, Login). Die README verlinkt
+  sie in der Doku-Tabelle, `docs/ARCHITECTURE.md:82` ist nachgezogen.
+- Dev-Login ist `test.user@example.com` / `Liebe>Hass!` über „Anmelden → Direktanmeldung“, nicht
+  `testuser`. Belege:
+  - Die Direktanmeldung prüft `managed-users.json` per BCrypt (`ManagedUserService.cs:131-144`).
+  - Das Dev-BFF liest die Datei aus dem Mount `./config` (`docker-compose.dev.yml:141,145`).
+  - Sie ist gitignoriert (`.gitignore:19`) und eine Kopie von `managed-users.example.json`
+    (Konto in Zeile 4-5).
+  - `testuser` ist nur der Dummy-Nutzer von `POST /login` (`Program.cs:526-527,538,563`). Dessen
+    Benutzername-Formular (`login.component.html:4-11`) erreicht die App nicht mehr: `/login` zeigt
+    den Selector (`app.routes.ts:80-81`), der nur nach `/login/managed` führt
+    (`login-selector.component.ts:82`), und dort verlangt das Formular eine E-Mail
+    (`login.component.ts:51,55`).
+  - Für `admin@contentgruen.com` ist `Liebe>Hass!` falsch; dessen Passwort steht nicht im Repo.
+
+**Warum:** CORS im Dev-Stack erlaubt nur den Frontend-Port 8080. Mit `ng serve` auf 4200 gegen das
+BFF auf 5054 scheiterten deshalb alle API-Aufrufe. Jetzt reichen die vier Backend-Container und
+`npx ng serve`; der Frontend-Container wird dafür nicht gebraucht.
+
+**Prod und Docker unberührt** (`environment.prod.ts` und `replace-env.sh` unverändert)
+- Der Production-Build ersetzt `environment.ts` durch `environment.prod.ts` (`angular.json:44-47`).
+  Dort steht weiter `baseUrl: '${API_BASE_URL}'` (`environment.prod.ts:3`).
+- Das Image setzt den Platzhalter beim Start ein: `replace-env.sh:6`, aufgerufen von `Dockerfile:56`.
+- Das Dev-Image baut mit `BUILD_CONFIGURATION=development` (`docker-compose.dev.yml:174`) aus
+  `environment.docker.ts` (`Dockerfile:16`). Dort ist `baseUrl` wie bisher leer.
+- `environment.local.ts` gelangt nicht ins Image (`.dockerignore:42`).
+
+**Selbstentscheidungen**
+- `environment.ts` ist gitignoriert und daher nicht Teil des Commits. Die Änderung steht in
+  `environment.local.ts`; daraus erzeugen CI (`tests-frontend.yml:34`) und `run-local.bat` (`:63`)
+  ihr `environment.ts`. Ein vorhandenes lokales `environment.ts` mit `http://localhost:5054` muss man
+  von Hand auf `''` stellen; `DEV-SETUP.md` sagt das.
+- `proxyConfig` steht in `serve.options`. Dort gilt es für `development` (Default) und `production`;
+  ein Eintrag je Konfiguration wäre doppelt.
+- `/login` und `/logout` sind nicht im Proxy, anders als in `nginx.docker.conf:23,32`. Ein Präfix
+  `/login` schickte auch direkte Aufrufe und Reloads der Seiten `/login` und `/login/managed` ans
+  BFF (401 statt App). Die App braucht beide Pfade nicht: `POST /login` gehört zum Dummy-Formular,
+  das sie nicht mehr erreicht (siehe oben), und `/logout` ruft sie nicht über `baseUrl` auf.
+
+**Geprüft:**
+- `ng test` 354 grün, Produktions-Build 964,39 kB mit `${API_BASE_URL}` im Bundle.
+- Über den Proxy liefert `/api/check-session` 401.
+- Direkte Aufrufe von `/login` und `/login/managed` liefern die App.
+- Echter Formularweg im Headless-Chrome (Startseite → Anmelden → Direktanmeldung):
+  `POST /api/auth/login/managed` antwortet 200, danach geht es weiter nach `/search`.
+
 ## Am Handy mit `ng serve` anschauen
 
-Hinweis zum Aufsetzen: CORS im Dev-Stack erlaubt nur den Frontend-Port 8080. Mit `ng serve` auf 4200
-gegen das BFF auf 5054 scheitern die API-Aufrufe. Gemessen habe ich mit `baseUrl: ''` in der lokalen
-`environment.ts` und einer Proxy-Konfiguration für `/api`, `/login`, `/content`, `/recent`,
-`/getMetrics`, `/report` und `/reports` auf `http://localhost:5054`. Die Worktree-`environment.ts`
-steht wieder auf dem Ausgangswert.
+Aufsetzen siehe `docs/DEV-SETUP.md` (Block G). Fürs Handy im WLAN braucht `ng serve` zusätzlich
+`--host 0.0.0.0`; das habe ich nicht getestet.
 
 1. `/search` – abgemeldet und angemeldet: Suchfeld, Beispielzeile, beide Kacheln über dem Falz;
    Kachel antippen (abgemeldet → Login → zurück); weiter unten der About-Teaser.
