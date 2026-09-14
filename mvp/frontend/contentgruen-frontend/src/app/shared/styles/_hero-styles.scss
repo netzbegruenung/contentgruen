@@ -51,9 +51,9 @@
   margin-top: 30px;
   font-size: 1.1rem;
 
-  @media (max-width: 600px) {
+  @media (max-width: 599px) {
     font-size: 0.95rem;
-    margin-top: 20px;
+    margin-top: 12px;
   }
 }
 
@@ -76,8 +76,8 @@
   padding: 20px var(--page-margin);
   text-align: center;
 
-  @media (max-width: 600px) {
-    padding: 15px var(--page-margin);
+  @media (max-width: 599px) {
+    padding: 12px var(--page-margin);
   }
 }
 
