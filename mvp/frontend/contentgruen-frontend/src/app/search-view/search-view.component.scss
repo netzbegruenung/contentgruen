@@ -1,7 +1,7 @@
 // Import shared hero styles
 @use '../shared/styles/hero-styles' as *;
 
-// Titel, Untertitel, Suchfeld: ein Block, mittig begrenzt
+// Titel und Untertitel auf Weiss, mittig begrenzt
 .start-hero {
   max-width: 720px;
   margin: 0 auto;
@@ -13,14 +13,58 @@
   }
 }
 
-.start-suche {
-  display: block;
-  margin-top: 24px;
-  text-align: left;
+// Markenname als kleine Zeile ueber der Ueberschrift
+.hero-eyebrow {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--primary-dark);
+}
+
+// Claim und Untertitel mobil; nur hier, die geteilten _hero-styles bleiben
+@media (max-width: 599px) {
+  .start-hero .hero-title {
+    font-size: 34px;
+  }
+
+  .start-hero .hero-subtitle {
+    margin: 8px 0 16px;
+    font-size: 15px;
+    font-weight: normal;
+    color: var(--text-secondary, #555);
+  }
+}
+
+// Schmales gelbes Band: Erklaerzeile, Suchfeld, Knopf, Beispielzeile
+.such-band {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: rgb(246, 255, 124);
 
   @media (max-width: 599px) {
     margin-top: 12px;
   }
+}
+
+.such-band-inhalt {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.such-erklaerung {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: normal;
+  color: var(--primary-dark);
+}
+
+.start-suche {
+  display: block;
+  margin-top: 8px;
+  text-align: left;
 }
 
 .beispiel-zeile {
@@ -62,12 +106,15 @@
   }
 }
 
+// Weiss mit tannengruenem Rand; bewusst ohne Typfarben
 .start-kachel {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
+  border: 2px solid var(--primary-dark);
   border-radius: 12px;
+  background: #fff;
   color: var(--text-primary);
   text-decoration: none;
   transition: box-shadow var(--transition-fast, 0.2s);
@@ -85,14 +132,6 @@
   @media (max-width: 599px) {
     padding: 12px 16px;
   }
-}
-
-.einwerfen-kachel {
-  background: linear-gradient(135deg, rgb(245, 238, 215) 0%, rgb(238, 229, 196) 100%);
-}
-
-.verfassen-kachel {
-  background: linear-gradient(135deg, var(--commentary-bg) 0%, rgb(220, 235, 195) 100%);
 }
 
 .kachel-icon {
@@ -115,6 +154,7 @@
 .kachel-titel {
   font-size: 18px;
   font-weight: 600;
+  color: var(--primary-dark);
 
   @media (max-width: 599px) {
     font-size: 16px;

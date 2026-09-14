@@ -44,12 +44,23 @@ describe('SearchViewComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('stellt das Suchfeld direkt unter Titel und Untertitel', () => {
+  it('zeigt den Markennamen als Zeile ueber der Ueberschrift, ohne Gedankenstrich', () => {
     const hero: HTMLElement = fixture.nativeElement.querySelector('.start-hero');
 
+    expect(hero.querySelector('.hero-eyebrow')!.textContent!.trim()).toBe('Gut gesagt');
+    expect(hero.querySelector('.hero-eyebrow')!.nextElementSibling).toBe(hero.querySelector('.hero-title'));
+    expect(hero.querySelector('.hero-title')!.textContent!.trim()).toBe('Nie wieder sprachlos');
+  });
+
+  it('stellt unter Titel und Untertitel das Such-Band mit Erklaerzeile, Suchfeld und Beispiel', () => {
+    const hero: HTMLElement = fixture.nativeElement.querySelector('.start-hero');
+    const band: HTMLElement = fixture.nativeElement.querySelector('.such-band');
+
     expect(hero.querySelector('.hero-title')).toBeTruthy();
-    expect(hero.querySelector('app-search')).toBeTruthy();
-    expect(hero.textContent).toContain('Beispiel probieren');
+    expect(hero.nextElementSibling).toBe(band);
+    expect(band.querySelector('.such-erklaerung')!.textContent).toContain('Post reinkopieren – Antwort finden – Verwenden!');
+    expect(band.querySelector('app-search')).toBeTruthy();
+    expect(band.textContent).toContain('Beispiel probieren');
   });
 
   it('fuehrt mit zwei Kacheln zum Einwerfen und zum Verfassen', () => {

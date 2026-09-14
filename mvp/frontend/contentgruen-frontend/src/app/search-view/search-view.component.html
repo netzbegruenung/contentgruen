@@ -1,26 +1,33 @@
-<!-- Titel, Untertitel und Suche als ein Block: auf dem Handy soll das Suchfeld
-     ohne Scrollen dastehen. -->
+<!-- Titel und Untertitel auf Weiss, direkt darunter die Suche im schmalen gelben
+     Band: auf dem Handy soll das Suchfeld ohne Scrollen dastehen. -->
 <section class="start-hero">
+    <div class="hero-eyebrow">Gut gesagt</div>
     <div class="hero-title">
-        Gut gesagt – Nie wieder sprachlos
+        Nie wieder sprachlos
     </div>
     <div class="hero-subtitle">
         Gemeinsam stark: Bewährte Argumente aus der Community.
     </div>
+</section>
 
-    <app-search class="start-suche"></app-search>
+<section class="such-band">
+    <div class="such-band-inhalt">
+        <p class="such-erklaerung">Post reinkopieren – Antwort finden – Verwenden!</p>
 
-    <p class="beispiel-zeile">
-        Beispiel probieren:
-        <a (click)="performExampleSearch()" (keyup.enter)="performExampleSearch()"
-           tabindex="0" role="button" class="beispiel-link">„Windräder töten die Vögel!“</a>
-    </p>
+        <app-search class="start-suche"></app-search>
+
+        <p class="beispiel-zeile">
+            Beispiel probieren:
+            <a (click)="performExampleSearch()" (keyup.enter)="performExampleSearch()"
+               tabindex="0" role="button" class="beispiel-link">„Windräder töten die Vögel!“</a>
+        </p>
+    </div>
 </section>
 
 <!-- Zwei Wege zum Mitmachen. Beide Ziele sind geschuetzt; ohne Anmeldung leitet
      der AuthGuard zum Login und danach zurueck. -->
 <section class="start-kacheln" aria-label="Mitmachen">
-    <a class="start-kachel einwerfen-kachel" routerLink="/einwerfen">
+    <a class="start-kachel" routerLink="/einwerfen">
         <span class="kachel-icon" aria-hidden="true">🧺</span>
         <span class="kachel-text">
             <span class="kachel-titel">Einwerfen</span>
@@ -29,7 +36,7 @@
         <mat-icon class="kachel-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </a>
 
-    <a class="start-kachel verfassen-kachel" routerLink="/contribute">
+    <a class="start-kachel" routerLink="/contribute">
         <span class="kachel-icon" aria-hidden="true">✒️</span>
         <span class="kachel-text">
             <span class="kachel-titel">Beitrag verfassen</span>

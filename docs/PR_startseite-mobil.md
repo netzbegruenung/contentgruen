@@ -222,6 +222,22 @@ BFF auf 5054 scheiterten deshalb alle API-Aufrufe. Jetzt reichen die vier Backen
 
 ## Nachfeilen
 
+**Startseite**
+- Gelbes Band zurück, aber schmal (padding 16, ohne Titel und Icon). Darin: die Erklärzeile
+  „Post reinkopieren – Antwort finden – Verwenden!“ (14 px, `--primary-dark`), das Suchfeld, der
+  Suchen-Knopf und die Beispielzeile. Hero-Titel und Untertitel stehen darüber auf Weiß.
+- Kacheln Einwerfen und Beitrag verfassen: weiß, 2 px Rand in `--primary-dark`, Titel und Pfeil in
+  derselben Farbe, ohne Typfarben.
+- Hero: Eyebrow-Zeile „Gut gesagt“ (0.9rem, Versalien, letter-spacing 0.08em, `--primary-dark`),
+  darunter der Claim „Nie wieder sprachlos“ ohne Gedankenstrich. Mobil: Claim 34 px, Untertitel
+  15 px normal in Sekundärfarbe, Abstand 8 px oben und 16 px unten. Der Seitentitel bleibt
+  „Gut gesagt – Nie wieder sprachlos“ (`index.html:5`).
+- Die Überschrift bleibt im Template ein `div.hero-title`, kein `h1`, weil der Desktop-Header schon
+  ein `h1` hat.
+- Neu gemessen bei 360×740 (die Tabelle oben zeigt den ersten Wurf):
+  - Untertitel endet bei 180 px, das Band liegt bei 196–409 px.
+  - Die zweite Kachel endet bei 628 px, bleibt also ohne Scrollen sichtbar.
+
 **Beitragen-Seite** (`f75d7c3`)
 - Einwerfen ist ein eigener Block über den Typzeilen: weiß, 2 px Rand in `--primary-dark`, so hoch
   wie die Typzeilen.
@@ -236,8 +252,9 @@ BFF auf 5054 scheiterten deshalb alle API-Aufrufe. Jetzt reichen die vier Backen
 - `/einwerfen`: Die Infokarte hat jetzt die Hinweisbox-Optik, Korb-Emoji links, ohne den Titel
   „Schnell einwerfen“ (steht schon im Header). Der Text bleibt `FANGKORB_BESCHREIBUNG`.
 - Consent-Text in allen vier Formularen aus `CONSENT_HINWEIS` (`shared/consent-hinweis.ts`), Schrift
-  0.8em: „Mit dem Absenden stellst du deine Formulierung unwiderruflich unter CC0 und bestätigst die
-  Nutzungsbedingungen – keine personenbezogenen Daten Dritter.“
+  0.8em: „Mit dem Absenden stellst du deine eigene Formulierung unwiderruflich unter CC0 und
+  bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter.“
+  „eigene“ trägt die Bedingung aus den Nutzungsbedingungen (`nutzungsbedingungen.component.html:48,104`).
   Die Konstante hat drei Teile (vor dem Link, Linktext, danach), weil der Link im Template als
   `routerLink` steht.
 - Alte Fassungen, bis auf ein Wort gleich:
