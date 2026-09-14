@@ -448,3 +448,44 @@
     font-size: 11px;
   }
 }
+
+// Kompakt: dieselbe Karte, kleiner. Kopf mit Typfarbe, Titel auf zwei Zeilen,
+// nur der Nutzungs-Badge, darunter das Datum. Als Ganzes antippbar.
+
+.karte--kompakt {
+  width: 100%;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+  }
+
+  .karte-kopf {
+    padding: 12px;
+  }
+
+  .karte-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+  }
+
+  .karte-titel {
+    -webkit-line-clamp: 2;
+    font-size: 16px;
+  }
+
+  .badge {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+}
+
+.karte-datum {
+  margin: 0;
+  padding: var(--spacing-sm) 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}

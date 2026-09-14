@@ -1,12 +1,3 @@
-.inline-content {
-  display: flex;
-  align-items: center;
-}
-
-.inline-content img {
-  margin-right: 10px;
-}
-
 /* Removed .loading-container - using global styles */
 
 .mat-spinner-color::ng-deep circle {
@@ -16,6 +7,7 @@
 /* Usage Statistics Styles */
 .usage-stats-summary {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   margin-top: 20px;
   margin-bottom: 10px;
@@ -43,18 +35,8 @@
   color: var(--primary-main);
 }
 
-/* Usage count cell in table */
-.usage-count-cell {
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: var(--border-radius-small);
-  display: inline-block;
-}
-
-.usage-count-cell.high-usage {
-  background-color: var(--primary-light);
-  color: var(--primary-dark);
-  font-weight: 600;
+.beitraege-leer {
+  color: var(--text-secondary);
 }
 
 /* Info Message Styles */

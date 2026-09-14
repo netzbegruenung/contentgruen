@@ -1,31 +1,29 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContributionsService } from '../services/contributions.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
-import { BreakpointObserver } from '@angular/cdk/layout';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { typLabel } from '../shared/content-type-registry';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
+import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
+import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 
+/**
+ * Meine Beitraege als kompakte Karten: mobil eine Liste, ab 600 px ein Raster (das
+ * Layout regelt app-kartenliste per CSS). Ein Tipp sucht den Beitrag ueber seinen
+ * Titel, bis es eine Detailansicht gibt.
+ */
 @Component({
   selector: 'app-contributions-view',
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
     MatPaginator,
     MatProgressSpinnerModule,
-    MatButtonModule,
-    MatIconModule
+    KartenlisteComponent
   ],
   templateUrl: './contributions-view.component.html',
   styleUrls: ['./contributions-view.component.css'],
@@ -34,17 +32,13 @@ import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
   // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
   providers: [{ provide: MatPaginatorIntl, useClass: DeutscherPaginatorIntl }]
 })
-export class ContributionsViewComponent implements OnInit, OnDestroy {
-  readonly typLabel = typLabel;
-  displayedColumns: string[] = ['content_type', 'text', 'usage_count', 'created', 'last_modified', 'last_modified_by'];
-  dataSource = new MatTableDataSource<ContentResult>();
+export class ContributionsViewComponent implements OnInit {
+  karten: KartenDaten[] = [];
   totalRecords = 0;
   pageSize = 20;
   isLoading = true;
   totalUsageCount = 0;
   userStats: UserUsageStats | null = null;
-  isMobile: boolean = false;
-  private destroy$ = new Subject<void>();
 
   constructor(
     private contributionsService: ContributionsService,
@@ -52,18 +46,9 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     private usageTrackingService: UsageTrackingService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private breakpointObserver: BreakpointObserver
   ) { }
 
   ngOnInit() {
-    // Set up responsive breakpoint detection
-    this.breakpointObserver.observe(['(max-width: 768px)'])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(result => {
-        this.isMobile = result.matches;
-        this.cdr.markForCheck();
-      });
-
     this.fetchData(1, this.pageSize);
     this.loadUserStats();
   }
@@ -71,7 +56,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   fetchData(page: number, pageSize: number) {
     this.isLoading = true;
     this.contributionsService.getContributions(page, pageSize).subscribe((data) => {
-      this.dataSource.data = data.results;
+      this.karten = data.results.map((eintrag) => ausBeitrag(eintrag));
       this.totalRecords = data.total_records_count;
       this.calculateTotalUsage(data.results);
       this.isLoading = false;
@@ -100,14 +85,20 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Uebergangsloesung wie auf der ausformulierten Fangkorb-Karte: Es gibt noch keine
+   * Detailansicht (/beitrag/:id, docs/ROADMAP.md). Ohne Titel sucht der Text.
+   */
+  inSucheAnzeigen(karte: KartenDaten): void {
+    const suche = karte.titel || karte.text;
+    if (suche) {
+      this.router.navigate(['/result'], { queryParams: { searchQuery: suche } });
+    }
+  }
+
+  /**
    * Navigate back to the start/home page.
    */
   navigateToStart(): void {
     this.router.navigate(['/']);
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

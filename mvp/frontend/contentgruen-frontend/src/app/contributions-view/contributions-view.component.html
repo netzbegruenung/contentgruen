@@ -32,48 +32,13 @@
     </div>
 
     <div *ngIf="!isLoading">
-        <table mat-table [dataSource]="dataSource" class="contributions-table">
-            <ng-container matColumnDef="content_type">
-                <th mat-header-cell *matHeaderCellDef> Inhaltstyp </th>
-                <td mat-cell *matCellDef="let element"> {{ typLabel(element.content_type) }} </td>
-            </ng-container>
+        <p *ngIf="!karten.length" class="beitraege-leer">Du hast noch keine Beiträge.</p>
 
-            <ng-container matColumnDef="text">
-                <th mat-header-cell *matHeaderCellDef> Text </th>
-                <td mat-cell *matCellDef="let element"> {{ element.text }} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="usage_count">
-                <th mat-header-cell *matHeaderCellDef> Nutzung </th>
-                <td mat-cell *matCellDef="let element">
-                    <span class="usage-count-cell" [class.high-usage]="element.usage_count > 20">
-                        {{ element.usage_count || 0 }}x
-                        <span *ngIf="element.usage_count > 30">🔥</span>
-                        <span *ngIf="element.usage_count > 15 && element.usage_count <= 30">⭐</span>
-                    </span>
-                </td>
-            </ng-container>
-
-            <ng-container matColumnDef="created">
-                <th mat-header-cell *matHeaderCellDef> Erstellt am </th>
-                <td mat-cell *matCellDef="let element"> {{ element.created | date: 'dd.MM.yyyy, HH:mm' }} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="last_modified">
-                <th mat-header-cell *matHeaderCellDef> Bearbeitet am </th>
-                <td mat-cell *matCellDef="let element"> {{ element.last_modified | date: 'dd.MM.yyyy, HH:mm' }} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="last_modified_by">
-                <th mat-header-cell *matHeaderCellDef> Bearbeitet von </th>
-                <td mat-cell *matCellDef="let element"> {{ element.last_modified_by }} </td>
-            </ng-container>
-
-            <!-- Table Header -->
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <!-- Table Rows -->
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
+        <app-kartenliste *ngIf="karten.length"
+                         variante="kompakt"
+                         [daten]="karten"
+                         (angetippt)="inSucheAnzeigen($event)">
+        </app-kartenliste>
 
         <mat-paginator [length]="totalRecords" [pageSize]="pageSize" [pageSizeOptions]="[10, 20, 50, 100]"
             (page)="onPageChange($event)">

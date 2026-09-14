@@ -385,4 +385,45 @@ describe('BeitragskarteComponent', () => {
       );
     });
   });
+  describe('Kompakt', () => {
+    it('zeigt nur Kopf mit Typfarbe, Titel auf zwei Zeilen, Nutzung und Datum', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 7, created: '2026-09-13T12:00:00' })), {
+        variante: 'kompakt',
+      });
+      const karte = element('.karte');
+
+      expect(karte.classList).toContain('karte--kompakt');
+      expect(karte.classList).toContain('typ-commentary');
+      expect(element('.karte-titel').textContent).toContain('Test Title');
+      expect(getComputedStyle(element('.karte-titel')).webkitLineClamp).toBe('2');
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('7x');
+      expect(element('.karte-datum').textContent!.trim()).toBe('13.09.2026');
+      expect(element('.statement')).toBeNull();
+      expect(element('.karte-text')).toBeNull();
+      expect(element('.karte-meta')).toBeNull();
+      expect(element('app-karten-aktionen')).toBeNull();
+    });
+
+    it('meldet kompakt den Tipp, voll nicht', () => {
+      const daten = ausSuchergebnis(paket('commentary_result'));
+      zeigen(daten, { variante: 'kompakt' });
+      const kompakt = jasmine.createSpy('kompakt');
+      component.angetippt.subscribe(kompakt);
+
+      element('.karte').click();
+
+      expect(kompakt).toHaveBeenCalledOnceWith(daten);
+      expect(element('.karte').getAttribute('role')).toBe('link');
+      expect(element('.karte').getAttribute('tabindex')).toBe('0');
+
+      zeigen(daten);
+      const voll = jasmine.createSpy('voll');
+      component.angetippt.subscribe(voll);
+
+      element('.karte').click();
+
+      expect(voll).not.toHaveBeenCalled();
+      expect(element('.karte').getAttribute('role')).toBeNull();
+    });
+  });
 });

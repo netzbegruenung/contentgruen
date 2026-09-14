@@ -3,10 +3,12 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  EventEmitter,
   Input,
   NgZone,
   OnChanges,
   OnDestroy,
+  Output,
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
@@ -33,6 +35,10 @@ const BELIEBT_AB = 5;
  * Die Karte kennt keine Datenquelle, nur KartenDaten; die Adapter in karten-daten.ts
  * bringen Suche, Meine Beitraege und Fangkorb darauf. Abstimmen, Kopieren und Melden
  * stecken in app-karten-aktionen und erscheinen nur in der vollen Variante.
+ *
+ * Die volle Karte hat Knoepfe und ist deshalb selbst kein Tipp-Ziel. Die kompakte
+ * ist als Ganzes antippbar und meldet das ueber `angetippt`; wohin es geht,
+ * entscheidet die Seite.
  *
  * Die Hoehe ergibt sich aus dem Inhalt. Langer Text wird gekuerzt und laesst sich mit
  * "mehr" aufklappen; ob gekuerzt wurde, misst die Karte am Element selbst.
@@ -68,6 +74,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) daten!: KartenDaten;
   /** Formular-Vorschau: Aktionen sichtbar, aber ohne Wirkung. */
   @Input() vorschau = false;
+
+  /** Tipp auf eine antippbare Karte (kompakt). */
+  @Output() angetippt = new EventEmitter<KartenDaten>();
 
   nutzung: number | null = null;
   nutzungAnimiert = false;
@@ -115,6 +124,14 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     this.beobachter?.disconnect();
   }
 
+  get istVoll(): boolean {
+    return this.variante === 'voll';
+  }
+
+  get istKompakt(): boolean {
+    return this.variante === 'kompakt';
+  }
+
   get kartenKlassen(): string[] {
     return [`karte--${this.variante}`, `typ-${this.daten.typ ?? 'ohne'}`];
   }
@@ -125,6 +142,19 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get emoji(): string {
     return (this.daten.typ && CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji) || '📝';
+  }
+
+  /** Kompakt steht ohne Titel (Altbestand) der Text im Titelfeld. */
+  get titelAnzeige(): string | null {
+    return this.istKompakt ? this.daten.titel || this.daten.text : this.daten.titel;
+  }
+
+  get antippbar(): boolean {
+    return this.istKompakt;
+  }
+
+  get beschriftung(): string {
+    return `${this.typName}: ${this.titelAnzeige ?? ''}`;
   }
 
   get hatKurzOderLang(): boolean {
@@ -166,6 +196,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   /** Eine UUID ohne Adresse zeigt die Vorschau als "Herkunft n" statt als Kennung. */
   quellenName(id: string, index: number): string {
     return /^[0-9a-f-]{36}$/i.test(id) ? `Herkunft ${index + 1}` : id;
+  }
+
+  antippen(): void {
+    if (this.antippbar) {
+      this.angetippt.emit(this.daten);
+    }
   }
 
   statementUmschalten(): void {

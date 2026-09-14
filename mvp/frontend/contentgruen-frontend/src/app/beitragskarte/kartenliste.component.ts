@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenDaten, KartenVariante } from './karten-daten';
 
 /**
- * Beitragskarten untereinander. Mobil (bis 599 px) zeigen Startseite und Suche diese
- * Liste statt des Karussells; jede Karte ist so hoch, wie ihr Inhalt es verlangt.
+ * Beitragskarten auf hellgrauem Grund. Voll untereinander: mobil (bis 599 px)
+ * zeigen Startseite und Suche diese Liste statt des Karussells. Kompakt ab 600 px
+ * als Raster (Meine Beitraege). Jede Karte ist so hoch, wie ihr Inhalt es verlangt.
  */
 @Component({
   selector: 'app-kartenliste',
@@ -14,9 +15,10 @@ import { KartenDaten, KartenVariante } from './karten-daten';
   imports: [CommonModule, BeitragskarteComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul class="kartenliste">
+    <ul class="kartenliste" [class.kartenliste--raster]="variante === 'kompakt'">
       <li *ngFor="let karte of daten; trackBy: nachId">
-        <app-beitragskarte [daten]="karte" [variante]="variante"></app-beitragskarte>
+        <app-beitragskarte [daten]="karte" [variante]="variante" (angetippt)="angetippt.emit($event)">
+        </app-beitragskarte>
       </li>
     </ul>
   `,
@@ -31,12 +33,22 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         list-style: none;
         background: var(--kartenliste-bg);
       }
+
+      @media (min-width: 600px) {
+        .kartenliste--raster {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        }
+      }
     `,
   ],
 })
 export class KartenlisteComponent {
   @Input() daten: KartenDaten[] = [];
   @Input() variante: KartenVariante = 'voll';
+
+  /** Tipp auf eine antippbare Karte, unveraendert durchgereicht. */
+  @Output() angetippt = new EventEmitter<KartenDaten>();
 
   nachId(_index: number, karte: KartenDaten): string {
     return karte.id;
