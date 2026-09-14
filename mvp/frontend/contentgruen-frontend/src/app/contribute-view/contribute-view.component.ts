@@ -7,14 +7,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatCardModule } from '@angular/material/card';
 import { AddCommentaryWorkflowComponent } from "../add-commentary-workflow/add-commentary-workflow.component";
 import { AddGenerictextWorkflowComponent } from "../add-generictext-workflow/add-generictext-workflow.component";
 import { AddImageWorkflowComponent } from "../add-image-workflow/add-image-workflow.component";
 import { CommonModule } from '@angular/common';
 import { BreakpointService } from '../shared/services/breakpoint.service';
 import { typLabel } from '../shared/content-type-registry';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, FANGKORB_KURZ } from '../shared/fangkorb-texte';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -28,7 +27,6 @@ import { takeUntil } from 'rxjs/operators';
     MatTabsModule,
     MatTooltipModule,
     MatExpansionModule,
-    MatCardModule,
     AddCommentaryWorkflowComponent,
     AddGenerictextWorkflowComponent,
     AddImageWorkflowComponent,
@@ -39,6 +37,7 @@ import { takeUntil } from 'rxjs/operators';
 export class ContributeViewComponent implements OnDestroy {
   readonly typLabel = typLabel;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly fangkorbKurz = FANGKORB_KURZ;
   activePanel: string = '';
   searchQuery: string = '';
   isMobile: boolean = false;

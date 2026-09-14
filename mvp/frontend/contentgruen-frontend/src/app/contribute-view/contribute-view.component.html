@@ -1,28 +1,13 @@
-<!-- Desktop intro text -->
-<section class="content-section" *ngIf="!isMobile">
-    <p>
-        Füge eigene Beiträge zu Gut gesagt hinzu – diese können dann von Anderen genutzt werden.<br>
-        So schaffen wir gemeinsam eine große, zugängliche Wissensbasis! 💚💪<br>
-        <br>
-        Wähle eine der folgenden Kategorien:
-    </p>
-</section>
-
-<!-- Mobile intro text only (no title/back button) -->
-<section class="content-section" *ngIf="isMobile && !showMobileForm">
-    <p>
-        Füge eigene Beiträge zu Gut gesagt hinzu – diese können dann von Anderen genutzt werden.<br>
-        So schaffen wir gemeinsam eine große, zugängliche Wissensbasis! 💚💪<br>
-        <br>
-        Wähle eine der folgenden Kategorien:
-    </p>
+<!-- Einleitung: ein Satz, auf Desktop und Handy gleich -->
+<section class="content-section einleitung" *ngIf="!isMobile || !showMobileForm">
+    <p>Wähle, was du beitragen willst:</p>
 </section>
 
 <!-- Fangkorb-Aufruf: steht ueber der Auswahl, weil er die Auswahl gerade
      ueberspringt - keine Kategorie, kein Ausarbeiten, nur ablegen. -->
 <section class="content-section fangkorb-hinweis" *ngIf="!isMobile">
     <div class="fangkorb-karte" role="button" tabindex="0"
-         aria-label="Schnell einwerfen - Rohmaterial ohne Ausarbeiten ablegen"
+         aria-label="Einwerfen - Rohmaterial ohne Ausarbeiten ablegen"
          (click)="navigateToRawInput()"
          (keyup.enter)="navigateToRawInput()"
          (keyup.space)="navigateToRawInput()">
@@ -32,102 +17,50 @@
             <p>{{ fangkorbBeschreibung }}</p>
         </div>
         <button mat-button color="primary" aria-label="Zum Einwerfen">
-            Schnell einwerfen
+            Einwerfen
             <mat-icon aria-hidden="true">arrow_forward</mat-icon>
         </button>
     </div>
 </section>
 
-<!-- Mobile Card Layout -->
-<div *ngIf="isMobile && !showMobileForm" class="mobile-cards-container" role="navigation" aria-label="Beitragstypen">
-    <mat-card class="content-type-card fangkorb-card"
-              (click)="navigateToRawInput()"
-              role="button"
-              tabindex="0"
-              aria-label="Schnell einwerfen - Rohmaterial ohne Ausarbeiten ablegen"
-              (keyup.enter)="navigateToRawInput()"
-              (keyup.space)="navigateToRawInput()">
-        <mat-card-header>
-            <div class="card-icon" aria-hidden="true">🧺</div>
-            <mat-card-title>Schnell einwerfen</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <p>{{ fangkorbBeschreibung }}</p>
-        </mat-card-content>
-        <mat-card-actions>
-            <button mat-button color="primary" aria-label="Zum Einwerfen">
-                Zum Fangkorb
-                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-            </button>
-        </mat-card-actions>
-    </mat-card>
+<!-- Mobil: eine kompakte Zeile je Typ, damit alle vier auf einen Bildschirm passen -->
+<nav *ngIf="isMobile && !showMobileForm" class="typ-zeilen" aria-label="Beitragstypen">
+    <button type="button" class="typ-zeile fangkorb-card" (click)="navigateToRawInput()">
+        <span class="typ-icon" aria-hidden="true">🧺</span>
+        <span class="typ-text">
+            <span class="typ-titel">Einwerfen</span>
+            <span class="typ-satz">{{ fangkorbKurz }}</span>
+        </span>
+        <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </button>
 
-    <mat-card class="content-type-card commentary-card"
-              (click)="selectMobileContentType('commentary')"
-              role="button"
-              tabindex="0"
-              aria-label="Fertigen Kommentar verfassen - Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media"
-              (keyup.enter)="selectMobileContentType('commentary')"
-              (keyup.space)="selectMobileContentType('commentary')">
-        <mat-card-header>
-            <div class="card-icon" aria-hidden="true">💬</div>
-            <mat-card-title>{{ typLabel('commentary') }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <p>Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media</p>
-        </mat-card-content>
-        <mat-card-actions>
-            <button mat-button color="primary" aria-label="Kommentar verfassen">
-                Fertigen Kommentar verfassen
-                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-            </button>
-        </mat-card-actions>
-    </mat-card>
+    <button type="button" class="typ-zeile commentary-card" (click)="selectMobileContentType('commentary')">
+        <span class="typ-icon" aria-hidden="true">💬</span>
+        <span class="typ-text">
+            <span class="typ-titel">{{ typLabel('commentary') }}</span>
+            <span class="typ-satz">Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media.</span>
+        </span>
+        <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </button>
 
-    <mat-card class="content-type-card generictext-card"
-              (click)="selectMobileContentType('generictext')"
-              role="button"
-              tabindex="0"
-              aria-label="Hintergrundinfo verfassen - Fakten, Zahlen und Hintergrundinformationen zum Thema"
-              (keyup.enter)="selectMobileContentType('generictext')"
-              (keyup.space)="selectMobileContentType('generictext')">
-        <mat-card-header>
-            <div class="card-icon" aria-hidden="true">📄</div>
-            <mat-card-title>{{ typLabel('generictext') }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <p>Fakten, Zahlen und Hintergrundinformationen zum Thema</p>
-        </mat-card-content>
-        <mat-card-actions>
-            <button mat-button color="primary" aria-label="Textbeitrag verfassen">
-                Hintergrundinfo verfassen
-                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-            </button>
-        </mat-card-actions>
-    </mat-card>
+    <button type="button" class="typ-zeile generictext-card" (click)="selectMobileContentType('generictext')">
+        <span class="typ-icon" aria-hidden="true">📄</span>
+        <span class="typ-text">
+            <span class="typ-titel">{{ typLabel('generictext') }}</span>
+            <span class="typ-satz">Fakten, Zahlen und Hintergrundinformationen zum Thema.</span>
+        </span>
+        <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </button>
 
-    <mat-card class="content-type-card image-card"
-              (click)="selectMobileContentType('image')"
-              role="button"
-              tabindex="0"
-              aria-label="Bild hinzufügen - Politisch relevante Bilder mit Bildunterschrift"
-              (keyup.enter)="selectMobileContentType('image')"
-              (keyup.space)="selectMobileContentType('image')">
-        <mat-card-header>
-            <div class="card-icon" aria-hidden="true">🖼️</div>
-            <mat-card-title>{{ typLabel('image') }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <p>Politisch relevante Bilder mit Bildunterschrift</p>
-        </mat-card-content>
-        <mat-card-actions>
-            <button mat-button color="primary" aria-label="Bild hinzufügen">
-                Bild hinzufügen
-                <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-            </button>
-        </mat-card-actions>
-    </mat-card>
-</div>
+    <button type="button" class="typ-zeile image-card" (click)="selectMobileContentType('image')">
+        <span class="typ-icon" aria-hidden="true">🖼️</span>
+        <span class="typ-text">
+            <span class="typ-titel">{{ typLabel('image') }}</span>
+            <span class="typ-satz">Politisch relevante Bilder mit Bildunterschrift.</span>
+        </span>
+        <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </button>
+</nav>
 
 <!-- Mobile Form View -->
 <div *ngIf="isMobile && showMobileForm" class="mobile-form-container">
