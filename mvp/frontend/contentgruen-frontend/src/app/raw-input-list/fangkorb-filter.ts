@@ -7,6 +7,17 @@ import { Plattform, PLATTFORMEN, plattformAusUrl } from '../shared/plattform';
  */
 export const FILTER_SCHLUESSEL = 'contentgruen.fangkorb.filter';
 
+/**
+ * Die Plattformen, die ein gespeicherter Filter ohne Angabe "bekannte" kannte -
+ * so hat ihn die Version vor Threads, X und Bluesky abgelegt.
+ */
+const FRUEHER_BEKANNTE: ReadonlyArray<string> = ['instagram', 'youtube', 'tiktok', 'web'];
+
+/** So liegt der Filter im Storage: dazu, welche Plattformen es beim Speichern gab. */
+interface GespeicherterFilter extends FangkorbFilter {
+  bekannte: string[];
+}
+
 export interface FangkorbFilter {
   /** Eingeblendete Plattformen, Standard alle. Einwuerfe ohne Link blendet das nie aus. */
   plattformen: Plattform[];
@@ -52,7 +63,10 @@ export function passtZumFilter(
  * Den Filter dieser Sitzung lesen.
  *
  * Fehlt er, ist er unlesbar oder ist der Storage gesperrt (privater Modus), gilt
- * der Standard. Unbekannte Plattformen aus einer aelteren Version fallen heraus.
+ * der Standard. Plattformen, die es heute nicht mehr gibt, fallen heraus.
+ * Plattformen, die der gespeicherte Filter noch nicht kannte, gelten als
+ * eingeblendet - sonst blieben ihre Einwuerfe unsichtbar, ohne dass je jemand
+ * sie abgewaehlt hat.
  */
 export function filterLaden(): FangkorbFilter {
   try {
@@ -60,11 +74,14 @@ export function filterLaden(): FangkorbFilter {
     if (!roh) {
       return standardFilter();
     }
-    const gelesen = JSON.parse(roh) as Partial<FangkorbFilter> | null;
-    const bekannte: string[] = PLATTFORMEN.map((eintrag) => eintrag.wert);
+    const gelesen = JSON.parse(roh) as Partial<GespeicherterFilter> | null;
+    const kannte = Array.isArray(gelesen?.bekannte) ? gelesen.bekannte : FRUEHER_BEKANNTE;
+    const gespeichert: string[] | null = Array.isArray(gelesen?.plattformen) ? gelesen.plattformen : null;
     return {
-      plattformen: Array.isArray(gelesen?.plattformen)
-        ? gelesen.plattformen.filter((wert): wert is Plattform => bekannte.includes(wert))
+      plattformen: gespeichert
+        ? PLATTFORMEN.map((eintrag) => eintrag.wert).filter(
+            (wert) => gespeichert.includes(wert) || !kannte.includes(wert),
+          )
         : standardFilter().plattformen,
       nurOffene: gelesen?.nurOffene === true,
       nurMeine: gelesen?.nurMeine === true,
@@ -76,7 +93,11 @@ export function filterLaden(): FangkorbFilter {
 
 export function filterSpeichern(filter: FangkorbFilter): void {
   try {
-    sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify(filter));
+    const gespeichert: GespeicherterFilter = {
+      ...filter,
+      bekannte: PLATTFORMEN.map((eintrag) => eintrag.wert),
+    };
+    sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify(gespeichert));
   } catch {
     // Ohne Storage gilt der Filter eben nur, solange die Seite offen ist.
   }
