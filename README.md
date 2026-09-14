@@ -42,6 +42,7 @@ Access the app at [http://localhost](http://localhost). See [CONTRIBUTING.md](./
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup and contribution guide |
 | [`STATUS.md`](./STATUS.md) | Current status and priorities |
 | [`docs/DEV_GUIDE.md`](./docs/DEV_GUIDE.md) | Development and testing guide |
+| [`docs/DEV-SETUP.md`](./docs/DEV-SETUP.md) | `ng serve` against the Docker dev stack (proxy, no frontend container) |
 | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | Deployment instructions |
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | System architecture |
 | [`docs/CONTENT_MODEL.md`](./docs/CONTENT_MODEL.md) | Content-type architecture |
