@@ -5,10 +5,7 @@
             <span class="einwurf-icon" aria-hidden="true">🧺</span>
             <div class="einwurf-text">
                 <h2 class="einwurf-titel">Schnell einwerfen</h2>
-                <p class="einwurf-beschreibung">
-                    Ein Link, ein Hinweis oder beides - roh, ohne Ausarbeiten.
-                    Jemand macht spaeter einen Beitrag daraus.
-                </p>
+                <p class="einwurf-beschreibung">{{ fangkorbBeschreibung }}</p>
             </div>
         </div>
     </div>
@@ -73,8 +70,8 @@
 
         <div class="einwurf-rueckmeldung" role="status" aria-live="polite">
             <p *ngIf="eingeworfen > 0 && !fehler" class="erfolg">
-                ✅ Drin. {{ eingeworfen === 1 ? 'Ein Einwurf' : eingeworfen + ' Einwuerfe' }} in dieser Sitzung -
-                die Felder sind wieder frei fuer den naechsten.
+                ✅ Drin. {{ eingeworfen === 1 ? 'Ein Einwurf' : eingeworfen + ' Einwürfe' }} in dieser Sitzung –
+                die Felder sind wieder frei für den nächsten.
             </p>
             <p *ngIf="fehler" class="fehler">⚠️ {{ fehler }}</p>
         </div>
@@ -83,8 +80,8 @@
 
     <div class="einwurf-fussnote">
         <p>
-            Der Fangkorb ist ein gemeinsamer Vorrat: Andere sehen deine Einwuerfe und
-            koennen sie ausarbeiten.
+            Der Fangkorb ist ein gemeinsamer Vorrat: Andere sehen deine Einwürfe und
+            können sie ausarbeiten.
         </p>
     </div>
 

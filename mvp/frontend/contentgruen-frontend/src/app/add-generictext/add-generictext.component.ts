@@ -20,6 +20,7 @@ import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, debounceTime } from 'rxjs/operators';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
+import { typLabel } from '../shared/content-type-registry';
 
 
 interface GenericTextFormValues {
@@ -59,6 +60,7 @@ interface GenericTextFormValues {
     ]
 })
 export class AddGenerictextComponent implements OnChanges, OnDestroy {
+    readonly typName = typLabel('generictext');
     @Input() statementText: string = '';
     @Input() statementId: string = '';
     /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft. */

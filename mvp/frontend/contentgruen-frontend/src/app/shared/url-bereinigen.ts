@@ -29,6 +29,26 @@ const TRACKING_PARAMETER = [
 const TRACKING_PRAEFIXE = ['utm_'];
 
 /**
+ * Parameter, die nur auf bestimmten Hosts Tracking sind.
+ *
+ * Namen wie ``si`` oder ``feature`` sind fuer die globale Liste zu allgemein: auf
+ * anderen Seiten koennen sie Inhalt tragen. Subdomains zaehlen mit (www.youtube.com,
+ * m.youtube.com), aehnlich klingende Domains nicht.
+ */
+const HOST_TRACKING_PARAMETER: ReadonlyArray<{ domains: string[]; parameter: string[] }> = [
+  // YouTube: si ist die Kennung des Teilen-Vorgangs, feature/pp/is die Herkunft des Klicks.
+  // Inhaltliche Parameter wie v, t oder list bleiben stehen.
+  { domains: ['youtube.com', 'youtu.be'], parameter: ['si', 'is', 'feature', 'pp'] },
+];
+
+function hostTrackingParameter(host: string): string[] {
+  const klein = host.toLowerCase();
+  return HOST_TRACKING_PARAMETER.filter(({ domains }) =>
+    domains.some((domain) => klein === domain || klein.endsWith(`.${domain}`)),
+  ).flatMap(({ parameter }) => parameter);
+}
+
+/**
  * Erkennt Adressen im Freitext. Bewusst schlicht: der Server prueft eine Adresse
  * noch einmal richtig. Beide Muster muessen dasselbe als Adresse ansehen.
  */
@@ -40,10 +60,11 @@ export function ersteAdresse(text: string | null | undefined): string | null {
   return text?.match(URL_MUSTER)?.[0] ?? null;
 }
 
-function istTrackingParameter(name: string): boolean {
+function istTrackingParameter(name: string, hostParameter: string[]): boolean {
   const klein = name.toLowerCase();
   return (
     TRACKING_PARAMETER.includes(klein) ||
+    hostParameter.includes(klein) ||
     TRACKING_PRAEFIXE.some((praefix) => klein.startsWith(praefix))
   );
 }
@@ -70,9 +91,10 @@ export function trackingParameterEntfernen(url: string): string {
     return url;
   }
 
+  const hostParameter = hostTrackingParameter(zerlegt.hostname);
   const zuEntfernen: string[] = [];
   zerlegt.searchParams.forEach((_wert, name) => {
-    if (istTrackingParameter(name)) {
+    if (istTrackingParameter(name, hostParameter)) {
       zuEntfernen.push(name);
     }
   });

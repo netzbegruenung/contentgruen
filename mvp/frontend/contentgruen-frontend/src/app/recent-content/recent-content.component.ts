@@ -6,7 +6,7 @@ import { ContentRefreshService } from '../services/content-refresh.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ResultCarouselComponent } from '../result-carousel/result-carousel.component';
-import { resolveResultComponent } from '../shared/content-type-registry';
+import { resolveResultComponent } from '../shared/content-type-components';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../shared/components/error-message/error-message.component';
 

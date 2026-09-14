@@ -59,13 +59,25 @@
             Hilfe
         </button>
 
-        <button mat-button class="mobile-menu-item">
+        <!-- Rechtstexte: der Footer ist mobil schmal, hier sind sie einen Tipp entfernt. -->
+        <a mat-button routerLink="/impressum" (click)="close()" class="mobile-menu-item legal-impressum">
             <mat-icon>info</mat-icon>
             Impressum
-        </button>
+        </a>
+
+        <a mat-button routerLink="/datenschutz" (click)="close()" class="mobile-menu-item legal-datenschutz">
+            <mat-icon>privacy_tip</mat-icon>
+            Datenschutz
+        </a>
+
+        <a mat-button routerLink="/nutzungsbedingungen" (click)="close()" class="mobile-menu-item legal-nutzungsbedingungen">
+            <mat-icon>gavel</mat-icon>
+            Nutzungsbedingungen
+        </a>
 
         <div class="mobile-menu-about">
-            <p>Gut gesagt ist ein Projekt von <a href="" target="_blank" rel="noopener">Sebastian Banach</a> im Rahmen von <a target="_blank" rel="noopener" href="https://netzbegruenung.de/">Netzbegrünung e.V.</a></p>
+            <!-- Anbieter zuerst, wie im Impressum. -->
+            <p>Ein Projekt von <a target="_blank" rel="noopener" href="https://netzbegruenung.de/" class="anbieter-link">Netzbegrünung e.V.</a>, entwickelt von <a routerLink="/about" (click)="close()" class="about-link">Sebastian Banach</a></p>
         </div>
     </div>
 </div>

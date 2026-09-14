@@ -35,7 +35,7 @@
         <table mat-table [dataSource]="dataSource" class="contributions-table">
             <ng-container matColumnDef="content_type">
                 <th mat-header-cell *matHeaderCellDef> Inhaltstyp </th>
-                <td mat-cell *matCellDef="let element"> {{ element.content_type }} </td>
+                <td mat-cell *matCellDef="let element"> {{ typLabel(element.content_type) }} </td>
             </ng-container>
 
             <ng-container matColumnDef="text">
@@ -56,12 +56,12 @@
 
             <ng-container matColumnDef="created">
                 <th mat-header-cell *matHeaderCellDef> Erstellt am </th>
-                <td mat-cell *matCellDef="let element"> {{ element.created | date: 'dd.MM.yyyy, hh:mm' }} </td>
+                <td mat-cell *matCellDef="let element"> {{ element.created | date: 'dd.MM.yyyy, HH:mm' }} </td>
             </ng-container>
 
             <ng-container matColumnDef="last_modified">
                 <th mat-header-cell *matHeaderCellDef> Bearbeitet am </th>
-                <td mat-cell *matCellDef="let element"> {{ element.last_modified | date: 'dd.MM.yyyy, hh:mm' }} </td>
+                <td mat-cell *matCellDef="let element"> {{ element.last_modified | date: 'dd.MM.yyyy, HH:mm' }} </td>
             </ng-container>
 
             <ng-container matColumnDef="last_modified_by">

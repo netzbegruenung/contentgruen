@@ -13,6 +13,8 @@ import { AddGenerictextWorkflowComponent } from "../add-generictext-workflow/add
 import { AddImageWorkflowComponent } from "../add-image-workflow/add-image-workflow.component";
 import { CommonModule } from '@angular/common';
 import { BreakpointService } from '../shared/services/breakpoint.service';
+import { typLabel } from '../shared/content-type-registry';
+import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -35,6 +37,8 @@ import { takeUntil } from 'rxjs/operators';
   styleUrls: ['./contribute-view.component.css']
 })
 export class ContributeViewComponent implements OnDestroy {
+  readonly typLabel = typLabel;
+  readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
   activePanel: string = '';
   searchQuery: string = '';
   isMobile: boolean = false;

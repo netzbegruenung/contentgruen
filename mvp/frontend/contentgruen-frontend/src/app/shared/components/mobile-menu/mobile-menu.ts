@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
+import { RouterLink } from '@angular/router';
 import { UserInfo } from '../../../auth/auth.service';
 
 @Component({
@@ -12,7 +13,8 @@ import { UserInfo } from '../../../auth/auth.service';
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatDividerModule
+    MatDividerModule,
+    RouterLink
   ],
   templateUrl: './mobile-menu.html',
   styleUrl: './mobile-menu.css'

@@ -104,42 +104,6 @@ mat-expansion-panel-header {
     font-style: italic;
 }
 
-.roadmap-section {
-    margin-top: var(--spacing-xxl);
-    padding: var(--spacing-xl) 0;
-}
-
-.coming-soon-card {
-    background-color: var(--bg-secondary);
-    border-radius: var(--border-radius-medium);
-    padding: var(--spacing-xl);
-    margin: 0 auto;
-    max-width: 600px;
-    text-align: center;
-}
-
-.coming-soon-card h4 {
-    color: var(--primary-dark);
-    margin-bottom: var(--spacing-md);
-}
-
-.coming-soon-card p {
-    color: var(--text-secondary);
-    line-height: 1.6;
-}
-
-.feedback-link {
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color var(--transition-fast);
-}
-
-.feedback-link:hover {
-    color: var(--primary-dark);
-    text-decoration: underline;
-}
-
 mat-panel-description {
     color: var(--text-secondary);
     font-size: 16px;
@@ -166,11 +130,6 @@ mat-panel-title h3 {
 
     .panel-content {
         padding: var(--spacing-md);
-    }
-
-    .coming-soon-card {
-        margin: 0 var(--spacing-md);
-        padding: var(--spacing-lg);
     }
 
     mat-expansion-panel-header {

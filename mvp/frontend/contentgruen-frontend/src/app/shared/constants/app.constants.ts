@@ -1,3 +1,5 @@
+import { typLabel } from '../content-type-registry';
+
 export const APP_CONSTANTS = {
   // Breakpoints (should align with CDK breakpoints)
   BREAKPOINTS: {
@@ -55,8 +57,9 @@ export const PAGE_TITLES = {
   RAW_INPUT_LIST: 'Fangkorb',
   DESTILLIEREN: 'Destillieren',
   SHARE_TARGET: 'Geteilter Inhalt',
-  COMMENTARY: 'Fertiger Kommentar',
-  GENERIC_TEXT: 'Hintergrundinfo',
+  // Typnamen aus der Registry
+  COMMENTARY: typLabel('commentary'),
+  GENERIC_TEXT: typLabel('generic_text'),
   LOGIN: 'Anmelden',
   HELP: 'Hilfe'
 };

@@ -56,7 +56,7 @@ def _angemeldete_person(x_user: Optional[str]) -> str:
     """Wie _einwerfende_person, aber ohne Kennung gibt es hier nichts zu tun."""
     person = _einwerfende_person(x_user)
     if person is None:
-        raise HTTPException(status_code=401, detail="Dafuer musst du angemeldet sein.")
+        raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
     return person
 
 
@@ -209,5 +209,5 @@ async def update_status(
     except Exception as e:
         logger.error(f"Fehler in PATCH /rawinput/{{id}}/status: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail="Der Status konnte nicht geaendert werden."
+            status_code=500, detail="Der Status konnte nicht geändert werden."
         )

@@ -170,12 +170,18 @@ class ContentRepository(
         return await self.get_all(limit, offset)
 
     async def getByAuthor(
-        self, user_id: str, limit: int, offset: int
+        self,
+        user_id: str,
+        limit: int,
+        offset: int,
+        content_types: Optional[List[str]] = None,
     ) -> List[ContentDbEntry]:
-        return await self.get_by_author(user_id, limit, offset)
+        return await self.get_by_author(user_id, limit, offset, content_types)
 
-    async def getCountByAuthor(self, user_id: str) -> int:
-        return await self.get_count_by_author(user_id)
+    async def getCountByAuthor(
+        self, user_id: str, content_types: Optional[List[str]] = None
+    ) -> int:
+        return await self.get_count_by_author(user_id, content_types)
 
     async def upsert_content(self, content_input: ContentDbEntry) -> uuid.UUID:
         """

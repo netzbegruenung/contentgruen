@@ -103,7 +103,11 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
 
     @abstractmethod
     async def get_by_author(
-        self, user_id: str, limit: int, offset: int
+        self,
+        user_id: str,
+        limit: int,
+        offset: int,
+        content_types: Optional[List[str]] = None,
     ) -> List[TContentDbEntry]:
         """
         Retrieve items by a specific author with pagination.
@@ -112,6 +116,7 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
             user_id: The author's user ID
             limit: Maximum number of items to return
             offset: Number of items to skip
+            content_types: Optional, nur Eintraege dieser Typen
 
         Returns:
             List of content items by the author
@@ -119,12 +124,15 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         pass
 
     @abstractmethod
-    async def get_count_by_author(self, user_id: str) -> int:
+    async def get_count_by_author(
+        self, user_id: str, content_types: Optional[List[str]] = None
+    ) -> int:
         """
         Get the count of items by a specific author.
 
         Args:
             user_id: The author's user ID
+            content_types: Optional, nur Eintraege dieser Typen
 
         Returns:
             Count of items by the author

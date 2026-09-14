@@ -57,6 +57,36 @@ describe('trackingParameterEntfernen', () => {
       'https://example.org/a',
     );
   });
+
+  describe('YouTube', () => {
+    it('entfernt si und feature auf youtube.com und behaelt v und t', () => {
+      expect(
+        trackingParameterEntfernen('https://youtube.com/watch?v=abc123&si=XyZ&feature=shared&t=42'),
+      ).toBe('https://youtube.com/watch?v=abc123&t=42');
+    });
+
+    it('entfernt pp und is auch auf Subdomains wie www. und m.', () => {
+      expect(trackingParameterEntfernen('https://www.youtube.com/watch?v=abc123&pp=ygUE')).toBe(
+        'https://www.youtube.com/watch?v=abc123',
+      );
+      expect(trackingParameterEntfernen('https://m.youtube.com/watch?v=abc123&is=1')).toBe(
+        'https://m.youtube.com/watch?v=abc123',
+      );
+    });
+
+    it('entfernt si auf youtu.be und laesst kein Fragezeichen stehen', () => {
+      expect(trackingParameterEntfernen('https://youtu.be/abc123?si=XyZ')).toBe(
+        'https://youtu.be/abc123',
+      );
+    });
+
+    it('laesst si, is, feature und pp auf anderen Hosts stehen', () => {
+      const fremd = 'https://example.org/a?si=1&is=2&feature=3&pp=4';
+      expect(trackingParameterEntfernen(fremd)).toBe(fremd);
+      const aehnlich = 'https://notyoutube.com/watch?v=abc123&si=XyZ';
+      expect(trackingParameterEntfernen(aehnlich)).toBe(aehnlich);
+    });
+  });
 });
 
 describe('urlsInTextBereinigen', () => {

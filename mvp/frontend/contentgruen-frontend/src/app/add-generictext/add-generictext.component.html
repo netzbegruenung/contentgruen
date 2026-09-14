@@ -4,7 +4,7 @@
         <div class="content-type-badge">
             <span class="content-type-icon">📄</span>
             <div class="content-type-text">
-                <h2 class="content-type-title">Hintergrundinfo</h2>
+                <h2 class="content-type-title">{{ typName }}</h2>
                 <p class="content-type-description">Fakten, Zahlen und Hintergrundinformationen zum Thema</p>
             </div>
         </div>
@@ -134,17 +134,17 @@
                     <button mat-stroked-button type="button" class="add-reference-trigger"
                             *ngIf="!showReferences"
                             (click)="revealReferences()"
-                            matTooltip="Quellenangaben hinzufügen (optional)">
+                            matTooltip="Herkunft hinzufügen (optional)">
                         <mat-icon>menu_book</mat-icon>
-                        <span>+ Quelle</span>
+                        <span>+ Herkunft</span>
                     </button>
 
                     <div class="form-group references-section"
                          *ngIf="showReferences" @expandCollapse>
-                        <label class="input-label">Quellenangaben (optional)</label>
+                        <label class="input-label">Herkunft (optional)</label>
                         <app-reference-input
                             formControlName="references"
-                            placeholder="Quelle hinzufügen (URL oder Beschreibung)"
+                            placeholder="Herkunft hinzufügen (URL oder Beschreibung)"
                             (referenceAdded)="onReferenceAdded($event)"
                             (referenceRemoved)="onReferenceRemoved($event)">
                         </app-reference-input>

@@ -7,7 +7,6 @@ import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { RecentContentComponent } from '../recent-content/recent-content.component';
-import { MetricsComponent } from '../metrics/metrics.component';
 import { MetricsService } from '../services/metrics.service';
 import { AboutTeaserComponent } from '../about-teaser/about-teaser.component';
 import { AuthService, UserInfo } from '../auth/auth.service';
@@ -15,6 +14,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ContentRefreshService } from '../services/content-refresh.service';
+import { typLabel } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-search-view',
@@ -27,13 +27,13 @@ import { ContentRefreshService } from '../services/content-refresh.service';
     MatButtonModule,
     MatIconModule,
     RecentContentComponent,
-    MetricsComponent,
     AboutTeaserComponent,
   ],
   templateUrl: './search-view.component.html',
   styleUrls: ['./search-view.component.scss']
 })
 export class SearchViewComponent implements OnInit, AfterViewInit {
+  readonly typLabel = typLabel;
   contentCount$: Observable<number> | undefined;
   contentStats$: Observable<any> | undefined;
   userInfo: UserInfo | null = null;

@@ -9,7 +9,7 @@ import { StatementService } from '../services/statement.service';
 import { SearchResponse, GenerictextResult } from '../services/dtos/searchDtos';
 import { CommentarySearchResultsComponent } from '../commentary-search-results/commentary-search-results.component';
 import { GenerictextSearchResultsComponent } from '../generictext-search-results/generictext-search-results.component';
-import { CONTENT_TYPE_REGISTRY } from '../shared/content-type-registry';
+import { RESULT_COMPONENTS } from '../shared/content-type-components';
 import { ResultCarouselComponent } from '../result-carousel/result-carousel.component';
 import { SearchComponent } from '../search/search.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -73,9 +73,9 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   private queryParamsSubscription?: Subscription;
   private destroy$ = new Subject<void>();
 
-  // Component types for carousels, sourced from the content-type registry.
-  commentaryResultItemComponent: Type<any> = CONTENT_TYPE_REGISTRY['commentary'].resultComponent;
-  generictextResultItemComponent: Type<any> = CONTENT_TYPE_REGISTRY['generictext'].resultComponent;
+  // Component types for carousels, sourced from the content-type components map.
+  commentaryResultItemComponent: Type<any> = RESULT_COMPONENTS['commentary'];
+  generictextResultItemComponent: Type<any> = RESULT_COMPONENTS['generictext'];
 
   // Mobile navigation
   isMobile: boolean = false;

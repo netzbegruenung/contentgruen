@@ -24,6 +24,7 @@ import { LoggingService } from '../services/logging.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { BaseResultItemComponent } from '../shared/components/base-result-item/base-result-item.component';
+import { typLabel } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-image-result-item',
@@ -56,6 +57,7 @@ export class ImageResultItemComponent extends BaseResultItemComponent<ImageSearc
   @Input() isPreview = false;
 
   protected readonly contentType = 'image';
+  readonly typName = typLabel('image');
 
   get content(): BaseContentResult {
     return this.result.image_result;

@@ -337,3 +337,39 @@ class TestAutorenzuordnungOhneSuchanfragen:
         bedingungen = {bedingung.key: bedingung for bedingung in such_filter.must}
         assert bedingungen["original_author"].match.value == "testuser"
         assert bedingungen["content_type"].match.value == "statement"
+
+    @staticmethod
+    def _typ_eingrenzungen(such_filter) -> list:
+        return [
+            list(bedingung.match.any)
+            for bedingung in such_filter.must
+            if bedingung.key == "content_type" and hasattr(bedingung.match, "any")
+        ]
+
+    @pytest.mark.asyncio
+    async def test_content_types_grenzt_liste_und_zaehlung_ein(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        typen = ["commentary", "generic_text", "image", "post"]
+
+        await repository.get_by_author(
+            "testuser", limit=10, offset=0, content_types=typen
+        )
+        await repository.get_count_by_author("testuser", content_types=typen)
+
+        liste = client.scroll.call_args.kwargs["scroll_filter"]
+        zaehlung = client.count.call_args.kwargs["count_filter"]
+        assert self._typ_eingrenzungen(liste) == [typen]
+        assert self._typ_eingrenzungen(zaehlung) == [typen]
+        assert self._suchanfragen_ausgeschlossen(liste)
+        assert self._suchanfragen_ausgeschlossen(zaehlung)
+
+    @pytest.mark.asyncio
+    async def test_ohne_content_types_keine_eingrenzung(self, repository_mit_client):
+        repository, client = repository_mit_client
+
+        await repository.get_by_author("testuser", limit=10, offset=0)
+
+        such_filter = client.scroll.call_args.kwargs["scroll_filter"]
+        assert self._typ_eingrenzungen(such_filter) == []

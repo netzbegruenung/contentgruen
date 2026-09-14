@@ -321,28 +321,47 @@ class QdrantBaseRepository(
             logger.error(f"Failed to get all items: {e}", exc_info=True)
             raise
 
+    def _autoren_filter(self, user_id: str, content_types: Optional[List[str]] = None):
+        """
+        Filter fuer alles, was einer Person zugeordnet wird.
+
+        Der Typ des Repositorys gilt immer, falls es einen hat. content_types grenzt
+        zusaetzlich auf mehrere Typen ein - gedacht fuer das aggregierte Repository,
+        etwa fuer "Meine Beitraege" ohne Aussagen und Herkunftsangaben. Ohne Angabe
+        bleibt alles wie bisher; die Nutzungsstatistik ruft ohne Eingrenzung auf.
+        """
+        from qdrant_client.models import Filter, FieldCondition, MatchAny, MatchValue
+
+        must_conditions = [
+            FieldCondition(key="original_author", match=MatchValue(value=user_id))
+        ]
+
+        if self.content_type:
+            must_conditions.append(
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                )
+            )
+
+        if content_types:
+            must_conditions.append(
+                FieldCondition(
+                    key="content_type", match=MatchAny(any=list(content_types))
+                )
+            )
+
+        return Filter(must=must_conditions, must_not=_search_query_origin_conditions())
+
     async def get_by_author(
-        self, user_id: str, limit: int, offset: int
+        self,
+        user_id: str,
+        limit: int,
+        offset: int,
+        content_types: Optional[List[str]] = None,
     ) -> List[TContentDbEntry]:
         """Async implementation of get_by_author."""
         try:
-            from qdrant_client.models import Filter, FieldCondition, MatchValue
-
-            # Build filter conditions
-            must_conditions = [
-                FieldCondition(key="original_author", match=MatchValue(value=user_id))
-            ]
-
-            if self.content_type:
-                must_conditions.append(
-                    FieldCondition(
-                        key="content_type", match=MatchValue(value=self.content_type)
-                    )
-                )
-
-            search_filter = Filter(
-                must=must_conditions, must_not=_search_query_origin_conditions()
-            )
+            search_filter = self._autoren_filter(user_id, content_types)
 
             # Scroll through results with pagination
             all_results = []
@@ -395,26 +414,12 @@ class QdrantBaseRepository(
             logger.error(f"Failed to get items by author: {e}", exc_info=True)
             raise
 
-    async def get_count_by_author(self, user_id: str) -> int:
+    async def get_count_by_author(
+        self, user_id: str, content_types: Optional[List[str]] = None
+    ) -> int:
         """Async implementation of get_count_by_author."""
         try:
-            from qdrant_client.models import Filter, FieldCondition, MatchValue
-
-            # Build filter conditions
-            must_conditions = [
-                FieldCondition(key="original_author", match=MatchValue(value=user_id))
-            ]
-
-            if self.content_type:
-                must_conditions.append(
-                    FieldCondition(
-                        key="content_type", match=MatchValue(value=self.content_type)
-                    )
-                )
-
-            search_filter = Filter(
-                must=must_conditions, must_not=_search_query_origin_conditions()
-            )
+            search_filter = self._autoren_filter(user_id, content_types)
 
             # Count with filter
             result = await self._shared_manager.async_client.count(

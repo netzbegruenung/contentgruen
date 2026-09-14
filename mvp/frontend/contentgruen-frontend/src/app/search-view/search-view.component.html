@@ -1,5 +1,3 @@
-<app-metrics></app-metrics>
-
 <section class="content-section compact-intro">
     <div class="hero-title">
         Gut gesagt – Nie wieder sprachlos
@@ -43,28 +41,28 @@
                             <span *ngIf="contentStats$ | async as stats; else loadingStatement">{{ stats?.statement_count || 0 }}</span>
                             <ng-template #loadingStatement>...</ng-template>
                         </div>
-                        <div class="metric-label">Aussagen</div>
+                        <div class="metric-label">{{ typLabel('statement') }}</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-value">
                             <span *ngIf="contentStats$ | async as stats; else loadingCommentary">{{ stats?.commentary_count || 0 }}</span>
                             <ng-template #loadingCommentary>...</ng-template>
                         </div>
-                        <div class="metric-label">Fertige Kommentare</div>
+                        <div class="metric-label">{{ typLabel('commentary') }}</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-value">
                             <span *ngIf="contentStats$ | async as stats; else loadingGenericText">{{ getGenericTextCount(stats) }}</span>
                             <ng-template #loadingGenericText>...</ng-template>
                         </div>
-                        <div class="metric-label">Hintergrundinfos</div>
+                        <div class="metric-label">{{ typLabel('generictext') }}</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-value">
                             <span *ngIf="contentStats$ | async as stats; else loadingReference">{{ stats?.reference_count || 0 }}</span>
                             <ng-template #loadingReference>...</ng-template>
                         </div>
-                        <div class="metric-label">Quellen</div>
+                        <div class="metric-label">{{ typLabel('reference') }}</div>
                     </div>
             </div>
             <div class="contribute-actions">
