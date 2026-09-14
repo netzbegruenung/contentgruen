@@ -10,7 +10,7 @@ import { AboutTeaserComponent } from '../about-teaser/about-teaser.component';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { typLabel } from '../shared/content-type-registry';
-import { FANGKORB_KURZ } from '../shared/fangkorb-texte';
+import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
 
 @Component({
   selector: 'app-search-view',
@@ -31,6 +31,7 @@ import { FANGKORB_KURZ } from '../shared/fangkorb-texte';
 export class SearchViewComponent implements AfterViewInit {
   readonly typLabel = typLabel;
   readonly fangkorbKurz = FANGKORB_KURZ;
+  readonly kettenIcons = KETTEN_ICONS;
 
   constructor(
     private navigationService: NavigationService,

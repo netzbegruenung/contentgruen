@@ -86,22 +86,30 @@ describe('ContributeViewComponent', () => {
       return Array.from(fixture.nativeElement.querySelectorAll('button.typ-zeile'));
     }
 
-    it('zeigt alle vier Typen als Zeilen', () => {
+    it('zeigt Einwerfen, Fangkorb und die drei Typen als Zeilen', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
-        .toEqual(['Einwerfen', 'Kommentar', 'Hintergrundinfo', 'Bild']);
+        .toEqual(['Einwerfen', 'Fangkorb', 'Kommentar', 'Hintergrundinfo', 'Bild']);
       expect(text()).not.toContain('Zum Fangkorb');
     });
 
-    it('setzt Einwerfen als eigenen Block ueber die Zwischenueberschrift Fertige Beitraege', () => {
-      const block: HTMLElement = fixture.nativeElement.querySelector('.einwerfen-block');
-      const ueberschrift: HTMLElement = fixture.nativeElement.querySelector('.typ-zwischenueberschrift');
-      const liste: HTMLElement = fixture.nativeElement.querySelector('nav.typ-liste');
+    it('gliedert die Kette in Einwerfen, Weiterarbeiten und Verfassen', () => {
+      const ueberschriften: HTMLElement[] = Array.from(
+        fixture.nativeElement.querySelectorAll('.typ-zwischenueberschrift'),
+      );
+      const [einwerfen, weiterarbeiten, verfassen] = ueberschriften;
 
-      expect(block.nextElementSibling).toBe(ueberschrift);
-      expect(ueberschrift.textContent!.trim()).toBe('Fertige Beiträge');
-      expect(ueberschrift.nextElementSibling).toBe(liste);
-      expect(liste.querySelectorAll('button.typ-zeile').length).toBe(3);
+      expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Einwerfen', 'Weiterarbeiten', 'Verfassen']);
+      expect(einwerfen.nextElementSibling!.classList).toContain('einwerfen-block');
+      expect(weiterarbeiten.nextElementSibling!.classList).toContain('fangkorb-block');
+      expect(verfassen.nextElementSibling!.matches('nav.typ-liste')).toBeTrue();
+      expect(verfassen.nextElementSibling!.querySelectorAll('button.typ-zeile').length).toBe(3);
       expect(fixture.nativeElement.querySelector('.einleitung-satz')).toBeNull();
+    });
+
+    it('fuehrt mit der Fangkorb-Kachel zur Liste', () => {
+      (fixture.nativeElement.querySelector('.fangkorb-block') as HTMLButtonElement).click();
+
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
     });
 
     it('fuehrt mit der Einwerfen-Zeile zum Formular, nicht zur Liste', () => {
@@ -111,7 +119,7 @@ describe('ContributeViewComponent', () => {
     });
 
     it('oeffnet mit einer Typ-Zeile das Formular des Typs', () => {
-      zeilen()[1].click();
+      zeilen()[2].click();
 
       expect(component.showMobileForm).toBe('commentary');
     });

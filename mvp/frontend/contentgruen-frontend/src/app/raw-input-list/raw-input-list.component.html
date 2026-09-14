@@ -2,7 +2,8 @@
     <div class="guidance">
         <div class="info-message">
             <div class="dreischritt">
-                <span class="dreischritt-text"><strong>Einwerfen</strong> → <strong>Destillieren</strong> → <strong>Ausformulieren</strong></span>
+                <!-- Leerzeichen im Emoji-Span: zwischen zwei Elementen entfernt Angular reinen Leerraum -->
+                <span class="dreischritt-text"><span aria-hidden="true">{{ kettenIcons.einwerfen }} </span><strong>Einwerfen</strong> → <span aria-hidden="true">{{ kettenIcons.destillieren }} </span><strong>Destillieren</strong> → <span aria-hidden="true">{{ kettenIcons.verfassen }} </span><strong>Ausformulieren</strong></span>
                 <button mat-icon-button type="button" class="erklaerung-umschalter"
                         aria-controls="fangkorb-erklaerung"
                         [attr.aria-expanded]="erklaerungOffen"

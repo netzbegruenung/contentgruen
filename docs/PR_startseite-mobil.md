@@ -264,6 +264,43 @@ BFF auf 5054 scheiterten deshalb alle API-Aufrufe. Jetzt reichen die vier Backen
   - Kommentar, Hintergrundinfo, Bild: derselbe Satz mit „dass dein **Beitrag** den“.
 - `ERSTNUTZER_SATZ` endet jetzt mit „Also: kein Scheiß.“ (Beitragen-Seite und Fangkorb-Kopf).
 
+**Beitragen-Seite als Kette** (mobil; Desktop unverändert)
+- Drei Abschnitte mit kleinen Zwischenüberschriften (14 px):
+  - „Einwerfen“ mit der Einwerfen-Kachel.
+  - „Weiterarbeiten“ mit einer neuen Kachel „Fangkorb“ („Einwürfe destillieren oder Sätze
+    ausformulieren.“), Ziel `/fangkorb`, im selben Stil: weiß, 2 px `--primary-dark`.
+  - „Verfassen“ mit den drei Typzeilen. Das ersetzt „Fertige Beiträge“.
+- Die Fangkorb-Kachel zeigt `mat-icon inventory_2` statt 🧺. Das Korb-Emoji trägt schon die
+  Einwerfen-Kachel direkt darüber, und `inventory_2` nutzt das Einwurf-Formular für „Fangkorb
+  ansehen“. Einen Zähler gibt es noch nicht.
+- Die Zwischenüberschriften haben mehr Abstand nach oben als nach unten, damit sie zu ihrem
+  Abschnitt gehören.
+- Gemessen bei 360×740: Die Bild-Zeile endet bei 730 px, also 10 px vor dem unteren Rand. Die
+  Erstnutzer-Hinweisbox ist mit „Also: kein Scheiß.“ dreizeilig und 87 px hoch.
+
+**Icons entlang der Kette** (im selben Commit)
+- `KETTEN_ICONS` in `shared/fangkorb-texte.ts` neben `FANGKORB_BESCHREIBUNG`: Einwerfen 📥, Fangkorb 🧺,
+  Destillieren ⚗️, Ausformulieren/Verfassen 🖋️. Die Templates binden die Konstante, statt die Emojis
+  selbst zu tippen. Die Beitragstypen behalten ihre Icons.
+- Umgestellt:
+  - Startseite: Kacheln 📥 und 🖋️.
+  - Beitragen-Seite: Einwerfen 📥, Fangkorb 🧺 statt `inventory_2`; auf dem Desktop der Einwerfen-Aufruf 📥.
+  - Einwurf-Formular: Kopf 📥, „Fangkorb ansehen“ 🧺.
+  - Fangkorb-Kopf: „📥 Einwerfen → ⚗️ Destillieren → 🖋️ Ausformulieren“.
+  - Desktop-Header: „🧺 Fangkorb“ und der runde Knopf „Schnell einwerfen“ mit 📥 statt `bolt`.
+  - Menü: „Schnell einwerfen“ 📥, „Fangkorb“ 🧺.
+- **Ordner-Button im mobilen Header bleibt:** Er öffnet „Meine Beiträge“ (`folder_open`,
+  `mobile-header.component.html:42-49`), nicht `/fangkorb`. Deshalb bekommt er weder das
+  Fangkorb-Icon, noch wird er entfernt.
+- **Bewusst nicht umgestellt:**
+  - Der Stift (`edit`) für „Beitragen“ in Header und Menü führt auf die ganze Beitragen-Seite, nicht
+    nur zum Verfassen.
+  - Der schwebende Knopf im Fangkorb behält `add`, das übliche Zeichen für einen FAB.
+  - Der Hilfe-Dialog (`help-dialog.component.html:16`, ✒️) gehörte nicht zu den genannten Stellen.
+- **Überschneidung:** 📥 markiert auf Ergebniskarten schon die Herkunft „INGESTED“
+  (`services/dtos/content-origin-display.ts:7`). Das liegt im Kartenbereich und ist hier nicht
+  angefasst.
+
 **Fangkorb-Kopf, gekürzt** (ersetzt Teile von Block D)
 - Oben steht nur noch die Zeile „Einwerfen → Destillieren → Ausformulieren“ mit einem Hilfe-Icon
   (`help_outline`) am Ende. Das Icon klappt die Langfassung auf: Erklärsatz, die drei Schritte und

@@ -22,6 +22,7 @@ import { RouteConfigService } from './shared/services/route-config.service';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { KETTEN_ICONS } from './shared/fangkorb-texte';
 
 @Component({
   selector: 'app-root',
@@ -48,6 +49,7 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   title = 'Gut gesagt';
+  readonly kettenIcons = KETTEN_ICONS;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   private destroy$ = new Subject<void>();

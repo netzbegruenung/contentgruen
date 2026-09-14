@@ -58,6 +58,16 @@
     margin-right: var(--spacing-sm);
 }
 
+/* Ketten-Icons (Emoji) auf derselben Flaeche wie die mat-icons daneben */
+.mobile-menu-item .menu-emoji {
+    display: inline-block;
+    width: 24px;
+    margin-right: var(--spacing-sm);
+    font-size: 20px;
+    line-height: 1;
+    text-align: center;
+}
+
 .close-menu-button {
     color: var(--text-secondary);
 }

@@ -28,7 +28,7 @@
      der AuthGuard zum Login und danach zurueck. -->
 <section class="start-kacheln" aria-label="Mitmachen">
     <a class="start-kachel" routerLink="/einwerfen">
-        <span class="kachel-icon" aria-hidden="true">🧺</span>
+        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
         <span class="kachel-text">
             <span class="kachel-titel">Einwerfen</span>
             <span class="kachel-satz">{{ fangkorbKurz }}</span>
@@ -37,7 +37,7 @@
     </a>
 
     <a class="start-kachel" routerLink="/contribute">
-        <span class="kachel-icon" aria-hidden="true">✒️</span>
+        <span class="kachel-icon" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
         <span class="kachel-text">
             <span class="kachel-titel">Beitrag verfassen</span>
             <span class="kachel-satz">Ausgearbeitet und direkt verwendbar: {{ typLabel('commentary') }}, {{ typLabel('generictext') }} oder {{ typLabel('image') }}.</span>

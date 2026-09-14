@@ -12,6 +12,18 @@ export const FANGKORB_KURZ = 'Ein Link, ein Hinweis oder beides – roh, ohne Au
 export const FANGKORB_BESCHREIBUNG = `${FANGKORB_KURZ} Jemand macht später einen Beitrag daraus.`;
 
 /**
+ * Die Icons entlang der Kette, an jeder Stelle gleich: Startseite, Beitragen-Seite,
+ * Einwurf-Formular, Fangkorb-Kopf, Header und Menue. `verfassen` steht auch fuer
+ * Ausformulieren. Die Beitragstypen behalten ihre Icons.
+ */
+export const KETTEN_ICONS = {
+  einwerfen: '📥',
+  fangkorb: '🧺',
+  destillieren: '⚗️',
+  verfassen: '🖋️',
+} as const;
+
+/**
  * Fuer Angemeldete, solange die Plattform jung ist: Wer jetzt etwas eintraegt,
  * setzt die Massstaebe mit. Steht unter dem Fangkorb-Kopf und ueber der
  * Typ-Auswahl auf der Beitragen-Seite.

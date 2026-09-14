@@ -6,6 +6,7 @@ import { of, throwError } from 'rxjs';
 import { LADE_GROESSE, RawInputListComponent } from './raw-input-list.component';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
 import { PLATTFORMEN } from '../shared/plattform';
+import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import {
   GetRawInputsResponse,
   RawInput,
@@ -108,7 +109,9 @@ describe('RawInputListComponent', () => {
       erstellen([]);
       const zeile = fixture.nativeElement.querySelector('.dreischritt-text').textContent.replace(/\s+/g, ' ');
 
-      expect(zeile.trim()).toBe('Einwerfen → Destillieren → Ausformulieren');
+      expect(zeile.trim()).toBe(
+        `${KETTEN_ICONS.einwerfen} Einwerfen → ${KETTEN_ICONS.destillieren} Destillieren → ${KETTEN_ICONS.verfassen} Ausformulieren`,
+      );
       expect(langfassung()).toBeNull();
       expect(fixture.nativeElement.textContent).not.toContain('Jeder Schritt kann von jemand anderem kommen.');
 

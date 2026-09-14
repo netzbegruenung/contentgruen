@@ -232,11 +232,11 @@ mat-panel-title h3 {
 }
 
 /*
- * Einwerfen: eigener Block, weiss mit Rand wie die Startseiten-Kacheln statt
- * Typfarbe. Das Padding ist um die 2 px Rand kleiner, damit die Zeile so hoch
- * bleibt wie die Typzeilen darunter.
+ * Einwerfen und Fangkorb: weiss mit Rand wie die Startseiten-Kacheln statt
+ * Typfarbe. Das Padding ist um die 2 px Rand kleiner, damit die Kacheln so hoch
+ * bleiben wie die Typzeilen darunter.
  */
-.einwerfen-block {
+.rahmen-kachel {
     padding: 14px 18px;
     border: 2px solid var(--primary-dark);
     background: #fff;
@@ -248,15 +248,22 @@ mat-panel-title h3 {
     gap: 12px;
 }
 
-/* Wie die Einleitung ("Waehle, was ..."), eine Stufe kleiner */
+/*
+ * Wie die Einleitung ("Waehle, was ..."), eine Stufe kleiner. Mehr Luft nach oben
+ * als nach unten, damit die Ueberschrift zu ihrem Abschnitt gehoert.
+ */
 .typ-zwischenueberschrift {
-    margin: 4px 0 0;
+    margin: 8px 0 -4px;
     font-family: inherit;
     font-size: 14px;
     font-weight: 400;
     line-height: 1.4;
     letter-spacing: normal;
     color: var(--text-primary);
+}
+
+.typ-zwischenueberschrift:first-child {
+    margin-top: 0;
 }
 
 .typ-zeile:focus-visible {
@@ -303,7 +310,7 @@ mat-panel-title h3 {
         padding: 12px 16px;
     }
 
-    .einwerfen-block {
+    .rahmen-kachel {
         padding: 10px 14px;
     }
 

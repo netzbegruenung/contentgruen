@@ -23,7 +23,7 @@ import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
 import { Plattform, PLATTFORMEN, plattformAusUrl, plattformName } from '../shared/plattform';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import {
   FangkorbFilter,
   filterLaden,
@@ -70,6 +70,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
   readonly kurzeKennung = kurzeKennung;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly kettenIcons = KETTEN_ICONS;
 
   /** Die Langfassung hinter dem Hilfe-Icon; zu, bis jemand danach fragt. */
   erklaerungOffen = false;

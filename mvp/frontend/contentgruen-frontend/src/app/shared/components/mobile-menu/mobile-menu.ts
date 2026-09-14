@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterLink } from '@angular/router';
 import { UserInfo } from '../../../auth/auth.service';
+import { KETTEN_ICONS } from '../../fangkorb-texte';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -20,6 +21,7 @@ import { UserInfo } from '../../../auth/auth.service';
   styleUrl: './mobile-menu.css'
 })
 export class MobileMenuComponent {
+  readonly kettenIcons = KETTEN_ICONS;
   @Input() userInfo: UserInfo | null = null;
   @Input() selectedProfilePictureUrl: string = '';
 

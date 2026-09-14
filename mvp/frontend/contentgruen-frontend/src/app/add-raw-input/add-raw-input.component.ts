@@ -9,7 +9,7 @@ import {
   einwurfAusShareDaten,
 } from '../share-target/share-target.guard';
 import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
@@ -63,6 +63,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   readonly hinweisLimit = HINWEIS_LIMIT;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
   readonly consentHinweis = CONSENT_HINWEIS;
+  readonly kettenIcons = KETTEN_ICONS;
 
   einwurfForm: FormGroup;
 

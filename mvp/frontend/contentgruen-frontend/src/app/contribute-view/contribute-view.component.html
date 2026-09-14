@@ -13,7 +13,7 @@
          (click)="navigateToRawInput()"
          (keyup.enter)="navigateToRawInput()"
          (keyup.space)="navigateToRawInput()">
-        <div class="fangkorb-icon" aria-hidden="true">🧺</div>
+        <div class="fangkorb-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</div>
         <div class="fangkorb-text">
             <h4>Keine Zeit zum Ausarbeiten?</h4>
             <p>{{ fangkorbBeschreibung }}</p>
@@ -25,11 +25,12 @@
     </div>
 </section>
 
-<!-- Mobil: Einwerfen als eigener Block, darunter die fertigen Beitragstypen als
-     kompakte Zeilen - alles auf einem Bildschirm -->
+<!-- Mobil: die Kette in drei Abschnitten - Einwerfen, Weiterarbeiten im Fangkorb,
+     Verfassen - alles auf einem Bildschirm -->
 <div *ngIf="isMobile && !showMobileForm" class="typ-zeilen">
-    <button type="button" class="typ-zeile einwerfen-block" (click)="navigateToRawInput()">
-        <span class="typ-icon" aria-hidden="true">🧺</span>
+    <h3 class="typ-zwischenueberschrift">Einwerfen</h3>
+    <button type="button" class="typ-zeile rahmen-kachel einwerfen-block" (click)="navigateToRawInput()">
+        <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
         <span class="typ-text">
             <span class="typ-titel">Einwerfen</span>
             <span class="typ-satz">{{ fangkorbKurz }}</span>
@@ -37,9 +38,19 @@
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
 
-    <h3 class="typ-zwischenueberschrift" id="fertige-beitraege">Fertige Beiträge</h3>
+    <h3 class="typ-zwischenueberschrift">Weiterarbeiten</h3>
+    <button type="button" class="typ-zeile rahmen-kachel fangkorb-block" (click)="navigateToRawInputList()">
+        <span class="typ-icon" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
+        <span class="typ-text">
+            <span class="typ-titel">Fangkorb</span>
+            <span class="typ-satz">Einwürfe destillieren oder Sätze ausformulieren.</span>
+        </span>
+        <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </button>
 
-    <nav class="typ-liste" aria-labelledby="fertige-beitraege">
+    <h3 class="typ-zwischenueberschrift" id="abschnitt-verfassen">Verfassen</h3>
+
+    <nav class="typ-liste" aria-labelledby="abschnitt-verfassen">
 
     <button type="button" class="typ-zeile commentary-card" (click)="selectMobileContentType('commentary')">
         <span class="typ-icon" aria-hidden="true">💬</span>

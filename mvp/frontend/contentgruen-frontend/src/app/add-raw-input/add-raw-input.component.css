@@ -60,6 +60,12 @@
     min-height: 48px;
 }
 
+.knopf-emoji {
+    margin-right: 8px;
+    font-size: 18px;
+    line-height: 1;
+}
+
 .knopf-spinner {
     display: inline-block;
     margin-right: 8px;
