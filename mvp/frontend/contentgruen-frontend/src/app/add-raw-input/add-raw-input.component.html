@@ -1,12 +1,10 @@
 <div class="einwurf-container">
 
+    <!-- Der Titel "Schnell einwerfen" steht schon im Header. -->
     <div class="einwurf-kopf">
-        <div class="einwurf-badge">
+        <div class="hinweis-box einwurf-badge">
             <span class="einwurf-icon" aria-hidden="true">🧺</span>
-            <div class="einwurf-text">
-                <h2 class="einwurf-titel">Schnell einwerfen</h2>
-                <p class="einwurf-beschreibung">{{ fangkorbBeschreibung }}</p>
-            </div>
+            <p class="einwurf-beschreibung">{{ fangkorbBeschreibung }}</p>
         </div>
     </div>
 
@@ -48,13 +46,8 @@
             <mat-hint align="end">{{ hinweisFeld.value.length }}/{{ hinweisLimit }}</mat-hint>
         </mat-form-field>
 
-        <p class="submit-hint">
-            Mit dem Absenden stellst du deine eigenen Formulierungen unter CC0
-            (gemeinfrei, unwiderruflich) und bestätigst, dass dein Einwurf den
-            <a routerLink="/nutzungsbedingungen" target="_blank"
-               rel="noopener">Nutzungsbedingungen</a> entspricht und keine
-            personenbezogenen Daten Dritter enthält, die hier nicht hingehören.
-        </p>
+        <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
+               rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
         <div class="einwurf-aktionen">
             <button mat-raised-button color="primary" type="submit"
                     class="einwerfen-knopf"

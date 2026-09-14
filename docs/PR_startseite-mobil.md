@@ -220,6 +220,33 @@ BFF auf 5054 scheiterten deshalb alle API-Aufrufe. Jetzt reichen die vier Backen
 - Echter Formularweg im Headless-Chrome (Startseite → Anmelden → Direktanmeldung):
   `POST /api/auth/login/managed` antwortet 200, danach geht es weiter nach `/search`.
 
+## Nachfeilen
+
+**Beitragen-Seite** (`f75d7c3`)
+- Einwerfen ist ein eigener Block über den Typzeilen: weiß, 2 px Rand in `--primary-dark`, so hoch
+  wie die Typzeilen.
+- Mobil ersetzt die Zwischenüberschrift „Fertige Beiträge“ den Satz „Wähle, was du beitragen
+  willst:“. Auf dem Desktop bleibt der Satz.
+- Der Erstnutzer-Satz steht in einer Hinweisbox: neue globale Klasse `.hinweis-box` in `styles.css`
+  mit den Werten von `.info-message` aus contributions-view. Dort ist die Klasse nur lokal definiert
+  und bleibt unberührt.
+- Footer: „Ein Projekt von Netzbegrünung e.V., entwickelt von Sebastian Banach“, wie im Menü.
+
+**Einwurf-Formular und Hinweise**
+- `/einwerfen`: Die Infokarte hat jetzt die Hinweisbox-Optik, Korb-Emoji links, ohne den Titel
+  „Schnell einwerfen“ (steht schon im Header). Der Text bleibt `FANGKORB_BESCHREIBUNG`.
+- Consent-Text in allen vier Formularen aus `CONSENT_HINWEIS` (`shared/consent-hinweis.ts`), Schrift
+  0.8em: „Mit dem Absenden stellst du deine Formulierung unwiderruflich unter CC0 und bestätigst die
+  Nutzungsbedingungen – keine personenbezogenen Daten Dritter.“
+  Die Konstante hat drei Teile (vor dem Link, Linktext, danach), weil der Link im Template als
+  `routerLink` steht.
+- Alte Fassungen, bis auf ein Wort gleich:
+  - Einwurf: „Mit dem Absenden stellst du deine eigenen Formulierungen unter CC0 (gemeinfrei,
+    unwiderruflich) und bestätigst, dass dein **Einwurf** den Nutzungsbedingungen entspricht und
+    keine personenbezogenen Daten Dritter enthält, die hier nicht hingehören.“
+  - Kommentar, Hintergrundinfo, Bild: derselbe Satz mit „dass dein **Beitrag** den“.
+- `ERSTNUTZER_SATZ` endet jetzt mit „Also: kein Scheiß.“ (Beitragen-Seite und Fangkorb-Kopf).
+
 ## Am Handy mit `ng serve` anschauen
 
 Aufsetzen siehe `docs/DEV-SETUP.md` (Block G). Fürs Handy im WLAN braucht `ng serve` zusätzlich

@@ -10,6 +10,7 @@ import {
 } from '../share-target/share-target.guard';
 import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
 import { Router, RouterLink } from '@angular/router';
@@ -61,6 +62,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
 
   readonly hinweisLimit = HINWEIS_LIMIT;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
+  readonly consentHinweis = CONSENT_HINWEIS;
 
   einwurfForm: FormGroup;
 

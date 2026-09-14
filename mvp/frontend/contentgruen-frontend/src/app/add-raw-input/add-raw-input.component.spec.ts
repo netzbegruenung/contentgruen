@@ -11,6 +11,8 @@ import {
 import { RawInputService } from '../services/raw-input.service';
 import { SHARE_EINWURF_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 
 describe('hinweisVorschlag', () => {
   it('stellt den Seitentitel mit Praefix voran', () => {
@@ -100,6 +102,17 @@ describe('AddRawInputComponent', () => {
       expect(link).toBeTruthy();
       expect(link!.target).toBe('_blank');
       expect(link!.closest('p')!.classList).toContain('submit-hint');
+      expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
+      );
+    });
+
+    it('zeigt oben eine Hinweisbox mit der Fangkorb-Beschreibung, ohne eigenen Titel', () => {
+      const kopf: HTMLElement = fixture.nativeElement.querySelector('.einwurf-kopf');
+
+      expect(kopf.querySelector('.hinweis-box')).toBeTruthy();
+      expect(kopf.querySelector('h2')).toBeNull();
+      expect(kopf.textContent).toContain(FANGKORB_BESCHREIBUNG);
     });
 
     it('laesst das Hinweis-Feld mit dem Text wachsen, von zwei bis acht Zeilen', () => {

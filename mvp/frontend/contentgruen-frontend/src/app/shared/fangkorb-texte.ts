@@ -17,4 +17,4 @@ export const FANGKORB_BESCHREIBUNG = `${FANGKORB_KURZ} Jemand macht später eine
  * Typ-Auswahl auf der Beitragen-Seite.
  */
 export const ERSTNUTZER_SATZ =
-  'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird.';
+  'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird. Also: kein Scheiß.';

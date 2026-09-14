@@ -310,7 +310,7 @@ body {
  * Abstaende setzt jedes Formular selbst.
  */
 .submit-hint {
-    font-size: 0.85em;
+    font-size: 0.8em;
     line-height: 1.5;
     color: var(--text-secondary);
 }

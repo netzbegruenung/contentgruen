@@ -8,33 +8,19 @@
     margin-bottom: var(--spacing-md, 16px);
 }
 
-/* Kompakt, damit der Einwerfen-Knopf auf dem Handy ohne Scrollen sichtbar ist. */
+/*
+ * Optik aus der globalen .hinweis-box (styles.css); hier nur das Emoji links
+ * neben dem Text. Kompakt, damit der Einwerfen-Knopf mobil ohne Scrollen sichtbar ist.
+ */
 .einwurf-badge {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
-    background: linear-gradient(135deg, rgb(232, 240, 222) 0%, rgb(218, 232, 205) 100%);
-    border-radius: 12px;
-    padding: var(--spacing-md, 16px);
 }
 
 .einwurf-icon {
     font-size: 28px;
     line-height: 1;
-}
-
-.einwurf-titel {
-    margin: 0 0 2px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-primary, #1a1a1a);
-}
-
-.einwurf-beschreibung {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.4;
-    color: var(--text-secondary, #4a4a4a);
 }
 
 .einwurf-formular {
@@ -114,9 +100,5 @@
 @media (max-width: 599px) {
     .einwurf-formular {
         gap: 12px;
-    }
-
-    .einwurf-titel {
-        font-size: 16px;
     }
 }

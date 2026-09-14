@@ -21,6 +21,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, debounceTime } from 'rxjs/operators';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
 import { typLabel } from '../shared/content-type-registry';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 interface CommentaryFormValues {
     title: string;
@@ -62,6 +63,7 @@ interface CommentaryFormValues {
 })
 export class AddCommentaryComponent implements OnChanges, OnDestroy {
     readonly typName = typLabel('commentary');
+    readonly consentHinweis = CONSENT_HINWEIS;
     @Input() statementText: string = '';
     @Input() statementId: string = '';
     /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft. */

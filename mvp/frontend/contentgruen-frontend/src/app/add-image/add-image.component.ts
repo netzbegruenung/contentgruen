@@ -13,6 +13,7 @@ import { ContentVisibility } from '../services/dtos/content-visibility-enum';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 @Component({
   selector: 'app-add-image',
@@ -28,6 +29,7 @@ import { takeUntil } from 'rxjs/operators';
   styleUrls: ['./add-image.component.scss'],
 })
 export class AddImageComponent implements OnDestroy {
+  readonly consentHinweis = CONSENT_HINWEIS;
   @Output() success = new EventEmitter<string>();
   @Output() cancel = new EventEmitter<void>();
 
