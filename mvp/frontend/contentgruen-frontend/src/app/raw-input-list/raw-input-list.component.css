@@ -4,44 +4,47 @@
   stroke: rgb(0, 84, 55) !important;
 }
 
-/* Kopf: Dreischritt als eine Zeile, Langfassung aufklappbar */
+/* Kopf: Dreischritt als eine Zeile, Langfassung hinter dem Hilfe-Icon */
 .dreischritt {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 16px;
 }
 
-.dreischritt-satz {
-  margin: 4px 0 0;
-  color: var(--text-secondary, #4a4a4a);
-}
-
 .erklaerung-umschalter {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 40px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  flex-shrink: 0;
   color: var(--primary-dark, #005437);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
 }
 
-.erklaerung-umschalter mat-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-}
-
-.erklaerung-umschalter:focus-visible {
-  outline: 2px solid var(--primary-dark, #005437);
-  outline-offset: 2px;
+.erklaerung {
+  margin-top: 4px;
 }
 
 .erklaerung p {
   margin: 0;
+}
+
+.erklaerung .dreischritt-satz {
+  margin-bottom: 8px;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+/* Etwas einwerfen: schwebend unten rechts, ueber der Liste */
+.einwerfen-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: var(--z-index-fixed, 1030);
+  --mat-fab-container-color: var(--primary-dark, #005437);
+  --mat-fab-foreground-color: #fff;
+  background-color: var(--primary-dark, #005437);
+  color: #fff;
+}
+
+/* Platz, damit der FAB die letzte Karte nicht verdeckt */
+.fangkorb {
+  padding-bottom: 88px;
 }
 
 .dreiklang {
@@ -50,36 +53,40 @@
   line-height: 1.6;
 }
 
-.fangkorb-aktionen {
-  margin-top: 12px;
-}
-
-/* Optik aus der globalen .hinweis-box (styles.css) */
-.erstnutzer-satz {
-  margin: 12px 0 0;
-}
-
-@media (max-width: 599px) {
-  .fangkorb-aktionen .einwerfen-knopf {
-    width: 100%;
-  }
-}
-
+/* Eine Chip-Zeile, seitlich scrollbar, ohne sichtbare Scrollleiste */
 .filterleiste {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
   margin-top: 16px;
   margin-bottom: 16px;
+  padding-right: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filterleiste::-webkit-scrollbar {
+  display: none;
 }
 
 .filtergruppe {
   display: flex;
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
+.filter-trenner {
+  flex-shrink: 0;
+  width: 1px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
 .filter-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
   min-height: 40px;
   padding: 6px 14px;
   border: 1px solid rgba(0, 0, 0, 0.24);

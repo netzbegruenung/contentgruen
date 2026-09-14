@@ -3,14 +3,9 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
-import {
-  ERKLAERUNG_SCHLUESSEL,
-  LADE_GROESSE,
-  RawInputListComponent,
-} from './raw-input-list.component';
+import { LADE_GROESSE, RawInputListComponent } from './raw-input-list.component';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
 import { PLATTFORMEN } from '../shared/plattform';
-import { ERSTNUTZER_SATZ } from '../shared/fangkorb-texte';
 import {
   GetRawInputsResponse,
   RawInput,
@@ -77,7 +72,6 @@ describe('RawInputListComponent', () => {
 
   beforeEach(async () => {
     sessionStorage.removeItem(FILTER_SCHLUESSEL);
-    sessionStorage.removeItem(ERKLAERUNG_SCHLUESSEL);
     rawInputService = jasmine.createSpyObj('RawInputService', ['getRawInputs']);
 
     await TestBed.configureTestingModule({
@@ -103,56 +97,66 @@ describe('RawInputListComponent', () => {
     spyOn(router, 'navigate').and.resolveTo(true);
   });
 
-  afterEach(() => {
-    sessionStorage.removeItem(FILTER_SCHLUESSEL);
-    sessionStorage.removeItem(ERKLAERUNG_SCHLUESSEL);
-  });
+  afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
 
   describe('Kopf', () => {
     function langfassung(): HTMLElement | null {
-      return fixture.nativeElement.querySelector('.dreiklang');
+      return fixture.nativeElement.querySelector('.erklaerung');
     }
 
-    it('zeigt die drei Schritte in einer Zeile mit Erklaersatz', () => {
+    it('zeigt die drei Schritte in einer Zeile, die Erklaerung erst ueber das Hilfe-Icon', () => {
       erstellen([]);
-      const zeile = fixture.nativeElement.querySelector('.dreischritt').textContent.replace(/\s+/g, ' ');
+      const zeile = fixture.nativeElement.querySelector('.dreischritt-text').textContent.replace(/\s+/g, ' ');
 
       expect(zeile.trim()).toBe('Einwerfen → Destillieren → Ausformulieren');
-      expect(fixture.nativeElement.textContent).toContain('Jeder Schritt kann von jemand anderem kommen.');
-    });
+      expect(langfassung()).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Jeder Schritt kann von jemand anderem kommen.');
 
-    it('klappt die Langfassung beim ersten Oeffnen auf und danach nicht mehr', () => {
-      erstellen([]);
+      klicken(fixture.nativeElement.querySelector('.dreischritt .erklaerung-umschalter'));
+
+      expect(langfassung()!.textContent).toContain('Jeder Schritt kann von jemand anderem kommen.');
       const schritte = Array.from(
-        fixture.nativeElement.querySelectorAll('.dreiklang li strong') as NodeListOf<HTMLElement>,
+        langfassung()!.querySelectorAll('.dreiklang li strong') as NodeListOf<HTMLElement>,
       ).map((schritt) => schritt.textContent!.trim());
       expect(schritte).toEqual(['Einwerfen', 'Destillieren', 'Ausformulieren']);
+    });
+
+    it('beginnt auch beim zweiten Oeffnen mit zugeklappter Erklaerung', () => {
+      erstellen([]);
+      klicken(fixture.nativeElement.querySelector('.erklaerung-umschalter'));
       fixture.destroy();
 
       erstellen([]);
+
       expect(langfassung()).toBeNull();
-
-      klicken(fixture.nativeElement.querySelector('.erklaerung-umschalter'));
-      expect(langfassung()).toBeTruthy();
     });
 
-    it('zeigt Angemeldeten den Erstnutzer-Satz', () => {
-      erstellen([]);
-
-      expect(fixture.nativeElement.querySelector('.erstnutzer-satz').textContent).toContain(ERSTNUTZER_SATZ);
-    });
-
-    it('zeigt ohne Anmeldung keinen Erstnutzer-Satz', () => {
-      const auth = TestBed.inject(AuthService) as unknown as {
-        getCurrentUserId: () => string | null;
-        fetchUserInfo: () => unknown;
-      };
-      auth.getCurrentUserId = () => null;
-      auth.fetchUserInfo = () => of(null);
-
+    it('zeigt keinen Erstnutzer-Satz', () => {
       erstellen([]);
 
       expect(fixture.nativeElement.querySelector('.erstnutzer-satz')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Gut gesagt ist neu.');
+    });
+
+    it('fuehrt mit dem schwebenden Knopf zum Einwerfen', () => {
+      erstellen([]);
+      const fab: HTMLButtonElement = fixture.nativeElement.querySelector('button.einwerfen-fab');
+
+      expect(fab.getAttribute('aria-label')).toBe('Etwas einwerfen');
+      klicken(fab);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
+    });
+
+    it('stellt nur offene und nur meine vor die Plattform-Chips, in einer Leiste', () => {
+      erstellen([]);
+      const leiste: HTMLElement = fixture.nativeElement.querySelector('.filterleiste');
+      const chips = Array.from(leiste.querySelectorAll('.filter-chip') as NodeListOf<HTMLElement>).map(
+        (chip) => chip.textContent!.trim(),
+      );
+
+      expect(chips).toEqual(['nur offene', 'nur meine', ...PLATTFORMEN.map((eintrag) => eintrag.name)]);
+      expect(leiste.querySelector('.filter-trenner')).toBeTruthy();
     });
   });
 

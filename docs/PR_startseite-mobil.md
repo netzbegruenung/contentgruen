@@ -264,6 +264,26 @@ BFF auf 5054 scheiterten deshalb alle API-Aufrufe. Jetzt reichen die vier Backen
   - Kommentar, Hintergrundinfo, Bild: derselbe Satz mit „dass dein **Beitrag** den“.
 - `ERSTNUTZER_SATZ` endet jetzt mit „Also: kein Scheiß.“ (Beitragen-Seite und Fangkorb-Kopf).
 
+**Fangkorb-Kopf, gekürzt** (ersetzt Teile von Block D)
+- Oben steht nur noch die Zeile „Einwerfen → Destillieren → Ausformulieren“ mit einem Hilfe-Icon
+  (`help_outline`) am Ende. Das Icon klappt die Langfassung auf: Erklärsatz, die drei Schritte und
+  „Alle sehen alles …“. Standard ist zu, auch beim ersten Öffnen; die sessionStorage-Regel aus D
+  ist entfernt.
+- Die Erstnutzer-Hinweisbox ist aus dem Fangkorb entfernt und steht nur noch auf der
+  Beitragen-Seite. Im Einwurf-Formular gab es sie nie.
+- „Etwas einwerfen“ ist jetzt ein `mat-fab` mit Icon `add` in `--primary-dark`, fixiert unten rechts
+  mit 16 px Abstand, mobil und auf dem Desktop. Die Liste hat unten 88 px Platz, damit der Knopf die
+  letzte Karte nicht verdeckt.
+- Filter in einer Chip-Zeile: „nur offene“, „nur meine“, ein schmaler Trenner, dann die
+  Plattformen. Die Zeile bricht nicht um, scrollt seitlich ohne sichtbare Scrollleiste und hat rechts
+  16 px Padding.
+- Gemessen bei 360×740:
+  - Die erste Karte beginnt bei 184 px.
+  - Mit aufgeklappter Langfassung beginnt sie bei 463 px.
+  - Die Chip-Leiste ist 758 px breit in 328 px sichtbarer Breite.
+- Build: Initial total 975,12 kB (+10 kB, vermutlich durch die FAB-Komponente), weiter unter der
+  1-MB-Warngrenze.
+
 ## Am Handy mit `ng serve` anschauen
 
 Aufsetzen siehe `docs/DEV-SETUP.md` (Block G). Fürs Handy im WLAN braucht `ng serve` zusätzlich

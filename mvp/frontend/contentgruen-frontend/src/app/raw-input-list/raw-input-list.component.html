@@ -1,18 +1,19 @@
 <div class="component-box">
     <div class="guidance">
         <div class="info-message">
-            <p class="dreischritt"><strong>Einwerfen</strong> → <strong>Destillieren</strong> → <strong>Ausformulieren</strong></p>
-            <p class="dreischritt-satz">Jeder Schritt kann von jemand anderem kommen.</p>
-
-            <button type="button" class="erklaerung-umschalter"
-                    aria-controls="fangkorb-erklaerung"
-                    [attr.aria-expanded]="erklaerungOffen"
-                    (click)="erklaerungUmschalten()">
-                {{ erklaerungOffen ? 'Weniger anzeigen' : 'So funktioniert es' }}
-                <mat-icon aria-hidden="true">{{ erklaerungOffen ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
+            <div class="dreischritt">
+                <span class="dreischritt-text"><strong>Einwerfen</strong> → <strong>Destillieren</strong> → <strong>Ausformulieren</strong></span>
+                <button mat-icon-button type="button" class="erklaerung-umschalter"
+                        aria-controls="fangkorb-erklaerung"
+                        [attr.aria-expanded]="erklaerungOffen"
+                        [attr.aria-label]="erklaerungOffen ? 'Erklärung schließen' : 'So funktioniert der Fangkorb'"
+                        (click)="erklaerungUmschalten()">
+                    <mat-icon aria-hidden="true">help_outline</mat-icon>
+                </button>
+            </div>
 
             <div *ngIf="erklaerungOffen" id="fangkorb-erklaerung" class="erklaerung">
+                <p class="dreischritt-satz">Jeder Schritt kann von jemand anderem kommen.</p>
                 <ol class="dreiklang" aria-label="So wird aus einem Fund ein Beitrag">
                     <li><strong>Einwerfen</strong> – {{ fangkorbBeschreibung }}</li>
                     <li><strong>Destillieren</strong> – in einem Satz sagen, was der Punkt ist.</li>
@@ -22,26 +23,17 @@
             </div>
         </div>
 
-        <div class="fangkorb-aktionen">
-            <button mat-raised-button color="primary" class="einwerfen-knopf" (click)="zumEinwerfen()">
-                <mat-icon>add</mat-icon>
-                Etwas einwerfen
-            </button>
-        </div>
-
-        <p *ngIf="angemeldet" class="hinweis-box erstnutzer-satz">{{ erstnutzerSatz }}</p>
     </div>
 </div>
 
+<!-- Einwerfen als schwebender Knopf: immer erreichbar, ohne Platz im Kopf -->
+<button mat-fab type="button" class="einwerfen-fab" aria-label="Etwas einwerfen" (click)="zumEinwerfen()">
+    <mat-icon aria-hidden="true">add</mat-icon>
+</button>
+
 <div class="component-box fangkorb">
+    <!-- Eine Zeile, seitlich scrollbar: erst Status, dann Plattformen -->
     <div class="filterleiste" role="group" aria-label="Fangkorb filtern">
-        <div class="filtergruppe" role="group" aria-label="Plattformen">
-            <button *ngFor="let plattform of plattformen" type="button"
-                    class="filter-chip plattform-filter"
-                    [class.aktiv]="plattformGewaehlt(plattform.wert)"
-                    [attr.aria-pressed]="plattformGewaehlt(plattform.wert)"
-                    (click)="plattformUmschalten(plattform.wert)">{{ plattform.name }}</button>
-        </div>
         <div class="filtergruppe">
             <button type="button" class="filter-chip nur-offene"
                     [class.aktiv]="filter.nurOffene" [attr.aria-pressed]="filter.nurOffene"
@@ -49,6 +41,14 @@
             <button type="button" class="filter-chip nur-meine"
                     [class.aktiv]="filter.nurMeine" [attr.aria-pressed]="filter.nurMeine"
                     (click)="nurMeineUmschalten()">nur meine</button>
+        </div>
+        <span class="filter-trenner" aria-hidden="true"></span>
+        <div class="filtergruppe" role="group" aria-label="Plattformen">
+            <button *ngFor="let plattform of plattformen" type="button"
+                    class="filter-chip plattform-filter"
+                    [class.aktiv]="plattformGewaehlt(plattform.wert)"
+                    [attr.aria-pressed]="plattformGewaehlt(plattform.wert)"
+                    (click)="plattformUmschalten(plattform.wert)">{{ plattform.name }}</button>
         </div>
     </div>
 
