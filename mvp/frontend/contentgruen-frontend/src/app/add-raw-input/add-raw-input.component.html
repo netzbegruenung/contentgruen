@@ -31,7 +31,9 @@
             <textarea matInput
                       #hinweisFeld
                       id="einwurf-hinweis"
-                      rows="4"
+                      cdkTextareaAutosize
+                      cdkAutosizeMinRows="2"
+                      cdkAutosizeMaxRows="8"
                       [attr.maxlength]="hinweisLimit"
                       formControlName="hinweis"></textarea>
             <button *ngIf="istVorbelegt" matSuffix mat-icon-button type="button"
@@ -46,7 +48,7 @@
             <mat-hint align="end">{{ hinweisFeld.value.length }}/{{ hinweisLimit }}</mat-hint>
         </mat-form-field>
 
-        <p class="einwurf-hinweis">
+        <p class="submit-hint">
             Mit dem Absenden stellst du deine eigenen Formulierungen unter CC0
             (gemeinfrei, unwiderruflich) und bestätigst, dass dein Einwurf den
             <a routerLink="/nutzungsbedingungen" target="_blank"

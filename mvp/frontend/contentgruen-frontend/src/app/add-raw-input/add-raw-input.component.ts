@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { TextFieldModule } from '@angular/cdk/text-field';
 import { RawInputService, AddRawInputRequest } from '../services/raw-input.service';
 import {
   GeteilterEinwurf,
@@ -51,7 +52,7 @@ export function hinweisVorschlag(geteilt: GeteilterEinwurf): string | null {
 @Component({
   selector: 'app-add-raw-input',
   standalone: true,
-  imports: [...SHARED_IMPORTS, CommonModule, RouterLink],
+  imports: [...SHARED_IMPORTS, CommonModule, RouterLink, TextFieldModule],
   templateUrl: './add-raw-input.component.html',
   styleUrls: ['./add-raw-input.component.css'],
 })

@@ -99,6 +99,15 @@ describe('AddRawInputComponent', () => {
 
       expect(link).toBeTruthy();
       expect(link!.target).toBe('_blank');
+      expect(link!.closest('p')!.classList).toContain('submit-hint');
+    });
+
+    it('laesst das Hinweis-Feld mit dem Text wachsen, von zwei bis acht Zeilen', () => {
+      const feld: HTMLTextAreaElement = fixture.nativeElement.querySelector('#einwurf-hinweis');
+
+      expect(feld.classList).toContain('cdk-textarea-autosize');
+      expect(feld.getAttribute('cdkAutosizeMinRows')).toBe('2');
+      expect(feld.getAttribute('cdkAutosizeMaxRows')).toBe('8');
     });
 
     it('wirft nichts ein, solange nichts dasteht', () => {

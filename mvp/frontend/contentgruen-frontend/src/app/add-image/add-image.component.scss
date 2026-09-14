@@ -130,11 +130,9 @@
   }
 }
 
+// Schrift und Farbe kommen aus der globalen .submit-hint (styles.css).
 .submit-hint {
   margin: 24px 0 12px;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
 }
 
 .form-actions {

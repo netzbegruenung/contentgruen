@@ -304,6 +304,17 @@ body {
     border-left: 4px solid var(--info-border);
 }
 
+/*
+ * Hinweis zu CC0 und Nutzungsbedingungen ueber dem Absenden-Knopf. Gleiche
+ * Schrift in allen vier Formularen (Einwurf, Kommentar, Hintergrundinfo, Bild);
+ * Abstaende setzt jedes Formular selbst.
+ */
+.submit-hint {
+    font-size: 0.85em;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
 /* Links */
 a {
     color: var(--primary-main);
