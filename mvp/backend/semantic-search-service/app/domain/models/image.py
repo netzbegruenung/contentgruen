@@ -49,6 +49,10 @@ class Image(BaseContent):
 class ImageDbEntry(Image, BaseContentDbEntry):
     """Image with additional metadata for indexing."""
 
+    # Wie bei Kommentar und Hintergrundinfo: die Suche traegt die Nutzung in jedes
+    # Ergebnis ein (SearchOrchestrator.enrich_with_usage).
+    usage_count: Optional[int] = None
+
 
 class ImageSearchResult(ImageDbEntry, BaseContentSearchResult):
     """Image entry with score and additional result metadata."""
