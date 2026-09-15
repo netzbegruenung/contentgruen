@@ -1,17 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { of } from 'rxjs';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import { Observable, of } from 'rxjs';
+import { delay } from 'rxjs/operators';
 
 import { ContributionsViewComponent } from './contributions-view.component';
 import { ContributionsService } from '../services/contributions.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
+import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
 
 describe('ContributionsViewComponent', () => {
   let fixture: ComponentFixture<ContributionsViewComponent>;
   let router: Router;
+  let bottomSheet: MatBottomSheet;
 
   function beitrag(felder: Record<string, unknown> = {}): any {
     return {
@@ -30,27 +34,31 @@ describe('ContributionsViewComponent', () => {
     };
   }
 
-  async function erstellen(results: any[], mobil = false): Promise<void> {
-    await TestBed.configureTestingModule({
+  function konfigurieren(getContributions: (seite: number, groesse: number) => Observable<any>, mobil = false): void {
+    TestBed.configureTestingModule({
       imports: [ContributionsViewComponent],
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
-        {
-          provide: ContributionsService,
-          useValue: {
-            getContributions: () =>
-              of({ results_count: results.length, total_records_count: results.length, results }),
-          },
-        },
+        { provide: ContributionsService, useValue: { getContributions } },
         { provide: UsageTrackingService, useValue: { getUserUsageStats: () => of(null) } },
         { provide: AuthService, useValue: { getCurrentUserId: () => null } },
       ],
-    }).compileComponents();
+    });
 
     router = TestBed.inject(Router);
     spyOn(router, 'navigate').and.resolveTo(true);
+    bottomSheet = TestBed.inject(MatBottomSheet);
+    spyOn(bottomSheet, 'open');
+  }
+
+  async function erstellen(results: any[], mobil = false): Promise<void> {
+    konfigurieren(
+      () => of({ results_count: results.length, total_records_count: results.length, results }),
+      mobil,
+    );
+    await TestBed.compileComponents();
     fixture = TestBed.createComponent(ContributionsViewComponent);
     fixture.detectChanges();
   }
@@ -79,6 +87,32 @@ describe('ContributionsViewComponent', () => {
     expect(text('.mat-mdc-paginator-range-label')).toBe('1 – 24 von 30');
     expect(fixture.nativeElement.querySelector('.mat-mdc-paginator-navigation-next')).not.toBeNull();
   });
+
+  it('laedt nach zweimal "Weiter" Seite 3, auch wenn die Antwort auf sich warten laesst', fakeAsync(() => {
+    const geladen: number[][] = [];
+    konfigurieren((seite, groesse) => {
+      geladen.push([seite, groesse]);
+      const results = Array.from({ length: 24 }, (_, i) => beitrag({ id: `s${seite}-${i}` }));
+      return of({ results_count: 24, total_records_count: 60, results }).pipe(delay(50));
+    });
+    fixture = TestBed.createComponent(ContributionsViewComponent);
+
+    const laden = () => {
+      fixture.detectChanges();
+      tick(50);
+      fixture.detectChanges();
+    };
+    const weiter = () => (fixture.nativeElement.querySelector('.mat-mdc-paginator-navigation-next') as HTMLButtonElement).click();
+
+    laden();
+    weiter();
+    laden();
+    weiter();
+    laden();
+
+    expect(geladen).toEqual([[1, 24], [2, 24], [3, 24]]);
+    expect(text('.mat-mdc-paginator-range-label')).toBe('49 – 60 von 60');
+  }));
 
   it('zeigt bis 24 Beitraege keinen Paginator', async () => {
     await erstellen(Array.from({ length: 24 }, (_, i) => beitrag({ id: `b${i}` })));
@@ -143,17 +177,21 @@ describe('ContributionsViewComponent', () => {
     expect(karte.querySelector('.badge-neu')).toBeNull();
   });
 
-  it('oeffnet beim Tippen die Suche mit dem Titel', async () => {
+  it('oeffnet beim Tippen den Beitrag im Bottom Sheet und startet keine Suche', async () => {
     await erstellen([beitrag()]);
 
     karten()[0].click();
 
-    expect(router.navigate).toHaveBeenCalledOnceWith(['/result'], {
-      queryParams: { searchQuery: 'Wärmepumpe lohnt sich auch im Altbau' },
-    });
+    const oeffnen = bottomSheet.open as jasmine.Spy;
+    expect(oeffnen).toHaveBeenCalledTimes(1);
+    const [komponente, konfiguration] = oeffnen.calls.mostRecent().args;
+    expect(komponente).toBe(BeitragSheetComponent);
+    expect(konfiguration.data).toEqual(jasmine.objectContaining({ id: 'b1', titel: 'Wärmepumpe lohnt sich auch im Altbau' }));
+    expect(konfiguration.ariaLabel).toBe('Wärmepumpe lohnt sich auch im Altbau');
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it('sucht ohne Titel mit dem Text und oeffnet auch mit Enter', async () => {
+  it('oeffnet das Bottom Sheet auch mit Enter und ohne Titel', async () => {
     await erstellen([beitrag({ title: null })]);
     const [karte] = karten();
 
@@ -161,9 +199,12 @@ describe('ContributionsViewComponent', () => {
 
     expect(karte.querySelector('.karte-titel')!.textContent).toContain('Text der Hintergrundinfo');
     expect(karte.querySelector('.album-anriss')).toBeNull();
-    expect(router.navigate).toHaveBeenCalledOnceWith(['/result'], {
-      queryParams: { searchQuery: 'Text der Hintergrundinfo' },
-    });
+    const oeffnen = bottomSheet.open as jasmine.Spy;
+    expect(oeffnen).toHaveBeenCalledTimes(1);
+    const [komponente, konfiguration] = oeffnen.calls.mostRecent().args;
+    expect(komponente).toBe(BeitragSheetComponent);
+    expect(konfiguration.ariaLabel).toBe('Text der Hintergrundinfo');
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('sagt, wenn es noch keine Beitraege gibt', async () => {

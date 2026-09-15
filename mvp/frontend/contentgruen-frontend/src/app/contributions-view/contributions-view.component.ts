@@ -3,6 +3,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContributionsService } from '../services/contributions.service';
@@ -12,12 +13,14 @@ import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking
 import { AuthService } from '../auth/auth.service';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
+import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 
 /**
  * Meine Beitraege als Album: kompakte, hochkante Karten im Raster (2/3/4 Spalten, das
  * Layout regelt app-kartenliste per CSS), darueber die Statistik als eine Textzeile.
- * Ein Tipp sucht den Beitrag ueber seinen Titel, bis es eine Detailansicht gibt.
+ * Ein Tipp oeffnet den Beitrag als volle Karte im Bottom Sheet, mit Aktionsleiste und
+ * Herkunft; eine Suche und damit eine neue Suchaussage entsteht dabei nicht.
  */
 @Component({
   selector: 'app-contributions-view',
@@ -44,6 +47,8 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   /** Standard-Seitengroesse; bis zu so vielen Beitraegen gibt es keinen Paginator. */
   readonly SEITENGROESSE = 24;
   pageSize = this.SEITENGROESSE;
+  /** Gebunden, damit der Paginator die Seite auch ueber ein Neuzeichnen hinweg haelt. */
+  pageIndex = 0;
   isLoading = true;
   totalUsageCount = 0;
   userStats: UserUsageStats | null = null;
@@ -55,6 +60,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
     private breakpointObserver: BreakpointObserver,
+    private bottomSheet: MatBottomSheet,
   ) { }
 
   ngOnInit() {
@@ -110,18 +116,17 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   }
 
   onPageChange(event: PageEvent) {
-    this.fetchData(event.pageIndex + 1, event.pageSize);
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this.fetchData(this.pageIndex + 1, this.pageSize);
   }
 
-  /**
-   * Uebergangsloesung wie auf der ausformulierten Fangkorb-Karte: Es gibt noch keine
-   * Detailansicht (/beitrag/:id, docs/ROADMAP.md). Ohne Titel sucht der Text.
-   */
-  inSucheAnzeigen(karte: KartenDaten): void {
-    const suche = karte.titel || karte.text;
-    if (suche) {
-      this.router.navigate(['/result'], { queryParams: { searchQuery: suche } });
-    }
+  /** Oeffnet den Beitrag als volle Karte; schliessen per Wisch, Klick ausserhalb oder Escape. */
+  beitragOeffnen(karte: KartenDaten): void {
+    this.bottomSheet.open(BeitragSheetComponent, {
+      data: karte,
+      ariaLabel: karte.titel || karte.text || 'Beitrag',
+    });
   }
 
   /**

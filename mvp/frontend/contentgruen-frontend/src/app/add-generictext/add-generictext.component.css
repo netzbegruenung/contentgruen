@@ -422,14 +422,6 @@
     overflow: hidden;
 }
 
-/* Ensure the result item fits properly in preview */
-.preview-column app-generictext-result-item ::ng-deep .result-item {
-    margin: 0;
-    width: 100%;
-    box-shadow: none;
-    border-radius: 0;
-}
-
 /* Form Fields */
 .form-fields {
     display: flex;
@@ -742,13 +734,6 @@ mat-form-field {
         margin-right: auto;
         padding: 0;
         box-sizing: border-box;
-    }
-
-    /* Ensure the result item within preview maintains proper dimensions */
-    .preview-column app-generictext-result-item ::ng-deep .result-item {
-        max-width: 100%;
-        width: 100%;
-        height: 500px;  /* Fixed height for mobile */
     }
 }
 

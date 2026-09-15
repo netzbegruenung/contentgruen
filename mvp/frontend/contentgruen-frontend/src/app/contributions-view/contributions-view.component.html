@@ -14,12 +14,14 @@
         <app-kartenliste *ngIf="karten.length"
                          variante="kompakt"
                          [daten]="karten"
-                         (angetippt)="inSucheAnzeigen($event)">
+                         (angetippt)="beitragOeffnen($event)">
         </app-kartenliste>
-
-        <mat-paginator *ngIf="totalRecords > SEITENGROESSE" [length]="totalRecords" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
-            (page)="onPageChange($event)">
-        </mat-paginator>
     </div>
+
+    <!-- Ausserhalb des Ladezweigs: sonst entsteht der Paginator bei jedem Seitenwechsel neu und steht wieder auf Seite 1 -->
+    <mat-paginator *ngIf="totalRecords > SEITENGROESSE" [length]="totalRecords"
+        [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
+        (page)="onPageChange($event)">
+    </mat-paginator>
 
 </div>

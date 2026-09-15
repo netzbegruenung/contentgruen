@@ -68,18 +68,22 @@ liegt nur im Payload.
    `.image-color` (`:189-190`) sind benutzt, aber nirgends definiert.
 3. Zwei verschiedene Blautöne für Hintergrundinfo:
    `fe/contribute-view/contribute-view.component.css:87-89` gegenüber
-   `src/theme/custom-theme.scss:177`. Post nutzt `--generictext-bg`
-   (`fe/post-result-item/post-result-item.component.scss:18`).
-4. Die Mobil-Wildcards in `fe/shared/styles/_result-item-base.scss`
-   (`[class*="-title"]`, `-text`, `-type`, `-references` …) treffen Klassen, für die sie
-   nicht gedacht sind. Für `-header-info` ist das seit dem Titel-Umbau ausgenommen, der
-   Rest besteht.
-5. Desktop reserviert neben dem Titel 65 px für Badges (`_result-item-base.scss:73`),
-   bis zu drei Badges brauchen rechnerisch 120 px (`:266-276`) – Überlappung möglich.
-6. Post-Header ohne eigene Höhe, anders als Kommentar und Hintergrundinfo
-   (`fe/post-result-item/post-result-item.component.scss:17-20`).
-7. Bildtitel dürfen 200 Zeichen haben, die Karte zeigt eine Zeile mit Auslassung
-   (`fe/image-result-item/image-result-item.component.scss:24-30`).
+   `src/theme/custom-theme.scss:177`. Die frühere Post-Karte nutzte zusätzlich
+   `--generictext-bg`; das ist mit der Beitragskarte erledigt, Post hat dort `--post-bg`
+   (`fe/beitragskarte/beitragskarte.component.scss:45-46`).
+4. **Erledigt mit der Beitragskarte (PR #45):** Die Mobil-Wildcards
+   (`[class*="-title"]`, `-text`, `-type`, `-references` …) standen in
+   `_result-item-base.scss`; die Datei ist samt den alten Karten gelöscht, die
+   Beitragskarte kommt ohne Wildcard-Selektoren aus.
+5. **Erledigt mit der Beitragskarte:** Statt 65 px fester Reserve für Badges ist der
+   Kartenkopf ein Grid aus Symbol, Titel und Badges
+   (`fe/beitragskarte/beitragskarte.component.scss:56-58`); die Badges nehmen sich ihre
+   Breite, der Titel bekommt den Rest.
+6. **Erledigt mit der Beitragskarte:** Es gibt einen Kopf für alle Typen
+   (`beitragskarte.component.scss:56`), also keine abweichende Post-Höhe mehr.
+7. **Erledigt mit der Beitragskarte:** Bildtitel (bis 200 Zeichen) laufen in der vollen
+   Karte über bis zu vier Zeilen (`.typ-image`, `beitragskarte.component.scss:40-42`),
+   im Album über zwei.
 8. Das Hintergrundinfo-Formular meldet Erfolg erst nach zwei Sekunden
    (`fe/add-generictext/add-generictext.component.ts`, `setTimeout(..., 2000)` in
    `saveGenericTextForm`); im Destillier-Ablauf springt der nächste Einwurf dort

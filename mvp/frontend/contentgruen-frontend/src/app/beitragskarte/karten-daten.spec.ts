@@ -163,6 +163,25 @@ describe('karten-daten', () => {
       expect(daten.statement).toBeUndefined();
     });
 
+    it('uebernimmt die Herkunft mit Adresse und Beschreibung', () => {
+      const daten = ausBeitrag(
+        eintrag({
+          references: [
+            {
+              reference_id: 'r-1',
+              created: '2026-09-01T10:00:00',
+              reference_text: 'https://example.org/studie',
+              reference_description: 'Studie des Umweltbundesamts',
+            },
+          ],
+        }),
+      );
+
+      expect(daten.quellen).toEqual([
+        { id: 'r-1', url: 'https://example.org/studie', beschreibung: 'Studie des Umweltbundesamts' },
+      ]);
+    });
+
     it('uebernimmt die Bildadresse und kommt ohne Titel aus', () => {
       const daten = ausBeitrag(eintrag({ content_type: 'image', image_url: 'https://example.org/b.jpg', title: null }));
 

@@ -174,7 +174,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     autor: eintrag.original_author ?? null,
     autorName: null,
     nutzung: eintrag.usage_count ?? 0,
-    quellen: [],
+    quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
   };
 }

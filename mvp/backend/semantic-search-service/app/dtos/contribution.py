@@ -1,6 +1,9 @@
+import json
+
 from pydantic import BaseModel, field_validator
 from typing import List, Optional
 
+from domain.models.commentary import CommentaryReference
 from domain.models.content import ContentDbEntry
 
 
@@ -14,12 +17,16 @@ class ContributionEntry(ContentDbEntry):
     ContentDbEntry allein verwirft beim Lesen aus Qdrant alles, was nicht zu den
     gemeinsamen Feldern gehoert - auch Titel und Bildadresse, obwohl sie im Payload
     stehen. Die Nutzung liegt nicht in Qdrant, sondern in PostgreSQL und wird im
-    Endpunkt nachgetragen.
+    Endpunkt nachgetragen, ebenso Adresse und Beschreibung der Herkunft.
+
+    Die Herkunft nutzt CommentaryReference: GenericTextReference hat dieselben Felder,
+    Bild und Post haben keine Herkunft.
     """
 
     title: Optional[str] = None
     image_url: Optional[str] = None
     usage_count: int = 0
+    references: List[CommentaryReference] = []
 
     @field_validator("usage_count", mode="before")
     @classmethod
@@ -28,6 +35,16 @@ class ContributionEntry(ContentDbEntry):
         # PostgreSQL und wird im Endpunkt nachgetragen; ohne diese Umwandlung
         # scheitert schon das Lesen aus Qdrant und die ganze Liste mit 500.
         return 0 if value is None else value
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def _herkunft_als_liste(cls, value):
+        # Wie Commentary.parse_references: aeltere Payloads tragen die Liste als JSON-Text.
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
 
 
 class GetContributionsOfUserResponse(BaseModel):

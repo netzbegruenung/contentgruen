@@ -7,6 +7,8 @@ import uuid
 import logging
 import asyncio
 
+from pydantic import ValidationError
+
 from core.config import Settings
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
@@ -398,16 +400,27 @@ class QdrantBaseRepository(
                     break
                 current_offset = naechster_offset
 
-            # created ist ueberall ISO ohne Zeitzone, als Text also chronologisch sortierbar
-            punkte.sort(
-                key=lambda p: (p.payload or {}).get("created", ""), reverse=True
-            )
-
-            all_results = []
-            for point in punkte[offset : offset + limit]:
-                payload = point.payload or {}
+            # Erst validieren, dann sortieren: ein kaputter Punkt faellt einzeln heraus,
+            # statt die ganze Liste mit 500 scheitern zu lassen.
+            gueltige = []
+            for point in punkte:
+                payload = dict(point.payload or {})
                 payload["id"] = str(point.id)
-                all_results.append(modell.model_validate(payload))
+                try:
+                    eintrag = modell.model_validate(payload)
+                except ValidationError as fehler:
+                    logger.warning(
+                        f"get_by_author: Punkt {point.id} uebersprungen, "
+                        f"Payload ungueltig ({fehler.error_count()} Fehler)"
+                    )
+                    continue
+                # created ist ISO ohne Zeitzone, als Text also chronologisch sortierbar;
+                # null oder kein Text sortiert ans Ende statt die Sortierung zu sprengen.
+                created = payload.get("created")
+                gueltige.append((created if isinstance(created, str) else "", eintrag))
+
+            gueltige.sort(key=lambda paar: paar[0], reverse=True)
+            all_results = [eintrag for _, eintrag in gueltige[offset : offset + limit]]
 
             content_desc = (
                 f"all content types" if self.content_type is None else self.content_type

@@ -430,6 +430,44 @@ class TestAutorenzuordnungOhneSuchanfragen:
         assert client.scroll.call_count == 2
 
     @pytest.mark.asyncio
+    async def test_get_by_author_ueberspringt_kaputten_punkt(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        kaputt = MagicMock()
+        kaputt.id = str(uuid.uuid4())
+        # Neuestes Datum, aber ohne Text und Pflichtfelder: darf die Liste nicht kippen
+        kaputt.payload = {"content_type": "statement", "created": "2026-09-30T10:00:00"}
+        client.scroll.return_value = (
+            [kaputt, self._punkt_vom("2026-09-01T10:00:00")],
+            None,
+        )
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert [e.text for e in ergebnisse] == ["Beitrag vom 2026-09-01T10:00:00"]
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_sortiert_created_ohne_text_ans_ende(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        ohne_text = self._punkt_vom("kein Text")
+        # gueltig, aber created ist ein datetime statt ISO-Text
+        ohne_text.payload["created"] = create_base_content_fields()["created"]
+        client.scroll.return_value = (
+            [ohne_text, self._punkt_vom("2026-09-01T10:00:00")],
+            None,
+        )
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert [e.text for e in ergebnisse] == [
+            "Beitrag vom 2026-09-01T10:00:00",
+            "Beitrag vom kein Text",
+        ]
+
+    @pytest.mark.asyncio
     async def test_get_by_author_endet_bei_gleichbleibendem_offset(
         self, repository_mit_client
     ):

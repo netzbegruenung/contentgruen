@@ -1,3 +1,4 @@
+import { ContentReference } from './commonDtos';
 
 //TODO: Evaluate usage of camel case and transformation in the backend
 
@@ -28,4 +29,6 @@ export interface ContentResult {
     image_url?: string | null;
     /** Aus PostgreSQL nachgetragen, 0 ohne Nutzung. */
     usage_count: number;
+    /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */
+    references?: ContentReference[];
 }
