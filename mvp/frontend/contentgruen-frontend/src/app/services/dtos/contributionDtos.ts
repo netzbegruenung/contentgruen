@@ -20,7 +20,8 @@ export interface ContentResult {
     original_author: string;
     last_modified_by: string;
     edit_history: object;
-    text: string;
+    /** Leer bei Bildern ohne Bildunterschrift. */
+    text: string | null;
     content_type: string;
     score: number;
     /** Titel des Beitrags; fehlt nur bei Altbestand ohne Titel im Payload. */

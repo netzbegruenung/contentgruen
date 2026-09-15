@@ -3,7 +3,7 @@
     Ein [attr.aria-disabled] am Knopf ueberschreibt MatButton mit seiner Host-Bindung.
 -->
 <div class="aktionen" [attr.aria-disabled]="vorschau || null">
-    <div class="stimmen">
+    <div class="stimmen" *ngIf="abstimmenSichtbar">
         <button mat-icon-button type="button" class="stimme-knopf"
                 [class.active-button]="isLiked"
                 [attr.aria-pressed]="isLiked"

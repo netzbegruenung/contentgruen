@@ -182,6 +182,20 @@ describe('karten-daten', () => {
       ]);
     });
 
+    it('zeigt ein Bild ohne Unterschrift mit Titel, ohne Titel mit der Domain der Bildadresse', () => {
+      const mitTitel = ausBeitrag(
+        eintrag({ content_type: 'image', text: null, title: 'Solardach', image_url: 'https://www.example.org/b.jpg' }),
+      );
+      expect(mitTitel.titel).toBe('Solardach');
+      expect(mitTitel.text).toBeNull();
+
+      const ohneTitel = ausBeitrag(
+        eintrag({ content_type: 'image', text: null, title: null, image_url: 'https://www.example.org/b.jpg' }),
+      );
+      expect(ohneTitel.titel).toBe('example.org');
+      expect(ohneTitel.text).toBeNull();
+    });
+
     it('uebernimmt die Bildadresse und kommt ohne Titel aus', () => {
       const daten = ausBeitrag(eintrag({ content_type: 'image', image_url: 'https://example.org/b.jpg', title: null }));
 

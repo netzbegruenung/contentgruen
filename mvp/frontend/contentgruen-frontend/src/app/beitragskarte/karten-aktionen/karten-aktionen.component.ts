@@ -56,6 +56,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() kopierBeschriftung = 'Kopieren';
   @Input() stimme?: 'like' | 'dislike';
   @Input() vorschau = false;
+  /** Aus beim eigenen Beitrag (Album-Sheet in Meine Beitraege); Kopieren und Melden bleiben. */
+  @Input() abstimmenSichtbar = true;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();

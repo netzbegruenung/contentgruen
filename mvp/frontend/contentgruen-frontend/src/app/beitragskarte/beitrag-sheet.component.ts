@@ -8,8 +8,8 @@ import { KartenDaten } from './karten-daten';
 export const WISCH_SCHWELLE = 80;
 
 /**
- * Ein Beitrag aus dem Album als volle Karte im Bottom Sheet, mit Aktionsleiste und
- * Herkunft. Klick ausserhalb und Escape schliessen ueber MatBottomSheet selbst; den
+ * Ein Beitrag aus dem Album als volle Karte im Bottom Sheet, mit Kopieren, Melden und
+ * Herkunft; ohne Abstimmen, weil es der eigene Beitrag ist. Klick ausserhalb und Escape schliessen ueber MatBottomSheet selbst; den
  * Wisch nach unten bringt Material nicht mit. Er zaehlt nur, solange das Sheet ganz
  * oben steht, sonst gehoert die Geste dem Scrollen im Sheet.
  */
@@ -20,7 +20,8 @@ export const WISCH_SCHWELLE = 80;
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sheet-griff" aria-hidden="true"></div>
-    <app-beitragskarte [daten]="daten" variante="voll"></app-beitragskarte>
+    <!-- Der eigene Beitrag: nicht abstimmen, Kopieren und Melden bleiben -->
+    <app-beitragskarte [daten]="daten" variante="voll" [abstimmenSichtbar]="false"></app-beitragskarte>
   `,
   styles: [
     `

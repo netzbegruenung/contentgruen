@@ -58,11 +58,14 @@ describe('BeitragSheetComponent', () => {
     host.dispatchEvent(new TouchEvent('touchend', { changedTouches: [beruehrung(nachY)], bubbles: true }));
   }
 
-  it('zeigt den Beitrag als volle Karte mit Aktionsleiste und Herkunft', () => {
+  it('zeigt den Beitrag als volle Karte mit Kopieren, Menue und Herkunft, ohne Abstimmen', () => {
     const karte: HTMLElement = fixture.nativeElement.querySelector('app-beitragskarte article');
 
     expect(karte.classList).toContain('karte--voll');
     expect(karte.querySelector('app-karten-aktionen')).not.toBeNull();
+    expect(karte.querySelectorAll('.stimme-knopf').length).toBe(0);
+    expect(karte.querySelector('.kopieren-knopf')).not.toBeNull();
+    expect(karte.querySelector('.menue-knopf')).not.toBeNull();
     expect(karte.querySelector('.quelle-link')!.getAttribute('href')).toBe('https://example.org/studie');
     expect(karte.getAttribute('role')).toBeNull();
   });

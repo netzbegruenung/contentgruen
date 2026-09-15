@@ -23,6 +23,9 @@ class ContributionEntry(ContentDbEntry):
     Bild und Post haben keine Herkunft.
     """
 
+    # Optional wie im Bildmodell: ein Bild ohne Bildunterschrift ist ein gueltiger
+    # Beitrag und darf beim Lesen nicht herausfallen.
+    text: Optional[str] = None
     title: Optional[str] = None
     image_url: Optional[str] = None
     usage_count: int = 0

@@ -346,6 +346,24 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
+  describe('Ohne Abstimmen', () => {
+    it('zeigt ohne Abstimmen keine Daumen, Kopieren und Menue bleiben', () => {
+      fixture.componentRef.setInput('abstimmenSichtbar', false);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.stimmen')).toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('.stimme-knopf').length).toBe(0);
+      expect(fixture.nativeElement.querySelector('.kopieren-knopf')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.menue-knopf')).not.toBeNull();
+    });
+
+    it('zeigt die Daumen standardmaessig', () => {
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelectorAll('.stimme-knopf').length).toBe(2);
+    });
+  });
+
   describe('Vorschau', () => {
     beforeEach(() => {
       fixture.componentRef.setInput('vorschau', true);

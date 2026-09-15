@@ -86,6 +86,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) daten!: KartenDaten;
   /** Formular-Vorschau: Aktionen sichtbar, aber ohne Wirkung. */
   @Input() vorschau = false;
+  /** Durchgereicht an app-karten-aktionen; aus beim eigenen Beitrag im Album-Sheet. */
+  @Input() abstimmenSichtbar = true;
 
   /** Tipp auf eine antippbare Karte (kompakt, Rohling). */
   @Output() angetippt = new EventEmitter<KartenDaten>();

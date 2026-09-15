@@ -129,6 +129,26 @@ def test_liefert_titel_bildadresse_und_nutzung(client, repository):
     assert bild["usage_count"] == 7
 
 
+def test_bild_ohne_bildunterschrift_erscheint_in_der_liste(client, repository):
+    repository.getByAuthor.return_value = [
+        beitrag(
+            content_type="image",
+            text=None,
+            title="Solardach der Grundschule",
+            image_url="https://example.org/dach.jpg",
+        )
+    ]
+    repository.getCountByAuthor.return_value = 1
+
+    response = client.get(URL, headers={"X-User": "person-1"})
+
+    assert response.status_code == 200
+    bild = response.json()["results"][0]
+    assert bild["text"] is None
+    assert bild["title"] == "Solardach der Grundschule"
+    assert bild["image_url"] == "https://example.org/dach.jpg"
+
+
 def test_liest_usage_count_null_aus_dem_payload_als_null():
     assert beitrag(usage_count=None).usage_count == 0
 

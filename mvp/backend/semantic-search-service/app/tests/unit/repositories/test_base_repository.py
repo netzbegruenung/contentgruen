@@ -448,6 +448,32 @@ class TestAutorenzuordnungOhneSuchanfragen:
         assert [e.text for e in ergebnisse] == ["Beitrag vom 2026-09-01T10:00:00"]
 
     @pytest.mark.asyncio
+    async def test_get_by_author_behaelt_bild_ohne_bildunterschrift(
+        self, repository_mit_client
+    ):
+        from dtos.contribution import ContributionEntry
+
+        repository, client = repository_mit_client
+        bild = self._punkt_vom("2026-09-01T10:00:00")
+        bild.payload.update(
+            {
+                "content_type": "image",
+                "text": None,
+                "title": "Solardach",
+                "image_url": "https://example.org/dach.jpg",
+            }
+        )
+        client.scroll.return_value = ([bild], None)
+
+        ergebnisse = await repository.get_by_author(
+            "testuser", limit=10, offset=0, eintrag_modell=ContributionEntry
+        )
+
+        assert len(ergebnisse) == 1
+        assert ergebnisse[0].text is None
+        assert ergebnisse[0].title == "Solardach"
+
+    @pytest.mark.asyncio
     async def test_get_by_author_sortiert_created_ohne_text_ans_ende(
         self, repository_mit_client
     ):

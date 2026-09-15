@@ -29,8 +29,10 @@ Mobil (≤ 599 px) zeigen Startseite und Suche eine Liste statt des Karussells. 
 
 - **Kopf:** Grid aus Typ-Symbol (aus der Registry), Titel und Badges. Titel 19 px fett, höchstens 3 Zeilen, Bilder 4.
 - **Inhalt:** Statement als Aufklapper im Fluss, Kurz/Mittel/Lang am Desktop, Text gekürzt mit „mehr“, Blöcke für Herkunft, Post und Bild. Keine feste Höhe.
-- **Fuß:** `app-karten-aktionen` (Abstimmen, Kopieren, Melden) und „Von: …“ mit gekürzter Kennung. In der Formular-Vorschau ist die Leiste sichtbar, reagiert aber nicht.
+- **Fuß:** `app-karten-aktionen` (Abstimmen, Kopieren, Melden). In der Formular-Vorschau ist die Leiste sichtbar, reagiert aber nicht; im Album-Sheet fehlen die Daumen (`abstimmenSichtbar`).
+- **„Von: …“** steht jetzt auf jeder vollen Karte, für alle Typen, mit gekürzter Kennung, solange es keine Anzeigenamen gibt.
 - **Nutzungs-Badge:** schreibt „3×“ auf allen Karten.
+- **Teaser auf der Startseite:** zeigt 5 statt bisher 10 Beiträge. Das ist Absicht seit Paket 3.
 - **Typnamen** kommen aus der Registry (`typLabel`), die Ketten-Symbole aus `KETTEN_ICONS`.
 
 ## Meine Beiträge als Album
@@ -42,7 +44,8 @@ Mobil (≤ 599 px) zeigen Startseite und Suche eine Liste statt des Karussells. 
   - Titel 15 px fett und Anriss 13 px, je höchstens 2 Zeilen mit Auslassung.
   - Fuß: Datum links, Nutzung rechts, bei 0 dezent.
   - Keine Aktionsleiste. Die ganze Karte ist antippbar.
-- **Tippen:** öffnet den Beitrag als volle Karte in einem Bottom Sheet, mit Aktionsleiste und Herkunft. Schließen per Wisch nach unten, Klick außerhalb oder Escape. Es wird keine Suche mehr gestartet und damit keine Suchaussage angelegt.
+- **Tippen:** öffnet den Beitrag als volle Karte in einem Bottom Sheet, mit Kopieren, Melden und Herkunft. Abstimmen fehlt dort, weil es der eigene Beitrag ist. Schließen per Wisch nach unten, Klick außerhalb oder Escape. Es wird keine Suche mehr gestartet und damit keine Suchaussage angelegt.
+- **Bild ohne Bildunterschrift:** erscheint im Album mit seinem Titel, ohne Titel mit der Domain der Bildadresse.
 - **Paginator:** 24 pro Seite, erst ab 25 Beiträgen sichtbar, mobil ohne Seitengröße. Er liegt außerhalb des Ladezweigs und hat `pageIndex` und `pageSize` gebunden, damit der Seitenstand über das Nachladen erhalten bleibt.
 
 ## Backend
@@ -52,10 +55,11 @@ Mobil (≤ 599 px) zeigen Startseite und Suche eine Liste statt des Karussells. 
   - löst die Herkunft auf (Adresse und Beschreibung), wie `/content/recent`
   - trägt die Nutzung aus PostgreSQL nach; ist die Datenbank nicht erreichbar, kommt die Liste trotzdem, mit `usage_count` 0 und einer Warnung im Log
 - **`get_by_author`**
-  - holt alle Punkte der Person, validiert jeden einzeln und überspringt ungültige mit einer Warnung, statt die ganze Liste mit 500 scheitern zu lassen
+  - holt alle Punkte der Person und validiert jeden einzeln. Ein Punkt, dessen Payload nicht zum Modell passt, wird mit einer Warnung übersprungen, statt die ganze Liste mit 500 scheitern zu lassen.
+  - Ein Bild ohne Bildunterschrift ist gültig: `text` ist in `ContributionEntry` optional wie im Bildmodell. Die Album-Karte zeigt dann den Titel, ohne Titel die Domain der Bildadresse.
   - sortiert danach nach `created`, neueste zuerst, und schneidet erst dann die Seite. Ist `created` null oder kein Text, sortiert der Punkt ans Ende.
   - Qdrant scrollt ohne `order_by` in ID-Reihenfolge, und `order_by` bräuchte einen Payload-Index auf `created`. Die Sortierung im Speicher lädt pro Anfrage alle Beiträge der Person; bei der heutigen Menge unkritisch.
-  - `get_count_by_author` zählt übersprungene Punkte weiter mit. Die Gesamtzahl kann also um die Zahl kaputter Punkte höher sein als die Liste.
+  - `get_count_by_author` zählt übersprungene Punkte weiter mit. Die Gesamtzahl kann also um die Zahl solcher Punkte mit unpassendem Payload höher sein als die Liste.
 - **Deploy:** Wirksam erst mit neu gebautem Semantic-Image. Die Suche braucht außerdem #44 (`usage_count` für Bild und Post), sonst antwortet `searchByText` mit 500, sobald ein Bild im Index liegt.
 
 ## Fangkorb
@@ -75,8 +79,8 @@ Mobil (≤ 599 px) zeigen Startseite und Suche eine Liste statt des Karussells. 
 
 ## Tests und Bundle
 
-- **Frontend (`ng test`):** 416 grün
-- **Backend (`pytest` aus `app/`):** 678 grün, 11 übersprungen
+- **Frontend (`ng test`):** 419 grün
+- **Backend (`pytest` aus `app/`):** 680 grün, 11 übersprungen
 - **Initial-Bundle:** 972,43 kB, Budget in `angular.json` unverändert. `beitragskarte.component.scss` liegt mit 8,68 kB über der Warngrenze (4 kB), unter der Fehlergrenze (15 kB). Der Chunk von Meine Beiträge ist mit Bottom Sheet 26,8 kB groß.
 
 ## Bitte prüfen

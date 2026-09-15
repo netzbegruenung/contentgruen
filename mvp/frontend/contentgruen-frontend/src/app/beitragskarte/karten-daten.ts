@@ -164,11 +164,16 @@ function extra(typ: string | null, inhalt: Record<string, any>): KartenExtra | u
 
 // Meine Beitraege
 
+/**
+ * Ohne Text zeigt die Album-Karte den Titel; fehlt auch der, die Domain der
+ * Bildadresse, damit ein Bild ohne Unterschrift nicht als leere Karte erscheint.
+ * Der Text selbst bleibt leer, sonst stuende der Titel im Album doppelt da.
+ */
 export function ausBeitrag(eintrag: ContentResult): KartenDaten {
   return {
     id: eintrag.id,
     typ: resolveContentType(eintrag.content_type) ?? null,
-    titel: eintrag.title ?? null,
+    titel: eintrag.title || (eintrag.text ? null : domainAusBildadresse(eintrag.image_url)),
     text: eintrag.text ?? null,
     erstellt: eintrag.created,
     autor: eintrag.original_author ?? null,
@@ -177,6 +182,17 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
   };
+}
+
+function domainAusBildadresse(adresse: string | null | undefined): string | null {
+  if (!adresse) {
+    return null;
+  }
+  try {
+    return new URL(adresse).hostname.replace(/^www\./, '') || null;
+  } catch {
+    return null;
+  }
 }
 
 // Fangkorb
