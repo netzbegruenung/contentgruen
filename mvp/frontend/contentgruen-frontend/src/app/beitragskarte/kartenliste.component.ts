@@ -6,8 +6,9 @@ import { KartenDaten, KartenVariante } from './karten-daten';
 
 /**
  * Beitragskarten auf hellgrauem Grund. Voll untereinander: mobil (bis 599 px)
- * zeigen Startseite und Suche diese Liste statt des Karussells. Kompakt ab 600 px
- * als Raster (Meine Beitraege). Jede Karte ist so hoch, wie ihr Inhalt es verlangt.
+ * zeigen Startseite und Suche diese Liste statt des Karussells. Kompakt als Album
+ * (Meine Beitraege): Raster direkt auf dem Seitengrund, 2 Spalten, 3 ab 600 px,
+ * 4 ab 960 px. Jede Karte ist so hoch, wie ihr Inhalt es verlangt.
  */
 @Component({
   selector: 'app-kartenliste',
@@ -34,10 +35,23 @@ import { KartenDaten, KartenVariante } from './karten-daten';
         background: var(--kartenliste-bg);
       }
 
+      .kartenliste--raster {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding: 0;
+        background: none;
+      }
+
       @media (min-width: 600px) {
         .kartenliste--raster {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 960px) {
+        .kartenliste--raster {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
         }
       }
     `,

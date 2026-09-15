@@ -1,4 +1,7 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -12,9 +15,9 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 
 /**
- * Meine Beitraege als kompakte Karten: mobil eine Liste, ab 600 px ein Raster (das
- * Layout regelt app-kartenliste per CSS). Ein Tipp sucht den Beitrag ueber seinen
- * Titel, bis es eine Detailansicht gibt.
+ * Meine Beitraege als Album: kompakte, hochkante Karten im Raster (2/3/4 Spalten, das
+ * Layout regelt app-kartenliste per CSS), darueber die Statistik als eine Textzeile.
+ * Ein Tipp sucht den Beitrag ueber seinen Titel, bis es eine Detailansicht gibt.
  */
 @Component({
   selector: 'app-contributions-view',
@@ -32,10 +35,15 @@ import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
   // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
   providers: [{ provide: MatPaginatorIntl, useClass: DeutscherPaginatorIntl }]
 })
-export class ContributionsViewComponent implements OnInit {
+export class ContributionsViewComponent implements OnInit, OnDestroy {
   karten: KartenDaten[] = [];
+  /** Bis 599 px zeigt der Paginator nur Bereich und Pfeile, ohne Seitengroesse. */
+  istMobil = false;
+  private destroy$ = new Subject<void>();
   totalRecords = 0;
-  pageSize = 20;
+  /** Standard-Seitengroesse; bis zu so vielen Beitraegen gibt es keinen Paginator. */
+  readonly SEITENGROESSE = 24;
+  pageSize = this.SEITENGROESSE;
   isLoading = true;
   totalUsageCount = 0;
   userStats: UserUsageStats | null = null;
@@ -46,11 +54,25 @@ export class ContributionsViewComponent implements OnInit {
     private usageTrackingService: UsageTrackingService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
+    private breakpointObserver: BreakpointObserver,
   ) { }
 
   ngOnInit() {
+    this.breakpointObserver
+      .observe('(max-width: 599px)')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((zustand) => {
+        this.istMobil = zustand.matches;
+        this.cdr.markForCheck();
+      });
+
     this.fetchData(1, this.pageSize);
     this.loadUserStats();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   fetchData(page: number, pageSize: number) {
@@ -72,6 +94,13 @@ export class ContributionsViewComponent implements OnInit {
         this.cdr.markForCheck();
       });
     }
+  }
+
+  /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */
+  get statistik(): string {
+    const beitraege = this.totalRecords === 1 ? 'Beitrag' : 'Beiträge';
+    const nutzung = this.userStats?.total_usage_count ?? this.totalUsageCount;
+    return `${this.totalRecords} ${beitraege} · ${nutzung}× genutzt`;
   }
 
   calculateTotalUsage(contributions: ContentResult[]) {

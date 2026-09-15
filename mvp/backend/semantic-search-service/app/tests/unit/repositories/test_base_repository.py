@@ -386,6 +386,61 @@ class TestAutorenzuordnungOhneSuchanfragen:
         }
         return punkt
 
+    @staticmethod
+    def _punkt_vom(created: str):
+        punkt = MagicMock()
+        punkt.id = str(uuid.uuid4())
+        punkt.payload = {
+            "text": f"Beitrag vom {created}",
+            "content_type": "statement",
+            **create_base_content_fields(original_author="testuser"),
+            "created": created,
+        }
+        return punkt
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_neueste_zuerst_ueber_alle_seiten(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        # Qdrant liefert in ID-Reihenfolge und in zwei Scroll-Seiten
+        client.scroll.side_effect = [
+            (
+                [
+                    self._punkt_vom("2026-08-04T10:00:00.000000"),
+                    self._punkt_vom("2026-09-12T10:00:00.000000"),
+                ],
+                "weiter",
+            ),
+            (
+                [
+                    self._punkt_vom("2026-08-20T10:00:00"),
+                    self._punkt_vom("2026-09-01T10:00:00.000000"),
+                ],
+                None,
+            ),
+        ]
+
+        ergebnisse = await repository.get_by_author("testuser", limit=2, offset=1)
+
+        assert [e.text for e in ergebnisse] == [
+            "Beitrag vom 2026-09-01T10:00:00.000000",
+            "Beitrag vom 2026-08-20T10:00:00",
+        ]
+        assert client.scroll.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_endet_bei_gleichbleibendem_offset(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        client.scroll.return_value = ([self._punkt_vom("2026-09-01T10:00:00")], "x")
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert len(ergebnisse) >= 1
+        assert client.scroll.call_count <= 2
+
     @pytest.mark.asyncio
     async def test_eintrag_modell_behaelt_typspezifische_felder(
         self, repository_mit_client

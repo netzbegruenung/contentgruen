@@ -235,7 +235,7 @@ describe('BeitragskarteComponent', () => {
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
 
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('3x');
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
       tick(600);
     }));
   });
@@ -386,7 +386,7 @@ describe('BeitragskarteComponent', () => {
     });
   });
   describe('Kompakt', () => {
-    it('zeigt nur Kopf mit Typfarbe, Titel auf zwei Zeilen, Nutzung und Datum', () => {
+    it('zeigt als Album Symbol im Kopf, Titel und Anriss auf zwei Zeilen, Datum und Nutzung im Fuss', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { usage_count: 7, created: '2026-09-13T12:00:00' })), {
         variante: 'kompakt',
       });
@@ -394,14 +394,60 @@ describe('BeitragskarteComponent', () => {
 
       expect(karte.classList).toContain('karte--kompakt');
       expect(karte.classList).toContain('typ-commentary');
-      expect(element('.karte-titel').textContent).toContain('Test Title');
+      expect(element('.karte-kopf .karte-icon').textContent!.trim()).toBe('💬');
+      expect(element('.karte-kopf .karte-titel')).toBeNull();
+      expect(element('.karte-kopf .karte-badges')).toBeNull();
+      expect(element('.album-inhalt .karte-titel').textContent).toContain('Test Title');
       expect(getComputedStyle(element('.karte-titel')).webkitLineClamp).toBe('2');
-      expect(element('.badge-nutzung').textContent!.trim()).toBe('7x');
-      expect(element('.karte-datum').textContent!.trim()).toBe('13.09.2026');
+      expect(getComputedStyle(element('.karte-titel')).fontSize).toBe('15px');
+      expect(element('.album-anriss').textContent).toContain('Test text');
+      expect(getComputedStyle(element('.album-anriss')).webkitLineClamp).toBe('2');
+      expect(getComputedStyle(element('.album-anriss')).fontSize).toBe('13px');
+      expect(element('.album-fuss .karte-datum').textContent!.trim()).toBe('13.09.2026');
+      expect(element('.album-fuss .badge-nutzung').textContent!.trim()).toBe('7×');
+      expect(element('.badge-nutzung').classList).not.toContain('ungenutzt');
       expect(element('.statement')).toBeNull();
       expect(element('.karte-text')).toBeNull();
       expect(element('.karte-meta')).toBeNull();
       expect(element('app-karten-aktionen')).toBeNull();
+    });
+
+    it('zeigt ein Bild im Kopfband, das Symbol darauf, und laedt es lazy mit dem Titel als alt', () => {
+      const daten = ausSuchergebnis(
+        paket('image_result', { content_type: 'image', title: 'Solardach der Schule', image_url: 'https://example.org/dach.jpg' }),
+      );
+
+      zeigen(daten, { variante: 'kompakt' });
+      const bild = element<HTMLImageElement>('.karte-kopf .kopf-bild');
+
+      expect(element('.karte-kopf').classList).toContain('karte-kopf--bild');
+      expect(bild.getAttribute('src')).toBe('https://example.org/dach.jpg');
+      expect(bild.getAttribute('loading')).toBe('lazy');
+      expect(bild.alt).toBe('Solardach der Schule');
+      expect(getComputedStyle(bild).objectFit).toBe('cover');
+      expect(element('.karte-kopf .karte-icon').textContent!.trim()).toBe('🖼️');
+    });
+
+    it('laesst das Kopfband ohne Bild wie bisher und aendert die volle Karte nicht', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { variante: 'kompakt' });
+      expect(element('.kopf-bild')).toBeNull();
+      expect(element('.karte-kopf').classList).not.toContain('karte-kopf--bild');
+
+      zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', image_url: 'https://example.org/dach.jpg' })));
+      expect(element('.kopf-bild')).toBeNull();
+      expect(element('.karte-bild img')).not.toBeNull();
+    });
+
+    it('zeigt ohne oder mit unbekannter Nutzung eine dezente 0', () => {
+      const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 0 }));
+
+      zeigen(daten, { variante: 'kompakt' });
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('0×');
+      expect(element('.badge-nutzung').classList).toContain('ungenutzt');
+
+      zeigen({ ...daten, nutzung: null }, { variante: 'kompakt' });
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('0×');
+      expect(element('.badge-nutzung').classList).toContain('ungenutzt');
     });
 
     it('meldet kompakt den Tipp, voll nicht', () => {

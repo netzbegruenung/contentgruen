@@ -366,46 +366,48 @@ class QdrantBaseRepository(
         eintrag_modell ersetzt das Modell des Repositorys beim Lesen des Payloads.
         Das aggregierte Repository liest sonst mit ContentDbEntry und verliert dabei
         die typspezifischen Felder (Titel, Bildadresse).
+
+        Neueste zuerst nach created, dem Datum, das die Karte anzeigt. Qdrant scrollt
+        ohne order_by in ID-Reihenfolge, und order_by braeuchte einen Payload-Index auf
+        created. Wie get_recent werden deshalb alle Punkte der Person geholt, im
+        Speicher sortiert und dann die Seite geschnitten; pro Person sind das wenige.
         """
         modell = eintrag_modell or self.content_db_entry_model_class
         try:
             search_filter = self._autoren_filter(user_id, content_types)
 
-            # Scroll through results with pagination
-            all_results = []
+            punkte = []
             current_offset = None
-            points_to_skip = offset
-            points_collected = 0
-
-            while points_collected < limit:
-                result = await self._shared_manager.async_client.scroll(
-                    collection_name=self._shared_manager.collection_name,
-                    scroll_filter=search_filter,
-                    limit=min(100, limit - points_collected + points_to_skip),
-                    offset=current_offset,
-                    with_payload=True,
-                    with_vectors=False,
+            while True:
+                seite, naechster_offset = (
+                    await self._shared_manager.async_client.scroll(
+                        collection_name=self._shared_manager.collection_name,
+                        scroll_filter=search_filter,
+                        limit=100,
+                        offset=current_offset,
+                        with_payload=True,
+                        with_vectors=False,
+                    )
                 )
-
-                if not result[0]:
+                punkte.extend(seite)
+                if (
+                    not seite
+                    or naechster_offset is None
+                    or naechster_offset == current_offset
+                ):
                     break
+                current_offset = naechster_offset
 
-                for point in result[0]:
-                    if points_to_skip > 0:
-                        points_to_skip -= 1
-                        continue
+            # created ist ueberall ISO ohne Zeitzone, als Text also chronologisch sortierbar
+            punkte.sort(
+                key=lambda p: (p.payload or {}).get("created", ""), reverse=True
+            )
 
-                    if points_collected >= limit:
-                        break
-
-                    payload = point.payload or {}
-                    payload["id"] = str(point.id)
-                    all_results.append(modell.model_validate(payload))
-                    points_collected += 1
-
-                current_offset = result[1]
-                if current_offset is None or points_collected >= limit:
-                    break
+            all_results = []
+            for point in punkte[offset : offset + limit]:
+                payload = point.payload or {}
+                payload["id"] = str(point.id)
+                all_results.append(modell.model_validate(payload))
 
             content_desc = (
                 f"all content types" if self.content_type is None else self.content_type

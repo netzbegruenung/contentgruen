@@ -4,12 +4,14 @@
          [attr.aria-label]="antippbar ? beschriftung : null"
          (click)="antippen()" (keyup.enter)="antippen()">
 
-    <header class="karte-kopf">
+    <header class="karte-kopf" [class.karte-kopf--bild]="kopfBild">
+        <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf -->
+        <img *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || ''" loading="lazy">
         <span class="karte-icon" role="img"
               [attr.aria-label]="typName"
               [matTooltip]="typName" matTooltipPosition="below">{{ emoji }}</span>
 
-        <h3 class="karte-titel" *ngIf="!istEinwurf">{{ titelAnzeige }}</h3>
+        <h3 class="karte-titel" *ngIf="!istEinwurf && !istKompakt">{{ titelAnzeige }}</h3>
 
         <!-- Der Einwurf hat keinen Titel: an seiner Stelle Plattform und Stand -->
         <div class="karte-marker" *ngIf="istEinwurf">
@@ -17,7 +19,7 @@
             <span class="verworfen-hinweis" *ngIf="rohling?.zustand === 'verworfen'">verworfen</span>
         </div>
 
-        <div class="karte-badges">
+        <div class="karte-badges" *ngIf="!istKompakt">
             <span class="badge badge-neu" *ngIf="istVoll && istNeu"
                   matTooltip="Neu" matTooltipPosition="left">
                 <mat-icon class="badge-icon">auto_awesome</mat-icon>
@@ -26,7 +28,7 @@
                   matTooltip="Beliebt" matTooltipPosition="left">🔥</span>
             <span class="badge badge-nutzung" *ngIf="nutzung !== null"
                   [class.nutzung-animiert]="nutzungAnimiert"
-                  matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzung }}x</span>
+                  matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
         </div>
     </header>
 
@@ -65,8 +67,18 @@
                 (keyup.enter)="$event.stopPropagation()">In der Suche anzeigen</button>
     </div>
 
-    <!-- Kompakt: nur Kopf und Datum -->
-    <p class="karte-datum" *ngIf="istKompakt">{{ daten.erstellt | date: 'dd.MM.yyyy' }}</p>
+    <!-- Kompakt (Album): Kopf nur mit Symbol, Titel und Anriss, im Fuss Datum und Nutzung -->
+    <ng-container *ngIf="istKompakt">
+        <div class="album-inhalt">
+            <h3 class="karte-titel">{{ titelAnzeige }}</h3>
+            <p class="album-anriss" *ngIf="anriss as anriss">{{ anriss }}</p>
+        </div>
+        <footer class="album-fuss">
+            <span class="karte-datum">{{ daten.erstellt | date: 'dd.MM.yyyy' }}</span>
+            <span class="badge badge-nutzung" [class.ungenutzt]="!nutzung"
+                  matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+        </footer>
+    </ng-container>
 
     <ng-container *ngIf="istVoll">
         <div class="statement" *ngIf="daten.statement as statement">

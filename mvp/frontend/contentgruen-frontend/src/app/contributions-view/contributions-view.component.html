@@ -1,29 +1,4 @@
 <div class="component-box">
-    <div class="guidance">
-        <!-- Simple permanent message -->
-        <div class="info-message">
-            <p>Hier siehst du all deine Beiträge und wie oft sie von der Community genutzt wurden.</p>
-        </div>
-
-        <!-- Usage Statistics Summary -->
-        <div class="usage-stats-summary" *ngIf="userStats">
-            <div class="stat-card">
-                <span class="stat-label">Gesamtnutzung:</span>
-                <span class="stat-value">{{ userStats.total_usage_count }}x</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">Beiträge:</span>
-                <span class="stat-value">{{ totalRecords }}</span>
-            </div>
-            <div class="stat-card" *ngIf="userStats.total_usage_count > 0">
-                <span class="stat-label">Durchschnitt:</span>
-                <span class="stat-value">{{ (userStats.total_usage_count / totalRecords) | number:'1.1-1' }}x</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="component-box">
     <div *ngIf="isLoading">
         <p>Lade eigene Beiträge …</p>
         <div class="loading-container">
@@ -34,13 +9,15 @@
     <div *ngIf="!isLoading">
         <p *ngIf="!karten.length" class="beitraege-leer">Du hast noch keine Beiträge.</p>
 
+        <p *ngIf="karten.length" class="album-statistik">{{ statistik }}</p>
+
         <app-kartenliste *ngIf="karten.length"
                          variante="kompakt"
                          [daten]="karten"
                          (angetippt)="inSucheAnzeigen($event)">
         </app-kartenliste>
 
-        <mat-paginator [length]="totalRecords" [pageSize]="pageSize" [pageSizeOptions]="[10, 20, 50, 100]"
+        <mat-paginator *ngIf="totalRecords > SEITENGROESSE" [length]="totalRecords" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
             (page)="onPageChange($event)">
         </mat-paginator>
     </div>

@@ -189,6 +189,21 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.istKompakt ? this.daten.titel || this.daten.text : this.daten.titel;
   }
 
+  /** Bild im Kopfband, nur im Album; die volle Karte zeigt ihr Bild im Inhalt. */
+  get kopfBild(): string | null {
+    return this.istKompakt ? (this.daten.bildUrl ?? null) : null;
+  }
+
+  /** Text des Nutzungs-Badges fuer alle Varianten, "3×"; unbekannt zaehlt als 0. */
+  get nutzungAnzeige(): string {
+    return `${this.nutzung ?? 0}×`;
+  }
+
+  /** Anriss im Album: der Text unter dem Titel; ohne Titel steht er schon im Titelfeld. */
+  get anriss(): string | null {
+    return this.daten.titel ? this.daten.text : null;
+  }
+
   get antippbar(): boolean {
     return this.istKompakt || !!this.rohling?.antippbar;
   }

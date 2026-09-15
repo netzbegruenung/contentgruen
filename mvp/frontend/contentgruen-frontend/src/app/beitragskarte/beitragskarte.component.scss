@@ -449,11 +449,13 @@
   }
 }
 
-// Kompakt: dieselbe Karte, kleiner. Kopf mit Typfarbe, Titel auf zwei Zeilen,
-// nur der Nutzungs-Badge, darunter das Datum. Als Ganzes antippbar.
+// Kompakt (Album): hochkante Karte im Raster. Kopf mit Typfarbe nur fuer das Symbol,
+// darunter Titel und Anriss auf je zwei Zeilen, im Fuss Datum und Nutzung. Als Ganzes
+// antippbar, ohne Aktionsleiste.
 
 .karte--kompakt {
   width: 100%;
+  min-height: 150px;
   cursor: pointer;
 
   &:focus-visible {
@@ -462,7 +464,7 @@
   }
 
   .karte-kopf {
-    padding: 12px;
+    padding: var(--spacing-sm) 12px;
   }
 
   .karte-icon {
@@ -471,9 +473,11 @@
     font-size: 22px;
   }
 
+  // Keine reservierten Zeilen: der Fuss sitzt per margin-top: auto am Kartenende.
   .karte-titel {
     -webkit-line-clamp: 2;
-    font-size: 16px;
+    min-height: 0;
+    font-size: 15px;
   }
 
   .badge {
@@ -483,10 +487,71 @@
   }
 }
 
-.karte-datum {
+// Album mit Bild: das Bild fuellt das Kopfband in unveraenderter Hoehe (Symbolbox 28 px
+// plus Innenabstand), das Typ-Symbol liegt klein unten links darauf.
+.karte-kopf--bild {
+  position: relative;
+  box-sizing: border-box;
+  min-height: calc(28px + 2 * var(--spacing-sm));
+  align-items: end;
+  overflow: hidden;
+
+  .karte-icon {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+  }
+}
+
+.kopf-bild {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: 10px 12px 0;
+}
+
+.album-anriss {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.album-fuss {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: auto;
   padding: var(--spacing-sm) 12px;
+}
+
+.karte-datum {
   font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// Ohne Nutzung dezent: kein Kreis, nur die graue Zahl.
+.badge-nutzung.ungenutzt {
+  background: none;
+  box-shadow: none;
+  font-weight: 400;
   color: var(--text-secondary);
 }
 
