@@ -55,6 +55,10 @@ class PostDbEntry(Post, BaseContentDbEntry):
     Representing a post with additional metadata for indexing.
     """
 
+    # Wie bei Kommentar und Hintergrundinfo: die Suche traegt die Nutzung in jedes
+    # Ergebnis ein (SearchOrchestrator.enrich_with_usage).
+    usage_count: Optional[int] = None
+
 
 class PostSearchResult(PostDbEntry, BaseContentSearchResult):
     """
