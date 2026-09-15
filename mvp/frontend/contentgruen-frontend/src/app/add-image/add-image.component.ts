@@ -6,7 +6,8 @@ import { FormsModule } from '@angular/forms';
 import { ImageService } from '../services/image.service';
 import { LoggingService } from '../services/logging.service';
 import { ImageSearchResult } from '../services/dtos/searchDtos';
-import { ImageResultItemComponent } from '../image-result-item/image-result-item.component';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ContentStatus } from '../services/dtos/content-status-enum';
 import { ContentOrigin } from '../services/dtos/content-origin-enum';
 import { ContentVisibility } from '../services/dtos/content-visibility-enum';
@@ -22,7 +23,7 @@ import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
     ...SHARED_IMPORTS,
     CommonModule,
     FormsModule,
-    ImageResultItemComponent,
+    BeitragskarteComponent,
     RouterLink,
   ],
   templateUrl: './add-image.component.html',
@@ -37,6 +38,18 @@ export class AddImageComponent implements OnDestroy {
 
   imageForm: FormGroup;
   previewResult: ImageSearchResult | null = null;
+  private vorschauCache?: { quelle: ImageSearchResult; karte: KartenDaten };
+
+  /** Die Vorschau als KartenDaten, zwischengespeichert bis sich die Vorschau aendert. */
+  get vorschauKarte(): KartenDaten | null {
+    if (!this.previewResult) {
+      return null;
+    }
+    if (this.vorschauCache?.quelle !== this.previewResult) {
+      this.vorschauCache = { quelle: this.previewResult, karte: ausSuchergebnis(this.previewResult) };
+    }
+    return this.vorschauCache.karte;
+  }
 
   imageLoading = false;
   imageSaved = false;

@@ -1,6 +1,5 @@
 import { Component, Input } from '@angular/core';
 import { Router } from '@angular/router';
-import { GenerictextResultItemComponent } from '../generictext-result-item/generictext-result-item.component';
 import { SearchResponse } from '../services/dtos/searchDtos';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { NavigationService } from '../services/navigation.service';
@@ -20,7 +19,6 @@ export class GenerictextSearchResultsComponent {
   @Input() error = '';                           // Input to display error messages
   @Input() searchQuery: string = '';             // Input for the search query
   @Input() showMinimalEmptyState: boolean = false; // Show minimal version when other component has results
-  generictextResultItemComponent = GenerictextResultItemComponent; // Component for rendering individual results
   showAddGenerictext = false;               // Tracks whether the add generictext section is visible
 
   // Popular topics for empty state suggestions

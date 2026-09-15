@@ -1,31 +1,35 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContributionsService } from '../services/contributions.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
-import { BreakpointObserver } from '@angular/cdk/layout';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { typLabel } from '../shared/content-type-registry';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
+import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
+import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
+import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 
+/**
+ * Meine Beitraege als Album: kompakte, hochkante Karten im Raster (2/3/4 Spalten, das
+ * Layout regelt app-kartenliste per CSS), darueber die Statistik als eine Textzeile.
+ * Ein Tipp oeffnet den Beitrag als volle Karte im Bottom Sheet, mit Aktionsleiste und
+ * Herkunft; eine Suche und damit eine neue Suchaussage entsteht dabei nicht.
+ */
 @Component({
   selector: 'app-contributions-view',
   standalone: true,
   imports: [
     CommonModule,
-    MatTableModule,
     MatPaginator,
     MatProgressSpinnerModule,
-    MatButtonModule,
-    MatIconModule
+    KartenlisteComponent
   ],
   templateUrl: './contributions-view.component.html',
   styleUrls: ['./contributions-view.component.css'],
@@ -35,16 +39,19 @@ import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
   providers: [{ provide: MatPaginatorIntl, useClass: DeutscherPaginatorIntl }]
 })
 export class ContributionsViewComponent implements OnInit, OnDestroy {
-  readonly typLabel = typLabel;
-  displayedColumns: string[] = ['content_type', 'text', 'usage_count', 'created', 'last_modified', 'last_modified_by'];
-  dataSource = new MatTableDataSource<ContentResult>();
+  karten: KartenDaten[] = [];
+  /** Bis 599 px zeigt der Paginator nur Bereich und Pfeile, ohne Seitengroesse. */
+  istMobil = false;
+  private destroy$ = new Subject<void>();
   totalRecords = 0;
-  pageSize = 20;
+  /** Standard-Seitengroesse; bis zu so vielen Beitraegen gibt es keinen Paginator. */
+  readonly SEITENGROESSE = 24;
+  pageSize = this.SEITENGROESSE;
+  /** Gebunden, damit der Paginator die Seite auch ueber ein Neuzeichnen hinweg haelt. */
+  pageIndex = 0;
   isLoading = true;
   totalUsageCount = 0;
   userStats: UserUsageStats | null = null;
-  isMobile: boolean = false;
-  private destroy$ = new Subject<void>();
 
   constructor(
     private contributionsService: ContributionsService,
@@ -52,15 +59,16 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     private usageTrackingService: UsageTrackingService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private breakpointObserver: BreakpointObserver
+    private breakpointObserver: BreakpointObserver,
+    private bottomSheet: MatBottomSheet,
   ) { }
 
   ngOnInit() {
-    // Set up responsive breakpoint detection
-    this.breakpointObserver.observe(['(max-width: 768px)'])
+    this.breakpointObserver
+      .observe('(max-width: 599px)')
       .pipe(takeUntil(this.destroy$))
-      .subscribe(result => {
-        this.isMobile = result.matches;
+      .subscribe((zustand) => {
+        this.istMobil = zustand.matches;
         this.cdr.markForCheck();
       });
 
@@ -68,10 +76,15 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     this.loadUserStats();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   fetchData(page: number, pageSize: number) {
     this.isLoading = true;
     this.contributionsService.getContributions(page, pageSize).subscribe((data) => {
-      this.dataSource.data = data.results;
+      this.karten = data.results.map((eintrag) => ausBeitrag(eintrag));
       this.totalRecords = data.total_records_count;
       this.calculateTotalUsage(data.results);
       this.isLoading = false;
@@ -89,6 +102,13 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */
+  get statistik(): string {
+    const beitraege = this.totalRecords === 1 ? 'Beitrag' : 'Beiträge';
+    const nutzung = this.userStats?.total_usage_count ?? this.totalUsageCount;
+    return `${this.totalRecords} ${beitraege} · ${nutzung}× genutzt`;
+  }
+
   calculateTotalUsage(contributions: ContentResult[]) {
     this.totalUsageCount = contributions.reduce((sum, item) => {
       return sum + (item.usage_count || 0);
@@ -96,7 +116,17 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   }
 
   onPageChange(event: PageEvent) {
-    this.fetchData(event.pageIndex + 1, event.pageSize);
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this.fetchData(this.pageIndex + 1, this.pageSize);
+  }
+
+  /** Oeffnet den Beitrag als volle Karte; schliessen per Wisch, Klick ausserhalb oder Escape. */
+  beitragOeffnen(karte: KartenDaten): void {
+    this.bottomSheet.open(BeitragSheetComponent, {
+      data: karte,
+      ariaLabel: karte.titel || karte.text || 'Beitrag',
+    });
   }
 
   /**
@@ -104,10 +134,5 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
    */
   navigateToStart(): void {
     this.router.navigate(['/']);
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 }

@@ -373,3 +373,163 @@ class TestAutorenzuordnungOhneSuchanfragen:
 
         such_filter = client.scroll.call_args.kwargs["scroll_filter"]
         assert self._typ_eingrenzungen(such_filter) == []
+
+    @staticmethod
+    def _punkt_mit_titel():
+        punkt = MagicMock()
+        punkt.id = str(uuid.uuid4())
+        punkt.payload = {
+            "text": "Text",
+            "content_type": "statement",
+            "title": "Titel aus dem Payload",
+            **create_base_content_fields(original_author="testuser"),
+        }
+        return punkt
+
+    @staticmethod
+    def _punkt_vom(created: str):
+        punkt = MagicMock()
+        punkt.id = str(uuid.uuid4())
+        punkt.payload = {
+            "text": f"Beitrag vom {created}",
+            "content_type": "statement",
+            **create_base_content_fields(original_author="testuser"),
+            "created": created,
+        }
+        return punkt
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_neueste_zuerst_ueber_alle_seiten(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        # Qdrant liefert in ID-Reihenfolge und in zwei Scroll-Seiten
+        client.scroll.side_effect = [
+            (
+                [
+                    self._punkt_vom("2026-08-04T10:00:00.000000"),
+                    self._punkt_vom("2026-09-12T10:00:00.000000"),
+                ],
+                "weiter",
+            ),
+            (
+                [
+                    self._punkt_vom("2026-08-20T10:00:00"),
+                    self._punkt_vom("2026-09-01T10:00:00.000000"),
+                ],
+                None,
+            ),
+        ]
+
+        ergebnisse = await repository.get_by_author("testuser", limit=2, offset=1)
+
+        assert [e.text for e in ergebnisse] == [
+            "Beitrag vom 2026-09-01T10:00:00.000000",
+            "Beitrag vom 2026-08-20T10:00:00",
+        ]
+        assert client.scroll.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_ueberspringt_kaputten_punkt(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        kaputt = MagicMock()
+        kaputt.id = str(uuid.uuid4())
+        # Neuestes Datum, aber ohne Text und Pflichtfelder: darf die Liste nicht kippen
+        kaputt.payload = {"content_type": "statement", "created": "2026-09-30T10:00:00"}
+        client.scroll.return_value = (
+            [kaputt, self._punkt_vom("2026-09-01T10:00:00")],
+            None,
+        )
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert [e.text for e in ergebnisse] == ["Beitrag vom 2026-09-01T10:00:00"]
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_behaelt_bild_ohne_bildunterschrift(
+        self, repository_mit_client
+    ):
+        from dtos.contribution import ContributionEntry
+
+        repository, client = repository_mit_client
+        bild = self._punkt_vom("2026-09-01T10:00:00")
+        bild.payload.update(
+            {
+                "content_type": "image",
+                "text": None,
+                "title": "Solardach",
+                "image_url": "https://example.org/dach.jpg",
+            }
+        )
+        client.scroll.return_value = ([bild], None)
+
+        ergebnisse = await repository.get_by_author(
+            "testuser", limit=10, offset=0, eintrag_modell=ContributionEntry
+        )
+
+        assert len(ergebnisse) == 1
+        assert ergebnisse[0].text is None
+        assert ergebnisse[0].title == "Solardach"
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_sortiert_created_ohne_text_ans_ende(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        ohne_text = self._punkt_vom("kein Text")
+        # gueltig, aber created ist ein datetime statt ISO-Text
+        ohne_text.payload["created"] = create_base_content_fields()["created"]
+        client.scroll.return_value = (
+            [ohne_text, self._punkt_vom("2026-09-01T10:00:00")],
+            None,
+        )
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert [e.text for e in ergebnisse] == [
+            "Beitrag vom 2026-09-01T10:00:00",
+            "Beitrag vom kein Text",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_get_by_author_endet_bei_gleichbleibendem_offset(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        client.scroll.return_value = ([self._punkt_vom("2026-09-01T10:00:00")], "x")
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert len(ergebnisse) >= 1
+        assert client.scroll.call_count <= 2
+
+    @pytest.mark.asyncio
+    async def test_eintrag_modell_behaelt_typspezifische_felder(
+        self, repository_mit_client
+    ):
+        from dtos.contribution import ContributionEntry
+
+        repository, client = repository_mit_client
+        client.scroll.return_value = ([self._punkt_mit_titel()], None)
+
+        ergebnisse = await repository.get_by_author(
+            "testuser", limit=10, offset=0, eintrag_modell=ContributionEntry
+        )
+
+        assert len(ergebnisse) == 1
+        assert isinstance(ergebnisse[0], ContributionEntry)
+        assert ergebnisse[0].title == "Titel aus dem Payload"
+
+    @pytest.mark.asyncio
+    async def test_ohne_eintrag_modell_liest_das_repository_modell(
+        self, repository_mit_client
+    ):
+        repository, client = repository_mit_client
+        client.scroll.return_value = ([self._punkt_mit_titel()], None)
+
+        ergebnisse = await repository.get_by_author("testuser", limit=10, offset=0)
+
+        assert isinstance(ergebnisse[0], MockDbEntry)
+        assert not hasattr(ergebnisse[0], "title")

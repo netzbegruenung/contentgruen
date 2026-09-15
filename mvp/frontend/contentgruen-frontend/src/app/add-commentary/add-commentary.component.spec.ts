@@ -11,6 +11,8 @@ import { CommentaryService } from '../services/commentary.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { CommentaryResult } from '../services/dtos/searchDtos';
 import { SimpleChange } from '@angular/core';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -40,6 +42,10 @@ describe('AddCommentaryComponent', () => {
           }
         }
       ]
+    })
+    .overrideComponent(AddCommentaryComponent, {
+      remove: { imports: [BeitragskarteComponent] },
+      add: { imports: [BeitragskarteStubComponent] },
     })
     .compileComponents();
 

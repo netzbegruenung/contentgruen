@@ -16,15 +16,15 @@
   </app-error-message>
 
   <!-- Empty State -->
-  <div *ngIf="!loading && !error && recentContent.length === 0" class="empty-state">
+  <div *ngIf="!loading && !error && karten.length === 0" class="empty-state">
     <p>Keine neuen Inhalte verfügbar.</p>
   </div>
 </div>
 
-<!-- Recent Content Carousel - Unified -->
-<div *ngIf="!loading && !error && recentContent.length > 0">
-  <app-result-carousel
-    [results]="recentContent"
-    [itemComponentResolver]="resultComponentResolver">
-  </app-result-carousel>
-</div>
+<!-- Mobil eine Liste, ab 600 px das Karussell -->
+<ng-container *ngIf="!loading && !error && karten.length > 0">
+  <app-kartenliste *ngIf="istMobil; else karussell" [daten]="karten"></app-kartenliste>
+  <ng-template #karussell>
+    <app-result-carousel [daten]="karten"></app-result-carousel>
+  </ng-template>
+</ng-container>

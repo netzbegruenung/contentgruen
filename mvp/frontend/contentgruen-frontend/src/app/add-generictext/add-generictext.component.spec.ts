@@ -6,6 +6,8 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 
 describe('AddGenerictextComponent', () => {
   let component: AddGenerictextComponent;
@@ -23,6 +25,10 @@ describe('AddGenerictextComponent', () => {
         provideHttpClientTesting(),
         provideRouter([])
       ]
+    })
+    .overrideComponent(AddGenerictextComponent, {
+      remove: { imports: [BeitragskarteComponent] },
+      add: { imports: [BeitragskarteStubComponent] },
     })
     .compileComponents();
 

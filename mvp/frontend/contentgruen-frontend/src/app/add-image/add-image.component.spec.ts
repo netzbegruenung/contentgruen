@@ -5,6 +5,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 
 import { AddImageComponent } from './add-image.component';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 
 describe('AddImageComponent', () => {
   let fixture: ComponentFixture<AddImageComponent>;
@@ -17,7 +19,12 @@ describe('AddImageComponent', () => {
         provideHttpClientTesting(),
         provideRouter([])
       ]
-    }).compileComponents();
+    })
+      .overrideComponent(AddImageComponent, {
+        remove: { imports: [BeitragskarteComponent] },
+        add: { imports: [BeitragskarteStubComponent] },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(AddImageComponent);
     fixture.detectChanges();

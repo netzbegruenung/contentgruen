@@ -12,9 +12,9 @@
  * Das Label ist die einzige Quelle fuer den deutschen Typnamen im UI; gelesen wird
  * es ueber typLabel(). Aussage und Herkunft haben nur ein Label und keine Suchkarte.
  *
- * Die Suchkarten selbst stehen in content-type-components.ts. Diese Datei importiert
- * bewusst keine Komponenten: die App-Shell liest Typnamen (PAGE_TITLES), und ein
- * Komponenten-Import hier zoege alle Karten ins initiale Bundle.
+ * Es gibt eine Karte fuer alle Typen (beitragskarte/); sie liest Label und Symbol von
+ * hier. Diese Datei importiert bewusst keine Komponenten: die App-Shell liest Typnamen
+ * (PAGE_TITLES), und ein Komponenten-Import hier zoege die Karte ins initiale Bundle.
  */
 export interface ContentTypeConfig {
   /** Canonical registry key (frontend form). */
@@ -24,6 +24,8 @@ export interface ContentTypeConfig {
   label: string;
   /** Name of the nested result field on a search-result wrapper; nur bei Typen mit Suchkarte. */
   resultField?: string;
+  /** Symbol im Kopf der Beitragskarte; nur bei Typen mit Suchkarte. */
+  emoji?: string;
 }
 
 export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
@@ -32,24 +34,28 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     icon: 'forum',
     label: 'Kommentar',
     resultField: 'commentary_result',
+    emoji: '💬',
   },
   generictext: {
     key: 'generictext',
     icon: 'description',
     label: 'Hintergrundinfo',
     resultField: 'generictext_result',
+    emoji: '📄',
   },
   post: {
     key: 'post',
     icon: 'campaign',
     label: 'Post',
     resultField: 'post_result',
+    emoji: '📣',
   },
   image: {
     key: 'image',
     icon: 'image',
     label: 'Bild',
     resultField: 'image_result',
+    emoji: '🖼️',
   },
   statement: {
     key: 'statement',

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, Type, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NavigationService } from '../services/navigation.service';
@@ -9,8 +9,9 @@ import { StatementService } from '../services/statement.service';
 import { SearchResponse, GenerictextResult } from '../services/dtos/searchDtos';
 import { CommentarySearchResultsComponent } from '../commentary-search-results/commentary-search-results.component';
 import { GenerictextSearchResultsComponent } from '../generictext-search-results/generictext-search-results.component';
-import { RESULT_COMPONENTS } from '../shared/content-type-components';
 import { ResultCarouselComponent } from '../result-carousel/result-carousel.component';
+import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
+import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { SearchComponent } from '../search/search.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
@@ -44,6 +45,7 @@ const HELP_DIALOG_CONFIG = {
     CommentarySearchResultsComponent,
     GenerictextSearchResultsComponent,
     ResultCarouselComponent,
+    KartenlisteComponent,
     SearchComponent,
     MatTooltipModule,
     MatButtonModule,
@@ -73,9 +75,10 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   private queryParamsSubscription?: Subscription;
   private destroy$ = new Subject<void>();
 
-  // Component types for carousels, sourced from the content-type components map.
-  commentaryResultItemComponent: Type<any> = RESULT_COMPONENTS['commentary'];
-  generictextResultItemComponent: Type<any> = RESULT_COMPONENTS['generictext'];
+  // Einmal je Suchantwort umgerechnet, nicht im Template: neue Objekte bei jeder
+  // Change Detection setzten die Karten zurueck (aufgeklappte Aussage, Kurz/Lang).
+  kommentarKarten: KartenDaten[] = [];
+  hintergrundKarten: KartenDaten[] = [];
 
   // Mobile navigation
   isMobile: boolean = false;
@@ -168,6 +171,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         if (response) {
           this.hasCommentaryResults = response.commentary_search_results_count > 0;
           this.hasGenerictextResults = response.generictext_search_results_count > 0;
+          this.kommentarKarten = (response.commentary_search_results ?? []).map((paket) => ausSuchergebnis(paket));
+          this.hintergrundKarten = (response.generictext_search_results ?? []).map((paket) => ausSuchergebnis(paket));
 
           // Default to commentary if available, otherwise generictext
           if (this.hasCommentaryResults) {

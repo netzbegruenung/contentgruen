@@ -1,0 +1,688 @@
+@use '../shared/styles/breakpoints' as bp;
+
+// Eine Karte, drei Varianten. Modifier (.karte--voll/--kompakt/--rohling) regeln
+// Masse und vorhandene Bereiche, die Typklasse setzt nur --karten-farbe.
+//
+// Keine feste Hoehe: im Karussell gleicht align-items: stretch die Reihe an, in
+// der Liste bestimmt der Inhalt. Der Titel bleibt eine Behauptung mit hoechstens
+// drei Zeilen (Bilder vier, Bildtitel sind beschreibend und laenger); die Titelbox
+// haelt mindestens zwei, im Karussell drei.
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.karte {
+  --karten-farbe: var(--statement-bg);
+  --titel-zeilen: 3;
+  --text-zeilen: 12;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.typ-commentary {
+  --karten-farbe: var(--commentary-bg);
+}
+
+.typ-generictext {
+  --karten-farbe: var(--generictext-bg);
+}
+
+.typ-image {
+  --karten-farbe: var(--image-bg);
+  --titel-zeilen: 4;
+}
+
+.typ-post {
+  --karten-farbe: var(--post-bg);
+}
+
+.karte--voll {
+  width: 450px;
+  max-width: 100%;
+}
+
+// Kopf: Symbol | Titel | Badges
+
+.karte-kopf {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--karten-farbe);
+}
+
+.karte-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 28px;
+}
+
+.karte-titel {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--titel-zeilen);
+  overflow: hidden;
+  min-height: calc(2 * 1.3em);
+  margin: 0;
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 600px) {
+  .karte--voll .karte-titel {
+    min-height: calc(3 * 1.3em);
+  }
+}
+
+.karte-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  font-weight: 600;
+  transition: transform 0.2s ease;
+}
+
+.badge-neu {
+  background: var(--primary-main);
+  color: white;
+}
+
+.badge-beliebt {
+  font-size: 22px;
+}
+
+.badge-nutzung {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.badge-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.nutzung-animiert {
+  transform: scale(1.2);
+}
+
+// Statement: Aufklapper im Fluss, die Karte waechst mit
+
+.statement-zeile {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(0, 137, 57, 0.04);
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 137, 57, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-main);
+    outline-offset: -2px;
+  }
+}
+
+.statement-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-right: var(--spacing-sm);
+  font-size: 18px;
+  color: var(--primary-dark);
+}
+
+.statement-label {
+  flex-shrink: 0;
+  margin-right: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.statement-vorschau {
+  flex: 1;
+  overflow: hidden;
+  font-size: 13px;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statement-pfeil {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  font-size: 20px;
+  color: var(--primary-main);
+  transition: transform 0.3s ease;
+
+  &.offen {
+    transform: rotate(180deg);
+  }
+}
+
+.statement-details {
+  overflow: hidden;
+  padding: 0 var(--spacing-md);
+  border-bottom: 1px solid rgba(0, 137, 57, 0.3);
+}
+
+.statement-text {
+  margin: 12px 0;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.statement-werte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: 12px;
+}
+
+.statement-wert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-small);
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: help;
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    color: var(--primary-main);
+  }
+}
+
+.statement-hinweis {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    color: var(--primary-main);
+  }
+}
+
+// Inhalt
+
+.karte-inhalt {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-md) 0;
+}
+
+.karte-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+
+  &:not(.aufgeklappt) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--text-zeilen);
+    overflow: hidden;
+  }
+}
+
+.mehr-knopf {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-main);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.karte-bild img {
+  display: block;
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: var(--border-radius-small);
+  background: var(--surface-variant);
+}
+
+.post-herkunft {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.post-link,
+.quelle-link {
+  color: var(--primary-main);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.post-link {
+  display: flex;
+  gap: 6px;
+}
+
+.post-engagement {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--text-secondary);
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
+.karte-quellen {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--divider-color);
+  font-size: 14px;
+  color: var(--text-secondary);
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.quellen-leer {
+  margin: 0;
+}
+
+.quelle {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.4;
+}
+
+// Kurz/Mittel/Lang - nur ab 600 px
+
+.textlaenge {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--divider-color);
+  border-radius: var(--border-radius-small);
+
+  ::ng-deep .mat-button-toggle {
+    flex: 1 1 0;
+  }
+
+  ::ng-deep .mat-button-toggle-button {
+    height: 28px;
+    font-size: 13px;
+  }
+
+  ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+    padding: 0;
+    font-weight: 600;
+    line-height: 28px;
+  }
+
+  ::ng-deep .mat-button-toggle-checked .mat-button-toggle-button {
+    background-color: rgba(0, 0, 0, 0.08);
+  }
+}
+
+// Fuss
+
+.karte-fuss {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.karte-meta {
+  margin: 0;
+  padding: 0 var(--spacing-md) var(--spacing-sm);
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+@include bp.mobile-only {
+  .karte {
+    --text-zeilen: 8;
+  }
+
+  .karte--voll {
+    width: 100%;
+  }
+
+  .karte-badges {
+    gap: var(--spacing-xs);
+  }
+
+  .badge {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .badge-beliebt {
+    font-size: 16px;
+  }
+
+  .badge-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+
+  .statement-zeile {
+    min-height: 24px;
+    padding: 3px var(--spacing-md);
+  }
+
+  .statement-hinweis {
+    display: flex;
+  }
+
+  .textlaenge {
+    display: none;
+  }
+
+  .karte-meta {
+    font-size: 11px;
+  }
+}
+
+// Kompakt (Album): hochkante Karte im Raster. Kopf mit Typfarbe nur fuer das Symbol,
+// darunter Titel und Anriss auf je zwei Zeilen, im Fuss Datum und Nutzung. Als Ganzes
+// antippbar, ohne Aktionsleiste.
+
+.karte--kompakt {
+  width: 100%;
+  min-height: 150px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+  }
+
+  .karte-kopf {
+    padding: var(--spacing-sm) 12px;
+  }
+
+  .karte-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+  }
+
+  // Keine reservierten Zeilen: der Fuss sitzt per margin-top: auto am Kartenende.
+  .karte-titel {
+    -webkit-line-clamp: 2;
+    min-height: 0;
+    font-size: 15px;
+  }
+
+  .badge {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+}
+
+// Album mit Bild: das Bild fuellt das Kopfband in unveraenderter Hoehe (Symbolbox 28 px
+// plus Innenabstand), das Typ-Symbol liegt klein unten links darauf.
+.karte-kopf--bild {
+  position: relative;
+  box-sizing: border-box;
+  min-height: calc(28px + 2 * var(--spacing-sm));
+  align-items: end;
+  overflow: hidden;
+
+  .karte-icon {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+  }
+}
+
+.kopf-bild {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: 10px 12px 0;
+}
+
+.album-anriss {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.album-fuss {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-top: auto;
+  padding: var(--spacing-sm) 12px;
+}
+
+.karte-datum {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// Ohne Nutzung dezent: kein Kreis, nur die graue Zahl.
+.badge-nutzung.ungenutzt {
+  background: none;
+  box-shadow: none;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+// Rohling: dieselbe Karte, unfertig. Der Einwurf ist Rohmaterial (gestrichelte Kante,
+// grauer Kopf), ein Satz ohne Beitrag ist destilliert (durchgezogene Kante, grau),
+// ein Satz mit Beitrag traegt die Typfarbe wie die volle Karte.
+
+.karte--rohling {
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  box-shadow: none;
+
+  &[role='link'] {
+    cursor: pointer;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+  }
+
+  .karte-kopf {
+    padding: 12px;
+  }
+
+  .karte-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+  }
+
+  .karte-titel {
+    font-size: 16px;
+  }
+}
+
+.zustand-offen,
+.zustand-verworfen {
+  --karten-farbe: var(--statement-bg);
+  border-style: dashed;
+}
+
+.zustand-destilliert {
+  --karten-farbe: var(--statement-bg);
+  border-style: solid;
+}
+
+.zustand-ausformuliert {
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.zustand-verworfen {
+  opacity: 0.55;
+}
+
+.karte-marker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.plattform-chip,
+.verworfen-hinweis {
+  padding: 2px var(--spacing-sm);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.plattform-chip {
+  background: var(--bg-card);
+}
+
+.verworfen-hinweis {
+  border: 1px solid rgba(0, 0, 0, 0.24);
+}
+
+.rohling-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px var(--spacing-md);
+}
+
+.einwurf-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--primary-main);
+}
+
+.link-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.link-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Der Hinweis fuer andere steht in der globalen .hinweis-box, hier nur gekuerzt.
+.einwurf-hinweis {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.personen {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.person {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.beitrag-link {
+  align-self: flex-start;
+  margin-top: var(--spacing-xs);
+  color: var(--primary-dark);
+}

@@ -1,13 +1,56 @@
-from pydantic import BaseModel
-from typing import List
+import json
 
+from pydantic import BaseModel, field_validator
+from typing import List, Optional
+
+from domain.models.commentary import CommentaryReference
 from domain.models.content import ContentDbEntry
 
 
-###   Requests   ###
+###   Responses   ###
+
+
+class ContributionEntry(ContentDbEntry):
+    """
+    Ein Eintrag in "Meine Beitraege", so wie die Beitragskarte ihn braucht.
+
+    ContentDbEntry allein verwirft beim Lesen aus Qdrant alles, was nicht zu den
+    gemeinsamen Feldern gehoert - auch Titel und Bildadresse, obwohl sie im Payload
+    stehen. Die Nutzung liegt nicht in Qdrant, sondern in PostgreSQL und wird im
+    Endpunkt nachgetragen, ebenso Adresse und Beschreibung der Herkunft.
+
+    Die Herkunft nutzt CommentaryReference: GenericTextReference hat dieselben Felder,
+    Bild und Post haben keine Herkunft.
+    """
+
+    # Optional wie im Bildmodell: ein Bild ohne Bildunterschrift ist ein gueltiger
+    # Beitrag und darf beim Lesen nicht herausfallen.
+    text: Optional[str] = None
+    title: Optional[str] = None
+    image_url: Optional[str] = None
+    usage_count: int = 0
+    references: List[CommentaryReference] = []
+
+    @field_validator("usage_count", mode="before")
+    @classmethod
+    def _nutzung_null_als_null(cls, value):
+        # Aeltere Payloads tragen usage_count: null. Die echte Zahl kommt ohnehin aus
+        # PostgreSQL und wird im Endpunkt nachgetragen; ohne diese Umwandlung
+        # scheitert schon das Lesen aus Qdrant und die ganze Liste mit 500.
+        return 0 if value is None else value
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def _herkunft_als_liste(cls, value):
+        # Wie Commentary.parse_references: aeltere Payloads tragen die Liste als JSON-Text.
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
 
 
 class GetContributionsOfUserResponse(BaseModel):
     results_count: int
-    results: List[ContentDbEntry]
+    results: List[ContributionEntry]
     total_records_count: int

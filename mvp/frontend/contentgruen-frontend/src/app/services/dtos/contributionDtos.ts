@@ -1,3 +1,4 @@
+import { ContentReference } from './commonDtos';
 
 //TODO: Evaluate usage of camel case and transformation in the backend
 
@@ -19,8 +20,16 @@ export interface ContentResult {
     original_author: string;
     last_modified_by: string;
     edit_history: object;
-    text: string;
+    /** Leer bei Bildern ohne Bildunterschrift. */
+    text: string | null;
     content_type: string;
     score: number;
-    usage_count?: number;
+    /** Titel des Beitrags; fehlt nur bei Altbestand ohne Titel im Payload. */
+    title?: string | null;
+    /** Nur bei Bildern gesetzt. */
+    image_url?: string | null;
+    /** Aus PostgreSQL nachgetragen, 0 ohne Nutzung. */
+    usage_count: number;
+    /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */
+    references?: ContentReference[];
 }

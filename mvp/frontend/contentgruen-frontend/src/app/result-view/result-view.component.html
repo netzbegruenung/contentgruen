@@ -50,22 +50,13 @@
 
     <!-- Content Container -->
     <div class="mobile-results-container">
-        <!-- Commentary Section -->
+        <!-- Mobil: Karten untereinander statt Karussell -->
         <div *ngIf="currentSection === 'commentary' && hasCommentaryResults" class="mobile-section">
-            <app-result-carousel
-                [results]="searchResponse.commentary_search_results"
-                [itemComponent]="commentaryResultItemComponent"
-                [contentType]="'commentary'">
-            </app-result-carousel>
+            <app-kartenliste [daten]="kommentarKarten"></app-kartenliste>
         </div>
 
-        <!-- Generic Text Section -->
         <div *ngIf="currentSection === 'generictext' && hasGenerictextResults" class="mobile-section">
-            <app-result-carousel
-                [results]="searchResponse.generictext_search_results"
-                [itemComponent]="generictextResultItemComponent"
-                [contentType]="'generictext'">
-            </app-result-carousel>
+            <app-kartenliste [daten]="hintergrundKarten"></app-kartenliste>
         </div>
 
         <!-- Mobile Empty State when no results in any category -->
@@ -134,8 +125,7 @@
         <section class="carousel-section">
             <app-result-carousel
                 *ngIf="searchResponse.commentary_search_results_count > 0"
-                [results]="searchResponse.commentary_search_results"
-                [itemComponent]="commentaryResultItemComponent">
+                [daten]="kommentarKarten">
             </app-result-carousel>
         </section>
 
@@ -154,8 +144,7 @@
         <section class="carousel-section">
             <app-result-carousel
                 *ngIf="searchResponse.generictext_search_results_count > 0"
-                [results]="searchResponse.generictext_search_results"
-                [itemComponent]="generictextResultItemComponent">
+                [daten]="hintergrundKarten">
             </app-result-carousel>
         </section>
 

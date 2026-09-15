@@ -7,6 +7,8 @@ import uuid
 import logging
 import asyncio
 
+from pydantic import ValidationError
+
 from core.config import Settings
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
@@ -358,48 +360,67 @@ class QdrantBaseRepository(
         limit: int,
         offset: int,
         content_types: Optional[List[str]] = None,
+        eintrag_modell: Optional[Type[BaseContentDbEntry]] = None,
     ) -> List[TContentDbEntry]:
-        """Async implementation of get_by_author."""
+        """
+        Async implementation of get_by_author.
+
+        eintrag_modell ersetzt das Modell des Repositorys beim Lesen des Payloads.
+        Das aggregierte Repository liest sonst mit ContentDbEntry und verliert dabei
+        die typspezifischen Felder (Titel, Bildadresse).
+
+        Neueste zuerst nach created, dem Datum, das die Karte anzeigt. Qdrant scrollt
+        ohne order_by in ID-Reihenfolge, und order_by braeuchte einen Payload-Index auf
+        created. Wie get_recent werden deshalb alle Punkte der Person geholt, im
+        Speicher sortiert und dann die Seite geschnitten; pro Person sind das wenige.
+        """
+        modell = eintrag_modell or self.content_db_entry_model_class
         try:
             search_filter = self._autoren_filter(user_id, content_types)
 
-            # Scroll through results with pagination
-            all_results = []
+            punkte = []
             current_offset = None
-            points_to_skip = offset
-            points_collected = 0
-
-            while points_collected < limit:
-                result = await self._shared_manager.async_client.scroll(
-                    collection_name=self._shared_manager.collection_name,
-                    scroll_filter=search_filter,
-                    limit=min(100, limit - points_collected + points_to_skip),
-                    offset=current_offset,
-                    with_payload=True,
-                    with_vectors=False,
-                )
-
-                if not result[0]:
-                    break
-
-                for point in result[0]:
-                    if points_to_skip > 0:
-                        points_to_skip -= 1
-                        continue
-
-                    if points_collected >= limit:
-                        break
-
-                    payload = point.payload or {}
-                    payload["id"] = str(point.id)
-                    all_results.append(
-                        self.content_db_entry_model_class.model_validate(payload)
+            while True:
+                seite, naechster_offset = (
+                    await self._shared_manager.async_client.scroll(
+                        collection_name=self._shared_manager.collection_name,
+                        scroll_filter=search_filter,
+                        limit=100,
+                        offset=current_offset,
+                        with_payload=True,
+                        with_vectors=False,
                     )
-                    points_collected += 1
-
-                current_offset = result[1]
-                if current_offset is None or points_collected >= limit:
+                )
+                punkte.extend(seite)
+                if (
+                    not seite
+                    or naechster_offset is None
+                    or naechster_offset == current_offset
+                ):
                     break
+                current_offset = naechster_offset
+
+            # Erst validieren, dann sortieren: ein kaputter Punkt faellt einzeln heraus,
+            # statt die ganze Liste mit 500 scheitern zu lassen.
+            gueltige = []
+            for point in punkte:
+                payload = dict(point.payload or {})
+                payload["id"] = str(point.id)
+                try:
+                    eintrag = modell.model_validate(payload)
+                except ValidationError as fehler:
+                    logger.warning(
+                        f"get_by_author: Punkt {point.id} uebersprungen, "
+                        f"Payload ungueltig ({fehler.error_count()} Fehler)"
+                    )
+                    continue
+                # created ist ISO ohne Zeitzone, als Text also chronologisch sortierbar;
+                # null oder kein Text sortiert ans Ende statt die Sortierung zu sprengen.
+                created = payload.get("created")
+                gueltige.append((created if isinstance(created, str) else "", eintrag))
+
+            gueltige.sort(key=lambda paar: paar[0], reverse=True)
+            all_results = [eintrag for _, eintrag in gueltige[offset : offset + limit]]
 
             content_desc = (
                 f"all content types" if self.content_type is None else self.content_type

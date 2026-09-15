@@ -152,11 +152,8 @@
                 <mat-icon matTooltip="So wird dein Bild in den Suchergebnissen angezeigt">info</mat-icon>
             </div>
             <div class="preview-content">
-                <app-image-result-item
-                    *ngIf="previewResult"
-                    [result_input]="previewResult"
-                    [isPreview]="true">
-                </app-image-result-item>
+                <app-beitragskarte *ngIf="vorschauKarte as karte" [daten]="karte" [vorschau]="true">
+                </app-beitragskarte>
             </div>
         </div>
     </div>

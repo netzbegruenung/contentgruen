@@ -4,7 +4,8 @@ export const ContentOriginIcons: Record<ContentOrigin, string> = {
     [ContentOrigin.INITIAL_DATA]: '🌱',
     [ContentOrigin.MANUALLY_CREATED]: '✍️',
     [ContentOrigin.AI_GENERATED]: '🤖',
-    [ContentOrigin.INGESTED]: '📥',
+    // Nicht 📥: das steht in KETTEN_ICONS (shared/fangkorb-texte.ts) fuer Einwerfen.
+    [ContentOrigin.INGESTED]: '⚙️',
 };
 
 export const ContentOriginStrings: Record<ContentOrigin, string> = {

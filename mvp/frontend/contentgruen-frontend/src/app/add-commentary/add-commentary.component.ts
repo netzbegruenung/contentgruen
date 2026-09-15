@@ -9,7 +9,8 @@ import { LoggingService } from '../services/logging.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { AddReplysuggestionToStatementRequest, AddReplysuggestionToStatementResponse } from '../services/dtos/statementDtos';
 import { CommentaryResult } from '../services/dtos/searchDtos';
-import { CommentaryResultItemComponent } from '../commentary-result-item/commentary-result-item.component';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ReferenceInputComponent, ReferenceEntry } from '../reference-input/reference-input.component';
 import { ContentStatus } from '../services/dtos/content-status-enum';
 import { ContentOrigin } from '../services/dtos/content-origin-enum';
@@ -41,12 +42,9 @@ interface CommentaryFormValues {
         CommonModule,
         FormsModule,
         MatSlideToggleModule,
-        CommentaryResultItemComponent,
+        BeitragskarteComponent,
         ReferenceInputComponent,
         RouterLink
-    ],
-    providers: [
-        { provide: 'RESULT', useValue: null }
     ],
     animations: [
         trigger('expandCollapse', [
@@ -78,6 +76,32 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
 
     commentaryForm: FormGroup;
     previewResult: CommentaryResult | null = null;
+    private vorschauCache?: { quelle: CommentaryResult; statement: string; karte: KartenDaten };
+
+    /**
+     * Die Vorschau als KartenDaten. Zwischengespeichert, solange sich Vorschau und
+     * Aussage nicht aendern - sonst setzte jede Change Detection die Karte zurueck
+     * (Kurz/Lang, aufgeklappte Aussage).
+     */
+    get vorschauKarte(): KartenDaten | null {
+        if (!this.previewResult) {
+            return null;
+        }
+        if (this.vorschauCache?.quelle !== this.previewResult || this.vorschauCache.statement !== this.statementText) {
+            this.vorschauCache = {
+                quelle: this.previewResult,
+                statement: this.statementText,
+                karte: ausSuchergebnis({
+                    commentary_result: this.previewResult,
+                    score: 1.0,
+                    statement_text: this.statementText,
+                    statement_similarity_score: 0,
+                    reply_relevance: 0,
+                }),
+            };
+        }
+        return this.vorschauCache.karte;
+    }
 
     commentaryLoading = false;
     commentarySaved = false;
