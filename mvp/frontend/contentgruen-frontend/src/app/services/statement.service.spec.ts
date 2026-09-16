@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
+import { convertToParamMap } from '@angular/router';
+
 import { StatementService } from './statement.service';
 import { environment } from '../../environments/environment';
 
@@ -71,5 +73,95 @@ describe('StatementService: Herkunft der angelegten Statements', () => {
     });
 
     httpMock.expectNone(addUrl);
+  });
+});
+
+describe('StatementService: Aussage eines Beitragsformulars', () => {
+  let service: StatementService;
+  let httpMock: HttpTestingController;
+
+  const searchUrl = `${environment.baseUrl}/api/v1/statement/searchStatements`;
+  const addUrl = `${environment.baseUrl}/api/v1/statement/addStatement`;
+  const linkUrl = `${environment.baseUrl}/api/v1/statement/addReplysuggestionToStatement`;
+  const getByIdUrl = `${environment.baseUrl}/api/v1/statement/getById`;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()]
+    });
+    service = TestBed.inject(StatementService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpMock.verify());
+
+  describe('aussageAusAdresse', () => {
+    it('laedt ?aussage= per ID', () => {
+      let ergebnis: unknown;
+      service.aussageAusAdresse(convertToParamMap({ aussage: 'a-1', searchQuery: 'egal' }))
+        .subscribe((aussage) => (ergebnis = aussage));
+
+      const anfrage = httpMock.expectOne((req) => req.url === getByIdUrl);
+      expect(anfrage.request.params.get('statement_id')).toBe('a-1');
+      anfrage.flush({ statement_id: 'a-1', statement_text: 'Text' });
+
+      expect(ergebnis).toEqual({ statement_id: 'a-1', statement_text: 'Text' });
+    });
+
+    it('nimmt ?searchQuery= als Text ohne ID und ohne Aufruf', () => {
+      let ergebnis: unknown;
+      service.aussageAusAdresse(convertToParamMap({ searchQuery: '  Waermepumpen  ' }))
+        .subscribe((aussage) => (ergebnis = aussage));
+
+      expect(ergebnis).toEqual({ statement_id: '', statement_text: 'Waermepumpen' });
+    });
+  });
+
+  describe('alsAntwortVerknuepfen', () => {
+    it('verknuepft direkt, wenn die ID bekannt ist', () => {
+      let ergebnis: boolean | undefined;
+      service.alsAntwortVerknuepfen('k-1', 'commentary', 1.0, { id: 'a-1', text: 'egal' })
+        .subscribe((ok) => (ergebnis = ok));
+
+      const verknuepfen = httpMock.expectOne(linkUrl);
+      expect(verknuepfen.request.body).toEqual({
+        statement_id: 'a-1', replysuggestion_id: 'k-1', content_type: 'commentary', relevance: 1.0,
+      });
+      verknuepfen.flush({ success: true });
+
+      httpMock.expectNone(searchUrl);
+      expect(ergebnis).toBeTrue();
+    });
+
+    it('legt eine nur als Text bekannte Aussage erst jetzt an, als manually_created', () => {
+      service.alsAntwortVerknuepfen('k-1', 'generic_text', 0.9, { id: '', text: 'Waermepumpen' }).subscribe();
+
+      httpMock.expectOne(searchUrl).flush({ results: [] });
+      const anlegen = httpMock.expectOne(addUrl);
+      expect(anlegen.request.body.source).toBe('manually_created');
+      anlegen.flush({ statement_was_new: true, statement_id: 'neu-1', statement_text: 'Waermepumpen' });
+
+      expect(httpMock.expectOne(linkUrl).request.body.statement_id).toBe('neu-1');
+    });
+
+    it('ruft ohne Aussage nichts auf', () => {
+      let ergebnis: boolean | undefined;
+      service.alsAntwortVerknuepfen('k-1', 'commentary', 1.0, { id: '', text: '   ' })
+        .subscribe((ok) => (ergebnis = ok));
+
+      expect(ergebnis).toBeFalse();
+    });
+
+    it('meldet false statt eines Fehlers, wenn das Verknuepfen scheitert', () => {
+      let ergebnis: boolean | undefined;
+      let fehler: unknown;
+      service.alsAntwortVerknuepfen('k-1', 'commentary', 1.0, { id: 'a-1', text: '' })
+        .subscribe({ next: (ok) => (ergebnis = ok), error: (e) => (fehler = e) });
+
+      httpMock.expectOne(linkUrl).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toBeFalse();
+      expect(fehler).toBeUndefined();
+    });
   });
 });

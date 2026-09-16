@@ -27,6 +27,7 @@ import { LoggingService } from '../services/logging.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
+import { FORMULAR_PFAD, aussageParameter } from '../shared/formular-adresse';
 
 // Dialog configuration constants
 const HELP_DIALOG_CONFIG = {
@@ -331,11 +332,15 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Navigate to contribute view with specified panel
+   * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: per ID, wo
+   * sie bekannt ist (aus der Suchantwort, sonst aus dem eigenen Anlegen), sonst
+   * mit dem Suchtext.
    */
-  navigateToContribute(panel: 'commentary' | 'generictext'): void {
-    const statementText = this.searchQuery;
-    this.router.navigate(['/contribute'], { queryParams: { panel, searchQuery: statementText } });
+  navigateToContribute(typ: 'commentary' | 'generictext'): void {
+    const { searchResults, statementId } = this.stateService.currentState;
+    this.router.navigate([FORMULAR_PFAD[typ]], {
+      queryParams: aussageParameter(searchResults?.statement_id || statementId, this.searchQuery),
+    });
   }
 
   /**

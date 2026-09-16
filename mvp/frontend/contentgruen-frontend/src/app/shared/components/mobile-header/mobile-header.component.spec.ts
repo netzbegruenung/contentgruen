@@ -20,6 +20,7 @@ describe('MobileHeaderComponent', () => {
         provideRouter([
           { path: 'search', component: LeerComponent },
           { path: 'fangkorb', component: LeerComponent },
+          { path: 'workflow/add-commentary', component: LeerComponent },
         ]),
         { provide: NavigationService, useValue: navigation },
       ],
@@ -50,6 +51,12 @@ describe('MobileHeaderComponent', () => {
 
     expect(titel().querySelector('a')).toBeNull();
     expect(titel().textContent!.trim()).toBe('Fangkorb');
+  }));
+
+  it('nennt auf einer Formularseite nur den Typ', fakeAsync(() => {
+    oeffnen('/workflow/add-commentary');
+
+    expect(titel().textContent!.trim()).toBe('Kommentar');
   }));
 
   it('zeigt auf der Startseite den Namen der App', fakeAsync(() => {
@@ -125,17 +132,52 @@ describe('MobileHeaderComponent – Pfeil an der echten Routentabelle', () => {
     expect(pfeilVon('/impressum')).toBe('/search');
   }));
 
-  /**
-   * Am Handy liegt das Beitragsformular als Unter-Screen ueber der Auswahl
-   * (``?form=``). Der Pfeil schliesst erst diesen, erst der zweite Tipp verlaesst
-   * die Seite. Was sonst noch in der Adresse steht, bleibt stehen.
-   */
-  it('schliesst erst das Formular und geht erst dann eine Ebene hoch', fakeAsync(() => {
-    expect(pfeilVon('/contribute?form=commentary&searchQuery=x')).toBe('/contribute?searchQuery=x');
-    expect(pfeilKlicken()).toBe('/search');
+  it('fuehrt aus dem Formular mit Aussage auf die Beitragen-Seite', fakeAsync(() => {
+    expect(pfeilVon('/workflow/add-commentary?aussage=a-1')).toBe('/contribute');
   }));
+});
 
-  it('behandelt panel als Sprungziel, nicht als Unter-Screen', fakeAsync(() => {
-    expect(pfeilVon('/contribute?panel=commentary')).toBe('/search');
+/**
+ * Die schliesst-Mechanik hat nach dem Umzug der Formulare keinen Nutzer in der
+ * Routentabelle mehr. Sie bleibt, deshalb wird sie hier an einer Testroute geprueft.
+ */
+describe('MobileHeaderComponent – Unter-Screen per data.schliesst', () => {
+  let fixture: ComponentFixture<MobileHeaderComponent>;
+  let router: Router;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [MobileHeaderComponent],
+      providers: [
+        provideRouter([
+          { path: 'search', component: LeerComponent },
+          {
+            path: 'mit-unterscreen',
+            component: LeerComponent,
+            data: { parent: '/search', schliesst: ['blatt'] },
+          },
+        ]),
+      ],
+    }).compileComponents();
+
+    router = TestBed.inject(Router);
+    fixture = TestBed.createComponent(MobileHeaderComponent);
+    fixture.detectChanges();
+  });
+
+  function pfeilKlicken(): string {
+    fixture.nativeElement.querySelector('button.back-button').click();
+    tick();
+    fixture.detectChanges();
+    return router.url;
+  }
+
+  it('schliesst erst den Unter-Screen und geht erst dann eine Ebene hoch', fakeAsync(() => {
+    router.navigateByUrl('/mit-unterscreen?blatt=1&suche=x');
+    tick();
+    fixture.detectChanges();
+
+    expect(pfeilKlicken()).toBe('/mit-unterscreen?suche=x');
+    expect(pfeilKlicken()).toBe('/search');
   }));
 });

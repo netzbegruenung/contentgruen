@@ -2,17 +2,21 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
+import { ParamMap } from '@angular/router';
 import {
   AddReplysuggestionToStatementRequest,
   AddReplysuggestionToStatementResponse,
   AddStatementRequest,
   AddStatementResponse,
+  ContentType,
+  GetStatementByIdResponse,
   SearchStatementByTextRequest,
   StatementSearchResponse,
   StatementSource
 } from './dtos/statementDtos';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
+import { AUSSAGE_PARAM, SUCHTEXT_PARAM } from '../shared/formular-adresse';
 
 @Injectable({
   providedIn: 'root'
@@ -21,6 +25,7 @@ export class StatementService {
   private addReplysuggestionToStatementApiUrl = `${environment.baseUrl}/api/v1/statement/addReplysuggestionToStatement`;
   private addStatementApiUrl = `${environment.baseUrl}/api/v1/statement/addStatement`;
   private searchStatementsApiUrl = `${environment.baseUrl}/api/v1/statement/searchStatements`;
+  private getStatementByIdApiUrl = `${environment.baseUrl}/api/v1/statement/getById`;
 
   constructor(
     private http: HttpClient,
@@ -127,6 +132,65 @@ export class StatementService {
       tap(response => {
         this.logger.info('Reply suggestion added successfully:', response);
       })
+    );
+  }
+
+  getStatementById(statementId: string): Observable<GetStatementByIdResponse> {
+    return this.http.get<GetStatementByIdResponse>(this.getStatementByIdApiUrl, {
+      params: { statement_id: statementId },
+    });
+  }
+
+  /**
+   * Die Aussage, auf die ein Beitragsformular antwortet, aus seiner Adresse.
+   *
+   * Mit ?aussage=<id> wird sie geladen. Mit ?searchQuery= steht nur ihr Text fest:
+   * Die ID bleibt leer, und angelegt wird nichts - das geschieht erst beim
+   * Speichern (alsAntwortVerknuepfen). Ohne beides ist das Ergebnis leer.
+   */
+  aussageAusAdresse(params: ParamMap): Observable<GetStatementByIdResponse> {
+    const aussageId = params.get(AUSSAGE_PARAM);
+    if (aussageId) {
+      return this.getStatementById(aussageId);
+    }
+    return of({ statement_id: '', statement_text: params.get(SUCHTEXT_PARAM)?.trim() ?? '' });
+  }
+
+  /**
+   * Einen gespeicherten Beitrag als Antwort an seine Aussage haengen.
+   *
+   * Ist die Aussage nur als Text bekannt, wird sie erst jetzt gesucht oder
+   * angelegt - so entsteht beim blossen Oeffnen eines Formulars keine Aussage.
+   * Scheitert etwas, bleibt der Beitrag gespeichert; das Ergebnis ist dann false.
+   */
+  alsAntwortVerknuepfen(
+    beitragId: string,
+    contentType: ContentType,
+    relevance: number,
+    aussage: { id: string; text: string },
+  ): Observable<boolean> {
+    const text = aussage.text.trim();
+    if (!aussage.id && !text) {
+      return of(false);
+    }
+    const aussageId$ = aussage.id
+      ? of(aussage.id)
+      : this.findOrCreateStatement(text, 'manually_created').pipe(map((antwort) => antwort.statement_id));
+
+    return aussageId$.pipe(
+      switchMap((statementId) =>
+        this.addReplysuggestionToStatement({
+          statement_id: statementId,
+          replysuggestion_id: beitragId,
+          content_type: contentType,
+          relevance,
+        }),
+      ),
+      map(() => true),
+      catchError((error) => {
+        this.logger.error('Beitrag gespeichert, aber nicht mit der Aussage verknuepft', error);
+        return of(false);
+      }),
     );
   }
 }

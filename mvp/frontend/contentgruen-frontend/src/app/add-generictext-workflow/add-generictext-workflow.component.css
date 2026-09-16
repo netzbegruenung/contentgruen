@@ -1,5 +1,7 @@
+/* Formularseite: auf breiten Schirmen schmal und mittig, am Handy volle Breite. */
 .workflow-container {
-    padding: 0;
+    max-width: 720px;
+    margin: 0 auto;
 }
 
 .loading-container {

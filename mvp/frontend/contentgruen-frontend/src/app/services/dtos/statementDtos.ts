@@ -48,6 +48,13 @@ export interface AddStatementResponse {
     statement_text: string;
 }
 
+// GetStatementById
+
+export interface GetStatementByIdResponse {
+    statement_id: string;
+    statement_text: string;
+}
+
 // AddCommentaryToStatement
 
 export interface AddReplysuggestionToStatementRequest {

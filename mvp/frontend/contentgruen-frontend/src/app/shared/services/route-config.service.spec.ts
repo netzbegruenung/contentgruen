@@ -24,4 +24,25 @@ describe('RouteConfigService', () => {
     expect(service.getRouteConfig('/destillieren/id-1').showBackButton).toBeTrue();
     expect(service.getRouteConfig('/destillieren/id-1?schritt=typwahl').showBackButton).toBeTrue();
   });
+
+  it('benennt die Formularseiten nach ihrem Typ, auch mit Parametern', () => {
+    expect(service.getRouteConfig('/workflow/add-commentary').pageTitle).toBe('Kommentar verfassen');
+    expect(service.getRouteConfig('/workflow/add-commentary?aussage=a-1').pageTitle).toBe('Kommentar verfassen');
+    expect(service.getRouteConfig('/workflow/add-generictext?rohinput=e-1').pageTitle).toBe('Hintergrundinfo verfassen');
+    expect(service.getRouteConfig('/workflow/add-image').pageTitle).toBe('Bild hinzufügen');
+  });
+
+  it('nennt die Formularseiten mobil nur nach dem Typ', () => {
+    expect(service.getRouteConfig('/workflow/add-commentary?aussage=a-1').mobilePageTitle).toBe('Kommentar');
+    expect(service.getRouteConfig('/workflow/add-generictext').mobilePageTitle).toBe('Hintergrundinfo');
+    expect(service.getRouteConfig('/workflow/add-image').mobilePageTitle).toBe('Bild');
+    expect(service.getRouteConfig('/fangkorb').mobilePageTitle).toBeUndefined();
+  });
+
+  it('zeigt auf den Formularseiten Pfeil und Meine Beitraege, nicht Beitragen', () => {
+    const config = service.getRouteConfig('/workflow/add-commentary');
+    expect(config.showBackButton).toBeTrue();
+    expect(config.showContributeButton).toBeFalse();
+    expect(config.showContributionsButton).toBeTrue();
+  });
 });

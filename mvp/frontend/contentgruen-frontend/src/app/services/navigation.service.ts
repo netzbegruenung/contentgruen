@@ -34,10 +34,6 @@ export class NavigationService {
     this.router.navigate(['/contribute']);
   }
 
-  navigateToContributeWithPanel(panelType: string): void {
-    this.router.navigate(['/contribute'], { queryParams: { panel: panelType } });
-  }
-
   navigateToContributions(): void {
     this.router.navigate(['/contributions']);
   }

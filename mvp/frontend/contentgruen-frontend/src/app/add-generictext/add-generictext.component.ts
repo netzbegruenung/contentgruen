@@ -7,7 +7,6 @@ import { GenericTextService } from '../services/generic-text.service';
 import { StatementService } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { AddGenericTextRequest, AddGenericTextResponse } from '../services/dtos/generictextDtos';
-import { AddReplysuggestionToStatementRequest, AddReplysuggestionToStatementResponse } from '../services/dtos/statementDtos';
 import { GenerictextSearchResult } from '../services/dtos/searchDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -127,12 +126,6 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
         // Initialize preview with form values
         this.updatePreview(this.generictextForm.value);
 
-        // Set initial state based on whether we have a statement
-        if (this.statementText) {
-            this.isReplyToStatement = true;
-            this.statementInput = this.statementText;
-        }
-
         // Debounce statement input changes
         this.statementUpdateSubject
             .pipe(
@@ -147,6 +140,13 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
     }
 
     ngOnChanges(changes: SimpleChanges): void {
+        // Die Aussage kommt als Input - im Konstruktor ist sie noch leer. Vorher
+        // stand diese Pruefung dort und griff deshalb nie: Aus der Suche zeigte
+        // der Schalter "eigenstaendig", obwohl verknuepft wurde.
+        if (changes['statementText'] && this.statementText) {
+            this.isReplyToStatement = true;
+            this.statementInput = this.statementText;
+        }
         if (changes['vorbefuellung'] && this.vorbefuellung) {
             this.vorbefuellungAnwenden(this.vorbefuellung);
         }
@@ -323,25 +323,12 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
                 next: (response: AddGenericTextResponse) => {
                     this.logger.info('Generic text added successfully:', response);
 
-                    if (this.statementText && this.statementId) {
-                        const addReplysuggestionToStatementRequest: AddReplysuggestionToStatementRequest = {
-                            statement_id: this.statementId,
-                            replysuggestion_id: response.id,
-                            content_type: 'generic_text',
-                            relevance: 0.9
-                        };
-
-                        // Call the service to link the replysuggestion to a statement
-                        this.statementService.addReplysuggestionToStatement(addReplysuggestionToStatementRequest).subscribe({
-                            next: (linkResponse: AddReplysuggestionToStatementResponse) => {
-                                this.logger.info('Generic text linked to statement successfully');
-                            },
-                            error: (error) => {
-                                this.logger.warn('Failed to link generic text to statement, but text was saved', error);
-                                // Don't show error since the main operation succeeded
-                            }
-                        });
-                    }
+                    // Antwort auf eine Aussage: erst jetzt verknuepfen - eine nur als Text
+                    // bekannte Aussage wird dabei gesucht oder angelegt. Scheitert das,
+                    // ist der Beitrag trotzdem gespeichert.
+                    this.statementService
+                        .alsAntwortVerknuepfen(response.id, 'generic_text', 0.9, this.aussageZumSpeichern())
+                        .subscribe();
 
                     this.generictextLoading = false;
                     this.generictextSaved = true;
@@ -365,6 +352,14 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
                 this.generictextForm.get(key)?.markAsTouched();
             });
         }
+    }
+
+    /** Die Aussage, auf die geantwortet wird - leer, wenn der Schalter aus ist. */
+    private aussageZumSpeichern(): { id: string; text: string } {
+        if (!this.isReplyToStatement) {
+            return { id: '', text: '' };
+        }
+        return { id: this.statementId, text: this.statementInput || this.statementText };
     }
 
     private scrollToLoadingOrSuccess(): void {

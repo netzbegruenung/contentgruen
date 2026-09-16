@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 
 from dependencies import get_statement_service
@@ -11,6 +13,7 @@ from dtos.statement import (
     GetStatementsOfCategoryResponse,
     GetStatementsOfTopicRequest,
     GetStatementsOfTopicResponse,
+    GetStatementByIdResponse,
     GetTopicsResponse,
     SearchStatementByTextRequest,
     StatementSearchResponse,
@@ -64,6 +67,28 @@ async def get_all(
     except Exception as e:
         logger.error(f"Error in /getAll: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
+# werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege.
+@router.get("/getById", response_model=GetStatementByIdResponse)
+async def get_by_id(
+    statement_id: uuid.UUID = Query(..., description="ID der Aussage"),
+    statement_service: StatementService = Depends(get_statement_service),
+) -> GetStatementByIdResponse:
+    try:
+        statement = await statement_service.get(statement_id)
+    except ValueError:
+        # Das Repository meldet "nicht gefunden" und "falscher Inhaltstyp" als
+        # ValueError - beides heisst fuer den Aufrufer: diese Aussage gibt es nicht.
+        raise HTTPException(status_code=404, detail="Statement not found")
+    except Exception as e:
+        logger.error(f"Error in /getById: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return GetStatementByIdResponse(
+        statement_id=statement.id, statement_text=statement.text
+    )
 
 
 # Searches for statements in the statement_index using similarity search

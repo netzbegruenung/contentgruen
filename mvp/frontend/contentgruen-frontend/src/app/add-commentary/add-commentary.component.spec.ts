@@ -8,6 +8,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { CommentaryService } from '../services/commentary.service';
+import { StatementService } from '../services/statement.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { CommentaryResult } from '../services/dtos/searchDtos';
 import { SimpleChange } from '@angular/core';
@@ -144,6 +145,61 @@ describe('AddCommentaryComponent', () => {
     const payload: AddCommentaryRequest = addSpy.calls.mostRecent().args[0];
     expect(payload.commentary.long_text).toBe('Ausführliche Fassung des Kommentars.');
   }));
+
+  describe('Antwort auf eine Aussage', () => {
+    function aussageSetzen(text: string, id = ''): void {
+      component.statementText = text;
+      component.statementId = id;
+      component.ngOnChanges({ statementText: new SimpleChange('', text, true) });
+    }
+
+    function speichern(): jasmine.Spy {
+      const commentaryService = TestBed.inject(CommentaryService);
+      spyOn(commentaryService, 'addCommentary').and.returnValue(of({ id: 'k-1' } as AddCommentaryResponse));
+      spyOn(commentaryService, 'getCommentaryById').and.returnValue(of({} as CommentaryResult));
+      const verknuepfen = spyOn(TestBed.inject(StatementService), 'alsAntwortVerknuepfen').and.returnValue(of(true));
+
+      component.commentaryForm.patchValue({ title: 'Testtitel', text: 'Ein ausreichend langer Haupttext.' });
+      component.saveCommentaryForm();
+      return verknuepfen;
+    }
+
+    it('schaltet auf Antwort, sobald die Aussage als Input ankommt', () => {
+      aussageSetzen('Waermepumpen sind zu teuer');
+
+      expect(component.isReplyToStatement).toBeTrue();
+      expect(component.statementInput).toBe('Waermepumpen sind zu teuer');
+    });
+
+    it('reicht beim Speichern ID und Text der Aussage weiter', fakeAsync(() => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+
+      const verknuepfen = speichern();
+      flush();
+
+      expect(verknuepfen).toHaveBeenCalledOnceWith('k-1', 'commentary', 1.0, { id: 'a-1', text: 'Waermepumpen sind zu teuer' });
+      expect(component.commentarySaved).toBeTrue();
+    }));
+
+    it('reicht nur den Text weiter, wenn die Aussage keine ID hat', fakeAsync(() => {
+      aussageSetzen('Waermepumpen sind zu teuer');
+
+      const verknuepfen = speichern();
+      flush();
+
+      expect(verknuepfen).toHaveBeenCalledOnceWith('k-1', 'commentary', 1.0, { id: '', text: 'Waermepumpen sind zu teuer' });
+    }));
+
+    it('verknuepft nichts, wenn der Schalter auf eigenstaendig steht', fakeAsync(() => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+      component.toggleReplyType(false);
+
+      const verknuepfen = speichern();
+      flush();
+
+      expect(verknuepfen).toHaveBeenCalledOnceWith('k-1', 'commentary', 1.0, { id: '', text: '' });
+    }));
+  });
 
   describe('Vorbefuellung aus dem Destillier-Ablauf', () => {
     function vorbefuellen(url: string | null): void {

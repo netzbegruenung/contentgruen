@@ -1,5 +1,5 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,7 +30,6 @@ import {
   ]
 })
 export class AddCommentaryWorkflowComponent implements OnInit {
-  @Input() searchQuery: string = '';
   statementId: string = '';
   statementText: string = '';
   isLoadingStatement: boolean = false;
@@ -50,10 +49,9 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // If we have a searchQuery, find or create the statement
-    if (this.searchQuery && this.searchQuery.trim()) {
-      this.findOrCreateStatement(this.searchQuery);
-    }
+    // Worauf der Beitrag antwortet, steht in der Adresse (?aussage= oder
+    // ?searchQuery=). Beim Oeffnen wird dafuer keine Aussage angelegt.
+    this.aussageLaden();
 
     this.rohinputId = this.uebergabe.rohinputId(this.route);
     if (this.rohinputId) {
@@ -64,27 +62,21 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     }
   }
 
-  findOrCreateStatement(text: string): void {
+  aussageLaden(): void {
+    const params = this.route.snapshot?.queryParamMap ?? convertToParamMap({});
     this.isLoadingStatement = true;
     this.statementError = null;
 
-    this.statementService.findOrCreateStatement(text, 'manually_created').subscribe({
-      next: (response) => {
-        this.statementId = response.statement_id;
-        this.statementText = response.statement_text;
+    this.statementService.aussageAusAdresse(params).subscribe({
+      next: (aussage) => {
+        this.statementId = aussage.statement_id;
+        this.statementText = aussage.statement_text;
         this.isLoadingStatement = false;
-
-        if (response.statement_was_new) {
-          this.logger.info('Created new statement with ID:', response.statement_id);
-        } else {
-          this.logger.info('Using existing statement with ID:', response.statement_id);
-        }
       },
       error: (error) => {
-        this.logger.error('Error finding or creating statement', error);
-        this.statementError = 'Fehler beim Erstellen des Statements. Bitte versuche es erneut.';
+        this.logger.error('Aussage aus der Adresse nicht ladbar', error);
+        this.statementError = 'Die Aussage, auf die du antworten willst, konnte nicht geladen werden.';
         this.isLoadingStatement = false;
-        // Don't set a statementId if the operation fails
       }
     });
   }

@@ -7,7 +7,6 @@ import { CommentaryService } from '../services/commentary.service';
 import { StatementService } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
-import { AddReplysuggestionToStatementRequest, AddReplysuggestionToStatementResponse } from '../services/dtos/statementDtos';
 import { CommentaryResult } from '../services/dtos/searchDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -145,12 +144,6 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
         // Initialize preview with form values
         this.updatePreview(this.commentaryForm.value);
 
-        // Set initial state based on whether we have a statement
-        if (this.statementText) {
-            this.isReplyToStatement = true;
-            this.statementInput = this.statementText;
-        }
-
         // Debounce statement input changes
         this.statementUpdateSubject
             .pipe(
@@ -165,6 +158,13 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
     }
 
     ngOnChanges(changes: SimpleChanges): void {
+        // Die Aussage kommt als Input - im Konstruktor ist sie noch leer. Vorher
+        // stand diese Pruefung dort und griff deshalb nie: Aus der Suche zeigte
+        // der Schalter "eigenstaendig", obwohl verknuepft wurde.
+        if (changes['statementText'] && this.statementText) {
+            this.isReplyToStatement = true;
+            this.statementInput = this.statementText;
+        }
         if (changes['vorbefuellung'] && this.vorbefuellung) {
             this.vorbefuellungAnwenden(this.vorbefuellung);
         }
@@ -286,33 +286,15 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
                     }
                 });
 
-                // If there's a statement, link the commentary to it
-                if (this.statementId) {
-                    const statementRequest: AddReplysuggestionToStatementRequest = {
-                        statement_id: this.statementId,
-                        replysuggestion_id: response.id,
-                        content_type: 'commentary',  // We know this is a commentary
-                        relevance: 1.0
-                    };
-                    this.statementService.addReplysuggestionToStatement(statementRequest).subscribe({
-                        next: () => {
-                            this.commentarySaved = true;
-                            this.commentaryLoading = false;
-                            this.success.emit(response.id);
-                        },
-                        error: (error) => {
-                            this.logger.error('Error linking commentary to statement', error);
-                            // Still consider it saved even if linking failed
-                            this.commentarySaved = true;
-                            this.commentaryLoading = false;
-                            this.success.emit(response.id);
-                        }
+                // Antwort auf eine Aussage: erst jetzt verknuepfen - eine nur als Text
+                // bekannte Aussage wird dabei gesucht oder angelegt. Scheitert das,
+                // ist der Kommentar trotzdem gespeichert.
+                this.statementService.alsAntwortVerknuepfen(response.id, 'commentary', 1.0, this.aussageZumSpeichern())
+                    .subscribe(() => {
+                        this.commentarySaved = true;
+                        this.commentaryLoading = false;
+                        this.success.emit(response.id);
                     });
-                } else {
-                    this.commentarySaved = true;
-                    this.commentaryLoading = false;
-                    this.success.emit(response.id);
-                }
             },
             error: (error: Error) => {
                 this.logger.error('Error saving commentary', error);
@@ -320,6 +302,14 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
                 this.commentaryLoading = false;
             }
         });
+    }
+
+    /** Die Aussage, auf die geantwortet wird - leer, wenn der Schalter aus ist. */
+    private aussageZumSpeichern(): { id: string; text: string } {
+        if (!this.isReplyToStatement) {
+            return { id: '', text: '' };
+        }
+        return { id: this.statementId, text: this.statementInput || this.statementText };
     }
 
     retryCommentarySave(): void {

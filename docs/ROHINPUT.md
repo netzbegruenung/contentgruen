@@ -273,6 +273,11 @@ Der Ort ist die eigentliche Produktfrage. `contribute-view` ist eine *Kategorien
 fertige Beiträge (Karten mobil, Akkordeon am Desktop) — eine vierte Karte „Fangkorb" wäre
 billig, würde den Einwurf aber hinter genau die Auswahl stellen, die er vermeiden soll.
 
+> **Stand 2026-09-16:** `contribute-view` bettet keine Formulare mehr ein. Die Seite ist auf
+> Desktop und Handy dieselbe Übersicht (Kette Einwerfen → Weiterarbeiten → Verfassen, Typen als
+> Zeilen); jedes Formular ist eine eigene Seite unter `/workflow/add-*`. Das Akkordeon und
+> `?form=`/`?panel=` sind entfallen — alte Adressen leitet die Seite ins Formular weiter.
+
 **Empfehlung:** ein eigener, immer erreichbarer Einwurf.
 
 - **Eingabe:** Route `/einwerfen` + Eintrag in Kopfzeile und Mobil-Menü (die Navigation

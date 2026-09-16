@@ -59,6 +59,16 @@ class AddStatementResponse(BaseModel):
     statement_text: str
 
 
+### GetStatementById ###
+
+
+class GetStatementByIdResponse(BaseModel):
+    """Nur ID und Text: das Beitragsformular zeigt damit, worauf es antwortet."""
+
+    statement_id: uuid.UUID
+    statement_text: str
+
+
 ### SearchStatement ###
 
 

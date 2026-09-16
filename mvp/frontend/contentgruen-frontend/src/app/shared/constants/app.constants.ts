@@ -61,6 +61,10 @@ export const PAGE_TITLES = {
   // Typnamen aus der Registry
   COMMENTARY: typLabel('commentary'),
   GENERIC_TEXT: typLabel('generic_text'),
+  // Die Formularseiten unter /workflow/add-*
+  COMMENTARY_FORM: `${typLabel('commentary')} verfassen`,
+  GENERIC_TEXT_FORM: `${typLabel('generic_text')} verfassen`,
+  IMAGE_FORM: `${typLabel('image')} hinzufügen`,
   LOGIN: 'Anmelden',
   HELP: 'Hilfe'
 };

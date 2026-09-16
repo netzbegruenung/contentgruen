@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { NavigationService } from '../services/navigation.service';
+import { FORMULAR_PFAD, aussageParameter } from '../shared/formular-adresse';
 
 @Component({
   selector: 'app-commentary-search-results',
@@ -38,10 +39,14 @@ export class CommentarySearchResultsComponent {
     private navigationService: NavigationService
   ) { } // Inject services
 
+  /** Ins Formular, als Antwort auf die Aussage dieser Suche - per ID, sonst mit ihrem Text. */
   navigateToContributeView(): void {
-    // Use the statement_text from the search response if available, otherwise use searchQuery
-    const statementText = this.searchResponse?.statement_text || this.searchQuery;
-    this.router.navigate(['/contribute'], { queryParams: { panel: 'commentary' , searchQuery: statementText } });
+    this.router.navigate([FORMULAR_PFAD.commentary], {
+      queryParams: aussageParameter(
+        this.searchResponse?.statement_id,
+        this.searchResponse?.statement_text || this.searchQuery,
+      ),
+    });
   }
 
   /**
