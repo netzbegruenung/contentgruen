@@ -231,7 +231,7 @@ async def search_by_text(
 
         response = SearchResponse(
             query_was_newly_added_as_statement=statement_was_new,
-            statement_id=str(statement_id),
+            statement_id=str(statement_id) if statement_id is not None else None,
             statement_text=statement_text,
             commentary_search_results_count=len(commentary_search_results),
             commentary_search_results=commentary_search_results,

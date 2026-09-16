@@ -58,7 +58,7 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
   let fixture: ComponentFixture<ResultViewComponent>;
   let router: Router;
 
-  function oeffnen(mobil: boolean, statementId: string): void {
+  function oeffnen(mobil: boolean, statementId: string | null): void {
     TestBed.configureTestingModule({
       imports: [ResultViewComponent],
       providers: [
@@ -115,10 +115,29 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
   }));
 
-  it('nimmt ohne gueltige ID den Suchtext', fakeAsync(() => {
-    oeffnen(false, 'None');
+  for (const fehlend of [null, '', 'None']) {
+    it(`nimmt bei fehlender ID (${JSON.stringify(fehlend)}) den Suchtext`, fakeAsync(() => {
+      oeffnen(false, fehlend);
 
-    knopf('.action-buttons-top', 0).click();
+      knopf('.action-buttons-top', 0).click();
+      tick();
+      expect(router.url).toBe('/workflow/add-commentary?searchQuery=waermepumpe%20teuer');
+    }));
+  }
+
+  it('vergisst die Aussage der vorigen Suche, sobald eine neue laeuft', fakeAsync(() => {
+    oeffnen(false, AUSSAGE_ID);
+    const zustand = TestBed.inject(StateManagementService);
+    zustand.setStatementId('22222222-2222-4333-8444-555555555555');
+
+    // Neue Suche startet: statementId wird sofort geleert, die alte Antwort
+    // steht noch im Zustand, zaehlt aber waehrend des Ladens nicht.
+    const komponente = fixture.componentInstance as unknown as { performSearchWithStatement(): void };
+    komponente.performSearchWithStatement();
+    zustand.setLoading(true);
+
+    expect(zustand.currentState.statementId).toBeNull();
+    fixture.componentInstance.navigateToContribute('commentary');
     tick();
     expect(router.url).toBe('/workflow/add-commentary?searchQuery=waermepumpe%20teuer');
   }));

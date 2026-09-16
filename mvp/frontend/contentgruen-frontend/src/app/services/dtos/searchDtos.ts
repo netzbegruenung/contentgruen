@@ -14,7 +14,8 @@ export interface SearchByTextRequest {
 
 export interface SearchResponse {
     query_was_newly_added_as_statement: boolean;
-    statement_id: string;
+    /** null, wenn die Suchanfrage nicht als Aussage angelegt werden konnte. */
+    statement_id: string | null;
     statement_text: string;
     commentary_search_results_count: number;
     commentary_search_results: CommentarySearchResult[];

@@ -119,7 +119,7 @@ describe('StatementService: Aussage eines Beitragsformulars', () => {
 
   describe('alsAntwortVerknuepfen', () => {
     it('verknuepft direkt, wenn die ID bekannt ist', () => {
-      let ergebnis: boolean | undefined;
+      let ergebnis: string | undefined;
       service.alsAntwortVerknuepfen('k-1', 'commentary', 1.0, { id: 'a-1', text: 'egal' })
         .subscribe((ok) => (ergebnis = ok));
 
@@ -130,7 +130,7 @@ describe('StatementService: Aussage eines Beitragsformulars', () => {
       verknuepfen.flush({ success: true });
 
       httpMock.expectNone(searchUrl);
-      expect(ergebnis).toBeTrue();
+      expect(ergebnis).toBe('verknuepft');
     });
 
     it('legt eine nur als Text bekannte Aussage erst jetzt an, als manually_created', () => {
@@ -145,22 +145,22 @@ describe('StatementService: Aussage eines Beitragsformulars', () => {
     });
 
     it('ruft ohne Aussage nichts auf', () => {
-      let ergebnis: boolean | undefined;
+      let ergebnis: string | undefined;
       service.alsAntwortVerknuepfen('k-1', 'commentary', 1.0, { id: '', text: '   ' })
         .subscribe((ok) => (ergebnis = ok));
 
-      expect(ergebnis).toBeFalse();
+      expect(ergebnis).toBe('ohne-aussage');
     });
 
-    it('meldet false statt eines Fehlers, wenn das Verknuepfen scheitert', () => {
-      let ergebnis: boolean | undefined;
+    it('meldet fehlgeschlagen statt eines Fehlers, wenn das Verknuepfen scheitert', () => {
+      let ergebnis: string | undefined;
       let fehler: unknown;
       service.alsAntwortVerknuepfen('k-1', 'commentary', 1.0, { id: 'a-1', text: '' })
         .subscribe({ next: (ok) => (ergebnis = ok), error: (e) => (fehler = e) });
 
       httpMock.expectOne(linkUrl).flush('kaputt', { status: 500, statusText: 'Server Error' });
 
-      expect(ergebnis).toBeFalse();
+      expect(ergebnis).toBe('fehlgeschlagen');
       expect(fehler).toBeUndefined();
     });
   });

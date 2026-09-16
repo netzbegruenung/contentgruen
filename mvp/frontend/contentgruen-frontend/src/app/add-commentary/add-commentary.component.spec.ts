@@ -8,7 +8,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { CommentaryService } from '../services/commentary.service';
-import { StatementService } from '../services/statement.service';
+import { StatementService, Verknuepfung } from '../services/statement.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { CommentaryResult } from '../services/dtos/searchDtos';
 import { SimpleChange } from '@angular/core';
@@ -153,11 +153,11 @@ describe('AddCommentaryComponent', () => {
       component.ngOnChanges({ statementText: new SimpleChange('', text, true) });
     }
 
-    function speichern(): jasmine.Spy {
+    function speichern(ergebnis: Verknuepfung = 'verknuepft'): jasmine.Spy {
       const commentaryService = TestBed.inject(CommentaryService);
       spyOn(commentaryService, 'addCommentary').and.returnValue(of({ id: 'k-1' } as AddCommentaryResponse));
       spyOn(commentaryService, 'getCommentaryById').and.returnValue(of({} as CommentaryResult));
-      const verknuepfen = spyOn(TestBed.inject(StatementService), 'alsAntwortVerknuepfen').and.returnValue(of(true));
+      const verknuepfen = spyOn(TestBed.inject(StatementService), 'alsAntwortVerknuepfen').and.returnValue(of<Verknuepfung>(ergebnis));
 
       component.commentaryForm.patchValue({ title: 'Testtitel', text: 'Ein ausreichend langer Haupttext.' });
       component.saveCommentaryForm();
@@ -179,6 +179,57 @@ describe('AddCommentaryComponent', () => {
 
       expect(verknuepfen).toHaveBeenCalledOnceWith('k-1', 'commentary', 1.0, { id: 'a-1', text: 'Waermepumpen sind zu teuer' });
       expect(component.commentarySaved).toBeTrue();
+    }));
+
+    it('nimmt den Text statt der alten ID, wenn die Aussage bearbeitet wurde', fakeAsync(() => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+      component.statementInput = 'Waermepumpen sind im Altbau zu teuer';
+
+      const verknuepfen = speichern();
+      flush();
+
+      expect(verknuepfen).toHaveBeenCalledOnceWith('k-1', 'commentary', 1.0, { id: '', text: 'Waermepumpen sind im Altbau zu teuer' });
+    }));
+
+    it('behaelt die ID, wenn nur Leerraum um den Text hinzukam', fakeAsync(() => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+      component.statementInput = '  Waermepumpen sind zu teuer ';
+
+      const verknuepfen = speichern();
+      flush();
+
+      expect(verknuepfen).toHaveBeenCalledOnceWith('k-1', 'commentary', 1.0, { id: 'a-1', text: 'Waermepumpen sind zu teuer' });
+    }));
+
+    it('legt beim Verlassen des Aussage-Felds nichts an', () => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+      const statementService = TestBed.inject(StatementService);
+      const suchen = spyOn(statementService, 'findOrCreateStatement');
+      fixture.detectChanges();
+
+      const feld: HTMLTextAreaElement = fixture.nativeElement.querySelector('.statement-field textarea');
+      feld.value = 'Ganz andere Aussage';
+      feld.dispatchEvent(new Event('input'));
+      feld.dispatchEvent(new Event('blur'));
+
+      expect(suchen).not.toHaveBeenCalled();
+      expect(component.statementId).toBe('a-1');
+    });
+
+    it('zeigt eine gescheiterte Verknuepfung und springt erst mit Weiter weiter', fakeAsync(() => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+      const erfolg = spyOn(component.success, 'emit');
+
+      speichern('fehlgeschlagen');
+      flush();
+      fixture.detectChanges();
+
+      expect(erfolg).not.toHaveBeenCalled();
+      const hinweis: HTMLElement = fixture.nativeElement.querySelector('.verknuepfungs-fehler');
+      expect(hinweis.textContent).toContain('nicht mit der Aussage verknüpft');
+
+      (hinweis.querySelector('button') as HTMLButtonElement).click();
+      expect(erfolg).toHaveBeenCalledOnceWith('k-1');
     }));
 
     it('reicht nur den Text weiter, wenn die Aussage keine ID hat', fakeAsync(() => {

@@ -5,20 +5,12 @@
         <p>Aussage wird geladen …</p>
     </div>
 
-    <!-- Error State for Statement -->
-    <div *ngIf="statementError" class="error-container">
-        <mat-icon color="warn">error</mat-icon>
-        <p>{{ statementError }}</p>
-        <button mat-raised-button color="primary" (click)="navigateBack()">
-            Zurück
-        </button>
-    </div>
-
     <!-- Main Content when Statement is Ready or Not Required -->
-    <div *ngIf="!isLoadingStatement && !statementError">
+    <div *ngIf="!isLoadingStatement">
         <app-add-generictext
             [statementText]="statementText"
             [statementId]="statementId"
+            [aussageHinweis]="aussageHinweis"
             [vorbefuellung]="vorbefuellung"
             (success)="onSuccess($event)"
             (cancel)="onCancel()">

@@ -27,7 +27,7 @@ import { LoggingService } from '../services/logging.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
-import { FORMULAR_PFAD, aussageParameter } from '../shared/formular-adresse';
+import { FORMULAR_PFAD, aussageParameter, istAussageId } from '../shared/formular-adresse';
 
 // Dialog configuration constants
 const HELP_DIALOG_CONFIG = {
@@ -212,6 +212,10 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    * This maintains the current behavior but with proper separation of concerns
    */
   private performSearchWithStatement(): void {
+    // Die Aussage der vorigen Suche gilt nicht mehr: Wer vor der Antwort auf
+    // "hinzufuegen" tippt, darf nicht an die alte Aussage antworten.
+    this.stateService.setStatementId(null);
+
     // First, ensure the statement exists
     this.statementService.findOrCreateStatement(this.searchQuery, 'search_query').subscribe({
       next: (statementResponse) => {
@@ -337,9 +341,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    * mit dem Suchtext.
    */
   navigateToContribute(typ: 'commentary' | 'generictext'): void {
-    const { searchResults, statementId } = this.stateService.currentState;
+    const { searchResults, statementId, loading } = this.stateService.currentState;
+    // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
+    const ausAntwort = !loading && istAussageId(searchResults?.statement_id) ? searchResults!.statement_id : null;
     this.router.navigate([FORMULAR_PFAD[typ]], {
-      queryParams: aussageParameter(searchResults?.statement_id || statementId, this.searchQuery),
+      queryParams: aussageParameter(ausAntwort ?? statementId, this.searchQuery),
     });
   }
 

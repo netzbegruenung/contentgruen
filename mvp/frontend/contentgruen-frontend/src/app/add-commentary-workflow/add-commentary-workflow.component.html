@@ -4,18 +4,13 @@
         <p>Aussage wird geladen …</p>
     </div>
 
-    <div *ngIf="statementError" class="error-container">
-        <mat-icon>error</mat-icon>
-        <p>{{ statementError }}</p>
-        <button mat-raised-button (click)="aussageLaden()">Erneut versuchen</button>
-    </div>
-
     <app-add-commentary
-        *ngIf="!isLoadingStatement && !statementError"
+        *ngIf="!isLoadingStatement"
         (success)="onSuccess($event)"
         (cancel)="onCancel()"
         [statementText]="statementText"
         [statementId]="statementId"
+        [aussageHinweis]="aussageHinweis"
         [vorbefuellung]="vorbefuellung">
     </app-add-commentary>
 </div>

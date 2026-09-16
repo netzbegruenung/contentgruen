@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -29,6 +30,7 @@ export class ContributeViewComponent implements OnInit {
   readonly kettenIcons = KETTEN_ICONS;
   /** Die Route verlangt eine Anmeldung, der Satz braucht deshalb keine eigene Pruefung. */
   readonly erstnutzerSatz = ERSTNUTZER_SATZ;
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private router: Router,
@@ -41,14 +43,19 @@ export class ContributeViewComponent implements OnInit {
    * replaceUrl, damit das Zurueck nicht wieder hier landet und weiterleitet.
    */
   ngOnInit(): void {
-    const params = this.route.snapshot.queryParamMap;
-    const typ = [params.get('form'), params.get('panel')].find(istFormularTyp);
-    if (typ) {
-      this.router.navigate([FORMULAR_PFAD[typ]], {
-        queryParams: aussageParameter(null, params.get(SUCHTEXT_PARAM)),
-        replaceUrl: true,
+    // Reaktiv: auch ein spaeterer Aufruf von /contribute?form=... auf der schon
+    // offenen Seite wird weitergeleitet, nicht nur der erste.
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const typ = [params.get('form'), params.get('panel')].find(istFormularTyp);
+        if (typ) {
+          this.router.navigate([FORMULAR_PFAD[typ]], {
+            queryParams: aussageParameter(null, params.get(SUCHTEXT_PARAM)),
+            replaceUrl: true,
+          });
+        }
       });
-    }
   }
 
   /**

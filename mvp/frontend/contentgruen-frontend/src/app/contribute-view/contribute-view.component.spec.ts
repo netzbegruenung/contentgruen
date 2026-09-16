@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ContributeViewComponent } from './contribute-view.component';
-import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter, Router } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 import { MatDialogModule } from '@angular/material/dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
@@ -11,7 +11,10 @@ describe('ContributeViewComponent', () => {
   let fixture: ComponentFixture<ContributeViewComponent>;
   let router: Router;
 
+  let adresse: BehaviorSubject<ParamMap>;
+
   async function erstellen(queryParams: Record<string, string> = {}): Promise<void> {
+    adresse = new BehaviorSubject(convertToParamMap(queryParams));
     await TestBed.configureTestingModule({
       imports: [
         ContributeViewComponent,
@@ -24,10 +27,7 @@ describe('ContributeViewComponent', () => {
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: {
-            queryParams: of(queryParams),
-            snapshot: { queryParamMap: convertToParamMap(queryParams) }
-          }
+          useValue: { queryParamMap: adresse.asObservable() }
         }
       ]
     })
@@ -122,6 +122,18 @@ describe('ContributeViewComponent', () => {
 
       expect(router.navigate).toHaveBeenCalledOnceWith(['/workflow/add-image'], {
         queryParams: {},
+        replaceUrl: true,
+      });
+    });
+
+    it('leitet auch weiter, wenn der Parameter erst bei offener Seite kommt', async () => {
+      await erstellen();
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      adresse.next(convertToParamMap({ form: 'generictext', searchQuery: 'spaeter' }));
+
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/workflow/add-generictext'], {
+        queryParams: { searchQuery: 'spaeter' },
         replaceUrl: true,
       });
     });

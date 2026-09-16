@@ -26,17 +26,22 @@ export function istFormularTyp(wert: string | null | undefined): wert is Formula
 }
 
 /**
- * Nur eine echte UUID taugt als Aussage. Das Backend schreibt eine
- * fehlgeschlagene Anlage in der Suche als "None" in die Antwort (str(None)).
+ * Nur eine echte UUID taugt als Aussage. null, "" und "None" gelten gleich als
+ * fehlend - "None" schrieb das Backend frueher bei gescheiterter Anlage (str(None)),
+ * und aeltere Antworten koennen noch im Zustand liegen.
  */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function istAussageId(wert: string | null | undefined): wert is string {
+  return !!wert && UUID.test(wert);
+}
 
 /**
  * Query-Parameter fuer ein Formular, das auf eine Aussage antwortet: die ID, wo
  * es eine gibt, sonst der Text. Ohne beides bleiben sie leer.
  */
 export function aussageParameter(aussageId: string | null | undefined, text: string | null | undefined): Params {
-  if (aussageId && UUID.test(aussageId)) {
+  if (istAussageId(aussageId)) {
     return { [AUSSAGE_PARAM]: aussageId };
   }
   const suchtext = text?.trim();

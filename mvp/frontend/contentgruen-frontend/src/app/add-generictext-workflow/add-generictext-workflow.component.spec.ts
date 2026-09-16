@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -30,7 +31,7 @@ describe('AddGenerictextWorkflowComponent mit Aussage aus der Adresse', () => {
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap(params) } }
+          useValue: { queryParamMap: of(convertToParamMap(params)) }
         }
       ]
     })
@@ -65,6 +66,18 @@ describe('AddGenerictextWorkflowComponent mit Aussage aus der Adresse', () => {
 
     expect(component.statementId).toBe('');
     expect(formular()!.statementInput).toBe('Waermepumpen sind zu teuer');
+  });
+
+  it('bleibt nutzbar, wenn die Aussage nicht ladbar ist', async () => {
+    await oeffnen({ aussage: 'a-weg' });
+
+    http.expectOne((req) => req.url === getByIdUrl).flush('weg', { status: 404, statusText: 'Not Found' });
+    fixture.detectChanges();
+
+    expect(formular()).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.aussage-hinweis').textContent).toContain('nicht mehr verfügbar');
+    expect(formular()!.isReplyToStatement).toBeTrue();
+    expect(formular()!.statementInput).toBe('');
   });
 
   it('ist ausserhalb des Destillier-Ablaufs nicht vorbefuellt', async () => {

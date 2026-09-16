@@ -18,6 +18,13 @@ import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { AUSSAGE_PARAM, SUCHTEXT_PARAM } from '../shared/formular-adresse';
 
+/** Ergebnis von alsAntwortVerknuepfen. */
+export type Verknuepfung = 'verknuepft' | 'ohne-aussage' | 'fehlgeschlagen';
+
+/** Hinweis im Formular, wenn der Beitrag steht, die Verknuepfung aber nicht. */
+export const VERKNUEPFUNG_FEHLGESCHLAGEN =
+  'Dein Beitrag ist gespeichert, konnte aber nicht mit der Aussage verknüpft werden.';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -159,19 +166,20 @@ export class StatementService {
   /**
    * Einen gespeicherten Beitrag als Antwort an seine Aussage haengen.
    *
-   * Ist die Aussage nur als Text bekannt, wird sie erst jetzt gesucht oder
-   * angelegt - so entsteht beim blossen Oeffnen eines Formulars keine Aussage.
-   * Scheitert etwas, bleibt der Beitrag gespeichert; das Ergebnis ist dann false.
+   * Das ist der einzige Ort, an dem ein Beitragsformular eine Aussage aufloest:
+   * Mit ID wird direkt verknuepft, ist sie nur als Text bekannt, wird sie jetzt
+   * gesucht oder angelegt. Scheitert etwas, bleibt der Beitrag gespeichert - das
+   * Ergebnis sagt dann 'fehlgeschlagen', damit das Formular es zeigen kann.
    */
   alsAntwortVerknuepfen(
     beitragId: string,
     contentType: ContentType,
     relevance: number,
     aussage: { id: string; text: string },
-  ): Observable<boolean> {
+  ): Observable<Verknuepfung> {
     const text = aussage.text.trim();
     if (!aussage.id && !text) {
-      return of(false);
+      return of('ohne-aussage');
     }
     const aussageId$ = aussage.id
       ? of(aussage.id)
@@ -186,10 +194,10 @@ export class StatementService {
           relevance,
         }),
       ),
-      map(() => true),
+      map((): Verknuepfung => 'verknuepft'),
       catchError((error) => {
         this.logger.error('Beitrag gespeichert, aber nicht mit der Aussage verknuepft', error);
-        return of(false);
+        return of<Verknuepfung>('fehlgeschlagen');
       }),
     );
   }
