@@ -4,20 +4,14 @@
          [attr.aria-label]="antippbar ? beschriftung : null"
          (click)="antippen()" (keyup.enter)="antippen()">
 
-    <header class="karte-kopf" [class.karte-kopf--bild]="kopfBild">
+    <header class="karte-kopf" *ngIf="!rohling" [class.karte-kopf--bild]="kopfBild">
         <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf -->
         <img *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || ''" loading="lazy">
         <span class="karte-icon" role="img"
               [attr.aria-label]="typName"
               [matTooltip]="typName" matTooltipPosition="below">{{ emoji }}</span>
 
-        <h3 class="karte-titel" *ngIf="!istEinwurf && !istKompakt">{{ titelAnzeige }}</h3>
-
-        <!-- Der Einwurf hat keinen Titel: an seiner Stelle Plattform und Stand -->
-        <div class="karte-marker" *ngIf="istEinwurf">
-            <span class="plattform-chip" *ngIf="rohling?.plattform as name">{{ name }}</span>
-            <span class="verworfen-hinweis" *ngIf="rohling?.zustand === 'verworfen'">verworfen</span>
-        </div>
+        <h3 class="karte-titel" *ngIf="!istKompakt">{{ titelAnzeige }}</h3>
 
         <div class="karte-badges" *ngIf="!istKompakt">
             <span class="badge badge-neu" *ngIf="istVoll && istNeu"
@@ -32,40 +26,69 @@
         </div>
     </header>
 
-    <!-- Rohling: Einwurf oder Satz, unfertig -->
-    <div class="rohling-inhalt" *ngIf="rohling as rohling">
-        <ng-container *ngIf="istEinwurf">
-            <a *ngIf="rohling.link" class="einwurf-link" [href]="rohling.link"
-               target="_blank" rel="noopener noreferrer"
-               (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
-                <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
-                <span class="link-text">{{ rohling.link }}</span>
-            </a>
-            <a *ngIf="rohling.bildAdresse" class="einwurf-link" [href]="rohling.bildAdresse"
-               target="_blank" rel="noopener noreferrer"
-               (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()">
-                <mat-icon class="link-icon" aria-hidden="true">image</mat-icon>
-                <span class="link-text">Bild-Adresse</span>
-            </a>
-            <p *ngIf="rohling.hinweis as hinweis" class="einwurf-hinweis hinweis-box">{{ hinweis }}</p>
-        </ng-container>
+    <!-- Rohling: dieselbe Anatomie wie die volle Karte - Band, Koerper, Aktion, Meta -->
+    <ng-container *ngIf="rohling as rohling">
+        <header class="karte-kopf rohling-kopf">
+            <span class="karte-icon" role="img" [attr.aria-label]="stufenName"
+                  [matTooltip]="stufenName" matTooltipPosition="below">{{ stufenEmoji }}</span>
 
-        <p class="personen">
-            <ng-container *ngFor="let beteiligt of rohling.beteiligte; let letzter = last">
-                {{ rolle(beteiligt.rolle) }}
-                <span class="person" [attr.title]="beteiligt.kennung">{{ kurzeKennung(beteiligt.kennung) }}</span>
-                <ng-container *ngIf="!letzter"> · </ng-container>
+            <div class="rohling-kopfinhalt">
+                <h3 class="karte-titel rohling-titel">{{ daten.titel }}</h3>
+                <p class="rohling-marken">
+                    <span class="rohling-herkunft" *ngIf="rohling.herkunft">{{ rohling.herkunft }}</span>
+                    <a *ngIf="rohling.link" class="rohling-link" [href]="rohling.link"
+                       target="_blank" rel="noopener noreferrer"
+                       aria-label="Original öffnen"
+                       matTooltip="Original öffnen" matTooltipPosition="above">
+                        <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
+                    </a>
+                    <span class="rohling-verworfen" *ngIf="rohling.zustand === 'verworfen'">verworfen</span>
+                </p>
+            </div>
+
+            <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="rohling-menue"
+                    [matMenuTriggerFor]="rohlingMenue"
+                    aria-label="Mehr zu diesem Einwurf"
+                    (click)="$event.stopPropagation()">
+                <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #rohlingMenue="matMenu">
+                <button mat-menu-item type="button" *ngFor="let eintrag of menueEintraege"
+                        (click)="aktionAusloesen(eintrag.aktion, $event)">
+                    <mat-icon>{{ eintrag.icon }}</mat-icon>
+                    <span>{{ eintrag.wort }}</span>
+                </button>
+            </mat-menu>
+        </header>
+
+        <!-- Koerper weiss: die Saetze am gruenen Balken, je Satz rechts der Stand -->
+        <div class="rohling-koerper" *ngIf="sichtbareSaetze.length">
+            <ul class="rohling-saetze">
+                <li class="rohling-satz" *ngFor="let satz of sichtbareSaetze">
+                    <span class="satz-text">{{ satz.text }}</span>
+                    <span class="satz-status" [class.satz-status--fertig]="satz.beitraege > 0"
+                          [attr.aria-label]="satzBeschriftung(satz)">{{ satzStatus(satz) }}</span>
+                </li>
+                <li class="rohling-mehr" *ngIf="weitereSaetze">+{{ weitereSaetze }} weitere</li>
+            </ul>
+        </div>
+
+        <div class="rohling-aktion" *ngIf="primaerAktion as primaer">
+            <button type="button" mat-raised-button class="gutgesagt-primary-dark rohling-primaer"
+                    (click)="aktionAusloesen(primaer.aktion, $event)">
+                <span class="knopf-emoji" aria-hidden="true">{{ stufenEmoji }}</span>
+                <span class="knopf-wort">{{ primaer.wort }}</span>
+            </button>
+        </div>
+
+        <p class="karte-meta rohling-meta">
+            <span class="rohling-alter">{{ daten.erstellt | relativeTime }}</span>
+            <ng-container *ngIf="zeigtEinwerfer">
+                ·
+                <span class="rohling-einwerfer" [attr.title]="daten.autor">von {{ kurzeKennung(daten.autor) }}</span>
             </ng-container>
         </p>
-
-        <!--
-            Uebergangsloesung: Es gibt noch keine Detailansicht eines Beitrags.
-            Geplant ist /beitrag/:id, siehe docs/ROADMAP.md, "Roadmap-Features".
-        -->
-        <button *ngIf="rohling.suchSatz" type="button" mat-stroked-button class="beitrag-link"
-                (click)="sucheOeffnen($event)"
-                (keyup.enter)="$event.stopPropagation()">In der Suche anzeigen</button>
-    </div>
+    </ng-container>
 
     <!-- Kompakt (Album): Kopf nur mit Symbol, Titel und Anriss, im Fuss Datum und Nutzung -->
     <ng-container *ngIf="istKompakt">

@@ -555,134 +555,179 @@
   color: var(--text-secondary);
 }
 
-// Rohling: dieselbe Karte, unfertig. Der Einwurf ist Rohmaterial (gestrichelte Kante,
-// grauer Kopf), ein Satz ohne Beitrag ist destilliert (durchgezogene Kante, grau),
-// ein Satz mit Beitrag traegt die Typfarbe wie die volle Karte.
+// Rohling: dieselbe Anatomie wie die volle Karte - Kopfband, weisser Koerper,
+// Aktionszeile, Meta. Nur die Fuellung ist unfertig: statt Beitragstext stehen
+// die Saetze da, und statt Abstimmen/Kopieren genau ein Griff.
+//
+// Das Band traegt Sand (--rohling-grund), solange nichts fertig ist; bei Erledigt
+// setzt die Typklasse --karten-farbe, und das Band nimmt die Farbe des ersten
+// entstandenen Beitrags an (das erledigt .karte-kopf schon von selbst).
 
 .karte--rohling {
   width: 100%;
-  border: 1px solid rgba(0, 0, 0, 0.24);
-  box-shadow: none;
-
-  &[role='link'] {
-    cursor: pointer;
-  }
 
   &:focus-visible {
     outline: 2px solid var(--primary-dark);
     outline-offset: 2px;
   }
 
-  .karte-kopf {
-    padding: 12px;
-  }
-
-  .karte-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 22px;
-  }
-
-  .karte-titel {
-    font-size: 16px;
+  &.zustand-verworfen {
+    opacity: 0.6;
   }
 }
 
-.zustand-offen,
-.zustand-verworfen {
-  --karten-farbe: var(--statement-bg);
-  border-style: dashed;
+.zustand-destillieren .rohling-kopf,
+.zustand-ausformulieren .rohling-kopf {
+  background: var(--rohling-grund);
 }
 
-.zustand-destilliert {
-  --karten-farbe: var(--statement-bg);
-  border-style: solid;
+.zustand-verworfen .rohling-kopf {
+  background: var(--disabled-bg);
 }
 
-.zustand-ausformuliert {
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+// Titel oben, darunter klein die Herkunft - beide in der mittleren Spalte des
+// Kopfbands, zwischen Stufen-Emoji und ⋮.
+.rohling-kopf {
+  align-items: start;
 }
 
-.zustand-verworfen {
-  opacity: 0.55;
-}
-
-.karte-marker {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.plattform-chip,
-.verworfen-hinweis {
-  padding: 2px var(--spacing-sm);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.plattform-chip {
-  background: var(--bg-card);
-}
-
-.verworfen-hinweis {
-  border: 1px solid rgba(0, 0, 0, 0.24);
-}
-
-.rohling-inhalt {
+.rohling-kopfinhalt {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px var(--spacing-md);
+  gap: var(--spacing-xs);
+  min-width: 0;
 }
 
-.einwurf-link {
+.rohling-titel {
+  min-height: 0;
+}
+
+.rohling-marken {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--spacing-xs);
   min-width: 0;
-  color: var(--primary-main);
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
-.link-icon {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
-}
-
-.link-text {
+.rohling-herkunft {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-// Der Hinweis fuer andere steht in der globalen .hinweis-box, hier nur gekuerzt.
-.einwurf-hinweis {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  margin: 0;
-  white-space: pre-line;
-}
-
-.personen {
-  margin: 0;
-  font-size: 13px;
+.rohling-link {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
   color: var(--text-secondary);
 }
 
-.person {
-  font-family: monospace;
+.link-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.rohling-verworfen {
+  flex-shrink: 0;
+  padding: 2px var(--spacing-sm);
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.rohling-menue {
+  align-self: start;
+  color: var(--text-secondary);
+}
+
+// Koerper: weiss wie bei der vollen Karte, die Saetze nur am gruenen Balken.
+.rohling-koerper {
+  padding: var(--spacing-md) var(--spacing-md) 0;
+  background: var(--bg-card);
+}
+
+.rohling-saetze {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rohling-satz {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  padding-left: 10px;
+  border-left: 3px solid var(--primary-light);
+}
+
+// Der Satz bricht um - bis zu drei Zeilen, dann abgeschnitten. Einzeilig
+// abgeschnitten verlor er zu oft genau die Pointe am Ende.
+.satz-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.satz-status {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.satz-status--fertig {
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.rohling-mehr {
+  padding-left: 13px;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
-.beitrag-link {
-  align-self: flex-start;
-  margin-top: var(--spacing-xs);
-  color: var(--primary-dark);
+// Aktionszeile an der Stelle, an der die volle Karte ihre Knoepfe hat.
+.rohling-aktion {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-md);
+}
+
+// Derselbe Knopf wie "Kopieren" auf der vollen Karte: gefuellt, gruen (die Farbe
+// kommt aus .gutgesagt-primary-dark), 40 px hoch, Emoji vor dem Wort. Anders als
+// dort bleibt die Hoehe auch am Handy bei 40 - der Griff ist hier die Hauptsache.
+.rohling-primaer {
+  display: inline-flex;
+  align-items: center;
+  min-width: 180px;
+  height: 40px;
+  padding: 0 24px;
+  font-weight: 600;
+}
+
+.knopf-emoji {
+  margin-right: 6px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.rohling-meta {
+  padding-top: 0;
+}
+
+.rohling-alter,
+.rohling-einwerfer {
+  white-space: nowrap;
 }

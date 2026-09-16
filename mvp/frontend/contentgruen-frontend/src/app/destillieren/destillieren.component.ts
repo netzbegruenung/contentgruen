@@ -17,6 +17,7 @@ import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
 import { typLabel } from '../shared/content-type-registry';
 import { DestillierUebergabeService, ROHINPUT_PARAM } from './destillier-uebergabe.service';
+import { tabMerken } from '../raw-input-list/fangkorb-filter';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -273,10 +274,19 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       next: (naechster) => {
         if (naechster) {
           this.router.navigate(['/destillieren', naechster.id], { replaceUrl: true });
-        } else {
-          this.laedt = false;
-          this.allesDestilliert = true;
+          return;
         }
+        // Mit "nach" kommt man aus dem Ablauf und hat gerade etwas fertig
+        // gemacht: zurueck in den Fangkorb, in den Tab mit dem Ergebnis. Ohne
+        // "nach" hat jemand die Ansicht direkt geoeffnet - dann bleibt es bei
+        // der Ansage, dass nichts offen ist.
+        if (nach) {
+          tabMerken('erledigt');
+          this.router.navigate(['/fangkorb']);
+          return;
+        }
+        this.laedt = false;
+        this.allesDestilliert = true;
       },
       error: (error) => {
         this.logger.error('Fangkorb konnte nicht geladen werden', error);

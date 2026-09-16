@@ -1,6 +1,6 @@
 import { BaseContentResult, BaseSearchResult, ContentReference } from '../services/dtos/commonDtos';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { RawInput, RawInputDraft, RawInputLink } from '../services/raw-input.service';
+import { RawInput } from '../services/raw-input.service';
 import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-type-registry';
 import { plattformAusUrl, plattformName } from '../shared/plattform';
 
@@ -14,10 +14,17 @@ import { plattformAusUrl, plattformName } from '../shared/plattform';
  */
 export type KartenVariante = 'voll' | 'kompakt' | 'rohling';
 
-/** offen und verworfen gelten fuer die Einwurf-Karte, die anderen fuer Satz-Karten. */
-export type RohlingZustand = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfen';
-
-export type RohlingRolle = 'eingeworfen' | 'destilliert' | 'ausformuliert';
+/**
+ * Was eine Rohling-Karte anbietet: der eine Primaerknopf im Fuss und die
+ * Eintraege im ⋮-Menue. Wohin das fuehrt, entscheidet die Seite, nicht die Karte.
+ */
+export type RohlingAktion =
+  | 'destillieren'
+  | 'ausformulieren'
+  | 'ansehen'
+  | 'weiterDestillieren'
+  | 'linkKopieren'
+  | 'verwerfen';
 
 export interface KartenQuelle {
   id: string;
@@ -43,21 +50,36 @@ export interface KartenExtra {
   engagement?: number;
 }
 
+/** Ein Satz zum Einwurf, mit der Zahl der daraus entstandenen Beitraege. */
+export interface RohlingSatz {
+  id: string;
+  text: string;
+  /** 0 heisst Entwurf; sonst die Zahl der Beitraege aus genau diesem Satz. */
+  beitraege: number;
+}
+
+/** Ein Beitrag aus dem Einwurf - was das Sheet braucht, um ihn nachzuladen. */
+export interface RohlingBeitrag {
+  contentId: string;
+  /** Registry-Schluessel; null bei Verknuepfungen aus der Zeit vor Fangkorb v2. */
+  typ: string | null;
+  /** Der ausformulierte Satz als Beschriftung; null, wenn er spaeter geleert wurde. */
+  satz: string | null;
+}
+
 export interface RohlingDaten {
-  /** Die Einwurf-Karte oben im Stapel oder eine Satz-Karte darunter. */
-  art: 'einwurf' | 'satz';
   einwurfId: string;
-  zustand: RohlingZustand;
-  antippbar: boolean;
-  /** Name der Plattform des Links, nur auf der Einwurf-Karte. */
-  plattform: string | null;
+  zustand: FangkorbZustand;
+  /** Plattformname, sonst die Domain - nie die Adresse als Text. */
+  herkunft: string | null;
+  /** Adresse hinter dem Link-Icon: der Link, sonst die Bildadresse. */
   link: string | null;
-  bildAdresse: string | null;
-  /** Der Hinweis fuer andere, sofern er mehr ist als der Link selbst. */
-  hinweis: string | null;
-  beteiligte: { rolle: RohlingRolle; kennung: string | null }[];
-  /** Womit "In der Suche anzeigen" sucht; nur bei einem Satz mit Beitrag. */
-  suchSatz: string | null;
+  /** Alle Saetze, aelteste Aenderung zuerst. */
+  saetze: RohlingSatz[];
+  /** Die entstandenen Beitraege, aelteste zuerst. */
+  beitraege: RohlingBeitrag[];
+  /** Verworfen werden darf nur, was offen oder destilliert ist - und nur vom Einwerfer. */
+  verwerfbar: boolean;
 }
 
 export interface KartenDaten {
@@ -173,7 +195,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
   return {
     id: eintrag.id,
     typ: resolveContentType(eintrag.content_type) ?? null,
-    titel: eintrag.title || (eintrag.text ? null : domainAusBildadresse(eintrag.image_url)),
+    titel: eintrag.title || (eintrag.text ? null : domainAus(eintrag.image_url)),
     text: eintrag.text ?? null,
     erstellt: eintrag.created,
     autor: eintrag.original_author ?? null,
@@ -184,7 +206,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
   };
 }
 
-function domainAusBildadresse(adresse: string | null | undefined): string | null {
+function domainAus(adresse: string | null | undefined): string | null {
   if (!adresse) {
     return null;
   }
@@ -198,26 +220,61 @@ function domainAusBildadresse(adresse: string | null | undefined): string | null
 // Fangkorb
 
 /**
- * Ein Einwurf als Stapel: zuerst die Einwurf-Karte, dann je Satz eine Karte.
- *
- * Der Zustand eines Satzes haengt nur an den Verknuepfungen: zeigt eine auf ihn
- * (draft_id), ist daraus ein Beitrag geworden, sonst ist er destilliert. Der
- * Status des Einwurfs spielt dafuer keine Rolle, er steuert nur den Filter.
- *
- * Verknuepfungen ohne passenden Satz werden uebersprungen: Eine Karte ohne Titel und
- * ohne Suche traegt nichts, und der Altbestand hat seit der Migration vom 13.09.2026
- * eine draft_id. Uebrig bleiben nur Faelle, in denen der Satz spaeter geleert wurde.
+ * Woran ein Einwurf gerade ist - zugleich die drei Tabs des Fangkorbs und der
+ * vierte Zustand, der hinter einem Chip unter "Erledigt" liegt.
  */
-export function ausEinwurf(einwurf: RawInput): KartenDaten[] {
-  const verworfen = einwurf.status === 'discarded';
-  const antippbar = !verworfen;
-  const saetze = einwurf.drafts ?? [];
-  const links = einwurf.links ?? [];
+export type FangkorbZustand = 'destillieren' | 'ausformulieren' | 'erledigt' | 'verworfen';
 
-  const einwurfKarte: KartenDaten = {
+/**
+ * Den Bearbeitungsstand eines Einwurfs bestimmen.
+ *
+ * Verworfen zuerst: Verworfenes bleibt verworfen, auch wenn andere trotzdem
+ * weiterdestillieren (das Backend erlaubt das ausdruecklich). Erledigt haengt an
+ * den Verknuepfungen, nicht an den Saetzen - ein Beitrag kann auch ohne
+ * gespeicherten Satz entstanden sein (processed aus open), und ein spaeter
+ * geleerter Satz darf den Einwurf nicht zurueckfallen lassen.
+ */
+export function zustandVonEinwurf(einwurf: RawInput): FangkorbZustand {
+  if (einwurf.status === 'discarded') {
+    return 'verworfen';
+  }
+  if ((einwurf.links ?? []).length > 0) {
+    return 'erledigt';
+  }
+  return (einwurf.drafts ?? []).length > 0 ? 'ausformulieren' : 'destillieren';
+}
+
+/**
+ * Ein Einwurf als eine Karte: Herkunft im Kopf, der Inhalt als Titel, die Saetze
+ * innen.
+ *
+ * Titel ist, was jemand mitgegeben hat - die Notiz; fehlt sie, die Domain der
+ * Adresse, damit kein Rohling ohne Aufschrift dasteht. Die Adresse selbst steht
+ * nie als Text da, sie haengt am Link-Icon im Kopf.
+ *
+ * ``beitraege`` je Satz zaehlt die Verknuepfungen auf genau diesen Satz - dieselbe
+ * Person kann aus ihrem Satz mehr als einen Beitrag gemacht haben. Verknuepfungen
+ * ohne Satz (verarbeitet ohne gespeicherten Satz, oder der Satz wurde spaeter
+ * geleert) haengen an keiner Zeile, bleiben aber unter ``beitraege`` erreichbar -
+ * sichtbar werden sie im Sheet.
+ */
+export function ausEinwurf(einwurf: RawInput): KartenDaten {
+  const links = einwurf.links ?? [];
+  const adresse = einwurf.url ?? einwurf.image_url;
+  const zustand = zustandVonEinwurf(einwurf);
+  const saetze: RohlingSatz[] = (einwurf.drafts ?? []).map((satz) => ({
+    id: satz.id,
+    text: satz.sentence,
+    beitraege: links.filter((link) => link.draft_id === satz.id).length,
+  }));
+
+  return {
     id: einwurf.id,
-    typ: null,
-    titel: null,
+    // Erledigt traegt die Farbe des ersten entstandenen Beitrags: Die Typklasse
+    // setzt --karten-farbe, und davon nimmt das Kopfband. Unfertige Rohlinge
+    // haben keinen Typ - ihr Band bleibt Sand.
+    typ: zustand === 'erledigt' ? (resolveContentType(links[0]?.content_type) ?? null) : null,
+    titel: hinweis(einwurf) ?? domainAus(adresse),
     text: null,
     erstellt: einwurf.created_at,
     autor: einwurf.submitted_by,
@@ -225,64 +282,31 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten[] {
     nutzung: null,
     quellen: [],
     rohling: {
-      art: 'einwurf',
       einwurfId: einwurf.id,
-      zustand: verworfen ? 'verworfen' : 'offen',
-      antippbar,
-      plattform: plattformNameAusUrl(einwurf.url),
-      link: einwurf.url,
-      bildAdresse: einwurf.image_url,
-      hinweis: hinweis(einwurf),
-      beteiligte: [{ rolle: 'eingeworfen', kennung: einwurf.submitted_by }],
-      suchSatz: null,
-    },
-  };
-
-  const satzKarten = saetze.map((satz) =>
-    satzKarte(einwurf, satz, links.find((link) => link.draft_id === satz.id) ?? null, antippbar),
-  );
-
-  return [einwurfKarte, ...satzKarten];
-}
-
-function satzKarte(
-  einwurf: RawInput,
-  satz: RawInputDraft,
-  link: RawInputLink | null,
-  antippbar: boolean,
-): KartenDaten {
-  const beteiligte: RohlingDaten['beteiligte'] = [{ rolle: 'destilliert', kennung: satz.user_id }];
-  if (link) {
-    beteiligte.push({ rolle: 'ausformuliert', kennung: link.processed_by });
-  }
-  return {
-    id: satz.id,
-    typ: link ? (resolveContentType(link.content_type) ?? null) : null,
-    titel: satz.sentence,
-    text: null,
-    erstellt: satz.updated_at,
-    autor: satz.user_id,
-    autorName: null,
-    nutzung: null,
-    quellen: [],
-    rohling: {
-      art: 'satz',
-      einwurfId: einwurf.id,
-      zustand: link ? 'ausformuliert' : 'destilliert',
-      antippbar,
-      plattform: null,
-      link: null,
-      bildAdresse: null,
-      hinweis: null,
-      beteiligte,
-      suchSatz: link ? satz.sentence : null,
+      zustand,
+      herkunft: plattformNameAusUrl(einwurf.url) ?? domainAus(adresse),
+      link: adresse,
+      saetze,
+      beitraege: links.map((link) => ({
+        contentId: link.content_id,
+        typ: resolveContentType(link.content_type) ?? null,
+        satz: saetze.find((satz) => satz.id === link.draft_id)?.text ?? null,
+      })),
+      verwerfbar: einwurf.status === 'open' || einwurf.status === 'in_progress',
     },
   };
 }
 
+/**
+ * Der Plattformname, aber nur wenn er etwas sagt.
+ *
+ * Die Erkennung faellt fuer jede unbekannte Adresse auf "web" zurueck. "Web"
+ * traegt weniger als die Domain, deshalb gilt es hier als keine Angabe - die
+ * Karte zeigt dann die Domain.
+ */
 function plattformNameAusUrl(url: string | null): string | null {
   const plattform = plattformAusUrl(url);
-  return plattform ? plattformName(plattform) : null;
+  return plattform && plattform !== 'web' ? plattformName(plattform) : null;
 }
 
 function hinweis(einwurf: RawInput): string | null {
