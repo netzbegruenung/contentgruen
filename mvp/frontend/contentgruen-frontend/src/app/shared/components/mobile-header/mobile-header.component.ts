@@ -74,7 +74,7 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    // Use navigation service for consistent back behavior
+    // Ziel kommt aus data.parent der aktiven Route (siehe NavigationService)
     this.navigationService.goBack();
   }
 

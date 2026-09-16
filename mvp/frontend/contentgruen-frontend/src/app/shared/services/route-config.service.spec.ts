@@ -17,10 +17,11 @@ describe('RouteConfigService', () => {
     );
   });
 
-  it('laesst den Pfeil in der Kopfleiste dort in beiden Schritten weg', () => {
-    // Die Ansicht hat einen eigenen Pfeil: aus der Typwahl zum Satz, aus dem Satz
-    // zum Fangkorb.
-    expect(service.getRouteConfig('/destillieren/id-1').showBackButton).toBeFalse();
-    expect(service.getRouteConfig('/destillieren/id-1?schritt=typwahl').showBackButton).toBeFalse();
+  it('zeigt den Pfeil in der Kopfleiste dort in beiden Schritten', () => {
+    // Seit dem Navigations-Umbau hat die Ansicht keinen eigenen Pfeil mehr: Der im
+    // Kopf fuehrt in den Fangkorb (data.parent) und laesst die Ansicht vorher ihren
+    // Satz speichern. Aus der Typwahl zum Satz fuehrt der Knopf im Ablauf.
+    expect(service.getRouteConfig('/destillieren/id-1').showBackButton).toBeTrue();
+    expect(service.getRouteConfig('/destillieren/id-1?schritt=typwahl').showBackButton).toBeTrue();
   });
 });

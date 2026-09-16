@@ -26,6 +26,7 @@ export class MobileMenuComponent {
   @Input() selectedProfilePictureUrl: string = '';
 
   @Output() closeMenu = new EventEmitter<void>();
+  @Output() home = new EventEmitter<void>();
   @Output() contribute = new EventEmitter<void>();
   @Output() contributions = new EventEmitter<void>();
   @Output() rawInput = new EventEmitter<void>();
@@ -37,6 +38,11 @@ export class MobileMenuComponent {
 
   close(): void {
     this.closeMenu.emit();
+  }
+
+  onHomeClick(): void {
+    this.home.emit();
+    this.close();
   }
 
   onContributeClick(): void {

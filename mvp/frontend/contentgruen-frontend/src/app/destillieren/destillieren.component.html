@@ -14,15 +14,11 @@
     </div>
 
     <ng-container *ngIf="!laedt && einwurf">
-        <div class="kopfzeile">
-            <button mat-icon-button type="button" class="zurueck-pfeil"
-                    [attr.aria-label]="schritt === 'typwahl' ? 'Zurück zum Satz' : 'Zurück zum Fangkorb'"
-                    (click)="zurueck()">
-                <mat-icon>arrow_back</mat-icon>
-            </button>
-            <span class="kopfzeile-titel">{{ schritt === 'typwahl' ? 'Zurück zum Satz' : 'Zurück zum Fangkorb' }}</span>
-        </div>
-
+        <!--
+            Kein eigener Pfeil mehr: Der im Kopf fuehrt in den Fangkorb und laesst
+            die Ansicht vorher ihren Satz speichern (registerBeforeBack). Aus der
+            Typwahl zurueck zum Satz fuehrt der Knopf unten im Ablauf.
+        -->
         <section class="einwurf">
             <a *ngIf="einwurf.url" class="einwurf-link" [href]="einwurf.url"
                target="_blank" rel="noopener noreferrer">

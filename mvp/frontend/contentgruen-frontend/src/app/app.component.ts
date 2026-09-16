@@ -187,8 +187,26 @@ export class AppComponent implements OnInit, OnDestroy {
     this.navigationService.navigateToRawInputList();
   }
 
-  navigateToSearchView(): void {
-    this.router.navigate(['/search']);
+  /**
+   * Der Pfeil im Desktop-Kopf. Frueher fuehrte er fest auf /search; jetzt eine
+   * Ebene hoeher, nach dem Elternziel der Route - dieselbe Methode, die auch der
+   * mobile Kopf ruft.
+   */
+  zurueck(): void {
+    this.navigationService.goBack();
+  }
+
+  /** Erster Eintrag im mobilen Menue. */
+  navigateToHome(): void {
+    this.navigationService.navigateHome();
+  }
+
+  /**
+   * Der Haus-Knopf im Desktop-Kopf - wie der Pfeil ueber den NavigationService,
+   * damit eine Seite vorher zu Ende bringen kann, was sie angemeldet hat.
+   */
+  zurStartseite(): void {
+    this.navigationService.navigateHome();
   }
 
   navigateToAdminDashboard(): void {

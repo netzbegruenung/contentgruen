@@ -5,6 +5,7 @@
                 [userInfo]="userInfo"
                 [selectedProfilePictureUrl]="selectedProfilePictureUrl"
                 (closeMenu)="sidenav.close()"
+                (home)="navigateToHome()"
                 (contribute)="navigateToContributeView()"
                 (contributions)="navigateToContributionsView()"
                 (rawInput)="navigateToRawInputView()"
@@ -38,11 +39,16 @@
                     <h1 class="desktop-header-title">
                         <button mat-icon-button
                                 *ngIf="showBackButton"
-                                (click)="navigateToSearchView()"
+                                (click)="zurueck()"
                                 class="mat-elevation-z1 back-button-header"
-                                aria-label="Zurück zur Startseite">
+                                aria-label="Zurück">
                             <mat-icon>arrow_back</mat-icon>
                         </button>
+                        <!--
+                            Reiner Text, kein Link: Hier steht der Name der Seite,
+                            auf der man ist ("Fangkorb"), nicht die Marke. Zur
+                            Startseite fuehrt der Haus-Knopf rechts im Kopf.
+                        -->
                         {{ pageTitle }}
                     </h1>
                 </div>
@@ -135,24 +141,26 @@
                         <mat-icon>help_outline</mat-icon>
                     </button>
 
-                    <!-- Contribute button - visible on mobile -->
-                    <button mat-icon-button
-                        (click)="userInfo?.isAuthenticated ? navigateToContributeView() : loginWithReturnUrl('/contribute')"
-                        class="mat-elevation-z1 mobile-contributions-button"
-                        [attr.aria-label]="userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen'"
-                        *ngIf="(isMobile || isTablet)">
-                        <mat-icon>edit</mat-icon>
-                    </button>
+                    <!--
+                        Hier standen ausserdem ein Beitragen- und ein Menue-Knopf mit
+                        *ngIf="isMobile || isTablet" - innerhalb dieses Blocks, der
+                        selbst nur bei !isMobile && !isTablet gerendert wird. Die
+                        Breakpoints sind disjunkt, die Bedingung war also nie wahr.
+                        Beide Knoepfe gibt es mobil im eigenen Kopf (app-mobile-header).
+                    -->
 
-                    <button mat-icon-button (click)="navigateToSearchView()" class="mat-elevation-z1"
+                    <!--
+                        Der Weg zur Startseite auf Desktop; mobil leistet das der
+                        erste Menueeintrag, dort waere ein weiterer Knopf im engen
+                        Kopf einer zu viel.
+
+                        Ueber den NavigationService statt per routerLink: Die
+                        Destillier-Ansicht soll auch hier erst ihren Satz speichern
+                        duerfen, bevor die Seite verlassen wird.
+                    -->
+                    <button mat-icon-button (click)="zurStartseite()" class="mat-elevation-z1"
                         aria-label="Zur Startseite">
                         <mat-icon>home</mat-icon>
-                    </button>
-
-                    <!-- Mobile menu button -->
-                    <button mat-icon-button (click)="toggleMobileMenu()" class="mobile-menu-button mat-elevation-z1"
-                        aria-label="Menü öffnen" *ngIf="isMobile || isTablet">
-                        <mat-icon>menu</mat-icon>
                     </button>
                 </div>
             </div>

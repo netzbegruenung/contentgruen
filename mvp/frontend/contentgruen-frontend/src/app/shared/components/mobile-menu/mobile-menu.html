@@ -19,6 +19,12 @@
         </button>
     </div>
 
+    <!-- Erster Eintrag, fuer An- und Abgemeldete gleich: der Weg nach Hause -->
+    <button mat-button (click)="onHomeClick()" class="mobile-menu-item mobile-menu-start">
+        <mat-icon>home</mat-icon>
+        Startseite
+    </button>
+
     <div class="mobile-menu-user-info" *ngIf="userInfo?.isAuthenticated; else notLoggedInMenu">
         <button mat-raised-button color="primary" (click)="onContributeClick()" class="mobile-menu-item">
             <mat-icon>edit</mat-icon>

@@ -121,8 +121,11 @@ export class RouteConfigService {
     defaultConfig: RouteConfig
   ): RouteConfig {
     // /destillieren und /destillieren/:id
-    // Ohne Pfeil in der Kopfleiste: der fuehrte zur Startseite. Die Ansicht hat einen
-    // eigenen, der aus dem Satz zum Fangkorb und aus der Typwahl zum Satz zurueckfuehrt.
+    // Der Pfeil steht im Kopf wie ueberall und fuehrt in den Fangkorb (data.parent).
+    // Dass vorher der Satz gespeichert wird, meldet die Ansicht ueber
+    // NavigationService.registerBeforeBack an. Aus der Typwahl zurueck zum Satz
+    // fuehrt der Knopf im Ablauf, nicht der Pfeil - der Schritt ist kein
+    // Unter-Screen.
     //
     // Im Schritt Typwahl heisst die Seite "Ausformulieren": Destilliert ist da
     // schon, hier entsteht der Beitrag. Der Schritt steht in der Adresse
@@ -133,7 +136,7 @@ export class RouteConfigService {
           queryParams.get('schritt') === 'typwahl'
             ? PAGE_TITLES.AUSFORMULIEREN
             : PAGE_TITLES.DESTILLIEREN,
-        showBackButton: false,
+        showBackButton: true,
         showContributeButton: false,
         showContributionsButton: false
       };
