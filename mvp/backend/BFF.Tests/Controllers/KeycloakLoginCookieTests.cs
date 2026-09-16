@@ -137,7 +137,8 @@ public class KeycloakLoginCookieTests
     /// <summary>Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck.</summary>
     private static async Task<HttpResponseMessage> LoginAsync(string? returnUrl)
     {
-        var (factory, endpoint) = CreateHost();
+        var (host, endpoint) = CreateHost();
+        using var factory = host;
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,
