@@ -112,6 +112,36 @@ class TestSuchpfadBackend:
         assert author == SEARCH_QUERY_AUTHOR
         assert status is ContentStatus.RELEASED_INTERNAL
 
+    def test_suche_liefert_statement_id_der_angelegten_suchanfrage(
+        self, statement_service
+    ):
+        statement_id = uuid.uuid4()
+        statement_service.add_statement.return_value = (
+            True,
+            statement_id,
+            "klimaschutz",
+        )
+
+        resp = TestClient(app).post(
+            SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["statement_id"] == str(statement_id)
+
+    def test_suche_liefert_null_statt_none_wenn_anlegen_scheitert(
+        self, statement_service
+    ):
+        """Frueher stand hier str(None) - der Text "None" sah aus wie eine ID."""
+        statement_service.add_statement.side_effect = RuntimeError("qdrant weg")
+
+        resp = TestClient(app).post(
+            SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["statement_id"] is None
+
     def test_angemeldete_person_haengt_nicht_am_statement(self, statement_service):
         """Auch mit X-User wird der Systemautor gespeichert, nicht die Person."""
         client = TestClient(app)

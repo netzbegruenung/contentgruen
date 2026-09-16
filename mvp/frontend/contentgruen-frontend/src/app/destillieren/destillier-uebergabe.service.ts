@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -46,11 +46,6 @@ export class DestillierUebergabeService {
     private snackBar: MatSnackBar,
     private logger: LoggingService,
   ) {}
-
-  /** Die Einwurf-ID aus der Adresse, oder null ausserhalb des Ablaufs. */
-  rohinputId(route: ActivatedRoute): string | null {
-    return route.snapshot?.queryParamMap?.get(ROHINPUT_PARAM) ?? null;
-  }
 
   vorbefuellungLaden(rohinputId: string): Observable<Vorbefuellung> {
     return this.rawInputService.getRawInput(rohinputId).pipe(

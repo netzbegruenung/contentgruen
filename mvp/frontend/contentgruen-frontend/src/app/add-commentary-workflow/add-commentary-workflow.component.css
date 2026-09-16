@@ -10,3 +10,9 @@
 .tabbed {
     margin-left: 60px;
 }
+
+/* Formularseite: auf breiten Schirmen schmal und mittig, am Handy volle Breite. */
+.workflow-container {
+    max-width: 720px;
+    margin: 0 auto;
+}

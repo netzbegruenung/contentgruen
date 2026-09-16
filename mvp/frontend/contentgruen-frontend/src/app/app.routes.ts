@@ -18,6 +18,10 @@ export type ElternZiel = string | ((snapshot: ActivatedRouteSnapshot) => string 
  * Query-Parameter, die einen Unter-Screen auf derselben Seite bezeichnen
  * (``data.schliesst``). Ist einer davon gesetzt, schliesst der Pfeil zuerst ihn,
  * statt die Seite zu verlassen - erst der zweite Tipp geht eine Ebene hoch.
+ *
+ * Derzeit traegt keine Route das: Der einzige Nutzer war ``?form=`` auf
+ * /contribute, und die Formulare sind inzwischen eigene Seiten. Die Mechanik im
+ * NavigationService bleibt fuer den naechsten Unter-Screen.
  */
 export type SchliesstParameter = string[];
 
@@ -49,15 +53,12 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
-        // ``form`` oeffnet am Handy ein Formular ueber der Auswahl (siehe
-        // contribute-view.component.ts, selectMobileContentType). Der Pfeil
-        // schliesst erst dieses Formular und geht erst danach eine Ebene hoch.
-        // ``panel`` steht bewusst nicht hier: Das ist nur ein Sprungziel zum
-        // Scrollen, kein Unter-Screen.
+        // Nur Uebersicht. Die alten Adressen ?form= und ?panel= leitet die Seite
+        // selbst ins Formular weiter (contribute-view.component.ts, ngOnInit).
         path: 'contribute',
         loadComponent: () => import('./contribute-view/contribute-view.component').then(m => m.ContributeViewComponent),
         canActivate: [AuthGuard],
-        data: { parent: '/search', schliesst: ['form'] }
+        data: { parent: '/search' }
     },
     {
         // Einwerfen gehoert zum Fangkorb: Von dort kommt der FAB, und dorthin

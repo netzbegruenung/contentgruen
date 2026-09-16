@@ -27,6 +27,7 @@ import { LoggingService } from '../services/logging.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
+import { FORMULAR_PFAD, aussageParameter, istAussageId } from '../shared/formular-adresse';
 
 // Dialog configuration constants
 const HELP_DIALOG_CONFIG = {
@@ -211,6 +212,12 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    * This maintains the current behavior but with proper separation of concerns
    */
   private performSearchWithStatement(): void {
+    // Ergebnisse und Aussage der vorigen Suche gelten nicht mehr - und zwar ab
+    // sofort, nicht erst mit loading=true, das search() erst nach dem Anlegen der
+    // Aussage setzt. Wer in diesem Fenster auf "hinzufuegen" tippt, darf nicht an
+    // die alte Aussage antworten.
+    this.stateService.neueSucheBeginnen();
+
     // First, ensure the statement exists
     this.statementService.findOrCreateStatement(this.searchQuery, 'search_query').subscribe({
       next: (statementResponse) => {
@@ -331,11 +338,17 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Navigate to contribute view with specified panel
+   * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: per ID, wo
+   * sie bekannt ist (aus der Suchantwort, sonst aus dem eigenen Anlegen), sonst
+   * mit dem Suchtext.
    */
-  navigateToContribute(panel: 'commentary' | 'generictext'): void {
-    const statementText = this.searchQuery;
-    this.router.navigate(['/contribute'], { queryParams: { panel, searchQuery: statementText } });
+  navigateToContribute(typ: 'commentary' | 'generictext'): void {
+    const { searchResults, statementId, loading } = this.stateService.currentState;
+    // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
+    const ausAntwort = !loading && istAussageId(searchResults?.statement_id) ? searchResults!.statement_id : null;
+    this.router.navigate([FORMULAR_PFAD[typ]], {
+      queryParams: aussageParameter(ausAntwort ?? statementId, this.searchQuery),
+    });
   }
 
   /**

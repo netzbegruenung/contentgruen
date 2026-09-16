@@ -207,3 +207,26 @@
 .add-reference-trigger {
   align-self: flex-start;
 }
+
+/* Gespeichert, aber nicht mit der Aussage verknuepft: bleibt stehen, bis "Weiter" */
+.verknuepfungs-fehler {
+    margin: 16px 0;
+    padding: 12px 16px;
+    border-left: 4px solid #f57c00;
+    border-radius: 4px;
+    background: #fff3e0;
+    text-align: left;
+
+    p {
+        margin: 0 0 12px;
+    }
+}
+
+/* Aussage aus der Adresse nicht ladbar - das Formular bleibt nutzbar */
+.aussage-hinweis {
+    margin: 0 0 16px;
+    padding: 12px 16px;
+    border-left: 4px solid #f57c00;
+    border-radius: 4px;
+    background: #fff3e0;
+}

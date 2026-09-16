@@ -4,10 +4,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { GenericTextService } from '../services/generic-text.service';
-import { StatementService } from '../services/statement.service';
+import { StatementService, VERKNUEPFUNG_FEHLGESCHLAGEN } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { AddGenericTextRequest, AddGenericTextResponse } from '../services/dtos/generictextDtos';
-import { AddReplysuggestionToStatementRequest, AddReplysuggestionToStatementResponse } from '../services/dtos/statementDtos';
 import { GenerictextSearchResult } from '../services/dtos/searchDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -19,7 +18,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
-import { takeUntil, debounceTime } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
 import { typLabel } from '../shared/content-type-registry';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
@@ -63,6 +62,8 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
     readonly consentHinweis = CONSENT_HINWEIS;
     @Input() statementText: string = '';
     @Input() statementId: string = '';
+    /** Die Aussage aus der Adresse war nicht ladbar: Hinweis zeigen, Feld leer und offen. */
+    @Input() aussageHinweis: string | null = null;
     /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft. */
     @Input() vorbefuellung: Vorbefuellung | null = null;
     @Output() success = new EventEmitter<string>();
@@ -97,7 +98,8 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
     // New properties for inline statement handling
     isReplyToStatement: boolean = false;
     statementInput: string = '';
-    private statementUpdateSubject = new Subject<string>();
+    /** Gesetzt, wenn der Beitrag gespeichert ist, die Verknuepfung mit der Aussage aber scheiterte. */
+    verknuepfungsFehler: string | null = null;
 
     // Sources start hidden to keep the initial form minimal.
     // NOTE: if an edit mode is added later, initialise this from the loaded values
@@ -126,27 +128,27 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
 
         // Initialize preview with form values
         this.updatePreview(this.generictextForm.value);
-
-        // Set initial state based on whether we have a statement
-        if (this.statementText) {
-            this.isReplyToStatement = true;
-            this.statementInput = this.statementText;
-        }
-
-        // Debounce statement input changes
-        this.statementUpdateSubject
-            .pipe(
-                takeUntil(this.destroy$),
-                debounceTime(500)
-            )
-            .subscribe(text => {
-                if (text && text.trim()) {
-                    this.findOrCreateStatement(text.trim());
-                }
-            });
     }
 
     ngOnChanges(changes: SimpleChanges): void {
+        // Die Aussage kommt als Input - im Konstruktor ist sie noch leer. Vorher
+        // stand diese Pruefung dort und griff deshalb nie: Aus der Suche zeigte
+        // der Schalter "eigenstaendig", obwohl verknuepft wurde.
+        if (changes['statementText']) {
+            if (this.statementText) {
+                this.isReplyToStatement = true;
+                this.statementInput = this.statementText;
+            } else {
+                // Die Aussage aus der Adresse ist weg (etwa ein neuer Aufruf ohne
+                // ?aussage=): Feld und ID leeren, sonst stuende der alte Text noch da.
+                this.statementInput = '';
+                this.statementId = '';
+            }
+        }
+        if (changes['aussageHinweis'] && this.aussageHinweis) {
+            this.isReplyToStatement = true;
+            this.statementInput = '';
+        }
         if (changes['vorbefuellung'] && this.vorbefuellung) {
             this.vorbefuellungAnwenden(this.vorbefuellung);
         }
@@ -232,52 +234,25 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
         }
     }
 
-    updateStatement(): void {
-        if (this.statementInput && this.statementInput.trim()) {
-            this.statementUpdateSubject.next(this.statementInput);
-        }
-    }
-
     clearStatement(): void {
         this.statementText = '';
         this.statementId = '';
         this.statementInput = '';
     }
 
-    findOrCreateStatement(text: string): void {
-        this.logger.debug('Finding or creating statement:', text);
-
-        this.statementService.findOrCreateStatement(text, 'manually_created').subscribe({
-            next: (response) => {
-                this.statementId = response.statement_id;
-                this.statementText = response.statement_text;
-
-                if (response.statement_was_new) {
-                    this.logger.info('Created new statement with ID:', response.statement_id);
-                } else {
-                    this.logger.info('Using existing statement with ID:', response.statement_id);
-                }
-            },
-            error: (error) => {
-                this.logger.error('Error finding or creating statement', error);
-                this.generictextError = 'Fehler beim Erstellen des Statements.';
-            }
-        });
-    }
-
-    removeStatement(): void {
-        this.clearStatement();
-        this.isReplyToStatement = false;
-        this.logger.debug('Statement removed');
-    }
-
     reset() {
         this.responseId = '';
         this.generictextSaved = false;
         this.generictextError = null;
+        this.verknuepfungsFehler = null;
         this.showReferences = false;
         this.generictextForm.reset();
         this.updatePreview(this.generictextForm.value);
+    }
+
+    /** Nach gescheiterter Verknuepfung: der Beitrag steht, weiter wie nach dem Speichern. */
+    weiterNachVerknuepfungsFehler(): void {
+        this.success.emit(this.responseId);
     }
 
     navigateBack(): void {
@@ -323,34 +298,24 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
                 next: (response: AddGenericTextResponse) => {
                     this.logger.info('Generic text added successfully:', response);
 
-                    if (this.statementText && this.statementId) {
-                        const addReplysuggestionToStatementRequest: AddReplysuggestionToStatementRequest = {
-                            statement_id: this.statementId,
-                            replysuggestion_id: response.id,
-                            content_type: 'generic_text',
-                            relevance: 0.9
-                        };
+                    // Antwort auf eine Aussage: erst jetzt aufloesen und verknuepfen, und
+                    // das abwarten. Scheitert es, ist der Beitrag trotzdem gespeichert -
+                    // dann bleibt der Hinweis stehen, weiter geht es mit "Weiter".
+                    this.statementService
+                        .alsAntwortVerknuepfen(response.id, 'generic_text', 0.9, this.aussageZumSpeichern())
+                        .subscribe((ergebnis) => {
+                            this.generictextLoading = false;
+                            this.generictextSaved = true;
+                            this.responseId = response.id;
 
-                        // Call the service to link the replysuggestion to a statement
-                        this.statementService.addReplysuggestionToStatement(addReplysuggestionToStatementRequest).subscribe({
-                            next: (linkResponse: AddReplysuggestionToStatementResponse) => {
-                                this.logger.info('Generic text linked to statement successfully');
-                            },
-                            error: (error) => {
-                                this.logger.warn('Failed to link generic text to statement, but text was saved', error);
-                                // Don't show error since the main operation succeeded
+                            if (ergebnis === 'fehlgeschlagen') {
+                                this.verknuepfungsFehler = VERKNUEPFUNG_FEHLGESCHLAGEN;
+                                return;
                             }
+                            setTimeout(() => {
+                                this.success.emit(response.id);
+                            }, 2000);
                         });
-                    }
-
-                    this.generictextLoading = false;
-                    this.generictextSaved = true;
-                    this.responseId = response.id;
-
-                    // Emit success event
-                    setTimeout(() => {
-                        this.success.emit(response.id);
-                    }, 2000);
                 },
                 error: (error) => {
                     this.logger.error('Error saving generic text', error);
@@ -365,6 +330,27 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
                 this.generictextForm.get(key)?.markAsTouched();
             });
         }
+    }
+
+    /** Der Text im Aussage-Feld, so wie er gespeichert wuerde. */
+    get aussageText(): string {
+        return this.isReplyToStatement ? this.statementInput.trim() : '';
+    }
+
+    /**
+     * Die Aussage fuer alsAntwortVerknuepfen - leer, wenn der Schalter aus ist.
+     *
+     * Die mitgegebene ID gilt nur, solange der Text der geladenen Aussage
+     * unveraendert im Feld steht. Wurde er bearbeitet, zaehlt der Text: Dann wird
+     * beim Speichern gesucht oder angelegt, statt an die alte Aussage zu haengen.
+     */
+    aussageZumSpeichern(): { id: string; text: string } {
+        const text = this.aussageText;
+        if (!text) {
+            return { id: '', text: '' };
+        }
+        const unveraendert = !!this.statementId && text === this.statementText.trim();
+        return { id: unveraendert ? this.statementId : '', text };
     }
 
     private scrollToLoadingOrSuccess(): void {
@@ -388,7 +374,6 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        this.statementUpdateSubject.complete();
         this.destroy$.next();
         this.destroy$.complete();
     }

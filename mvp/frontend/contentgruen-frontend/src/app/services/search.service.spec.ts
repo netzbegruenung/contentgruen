@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { SearchService } from './search.service';
 import { SessionService } from './session.service';
+import { StateManagementService } from './state-management.service';
+import { SearchResponse } from './dtos/searchDtos';
 import { environment } from '../../environments/environment';
 
 describe('SearchService', () => {
@@ -26,6 +28,18 @@ describe('SearchService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('laesst nach einer gescheiterten Suche keine Ergebnisse der vorigen stehen', () => {
+    const zustand = TestBed.inject(StateManagementService);
+    zustand.setSearchResults({ statement_id: '11111111-2222-4333-8444-555555555555' } as SearchResponse);
+
+    service.search('klima', 10).subscribe({ next: () => {}, error: () => {} });
+    httpMock.expectOne(searchUrl).flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(zustand.currentState.searchResults).toBeNull();
+    expect(zustand.currentState.error).toBeTruthy();
+    expect(zustand.currentState.loading).toBeFalse();
   });
 
   it('sendet die aktuelle Session-ID als X-Session-Id', () => {

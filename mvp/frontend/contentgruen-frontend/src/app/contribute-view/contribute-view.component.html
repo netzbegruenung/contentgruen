@@ -1,33 +1,10 @@
-<!-- Einleitung: ein Satz, auf Desktop und Handy gleich -->
-<section class="content-section einleitung" *ngIf="!isMobile || !showMobileForm">
+<section class="content-section einleitung">
     <p class="hinweis-box erstnutzer-satz">{{ erstnutzerSatz }}</p>
-    <!-- Mobil uebernimmt die Zwischenueberschrift "Fertige Beitraege" -->
-    <p class="einleitung-satz" *ngIf="!isMobile">Wähle, was du beitragen willst:</p>
 </section>
 
-<!-- Fangkorb-Aufruf: steht ueber der Auswahl, weil er die Auswahl gerade
-     ueberspringt - keine Kategorie, kein Ausarbeiten, nur ablegen. -->
-<section class="content-section fangkorb-hinweis" *ngIf="!isMobile">
-    <div class="fangkorb-karte" role="button" tabindex="0"
-         aria-label="Einwerfen - Rohmaterial ohne Ausarbeiten ablegen"
-         (click)="navigateToRawInput()"
-         (keyup.enter)="navigateToRawInput()"
-         (keyup.space)="navigateToRawInput()">
-        <div class="fangkorb-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</div>
-        <div class="fangkorb-text">
-            <h4>Keine Zeit zum Ausarbeiten?</h4>
-            <p>{{ fangkorbBeschreibung }}</p>
-        </div>
-        <button mat-button color="primary" aria-label="Zum Einwerfen">
-            Einwerfen
-            <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-        </button>
-    </div>
-</section>
-
-<!-- Mobil: die Kette in drei Abschnitten - Einwerfen, Weiterarbeiten im Fangkorb,
-     Verfassen - alles auf einem Bildschirm -->
-<div *ngIf="isMobile && !showMobileForm" class="typ-zeilen">
+<!-- Die Kette in drei Abschnitten - Einwerfen, Weiterarbeiten im Fangkorb,
+     Verfassen - auf Desktop und Handy gleich -->
+<div class="typ-zeilen">
     <h3 class="typ-zwischenueberschrift">Einwerfen</h3>
     <button type="button" class="typ-zeile rahmen-kachel einwerfen-block" (click)="navigateToRawInput()">
         <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
@@ -52,7 +29,7 @@
 
     <nav class="typ-liste" aria-labelledby="abschnitt-verfassen">
 
-    <button type="button" class="typ-zeile commentary-card" (click)="selectMobileContentType('commentary')">
+    <button type="button" class="typ-zeile commentary-card" (click)="formularOeffnen('commentary')">
         <span class="typ-icon" aria-hidden="true">💬</span>
         <span class="typ-text">
             <span class="typ-titel">{{ typLabel('commentary') }}</span>
@@ -61,7 +38,7 @@
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
 
-    <button type="button" class="typ-zeile generictext-card" (click)="selectMobileContentType('generictext')">
+    <button type="button" class="typ-zeile generictext-card" (click)="formularOeffnen('generictext')">
         <span class="typ-icon" aria-hidden="true">📄</span>
         <span class="typ-text">
             <span class="typ-titel">{{ typLabel('generictext') }}</span>
@@ -70,7 +47,7 @@
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
 
-    <button type="button" class="typ-zeile image-card" (click)="selectMobileContentType('image')">
+    <button type="button" class="typ-zeile image-card" (click)="formularOeffnen('image')">
         <span class="typ-icon" aria-hidden="true">🖼️</span>
         <span class="typ-text">
             <span class="typ-titel">{{ typLabel('image') }}</span>
@@ -79,75 +56,4 @@
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
     </nav>
-</div>
-
-<!-- Mobile Form View -->
-<div *ngIf="isMobile && showMobileForm" class="mobile-form-container">
-    <div class="mobile-form-content">
-        <app-add-commentary-workflow
-            *ngIf="showMobileForm === 'commentary'"
-            [searchQuery]="searchQuery">
-        </app-add-commentary-workflow>
-
-        <app-add-generictext-workflow
-            *ngIf="showMobileForm === 'generictext'"
-            [searchQuery]="searchQuery">
-        </app-add-generictext-workflow>
-
-        <app-add-image-workflow
-            *ngIf="showMobileForm === 'image'">
-        </app-add-image-workflow>
-    </div>
-</div>
-
-<!-- Desktop Accordion Layout (unchanged) -->
-<div *ngIf="!isMobile" class="contribution-container">
-    <mat-accordion multi="true" class="accordion-container">
-
-        <!-- Kommentar -->
-        <mat-expansion-panel #commentaryPanel class="panel commentary-color mat-elevation-z2" [expanded]="isPanelActive('commentary')">
-            <mat-expansion-panel-header class="panel-header commentary-color">
-                <mat-panel-title>
-                    <h3>💬 {{ typLabel('commentary') }}</h3>
-                </mat-panel-title>
-                <mat-panel-description>
-                    Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media
-                </mat-panel-description>
-            </mat-expansion-panel-header>
-            <div class="panel-content">
-                <app-add-commentary-workflow [searchQuery]="searchQuery"></app-add-commentary-workflow>
-            </div>
-        </mat-expansion-panel>
-
-        <!-- Textbeitrag -->
-        <mat-expansion-panel #generictextPanel class="panel generictext-color mat-elevation-z2" [expanded]="isPanelActive('generictext')">
-            <mat-expansion-panel-header class="panel-header generictext-color">
-                <mat-panel-title>
-                    <h3>📄 {{ typLabel('generictext') }}</h3>
-                </mat-panel-title>
-                <mat-panel-description>
-                    Fakten, Zahlen und Hintergrundinformationen zum Thema
-                </mat-panel-description>
-            </mat-expansion-panel-header>
-            <div class="panel-content">
-                <app-add-generictext-workflow [searchQuery]="searchQuery"></app-add-generictext-workflow>
-            </div>
-        </mat-expansion-panel>
-
-        <!-- Bild -->
-        <mat-expansion-panel #imagePanel class="panel image-color mat-elevation-z2" [expanded]="isPanelActive('image')">
-            <mat-expansion-panel-header class="panel-header image-color">
-                <mat-panel-title>
-                    <h3>🖼️ {{ typLabel('image') }}</h3>
-                </mat-panel-title>
-                <mat-panel-description>
-                    Politisch relevante Bilder mit Bildunterschrift
-                </mat-panel-description>
-            </mat-expansion-panel-header>
-            <div class="panel-content">
-                <app-add-image-workflow></app-add-image-workflow>
-            </div>
-        </mat-expansion-panel>
-
-    </mat-accordion>
 </div>

@@ -90,7 +90,9 @@ class ImageSearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     query_was_newly_added_as_statement: bool
-    statement_id: str
+    # None, wenn das Anlegen der Suchanfrage als Statement scheiterte - frueher
+    # stand hier str(None), also der Text "None".
+    statement_id: Optional[str]
     statement_text: str
     commentary_search_results_count: int
     commentary_search_results: List[CommentarySearchResult]

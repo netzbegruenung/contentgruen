@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
 
@@ -28,18 +28,6 @@ describe('DestillierUebergabeService', () => {
       ],
     });
     service = TestBed.inject(DestillierUebergabeService);
-  });
-
-  it('liest die Einwurf-ID aus ?rohinput', () => {
-    const route = { snapshot: { queryParamMap: convertToParamMap({ rohinput: 'id-1' }) } };
-
-    expect(service.rohinputId(route as unknown as ActivatedRoute)).toBe('id-1');
-  });
-
-  it('ist ausserhalb des Ablaufs null, auch ohne Snapshot', () => {
-    expect(service.rohinputId({} as ActivatedRoute)).toBeNull();
-    const route = { snapshot: { queryParamMap: convertToParamMap({ form: 'commentary' }) } };
-    expect(service.rohinputId(route as unknown as ActivatedRoute)).toBeNull();
   });
 
   it('macht den eigenen Satz zum Titel und den bereinigten Link zur Herkunft', () => {

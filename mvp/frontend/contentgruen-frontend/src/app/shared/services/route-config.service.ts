@@ -1,8 +1,12 @@
 import { Injectable } from '@angular/core';
 import { CONTENT_ICONS, PAGE_TITLES, ROUTES } from '../constants/app.constants';
+import { FORMULAR_PFAD } from '../formular-adresse';
+import { typLabel } from '../content-type-registry';
 
 export interface RouteConfig {
   pageTitle: string;
+  /** Kuerzerer Titel fuer den mobilen Kopf, wo neben Pfeil und Knoepfen wenig Platz ist. */
+  mobilePageTitle?: string;
   showBackButton: boolean;
   showContributeButton: boolean;
   showContributionsButton: boolean;
@@ -48,6 +52,15 @@ export class RouteConfigService {
 
       case ROUTES.CONTRIBUTE:
         return this.getContributeConfig(queryParams);
+
+      // Die Formulare sind eigene Seiten; der Pfeil fuehrt ueber data.parent
+      // auf die Beitragen-Seite oder zurueck zum Einwurf.
+      case FORMULAR_PFAD.commentary:
+        return this.getFormularConfig(PAGE_TITLES.COMMENTARY_FORM, typLabel('commentary'));
+      case FORMULAR_PFAD.generictext:
+        return this.getFormularConfig(PAGE_TITLES.GENERIC_TEXT_FORM, typLabel('generic_text'));
+      case FORMULAR_PFAD.image:
+        return this.getFormularConfig(PAGE_TITLES.IMAGE_FORM, typLabel('image'));
 
       case ROUTES.CONTRIBUTIONS:
         return {
@@ -104,9 +117,20 @@ export class RouteConfigService {
     }
   }
 
+  // Mobil nur der Typname: "Kommentar verfassen" passt bei 360 px nicht neben
+  // Pfeil, Avatar und Menue.
+  private getFormularConfig(pageTitle: string, mobilePageTitle: string): RouteConfig {
+    return {
+      pageTitle,
+      mobilePageTitle,
+      showBackButton: true,
+      showContributeButton: false,
+      showContributionsButton: true
+    };
+  }
+
   private getContributeConfig(queryParams: URLSearchParams): RouteConfig {
-    // Always use generic "Beitrag verfassen" title for mobile compatibility
-    // Content type will be shown as a badge within the page content
+    // Die Uebersicht; die Formulare haben eigene Titel (getFormularConfig).
     return {
       pageTitle: PAGE_TITLES.CONTRIBUTE,
       showBackButton: true,

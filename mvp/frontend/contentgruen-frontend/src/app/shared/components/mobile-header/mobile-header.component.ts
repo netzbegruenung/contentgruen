@@ -67,7 +67,7 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     const config = this.routeConfigService.getRouteConfig(url);
 
     // Apply configuration
-    this.pageTitle = config.pageTitle;
+    this.pageTitle = config.mobilePageTitle ?? config.pageTitle;
     this.showBackButton = config.showBackButton;
     this.showContributeButton = config.showContributeButton;
     this.showContributionsButton = config.showContributionsButton;

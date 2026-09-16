@@ -1,22 +1,18 @@
-import { Component, ElementRef, ViewChild, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, ActivatedRoute } from '@angular/router';
-import { NavigationService } from '../services/navigation.service';
-import { LoggingService } from '../services/logging.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { AddCommentaryWorkflowComponent } from "../add-commentary-workflow/add-commentary-workflow.component";
-import { AddGenerictextWorkflowComponent } from "../add-generictext-workflow/add-generictext-workflow.component";
-import { AddImageWorkflowComponent } from "../add-image-workflow/add-image-workflow.component";
 import { CommonModule } from '@angular/common';
-import { BreakpointService } from '../shared/services/breakpoint.service';
 import { typLabel } from '../shared/content-type-registry';
-import { ERSTNUTZER_SATZ, FANGKORB_BESCHREIBUNG, FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { ERSTNUTZER_SATZ, FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { FORMULAR_PFAD, FormularTyp, SUCHTEXT_PARAM, aussageParameter, istFormularTyp } from '../shared/formular-adresse';
 
+/**
+ * Die Beitragen-Seite: nur Uebersicht, auf Desktop und Handy gleich - die Kette
+ * Einwerfen, Weiterarbeiten, Verfassen. Die Formulare sind eigene Seiten unter
+ * /workflow/add-*; hier wird keins eingebettet.
+ */
 @Component({
   selector: 'app-contribute-view',
   standalone: true,
@@ -24,79 +20,42 @@ import { takeUntil } from 'rxjs/operators';
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatTabsModule,
-    MatTooltipModule,
-    MatExpansionModule,
-    AddCommentaryWorkflowComponent,
-    AddGenerictextWorkflowComponent,
-    AddImageWorkflowComponent,
   ],
   templateUrl: './contribute-view.component.html',
   styleUrls: ['./contribute-view.component.css']
 })
-export class ContributeViewComponent implements OnDestroy {
+export class ContributeViewComponent implements OnInit {
   readonly typLabel = typLabel;
-  readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
   readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
   /** Die Route verlangt eine Anmeldung, der Satz braucht deshalb keine eigene Pruefung. */
   readonly erstnutzerSatz = ERSTNUTZER_SATZ;
-  activePanel: string = '';
-  searchQuery: string = '';
-  isMobile: boolean = false;
-  showMobileForm: string = ''; // 'commentary' | 'generictext' | ''
-  private destroy$ = new Subject<void>();
-
-  @ViewChild('commentaryPanel') commentaryPanel!: ElementRef;
-  @ViewChild('generictextPanel') generictextPanel!: ElementRef;
-  @ViewChild('imagePanel') imagePanel!: ElementRef;
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private navigationService: NavigationService,
-    private logger: LoggingService,
-    private breakpointService: BreakpointService
-  ) {
-    this.logger.debug('ContributeViewComponent created');
-    this.logger.debug('route', route);
+  ) {}
 
-    // Detect mobile breakpoint using breakpoint service
-    this.breakpointService.isMobile$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isMobile => {
-        this.isMobile = isMobile;
-        this.logger.debug('Mobile breakpoint detected:', this.isMobile);
-      });
-  }
-
+  /**
+   * Alte Adressen: ``?form=<typ>`` (Formular am Handy) und ``?panel=<typ>``
+   * (Akkordeon am Desktop, Ziel der Suche) fuehren jetzt direkt ins Formular.
+   * replaceUrl, damit das Zurueck nicht wieder hier landet und weiterleitet.
+   */
   ngOnInit(): void {
-    this.route.queryParams
-      .pipe(takeUntil(this.destroy$))
+    // Reaktiv: auch ein spaeterer Aufruf von /contribute?form=... auf der schon
+    // offenen Seite wird weitergeleitet, nicht nur der erste.
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {
-        this.activePanel = params['panel'] || '';
-        this.searchQuery = params['searchQuery'] || '';
-        // For mobile, check if we should show a specific form
-        if (this.isMobile) {
-          // Update showMobileForm based on the presence/absence of form param
-          this.showMobileForm = params['form'] || '';
+        const typ = [params.get('form'), params.get('panel')].find(istFormularTyp);
+        if (typ) {
+          this.router.navigate([FORMULAR_PFAD[typ]], {
+            queryParams: aussageParameter(null, params.get(SUCHTEXT_PARAM)),
+            replaceUrl: true,
+          });
         }
       });
-  }
-
-  ngAfterViewInit(): void {
-    // Scroll to the specified panel after the view is initialized
-    setTimeout(() => {
-      this.scrollToActivePanel();
-    }, 0); // Allow the DOM to finish rendering
-  }
-
-  isPanelActive(panel: string): boolean {
-    return this.activePanel === panel;
-  }
-
-  navigateToStart(): void {
-    this.navigationService.navigateToStart();
   }
 
   /**
@@ -112,61 +71,7 @@ export class ContributeViewComponent implements OnDestroy {
     this.router.navigate(['/fangkorb']);
   }
 
-  navigateToAddCommentaryWorkflow() {
-    this.router.navigate(['/workflow/add-commentary']);
-  }
-
-  navigateToAddReferenceWorkflow() {
-    // TODO: Implement when reference workflow is ready
-  }
-
-  navigateToAddGenerictextWorkflow() {
-    this.router.navigate(['/workflow/add-generictext']);
-  }
-
-  // Mobile navigation methods
-  selectMobileContentType(type: string): void {
-    if (this.isMobile) {
-      this.showMobileForm = type;
-      this.activePanel = type;
-      // Update URL with query params
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { form: type, searchQuery: this.searchQuery },
-        queryParamsHandling: 'merge'
-      });
-    }
-  }
-
-  closeMobileForm(): void {
-    this.showMobileForm = '';
-    this.activePanel = '';
-    // Clear form param from URL
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { form: null, searchQuery: this.searchQuery },
-      queryParamsHandling: 'merge'
-    });
-  }
-
-  scrollToActivePanel(): void {
-    this.logger.debug('Scrolling to active panel:', this.activePanel);
-    if (this.activePanel === 'commentary' && this.commentaryPanel?.nativeElement) {
-      this.logger.debug('Scrolling to commentary panel');
-      this.commentaryPanel.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (this.activePanel === 'generictext' && this.generictextPanel?.nativeElement) {
-      this.logger.debug('Scrolling to generic text panel');
-      this.generictextPanel.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (this.activePanel === 'image' && this.imagePanel?.nativeElement) {
-      this.logger.debug('Scrolling to image panel');
-      this.imagePanel.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      this.logger.warn('No matching panel found or panel not initialized.');
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+  formularOeffnen(typ: FormularTyp): void {
+    this.router.navigate([FORMULAR_PFAD[typ]]);
   }
 }

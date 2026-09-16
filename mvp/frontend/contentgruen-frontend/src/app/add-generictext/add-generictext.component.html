@@ -13,6 +13,8 @@
     <!-- Step 1: Reply Context Section -->
     <div class="context-section-wrapper" *ngIf="!generictextLoading && !responseId && !generictextError">
         <div class="context-section">
+            <p *ngIf="aussageHinweis" class="aussage-hinweis" role="status">{{ aussageHinweis }}</p>
+
             <div class="section-header">
                 <span class="step-indicator">1</span>
                 <h3>Kontext festlegen</h3>
@@ -47,7 +49,6 @@
                     <textarea
                         matInput
                         [(ngModel)]="statementInput"
-                        (blur)="updateStatement()"
                         rows="3"
                         placeholder="Gib hier die Aussage ein, auf die du antworten möchtest...">
                     </textarea>
@@ -55,13 +56,13 @@
                 </mat-form-field>
 
                 <!-- Visual preview of the statement if entered -->
-                <div *ngIf="statementText" class="statement-preview">
+                <div *ngIf="aussageText" class="statement-preview">
                     <div class="preview-header">
                         <mat-icon class="quote-icon">format_quote</mat-icon>
                         <span>Aussage, auf die geantwortet wird:</span>
                     </div>
                     <div class="statement-quote-box">
-                        <div class="statement-quote">{{ statementText }}</div>
+                        <div class="statement-quote">{{ aussageText }}</div>
                     </div>
                     <button mat-button color="warn" (click)="clearStatement()" class="clear-btn">
                         <mat-icon>clear</mat-icon>
@@ -79,7 +80,7 @@
     </div>
 
     <!-- Step 2: Main Content - Two Columns -->
-    <div class="content-wrapper" [class.connected-sections]="isReplyToStatement && statementText">
+    <div class="content-wrapper" [class.connected-sections]="!!aussageText">
         <div class="form-column">
             <!-- Input State: Form -->
             <form *ngIf="!generictextLoading && !responseId && !generictextError" [formGroup]="generictextForm"
@@ -178,6 +179,12 @@
                 <mat-icon class="success-icon">check_circle</mat-icon>
                 <h3>Hintergrundinfo erfolgreich gespeichert!</h3>
                 <p>Deine Hintergrundinfo wurde erfolgreich hinzugefügt und kann nun von anderen genutzt werden.</p>
+                <div *ngIf="verknuepfungsFehler" class="verknuepfungs-fehler" role="alert">
+                    <p>{{ verknuepfungsFehler }}</p>
+                    <button mat-raised-button color="primary" (click)="weiterNachVerknuepfungsFehler()">
+                        Weiter
+                    </button>
+                </div>
                 <div class="action-buttons">
                     <button mat-raised-button color="primary" (click)="navigateToGenerictext(responseId)">
                         <mat-icon>visibility</mat-icon>

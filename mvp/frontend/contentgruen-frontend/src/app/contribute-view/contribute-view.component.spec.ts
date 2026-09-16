@@ -1,19 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ContributeViewComponent } from './contribute-view.component';
-import { ActivatedRoute, provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter, Router } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 import { MatDialogModule } from '@angular/material/dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BreakpointService } from '../shared/services/breakpoint.service';
 
 describe('ContributeViewComponent', () => {
-  let component: ContributeViewComponent;
   let fixture: ComponentFixture<ContributeViewComponent>;
   let router: Router;
 
-  async function erstellen(mobil: boolean): Promise<void> {
+  let adresse: BehaviorSubject<ParamMap>;
+
+  async function erstellen(queryParams: Record<string, string> = {}): Promise<void> {
+    adresse = new BehaviorSubject(convertToParamMap(queryParams));
     await TestBed.configureTestingModule({
       imports: [
         ContributeViewComponent,
@@ -24,17 +25,9 @@ describe('ContributeViewComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: BreakpointService, useValue: { isMobile$: of(mobil) } },
         {
           provide: ActivatedRoute,
-          useValue: {
-            params: of({}),
-            queryParams: of({}),
-            snapshot: {
-              params: {},
-              queryParams: {}
-            }
-          }
+          useValue: { queryParamMap: adresse.asObservable() }
         }
       ]
     })
@@ -43,53 +36,29 @@ describe('ContributeViewComponent', () => {
     router = TestBed.inject(Router);
     spyOn(router, 'navigate').and.resolveTo(true);
     fixture = TestBed.createComponent(ContributeViewComponent);
-    component = fixture.componentInstance;
     fixture.detectChanges();
   }
 
-  function text(): string {
-    return fixture.nativeElement.textContent;
+  function zeilen(): HTMLButtonElement[] {
+    return Array.from(fixture.nativeElement.querySelectorAll('button.typ-zeile'));
   }
 
-  describe('Desktop', () => {
-    beforeEach(() => erstellen(false));
-
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
-
-    it('leitet mit einem Satz ein, darueber der Erstnutzer-Satz', () => {
-      expect(fixture.nativeElement.querySelector('.einleitung-satz').textContent.trim())
-        .toBe('Wähle, was du beitragen willst:');
-      expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
-        .toContain('Gut gesagt ist neu.');
-    });
-
-    it('beschriftet den Fangkorb-Knopf mit Einwerfen und fuehrt zum Formular', () => {
-      const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.fangkorb-karte button');
-
-      expect(knopf.textContent).toContain('Einwerfen');
-      knopf.click();
-
-      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
-    });
-
-    it('zeigt keine Typ-Zeilen', () => {
-      expect(fixture.nativeElement.querySelector('.typ-zeilen')).toBeNull();
-    });
-  });
-
-  describe('Mobil', () => {
-    beforeEach(() => erstellen(true));
-
-    function zeilen(): HTMLButtonElement[] {
-      return Array.from(fixture.nativeElement.querySelectorAll('button.typ-zeile'));
-    }
+  // Desktop und Handy zeigen dieselbe Seite; ein Breakpoint wird nicht mehr gelesen.
+  describe('Kette', () => {
+    beforeEach(() => erstellen());
 
     it('zeigt Einwerfen, Fangkorb und die drei Typen als Zeilen', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
         .toEqual(['Einwerfen', 'Fangkorb', 'Kommentar', 'Hintergrundinfo', 'Bild']);
-      expect(text()).not.toContain('Zum Fangkorb');
+      expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
+        .toContain('Gut gesagt ist neu.');
+    });
+
+    it('bettet kein Formular und kein Akkordeon ein', () => {
+      const seite: HTMLElement = fixture.nativeElement;
+      expect(seite.querySelector('mat-expansion-panel')).toBeNull();
+      expect(seite.querySelector('app-add-commentary-workflow, app-add-generictext-workflow, app-add-image-workflow'))
+        .toBeNull();
     });
 
     it('gliedert die Kette in Einwerfen, Weiterarbeiten und Verfassen', () => {
@@ -103,25 +72,76 @@ describe('ContributeViewComponent', () => {
       expect(weiterarbeiten.nextElementSibling!.classList).toContain('fangkorb-block');
       expect(verfassen.nextElementSibling!.matches('nav.typ-liste')).toBeTrue();
       expect(verfassen.nextElementSibling!.querySelectorAll('button.typ-zeile').length).toBe(3);
-      expect(fixture.nativeElement.querySelector('.einleitung-satz')).toBeNull();
     });
 
-    it('fuehrt mit der Fangkorb-Kachel zur Liste', () => {
-      (fixture.nativeElement.querySelector('.fangkorb-block') as HTMLButtonElement).click();
+    it('fuehrt mit der Einwerfen-Zeile zum Formular, mit der Fangkorb-Zeile zur Liste', () => {
+      zeilen()[0].click();
+      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
 
+      zeilen()[1].click();
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
     });
 
-    it('fuehrt mit der Einwerfen-Zeile zum Formular, nicht zur Liste', () => {
-      zeilen()[0].click();
+    it('oeffnet mit einer Typ-Zeile die Formularseite des Typs', () => {
+      const [, , kommentar, hintergrund, bild] = zeilen();
 
-      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
+      kommentar.click();
+      expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-commentary']);
+      hintergrund.click();
+      expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-generictext']);
+      bild.click();
+      expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-image']);
     });
 
-    it('oeffnet mit einer Typ-Zeile das Formular des Typs', () => {
-      zeilen()[2].click();
+    it('leitet ohne alte Parameter nirgendwohin weiter', () => {
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+  });
 
-      expect(component.showMobileForm).toBe('commentary');
+  describe('Weiterleitung alter Adressen', () => {
+    it('fuehrt ?form= ins Formular und nimmt searchQuery mit', async () => {
+      await erstellen({ form: 'commentary', searchQuery: 'Waermepumpen sind zu teuer' });
+
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/workflow/add-commentary'], {
+        queryParams: { searchQuery: 'Waermepumpen sind zu teuer' },
+        replaceUrl: true,
+      });
+    });
+
+    it('fuehrt ?panel= ins Formular', async () => {
+      await erstellen({ panel: 'generictext' });
+
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/workflow/add-generictext'], {
+        queryParams: {},
+        replaceUrl: true,
+      });
+    });
+
+    it('fuehrt auch das Bild weiter', async () => {
+      await erstellen({ form: 'image' });
+
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/workflow/add-image'], {
+        queryParams: {},
+        replaceUrl: true,
+      });
+    });
+
+    it('leitet auch weiter, wenn der Parameter erst bei offener Seite kommt', async () => {
+      await erstellen();
+      expect(router.navigate).not.toHaveBeenCalled();
+
+      adresse.next(convertToParamMap({ form: 'generictext', searchQuery: 'spaeter' }));
+
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/workflow/add-generictext'], {
+        queryParams: { searchQuery: 'spaeter' },
+        replaceUrl: true,
+      });
+    });
+
+    it('bleibt bei einem unbekannten Typ auf der Uebersicht', async () => {
+      await erstellen({ form: 'reference', panel: 'toString' });
+
+      expect(router.navigate).not.toHaveBeenCalled();
     });
   });
 });

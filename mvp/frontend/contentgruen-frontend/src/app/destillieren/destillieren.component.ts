@@ -24,16 +24,12 @@ import {
 } from './destillier-uebergabe.service';
 import { FangkorbTab, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
+import { FORMULAR_PFAD } from '../shared/formular-adresse';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
 
 type Beitragstyp = 'commentary' | 'generictext';
-
-const FORMULAR_PFAD: Record<Beitragstyp, string> = {
-  commentary: '/workflow/add-commentary',
-  generictext: '/workflow/add-generictext',
-};
 
 /** Die Typwahl, mit denselben Erlaeuterungen wie auf der Beitragen-Seite. */
 export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterung: string }> = [

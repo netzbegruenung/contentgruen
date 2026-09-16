@@ -332,7 +332,8 @@ Aufsetzen siehe `docs/DEV-SETUP.md` (Block G). Fürs Handy im WLAN braucht `ng s
    Einwerfen-Knopf ohne Scrollen; auch über Teilen (`/teilen`) mit vorbelegtem Hinweis.
 3. `/contribute` – Erstnutzer-Satz, Einleitung, vier Zeilen; jede antippen
    (Einwerfen → `/einwerfen`, die anderen öffnen das Formular).
-4. `/contribute?form=commentary`, `…=generictext`, `…=image` – Consent-Text in 0.85em über der Knopfleiste.
+4. `/workflow/add-commentary`, `…/add-generictext`, `…/add-image` – Consent-Text in 0.85em über der Knopfleiste.
+   (Stand 2026-09-16: Die Formulare sind eigene Seiten; `/contribute?form=…` leitet dorthin weiter.)
 5. `/fangkorb` – zweimal öffnen (erst Langfassung offen, dann zu), aufklappen/zuklappen, Chips
    durchtippen (eine wählen, zweite dazu, alle abwählen → ungefüllt), „Etwas einwerfen“ volle Breite.
 6. Footer auf einer beliebigen Seite – `v1.1.0 · dev` rechts unten.

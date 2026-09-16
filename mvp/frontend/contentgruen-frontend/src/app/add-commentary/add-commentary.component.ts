@@ -4,10 +4,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommentaryService } from '../services/commentary.service';
-import { StatementService } from '../services/statement.service';
+import { StatementService, VERKNUEPFUNG_FEHLGESCHLAGEN } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
-import { AddReplysuggestionToStatementRequest, AddReplysuggestionToStatementResponse } from '../services/dtos/statementDtos';
 import { CommentaryResult } from '../services/dtos/searchDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
@@ -19,7 +18,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
-import { takeUntil, debounceTime } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
 import { typLabel } from '../shared/content-type-registry';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
@@ -64,6 +63,8 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
     readonly consentHinweis = CONSENT_HINWEIS;
     @Input() statementText: string = '';
     @Input() statementId: string = '';
+    /** Die Aussage aus der Adresse war nicht ladbar: Hinweis zeigen, Feld leer und offen. */
+    @Input() aussageHinweis: string | null = null;
     /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft. */
     @Input() vorbefuellung: Vorbefuellung | null = null;
     @Output() success = new EventEmitter<string>();
@@ -87,14 +88,14 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
         if (!this.previewResult) {
             return null;
         }
-        if (this.vorschauCache?.quelle !== this.previewResult || this.vorschauCache.statement !== this.statementText) {
+        if (this.vorschauCache?.quelle !== this.previewResult || this.vorschauCache.statement !== this.aussageText) {
             this.vorschauCache = {
                 quelle: this.previewResult,
-                statement: this.statementText,
+                statement: this.aussageText,
                 karte: ausSuchergebnis({
                     commentary_result: this.previewResult,
                     score: 1.0,
-                    statement_text: this.statementText,
+                    statement_text: this.aussageText,
                     statement_similarity_score: 0,
                     reply_relevance: 0,
                 }),
@@ -112,7 +113,8 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
     // New properties for inline statement handling
     isReplyToStatement: boolean = false;
     statementInput: string = '';
-    private statementUpdateSubject = new Subject<string>();
+    /** Gesetzt, wenn der Beitrag gespeichert ist, die Verknuepfung mit der Aussage aber scheiterte. */
+    verknuepfungsFehler: string | null = null;
 
     // Optional form sections start collapsed to keep the initial form minimal.
     // NOTE: if an edit mode is added later, initialise these from the loaded values
@@ -144,27 +146,27 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
 
         // Initialize preview with form values
         this.updatePreview(this.commentaryForm.value);
-
-        // Set initial state based on whether we have a statement
-        if (this.statementText) {
-            this.isReplyToStatement = true;
-            this.statementInput = this.statementText;
-        }
-
-        // Debounce statement input changes
-        this.statementUpdateSubject
-            .pipe(
-                takeUntil(this.destroy$),
-                debounceTime(500)
-            )
-            .subscribe(text => {
-                if (text && text.trim()) {
-                    this.findOrCreateStatement(text.trim());
-                }
-            });
     }
 
     ngOnChanges(changes: SimpleChanges): void {
+        // Die Aussage kommt als Input - im Konstruktor ist sie noch leer. Vorher
+        // stand diese Pruefung dort und griff deshalb nie: Aus der Suche zeigte
+        // der Schalter "eigenstaendig", obwohl verknuepft wurde.
+        if (changes['statementText']) {
+            if (this.statementText) {
+                this.isReplyToStatement = true;
+                this.statementInput = this.statementText;
+            } else {
+                // Die Aussage aus der Adresse ist weg (etwa ein neuer Aufruf ohne
+                // ?aussage=): Feld und ID leeren, sonst stuende der alte Text noch da.
+                this.statementInput = '';
+                this.statementId = '';
+            }
+        }
+        if (changes['aussageHinweis'] && this.aussageHinweis) {
+            this.isReplyToStatement = true;
+            this.statementInput = '';
+        }
         if (changes['vorbefuellung'] && this.vorbefuellung) {
             this.vorbefuellungAnwenden(this.vorbefuellung);
         }
@@ -286,33 +288,19 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
                     }
                 });
 
-                // If there's a statement, link the commentary to it
-                if (this.statementId) {
-                    const statementRequest: AddReplysuggestionToStatementRequest = {
-                        statement_id: this.statementId,
-                        replysuggestion_id: response.id,
-                        content_type: 'commentary',  // We know this is a commentary
-                        relevance: 1.0
-                    };
-                    this.statementService.addReplysuggestionToStatement(statementRequest).subscribe({
-                        next: () => {
-                            this.commentarySaved = true;
-                            this.commentaryLoading = false;
-                            this.success.emit(response.id);
-                        },
-                        error: (error) => {
-                            this.logger.error('Error linking commentary to statement', error);
-                            // Still consider it saved even if linking failed
-                            this.commentarySaved = true;
-                            this.commentaryLoading = false;
-                            this.success.emit(response.id);
+                // Antwort auf eine Aussage: erst jetzt aufloesen und verknuepfen. Scheitert
+                // das, ist der Kommentar trotzdem gespeichert - dann bleibt der Hinweis
+                // stehen, und weiter geht es erst mit "Weiter".
+                this.statementService.alsAntwortVerknuepfen(response.id, 'commentary', 1.0, this.aussageZumSpeichern())
+                    .subscribe((ergebnis) => {
+                        this.commentarySaved = true;
+                        this.commentaryLoading = false;
+                        if (ergebnis === 'fehlgeschlagen') {
+                            this.verknuepfungsFehler = VERKNUEPFUNG_FEHLGESCHLAGEN;
+                            return;
                         }
+                        this.success.emit(response.id);
                     });
-                } else {
-                    this.commentarySaved = true;
-                    this.commentaryLoading = false;
-                    this.success.emit(response.id);
-                }
             },
             error: (error: Error) => {
                 this.logger.error('Error saving commentary', error);
@@ -320,6 +308,32 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
                 this.commentaryLoading = false;
             }
         });
+    }
+
+    /** Der Text im Aussage-Feld, so wie er gespeichert wuerde. */
+    get aussageText(): string {
+        return this.isReplyToStatement ? this.statementInput.trim() : '';
+    }
+
+    /**
+     * Die Aussage fuer alsAntwortVerknuepfen - leer, wenn der Schalter aus ist.
+     *
+     * Die mitgegebene ID gilt nur, solange der Text der geladenen Aussage
+     * unveraendert im Feld steht. Wurde er bearbeitet, zaehlt der Text: Dann wird
+     * beim Speichern gesucht oder angelegt, statt an die alte Aussage zu haengen.
+     */
+    aussageZumSpeichern(): { id: string; text: string } {
+        const text = this.aussageText;
+        if (!text) {
+            return { id: '', text: '' };
+        }
+        const unveraendert = !!this.statementId && text === this.statementText.trim();
+        return { id: unveraendert ? this.statementId : '', text };
+    }
+
+    /** Nach gescheiterter Verknuepfung: der Kommentar steht, weiter wie nach dem Speichern. */
+    weiterNachVerknuepfungsFehler(): void {
+        this.success.emit(this.responseId);
     }
 
     retryCommentarySave(): void {
@@ -338,6 +352,7 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
         this.responseId = '';
         this.commentaryError = null;
         this.commentarySaved = false;
+        this.verknuepfungsFehler = null;
         this.showTextVariants = false;
         this.showReferences = false;
     }
@@ -350,43 +365,10 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
         }
     }
 
-    updateStatement(): void {
-        if (this.statementInput && this.statementInput.trim()) {
-            this.statementUpdateSubject.next(this.statementInput);
-        }
-    }
-
     clearStatement(): void {
         this.statementText = '';
         this.statementId = '';
         this.statementInput = '';
-    }
-
-    findOrCreateStatement(statementText: string): void {
-        this.statementService.findOrCreateStatement(statementText, 'manually_created').subscribe({
-            next: (response) => {
-                this.statementId = response.statement_id;
-                this.statementText = response.statement_text;
-
-                if (response.statement_was_new) {
-                    this.logger.info('Created new statement with ID:', response.statement_id);
-                } else {
-                    this.logger.info('Using existing statement with ID:', response.statement_id);
-                }
-
-                // View will update automatically
-            },
-            error: (error) => {
-                this.logger.error('Error finding or creating statement', error);
-                // Don't use a temporary ID - show error to user instead
-                this.commentaryError = 'Fehler beim Erstellen des Statements. Bitte versuche es erneut.';
-            }
-        });
-    }
-
-    removeStatement(): void {
-        this.clearStatement();
-        this.isReplyToStatement = false;
     }
 
     navigateToCommentary(id: string): void {
@@ -422,7 +404,6 @@ export class AddCommentaryComponent implements OnChanges, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        this.statementUpdateSubject.complete();
         this.destroy$.next();
         this.destroy$.complete();
     }

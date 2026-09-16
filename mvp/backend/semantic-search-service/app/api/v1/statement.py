@@ -1,4 +1,7 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from pydantic import ValidationError
 
 from dependencies import get_statement_service
 from dtos.statement import (
@@ -11,6 +14,7 @@ from dtos.statement import (
     GetStatementsOfCategoryResponse,
     GetStatementsOfTopicRequest,
     GetStatementsOfTopicResponse,
+    GetStatementByIdResponse,
     GetTopicsResponse,
     SearchStatementByTextRequest,
     StatementSearchResponse,
@@ -64,6 +68,34 @@ async def get_all(
     except Exception as e:
         logger.error(f"Error in /getAll: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Eine Aussage per ID - fuer Beitragsformulare, die mit ?aussage=<id> geoeffnet
+# werden. Liefert bewusst nur ID und Text, nicht die Antwortvorschlaege.
+@router.get("/getById", response_model=GetStatementByIdResponse)
+async def get_by_id(
+    statement_id: uuid.UUID = Query(..., description="ID der Aussage"),
+    statement_service: StatementService = Depends(get_statement_service),
+) -> GetStatementByIdResponse:
+    try:
+        statement = await statement_service.get(statement_id)
+    except ValidationError as e:
+        # Vor ValueError: Pydantics ValidationError ist eine Unterklasse davon. Ein
+        # Datensatz, der sich nicht lesen laesst, ist kaputt, nicht abwesend - das
+        # gehoert ins Log und als 500 zum Aufrufer, nicht als 404 unter den Teppich.
+        logger.error(f"Statement {statement_id} ist nicht lesbar: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Statement not readable")
+    except ValueError:
+        # Das Repository meldet "nicht gefunden" und "anderer Inhaltstyp unter
+        # dieser ID" als ValueError - beides heisst: diese Aussage gibt es nicht.
+        raise HTTPException(status_code=404, detail="Statement not found")
+    except Exception as e:
+        logger.error(f"Error in /getById: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return GetStatementByIdResponse(
+        statement_id=statement.id, statement_text=statement.text
+    )
 
 
 # Searches for statements in the statement_index using similarity search
