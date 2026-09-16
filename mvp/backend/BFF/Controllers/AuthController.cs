@@ -107,9 +107,9 @@ public class AuthController : ControllerBase
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var authProperties = new AuthenticationProperties
         {
-            IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8),
-            IssuedUtc = DateTimeOffset.UtcNow
+            // Persistent, but without ExpiresUtc: the lifetime (14 days, sliding) lives on the
+            // cookie handler in Program.cs and is the same for both login paths.
+            IsPersistent = true
         };
 
         await HttpContext.SignInAsync(
@@ -137,8 +137,8 @@ public class AuthController : ControllerBase
     [HttpPost("login/keycloak")]
     public IActionResult LoginKeycloak([FromQuery] string? returnUrl = null)
     {
-        var frontendUrl = _configuration.GetValue<string>("FRONTEND_URL", "http://localhost:4200");
-        var redirectUrl = string.IsNullOrEmpty(returnUrl) ? frontendUrl : returnUrl;
+        var frontendUrl = _configuration.GetValue<string>("FRONTEND_URL", "http://localhost:4200")!;
+        var redirectUrl = LoginRedirectTarget(frontendUrl, returnUrl);
 
         // Trigger Keycloak authentication. Returning the challenge as the action result keeps the
         // 302 the OIDC handler produces -- calling ChallengeAsync and then returning Ok() would
@@ -146,6 +146,27 @@ public class AuthController : ControllerBase
         return Challenge(
             new AuthenticationProperties { RedirectUri = redirectUrl },
             OpenIdConnectDefaults.AuthenticationScheme);
+    }
+
+    /// <summary>
+    /// Wohin der Browser nach der Keycloak-Anmeldung zurueckkehrt: die Frontend-Adresse plus
+    /// <paramref name="returnUrl"/>, wenn das ein Pfad innerhalb des Frontends ist, sonst die
+    /// Startseite. Nur Pfade mit genau einem fuehrenden Schraegstrich -- "//host" und "/\host"
+    /// liest der Browser als fremden Host, und eine absolute Adresse aus der Query waere ein
+    /// offener Redirect.
+    /// </summary>
+    public static string LoginRedirectTarget(string frontendUrl, string? returnUrl)
+    {
+        var basis = frontendUrl.TrimEnd('/');
+        if (string.IsNullOrEmpty(returnUrl)
+            || returnUrl[0] != '/'
+            || (returnUrl.Length > 1 && (returnUrl[1] == '/' || returnUrl[1] == '\\'))
+            || returnUrl.Any(char.IsControl))
+        {
+            return basis;
+        }
+
+        return basis + returnUrl;
     }
 
     [HttpPost("logout")]
