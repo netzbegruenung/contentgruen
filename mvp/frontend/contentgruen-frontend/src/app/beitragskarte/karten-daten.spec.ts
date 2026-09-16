@@ -206,107 +206,106 @@ describe('karten-daten', () => {
   });
 
   describe('ausEinwurf', () => {
-    it('liefert fuer einen Einwurf ohne Saetze genau die Einwurf-Karte', () => {
-      const [karte, ...rest] = ausEinwurf(einwurf({ content: 'Gute Antwort in den Kommentaren' }));
+    it('macht aus einem Einwurf genau eine Karte mit der Notiz als Titel', () => {
+      const karte = ausEinwurf(einwurf({ content: 'Gute Antwort in den Kommentaren' }));
 
-      expect(rest).toEqual([]);
+      expect(karte.id).toBe('e-1');
       expect(karte.typ).toBeNull();
-      expect(karte.titel).toBeNull();
+      expect(karte.titel).toBe('Gute Antwort in den Kommentaren');
+      expect(karte.autor).toBe('alice');
       expect(karte.rohling).toEqual({
-        art: 'einwurf',
         einwurfId: 'e-1',
-        zustand: 'offen',
-        antippbar: true,
-        plattform: 'Instagram',
+        zustand: 'destillieren',
+        herkunft: 'Instagram',
         link: 'https://www.instagram.com/reel/ABC/',
-        bildAdresse: null,
-        hinweis: 'Gute Antwort in den Kommentaren',
-        beteiligte: [{ rolle: 'eingeworfen', kennung: 'alice' }],
-        suchSatz: null,
+        linkText: 'instagram.com/reel/ABC',
+        saetze: [],
+        beitraege: [],
+        verwerfbar: true,
       });
     });
 
-    it('wiederholt den Link nicht als Hinweis und kennt ohne Link keine Plattform', () => {
-      expect(ausEinwurf(einwurf({ content: 'https://www.instagram.com/reel/ABC/' }))[0].rohling!.hinweis).toBeNull();
-      expect(ausEinwurf(einwurf({ url: null, content: 'nur Text' }))[0].rohling!.plattform).toBeNull();
+    it('laesst ohne Notiz den Titel leer - die Link-Zeile ist dann die Aufschrift', () => {
+      const karte = ausEinwurf(einwurf({ url: 'https://beispiel-zeitung.de/artikel/1' }));
+
+      expect(karte.titel).toBeNull();
+      expect(karte.rohling!.herkunft).toBe('beispiel-zeitung.de');
+      expect(karte.rohling!.linkText).toBe('beispiel-zeitung.de/artikel/1');
     });
 
-    it('legt je Satz eine destillierte Karte unter den Einwurf', () => {
-      const karten = ausEinwurf(
-        einwurf({
-          status: 'in_progress',
-          drafts: [satz('s-1', 'bob', 'Satz von Bob'), satz('s-2', 'carol', 'Satz von Carol')],
-        }),
-      );
-
-      expect(karten.length).toBe(3);
-      expect(karten[0].rohling!.zustand).toBe('offen');
-      expect(karten.slice(1).map((karte) => karte.titel)).toEqual(['Satz von Bob', 'Satz von Carol']);
-      expect(karten[1].rohling).toEqual(
-        jasmine.objectContaining({
-          art: 'satz',
-          einwurfId: 'e-1',
-          zustand: 'destilliert',
-          antippbar: true,
-          beteiligte: [{ rolle: 'destilliert', kennung: 'bob' }],
-          suchSatz: null,
-        }),
-      );
-      expect(karten[1].typ).toBeNull();
+    it('wiederholt den Link nicht als Titel', () => {
+      expect(ausEinwurf(einwurf({ content: 'https://www.instagram.com/reel/ABC/' })).titel).toBeNull();
     });
 
-    it('leitet ausformuliert pro Satz aus den Verknuepfungen ab, nicht aus dem Einwurf-Status', () => {
-      const karten = ausEinwurf(
+    it('kuerzt die Adresse auf Domain und Pfad, ohne Schema, www und Abfrage', () => {
+      const karte = ausEinwurf(
+        einwurf({ url: 'https://www.tagesschau.de/inland/heizung-101.html?utm_source=x#top' }),
+      );
+
+      expect(karte.rohling!.linkText).toBe('tagesschau.de/inland/heizung-101.html');
+    });
+
+    it('nimmt bei einem Bild-Einwurf die Bildadresse als Link', () => {
+      const karte = ausEinwurf(einwurf({ url: null, image_url: 'https://bilder.example.org/1.jpg' }));
+
+      expect(karte.rohling!.link).toBe('https://bilder.example.org/1.jpg');
+      expect(karte.rohling!.linkText).toBe('bilder.example.org/1.jpg');
+      expect(karte.titel).toBeNull();
+    });
+
+    it('legt die Saetze in die Karte und zaehlt je Satz die Beitraege daraus', () => {
+      const karte = ausEinwurf(
         einwurf({
-          status: 'in_progress',
-          drafts: [satz('s-1', 'bob', 'Nicht genommen'), satz('s-2', 'dave', 'Genommen')],
-          links: [link('s-2', 'generic_text')],
+          status: 'processed',
+          drafts: [satz('s-1', 'bob', 'Entwurf geblieben'), satz('s-2', 'bob', 'Zweimal genommen')],
+          links: [link('s-2', 'commentary', 'c-1'), link('s-2', 'generic_text', 'c-2')],
         }),
       );
-      const [, offen, genommen] = karten;
 
-      expect(offen.rohling!.zustand).toBe('destilliert');
-      expect(genommen.rohling!.zustand).toBe('ausformuliert');
-      expect(genommen.typ).toBe('generictext');
-      expect(genommen.rohling!.beteiligte).toEqual([
-        { rolle: 'destilliert', kennung: 'dave' },
-        { rolle: 'ausformuliert', kennung: 'carol' },
+      expect(karte.rohling!.saetze).toEqual([
+        { id: 's-1', text: 'Entwurf geblieben', beitraege: 0 },
+        { id: 's-2', text: 'Zweimal genommen', beitraege: 2 },
       ]);
-      expect(genommen.rohling!.suchSatz).toBe('Genommen');
+      expect(karte.rohling!.zustand).toBe('erledigt');
     });
 
-    it('macht aus mehreren Saetzen mehrere verschiedene Beitraege', () => {
-      const karten = ausEinwurf(
+    it('haelt jeden Beitrag fuer das Sheet bereit, auch ohne Satz und ohne Typ', () => {
+      const karte = ausEinwurf(
         einwurf({
           status: 'processed',
-          drafts: [satz('s-1', 'bob', 'Als Kommentar'), satz('s-2', 'bob', 'Als Hintergrund')],
-          links: [link('s-1', 'commentary', 'c-1'), link('s-2', 'generic_text', 'c-2')],
+          drafts: [satz('s-1', 'bob', 'Genommen')],
+          links: [link('s-1', 'commentary', 'c-1'), link(null, null, 'c-alt')],
         }),
       );
 
-      expect(karten.slice(1).map((karte) => karte.typ)).toEqual(['commentary', 'generictext']);
+      expect(karte.rohling!.beitraege).toEqual([
+        { contentId: 'c-1', typ: 'commentary', satz: 'Genommen' },
+        { contentId: 'c-alt', typ: null, satz: null },
+      ]);
     });
 
-    it('laesst Verknuepfungen ohne passenden Satz weg', () => {
-      const karten = ausEinwurf(
-        einwurf({
-          status: 'processed',
-          drafts: [satz('s-1', 'bob', 'Nie ausformuliert')],
-          links: [link('s-geleert'), link(null, null, 'c-alt')],
-        }),
+    it('nennt einen Einwurf mit Satz, aber ohne Beitrag ausformulierbar', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] }),
       );
 
-      expect(karten.length).toBe(2);
-      expect(karten[1].rohling!.zustand).toBe('destilliert');
-      expect(karten[1].rohling!.suchSatz).toBeNull();
-      expect(karten.map((karte) => karte.id)).not.toContain('c-alt');
+      expect(karte.rohling!.zustand).toBe('ausformulieren');
+      expect(karte.rohling!.verwerfbar).toBeTrue();
     });
 
-    it('macht einen verworfenen Einwurf samt Saetzen nicht antippbar', () => {
-      const karten = ausEinwurf(einwurf({ status: 'discarded', drafts: [satz('s-1', 'bob', 'Satz')] }));
+    it('bleibt verworfen, auch wenn jemand anderes dazu einen Satz hat', () => {
+      const karte = ausEinwurf(einwurf({ status: 'discarded', drafts: [satz('s-1', 'bob', 'Satz')] }));
 
-      expect(karten[0].rohling!.zustand).toBe('verworfen');
-      expect(karten.every((karte) => karte.rohling!.antippbar === false)).toBeTrue();
+      expect(karte.rohling!.zustand).toBe('verworfen');
+      expect(karte.rohling!.verwerfbar).toBeFalse();
+      expect(karte.rohling!.saetze.length).toBe(1);
+    });
+
+    it('laesst einen verarbeiteten Einwurf nicht mehr verwerfen', () => {
+      const karte = ausEinwurf(einwurf({ status: 'processed', links: [link(null, 'commentary')] }));
+
+      expect(karte.rohling!.zustand).toBe('erledigt');
+      expect(karte.rohling!.verwerfbar).toBeFalse();
     });
   });
 });

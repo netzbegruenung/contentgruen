@@ -17,9 +17,17 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { KartenDaten, KartenVariante, RohlingDaten, RohlingRolle } from './karten-daten';
+import {
+  FangkorbZustand,
+  KartenDaten,
+  KartenVariante,
+  RohlingAktion,
+  RohlingDaten,
+  RohlingSatz,
+} from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
@@ -31,10 +39,21 @@ type TextModus = 'short' | 'standard' | 'long';
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
 
-const ROLLEN: Record<RohlingRolle, string> = {
-  eingeworfen: 'eingeworfen von',
-  destilliert: 'destilliert von',
-  ausformuliert: 'ausformuliert von',
+/** So viele Saetze stehen in der Rohling-Karte; der Rest wird nur gezaehlt. */
+const SAETZE_SICHTBAR = 3;
+
+/**
+ * Die Stufe, an der der Rohling gerade steht - dasselbe Icon wie ueberall entlang
+ * der Kette. Das Band zeigt damit den Ist-Zustand: Ein Einwurf ohne Satz traegt
+ * das Einwurf-Icon, ein destillierter das der Destille. Der Primaerknopf zeigt
+ * dagegen die naechste Stufe (siehe primaerAktion). Verworfenes behaelt das Icon
+ * des Einwurfs.
+ */
+const STUFEN: Record<FangkorbZustand, { emoji: string; name: string }> = {
+  destillieren: { emoji: KETTEN_ICONS.einwerfen, name: 'Zu destillieren' },
+  ausformulieren: { emoji: KETTEN_ICONS.destillieren, name: 'Auszuformulieren' },
+  erledigt: { emoji: KETTEN_ICONS.verfassen, name: 'Erledigt' },
+  verworfen: { emoji: KETTEN_ICONS.einwerfen, name: 'Verworfen' },
 };
 
 /**
@@ -45,9 +64,9 @@ const ROLLEN: Record<RohlingRolle, string> = {
  * stecken in app-karten-aktionen und erscheinen nur in der vollen Variante.
  *
  * Die volle Karte hat Knoepfe und ist deshalb selbst kein Tipp-Ziel. Kompakte Karten
- * und nicht verworfene Rohlinge sind als Ganzes antippbar und melden das ueber
- * `angetippt`; wohin es geht, entscheidet die Seite. Links und Knoepfe darin halten
- * den Tipp mit stopPropagation von der Karte fern.
+ * sind als Ganzes antippbar und melden das ueber `angetippt`. Der Rohling traegt
+ * statt eines Flaechentipps genau einen Primaerknopf und ein ⋮-Menue und meldet
+ * beides ueber `aktion`; wohin es geht, entscheidet die Seite.
  *
  * Die Hoehe ergibt sich aus dem Inhalt. Langer Text wird gekuerzt und laesst sich mit
  * "mehr" aufklappen; ob gekuerzt wurde, misst die Karte am Element selbst.
@@ -60,6 +79,7 @@ const ROLLEN: Record<RohlingRolle, string> = {
     MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
+    MatMenuModule,
     MatTooltipModule,
     RelativeTimePipe,
     KartenAktionenComponent,
@@ -88,11 +108,13 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input() vorschau = false;
   /** Durchgereicht an app-karten-aktionen; aus beim eigenen Beitrag im Album-Sheet. */
   @Input() abstimmenSichtbar = true;
+  /** Die angemeldete Person; der Rohling nennt den Einwerfer nur, wenn es jemand anders ist. */
+  @Input() eigeneKennung: string | null = null;
 
-  /** Tipp auf eine antippbare Karte (kompakt, Rohling). */
+  /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
-  /** "In der Suche anzeigen" auf einem ausformulierten Rohling, mit dem Satz. */
-  @Output() inSuche = new EventEmitter<string>();
+  /** Primaerknopf oder Menueeintrag auf einer Rohling-Karte. */
+  @Output() aktion = new EventEmitter<RohlingAktion>();
 
   nutzung: number | null = null;
   nutzungAnimiert = false;
@@ -153,37 +175,130 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.variante === 'rohling' ? (this.daten.rohling ?? null) : null;
   }
 
-  get istEinwurf(): boolean {
-    return this.rohling?.art === 'einwurf';
-  }
-
   get kartenKlassen(): string[] {
     const klassen = [`karte--${this.variante}`, `typ-${this.daten.typ ?? 'ohne'}`];
     if (this.rohling) {
-      klassen.push(`art-${this.rohling.art}`, `zustand-${this.rohling.zustand}`);
+      klassen.push(`zustand-${this.rohling.zustand}`);
     }
     return klassen;
   }
 
   get typName(): string {
-    if (this.rohling) {
-      if (this.istEinwurf) {
-        return 'Einwurf';
-      }
-      return this.rohling.zustand === 'ausformuliert' && this.daten.typ ? typLabel(this.daten.typ) : 'Satz';
-    }
     return typLabel(this.daten.typ);
   }
 
   get emoji(): string {
     const typEmoji = this.daten.typ ? CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji : undefined;
-    if (this.rohling) {
-      if (this.istEinwurf) {
-        return KETTEN_ICONS.einwerfen;
-      }
-      return this.rohling.zustand === 'ausformuliert' ? typEmoji || KETTEN_ICONS.verfassen : KETTEN_ICONS.destillieren;
-    }
     return typEmoji || '📝';
+  }
+
+  /**
+   * Der eine Griff im Fuss, nach Zustand. Verworfenes bietet keinen an: Ansehen
+   * gibt es ohne Beitrag nicht, und Weiterarbeiten steht im ⋮-Menue.
+   *
+   * Das Zeichen auf dem Knopf ist das der *naechsten* Stufe - es sagt, wohin der
+   * Griff fuehrt, nicht wo der Rohling steht (das zeigt das Band). Ansehen fuehrt
+   * auf keine Stufe der Kette weiter und traegt deshalb ein Material-Icon.
+   */
+  get primaerAktion(): { aktion: RohlingAktion; wort: string; emoji?: string; icon?: string } | null {
+    switch (this.rohling?.zustand) {
+      case 'destillieren':
+        return { aktion: 'destillieren', wort: 'Destillieren', emoji: KETTEN_ICONS.destillieren };
+      case 'ausformulieren':
+        return { aktion: 'ausformulieren', wort: 'Ausformulieren', emoji: KETTEN_ICONS.verfassen };
+      case 'erledigt':
+        return { aktion: 'ansehen', wort: 'Ansehen', icon: 'visibility' };
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Das Zeichen im Kopfband. Erledigtes traegt das Emoji des entstandenen
+   * Beitrags - dieselbe Marke, unter der er in Suche und Album steht; die
+   * unfertigen Stufen tragen das Icon der Kette.
+   */
+  get stufenEmoji(): string {
+    if (!this.rohling) {
+      return '';
+    }
+    if (this.rohling.zustand === 'erledigt' && this.daten.typ) {
+      return CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji || STUFEN.erledigt.emoji;
+    }
+    return STUFEN[this.rohling.zustand].emoji;
+  }
+
+  get stufenName(): string {
+    if (!this.rohling) {
+      return '';
+    }
+    if (this.rohling.zustand === 'erledigt' && this.daten.typ) {
+      return typLabel(this.daten.typ);
+    }
+    return STUFEN[this.rohling.zustand].name;
+  }
+
+  /** Den Einwerfer nennt die Karte nur, wenn es nicht die angemeldete Person ist. */
+  get zeigtEinwerfer(): boolean {
+    return !!this.daten.autor && this.daten.autor !== this.eigeneKennung;
+  }
+
+  get sichtbareSaetze(): RohlingSatz[] {
+    return (this.rohling?.saetze ?? []).slice(0, SAETZE_SICHTBAR);
+  }
+
+  get weitereSaetze(): number {
+    return Math.max((this.rohling?.saetze.length ?? 0) - SAETZE_SICHTBAR, 0);
+  }
+
+  /** Rechts am Satz: ein Haken je Beitrag daraus, sonst das Wort "Entwurf". */
+  satzStatus(satz: RohlingSatz): string {
+    if (!satz.beitraege) {
+      return 'Entwurf';
+    }
+    return satz.beitraege === 1 ? '✓' : `✓ ${satz.beitraege}`;
+  }
+
+  satzBeschriftung(satz: RohlingSatz): string {
+    if (!satz.beitraege) {
+      return 'Entwurf, noch kein Beitrag';
+    }
+    return satz.beitraege === 1 ? 'ein Beitrag daraus' : `${satz.beitraege} Beiträge daraus`;
+  }
+
+  /** Verwerfen darf nur, wer eingeworfen hat - und nur, solange kein Beitrag dranhaengt. */
+  get darfVerwerfen(): boolean {
+    return (
+      !!this.rohling?.verwerfbar && !!this.daten.autor && this.daten.autor === this.eigeneKennung
+    );
+  }
+
+  /**
+   * Das ⋮-Menue: alles, was nicht der eine Primaergriff ist.
+   *
+   * Erledigtes und Verworfenes laesst sich weiter destillieren - das Backend
+   * erlaubt beides ausdruecklich, ein zweiter Beitrag aus demselben Einwurf ist
+   * kein Fehler.
+   */
+  get menueEintraege(): { aktion: RohlingAktion; wort: string; icon: string }[] {
+    const rohling = this.rohling;
+    if (!rohling) {
+      return [];
+    }
+    const eintraege: { aktion: RohlingAktion; wort: string; icon: string }[] = [];
+    if (rohling.link) {
+      eintraege.push({ aktion: 'linkKopieren', wort: 'Link kopieren', icon: 'link' });
+    }
+    if (rohling.zustand === 'erledigt') {
+      eintraege.push({ aktion: 'weiterDestillieren', wort: 'Weiter destillieren', icon: 'science' });
+    }
+    if (rohling.zustand === 'verworfen') {
+      eintraege.push({ aktion: 'weiterDestillieren', wort: 'Trotzdem destillieren', icon: 'science' });
+    }
+    if (this.darfVerwerfen) {
+      eintraege.push({ aktion: 'verwerfen', wort: 'Verwerfen', icon: 'delete_outline' });
+    }
+    return eintraege;
   }
 
   /** Kompakt steht ohne Titel (Altbestand) der Text im Titelfeld. */
@@ -207,19 +322,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   get antippbar(): boolean {
-    return this.istKompakt || !!this.rohling?.antippbar;
+    return this.istKompakt;
   }
 
   get beschriftung(): string {
-    if (this.rohling) {
-      const wer = this.istEinwurf ? 'Einwurf' : `Satz „${this.daten.titel ?? ''}“`;
-      return this.rohling.antippbar ? `${wer}, ${this.rohling.zustand}: destillieren` : `${wer}, ${this.rohling.zustand}`;
-    }
     return `${this.typName}: ${this.titelAnzeige ?? ''}`;
-  }
-
-  rolle(rolle: RohlingRolle): string {
-    return ROLLEN[rolle];
   }
 
   get hatKurzOderLang(): boolean {
@@ -269,11 +376,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     }
   }
 
-  sucheOeffnen(event: Event): void {
-    event.stopPropagation();
-    if (this.rohling?.suchSatz) {
-      this.inSuche.emit(this.rohling.suchSatz);
-    }
+  /** Knoepfe im Rohling melden nur, was gewollt ist - wohin es fuehrt, weiss die Seite. */
+  aktionAusloesen(aktion: RohlingAktion, event?: Event): void {
+    event?.stopPropagation();
+    this.aktion.emit(aktion);
   }
 
   statementUmschalten(): void {

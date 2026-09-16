@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AddGenericTextRequest, AddGenericTextResponse } from './dtos/generictextDtos';
-import { GenerictextSearchResult } from './dtos/searchDtos';
+import { GenerictextResult } from './dtos/searchDtos';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
@@ -28,15 +28,22 @@ export class GenericTextService {
     );
   }
 
-  getGenericTextById(id: string): Observable<GenerictextSearchResult> {
+  /**
+   * Eine Hintergrundinfo per ID.
+   *
+   * Der Endpunkt liefert den Beitrag flach, nicht als Suchergebnis mit
+   * generictext_result - genau wie /commentary/getById. Vorher stand hier der
+   * Suchergebnis-Typ, und das Log griff auf das Feld darin zu: Jeder Aufruf waere
+   * mit einem TypeError abgebrochen. Aufgerufen hat die Methode bis jetzt niemand.
+   */
+  getGenericTextById(id: string): Observable<GenerictextResult> {
     this.logger.debug(`Fetching generic text with ID: ${id}`);
-    return this.http.get<GenerictextSearchResult>(`${this.baseApiUrl}/getById?generic_text_id=${id}`).pipe(
+    return this.http.get<GenerictextResult>(`${this.baseApiUrl}/getById?generic_text_id=${id}`).pipe(
       tap(genericText => {
         this.logger.info('Generic text retrieved:', {
-          id: genericText.generictext_result.id,
-          title: genericText.generictext_result.title,
-          text: genericText.generictext_result.text.substring(0, 100) + '...',
-          references: genericText.generictext_result.references?.length || 0
+          id: genericText.id,
+          title: genericText.title,
+          references: genericText.references?.length || 0
         });
       })
     );

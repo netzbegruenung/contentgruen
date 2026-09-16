@@ -60,6 +60,20 @@
     min-height: 48px;
 }
 
+/*
+ * Wie der Primaergriff auf der Fangkorb-Karte und "Kopieren" auf der vollen Karte:
+ * gefuellt, dunkelgruen (Farbe aus .gutgesagt-primary-dark), 40 px, Emoji davor.
+ * Niedriger als "Einwerfen" (48 px) - das bleibt die Hauptsache dieser Seite.
+ */
+.fangkorb-knopf {
+    display: inline-flex;
+    align-items: center;
+    min-width: 180px;
+    height: 40px;
+    padding: 0 24px;
+    font-weight: 600;
+}
+
 .knopf-emoji {
     margin-right: 8px;
     font-size: 18px;

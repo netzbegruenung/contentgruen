@@ -1,9 +1,11 @@
 import { RawInput } from '../services/raw-input.service';
+import { zustandVonEinwurf } from '../beitragskarte/karten-daten';
 import { Plattform, PLATTFORMEN, plattformAusUrl } from '../shared/plattform';
 
 /**
- * Schluessel im sessionStorage. Der Filter haelt innerhalb der Sitzung, nicht
- * darueber hinaus - wer den Fangkorb morgen oeffnet, sieht wieder alles.
+ * Schluessel im sessionStorage. Filter und Tab halten innerhalb der Sitzung, nicht
+ * darueber hinaus - wer den Fangkorb morgen oeffnet, sieht wieder alles und
+ * beginnt beim Destillieren.
  */
 export const FILTER_SCHLUESSEL = 'contentgruen.fangkorb.filter';
 
@@ -13,6 +15,16 @@ export const FILTER_SCHLUESSEL = 'contentgruen.fangkorb.filter';
  */
 const FRUEHER_BEKANNTE: ReadonlyArray<string> = ['instagram', 'youtube', 'tiktok', 'web'];
 
+/** Die drei Arbeitsstufen als Tabs. Verworfenes liegt unter "Erledigt" hinter einem Chip. */
+export type FangkorbTab = 'destillieren' | 'ausformulieren' | 'erledigt';
+
+/** Reihenfolge, Beschriftung und die eine Zeile, die im leeren Tab steht. */
+export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string }> = [
+  { wert: 'destillieren', name: 'Destillieren', leer: 'Nichts zu destillieren.' },
+  { wert: 'ausformulieren', name: 'Ausformulieren', leer: 'Nichts auszuformulieren.' },
+  { wert: 'erledigt', name: 'Erledigt', leer: 'Noch nichts erledigt.' },
+];
+
 /** So liegt der Filter im Storage: dazu, welche Plattformen es beim Speichern gab. */
 interface GespeicherterFilter extends FangkorbFilter {
   bekannte: string[];
@@ -21,22 +33,27 @@ interface GespeicherterFilter extends FangkorbFilter {
 export interface FangkorbFilter {
   /** Eingeblendete Plattformen, Standard alle. Einwuerfe ohne Link blendet das nie aus. */
   plattformen: Plattform[];
-  /** Nur, woran noch Arbeit ist: offen oder destilliert, aber nicht ausformuliert. */
-  nurOffene: boolean;
   /** Nur selbst Eingeworfenes. */
   nurMeine: boolean;
+  /** Der offene Tab. */
+  tab: FangkorbTab;
+  /** Verworfenes unter "Erledigt" mitzeigen; standardmaessig ausgeblendet. */
+  verworfenSichtbar: boolean;
 }
 
 export function standardFilter(): FangkorbFilter {
   return {
     plattformen: PLATTFORMEN.map((eintrag) => eintrag.wert),
-    nurOffene: false,
     nurMeine: false,
+    tab: 'destillieren',
+    verworfenSichtbar: false,
   };
 }
 
 /**
- * Ob ein Einwurf unter diesem Filter sichtbar ist.
+ * Ob ein Einwurf unter den Chips sichtbar ist - Plattform und "nur meine". Der
+ * Tab entscheidet getrennt davon (``passtZumTab``), damit die Zaehler der anderen
+ * Tabs dieselben Chips beruecksichtigen.
  *
  * Ohne bekannte eigene Kennung zeigt "nur meine" nichts an, statt stillschweigend
  * alles.
@@ -50,9 +67,6 @@ export function passtZumFilter(
   if (plattform && !filter.plattformen.includes(plattform)) {
     return false;
   }
-  if (filter.nurOffene && einwurf.status !== 'open' && einwurf.status !== 'in_progress') {
-    return false;
-  }
   if (filter.nurMeine && (!eigeneKennung || einwurf.submitted_by !== eigeneKennung)) {
     return false;
   }
@@ -60,13 +74,32 @@ export function passtZumFilter(
 }
 
 /**
- * Den Filter dieser Sitzung lesen.
+ * Ob ein Einwurf in diesem Tab liegt.
  *
- * Fehlt er, ist er unlesbar oder ist der Storage gesperrt (privater Modus), gilt
- * der Standard. Plattformen, die es heute nicht mehr gibt, fallen heraus.
- * Plattformen, die der gespeicherte Filter noch nicht kannte, gelten als
- * eingeblendet - sonst blieben ihre Einwuerfe unsichtbar, ohne dass je jemand
- * sie abgewaehlt hat.
+ * Verworfenes gehoert zu "Erledigt", ist dort aber nur zu sehen, wenn der Chip
+ * "verworfen" an ist - sonst taucht wieder auf, was jemand weggelegt hat.
+ */
+export function passtZumTab(
+  einwurf: RawInput,
+  tab: FangkorbTab,
+  verworfenSichtbar: boolean,
+): boolean {
+  const zustand = zustandVonEinwurf(einwurf);
+  if (zustand === 'verworfen') {
+    return tab === 'erledigt' && verworfenSichtbar;
+  }
+  return zustand === tab;
+}
+
+/**
+ * Filter und Tab dieser Sitzung lesen.
+ *
+ * Fehlt die Ablage, ist sie unlesbar oder ist der Storage gesperrt (privater
+ * Modus), gilt der Standard. Plattformen, die es heute nicht mehr gibt, fallen
+ * heraus. Plattformen, die der gespeicherte Filter noch nicht kannte, gelten als
+ * eingeblendet - sonst blieben ihre Einwuerfe unsichtbar, ohne dass je jemand sie
+ * abgewaehlt hat. Das frueher gespeicherte "nur offene" wird ignoriert; die Tabs
+ * leisten dasselbe.
  */
 export function filterLaden(): FangkorbFilter {
   try {
@@ -83,12 +116,26 @@ export function filterLaden(): FangkorbFilter {
             (wert) => gespeichert.includes(wert) || !kannte.includes(wert),
           )
         : standardFilter().plattformen,
-      nurOffene: gelesen?.nurOffene === true,
       nurMeine: gelesen?.nurMeine === true,
+      tab: TABS.some((eintrag) => eintrag.wert === gelesen?.tab)
+        ? (gelesen!.tab as FangkorbTab)
+        : standardFilter().tab,
+      verworfenSichtbar: gelesen?.verworfenSichtbar === true,
     };
   } catch {
     return standardFilter();
   }
+}
+
+/**
+ * Den Tab merken, den der Fangkorb beim naechsten Oeffnen zeigen soll.
+ *
+ * Gebraucht am Ende des Destillier-Ablaufs: Wer den letzten offenen Einwurf
+ * verarbeitet hat, landet wieder im Fangkorb - und zwar dort, wo das Ergebnis
+ * liegt, nicht in einem leeren "Destillieren".
+ */
+export function tabMerken(tab: FangkorbTab): void {
+  filterSpeichern({ ...filterLaden(), tab });
 }
 
 export function filterSpeichern(filter: FangkorbFilter): void {
@@ -99,6 +146,6 @@ export function filterSpeichern(filter: FangkorbFilter): void {
     };
     sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify(gespeichert));
   } catch {
-    // Ohne Storage gilt der Filter eben nur, solange die Seite offen ist.
+    // Ohne Storage gelten Filter und Tab eben nur, solange die Seite offen ist.
   }
 }

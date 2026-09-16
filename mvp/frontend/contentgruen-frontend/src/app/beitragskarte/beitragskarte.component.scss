@@ -555,96 +555,110 @@
   color: var(--text-secondary);
 }
 
-// Rohling: dieselbe Karte, unfertig. Der Einwurf ist Rohmaterial (gestrichelte Kante,
-// grauer Kopf), ein Satz ohne Beitrag ist destilliert (durchgezogene Kante, grau),
-// ein Satz mit Beitrag traegt die Typfarbe wie die volle Karte.
+// Rohling: dieselbe Anatomie wie die volle Karte - Kopfband, weisser Koerper,
+// Aktionszeile, Meta. Nur die Fuellung ist unfertig: statt Beitragstext stehen
+// die Saetze da, und statt Abstimmen/Kopieren genau ein Griff.
+//
+// Das Band traegt Sand (--rohling-grund), solange nichts fertig ist; bei Erledigt
+// setzt die Typklasse --karten-farbe, und das Band nimmt die Farbe des ersten
+// entstandenen Beitrags an (das erledigt .karte-kopf schon von selbst).
 
 .karte--rohling {
   width: 100%;
-  border: 1px solid rgba(0, 0, 0, 0.24);
-  box-shadow: none;
-
-  &[role='link'] {
-    cursor: pointer;
-  }
 
   &:focus-visible {
     outline: 2px solid var(--primary-dark);
     outline-offset: 2px;
   }
 
-  .karte-kopf {
-    padding: 12px;
-  }
-
-  .karte-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 22px;
-  }
-
-  .karte-titel {
-    font-size: 16px;
+  &.zustand-verworfen {
+    opacity: 0.6;
   }
 }
 
-.zustand-offen,
-.zustand-verworfen {
-  --karten-farbe: var(--statement-bg);
-  border-style: dashed;
+// Band und Link-Zeile tragen dieselbe Farbe - zusammen sind sie der Kopf.
+.zustand-destillieren .rohling-kopf,
+.zustand-destillieren .rohling-linkzeile,
+.zustand-ausformulieren .rohling-kopf,
+.zustand-ausformulieren .rohling-linkzeile {
+  background: var(--rohling-grund);
 }
 
-.zustand-destilliert {
-  --karten-farbe: var(--statement-bg);
-  border-style: solid;
+.zustand-verworfen .rohling-kopf,
+.zustand-verworfen .rohling-linkzeile {
+  background: var(--disabled-bg);
 }
 
-.zustand-ausformuliert {
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+.rohling-kopf {
+  align-items: start;
+  padding-bottom: var(--spacing-sm);
 }
 
-.zustand-verworfen {
-  opacity: 0.55;
+// Ohne Notiz ist die Link-Zeile die Aufschrift; das Band darueber wird schmal.
+.rohling-kopf--ohne-notiz {
+  padding-bottom: 0;
 }
 
-.karte-marker {
+// Eine Notiz, keine Behauptung: kleiner und halbfett statt 19 px fett.
+.rohling-titel {
+  min-height: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.rohling-titel-platz {
+  min-width: 0;
+}
+
+// Eigener Block ueber die volle Bandbreite, mindestens 44 px, als Ganzes
+// antippbar: zwei Zeilen Text, das Symbol daneben ueber beide zentriert.
+.rohling-linkzeile {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-sm);
-}
-
-.plattform-chip,
-.verworfen-hinweis {
-  padding: 2px var(--spacing-sm);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
+  min-height: 44px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--karten-farbe);
   color: var(--text-secondary);
+  font-size: 13px;
+  text-decoration: none;
+
+  // Die Bandfarbe bleibt stehen, der Tipp legt nur einen Schleier darueber.
+  &:hover,
+  &:focus-visible {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.04));
+  }
+
+  &:active {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.09), rgba(0, 0, 0, 0.09));
+  }
 }
 
-.plattform-chip {
-  background: var(--bg-card);
-}
-
-.verworfen-hinweis {
-  border: 1px solid rgba(0, 0, 0, 0.24);
-}
-
-.rohling-inhalt {
+.rohling-linktexte {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px var(--spacing-md);
+  min-width: 0;
 }
 
-.einwurf-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  color: var(--primary-main);
+.rohling-herkunft {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.rohling-adresse {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+// Ohne Notiz traegt dieser Block die Aufschrift: Plattform in Titelgroesse.
+.rohling-linkzeile--titel .rohling-herkunft {
+  font-size: 17px;
+  line-height: 1.3;
 }
 
 .link-icon {
@@ -654,35 +668,117 @@
   font-size: 18px;
 }
 
-.link-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-// Der Hinweis fuer andere steht in der globalen .hinweis-box, hier nur gekuerzt.
-.einwurf-hinweis {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  margin: 0;
-  white-space: pre-line;
-}
-
-.personen {
-  margin: 0;
-  font-size: 13px;
+.rohling-verworfen {
+  flex-shrink: 0;
+  padding: 2px var(--spacing-sm);
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-secondary);
 }
 
-.person {
-  font-family: monospace;
+// Koerper: weiss wie bei der vollen Karte, die Saetze nur am gruenen Balken.
+.rohling-koerper {
+  padding: var(--spacing-md) var(--spacing-md) 0;
+  background: var(--bg-card);
+}
+
+.rohling-saetze {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rohling-satz {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  padding-left: 10px;
+  border-left: 3px solid var(--primary-light);
+}
+
+// Der Satz bricht um - bis zu drei Zeilen, dann abgeschnitten. Einzeilig
+// abgeschnitten verlor er zu oft genau die Pointe am Ende.
+.satz-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.satz-status {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.satz-status--fertig {
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.rohling-mehr {
+  padding-left: 13px;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
-.beitrag-link {
-  align-self: flex-start;
-  margin-top: var(--spacing-xs);
-  color: var(--primary-dark);
+// Aktionszeile wie .aktionen der vollen Karte: Griff in der Mitte, ⋮ am Rand.
+// Feste Spalten, damit das Menue auch ohne Griff (verworfen) rechts steht.
+.rohling-aktion {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: var(--spacing-md);
+}
+
+.rohling-menue {
+  grid-column: 3;
+  justify-self: end;
+  color: var(--text-secondary);
+}
+
+// Derselbe Knopf wie "Kopieren" auf der vollen Karte: gefuellt, gruen (die Farbe
+// kommt aus .gutgesagt-primary-dark), 40 px hoch, Emoji vor dem Wort. Anders als
+// dort bleibt die Hoehe auch am Handy bei 40 - der Griff ist hier die Hauptsache.
+.rohling-primaer {
+  display: inline-flex;
+  align-items: center;
+  grid-column: 2;
+  justify-self: center;
+  min-width: 180px;
+  height: 40px;
+  padding: 0 24px;
+  font-weight: 600;
+}
+
+.knopf-emoji {
+  margin-right: 6px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+// "Ansehen" fuehrt auf keine Stufe der Kette weiter - dort steht ein Material-Icon.
+.knopf-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  font-size: 18px;
+}
+
+.rohling-meta {
+  padding-top: 0;
+}
+
+.rohling-alter,
+.rohling-einwerfer {
+  white-space: nowrap;
 }

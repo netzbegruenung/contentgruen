@@ -2,21 +2,15 @@
     <div class="guidance">
         <div class="info-message">
             <div class="fangkorb-kopf">
-                <div class="stepper" role="list" aria-label="So wird aus einem Fund ein Beitrag">
-                    <div class="stepper-schritt" role="listitem">
-                        <span class="stepper-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
-                        <span class="stepper-wort">Einwerfen</span>
-                    </div>
-                    <mat-icon class="stepper-pfeil" aria-hidden="true">chevron_right</mat-icon>
-                    <div class="stepper-schritt" role="listitem">
-                        <span class="stepper-emoji" aria-hidden="true">{{ kettenIcons.destillieren }}</span>
-                        <span class="stepper-wort">Destillieren</span>
-                    </div>
-                    <mat-icon class="stepper-pfeil" aria-hidden="true">chevron_right</mat-icon>
-                    <div class="stepper-schritt" role="listitem">
-                        <span class="stepper-emoji" aria-hidden="true">{{ kettenIcons.verfassen }}</span>
-                        <span class="stepper-wort">Ausformulieren</span>
-                    </div>
+                <!-- Die drei Stufen sind die Navigation: was im Tab liegt, sagt der Zaehler -->
+                <div class="tabs" role="tablist" aria-label="Arbeitsstufen im Fangkorb">
+                    <button *ngFor="let tab of tabs" type="button" role="tab" class="tab"
+                            [class.aktiv]="filter.tab === tab.wert"
+                            [attr.aria-selected]="filter.tab === tab.wert"
+                            (click)="tabWaehlen(tab.wert)">
+                        <span class="tab-wort">{{ tab.name }}</span>
+                        <span class="tab-zahl">{{ zaehler[tab.wert] }}</span>
+                    </button>
                 </div>
 
                 <button type="button" class="erklaerung-umschalter"
@@ -48,15 +42,16 @@
 </button>
 
 <div class="component-box fangkorb">
-    <!-- Eine Zeile, seitlich scrollbar: erst Status, dann Plattformen -->
+    <!-- Eine Zeile, seitlich scrollbar: erst die eigenen, dann Plattformen -->
     <div class="filterleiste" role="group" aria-label="Fangkorb filtern">
         <div class="filtergruppe">
-            <button type="button" class="filter-chip nur-offene"
-                    [class.aktiv]="filter.nurOffene" [attr.aria-pressed]="filter.nurOffene"
-                    (click)="nurOffeneUmschalten()">nur offene</button>
             <button type="button" class="filter-chip nur-meine"
                     [class.aktiv]="filter.nurMeine" [attr.aria-pressed]="filter.nurMeine"
                     (click)="nurMeineUmschalten()">nur meine</button>
+            <!-- Nur unter Erledigt: Weggelegtes taucht sonst wieder auf -->
+            <button *ngIf="filter.tab === 'erledigt'" type="button" class="filter-chip verworfen"
+                    [class.aktiv]="filter.verworfenSichtbar" [attr.aria-pressed]="filter.verworfenSichtbar"
+                    (click)="verworfenUmschalten()">verworfen</button>
         </div>
         <span class="filter-trenner" aria-hidden="true"></span>
         <div class="filtergruppe" role="group" aria-label="Plattformen">
@@ -78,25 +73,14 @@
     </div>
 
     <ng-container *ngIf="!isLoading && !ladefehler">
-        <p *ngIf="gesamt === 0" class="fangkorb-leer">Noch nichts drin. Wirf den ersten Fund ein.</p>
-        <p *ngIf="gesamt > 0 && sichtbar.length === 0" class="fangkorb-leer">
-            Keine Einwürfe für diese Filter.
-        </p>
+        <p *ngIf="!sichtbar.length" class="fangkorb-leer">{{ leerText }}</p>
 
-        <ul *ngIf="stapel.length" class="karten">
-            <li *ngFor="let eintrag of stapel; trackBy: nachStapel" class="stapel">
-                <app-beitragskarte variante="rohling" [daten]="eintrag.einwurf"
-                                   (angetippt)="oeffnen($event)">
+        <ul *ngIf="karten.length" class="karten">
+            <li *ngFor="let karte of karten; trackBy: nachKarte">
+                <app-beitragskarte variante="rohling" [daten]="karte"
+                                   [eigeneKennung]="eigeneKennung"
+                                   (aktion)="aktionAusfuehren(karte, $event)">
                 </app-beitragskarte>
-
-                <ul *ngIf="eintrag.saetze.length" class="stapel-saetze">
-                    <li *ngFor="let karte of eintrag.saetze; trackBy: nachKarte">
-                        <app-beitragskarte variante="rohling" [daten]="karte"
-                                           (angetippt)="oeffnen($event)"
-                                           (inSuche)="inSucheAnzeigen($event)">
-                        </app-beitragskarte>
-                    </li>
-                </ul>
             </li>
         </ul>
 

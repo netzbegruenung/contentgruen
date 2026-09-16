@@ -1,12 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
 
 import { LADE_GROESSE, RawInputListComponent } from './raw-input-list.component';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
+import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { PLATTFORMEN } from '../shared/plattform';
-import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import {
   GetRawInputsResponse,
   RawInput,
@@ -39,14 +44,29 @@ function satz(id: string, user_id: string, sentence: string): RawInputDraft {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:00:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null, processed_by = 'carol'): RawInputLink {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = `c-${draft_id}`): RawInputLink {
   return {
-    content_id: `c-${draft_id}`,
+    content_id,
     content_type,
     draft_id,
-    processed_by,
+    processed_by: 'carol',
     processed_at: '2026-09-13T13:00:00Z',
   };
+}
+
+/** Ein Einwurf je Tab, damit jeder Tab etwas zu zeigen hat. */
+function jeTab(): RawInput[] {
+  return [
+    einwurf({ id: 'roh' }),
+    einwurf({ id: 'satz', status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] }),
+    einwurf({
+      id: 'fertig',
+      status: 'processed',
+      drafts: [satz('s-2', 'bob', 'Genommen')],
+      links: [link('s-2')],
+    }),
+    einwurf({ id: 'weg', status: 'discarded' }),
+  ];
 }
 
 function antwort(results: RawInput[], gesamt = results.length): GetRawInputsResponse {
@@ -58,6 +78,9 @@ describe('RawInputListComponent', () => {
   let component: RawInputListComponent;
   let rawInputService: jasmine.SpyObj<RawInputService>;
   let router: Router;
+  let bottomSheet: MatBottomSheet;
+  let clipboard: jasmine.SpyObj<Clipboard>;
+  let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   function erstellen(results: RawInput[], gesamt?: number): void {
     rawInputService.getRawInputs.and.returnValue(of(antwort(results, gesamt)));
@@ -66,18 +89,23 @@ describe('RawInputListComponent', () => {
     fixture.detectChanges();
   }
 
-  /** Die Einwurf-Karten, oben in jedem Stapel. */
   function karten(): HTMLElement[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('li.stapel > app-beitragskarte article.art-einwurf'));
+    return Array.from(fixture.nativeElement.querySelectorAll('article.karte--rohling'));
   }
 
-  /** Die Satz-Karten, eingerueckt unter ihrem Einwurf. */
-  function satzKarten(stapel: Element = fixture.nativeElement): HTMLElement[] {
-    return Array.from(stapel.querySelectorAll('.stapel-saetze article.art-satz'));
+  function kartenKomponenten(): BeitragskarteComponent[] {
+    return fixture.debugElement
+      .queryAll(By.directive(BeitragskarteComponent))
+      .map((eintrag) => eintrag.componentInstance as BeitragskarteComponent);
   }
 
-  function stapel(): HTMLElement[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('li.stapel'));
+  function tabKnopf(name: string): HTMLButtonElement {
+    const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('button.tab'));
+    return knoepfe.find((knopf) => knopf.querySelector('.tab-wort')!.textContent!.trim() === name)!;
+  }
+
+  function zaehler(name: string): string {
+    return tabKnopf(name).querySelector('.tab-zahl')!.textContent!.trim();
   }
 
   function filterKnopf(beschriftung: string): HTMLButtonElement {
@@ -94,13 +122,18 @@ describe('RawInputListComponent', () => {
 
   beforeEach(async () => {
     sessionStorage.removeItem(FILTER_SCHLUESSEL);
-    rawInputService = jasmine.createSpyObj('RawInputService', ['getRawInputs']);
+    rawInputService = jasmine.createSpyObj('RawInputService', ['getRawInputs', 'updateStatus']);
+    clipboard = jasmine.createSpyObj('Clipboard', ['copy']);
+    clipboard.copy.and.returnValue(true);
+    snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
 
     await TestBed.configureTestingModule({
       imports: [RawInputListComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
         { provide: RawInputService, useValue: rawInputService },
+        { provide: Clipboard, useValue: clipboard },
+        { provide: MatSnackBar, useValue: snackBar },
         {
           provide: AuthService,
           useValue: {
@@ -117,102 +150,142 @@ describe('RawInputListComponent', () => {
 
     router = TestBed.inject(Router);
     spyOn(router, 'navigate').and.resolveTo(true);
+    bottomSheet = TestBed.inject(MatBottomSheet);
+    spyOn(bottomSheet, 'open');
   });
 
   afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
 
   describe('Kopf', () => {
-    function langfassung(): HTMLElement | null {
-      return fixture.nativeElement.querySelector('.erklaerung');
-    }
-
-    it('zeigt die drei Schritte als Stepper, die Erklaerung erst ueber das Hilfe-Icon', () => {
-      erstellen([]);
-      const schritte = Array.from(fixture.nativeElement.querySelectorAll('.stepper-schritt') as NodeListOf<HTMLElement>);
-      const pfeile = Array.from(fixture.nativeElement.querySelectorAll('.stepper-pfeil') as NodeListOf<HTMLElement>);
-
-      expect(schritte.map((schritt) => schritt.querySelector('.stepper-emoji')!.textContent!.trim())).toEqual([
-        KETTEN_ICONS.einwerfen,
-        KETTEN_ICONS.destillieren,
-        KETTEN_ICONS.verfassen,
-      ]);
-      expect(schritte.map((schritt) => schritt.querySelector('.stepper-wort')!.textContent!.trim())).toEqual([
-        'Einwerfen',
-        'Destillieren',
-        'Ausformulieren',
-      ]);
-      expect(pfeile.map((pfeil) => pfeil.textContent!.trim())).toEqual(['chevron_right', 'chevron_right']);
-      expect(langfassung()).toBeNull();
-      expect(fixture.nativeElement.textContent).not.toContain('Jeder Schritt kann von jemand anderem kommen.');
-
-      klicken(fixture.nativeElement.querySelector('.fangkorb-kopf .erklaerung-umschalter'));
-
-      expect(langfassung()!.textContent).toContain('Jeder Schritt kann von jemand anderem kommen.');
-      const langeSchritte = Array.from(
-        langfassung()!.querySelectorAll('.dreiklang li strong') as NodeListOf<HTMLElement>,
-      ).map((schritt) => schritt.textContent!.trim());
-      expect(langeSchritte).toEqual(['Einwerfen', 'Destillieren', 'Ausformulieren']);
-    });
-
-    it('gibt den drei Schritten gleich breite Spalten und dem Hilfe-Icon keinen Knopfrahmen', () => {
-      erstellen([]);
-      const breiten = Array.from(fixture.nativeElement.querySelectorAll('.stepper-schritt') as NodeListOf<HTMLElement>).map(
-        (schritt) => Math.round(schritt.getBoundingClientRect().width),
+    it('zeigt die drei Stufen als Tabs mit Zaehlern, ohne Einwerfen', () => {
+      erstellen(jeTab());
+      const woerter = Array.from(fixture.nativeElement.querySelectorAll('.tab-wort') as NodeListOf<HTMLElement>).map(
+        (wort) => wort.textContent!.trim(),
       );
-      const hilfe: HTMLButtonElement = fixture.nativeElement.querySelector('.erklaerung-umschalter');
 
-      expect(new Set(breiten).size).toBe(1);
-      expect(hilfe.classList).not.toContain('mat-mdc-icon-button');
-      expect(getComputedStyle(hilfe).boxShadow).toBe('none');
-      expect(getComputedStyle(hilfe).borderTopStyle).toBe('none');
-      expect(hilfe.getAttribute('aria-expanded')).toBe('false');
+      expect(woerter).toEqual(['Destillieren', 'Ausformulieren', 'Erledigt']);
+      expect(fixture.nativeElement.textContent).not.toContain('Einwerfen →');
+      expect(zaehler('Destillieren')).toBe('1');
+      expect(zaehler('Ausformulieren')).toBe('1');
+      expect(zaehler('Erledigt')).toBe('1');
     });
 
-    it('beginnt auch beim zweiten Oeffnen mit zugeklappter Erklaerung', () => {
-      erstellen([]);
-      klicken(fixture.nativeElement.querySelector('.erklaerung-umschalter'));
+    it('beginnt beim Destillieren und wechselt auf Tipp', () => {
+      erstellen(jeTab());
+
+      expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
+
+      klicken(tabKnopf('Erledigt'));
+
+      expect(tabKnopf('Erledigt').getAttribute('aria-selected')).toBe('true');
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig']);
+    });
+
+    it('haelt Tab und Filter in der Sitzung', () => {
+      erstellen(jeTab());
+      klicken(tabKnopf('Ausformulieren'));
+      klicken(filterKnopf('nur meine'));
       fixture.destroy();
 
-      erstellen([]);
+      erstellen(jeTab());
 
-      expect(langfassung()).toBeNull();
+      expect(component.filter.tab).toBe('ausformulieren');
+      expect(component.filter.nurMeine).toBeTrue();
     });
 
-    it('zeigt keinen Erstnutzer-Satz', () => {
-      erstellen([]);
-
-      expect(fixture.nativeElement.querySelector('.erstnutzer-satz')).toBeNull();
-      expect(fixture.nativeElement.textContent).not.toContain('Gut gesagt ist neu.');
-    });
-
-    it('fuehrt mit dem schwebenden Knopf zum Einwerfen', () => {
+    it('fuehrt mit dem schwebenden Knopf zum Einwerfen und zeigt die Erklaerung erst auf Tipp', () => {
       erstellen([]);
       const fab: HTMLButtonElement = fixture.nativeElement.querySelector('button.einwerfen-fab');
 
-      expect(fab.getAttribute('aria-label')).toBe('Etwas einwerfen');
+      expect(fixture.nativeElement.querySelector('.erklaerung')).toBeNull();
+      klicken(fixture.nativeElement.querySelector('.erklaerung-umschalter'));
+      expect(fixture.nativeElement.querySelector('.erklaerung')).toBeTruthy();
+
       klicken(fab);
 
       expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
     });
 
-    it('stellt nur offene und nur meine vor die Plattform-Chips, in einer Leiste', () => {
+    it('zeigt "nur meine" und die Plattformen, "nur offene" nicht mehr', () => {
       erstellen([]);
-      const leiste: HTMLElement = fixture.nativeElement.querySelector('.filterleiste');
-      const chips = Array.from(leiste.querySelectorAll('.filter-chip') as NodeListOf<HTMLElement>).map(
+      const chips = Array.from(fixture.nativeElement.querySelectorAll('.filter-chip') as NodeListOf<HTMLElement>).map(
         (chip) => chip.textContent!.trim(),
       );
 
-      expect(chips).toEqual(['nur offene', 'nur meine', ...PLATTFORMEN.map((eintrag) => eintrag.name)]);
-      expect(leiste.querySelector('.filter-trenner')).toBeTruthy();
+      expect(chips).toEqual(['nur meine', ...PLATTFORMEN.map((eintrag) => eintrag.name)]);
+    });
+  });
+
+  describe('Tab-Zuordnung', () => {
+    it('legt einen Einwurf ohne Satz unter Destillieren', () => {
+      erstellen(jeTab());
+
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
+      expect(karten().length).toBe(1);
+    });
+
+    it('legt Saetze ohne Beitrag unter Ausformulieren', () => {
+      erstellen(jeTab());
+
+      klicken(tabKnopf('Ausformulieren'));
+
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz']);
+    });
+
+    it('legt alles mit Beitrag unter Erledigt, auch ohne Satz', () => {
+      erstellen([
+        ...jeTab(),
+        einwurf({ id: 'alt', status: 'processed', created_at: '2026-09-01T10:00:00Z', links: [link(null, null)] }),
+      ]);
+
+      klicken(tabKnopf('Erledigt'));
+
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig', 'alt']);
+    });
+
+    it('zeigt Verworfenes erst mit dem Chip, und den nur unter Erledigt', () => {
+      erstellen(jeTab());
+      expect(filterKnopf('verworfen')).toBeUndefined();
+
+      klicken(tabKnopf('Erledigt'));
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig']);
+
+      klicken(filterKnopf('verworfen'));
+
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig', 'weg']);
+      expect(zaehler('Erledigt')).toBe('2');
+    });
+
+    it('sortiert neueste zuerst, nicht eigene zuerst', () => {
+      erstellen([
+        einwurf({ id: 'alt', created_at: '2026-09-01T10:00:00Z' }),
+        einwurf({ id: 'neu', created_at: '2026-09-14T10:00:00Z' }),
+        einwurf({ id: 'mittel', created_at: '2026-09-10T10:00:00Z' }),
+      ]);
+
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['neu', 'mittel', 'alt']);
+    });
+
+    it('sagt in jedem leeren Tab in einer Zeile, dass dort nichts liegt', () => {
+      erstellen([einwurf({ id: 'roh' })]);
+      klicken(tabKnopf('Ausformulieren'));
+      expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
+        'Nichts auszuformulieren.',
+      );
+
+      klicken(tabKnopf('Erledigt'));
+      expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
+        'Noch nichts erledigt.',
+      );
     });
   });
 
   describe('Laden', () => {
-    it('laedt die Einwuerfe auf einmal und zeigt Karten statt einer Tabelle', () => {
-      erstellen([einwurf(), einwurf({ id: 'id-2' })]);
+    it('laedt die Einwuerfe auf einmal, ohne Tabelle und ohne Paginator', () => {
+      erstellen(jeTab());
 
       expect(rawInputService.getRawInputs).toHaveBeenCalledWith(1, LADE_GROESSE);
-      expect(karten().length).toBe(2);
       expect(fixture.nativeElement.querySelector('table')).toBeNull();
       expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
     });
@@ -220,10 +293,9 @@ describe('RawInputListComponent', () => {
     it('meldet einen Ladefehler statt still leer zu bleiben', () => {
       rawInputService.getRawInputs.and.returnValue(throwError(() => new Error('kaputt')));
       fixture = TestBed.createComponent(RawInputListComponent);
-      component = fixture.componentInstance;
       fixture.detectChanges();
 
-      expect(component.ladefehler).toBeTrue();
+      expect(fixture.componentInstance.ladefehler).toBeTrue();
       expect(fixture.nativeElement.textContent).toContain('konnte nicht geladen werden');
     });
 
@@ -240,305 +312,211 @@ describe('RawInputListComponent', () => {
     });
   });
 
-  describe('Zustaende', () => {
-    it('zeigt einen offenen Einwurf gestrichelt mit Link, Plattform, Hinweis und Einwerfer', () => {
+  describe('Karte', () => {
+    it('zeigt Plattform und Link-Icon im Kopf, die Notiz als Titel, Alter und Knopf im Fuss', () => {
       erstellen([
         einwurf({
           url: 'https://www.instagram.com/reel/ABC/',
           content: 'Gute Antwort in den Kommentaren',
-          submitted_by: '0f3c2a9e-1111-2222-3333-444455556666',
+          submitted_by: 'alice',
         }),
       ]);
       const [karte] = karten();
 
-      expect(karte.classList).toContain('karte--rohling');
-      expect(karte.classList).toContain('zustand-offen');
-      expect(getComputedStyle(karte).borderTopStyle).toBe('dashed');
-      expect(karte.querySelector('a.einwurf-link')!.getAttribute('href')).toBe(
-        'https://www.instagram.com/reel/ABC/',
+      const linkzeile = karte.querySelector<HTMLAnchorElement>('a.rohling-linkzeile')!;
+      expect(linkzeile.getAttribute('href')).toBe('https://www.instagram.com/reel/ABC/');
+      expect(linkzeile.getAttribute('target')).toBe('_blank');
+      expect(linkzeile.querySelector('.rohling-herkunft')!.textContent!.trim()).toBe('Instagram');
+      expect(linkzeile.querySelector('.rohling-adresse')!.textContent!.trim()).toBe(
+        'instagram.com/reel/ABC',
       );
-      expect(karte.querySelector('.plattform-chip')!.textContent!.trim()).toBe('Instagram');
-      const hinweis = karte.querySelector('.einwurf-hinweis')!;
-      expect(hinweis.textContent).toContain('Gute Antwort in den Kommentaren');
-      expect(hinweis.classList).toContain('hinweis-box');
-      const einwerfer = karte.querySelector('.personen .person')!;
-      expect(karte.querySelector('.personen')!.textContent).toContain('eingeworfen von');
-      expect(einwerfer.textContent!.trim()).toBe('0f3c2a9e');
-      expect(einwerfer.getAttribute('title')).toBe('0f3c2a9e-1111-2222-3333-444455556666');
-      expect(satzKarten().length).toBe(0);
+      expect(linkzeile.textContent).not.toContain('https://');
+      expect(karte.querySelector('.rohling-titel')!.textContent!.trim()).toBe(
+        'Gute Antwort in den Kommentaren',
+      );
+      expect(karte.querySelector('.rohling-alter')!.textContent!.trim()).toBeTruthy();
+      expect(karte.querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Destillieren');
     });
 
-    it('zeigt ohne Link keinen Plattform-Chip', () => {
-      erstellen([einwurf({ url: null, content: 'nur ein Satz' })]);
+    it('zeigt ohne Notiz keinen Titel - dann traegt die Link-Zeile die Aufschrift', () => {
+      erstellen([einwurf({ url: 'https://beispiel-zeitung.de/artikel/1', content: null })]);
+      const [karte] = karten();
 
-      expect(karten()[0].querySelector('.plattform-chip')).toBeNull();
+      expect(karte.querySelector('.rohling-titel')).toBeNull();
+      expect(karte.querySelector('.rohling-herkunft')!.textContent!.trim()).toBe('beispiel-zeitung.de');
+      expect(karte.querySelector('.rohling-adresse')!.textContent!.trim()).toBe(
+        'beispiel-zeitung.de/artikel/1',
+      );
     });
 
-    it('wiederholt den Link nicht als Hinweis', () => {
-      erstellen([einwurf({ content: 'https://example.org/post' })]);
+    it('zeigt ohne Link keine Link-Zeile', () => {
+      erstellen([einwurf({ url: null, content: 'nur eine Notiz' })]);
 
-      expect(karten()[0].querySelector('.einwurf-hinweis')).toBeNull();
+      expect(karten()[0].querySelector('.rohling-linkzeile')).toBeNull();
+      expect(karten()[0].querySelector('.rohling-titel')!.textContent!.trim()).toBe('nur eine Notiz');
     });
 
-    it('legt unter den Einwurf je Satz eine destillierte Karte mit Satz und Person', () => {
+    it('nennt den Einwerfer nur, wenn es nicht die angemeldete Person ist', () => {
+      erstellen([einwurf({ id: 'fremd', submitted_by: '0f3c2a9e-1111-2222-3333-444455556666' })]);
+      expect(karten()[0].querySelector('.rohling-einwerfer')!.textContent!.trim()).toBe(
+        'Von: 0f3c2a9e',
+      );
+
+      fixture.destroy();
+      erstellen([einwurf({ submitted_by: 'alice' })]);
+
+      expect(karten()[0].querySelector('.rohling-einwerfer')).toBeNull();
+    });
+
+    it('beschriftet den Primaerknopf nach Zustand und laesst ihn bei Verworfenem weg', () => {
+      erstellen(jeTab());
+      expect(karten()[0].querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Destillieren');
+
+      klicken(tabKnopf('Ausformulieren'));
+      expect(karten()[0].querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Ausformulieren');
+
+      klicken(tabKnopf('Erledigt'));
+      expect(karten()[0].querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Ansehen');
+
+      klicken(filterKnopf('verworfen'));
+      const verworfen = karten().find((karte) => karte.classList.contains('zustand-verworfen'))!;
+      expect(verworfen.querySelector('.rohling-primaer')).toBeNull();
+      expect(verworfen.querySelector('.rohling-verworfen')!.textContent!.trim()).toBe('verworfen');
+    });
+  });
+
+  describe('Saetze in der Karte', () => {
+    it('zeigt je Satz den Stand, mehrere Beitraege als Zahl', () => {
+      erstellen([
+        einwurf({
+          status: 'processed',
+          drafts: [satz('s-1', 'bob', 'Entwurf geblieben'), satz('s-2', 'bob', 'Zweimal genommen')],
+          links: [link('s-2', 'commentary', 'c-1'), link('s-2', 'generic_text', 'c-2')],
+        }),
+      ]);
+      klicken(tabKnopf('Erledigt'));
+      const zeilen = Array.from(karten()[0].querySelectorAll('.rohling-satz') as NodeListOf<HTMLElement>);
+
+      expect(zeilen.length).toBe(2);
+      expect(zeilen[0].querySelector('.satz-text')!.textContent!.trim()).toBe('Entwurf geblieben');
+      expect(zeilen[0].querySelector('.satz-status')!.textContent!.trim()).toBe('Entwurf');
+      expect(zeilen[1].querySelector('.satz-status')!.textContent!.trim()).toBe('✓ 2');
+    });
+
+    it('zeigt hoechstens drei Saetze und zaehlt den Rest', () => {
       erstellen([
         einwurf({
           status: 'in_progress',
-          destilled_by: 'bob',
-          drafts: [satz('s-1', 'bob', 'Satz von Bob'), satz('s-2', 'carol', 'Satz von Carol')],
+          drafts: ['a', 'b', 'c', 'd', 'e'].map((kennung, i) => satz(`s-${i}`, kennung, `Satz ${kennung}`)),
         }),
       ]);
-      const [karte] = karten();
-      const saetze = satzKarten(stapel()[0]);
-
-      expect(karte.classList).toContain('zustand-offen');
-      expect(saetze.length).toBe(2);
-      saetze.forEach((satzKarte) => {
-        expect(satzKarte.classList).toContain('zustand-destilliert');
-        expect(getComputedStyle(satzKarte).borderTopStyle).toBe('solid');
-        expect(satzKarte.querySelector('.beitrag-link')).toBeNull();
-      });
-      expect(saetze[0].querySelector('.karte-titel')!.textContent).toContain('Satz von Bob');
-      expect(saetze[0].querySelector('.personen')!.textContent).toContain('destilliert von');
-      expect(saetze[0].querySelector('.personen .person')!.textContent!.trim()).toBe('bob');
-      expect(saetze[1].querySelector('.karte-titel')!.textContent).toContain('Satz von Carol');
-      expect(saetze[0].getAttribute('aria-label')).toContain('destilliert');
-    });
-
-    it('faerbt einen ausformulierten Satz nach seinem Beitragstyp, jeden fuer sich', () => {
-      erstellen([
-        einwurf({
-          id: 'kommentar',
-          status: 'processed',
-          drafts: [
-            satz('s-1', 'bob', 'Nicht genommen'),
-            satz('s-2', 'carol', 'Genommen'),
-            satz('s-3', 'dave', 'Als Hintergrund'),
-          ],
-          links: [link('s-2', 'commentary'), link('s-3', 'generic_text', 'erin')],
-        }),
-      ]);
-      const [nicht, kommentar, hintergrund] = satzKarten();
-
-      expect(nicht.classList).toContain('zustand-destilliert');
-      expect(kommentar.classList).toContain('zustand-ausformuliert');
-      expect(kommentar.classList).toContain('typ-commentary');
-      expect(hintergrund.classList).toContain('typ-generictext');
-      expect(kommentar.querySelector('.personen')!.textContent).toContain('destilliert von');
-      expect(kommentar.querySelector('.personen')!.textContent).toContain('ausformuliert von');
-      expect(kommentar.textContent).not.toContain('eingeworfen von');
-
-      const knopf: HTMLButtonElement = kommentar.querySelector('button.beitrag-link')!;
-      expect(knopf.textContent!.trim()).toBe('In der Suche anzeigen');
-      expect(nicht.querySelector('.beitrag-link')).toBeNull();
-    });
-
-    it('laesst Verknuepfungen ohne passenden Satz weg', () => {
-      erstellen([
-        einwurf({
-          status: 'processed',
-          drafts: [satz('s-1', 'bob', 'Nie ausformuliert')],
-          links: [link('s-geleert', 'commentary'), link(null, 'generic_text')],
-        }),
-        einwurf({ id: 'alt', status: 'processed', links: [link(null, null)] }),
-      ]);
-      const [erster, alt] = stapel();
-
-      expect(satzKarten(erster).length).toBe(1);
-      expect(satzKarten(erster)[0].classList).toContain('zustand-destilliert');
-      expect(satzKarten(erster)[0].querySelector('.beitrag-link')).toBeNull();
-      expect(satzKarten(alt).length).toBe(0);
-    });
-
-    it('dimmt einen verworfenen Einwurf ab und sagt es dazu', () => {
-      erstellen([einwurf({ status: 'discarded' })]);
+      klicken(tabKnopf('Ausformulieren'));
       const [karte] = karten();
 
-      expect(karte.classList).toContain('zustand-verworfen');
-      expect(getComputedStyle(karte).opacity).toBe('0.55');
-      expect(karte.querySelector('.verworfen-hinweis')!.textContent!.trim()).toBe('verworfen');
+      expect(karte.querySelectorAll('.rohling-satz').length).toBe(3);
+      expect(karte.querySelector('.rohling-mehr')!.textContent!.trim()).toBe('+2 weitere');
+    });
+
+    it('zeigt einen einzelnen Beitrag als Haken', () => {
+      erstellen([
+        einwurf({ status: 'processed', drafts: [satz('s-1', 'bob', 'Genommen')], links: [link('s-1')] }),
+      ]);
+      klicken(tabKnopf('Erledigt'));
+
+      expect(karten()[0].querySelector('.satz-status')!.textContent!.trim()).toBe('✓');
     });
   });
 
-  describe('Tippen', () => {
-    const ausformuliert = () =>
-      einwurf({
-        id: 'id-9',
-        status: 'processed',
-        drafts: [
-          satz('s-0', 'dave', 'Fremder Satz ohne Beitrag'),
-          satz('s-1', 'bob', 'Waermepumpe lohnt sich auch im Altbau'),
-        ],
-        links: [link('s-1', 'commentary', 'bob')],
-      });
+  describe('Griffe', () => {
+    it('fuehrt Destillieren und Ausformulieren in die Destillier-Ansicht', () => {
+      erstellen(jeTab());
+      klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'roh']);
 
-    it('oeffnet offene, destillierte und ausformulierte Einwuerfe zum Destillieren', () => {
-      erstellen([
-        einwurf({ id: 'id-7' }),
-        einwurf({ id: 'id-8', status: 'in_progress' }),
-        ausformuliert(),
+      klicken(tabKnopf('Ausformulieren'));
+      klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
+
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'satz']);
+    });
+
+    it('oeffnet mit "Ansehen" das Sheet statt einer Suche', () => {
+      erstellen(jeTab());
+      klicken(tabKnopf('Erledigt'));
+
+      klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
+
+      const [komponente, optionen] = (bottomSheet.open as jasmine.Spy).calls.mostRecent().args;
+      expect(komponente).toBe(EinwurfBeitragSheetComponent);
+      expect(optionen.data.beitraege).toEqual([
+        { contentId: 'c-s-2', typ: 'commentary', satz: 'Genommen' },
+      ]);
+      expect(router.navigate).not.toHaveBeenCalledWith(['/result'], jasmine.anything());
+    });
+
+    it('bietet im Menue Link kopieren und Verwerfen nur dem Einwerfer', () => {
+      erstellen([einwurf({ id: 'eigen', submitted_by: 'alice' }), einwurf({ id: 'fremd', submitted_by: 'bob' })]);
+      const [eigen, fremd] = kartenKomponenten();
+
+      expect(eigen.menueEintraege.map((eintrag) => eintrag.wort)).toEqual(['Link kopieren', 'Verwerfen']);
+      expect(fremd.menueEintraege.map((eintrag) => eintrag.wort)).toEqual(['Link kopieren']);
+    });
+
+    it('bietet bei Erledigtem und Verworfenem Weiterarbeiten statt Verwerfen', () => {
+      erstellen(jeTab());
+      klicken(tabKnopf('Erledigt'));
+      expect(kartenKomponenten()[0].menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
+        'Link kopieren',
+        'Weiter destillieren',
       ]);
 
-      karten().forEach((karte) => karte.click());
+      klicken(filterKnopf('verworfen'));
+      const verworfen = kartenKomponenten().find((karte) => karte.daten.rohling!.zustand === 'verworfen')!;
 
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-7']);
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-8']);
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-9']);
-      expect(router.navigate).toHaveBeenCalledTimes(3);
-      karten().forEach((karte) => {
-        expect(karte.getAttribute('role')).toBe('link');
-        expect(karte.getAttribute('tabindex')).toBe('0');
-      });
+      expect(verworfen.menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
+        'Link kopieren',
+        'Trotzdem destillieren',
+      ]);
     });
 
-    it('oeffnet auch von einer Satz-Karte aus den Einwurf, fuer einen weiteren Satz', () => {
-      erstellen([ausformuliert()]);
-      const [fremd, eigener] = satzKarten();
+    it('kopiert den Link und sagt es', () => {
+      erstellen([einwurf({ url: 'https://example.org/post' })]);
 
-      fremd.click();
-      eigener.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+      component.aktionAusfuehren(component.karten[0], 'linkKopieren');
 
-      expect(router.navigate).toHaveBeenCalledTimes(2);
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-9']);
-      expect(fremd.getAttribute('role')).toBe('link');
+      expect(clipboard.copy).toHaveBeenCalledWith('https://example.org/post');
+      expect(snackBar.open).toHaveBeenCalledWith('Link kopiert.', undefined, { duration: 3000 });
     });
 
-    it('laesst einen verworfenen Einwurf samt Saetzen nicht antippen', () => {
-      erstellen([einwurf({ id: 'id-7', status: 'discarded', drafts: [satz('s-1', 'bob', 'Satz')] })]);
-      const [karte] = karten();
-      const [satzKarte] = satzKarten();
+    it('verwirft und laedt die Liste neu', () => {
+      erstellen([einwurf({ id: 'eigen' })]);
+      rawInputService.updateStatus.and.returnValue(of(einwurf({ id: 'eigen', status: 'discarded' })));
 
-      karte.click();
-      karte.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
-      satzKarte.click();
+      component.aktionAusfuehren(component.karten[0], 'verwerfen');
 
-      expect(router.navigate).not.toHaveBeenCalled();
-      expect(karte.getAttribute('role')).toBeNull();
-      expect(karte.getAttribute('tabindex')).toBeNull();
-      expect(satzKarte.getAttribute('role')).toBeNull();
+      expect(rawInputService.updateStatus).toHaveBeenCalledWith('eigen', 'discarded');
+      expect(rawInputService.getRawInputs).toHaveBeenCalledTimes(2);
     });
 
-    it('sucht mit dem Knopf genau den ausformulierten Satz, ohne die Karte zu oeffnen', () => {
-      erstellen([ausformuliert()]);
-      const knopf: HTMLButtonElement = satzKarten()[1].querySelector('button.beitrag-link')!;
+    it('sagt es, wenn das Verwerfen scheitert', () => {
+      erstellen([einwurf({ id: 'eigen' })]);
+      rawInputService.updateStatus.and.returnValue(throwError(() => ({ status: 403 })));
 
-      knopf.click();
-      knopf.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+      component.aktionAusfuehren(component.karten[0], 'verwerfen');
 
-      expect(router.navigate).toHaveBeenCalledOnceWith(['/result'], {
-        queryParams: { searchQuery: 'Waermepumpe lohnt sich auch im Altbau' },
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Verwerfen kann nur, wer den Einwurf eingeworfen hat.',
+        'OK',
+        { duration: 6000 },
+      );
     });
 
-    it('oeffnet mit Enter auf dem Link nicht zusaetzlich die Karte', () => {
-      erstellen([einwurf({ id: 'id-7', url: 'https://example.org/p' })]);
-      const linkElement: HTMLAnchorElement = karten()[0].querySelector('a.einwurf-link')!;
+    it('fuehrt Weiterdestillieren in die Destillier-Ansicht', () => {
+      erstellen(jeTab());
+      klicken(tabKnopf('Erledigt'));
 
-      linkElement.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+      component.aktionAusfuehren(component.karten[0], 'weiterDestillieren');
 
-      expect(router.navigate).not.toHaveBeenCalled();
-    });
-
-    it('oeffnet den Link, ohne die Karte mitzuklicken', () => {
-      erstellen([einwurf({ id: 'id-7', url: 'https://example.org/p' })]);
-      const linkElement: HTMLAnchorElement = karten()[0].querySelector('a.einwurf-link')!;
-      linkElement.addEventListener('click', (event) => event.preventDefault());
-
-      linkElement.click();
-
-      expect(router.navigate).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Filter', () => {
-    const gemischt = () => [
-      einwurf({ id: 'insta', url: 'https://www.instagram.com/reel/A/', submitted_by: 'bob' }),
-      einwurf({ id: 'yt', url: 'https://youtu.be/1', status: 'in_progress' }),
-      einwurf({ id: 'ohne-link', url: null, content: 'nur Text', status: 'processed' }),
-      einwurf({ id: 'web', status: 'discarded', submitted_by: 'bob' }),
-    ];
-
-    function sichtbareIds(): string[] {
-      return component.sichtbar.map((e) => e.id);
-    }
-
-    it('zeigt ohne Plattform-Filter keinen Chip gefuellt', () => {
-      erstellen(gemischt());
-
-      for (const plattform of PLATTFORMEN) {
-        const knopf = filterKnopf(plattform.name);
-        expect(knopf.classList).not.toContain('aktiv');
-        expect(knopf.getAttribute('aria-pressed')).toBe('false');
-      }
-      expect(karten().length).toBe(4);
-    });
-
-    it('zeigt bei gewaehlter Plattform nur deren Einwuerfe, Einwuerfe ohne Link bleiben', () => {
-      erstellen(gemischt());
-
-      klicken(filterKnopf('Instagram'));
-
-      expect(sichtbareIds()).toEqual(['insta', 'ohne-link']);
-      expect(filterKnopf('Instagram').getAttribute('aria-pressed')).toBe('true');
-      expect(filterKnopf('Instagram').classList).toContain('aktiv');
-      expect(filterKnopf('YouTube').getAttribute('aria-pressed')).toBe('false');
-      expect(karten().length).toBe(2);
-    });
-
-    it('nimmt mit einem weiteren Tipp eine Plattform dazu', () => {
-      erstellen(gemischt());
-
-      klicken(filterKnopf('Instagram'));
-      klicken(filterKnopf('YouTube'));
-
-      expect(sichtbareIds()).toEqual(['insta', 'yt', 'ohne-link']);
-    });
-
-    it('hebt den Plattform-Filter auf, wenn die letzte gewaehlte Plattform abgewaehlt wird', () => {
-      erstellen(gemischt());
-
-      klicken(filterKnopf('Instagram'));
-      klicken(filterKnopf('Instagram'));
-
-      expect(component.filter.plattformen).toEqual(PLATTFORMEN.map((eintrag) => eintrag.wert));
-      expect(sichtbareIds()).toEqual(['insta', 'yt', 'ohne-link', 'web']);
-    });
-
-    it('zeigt bei "nur offene" auch Destilliertes', () => {
-      erstellen(gemischt());
-
-      klicken(filterKnopf('nur offene'));
-
-      expect(sichtbareIds()).toEqual(['insta', 'yt']);
-    });
-
-    it('zeigt bei "nur meine" nur selbst Eingeworfenes', () => {
-      erstellen(gemischt());
-
-      klicken(filterKnopf('nur meine'));
-
-      expect(sichtbareIds()).toEqual(['yt', 'ohne-link']);
-    });
-
-    it('sagt, wenn der Filter alles ausblendet', () => {
-      erstellen([einwurf({ submitted_by: 'bob' })]);
-
-      klicken(filterKnopf('nur meine'));
-
-      expect(fixture.nativeElement.textContent).toContain('Keine Einwürfe für diese Filter');
-    });
-
-    it('haelt den Filter in der Sitzung', () => {
-      erstellen(gemischt());
-      klicken(filterKnopf('nur offene'));
-      klicken(filterKnopf('TikTok'));
-      fixture.destroy();
-
-      erstellen(gemischt());
-
-      expect(component.filter.nurOffene).toBeTrue();
-      expect(component.filter.plattformen).toEqual(['tiktok']);
-      expect(filterKnopf('nur offene').getAttribute('aria-pressed')).toBe('true');
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'fertig']);
     });
   });
 });
