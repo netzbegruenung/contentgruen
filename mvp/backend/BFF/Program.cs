@@ -79,13 +79,17 @@ if (useKeycloak)
         options.Cookie.HttpOnly = true; // Prevent client-side JavaScript from accessing the cookie
 
         // Explicit lifetime so the privacy policy can name a duration that is actually in the code.
-        // Without this the framework default of 14 days applies -- far more than the purpose needs
-        // for a ticket that carries the full Keycloak claims and, via SaveTokens below, the tokens
-        // themselves. Eight hours matches managed auth (AuthController.cs) so both production login
-        // paths share one number. Sliding, so that someone working through a long session is not
-        // signed out mid-edit: whether the OIDC challenge would silently renew depends on the
-        // Keycloak SSO session lifetime, which is configured outside this repository.
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        // Fourteen days, sliding: whoever uses the app at least once a fortnight stays signed in.
+        // The ticket carries only the Keycloak claims -- SaveTokens is off below, nothing here reads
+        // the tokens. Managed auth (AuthController.cs) takes the same lifetime from this handler.
+        //
+        // The lifetime only reaches the browser if the ticket is persistent (OnTicketReceived
+        // below). Otherwise the cookie goes out without Expires, and Android discards it together
+        // with the PWA process -- after a switch to another app or a share-sheet start.
+        //
+        // Trade-off: a user disabled in Keycloak stays signed in here until the cookie expires.
+        // Closing that gap needs a silent refresh against Keycloak, which is deliberately not built.
+        options.ExpireTimeSpan = TimeSpan.FromDays(14);
         options.SlidingExpiration = true;
     }
     ) // Cookie for session handling
@@ -95,7 +99,7 @@ if (useKeycloak)
         options.ClientId = keycloakSettings["ClientId"];
         options.ClientSecret = keycloakSettings["ClientSecret"];
         options.ResponseType = "code";  // Authorization Code flow
-        options.SaveTokens = true;
+        options.SaveTokens = false; // the tokens are never read; see the cookie lifetime above
         options.Scope.Add("openid");
         options.Scope.Add("profile");
         options.Scope.Add("email");
@@ -111,38 +115,14 @@ if (useKeycloak)
                 context.ProtocolMessage.RedirectUri = $"{scheme}://{host}{path}";
                 return Task.CompletedTask;
             },
-            OnTokenValidated = async context =>
+            OnTicketReceived = context =>
             {
-                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-
-                logger.LogDebug("Token validated");
-                if (context.Principal != null)
-                {
-                    // Create a ClaimsPrincipal from the validated token
-                    var claims = context.Principal.Claims;
-
-                    // Ensure relevant claims (like sub, email, etc.) are included
-                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                    var principal = new ClaimsPrincipal(identity);
-
-                    // Issue the authentication cookie. Deliberately without AuthenticationProperties:
-                    // an ExpiresUtc set here would override ExpireTimeSpan and split the cookie
-                    // lifetime across two places. The lifetime lives on the cookie handler above.
-                    await context.HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
-                    logger.LogDebug("Authentication cookie issued");
-                }
-                else
-                {
-                    logger.LogWarning("No claims found, context.Principal is null.");
-                }
-
-                // Set the redirection target after successful login
-                if (context.Properties != null)
-                {
-                    context.Properties.RedirectUri = frontendUrl;
-                    logger.LogDebug("Redirect target after login set to the configured frontend URL");
-                }
+                // Runs right before the OIDC handler signs in with the cookie scheme, with the
+                // properties it signs in with. Persistent, so the cookie carries Expires; the
+                // lifetime itself stays on the cookie handler (no ExpiresUtc here). The
+                // redirect target comes from AuthController.LoginKeycloak and is kept as is.
+                context.Properties!.IsPersistent = true;
+                return Task.CompletedTask;
             }
         };
         options.TokenValidationParameters = new TokenValidationParameters
@@ -165,6 +145,9 @@ else
                        options.Cookie.SameSite = SameSiteMode.Lax;    // Allow same-site cookies
                        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Allow HTTP in dev
                        options.Cookie.HttpOnly = true; // Prevent client-side JavaScript access
+                       // Same lifetime as the Keycloak branch, see the comment there.
+                       options.ExpireTimeSpan = TimeSpan.FromDays(14);
+                       options.SlidingExpiration = true;
                    });
 
     // Keep the dummy auth for backward compatibility if managed users are not configured

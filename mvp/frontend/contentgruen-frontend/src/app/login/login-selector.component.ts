@@ -73,8 +73,11 @@ export class LoginSelectorComponent implements OnInit {
   loginWithKeycloak(): void {
     // Store return URL in session storage for Keycloak redirect (use consistent key)
     sessionStorage.setItem('loginReturnUrl', this.returnUrl);
-    // Redirect to Keycloak login through the API endpoint
-    window.location.href = `${environment.baseUrl}/api/auth/login/keycloak`;
+    // Redirect to Keycloak login through the API endpoint. The return URL also goes along as a
+    // query parameter: the BFF sends the browser straight back there after the login, which does
+    // not depend on sessionStorage surviving the round trip through Keycloak.
+    const returnUrl = encodeURIComponent(this.returnUrl);
+    window.location.href = `${environment.baseUrl}/api/auth/login/keycloak?returnUrl=${returnUrl}`;
   }
 
   loginWithGutGesagt(): void {
