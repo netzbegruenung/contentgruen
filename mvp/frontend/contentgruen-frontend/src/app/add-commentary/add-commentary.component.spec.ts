@@ -164,6 +164,20 @@ describe('AddCommentaryComponent', () => {
       return verknuepfen;
     }
 
+    it('leert Feld, Text und ID, wenn die Aussage aus der Adresse leer wird', () => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+      component.statementInput = 'Waermepumpen sind zu teuer, sagt der Nachbar';
+
+      component.statementText = '';
+      component.statementId = '';
+      component.ngOnChanges({ statementText: new SimpleChange('Waermepumpen sind zu teuer', '', false) });
+
+      expect(component.statementText).toBe('');
+      expect(component.statementInput).toBe('');
+      expect(component.statementId).toBe('');
+      expect(component.aussageZumSpeichern()).toEqual({ id: '', text: '' });
+    });
+
     it('schaltet auf Antwort, sobald die Aussage als Input ankommt', () => {
       aussageSetzen('Waermepumpen sind zu teuer');
 

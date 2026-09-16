@@ -64,11 +64,13 @@ liegt nur im Payload.
    mit dem eigenen Mutationspfad und ignoriert PATCH. Für den Fangkorb löst v1 das
    gezielt (`cacheService.delete('/api/v1/rawinput')`), generell bleibt es: Nach einem
    neuen Beitrag sind etwa gecachte Such- und Listenantworten bis zu 5 Minuten alt.
-2. `.image-card` (`fe/contribute-view/contribute-view.component.html:112`) und
-   `.image-color` (`:189-190`) sind benutzt, aber nirgends definiert.
-3. Zwei verschiedene Blautöne für Hintergrundinfo:
-   `fe/contribute-view/contribute-view.component.css:87-89` gegenüber
-   `src/theme/custom-theme.scss:177`. Die frühere Post-Karte nutzte zusätzlich
+2. **Erledigt mit PR #50 (Beitragen-Struktur):** `.image-card` ist jetzt definiert
+   (`fe/contribute-view/contribute-view.component.css`, Verlauf aus `--image-bg`);
+   `.image-color` ist mit dem Akkordeon entfallen.
+3. **Erledigt mit PR #50:** Die Hintergrundinfo-Farbe auf der Beitragen-Seite kommt nur
+   noch aus `--generictext-bg` (`src/theme/custom-theme.scss:177`); die Panel-Klasse
+   `.generictext-color` ist mit dem Akkordeon entfallen. Die Kacheln verlaufen von der
+   Variablen zu einem festen zweiten Ton. Die frühere Post-Karte nutzte zusätzlich
    `--generictext-bg`; das ist mit der Beitragskarte erledigt, Post hat dort `--post-bg`
    (`fe/beitragskarte/beitragskarte.component.scss:45-46`).
 4. **Erledigt mit der Beitragskarte (PR #45):** Die Mobil-Wildcards

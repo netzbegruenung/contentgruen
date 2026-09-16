@@ -134,9 +134,16 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
         // Die Aussage kommt als Input - im Konstruktor ist sie noch leer. Vorher
         // stand diese Pruefung dort und griff deshalb nie: Aus der Suche zeigte
         // der Schalter "eigenstaendig", obwohl verknuepft wurde.
-        if (changes['statementText'] && this.statementText) {
-            this.isReplyToStatement = true;
-            this.statementInput = this.statementText;
+        if (changes['statementText']) {
+            if (this.statementText) {
+                this.isReplyToStatement = true;
+                this.statementInput = this.statementText;
+            } else {
+                // Die Aussage aus der Adresse ist weg (etwa ein neuer Aufruf ohne
+                // ?aussage=): Feld und ID leeren, sonst stuende der alte Text noch da.
+                this.statementInput = '';
+                this.statementId = '';
+            }
         }
         if (changes['aussageHinweis'] && this.aussageHinweis) {
             this.isReplyToStatement = true;

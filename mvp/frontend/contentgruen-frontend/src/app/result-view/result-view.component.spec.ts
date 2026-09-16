@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { of } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
@@ -125,20 +125,31 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     }));
   }
 
-  it('vergisst die Aussage der vorigen Suche, sobald eine neue laeuft', fakeAsync(() => {
+  it('laesst im Fenster vor loading keine alte Aussage-ID stehen', fakeAsync(() => {
     oeffnen(false, AUSSAGE_ID);
     const zustand = TestBed.inject(StateManagementService);
+    const http = TestBed.inject(HttpTestingController);
     zustand.setStatementId('22222222-2222-4333-8444-555555555555');
+    expect(knopf('.action-buttons-top', 0)).withContext('Knopf der vorigen Suche').toBeTruthy();
 
-    // Neue Suche startet: statementId wird sofort geleert, die alte Antwort
-    // steht noch im Zustand, zaehlt aber waehrend des Ladens nicht.
+    // Neue Suche startet. search() - und damit loading=true - kommt erst, wenn
+    // das Anlegen der Aussage beantwortet ist; diese Anfrage bleibt hier offen.
     const komponente = fixture.componentInstance as unknown as { performSearchWithStatement(): void };
     komponente.performSearchWithStatement();
-    zustand.setLoading(true);
+    fixture.detectChanges();
 
+    http.expectOne((req) => req.url.endsWith('/api/v1/statement/searchStatements'));
+    expect(zustand.currentState.loading).toBeFalse();
+    expect(zustand.currentState.searchResults).toBeNull();
     expect(zustand.currentState.statementId).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.action-buttons-top button').length)
+      .withContext('kein Hinzufuegen-Knopf der alten Suche mehr')
+      .toBe(0);
+
+    // Auch ein Aufruf aus einem anderen Einstieg nimmt jetzt den Text, nicht die alte ID.
     fixture.componentInstance.navigateToContribute('commentary');
     tick();
     expect(router.url).toBe('/workflow/add-commentary?searchQuery=waermepumpe%20teuer');
   }));
+
 });

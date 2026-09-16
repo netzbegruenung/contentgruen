@@ -120,6 +120,18 @@ describe('AddGenerictextComponent', () => {
       return verknuepfen;
     }
 
+    it('leert Feld, Text und ID, wenn die Aussage aus der Adresse leer wird', () => {
+      aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
+
+      component.statementText = '';
+      component.statementId = 'a-1';
+      component.ngOnChanges({ statementText: new SimpleChange('Waermepumpen sind zu teuer', '', false) });
+
+      expect(component.statementText).toBe('');
+      expect(component.statementInput).toBe('');
+      expect(component.statementId).toBe('');
+    });
+
     it('wartet die Verknuepfung ab, bevor es als gespeichert gilt', fakeAsync(() => {
       aussageSetzen('Waermepumpen sind zu teuer', 'a-1');
       const erfolg = spyOn(component.success, 'emit');

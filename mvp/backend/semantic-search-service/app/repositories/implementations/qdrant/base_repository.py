@@ -158,32 +158,44 @@ class QdrantBaseRepository(
             raise
 
     async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
-        """Async implementation of get."""
+        """
+        Async implementation of get.
+
+        "Nicht gefunden" und "anderer Inhaltstyp unter dieser ID" sind erwartbar
+        (geloeschte Aussage, veralteter Link) und werden als ValueError gemeldet -
+        im Log als warning ohne Traceback. Als error mit Traceback landen nur echte
+        Fehler: der Speicher antwortet nicht, oder der Datensatz ist nicht lesbar.
+        """
         try:
             result = await self._shared_manager.get_by_id(str(item_id))
-
-            if result is None:
-                content_desc = (
-                    f"all content types"
-                    if self.content_type is None
-                    else f"content_type: {self.content_type}"
-                )
-                raise ValueError(
-                    f"Entry with id {item_id} not found in {self.repository_name} ({content_desc})"
-                )
-
-            # Verify content_type if filtering is enabled
-            if self.content_type and result.get("content_type") != self.content_type:
-                raise ValueError(
-                    f"Entry with id {item_id} has wrong content_type: {result.get('content_type')}"
-                )
-
-            logger.info(f"Found entry with id {item_id} in {self.repository_name}")
-            return self.content_db_entry_model_class.model_validate(result)
-
         except Exception as e:
             logger.error(f"Failed to get item by ID: {e}", exc_info=True)
             raise
+
+        if result is None:
+            content_desc = (
+                f"all content types"
+                if self.content_type is None
+                else f"content_type: {self.content_type}"
+            )
+            meldung = f"Entry with id {item_id} not found in {self.repository_name} ({content_desc})"
+            logger.warning(meldung)
+            raise ValueError(meldung)
+
+        # Verify content_type if filtering is enabled
+        if self.content_type and result.get("content_type") != self.content_type:
+            meldung = f"Entry with id {item_id} has wrong content_type: {result.get('content_type')}"
+            logger.warning(meldung)
+            raise ValueError(meldung)
+
+        try:
+            entry = self.content_db_entry_model_class.model_validate(result)
+        except Exception as e:
+            logger.error(f"Failed to read item {item_id}: {e}", exc_info=True)
+            raise
+
+        logger.info(f"Found entry with id {item_id} in {self.repository_name}")
+        return entry
 
     async def get_by_id(self, item_id: uuid.UUID) -> TContentDbEntry:
         """

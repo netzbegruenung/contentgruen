@@ -3,6 +3,7 @@
 antwortet (?aussage=<id>). Nur ID und Text gehen raus.
 """
 
+import logging
 import uuid
 
 import pytest
@@ -115,12 +116,18 @@ class TestGetByIdGegenRepository:
         assert resp.status_code == 200
         assert resp.json()["statement_text"] == "Waermepumpen sind zu teuer"
 
-    def test_get_by_id_nicht_vorhanden_gibt_404(self, echtes_repository):
-        resp = TestClient(app).get(
-            GET_BY_ID_URL, params={"statement_id": str(uuid.uuid4())}
-        )
+    def test_get_by_id_nicht_vorhanden_gibt_404(self, echtes_repository, caplog):
+        with caplog.at_level(logging.INFO):
+            resp = TestClient(app).get(
+                GET_BY_ID_URL, params={"statement_id": str(uuid.uuid4())}
+            )
 
         assert resp.status_code == 404
+        # Erwartbar, kein Fehler: warning ohne Traceback, kein error.
+        warnungen = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert any("not found" in r.getMessage() for r in warnungen)
+        assert all(r.exc_info is None for r in warnungen)
+        assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
 
     def test_get_by_id_kaputter_datensatz_gibt_500_statt_404(
         self, echtes_repository, caplog
@@ -138,3 +145,5 @@ class TestGetByIdGegenRepository:
 
         assert resp.status_code == 500
         assert "nicht lesbar" in caplog.text
+        fehler = [r for r in caplog.records if r.levelno >= logging.ERROR]
+        assert fehler and all(r.exc_info for r in fehler)

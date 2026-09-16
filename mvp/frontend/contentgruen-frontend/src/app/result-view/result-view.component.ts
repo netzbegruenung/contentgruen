@@ -212,9 +212,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
    * This maintains the current behavior but with proper separation of concerns
    */
   private performSearchWithStatement(): void {
-    // Die Aussage der vorigen Suche gilt nicht mehr: Wer vor der Antwort auf
-    // "hinzufuegen" tippt, darf nicht an die alte Aussage antworten.
-    this.stateService.setStatementId(null);
+    // Ergebnisse und Aussage der vorigen Suche gelten nicht mehr - und zwar ab
+    // sofort, nicht erst mit loading=true, das search() erst nach dem Anlegen der
+    // Aussage setzt. Wer in diesem Fenster auf "hinzufuegen" tippt, darf nicht an
+    // die alte Aussage antworten.
+    this.stateService.neueSucheBeginnen();
 
     // First, ensure the statement exists
     this.statementService.findOrCreateStatement(this.searchQuery, 'search_query').subscribe({

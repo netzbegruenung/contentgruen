@@ -60,8 +60,18 @@ export class StateManagementService {
     this.updateState({ loading });
   }
 
+  /** Eine gescheiterte Suche laesst keine Ergebnisse der vorigen stehen. */
   setError(error: string | null): void {
-    this.updateState({ error, loading: false });
+    this.updateState({ error, loading: false, searchResults: null });
+  }
+
+  /**
+   * Eine neue Suche beginnt: Ergebnisse und Aussage der vorigen gelten nicht mehr.
+   * Wird gerufen, bevor irgendetwas angefragt ist - also auch vor loading=true -,
+   * damit in diesem Fenster kein Knopf die alte Aussage-ID aufgreift.
+   */
+  neueSucheBeginnen(): void {
+    this.updateState({ searchResults: null, statementId: null, error: null });
   }
 
   setContributions(contributions: any[]): void {
