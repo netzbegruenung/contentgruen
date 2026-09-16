@@ -44,8 +44,12 @@
                                 aria-label="Zurück">
                             <mat-icon>arrow_back</mat-icon>
                         </button>
-                        <a *ngIf="!istStartseite; else nurTitel" class="titel-link" routerLink="/search">{{ pageTitle }}</a>
-                        <ng-template #nurTitel>{{ pageTitle }}</ng-template>
+                        <!--
+                            Reiner Text, kein Link: Hier steht der Name der Seite,
+                            auf der man ist ("Fangkorb"), nicht die Marke. Zur
+                            Startseite fuehrt der Haus-Knopf rechts im Kopf.
+                        -->
+                        {{ pageTitle }}
                     </h1>
                 </div>
 
@@ -138,16 +142,26 @@
                     </button>
 
                     <!--
-                        Kein Haus-Knopf mehr: Der Titel links fuehrt zur Startseite,
-                        und zwei Wege mit demselben Ziel nebeneinander stiften nur
-                        Verwirrung mit dem Pfeil daneben.
-
                         Hier standen ausserdem ein Beitragen- und ein Menue-Knopf mit
                         *ngIf="isMobile || isTablet" - innerhalb dieses Blocks, der
                         selbst nur bei !isMobile && !isTablet gerendert wird. Die
                         Breakpoints sind disjunkt, die Bedingung war also nie wahr.
                         Beide Knoepfe gibt es mobil im eigenen Kopf (app-mobile-header).
                     -->
+
+                    <!--
+                        Der Weg zur Startseite auf Desktop; mobil leistet das der
+                        erste Menueeintrag, dort waere ein weiterer Knopf im engen
+                        Kopf einer zu viel.
+
+                        Ueber den NavigationService statt per routerLink: Die
+                        Destillier-Ansicht soll auch hier erst ihren Satz speichern
+                        duerfen, bevor die Seite verlassen wird.
+                    -->
+                    <button mat-icon-button (click)="zurStartseite()" class="mat-elevation-z1"
+                        aria-label="Zur Startseite">
+                        <mat-icon>home</mat-icon>
+                    </button>
                 </div>
             </div>
         </div>

@@ -9,7 +9,7 @@ import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
-import { Router, ActivatedRoute, NavigationEnd, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
@@ -38,7 +38,6 @@ import { KETTEN_ICONS } from './shared/fangkorb-texte';
     MatDividerModule,
     FormsModule,
     RouterOutlet,
-    RouterLink,
     FooterComponent,
     MobileMenuComponent,
     MobileHeaderComponent
@@ -53,8 +52,6 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly kettenIcons = KETTEN_ICONS;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
-  /** Die aktive Adresse; daran haengt, ob der Titel im Kopf ein Link ist. */
-  aktuelleAdresse: string = '';
   private destroy$ = new Subject<void>();
   isMobile: boolean = false;
   isTablet: boolean = false;
@@ -201,13 +198,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /** Erster Eintrag im mobilen Menue. */
   navigateToHome(): void {
-    this.navigationService.navigateToStart();
+    this.navigationService.navigateHome();
   }
 
-  /** Auf der Startseite ist der Titel kein Link. */
-  get istStartseite(): boolean {
-    const pfad = this.aktuelleAdresse.split('?')[0];
-    return pfad === '/' || pfad === '/search';
+  /**
+   * Der Haus-Knopf im Desktop-Kopf - wie der Pfeil ueber den NavigationService,
+   * damit eine Seite vorher zu Ende bringen kann, was sie angemeldet hat.
+   */
+  zurStartseite(): void {
+    this.navigationService.navigateHome();
   }
 
   navigateToAdminDashboard(): void {
@@ -297,7 +296,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private updatePageTitle(url: string): void {
-    this.aktuelleAdresse = url;
     const config = this.routeConfigService.getRouteConfig(url);
     this.pageTitle = config.pageTitle;
     this.showBackButton = config.showBackButton;

@@ -26,6 +26,102 @@ describe('NavigationService.goBack', () => {
     return router.url;
   }
 
+  /**
+   * Ein angemeldeter Hook, der erst faellt, wenn der Test es sagt - so laesst
+   * sich pruefen, was waehrend des Speicherns passiert.
+   */
+  function haengenderHook(): {
+    hook: () => Promise<void>;
+    aufrufe: () => number;
+    fertig: () => void;
+    scheitern: () => void;
+  } {
+    let aufloesen: (() => void) | null = null;
+    let ablehnen: ((grund: unknown) => void) | null = null;
+    let aufrufe = 0;
+    return {
+      hook: () => {
+        aufrufe++;
+        return new Promise<void>((ja, nein) => {
+          aufloesen = ja;
+          ablehnen = nein;
+        });
+      },
+      aufrufe: () => aufrufe,
+      fertig: () => aufloesen?.(),
+      scheitern: () => ablehnen?.(new Error('nicht gespeichert')),
+    };
+  }
+
+  describe('Vorher-Erledigen und Doppel-Tipp', () => {
+    it('ignoriert den zweiten Tipp, solange der erste laeuft', fakeAsync(() => {
+      const { hook, aufrufe, fertig } = haengenderHook();
+      router.navigateByUrl('/fangkorb');
+      tick();
+      service.registerBeforeBack(hook);
+
+      service.goBack();
+      tick();
+      service.goBack();
+      tick();
+
+      // Der zweite Tipp faellt in die Sperre: kein zweiter Speicherlauf.
+      expect(aufrufe()).toBe(1);
+      expect(router.url).toBe('/fangkorb');
+
+      fertig();
+      tick();
+      expect(router.url).toBe('/search');
+    }));
+
+    it('bleibt stehen, wenn das Vorher-Erledigen scheitert, und laesst danach wieder zu', fakeAsync(() => {
+      const { hook, aufrufe, scheitern } = haengenderHook();
+      router.navigateByUrl('/fangkorb');
+      tick();
+      service.registerBeforeBack(hook);
+
+      service.goBack();
+      tick();
+      scheitern();
+      tick();
+
+      expect(router.url).toBe('/fangkorb');
+
+      // Die Sperre ist wieder offen - ein erneuter Tipp ruft den Hook erneut.
+      service.goBack();
+      tick();
+      expect(aufrufe()).toBe(2);
+    }));
+
+    it('laesst das Haus denselben Hook abwarten wie den Pfeil', fakeAsync(() => {
+      const { hook, aufrufe, fertig } = haengenderHook();
+      router.navigateByUrl('/destillieren/e-1');
+      tick();
+      service.registerBeforeBack(hook);
+
+      service.navigateHome();
+      tick();
+
+      expect(aufrufe()).toBe(1);
+      expect(router.url).toBe('/destillieren/e-1');
+
+      fertig();
+      tick();
+      expect(router.url).toBe('/search');
+    }));
+
+    it('fuehrt das Haus zur Startseite, nicht eine Ebene hoeher', fakeAsync(() => {
+      router.navigateByUrl('/destillieren/e-1');
+      tick();
+
+      service.navigateHome();
+      tick();
+
+      // Der Pfeil fuehrte von hier in den Fangkorb; das Haus geht nach Hause.
+      expect(router.url).toBe('/search');
+    }));
+  });
+
   // Eine Zeile je Elternziel aus der Routentabelle.
   const ZUORDNUNGEN: ReadonlyArray<[string, string]> = [
     ['/result?searchQuery=Waermepumpe', '/search'],

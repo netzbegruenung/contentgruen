@@ -12,18 +12,10 @@
   color: var(--text-secondary, #4a4a4a);
 }
 
-.kopfzeile {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 0 8px -8px;
-}
-
-.kopfzeile-titel {
-  font-size: 15px;
-  color: var(--text-secondary, #4a4a4a);
-}
-
+/*
+ * Die Kopfzeile mit eigenem Zurueck-Pfeil ist entfallen: Der Pfeil steht im Kopf
+ * der App. Ihre Stile standen hier noch ungenutzt herum.
+ */
 .einwurf {
   margin-bottom: 16px;
 }

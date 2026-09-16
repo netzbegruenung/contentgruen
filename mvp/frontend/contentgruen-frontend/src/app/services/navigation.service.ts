@@ -11,6 +11,8 @@ const STANDARD_ZIEL = '/search';
 })
 export class NavigationService {
   private vorZurueck: (() => Promise<void>) | null = null;
+  /** Ein Griff im Kopf laeuft gerade; weitere Tipps werden ignoriert. */
+  private laeuft = false;
 
   constructor(
     private router: Router
@@ -53,19 +55,7 @@ export class NavigationService {
   }
 
   /**
-   * Eine Ebene hoeher in der Hierarchie - immer dasselbe Ziel je Route, nie der
-   * letzte Schritt der History.
-   *
-   * Das Ziel steht als ``data.parent`` an der Route (siehe app.routes.ts). Frueher
-   * stand hier eine if-Kette mit vier Sonderfaellen und ``location.back()`` als
-   * Default; das machte den Pfeil vom Weg abhaengig, auf dem jemand kam, und
-   * fuehrte bei direkt geoeffneten Adressen aus der App heraus.
-   *
-   * Das System-Zurueck (Browser-Knopf, Android-Geste) bleibt History-basiert -
-   * das ist Plattformverhalten und wird hier nicht angefasst.
-   */
-  /**
-   * Was eine Seite erledigen will, bevor der Pfeil sie verlaesst - die
+   * Was eine Seite erledigen will, bevor ein Griff im Kopf sie verlaesst - die
    * Destillier-Ansicht etwa speichert den Satz. Genau eine Seite ist zugleich
    * sichtbar, deshalb reicht ein Platz.
    */
@@ -74,9 +64,13 @@ export class NavigationService {
   }
 
   /**
-   * Beim Verlassen wieder abmelden. Mit Funktion nur, wenn es die eigene ist -
-   * sonst raeumt eine Seite beim Zerstoeren die Anmeldung ihrer Nachfolgerin weg
-   * (Angular baut die neue Ansicht vor dem Zerstoeren der alten auf).
+   * Beim Verlassen wieder abmelden, und zwar nur die eigene Anmeldung.
+   *
+   * Angular zerstoert beim Routenwechsel erst die alte Ansicht und baut dann die
+   * neue auf (nachgemessen: "A zerstoert", "B erzeugt"). Die Identitaetspruefung
+   * schuetzt deshalb nicht gegen diese Reihenfolge, sondern gegen den Fall, dass
+   * eine Seite abmeldet, was sie nie angemeldet hat - etwa wenn spaeter zwei
+   * Ansichten zugleich sichtbar sind.
    */
   unregisterBeforeBack(fn?: () => Promise<void>): void {
     if (!fn || this.vorZurueck === fn) {
@@ -85,30 +79,72 @@ export class NavigationService {
   }
 
   /**
-   * Scheitert das Vorher-Erledigen, bleibt man stehen: Die Seite meldet den
-   * Fehler selbst, und ein ungespeicherter Satz geht nicht dabei verloren, dass
+   * Eine Ebene hoeher in der Hierarchie - immer dasselbe Ziel je Route, nie der
+   * letzte Schritt der History.
+   *
+   * Das Ziel steht als ``data.parent`` an der Route (siehe app.routes.ts). Frueher
+   * stand hier eine if-Kette mit vier Sonderfaellen und ``location.back()`` als
+   * Default; das machte den Pfeil vom Weg abhaengig, auf dem jemand kam, und
+   * fuehrte bei direkt geoeffneten Adressen aus der App heraus.
+   *
+   * Ist ein Unter-Screen offen (``data.schliesst``), schliesst der Pfeil zuerst
+   * ihn. Scheitert das Vorher-Erledigen, bleibt man stehen: Die Seite meldet den
+   * Fehler selbst, und ein ungespeicherter Satz geht nicht dadurch verloren, dass
    * der Pfeil trotzdem navigiert.
+   *
+   * Das System-Zurueck (Browser-Knopf, Android-Geste) bleibt History-basiert -
+   * das ist Plattformverhalten und wird hier nicht angefasst.
    */
   async goBack(): Promise<void> {
-    if (this.vorZurueck) {
-      try {
-        await this.vorZurueck();
-      } catch {
+    await this.mitVorherErledigen(() => {
+      const offen = this.offenerUnterScreen();
+      if (offen) {
+        this.unterScreenSchliessen(offen);
         return;
       }
-    }
-    const offen = this.offenerUnterScreen();
-    if (offen) {
-      this.unterScreenSchliessen(offen);
-      return;
-    }
 
-    const ziel = this.elternZiel();
-    if (Array.isArray(ziel)) {
-      this.router.navigate(ziel);
+      const ziel = this.elternZiel();
+      if (Array.isArray(ziel)) {
+        this.router.navigate(ziel);
+        return;
+      }
+      this.router.navigateByUrl(ziel);
+    });
+  }
+
+  /**
+   * Zur Startseite - der Haus-Knopf im Desktop-Kopf.
+   *
+   * Wartet denselben Hook ab wie der Pfeil: Wer die Destillier-Ansicht ueber das
+   * Haus verlaesst, soll seinen Satz genauso wenig verlieren wie ueber den Pfeil.
+   */
+  async navigateHome(): Promise<void> {
+    await this.mitVorherErledigen(() => this.navigateToStart());
+  }
+
+  /**
+   * Erst erledigen, was die Seite angemeldet hat, dann navigieren - und nur
+   * einmal zugleich.
+   *
+   * Die Sperre faengt den Doppel-Tipp: Am Handy trifft der zweite Tipp den Knopf
+   * oft noch, waehrend der Satz gespeichert wird. Ohne sie liefen zwei Speicher-
+   * und Navigationsvorgaenge nebeneinander.
+   */
+  private async mitVorherErledigen(navigieren: () => void): Promise<void> {
+    if (this.laeuft) {
       return;
     }
-    this.router.navigateByUrl(ziel);
+    this.laeuft = true;
+    try {
+      if (this.vorZurueck) {
+        await this.vorZurueck();
+      }
+      navigieren();
+    } catch {
+      // Die Seite hat den Fehler bereits gemeldet; hier bleibt alles stehen.
+    } finally {
+      this.laeuft = false;
+    }
   }
 
   /**

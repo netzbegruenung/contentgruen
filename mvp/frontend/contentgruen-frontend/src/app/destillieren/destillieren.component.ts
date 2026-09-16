@@ -2,7 +2,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatRadioModule } from '@angular/material/radio';
-import { firstValueFrom, Observable, of, Subject } from 'rxjs';
+import { firstValueFrom, Observable, of, Subject, throwError } from 'rxjs';
 import { debounceTime, map, takeUntil, tap } from 'rxjs/operators';
 
 import { SHARED_IMPORTS } from '../shared/shared-imports';
@@ -352,7 +352,12 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   /** Speichert nur, wenn sich der Satz seit dem letzten Speichern geaendert hat. */
   private speichernWennGeaendert(): Observable<void> {
     const satz = this.satz.value.trim();
-    if (!this.einwurf || satz === this.zuletztGespeichert || satz.length > SATZ_LIMIT) {
+    // Zu lang heisst: nicht speicherbar. Frueher lief das still als "nichts zu
+    // tun" durch - dann verliess der Pfeil die Ansicht und der Satz war weg.
+    if (satz.length > SATZ_LIMIT) {
+      return throwError(() => new Error(`Satz ueber ${SATZ_LIMIT} Zeichen`));
+    }
+    if (!this.einwurf || satz === this.zuletztGespeichert) {
       return of(undefined);
     }
     return this.rawInputService.saveDraft(this.einwurf.id, satz).pipe(
@@ -379,6 +384,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   private speicherfehler(error: Error): void {
     this.logger.error('Satz konnte nicht gespeichert werden', error);
     this.arbeitet = false;
-    this.fehler = 'Der Satz konnte nicht gespeichert werden. Bitte versuche es erneut.';
+    // Ein zu langer Satz ist kein Netzfehler - "versuche es erneut" waere hier
+    // der falsche Rat, kuerzen hilft.
+    this.fehler =
+      this.satz.value.trim().length > SATZ_LIMIT
+        ? `Der Satz ist zu lang: höchstens ${SATZ_LIMIT} Zeichen.`
+        : 'Der Satz konnte nicht gespeichert werden. Bitte versuche es erneut.';
   }
 }

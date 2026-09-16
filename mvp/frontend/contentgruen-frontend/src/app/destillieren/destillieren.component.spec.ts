@@ -393,6 +393,20 @@ describe('DestillierenComponent', () => {
       expect(fertig).toBeTrue();
     });
 
+    it('scheitert bei einem zu langen Satz und nennt die Laenge als Grund', async () => {
+      await erstellen('id-1');
+      component.satz.setValue('a'.repeat(121), { emitEvent: false });
+
+      await expectAsync(hookAusfuehren()).toBeRejected();
+      fixture.detectChanges();
+
+      // Nicht speicherbar heisst: nicht verlassen. Frueher lief das still als
+      // "nichts zu tun" durch, und der Satz war nach dem Pfeil weg.
+      expect(rawInputService.saveDraft).not.toHaveBeenCalled();
+      expect(text()).toContain('Der Satz ist zu lang');
+      expect(navigation.goBack).not.toHaveBeenCalled();
+    });
+
     it('scheitert und bleibt stehen, wenn das Speichern nicht klappt', async () => {
       await erstellen('id-1');
       rawInputService.saveDraft.and.returnValue(throwError(() => new Error('offline')));
