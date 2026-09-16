@@ -38,12 +38,19 @@
             <span class="rohling-verworfen" *ngIf="rohling.zustand === 'verworfen'">verworfen</span>
         </header>
 
-        <!-- Eigene Zeile ueber die ganze Bandbreite; ohne Notiz ist sie die Aufschrift -->
+        <!--
+            Eigener Block ueber die ganze Bandbreite, als Ganzes ein Tipp-Ziel:
+            oben die Plattform, darunter die Adresse. Ohne Notiz ist er die
+            Aufschrift der Karte - dann steht die Plattform in Titelgroesse.
+        -->
         <a *ngIf="rohling.link" class="rohling-linkzeile" [href]="rohling.link"
+           [class.rohling-linkzeile--titel]="!daten.titel"
            target="_blank" rel="noopener noreferrer"
            [attr.aria-label]="'Original öffnen: ' + (rohling.linkText || rohling.link)">
-            <span class="rohling-herkunft" *ngIf="rohling.herkunft">{{ rohling.herkunft }}</span>
-            <span class="rohling-adresse">{{ rohling.linkText }}</span>
+            <span class="rohling-linktexte">
+                <span class="rohling-herkunft" *ngIf="rohling.herkunft">{{ rohling.herkunft }}</span>
+                <span class="rohling-adresse">{{ rohling.linkText }}</span>
+            </span>
             <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
         </a>
 
@@ -64,7 +71,9 @@
             <button *ngIf="primaerAktion as primaer" type="button" mat-raised-button
                     class="gutgesagt-primary-dark rohling-primaer"
                     (click)="aktionAusloesen(primaer.aktion, $event)">
-                <span class="knopf-emoji" aria-hidden="true">{{ stufenEmoji }}</span>
+                <!-- Das Zeichen der naechsten Stufe: wohin der Griff fuehrt -->
+                <span class="knopf-emoji" *ngIf="primaer.emoji as emoji" aria-hidden="true">{{ emoji }}</span>
+                <mat-icon class="knopf-icon" *ngIf="primaer.icon as icon" aria-hidden="true">{{ icon }}</mat-icon>
                 <span class="knopf-wort">{{ primaer.wort }}</span>
             </button>
 

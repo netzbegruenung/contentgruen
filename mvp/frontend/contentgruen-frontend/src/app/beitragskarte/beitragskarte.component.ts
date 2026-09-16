@@ -43,9 +43,11 @@ const BELIEBT_AB = 5;
 const SAETZE_SICHTBAR = 3;
 
 /**
- * Die Stufe, an der der Rohling steht - dasselbe Icon wie ueberall entlang der
- * Kette. Es zeigt den naechsten Griff, nicht das Erreichte: Wer destilliert
- * werden will, traegt das Einwurf-Icon. Verworfenes behaelt das des Einwurfs.
+ * Die Stufe, an der der Rohling gerade steht - dasselbe Icon wie ueberall entlang
+ * der Kette. Das Band zeigt damit den Ist-Zustand: Ein Einwurf ohne Satz traegt
+ * das Einwurf-Icon, ein destillierter das der Destille. Der Primaerknopf zeigt
+ * dagegen die naechste Stufe (siehe primaerAktion). Verworfenes behaelt das Icon
+ * des Einwurfs.
  */
 const STUFEN: Record<FangkorbZustand, { emoji: string; name: string }> = {
   destillieren: { emoji: KETTEN_ICONS.einwerfen, name: 'Zu destillieren' },
@@ -193,15 +195,19 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   /**
    * Der eine Griff im Fuss, nach Zustand. Verworfenes bietet keinen an: Ansehen
    * gibt es ohne Beitrag nicht, und Weiterarbeiten steht im ⋮-Menue.
+   *
+   * Das Zeichen auf dem Knopf ist das der *naechsten* Stufe - es sagt, wohin der
+   * Griff fuehrt, nicht wo der Rohling steht (das zeigt das Band). Ansehen fuehrt
+   * auf keine Stufe der Kette weiter und traegt deshalb ein Material-Icon.
    */
-  get primaerAktion(): { aktion: RohlingAktion; wort: string } | null {
+  get primaerAktion(): { aktion: RohlingAktion; wort: string; emoji?: string; icon?: string } | null {
     switch (this.rohling?.zustand) {
       case 'destillieren':
-        return { aktion: 'destillieren', wort: 'Destillieren' };
+        return { aktion: 'destillieren', wort: 'Destillieren', emoji: KETTEN_ICONS.destillieren };
       case 'ausformulieren':
-        return { aktion: 'ausformulieren', wort: 'Ausformulieren' };
+        return { aktion: 'ausformulieren', wort: 'Ausformulieren', emoji: KETTEN_ICONS.verfassen };
       case 'erledigt':
-        return { aktion: 'ansehen', wort: 'Ansehen' };
+        return { aktion: 'ansehen', wort: 'Ansehen', icon: 'visibility' };
       default:
         return null;
     }
