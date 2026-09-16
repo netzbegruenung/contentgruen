@@ -9,6 +9,7 @@ import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { FILTER_SCHLUESSEL, filterLaden } from '../raw-input-list/fangkorb-filter';
+import { NavigationService } from '../services/navigation.service';
 
 function einwurf(overrides: Partial<RawInput> = {}): RawInput {
   return {
@@ -30,12 +31,18 @@ describe('DestillierenComponent', () => {
   let component: DestillierenComponent;
   let rawInputService: jasmine.SpyObj<RawInputService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
+  let navigation: jasmine.SpyObj<NavigationService>;
   let router: Router;
   let params: BehaviorSubject<ParamMap>;
   let queryParams: ParamMap;
 
   async function erstellen(id: string | null, geladen: RawInput = einwurf()) {
     params = new BehaviorSubject(convertToParamMap(id ? { id } : {}));
+    navigation = jasmine.createSpyObj('NavigationService', [
+      'goBack',
+      'registerBeforeBack',
+      'unregisterBeforeBack',
+    ]);
     rawInputService.getRawInput.and.returnValue(of(geladen));
 
     await TestBed.configureTestingModule({
@@ -53,6 +60,7 @@ describe('DestillierenComponent', () => {
         },
         { provide: RawInputService, useValue: rawInputService },
         { provide: DestillierUebergabeService, useValue: uebergabe },
+        { provide: NavigationService, useValue: navigation },
         {
           provide: AuthService,
           useValue: {
@@ -338,54 +346,74 @@ describe('DestillierenComponent', () => {
   });
 
   describe('Nachlese', () => {
-    it('fuehrt mit dem Zurueck-Pfeil im Satz-Schritt zum Fangkorb', async () => {
+    /** Was die Ansicht beim Dienst angemeldet hat, damit der Pfeil im Kopf es abwartet. */
+    function angemeldeterHook(): () => Promise<void> {
+      return navigation.registerBeforeBack.calls.mostRecent().args[0] as () => Promise<void>;
+    }
+
+    /** Denselben Hook ausfuehren - so, wie der Dienst es beim Pfeil tut. */
+    function hookAusfuehren(): Promise<void> {
+      return angemeldeterHook()();
+    }
+
+    it('hat keinen eigenen Pfeil mehr, sondern meldet das Speichern beim Dienst an', async () => {
       await erstellen('id-1');
 
-      expect(text()).toContain('Zurück zum Fangkorb');
-      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
-
-      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+      expect(fixture.nativeElement.querySelector('button.zurueck-pfeil')).toBeNull();
+      expect(text()).not.toContain('Zurück zum Fangkorb');
+      expect(navigation.registerBeforeBack).toHaveBeenCalledTimes(1);
     });
 
-    it('wartet mit dem Zurueck-Pfeil, bis der Satz gespeichert ist', async () => {
+    it('meldet den Dienst beim Verlassen wieder ab', async () => {
+      await erstellen('id-1');
+      const angemeldet = angemeldeterHook();
+
+      fixture.destroy();
+
+      expect(navigation.unregisterBeforeBack).toHaveBeenCalledWith(angemeldet);
+    });
+
+    it('ist erst fertig, wenn der Satz gespeichert ist', async () => {
       await erstellen('id-1');
       const antwort = new Subject<DraftResponse>();
       rawInputService.saveDraft.and.returnValue(antwort);
       component.satz.setValue('Frisch getippt', { emitEvent: false });
 
-      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+      let fertig = false;
+      const lauf = hookAusfuehren().then(() => (fertig = true));
 
       expect(rawInputService.saveDraft).toHaveBeenCalledOnceWith('id-1', 'Frisch getippt');
-      expect(router.navigate).not.toHaveBeenCalled();
+      await Promise.resolve();
+      expect(fertig).toBeFalse();
 
       antwort.next({ raw_input_id: 'id-1', sentence: 'Frisch getippt', updated_at: null });
       antwort.complete();
+      await lauf;
 
-      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+      expect(fertig).toBeTrue();
     });
 
-    it('bleibt beim Zurueck-Pfeil stehen, wenn das Speichern scheitert', async () => {
+    it('scheitert und bleibt stehen, wenn das Speichern nicht klappt', async () => {
       await erstellen('id-1');
       rawInputService.saveDraft.and.returnValue(throwError(() => new Error('offline')));
       component.satz.setValue('Frisch getippt', { emitEvent: false });
 
-      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+      await expectAsync(hookAusfuehren()).toBeRejected();
       fixture.detectChanges();
 
-      expect(router.navigate).not.toHaveBeenCalled();
       expect(text()).toContain('Der Satz konnte nicht gespeichert werden');
     });
 
-    it('fuehrt mit dem Zurueck-Pfeil in der Typwahl zurueck zum Satz', async () => {
+    it('fuehrt aus der Typwahl mit dem Zurueck-Knopf zurueck zum Satz', async () => {
       await erstellen('id-1');
       component.schritt = 'typwahl';
       fixture.detectChanges();
 
-      fixture.nativeElement.querySelector('button.zurueck-pfeil').click();
+      fixture.nativeElement.querySelector('button.zurueck').click();
       fixture.detectChanges();
 
       expect(component.schritt).toBe('satz');
-      expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb']);
+      expect(navigation.goBack).not.toHaveBeenCalled();
     });
 
     it('erlaeutert in der Typwahl beide Typen und faerbt den gewaehlten', async () => {

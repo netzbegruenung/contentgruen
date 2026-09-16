@@ -2,7 +2,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatRadioModule } from '@angular/material/radio';
-import { Observable, of, Subject } from 'rxjs';
+import { firstValueFrom, Observable, of, Subject } from 'rxjs';
 import { debounceTime, map, takeUntil, tap } from 'rxjs/operators';
 
 import { SHARED_IMPORTS } from '../shared/shared-imports';
@@ -23,6 +23,7 @@ import {
   TAB_PARAM,
 } from './destillier-uebergabe.service';
 import { FangkorbTab, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
+import { NavigationService } from '../services/navigation.service';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -95,10 +96,13 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     private rawInputService: RawInputService,
     private authService: AuthService,
     private uebergabe: DestillierUebergabeService,
+    private navigation: NavigationService,
     private logger: LoggingService,
   ) {}
 
   ngOnInit(): void {
+    // Der Pfeil im Kopf soll den Satz nicht liegen lassen.
+    this.navigation.registerBeforeBack(this.satzSichernVorZurueck);
     this.eigeneKennung = this.authService.getCurrentUserId();
     if (!this.eigeneKennung) {
       this.authService
@@ -243,23 +247,28 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.schrittSetzen('satz');
   }
 
-  /** Der Pfeil oben: aus der Typwahl zurueck zum Satz, aus dem Satz zum Fangkorb. */
-  zurueck(): void {
-    if (this.schritt === 'typwahl') {
-      this.zurueckZumSatz();
-      return;
-    }
-    // Wie bei "Spaeter" erst das Speichern abwarten: Der Fangkorb laedt seine Liste
-    // sofort, und den gecachten Stand verwirft erst die Antwort auf das Speichern.
+  /**
+   * Was vor dem Pfeil im Kopf passieren muss: den Satz speichern.
+   *
+   * Wie bei "Spaeter" wird das Speichern abgewartet - der Fangkorb laedt seine
+   * Liste sofort, und den gecachten Stand verwirft erst die Antwort darauf.
+   * Scheitert es, bleibt die Ansicht stehen und zeigt den Fehler; der Dienst
+   * navigiert dann nicht.
+   */
+  private readonly satzSichernVorZurueck = async (): Promise<void> => {
     this.arbeitet = true;
     this.fehler = null;
-    this.speichernWennGeaendert().subscribe({
-      next: () => this.router.navigate(['/fangkorb']),
-      error: (error) => this.speicherfehler(error),
-    });
-  }
+    try {
+      await firstValueFrom(this.speichernWennGeaendert());
+      this.arbeitet = false;
+    } catch (error) {
+      this.speicherfehler(error as Error);
+      throw error;
+    }
+  };
 
   ngOnDestroy(): void {
+    this.navigation.unregisterBeforeBack(this.satzSichernVorZurueck);
     // Wer innerhalb der App wegnavigiert, verliert den Satz nicht.
     this.entwurfSpeichern();
     this.destroy$.next();

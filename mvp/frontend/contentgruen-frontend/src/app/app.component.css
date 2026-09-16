@@ -46,6 +46,15 @@ main * {
     gap: 12px;
 }
 
+/*
+ * Der Titel fuehrt zur Startseite und sieht dabei aus wie zuvor: Farbe und
+ * Schrift erbt er, damit der Kopf keinen gruenen Link bekommt.
+ */
+.titel-link {
+    color: inherit;
+    text-decoration: none;
+}
+
 .back-button-header {
     margin-right: 0 !important;
 }

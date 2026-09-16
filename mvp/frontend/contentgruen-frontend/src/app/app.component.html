@@ -5,6 +5,7 @@
                 [userInfo]="userInfo"
                 [selectedProfilePictureUrl]="selectedProfilePictureUrl"
                 (closeMenu)="sidenav.close()"
+                (home)="navigateToHome()"
                 (contribute)="navigateToContributeView()"
                 (contributions)="navigateToContributionsView()"
                 (rawInput)="navigateToRawInputView()"
@@ -38,12 +39,13 @@
                     <h1 class="desktop-header-title">
                         <button mat-icon-button
                                 *ngIf="showBackButton"
-                                (click)="navigateToSearchView()"
+                                (click)="zurueck()"
                                 class="mat-elevation-z1 back-button-header"
-                                aria-label="Zurück zur Startseite">
+                                aria-label="Zurück">
                             <mat-icon>arrow_back</mat-icon>
                         </button>
-                        {{ pageTitle }}
+                        <a *ngIf="!istStartseite; else nurTitel" class="titel-link" routerLink="/search">{{ pageTitle }}</a>
+                        <ng-template #nurTitel>{{ pageTitle }}</ng-template>
                     </h1>
                 </div>
 
@@ -135,25 +137,17 @@
                         <mat-icon>help_outline</mat-icon>
                     </button>
 
-                    <!-- Contribute button - visible on mobile -->
-                    <button mat-icon-button
-                        (click)="userInfo?.isAuthenticated ? navigateToContributeView() : loginWithReturnUrl('/contribute')"
-                        class="mat-elevation-z1 mobile-contributions-button"
-                        [attr.aria-label]="userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen'"
-                        *ngIf="(isMobile || isTablet)">
-                        <mat-icon>edit</mat-icon>
-                    </button>
+                    <!--
+                        Kein Haus-Knopf mehr: Der Titel links fuehrt zur Startseite,
+                        und zwei Wege mit demselben Ziel nebeneinander stiften nur
+                        Verwirrung mit dem Pfeil daneben.
 
-                    <button mat-icon-button (click)="navigateToSearchView()" class="mat-elevation-z1"
-                        aria-label="Zur Startseite">
-                        <mat-icon>home</mat-icon>
-                    </button>
-
-                    <!-- Mobile menu button -->
-                    <button mat-icon-button (click)="toggleMobileMenu()" class="mobile-menu-button mat-elevation-z1"
-                        aria-label="Menü öffnen" *ngIf="isMobile || isTablet">
-                        <mat-icon>menu</mat-icon>
-                    </button>
+                        Hier standen ausserdem ein Beitragen- und ein Menue-Knopf mit
+                        *ngIf="isMobile || isTablet" - innerhalb dieses Blocks, der
+                        selbst nur bei !isMobile && !isTablet gerendert wird. Die
+                        Breakpoints sind disjunkt, die Bedingung war also nie wahr.
+                        Beide Knoepfe gibt es mobil im eigenen Kopf (app-mobile-header).
+                    -->
                 </div>
             </div>
         </div>

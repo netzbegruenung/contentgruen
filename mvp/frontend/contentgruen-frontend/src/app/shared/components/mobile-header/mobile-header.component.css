@@ -46,6 +46,18 @@
   justify-content: flex-start; /* Align to left */
 }
 
+/*
+ * Der Titel fuehrt zur Startseite. Er sieht aus wie zuvor: Farbe und Schrift
+ * erbt er, damit der Kopf nicht ploetzlich einen gruenen Link traegt.
+ */
+.titel-link {
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mobile-header-actions {
   display: flex;
   align-items: center;

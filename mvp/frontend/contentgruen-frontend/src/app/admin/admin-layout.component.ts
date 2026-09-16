@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
 @Component({
@@ -16,18 +15,17 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatSidenavModule,
     MatListModule,
     MatIconModule,
-    MatButtonModule,
     MatToolbarModule
   ],
   template: `
     <div class="admin-container">
+      <!--
+        Kein eigener Zurueck-Knopf: Der Pfeil im Kopf der App fuehrt von hier auf
+        die Startseite (data.parent an der Route /admin). Zwei Pfeile nebeneinander
+        mit demselben Ziel waren einer zu viel.
+      -->
       <mat-toolbar color="primary" class="admin-toolbar">
         <span>🌱 Gut gesagt – Admin</span>
-        <span class="spacer"></span>
-        <button mat-button (click)="backToApp()">
-          <mat-icon>arrow_back</mat-icon>
-          Zurück zur App
-        </button>
       </mat-toolbar>
 
       <mat-sidenav-container class="admin-sidenav-container">
@@ -96,10 +94,4 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     }
   `]
 })
-export class AdminLayoutComponent {
-  constructor(private router: Router) {}
-
-  backToApp() {
-    this.router.navigate(['/search']);
-  }
-}
+export class AdminLayoutComponent {}
