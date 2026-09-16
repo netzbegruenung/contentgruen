@@ -13,9 +13,10 @@ from datetime import datetime, timezone
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from api.v1.raw_input import router as raw_input_router
+from dependencies import get_commentary_service, get_generic_text_service
 from domain.models.raw_input import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
@@ -60,6 +61,22 @@ def repository():
     app.dependency_overrides[get_raw_input_repository] = lambda: repo
     yield repo
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def beitraege():
+    """
+    Kommentar- und Hintergrundinfo-Dienst fuer die Beitragspruefung bei processed.
+    Standard: den Beitrag gibt es. Nicht gefunden meldet der echte Dienst als
+    ValueError - so auch hier.
+    """
+    dienste = {
+        "commentary": MagicMock(get=AsyncMock(return_value=MagicMock())),
+        "generic_text": MagicMock(get=AsyncMock(return_value=MagicMock())),
+    }
+    app.dependency_overrides[get_commentary_service] = lambda: dienste["commentary"]
+    app.dependency_overrides[get_generic_text_service] = lambda: dienste["generic_text"]
+    yield dienste
 
 
 @pytest.fixture
@@ -569,6 +586,110 @@ class TestStatuswechsel:
 
         assert antwort.status_code == 422
         repository.set_status.assert_not_called()
+
+    def test_verarbeitet_mit_unbekanntem_beitrag_ist_422(
+        self, client, repository, beitraege
+    ):
+        """Eine erfundene ID schiebt keinen fremden Einwurf nach "Erledigt"."""
+        beitraege["commentary"].get.side_effect = ValueError("not found")
+        inhalt_id = uuid.uuid4()
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(inhalt_id),
+                "content_type": "commentary",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 422
+        assert antwort.json()["detail"] == "Diesen Beitrag gibt es nicht."
+        beitraege["commentary"].get.assert_awaited_once_with(inhalt_id)
+        repository.set_status.assert_not_called()
+
+    def test_verarbeitet_mit_beitrag_anderen_typs_ist_422(
+        self, client, repository, beitraege
+    ):
+        """Der Dienst des genannten Typs findet die ID nicht; der andere wird nicht gefragt."""
+        beitraege["generic_text"].get.side_effect = ValueError("wrong content_type")
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "generic_text",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 422
+        beitraege["commentary"].get.assert_not_called()
+        repository.set_status.assert_not_called()
+
+    def test_verarbeitet_ohne_typ_genuegt_ein_beitrag_eines_der_typen(
+        self, client, repository, beitraege
+    ):
+        beitraege["commentary"].get.side_effect = ValueError("wrong content_type")
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+        )
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={"status": "processed", "content_id": str(uuid.uuid4())},
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        beitraege["generic_text"].get.assert_awaited_once()
+
+    def test_verarbeitet_ohne_typ_und_ohne_beitrag_ist_422(
+        self, client, repository, beitraege
+    ):
+        for dienst in beitraege.values():
+            dienst.get.side_effect = ValueError("not found")
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={"status": "processed", "content_id": str(uuid.uuid4())},
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 422
+        repository.set_status.assert_not_called()
+
+    def test_speicher_nicht_erreichbar_ist_500_nicht_422(
+        self, client, repository, beitraege
+    ):
+        beitraege["commentary"].get.side_effect = ConnectionError("qdrant weg")
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "commentary",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 500
+        repository.set_status.assert_not_called()
+
+    def test_verwerfen_prueft_keinen_beitrag(self, client, repository, beitraege):
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=RawInputStatus.DISCARDED.value
+        )
+
+        client.patch(
+            STATUS_URL, json={"status": "discarded"}, headers={"X-User": "alice"}
+        )
+
+        for dienst in beitraege.values():
+            dienst.get.assert_not_called()
 
     @pytest.mark.parametrize("kopfzeilen", [{}, {"X-User": "anonymous"}])
     def test_statuswechsel_ohne_anmeldung_ist_401(self, client, repository, kopfzeilen):
