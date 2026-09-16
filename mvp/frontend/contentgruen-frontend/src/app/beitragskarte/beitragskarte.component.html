@@ -28,23 +28,45 @@
 
     <!-- Rohling: dieselbe Anatomie wie die volle Karte - Band, Koerper, Aktion, Meta -->
     <ng-container *ngIf="rohling as rohling">
-        <header class="karte-kopf rohling-kopf">
+        <header class="karte-kopf rohling-kopf" [class.rohling-kopf--ohne-notiz]="!daten.titel">
             <span class="karte-icon" role="img" [attr.aria-label]="stufenName"
                   [matTooltip]="stufenName" matTooltipPosition="below">{{ stufenEmoji }}</span>
 
-            <div class="rohling-kopfinhalt">
-                <h3 class="karte-titel rohling-titel">{{ daten.titel }}</h3>
-                <p class="rohling-marken">
-                    <span class="rohling-herkunft" *ngIf="rohling.herkunft">{{ rohling.herkunft }}</span>
-                    <a *ngIf="rohling.link" class="rohling-link" [href]="rohling.link"
-                       target="_blank" rel="noopener noreferrer"
-                       aria-label="Original öffnen"
-                       matTooltip="Original öffnen" matTooltipPosition="above">
-                        <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
-                    </a>
-                    <span class="rohling-verworfen" *ngIf="rohling.zustand === 'verworfen'">verworfen</span>
-                </p>
-            </div>
+            <h3 class="karte-titel rohling-titel" *ngIf="daten.titel">{{ daten.titel }}</h3>
+            <span class="rohling-titel-platz" *ngIf="!daten.titel" aria-hidden="true"></span>
+
+            <span class="rohling-verworfen" *ngIf="rohling.zustand === 'verworfen'">verworfen</span>
+        </header>
+
+        <!-- Eigene Zeile ueber die ganze Bandbreite; ohne Notiz ist sie die Aufschrift -->
+        <a *ngIf="rohling.link" class="rohling-linkzeile" [href]="rohling.link"
+           target="_blank" rel="noopener noreferrer"
+           [attr.aria-label]="'Original öffnen: ' + (rohling.linkText || rohling.link)">
+            <span class="rohling-herkunft" *ngIf="rohling.herkunft">{{ rohling.herkunft }}</span>
+            <span class="rohling-adresse">{{ rohling.linkText }}</span>
+            <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
+        </a>
+
+        <!-- Koerper weiss: die Saetze am gruenen Balken, je Satz rechts der Stand -->
+        <div class="rohling-koerper" *ngIf="sichtbareSaetze.length">
+            <ul class="rohling-saetze">
+                <li class="rohling-satz" *ngFor="let satz of sichtbareSaetze">
+                    <span class="satz-text">{{ satz.text }}</span>
+                    <span class="satz-status" [class.satz-status--fertig]="satz.beitraege > 0"
+                          [attr.aria-label]="satzBeschriftung(satz)">{{ satzStatus(satz) }}</span>
+                </li>
+                <li class="rohling-mehr" *ngIf="weitereSaetze">+{{ weitereSaetze }} weitere</li>
+            </ul>
+        </div>
+
+        <!-- Aktionszeile wie bei der vollen Karte: Griff in der Mitte, ⋮ rechts -->
+        <div class="rohling-aktion" *ngIf="primaerAktion || menueEintraege.length">
+            <button *ngIf="primaerAktion as primaer" type="button" mat-raised-button
+                    class="gutgesagt-primary-dark rohling-primaer"
+                    (click)="aktionAusloesen(primaer.aktion, $event)">
+                <span class="knopf-emoji" aria-hidden="true">{{ stufenEmoji }}</span>
+                <span class="knopf-wort">{{ primaer.wort }}</span>
+            </button>
 
             <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="rohling-menue"
                     [matMenuTriggerFor]="rohlingMenue"
@@ -59,34 +81,14 @@
                     <span>{{ eintrag.wort }}</span>
                 </button>
             </mat-menu>
-        </header>
-
-        <!-- Koerper weiss: die Saetze am gruenen Balken, je Satz rechts der Stand -->
-        <div class="rohling-koerper" *ngIf="sichtbareSaetze.length">
-            <ul class="rohling-saetze">
-                <li class="rohling-satz" *ngFor="let satz of sichtbareSaetze">
-                    <span class="satz-text">{{ satz.text }}</span>
-                    <span class="satz-status" [class.satz-status--fertig]="satz.beitraege > 0"
-                          [attr.aria-label]="satzBeschriftung(satz)">{{ satzStatus(satz) }}</span>
-                </li>
-                <li class="rohling-mehr" *ngIf="weitereSaetze">+{{ weitereSaetze }} weitere</li>
-            </ul>
-        </div>
-
-        <div class="rohling-aktion" *ngIf="primaerAktion as primaer">
-            <button type="button" mat-raised-button class="gutgesagt-primary-dark rohling-primaer"
-                    (click)="aktionAusloesen(primaer.aktion, $event)">
-                <span class="knopf-emoji" aria-hidden="true">{{ stufenEmoji }}</span>
-                <span class="knopf-wort">{{ primaer.wort }}</span>
-            </button>
         </div>
 
         <p class="karte-meta rohling-meta">
-            <span class="rohling-alter">{{ daten.erstellt | relativeTime }}</span>
             <ng-container *ngIf="zeigtEinwerfer">
+                <span class="rohling-einwerfer" [attr.title]="daten.autor">Von: {{ kurzeKennung(daten.autor) }}</span>
                 ·
-                <span class="rohling-einwerfer" [attr.title]="daten.autor">von {{ kurzeKennung(daten.autor) }}</span>
             </ng-container>
+            <span class="rohling-alter">{{ daten.erstellt | relativeTime }}</span>
         </p>
     </ng-container>
 

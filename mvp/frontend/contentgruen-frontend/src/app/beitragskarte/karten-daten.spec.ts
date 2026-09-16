@@ -218,30 +218,39 @@ describe('karten-daten', () => {
         zustand: 'destillieren',
         herkunft: 'Instagram',
         link: 'https://www.instagram.com/reel/ABC/',
+        linkText: 'instagram.com/reel/ABC',
         saetze: [],
         beitraege: [],
         verwerfbar: true,
       });
     });
 
-    it('nimmt ohne Notiz die Domain - als Titel und als Herkunft ohne bekannte Plattform', () => {
+    it('laesst ohne Notiz den Titel leer - die Link-Zeile ist dann die Aufschrift', () => {
       const karte = ausEinwurf(einwurf({ url: 'https://beispiel-zeitung.de/artikel/1' }));
 
-      expect(karte.titel).toBe('beispiel-zeitung.de');
+      expect(karte.titel).toBeNull();
       expect(karte.rohling!.herkunft).toBe('beispiel-zeitung.de');
+      expect(karte.rohling!.linkText).toBe('beispiel-zeitung.de/artikel/1');
     });
 
     it('wiederholt den Link nicht als Titel', () => {
-      expect(ausEinwurf(einwurf({ content: 'https://www.instagram.com/reel/ABC/' })).titel).toBe(
-        'instagram.com',
+      expect(ausEinwurf(einwurf({ content: 'https://www.instagram.com/reel/ABC/' })).titel).toBeNull();
+    });
+
+    it('kuerzt die Adresse auf Domain und Pfad, ohne Schema, www und Abfrage', () => {
+      const karte = ausEinwurf(
+        einwurf({ url: 'https://www.tagesschau.de/inland/heizung-101.html?utm_source=x#top' }),
       );
+
+      expect(karte.rohling!.linkText).toBe('tagesschau.de/inland/heizung-101.html');
     });
 
     it('nimmt bei einem Bild-Einwurf die Bildadresse als Link', () => {
       const karte = ausEinwurf(einwurf({ url: null, image_url: 'https://bilder.example.org/1.jpg' }));
 
       expect(karte.rohling!.link).toBe('https://bilder.example.org/1.jpg');
-      expect(karte.titel).toBe('bilder.example.org');
+      expect(karte.rohling!.linkText).toBe('bilder.example.org/1.jpg');
+      expect(karte.titel).toBeNull();
     });
 
     it('legt die Saetze in die Karte und zaehlt je Satz die Beitraege daraus', () => {

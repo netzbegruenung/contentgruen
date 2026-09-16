@@ -207,12 +207,29 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     }
   }
 
+  /**
+   * Das Zeichen im Kopfband. Erledigtes traegt das Emoji des entstandenen
+   * Beitrags - dieselbe Marke, unter der er in Suche und Album steht; die
+   * unfertigen Stufen tragen das Icon der Kette.
+   */
   get stufenEmoji(): string {
-    return this.rohling ? STUFEN[this.rohling.zustand].emoji : '';
+    if (!this.rohling) {
+      return '';
+    }
+    if (this.rohling.zustand === 'erledigt' && this.daten.typ) {
+      return CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji || STUFEN.erledigt.emoji;
+    }
+    return STUFEN[this.rohling.zustand].emoji;
   }
 
   get stufenName(): string {
-    return this.rohling ? STUFEN[this.rohling.zustand].name : '';
+    if (!this.rohling) {
+      return '';
+    }
+    if (this.rohling.zustand === 'erledigt' && this.daten.typ) {
+      return typLabel(this.daten.typ);
+    }
+    return STUFEN[this.rohling.zustand].name;
   }
 
   /** Den Einwerfer nennt die Karte nur, wenn es nicht die angemeldete Person ist. */

@@ -70,10 +70,12 @@ export interface RohlingBeitrag {
 export interface RohlingDaten {
   einwurfId: string;
   zustand: FangkorbZustand;
-  /** Plattformname, sonst die Domain - nie die Adresse als Text. */
+  /** Marke links in der Link-Zeile: Plattformname, sonst die Domain. */
   herkunft: string | null;
-  /** Adresse hinter dem Link-Icon: der Link, sonst die Bildadresse. */
+  /** Ziel der Link-Zeile: der Link, sonst die Bildadresse. */
   link: string | null;
+  /** Der Link, wie er dasteht: ohne Schema und www, Domain und Pfad. */
+  linkText: string | null;
   /** Alle Saetze, aelteste Aenderung zuerst. */
   saetze: RohlingSatz[];
   /** Die entstandenen Beitraege, aelteste zuerst. */
@@ -206,6 +208,24 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
   };
 }
 
+/**
+ * Die Adresse, wie sie in der Link-Zeile steht: Domain und Pfad, ohne Schema und
+ * ohne www. Abfrage und Fragment bleiben weg - sie kosten die halbe Zeile und
+ * sagen selten etwas. Was sich nicht als Adresse lesen laesst, faellt weg.
+ */
+function adresseKurz(adresse: string | null | undefined): string | null {
+  if (!adresse) {
+    return null;
+  }
+  try {
+    const url = new URL(adresse);
+    const pfad = url.pathname === '/' ? '' : url.pathname.replace(/\/$/, '');
+    return `${url.hostname.replace(/^www\./, '')}${pfad}` || null;
+  } catch {
+    return null;
+  }
+}
+
 function domainAus(adresse: string | null | undefined): string | null {
   if (!adresse) {
     return null;
@@ -248,9 +268,9 @@ export function zustandVonEinwurf(einwurf: RawInput): FangkorbZustand {
  * Ein Einwurf als eine Karte: Herkunft im Kopf, der Inhalt als Titel, die Saetze
  * innen.
  *
- * Titel ist, was jemand mitgegeben hat - die Notiz; fehlt sie, die Domain der
- * Adresse, damit kein Rohling ohne Aufschrift dasteht. Die Adresse selbst steht
- * nie als Text da, sie haengt am Link-Icon im Kopf.
+ * Titel ist, was jemand mitgegeben hat - die Notiz, sonst nichts: Ohne Notiz ist
+ * die Link-Zeile die Aufschrift der Karte. Die Adresse steht dort gekuerzt
+ * (Domain und Pfad, ohne Schema und www), nicht als roher Link.
  *
  * ``beitraege`` je Satz zaehlt die Verknuepfungen auf genau diesen Satz - dieselbe
  * Person kann aus ihrem Satz mehr als einen Beitrag gemacht haben. Verknuepfungen
@@ -274,7 +294,7 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
     // setzt --karten-farbe, und davon nimmt das Kopfband. Unfertige Rohlinge
     // haben keinen Typ - ihr Band bleibt Sand.
     typ: zustand === 'erledigt' ? (resolveContentType(links[0]?.content_type) ?? null) : null,
-    titel: hinweis(einwurf) ?? domainAus(adresse),
+    titel: hinweis(einwurf),
     text: null,
     erstellt: einwurf.created_at,
     autor: einwurf.submitted_by,
@@ -286,6 +306,7 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
       zustand,
       herkunft: plattformNameAusUrl(einwurf.url) ?? domainAus(adresse),
       link: adresse,
+      linkText: adresseKurz(adresse),
       saetze,
       beitraege: links.map((link) => ({
         contentId: link.content_id,

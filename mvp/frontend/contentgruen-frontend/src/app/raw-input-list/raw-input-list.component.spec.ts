@@ -323,11 +323,14 @@ describe('RawInputListComponent', () => {
       ]);
       const [karte] = karten();
 
-      expect(karte.querySelector('.rohling-herkunft')!.textContent!.trim()).toBe('Instagram');
-      expect(karte.querySelector('.rohling-kopf')!.textContent).not.toContain('https://');
-      expect(karte.querySelector<HTMLAnchorElement>('a.rohling-link')!.getAttribute('href')).toBe(
-        'https://www.instagram.com/reel/ABC/',
+      const linkzeile = karte.querySelector<HTMLAnchorElement>('a.rohling-linkzeile')!;
+      expect(linkzeile.getAttribute('href')).toBe('https://www.instagram.com/reel/ABC/');
+      expect(linkzeile.getAttribute('target')).toBe('_blank');
+      expect(linkzeile.querySelector('.rohling-herkunft')!.textContent!.trim()).toBe('Instagram');
+      expect(linkzeile.querySelector('.rohling-adresse')!.textContent!.trim()).toBe(
+        'instagram.com/reel/ABC',
       );
+      expect(linkzeile.textContent).not.toContain('https://');
       expect(karte.querySelector('.rohling-titel')!.textContent!.trim()).toBe(
         'Gute Antwort in den Kommentaren',
       );
@@ -335,17 +338,29 @@ describe('RawInputListComponent', () => {
       expect(karte.querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Destillieren');
     });
 
-    it('nimmt ohne Notiz die Domain als Titel und Herkunft', () => {
+    it('zeigt ohne Notiz keinen Titel - dann traegt die Link-Zeile die Aufschrift', () => {
       erstellen([einwurf({ url: 'https://beispiel-zeitung.de/artikel/1', content: null })]);
       const [karte] = karten();
 
-      expect(karte.querySelector('.rohling-titel')!.textContent!.trim()).toBe('beispiel-zeitung.de');
+      expect(karte.querySelector('.rohling-titel')).toBeNull();
       expect(karte.querySelector('.rohling-herkunft')!.textContent!.trim()).toBe('beispiel-zeitung.de');
+      expect(karte.querySelector('.rohling-adresse')!.textContent!.trim()).toBe(
+        'beispiel-zeitung.de/artikel/1',
+      );
+    });
+
+    it('zeigt ohne Link keine Link-Zeile', () => {
+      erstellen([einwurf({ url: null, content: 'nur eine Notiz' })]);
+
+      expect(karten()[0].querySelector('.rohling-linkzeile')).toBeNull();
+      expect(karten()[0].querySelector('.rohling-titel')!.textContent!.trim()).toBe('nur eine Notiz');
     });
 
     it('nennt den Einwerfer nur, wenn es nicht die angemeldete Person ist', () => {
       erstellen([einwurf({ id: 'fremd', submitted_by: '0f3c2a9e-1111-2222-3333-444455556666' })]);
-      expect(karten()[0].querySelector('.rohling-einwerfer')!.textContent).toContain('0f3c2a9e');
+      expect(karten()[0].querySelector('.rohling-einwerfer')!.textContent!.trim()).toBe(
+        'Von: 0f3c2a9e',
+      );
 
       fixture.destroy();
       erstellen([einwurf({ submitted_by: 'alice' })]);
