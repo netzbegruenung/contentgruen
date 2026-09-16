@@ -7,6 +7,7 @@ import {
   passtZumTab,
   standardFilter,
   tabMerken,
+  verworfenEinblenden,
 } from './fangkorb-filter';
 import { RawInput, RawInputDraft, RawInputLink } from '../services/raw-input.service';
 
@@ -133,6 +134,16 @@ describe('Filter im sessionStorage', () => {
     filterSpeichern(gespeichert);
 
     expect(filterLaden()).toEqual(gespeichert);
+  });
+
+  it('blendet Verworfenes ein, ohne Tab und Plattformen anzufassen', () => {
+    filterSpeichern(filter({ plattformen: ['web'], tab: 'ausformulieren' }));
+
+    verworfenEinblenden();
+
+    expect(filterLaden()).toEqual(
+      filter({ plattformen: ['web'], tab: 'ausformulieren', verworfenSichtbar: true }),
+    );
   });
 
   it('merkt einen Tab, ohne den uebrigen Filter anzufassen', () => {

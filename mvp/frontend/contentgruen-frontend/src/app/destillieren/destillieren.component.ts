@@ -16,8 +16,13 @@ import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
 import { typLabel } from '../shared/content-type-registry';
-import { DestillierUebergabeService, ROHINPUT_PARAM } from './destillier-uebergabe.service';
-import { tabMerken } from '../raw-input-list/fangkorb-filter';
+import {
+  DestillierUebergabeService,
+  ROHINPUT_PARAM,
+  SCHRITT_PARAM,
+  TAB_PARAM,
+} from './destillier-uebergabe.service';
+import { FangkorbTab, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -161,9 +166,27 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.speichernWennGeaendert().subscribe({
       next: () => {
         this.arbeitet = false;
-        this.schritt = 'typwahl';
+        this.schrittSetzen('typwahl');
       },
       error: (error) => this.speicherfehler(error),
+    });
+  }
+
+  /**
+   * Den Schritt wechseln und in der Adresse mitfuehren.
+   *
+   * Der Schritt steht in der Adresse, damit ein Neustart der PWA an derselben
+   * Stelle weitermacht und die Kopfzeile den passenden Titel zeigen kann
+   * (RouteConfigService). ``replaceUrl``, weil es kein eigener Halt in der
+   * History ist - der Knopf "Zurueck" im Ablauf fuehrt zum Satz.
+   */
+  private schrittSetzen(schritt: 'satz' | 'typwahl'): void {
+    this.schritt = schritt;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [SCHRITT_PARAM]: schritt === 'typwahl' ? 'typwahl' : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 
@@ -175,7 +198,8 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.arbeitet = true;
     this.fehler = null;
     this.speichernWennGeaendert().subscribe({
-      next: () => this.uebergabe.zumNaechsten(einwurf.id),
+      // Zurueckgestellt heisst: Der Satz steht, der Beitrag fehlt noch.
+      next: () => this.uebergabe.zumNaechsten(einwurf.id, 'ausformulieren'),
       error: (error) => this.speicherfehler(error),
     });
   }
@@ -188,7 +212,13 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.arbeitet = true;
     this.fehler = null;
     this.rawInputService.updateStatus(einwurf.id, 'discarded').subscribe({
-      next: () => this.uebergabe.zumNaechsten(einwurf.id),
+      next: () => {
+        // Verworfenes liegt unter "Erledigt" hinter einem Chip, der normalerweise
+        // aus ist - fuer diese Sitzung wird er eingeschaltet, sonst ist der
+        // Einwurf nach dem Verwerfen scheinbar spurlos weg.
+        verworfenEinblenden();
+        this.uebergabe.zumNaechsten(einwurf.id, 'erledigt');
+      },
       error: (error) => {
         this.logger.error('Verwerfen fehlgeschlagen', error);
         this.arbeitet = false;
@@ -210,7 +240,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   }
 
   zurueckZumSatz(): void {
-    this.schritt = 'satz';
+    this.schrittSetzen('satz');
   }
 
   /** Der Pfeil oben: aus der Typwahl zurueck zum Satz, aus dem Satz zum Fangkorb. */
@@ -250,11 +280,19 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const gewuenschterSchritt = this.route.snapshot?.queryParamMap?.get(SCHRITT_PARAM) ?? null;
+
     this.rawInputService.getRawInput(id).subscribe({
       next: (einwurf) => {
         this.einwurf = einwurf;
         this.zuletztGespeichert = einwurf.own_draft ?? '';
         this.satz.setValue(this.zuletztGespeichert, { emitEvent: false });
+        // Aus dem Fangkorb kommt "Ausformulieren" direkt in die Typwahl - aber nur
+        // mit eigenem Satz. Ohne ihn gibt es nichts auszuformulieren, dann steht
+        // wie sonst das Satzfeld da.
+        if (gewuenschterSchritt === 'typwahl' && this.zuletztGespeichert.trim()) {
+          this.schritt = 'typwahl';
+        }
         this.laedt = false;
       },
       error: (error) => {
@@ -270,6 +308,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
   private naechstenOeffnen(): void {
     const nach = this.route.snapshot?.queryParamMap?.get('nach') ?? null;
+    const tab = this.route.snapshot?.queryParamMap?.get(TAB_PARAM) as FangkorbTab | null;
     this.rawInputService.naechsterOffenerEinwurf(nach).subscribe({
       next: (naechster) => {
         if (naechster) {
@@ -277,12 +316,17 @@ export class DestillierenComponent implements OnInit, OnDestroy {
           return;
         }
         // Mit "nach" kommt man aus dem Ablauf und hat gerade etwas fertig
-        // gemacht: zurueck in den Fangkorb, in den Tab mit dem Ergebnis. Ohne
-        // "nach" hat jemand die Ansicht direkt geoeffnet - dann bleibt es bei
-        // der Ansage, dass nichts offen ist.
+        // gemacht: zurueck in den Fangkorb, in den Tab mit dem Ergebnis - welcher
+        // das ist, sagt die Handlung ueber "tab". Ohne "nach" hat jemand die
+        // Ansicht direkt geoeffnet; dann bleibt es bei der Ansage, dass nichts
+        // offen ist.
+        //
+        // replaceUrl wie im Zweig darueber: Sonst bliebe /destillieren?nach=... in
+        // der History stehen, und das System-Zurueck liefe von hier aus wieder in
+        // dieselbe Weiterleitung.
         if (nach) {
-          tabMerken('erledigt');
-          this.router.navigate(['/fangkorb']);
+          tabMerken(tab ?? 'erledigt');
+          this.router.navigate(['/fangkorb'], { replaceUrl: true });
           return;
         }
         this.laedt = false;

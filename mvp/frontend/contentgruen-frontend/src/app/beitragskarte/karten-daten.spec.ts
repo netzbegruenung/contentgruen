@@ -284,6 +284,28 @@ describe('karten-daten', () => {
       ]);
     });
 
+    it('nimmt fuer Farbe und Zeichen die erste Verknuepfung mit Typ', () => {
+      const karte = ausEinwurf(
+        einwurf({
+          status: 'processed',
+          drafts: [satz('s-1', 'bob', 'Alt'), satz('s-2', 'bob', 'Neu')],
+          // Die aelteste Verknuepfung stammt aus der Zeit vor Fangkorb v2 und
+          // traegt keinen Typ - die Karte soll trotzdem Farbe bekennen.
+          links: [link('s-1', null, 'c-alt'), link('s-2', 'generic_text', 'c-neu')],
+        }),
+      );
+
+      expect(karte.typ).toBe('generictext');
+    });
+
+    it('bleibt ohne jeden Typ farblos', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'processed', links: [link(null, null, 'c-alt')] }),
+      );
+
+      expect(karte.typ).toBeNull();
+    });
+
     it('nennt einen Einwurf mit Satz, aber ohne Beitrag ausformulierbar', () => {
       const karte = ausEinwurf(
         einwurf({ status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] }),

@@ -1,10 +1,18 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  Inject,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_BOTTOM_SHEET_DATA } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Observable } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, RohlingBeitrag, ausBeitrag } from '../beitragskarte/karten-daten';
@@ -18,12 +26,22 @@ export interface EinwurfBeitragSheetDaten {
   beitraege: RohlingBeitrag[];
 }
 
+/** Ergebnis einer Anfrage: entweder eine Karte oder die Ansage, dass es sie nicht gibt. */
+interface Geladen {
+  karte: KartenDaten | null;
+  fehler: boolean;
+}
+
 /**
  * Die Beitraege eines Einwurfs im Bottom Sheet, als volle Karte wie im Album.
  *
  * Der Fangkorb kennt nur die IDs; den Beitrag holt das Sheet beim Oeffnen nach.
- * Bei genau einem Beitrag laedt es sofort, bei mehreren steht erst eine kleine
- * Auswahl - beschriftet mit dem Satz, aus dem der Beitrag entstanden ist.
+ * Bei genau einem Beitrag laedt es sofort, bei mehreren steht erst eine Auswahl -
+ * beschriftet mit dem Satz, aus dem der Beitrag entstanden ist.
+ *
+ * Die Anfragen laufen durch ein Subject mit switchMap: Wer in der Auswahl
+ * weiterklickt, bricht die vorige Anfrage ab. Sonst koennte eine langsame erste
+ * Antwort nach einer schnellen zweiten eintreffen und die falsche Karte zeigen.
  *
  * Nicht jeder Verweis fuehrt noch zu einem Beitrag: Verknuepfungen aus der Zeit
  * vor Fangkorb v2 tragen keinen Typ, und ein Beitrag kann inzwischen weg sein.
@@ -127,11 +145,14 @@ export interface EinwurfBeitragSheetDaten {
     `,
   ],
 })
-export class EinwurfBeitragSheetComponent implements OnInit {
+export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
   karte: KartenDaten | null = null;
   laedt = false;
   fehler = false;
   auswahlOffen = false;
+
+  /** Jede Anfrage loest die vorige ab; die Antwort der abgeloesten zaehlt nicht mehr. */
+  private readonly anfragen = new Subject<RohlingBeitrag>();
 
   constructor(
     @Inject(MAT_BOTTOM_SHEET_DATA) readonly daten: EinwurfBeitragSheetDaten,
@@ -142,6 +163,15 @@ export class EinwurfBeitragSheetComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.anfragen
+      .pipe(switchMap((beitrag) => this.laden(beitrag)))
+      .subscribe(({ karte, fehler }) => {
+        this.karte = karte;
+        this.fehler = fehler;
+        this.laedt = false;
+        this.cdr.markForCheck();
+      });
+
     const [erster] = this.daten.beitraege;
     if (this.daten.beitraege.length === 1 && erster) {
       this.oeffnen(erster);
@@ -151,36 +181,38 @@ export class EinwurfBeitragSheetComponent implements OnInit {
     this.fehler = !this.daten.beitraege.length;
   }
 
+  ngOnDestroy(): void {
+    this.anfragen.complete();
+  }
+
   oeffnen(beitrag: RohlingBeitrag): void {
     this.auswahlOffen = false;
     this.karte = null;
     this.fehler = false;
-    const quelle = this.quelle(beitrag);
-    if (!quelle) {
-      this.fehler = true;
-      this.cdr.markForCheck();
-      return;
-    }
     this.laedt = true;
-    quelle.subscribe({
-      next: (inhalt) => {
-        this.karte = ausBeitrag(inhalt);
-        this.laedt = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        this.logger.error('Beitrag aus dem Fangkorb konnte nicht geladen werden', error);
-        this.laedt = false;
-        this.fehler = true;
-        this.cdr.markForCheck();
-      },
-    });
+    this.cdr.markForCheck();
+    this.anfragen.next(beitrag);
   }
 
   zurueckZurAuswahl(): void {
     this.auswahlOffen = true;
     this.karte = null;
     this.fehler = false;
+    this.laedt = false;
+  }
+
+  private laden(beitrag: RohlingBeitrag): Observable<Geladen> {
+    const quelle = this.quelle(beitrag);
+    if (!quelle) {
+      return of({ karte: null, fehler: true });
+    }
+    return quelle.pipe(
+      map((inhalt) => ({ karte: ausBeitrag(inhalt), fehler: false })),
+      catchError((error) => {
+        this.logger.error('Beitrag aus dem Fangkorb konnte nicht geladen werden', error);
+        return of({ karte: null, fehler: true });
+      }),
+    );
   }
 
   /**

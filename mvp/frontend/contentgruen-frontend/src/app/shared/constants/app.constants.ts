@@ -56,6 +56,7 @@ export const PAGE_TITLES = {
   RAW_INPUT: 'Schnell einwerfen',
   RAW_INPUT_LIST: 'Fangkorb',
   DESTILLIEREN: 'Destillieren',
+  AUSFORMULIEREN: 'Ausformulieren',
   SHARE_TARGET: 'Geteilter Inhalt',
   // Typnamen aus der Registry
   COMMENTARY: typLabel('commentary'),

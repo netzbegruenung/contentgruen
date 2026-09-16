@@ -293,7 +293,13 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
     // Erledigt traegt die Farbe des ersten entstandenen Beitrags: Die Typklasse
     // setzt --karten-farbe, und davon nimmt das Kopfband. Unfertige Rohlinge
     // haben keinen Typ - ihr Band bleibt Sand.
-    typ: zustand === 'erledigt' ? (resolveContentType(links[0]?.content_type) ?? null) : null,
+    // Die erste Verknuepfung *mit* Typ: Verknuepfungen aus der Zeit vor Fangkorb v2
+    // tragen keinen, und stuende so eine vorn, blieben Band und Emoji farblos,
+    // obwohl ein typisierter Beitrag daneben liegt.
+    typ:
+      zustand === 'erledigt'
+        ? (links.map((link) => resolveContentType(link.content_type)).find(Boolean) ?? null)
+        : null,
     titel: hinweis(einwurf),
     text: null,
     erstellt: einwurf.created_at,

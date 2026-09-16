@@ -138,6 +138,17 @@ export function tabMerken(tab: FangkorbTab): void {
   filterSpeichern({ ...filterLaden(), tab });
 }
 
+/**
+ * Verworfenes fuer diese Sitzung einblenden.
+ *
+ * Gebraucht nach dem Verwerfen: Der Einwurf liegt danach hinter einem Chip, der
+ * normalerweise aus ist - ohne das hier verschwaende er vor den Augen der Person,
+ * die ihn gerade weggelegt hat.
+ */
+export function verworfenEinblenden(): void {
+  filterSpeichern({ ...filterLaden(), verworfenSichtbar: true });
+}
+
 export function filterSpeichern(filter: FangkorbFilter): void {
   try {
     const gespeichert: GespeicherterFilter = {

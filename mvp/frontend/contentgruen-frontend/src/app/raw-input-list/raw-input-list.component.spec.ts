@@ -299,10 +299,13 @@ describe('RawInputListComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('konnte nicht geladen werden');
     });
 
-    it('sagt dazu, wenn nicht alle Einwuerfe geladen sind', () => {
+    it('sagt dazu, dass nur die letzten Einwuerfe geladen sind und die Zaehler nur die meinen', () => {
       erstellen([einwurf()], 150);
+      const hinweis: string = fixture.nativeElement.querySelector('.fangkorb-mehr').textContent;
 
-      expect(fixture.nativeElement.textContent).toContain('Angezeigt werden 1 von 150');
+      expect(hinweis).toContain('Von 150 Einwürfen sind die letzten 1 geladen');
+      expect(hinweis).toContain('ältere fehlen');
+      expect(hinweis).toContain('Zähler oben zählen nur die geladenen');
     });
 
     it('sagt, wenn der Fangkorb leer ist', () => {
@@ -428,15 +431,33 @@ describe('RawInputListComponent', () => {
   });
 
   describe('Griffe', () => {
-    it('fuehrt Destillieren und Ausformulieren in die Destillier-Ansicht', () => {
+    it('fuehrt Destillieren in die Destillier-Ansicht, an den Anfang', () => {
       erstellen(jeTab());
+
       klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
+
       expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'roh']);
+    });
 
+    it('fuehrt Ausformulieren direkt in die Typwahl', () => {
+      erstellen(jeTab());
       klicken(tabKnopf('Ausformulieren'));
+
       klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
 
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'satz']);
+      // Der Satz steht schon - dann beginnt das Ausformulieren bei der Typwahl.
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'satz'], {
+        queryParams: { schritt: 'typwahl' },
+      });
+    });
+
+    it('fuehrt Weiterdestillieren an den Anfang, nicht in die Typwahl', () => {
+      erstellen(jeTab());
+      klicken(tabKnopf('Erledigt'));
+
+      component.aktionAusfuehren(component.karten[0], 'weiterDestillieren');
+
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'fertig']);
     });
 
     it('oeffnet mit "Ansehen" das Sheet statt einer Suche', () => {
@@ -505,6 +526,19 @@ describe('RawInputListComponent', () => {
 
       expect(snackBar.open).toHaveBeenCalledWith(
         'Verwerfen kann nur, wer den Einwurf eingeworfen hat.',
+        'OK',
+        { duration: 6000 },
+      );
+    });
+
+    it('nennt bei 409 den wahren Grund statt "versuche es erneut"', () => {
+      erstellen([einwurf({ id: 'eigen' })]);
+      rawInputService.updateStatus.and.returnValue(throwError(() => ({ status: 409 })));
+
+      component.aktionAusfuehren(component.karten[0], 'verwerfen');
+
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.',
         'OK',
         { duration: 6000 },
       );

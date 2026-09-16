@@ -17,6 +17,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
+import { SCHRITT_PARAM } from '../destillieren/destillier-uebergabe.service';
 
 import { RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
@@ -221,8 +222,15 @@ export class RawInputListComponent implements OnInit, OnDestroy {
       return;
     }
     switch (aktion) {
-      case 'destillieren':
       case 'ausformulieren':
+        // Der Satz steht schon - dann beginnt das Ausformulieren bei der Typwahl,
+        // nicht wieder im Satzfeld. Ohne eigenen Satz faellt die Ansicht selbst
+        // auf das Satzfeld zurueck.
+        this.router.navigate(['/destillieren', rohling.einwurfId], {
+          queryParams: { [SCHRITT_PARAM]: 'typwahl' },
+        });
+        break;
+      case 'destillieren':
       case 'weiterDestillieren':
         this.router.navigate(['/destillieren', rohling.einwurfId]);
         break;
@@ -266,15 +274,24 @@ export class RawInputListComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.logger.error('Einwurf konnte nicht verworfen werden', error);
-          this.snackBar.open(
-            error?.status === 403
-              ? 'Verwerfen kann nur, wer den Einwurf eingeworfen hat.'
-              : 'Verwerfen hat nicht geklappt. Bitte versuche es erneut.',
-            'OK',
-            { duration: 6000 },
-          );
+          this.snackBar.open(this.verwerfenFehler(error?.status), 'OK', { duration: 6000 });
         },
       });
+  }
+
+  /**
+   * Wortlaut wie in der Destillier-Ansicht: 403 heisst fremder Einwurf, 409 heisst
+   * daraus ist inzwischen ein Beitrag geworden - dann ist Verwerfen nicht mehr
+   * vorgesehen, und "versuche es erneut" waere ein falscher Rat.
+   */
+  private verwerfenFehler(status: number | undefined): string {
+    if (status === 403) {
+      return 'Verwerfen kann nur, wer den Einwurf eingeworfen hat.';
+    }
+    if (status === 409) {
+      return 'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.';
+    }
+    return 'Verwerfen hat nicht geklappt. Bitte versuche es erneut.';
   }
 
   nachKarte(_index: number, karte: KartenDaten): string {
