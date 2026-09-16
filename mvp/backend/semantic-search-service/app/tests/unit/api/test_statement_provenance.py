@@ -10,11 +10,12 @@ und beide werden hier festgenagelt:
 - Autor: SEARCH_QUERY_AUTHOR statt der suchenden Person. Wer gesucht hat, darf
   nicht am Statement haengen.
 
-Geschrieben wird auf zwei Wegen: das Backend legt in /searchByText selbst an,
-und das Frontend ruft aus der Ergebnisansicht zusaetzlich /statement/addStatement
-auf. Beide sind hier abgedeckt. /statement/addStatement bedient ausserdem den
-ausdruecklichen Weg "Beitrag ergaenzen" - derselbe Endpunkt, unterschieden allein
-ueber das Feld `source`; nur dort bleibt die Person Autorin.
+Aus der Suche heraus schreibt nur noch das Backend, in /searchByText. Die
+Ergebnisansicht ruft /statement/addStatement nicht mehr auf - fuer Anonyme endete
+das mit 401 und einem Sprung auf /login. Der Endpunkt nimmt `source=search_query`
+weiterhin an und ist hier mit abgedeckt. Er bedient ausserdem den ausdruecklichen
+Weg "Beitrag ergaenzen" - unterschieden allein ueber das Feld `source`; nur dort
+bleibt die Person Autorin.
 """
 
 import uuid
@@ -36,6 +37,11 @@ from dependencies import (
 )
 from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
 from domain.models.content_status import ContentStatus
+from services.search.search_query_statement import (
+    SearchQueryStatementRecorder,
+    get_search_query_statement_recorder,
+)
+from utils.rate_limiter import RateLimiter
 
 SEARCH_URL = "/api/v1/search/searchByText"
 ADD_STATEMENT_URL = "/api/v1/statement/addStatement"
@@ -67,6 +73,12 @@ def statement_service():
     app.dependency_overrides[get_generic_text_service] = lambda: leerer_dienst
     app.dependency_overrides[get_post_service] = lambda: leerer_dienst
     app.dependency_overrides[get_reference_service] = lambda: leerer_dienst
+    # Eigener Recorder je Test: der prozessweite Limiter zaehlt sonst ueber alle
+    # Tests hinweg mit.
+    recorder = SearchQueryStatementRecorder(
+        RateLimiter(max_requests=1000, window_minutes=10)
+    )
+    app.dependency_overrides[get_search_query_statement_recorder] = lambda: recorder
     app.dependency_overrides[get_voting_service] = lambda: MagicMock(
         get_user_votes_for_contents=MagicMock(return_value={})
     )
