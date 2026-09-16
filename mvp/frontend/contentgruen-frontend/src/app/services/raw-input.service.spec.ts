@@ -175,6 +175,42 @@ describe('RawInputService', () => {
       expect(naechster?.id).toBe('id-fremder-satz');
     });
 
+    it('bietet in dieser Runde Zurueckgestelltes nicht wieder an - auch ohne Satz', () => {
+      // Zwei offene Einwuerfe ohne Satz: "Spaeter" auf A, dann auf B. Frueher
+      // bot die zweite Abfrage wieder A an, und so fort.
+      const liste = {
+        results_count: 2,
+        total_records_count: 2,
+        results: [einwurf({ id: 'id-a' }), einwurf({ id: 'id-b' })],
+      };
+      let naechster: RawInput | null | undefined;
+
+      service.zurueckstellen('id-a');
+      service.naechsterOffenerEinwurf('id-a').subscribe((e) => (naechster = e));
+      httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush(liste);
+      expect(naechster?.id).toBe('id-b');
+
+      service.zurueckstellen('id-b');
+      service.naechsterOffenerEinwurf('id-b').subscribe((e) => (naechster = e));
+      httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush(liste);
+      expect(naechster).toBeNull();
+    });
+
+    it('bietet nach neuer Runde Zurueckgestelltes wieder an', () => {
+      let naechster: RawInput | null | undefined;
+      service.zurueckstellen('id-a');
+
+      service.rundeBeginnen();
+      service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));
+      httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush({
+        results_count: 1,
+        total_records_count: 1,
+        results: [einwurf({ id: 'id-a' })],
+      });
+
+      expect(naechster?.id).toBe('id-a');
+    });
+
     it('meldet null, wenn nichts mehr offen ist', () => {
       let naechster: RawInput | null | undefined;
       service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));
