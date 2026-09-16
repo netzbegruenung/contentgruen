@@ -83,8 +83,9 @@ describe('DestillierUebergabeService', () => {
       'beitrag-1',
       'generic_text',
     );
+    // Der Beitrag steht: Der Einwurf liegt danach unter "Erledigt".
     expect(router.navigate).toHaveBeenCalledWith(['/destillieren'], {
-      queryParams: { nach: 'id-1' },
+      queryParams: { nach: 'id-1', tab: 'erledigt' },
     });
   });
 
@@ -95,8 +96,9 @@ describe('DestillierUebergabeService', () => {
 
     expect(snackBar.open).toHaveBeenCalled();
     expect(snackBar.open.calls.mostRecent().args[0]).toContain('Beitrag ist gespeichert');
+    // Ohne Verknuepfung bleibt der Einwurf bei seinen Saetzen - Tab "Ausformulieren".
     expect(router.navigate).toHaveBeenCalledWith(['/destillieren'], {
-      queryParams: { nach: 'id-1' },
+      queryParams: { nach: 'id-1', tab: 'ausformulieren' },
     });
   });
 

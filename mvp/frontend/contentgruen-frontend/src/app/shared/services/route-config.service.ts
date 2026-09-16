@@ -100,7 +100,7 @@ export class RouteConfigService {
         };
 
       default:
-        return this.getDynamicRouteConfig(route, defaultConfig);
+        return this.getDynamicRouteConfig(route, queryParams, defaultConfig);
     }
   }
 
@@ -115,13 +115,24 @@ export class RouteConfigService {
     };
   }
 
-  private getDynamicRouteConfig(route: string, defaultConfig: RouteConfig): RouteConfig {
+  private getDynamicRouteConfig(
+    route: string,
+    queryParams: URLSearchParams,
+    defaultConfig: RouteConfig
+  ): RouteConfig {
     // /destillieren und /destillieren/:id
     // Ohne Pfeil in der Kopfleiste: der fuehrte zur Startseite. Die Ansicht hat einen
     // eigenen, der aus dem Satz zum Fangkorb und aus der Typwahl zum Satz zurueckfuehrt.
+    //
+    // Im Schritt Typwahl heisst die Seite "Ausformulieren": Destilliert ist da
+    // schon, hier entsteht der Beitrag. Der Schritt steht in der Adresse
+    // (?schritt=typwahl), damit der Titel ihm folgen kann.
     if (route === ROUTES.DESTILLIEREN || route.startsWith(`${ROUTES.DESTILLIEREN}/`)) {
       return {
-        pageTitle: PAGE_TITLES.DESTILLIEREN,
+        pageTitle:
+          queryParams.get('schritt') === 'typwahl'
+            ? PAGE_TITLES.AUSFORMULIEREN
+            : PAGE_TITLES.DESTILLIEREN,
         showBackButton: false,
         showContributeButton: false,
         showContributionsButton: false

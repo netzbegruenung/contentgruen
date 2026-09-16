@@ -8,6 +8,7 @@ import { DestillierUebergabeService } from './destillier-uebergabe.service';
 import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
+import { FILTER_SCHLUESSEL, filterLaden } from '../raw-input-list/fangkorb-filter';
 
 function einwurf(overrides: Partial<RawInput> = {}): RawInput {
   return {
@@ -82,6 +83,9 @@ describe('DestillierenComponent', () => {
   }
 
   beforeEach(() => {
+    // Tab und Chip liegen im sessionStorage - sonst traegt ein Test den Stand des
+    // vorigen weiter.
+    sessionStorage.removeItem(FILTER_SCHLUESSEL);
     queryParams = convertToParamMap({});
     rawInputService = jasmine.createSpyObj('RawInputService', [
       'getRawInput',
@@ -96,6 +100,8 @@ describe('DestillierenComponent', () => {
     rawInputService.updateStatus.and.returnValue(of(einwurf({ status: 'discarded' })));
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
   });
+
+  afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
 
   describe('Satz', () => {
     it('laedt den Einwurf und uebernimmt den eigenen Entwurf', async () => {
@@ -186,7 +192,10 @@ describe('DestillierenComponent', () => {
       knopf('verwerfen')!.click();
 
       expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1');
+      // Verworfenes liegt unter "Erledigt" - und der Chip dafuer wird eingeschaltet,
+      // sonst waere der Einwurf nach dem Verwerfen scheinbar spurlos weg.
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'erledigt');
+      expect(filterLaden().verworfenSichtbar).toBeTrue();
     });
 
     it('speichert bei Spaeter den Satz und oeffnet den naechsten', async () => {
@@ -196,7 +205,8 @@ describe('DestillierenComponent', () => {
       knopf('spaeter')!.click();
 
       expect(rawInputService.saveDraft).toHaveBeenCalledWith('id-1', 'Noch nicht ganz');
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1');
+      // Zurueckgestellt heisst: Satz steht, Beitrag fehlt - Tab "Ausformulieren".
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformulieren');
     });
 
     it('fuehrt mit Weiter zur Typwahl, Kommentar ist vorausgewaehlt', async () => {
@@ -257,6 +267,45 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('Alles destilliert');
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a[href="/fangkorb"]');
       expect(link).toBeTruthy();
+    });
+
+    it('springt aus dem Ablauf in den Tab der Handlung, ohne Halt in der History', async () => {
+      queryParams = convertToParamMap({ nach: 'id-vorher', tab: 'ausformulieren' });
+      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
+
+      await erstellen(null);
+
+      expect(filterLaden().tab).toBe('ausformulieren');
+      // replaceUrl: Sonst bliebe /destillieren?nach=... in der History stehen, und
+      // das System-Zurueck liefe von hier wieder in dieselbe Weiterleitung.
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
+    });
+
+    it('nimmt ohne Tab-Angabe den Tab "erledigt"', async () => {
+      queryParams = convertToParamMap({ nach: 'id-vorher' });
+      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
+
+      await erstellen(null);
+
+      expect(filterLaden().tab).toBe('erledigt');
+    });
+
+    it('oeffnet mit ?schritt=typwahl die Typwahl, wenn ein eigener Satz dasteht', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich auch im Altbau' }));
+
+      expect(component.schritt).toBe('typwahl');
+      expect(text()).toContain('Waermepumpe lohnt sich auch im Altbau');
+    });
+
+    it('bleibt mit ?schritt=typwahl ohne eigenen Satz beim Satzfeld', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', einwurf({ own_draft: null }));
+
+      expect(component.schritt).toBe('satz');
+      expect(text()).toContain('Was ist der Punkt? Ein Satz.');
     });
   });
   describe('Saetze anderer', () => {

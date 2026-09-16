@@ -6,10 +6,20 @@ import { map } from 'rxjs/operators';
 
 import { BeitragsTyp, RawInputService } from '../services/raw-input.service';
 import { LoggingService } from '../services/logging.service';
+import { FangkorbTab } from '../raw-input-list/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 
 /** Query-Parameter, mit dem die Destillier-Ansicht ein Beitragsformular oeffnet. */
 export const ROHINPUT_PARAM = 'rohinput';
+
+/**
+ * Query-Parameter, mit dem die Destillier-Ansicht direkt in einem Schritt oeffnet.
+ * Heute nur ``typwahl``: Der Fangkorb schickt von "Ausformulieren" dorthin.
+ */
+export const SCHRITT_PARAM = 'schritt';
+
+/** Query-Parameter, der den Tab fuer den Ruecksprung in den Fangkorb traegt. */
+export const TAB_PARAM = 'tab';
 
 /** Was aus dem Einwurf ins Beitragsformular uebernommen wird. Alles bleibt aenderbar. */
 export interface Vorbefuellung {
@@ -67,7 +77,7 @@ export class DestillierUebergabeService {
           duration: 4000,
           panelClass: ['success-snackbar'],
         });
-        this.zumNaechsten(rohinputId);
+        this.zumNaechsten(rohinputId, 'erledigt');
       },
       error: (error) => {
         this.logger.error('Einwurf konnte nicht als verarbeitet markiert werden', error);
@@ -76,14 +86,23 @@ export class DestillierUebergabeService {
           'OK',
           { duration: 8000 },
         );
-        this.zumNaechsten(rohinputId);
+        // Ohne Verknuepfung bleibt der Einwurf bei seinen Saetzen stehen - er liegt
+        // also unter "Ausformulieren", nicht unter "Erledigt".
+        this.zumNaechsten(rohinputId, 'ausformulieren');
       },
     });
   }
 
-  /** Den naechsten offenen Einwurf oeffnen; ``nach`` wird dabei uebersprungen. */
-  zumNaechsten(nach: string): void {
-    this.router.navigate(['/destillieren'], { queryParams: { nach } });
+  /**
+   * Den naechsten offenen Einwurf oeffnen; ``nach`` wird dabei uebersprungen.
+   *
+   * ``tab`` sagt, wo der Fangkorb aufgehen soll, falls keiner mehr offen ist -
+   * der Tab, in dem das Ergebnis der gerade beendeten Handlung liegt. Er wird
+   * durchgereicht statt geraten: Nur die Handlung selbst weiss, was sie bewirkt
+   * hat.
+   */
+  zumNaechsten(nach: string, tab: FangkorbTab): void {
+    this.router.navigate(['/destillieren'], { queryParams: { nach, [TAB_PARAM]: tab } });
   }
 
   zurueckZumEinwurf(rohinputId: string): void {

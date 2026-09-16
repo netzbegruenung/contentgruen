@@ -85,7 +85,8 @@
         </ul>
 
         <p *ngIf="gesamt > einwuerfe.length" class="fangkorb-mehr">
-            Angezeigt werden {{ einwuerfe.length }} von {{ gesamt }} Einwürfen.
+            Von {{ gesamt }} Einwürfen sind die letzten {{ einwuerfe.length }} geladen –
+            ältere fehlen, und die Zähler oben zählen nur die geladenen.
         </p>
     </ng-container>
 </div>
