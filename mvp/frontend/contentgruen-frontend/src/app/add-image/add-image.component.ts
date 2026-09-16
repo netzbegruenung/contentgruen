@@ -149,6 +149,12 @@ export class AddImageComponent implements OnDestroy {
     this.updatePreview(this.imageForm.value);
   }
 
+  /** Nach gescheitertem Speichern: dieselben Eingaben noch einmal senden, nichts leeren. */
+  erneutVersuchen(): void {
+    this.imageError = null;
+    this.saveImageForm();
+  }
+
   navigateBack(): void {
     this.cancel.emit();
   }
