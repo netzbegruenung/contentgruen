@@ -142,3 +142,28 @@
   line-height: 1.4;
   color: var(--text-secondary, #4a4a4a);
 }
+
+/* Typwahl eines Einwurfs, aus dem schon ein Beitrag entstanden ist */
+.schon-entstanden {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-left: 4px solid var(--primary-main);
+  border-radius: 4px;
+  background: var(--commentary-bg);
+}
+
+.text-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-dark);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.text-link:focus-visible {
+  outline: 2px solid var(--primary-dark);
+  outline-offset: 2px;
+}

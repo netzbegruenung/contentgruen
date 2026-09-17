@@ -65,6 +65,11 @@
         </section>
 
         <section *ngIf="schritt === 'typwahl'" class="typwahl">
+            <p *ngIf="entstandenerBeitrag" class="schon-entstanden" role="status">
+                Aus diesem Einwurf ist schon ein Beitrag entstanden.
+                <button *ngIf="entstandenerBeitragAnsehbar" type="button" class="text-link beitrag-ansehen"
+                        (click)="beitragAnsehen()">Ansehen</button>
+            </p>
             <!-- Derselbe Kopf wie spaeter ueber dem Formular: Einwurf, Link, der Satz -->
             <app-beitragskarte *ngIf="einwurfKopf as kopf" class="einwurf-kopf" variante="kopf" [daten]="kopf">
             </app-beitragskarte>

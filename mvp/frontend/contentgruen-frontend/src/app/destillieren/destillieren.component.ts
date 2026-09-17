@@ -26,6 +26,7 @@ import { FangkorbTab, tabMerken, verworfenEinblenden } from '../raw-input-list/f
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
@@ -88,6 +89,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     private uebergabe: DestillierUebergabeService,
     private navigation: NavigationService,
     private logger: LoggingService,
+    private beitragAnsehenDienst: BeitragAnsehenService,
   ) {}
 
   ngOnInit(): void {
@@ -130,7 +132,6 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     return satz.length > 0 && satz.length <= SATZ_LIMIT && !this.arbeitet;
   }
 
-  /** Die Notiz zum Einwurf, sofern sie mehr ist als der Link selbst. */
   /**
    * Der Einwurf als Kopfband fuer die Typwahl, mit dem gerade formulierten Satz.
    * Zwischengespeichert, solange Einwurf und Satz gleich bleiben.
@@ -165,6 +166,28 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
   private kopfCache?: { einwurf: RawInput; satz: string; karte: KartenDaten };
 
+  /**
+   * Ein schon entstandener Beitrag aus diesem Einwurf (der erste), fuer den Hinweis
+   * in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur sehen, dass
+   * es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
+   */
+  get entstandenerBeitrag(): { contentId: string; contentType: string | null } | null {
+    const link = this.einwurf?.links?.[0];
+    return link ? { contentId: link.content_id, contentType: link.content_type } : null;
+  }
+
+  get entstandenerBeitragAnsehbar(): boolean {
+    return this.beitragAnsehenDienst.kannAnsehen(this.entstandenerBeitrag?.contentType);
+  }
+
+  beitragAnsehen(): void {
+    const beitrag = this.entstandenerBeitrag;
+    if (beitrag) {
+      this.beitragAnsehenDienst.oeffnen(beitrag.contentId, beitrag.contentType);
+    }
+  }
+
+  /** Die Notiz zum Einwurf, sofern sie mehr ist als der Link selbst. */
   get notiz(): string | null {
     const inhalt = this.einwurf?.content;
     return inhalt && inhalt !== this.einwurf?.url ? inhalt : null;
@@ -328,15 +351,6 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         this.einwurf = einwurf;
         this.zuletztGespeichert = einwurf.own_draft ?? '';
         this.satz.setValue(this.zuletztGespeichert, { emitEvent: false });
-        // Die Typwahl eines schon verarbeiteten Einwurfs ist ein Rueckweg nach dem
-        // Speichern (System-Zurueck von der Ergebnisseite), kein neuer Anlauf: Dann
-        // in den Fangkorb, wo der Einwurf unter Erledigt liegt. Einen weiteren
-        // Beitrag gibt es ueber "Weiter destillieren", das beim Satz beginnt.
-        if (gewuenschterSchritt === 'typwahl' && einwurf.status === 'processed') {
-          tabMerken('erledigt');
-          this.router.navigate(['/fangkorb'], { replaceUrl: true });
-          return;
-        }
         // Aus dem Fangkorb kommt "Ausformulieren" direkt in die Typwahl - aber nur
         // mit eigenem Satz. Ohne ihn gibt es nichts auszuformulieren, dann steht
         // wie sonst das Satzfeld da.

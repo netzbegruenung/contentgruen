@@ -4,6 +4,7 @@ import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter, Router } fr
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
 import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent, TYPEN } from './destillieren.component';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { DestillierUebergabeService } from './destillier-uebergabe.service';
 import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
@@ -32,12 +33,15 @@ describe('DestillierenComponent', () => {
   let rawInputService: jasmine.SpyObj<RawInputService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
   let navigation: jasmine.SpyObj<NavigationService>;
+  let beitragAnsehen: jasmine.SpyObj<BeitragAnsehenService>;
   let router: Router;
   let params: BehaviorSubject<ParamMap>;
   let queryParams: ParamMap;
 
   async function erstellen(id: string | null, geladen: RawInput = einwurf()) {
     params = new BehaviorSubject(convertToParamMap(id ? { id } : {}));
+    beitragAnsehen = jasmine.createSpyObj('BeitragAnsehenService', ['oeffnen', 'kannAnsehen']);
+    beitragAnsehen.kannAnsehen.and.returnValue(true);
     navigation = jasmine.createSpyObj('NavigationService', [
       'goBack',
       'registerBeforeBack',
@@ -61,6 +65,7 @@ describe('DestillierenComponent', () => {
         { provide: RawInputService, useValue: rawInputService },
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
+        { provide: BeitragAnsehenService, useValue: beitragAnsehen },
         {
           provide: AuthService,
           useValue: {
@@ -366,18 +371,38 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('Waermepumpe lohnt sich auch im Altbau');
     });
 
-    it('fuehrt einen schon verarbeiteten Einwurf mit ?schritt=typwahl in den Fangkorb, Tab Erledigt', async () => {
+    const verarbeitet = () =>
+      einwurf({
+        own_draft: 'Waermepumpe lohnt sich',
+        status: 'processed',
+        links: [{ content_id: 'k-1', content_type: 'commentary', draft_id: null, processed_by: 'alice', processed_at: '' }],
+      } as any);
+
+    it('zeigt bei einem verarbeiteten Einwurf die Typwahl mit Hinweis statt umzuleiten (Rueckweg von der Ergebnisseite)', async () => {
       queryParams = convertToParamMap({ schritt: 'typwahl' });
 
-      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich', status: 'processed' }));
+      await erstellen('id-1', verarbeitet());
 
-      expect(filterLaden().tab).toBe('erledigt');
-      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
-      expect(component.schritt).toBe('satz');
+      expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
+      expect(component.schritt).toBe('typwahl');
+      const hinweis: HTMLElement = fixture.nativeElement.querySelector('.schon-entstanden');
+      expect(hinweis.textContent).toContain('Aus diesem Einwurf ist schon ein Beitrag entstanden');
+      expect(fixture.nativeElement.querySelector('.typen')).toBeTruthy();
+
+      (hinweis.querySelector('.beitrag-ansehen') as HTMLButtonElement).click();
+      expect(beitragAnsehen.oeffnen).toHaveBeenCalledOnceWith('k-1', 'commentary');
+    });
+
+    it('zeigt ohne entstandenen Beitrag keinen Hinweis', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich' }));
+
+      expect(fixture.nativeElement.querySelector('.schon-entstanden')).toBeNull();
     });
 
     it('laesst einen verarbeiteten Einwurf ohne ?schritt beim Satz (Weiter destillieren)', async () => {
-      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich', status: 'processed' }));
+      await erstellen('id-1', verarbeitet());
 
       expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
       expect(component.schritt).toBe('satz');
