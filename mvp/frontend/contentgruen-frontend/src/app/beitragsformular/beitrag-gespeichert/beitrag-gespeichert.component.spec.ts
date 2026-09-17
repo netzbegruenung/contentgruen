@@ -139,8 +139,17 @@ describe('BeitragGespeichertComponent', () => {
       expect(seite().querySelector('.verknuepfung-fehlgeschlagen')).toBeNull();
     });
 
-    it('zeigt einen Hinweis, wenn nicht verknuepft wurde', async () => {
+    it('zeigt bei verknuepft:false keine Karte, nennt die Aussage aber im Hinweis', async () => {
       await oeffnen({}, { aussage: { id: '', text: 'Wärmepumpen sind zu teuer' }, verknuepft: false });
+
+      expect(seite().querySelector('.gespeichert-aussage')).toBeNull();
+      expect(seite().querySelector('.verknuepfung-fehlgeschlagen')!.textContent!.trim()).toBe(
+        'Dein Beitrag ist gespeichert, konnte aber nicht mit „Wärmepumpen sind zu teuer“ verknüpft werden.',
+      );
+    });
+
+    it('nennt ohne bekannten Aussagetext den allgemeinen Hinweis', async () => {
+      await oeffnen({}, { verknuepft: false });
 
       expect(seite().querySelector('.verknuepfung-fehlgeschlagen')!.textContent).toContain('nicht mit der Aussage verknüpft');
     });

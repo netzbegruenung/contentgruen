@@ -20,7 +20,7 @@ import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from '
 import { SHARED_IMPORTS } from '../../shared/shared-imports';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausAussage } from '../../beitragskarte/karten-daten';
-import { StatementService } from '../../services/statement.service';
+import { AUSSAGE_MAX_ZEICHEN, StatementService } from '../../services/statement.service';
 import { StatementSearchResult } from '../../services/dtos/statementDtos';
 import { LoggingService } from '../../services/logging.service';
 
@@ -41,8 +41,7 @@ export const VORSCHLAG_VERZOEGERUNG_MS = 300;
 /** Mindestlaenge einer Aussage ohne Auswahl, wie im Backend (statement_text). Leer bleibt erlaubt. */
 export const AUSSAGE_MIN_ZEICHEN = 10;
 
-/** Obergrenze fuer den Aussagetext, wie im Backend (statement_text). */
-export const AUSSAGE_MAX_ZEICHEN = 1000;
+export { AUSSAGE_MAX_ZEICHEN } from '../../services/statement.service';
 
 /**
  * Der Block "Antwort auf" eines Beitragsformulars, fuer alle Beitragstypen.

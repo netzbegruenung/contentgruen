@@ -17,6 +17,9 @@ import { AUSSAGE_PARAM, SUCHTEXT_PARAM } from '../shared/formular-adresse';
 export const VERKNUEPFUNG_FEHLGESCHLAGEN =
   'Dein Beitrag ist gespeichert, konnte aber nicht mit der Aussage verknüpft werden.';
 
+/** Hoechstlaenge einer Aussage, wie im Backend (statement_text). */
+export const AUSSAGE_MAX_ZEICHEN = 1000;
+
 /** Wie viele vorhandene Aussagen das Antwort-auf-Feld hoechstens vorschlaegt. */
 export const VORSCHLAG_ANZAHL = 3;
 
@@ -93,6 +96,9 @@ export class StatementService {
     if (aussageId) {
       return this.getStatementById(aussageId);
     }
-    return of({ statement_id: '', statement_text: params.get(SUCHTEXT_PARAM)?.trim() ?? '' });
+    // Wie im Backend (statement_text) hoechstens AUSSAGE_MAX_ZEICHEN - eine lange
+    // Suchanfrage wuerde sonst beim Speichern abgelehnt.
+    const text = (params.get(SUCHTEXT_PARAM)?.trim() ?? '').slice(0, AUSSAGE_MAX_ZEICHEN).trim();
+    return of({ statement_id: '', statement_text: text });
   }
 }

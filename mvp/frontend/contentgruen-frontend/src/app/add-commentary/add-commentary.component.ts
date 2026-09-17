@@ -17,6 +17,7 @@ import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { typFarbe } from '../shared/content-type-registry';
 import { einzeilig } from '../beitragsformular/einzeilig';
+import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
@@ -100,6 +101,8 @@ export class AddCommentaryComponent implements OnChanges {
   showReferences = false;
   speichert = false;
   fehler: string | null = null;
+  /** Die knappe Validierungsmeldung des Backends bei 422, sonst null. */
+  validierung: string | null = null;
   /** Gesetzt, sobald der Kommentar gespeichert ist. */
   responseId = '';
   /** ID eines schon vorhandenen, sehr aehnlichen Kommentars; dann wurde nichts angelegt. */
@@ -232,6 +235,7 @@ export class AddCommentaryComponent implements OnChanges {
 
     this.speichert = true;
     this.fehler = null;
+    this.validierung = null;
     this.dublette = null;
 
     const { text, references } = this.commentaryForm.value;
@@ -259,7 +263,9 @@ export class AddCommentaryComponent implements OnChanges {
         // Die Eingaben bleiben stehen; "Erneut versuchen" speichert dasselbe noch einmal.
         this.logger.error('Error saving commentary', error);
         this.speichert = false;
-        this.fehler = SPEICHERN_FEHLGESCHLAGEN;
+        // Bei 422 sagt das Backend, was nicht passt - das ist hilfreicher als "nicht geklappt".
+        this.validierung = validierungsMeldung(error);
+        this.fehler = this.validierung ?? SPEICHERN_FEHLGESCHLAGEN;
       },
     });
   }
@@ -320,5 +326,6 @@ export class AddCommentaryComponent implements OnChanges {
     this.aussage = OHNE_AUSSAGE;
     this.showReferences = false;
     this.fehler = null;
+    this.dublette = null;
   }
 }

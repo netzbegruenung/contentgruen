@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
@@ -320,6 +320,30 @@ describe('AddCommentaryComponent', () => {
     }));
   });
 
+  describe('Validierungsfehler', () => {
+    it('zeigt bei 422 die Meldung des Backends knapp, ohne "Erneut versuchen"', fakeAsync(() => {
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 422,
+              error: { detail: [{ msg: 'Value error, Die Aussage braucht mindestens 10 Zeichen', loc: ['body'] }] },
+            }),
+        ),
+      );
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent!.trim()).toBe(
+        'Die Aussage braucht mindestens 10 Zeichen',
+      );
+      expect(seite().querySelector('app-formular-leiste .submit-btn')!.textContent).not.toContain('Erneut versuchen');
+    }));
+  });
+
   describe('Antwort auf: Ergebnis und Mindestlaenge', () => {
     function tippeAussage(text: string): void {
       const feld: HTMLTextAreaElement = seite().querySelector('.antwort-eingabe')!;
@@ -403,6 +427,24 @@ describe('AddCommentaryComponent', () => {
 
       (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
       expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
+    }));
+
+    it('verschwindet mit Zuruecksetzen, auch der Link in der Leiste', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+      expect(seite().querySelector('.dubletten-hinweis')).toBeTruthy();
+
+      dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+      component.zuruecksetzen();
+      fixture.detectChanges();
+
+      expect(component.dublette).toBeNull();
+      expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
   });
 

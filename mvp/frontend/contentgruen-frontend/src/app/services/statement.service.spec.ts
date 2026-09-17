@@ -36,6 +36,14 @@ describe('StatementService: Aussage eines Beitragsformulars', () => {
       expect(ergebnis).toEqual({ statement_id: 'a-1', statement_text: 'Text' });
     });
 
+    it('kuerzt eine lange ?searchQuery= auf 1000 Zeichen', () => {
+      let ergebnis: any;
+      service.aussageAusAdresse(convertToParamMap({ searchQuery: 'a'.repeat(1500) }))
+        .subscribe((aussage) => (ergebnis = aussage));
+
+      expect(ergebnis.statement_text.length).toBe(1000);
+    });
+
     it('nimmt ?searchQuery= als Text ohne ID und ohne Aufruf', () => {
       let ergebnis: unknown;
       service.aussageAusAdresse(convertToParamMap({ searchQuery: '  Waermepumpen  ' }))

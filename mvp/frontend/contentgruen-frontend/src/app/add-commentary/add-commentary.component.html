@@ -64,12 +64,12 @@
                 </p>
 
                 <app-formular-leiste *ngIf="!responseId"
-                                     [fehler]="fehler ? 'Speichern hat nicht geklappt.' : dublette ? dublettenHinweis : null"
+                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : dublette ? dublettenHinweis : null"
                                      [aktion]="!fehler && dublette ? 'Ansehen' : null" (aktionGeklickt)="dubletteAnsehen()">
                     <button mat-raised-button type="submit" class="submit-btn"
                             [disabled]="speichert || commentaryForm.invalid || aussageZuKurz">
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
-                        {{ fehler ? 'Erneut versuchen' : 'Kommentar speichern' }}
+                        {{ fehler && !validierung ? 'Erneut versuchen' : 'Kommentar speichern' }}
                     </button>
                 </app-formular-leiste>
             </form>

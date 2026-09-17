@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
@@ -308,6 +308,30 @@ describe('AddGenerictextComponent', () => {
         aussage: { id: ID, text: 'Wärmepumpen sind zu teuer' },
         verknuepft: false,
       });
+    }));
+  });
+
+  describe('Validierungsfehler', () => {
+    it('zeigt bei 422 die Meldung des Backends knapp, ohne "Erneut versuchen"', fakeAsync(() => {
+      spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 422,
+              error: { detail: [{ msg: 'Value error, Die Aussage braucht mindestens 10 Zeichen', loc: ['body'] }] },
+            }),
+        ),
+      );
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent!.trim()).toBe(
+        'Die Aussage braucht mindestens 10 Zeichen',
+      );
+      expect(seite().querySelector('app-formular-leiste .submit-btn')!.textContent).not.toContain('Erneut versuchen');
     }));
   });
 

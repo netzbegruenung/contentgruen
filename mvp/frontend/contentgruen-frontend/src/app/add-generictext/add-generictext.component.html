@@ -60,11 +60,11 @@
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
 
-                <app-formular-leiste *ngIf="!responseId" [fehler]="fehler ? 'Speichern hat nicht geklappt.' : null">
+                <app-formular-leiste *ngIf="!responseId" [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : null">
                     <button mat-raised-button type="submit" class="submit-btn"
                             [disabled]="speichert || generictextForm.invalid || aussageZuKurz">
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
-                        {{ fehler ? 'Erneut versuchen' : 'Hintergrundinfo speichern' }}
+                        {{ fehler && !validierung ? 'Erneut versuchen' : 'Hintergrundinfo speichern' }}
                     </button>
                 </app-formular-leiste>
             </form>

@@ -64,7 +64,6 @@ export const NICHT_MARKIERT =
 export class BeitragGespeichertComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
-  readonly verknuepfungFehlgeschlagen = VERKNUEPFUNG_FEHLGESCHLAGEN;
   readonly nichtMarkiert = NICHT_MARKIERT;
 
   typ: GespeichertTyp = 'commentary';
@@ -87,7 +86,17 @@ export class BeitragGespeichertComponent implements OnInit {
     // Der State haengt an der laufenden Navigation; nach dem Neuladen gibt es keinen.
     this.zustand = (this.router.getCurrentNavigation()?.extras.state as GespeichertZustand | undefined) ?? {};
     const aussage = this.zustand.aussage;
-    this.aussageKopf = aussage?.text ? ausAussage(aussage.id, aussage.text) : null;
+    // Nicht verknuepft: keine "Antwort auf"-Karte - der Hinweis nennt die Aussage.
+    this.aussageKopf =
+      aussage?.text && this.zustand.verknuepft !== false ? ausAussage(aussage.id, aussage.text) : null;
+  }
+
+  /** Hinweis, wenn nicht verknuepft werden konnte - mit der Aussage im Text, sofern bekannt. */
+  get verknuepfungFehlgeschlagen(): string {
+    const text = this.zustand.aussage?.text;
+    return text
+      ? `Dein Beitrag ist gespeichert, konnte aber nicht mit „${text}“ verknüpft werden.`
+      : VERKNUEPFUNG_FEHLGESCHLAGEN;
   }
 
   get texte() {
