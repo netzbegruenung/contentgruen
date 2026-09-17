@@ -3,7 +3,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
-import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent } from './destillieren.component';
+import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent, TYPEN } from './destillieren.component';
 import { DestillierUebergabeService } from './destillier-uebergabe.service';
 import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
@@ -366,6 +366,30 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('Waermepumpe lohnt sich auch im Altbau');
     });
 
+    it('fuehrt einen schon verarbeiteten Einwurf mit ?schritt=typwahl in den Fangkorb, Tab Erledigt', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich', status: 'processed' }));
+
+      expect(filterLaden().tab).toBe('erledigt');
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
+      expect(component.schritt).toBe('satz');
+    });
+
+    it('laesst einen verarbeiteten Einwurf ohne ?schritt beim Satz (Weiter destillieren)', async () => {
+      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich', status: 'processed' }));
+
+      expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
+      expect(component.schritt).toBe('satz');
+    });
+
+    it('beschreibt die Typen mit den Saetzen aus der Registry', () => {
+      expect(TYPEN.map((t) => t.erlaeuterung)).toEqual([
+        'Eine Antwort, die du direkt posten kannst.',
+        'Fakten und Zahlen, die eine Antwort stützen.',
+      ]);
+    });
+
     it('bleibt mit ?schritt=typwahl ohne eigenen Satz beim Satzfeld', async () => {
       queryParams = convertToParamMap({ schritt: 'typwahl' });
 
@@ -494,8 +518,8 @@ describe('DestillierenComponent', () => {
       component.schritt = 'typwahl';
       fixture.detectChanges();
 
-      expect(text()).toContain('Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media');
-      expect(text()).toContain('Fakten, Zahlen und Hintergrundinformationen zum Thema');
+      expect(text()).toContain('Eine Antwort, die du direkt posten kannst.');
+      expect(text()).toContain('Fakten und Zahlen, die eine Antwort stützen.');
       const gewaehlt: HTMLElement = fixture.nativeElement.querySelector('.typ.gewaehlt');
       expect(gewaehlt.classList).toContain('typ-commentary');
     });

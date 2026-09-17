@@ -15,7 +15,7 @@ import {
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
-import { typLabel } from '../shared/content-type-registry';
+import { typBeschreibung, typLabel } from '../shared/content-type-registry';
 import {
   DestillierUebergabeService,
   ROHINPUT_PARAM,
@@ -31,18 +31,10 @@ export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
 
 type Beitragstyp = 'commentary' | 'generictext';
 
-/** Die Typwahl, mit denselben Erlaeuterungen wie auf der Beitragen-Seite. */
+/** Die Typwahl, mit denselben Saetzen wie auf der Beitragen-Seite (aus der Registry). */
 export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterung: string }> = [
-  {
-    wert: 'commentary',
-    name: typLabel('commentary'),
-    erlaeuterung: 'Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media',
-  },
-  {
-    wert: 'generictext',
-    name: typLabel('generictext'),
-    erlaeuterung: 'Fakten, Zahlen und Hintergrundinformationen zum Thema',
-  },
+  { wert: 'commentary', name: typLabel('commentary'), erlaeuterung: typBeschreibung('commentary') },
+  { wert: 'generictext', name: typLabel('generictext'), erlaeuterung: typBeschreibung('generictext') },
 ];
 
 /**
@@ -300,6 +292,15 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         this.einwurf = einwurf;
         this.zuletztGespeichert = einwurf.own_draft ?? '';
         this.satz.setValue(this.zuletztGespeichert, { emitEvent: false });
+        // Die Typwahl eines schon verarbeiteten Einwurfs ist ein Rueckweg nach dem
+        // Speichern (System-Zurueck von der Ergebnisseite), kein neuer Anlauf: Dann
+        // in den Fangkorb, wo der Einwurf unter Erledigt liegt. Einen weiteren
+        // Beitrag gibt es ueber "Weiter destillieren", das beim Satz beginnt.
+        if (gewuenschterSchritt === 'typwahl' && einwurf.status === 'processed') {
+          tabMerken('erledigt');
+          this.router.navigate(['/fangkorb'], { replaceUrl: true });
+          return;
+        }
         // Aus dem Fangkorb kommt "Ausformulieren" direkt in die Typwahl - aber nur
         // mit eigenem Satz. Ohne ihn gibt es nichts auszuformulieren, dann steht
         // wie sonst das Satzfeld da.
