@@ -129,7 +129,6 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     oeffnen(false, AUSSAGE_ID);
     const zustand = TestBed.inject(StateManagementService);
     const http = TestBed.inject(HttpTestingController);
-    zustand.setStatementId('22222222-2222-4333-8444-555555555555');
     expect(knopf('.action-buttons-top', 0)).withContext('Knopf der vorigen Suche').toBeTruthy();
 
     // Neue Suche startet; die Antwort bleibt hier offen.
@@ -139,7 +138,6 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
 
     http.expectOne((req) => req.url.endsWith('/api/v1/search/searchByText'));
     expect(zustand.currentState.searchResults).toBeNull();
-    expect(zustand.currentState.statementId).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.action-buttons-top button').length)
       .withContext('kein Hinzufuegen-Knopf der alten Suche mehr')
       .toBe(0);

@@ -6,7 +6,6 @@ import { SearchResponse } from './dtos/searchDtos';
 interface AppState {
   searchQuery: string;
   searchResults: SearchResponse | null;
-  statementId: string | null;
   loading: boolean;
   error: string | null;
   contributions: any[];
@@ -20,7 +19,6 @@ export class StateManagementService {
   private readonly initialState: AppState = {
     searchQuery: '',
     searchResults: null,
-    statementId: null,
     loading: false,
     error: null,
     contributions: [],
@@ -32,7 +30,6 @@ export class StateManagementService {
   // Selectors
   readonly searchQuery$ = this.select(state => state.searchQuery);
   readonly searchResults$ = this.select(state => state.searchResults);
-  readonly statementId$ = this.select(state => state.statementId);
   readonly loading$ = this.select(state => state.loading);
   readonly error$ = this.select(state => state.error);
   readonly contributions$ = this.select(state => state.contributions);
@@ -52,10 +49,6 @@ export class StateManagementService {
     this.updateState({ searchResults: results, loading: false, error: null });
   }
 
-  setStatementId(statementId: string | null): void {
-    this.updateState({ statementId });
-  }
-
   setLoading(loading: boolean): void {
     this.updateState({ loading });
   }
@@ -66,12 +59,12 @@ export class StateManagementService {
   }
 
   /**
-   * Eine neue Suche beginnt: Ergebnisse und Aussage der vorigen gelten nicht mehr.
-   * Wird gerufen, bevor irgendetwas angefragt ist - also auch vor loading=true -,
-   * damit in diesem Fenster kein Knopf die alte Aussage-ID aufgreift.
+   * Eine neue Suche beginnt: Ergebnisse der vorigen - und damit ihre Aussage-ID -
+   * gelten nicht mehr. Wird gerufen, bevor irgendetwas angefragt ist, damit in
+   * diesem Fenster kein Knopf die alte Aussage-ID aufgreift.
    */
   neueSucheBeginnen(): void {
-    this.updateState({ searchResults: null, statementId: null, error: null });
+    this.updateState({ searchResults: null, error: null });
   }
 
   setContributions(contributions: any[]): void {
@@ -86,7 +79,6 @@ export class StateManagementService {
     this.updateState({
       searchQuery: '',
       searchResults: null,
-      statementId: null,
       error: null
     });
   }

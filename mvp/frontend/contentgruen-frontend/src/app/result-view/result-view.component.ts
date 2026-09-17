@@ -316,16 +316,14 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   /**
    * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: per ID, wo
-   * die Suchantwort sie liefert, sonst mit dem Suchtext. Die Ansicht legt keine
-   * Aussage mehr selbst an; ``statementId`` im Zustand setzt heute niemand und
-   * ist hier nur noch Rueckfall (immer null).
+   * die Suchantwort sie liefert, sonst mit dem Suchtext.
    */
   navigateToContribute(typ: 'commentary' | 'generictext'): void {
-    const { searchResults, statementId, loading } = this.stateService.currentState;
+    const { searchResults, loading } = this.stateService.currentState;
     // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
     const ausAntwort = !loading && istAussageId(searchResults?.statement_id) ? searchResults!.statement_id : null;
     this.router.navigate([FORMULAR_PFAD[typ]], {
-      queryParams: aussageParameter(ausAntwort ?? statementId, this.searchQuery),
+      queryParams: aussageParameter(ausAntwort, this.searchQuery),
     });
   }
 
