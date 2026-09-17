@@ -3,9 +3,12 @@ Simple in-memory rate limiter for API endpoints.
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, Iterable, List
 from collections import defaultdict
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -95,3 +98,37 @@ class RateLimiter:
 # Global rate limiters
 # 5 reports per user/session per 15 minutes
 report_rate_limiter = RateLimiter(max_requests=5, window_minutes=15)
+
+# Aussagen aus Suchanfragen: 60 je Adresse in 10 Minuten. Gezaehlt wird jeder
+# Versuch, auch wenn die Aussage schon existiert. Hinter einem gemeinsamen NAT
+# (Geschaeftsstelle, Parteitag) teilen sich viele eine Adresse - deshalb deutlich
+# ueber dem, was eine Person sucht. Ist die Grenze erreicht, sucht man weiter,
+# nur ohne neue Aussage.
+search_query_statement_rate_limiter = RateLimiter(max_requests=60, window_minutes=10)
+
+
+# So oft raeumt der Hintergrund-Task abgelaufene Schluessel weg. Ein Schluessel
+# verschwindet damit spaetestens ein Fenster plus dieser Takt nach seinem letzten
+# Aufruf - fuer die Suchaussage zehn plus eine Minute. Die Datenschutzerklaerung
+# nennt diese Frist ("Ihre Suchanfragen"); wer Fenster oder Takt aendert, zieht
+# sie nach.
+AUFRAEUM_TAKT_SEKUNDEN = 60
+
+
+async def aufraeumen(limiters: Iterable[RateLimiter]) -> None:
+    """Einmal alle Limiter aufraeumen; ein Fehler bei einem haelt die anderen nicht auf."""
+    for limiter in limiters:
+        try:
+            await limiter.cleanup()
+        except Exception as e:
+            logger.error(f"Error in rate limiter cleanup: {e}", exc_info=True)
+
+
+async def aufraeumen_im_takt(
+    limiters: Iterable[RateLimiter], takt_sekunden: float = AUFRAEUM_TAKT_SEKUNDEN
+) -> None:
+    """Hintergrund-Task: raeumt die Limiter in festem Takt auf, bis er abgebrochen wird."""
+    limiters = list(limiters)
+    while True:
+        await asyncio.sleep(takt_sekunden)
+        await aufraeumen(limiters)

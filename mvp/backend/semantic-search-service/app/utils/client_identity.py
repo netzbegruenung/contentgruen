@@ -29,6 +29,7 @@ sie fluechtig und pseudonymisiert.
 """
 
 import hashlib
+import ipaddress
 import secrets
 import uuid
 from typing import Optional
@@ -70,18 +71,42 @@ def get_client_address(request: Request) -> Optional[str]:
     return None
 
 
+def _anschluss(address: str) -> str:
+    """
+    Die Einheit, die ein Kontingent bekommt: bei IPv4 die Adresse, bei IPv6 ihr /64.
+
+    Ein IPv6-Anschluss bekommt typischerweise ein ganzes /64. Mit der vollen
+    Adresse haette jeder Wechsel innerhalb des Praefixes ein frisches Kontingent
+    ergeben. Mehrere Geraete eines Anschlusses teilen sich damit eines, wie
+    hinter einem IPv4-NAT.
+
+    IPv4-mapped-Adressen (::ffff:198.51.100.5) zaehlen als IPv4. Was sich nicht
+    als Adresse lesen laesst, geht unveraendert in den Hash - so wie vorher.
+    """
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return address
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip.ipv4_mapped:
+            return str(ip.ipv4_mapped)
+        return str(ipaddress.ip_network(f"{ip}/64", strict=False))
+    return str(ip)
+
+
 def derive_client_key(request: Request) -> str:
     """
     Pseudonymer, prozesslokaler Schluessel fuer das Rate-Limit.
 
     Gibt "unknown" zurueck, wenn keine Adresse zu ermitteln ist -- solche
     Aufrufe teilen sich dann ein Kontingent, was die sichere Richtung ist.
+    IPv6 wird vorher auf das /64 gekuerzt (_anschluss).
     """
     address = get_client_address(request)
     if not address:
         return "ip:unknown"
 
-    digest = hashlib.sha256(_SALT + address.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(_SALT + _anschluss(address).encode("utf-8")).hexdigest()
     return f"ip:{digest[:16]}"
 
 

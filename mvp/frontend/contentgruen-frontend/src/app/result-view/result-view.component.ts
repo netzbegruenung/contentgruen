@@ -5,7 +5,6 @@ import { NavigationService } from '../services/navigation.service';
 import { Subscription, Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { SearchService } from '../services/search.service';
-import { StatementService } from '../services/statement.service';
 import { SearchResponse, GenerictextResult } from '../services/dtos/searchDtos';
 import { CommentarySearchResultsComponent } from '../commentary-search-results/commentary-search-results.component';
 import { GenerictextSearchResultsComponent } from '../generictext-search-results/generictext-search-results.component';
@@ -119,7 +118,6 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   constructor(
     private searchService: SearchService,
-    private statementService: StatementService,
     private navigationService: NavigationService,
     private stateService: StateManagementService,
     private logger: LoggingService,
@@ -190,7 +188,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
       this.searchQuery = params['searchQuery'] || '';
       if (this.searchQuery) {
-        this.performSearchWithStatement();
+        this.performSearch();
       }
     });
   }
@@ -208,38 +206,17 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Performs search and ensures a statement exists for the search query
-   * This maintains the current behavior but with proper separation of concerns
+   * Neue Suche. Die Aussage zur Suchanfrage legt das Backend im Suchaufruf selbst
+   * an und liefert ihre ID in der Antwort (statement_id) - die Ansicht ruft dafuer
+   * nichts Eigenes mehr auf. Frueher tat sie das ueber /statement/*, und fuer
+   * Anonyme endete das mit 401 und einem Sprung auf /login.
    */
-  private performSearchWithStatement(): void {
+  private performSearch(): void {
     // Ergebnisse und Aussage der vorigen Suche gelten nicht mehr - und zwar ab
-    // sofort, nicht erst mit loading=true, das search() erst nach dem Anlegen der
-    // Aussage setzt. Wer in diesem Fenster auf "hinzufuegen" tippt, darf nicht an
-    // die alte Aussage antworten.
+    // sofort, nicht erst mit loading=true. Wer in diesem Fenster auf "hinzufuegen"
+    // tippt, darf nicht an die alte Aussage antworten.
     this.stateService.neueSucheBeginnen();
-
-    // First, ensure the statement exists
-    this.statementService.findOrCreateStatement(this.searchQuery, 'search_query').subscribe({
-      next: (statementResponse) => {
-        if (statementResponse.statement_was_new) {
-          this.logger.info('Created new statement for search query:', statementResponse.statement_id);
-        } else {
-          this.logger.debug('Using existing statement:', statementResponse.statement_id);
-        }
-
-        // Store the statement ID in the search response for reference
-        // This will be available when we get the search results
-        this.stateService.setStatementId(statementResponse.statement_id);
-
-        // Now perform the actual search
-        this.fetchSearchResults();
-      },
-      error: (error) => {
-        this.logger.error('Error creating statement for search, proceeding with search anyway', error);
-        // Even if statement creation fails, we still perform the search
-        this.fetchSearchResults();
-      }
-    });
+    this.fetchSearchResults();
   }
 
   /**
@@ -339,15 +316,14 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   /**
    * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: per ID, wo
-   * sie bekannt ist (aus der Suchantwort, sonst aus dem eigenen Anlegen), sonst
-   * mit dem Suchtext.
+   * die Suchantwort sie liefert, sonst mit dem Suchtext.
    */
   navigateToContribute(typ: 'commentary' | 'generictext'): void {
-    const { searchResults, statementId, loading } = this.stateService.currentState;
+    const { searchResults, loading } = this.stateService.currentState;
     // Waehrend eine Suche laeuft, stehen noch die Ergebnisse der vorigen im Zustand.
     const ausAntwort = !loading && istAussageId(searchResults?.statement_id) ? searchResults!.statement_id : null;
     this.router.navigate([FORMULAR_PFAD[typ]], {
-      queryParams: aussageParameter(ausAntwort ?? statementId, this.searchQuery),
+      queryParams: aussageParameter(ausAntwort, this.searchQuery),
     });
   }
 

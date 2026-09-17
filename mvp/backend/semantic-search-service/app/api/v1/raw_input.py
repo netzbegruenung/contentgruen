@@ -12,11 +12,15 @@ import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import ValidationError
 
+from dependencies import get_commentary_service, get_generic_text_service
+from domain.models.content_type import ContentType
 from domain.models.raw_input import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
     RawInputSource,
+    RawInputStatus,
     UebergangNichtErlaubt,
 )
 from dtos.raw_input import (
@@ -37,6 +41,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 NICHT_GEFUNDEN = "Diesen Einwurf gibt es nicht."
+BEITRAG_FEHLT = "Diesen Beitrag gibt es nicht."
 
 
 def _einwerfende_person(x_user: Optional[str]) -> Optional[str]:
@@ -172,12 +177,46 @@ async def save_draft(
         )
 
 
+async def _beitrag_pruefen(
+    content_id: uuid.UUID,
+    content_type: Optional[ContentType],
+    dienste: dict,
+) -> None:
+    """
+    Gibt es den Beitrag, mit dem der Einwurf verknuepft werden soll?
+
+    Ohne diese Pruefung konnte jede angemeldete Person jeden Einwurf mit einer
+    erfundenen ID nach "Erledigt" schieben; die Verknuepfung zeigte ins Leere.
+    Geprueft werden Existenz und Typ, nicht der Autor: Der stille Dedup beim
+    Kommentar liefert im regulaeren Ablauf die ID eines fremden Kommentars.
+
+    Ohne ``content_type`` (aeltere App-Version) genuegt ein Beitrag eines der
+    beiden Typen. "Nicht gefunden" und "anderer Typ" melden die Dienste als
+    ValueError; alles andere ist ein echter Fehler und geht weiter - auch ein
+    pydantic.ValidationError, obwohl er von ValueError erbt.
+    """
+    kandidaten = [dienste[content_type]] if content_type else list(dienste.values())
+    for dienst in kandidaten:
+        try:
+            await dienst.get(content_id)
+            return
+        except ValidationError:
+            # Auch ein ValueError, aber kein "gibt es nicht": der Datensatz ist
+            # da und nicht lesbar. Das ist ein Fehler, keine falsche Eingabe.
+            raise
+        except ValueError:
+            continue
+    raise HTTPException(status_code=422, detail=BEITRAG_FEHLT)
+
+
 @router.patch("/{raw_input_id}/status", response_model=RawInputResponse)
 async def update_status(
     raw_input_id: uuid.UUID,
     request: UpdateRawInputStatusRequest,
     x_user: Optional[str] = Header(default=None),
     repository: RawInputRepository = Depends(get_raw_input_repository),
+    commentary_service=Depends(get_commentary_service),
+    generic_text_service=Depends(get_generic_text_service),
 ) -> RawInputResponse:
     """
     Verwerfen (nur die einwerfende Person) oder als verarbeitet markieren.
@@ -185,10 +224,29 @@ async def update_status(
     ``processed`` schreibt in derselben Transaktion die Verknuepfung mit dem
     entstandenen Beitrag, seinem Typ und dem Satz der verarbeitenden Person.
     Erlaubt: discarded aus open oder in_progress, processed aus open, in_progress
-    oder discarded; eine Wiederholung desselben Ziels ist unschaedlich.
+    oder discarded; eine Wiederholung desselben Ziels ist unschaedlich. Den
+    Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
     """
     person = _angemeldete_person(x_user)
     try:
+        if request.status == RawInputStatus.PROCESSED:
+            # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt
+            # 404, ein unerlaubter Wechsel 409 - egal, was hinter content_id steht.
+            # Eine Wiederholung mit derselben content_id prueft den Beitrag nicht
+            # erneut; er kann inzwischen geloescht sein, und die Wiederholung soll
+            # unschaedlich bleiben.
+            schon_verknuepft = repository.statuswechsel_vorpruefen(
+                raw_input_id, request.status, person, request.content_id
+            )
+            if not schon_verknuepft:
+                await _beitrag_pruefen(
+                    request.content_id,
+                    request.content_type,
+                    {
+                        ContentType.COMMENTARY: commentary_service,
+                        ContentType.GENERIC_TEXT: generic_text_service,
+                    },
+                )
         row = repository.set_status(
             raw_input_id,
             request.status,
@@ -197,6 +255,8 @@ async def update_status(
             request.content_type.value if request.content_type else None,
         )
         return RawInputResponse(**row)
+    except HTTPException:
+        raise
     except EinwurfNichtGefunden:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)
     except AktionNichtErlaubt:

@@ -12,9 +12,10 @@ import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 
 /**
- * Portiert aus commentary-result-item.component.voting.spec.ts. Die Abstimmlogik
- * ist unveraendert aus BaseResultItemComponent umgezogen; statt eines Suchpakets
- * mit user_vote bekommt die Leiste nur noch die ID und die Stimme.
+ * Portiert aus commentary-result-item.component.voting.spec.ts; statt eines
+ * Suchpakets mit user_vote bekommt die Leiste nur noch die ID und die Stimme.
+ * Seit dem Abgleich gegen den Ausgangszustand kommen die Folgen Like/Dislike/Like
+ * hinzu, bei denen frueher eine Stimme verloren ging.
  */
 describe('KartenAktionenComponent - Abstimmen', () => {
   const INHALT_ID = '123e4567-e89b-12d3-a456-426614174000';
@@ -166,6 +167,92 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(component.isLiked).toBeTrue();
       expect(component.isDisliked).toBeFalse();
       expect(votingService.setLike.calls.count()).toBe(1);
+    }));
+
+    it('schickt bei Like, Dislike, Like jede Stimme ab (keine geht verloren)', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({} as any));
+      votingService.setDislike.and.returnValue(of({} as any));
+
+      component.toggleLike();
+      tick(50);
+      component.toggleDislike();
+      tick(50);
+      component.toggleLike();
+      tick(50);
+
+      expect(votingService.setLike.calls.count()).toBe(2);
+      expect(votingService.setDislike.calls.count()).toBe(1);
+      expect(component.isLiked).toBeTrue();
+      expect(component.isDisliked).toBeFalse();
+    }));
+
+    it('schickt bei Dislike, Like, Dislike jede Stimme ab', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({} as any));
+      votingService.setDislike.and.returnValue(of({} as any));
+
+      component.toggleDislike();
+      tick(50);
+      component.toggleLike();
+      tick(50);
+      component.toggleDislike();
+      tick(50);
+
+      expect(votingService.setDislike.calls.count()).toBe(2);
+      expect(votingService.setLike.calls.count()).toBe(1);
+      expect(component.isDisliked).toBeTrue();
+    }));
+
+    it('nimmt nach Like, Dislike das Dislike wieder zurueck', fakeAsync(() => {
+      votingService.setLike.and.returnValue(of({} as any));
+      votingService.setDislike.and.returnValue(of({} as any));
+      votingService.removeDislike.and.returnValue(of({} as any));
+
+      component.toggleLike();
+      tick(50);
+      component.toggleDislike();
+      tick(50);
+      component.toggleDislike();
+      tick(50);
+
+      expect(votingService.removeDislike).toHaveBeenCalledWith(INHALT_ID);
+      expect(votingService.removeLike).not.toHaveBeenCalled();
+      expect(component.isLiked).toBeFalse();
+      expect(component.isDisliked).toBeFalse();
+    }));
+
+    it('schickt bei Like und Dislike innerhalb der Entprellung nur den Endstand', fakeAsync(() => {
+      votingService.setDislike.and.returnValue(of({} as any));
+
+      component.toggleLike();
+      component.toggleDislike();
+      tick(50);
+
+      expect(votingService.setLike).not.toHaveBeenCalled();
+      expect(votingService.setDislike.calls.count()).toBe(1);
+      expect(component.isDisliked).toBeTrue();
+    }));
+
+    it('schickt nichts, wenn der Endstand dem Ausgang entspricht', fakeAsync(() => {
+      stimmeAendern('like');
+
+      component.toggleDislike();
+      component.toggleLike();
+      tick(50);
+
+      expect(votingService.setLike).not.toHaveBeenCalled();
+      expect(votingService.setDislike).not.toHaveBeenCalled();
+      expect(component.isLiked).toBeTrue();
+    }));
+
+    it('nimmt bei einem Fehler auf den gespeicherten Stand zurueck, nicht auf leer', fakeAsync(() => {
+      stimmeAendern('like');
+      votingService.setDislike.and.returnValue(throwError(() => ({ status: 500 })));
+
+      component.toggleDislike();
+      tick(50);
+
+      expect(component.isLiked).toBeTrue();
+      expect(component.isDisliked).toBeFalse();
     }));
 
     it('should reset vote states for non-authenticated users', fakeAsync(() => {

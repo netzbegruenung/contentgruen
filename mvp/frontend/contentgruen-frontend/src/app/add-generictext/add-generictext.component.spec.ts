@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
-import { Subject, of } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { GenericTextService } from '../services/generic-text.service';
 import { AddGenericTextResponse } from '../services/dtos/generictextDtos';
 import { StatementService, Verknuepfung } from '../services/statement.service';
@@ -179,4 +179,30 @@ describe('AddGenerictextComponent', () => {
       expect(erfolg).toHaveBeenCalledOnceWith('h-1');
     }));
   });
+
+  it('behaelt nach gescheitertem Speichern die Eingaben und sendet sie mit Erneut versuchen noch einmal', fakeAsync(() => {
+    const senden = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+      throwError(() => ({ status: 500 })),
+      of({ id: 'h-1' } as AddGenericTextResponse),
+    );
+    spyOn(TestBed.inject(StatementService), 'alsAntwortVerknuepfen').and.returnValue(of('ohne-aussage' as Verknuepfung));
+    const werte = { title: 'Waermepumpe lohnt sich', text: 'Ein ausreichend langer Text.' };
+    component.generictextForm.patchValue(werte);
+    component.showReferences = true;
+
+    component.saveGenericTextForm();
+    fixture.detectChanges();
+    const knopf: HTMLButtonElement = fixture.nativeElement.querySelector('.error-state button');
+    expect(knopf.textContent).toContain('Erneut versuchen');
+
+    knopf.click();
+    fixture.detectChanges();
+
+    expect(senden).toHaveBeenCalledTimes(2);
+    expect(senden.calls.mostRecent().args[0].generictext).toEqual(werte);
+    expect(component.generictextForm.value.title).toBe(werte.title);
+    expect(component.showReferences).toBeTrue();
+    expect(component.generictextError).toBeNull();
+    flush();
+  }));
 });

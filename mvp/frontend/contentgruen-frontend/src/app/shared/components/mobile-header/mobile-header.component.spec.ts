@@ -76,6 +76,71 @@ describe('MobileHeaderComponent', () => {
 });
 
 /**
+ * Layout bei 360 px: Ein langer Titel darf nichts aus dem Kopf schieben. Frueher
+ * war der Titel ein Flex-Element ohne min-width: 0 - seine Mindestbreite war die
+ * Textbreite, und Avatar, Ordner und Menue rutschten rechts hinaus.
+ */
+describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
+  let fixture: ComponentFixture<MobileHeaderComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [MobileHeaderComponent],
+      providers: [provideRouter([])],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(MobileHeaderComponent);
+    const host: HTMLElement = fixture.nativeElement;
+    host.style.display = 'block';
+    host.style.width = '360px';
+    document.body.appendChild(host);
+  });
+
+  afterEach(() => fixture.nativeElement.remove());
+
+  function aufbauen(titel: string): void {
+    const komponente = fixture.componentInstance;
+    fixture.detectChanges();
+    komponente.userInfo = { isAuthenticated: true } as any;
+    komponente.pageTitle = titel;
+    komponente.showBackButton = true;
+    komponente.showContributeButton = false;
+    komponente.showContributionsButton = true;
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+  }
+
+  function rechteck(selektor: string): DOMRect {
+    return (fixture.nativeElement.querySelector(selektor) as HTMLElement).getBoundingClientRect();
+  }
+
+  for (const titel of ['Beitrag verfassen', 'Ein sehr langer Seitentitel, der niemals passt']) {
+    it(`zeigt Avatar, Ordner und Menue vollstaendig bei "${titel}"`, () => {
+      aufbauen(titel);
+      const kopf = rechteck('.mobile-header');
+
+      for (const selektor of ['.mobile-header-avatar-container', '.contributions-button', '.menu-button']) {
+        const r = rechteck(selektor);
+        expect(r.width).withContext(`${selektor} Breite`).toBeGreaterThan(0);
+        expect(r.left).withContext(`${selektor} links`).toBeGreaterThanOrEqual(kopf.left);
+        expect(r.right).withContext(`${selektor} rechts`).toBeLessThanOrEqual(kopf.right);
+      }
+      expect(rechteck('.mobile-header-title').right).toBeLessThanOrEqual(rechteck('.mobile-header-actions').left);
+    });
+  }
+
+  it('kuerzt einen zu langen Titel mit Auslassungszeichen', () => {
+    aufbauen('Ein sehr langer Seitentitel, der niemals passt');
+    const text: HTMLElement = fixture.nativeElement.querySelector('.mobile-header-title-text');
+    const stil = getComputedStyle(text);
+
+    expect(text.scrollWidth).toBeGreaterThan(text.clientWidth);
+    expect(stil.textOverflow).toBe('ellipsis');
+    expect(stil.whiteSpace).toBe('nowrap');
+  });
+});
+
+/**
  * Derselbe Klick, aber gegen die echte Routentabelle und den echten Dienst: Nicht
  * nur "der Pfeil meldet sich", sondern "der Pfeil landet dort, wo er soll".
  * Geprueft wird damit die Kette Kopf -> NavigationService -> data.parent.

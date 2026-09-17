@@ -215,6 +215,37 @@ class TestClientKeyDerivation:
             with_header
         ) != client_identity.derive_client_key(without_header)
 
+    @staticmethod
+    def _schluessel(adresse: str) -> str:
+        return client_identity.derive_client_key(
+            Mock(headers={"X-Real-IP": adresse}, client=Mock(host="10.0.0.1"))
+        )
+
+    def test_ipv6_im_selben_64_ergibt_denselben_schluessel(self):
+        """Wer innerhalb seines Praefixes die Adresse wechselt, bekommt kein neues Kontingent."""
+        assert self._schluessel("2001:db8:1:2::1") == self._schluessel(
+            "2001:db8:1:2:abcd:ef01:2345:6789"
+        )
+
+    def test_ipv6_in_verschiedenen_64_ergibt_verschiedene_schluessel(self):
+        assert self._schluessel("2001:db8:1:2::1") != self._schluessel(
+            "2001:db8:1:3::1"
+        )
+
+    def test_ipv4_mapped_zaehlt_wie_ipv4(self):
+        assert self._schluessel("::ffff:198.51.100.5") == self._schluessel(
+            "198.51.100.5"
+        )
+
+    def test_ipv4_bleibt_je_adresse_getrennt(self):
+        assert self._schluessel("198.51.100.5") != self._schluessel("198.51.100.6")
+
+    def test_unlesbare_adresse_ergibt_trotzdem_einen_schluessel(self):
+        schluessel = self._schluessel("kein-ip-wert")
+
+        assert schluessel.startswith("ip:")
+        assert schluessel != "ip:unknown"
+
     def test_missing_address_falls_back_to_shared_key(self):
         request = Mock(headers={}, client=None)
 

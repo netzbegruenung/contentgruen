@@ -125,23 +125,19 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     }));
   }
 
-  it('laesst im Fenster vor loading keine alte Aussage-ID stehen', fakeAsync(() => {
+  it('laesst nach Suchbeginn keine alte Aussage-ID stehen', fakeAsync(() => {
     oeffnen(false, AUSSAGE_ID);
     const zustand = TestBed.inject(StateManagementService);
     const http = TestBed.inject(HttpTestingController);
-    zustand.setStatementId('22222222-2222-4333-8444-555555555555');
     expect(knopf('.action-buttons-top', 0)).withContext('Knopf der vorigen Suche').toBeTruthy();
 
-    // Neue Suche startet. search() - und damit loading=true - kommt erst, wenn
-    // das Anlegen der Aussage beantwortet ist; diese Anfrage bleibt hier offen.
-    const komponente = fixture.componentInstance as unknown as { performSearchWithStatement(): void };
-    komponente.performSearchWithStatement();
+    // Neue Suche startet; die Antwort bleibt hier offen.
+    const komponente = fixture.componentInstance as unknown as { performSearch(): void };
+    komponente.performSearch();
     fixture.detectChanges();
 
-    http.expectOne((req) => req.url.endsWith('/api/v1/statement/searchStatements'));
-    expect(zustand.currentState.loading).toBeFalse();
+    http.expectOne((req) => req.url.endsWith('/api/v1/search/searchByText'));
     expect(zustand.currentState.searchResults).toBeNull();
-    expect(zustand.currentState.statementId).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.action-buttons-top button').length)
       .withContext('kein Hinzufuegen-Knopf der alten Suche mehr')
       .toBe(0);
@@ -152,4 +148,15 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     expect(router.url).toBe('/workflow/add-commentary?searchQuery=waermepumpe%20teuer');
   }));
 
+  it('ruft beim Suchen keinen Statement-Endpunkt auf (anonym waere das 401 und /login)', fakeAsync(() => {
+    oeffnen(false, AUSSAGE_ID);
+    const http = TestBed.inject(HttpTestingController);
+
+    (fixture.componentInstance as unknown as { performSearch(): void }).performSearch();
+    tick();
+
+    http.expectOne((req) => req.url.endsWith('/api/v1/search/searchByText'));
+    http.expectNone((req) => req.url.includes('/api/v1/statement/'));
+    expect(router.url).not.toContain('/login');
+  }));
 });

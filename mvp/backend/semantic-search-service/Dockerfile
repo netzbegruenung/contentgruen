@@ -42,4 +42,9 @@ ENV DOCKER_CONTAINER=true
 
 EXPOSE 8000
 
+# Ein Worker ist Absicht: Die Rate-Limiter (utils/rate_limiter.py) und die Sperre
+# je Suchtext (services/search/search_query_statement.py) leben im Prozessspeicher.
+# Mit --workers N haette jeder Prozess eigene Zaehler und Sperren - die Limits
+# wuerden sich ver-N-fachen, und gleichzeitige gleiche Suchen koennten wieder
+# doppelte Aussagen anlegen. Wer skaliert, braucht dafuer einen geteilten Speicher.
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

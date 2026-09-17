@@ -198,8 +198,16 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.arbeitet = true;
     this.fehler = null;
     this.speichernWennGeaendert().subscribe({
-      // Zurueckgestellt heisst: Der Satz steht, der Beitrag fehlt noch.
-      next: () => this.uebergabe.zumNaechsten(einwurf.id, 'ausformulieren'),
+      next: () => {
+        // Nicht gleich wieder anbieten - sonst springt "Spaeter" ohne Satz
+        // zwischen zwei offenen Einwuerfen endlos hin und her.
+        this.rawInputService.zurueckstellen(einwurf.id);
+        // Ist keiner mehr offen, geht es in den Tab, in dem der Einwurf jetzt
+        // liegt: mit einem Satz (eigenem oder fremdem) unter "Ausformulieren",
+        // ohne unter "Destillieren".
+        const mitSatz = !!this.zuletztGespeichert.trim() || this.fremdeSaetze.length > 0;
+        this.uebergabe.zumNaechsten(einwurf.id, mitSatz ? 'ausformulieren' : 'destillieren');
+      },
       error: (error) => this.speicherfehler(error),
     });
   }
@@ -314,6 +322,10 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   private naechstenOeffnen(): void {
     const nach = this.route.snapshot?.queryParamMap?.get('nach') ?? null;
     const tab = this.route.snapshot?.queryParamMap?.get(TAB_PARAM) as FangkorbTab | null;
+    // Ohne "nach" beginnt eine neue Runde: Zurueckgestelltes kommt wieder dran.
+    if (!nach) {
+      this.rawInputService.rundeBeginnen();
+    }
     this.rawInputService.naechsterOffenerEinwurf(nach).subscribe({
       next: (naechster) => {
         if (naechster) {
@@ -330,6 +342,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // der History stehen, und das System-Zurueck liefe von hier aus wieder in
         // dieselbe Weiterleitung.
         if (nach) {
+          this.rawInputService.rundeBeginnen();
           tabMerken(tab ?? 'erledigt');
           this.router.navigate(['/fangkorb'], { replaceUrl: true });
           return;

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from typing import List, Optional
 
 from core.config import settings
@@ -28,6 +28,11 @@ from dependencies import (
 from services.usage_tracking_service import get_usage_service
 from services.voting_service import VotingService
 from services.search_tracking_service import get_search_tracking_service
+from services.search.search_query_statement import (
+    SearchQueryStatementRecorder,
+    get_search_query_statement_recorder,
+)
+from utils.client_identity import derive_client_key
 from services.polarity_filter_service import get_polarity_filter_service
 from services.keyword_overlap_service import get_keyword_overlap_service
 from dtos.search import (
@@ -39,13 +44,11 @@ from dtos.search import (
     SearchResponse,
 )
 from domain.models.content_type import ContentType
-from domain.models.statement import Statement, StatementSearchResult
+from domain.models.statement import StatementSearchResult
 from services.content.commentary_service import CommentaryService
 from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
-from domain.models.content_status import ContentStatus
-from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
 
 logger = get_logger(__name__)
 
@@ -64,6 +67,7 @@ async def read_test():
 @router.post("/searchByText", response_model=SearchResponse)
 async def search_by_text(
     request: SearchByTextRequest,
+    http_request: Request,
     statement_service: StatementService = Depends(get_statement_service),
     commentary_service: CommentaryService = Depends(get_commentary_service),
     generictext_service: GenericTextService = Depends(get_generic_text_service),
@@ -71,6 +75,9 @@ async def search_by_text(
     image_service=Depends(get_image_service),
     reference_service: ReferenceService = Depends(get_reference_service),
     voting_service: VotingService = Depends(get_voting_service),
+    recorder: SearchQueryStatementRecorder = Depends(
+        get_search_query_statement_recorder
+    ),
     x_user: Optional[str] = Header(None),
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
@@ -99,26 +106,18 @@ async def search_by_text(
                 detail="limit must be a positive integer between 1 and 20",
             )
 
-        # Qdrant handles concurrent searches correctly without needing locks
         statement_was_new = False
         statement_id = None
         statement_text = request.query_text
 
-        # Add the query text to the statement index (if new) - statements don't require review and are released directly
-        statement: Statement = Statement(
-            text=request.query_text,
-            replysuggestions=[],
-        )
+        # Die Suchanfrage wird als Aussage aufgenommen (SEARCH_QUERY, Systemautor)
+        # - nur hier, das Frontend legt nichts mehr an. Rate-Limit und Sperre je
+        # Text: services/search/search_query_statement.py.
         try:
-            # SEARCH_QUERY trennt die Suchanfrage vom kuratierten Material, und der
-            # Autor ist ein Systemwert: wer gesucht hat, haengt nicht am Statement.
-            statement_was_new, statement_id, statement_text = (
-                await statement_service.add_statement(
-                    statement,
-                    SEARCH_QUERY_AUTHOR,
-                    ContentStatus.RELEASED_INTERNAL,
-                    ContentOrigin.SEARCH_QUERY,
-                )
+            statement_was_new, statement_id, statement_text = await recorder.anlegen(
+                statement_service,
+                request.query_text,
+                derive_client_key(http_request),
             )
         except Exception as e:
             logger.warning(f"Failed to auto-create statement during search: {e}")

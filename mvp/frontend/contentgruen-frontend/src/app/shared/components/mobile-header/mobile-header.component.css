@@ -14,6 +14,7 @@
 
 .mobile-header-left {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   min-width: 48px;
 }
@@ -27,8 +28,14 @@
   height: 48px;
 }
 
+/*
+ * min-width: 0, damit der Titel schrumpfen darf. Ohne das ist die Mindestbreite
+ * eines Flex-Elements seine Textbreite: Ein langer Titel ("Beitrag verfassen")
+ * schob bei 360 px Avatar, Ordner und Menue aus dem Bild.
+ */
 .mobile-header-title {
   flex: 1;
+  min-width: 0;
   margin: 0;
   font-family: GrueneType, Roboto, sans-serif;
   font-size: 28px; /* Match h2 mobile size */
@@ -46,8 +53,16 @@
   justify-content: flex-start; /* Align to left */
 }
 
+.mobile-header-title-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .mobile-header-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 4px;
   margin-right: 4px;

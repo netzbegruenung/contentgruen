@@ -43,23 +43,15 @@ from api.v1.moderation import router as moderation_router
 from api.v1.health import router as health_router
 from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
 from services.vision.image_description_worker import start_description_worker
-from utils.rate_limiter import report_rate_limiter
+from utils.rate_limiter import (
+    aufraeumen_im_takt,
+    report_rate_limiter,
+    search_query_statement_rate_limiter,
+)
 import asyncio
 
 # This is a workaround for a dependency issue: "OMP: Error #15: Initializing libomp140.x86_64.dll, but found libomp140.x86_64.dll already initialized.""
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
-
-async def rate_limiter_cleanup():
-    """Background task to periodically clean up expired rate limiter entries."""
-    while True:
-        try:
-            await asyncio.sleep(3600)  # Run every hour
-            logger.debug("Running rate limiter cleanup...")
-            report_rate_limiter.cleanup()
-            logger.debug("Rate limiter cleanup completed")
-        except Exception as e:
-            logger.error(f"Error in rate limiter cleanup: {e}", exc_info=True)
 
 
 @asynccontextmanager
@@ -124,7 +116,15 @@ async def lifespan(app: FastAPI):
 
         # Start rate limiter cleanup task
         logger.info("Starting rate limiter cleanup task...")
-        asyncio.create_task(rate_limiter_cleanup())
+        # Frueher stuendlich und ohne await - die Coroutine lief nie, abgelaufene
+        # Schluessel blieben bis zum Neustart im Speicher.
+        # Referenz halten: asyncio haelt Tasks nur schwach, und beim Shutdown
+        # wird er abgebrochen statt mit der Schleife zu sterben.
+        app.state.rate_limiter_aufraeumen = asyncio.create_task(
+            aufraeumen_im_takt(
+                [report_rate_limiter, search_query_statement_rate_limiter]
+            )
+        )
         logger.info("✅ Rate limiter cleanup task started")
 
         logger.info(
@@ -140,6 +140,9 @@ async def lifespan(app: FastAPI):
         # Shutdown
         try:
             logger.info("Shutting down Gut gesagt Semantic Search Service")
+            aufraeumen = getattr(app.state, "rate_limiter_aufraeumen", None)
+            if aufraeumen is not None:
+                aufraeumen.cancel()
             manager = get_embeddings_manager()
             await manager.shutdown()
             close_app_database()

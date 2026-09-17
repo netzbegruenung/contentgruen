@@ -101,6 +101,8 @@ describe('DestillierenComponent', () => {
       'saveDraftKeepalive',
       'updateStatus',
       'naechsterOffenerEinwurf',
+      'zurueckstellen',
+      'rundeBeginnen',
     ]);
     rawInputService.saveDraft.and.callFake((id: string, sentence: string) =>
       of({ raw_input_id: id, sentence, updated_at: null }),
@@ -215,6 +217,42 @@ describe('DestillierenComponent', () => {
       expect(rawInputService.saveDraft).toHaveBeenCalledWith('id-1', 'Noch nicht ganz');
       // Zurueckgestellt heisst: Satz steht, Beitrag fehlt - Tab "Ausformulieren".
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformulieren');
+      expect(rawInputService.zurueckstellen).toHaveBeenCalledWith('id-1');
+    });
+
+    it('stellt bei Spaeter ohne Satz zurueck und nennt den Tab "Destillieren"', async () => {
+      await erstellen('id-1');
+
+      knopf('spaeter')!.click();
+
+      expect(rawInputService.saveDraft).not.toHaveBeenCalled();
+      expect(rawInputService.zurueckstellen).toHaveBeenCalledWith('id-1');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'destillieren');
+    });
+
+    it('nennt bei Spaeter ohne eigenen, aber mit fremdem Satz den Tab "Ausformulieren"', async () => {
+      await erstellen(
+        'id-1',
+        einwurf({
+          status: 'in_progress',
+          drafts: [{ id: 's-1', user_id: 'bob', sentence: 'Satz von Bob', updated_at: '2026-09-13T12:00:00Z' }],
+        }),
+      );
+
+      knopf('spaeter')!.click();
+
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformulieren');
+    });
+
+    it('stellt bei gescheitertem Speichern nichts zurueck', async () => {
+      await erstellen('id-1');
+      rawInputService.saveDraft.and.returnValue(throwError(() => ({ status: 500 })));
+      component.satz.setValue('Noch nicht ganz', { emitEvent: false });
+
+      knopf('spaeter')!.click();
+
+      expect(rawInputService.zurueckstellen).not.toHaveBeenCalled();
+      expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
     });
 
     it('fuehrt mit Weiter zur Typwahl, Kommentar ist vorausgewaehlt', async () => {
@@ -264,6 +302,27 @@ describe('DestillierenComponent', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-9'], {
         replaceUrl: true,
       });
+      // Mitten im Ablauf bleibt Zurueckgestelltes zurueckgestellt.
+      expect(rawInputService.rundeBeginnen).not.toHaveBeenCalled();
+    });
+
+    it('beginnt ohne "nach" eine neue Runde, bevor es sucht', async () => {
+      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(einwurf({ id: 'id-9' })));
+
+      await erstellen(null);
+
+      expect(rawInputService.rundeBeginnen).toHaveBeenCalledBefore(rawInputService.naechsterOffenerEinwurf);
+    });
+
+    it('beginnt am Ende des Ablaufs eine neue Runde', async () => {
+      queryParams = convertToParamMap({ nach: 'id-vorher', tab: 'destillieren' });
+      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
+
+      await erstellen(null);
+
+      expect(rawInputService.rundeBeginnen).toHaveBeenCalled();
+      expect(filterLaden().tab).toBe('destillieren');
+      expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
     });
 
     it('sagt "Alles destilliert", wenn nichts mehr offen ist', async () => {

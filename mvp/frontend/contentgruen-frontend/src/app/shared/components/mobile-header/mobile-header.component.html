@@ -16,7 +16,11 @@
     ("Fangkorb"), nicht die Marke - ein Link darauf fuehrte woanders hin, als er
     verspricht. Den Weg zur Startseite bietet mobil der erste Menueeintrag.
   -->
-  <h2 class="mobile-header-title">{{ pageTitle }}</h2>
+  <!--
+    Der Text sitzt in einem eigenen Element: Die Ellipse wirkt nur an einem
+    Block, nicht am Flex-Container selbst.
+  -->
+  <h2 class="mobile-header-title"><span class="mobile-header-title-text">{{ pageTitle }}</span></h2>
 
   <div class="mobile-header-actions">
     <!-- Avatar with Material icon fallback for anonymous users -->

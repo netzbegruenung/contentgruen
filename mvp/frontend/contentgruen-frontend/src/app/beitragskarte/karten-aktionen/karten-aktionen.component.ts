@@ -19,7 +19,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime } from 'rxjs/operators';
 
 import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
@@ -30,8 +30,8 @@ import { ReportDialogComponent } from '../../shared/components/report-dialog/rep
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden.
  *
- * Die Logik stammt 1:1 aus BaseResultItemComponent (optimistisches Abstimmen mit
- * Entprellung und Ruecknahme, 401/403/429-Behandlung). Sie sitzt in einer eigenen
+ * Abstimmen ist optimistisch mit Entprellung und Ruecknahme, dazu 401/403/429-Behandlung
+ * (urspruenglich aus BaseResultItemComponent). Die Leiste sitzt in einer eigenen
  * Komponente, damit kompakte Karten und Rohlinge, die als Ganzes antippbar sind,
  * keine Knoepfe und keine Dienste mitschleppen.
  *
@@ -39,6 +39,8 @@ import { ReportDialogComponent } from '../../shared/components/report-dialog/rep
  * nicht: kein Zeiger, kein Fokus, aria-disabled. Ausgegraut wird sie bewusst nicht,
  * die Vorschau soll zeigen, wie der Beitrag aussehen wird.
  */
+type Stimme = 'like' | 'dislike' | null;
+
 @Component({
   selector: 'app-karten-aktionen',
   standalone: true,
@@ -69,9 +71,19 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   isVoting = false;
   copyAnimationActive = false;
 
-  // Traegt den Zustand vor dem Umschalten, danach entscheidet die Entprellung.
-  private likeSubject = new Subject<boolean>();
-  private dislikeSubject = new Subject<boolean>();
+  /**
+   * Die Stimme, wie sie vor dem ersten Tippen seit dem letzten Abgleich stand;
+   * undefined, solange nichts aussteht. Gegen sie wird nach der Entprellung
+   * abgeglichen: gesendet wird, was noetig ist, um vom Ausgangs- zum Zielzustand
+   * zu kommen.
+   *
+   * Frueher trugen zwei Subjects je Knopf "war vorher an" durch
+   * distinctUntilChanged. Like -> Dislike -> Like schickte dort zweimal false auf
+   * den Like-Strom, das zweite fiel weg - die Karte zeigte Like, gespeichert war
+   * Dislike.
+   */
+  private ausgang: Stimme | undefined;
+  private abgleich = new Subject<void>();
   private abonniert = false;
 
   constructor(
@@ -92,12 +104,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.abonniert = true;
-    this.likeSubject
-      .pipe(debounceTime(50), distinctUntilChanged())
-      .subscribe((wasLiked) => this.performLikeVote(wasLiked));
-    this.dislikeSubject
-      .pipe(debounceTime(50), distinctUntilChanged())
-      .subscribe((wasDisliked) => this.performDislikeVote(wasDisliked));
+    this.abgleich.pipe(debounceTime(50)).subscribe(() => this.abgleichen());
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -107,34 +114,15 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.likeSubject.complete();
-    this.dislikeSubject.complete();
+    this.abgleich.complete();
   }
 
   toggleLike(): void {
-    if (this.vorschau || this.isVoting) {
-      return;
-    }
-    const wasLiked = this.isLiked;
-    this.isLiked = !wasLiked;
-    if (this.isLiked) {
-      this.isDisliked = false;
-    }
-    this.cdr.markForCheck();
-    this.likeSubject.next(wasLiked);
+    this.umschalten(this.isLiked ? null : 'like');
   }
 
   toggleDislike(): void {
-    if (this.vorschau || this.isVoting) {
-      return;
-    }
-    const wasDisliked = this.isDisliked;
-    this.isDisliked = !wasDisliked;
-    if (this.isDisliked) {
-      this.isLiked = false;
-    }
-    this.cdr.markForCheck();
-    this.dislikeSubject.next(wasDisliked);
+    this.umschalten(this.isDisliked ? null : 'dislike');
   }
 
   kopieren(): void {
@@ -168,84 +156,84 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private initializeVoteState(): void {
-    this.isLiked = this.stimme === 'like';
-    this.isDisliked = this.stimme === 'dislike';
+    this.anzeigen(this.stimme ?? null);
+    this.ausgang = undefined;
   }
 
-  private performLikeVote(wasLiked: boolean): void {
-    const userInfo = this.authService.getUserInfo();
-    if (!userInfo || !userInfo.isAuthenticated) {
-      this.isLiked = wasLiked;
-      this.isDisliked = false;
-      this.cdr.markForCheck();
-      this.promptLogin();
+  private get angezeigt(): Stimme {
+    return this.isLiked ? 'like' : this.isDisliked ? 'dislike' : null;
+  }
+
+  private anzeigen(stimme: Stimme): void {
+    this.isLiked = stimme === 'like';
+    this.isDisliked = stimme === 'dislike';
+  }
+
+  private umschalten(ziel: Stimme): void {
+    // Waehrend eine Anfrage laeuft, bleibt der Knopf ohne Wirkung - die Anzeige
+    // aendert sich dann auch nicht, es geht also keine Stimme stumm verloren.
+    if (this.vorschau || this.isVoting) {
+      return;
+    }
+    if (this.ausgang === undefined) {
+      this.ausgang = this.angezeigt;
+    }
+    this.anzeigen(ziel);
+    this.cdr.markForCheck();
+    this.abgleich.next();
+  }
+
+  private abgleichen(): void {
+    const ausgang = this.ausgang;
+    const ziel = this.angezeigt;
+    if (ausgang === undefined) {
+      return;
+    }
+    if (ziel === ausgang) {
+      this.ausgang = undefined;
       return;
     }
 
-    if (this.isVoting) {
+    const userInfo = this.authService.getUserInfo();
+    if (!userInfo || !userInfo.isAuthenticated) {
+      this.zuruecknehmen(ausgang);
+      this.promptLogin();
       return;
     }
 
     const contentId = this.inhaltId;
     this.isVoting = true;
 
-    const voteObservable = wasLiked
-      ? this.votingService.removeLike(contentId)
-      : this.votingService.setLike(contentId);
+    const anfrage =
+      ziel === 'like'
+        ? this.votingService.setLike(contentId)
+        : ziel === 'dislike'
+          ? this.votingService.setDislike(contentId)
+          : ausgang === 'like'
+            ? this.votingService.removeLike(contentId)
+            : this.votingService.removeDislike(contentId);
+    const gemeldet = ziel === 'like' || (ziel === null && ausgang === 'like') ? this.likeToggled : this.dislikeToggled;
 
-    voteObservable.subscribe({
+    anfrage.subscribe({
       next: () => {
-        this.likeToggled.emit(contentId);
+        this.ausgang = undefined;
         this.isVoting = false;
+        gemeldet.emit(contentId);
         this.cdr.markForCheck();
       },
       error: (error) => {
-        this.logger.error('Failed to submit like:', error);
-        this.isLiked = wasLiked;
-        this.isDisliked = false;
+        this.logger.error('Failed to submit vote:', error);
         this.isVoting = false;
+        this.zuruecknehmen(ausgang);
         this.handleVoteError(error);
-        this.cdr.markForCheck();
       },
     });
   }
 
-  private performDislikeVote(wasDisliked: boolean): void {
-    const userInfo = this.authService.getUserInfo();
-    if (!userInfo || !userInfo.isAuthenticated) {
-      this.isLiked = false;
-      this.isDisliked = wasDisliked;
-      this.cdr.markForCheck();
-      this.promptLogin();
-      return;
-    }
-
-    if (this.isVoting) {
-      return;
-    }
-
-    const contentId = this.inhaltId;
-    this.isVoting = true;
-
-    const voteObservable = wasDisliked
-      ? this.votingService.removeDislike(contentId)
-      : this.votingService.setDislike(contentId);
-
-    voteObservable.subscribe({
-      next: () => {
-        this.dislikeToggled.emit(contentId);
-        this.isVoting = false;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        this.logger.error('Failed to submit dislike:', error);
-        this.isLiked = false;
-        this.isDisliked = wasDisliked;
-        this.isVoting = false;
-        this.handleVoteError(error);
-        this.cdr.markForCheck();
-      },
-    });
+  private zuruecknehmen(ausgang: Stimme): void {
+    this.anzeigen(ausgang);
+    this.ausgang = undefined;
+    this.cdr.markForCheck();
   }
 
   private promptLogin(): void {

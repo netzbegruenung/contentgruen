@@ -250,6 +250,12 @@ export class AddGenerictextComponent implements OnChanges, OnDestroy {
         this.updatePreview(this.generictextForm.value);
     }
 
+    /** Nach gescheitertem Speichern: dieselben Eingaben noch einmal senden, nichts leeren. */
+    erneutVersuchen(): void {
+        this.generictextError = null;
+        this.saveGenericTextForm();
+    }
+
     /** Nach gescheiterter Verknuepfung: der Beitrag steht, weiter wie nach dem Speichern. */
     weiterNachVerknuepfungsFehler(): void {
         this.success.emit(this.responseId);

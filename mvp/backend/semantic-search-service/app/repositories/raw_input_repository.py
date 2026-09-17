@@ -322,20 +322,9 @@ class RawInputRepository:
                     .with_for_update()
                     .one_or_none()
                 )
-                if row is None:
-                    raise EinwurfNichtGefunden(raw_input_id)
-
-                if (
-                    neuer_status == RawInputStatus.DISCARDED
-                    and row.submitted_by != user_id
-                ):
-                    raise AktionNichtErlaubt(
-                        "Verwerfen darf nur, wer den Einwurf eingeworfen hat"
-                    )
-
-                aktuell = RawInputStatus(row.status)
-                if not uebergang_erlaubt(aktuell, neuer_status):
-                    raise UebergangNichtErlaubt(aktuell, neuer_status)
+                aktuell = self._statuswechsel_pruefen(
+                    row, raw_input_id, neuer_status, user_id
+                )
 
                 row.status = neuer_status.value
                 if neuer_status == RawInputStatus.PROCESSED:
@@ -356,7 +345,69 @@ class RawInputRepository:
             logger.error(f"Fehler beim Statuswechsel: {e}", exc_info=True)
             raise
 
+    def statuswechsel_vorpruefen(
+        self,
+        raw_input_id: uuid.UUID,
+        neuer_status: RawInputStatus,
+        user_id: str,
+        content_id: Optional[uuid.UUID] = None,
+    ) -> bool:
+        """
+        Dieselben Pruefungen wie set_status, nur lesend und ohne Sperre.
+
+        Der Router ruft das vor der Beitragspruefung, damit ein unbekannter
+        Einwurf 404 bleibt und ein unerlaubter Wechsel 409, egal was hinter
+        ``content_id`` steht. set_status prueft unter der Sperre erneut.
+
+        Returns:
+            True, wenn der Einwurf mit genau dieser ``content_id`` schon
+            verknuepft ist - eine Wiederholung, deren Beitrag nicht noch einmal
+            geprueft werden muss (er kann inzwischen geloescht sein).
+
+        Raises:
+            EinwurfNichtGefunden, AktionNichtErlaubt, UebergangNichtErlaubt
+        """
+        with self.db.get_session() as session:
+            row = (
+                session.query(RawInput)
+                .filter(RawInput.id == raw_input_id)
+                .one_or_none()
+            )
+            self._statuswechsel_pruefen(row, raw_input_id, neuer_status, user_id)
+            if content_id is None:
+                return False
+            return (
+                session.query(RawInputContentLink.content_id)
+                .filter(
+                    RawInputContentLink.raw_input_id == raw_input_id,
+                    RawInputContentLink.content_id == content_id,
+                )
+                .first()
+                is not None
+            )
+
     # Hilfsfunktionen
+
+    @staticmethod
+    def _statuswechsel_pruefen(
+        row: Optional[RawInput],
+        raw_input_id: uuid.UUID,
+        neuer_status: RawInputStatus,
+        user_id: str,
+    ) -> RawInputStatus:
+        """Existenz, Berechtigung und Uebergang; gibt den aktuellen Status zurueck."""
+        if row is None:
+            raise EinwurfNichtGefunden(raw_input_id)
+
+        if neuer_status == RawInputStatus.DISCARDED and row.submitted_by != user_id:
+            raise AktionNichtErlaubt(
+                "Verwerfen darf nur, wer den Einwurf eingeworfen hat"
+            )
+
+        aktuell = RawInputStatus(row.status)
+        if not uebergang_erlaubt(aktuell, neuer_status):
+            raise UebergangNichtErlaubt(aktuell, neuer_status)
+        return aktuell
 
     @staticmethod
     def _entwurf_upsert(raw_input_id: uuid.UUID, user_id: str, sentence: str):

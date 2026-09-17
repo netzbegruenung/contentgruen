@@ -100,10 +100,30 @@ export interface DraftResponse {
 export class RawInputService {
   private baseApiUrl = `${environment.baseUrl}/api/v1/rawinput`;
 
+  /**
+   * Einwuerfe, die in dieser Runde mit "Spaeter" zurueckgestellt wurden.
+   *
+   * Ohne Satz unterscheidet sich ein zurueckgestellter Einwurf serverseitig nicht
+   * von einem unberuehrten - "Spaeter" lief deshalb bei zwei solchen Einwuerfen
+   * endlos zwischen beiden hin und her. Die Liste lebt nur im Speicher der
+   * laufenden App: nichts davon landet im Browser-Speicher oder auf dem Server.
+   */
+  private readonly zurueckgestellt = new Set<string>();
+
   constructor(
     private http: HttpClient,
     private logger: LoggingService,
   ) {}
+
+  /** Fuer den Rest der Runde nicht mehr automatisch anbieten. */
+  zurueckstellen(id: string): void {
+    this.zurueckgestellt.add(id);
+  }
+
+  /** Neue Runde: Zurueckgestelltes wird wieder angeboten. */
+  rundeBeginnen(): void {
+    this.zurueckgestellt.clear();
+  }
 
   addRawInput(request: AddRawInputRequest): Observable<AddRawInputResponse> {
     this.logger.debug('Werfe Rohinput ein');
@@ -182,8 +202,9 @@ export class RawInputService {
    * Destilliert heisst nur, dass jemand anderes schon einen Satz hat - es gibt
    * keine Sperre, der eigene Satz kann trotzdem kommen. Einwuerfe mit eigenem
    * Entwurf hat man mit "Spaeter" zurueckgestellt; sie bleiben antippbar, werden
-   * aber nicht automatisch wieder angeboten. Die Reihenfolge (eigene zuerst, dann
-   * neueste) kommt vom Server.
+   * aber nicht automatisch wieder angeboten. Dasselbe gilt fuer Einwuerfe, die in
+   * dieser Runde ohne Satz zurueckgestellt wurden (``zurueckstellen``). Die
+   * Reihenfolge (eigene zuerst, dann neueste) kommt vom Server.
    */
   naechsterOffenerEinwurf(ausser?: string | null): Observable<RawInput | null> {
     return this.getRawInputs(1, 100).pipe(
@@ -193,7 +214,8 @@ export class RawInputService {
             (einwurf) =>
               (einwurf.status === 'open' || einwurf.status === 'in_progress') &&
               !einwurf.own_draft &&
-              einwurf.id !== ausser,
+              einwurf.id !== ausser &&
+              !this.zurueckgestellt.has(einwurf.id),
           ) ?? null,
       ),
     );
