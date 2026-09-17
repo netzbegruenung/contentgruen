@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import utc_jetzt
 import logging
 from fastapi import APIRouter, Header, HTTPException, Depends
 
@@ -151,7 +152,7 @@ async def add_commentary(
         for reference_id, description in new_references:
             commentary_reference = CommentaryReference(
                 reference_id=reference_id,
-                created=datetime.datetime.now(),
+                created=utc_jetzt(),
                 description=description,
             )
 

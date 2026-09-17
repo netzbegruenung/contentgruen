@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import UtcZeit
 import json
 from typing import List, Optional
 import uuid
@@ -82,8 +83,8 @@ class BaseContentDbEntry(BaseContent):
     """
 
     id: uuid.UUID
-    created: datetime.datetime
-    last_modified: datetime.datetime
+    created: UtcZeit
+    last_modified: UtcZeit
     original_author: str
     last_modified_by: str
     authors: List[AuthorEntry] = []

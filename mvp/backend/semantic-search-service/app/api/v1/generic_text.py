@@ -1,4 +1,5 @@
 from typing import List
+from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header
 import datetime
 import logging
@@ -176,7 +177,7 @@ async def add_generic_text(
         for reference_id, description in new_references:
             generictext_reference = GenericTextReference(
                 reference_id=reference_id,
-                created=datetime.datetime.now(),
+                created=utc_jetzt(),
                 description=description,
             )
             generictext_references.append(generictext_reference)

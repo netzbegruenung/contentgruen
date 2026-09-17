@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import UtcZeit
 from pydantic import BaseModel, ValidationError, field_validator
 from typing import List
 import json
@@ -36,8 +37,8 @@ class StatementReplysuggestion(BaseModel):
     id: uuid.UUID
     content_type: ContentType
     relevance: float
-    created: datetime.datetime
-    updated: datetime.datetime
+    created: UtcZeit
+    updated: UtcZeit
     number_of_usages: int
 
     @field_validator("id", mode="before")

@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import utc_jetzt
 from typing import List, Optional
 import uuid
 import logging
@@ -185,7 +186,7 @@ class StatementService(
             return False, existing_statement.id, existing_statement.text
 
         # Create StatementInput object from Statement object
-        now = created_at or datetime.datetime.now()
+        now = created_at or utc_jetzt()
         statement_input = StatementDbEntry(
             text=statement.text,
             id=id or uuid.uuid4(),
@@ -281,8 +282,8 @@ class StatementService(
             id=replysuggestion_id,
             content_type=content_type,
             relevance=relevance,
-            created=datetime.datetime.now(),
-            updated=datetime.datetime.now(),
+            created=utc_jetzt(),
+            updated=utc_jetzt(),
             number_of_usages=0,
         )
 

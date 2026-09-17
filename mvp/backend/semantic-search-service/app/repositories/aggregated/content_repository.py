@@ -1,4 +1,5 @@
 from typing import List, Optional, Type
+from domain.models.zeit import utc_jetzt
 import datetime
 import uuid
 import logging
@@ -109,7 +110,7 @@ class ContentRepository(
         ]
 
         # Create ContentInput objects from the initial content data
-        now = datetime.datetime.now()
+        now = utc_jetzt()
         initial_content_inputs = [
             ContentDbEntry(
                 text=content.text,

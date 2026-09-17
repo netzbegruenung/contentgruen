@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import UtcZeit
 from typing import Optional
 from pydantic import BaseModel, field_validator
 
@@ -20,7 +21,7 @@ class EditEntry(BaseModel):
     """
 
     editor: str
-    timestamp: datetime.datetime
+    timestamp: UtcZeit
     action: Optional[str] = None
 
     @field_validator("timestamp", mode="before")

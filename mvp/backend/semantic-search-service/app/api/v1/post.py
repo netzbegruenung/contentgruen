@@ -1,4 +1,5 @@
 from typing import List
+from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header, Query
 import datetime
 import logging
@@ -97,7 +98,7 @@ async def add_post(
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
 
-        now = datetime.datetime.now()
+        now = utc_jetzt()
         post_input = request.post
         # Post ingestion is the type-specific input seam (kept at the router, not in a
         # service clone): build the stored entry and persist via the generic service.

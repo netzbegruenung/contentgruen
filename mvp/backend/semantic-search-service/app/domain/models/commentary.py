@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import UtcZeit
 from pydantic import BaseModel, ValidationError, field_validator, Field
 from typing import List, Optional
 import uuid
@@ -35,7 +36,7 @@ class CommentaryReference(BaseModel):
     """
 
     reference_id: uuid.UUID
-    created: datetime.datetime
+    created: UtcZeit
     description: Optional[str] = None
     reference_text: Optional[str] = None
     reference_description: Optional[str] = None
