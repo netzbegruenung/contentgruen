@@ -21,3 +21,24 @@ Die dahinterliegende Logik ist ueber die Unit-Tests abgedeckt:
 
 Each script requires `requests` and targets `http://localhost:8000` (semantic search) or
 `http://localhost:5054` (BFF).
+
+## Bestand in Qdrant (im semantic-search-Container)
+
+Diese beiden Skripte laufen nicht gegen die HTTP-API, sondern per stdin im
+semantic-search-Container, mit dessen Qdrant-Umgebung:
+
+- `bestand_pruefen.py` – **nur lesend**. Zaehlt Punkte je Typ und Herkunft,
+  Kommentare/Hintergrundinfos ohne verknuepfende Aussage, normalisiert gleiche
+  Aussagen, Stand des Felds `text_normalisiert`; mit `--praefix N` zusaetzlich eine
+  Stichprobe, mit welchem E5-Praefix die Vektoren eingebettet sind. Gibt nur Zaehler
+  aus, keine Texte, IDs oder Autoren.
+- `text_normalisiert_nachtragen.py` – traegt das Payload-Feld `text_normalisiert`
+  fuer Aussagen und Kommentare nach (exakter Abgleich der Dublettenpruefung) und legt
+  den Keyword-Index an. Ohne `--ausfuehren` wird nur gezaehlt; idempotent. Erst nach
+  dem Ausrollen der Version laufen lassen, die das Feld schreibt.
+
+```bash
+docker exec -i contentgruen-semantic-search python - < mvp/scripts/manual/bestand_pruefen.py
+docker exec -i contentgruen-semantic-search python - --ausfuehren \
+    < mvp/scripts/manual/text_normalisiert_nachtragen.py
+```
