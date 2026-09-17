@@ -100,15 +100,44 @@ async def test_verknuepfen_per_text_und_ohne_dublette(statement_service):
     )
 
     assert erste == zweite
-    aussage = await statement_service.get(erste)
+    statement_id, statement_text = erste
+    assert statement_text == "Klimaschutz zerstört Arbeitsplätze"
+    aussage = await statement_service.get(statement_id)
     assert [r.id for r in aussage.replysuggestions] == [beitrag_id]
     assert aussage.replysuggestions_count == 1
     assert aussage.origin is ContentOrigin.MANUALLY_CREATED
     assert aussage.original_author == "person-1"
 
 
+async def test_parallele_verknuepfungen_derselben_aussage(statement_service):
+    import asyncio
+
+    statement_id = await _anlegen(
+        statement_service,
+        "Tempo 30 in der Stadt bringt gar nichts",
+        "person-1",
+        ContentOrigin.MANUALLY_CREATED,
+    )
+    beitraege = [uuid.uuid4() for _ in range(5)]
+
+    await asyncio.gather(
+        *(
+            statement_service.beitrag_als_antwort_verknuepfen(
+                beitrag, ContentType.COMMENTARY, 1.0, "person-1", statement_id
+            )
+            for beitrag in beitraege
+        )
+    )
+
+    aussage = await statement_service.get(statement_id)
+    assert {r.id for r in aussage.replysuggestions} == set(beitraege)
+    assert aussage.replysuggestions_count == 5
+
+
 async def test_unbekannte_aussage_wirft(statement_service):
-    with pytest.raises(ValueError):
+    from services.content.statement_service import AussageNichtGefunden
+
+    with pytest.raises(AussageNichtGefunden):
         await statement_service.beitrag_als_antwort_verknuepfen(
             uuid.uuid4(), ContentType.COMMENTARY, 1.0, "person-1", uuid.uuid4()
         )
