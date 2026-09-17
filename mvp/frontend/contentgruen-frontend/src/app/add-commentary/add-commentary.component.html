@@ -58,10 +58,16 @@
                        rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
+                <p *ngIf="dublette" class="dubletten-hinweis" role="status">
+                    {{ dublettenHinweis }}
+                    <button type="button" class="text-link dublette-ansehen" (click)="dubletteAnsehen()">Ansehen</button>
+                </p>
 
-                <app-formular-leiste *ngIf="!responseId" [fehler]="fehler ? 'Speichern hat nicht geklappt.' : null">
+                <app-formular-leiste *ngIf="!responseId"
+                                     [fehler]="fehler ? 'Speichern hat nicht geklappt.' : dublette ? dublettenHinweis : null"
+                                     [aktion]="!fehler && dublette ? 'Ansehen' : null" (aktionGeklickt)="dubletteAnsehen()">
                     <button mat-raised-button type="submit" class="submit-btn"
-                            [disabled]="speichert || commentaryForm.invalid">
+                            [disabled]="speichert || commentaryForm.invalid || aussageZuKurz">
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
                         {{ fehler ? 'Erneut versuchen' : 'Kommentar speichern' }}
                     </button>

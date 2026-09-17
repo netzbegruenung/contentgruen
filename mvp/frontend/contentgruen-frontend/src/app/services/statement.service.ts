@@ -20,7 +20,11 @@ export const VERKNUEPFUNG_FEHLGESCHLAGEN =
 /** Wie viele vorhandene Aussagen das Antwort-auf-Feld hoechstens vorschlaegt. */
 export const VORSCHLAG_ANZAHL = 3;
 
-/** Ab diesem Aehnlichkeitswert (0-1) gilt eine Aussage als Vorschlag. */
+/**
+ * Ab diesem Aehnlichkeitswert (0-1) gilt eine Aussage als Vorschlag. Gemessen fuer
+ * intfloat/multilingual-e5-base (passende Aussagen 0,892-0,940, unpassende meist
+ * darunter); bei einem Modellwechsel neu messen.
+ */
 export const VORSCHLAG_MIN_AEHNLICHKEIT = 0.885;
 
 @Injectable({

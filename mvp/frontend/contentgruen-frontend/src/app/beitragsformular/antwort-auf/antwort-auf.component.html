@@ -17,7 +17,11 @@
             <textarea matInput class="antwort-eingabe" [formControl]="feld" [placeholder]="platzhalter"
                       [attr.maxlength]="maxZeichen"
                       cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="4"></textarea>
-            <mat-hint>Die Aussage, auf die du reagierst – oder leer lassen.</mat-hint>
+            <mat-hint [ngSwitch]="feldZustand" [class.zu-kurz]="feldZustand === 'zu-kurz'">
+                <ng-container *ngSwitchCase="'zu-kurz'">Mindestens {{ minZeichen }} Zeichen – oder leer lassen.</ng-container>
+                <ng-container *ngSwitchCase="'neu'">Wird als neue Aussage angelegt.</ng-container>
+                <ng-container *ngSwitchDefault>Die Aussage, auf die du reagierst – oder leer lassen.</ng-container>
+            </mat-hint>
         </mat-form-field>
 
         <div *ngIf="neuAnlegbar as neu" class="vorschlaege">

@@ -58,4 +58,18 @@ describe('FormularLeisteComponent', () => {
     expect(fixture.nativeElement.querySelector('.leiste-fehler')).toBeNull();
     fixture.destroy();
   });
+
+  it('bietet hinter der Meldung optional einen Textlink an', () => {
+    const fixture = TestBed.createComponent(FormularLeisteComponent);
+    fixture.componentRef.setInput('fehler', 'Es gibt schon einen sehr ähnlichen Kommentar.');
+    fixture.componentRef.setInput('aktion', 'Ansehen');
+    const geklickt = jasmine.createSpy('geklickt');
+    fixture.componentInstance.aktionGeklickt.subscribe(geklickt);
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.leiste-aktion') as HTMLButtonElement).click();
+
+    expect(geklickt).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+  });
 });

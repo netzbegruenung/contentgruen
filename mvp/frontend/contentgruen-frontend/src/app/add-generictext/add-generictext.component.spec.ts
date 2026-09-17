@@ -311,6 +311,70 @@ describe('AddGenerictextComponent', () => {
     }));
   });
 
+  describe('Antwort auf: Ergebnis und Mindestlaenge', () => {
+    function tippeAussage(text: string): void {
+      const feld: HTMLTextAreaElement = seite().querySelector('.antwort-eingabe')!;
+      feld.value = text;
+      feld.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
+
+    it('sperrt Speichern bei 1-9 Zeichen Aussage ohne Auswahl, leer ist erlaubt', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      ausfuellen();
+
+      tippeAussage('Windrad');
+      expect(component.aussageZuKurz).toBeTrue();
+      expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeTrue();
+      component.speichern();
+      flush();
+      expect(hinzufuegen).not.toHaveBeenCalled();
+
+      tippeAussage('');
+      expect(component.aussageZuKurz).toBeFalse();
+      expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeFalse();
+    }));
+
+    it('meldet die tatsaechlich verknuepfte Aussage aus der Antwort', fakeAsync(() => {
+      speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind viel zu teuer!', verknuepft: true });
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      tippeAussage('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith({
+        id: 'k-1',
+        aussage: { id: ID, text: 'Wärmepumpen sind viel zu teuer!' },
+        verknuepft: true,
+      });
+    }));
+
+    it('behandelt ein fehlendes verknuepft wie false, wenn eine Aussage mitging', fakeAsync(() => {
+      speichernMit({});
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      tippeAussage('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ verknuepft: false }));
+    }));
+
+    it('braucht ohne Aussage kein verknuepft in der Antwort', fakeAsync(() => {
+      speichernMit({});
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ verknuepft: true }));
+    }));
+  });
+
   describe('Vorschau', () => {
     it('zeigt weder Nutzung noch Neu-Datum', () => {
       ausfuellen();

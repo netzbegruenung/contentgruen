@@ -36,6 +36,8 @@ export interface AddGenericTextResponse {
     id: string;
     /** Die Aussage, an der die Hintergrundinfo jetzt haengt; null ohne Aussage. */
     statement_id?: string | null;
+    /** Text der tatsaechlich verknuepften Aussage (kann eine vorhandene, aehnliche sein). */
+    statement_text?: string | null;
     /** false: Aussage angegeben, aber nicht verknuepft - die Hintergrundinfo steht trotzdem. */
     verknuepft?: boolean;
 }

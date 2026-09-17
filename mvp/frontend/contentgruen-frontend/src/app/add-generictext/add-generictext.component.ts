@@ -18,7 +18,7 @@ import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { typFarbe } from '../shared/content-type-registry';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { istAussageId } from '../shared/formular-adresse';
-import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
@@ -208,7 +208,7 @@ export class AddGenerictextComponent implements OnChanges {
     // wird - sonst geht sie beim Speichern stumm verloren.
     this.referenceInput?.flushPendingInput();
 
-    if (this.generictextForm.invalid) {
+    if (this.generictextForm.invalid || this.aussageZuKurz) {
       this.generictextForm.markAllAsTouched();
       return;
     }
@@ -233,7 +233,7 @@ export class AddGenerictextComponent implements OnChanges {
       next: (antwort) => {
         this.speichert = false;
         this.responseId = antwort.id;
-        this.success.emit({ id: antwort.id, aussage: this.aussage, verknuepft: antwort.verknuepft !== false });
+        this.success.emit(this.ergebnisAus(request, antwort));
       },
       error: (error: Error) => {
         // Die Eingaben bleiben stehen; "Erneut versuchen" speichert dasselbe noch einmal.
@@ -242,6 +242,30 @@ export class AddGenerictextComponent implements OnChanges {
         this.fehler = SPEICHERN_FEHLGESCHLAGEN;
       },
     });
+  }
+
+  /**
+   * Das Ergebnis fuer die Ergebnisseite. Wurde eine Aussage mitgeschickt, gilt sie nur
+   * als verknuepft, wenn die Antwort das ausdruecklich sagt - fehlt das Feld (etwa
+   * ein aelteres Backend), steht der Hinweis da. Gezeigt wird die tatsaechlich
+   * verknuepfte Aussage; bei Text kann das eine schon vorhandene, aehnliche sein.
+   */
+  private ergebnisAus(
+    anfrage: { statement_id?: string; statement_text?: string },
+    antwort: { id: string; statement_id?: string | null; statement_text?: string | null; verknuepft?: boolean },
+  ): BeitragGespeichert {
+    const aussageGeschickt = !!(anfrage.statement_id || anfrage.statement_text);
+    const verknuepft = !aussageGeschickt || antwort.verknuepft === true;
+    const aussage =
+      aussageGeschickt && verknuepft && antwort.statement_id
+        ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
+        : this.aussage;
+    return { id: antwort.id, aussage, verknuepft };
+  }
+
+  /** Aussage ohne Auswahl mit 1-9 Zeichen: Speichern bleibt gesperrt, leer ist erlaubt. */
+  get aussageZuKurz(): boolean {
+    return !this.aussage.id && zuKurz(this.aussage.text);
   }
 
   /** Die gewaehlte Aussage per ID, sonst ihr Text, sonst nichts. */

@@ -147,3 +147,9 @@
     border-radius: 4px;
     background: #fff3e0;
 }
+
+/* 1-9 Zeichen: kein Fehler, aber Speichern ist gesperrt, bis es passt oder leer ist */
+.zu-kurz {
+    color: #8a5300;
+    font-weight: 500;
+}

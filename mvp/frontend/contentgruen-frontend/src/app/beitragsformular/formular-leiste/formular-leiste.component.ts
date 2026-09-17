@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, Inject, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Inject, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { DOCUMENT, NgIf } from '@angular/common';
 
 /** Klasse am body, solange eine feste Leiste da ist: haelt unten Platz frei. */
@@ -29,7 +29,10 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
   imports: [NgIf],
   template: `
     <div #leiste class="leiste" [class.leiste--beim-tippen]="tippt">
-      <p *ngIf="fehler" class="leiste-fehler" role="alert">{{ fehler }}</p>
+      <p *ngIf="fehler" class="leiste-fehler" role="alert">
+        {{ fehler }}
+        <button *ngIf="aktion" type="button" class="leiste-aktion" (click)="aktionGeklickt.emit()">{{ aktion }}</button>
+      </p>
       <ng-content></ng-content>
     </div>
   `,
@@ -45,6 +48,17 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
     /* Am Desktop steht die Meldung direkt darueber im Formular */
     .leiste-fehler {
       display: none;
+    }
+
+    .leiste-aktion {
+      margin-left: 4px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--primary-dark);
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
     }
 
     @media (max-width: 599px) {
@@ -86,6 +100,9 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
 export class FormularLeisteComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Knappe Fehlermeldung ueber dem Knopf, null ohne Fehler. */
   @Input() fehler: string | null = null;
+  /** Optionaler Textlink hinter der Meldung, etwa "Ansehen". */
+  @Input() aktion: string | null = null;
+  @Output() aktionGeklickt = new EventEmitter<void>();
   @ViewChild('leiste') leiste?: ElementRef<HTMLElement>;
 
   /** Ein Textfeld hat den Fokus. */

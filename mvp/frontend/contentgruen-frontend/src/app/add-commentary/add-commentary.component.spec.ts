@@ -13,6 +13,7 @@ import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/co
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -316,6 +317,92 @@ describe('AddCommentaryComponent', () => {
         aussage: { id: ID, text: 'Wärmepumpen sind zu teuer' },
         verknuepft: false,
       });
+    }));
+  });
+
+  describe('Antwort auf: Ergebnis und Mindestlaenge', () => {
+    function tippeAussage(text: string): void {
+      const feld: HTMLTextAreaElement = seite().querySelector('.antwort-eingabe')!;
+      feld.value = text;
+      feld.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
+
+    it('sperrt Speichern bei 1-9 Zeichen Aussage ohne Auswahl, leer ist erlaubt', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      ausfuellen();
+
+      tippeAussage('Windrad');
+      expect(component.aussageZuKurz).toBeTrue();
+      expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeTrue();
+      component.speichern();
+      flush();
+      expect(hinzufuegen).not.toHaveBeenCalled();
+
+      tippeAussage('');
+      expect(component.aussageZuKurz).toBeFalse();
+      expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeFalse();
+    }));
+
+    it('meldet die tatsaechlich verknuepfte Aussage aus der Antwort', fakeAsync(() => {
+      speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind viel zu teuer!', verknuepft: true });
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      tippeAussage('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith({
+        id: 'k-1',
+        aussage: { id: ID, text: 'Wärmepumpen sind viel zu teuer!' },
+        verknuepft: true,
+      });
+    }));
+
+    it('behandelt ein fehlendes verknuepft wie false, wenn eine Aussage mitging', fakeAsync(() => {
+      speichernMit({});
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      tippeAussage('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ verknuepft: false }));
+    }));
+
+    it('braucht ohne Aussage kein verknuepft in der Antwort', fakeAsync(() => {
+      speichernMit({});
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ verknuepft: true }));
+    }));
+  });
+
+  describe('Dublette', () => {
+    it('bleibt im Formular, zeigt den Hinweis mit Link und meldet keinen Erfolg', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      const erfolg = spyOn(component.success, 'emit');
+      const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(component.responseId).toBe('');
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar.');
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('sehr ähnlichen Kommentar');
+      expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
+
+      (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
+      expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
     }));
   });
 

@@ -139,6 +139,36 @@ describe('AntwortAufComponent', () => {
     expect(seite().querySelector('.neu-marke')).toBeNull();
   }));
 
+  it('sagt unter dem Feld, was beim Speichern passiert: zu kurz oder neue Aussage', () => {
+    tippen('Windrad');
+    const hinweis = () => seite().querySelector('mat-hint')!;
+    expect(hinweis().textContent).toContain('Mindestens 10 Zeichen – oder leer lassen.');
+    expect(hinweis().classList).toContain('zu-kurz');
+    expect(component.feldZustand).toBe('zu-kurz');
+
+    tippen('Windräder töten Vögel');
+    expect(hinweis().textContent).toContain('Wird als neue Aussage angelegt.');
+    expect(component.feldZustand).toBe('neu');
+
+    tippen('');
+    expect(hinweis().textContent).toContain('Die Aussage, auf die du reagierst');
+    expect(component.feldZustand).toBe('leer');
+  });
+
+  it('bietet einen zu kurzen Text nicht als neue Aussage an', fakeAsync(() => {
+    statementService.aussageVorschlaege.and.returnValue(of([]));
+
+    tippen('Windrad 1'); // 9 Zeichen: gesucht wird schon, anlegen geht noch nicht
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+    expect(seite().querySelector('.neue-aussage')).toBeNull();
+
+    tippen('Windrad 10'); // 10 Zeichen
+    tick(VORSCHLAG_VERZOEGERUNG_MS);
+    fixture.detectChanges();
+    expect(seite().querySelector('.neue-aussage')).toBeTruthy();
+  }));
+
   it('entfernt die gewaehlte Aussage wieder', () => {
     adresse({ id: 'a-1', text: VORSCHLAG.text });
 

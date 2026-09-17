@@ -38,6 +38,9 @@ export const VORSCHLAG_AB_ZEICHEN = 8;
 /** Wartezeit nach dem letzten Tastendruck, bevor gesucht wird. */
 export const VORSCHLAG_VERZOEGERUNG_MS = 300;
 
+/** Mindestlaenge einer Aussage ohne Auswahl, wie im Backend (statement_text). Leer bleibt erlaubt. */
+export const AUSSAGE_MIN_ZEICHEN = 10;
+
 /** Obergrenze fuer den Aussagetext, wie im Backend (statement_text). */
 export const AUSSAGE_MAX_ZEICHEN = 1000;
 
@@ -70,6 +73,7 @@ export class AntwortAufComponent implements OnInit, OnChanges {
   @Output() aussageChange = new EventEmitter<AntwortAuf>();
 
   readonly maxZeichen = AUSSAGE_MAX_ZEICHEN;
+  readonly minZeichen = AUSSAGE_MIN_ZEICHEN;
   readonly feld = new FormControl('', { nonNullable: true });
   gewaehlt: AntwortAuf | null = null;
   /** Die gewaehlte Aussage gibt es noch nicht; sie entsteht beim Speichern. */
@@ -137,7 +141,19 @@ export class AntwortAufComponent implements OnInit, OnChanges {
   /** Der getippte Text, solange er sich als neue Aussage anbietet. */
   get neuAnlegbar(): string | null {
     const text = this.feld.value.trim();
-    return this.gesuchtFuer && text === this.gesuchtFuer ? text : null;
+    return this.gesuchtFuer && text === this.gesuchtFuer && !zuKurz(text) ? text : null;
+  }
+
+  /**
+   * Was mit dem Feld beim Speichern passiert: nichts (leer), zu kurz (1-9 Zeichen,
+   * Speichern gesperrt) oder als neue Aussage angelegt (Text ohne Auswahl).
+   */
+  get feldZustand(): 'leer' | 'zu-kurz' | 'neu' {
+    const text = this.feld.value.trim();
+    if (!text) {
+      return 'leer';
+    }
+    return zuKurz(text) ? 'zu-kurz' : 'neu';
   }
 
   /** Den getippten Text als neue Aussage nehmen - angelegt wird sie beim Speichern. */
@@ -183,4 +199,10 @@ export class AntwortAufComponent implements OnInit, OnChanges {
     // Einmal je Wahl bauen: ein neues Objekt je Change Detection setzte die Karte zurueck.
     this.kopf = aussage ? ausAussage(aussage.id, aussage.text) : null;
   }
+}
+
+/** Eine Aussage ohne Auswahl mit 1 bis AUSSAGE_MIN_ZEICHEN - 1 Zeichen. */
+export function zuKurz(text: string): boolean {
+  const laenge = text.trim().length;
+  return laenge > 0 && laenge < AUSSAGE_MIN_ZEICHEN;
 }

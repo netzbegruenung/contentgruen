@@ -18,10 +18,11 @@ import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { typFarbe } from '../shared/content-type-registry';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { istAussageId } from '../shared/formular-adresse';
-import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -31,6 +32,8 @@ export const TITEL_MAX = 120;
 export const TEXT_MAX = 500;
 /** Zeichengrenze von X und Bluesky; nur ein Hinweis, keine Pruefung. */
 export const PLATTFORM_GRENZE = 280;
+
+export const DUBLETTE_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar.';
 
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
@@ -99,6 +102,9 @@ export class AddCommentaryComponent implements OnChanges {
   fehler: string | null = null;
   /** Gesetzt, sobald der Kommentar gespeichert ist. */
   responseId = '';
+  /** ID eines schon vorhandenen, sehr aehnlichen Kommentars; dann wurde nichts angelegt. */
+  dublette: string | null = null;
+  readonly dublettenHinweis = DUBLETTE_HINWEIS;
 
   private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };
 
@@ -107,6 +113,7 @@ export class AddCommentaryComponent implements OnChanges {
     private commentaryService: CommentaryService,
     private logger: LoggingService,
     private dialog: MatDialog,
+    private beitragAnsehen: BeitragAnsehenService,
   ) {
     this.commentaryForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
@@ -215,7 +222,7 @@ export class AddCommentaryComponent implements OnChanges {
     // wird - sonst geht sie beim Speichern stumm verloren.
     this.referenceInput?.flushPendingInput();
 
-    if (this.commentaryForm.invalid) {
+    if (this.commentaryForm.invalid || this.aussageZuKurz) {
       this.commentaryForm.markAllAsTouched();
       return;
     }
@@ -225,6 +232,7 @@ export class AddCommentaryComponent implements OnChanges {
 
     this.speichert = true;
     this.fehler = null;
+    this.dublette = null;
 
     const { text, references } = this.commentaryForm.value;
     // Ein Satz: eingefuegte Umbrueche werden zu Leerzeichen (Enter selbst bricht nicht um).
@@ -239,8 +247,13 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryService.addCommentary(request).subscribe({
       next: (antwort) => {
         this.speichert = false;
+        if (antwort.duplikat) {
+          // Nichts angelegt: Das Formular bleibt, der Hinweis zeigt den vorhandenen.
+          this.dublette = antwort.id;
+          return;
+        }
         this.responseId = antwort.id;
-        this.success.emit({ id: antwort.id, aussage: this.aussage, verknuepft: antwort.verknuepft !== false });
+        this.success.emit(this.ergebnisAus(request, antwort));
       },
       error: (error: Error) => {
         // Die Eingaben bleiben stehen; "Erneut versuchen" speichert dasselbe noch einmal.
@@ -251,12 +264,42 @@ export class AddCommentaryComponent implements OnChanges {
     });
   }
 
+  /**
+   * Das Ergebnis fuer die Ergebnisseite. Wurde eine Aussage mitgeschickt, gilt sie nur
+   * als verknuepft, wenn die Antwort das ausdruecklich sagt - fehlt das Feld (etwa
+   * ein aelteres Backend), steht der Hinweis da. Gezeigt wird die tatsaechlich
+   * verknuepfte Aussage; bei Text kann das eine schon vorhandene, aehnliche sein.
+   */
+  private ergebnisAus(
+    anfrage: { statement_id?: string; statement_text?: string },
+    antwort: { id: string; statement_id?: string | null; statement_text?: string | null; verknuepft?: boolean },
+  ): BeitragGespeichert {
+    const aussageGeschickt = !!(anfrage.statement_id || anfrage.statement_text);
+    const verknuepft = !aussageGeschickt || antwort.verknuepft === true;
+    const aussage =
+      aussageGeschickt && verknuepft && antwort.statement_id
+        ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
+        : this.aussage;
+    return { id: antwort.id, aussage, verknuepft };
+  }
+
+  /** Aussage ohne Auswahl mit 1-9 Zeichen: Speichern bleibt gesperrt, leer ist erlaubt. */
+  get aussageZuKurz(): boolean {
+    return !this.aussage.id && zuKurz(this.aussage.text);
+  }
+
   /** Die gewaehlte Aussage per ID, sonst ihr Text, sonst nichts. */
   aussageFuerAnfrage(): Pick<AddCommentaryRequest, 'statement_id' | 'statement_text'> {
     if (this.aussage.id) {
       return { statement_id: this.aussage.id };
     }
     return this.aussage.text ? { statement_text: this.aussage.text } : {};
+  }
+
+  dubletteAnsehen(): void {
+    if (this.dublette) {
+      this.beitragAnsehen.oeffnen(this.dublette, 'commentary');
+    }
   }
 
   zuruecksetzen(): void {

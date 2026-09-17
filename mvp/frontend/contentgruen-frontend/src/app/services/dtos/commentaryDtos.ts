@@ -38,8 +38,12 @@ export interface AddCommentaryResponse {
     id: string;
     /** Die Aussage, an der der Kommentar jetzt haengt; null ohne Aussage. */
     statement_id?: string | null;
+    /** Text der tatsaechlich verknuepften Aussage (kann eine vorhandene, aehnliche sein). */
+    statement_text?: string | null;
     /** false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem. */
     verknuepft?: boolean;
+    /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt, nichts verknuepft. */
+    duplikat?: boolean;
 }
 
 
