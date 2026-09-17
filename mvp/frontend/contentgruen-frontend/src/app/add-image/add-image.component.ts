@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
+import { typBeschreibung } from '../shared/content-type-registry';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -30,6 +31,9 @@ import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
   styleUrls: ['./add-image.component.scss'],
 })
 export class AddImageComponent implements OnDestroy {
+  /** Der Satz zum Typ aus der Registry, wie auf /contribute. */
+  readonly typBeschreibung = typBeschreibung('image');
+
   readonly consentHinweis = CONSENT_HINWEIS;
   @Output() success = new EventEmitter<string>();
   @Output() cancel = new EventEmitter<void>();
