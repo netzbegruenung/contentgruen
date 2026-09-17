@@ -1,8 +1,11 @@
-import { Component, HostListener, Inject, OnDestroy, OnInit } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, HostListener, Inject, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { DOCUMENT, NgIf } from '@angular/common';
 
 /** Klasse am body, solange eine feste Leiste da ist: haelt unten Platz frei. */
 export const FESTE_LEISTE_KLASSE = 'hat-feste-leiste';
+
+/** CSS-Variable am body mit der gemessenen Hoehe der Leiste. */
+export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
 
 /**
  * Die Leiste mit dem Speichern-Knopf eines Beitragsformulars.
@@ -15,17 +18,33 @@ export const FESTE_LEISTE_KLASSE = 'hat-feste-leiste';
  * Solange ein Textfeld den Fokus hat, blendet sie sich am Handy aus: Die
  * Tastatur nimmt dann ohnehin die halbe Hoehe, und die Leiste saesse direkt ueber
  * dem Feld, in das man tippt.
+ *
+ * Ein Fehler beim Speichern steht knapp in der Leiste ueber dem Knopf: Die
+ * ausfuehrliche Meldung im Formular laege sonst genau hinter ihr. Der body haelt
+ * die gemessene Hoehe frei, also auch die der Fehlerzeile.
  */
 @Component({
   standalone: true,
   selector: 'app-formular-leiste',
-  template: `<div class="leiste" [class.leiste--beim-tippen]="tippt"><ng-content></ng-content></div>`,
+  imports: [NgIf],
+  template: `
+    <div #leiste class="leiste" [class.leiste--beim-tippen]="tippt">
+      <p *ngIf="fehler" class="leiste-fehler" role="alert">{{ fehler }}</p>
+      <ng-content></ng-content>
+    </div>
+  `,
   styles: [`
     .leiste {
       display: flex;
+      flex-wrap: wrap;
       justify-content: flex-end;
       gap: 12px;
       margin-top: 12px;
+    }
+
+    /* Am Desktop steht die Meldung direkt darueber im Formular */
+    .leiste-fehler {
+      display: none;
     }
 
     @media (max-width: 599px) {
@@ -46,6 +65,17 @@ export const FESTE_LEISTE_KLASSE = 'hat-feste-leiste';
         display: none;
       }
 
+      .leiste-fehler {
+        display: block;
+        flex-basis: 100%;
+        margin: 0;
+        padding: 8px 12px;
+        border-left: 4px solid var(--error, #d32f2f);
+        border-radius: 4px;
+        background: rgba(211, 47, 47, 0.08);
+        font-size: 0.9rem;
+      }
+
       .leiste ::ng-deep button {
         flex: 1;
         min-height: 48px;
@@ -53,9 +83,15 @@ export const FESTE_LEISTE_KLASSE = 'hat-feste-leiste';
     }
   `],
 })
-export class FormularLeisteComponent implements OnInit, OnDestroy {
+export class FormularLeisteComponent implements OnInit, AfterViewInit, OnDestroy {
+  /** Knappe Fehlermeldung ueber dem Knopf, null ohne Fehler. */
+  @Input() fehler: string | null = null;
+  @ViewChild('leiste') leiste?: ElementRef<HTMLElement>;
+
   /** Ein Textfeld hat den Fokus. */
   tippt = false;
+
+  private beobachter?: ResizeObserver;
 
   constructor(@Inject(DOCUMENT) private document: Document) {}
 
@@ -74,7 +110,24 @@ export class FormularLeisteComponent implements OnInit, OnDestroy {
     this.tippt = istTextfeld(event.relatedTarget);
   }
 
+  ngAfterViewInit(): void {
+    const element = this.leiste?.nativeElement;
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    // Ausgeblendet (beim Tippen) misst 0 - dann die letzte Hoehe behalten, damit nichts springt.
+    this.beobachter = new ResizeObserver(() => {
+      const hoehe = element.offsetHeight;
+      if (hoehe > 0) {
+        this.document.body.style.setProperty(LEISTEN_HOEHE_VARIABLE, `${hoehe}px`);
+      }
+    });
+    this.beobachter.observe(element);
+  }
+
   ngOnDestroy(): void {
+    this.beobachter?.disconnect();
+    this.document.body.style.removeProperty(LEISTEN_HOEHE_VARIABLE);
     this.document.body.classList.remove(FESTE_LEISTE_KLASSE);
   }
 }

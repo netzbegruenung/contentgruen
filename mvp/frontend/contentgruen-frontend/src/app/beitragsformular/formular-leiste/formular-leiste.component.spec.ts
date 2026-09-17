@@ -43,4 +43,19 @@ describe('FormularLeisteComponent', () => {
     expect(leiste.classList).not.toContain('leiste--beim-tippen');
     fixture.destroy();
   });
+
+  it('zeigt einen Fehler knapp ueber dem Knopf', () => {
+    const fixture = TestBed.createComponent(FormularLeisteComponent);
+    fixture.componentRef.setInput('fehler', 'Speichern hat nicht geklappt.');
+    fixture.detectChanges();
+
+    const meldung: HTMLElement = fixture.nativeElement.querySelector('.leiste-fehler');
+    expect(meldung.textContent).toContain('Speichern hat nicht geklappt.');
+    expect(meldung.getAttribute('role')).toBe('alert');
+
+    fixture.componentRef.setInput('fehler', null);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.leiste-fehler')).toBeNull();
+    fixture.destroy();
+  });
 });

@@ -710,6 +710,6 @@ body.cdk-global-scrollblock {
    frei halten, damit Vorschau und Fusszeile nicht darunter verschwinden. */
 @media (max-width: 599px) {
     body.hat-feste-leiste {
-        padding-bottom: 73px;
+        padding-bottom: var(--feste-leiste-hoehe, 73px);
     }
 }

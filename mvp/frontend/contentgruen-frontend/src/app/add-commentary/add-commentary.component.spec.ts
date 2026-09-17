@@ -199,6 +199,8 @@ describe('AddCommentaryComponent', () => {
       fixture.detectChanges();
 
       expect(seite().querySelector('.speicher-fehler')!.textContent).toContain(SPEICHERN_FEHLGESCHLAGEN);
+      // Knapp auch in der Leiste: am Handy laege die Meldung im Formular hinter ihr.
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('Speichern hat nicht geklappt.');
       expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
       const knopf: HTMLButtonElement = seite().querySelector('.submit-btn')!;
       expect(knopf.textContent).toContain('Erneut versuchen');
