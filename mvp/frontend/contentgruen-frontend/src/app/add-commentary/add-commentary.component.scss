@@ -1,5 +1,6 @@
 // Import shared contribution form styles
 @use '../shared/styles/contribution-form' as contribution;
+@use '../shared/styles/breakpoints' as bp;
 
 // Apply all shared styles
 @include contribution.contribution-form-styles;
@@ -9,224 +10,102 @@
   @include contribution.contribution-container;
 }
 
-// Commentary-specific badge colors
-.content-type-badge {
-  background: linear-gradient(135deg, #E8F5E9 0%, #F1F8E9 100%);
-  border: 1px solid #C8E6C9;
-}
+// Die Hilfe steht ueber dem Formularkasten; am Handy mit demselben Rand wie die Felder.
+app-formular-hilfe {
+  display: block;
 
-// Legacy styles for backward compatibility
-.statement-section-wrapper {
-  width: 100%;
-  margin-top: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-
-  @media (max-width: 768px) {
-    margin-bottom: var(--spacing-md);
+  @include bp.mobile-only {
+    padding: 12px 16px 0;
   }
 }
 
-.statement-section {
-  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  border: 1px solid #ffe082;
-
-  @media (max-width: 600px) {
-    padding: var(--spacing-md);
-  }
-}
-
-.statement-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--spacing-lg);
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-.statement-content {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  flex: 1;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-  }
-}
-
-.statement-icon {
-  font-size: 48px;
-  line-height: 1;
-
-  @media (max-width: 600px) {
-    font-size: 36px;
-  }
-}
-
-.statement-text-wrapper {
-  flex: 1;
-}
-
-.statement-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.statement-quote {
-  font-size: 1.25rem;
-  font-weight: 500;
-  font-style: italic;
-  color: var(--text-primary);
-  line-height: 1.4;
-}
-
-.statement-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  flex-shrink: 0;
-
-  button {
-    font-weight: 500;
-    padding: 0 var(--spacing-md);
-    height: 40px;
-  }
-
-  @media (max-width: 1024px) {
-    width: 100%;
-    justify-content: flex-start;
-    margin-top: var(--spacing-md);
-  }
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-
-    button {
-      width: 100%;
-    }
-  }
-}
-
-// No Statement State
-.no-statement {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--spacing-lg);
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-.no-statement-content {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.statement-icon-empty {
-  font-size: 48px;
-  opacity: 0.5;
-}
-
-.no-statement-text {
-  h3 {
-    margin: 0;
-    font-size: 1.2rem;
-    color: var(--text-primary);
-  }
-
-  p {
-    margin: var(--spacing-xs) 0 0 0;
-    color: var(--text-secondary);
-  }
-}
-
-.add-statement-btn {
-  font-weight: 500;
-  padding: 0 var(--spacing-md);
-  height: 40px;
-  font-size: 0.9rem;
-
-  @media (max-width: 1024px) {
-    width: 100%;
-    margin-top: var(--spacing-md);
-  }
-}
-
-// Button styling overrides
-::ng-deep .statement-actions .mat-mdc-raised-button {
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-  background-color: #46A046 !important;
-  color: white !important;
-
-  &:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-    background-color: #3a8c3a !important;
-  }
-}
-
-::ng-deep .add-statement-btn {
-  box-shadow: var(--shadow-md);
-  background-color: #46A046 !important;
-  color: white !important;
-
-  &:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-    background-color: #3a8c3a !important;
-  }
-}
-
-// Collapsible optional sections
-.optional-toggle {
-  align-self: flex-start;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.optional-block {
+.beitrag-formular {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 4px;
 }
 
-.add-reference-trigger {
+.formular-feld {
+  width: 100%;
+}
+
+// Ein dezenter Hinweis, kein Fehler: auch ueber 280 Zeichen bleibt es speicherbar.
+.plattform-hinweis {
+  color: var(--text-secondary);
+}
+
+.plattform-hinweis.zu-lang {
+  color: #8a5300;
+}
+
+// Textlinks statt Knoepfe fuer Nebensaechliches
+.text-link {
   align-self: flex-start;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-dark);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+  }
+
+  &[disabled] {
+    color: var(--text-secondary);
+    cursor: default;
+  }
 }
 
-/* Gespeichert, aber nicht mit der Aussage verknuepft: bleibt stehen, bis "Weiter" */
-.verknuepfungs-fehler {
-    margin: 16px 0;
-    padding: 12px 16px;
-    border-left: 4px solid #f57c00;
-    border-radius: 4px;
-    background: #fff3e0;
-    text-align: left;
-
-    p {
-        margin: 0 0 12px;
-    }
+.herkunft {
+  margin-top: 4px;
 }
 
-/* Aussage aus der Adresse nicht ladbar - das Formular bleibt nutzbar */
-.aussage-hinweis {
-    margin: 0 0 16px;
-    padding: 12px 16px;
-    border-left: 4px solid #f57c00;
-    border-radius: 4px;
-    background: #fff3e0;
+.formular-fuss {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.zuruecksetzen {
+  align-self: auto;
+  font-size: 0.9rem;
+}
+
+// Im Formular direkt ueber der Leiste; die Trennlinie traegt die Leiste mobil selbst.
+.submit-hint {
+  margin: 8px 0 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.knopf-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.speicher-fehler {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border-left: 4px solid var(--error, #d32f2f);
+  border-radius: 4px;
+  background: rgba(211, 47, 47, 0.08);
+}
+
+// Der Einwurf aus dem Fangkorb ueber dem Formular
+.einwurf-kopf {
+  display: block;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--divider-color);
+
+  @include bp.mobile-only {
+    margin: 12px 16px 0;
+  }
 }

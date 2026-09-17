@@ -42,11 +42,27 @@ describe('DestillierUebergabeService', () => {
 
     service.vorbefuellungLaden('id-1').subscribe((v) => (ergebnis = v));
 
-    expect(ergebnis).toEqual({
+    expect(ergebnis).toEqual(jasmine.objectContaining({
       rohinputId: 'id-1',
       titel: 'Waermepumpe lohnt sich auch im Altbau',
       url: 'https://www.instagram.com/reel/ABC/',
-    });
+    }));
+    // Der Kopf ueber dem Formular: der Einwurf als Rohling mit dem einen Satz
+    expect(ergebnis!.kopf!.rohling!.einwurfId).toBe('id-1');
+    expect(ergebnis!.kopf!.rohling!.kopfSatz).toBe('Waermepumpe lohnt sich auch im Altbau');
+  });
+
+  it('markiert ohne Sprung und meldet, ob es geklappt hat', () => {
+    rawInputService.updateStatus.and.returnValues(of({} as any), throwError(() => new Error('500')));
+    const ergebnisse: boolean[] = [];
+
+    service.alsVerarbeitetMarkieren('id-1', 'k-1', 'commentary').subscribe((ok) => ergebnisse.push(ok));
+    service.alsVerarbeitetMarkieren('id-1', 'k-1', 'commentary').subscribe((ok) => ergebnisse.push(ok));
+
+    expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'processed', 'k-1', 'commentary');
+    expect(ergebnisse).toEqual([true, false]);
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(snackBar.open).not.toHaveBeenCalled();
   });
 
   it('laesst Titel und Herkunft leer, wenn es keinen Entwurf und keinen Link gibt', () => {
@@ -57,7 +73,8 @@ describe('DestillierUebergabeService', () => {
 
     service.vorbefuellungLaden('id-1').subscribe((v) => (ergebnis = v));
 
-    expect(ergebnis).toEqual({ rohinputId: 'id-1', titel: '', url: null });
+    expect(ergebnis).toEqual(jasmine.objectContaining({ rohinputId: 'id-1', titel: '', url: null }));
+    expect(ergebnis!.kopf!.rohling!.kopfSatz).toBeUndefined();
   });
 
   it('markiert nach dem Speichern mit Beitragstyp als verarbeitet und springt weiter', () => {

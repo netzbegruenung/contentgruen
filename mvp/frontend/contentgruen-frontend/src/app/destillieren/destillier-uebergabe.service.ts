@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 import { BeitragsTyp, RawInputService } from '../services/raw-input.service';
 import { LoggingService } from '../services/logging.service';
 import { FangkorbTab } from '../raw-input-list/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
+import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 
 /** Query-Parameter, mit dem die Destillier-Ansicht ein Beitragsformular oeffnet. */
 export const ROHINPUT_PARAM = 'rohinput';
@@ -28,6 +29,8 @@ export interface Vorbefuellung {
   titel: string;
   /** Der Link des Einwurfs, ohne Tracking-Parameter - er wird die Herkunft. */
   url: string | null;
+  /** Der Einwurf als Kopf ueber dem Formular: Sandband, Link, der Satz. */
+  kopf?: KartenDaten;
 }
 
 /**
@@ -49,11 +52,16 @@ export class DestillierUebergabeService {
 
   vorbefuellungLaden(rohinputId: string): Observable<Vorbefuellung> {
     return this.rawInputService.getRawInput(rohinputId).pipe(
-      map((einwurf) => ({
-        rohinputId: einwurf.id,
-        titel: einwurf.own_draft ?? '',
-        url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
-      })),
+      map((einwurf) => {
+        const karte = ausEinwurf(einwurf);
+        const titel = einwurf.own_draft ?? '';
+        return {
+          rohinputId: einwurf.id,
+          titel,
+          url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
+          kopf: karte.rohling ? { ...karte, rohling: { ...karte.rohling, kopfSatz: titel || undefined } } : karte,
+        };
+      }),
     );
   }
 
@@ -86,6 +94,23 @@ export class DestillierUebergabeService {
         this.zumNaechsten(rohinputId, 'ausformulieren');
       },
     });
+  }
+
+  /**
+   * Der Beitrag ist gespeichert: Einwurf als verarbeitet markieren, ohne weiterzuspringen.
+   *
+   * Fuer Formulare mit Ergebnisseite - dort waehlt man selbst den naechsten
+   * Einwurf. Liefert, ob das Markieren geklappt hat; ein Fehler bricht nichts ab,
+   * der Beitrag ist ja da.
+   */
+  alsVerarbeitetMarkieren(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
+    return this.rawInputService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
+      map(() => true),
+      catchError((error) => {
+        this.logger.error('Einwurf konnte nicht als verarbeitet markiert werden', error);
+        return of(false);
+      }),
+    );
   }
 
   /**
