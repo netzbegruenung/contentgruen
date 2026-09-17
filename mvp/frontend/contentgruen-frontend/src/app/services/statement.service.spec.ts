@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 
 import { convertToParamMap } from '@angular/router';
 
-import { StatementService } from './statement.service';
+import { StatementService, VORSCHLAG_ANZAHL, VORSCHLAG_MIN_AEHNLICHKEIT } from './statement.service';
 import { environment } from '../../environments/environment';
 
 /**
@@ -163,5 +163,44 @@ describe('StatementService: Aussage eines Beitragsformulars', () => {
       expect(ergebnis).toBe('fehlgeschlagen');
       expect(fehler).toBeUndefined();
     });
+  });
+});
+
+describe('StatementService: Vorschlaege im Antwort-auf-Feld', () => {
+  let service: StatementService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()]
+    });
+    service = TestBed.inject(StatementService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpMock.verify());
+
+  it('fragt nur gepflegte, hinreichend aehnliche Aussagen ab', () => {
+    let ergebnis: unknown;
+    service.aussageVorschlaege('Wärmepumpen teuer').subscribe((vorschlaege) => (ergebnis = vorschlaege));
+
+    const anfrage = httpMock.expectOne(`${environment.baseUrl}/api/v1/statement/searchStatements`);
+    expect(anfrage.request.body).toEqual({
+      query_text: 'Wärmepumpen teuer',
+      limit: VORSCHLAG_ANZAHL,
+      nur_kuratiert: true,
+      min_similarity: VORSCHLAG_MIN_AEHNLICHKEIT,
+    });
+    anfrage.flush({ results: [{ id: 'a-1', text: 'x', replysuggestions_count: 1, score: 0.7 }] });
+
+    expect(ergebnis).toEqual([{ id: 'a-1', text: 'x', replysuggestions_count: 1, score: 0.7 }]);
+  });
+
+  it('laesst die Suche ohne Filter wie bisher', () => {
+    service.searchStatements('klimaschutz', 1).subscribe();
+
+    const anfrage = httpMock.expectOne(`${environment.baseUrl}/api/v1/statement/searchStatements`);
+    expect(anfrage.request.body).toEqual({ query_text: 'klimaschutz', limit: 1 });
+    anfrage.flush({ results: [] });
   });
 });

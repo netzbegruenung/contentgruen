@@ -8,6 +8,10 @@ export type ContentType = 'statement' | 'commentary' | 'reference' | 'generic_te
 export interface SearchStatementByTextRequest {
     query_text: string;
     limit: number;
+    /** Unbeantwortete Suchanfragen weglassen (wie der Aussagen-Zaehler der Startseite). */
+    nur_kuratiert?: boolean;
+    /** Nur Treffer mit mindestens diesem Aehnlichkeitswert, 0-1. */
+    min_similarity?: number;
 }
 
 export interface StatementSearchResult {

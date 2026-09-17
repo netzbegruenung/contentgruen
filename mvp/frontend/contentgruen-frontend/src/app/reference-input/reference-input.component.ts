@@ -54,6 +54,14 @@ export interface ReferenceEntry {
 })
 export class ReferenceInputComponent implements OnInit, OnDestroy, ControlValueAccessor {
     @Input() maxReferences = 10;
+    /**
+     * Knapp fuer Formulare, die Herkunft nur nebenbei erfragen: ohne Kasten ums
+     * Feld und ohne Infozeile, kleines Loesch-Icon, der Zaehler erst an der Grenze.
+     * Ohne Angabe bleibt alles wie bisher.
+     */
+    @Input() kompakt = false;
+    @Input() beschriftung = 'Woher stammt das?';
+    @Input() platzhalter = 'z.B. Instagram-Reel von @account, Juli 2026 — oder eine URL';
     @Output() referenceAdded = new EventEmitter<ReferenceEntry>();
     @Output() referenceRemoved = new EventEmitter<ReferenceEntry>();
 

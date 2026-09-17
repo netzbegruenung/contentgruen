@@ -1,0 +1,25 @@
+<div class="formular-hilfe" *ngIf="hilfe as hilfe">
+    <div class="hilfe-kopf">
+        <p class="hilfe-zeile">{{ hilfe.zeile }}</p>
+        <app-hilfe-umschalter [(offen)]="offen" [steuert]="panelId"
+                              [beschriftungZu]="hilfe.frage" beschriftungOffen="Erklärung schließen">
+        </app-hilfe-umschalter>
+    </div>
+
+    <div *ngIf="offen" [id]="panelId" class="hilfe-panel">
+        <p class="hilfe-frage"><strong>{{ hilfe.frage }}</strong> {{ hilfe.antwort }}</p>
+        <ul class="hilfe-regeln">
+            <li *ngFor="let regel of hilfe.ist" class="regel regel-ist">
+                <span class="regel-zeichen" aria-hidden="true">✓</span>
+                <span class="cdk-visually-hidden">Ist:</span>{{ regel }}
+            </li>
+            <li *ngFor="let regel of hilfe.istNicht" class="regel regel-nicht">
+                <span class="regel-zeichen" aria-hidden="true">✗</span>
+                <span class="cdk-visually-hidden">Ist nicht:</span>{{ regel }}
+            </li>
+        </ul>
+        <p *ngIf="hilfe.beispiel as beispiel" class="hilfe-beispiel">
+            <strong>Beispiel:</strong> Auf „{{ beispiel.aussage }}“ → „{{ beispiel.antwort }}“
+        </p>
+    </div>
+</div>

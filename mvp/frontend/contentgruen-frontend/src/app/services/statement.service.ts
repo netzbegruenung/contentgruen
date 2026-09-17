@@ -12,6 +12,7 @@ import {
   GetStatementByIdResponse,
   SearchStatementByTextRequest,
   StatementSearchResponse,
+  StatementSearchResult,
   StatementSource
 } from './dtos/statementDtos';
 import { environment } from '../../environments/environment';
@@ -24,6 +25,12 @@ export type Verknuepfung = 'verknuepft' | 'ohne-aussage' | 'fehlgeschlagen';
 /** Hinweis im Formular, wenn der Beitrag steht, die Verknuepfung aber nicht. */
 export const VERKNUEPFUNG_FEHLGESCHLAGEN =
   'Dein Beitrag ist gespeichert, konnte aber nicht mit der Aussage verknüpft werden.';
+
+/** Wie viele vorhandene Aussagen das Antwort-auf-Feld hoechstens vorschlaegt. */
+export const VORSCHLAG_ANZAHL = 3;
+
+/** Ab diesem Aehnlichkeitswert (0-1) gilt eine Aussage als Vorschlag. */
+export const VORSCHLAG_MIN_AEHNLICHKEIT = 0.885;
 
 @Injectable({
   providedIn: 'root'
@@ -100,10 +107,15 @@ export class StatementService {
    * @param limit Maximum number of results
    * @returns Observable with search results
    */
-  searchStatements(queryText: string, limit: number = 10): Observable<StatementSearchResponse> {
+  searchStatements(
+    queryText: string,
+    limit: number = 10,
+    filter: Pick<SearchStatementByTextRequest, 'nur_kuratiert' | 'min_similarity'> = {},
+  ): Observable<StatementSearchResponse> {
     const request: SearchStatementByTextRequest = {
       query_text: queryText,
-      limit: limit
+      limit: limit,
+      ...filter,
     };
 
     this.logger.debug('Searching for statements:', request);
@@ -140,6 +152,17 @@ export class StatementService {
         this.logger.info('Reply suggestion added successfully:', response);
       })
     );
+  }
+
+  /**
+   * Vorhandene Aussagen, die zum Getippten passen - fuer die Vorschlaege im
+   * Antwort-auf-Feld. Nur gepflegte Aussagen und nur hinreichend aehnliche.
+   */
+  aussageVorschlaege(text: string): Observable<StatementSearchResult[]> {
+    return this.searchStatements(text, VORSCHLAG_ANZAHL, {
+      nur_kuratiert: true,
+      min_similarity: VORSCHLAG_MIN_AEHNLICHKEIT,
+    }).pipe(map((antwort) => antwort.results));
   }
 
   getStatementById(statementId: string): Observable<GetStatementByIdResponse> {

@@ -287,3 +287,71 @@
         gap: var(--spacing-sm);
     }
 }
+
+/* Kompakt: kein Kasten ums Feld, das Icon buendig, Eintraege als schlichte Zeilen */
+.kompakt.reference-input-container {
+    margin: 0;
+}
+
+.kompakt .reference-input-group {
+    /* Auch schmal ueber die volle Breite; ohne das zentriert die Spalte das Feld */
+    align-items: stretch;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+}
+
+.kompakt .reference-url-field {
+    margin: 0;
+}
+
+.kompakt .reference-url-field ::ng-deep .mat-mdc-text-field-wrapper {
+    padding-top: 0 !important;
+}
+
+.kompakt .selected-references {
+    margin-top: var(--spacing-xs);
+}
+
+.kompakt .reference-item,
+.kompakt .reference-item.new-reference,
+.kompakt .reference-item.existing-reference,
+.kompakt .reference-item.pending-reference {
+    align-items: center;
+    padding: 4px 0;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--divider-color);
+    border-radius: 0;
+}
+
+.entfernen-klein {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.entfernen-klein mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+}
+
+.entfernen-klein:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: -2px;
+}
+
+.entfernen-klein[disabled] {
+    opacity: 0.4;
+    cursor: default;
+}

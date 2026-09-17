@@ -1,0 +1,149 @@
+.antwort-auf {
+    display: flex;
+    flex-direction: column;
+}
+
+.antwort-feld {
+    width: 100%;
+}
+
+.gewaehlt-label {
+    margin: 0 0 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Karte und Entfernen-Knopf nebeneinander; die Karte nimmt den Rest */
+.gewaehlt {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--divider-color);
+    overflow: hidden;
+    background: var(--statement-bg);
+}
+
+.gewaehlt-karte {
+    flex: 1;
+    min-width: 0;
+}
+
+.entfernen {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 6px 6px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.entfernen mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+
+.entfernen:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: -2px;
+}
+
+.vorschlaege {
+    margin-top: 8px;
+}
+
+.vorschlaege-titel {
+    margin: 0 0 4px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.vorschlaege ul {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.vorschlag {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--divider-color);
+    border-radius: 8px;
+    background: var(--statement-bg);
+    color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vorschlag:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+}
+
+.neue-aussage {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border: 1px dashed var(--primary-main);
+    border-radius: 8px;
+    background: white;
+    color: var(--primary-dark);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.neue-aussage mat-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+
+.neue-aussage:focus-visible {
+    outline: 2px solid var(--primary-dark);
+    outline-offset: 2px;
+}
+
+.neu-marke {
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--primary-main);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.vorschlag-text {
+    overflow-wrap: anywhere;
+}
+
+/* Aussage aus der Adresse nicht ladbar - das Formular bleibt nutzbar */
+.aussage-hinweis {
+    margin: 0 0 12px;
+    padding: 12px 16px;
+    border-left: 4px solid #f57c00;
+    border-radius: 4px;
+    background: #fff3e0;
+}
