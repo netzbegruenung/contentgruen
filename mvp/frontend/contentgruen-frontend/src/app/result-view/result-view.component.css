@@ -524,3 +524,41 @@ mat-sidenav-content {
     max-width: 300px;
   }
 }
+
+/* Mobil mit Treffern: ergaenzen unter dem Suchband (dezent) und unter der Liste */
+.mobile-ergaenzen-kopf {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 var(--page-margin, 16px);
+}
+
+.ergaenzen-link {
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-dark);
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ergaenzen-link:focus-visible {
+  outline: 2px solid var(--primary-dark);
+  outline-offset: 2px;
+}
+
+.mobile-ergaenzen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg) var(--page-margin, 16px);
+}
+
+.mobile-ergaenzen-frage {
+  margin: 0;
+  color: var(--text-secondary);
+}
