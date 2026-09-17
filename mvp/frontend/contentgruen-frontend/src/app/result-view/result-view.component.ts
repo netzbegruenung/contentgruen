@@ -316,8 +316,9 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   /**
    * Ins Formular des Typs, als Antwort auf die Aussage dieser Suche: per ID, wo
-   * sie bekannt ist (aus der Suchantwort, sonst aus dem eigenen Anlegen), sonst
-   * mit dem Suchtext.
+   * die Suchantwort sie liefert, sonst mit dem Suchtext. Die Ansicht legt keine
+   * Aussage mehr selbst an; ``statementId`` im Zustand setzt heute niemand und
+   * ist hier nur noch Rueckfall (immer null).
    */
   navigateToContribute(typ: 'commentary' | 'generictext'): void {
     const { searchResults, statementId, loading } = this.stateService.currentState;
