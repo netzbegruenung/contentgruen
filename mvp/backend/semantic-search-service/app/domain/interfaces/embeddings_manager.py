@@ -3,7 +3,7 @@ Interface for embeddings manager to enable dependency injection and testing.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Literal, Tuple
 
 
 class IEmbeddingsManager(ABC):
@@ -30,7 +30,12 @@ class IEmbeddingsManager(ABC):
 
     @abstractmethod
     async def search(
-        self, query: str, content_type: Optional[str] = None, limit: int = 10
+        self,
+        query: str,
+        content_type: Optional[str] = None,
+        limit: int = 10,
+        filter_dict: Optional[Dict[str, Any]] = None,
+        praefix: Literal["query", "passage"] = "query",
     ) -> List[Dict[str, Any]]:
         """
         Search for similar content.
@@ -39,6 +44,9 @@ class IEmbeddingsManager(ABC):
             query: Search query text
             content_type: Optional content type to filter by
             limit: Maximum number of results
+            filter_dict: Additional filters ('must' / 'must_not' lists of conditions)
+            praefix: Einbettung des Suchtexts - "query" fuer die Suche, "passage" fuer
+                die Dublettenpruefung gegen passage-Bestand (Kommentare)
 
         Returns:
             List of search results
