@@ -1,8 +1,12 @@
+import asyncio
 import datetime
+from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 import uuid
 import logging
+
+from pydantic import ValidationError
 
 from core.config import Settings
 from services.content.base_content_service import BaseContentService
@@ -24,6 +28,10 @@ from domain.models.content_origin import ContentOrigin
 logger = logging.getLogger(__name__)
 
 
+class AussageNichtGefunden(ValueError):
+    """Die Aussage zu einer ID gibt es nicht (mehr) - erwartbar, etwa bei einem alten Link."""
+
+
 class StatementService(
     BaseContentService[IStatementRepository, StatementDbEntry, StatementSearchResult]
 ):
@@ -39,6 +47,13 @@ class StatementService(
             )
 
             repository_factory = QdrantRepositoryFactory()
+
+        # Eine Sperre je Aussage um Lesen-Aendern-Schreiben der Antwortvorschlaege.
+        # Prozesslokal: schuetzt parallele Anfragen in diesem Worker, nicht ueber
+        # mehrere Prozesse hinweg.
+        self._verknuepfungs_sperren: Dict[uuid.UUID, asyncio.Lock] = defaultdict(
+            asyncio.Lock
+        )
 
         repository = repository_factory.create_statement_repository(settings)
         content_repository = repository_factory.create_content_repository(settings)
@@ -261,8 +276,27 @@ class StatementService(
         - True if the reply suggestion was successfully added to the statement, False otherwise.
         """
 
-        # Wirft ValueError, wenn es die Aussage nicht (mehr) gibt.
-        statement_db_entry = await self.get(statement_id)
+        sperre = self._verknuepfungs_sperren[statement_id]
+        try:
+            async with sperre:
+                return await self._antwortvorschlag_anhaengen(
+                    statement_id, replysuggestion_id, content_type, relevance
+                )
+        finally:
+            # Aufraeumen, sobald niemand mehr die Sperre haelt oder auf sie wartet -
+            # sonst sammelte sich je beruehrter Aussage eine Sperre an.
+            if not sperre.locked() and not getattr(sperre, "_waiters", None):
+                self._verknuepfungs_sperren.pop(statement_id, None)
+
+    async def _antwortvorschlag_anhaengen(
+        self,
+        statement_id: uuid.UUID,
+        replysuggestion_id: uuid.UUID,
+        content_type: ContentType,
+        relevance: float,
+    ) -> bool:
+        """Lesen, aendern, schreiben - nur unter der Sperre der Aussage aufrufen."""
+        statement_db_entry = await self._aussage_laden(statement_id)
 
         # Zweimal dieselbe Antwort (etwa ein wiederholter Speicheraufruf) haengt
         # nicht doppelt an und zaehlt nicht doppelt.
@@ -274,9 +308,6 @@ class StatementService(
                 f"Reply suggestion {replysuggestion_id} already linked to statement {statement_id}"
             )
             return True
-
-        # Lesen, aendern, schreiben ohne Sperre: zwei gleichzeitige Verknuepfungen
-        # derselben Aussage koennen sich gegenseitig ueberschreiben.
 
         statement_replysuggestion = StatementReplysuggestion(
             id=replysuggestion_id,
@@ -294,6 +325,19 @@ class StatementService(
 
         return True
 
+    async def _aussage_laden(self, statement_id: uuid.UUID) -> StatementDbEntry:
+        """
+        Die Aussage zur ID; AussageNichtGefunden, wenn es sie nicht gibt. Ein nicht
+        lesbarer Datensatz (ValidationError) oder ein Speicherfehler geht unveraendert
+        weiter - das ist kaputt, nicht abwesend.
+        """
+        try:
+            return await self.get(statement_id)
+        except ValidationError:
+            raise
+        except ValueError as fehler:
+            raise AussageNichtGefunden(str(statement_id)) from fehler
+
     async def beitrag_als_antwort_verknuepfen(
         self,
         beitrag_id: uuid.UUID,
@@ -302,7 +346,7 @@ class StatementService(
         author: str,
         statement_id: Optional[uuid.UUID] = None,
         statement_text: Optional[str] = None,
-    ) -> Optional[uuid.UUID]:
+    ) -> Optional[Tuple[uuid.UUID, str]]:
         """
         Einen gerade gespeicherten Beitrag als Antwort an seine Aussage haengen.
 
@@ -312,23 +356,26 @@ class StatementService(
         als Autorin. Ohne beides passiert nichts.
 
         Returns:
-        - Die ID der verknuepften Aussage, oder None ohne Aussage.
+        - ID und Text der tatsaechlich verknuepften Aussage (mit Text kann das eine
+          schon vorhandene, sehr aehnliche sein), oder None ohne Aussage.
 
         Raises:
-        - ValueError, wenn die Aussage zur ID nicht existiert; sonst, was Suche
-          oder Speichern werfen. Der Beitrag selbst ist dann trotzdem gespeichert.
+        - AussageNichtGefunden, wenn die Aussage zur ID nicht existiert; sonst, was
+          Suche oder Speichern werfen. Der Beitrag selbst ist dann trotzdem gespeichert.
         """
         text = (statement_text or "").strip()
         if statement_id is None and not text:
             return None
 
         if statement_id is None:
-            _, statement_id, _ = await self.add_statement(
+            _, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
                 author,
                 ContentStatus.RELEASED_INTERNAL,
                 ContentOrigin.MANUALLY_CREATED,
             )
+        else:
+            aussage_text = (await self._aussage_laden(statement_id)).text
 
         await self.add_statementreplysuggestion_to_statement(
             statement_id=statement_id,
@@ -336,4 +383,4 @@ class StatementService(
             content_type=content_type,
             relevance=relevance,
         )
-        return statement_id
+        return statement_id, aussage_text

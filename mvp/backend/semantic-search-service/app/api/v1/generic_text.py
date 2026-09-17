@@ -210,16 +210,19 @@ async def add_generic_text(
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
         # bleibt die Hintergrundinfo gespeichert und die Antwort sagt es.
         statement_id = None
+        statement_text = None
         verknuepft = True
         if request.statement_id or (request.statement_text or "").strip():
             try:
-                statement_id = await statement_service.beitrag_als_antwort_verknuepfen(
-                    beitrag_id=generic_text_id,
-                    content_type=ContentType.GENERIC_TEXT,
-                    relevance=HINTERGRUNDINFO_RELEVANZ,
-                    author=x_user,
-                    statement_id=request.statement_id,
-                    statement_text=request.statement_text,
+                statement_id, statement_text = (
+                    await statement_service.beitrag_als_antwort_verknuepfen(
+                        beitrag_id=generic_text_id,
+                        content_type=ContentType.GENERIC_TEXT,
+                        relevance=HINTERGRUNDINFO_RELEVANZ,
+                        author=x_user,
+                        statement_id=request.statement_id,
+                        statement_text=request.statement_text,
+                    )
                 )
             except Exception as e:
                 logger.error(
@@ -229,7 +232,10 @@ async def add_generic_text(
                 verknuepft = False
 
         return AddGenericTextResponse(
-            id=generic_text_id, statement_id=statement_id, verknuepft=verknuepft
+            id=generic_text_id,
+            statement_id=statement_id,
+            statement_text=statement_text,
+            verknuepft=verknuepft,
         )
 
     except HTTPException:

@@ -21,7 +21,7 @@ from dtos.statement import (
     StatementGetAllResponse,
     StatementSource,
 )
-from services.content.statement_service import StatementService
+from services.content.statement_service import AussageNichtGefunden, StatementService
 from core.logging import get_logger
 from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
@@ -210,16 +210,11 @@ async def add_replysuggestion_to_statement(
 
         return response
 
-    except ValidationError as e:
-        # Vor ValueError, siehe /getById: nicht lesbar ist kaputt, nicht abwesend.
-        logger.error(
-            f"Statement {request.statement_id} ist nicht lesbar: {e}", exc_info=True
-        )
-        raise HTTPException(status_code=500, detail="Statement not readable")
-    except ValueError:
+    except AussageNichtGefunden:
+        # Nur "gibt es nicht" ist 404; alles andere (nicht lesbar, Speicherfehler,
+        # andere ValueErrors) ist ein echter Fehler.
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
-        # Improve error handling by returning specific exception types
         logger.error(f"Error in /addReplysuggestionToStatement: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

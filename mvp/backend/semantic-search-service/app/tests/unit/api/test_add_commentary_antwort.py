@@ -67,8 +67,20 @@ class TestAddCommentaryAntwort:
         assert resp.json() == {
             "id": str(commentary_id),
             "statement_id": None,
+            "statement_text": None,
             "verknuepft": True,
+            "duplikat": False,
         }
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
+
+    def test_aussagetext_unter_10_zeichen_wird_abgelehnt(self, dienste):
+        _, statement_service = dienste
+
+        resp = TestClient(app).post(
+            ADD_URL, json=_anfrage(statement_text="zu kurz"), headers=HEADERS
+        )
+
+        assert resp.status_code == 422
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_leerer_aussagetext_zaehlt_als_ohne_aussage(self, dienste):
@@ -84,7 +96,10 @@ class TestAddCommentaryAntwort:
     def test_mit_aussage_id_wird_verknuepft(self, dienste):
         commentary_id, statement_service = dienste
         statement_id = uuid.uuid4()
-        statement_service.beitrag_als_antwort_verknuepfen.return_value = statement_id
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            "Waermepumpen sind zu teuer",
+        )
 
         resp = TestClient(app).post(
             ADD_URL, json=_anfrage(statement_id=str(statement_id)), headers=HEADERS
@@ -92,6 +107,7 @@ class TestAddCommentaryAntwort:
 
         assert resp.status_code == 200
         assert resp.json()["statement_id"] == str(statement_id)
+        assert resp.json()["statement_text"] == "Waermepumpen sind zu teuer"
         assert resp.json()["verknuepft"] is True
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
             beitrag_id=commentary_id,
@@ -105,7 +121,11 @@ class TestAddCommentaryAntwort:
     def test_mit_aussagetext_wird_gesucht_oder_angelegt(self, dienste):
         _, statement_service = dienste
         statement_id = uuid.uuid4()
-        statement_service.beitrag_als_antwort_verknuepfen.return_value = statement_id
+        # Die tatsaechlich verknuepfte Aussage kann eine vorhandene, aehnliche sein.
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            "Waermepumpen sind viel zu teuer!",
+        )
 
         resp = TestClient(app).post(
             ADD_URL,
@@ -115,6 +135,7 @@ class TestAddCommentaryAntwort:
 
         assert resp.status_code == 200
         assert resp.json()["statement_id"] == str(statement_id)
+        assert resp.json()["statement_text"] == "Waermepumpen sind viel zu teuer!"
         aufruf = statement_service.beitrag_als_antwort_verknuepfen.call_args.kwargs
         assert aufruf["statement_text"] == "Waermepumpen sind zu teuer"
         assert aufruf["statement_id"] is None
@@ -133,8 +154,38 @@ class TestAddCommentaryAntwort:
         assert resp.json() == {
             "id": str(commentary_id),
             "statement_id": None,
+            "statement_text": None,
             "verknuepft": False,
+            "duplikat": False,
         }
+
+    def test_dublette_wird_gemeldet_und_nicht_verknuepft(self, dienste):
+        commentary_id, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        # add_commentary meldet: nichts angelegt, ein sehr aehnlicher existiert schon.
+        app.dependency_overrides[
+            get_commentary_service
+        ]().add_commentary.return_value = (
+            False,
+            vorhanden,
+            "text",
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_id=str(uuid.uuid4())),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {
+            "id": str(vorhanden),
+            "statement_id": None,
+            "statement_text": None,
+            "verknuepft": True,
+            "duplikat": True,
+        }
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_text_ueber_500_zeichen_wird_abgelehnt(self, dienste):
         anfrage = _anfrage()

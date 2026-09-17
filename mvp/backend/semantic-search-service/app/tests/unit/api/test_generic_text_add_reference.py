@@ -96,6 +96,7 @@ def test_add_generic_text_with_unknown_reference_is_stored(services):
     assert response.json() == {
         "id": str(NEW_GENERIC_TEXT_ID),
         "statement_id": None,
+        "statement_text": None,
         "verknuepft": True,
     }
 

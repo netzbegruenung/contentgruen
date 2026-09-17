@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from api.v1.statement import router as statement_router
 from dependencies import get_statement_service
+from services.content.statement_service import AussageNichtGefunden
 
 SEARCH_URL = "/api/v1/statement/searchStatements"
 
@@ -69,7 +70,7 @@ class TestAddReplysuggestionUnbekannteAussage:
         import uuid
 
         statement_service.add_statementreplysuggestion_to_statement = AsyncMock(
-            side_effect=ValueError("not found")
+            side_effect=AussageNichtGefunden("weg")
         )
 
         resp = TestClient(app).post(
@@ -83,3 +84,22 @@ class TestAddReplysuggestionUnbekannteAussage:
         )
 
         assert resp.status_code == 404
+
+    def test_andere_fehler_sind_kein_404(self, statement_service):
+        import uuid
+
+        statement_service.add_statementreplysuggestion_to_statement = AsyncMock(
+            side_effect=ValueError("irgendetwas anderes")
+        )
+
+        resp = TestClient(app).post(
+            "/api/v1/statement/addReplysuggestionToStatement",
+            json={
+                "statement_id": str(uuid.uuid4()),
+                "replysuggestion_id": str(uuid.uuid4()),
+                "content_type": "commentary",
+                "relevance": 1.0,
+            },
+        )
+
+        assert resp.status_code == 500
