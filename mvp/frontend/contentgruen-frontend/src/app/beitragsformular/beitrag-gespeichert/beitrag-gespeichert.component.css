@@ -1,0 +1,75 @@
+.gespeichert {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--spacing-lg, 24px) var(--page-margin, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.gespeichert-kopf {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gespeichert-icon {
+    flex-shrink: 0;
+    color: var(--primary-main);
+}
+
+.gespeichert-satz {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.gespeichert-laedt {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+}
+
+.gespeichert-hinweis {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.gespeichert-knoepfe {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.primaer {
+    background-color: var(--primary-main) !important;
+    color: white !important;
+}
+
+.gespeichert-warnung {
+    margin: 0;
+    padding: 12px 16px;
+    border-left: 4px solid #f57c00;
+    border-radius: 4px;
+    background: #fff3e0;
+}
+
+.gespeichert-label {
+    margin: 0 0 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.aussage-karte {
+    display: block;
+    border: 1px solid var(--divider-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+@media (max-width: 599px) {
+    .gespeichert-knoepfe > * {
+        flex: 1 1 100%;
+        min-height: 48px;
+    }
+}

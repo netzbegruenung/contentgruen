@@ -65,6 +65,7 @@ export const PAGE_TITLES = {
   COMMENTARY_FORM: `${typLabel('commentary')} verfassen`,
   GENERIC_TEXT_FORM: `${typLabel('generic_text')} verfassen`,
   IMAGE_FORM: `${typLabel('image')} hinzufügen`,
+  GESPEICHERT: 'Gespeichert',
   LOGIN: 'Anmelden',
   HELP: 'Hilfe'
 };

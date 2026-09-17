@@ -45,4 +45,11 @@ describe('RouteConfigService', () => {
     expect(config.showContributeButton).toBeFalse();
     expect(config.showContributionsButton).toBeTrue();
   });
+
+  it('nennt die Ergebnisseite nach dem Speichern "Gespeichert"', () => {
+    const config = service.getRouteConfig('/workflow/add-commentary/gespeichert/k-1');
+    expect(config.pageTitle).toBe('Gespeichert');
+    expect(config.mobilePageTitle).toBe('Gespeichert');
+    expect(config.showBackButton).toBeTrue();
+  });
 });

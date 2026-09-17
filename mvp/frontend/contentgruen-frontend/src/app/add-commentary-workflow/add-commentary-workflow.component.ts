@@ -7,12 +7,19 @@ import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { AddCommentaryComponent } from '../add-commentary/add-commentary.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { StatementService } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { ContentRefreshService } from '../services/content-refresh.service';
+import { AUSSAGE_PARAM, SUCHTEXT_PARAM, gespeichertPfad } from '../shared/formular-adresse';
+import { StateManagementService } from '../services/state-management.service';
+import type { BeitragGespeichert } from '../add-commentary/add-commentary.component';
+import {
+  GespeichertZustand,
+  SUCHE_PARAM,
+  VON_PARAM,
+} from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import {
   DestillierUebergabeService,
   ROHINPUT_PARAM,
@@ -47,6 +54,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   /** Gesetzt, wenn das Formular aus dem Destillier-Ablauf geoeffnet wurde. */
   rohinputId: string | null = null;
   vorbefuellung: Vorbefuellung | null = null;
+  /** Aus der Suche geoeffnet (?aussage= oder ?searchQuery=); dann mit der Anfrage, soweit bekannt. */
+  private ausSuche: { anfrage: string | null } | null = null;
 
   constructor(
     private router: Router,
@@ -54,8 +63,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     private statementService: StatementService,
     private logger: LoggingService,
     private contentRefreshService: ContentRefreshService,
-    private snackBar: MatSnackBar,
-    private uebergabe: DestillierUebergabeService
+    private uebergabe: DestillierUebergabeService,
+    private stateService: StateManagementService,
   ) { }
 
   ngOnInit(): void {
@@ -67,6 +76,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
       .pipe(
         switchMap((params) => {
           this.einwurfUebernehmen(params.get(ROHINPUT_PARAM));
+          this.herkunftMerken(params);
           return this.aussageLaden(params);
         }),
         takeUntilDestroyed(this.destroyRef),
@@ -109,42 +119,45 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     }
   }
 
-  onSuccess(responseId: string) {
-    // Trigger refresh of recent content
-    this.contentRefreshService.triggerRefresh();
-
-    // Aus dem Destillier-Ablauf: Einwurf verknuepfen und den naechsten oeffnen.
-    if (this.rohinputId) {
-      this.uebergabe.nachSpeichern(this.rohinputId, responseId, 'commentary');
+  private herkunftMerken(params: ParamMap): void {
+    if (!params.get(AUSSAGE_PARAM) && !params.get(SUCHTEXT_PARAM)) {
+      this.ausSuche = null;
       return;
     }
-
-    // Show thank you message with snackbar
-    const snackBarRef = this.snackBar.open(
-      'Vielen Dank! Dein Beitrag hilft der gesamten Community. Du kannst deine Beiträge und deren Nutzung auf der "Meine Beiträge" Seite verfolgen.',
-      'Meine Beiträge ansehen',
-      {
-        duration: 8000,
-        horizontalPosition: 'center',
-        verticalPosition: 'bottom',
-        panelClass: ['success-snackbar']
-      }
-    );
-
-    // Navigate to contributions page when action button is clicked
-    snackBarRef.onAction().subscribe(() => {
-      this.router.navigate(['/contributions']);
-    });
-
-    // Navigate back to contribute page so users can add more content
-    this.router.navigate(['/contribute']);
+    // Mit ?searchQuery= steht die Anfrage in der Adresse; mit ?aussage=<id> nur
+    // im Zustand der Suche, solange die Sitzung laeuft.
+    const anfrage = params.get(SUCHTEXT_PARAM)?.trim() || this.stateService.currentState.searchQuery?.trim() || null;
+    this.ausSuche = { anfrage };
   }
 
-  onCancel() {
+  /**
+   * Nach dem Speichern immer die Ergebnisseite - auch im Destillier-Ablauf; den
+   * naechsten Einwurf waehlt man dort selbst. Sie ersetzt das Formular im
+   * Verlauf: Zurueck fuehrt nicht in ein Formular, das eben gespeichert wurde.
+   */
+  onSuccess(ergebnis: BeitragGespeichert) {
+    this.contentRefreshService.triggerRefresh();
+
+    const zustand: GespeichertZustand = {
+      aussage: ergebnis.aussage.text ? ergebnis.aussage : undefined,
+      verknuepft: ergebnis.verknuepft,
+    };
+
     if (this.rohinputId) {
-      this.uebergabe.zurueckZumEinwurf(this.rohinputId);
+      const rohinputId = this.rohinputId;
+      this.uebergabe.alsVerarbeitetMarkieren(rohinputId, ergebnis.id, 'commentary').subscribe((markiert) =>
+        this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, markiert }),
+      );
       return;
     }
-    this.router.navigate(['/contribute']);
+
+    const queryParams = this.ausSuche
+      ? { [VON_PARAM]: 'suche', ...(this.ausSuche.anfrage ? { [SUCHE_PARAM]: this.ausSuche.anfrage } : {}) }
+      : {};
+    this.zurErgebnisseite(ergebnis.id, queryParams, zustand);
+  }
+
+  private zurErgebnisseite(id: string, queryParams: Record<string, string>, state: GespeichertZustand): void {
+    this.router.navigate(gespeichertPfad('commentary', id), { queryParams, state, replaceUrl: true });
   }
 }

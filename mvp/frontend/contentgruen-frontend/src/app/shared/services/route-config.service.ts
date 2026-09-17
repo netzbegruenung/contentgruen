@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CONTENT_ICONS, PAGE_TITLES, ROUTES } from '../constants/app.constants';
-import { FORMULAR_PFAD } from '../formular-adresse';
+import { FORMULAR_PFAD, GESPEICHERT_SEGMENT } from '../formular-adresse';
 import { typLabel } from '../content-type-registry';
 
 export interface RouteConfig {
@@ -144,6 +144,11 @@ export class RouteConfigService {
     queryParams: URLSearchParams,
     defaultConfig: RouteConfig
   ): RouteConfig {
+    // Ergebnisseite nach dem Speichern: <Formularpfad>/gespeichert/<id>
+    if (route.startsWith(`${FORMULAR_PFAD.commentary}/${GESPEICHERT_SEGMENT}/`)) {
+      return this.getFormularConfig(PAGE_TITLES.GESPEICHERT, PAGE_TITLES.GESPEICHERT);
+    }
+
     // /destillieren und /destillieren/:id
     // Der Pfeil steht im Kopf wie ueberall und fuehrt in den Fangkorb (data.parent).
     // Dass vorher der Satz gespeichert wird, meldet die Ansicht ueber
