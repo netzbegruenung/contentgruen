@@ -108,6 +108,15 @@ async def add_commentary(
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
 
+        # Dublette zuerst: sonst legten die Herkunftsangaben unten neue Referenzen an,
+        # die dann an keinem Beitrag haengen. add_commentary prueft noch einmal -
+        # das faengt nur den seltenen Fall ab, dass derselbe Kommentar parallel
+        # gespeichert wird.
+        dublette = await commentary_service.finde_dublette(request.commentary.text)
+        if dublette is not None:
+            logger.info(f"Commentary is a duplicate of {dublette.id}")
+            return AddCommentaryResponse(id=dublette.id, duplikat=True)
+
         # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
         # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
         # anders beschrieben sein.
@@ -171,9 +180,9 @@ async def add_commentary(
             )
         )
 
-        # Schon ein sehr aehnlicher Kommentar da: add_commentary hat nichts angelegt
-        # und liefert dessen ID. Dann auch nichts verknuepfen - sonst hinge ein
-        # fremder Kommentar an der Aussage dieser Person.
+        # Schon ein sehr aehnlicher Kommentar da (parallel gespeichert):
+        # add_commentary hat nichts angelegt und liefert dessen ID. Dann auch nichts
+        # verknuepfen - sonst hinge ein fremder Kommentar an der Aussage dieser Person.
         if not commentary_was_new:
             logger.info(f"Commentary is a near-duplicate of {commentary_id}")
             return AddCommentaryResponse(id=commentary_id, duplikat=True)

@@ -374,3 +374,88 @@ class TestCommentaryService:
         # Service2 should NOT see this data (different embeddings managers)
         with pytest.raises(ValueError):
             await service2.get(id1)
+
+
+@pytest.mark.unit
+class TestKommentarDublette:
+    """Dublette: normalisiert gleich oder passage/passage ab der Schwelle."""
+
+    @pytest.fixture
+    def service(self, test_settings, repository_factory):
+        from services.content.commentary_service import CommentaryService
+
+        return CommentaryService(test_settings, repository_factory)
+
+    @staticmethod
+    def _treffer(text, score):
+        return CommentarySearchResult(
+            **create_base_content_fields(),
+            **create_commentary_data(text=text),
+            id=uuid.uuid4(),
+            content_type=ContentType.COMMENTARY,
+            score=score,
+        )
+
+    @pytest.mark.asyncio
+    async def test_suche_mit_passage_einbettung(self, service):
+        from unittest.mock import AsyncMock
+
+        service._repository.search = AsyncMock(return_value=[])
+
+        assert await service.finde_dublette("Hauskatzen töten mehr Vögel") is None
+        assert service._repository.search.call_args.kwargs["praefix"] == "passage"
+
+    @pytest.mark.asyncio
+    async def test_ab_der_schwelle_ist_dublette(self, service, test_settings):
+        from unittest.mock import AsyncMock
+
+        kopie = self._treffer(
+            "Anderer Wortlaut", test_settings.commentary_similarity_threshold
+        )
+        service._repository.search = AsyncMock(return_value=[kopie])
+
+        assert (await service.finde_dublette("Wortlaut")).id == kopie.id
+
+    @pytest.mark.asyncio
+    async def test_umformulierung_unter_der_schwelle_ist_keine(self, service):
+        from unittest.mock import AsyncMock
+
+        service._repository.search = AsyncMock(
+            return_value=[self._treffer("Anderer Wortlaut", 0.968)]
+        )
+
+        assert await service.finde_dublette("Wortlaut") is None
+
+    @pytest.mark.asyncio
+    async def test_normalisiert_gleich_wird_nicht_angelegt(self, service):
+        commentary = Commentary(
+            text="Hauskatzen töten 100 Millionen Vögel im Jahr.",
+            title="Katzen vs. Windräder",
+            content_type=ContentType.COMMENTARY,
+            references=[],
+            long_text="",
+            short_text="",
+            style="",
+        )
+        neu, erste_id, _ = await service.add_commentary(
+            commentary, "person-1", _status(), _herkunft()
+        )
+        commentary.text = "hauskatzen töten 100 millionen vögel im jahr"
+        wieder_neu, zweite_id, _ = await service.add_commentary(
+            commentary, "person-2", _status(), _herkunft()
+        )
+
+        assert (neu, wieder_neu) == (True, False)
+        assert zweite_id == erste_id
+
+
+def _status():
+    from domain.models.content_status import ContentStatus
+
+    return ContentStatus.RELEASED_INTERNAL
+
+
+def _herkunft():
+    from domain.models.content_origin import ContentOrigin
+
+    return ContentOrigin.MANUALLY_CREATED

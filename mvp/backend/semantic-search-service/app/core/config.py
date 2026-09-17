@@ -107,7 +107,11 @@ class Settings(BaseSettings):
     # Inhaltlich aehnliche Aussagen werden nicht still uebernommen, sondern im
     # Formular vorgeschlagen (0,885, Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
     statement_similarity_threshold: float = 0.98
-    commentary_similarity_threshold: float = 0.97
+    # Kommentar-Dublette: passage/passage-Einbettung, >= Schwelle.
+    # Modell: intfloat/multilingual-e5-base. Umformulierungen hoechstens 0,968,
+    # trivial abweichende Kopien ab 0,984, andere Kommentare zur selben Aussage
+    # hoechstens 0,903.
+    commentary_similarity_threshold: float = 0.975
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
     statement_search_limit: int = 5

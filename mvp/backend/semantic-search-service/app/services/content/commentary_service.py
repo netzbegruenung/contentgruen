@@ -57,40 +57,18 @@ class CommentaryService(
             CommentarySearchResult,
         )
 
-    async def _check_commentary_similarity(
-        self, commentary_text: str
-    ) -> tuple[Optional[float], Optional[uuid.UUID]]:
+    async def finde_dublette(self, text: str) -> Optional[CommentarySearchResult]:
         """
-        Check if a commentary is too similar to existing commentaries.
+        Den vorhandenen Kommentar, von dem dieser Text eine Dublette ist, sonst None.
 
-        Returns:
-            - Tuple of (similarity_score, content_id) for most similar commentary, or (None, None)
+        Dublette ist: normalisiert gleicher Text oder passage/passage-Aehnlichkeit >=
+        commentary_similarity_threshold. passage, weil der Bestand so eingebettet
+        ist - mit query erreicht selbst wortgleicher Text nur 0,96.
         """
-        logger.debug("Checking for similar existing commentaries")
-
-        similar_commentaries = await self.search(commentary_text, limit=1)
-        if similar_commentaries and similar_commentaries[0].score:
-            return similar_commentaries[0].score, similar_commentaries[0].id
-        return None, None
-
-    async def _is_commentary_too_similar(
-        self, commentary_text: str
-    ) -> tuple[bool, Optional[CommentarySearchResult]]:
-        """
-        Determine if a commentary is too similar to existing ones based on configured threshold.
-
-        Returns:
-            - Tuple of (is_too_similar, existing_commentary_if_duplicate)
-        """
-        similar_commentaries = await self.search(commentary_text, limit=1)
-
-        if similar_commentaries and similar_commentaries[0].score:
-            is_duplicate = (
-                similar_commentaries[0].score
-                > self.settings.commentary_similarity_threshold
-            )
-            return is_duplicate, similar_commentaries[0] if is_duplicate else None
-        return False, None
+        vorhandener, _ = await self._vorhandenen_finden(
+            text, self.settings.commentary_similarity_threshold, praefix="passage"
+        )
+        return vorhandener
 
     async def add_commentary(
         self,
@@ -104,27 +82,24 @@ class CommentaryService(
         """
         Add a new commentary to the index. If no ID is provided, a new UUID is generated.
 
-        Args:
-        - commentary: The Commentary object to be added.
-        - id: Optional UUID for the commentary. If None, a new UUID is generated.
+        Ist der Text eine Dublette (finde_dublette), wird nichts angelegt.
 
         Returns:
-        - The UUID of the added commentary.
+        - (neu angelegt, ID, Text) - bei einer Dublette ID und Text des vorhandenen.
         """
-        # Check for similarity using extracted business logic
-        most_similar_similarity_score, most_similar_content_id = (
-            await self._check_commentary_similarity(commentary.text)
+        vorhandener, bester = await self._vorhandenen_finden(
+            commentary.text,
+            self.settings.commentary_similarity_threshold,
+            praefix="passage",
         )
-        is_too_similar, existing_commentary = await self._is_commentary_too_similar(
-            commentary.text
-        )
-
-        if is_too_similar and existing_commentary:
+        if vorhandener is not None:
             logger.debug(
-                f"Input commentary is too similar to existing commentary with ID {existing_commentary.id}. "
-                f"Similarity score: {existing_commentary.score:.3f} > threshold: {self.settings.commentary_similarity_threshold}"
+                f"Input commentary is a duplicate of existing commentary with ID {vorhandener.id} "
+                f"(score {vorhandener.score:.3f}, threshold {self.settings.commentary_similarity_threshold})"
             )
-            return False, existing_commentary.id, existing_commentary.text
+            return False, vorhandener.id, vorhandener.text
+        most_similar_similarity_score = bester.score if bester else None
+        most_similar_content_id = bester.id if bester else None
 
         # Create CommentaryInput object from Commentary object
         now = created_at or utc_jetzt()
