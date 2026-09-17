@@ -49,7 +49,7 @@ describe('ContributeViewComponent', () => {
 
     it('zeigt Einwerfen, Fangkorb und die drei Typen als Zeilen', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
-        .toEqual(['Einwerfen', 'Fangkorb', 'Kommentar', 'Hintergrundinfo', 'Bild']);
+        .toEqual(['Einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild']);
       expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
         .toContain('Gut gesagt ist neu.');
     });
@@ -70,6 +70,7 @@ describe('ContributeViewComponent', () => {
       expect(ueberschriften.map((u) => u.textContent!.trim())).toEqual(['Einwerfen', 'Weiterarbeiten', 'Verfassen']);
       expect(einwerfen.nextElementSibling!.classList).toContain('einwerfen-block');
       expect(weiterarbeiten.nextElementSibling!.classList).toContain('fangkorb-block');
+      expect(weiterarbeiten.nextElementSibling!.nextElementSibling!.classList).toContain('beitraege-block');
       expect(verfassen.nextElementSibling!.matches('nav.typ-liste')).toBeTrue();
       expect(verfassen.nextElementSibling!.querySelectorAll('button.typ-zeile').length).toBe(3);
     });
@@ -80,10 +81,13 @@ describe('ContributeViewComponent', () => {
 
       zeilen()[1].click();
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb']);
+
+      zeilen()[2].click();
+      expect(router.navigate).toHaveBeenCalledWith(['/contributions']);
     });
 
     it('oeffnet mit einer Typ-Zeile die Formularseite des Typs', () => {
-      const [, , kommentar, hintergrund, bild] = zeilen();
+      const [, , , kommentar, hintergrund, bild] = zeilen();
 
       kommentar.click();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-commentary']);

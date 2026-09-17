@@ -72,6 +72,11 @@ export class ContributeViewComponent implements OnInit {
     this.router.navigate(['/fangkorb']);
   }
 
+  /** Weiterarbeiten: die eigenen Beitraege - frueher das Ordner-Icon in der Kopfzeile. */
+  navigateToContributions(): void {
+    this.router.navigate(['/contributions']);
+  }
+
   formularOeffnen(typ: FormularTyp): void {
     this.router.navigate([FORMULAR_PFAD[typ]]);
   }

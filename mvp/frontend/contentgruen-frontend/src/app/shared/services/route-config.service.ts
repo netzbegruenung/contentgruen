@@ -118,14 +118,15 @@ export class RouteConfigService {
   }
 
   // Mobil nur der Typname: "Kommentar verfassen" passt bei 360 px nicht neben
-  // Pfeil, Avatar und Menue.
+  // Pfeil, Avatar und Menue. Kein Ordner-Icon: "Meine Beitraege" steht im Menue,
+  // auf der Beitragen-Seite und auf der Ergebnisseite.
   private getFormularConfig(pageTitle: string, mobilePageTitle: string): RouteConfig {
     return {
       pageTitle,
       mobilePageTitle,
       showBackButton: true,
       showContributeButton: false,
-      showContributionsButton: true
+      showContributionsButton: false
     };
   }
 
@@ -135,7 +136,8 @@ export class RouteConfigService {
       pageTitle: PAGE_TITLES.CONTRIBUTE,
       showBackButton: true,
       showContributeButton: false,
-      showContributionsButton: true
+      // "Meine Beitraege" ist hier eine Kachel unter Weiterarbeiten.
+      showContributionsButton: false
     };
   }
 
