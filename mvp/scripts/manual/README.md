@@ -37,8 +37,17 @@ semantic-search-Container, mit dessen Qdrant-Umgebung:
   den Keyword-Index an. Ohne `--ausfuehren` wird nur gezaehlt; idempotent. Erst nach
   dem Ausrollen der Version laufen lassen, die das Feld schreibt.
 
+Auf Test/Prod liegt kein Repo-Checkout; die Skripte werden heruntergeladen:
+
 ```bash
-docker exec -i contentgruen-semantic-search python - < mvp/scripts/manual/bestand_pruefen.py
-docker exec -i contentgruen-semantic-search python - --ausfuehren \
-    < mvp/scripts/manual/text_normalisiert_nachtragen.py
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/bestand_pruefen.py
+docker exec -i contentgruen-semantic-search python - < bestand_pruefen.py
+
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
+docker exec -i contentgruen-semantic-search python - < text_normalisiert_nachtragen.py
+docker exec -i contentgruen-semantic-search python - --ausfuehren < text_normalisiert_nachtragen.py
 ```
+
+`bestand_pruefen.py` nutzt nur qdrant_client und die Standardbibliothek und laeuft
+auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
+ausgerollten neuen Stand.

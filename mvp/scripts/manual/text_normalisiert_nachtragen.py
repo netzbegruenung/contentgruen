@@ -7,16 +7,20 @@ Dublettenpruefung (utils/text_normalisierung.py).
 Erst NACH dem Ausrollen der Version laufen lassen, die das Feld schreibt - sonst
 kommen in der Zwischenzeit wieder Eintraege ohne Feld dazu. Die Logik liegt im
 Dienst (services/wartung/text_normalisiert_nachtrag.py); das Skript laeuft deshalb
-im semantic-search-Container, per stdin, mit dessen Umgebung
-(SEMANTIC_SEARCH_QDRANT_URL, SEMANTIC_SEARCH_QDRANT_COLLECTION).
+im semantic-search-Container, per stdin, mit dessen Code und Umgebung
+(SEMANTIC_SEARCH_QDRANT_URL, SEMANTIC_SEARCH_QDRANT_COLLECTION). Gegen einen
+Container mit aelterem Stand bricht es mit ModuleNotFoundError ab, ohne zu schreiben.
+
+Auf Test/Prod liegt kein Repo-Checkout - Skript herunterladen, dann ausfuehren:
+
+    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
 
     # 1. Zaehlen, was nachzutragen waere - aendert nichts
-    docker exec -i contentgruen-semantic-search python - \
-        < mvp/scripts/manual/text_normalisiert_nachtragen.py
+    docker exec -i contentgruen-semantic-search python - < text_normalisiert_nachtragen.py
 
     # 2. Nachtragen
     docker exec -i contentgruen-semantic-search python - --ausfuehren \
-        < mvp/scripts/manual/text_normalisiert_nachtragen.py
+        < text_normalisiert_nachtragen.py
 
 Idempotent: ein zweiter Lauf mit --ausfuehren meldet nachzutragen = 0. Geschrieben
 wird mit set_payload nur dieses eine Feld. Die Ausgabe enthaelt nur Zaehler, keine

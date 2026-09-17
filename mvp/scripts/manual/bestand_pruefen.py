@@ -4,16 +4,21 @@ Liest den Qdrant-Bestand und gibt nur Zaehler aus - fuer Test und Prod.
 
 NUR LESEND: scroll und get_collection, sonst nichts. Keine Texte, keine IDs, keine
 Autoren in der Ausgabe. Laeuft im semantic-search-Container, per stdin, mit dessen
-Umgebung (SEMANTIC_SEARCH_QDRANT_URL, SEMANTIC_SEARCH_QDRANT_COLLECTION). Braucht
-keinen Code aus diesem Stand des Repos - funktioniert auch auf einer aelteren Version.
+Umgebung (SEMANTIC_SEARCH_QDRANT_URL, SEMANTIC_SEARCH_QDRANT_COLLECTION).
 
-    docker exec -i contentgruen-semantic-search python - \
-        < mvp/scripts/manual/bestand_pruefen.py
+Braucht nur qdrant_client und die Standardbibliothek (fuer --praefix zusaetzlich
+numpy und sentence_transformers, die im Image stecken) - keinen App-Code. Laeuft
+daher auch gegen einen Container mit aelterem Stand (geprueft mit python -I, also
+ohne /app im Pfad, gegen einen Container ohne utils/text_normalisierung.py).
+
+Auf Test/Prod liegt kein Repo-Checkout - Skript herunterladen, dann ausfuehren:
+
+    curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/bestand_pruefen.py
+    docker exec -i contentgruen-semantic-search python - < bestand_pruefen.py
 
     # zusaetzlich Vektorpraefix-Stichprobe (laedt das Einbettungsmodell, ~1,5 GB RAM,
     # 20 Punkte je Inhaltstyp)
-    docker exec -i contentgruen-semantic-search python - --praefix 20 \
-        < mvp/scripts/manual/bestand_pruefen.py
+    docker exec -i contentgruen-semantic-search python - --praefix 20 < bestand_pruefen.py
 
 Ausgabe (JSON):
 - punkte_je_typ_und_herkunft
@@ -47,7 +52,11 @@ _ANFUEHRUNGSZEICHEN = re.compile("[\"„“”‚«»‹›]")
 
 
 def normalisiert(text):
-    """Kopie von app/utils/text_normalisierung.py - hier nur zum Zaehlen."""
+    """
+    Bewusste Kopie von app/utils/text_normalisierung.py: Das Skript soll ohne App-Code
+    laufen, auch gegen aeltere Versionen. Aendert sich die Normalisierung dort, hier
+    nachziehen - sie dient hier nur zum Zaehlen.
+    """
     t = unicodedata.normalize("NFC", text or "").translate(_APOSTROPHE)
     t = _ANFUEHRUNGSZEICHEN.sub("", t)
     t = " ".join(t.split()).casefold()
