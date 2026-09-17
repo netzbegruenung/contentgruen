@@ -19,18 +19,11 @@ import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
+import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
 } from '../shared/components/bestaetigungs-dialog/bestaetigungs-dialog.component';
-
-/** Was das Formular nach dem Speichern meldet; die Ergebnisseite zeigt es. */
-export interface BeitragGespeichert {
-  id: string;
-  aussage: AntwortAuf;
-  /** false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem. */
-  verknuepft: boolean;
-}
 
 export const TITEL_MAX = 120;
 export const TEXT_MAX = 500;

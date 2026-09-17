@@ -17,6 +17,14 @@ export const ROHINPUT_ADRESSE_PARAM = 'rohinput';
 
 export type Herkunft = 'fangkorb' | 'suche' | 'frei';
 
+/** Was ein Beitragsformular nach dem Speichern meldet; die Ergebnisseite zeigt es. */
+export interface BeitragGespeichert {
+  id: string;
+  aussage: { id: string; text: string };
+  /** false: Aussage angegeben, aber nicht verknuepft - der Beitrag steht trotzdem. */
+  verknuepft: boolean;
+}
+
 export interface GespeichertZustand {
   /** Die Aussage, auf die der Beitrag antwortet; fehlt ohne Aussage. */
   aussage?: { id: string; text: string };

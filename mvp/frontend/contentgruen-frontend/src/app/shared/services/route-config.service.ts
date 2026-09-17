@@ -145,7 +145,10 @@ export class RouteConfigService {
     defaultConfig: RouteConfig
   ): RouteConfig {
     // Ergebnisseite nach dem Speichern: <Formularpfad>/gespeichert/<id>
-    if (route.startsWith(`${FORMULAR_PFAD.commentary}/${GESPEICHERT_SEGMENT}/`)) {
+    if (
+      route.startsWith(`${FORMULAR_PFAD.commentary}/${GESPEICHERT_SEGMENT}/`) ||
+      route.startsWith(`${FORMULAR_PFAD.generictext}/${GESPEICHERT_SEGMENT}/`)
+    ) {
       return this.getFormularConfig(PAGE_TITLES.GESPEICHERT, PAGE_TITLES.GESPEICHERT);
     }
 

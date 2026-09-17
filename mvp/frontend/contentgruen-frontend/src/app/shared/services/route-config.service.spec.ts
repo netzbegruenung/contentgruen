@@ -47,6 +47,7 @@ describe('RouteConfigService', () => {
   });
 
   it('nennt die Ergebnisseite nach dem Speichern "Gespeichert"', () => {
+    expect(service.getRouteConfig('/workflow/add-generictext/gespeichert/h-1').pageTitle).toBe('Gespeichert');
     const config = service.getRouteConfig('/workflow/add-commentary/gespeichert/k-1');
     expect(config.pageTitle).toBe('Gespeichert');
     expect(config.mobilePageTitle).toBe('Gespeichert');

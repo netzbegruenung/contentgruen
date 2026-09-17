@@ -14,6 +14,10 @@ export interface ReferenceInput {
 export interface AddGenericTextRequest {
     generictext: GenericText;
     references: ReferenceInput[];
+    /** Worauf die Hintergrundinfo antwortet: ID einer vorhandenen Aussage ... */
+    statement_id?: string;
+    /** ... oder, ohne ID, ihr Text; das Backend sucht oder legt sie an. */
+    statement_text?: string;
 }
 
 export interface GenericText {
@@ -30,6 +34,10 @@ export interface GenericTextReference {
 
 export interface AddGenericTextResponse {
     id: string;
+    /** Die Aussage, an der die Hintergrundinfo jetzt haengt; null ohne Aussage. */
+    statement_id?: string | null;
+    /** false: Aussage angegeben, aber nicht verknuepft - die Hintergrundinfo steht trotzdem. */
+    verknuepft?: boolean;
 }
 
 

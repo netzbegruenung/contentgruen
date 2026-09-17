@@ -108,6 +108,12 @@ export const routes: Routes = [
         data: { parent: gespeichertEltern, typ: 'commentary' }
     },
     {
+        path: 'workflow/add-generictext/gespeichert/:id',
+        loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
+        canActivate: [AuthGuard],
+        data: { parent: gespeichertEltern, typ: 'generictext' }
+    },
+    {
         path: 'workflow/add-generictext',
         loadComponent: () => import('./add-generictext-workflow/add-generictext-workflow.component').then(m => m.AddGenerictextWorkflowComponent),
         canActivate: [AuthGuard],

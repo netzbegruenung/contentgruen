@@ -1,19 +1,15 @@
 <div class="workflow-container">
-    <!-- Loading State for Statement -->
     <div *ngIf="isLoadingStatement" class="loading-container">
-        <mat-spinner></mat-spinner>
+        <mat-spinner diameter="40"></mat-spinner>
         <p>Aussage wird geladen …</p>
     </div>
 
-    <!-- Main Content when Statement is Ready or Not Required -->
-    <div *ngIf="!isLoadingStatement">
-        <app-add-generictext
-            [statementText]="statementText"
-            [statementId]="statementId"
-            [aussageHinweis]="aussageHinweis"
-            [vorbefuellung]="vorbefuellung"
-            (success)="onSuccess($event)"
-            (cancel)="onCancel()">
-        </app-add-generictext>
-    </div>
+    <app-add-generictext
+        *ngIf="!isLoadingStatement"
+        (success)="onSuccess($event)"
+        [statementText]="statementText"
+        [statementId]="statementId"
+        [aussageHinweis]="aussageHinweis"
+        [vorbefuellung]="vorbefuellung">
+    </app-add-generictext>
 </div>

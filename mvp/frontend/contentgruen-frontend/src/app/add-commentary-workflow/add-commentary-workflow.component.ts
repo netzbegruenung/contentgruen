@@ -14,8 +14,8 @@ import { LoggingService } from '../services/logging.service';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { AUSSAGE_PARAM, SUCHTEXT_PARAM, gespeichertPfad } from '../shared/formular-adresse';
 import { StateManagementService } from '../services/state-management.service';
-import type { BeitragGespeichert } from '../add-commentary/add-commentary.component';
 import {
+  BeitragGespeichert,
   GespeichertZustand,
   SUCHE_PARAM,
   VON_PARAM,
