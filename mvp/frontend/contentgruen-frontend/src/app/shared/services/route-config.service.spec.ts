@@ -39,10 +39,20 @@ describe('RouteConfigService', () => {
     expect(service.getRouteConfig('/fangkorb').mobilePageTitle).toBeUndefined();
   });
 
-  it('zeigt auf den Formularseiten Pfeil und Meine Beitraege, nicht Beitragen', () => {
-    const config = service.getRouteConfig('/workflow/add-commentary');
+  it('zeigt auf den Formularseiten und /contribute nur den Pfeil, kein Beitragen und kein Ordner-Icon', () => {
+    for (const pfad of ['/workflow/add-commentary', '/workflow/add-generictext', '/workflow/add-image', '/contribute', '/workflow/add-commentary/gespeichert/k-1']) {
+      const config = service.getRouteConfig(pfad);
+      expect(config.showBackButton).withContext(pfad).toBeTrue();
+      expect(config.showContributeButton).withContext(pfad).toBeFalse();
+      expect(config.showContributionsButton).withContext(pfad).toBeFalse();
+    }
+  });
+
+  it('nennt die Ergebnisseite nach dem Speichern "Gespeichert"', () => {
+    expect(service.getRouteConfig('/workflow/add-generictext/gespeichert/h-1').pageTitle).toBe('Gespeichert');
+    const config = service.getRouteConfig('/workflow/add-commentary/gespeichert/k-1');
+    expect(config.pageTitle).toBe('Gespeichert');
+    expect(config.mobilePageTitle).toBe('Gespeichert');
     expect(config.showBackButton).toBeTrue();
-    expect(config.showContributeButton).toBeFalse();
-    expect(config.showContributionsButton).toBeTrue();
   });
 });

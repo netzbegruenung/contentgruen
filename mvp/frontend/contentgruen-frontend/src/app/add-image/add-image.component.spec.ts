@@ -71,4 +71,10 @@ describe('AddImageComponent', () => {
     expect(component.imageForm.value.title).toBe(werte.title);
     flush();
   }));
+
+  it('beschreibt den Typ mit dem Satz aus der Registry', () => {
+    expect(fixture.nativeElement.querySelector('.content-type-description').textContent.trim()).toBe(
+      'Ein Bild mit Unterschrift, das für sich spricht.',
+    );
+  });
 });

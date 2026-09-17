@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import utc_jetzt
 import logging
 from typing import Optional, List, Tuple
 import uuid
@@ -119,7 +120,7 @@ class ReferenceService(
             id = uuid.uuid4()
 
         # Create ReferenceDbEntry object from Reference object
-        now = datetime.datetime.now()
+        now = utc_jetzt()
         reference_input = ReferenceDbEntry(
             text=reference.text,
             id=id,

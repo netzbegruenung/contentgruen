@@ -1,0 +1,48 @@
+<div class="gespeichert">
+    <div class="gespeichert-kopf" role="status">
+        <mat-icon class="gespeichert-icon" aria-hidden="true">check_circle</mat-icon>
+        <p class="gespeichert-satz">{{ texte.gespeichert }}</p>
+    </div>
+
+    <p *ngIf="zustand.verknuepft === false" class="gespeichert-warnung verknuepfung-fehlgeschlagen" role="alert">
+        {{ verknuepfungFehlgeschlagen }}
+    </p>
+    <p *ngIf="zustand.markiert === false" class="gespeichert-warnung markieren-fehlgeschlagen" role="alert">
+        {{ nichtMarkiert }}
+    </p>
+
+    <div *ngIf="aussageKopf as aussage" class="gespeichert-aussage">
+        <p class="gespeichert-label">Antwort auf</p>
+        <app-beitragskarte class="aussage-karte" variante="kopf" [daten]="aussage"></app-beitragskarte>
+    </div>
+
+    <div *ngIf="laedt" class="gespeichert-laedt">
+        <mat-spinner diameter="32"></mat-spinner>
+    </div>
+
+    <app-beitragskarte *ngIf="karte as karte" class="gespeichert-karte" [daten]="karte"
+                       [abstimmenSichtbar]="false">
+    </app-beitragskarte>
+
+    <p *ngIf="nichtLadbar" class="gespeichert-hinweis">{{ texte.nichtLadbar }}</p>
+
+    <div class="gespeichert-knoepfe" [ngSwitch]="herkunft">
+        <ng-container *ngSwitchCase="'fangkorb'">
+            <button mat-raised-button type="button" class="primaer naechster-einwurf" (click)="naechsterEinwurf()">
+                Nächster Einwurf
+            </button>
+            <button mat-stroked-button type="button" class="zum-fangkorb" (click)="zumFangkorb()">
+                Zum Fangkorb
+            </button>
+        </ng-container>
+        <button *ngSwitchCase="'suche'" mat-raised-button type="button" class="primaer zur-suche"
+                (click)="zurueckZurSuche()">
+            Zurück zur Suche
+        </button>
+        <button *ngSwitchDefault mat-raised-button type="button" class="primaer noch-einer" (click)="nochEiner()">
+            {{ texte.nochEiner }}
+        </button>
+
+        <a mat-stroked-button class="meine-beitraege" routerLink="/contributions">Meine Beiträge</a>
+    </div>
+</div>

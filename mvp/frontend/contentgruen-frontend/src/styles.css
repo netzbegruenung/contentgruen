@@ -705,3 +705,11 @@ body.cdk-global-scrollblock {
 .mat-mdc-snack-bar-container.success-snackbar .mat-mdc-button:hover {
     background-color: rgba(255, 255, 255, 0.3);
 }
+
+/* Beitragsformular mit fester Leiste (app-formular-leiste): am Handy unten Platz
+   frei halten, damit Vorschau und Fusszeile nicht darunter verschwinden. */
+@media (max-width: 599px) {
+    body.hat-feste-leiste {
+        padding-bottom: var(--feste-leiste-hoehe, 73px);
+    }
+}

@@ -21,7 +21,7 @@ from dtos.statement import (
     StatementGetAllResponse,
     StatementSource,
 )
-from services.content.statement_service import StatementService
+from services.content.statement_service import AussageNichtGefunden, StatementService
 from core.logging import get_logger
 from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
@@ -107,9 +107,17 @@ async def search_statements(
     try:
         logger.debug("/searchStatements was called")
 
-        statement_index_results = await statement_service.search(
-            request.query_text, request.limit
-        )
+        if request.nur_kuratiert or request.min_similarity is not None:
+            statement_index_results = await statement_service.search_filtered(
+                request.query_text,
+                request.limit,
+                nur_kuratiert=request.nur_kuratiert,
+                min_similarity=request.min_similarity,
+            )
+        else:
+            statement_index_results = await statement_service.search(
+                request.query_text, request.limit
+            )
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 
         response: StatementSearchResponse = StatementSearchResponse(
@@ -202,8 +210,11 @@ async def add_replysuggestion_to_statement(
 
         return response
 
+    except AussageNichtGefunden:
+        # Nur "gibt es nicht" ist 404; alles andere (nicht lesbar, Speicherfehler,
+        # andere ValueErrors) ist ein echter Fehler.
+        raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
-        # Improve error handling by returning specific exception types
         logger.error(f"Error in /addReplysuggestionToStatement: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

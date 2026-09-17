@@ -221,4 +221,51 @@ describe('ReferenceInputComponent', () => {
                 .withContext('Beschreibung weiter bedienbar').toBeFalse();
         });
     });
+
+    describe('kompakt', () => {
+        function mitEintrag(kompakt: boolean): void {
+            fixture.componentRef.setInput('kompakt', kompakt);
+            component.urlControl.setValue('https://example.org/studie');
+            component.addCustomReference();
+            fixture.detectChanges();
+        }
+
+        it('bleibt ohne Angabe wie bisher: Kasten, Zaehler, rotes Loeschen, Infozeile', () => {
+            const seite: HTMLElement = fixture.nativeElement;
+            expect(seite.querySelector('.status-message.info')).toBeTruthy();
+
+            mitEintrag(false);
+
+            expect(seite.querySelector('.reference-input-container.kompakt')).toBeNull();
+            expect(seite.querySelector('.reference-count')!.textContent).toContain('1 / 10');
+            expect(seite.querySelector('button[color="warn"]')).toBeTruthy();
+            expect(seite.querySelector('.entfernen-klein')).toBeNull();
+            expect(seite.querySelector('mat-label')!.textContent).toContain('Woher stammt das?');
+        });
+
+        it('zeigt kompakt kein Infofeld, keinen Zaehler und ein kleines Loesch-Icon', () => {
+            const seite: HTMLElement = fixture.nativeElement;
+
+            mitEintrag(true);
+
+            expect(seite.querySelector('.reference-input-container.kompakt')).toBeTruthy();
+            expect(seite.querySelector('.status-message.info')).toBeNull();
+            expect(seite.querySelector('.reference-count')).toBeNull();
+            expect(seite.querySelector('button[color="warn"]')).toBeNull();
+
+            (seite.querySelector('.entfernen-klein') as HTMLButtonElement).click();
+            fixture.detectChanges();
+            expect(component.selectedReferences.length).toBe(0);
+        });
+
+        it('nimmt Beschriftung und Platzhalter an', () => {
+            fixture.componentRef.setInput('beschriftung', 'Herkunft (optional)');
+            fixture.componentRef.setInput('platzhalter', 'Link oder Beschreibung');
+            fixture.detectChanges();
+            const seite: HTMLElement = fixture.nativeElement;
+
+            expect(seite.querySelector('mat-label')!.textContent).toContain('Herkunft (optional)');
+            expect((seite.querySelector('.reference-source-input') as HTMLInputElement).placeholder).toBe('Link oder Beschreibung');
+        });
+    });
 });

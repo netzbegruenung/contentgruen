@@ -1,4 +1,5 @@
 import datetime
+from domain.models.zeit import utc_jetzt
 import hashlib
 from typing import List, Optional, Callable, Dict, Any, Set
 import os
@@ -152,7 +153,7 @@ class DataProcessor:
             commentary_references.append(
                 CommentaryReference(
                     reference_id=reference_id,
-                    created=datetime.datetime.now(),
+                    created=utc_jetzt(),
                 )
             )
 
@@ -226,7 +227,7 @@ class DataProcessor:
             generictext_references.append(
                 GenericTextReference(
                     reference_id=reference_id,
-                    created=datetime.datetime.now(),
+                    created=utc_jetzt(),
                 )
             )
 
@@ -286,8 +287,8 @@ class DataProcessor:
                 id=reply_id,
                 content_type=content_type,
                 relevance=0.7,
-                created=datetime.datetime.now(),
-                updated=datetime.datetime.now(),
+                created=utc_jetzt(),
+                updated=utc_jetzt(),
                 number_of_usages=0,
             )
             for reply_id in reply_ids

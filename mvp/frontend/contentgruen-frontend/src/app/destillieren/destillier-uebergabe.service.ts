@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 import { BeitragsTyp, RawInputService } from '../services/raw-input.service';
 import { LoggingService } from '../services/logging.service';
 import { FangkorbTab } from '../raw-input-list/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
+import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 
 /** Query-Parameter, mit dem die Destillier-Ansicht ein Beitragsformular oeffnet. */
 export const ROHINPUT_PARAM = 'rohinput';
@@ -28,6 +28,8 @@ export interface Vorbefuellung {
   titel: string;
   /** Der Link des Einwurfs, ohne Tracking-Parameter - er wird die Herkunft. */
   url: string | null;
+  /** Der Einwurf als Kopf ueber dem Formular: Sandband, Link, der Satz. */
+  kopf?: KartenDaten;
 }
 
 /**
@@ -36,56 +38,46 @@ export interface Vorbefuellung {
  * In der Adresse steht nur die ID des Einwurfs (?rohinput=...). Satz und Link
  * holt das Formular vom Server, damit ein PWA-Neustart nichts verliert und kein
  * Freitext in der Adresse landet. Nach dem Speichern wird der Einwurf als
- * verarbeitet markiert und der naechste geoeffnet.
+ * verarbeitet markiert; den naechsten waehlt man auf der Ergebnisseite.
  */
 @Injectable({ providedIn: 'root' })
 export class DestillierUebergabeService {
   constructor(
     private rawInputService: RawInputService,
     private router: Router,
-    private snackBar: MatSnackBar,
     private logger: LoggingService,
   ) {}
 
   vorbefuellungLaden(rohinputId: string): Observable<Vorbefuellung> {
     return this.rawInputService.getRawInput(rohinputId).pipe(
-      map((einwurf) => ({
-        rohinputId: einwurf.id,
-        titel: einwurf.own_draft ?? '',
-        url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
-      })),
+      map((einwurf) => {
+        const karte = ausEinwurf(einwurf);
+        const titel = einwurf.own_draft ?? '';
+        return {
+          rohinputId: einwurf.id,
+          titel,
+          url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
+          kopf: karte.rohling ? { ...karte, rohling: { ...karte.rohling, kopfSatz: titel || undefined } } : karte,
+        };
+      }),
     );
   }
 
   /**
-   * Der Beitrag ist gespeichert: Einwurf als verarbeitet markieren und weiter.
+   * Der Beitrag ist gespeichert: Einwurf als verarbeitet markieren, ohne weiterzuspringen.
    *
-   * Der Typ geht mit, damit die Fangkorb-Karte die Farbe des Beitrags annimmt.
-   * Scheitert das Markieren, ist der Beitrag trotzdem da. Der Einwurf bleibt
-   * dann destilliert und wird nicht automatisch wieder angeboten (er hat einen
-   * eigenen Entwurf) - im Fangkorb ist er weiter antippbar.
+   * Fuer Formulare mit Ergebnisseite - dort waehlt man selbst den naechsten
+   * Einwurf. Liefert, ob das Markieren geklappt hat; ein Fehler bricht nichts ab,
+   * der Beitrag ist ja da.
    */
-  nachSpeichern(rohinputId: string, contentId: string, typ: BeitragsTyp): void {
-    this.rawInputService.updateStatus(rohinputId, 'processed', contentId, typ).subscribe({
-      next: () => {
-        this.snackBar.open('Gespeichert. Weiter mit dem nächsten Einwurf.', undefined, {
-          duration: 4000,
-          panelClass: ['success-snackbar'],
-        });
-        this.zumNaechsten(rohinputId, 'erledigt');
-      },
-      error: (error) => {
+  alsVerarbeitetMarkieren(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
+    return this.rawInputService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
+      map(() => true),
+      catchError((error) => {
         this.logger.error('Einwurf konnte nicht als verarbeitet markiert werden', error);
-        this.snackBar.open(
-          'Dein Beitrag ist gespeichert, aber der Einwurf konnte nicht als verarbeitet markiert werden.',
-          'OK',
-          { duration: 8000 },
-        );
-        // Ohne Verknuepfung bleibt der Einwurf bei seinen Saetzen stehen - er liegt
-        // also unter "Ausformulieren", nicht unter "Erledigt".
-        this.zumNaechsten(rohinputId, 'ausformulieren');
-      },
-    });
+        return of(false);
+      }),
+    );
   }
 
   /**
@@ -98,9 +90,5 @@ export class DestillierUebergabeService {
    */
   zumNaechsten(nach: string, tab: FangkorbTab): void {
     this.router.navigate(['/destillieren'], { queryParams: { nach, [TAB_PARAM]: tab } });
-  }
-
-  zurueckZumEinwurf(rohinputId: string): void {
-    this.router.navigate(['/destillieren', rohinputId]);
   }
 }

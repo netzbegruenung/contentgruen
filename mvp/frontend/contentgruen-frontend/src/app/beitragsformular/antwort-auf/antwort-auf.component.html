@@ -1,0 +1,45 @@
+<section class="antwort-auf">
+    <p *ngIf="hinweis" class="aussage-hinweis" role="status">{{ hinweis }}</p>
+
+    <ng-container *ngIf="kopf as karte; else eingabe">
+        <p class="gewaehlt-label">Antwort auf<span *ngIf="gewaehltNeu" class="neu-marke">neu</span></p>
+        <div class="gewaehlt">
+            <app-beitragskarte class="gewaehlt-karte" variante="kopf" [daten]="karte"></app-beitragskarte>
+            <button type="button" class="entfernen" aria-label="Aussage entfernen" (click)="entfernen()">
+                <mat-icon aria-hidden="true">close</mat-icon>
+            </button>
+        </div>
+    </ng-container>
+
+    <ng-template #eingabe>
+        <mat-form-field appearance="outline" class="antwort-feld" subscriptSizing="dynamic">
+            <mat-label>Antwort auf (optional)</mat-label>
+            <textarea matInput class="antwort-eingabe" [formControl]="feld" [placeholder]="platzhalter"
+                      [attr.maxlength]="maxZeichen"
+                      cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="4"></textarea>
+            <mat-hint [ngSwitch]="feldZustand" [class.zu-kurz]="feldZustand === 'zu-kurz'">
+                <ng-container *ngSwitchCase="'zu-kurz'">Mindestens {{ minZeichen }} Zeichen – oder leer lassen.</ng-container>
+                <ng-container *ngSwitchCase="'neu'">Wird als neue Aussage angelegt.</ng-container>
+                <ng-container *ngSwitchDefault>Die Aussage, auf die du reagierst – oder leer lassen.</ng-container>
+            </mat-hint>
+        </mat-form-field>
+
+        <div *ngIf="neuAnlegbar as neu" class="vorschlaege">
+            <ng-container *ngIf="vorschlaege.length">
+                <p class="vorschlaege-titel" id="vorschlaege-titel">Gibt es schon:</p>
+                <ul aria-labelledby="vorschlaege-titel">
+                    <li *ngFor="let vorschlag of vorschlaege">
+                        <button type="button" class="vorschlag" (click)="waehlen(vorschlag)">
+                            <span aria-hidden="true">🗨️</span>
+                            <span class="vorschlag-text">{{ vorschlag.text }}</span>
+                        </button>
+                    </li>
+                </ul>
+            </ng-container>
+            <button type="button" class="neue-aussage" (click)="alsNeueAussage()">
+                <mat-icon aria-hidden="true">add</mat-icon>
+                <span>Als neue Aussage anlegen: „{{ neu }}“</span>
+            </button>
+        </div>
+    </ng-template>
+</section>

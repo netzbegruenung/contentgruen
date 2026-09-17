@@ -1,36 +1,39 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { tap, map, catchError, switchMap } from 'rxjs/operators';
+import { tap, map } from 'rxjs/operators';
 import { ParamMap } from '@angular/router';
 import {
-  AddReplysuggestionToStatementRequest,
-  AddReplysuggestionToStatementResponse,
-  AddStatementRequest,
-  AddStatementResponse,
-  ContentType,
   GetStatementByIdResponse,
   SearchStatementByTextRequest,
   StatementSearchResponse,
-  StatementSource
+  StatementSearchResult,
 } from './dtos/statementDtos';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { AUSSAGE_PARAM, SUCHTEXT_PARAM } from '../shared/formular-adresse';
 
-/** Ergebnis von alsAntwortVerknuepfen. */
-export type Verknuepfung = 'verknuepft' | 'ohne-aussage' | 'fehlgeschlagen';
-
-/** Hinweis im Formular, wenn der Beitrag steht, die Verknuepfung aber nicht. */
+/** Hinweis auf der Ergebnisseite, wenn der Beitrag steht, die Verknuepfung aber nicht. */
 export const VERKNUEPFUNG_FEHLGESCHLAGEN =
   'Dein Beitrag ist gespeichert, konnte aber nicht mit der Aussage verknüpft werden.';
+
+/** Hoechstlaenge einer Aussage, wie im Backend (statement_text). */
+export const AUSSAGE_MAX_ZEICHEN = 1000;
+
+/** Wie viele vorhandene Aussagen das Antwort-auf-Feld hoechstens vorschlaegt. */
+export const VORSCHLAG_ANZAHL = 3;
+
+/**
+ * Ab diesem Aehnlichkeitswert (0-1) gilt eine Aussage als Vorschlag. Gemessen fuer
+ * intfloat/multilingual-e5-base (passende Aussagen 0,892-0,940, unpassende meist
+ * darunter); bei einem Modellwechsel neu messen.
+ */
+export const VORSCHLAG_MIN_AEHNLICHKEIT = 0.885;
 
 @Injectable({
   providedIn: 'root'
 })
 export class StatementService {
-  private addReplysuggestionToStatementApiUrl = `${environment.baseUrl}/api/v1/statement/addReplysuggestionToStatement`;
-  private addStatementApiUrl = `${environment.baseUrl}/api/v1/statement/addStatement`;
   private searchStatementsApiUrl = `${environment.baseUrl}/api/v1/statement/searchStatements`;
   private getStatementByIdApiUrl = `${environment.baseUrl}/api/v1/statement/getById`;
 
@@ -40,70 +43,20 @@ export class StatementService {
   ) { }
 
   /**
-   * Finds an existing statement or creates a new one if it doesn't exist
-   *
-   * Beide Aufrufsituationen laufen ueber diese eine Methode und denselben
-   * Endpunkt; unterschieden werden sie allein ueber `source`. Davon haengt ab,
-   * ob die Person als Autorin am Statement haengt - deshalb ist der Parameter
-   * verpflichtend und hat keine Voreinstellung.
-   *
-   * @param text The statement text to find or create
-   * @param source Ob der Text aus dem Suchfeld stammt oder ausdruecklich benannt wurde
-   * @returns Observable with the statement details
-   */
-  findOrCreateStatement(text: string, source: StatementSource): Observable<AddStatementResponse> {
-    this.logger.debug('Finding or creating statement:', text, source);
-
-    // First, search for an existing statement with high similarity
-    return this.searchStatements(text, 1).pipe(
-      switchMap(searchResponse => {
-        // Check if we found an exact or very similar match (score > 0.9)
-        if (searchResponse.results.length > 0 && searchResponse.results[0].score > 0.9) {
-          const existingStatement = searchResponse.results[0];
-          this.logger.info('Found existing statement with high similarity:', existingStatement);
-
-          // Return a response in the same format as addStatement
-          return of({
-            statement_was_new: false,
-            statement_id: existingStatement.id,
-            statement_text: existingStatement.text
-          } as AddStatementResponse);
-        } else {
-          // No similar statement found, create a new one
-          this.logger.info('No similar statement found, creating new statement');
-          return this.addStatement({
-            statement: {
-              text: text,
-              replysuggestions: []
-            },
-            source: source
-          });
-        }
-      }),
-      catchError(error => {
-        this.logger.error('Error in findOrCreateStatement, attempting to create new statement', error);
-        // If search fails, try to create a new statement anyway
-        return this.addStatement({
-          statement: {
-            text: text,
-            replysuggestions: []
-          },
-          source: source
-        });
-      })
-    );
-  }
-
-  /**
    * Searches for statements by text
    * @param queryText The text to search for
    * @param limit Maximum number of results
    * @returns Observable with search results
    */
-  searchStatements(queryText: string, limit: number = 10): Observable<StatementSearchResponse> {
+  searchStatements(
+    queryText: string,
+    limit: number = 10,
+    filter: Pick<SearchStatementByTextRequest, 'nur_kuratiert' | 'min_similarity'> = {},
+  ): Observable<StatementSearchResponse> {
     const request: SearchStatementByTextRequest = {
       query_text: queryText,
-      limit: limit
+      limit: limit,
+      ...filter,
     };
 
     this.logger.debug('Searching for statements:', request);
@@ -115,31 +68,14 @@ export class StatementService {
   }
 
   /**
-   * Adds a new statement
-   * @param request The statement to add
-   * @returns Observable with the created statement details
+   * Vorhandene Aussagen, die zum Getippten passen - fuer die Vorschlaege im
+   * Antwort-auf-Feld. Nur gepflegte Aussagen und nur hinreichend aehnliche.
    */
-  addStatement(request: AddStatementRequest): Observable<AddStatementResponse> {
-    this.logger.debug('Adding statement:', request);
-    return this.http.post<AddStatementResponse>(this.addStatementApiUrl, request).pipe(
-      tap(response => {
-        this.logger.info('Statement added successfully:', response);
-      })
-    );
-  }
-
-  /**
-   * Links a reply suggestion to a statement
-   * @param request The linking request
-   * @returns Observable with the result
-   */
-  addReplysuggestionToStatement(request: AddReplysuggestionToStatementRequest): Observable<AddReplysuggestionToStatementResponse> {
-    this.logger.debug('Adding reply suggestion to statement:', request);
-    return this.http.post<AddReplysuggestionToStatementResponse>(this.addReplysuggestionToStatementApiUrl, request).pipe(
-      tap(response => {
-        this.logger.info('Reply suggestion added successfully:', response);
-      })
-    );
+  aussageVorschlaege(text: string): Observable<StatementSearchResult[]> {
+    return this.searchStatements(text, VORSCHLAG_ANZAHL, {
+      nur_kuratiert: true,
+      min_similarity: VORSCHLAG_MIN_AEHNLICHKEIT,
+    }).pipe(map((antwort) => antwort.results));
   }
 
   getStatementById(statementId: string): Observable<GetStatementByIdResponse> {
@@ -153,52 +89,16 @@ export class StatementService {
    *
    * Mit ?aussage=<id> wird sie geladen. Mit ?searchQuery= steht nur ihr Text fest:
    * Die ID bleibt leer, und angelegt wird nichts - das geschieht erst beim
-   * Speichern (alsAntwortVerknuepfen). Ohne beides ist das Ergebnis leer.
+   * Speichern, im Backend mit der Speicher-Anfrage. Ohne beides ist das Ergebnis leer.
    */
   aussageAusAdresse(params: ParamMap): Observable<GetStatementByIdResponse> {
     const aussageId = params.get(AUSSAGE_PARAM);
     if (aussageId) {
       return this.getStatementById(aussageId);
     }
-    return of({ statement_id: '', statement_text: params.get(SUCHTEXT_PARAM)?.trim() ?? '' });
-  }
-
-  /**
-   * Einen gespeicherten Beitrag als Antwort an seine Aussage haengen.
-   *
-   * Das ist der einzige Ort, an dem ein Beitragsformular eine Aussage aufloest:
-   * Mit ID wird direkt verknuepft, ist sie nur als Text bekannt, wird sie jetzt
-   * gesucht oder angelegt. Scheitert etwas, bleibt der Beitrag gespeichert - das
-   * Ergebnis sagt dann 'fehlgeschlagen', damit das Formular es zeigen kann.
-   */
-  alsAntwortVerknuepfen(
-    beitragId: string,
-    contentType: ContentType,
-    relevance: number,
-    aussage: { id: string; text: string },
-  ): Observable<Verknuepfung> {
-    const text = aussage.text.trim();
-    if (!aussage.id && !text) {
-      return of('ohne-aussage');
-    }
-    const aussageId$ = aussage.id
-      ? of(aussage.id)
-      : this.findOrCreateStatement(text, 'manually_created').pipe(map((antwort) => antwort.statement_id));
-
-    return aussageId$.pipe(
-      switchMap((statementId) =>
-        this.addReplysuggestionToStatement({
-          statement_id: statementId,
-          replysuggestion_id: beitragId,
-          content_type: contentType,
-          relevance,
-        }),
-      ),
-      map((): Verknuepfung => 'verknuepft'),
-      catchError((error) => {
-        this.logger.error('Beitrag gespeichert, aber nicht mit der Aussage verknuepft', error);
-        return of<Verknuepfung>('fehlgeschlagen');
-      }),
-    );
+    // Wie im Backend (statement_text) hoechstens AUSSAGE_MAX_ZEICHEN - eine lange
+    // Suchanfrage wuerde sonst beim Speichern abgelehnt.
+    const text = (params.get(SUCHTEXT_PARAM)?.trim() ?? '').slice(0, AUSSAGE_MAX_ZEICHEN).trim();
+    return of({ statement_id: '', statement_text: text });
   }
 }

@@ -12,6 +12,13 @@ export const FORMULAR_PFAD: Record<FormularTyp, string> = {
   image: '/workflow/add-image',
 };
 
+/** Die Ergebnisseite nach dem Speichern: <Formularpfad>/gespeichert/<id>. */
+export const GESPEICHERT_SEGMENT = 'gespeichert';
+
+export function gespeichertPfad(typ: FormularTyp, id: string): string[] {
+  return [FORMULAR_PFAD[typ], GESPEICHERT_SEGMENT, id];
+}
+
 /** Query-Parameter mit der ID der Aussage, auf die der Beitrag antwortet. */
 export const AUSSAGE_PARAM = 'aussage';
 

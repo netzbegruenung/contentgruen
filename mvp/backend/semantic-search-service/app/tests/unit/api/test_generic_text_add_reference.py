@@ -23,7 +23,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from dependencies import get_generic_text_service, get_reference_service
+from dependencies import (
+    get_generic_text_service,
+    get_reference_service,
+    get_statement_service,
+)
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 
@@ -67,6 +71,8 @@ def services():
 
     app.dependency_overrides[get_reference_service] = lambda: reference_service
     app.dependency_overrides[get_generic_text_service] = lambda: generic_text_service
+    # Ohne Aussage in der Anfrage wird er nicht gerufen, muss aber aufloesbar sein.
+    app.dependency_overrides[get_statement_service] = lambda: MagicMock()
 
     yield reference_service, generic_text_service
 
@@ -87,7 +93,12 @@ def test_add_generic_text_with_unknown_reference_is_stored(services):
     )
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"id": str(NEW_GENERIC_TEXT_ID)}
+    assert response.json() == {
+        "id": str(NEW_GENERIC_TEXT_ID),
+        "statement_id": None,
+        "statement_text": None,
+        "verknuepft": True,
+    }
 
     reference_service.add_reference.assert_called_once()
 

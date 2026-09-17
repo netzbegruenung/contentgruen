@@ -1,4 +1,4 @@
-import { CONTENT_TYPE_REGISTRY, typLabel } from './content-type-registry';
+import { CONTENT_TYPE_REGISTRY, typBeschreibung, typLabel } from './content-type-registry';
 
 describe('content-type-registry', () => {
   describe('typLabel', () => {
@@ -33,5 +33,12 @@ describe('content-type-registry', () => {
         expect(config.emoji).withContext(config.key).toBeTruthy();
       }
     }
+  });
+
+  it('beschreibt die drei Beitragstypen in einem Satz, mit Abgrenzung', () => {
+    expect(typBeschreibung('commentary')).toBe('Eine Antwort, die du direkt posten kannst.');
+    expect(typBeschreibung('generic_text')).toBe('Fakten und Zahlen, die eine Antwort stützen.');
+    expect(typBeschreibung('image')).toBe('Ein Bild mit Unterschrift, das für sich spricht.');
+    expect(typBeschreibung('statement')).toBe('');
   });
 });

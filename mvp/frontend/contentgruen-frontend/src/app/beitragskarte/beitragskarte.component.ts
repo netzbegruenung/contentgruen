@@ -57,7 +57,7 @@ const STUFEN: Record<FangkorbZustand, { emoji: string; name: string }> = {
 };
 
 /**
- * Die eine Karte fuer Beitraege, in drei Varianten (siehe KartenVariante).
+ * Die eine Karte fuer Beitraege, in vier Varianten (siehe KartenVariante).
  *
  * Die Karte kennt keine Datenquelle, nur KartenDaten; die Adapter in karten-daten.ts
  * bringen Suche, Meine Beitraege und Fangkorb darauf. Abstimmen, Kopieren und Melden
@@ -67,6 +67,11 @@ const STUFEN: Record<FangkorbZustand, { emoji: string; name: string }> = {
  * sind als Ganzes antippbar und melden das ueber `angetippt`. Der Rohling traegt
  * statt eines Flaechentipps genau einen Primaerknopf und ein ⋮-Menue und meldet
  * beides ueber `aktion`; wohin es geht, entscheidet die Seite.
+ *
+ * Der Kopf ist nur das Band - Symbol und Titel, ohne Badges, Inhalt und Aktionen.
+ * Das Beitragsformular zeigt damit die Aussage, auf die geantwortet wird, und
+ * mit Rohling-Daten den Einwurf, aus dem der Beitrag entsteht (Sandband, Link,
+ * der eine Satz - ohne Saetze-Liste, Aktionen, ⋮ und Meta).
  *
  * Die Hoehe ergibt sich aus dem Inhalt. Langer Text wird gekuerzt und laesst sich mit
  * "mehr" aufklappen; ob gekuerzt wurde, misst die Karte am Element selbst.
@@ -170,9 +175,13 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.variante === 'kompakt';
   }
 
-  /** Die Rohling-Daten, nur in der Variante rohling. */
+  get istKopf(): boolean {
+    return this.variante === 'kopf';
+  }
+
+  /** Die Rohling-Daten: in der Variante rohling und im Kopf, wenn er aus einem Einwurf kommt. */
   get rohling(): RohlingDaten | null {
-    return this.variante === 'rohling' ? (this.daten.rohling ?? null) : null;
+    return this.variante === 'rohling' || this.variante === 'kopf' ? (this.daten.rohling ?? null) : null;
   }
 
   get kartenKlassen(): string[] {

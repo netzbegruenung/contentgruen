@@ -88,6 +88,35 @@ class TestCommentaryService:
         assert result.title == "Environmental Analysis"
 
     @pytest.mark.asyncio
+    async def test_langer_kommentar_bleibt_les_und_suchbar(
+        self, service, test_embeddings_manager
+    ):
+        """Die 500-Zeichen-Grenze gilt nur beim Anlegen (AddCommentaryRequest).
+        Ein aelterer, laengerer Kommentar muss sich weiter lesen und finden lassen."""
+        test_id = uuid.uuid4()
+        langer_text = "Waermepumpen " + "x" * 587
+        assert len(langer_text) == 600
+        test_embeddings_manager.add_test_data(
+            "commentary",
+            [
+                {
+                    **create_base_content_fields(),
+                    **create_commentary_data(
+                        text=langer_text, title="Langer Kommentar"
+                    ),
+                    "id": str(test_id),
+                    "content_type": "commentary",
+                }
+            ],
+        )
+
+        gelesen = await service.get(test_id)
+        gefunden = await service.search("Waermepumpen", limit=5)
+
+        assert gelesen.text == langer_text
+        assert [r.id for r in gefunden] == [test_id]
+
+    @pytest.mark.asyncio
     async def test_add_commentary(self, service, test_embeddings_manager):
         """Test adding a new commentary through service."""
         # Create new commentary

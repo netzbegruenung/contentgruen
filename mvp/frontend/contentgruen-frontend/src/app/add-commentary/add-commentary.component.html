@@ -1,265 +1,85 @@
-<div class="add-commentary-container">
-    <!-- Content Type Indicator -->
-    <div class="content-type-indicator">
-        <div class="content-type-badge">
-            <span class="content-type-icon">💬</span>
-            <div class="content-type-text">
-                <h2 class="content-type-title">{{ typName }}</h2>
-                <p class="content-type-description">Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media</p>
-            </div>
-        </div>
-    </div>
+<div class="add-commentary-container formular-bereich" [style.--typ-farbe]="typFarbe">
+    <!-- Aus dem Fangkorb: der Einwurf, aus dem der Kommentar entsteht -->
+    <app-beitragskarte *ngIf="vorbefuellung?.kopf as einwurf" class="einwurf-kopf" variante="kopf"
+                       [daten]="einwurf">
+    </app-beitragskarte>
 
-    <!-- Step 1: Reply Context Section -->
-    <div class="context-section-wrapper" *ngIf="!commentaryLoading && !responseId && !commentaryError">
-        <div class="context-section">
-            <p *ngIf="aussageHinweis" class="aussage-hinweis" role="status">{{ aussageHinweis }}</p>
+    <app-formular-hilfe typ="commentary"></app-formular-hilfe>
 
-            <div class="section-header">
-                <span class="step-indicator">1</span>
-                <h3>Kontext festlegen</h3>
-            </div>
+    <div class="content-wrapper">
+        <div class="form-column">
+            <form [formGroup]="commentaryForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
+                <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
+                                 (aussageChange)="aussage = $event">
+                </app-antwort-auf>
 
-            <!-- Toggle for reply type -->
-            <div class="reply-toggle">
-                <mat-slide-toggle
-                    [checked]="isReplyToStatement"
-                    (change)="toggleReplyType($event.checked)"
-                    color="primary">
-                    <span class="toggle-label">
-                        <mat-icon class="toggle-icon">{{ isReplyToStatement ? 'reply' : 'article' }}</mat-icon>
-                        {{ isReplyToStatement ? 'Dies ist eine Antwort auf eine Aussage' : 'Dies ist ein eigenständiger Beitrag' }}
-                    </span>
-                </mat-slide-toggle>
-            </div>
-
-            <!-- Statement input area (shown when toggle is ON) -->
-            <div *ngIf="isReplyToStatement" class="statement-input-area">
-                <div class="input-instruction">
-                    <mat-icon class="info-icon">help_outline</mat-icon>
-                    <div class="instruction-text">
-                        <p class="instruction-title">Worauf antwortest du?</p>
-                        <p class="instruction-detail">Gib die Aussage ein, auf die dein Kommentar reagiert</p>
-                        <p class="instruction-example">Beispiele: "Die Grünen wollen uns das Autofahren verbieten" oder "Klimaschutz zerstört Arbeitsplätze"</p>
-                    </div>
-                </div>
-
-                <mat-form-field appearance="outline" class="statement-field">
-                    <mat-label>Aussage, auf die geantwortet wird</mat-label>
-                    <textarea
-                        matInput
-                        [(ngModel)]="statementInput"
-                        rows="3"
-                        placeholder="Gib hier die Aussage ein, auf die du antworten möchtest...">
-                    </textarea>
-                    <mat-hint>Diese Aussage wird gespeichert und kann für weitere Inhalte wiederverwendet werden</mat-hint>
+                <mat-form-field appearance="outline" class="formular-feld">
+                    <mat-label>Titel</mat-label>
+                    <!-- Zweizeilig, damit ein ganzer Satz sichtbar bleibt; Enter bricht nicht um -->
+                    <textarea matInput id="title" formControlName="title" required
+                              [attr.maxlength]="titelMax" placeholder="Was ist der Punkt? Ein Satz."
+                              cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="4"
+                              (keydown.enter)="$event.preventDefault()"></textarea>
+                    <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('title')?.hasError('maxlength')">Höchstens {{ titelMax }} Zeichen.</mat-error>
                 </mat-form-field>
 
-                <!-- Visual preview of the statement if entered -->
-                <div *ngIf="aussageText" class="statement-preview">
-                    <div class="preview-header">
-                        <mat-icon class="quote-icon">format_quote</mat-icon>
-                        <span>Aussage, auf die geantwortet wird:</span>
-                    </div>
-                    <div class="statement-quote-box">
-                        <div class="statement-quote">{{ aussageText }}</div>
-                    </div>
-                    <button mat-button color="warn" (click)="clearStatement()" class="clear-btn">
-                        <mat-icon>clear</mat-icon>
-                        Aussage löschen
-                    </button>
-                    <!-- Visual connection indicator -->
-                    <div class="connection-indicator">
-                        <mat-icon>arrow_downward</mat-icon>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <mat-form-field appearance="outline" class="formular-feld">
+                    <mat-label>Kommentar</mat-label>
+                    <textarea matInput id="text" formControlName="text" required
+                              [attr.maxlength]="textMax" placeholder="So, wie du ihn posten würdest"
+                              cdkTextareaAutosize cdkAutosizeMinRows="4" cdkAutosizeMaxRows="16"></textarea>
+                    <mat-hint *ngIf="textLaenge" class="plattform-hinweis"
+                              [class.zu-lang]="textLaenge > plattformGrenze">{{ plattformHinweis }}</mat-hint>
+                    <mat-hint align="end">{{ textLaenge }} / {{ textMax }}</mat-hint>
+                    <mat-error *ngIf="commentaryForm.get('text')?.hasError('required')">Der Kommentar fehlt.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('text')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
+                    <mat-error *ngIf="commentaryForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
+                </mat-form-field>
 
-        <!-- Removed visual reply indicator - sections flow naturally -->
-    </div>
-
-    <!-- Step 2: Main Content - Two Columns -->
-    <div class="content-wrapper" [class.connected-sections]="!!aussageText">
-        <div class="form-column">
-            <!-- Input State: Form -->
-            <form *ngIf="!commentaryLoading && !responseId && !commentaryError" [formGroup]="commentaryForm"
-                (ngSubmit)="saveCommentaryForm()">
-
-                <div class="form-section">
-                    <div class="section-header">
-                        <span class="step-indicator">2</span>
-                        <h3>Dein Kommentar</h3>
-                    </div>
+                <button *ngIf="!showReferences" type="button" class="text-link herkunft-link" (click)="revealReferences()">
+                    + Herkunft
+                </button>
+                <div *ngIf="showReferences" class="herkunft">
+                    <app-reference-input formControlName="references" [kompakt]="true"
+                                         beschriftung="Herkunft (optional)" platzhalter="Link oder Beschreibung"
+                                         [maxReferences]="10">
+                    </app-reference-input>
                 </div>
 
-                <div class="form-fields">
-                    <div class="form-group">
-                        <label class="input-label">Titel*</label>
-                        <mat-form-field appearance="outline">
-                            <mat-label>Was ist der Punkt? Ein Satz.</mat-label>
-                            <input matInput #titel maxlength="120" formControlName="title" id="title" type="text" />
-                            <mat-hint align="end">{{titel.value.length || 0}} / 120</mat-hint>
-                            <mat-error *ngIf="commentaryForm.get('title')?.hasError('required')">
-                                Titel ist erforderlich
-                            </mat-error>
-                            <mat-error *ngIf="commentaryForm.get('title')?.hasError('minlength')">
-                                Titel muss mindestens 3 Zeichen lang sein
-                            </mat-error>
-                            <mat-error *ngIf="commentaryForm.get('title')?.hasError('maxlength')">
-                                Titel darf höchstens 120 Zeichen lang sein
-                            </mat-error>
-                        </mat-form-field>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="input-label">Haupttext*</label>
-                        <mat-form-field appearance="outline">
-                            <mat-label>Gib den Text deines fertigen Kommentars ein</mat-label>
-                            <textarea matInput #text maxLength="500" rows="5"
-                                formControlName="text" id="text"></textarea>
-                            <mat-hint align="end">{{text.value.length || 0}}/500</mat-hint>
-                            <mat-error *ngIf="commentaryForm.get('text')?.hasError('required')">
-                                Haupttext ist erforderlich
-                            </mat-error>
-                            <mat-error *ngIf="commentaryForm.get('text')?.hasError('minlength')">
-                                Haupttext muss mindestens 10 Zeichen lang sein
-                            </mat-error>
-                            <mat-error *ngIf="commentaryForm.get('text')?.hasError('maxlength')">
-                                Haupttext darf höchstens 500 Zeichen lang sein
-                            </mat-error>
-                        </mat-form-field>
-                    </div>
-
-                    <!-- Optional text variants, collapsed by default -->
-                    <button mat-button type="button" class="optional-toggle"
-                            (click)="toggleTextVariants()"
-                            [attr.aria-expanded]="showTextVariants"
-                            aria-controls="text-variants-block">
-                        <mat-icon>{{ showTextVariants ? 'expand_less' : 'expand_more' }}</mat-icon>
-                        <span>Weitere Textvarianten</span>
-                    </button>
-
-                    <div id="text-variants-block" class="optional-block"
-                         *ngIf="showTextVariants" @expandCollapse>
-                        <div class="form-group">
-                            <label class="input-label">Langtext</label>
-                            <mat-form-field appearance="outline">
-                                <mat-label>Ausführlicher Text</mat-label>
-                                <textarea matInput #long_text maxLength="2000" rows="4" formControlName="long_text"></textarea>
-                                <mat-hint align="end">{{long_text.value.length || 0}}/2000</mat-hint>
-                                <mat-error *ngIf="commentaryForm.get('long_text')?.hasError('maxlength')">
-                                    Langtext darf höchstens 2000 Zeichen lang sein
-                                </mat-error>
-                            </mat-form-field>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="input-label">Kurztext</label>
-                            <mat-form-field appearance="outline">
-                                <mat-label>Kurze Zusammenfassung</mat-label>
-                                <textarea matInput #short_text maxLength="100" rows="2" formControlName="short_text"></textarea>
-                                <mat-hint align="end">{{short_text.value.length || 0}}/100</mat-hint>
-                                <mat-error *ngIf="commentaryForm.get('short_text')?.hasError('maxlength')">
-                                    Kurztext darf höchstens 100 Zeichen lang sein
-                                </mat-error>
-                            </mat-form-field>
-                        </div>
-                    </div>
-
-                    <!-- Sources, revealed on demand -->
-                    <button mat-stroked-button type="button" class="add-reference-trigger"
-                            *ngIf="!showReferences"
-                            (click)="revealReferences()"
-                            matTooltip="Herkunft hinzufügen (optional)">
-                        <mat-icon>menu_book</mat-icon>
-                        <span>+ Herkunft</span>
-                    </button>
-
-                    <div class="form-group references-section"
-                         *ngIf="showReferences" @expandCollapse>
-                        <label class="input-label">Herkunft (optional)</label>
-                        <app-reference-input
-                            formControlName="references"
-                            placeholder="Herkunft hinzufügen (URL oder Beschreibung)"
-                            hint="Format: Beschreibung | URL oder nur URL"
-                            [maxReferences]="10"
-                            (referenceAdded)="onReferenceAdded($event)"
-                            (referenceRemoved)="onReferenceRemoved($event)">
-                        </app-reference-input>
-                    </div>
+                <div class="formular-fuss">
+                    <button type="button" class="text-link zuruecksetzen" (click)="zuruecksetzen()"
+                            [disabled]="speichert || !!responseId">Zurücksetzen</button>
                 </div>
 
                 <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
                        rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
-                <div class="form-actions">
-                    <button mat-stroked-button type="button" (click)="resetCommentaryForm()" class="cancel-btn">
-                        <mat-icon>close</mat-icon>
-                        Formular zurücksetzen
+
+                <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
+                <p *ngIf="dublette" class="dubletten-hinweis" role="status">
+                    {{ dublettenHinweis }}
+                    <button type="button" class="text-link dublette-ansehen" (click)="dubletteAnsehen()">Ansehen</button>
+                </p>
+
+                <app-formular-leiste *ngIf="!responseId"
+                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : dublette ? dublettenHinweis : null"
+                                     [aktion]="!fehler && dublette ? 'Ansehen' : null" (aktionGeklickt)="dubletteAnsehen()">
+                    <button mat-raised-button type="submit" class="submit-btn"
+                            [disabled]="speichert || commentaryForm.invalid || aussageZuKurz">
+                        <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
+                        {{ fehler && !validierung ? 'Erneut versuchen' : 'Kommentar speichern' }}
                     </button>
-                    <button mat-raised-button color="primary" type="submit" [disabled]="!commentaryForm.valid"
-                        class="submit-btn">
-                        <mat-icon>save</mat-icon>
-                        Fertigen Kommentar speichern
-                    </button>
-                </div>
+                </app-formular-leiste>
             </form>
-
-            <!-- Loading State -->
-            <div *ngIf="commentaryLoading" class="state-container loading-state" #loadingContainer>
-                <mat-spinner diameter="50"></mat-spinner>
-                <h3>Speichere fertigen Kommentar...</h3>
-                <p>Bitte warte einen Moment</p>
-            </div>
-
-            <!-- Success State -->
-            <div *ngIf="responseId && !commentaryError" class="state-container success-state" #successContainer>
-                <mat-icon class="success-icon">check_circle</mat-icon>
-                <h3>Fertiger Kommentar erfolgreich gespeichert!</h3>
-                <p>Dein fertiger Kommentar wurde erfolgreich hinzugefügt.</p>
-                <div *ngIf="verknuepfungsFehler" class="verknuepfungs-fehler" role="alert">
-                    <p>{{ verknuepfungsFehler }}</p>
-                    <button mat-raised-button color="primary" (click)="weiterNachVerknuepfungsFehler()">
-                        Weiter
-                    </button>
-                </div>
-                <div class="action-buttons">
-                    <button mat-raised-button color="primary" (click)="navigateToCommentary(responseId)">
-                        <mat-icon>visibility</mat-icon>
-                        Fertigen Kommentar ansehen
-                    </button>
-                    <button mat-stroked-button color="primary" (click)="resetCommentaryForm()">
-                        <mat-icon>add</mat-icon>
-                        Weiteren fertigen Kommentar hinzufügen
-                    </button>
-                </div>
-            </div>
-
-            <!-- Error State -->
-            <div *ngIf="commentaryError" class="state-container error-state">
-                <mat-icon class="error-icon">error</mat-icon>
-                <h3>Speichern fehlgeschlagen</h3>
-                <p class="error-message">{{ commentaryError }}</p>
-                <div class="action-buttons">
-                    <button mat-raised-button color="primary" (click)="retryCommentarySave()">
-                        <mat-icon>refresh</mat-icon>
-                        Erneut versuchen
-                    </button>
-                    <button mat-button color="warn" (click)="resetCommentaryForm()">
-                        <mat-icon>cancel</mat-icon>
-                        Abbrechen
-                    </button>
-                </div>
-            </div>
         </div>
 
-        <div class="preview-column">
+        <section class="preview-column" aria-labelledby="vorschau-titel">
             <div class="preview-header">
-                <h3>Vorschau</h3>
-                <mat-icon matTooltip="So wird dein fertiger Kommentar in den Suchergebnissen angezeigt">info</mat-icon>
+                <h3 id="vorschau-titel">Vorschau</h3>
             </div>
-            <app-beitragskarte *ngIf="vorschauKarte as karte" [daten]="karte" [vorschau]="true">
-            </app-beitragskarte>
-        </div>
+            <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
+        </section>
     </div>
 </div>

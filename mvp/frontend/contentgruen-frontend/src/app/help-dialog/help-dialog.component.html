@@ -23,18 +23,11 @@
         passende Antworten darauf!
     </p>
 
-    <h3>Was ist ein 💬 "fertiger Kommentar"?</h3>
-    <p>
-        Ein fertiger Kommentar ist ein bereits erstellter, direkt verwendbarer Text, den du als Antwort auf einen Social-Media-Post,
-        eine Nachricht oder in einer Diskussion sofort nutzen kannst.
-    </p>
-
-    <h3>Was ist eine 📄 "Hintergrundinfo"?</h3>
-    <p>
-        Eine Hintergrundinfo enthält Fakten, Zahlen und Hintergrundinformationen zu einem Thema.
-        Das kann z.B. ein Link zu einem Zeitungsartikel oder einer Studie, ein Zitat oder
-        detaillierte Sachinformationen sein.
-    </p>
+    <!-- Die Saetze stehen in der Registry, wie bei der Typwahl auf der Beitragen-Seite -->
+    <ng-container *ngFor="let typ of typen">
+        <h3>Was ist {{ typ.artikel }} {{ typ.emoji }} {{ typ.label }}?</h3>
+        <p>{{ typ.beschreibung }}</p>
+    </ng-container>
 
     <h3>Technische Details</h3>
     <p>

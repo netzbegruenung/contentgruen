@@ -15,7 +15,7 @@ import {
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { kurzeKennung } from '../shared/kennung';
-import { typLabel } from '../shared/content-type-registry';
+import { typBeschreibung, typLabel } from '../shared/content-type-registry';
 import {
   DestillierUebergabeService,
   ROHINPUT_PARAM,
@@ -25,24 +25,19 @@ import {
 import { FangkorbTab, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
 
 type Beitragstyp = 'commentary' | 'generictext';
 
-/** Die Typwahl, mit denselben Erlaeuterungen wie auf der Beitragen-Seite. */
+/** Die Typwahl, mit denselben Saetzen wie auf der Beitragen-Seite (aus der Registry). */
 export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterung: string }> = [
-  {
-    wert: 'commentary',
-    name: typLabel('commentary'),
-    erlaeuterung: 'Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media',
-  },
-  {
-    wert: 'generictext',
-    name: typLabel('generictext'),
-    erlaeuterung: 'Fakten, Zahlen und Hintergrundinformationen zum Thema',
-  },
+  { wert: 'commentary', name: typLabel('commentary'), erlaeuterung: typBeschreibung('commentary') },
+  { wert: 'generictext', name: typLabel('generictext'), erlaeuterung: typBeschreibung('generictext') },
 ];
 
 /**
@@ -61,7 +56,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 @Component({
   selector: 'app-destillieren',
   standalone: true,
-  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink],
+  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent],
   templateUrl: './destillieren.component.html',
   styleUrls: ['./destillieren.component.css'],
 })
@@ -94,6 +89,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     private uebergabe: DestillierUebergabeService,
     private navigation: NavigationService,
     private logger: LoggingService,
+    private beitragAnsehenDienst: BeitragAnsehenService,
   ) {}
 
   ngOnInit(): void {
@@ -134,6 +130,61 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   get kannWeiter(): boolean {
     const satz = this.satz.value.trim();
     return satz.length > 0 && satz.length <= SATZ_LIMIT && !this.arbeitet;
+  }
+
+  /**
+   * Der Einwurf als Kopfband fuer die Typwahl, mit dem gerade formulierten Satz.
+   * Zwischengespeichert, solange Einwurf und Satz gleich bleiben.
+   */
+  get einwurfKopf(): KartenDaten | null {
+    const einwurf = this.einwurf;
+    if (!einwurf) {
+      return null;
+    }
+    const satz = this.satz.value.trim();
+    if (this.kopfCache?.einwurf !== einwurf || this.kopfCache.satz !== satz) {
+      const karte = ausEinwurf(einwurf);
+      this.kopfCache = {
+        einwurf,
+        satz,
+        karte: karte.rohling
+          ? {
+              ...karte,
+              rohling: {
+                ...karte.rohling,
+                kopfSatz: satz || undefined,
+                // Der Einwurf ist vor dem Speichern des Satzes geladen; mit Satz ist er
+                // schon auszuformulieren, auch wenn seine drafts das noch nicht zeigen.
+                zustand: satz && karte.rohling.zustand === 'destillieren' ? 'ausformulieren' : karte.rohling.zustand,
+              },
+            }
+          : karte,
+      };
+    }
+    return this.kopfCache.karte;
+  }
+
+  private kopfCache?: { einwurf: RawInput; satz: string; karte: KartenDaten };
+
+  /**
+   * Ein schon entstandener Beitrag aus diesem Einwurf (der erste), fuer den Hinweis
+   * in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur sehen, dass
+   * es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
+   */
+  get entstandenerBeitrag(): { contentId: string; contentType: string | null } | null {
+    const link = this.einwurf?.links?.[0];
+    return link ? { contentId: link.content_id, contentType: link.content_type } : null;
+  }
+
+  get entstandenerBeitragAnsehbar(): boolean {
+    return this.beitragAnsehenDienst.kannAnsehen(this.entstandenerBeitrag?.contentType);
+  }
+
+  beitragAnsehen(): void {
+    const beitrag = this.entstandenerBeitrag;
+    if (beitrag) {
+      this.beitragAnsehenDienst.oeffnen(beitrag.contentId, beitrag.contentType);
+    }
   }
 
   /** Die Notiz zum Einwurf, sofern sie mehr ist als der Link selbst. */

@@ -45,6 +45,18 @@ describe('AddCommentaryWorkflowComponent', () => {
     expect(component.rohinputId).toBeNull();
     expect(component.vorbefuellung).toBeNull();
   });
+
+  it('oeffnet nach dem Speichern die Ergebnisseite und ersetzt das Formular im Verlauf', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'beitrag-1', aussage: { id: '', text: '' }, verknuepft: true });
+
+    expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary', 'gespeichert', 'beitrag-1'], {
+      queryParams: {},
+      state: { aussage: undefined, verknuepft: true },
+      replaceUrl: true,
+    });
+  });
 });
 
 describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
@@ -55,14 +67,15 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
   beforeEach(async () => {
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', [
       'vorbefuellungLaden',
-      'nachSpeichern',
-      'zurueckZumEinwurf',
+      'alsVerarbeitetMarkieren',
     ]);
+    uebergabe.alsVerarbeitetMarkieren.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
       of({
         rohinputId: 'id-1',
         titel: 'Waermepumpe lohnt sich auch im Altbau',
         url: 'https://example.org/p',
+        kopf: { id: 'id-1', typ: null, titel: null, text: null, erstellt: '', autor: null, autorName: null, nutzung: null, quellen: [] },
       }),
     );
 
@@ -96,19 +109,17 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
     expect(formular.showReferences).toBeTrue();
   });
 
-  it('markiert nach dem Speichern und springt weiter statt nach /contribute', () => {
+  it('markiert nach dem Speichern und zeigt die Ergebnisseite mit Herkunft Fangkorb', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
-    component.onSuccess('beitrag-1');
+    component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true });
 
-    expect(uebergabe.nachSpeichern).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
-    expect(navigieren).not.toHaveBeenCalled();
-  });
-
-  it('fuehrt beim Abbrechen zurueck zum Einwurf', () => {
-    component.onCancel();
-
-    expect(uebergabe.zurueckZumEinwurf).toHaveBeenCalledWith('id-1');
+    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
+    expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary', 'gespeichert', 'beitrag-1'], {
+      queryParams: { rohinput: 'id-1' },
+      state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, markiert: true },
+      replaceUrl: true,
+    });
   });
 });
 
@@ -164,7 +175,7 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
 
     expect(component.statementId).toBe('a-1');
     expect(formular()!.statementText).toBe('Waermepumpen sind zu teuer');
-    expect(formular()!.isReplyToStatement).toBeTrue();
+    expect(formular()!.aussage.text).toBe('Waermepumpen sind zu teuer');
   });
 
   it('nimmt ?searchQuery= nur als Text und ruft dafuer nichts auf', async () => {
@@ -172,8 +183,7 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
 
     // Kein searchStatements, kein addStatement - http.verify() im afterEach.
     expect(component.statementId).toBe('');
-    expect(formular()!.statementInput).toBe('Waermepumpen sind zu teuer');
-    expect(formular()!.isReplyToStatement).toBeTrue();
+    expect(formular()!.aussage).toEqual({ id: '', text: 'Waermepumpen sind zu teuer' });
   });
 
   for (const [fall, status] of [['404', 404], ['422', 422], ['Netzfehler', 0]] as const) {
@@ -192,28 +202,39 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
       expect(formular()).withContext('Formular trotz Ladefehler').toBeTruthy();
       expect(seite.querySelector('.aussage-hinweis')!.textContent).toContain('Die Aussage ist nicht mehr verfügbar');
       expect(seite.textContent).not.toContain('Erneut versuchen');
-      expect(formular()!.isReplyToStatement).toBeTrue();
-      expect(formular()!.statementInput).toBe('');
+      expect(formular()!.aussage).toEqual({ id: '', text: '' });
       expect(component.statementId).toBe('');
     });
   }
 
   it('zieht nach, wenn sich die Adresse bei offener Seite aendert', async () => {
     await oeffnen({ searchQuery: 'Erste Aussage' });
-    expect(formular()!.statementInput).toBe('Erste Aussage');
+    expect(formular()!.aussage.text).toBe('Erste Aussage');
 
     adresse.next(convertToParamMap({ aussage: 'a-2' }));
     http.expectOne((req) => req.url === getByIdUrl).flush({ statement_id: 'a-2', statement_text: 'Zweite Aussage' });
     fixture.detectChanges();
 
     expect(component.statementId).toBe('a-2');
-    expect(formular()!.statementInput).toBe('Zweite Aussage');
+    expect(formular()!.aussage.text).toBe('Zweite Aussage');
+  });
+
+  it('nennt der Ergebnisseite die Suche samt Anfrage', async () => {
+    await oeffnen({ searchQuery: 'Waermepumpen sind zu teuer' });
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'k-1', aussage: { id: '', text: 'Waermepumpen sind zu teuer' }, verknuepft: true });
+
+    expect(navigieren.calls.mostRecent().args[1]!.queryParams).toEqual({
+      von: 'suche',
+      suche: 'Waermepumpen sind zu teuer',
+    });
   });
 
   it('oeffnet ohne Parameter ein eigenstaendiges Formular', async () => {
     await oeffnen({});
 
-    expect(formular()!.isReplyToStatement).toBeFalse();
+    expect(formular()!.aussage).toEqual({ id: '', text: '' });
     expect(component.rohinputId).toBeNull();
   });
 });

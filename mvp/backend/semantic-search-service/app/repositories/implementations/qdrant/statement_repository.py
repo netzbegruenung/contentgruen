@@ -12,6 +12,24 @@ from domain.models.content_origin import ContentOrigin
 logger = logging.getLogger(__name__)
 
 
+def _unbeantwortete_suchanfrage():
+    """
+    Eine Suchanfrage, auf die noch niemand geantwortet hat - das, was nicht als
+    kuratiert gilt. Warum nicht allein die Herkunft zaehlt: count_curated.
+    """
+    from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+
+    return Filter(
+        must=[
+            FieldCondition(
+                key="origin",
+                match=MatchValue(value=ContentOrigin.SEARCH_QUERY.value),
+            ),
+            FieldCondition(key="replysuggestions_count", range=Range(lt=1)),
+        ]
+    )
+
+
 class StatementRepository(
     QdrantBaseRepository[StatementDbEntry, StatementSearchResult],
     IStatementRepository,
@@ -85,22 +103,7 @@ class StatementRepository(
         Startseite zeigt damit gepflegte Substanz, und eine Suchanfrage zaehlt
         in dem Moment mit, in dem ihr jemand Inhalt zur Seite stellt.
         """
-        from qdrant_client.models import (
-            Filter,
-            FieldCondition,
-            MatchValue,
-            Range,
-        )
-
-        unbeantwortete_suchanfrage = Filter(
-            must=[
-                FieldCondition(
-                    key="origin",
-                    match=MatchValue(value=ContentOrigin.SEARCH_QUERY.value),
-                ),
-                FieldCondition(key="replysuggestions_count", range=Range(lt=1)),
-            ]
-        )
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
 
         try:
             result = await self._shared_manager.async_client.count(
@@ -112,13 +115,49 @@ class StatementRepository(
                             match=MatchValue(value=self.content_type),
                         )
                     ],
-                    must_not=[unbeantwortete_suchanfrage],
+                    must_not=[_unbeantwortete_suchanfrage()],
                 ),
             )
             return result.count
         except Exception as e:
             logger.error(f"Failed to count curated statements: {e}", exc_info=True)
             return 0
+
+    async def search_curated(
+        self, query_text: str, limit: int
+    ) -> List[StatementSearchResult]:
+        """
+        Aehnliche Statements ohne die unbeantworteten Suchanfragen.
+
+        Dasselbe Kriterium wie count_curated: Wer im Beitragsformular eine
+        Aussage sucht, soll gepflegte Aussagen vorgeschlagen bekommen, nicht die
+        Suchanfragen anderer Leute, auf die nie jemand geantwortet hat.
+        """
+        try:
+            search_results = await self._shared_manager.search(
+                query=query_text,
+                content_type=self.content_type,
+                limit=limit,
+                # Dieselben Status wie die normale Suche ausschliessen, dazu die
+                # unbeantworteten Suchanfragen.
+                filter_dict={
+                    "must_not": [
+                        *self._status_ausschluss(),
+                        _unbeantwortete_suchanfrage(),
+                    ]
+                },
+            )
+            return [
+                self.content_search_result_model_class.model_validate(res)
+                for res in search_results
+            ]
+        except Exception as e:
+            # Suchtext nicht ins Log, siehe _async_search_with_replies.
+            logger.error(
+                f"Error during curated statement search: {e} (limit={limit})",
+                exc_info=True,
+            )
+            raise
 
     async def search_statements_with_replies(
         self, query_text: str, limit: int, min_replysuggestions_count: int = 0

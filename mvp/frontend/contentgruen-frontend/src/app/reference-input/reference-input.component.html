@@ -1,16 +1,16 @@
-<div class="reference-input-container">
+<div class="reference-input-container" [class.kompakt]="kompakt">
     <!-- Ein prominentes Feld; Enter oder Verlassen des Feldes uebernimmt die Quelle. -->
     <div class="reference-input-group">
         <div class="reference-fields-container">
             <mat-form-field appearance="outline" class="reference-url-field" subscriptSizing="fixed">
-                <mat-label>Woher stammt das?</mat-label>
+                <mat-label>{{ beschriftung }}</mat-label>
                 <input
                     matInput
                     class="reference-source-input"
                     [formControl]="urlControl"
                     (keydown)="onInputKeydown($event)"
                     (blur)="onInputBlur($event)"
-                    placeholder="z.B. Instagram-Reel von @account, Juli 2026 — oder eine URL">
+                    [placeholder]="platzhalter">
                 <mat-icon matPrefix>link</mat-icon>
             </mat-form-field>
         </div>
@@ -75,7 +75,7 @@
                         </span>
                     </div>
                 </div>
-                <button mat-icon-button
+                <button *ngIf="!kompakt" mat-icon-button
                         color="warn"
                         [disabled]="ref.isPending"
                         type="button"
@@ -83,16 +83,22 @@
                         matTooltip="Referenz entfernen">
                     <mat-icon>delete</mat-icon>
                 </button>
+                <button *ngIf="kompakt" type="button" class="entfernen-klein"
+                        [disabled]="ref.isPending"
+                        (click)="removeReference(i)"
+                        aria-label="Herkunft entfernen">
+                    <mat-icon aria-hidden="true">close</mat-icon>
+                </button>
             </div>
         </div>
 
-        <div class="reference-count">
+        <div class="reference-count" *ngIf="!kompakt">
             {{ selectedReferences.length }} / {{ maxReferences }} Herkunftsangaben hinzugefügt
         </div>
     </div>
 
     <!-- Status messages -->
-    <div class="status-message info" *ngIf="selectedReferences.length === 0">
+    <div class="status-message info" *ngIf="!kompakt && selectedReferences.length === 0">
         <mat-icon>info</mat-icon>
         <span>Füge Herkunftsangaben hinzu, um deine Aussagen zu belegen.</span>
     </div>

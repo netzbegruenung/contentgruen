@@ -1,0 +1,60 @@
+.formular-hilfe {
+    margin-bottom: 16px;
+}
+
+.hilfe-kopf {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.hilfe-emoji {
+    flex-shrink: 0;
+    padding-top: 7px;
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
+.hilfe-zeile {
+    flex: 1;
+    margin: 0;
+    padding-top: 9px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.hilfe-panel {
+    margin-top: 4px;
+    padding: 4px 0 4px 12px;
+    border-left: 3px solid var(--primary-main);
+    line-height: 1.5;
+}
+
+.hilfe-panel p {
+    margin: 0;
+}
+
+.hilfe-regeln {
+    margin: 8px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.regel {
+    display: flex;
+    gap: 8px;
+}
+
+.regel-zeichen {
+    flex-shrink: 0;
+    width: 1em;
+    font-weight: 700;
+}
+
+.regel-ist .regel-zeichen {
+    color: var(--primary-dark);
+}
+
+.regel-nicht .regel-zeichen {
+    color: #b3261e;
+}

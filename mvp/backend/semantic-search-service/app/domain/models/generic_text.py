@@ -1,4 +1,5 @@
 from typing import Optional, List
+from domain.models.zeit import UtcZeit
 from pydantic import BaseModel, field_validator, Field
 import datetime
 import uuid
@@ -34,7 +35,7 @@ class GenericTextReference(BaseModel):
     """
 
     reference_id: uuid.UUID
-    created: datetime.datetime
+    created: UtcZeit
     description: Optional[str] = None
     reference_text: Optional[str] = None
     reference_description: Optional[str] = None

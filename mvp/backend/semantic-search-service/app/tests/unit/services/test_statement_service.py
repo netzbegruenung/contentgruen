@@ -234,3 +234,237 @@ class TestStatementService:
 
         # And the count is zero
         assert await service.count() == 0
+
+
+@pytest.mark.unit
+class TestAntwortVerknuepfen:
+    """Beitrag als Antwort an seine Aussage haengen (addCommentary mit Aussage)."""
+
+    @pytest.fixture
+    def service(self, test_settings, repository_factory):
+        return StatementService(test_settings, repository_factory=repository_factory)
+
+    @staticmethod
+    def _aussage(replysuggestions=None):
+        from unittest.mock import MagicMock
+
+        return MagicMock(
+            replysuggestions=replysuggestions or [], replysuggestions_count=0
+        )
+
+    @pytest.mark.asyncio
+    async def test_ohne_aussage_passiert_nichts(self, service):
+        from unittest.mock import AsyncMock
+
+        service.add_statement = AsyncMock()
+        service.add_statementreplysuggestion_to_statement = AsyncMock()
+
+        ergebnis = await service.beitrag_als_antwort_verknuepfen(
+            uuid.uuid4(), ContentType.COMMENTARY, 1.0, "person-1", None, "  "
+        )
+
+        assert ergebnis is None
+        service.add_statement.assert_not_awaited()
+        service.add_statementreplysuggestion_to_statement.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_mit_id_wird_direkt_verknuepft(self, service):
+        from unittest.mock import AsyncMock
+
+        from unittest.mock import MagicMock
+
+        statement_id, beitrag_id = uuid.uuid4(), uuid.uuid4()
+        service.add_statement = AsyncMock()
+        service.get = AsyncMock(return_value=MagicMock(text="Die gespeicherte Aussage"))
+        service.add_statementreplysuggestion_to_statement = AsyncMock(return_value=True)
+
+        ergebnis = await service.beitrag_als_antwort_verknuepfen(
+            beitrag_id, ContentType.COMMENTARY, 1.0, "person-1", statement_id, "egal"
+        )
+
+        # ID und Text der tatsaechlich verknuepften Aussage, nicht der mitgeschickte Text
+        assert ergebnis == (statement_id, "Die gespeicherte Aussage")
+        service.add_statement.assert_not_awaited()
+        service.add_statementreplysuggestion_to_statement.assert_awaited_once_with(
+            statement_id=statement_id,
+            replysuggestion_id=beitrag_id,
+            content_type=ContentType.COMMENTARY,
+            relevance=1.0,
+        )
+
+    @pytest.mark.asyncio
+    async def test_mit_text_wird_ausdruecklich_angelegt(self, service):
+        from unittest.mock import AsyncMock
+
+        statement_id = uuid.uuid4()
+        service.add_statement = AsyncMock(
+            return_value=(False, statement_id, "Waermepumpen sind viel zu teuer")
+        )
+        service.add_statementreplysuggestion_to_statement = AsyncMock(return_value=True)
+
+        ergebnis = await service.beitrag_als_antwort_verknuepfen(
+            uuid.uuid4(),
+            ContentType.COMMENTARY,
+            1.0,
+            "person-1",
+            None,
+            " Waermepumpen sind zu teuer ",
+        )
+
+        assert ergebnis == (statement_id, "Waermepumpen sind viel zu teuer")
+        statement, autor, status, herkunft = service.add_statement.call_args.args
+        assert statement.text == "Waermepumpen sind zu teuer"
+        assert autor == "person-1"
+        assert status is ContentStatus.RELEASED_INTERNAL
+        assert herkunft is ContentOrigin.MANUALLY_CREATED
+
+    @pytest.mark.asyncio
+    async def test_dieselbe_antwort_wird_nicht_doppelt_angehaengt(self, service):
+        from unittest.mock import AsyncMock, MagicMock
+
+        beitrag_id = uuid.uuid4()
+        aussage = self._aussage([MagicMock(id=beitrag_id)])
+        aussage.replysuggestions_count = 1
+        service.get = AsyncMock(return_value=aussage)
+        service.update_statement = AsyncMock()
+
+        assert await service.add_statementreplysuggestion_to_statement(
+            uuid.uuid4(), beitrag_id, ContentType.COMMENTARY, 1.0
+        )
+
+        assert len(aussage.replysuggestions) == 1
+        assert aussage.replysuggestions_count == 1
+        service.update_statement.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_neue_antwort_wird_angehaengt(self, service):
+        from unittest.mock import AsyncMock, MagicMock
+
+        aussage = self._aussage([MagicMock(id=uuid.uuid4())])
+        aussage.replysuggestions_count = 1
+        service.get = AsyncMock(return_value=aussage)
+        service.update_statement = AsyncMock()
+
+        await service.add_statementreplysuggestion_to_statement(
+            uuid.uuid4(), uuid.uuid4(), ContentType.COMMENTARY, 1.0
+        )
+
+        assert len(aussage.replysuggestions) == 2
+        assert aussage.replysuggestions_count == 2
+        service.update_statement.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_parallele_verknuepfungen_verlieren_keine(self, service):
+        """Ohne Sperre lesen beide denselben Stand, und der zweite Schreibvorgang
+        ueberschreibt den ersten."""
+        import asyncio
+        import copy
+        from domain.models.statement import StatementDbEntry
+
+        statement_id = uuid.uuid4()
+        gespeichert = StatementDbEntry.model_validate(
+            {
+                **create_base_content_fields(),
+                **create_statement_data(text="Eine Aussage"),
+                "id": str(statement_id),
+                "content_type": "statement",
+                "replysuggestions": [],
+                "replysuggestions_count": 0,
+            }
+        )
+        speicher = {"stand": gespeichert}
+
+        async def lesen(_id):
+            stand = copy.deepcopy(speicher["stand"])
+            await asyncio.sleep(0.01)  # Zeit, in der ein zweiter Aufruf dazwischenkommt
+            return stand
+
+        async def schreiben(eintrag):
+            await asyncio.sleep(0.01)
+            speicher["stand"] = eintrag
+            return eintrag.id
+
+        service.get = lesen
+        service.update_statement = schreiben
+        erste, zweite = uuid.uuid4(), uuid.uuid4()
+
+        await asyncio.gather(
+            service.add_statementreplysuggestion_to_statement(
+                statement_id, erste, ContentType.COMMENTARY, 1.0
+            ),
+            service.add_statementreplysuggestion_to_statement(
+                statement_id, zweite, ContentType.COMMENTARY, 1.0
+            ),
+        )
+
+        ids = {v.id for v in speicher["stand"].replysuggestions}
+        assert ids == {erste, zweite}
+        assert speicher["stand"].replysuggestions_count == 2
+        assert service._verknuepfungs_sperren == {}
+
+    @pytest.mark.asyncio
+    async def test_nicht_lesbare_aussage_ist_nicht_nicht_gefunden(self, service):
+        from unittest.mock import AsyncMock
+        from pydantic import BaseModel, ValidationError
+        from services.content.statement_service import AussageNichtGefunden
+
+        class Modell(BaseModel):
+            zahl: int
+
+        try:
+            Modell.model_validate({"zahl": "keine"})
+        except ValidationError as fehler:
+            kaputt = fehler
+        service.get = AsyncMock(side_effect=kaputt)
+
+        with pytest.raises(ValidationError) as info:
+            await service.add_statementreplysuggestion_to_statement(
+                uuid.uuid4(), uuid.uuid4(), ContentType.COMMENTARY, 1.0
+            )
+        assert not isinstance(info.value, AussageNichtGefunden)
+
+    @pytest.mark.asyncio
+    async def test_unbekannte_aussage_wirft_aussage_nicht_gefunden(self, service):
+        from unittest.mock import AsyncMock
+        from services.content.statement_service import AussageNichtGefunden
+
+        service.get = AsyncMock(side_effect=ValueError("not found"))
+
+        with pytest.raises(AussageNichtGefunden):
+            await service.add_statementreplysuggestion_to_statement(
+                uuid.uuid4(), uuid.uuid4(), ContentType.COMMENTARY, 1.0
+            )
+
+
+@pytest.mark.unit
+class TestSearchFiltered:
+    @pytest.fixture
+    def service(self, test_settings, repository_factory):
+        return StatementService(test_settings, repository_factory=repository_factory)
+
+    @pytest.mark.asyncio
+    async def test_nur_kuratiert_nutzt_kuratierte_suche(self, service):
+        from unittest.mock import AsyncMock
+
+        service._repository.search_curated = AsyncMock(return_value=[])
+        service._repository.search = AsyncMock(return_value=[])
+
+        await service.search_filtered("waermepumpe", 5, nur_kuratiert=True)
+
+        service._repository.search_curated.assert_awaited_once_with("waermepumpe", 5)
+        service._repository.search.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_min_similarity_laesst_schwache_treffer_weg(self, service):
+        from unittest.mock import AsyncMock, MagicMock
+
+        stark, grenze, schwach = (
+            MagicMock(score=0.8),
+            MagicMock(score=0.5),
+            MagicMock(score=0.49),
+        )
+        service._repository.search = AsyncMock(return_value=[stark, grenze, schwach])
+
+        ergebnis = await service.search_filtered("waermepumpe", 5, min_similarity=0.5)
+
+        assert ergebnis == [stark, grenze]

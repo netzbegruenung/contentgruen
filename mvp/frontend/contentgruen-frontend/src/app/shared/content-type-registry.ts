@@ -24,8 +24,15 @@ export interface ContentTypeConfig {
   label: string;
   /** Name of the nested result field on a search-result wrapper; nur bei Typen mit Suchkarte. */
   resultField?: string;
-  /** Symbol im Kopf der Beitragskarte; nur bei Typen mit Suchkarte. */
+  /** Symbol im Kopf der Beitragskarte; bei Typen mit Suchkarte und der Aussage. */
   emoji?: string;
+  /**
+   * Ein Satz, was ein Beitrag dieses Typs ist - an den Stellen, wo man den Typ
+   * waehlt, und in der Hilfe. Nennt die Abgrenzung zu den anderen Typen.
+   */
+  beschreibung?: string;
+  /** Die Farbe des Kartenbands als CSS-Wert - auch der Streifen ueber dem Formular. */
+  farbe?: string;
 }
 
 export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
@@ -35,6 +42,8 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     label: 'Kommentar',
     resultField: 'commentary_result',
     emoji: '💬',
+    beschreibung: 'Eine Antwort, die du direkt posten kannst.',
+    farbe: 'var(--commentary-bg)',
   },
   generictext: {
     key: 'generictext',
@@ -42,6 +51,8 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     label: 'Hintergrundinfo',
     resultField: 'generictext_result',
     emoji: '📄',
+    beschreibung: 'Fakten und Zahlen, die eine Antwort stützen.',
+    farbe: 'var(--generictext-bg)',
   },
   post: {
     key: 'post',
@@ -56,11 +67,15 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     label: 'Bild',
     resultField: 'image_result',
     emoji: '🖼️',
+    beschreibung: 'Ein Bild mit Unterschrift, das für sich spricht.',
+    farbe: 'var(--image-bg)',
   },
   statement: {
     key: 'statement',
     icon: 'format_quote',
     label: 'Aussage',
+    // Im Kopf der Aussage, auf die ein Beitragsformular antwortet
+    emoji: '🗨️',
   },
   reference: {
     key: 'reference',
@@ -84,4 +99,22 @@ export function resolveContentType(contentType: string | undefined | null): stri
 export function typLabel(contentType: string | undefined | null): string {
   const key = resolveContentType(contentType);
   return key ? CONTENT_TYPE_REGISTRY[key].label : (contentType ?? '');
+}
+
+/** Der Beschreibungssatz eines Beitragstyps, leer fuer Typen ohne. */
+export function typBeschreibung(contentType: string | undefined | null): string {
+  const key = resolveContentType(contentType);
+  return key ? (CONTENT_TYPE_REGISTRY[key].beschreibung ?? '') : '';
+}
+
+/** Die Farbe des Kartenbands eines Beitragstyps, leer fuer Typen ohne. */
+export function typFarbe(contentType: string | undefined | null): string {
+  const key = resolveContentType(contentType);
+  return key ? (CONTENT_TYPE_REGISTRY[key].farbe ?? '') : '';
+}
+
+/** Das Symbol eines Beitragstyps, leer fuer Typen ohne. */
+export function typEmoji(contentType: string | undefined | null): string {
+  const key = resolveContentType(contentType);
+  return key ? (CONTENT_TYPE_REGISTRY[key].emoji ?? '') : '';
 }

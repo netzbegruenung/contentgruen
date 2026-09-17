@@ -1,6 +1,6 @@
 @use '../shared/styles/breakpoints' as bp;
 
-// Eine Karte, drei Varianten. Modifier (.karte--voll/--kompakt/--rohling) regeln
+// Eine Karte, vier Varianten. Modifier (.karte--voll/--kompakt/--rohling/--kopf) regeln
 // Masse und vorhandene Bereiche, die Typklasse setzt nur --karten-farbe.
 //
 // Keine feste Hoehe: im Karussell gleicht align-items: stretch die Reihe an, in
@@ -49,6 +49,27 @@
 .karte--voll {
   width: 450px;
   max-width: 100%;
+}
+
+// Kopf: nur das Band, so breit wie sein Platz, der Titel ohne Mindesthoehe
+.karte--kopf {
+  height: auto;
+  box-shadow: none;
+
+  .karte-titel {
+    min-height: 0;
+    font-size: 17px;
+  }
+}
+
+// Kopf aus einem Einwurf: der Satz unter der Link-Zeile, noch im Sandband
+.rohling-kopfsatz {
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  background: var(--rohling-grund);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 // Kopf: Symbol | Titel | Badges

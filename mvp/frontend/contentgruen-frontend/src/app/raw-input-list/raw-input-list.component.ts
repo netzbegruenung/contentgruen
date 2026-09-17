@@ -26,6 +26,7 @@ import { Plattform, PLATTFORMEN } from '../shared/plattform';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, RohlingAktion, ausEinwurf } from '../beitragskarte/karten-daten';
+import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
 import {
   FangkorbFilter,
   FangkorbTab,
@@ -59,7 +60,7 @@ export const LADE_GROESSE = 100;
 @Component({
   selector: 'app-raw-input-list',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule, BeitragskarteComponent],
+  imports: [CommonModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule, BeitragskarteComponent, HilfeUmschalterComponent],
   templateUrl: './raw-input-list.component.html',
   styleUrls: ['./raw-input-list.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -136,12 +137,6 @@ export class RawInputListComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
       });
-  }
-
-  // Kopf
-
-  erklaerungUmschalten(): void {
-    this.erklaerungOffen = !this.erklaerungOffen;
   }
 
   // Tabs

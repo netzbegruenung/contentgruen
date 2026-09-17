@@ -13,13 +13,9 @@
                     </button>
                 </div>
 
-                <button type="button" class="erklaerung-umschalter"
-                        aria-controls="fangkorb-erklaerung"
-                        [attr.aria-expanded]="erklaerungOffen"
-                        [attr.aria-label]="erklaerungOffen ? 'Erklärung schließen' : 'So funktioniert der Fangkorb'"
-                        (click)="erklaerungUmschalten()">
-                    <mat-icon aria-hidden="true">help_outline</mat-icon>
-                </button>
+                <app-hilfe-umschalter [(offen)]="erklaerungOffen" steuert="fangkorb-erklaerung"
+                                      beschriftungZu="So funktioniert der Fangkorb">
+                </app-hilfe-umschalter>
             </div>
 
             <div *ngIf="erklaerungOffen" id="fangkorb-erklaerung" class="erklaerung">

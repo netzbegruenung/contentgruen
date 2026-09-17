@@ -1,4 +1,5 @@
 from typing import Optional
+from domain.models.zeit import utc_jetzt
 import uuid
 import datetime
 
@@ -126,7 +127,7 @@ class CommentaryService(
             return False, existing_commentary.id, existing_commentary.text
 
         # Create CommentaryInput object from Commentary object
-        now = created_at or datetime.datetime.now()
+        now = created_at or utc_jetzt()
         commentary_input = CommentaryDbEntry(
             text=commentary.text,
             id=id or uuid.uuid4(),

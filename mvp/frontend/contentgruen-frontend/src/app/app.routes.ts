@@ -3,6 +3,7 @@ import { AuthGuard } from './auth/auth.guard';
 import { AdminGuard } from './auth/admin.guard';
 import { PublicGuard } from './auth/public.guard';
 import { ShareTargetGuard } from './share-target/share-target.guard';
+import { gespeichertEltern } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 
 /**
  * Das Ziel des Zurueck-Pfeils: eine Ebene hoeher in der Hierarchie, nicht der
@@ -98,6 +99,19 @@ export const routes: Routes = [
         loadComponent: () => import('./add-commentary-workflow/add-commentary-workflow.component').then(m => m.AddCommentaryWorkflowComponent),
         canActivate: [AuthGuard],
         data: { parent: formularEltern }
+    },
+    {
+        // Nach dem Speichern; der Pfeil fuehrt dorthin, woher das Formular kam, nicht zurueck hinein.
+        path: 'workflow/add-commentary/gespeichert/:id',
+        loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
+        canActivate: [AuthGuard],
+        data: { parent: gespeichertEltern, typ: 'commentary' }
+    },
+    {
+        path: 'workflow/add-generictext/gespeichert/:id',
+        loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
+        canActivate: [AuthGuard],
+        data: { parent: gespeichertEltern, typ: 'generictext' }
     },
     {
         path: 'workflow/add-generictext',

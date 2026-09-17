@@ -1,4 +1,5 @@
 from typing import Optional
+from domain.models.zeit import utc_jetzt
 import uuid
 import datetime
 
@@ -89,7 +90,7 @@ class GenericTextService(
             generic_text.text = generic_text.title
 
         # Create GenericTextDbEntry object from GenericText object
-        now = created_at or datetime.datetime.now()
+        now = created_at or utc_jetzt()
         generic_text_input = GenericTextDbEntry(
             text=generic_text.text,
             id=id or uuid.uuid4(),

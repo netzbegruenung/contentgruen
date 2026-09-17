@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 from domain.models.statement import (
     Statement,
@@ -87,8 +87,20 @@ class SearchStatementByTextRequest(BaseModel):
         description="Maximum number of results to return",
         example=10,
     )
+    nur_kuratiert: bool = Field(
+        default=False,
+        description=(
+            "Unbeantwortete Suchanfragen weglassen - dasselbe Kriterium wie der "
+            "Aussagen-Zaehler der Startseite."
+        ),
+    )
+    min_similarity: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Nur Treffer mit mindestens diesem Aehnlichkeitswert",
+    )
     # TODO: Add a field to specify the search type (content, statement, reply_suggestion, reply_suggestion_candidate)
-    # TODO: Add a field to specify minimum score
 
 
 class StatementSearchResponse(BaseModel):

@@ -7,7 +7,6 @@
     <app-add-commentary
         *ngIf="!isLoadingStatement"
         (success)="onSuccess($event)"
-        (cancel)="onCancel()"
         [statementText]="statementText"
         [statementId]="statementId"
         [aussageHinweis]="aussageHinweis"

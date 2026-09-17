@@ -14,13 +14,18 @@ export interface ReferenceInput {
 export interface AddCommentaryRequest {
     commentary: Commentary
     references: ReferenceInput[];
+    /** Worauf der Kommentar antwortet: ID einer vorhandenen Aussage ... */
+    statement_id?: string;
+    /** ... oder, ohne ID, ihr Text; das Backend sucht oder legt sie an. */
+    statement_text?: string;
 }
 
 export interface Commentary {
     text: string;
     title: string;
-    long_text: string;
-    short_text: string;
+    /** Nicht mehr im Formular; aeltere Eintraege koennen sie tragen. */
+    long_text?: string;
+    short_text?: string;
     references: CommentaryReference[];
 }
 
@@ -31,6 +36,14 @@ export interface CommentaryReference {
 
 export interface AddCommentaryResponse {
     id: string;
+    /** Die Aussage, an der der Kommentar jetzt haengt; null ohne Aussage. */
+    statement_id?: string | null;
+    /** Text der tatsaechlich verknuepften Aussage (kann eine vorhandene, aehnliche sein). */
+    statement_text?: string | null;
+    /** false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem. */
+    verknuepft?: boolean;
+    /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt, nichts verknuepft. */
+    duplikat?: boolean;
 }
 
 

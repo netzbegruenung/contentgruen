@@ -3,7 +3,8 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter, Router } from '@angular/router';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 
-import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent } from './destillieren.component';
+import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent, TYPEN } from './destillieren.component';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { DestillierUebergabeService } from './destillier-uebergabe.service';
 import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
@@ -32,12 +33,15 @@ describe('DestillierenComponent', () => {
   let rawInputService: jasmine.SpyObj<RawInputService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
   let navigation: jasmine.SpyObj<NavigationService>;
+  let beitragAnsehen: jasmine.SpyObj<BeitragAnsehenService>;
   let router: Router;
   let params: BehaviorSubject<ParamMap>;
   let queryParams: ParamMap;
 
   async function erstellen(id: string | null, geladen: RawInput = einwurf()) {
     params = new BehaviorSubject(convertToParamMap(id ? { id } : {}));
+    beitragAnsehen = jasmine.createSpyObj('BeitragAnsehenService', ['oeffnen', 'kannAnsehen']);
+    beitragAnsehen.kannAnsehen.and.returnValue(true);
     navigation = jasmine.createSpyObj('NavigationService', [
       'goBack',
       'registerBeforeBack',
@@ -61,6 +65,7 @@ describe('DestillierenComponent', () => {
         { provide: RawInputService, useValue: rawInputService },
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
+        { provide: BeitragAnsehenService, useValue: beitragAnsehen },
         {
           provide: AuthService,
           useValue: {
@@ -366,6 +371,65 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('Waermepumpe lohnt sich auch im Altbau');
     });
 
+    const verarbeitet = () =>
+      einwurf({
+        own_draft: 'Waermepumpe lohnt sich',
+        status: 'processed',
+        links: [{ content_id: 'k-1', content_type: 'commentary', draft_id: null, processed_by: 'alice', processed_at: '' }],
+      } as any);
+
+    it('zeigt bei einem verarbeiteten Einwurf die Typwahl mit Hinweis statt umzuleiten (Rueckweg von der Ergebnisseite)', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', verarbeitet());
+
+      expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
+      expect(component.schritt).toBe('typwahl');
+      const hinweis: HTMLElement = fixture.nativeElement.querySelector('.schon-entstanden');
+      expect(hinweis.textContent).toContain('Aus diesem Einwurf ist schon ein Beitrag entstanden');
+      expect(fixture.nativeElement.querySelector('.typen')).toBeTruthy();
+
+      (hinweis.querySelector('.beitrag-ansehen') as HTMLButtonElement).click();
+      expect(beitragAnsehen.oeffnen).toHaveBeenCalledOnceWith('k-1', 'commentary');
+    });
+
+    it('zeigt ohne entstandenen Beitrag keinen Hinweis', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich' }));
+
+      expect(fixture.nativeElement.querySelector('.schon-entstanden')).toBeNull();
+    });
+
+    it('laesst einen verarbeiteten Einwurf ohne ?schritt beim Satz (Weiter destillieren)', async () => {
+      await erstellen('id-1', verarbeitet());
+
+      expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
+      expect(component.schritt).toBe('satz');
+    });
+
+    it('zeigt in der Typwahl den Einwurf als Kopfband statt rohem Link und Text', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich auch im Altbau' }));
+
+      const seite: HTMLElement = fixture.nativeElement;
+      expect(seite.querySelector('.einwurf-link')).toBeNull();
+      expect(seite.querySelector('.satz-vorschau')).toBeNull();
+      expect(seite.querySelector('.einwurf-kopf .rohling-kopf')).toBeTruthy();
+      expect(seite.querySelector('.einwurf-kopf .rohling-titel')!.textContent).toContain('Guter Thread');
+      expect(seite.querySelector('.einwurf-kopf .rohling-kopfsatz')!.textContent).toContain('Waermepumpe lohnt sich auch im Altbau');
+      // Mit Satz ist der Einwurf auszuformulieren - auch wenn er vor dem Speichern geladen wurde.
+      expect(seite.querySelector('.einwurf-kopf .karte')!.classList).toContain('zustand-ausformulieren');
+    });
+
+    it('beschreibt die Typen mit den Saetzen aus der Registry', () => {
+      expect(TYPEN.map((t) => t.erlaeuterung)).toEqual([
+        'Eine Antwort, die du direkt posten kannst.',
+        'Fakten und Zahlen, die eine Antwort stützen.',
+      ]);
+    });
+
     it('bleibt mit ?schritt=typwahl ohne eigenen Satz beim Satzfeld', async () => {
       queryParams = convertToParamMap({ schritt: 'typwahl' });
 
@@ -494,8 +558,8 @@ describe('DestillierenComponent', () => {
       component.schritt = 'typwahl';
       fixture.detectChanges();
 
-      expect(text()).toContain('Fertige, direkt verwendbare Kommentare für Diskussionen und Social Media');
-      expect(text()).toContain('Fakten, Zahlen und Hintergrundinformationen zum Thema');
+      expect(text()).toContain('Eine Antwort, die du direkt posten kannst.');
+      expect(text()).toContain('Fakten und Zahlen, die eine Antwort stützen.');
       const gewaehlt: HTMLElement = fixture.nativeElement.querySelector('.typ.gewaehlt');
       expect(gewaehlt.classList).toContain('typ-commentary');
     });

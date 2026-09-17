@@ -309,3 +309,41 @@ class TestCountCurated:
         repository._shared_manager = manager
 
         assert await repository.count_curated() == 0
+
+
+@pytest.mark.unit
+class TestSearchCurated:
+    """Vorschlaege im Beitragsformular: dasselbe Kriterium wie count_curated."""
+
+    @pytest.mark.asyncio
+    async def test_schliesst_unbeantwortete_suchanfragen_aus(
+        self, test_settings, test_embeddings_manager
+    ):
+        from unittest.mock import AsyncMock, MagicMock
+        from repositories.implementations.qdrant.statement_repository import (
+            StatementRepository,
+        )
+
+        manager = MagicMock()
+        manager.search = AsyncMock(return_value=[])
+        repository = StatementRepository(
+            test_settings, embeddings_manager=test_embeddings_manager
+        )
+        repository._shared_manager = manager
+
+        await repository.search_curated("waermepumpe", 5)
+
+        aufruf = manager.search.call_args.kwargs
+        assert aufruf["content_type"] == "statement"
+        assert aufruf["limit"] == 5
+        ausschluss = aufruf["filter_dict"]["must_not"]
+        # Dieselben Status wie die normale Suche, dazu die unbeantworteten Suchanfragen
+        status = {
+            b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
+        }
+        assert status == {"pending_description", "description_failed", "pending_review"}
+        suchanfrage = [b for b in ausschluss if getattr(b, "must", None)]
+        assert len(suchanfrage) == 1
+        bedingungen = {b.key: b for b in suchanfrage[0].must}
+        assert bedingungen["origin"].match.value == "search_query"
+        assert bedingungen["replysuggestions_count"].range.lt == 1

@@ -11,30 +11,40 @@
   gap: 8px;
 }
 
-/* Drei gleich breite Segmente; der aktive traegt die Linie */
+/*
+ * Drei gleich breite Segmente auf einer grauen Schiene; der aktive ist eine gefuellte
+ * Pille in der Primaerfarbe. So heben sich die Tabs klar von den Filter-Chips darunter
+ * ab (die sind umrandet und hell gefuellt).
+ */
 .tabs {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Breite nach Inhalt: "Ausformulieren" ist laenger als die anderen und soll auch
+     bei 320 px ungekuerzt bleiben. */
+  grid-template-columns: repeat(3, auto);
   align-items: stretch;
+  gap: 2px;
   min-width: 0;
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--disabled-bg, #f0f0f0);
 }
 
 .tab {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 0;
   min-width: 0;
-  min-height: 44px;
-  padding: 4px 2px;
+  min-height: 48px;
+  padding: 4px 4px;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-radius: 11px;
   background: none;
-  color: var(--text-secondary, #4a4a4a);
+  color: var(--text-primary, rgba(0, 0, 0, 0.87));
   font: inherit;
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -47,47 +57,34 @@
 
 .tab-zahl {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .tab.aktiv {
-  border-bottom-color: var(--primary-dark, #005437);
-  color: var(--primary-dark, #005437);
-  font-weight: 500;
+  background: var(--primary-main, #008939);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tab:not(.aktiv):hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Sehr schmal: etwas kleinere Schrift, damit alle drei Namen ganz dastehen */
+@media (max-width: 359px) {
+  .tab {
+    font-size: 13px;
+  }
 }
 
 .tab:focus-visible {
   outline: 2px solid var(--primary-dark, #005437);
-  outline-offset: -2px;
-}
-
-/* Nur das Icon: kein Knopfrahmen, kein Schatten, trotzdem 40 px Tippflaeche */
-.erklaerung-umschalter {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  box-shadow: none;
-  color: var(--primary-dark, #005437);
-  cursor: pointer;
-}
-
-.erklaerung-umschalter mat-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
-}
-
-.erklaerung-umschalter:focus-visible {
-  outline: 2px solid var(--primary-dark, #005437);
   outline-offset: 2px;
 }
+
+/* Das ?-Icon selbst: app-hilfe-umschalter */
 
 .erklaerung {
   margin-top: 4px;

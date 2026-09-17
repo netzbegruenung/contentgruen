@@ -4,7 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
-import { typLabel } from '../shared/content-type-registry';
+import { typBeschreibung, typLabel } from '../shared/content-type-registry';
 import { ERSTNUTZER_SATZ, FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { FORMULAR_PFAD, FormularTyp, SUCHTEXT_PARAM, aussageParameter, istFormularTyp } from '../shared/formular-adresse';
 
@@ -26,6 +26,7 @@ import { FORMULAR_PFAD, FormularTyp, SUCHTEXT_PARAM, aussageParameter, istFormul
 })
 export class ContributeViewComponent implements OnInit {
   readonly typLabel = typLabel;
+  readonly typBeschreibung = typBeschreibung;
   readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
   /** Die Route verlangt eine Anmeldung, der Satz braucht deshalb keine eigene Pruefung. */
@@ -69,6 +70,11 @@ export class ContributeViewComponent implements OnInit {
   /** Weiterarbeiten: zur Liste, in der Einwuerfe destilliert und Saetze ausformuliert werden. */
   navigateToRawInputList(): void {
     this.router.navigate(['/fangkorb']);
+  }
+
+  /** Weiterarbeiten: die eigenen Beitraege - frueher das Ordner-Icon in der Kopfzeile. */
+  navigateToContributions(): void {
+    this.router.navigate(['/contributions']);
   }
 
   formularOeffnen(typ: FormularTyp): void {

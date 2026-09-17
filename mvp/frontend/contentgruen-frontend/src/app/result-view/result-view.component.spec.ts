@@ -1,3 +1,4 @@
+import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { of } from 'rxjs';
@@ -113,6 +114,32 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     knopf('.mobile-action-buttons', 0).click();
     tick();
     expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+  }));
+
+  it('bietet am Handy auch mit Treffern das Ergaenzen an, unter dem Suchband und unter der Liste', fakeAsync(() => {
+    oeffnen(true, AUSSAGE_ID);
+    const komponente = fixture.componentInstance;
+    komponente.hasCommentaryResults = true;
+    komponente.currentSection = 'commentary';
+    // OnPush: die Flags von aussen gesetzt, also selbst zur Pruefung vormerken.
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+
+    const oben: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen-kopf button');
+    const unten: HTMLButtonElement = fixture.nativeElement.querySelector('.mobile-ergaenzen button');
+    expect(oben.textContent).toContain('Eigenen Kommentar ergänzen');
+    expect(unten.textContent).toContain('Kommentar ergänzen');
+    expect(fixture.nativeElement.querySelector('.mobile-empty-state')).toBeNull();
+
+    unten.click();
+    tick();
+    expect(router.url).toBe(`/workflow/add-commentary?aussage=${AUSSAGE_ID}`);
+
+    komponente.hasGenerictextResults = true;
+    komponente.currentSection = 'generictext';
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-ergaenzen button').textContent).toContain('Hintergrundinfo ergänzen');
   }));
 
   for (const fehlend of [null, '', 'None']) {

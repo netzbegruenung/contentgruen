@@ -1,9 +1,14 @@
 from typing import List
+from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header
 import datetime
 import logging
 
-from dependencies import get_generic_text_service, get_reference_service
+from dependencies import (
+    get_generic_text_service,
+    get_reference_service,
+    get_statement_service,
+)
 from dtos.generic_text import (
     AddGenericTextRequest,
     AddGenericTextResponse,
@@ -13,6 +18,8 @@ from dtos.generic_text import (
 )
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
+from services.content.statement_service import AussageNichtGefunden, StatementService
+from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextDbEntry, GenericTextReference
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
@@ -21,6 +28,10 @@ from domain.models.content_origin import ContentOrigin
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Wie eng eine Hintergrundinfo zu ihrer Aussage passt, wenn jemand sie ausdruecklich
+# als Antwort darauf verfasst - etwas schwaecher als ein Kommentar.
+HINTERGRUNDINFO_RELEVANZ = 0.9
 
 
 # Test endpoint to check if the API is running
@@ -121,6 +132,7 @@ async def add_generic_text(
     request: AddGenericTextRequest,
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
     reference_service: ReferenceService = Depends(get_reference_service),
+    statement_service: StatementService = Depends(get_statement_service),
     x_user: str = Header(...),
 ) -> AddGenericTextResponse:
     try:
@@ -176,7 +188,7 @@ async def add_generic_text(
         for reference_id, description in new_references:
             generictext_reference = GenericTextReference(
                 reference_id=reference_id,
-                created=datetime.datetime.now(),
+                created=utc_jetzt(),
                 description=description,
             )
             generictext_references.append(generictext_reference)
@@ -195,10 +207,42 @@ async def add_generic_text(
         if not success:
             raise HTTPException(status_code=400, detail="Failed to add generic text")
 
-        # Create response object
-        response = AddGenericTextResponse(id=generic_text_id)
+        # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
+        # bleibt die Hintergrundinfo gespeichert und die Antwort sagt es.
+        statement_id = None
+        statement_text = None
+        verknuepft = True
+        if request.statement_id or (request.statement_text or "").strip():
+            try:
+                statement_id, statement_text = (
+                    await statement_service.beitrag_als_antwort_verknuepfen(
+                        beitrag_id=generic_text_id,
+                        content_type=ContentType.GENERIC_TEXT,
+                        relevance=HINTERGRUNDINFO_RELEVANZ,
+                        author=x_user,
+                        statement_id=request.statement_id,
+                        statement_text=request.statement_text,
+                    )
+                )
+            except AussageNichtGefunden:
+                # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
+                logger.warning(
+                    f"Generic text {generic_text_id} saved, but its statement {request.statement_id} no longer exists"
+                )
+                verknuepft = False
+            except Exception as e:
+                logger.error(
+                    f"Generic text {generic_text_id} saved, but not linked to its statement: {e}",
+                    exc_info=True,
+                )
+                verknuepft = False
 
-        return response
+        return AddGenericTextResponse(
+            id=generic_text_id,
+            statement_id=statement_id,
+            statement_text=statement_text,
+            verknuepft=verknuepft,
+        )
 
     except HTTPException:
         raise

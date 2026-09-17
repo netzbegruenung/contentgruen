@@ -1,8 +1,13 @@
 import datetime
+from domain.models.zeit import utc_jetzt
 import logging
 from fastapi import APIRouter, Header, HTTPException, Depends
 
-from dependencies import get_commentary_service, get_reference_service
+from dependencies import (
+    get_commentary_service,
+    get_reference_service,
+    get_statement_service,
+)
 from dtos.commentary import (
     AddCommentaryRequest,
     AddCommentaryResponse,
@@ -10,15 +15,21 @@ from dtos.commentary import (
     SearchCommentaryByTextRequest,
 )
 from services.content.commentary_service import CommentaryService
+from services.content.statement_service import AussageNichtGefunden, StatementService
 from domain.models.commentary import CommentaryReference
 from services.content.reference_service import ReferenceService
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_type import ContentType
 
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Wie eng ein Kommentar zu seiner Aussage passt, wenn jemand ihn ausdruecklich
+# als Antwort darauf verfasst.
+KOMMENTAR_RELEVANZ = 1.0
 
 
 # Test endpoint to check if the API is running
@@ -88,6 +99,7 @@ async def add_commentary(
     request: AddCommentaryRequest,
     commentary_service: CommentaryService = Depends(get_commentary_service),
     reference_service: ReferenceService = Depends(get_reference_service),
+    statement_service: StatementService = Depends(get_statement_service),
     x_user: str = Header(...),
 ) -> AddCommentaryResponse:
     try:
@@ -140,7 +152,7 @@ async def add_commentary(
         for reference_id, description in new_references:
             commentary_reference = CommentaryReference(
                 reference_id=reference_id,
-                created=datetime.datetime.now(),
+                created=utc_jetzt(),
                 description=description,
             )
 
@@ -159,10 +171,49 @@ async def add_commentary(
             )
         )
 
-        # Create response object
-        response = AddCommentaryResponse(id=commentary_id)
+        # Schon ein sehr aehnlicher Kommentar da: add_commentary hat nichts angelegt
+        # und liefert dessen ID. Dann auch nichts verknuepfen - sonst hinge ein
+        # fremder Kommentar an der Aussage dieser Person.
+        if not commentary_was_new:
+            logger.info(f"Commentary is a near-duplicate of {commentary_id}")
+            return AddCommentaryResponse(id=commentary_id, duplikat=True)
 
-        return response
+        # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
+        # bleibt der Kommentar gespeichert und die Antwort sagt es.
+        statement_id = None
+        statement_text = None
+        verknuepft = True
+        if request.statement_id or (request.statement_text or "").strip():
+            try:
+                statement_id, statement_text = (
+                    await statement_service.beitrag_als_antwort_verknuepfen(
+                        beitrag_id=commentary_id,
+                        content_type=ContentType.COMMENTARY,
+                        relevance=KOMMENTAR_RELEVANZ,
+                        author=x_user,
+                        statement_id=request.statement_id,
+                        statement_text=request.statement_text,
+                    )
+                )
+            except AussageNichtGefunden:
+                # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
+                logger.warning(
+                    f"Commentary {commentary_id} saved, but its statement {request.statement_id} no longer exists"
+                )
+                verknuepft = False
+            except Exception as e:
+                logger.error(
+                    f"Commentary {commentary_id} saved, but not linked to its statement: {e}",
+                    exc_info=True,
+                )
+                verknuepft = False
+
+        return AddCommentaryResponse(
+            id=commentary_id,
+            statement_id=statement_id,
+            statement_text=statement_text,
+            verknuepft=verknuepft,
+        )
 
     except HTTPException:
         raise
