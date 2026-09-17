@@ -383,6 +383,19 @@ describe('DestillierenComponent', () => {
       expect(component.schritt).toBe('satz');
     });
 
+    it('zeigt in der Typwahl den Einwurf als Kopfband statt rohem Link und Text', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+
+      await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich auch im Altbau' }));
+
+      const seite: HTMLElement = fixture.nativeElement;
+      expect(seite.querySelector('.einwurf-link')).toBeNull();
+      expect(seite.querySelector('.satz-vorschau')).toBeNull();
+      expect(seite.querySelector('.einwurf-kopf .rohling-kopf')).toBeTruthy();
+      expect(seite.querySelector('.einwurf-kopf .rohling-titel')!.textContent).toContain('Guter Thread');
+      expect(seite.querySelector('.einwurf-kopf .rohling-kopfsatz')!.textContent).toContain('Waermepumpe lohnt sich auch im Altbau');
+    });
+
     it('beschreibt die Typen mit den Saetzen aus der Registry', () => {
       expect(TYPEN.map((t) => t.erlaeuterung)).toEqual([
         'Eine Antwort, die du direkt posten kannst.',

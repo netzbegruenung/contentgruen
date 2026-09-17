@@ -19,7 +19,7 @@
             die Ansicht vorher ihren Satz speichern (registerBeforeBack). Aus der
             Typwahl zurueck zum Satz fuehrt der Knopf unten im Ablauf.
         -->
-        <section class="einwurf">
+        <section *ngIf="schritt === 'satz'" class="einwurf">
             <a *ngIf="einwurf.url" class="einwurf-link" [href]="einwurf.url"
                target="_blank" rel="noopener noreferrer">
                 <mat-icon>open_in_new</mat-icon>
@@ -65,7 +65,9 @@
         </section>
 
         <section *ngIf="schritt === 'typwahl'" class="typwahl">
-            <p class="satz-vorschau">„{{ satz.value.trim() }}“</p>
+            <!-- Derselbe Kopf wie spaeter ueber dem Formular: Einwurf, Link, der Satz -->
+            <app-beitragskarte *ngIf="einwurfKopf as kopf" class="einwurf-kopf" variante="kopf" [daten]="kopf">
+            </app-beitragskarte>
 
             <mat-radio-group class="typen" aria-label="Was wird daraus?" [(ngModel)]="typ">
                 <mat-radio-button *ngFor="let eintrag of typen" [value]="eintrag.wert"

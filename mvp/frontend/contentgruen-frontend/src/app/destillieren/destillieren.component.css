@@ -95,9 +95,12 @@
   color: var(--warn-color, #b00020);
 }
 
-.satz-vorschau {
-  font-size: 18px;
-  line-height: 1.4;
+.einwurf-kopf {
+  display: block;
+  margin-bottom: 16px;
+  border: 1px solid var(--divider-color);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .typen {

@@ -25,6 +25,8 @@ import {
 import { FangkorbTab, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
+import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -53,7 +55,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 @Component({
   selector: 'app-destillieren',
   standalone: true,
-  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink],
+  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent],
   templateUrl: './destillieren.component.html',
   styleUrls: ['./destillieren.component.css'],
 })
@@ -129,6 +131,29 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   }
 
   /** Die Notiz zum Einwurf, sofern sie mehr ist als der Link selbst. */
+  /**
+   * Der Einwurf als Kopfband fuer die Typwahl, mit dem gerade formulierten Satz.
+   * Zwischengespeichert, solange Einwurf und Satz gleich bleiben.
+   */
+  get einwurfKopf(): KartenDaten | null {
+    const einwurf = this.einwurf;
+    if (!einwurf) {
+      return null;
+    }
+    const satz = this.satz.value.trim();
+    if (this.kopfCache?.einwurf !== einwurf || this.kopfCache.satz !== satz) {
+      const karte = ausEinwurf(einwurf);
+      this.kopfCache = {
+        einwurf,
+        satz,
+        karte: karte.rohling ? { ...karte, rohling: { ...karte.rohling, kopfSatz: satz || undefined } } : karte,
+      };
+    }
+    return this.kopfCache.karte;
+  }
+
+  private kopfCache?: { einwurf: RawInput; satz: string; karte: KartenDaten };
+
   get notiz(): string | null {
     const inhalt = this.einwurf?.content;
     return inhalt && inhalt !== this.einwurf?.url ? inhalt : null;
