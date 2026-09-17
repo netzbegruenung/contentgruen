@@ -146,7 +146,18 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       this.kopfCache = {
         einwurf,
         satz,
-        karte: karte.rohling ? { ...karte, rohling: { ...karte.rohling, kopfSatz: satz || undefined } } : karte,
+        karte: karte.rohling
+          ? {
+              ...karte,
+              rohling: {
+                ...karte.rohling,
+                kopfSatz: satz || undefined,
+                // Der Einwurf ist vor dem Speichern des Satzes geladen; mit Satz ist er
+                // schon auszuformulieren, auch wenn seine drafts das noch nicht zeigen.
+                zustand: satz && karte.rohling.zustand === 'destillieren' ? 'ausformulieren' : karte.rohling.zustand,
+              },
+            }
+          : karte,
       };
     }
     return this.kopfCache.karte;

@@ -394,6 +394,8 @@ describe('DestillierenComponent', () => {
       expect(seite.querySelector('.einwurf-kopf .rohling-kopf')).toBeTruthy();
       expect(seite.querySelector('.einwurf-kopf .rohling-titel')!.textContent).toContain('Guter Thread');
       expect(seite.querySelector('.einwurf-kopf .rohling-kopfsatz')!.textContent).toContain('Waermepumpe lohnt sich auch im Altbau');
+      // Mit Satz ist der Einwurf auszuformulieren - auch wenn er vor dem Speichern geladen wurde.
+      expect(seite.querySelector('.einwurf-kopf .karte')!.classList).toContain('zustand-ausformulieren');
     });
 
     it('beschreibt die Typen mit den Saetzen aus der Registry', () => {
