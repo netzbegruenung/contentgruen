@@ -317,6 +317,19 @@ class DataProcessor:
             created_at=created_at,
         )
 
+        # Gab es die Aussage schon, hat add_statement nichts geschrieben - auch nicht
+        # die Antworten. Die gehoeren dann an die vorhandene Aussage, sonst haengen
+        # die Seed-Beitraege an keiner Aussage.
+        statement_was_new, statement_id, _ = result
+        if not statement_was_new:
+            for vorschlag in statement_replysuggestions:
+                await self.orchestrator.statement_service.add_statementreplysuggestion_to_statement(
+                    statement_id=statement_id,
+                    replysuggestion_id=vorschlag.id,
+                    content_type=vorschlag.content_type,
+                    relevance=vorschlag.relevance,
+                )
+
         # Initialize usage tracking with metadata if provided
         if self.usage_repository and metadata and result and len(result) > 1:
             statement_id = result[1]

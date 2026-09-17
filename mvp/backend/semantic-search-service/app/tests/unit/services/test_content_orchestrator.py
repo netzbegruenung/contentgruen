@@ -632,3 +632,56 @@ class TestContentOrchestratorIntegration:
         assert statement_data is not None
         assert statement_data["text"] == "Important climate statement"
         assert len(statement_data.get("replysuggestions", [])) == 3
+
+
+@pytest.mark.unit
+class TestSeedingAussageWiederverwendet:
+    """Gab es die Seed-Aussage schon, haengen ihre Antworten an der vorhandenen."""
+
+    @pytest.fixture
+    def orchestrator(self, test_settings):
+        orchestrator = MagicMock()
+        orchestrator.initial_data_author = test_settings.initial_data_author
+        orchestrator.statement_service.add_statementreplysuggestion_to_statement = (
+            AsyncMock(return_value=True)
+        )
+        return orchestrator
+
+    @pytest.mark.asyncio
+    async def test_antworten_an_vorhandene_aussage(self, orchestrator):
+        vorhandene = uuid.uuid4()
+        orchestrator.statement_service.add_statement = AsyncMock(
+            return_value=(False, vorhandene, "Die Grünen sind eine Verbotspartei!")
+        )
+        antworten = [uuid.uuid4(), uuid.uuid4()]
+
+        await DataProcessor(orchestrator).create_statement_with_replies(
+            "Die Grünen sind eine Verbotspartei", antworten, ContentType.COMMENTARY
+        )
+
+        anhaengen = (
+            orchestrator.statement_service.add_statementreplysuggestion_to_statement
+        )
+        assert anhaengen.await_count == 2
+        assert [
+            c.kwargs["replysuggestion_id"] for c in anhaengen.await_args_list
+        ] == antworten
+        assert all(
+            c.kwargs["statement_id"] == vorhandene for c in anhaengen.await_args_list
+        )
+        assert all(
+            c.kwargs["content_type"] == ContentType.COMMENTARY
+            for c in anhaengen.await_args_list
+        )
+
+    @pytest.mark.asyncio
+    async def test_neue_aussage_bringt_antworten_selbst_mit(self, orchestrator):
+        orchestrator.statement_service.add_statement = AsyncMock(
+            return_value=(True, uuid.uuid4(), "Neu")
+        )
+
+        await DataProcessor(orchestrator).create_statement_with_replies(
+            "Neu", [uuid.uuid4()], ContentType.COMMENTARY
+        )
+
+        orchestrator.statement_service.add_statementreplysuggestion_to_statement.assert_not_awaited()
