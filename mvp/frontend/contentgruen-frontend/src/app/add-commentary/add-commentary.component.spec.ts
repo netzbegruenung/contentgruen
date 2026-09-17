@@ -79,7 +79,7 @@ describe('AddCommentaryComponent', () => {
     });
 
     it('zeigt die Qualitaetszeile mit dem ?, anfangs zugeklappt', () => {
-      expect(seite().querySelector('.hilfe-zeile')!.textContent).toContain('Deine eigenen Worte – so, dass auch eine unentschiedene Nachbarin mitgeht.');
+      expect(seite().querySelector('.hilfe-zeile')!.textContent).toContain('So formuliert, dass auch eine unentschiedene Nachbarin mitgeht.');
       expect(seite().querySelector('.hilfe-panel')).toBeNull();
 
       (seite().querySelector('.erklaerung-umschalter') as HTMLButtonElement).click();

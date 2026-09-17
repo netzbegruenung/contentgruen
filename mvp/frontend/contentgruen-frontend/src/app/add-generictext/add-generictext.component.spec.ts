@@ -78,7 +78,7 @@ describe('AddGenerictextComponent', () => {
     });
 
     it('zeigt die Qualitaetszeile mit dem ?, anfangs zugeklappt', () => {
-      expect(seite().querySelector('.hilfe-zeile')!.textContent).toContain('Fakten, Zahlen oder Kontext – am besten mit Herkunft.');
+      expect(seite().querySelector('.hilfe-zeile')!.textContent).toContain('Knapp und überprüfbar – am besten mit Beleg.');
       expect(seite().querySelector('.hilfe-panel')).toBeNull();
 
       (seite().querySelector('.erklaerung-umschalter') as HTMLButtonElement).click();

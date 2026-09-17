@@ -17,7 +17,7 @@ export interface FormularHilfe {
  */
 export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
   commentary: {
-    zeile: 'Deine eigenen Worte – so, dass auch eine unentschiedene Nachbarin mitgeht.',
+    zeile: 'So formuliert, dass auch eine unentschiedene Nachbarin mitgeht.',
     frage: 'Was ist ein Kommentar?',
     antwort: 'Eine Antwort, die man so posten kann.',
     ist: ['Nimmt die Sorge hinter der Aussage ernst', 'Ein Punkt, konkret und alltagsnah'],
@@ -32,10 +32,10 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
     },
   },
   generictext: {
-    zeile: 'Fakten, Zahlen oder Kontext – am besten mit Herkunft.',
+    zeile: 'Knapp und überprüfbar – am besten mit Beleg.',
     frage: 'Was ist eine Hintergrundinfo?',
     antwort: 'Fakten, Zahlen oder Kontext, die eine Antwort stützen.',
-    ist: ['Überprüfbar, mit Herkunft', 'Knapp: eine Zahl, ein Zusammenhang'],
+    ist: ['Mit Herkunft, damit andere es nachsehen können', 'Ein Punkt: eine Zahl, ein Zusammenhang'],
     istNicht: ['Meinung ohne Beleg (→ Kommentar)', 'Fremde Texte übernehmen – in eigenen Worten zusammenfassen (CC0)'],
   },
 };
