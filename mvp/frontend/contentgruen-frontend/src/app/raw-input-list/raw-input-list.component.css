@@ -19,7 +19,9 @@
 .tabs {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Breite nach Inhalt: "Ausformulieren" ist laenger als die anderen und soll auch
+     bei 320 px ungekuerzt bleiben. */
+  grid-template-columns: repeat(3, auto);
   align-items: stretch;
   gap: 2px;
   min-width: 0;
@@ -36,7 +38,7 @@
   gap: 0;
   min-width: 0;
   min-height: 48px;
-  padding: 4px 2px;
+  padding: 4px 4px;
   border: 0;
   border-radius: 11px;
   background: none;
@@ -68,6 +70,13 @@
 
 .tab:not(.aktiv):hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+/* Sehr schmal: etwas kleinere Schrift, damit alle drei Namen ganz dastehen */
+@media (max-width: 359px) {
+  .tab {
+    font-size: 13px;
+  }
 }
 
 .tab:focus-visible {
