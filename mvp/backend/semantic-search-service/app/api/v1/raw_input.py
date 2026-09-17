@@ -12,6 +12,7 @@ import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import ValidationError
 
 from dependencies import get_commentary_service, get_generic_text_service
 from domain.models.content_type import ContentType
@@ -191,13 +192,18 @@ async def _beitrag_pruefen(
 
     Ohne ``content_type`` (aeltere App-Version) genuegt ein Beitrag eines der
     beiden Typen. "Nicht gefunden" und "anderer Typ" melden die Dienste als
-    ValueError; alles andere ist ein echter Fehler und geht weiter.
+    ValueError; alles andere ist ein echter Fehler und geht weiter - auch ein
+    pydantic.ValidationError, obwohl er von ValueError erbt.
     """
     kandidaten = [dienste[content_type]] if content_type else list(dienste.values())
     for dienst in kandidaten:
         try:
             await dienst.get(content_id)
             return
+        except ValidationError:
+            # Auch ein ValueError, aber kein "gibt es nicht": der Datensatz ist
+            # da und nicht lesbar. Das ist ein Fehler, keine falsche Eingabe.
+            raise
         except ValueError:
             continue
     raise HTTPException(status_code=422, detail=BEITRAG_FEHLT)
@@ -222,27 +228,25 @@ async def update_status(
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
     """
     person = _angemeldete_person(x_user)
-    if request.status == RawInputStatus.PROCESSED:
-        try:
-            await _beitrag_pruefen(
-                request.content_id,
-                request.content_type,
-                {
-                    ContentType.COMMENTARY: commentary_service,
-                    ContentType.GENERIC_TEXT: generic_text_service,
-                },
-            )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(
-                f"Fehler beim Pruefen des Beitrags in PATCH /rawinput/{{id}}/status: {e}",
-                exc_info=True,
-            )
-            raise HTTPException(
-                status_code=500, detail="Der Status konnte nicht geändert werden."
-            )
     try:
+        if request.status == RawInputStatus.PROCESSED:
+            # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt
+            # 404, ein unerlaubter Wechsel 409 - egal, was hinter content_id steht.
+            # Eine Wiederholung mit derselben content_id prueft den Beitrag nicht
+            # erneut; er kann inzwischen geloescht sein, und die Wiederholung soll
+            # unschaedlich bleiben.
+            schon_verknuepft = repository.statuswechsel_vorpruefen(
+                raw_input_id, request.status, person, request.content_id
+            )
+            if not schon_verknuepft:
+                await _beitrag_pruefen(
+                    request.content_id,
+                    request.content_type,
+                    {
+                        ContentType.COMMENTARY: commentary_service,
+                        ContentType.GENERIC_TEXT: generic_text_service,
+                    },
+                )
         row = repository.set_status(
             raw_input_id,
             request.status,
@@ -251,6 +255,8 @@ async def update_status(
             request.content_type.value if request.content_type else None,
         )
         return RawInputResponse(**row)
+    except HTTPException:
+        raise
     except EinwurfNichtGefunden:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)
     except AktionNichtErlaubt:

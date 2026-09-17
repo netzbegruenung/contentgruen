@@ -590,3 +590,77 @@ class TestStatusSetzen:
 
         with pytest.raises(EinwurfNichtGefunden):
             repository.set_status(uuid.uuid4(), RawInputStatus.DISCARDED, "alice")
+
+
+class TestStatuswechselVorpruefen:
+    """
+    Lesende Vorpruefung fuer PATCH /status: dieselben Regeln wie set_status,
+    ohne Sperre und ohne zu schreiben. Sie liefert, ob die content_id schon
+    verknuepft ist - dann prueft der Router den Beitrag nicht erneut.
+    """
+
+    @staticmethod
+    def _abfragen(session, zeile, verknuepfung):
+        query = MagicMock()
+        session.query.return_value = query
+        query.filter.return_value = query
+        query.one_or_none.return_value = zeile
+        query.first.return_value = verknuepfung
+        return query
+
+    def test_unbekannter_einwurf_wirft(self, repository, session):
+        self._abfragen(session, None, None)
+
+        with pytest.raises(EinwurfNichtGefunden):
+            repository.statuswechsel_vorpruefen(
+                uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+            )
+
+    def test_unerlaubter_uebergang_wirft(self, repository, session):
+        self._abfragen(session, _zeile(submitted_by="alice", status="processed"), None)
+
+        with pytest.raises(UebergangNichtErlaubt):
+            repository.statuswechsel_vorpruefen(
+                uuid.uuid4(), RawInputStatus.DISCARDED, "alice"
+            )
+
+    def test_fremdes_verwerfen_wirft(self, repository, session):
+        self._abfragen(session, _zeile(submitted_by="alice"), None)
+
+        with pytest.raises(AktionNichtErlaubt):
+            repository.statuswechsel_vorpruefen(
+                uuid.uuid4(), RawInputStatus.DISCARDED, "bob"
+            )
+
+    def test_meldet_vorhandene_verknuepfung(self, repository, session):
+        self._abfragen(
+            session, _zeile(status="processed"), SimpleNamespace(content_id="x")
+        )
+
+        assert (
+            repository.statuswechsel_vorpruefen(
+                uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+            )
+            is True
+        )
+
+    def test_meldet_neue_verknuepfung(self, repository, session):
+        self._abfragen(session, _zeile(), None)
+
+        assert (
+            repository.statuswechsel_vorpruefen(
+                uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+            )
+            is False
+        )
+
+    def test_schreibt_und_sperrt_nicht(self, repository, session):
+        query = self._abfragen(session, _zeile(), None)
+
+        repository.statuswechsel_vorpruefen(
+            uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+        )
+
+        query.with_for_update.assert_not_called()
+        session.execute.assert_not_called()
+        session.commit.assert_not_called()

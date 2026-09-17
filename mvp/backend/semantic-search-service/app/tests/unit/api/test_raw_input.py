@@ -15,6 +15,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock
 
+from pydantic import BaseModel, ValidationError
+
 from api.v1.raw_input import router as raw_input_router
 from dependencies import get_commentary_service, get_generic_text_service
 from domain.models.raw_input import (
@@ -58,6 +60,9 @@ def repository():
     repo.create.return_value = _gespeicherter_einwurf()
     repo.get_all.return_value = []
     repo.count.return_value = 0
+    # Ohne das waere der Rueckgabewert ein MagicMock und damit wahr - jede
+    # Beitragspruefung wuerde als Wiederholung uebersprungen.
+    repo.statuswechsel_vorpruefen.return_value = False
     app.dependency_overrides[get_raw_input_repository] = lambda: repo
     yield repo
     app.dependency_overrides.clear()
@@ -677,6 +682,108 @@ class TestStatuswechsel:
         )
 
         assert antwort.status_code == 500
+        repository.set_status.assert_not_called()
+
+    def test_unbekannter_einwurf_mit_unbekanntem_beitrag_bleibt_404(
+        self, client, repository, beitraege
+    ):
+        """Erst der Einwurf, dann der Beitrag - 404 wird nicht zu 422."""
+        repository.statuswechsel_vorpruefen.side_effect = EinwurfNichtGefunden(
+            EINWURF_ID
+        )
+        for dienst in beitraege.values():
+            dienst.get.side_effect = ValueError("not found")
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "commentary",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 404
+        for dienst in beitraege.values():
+            dienst.get.assert_not_called()
+        repository.set_status.assert_not_called()
+
+    def test_unerlaubter_uebergang_bleibt_409_vor_der_beitragspruefung(
+        self, client, repository, beitraege
+    ):
+        repository.statuswechsel_vorpruefen.side_effect = UebergangNichtErlaubt(
+            RawInputStatus.PROCESSED, RawInputStatus.PROCESSED
+        )
+        beitraege["commentary"].get.side_effect = ValueError("not found")
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "commentary",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 409
+        beitraege["commentary"].get.assert_not_called()
+
+    def test_wiederholung_nach_geloeschtem_beitrag_bleibt_unschaedlich(
+        self, client, repository, beitraege
+    ):
+        """
+        Die Antwort ging verloren, der Beitrag ist inzwischen weg: Die Verknuepfung
+        steht schon, die Wiederholung darf nicht an der Beitragspruefung scheitern.
+        """
+        inhalt_id = uuid.uuid4()
+        repository.statuswechsel_vorpruefen.return_value = True
+        beitraege["commentary"].get.side_effect = ValueError("not found")
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+        )
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(inhalt_id),
+                "content_type": "commentary",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        repository.statuswechsel_vorpruefen.assert_called_once_with(
+            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id
+        )
+        beitraege["commentary"].get.assert_not_called()
+        repository.set_status.assert_called_once()
+
+    def test_unlesbarer_beitrag_ist_500_nicht_422(self, client, repository, beitraege):
+        """ValidationError erbt von ValueError, heisst aber nicht "gibt es nicht"."""
+
+        class Streng(BaseModel):
+            zahl: int
+
+        try:
+            Streng.model_validate({"zahl": "keine"})
+        except ValidationError as fehler:
+            beitraege["commentary"].get.side_effect = fehler
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(uuid.uuid4()),
+                "content_type": "commentary",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 500
+        beitraege["generic_text"].get.assert_not_called()
         repository.set_status.assert_not_called()
 
     def test_verwerfen_prueft_keinen_beitrag(self, client, repository, beitraege):
