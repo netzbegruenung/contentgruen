@@ -224,3 +224,61 @@ async def test_seeding_haengt_antworten_an_die_vorhandene_aussage(statement_serv
     aussagen = [t for t in treffer if t.text.startswith("Die Grünen sind eine Verbot")]
     assert len(aussagen) == 1
     assert {r.id for r in aussagen[0].replysuggestions} == {erste, zweite}
+
+
+async def test_normalisiert_gleich_ohne_gesperrte_freigegebene_zuerst_dann_aelteste(
+    statement_service, real_embeddings_manager
+):
+    """Mehrere normalisiert gleiche Aussagen (Altbestand): deterministische Wahl."""
+    import datetime
+    from domain.models.author_entry import AuthorEntry
+    from domain.models.statement import StatementDbEntry
+
+    repository = statement_service._repository
+    basis = datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+
+    async def punkt(text, tage, status):
+        eintrag = StatementDbEntry(
+            text=text,
+            id=uuid.uuid4(),
+            created=basis + datetime.timedelta(days=tage),
+            last_modified=basis,
+            original_author="alt",
+            last_modified_by="alt",
+            authors=[AuthorEntry(name="alt")],
+            edit_history=[],
+            status=status,
+            origin=ContentOrigin.MANUALLY_CREATED,
+            replysuggestions=[],
+            replysuggestions_count=0,
+        )
+        await repository.upsert(eintrag.id, eintrag)
+        return eintrag.id
+
+    normalform = "windräder sind vogel-schredder"
+    gesperrt = await punkt("Windräder sind Vogel-Schredder!", 0, ContentStatus.BLOCKED)
+    archiviert = await punkt(
+        "windräder sind Vogel-Schredder", 1, ContentStatus.ARCHIVED
+    )
+    entwurf = await punkt("Windräder sind Vogel-Schredder.", 2, ContentStatus.DRAFT)
+    freigegeben_neu = await punkt(
+        "WINDRÄDER SIND VOGEL-SCHREDDER", 4, ContentStatus.RELEASED_INTERNAL
+    )
+    freigegeben_alt = await punkt(
+        "Windräder sind Vogel-Schredder!!", 3, ContentStatus.RELEASED_INTERNAL
+    )
+
+    treffer = await repository.finde_normalisiert_gleich(normalform)
+    assert treffer.id == freigegeben_alt
+
+    for status_aendern in (freigegeben_alt, freigegeben_neu):
+        await repository.update_status(status_aendern, ContentStatus.BLOCKED)
+    # Nur noch der Entwurf ist wiederverwendbar - gesperrt und archiviert nie.
+    assert (await repository.finde_normalisiert_gleich(normalform)).id == entwurf
+    await repository.update_status(entwurf, ContentStatus.DUPLICATE)
+    assert await repository.finde_normalisiert_gleich(normalform) is None
+    assert gesperrt and archiviert
+
+    # Auch add_statement legt dann neu an statt eine gesperrte wiederzuverwenden.
+    neu, _, _ = await _aussage(statement_service, "Windräder sind Vogel-Schredder!")
+    assert neu is True

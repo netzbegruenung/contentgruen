@@ -19,7 +19,11 @@ from domain.models.base_content import (
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import (
+    FREIGEGEBEN,
+    NICHT_WIEDERVERWENDBAR,
+    ContentStatus,
+)
 from domain.models.content_origin import ContentOrigin
 from utils.data_utils import DataSource
 from utils.text_normalisierung import (
@@ -29,6 +33,10 @@ from utils.text_normalisierung import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Wie viele normalisiert gleiche Eintraege finde_normalisiert_gleich zum Sortieren
+# holt. Normalerweise einer; mehrere nur aus der Zeit vor der Dublettenpruefung.
+NORMALISIERT_GLEICH_HOECHSTENS = 50
 
 TContentDbEntry = TypeVar("TContentDbEntry", bound=BaseContentDbEntry)
 TContentSearchResult = TypeVar("TContentSearchResult", bound=BaseContentSearchResult)
@@ -175,9 +183,13 @@ class QdrantBaseRepository(
         """
         Einen Eintrag dieses Typs mit genau dieser Normalform (Payload-Feld
         text_normalisiert, Keyword-Index) - ohne Vektorsuche, also unabhaengig davon,
-        wie weit der Score eines normalisiert gleichen Textes abfaellt. Dieselben
-        Status wie in search() sind ausgeschlossen. Eintraege ohne das Feld
-        (Altbestand vor dem Nachtrag) findet das nicht.
+        wie weit der Score eines normalisiert gleichen Textes abfaellt. Eintraege ohne
+        das Feld (Altbestand vor dem Nachtrag) findet das nicht.
+
+        Ausgeschlossen sind die Status aus search() und NICHT_WIEDERVERWENDBAR
+        (gesperrt, abgelehnt, archiviert, Dublette). Gibt es mehrere, entscheidet die
+        Reihenfolge deterministisch: freigegebene zuerst, dann der aelteste (created),
+        dann die ID.
         """
         from qdrant_client.models import Filter, FieldCondition, MatchValue
 
@@ -192,17 +204,36 @@ class QdrantBaseRepository(
                     key="content_type", match=MatchValue(value=self.content_type)
                 )
             )
+        must_not = [
+            *self._status_ausschluss(),
+            *(
+                FieldCondition(key="status", match=MatchValue(value=status.value))
+                for status in sorted(NICHT_WIEDERVERWENDBAR, key=lambda s: s.value)
+            ),
+        ]
         punkte, _ = await self._shared_manager.async_client.scroll(
             collection_name=self._shared_manager.collection_name,
-            scroll_filter=Filter(must=must, must_not=self._status_ausschluss()),
-            limit=1,
+            scroll_filter=Filter(must=must, must_not=must_not),
+            limit=NORMALISIERT_GLEICH_HOECHSTENS,
             with_payload=True,
             with_vectors=False,
         )
         if not punkte:
             return None
+
+        freigegeben = {status.value for status in FREIGEGEBEN}
+
+        def rang(punkt):
+            payload = punkt.payload or {}
+            return (
+                0 if payload.get("status") in freigegeben else 1,
+                str(payload.get("created") or ""),
+                str(punkt.id),
+            )
+
+        erster = min(punkte, key=rang)
         return self.content_search_result_model_class.model_validate(
-            {**punkte[0].payload, "id": str(punkte[0].id), "score": 1.0}
+            {**erster.payload, "id": str(erster.id), "score": 1.0}
         )
 
     async def get(self, item_id: uuid.UUID) -> TContentDbEntry:

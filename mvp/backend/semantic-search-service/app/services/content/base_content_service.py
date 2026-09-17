@@ -13,7 +13,7 @@ from domain.models.base_content import (
     BaseContentDbEntry,
     BaseContentSearchResult,
 )
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NICHT_WIEDERVERWENDBAR, ContentStatus
 from utils.data_utils import DataSource
 from utils.text_normalisierung import ist_dasselbe, text_normalisiert
 
@@ -113,6 +113,8 @@ class BaseContentService(
         )
         bester = treffer[0] if treffer else None
         for kandidat in treffer:
+            if kandidat.status in NICHT_WIEDERVERWENDBAR:
+                continue
             if ist_dasselbe(
                 normalform, text_normalisiert(kandidat.text), kandidat.score, schwelle
             ):
