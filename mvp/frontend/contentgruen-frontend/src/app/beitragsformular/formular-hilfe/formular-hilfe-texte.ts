@@ -17,15 +17,18 @@ export interface FormularHilfe {
  */
 export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
   commentary: {
-    zeile: 'Deine eigene Formulierung – so, dass sie eine unentschiedene Nachbarin überzeugt.',
+    zeile: 'Deine eigenen Worte – so, dass auch eine unentschiedene Nachbarin mitgeht.',
     frage: 'Was ist ein Kommentar?',
     antwort: 'Eine Antwort, die man so posten kann.',
-    ist: ['Deine eigene Formulierung', 'Überzeugt eine unentschiedene Nachbarin, nicht nur die eigenen Leute'],
-    istNicht: ['Kopierte Captions oder Zitate', 'Unterstellungen, Lager-Etiketten, Häme'],
+    ist: ['Nimmt die Sorge hinter der Aussage ernst', 'Ein Punkt, konkret und alltagsnah'],
+    istNicht: [
+      'Fremde Texte übernehmen – du gibst deinen Text frei (CC0), das geht nur mit eigenen Worten',
+      'Unterstellungen, Lager-Etiketten, Häme',
+    ],
     beispiel: {
       aussage: 'Die Grünen wollen uns das Autofahren verbieten',
       antwort:
-        'Niemand will dir dein Auto wegnehmen. Es geht darum, dass du auch ohne gut ankommst, wo Bus oder Rad passen.',
+        'Wer aufs Auto angewiesen ist, soll es auch bleiben dürfen. Es geht um die anderen Wege: dass der Bus öfter fährt und das Kind sicher mit dem Rad zur Schule kommt. Dann ist auf der Straße auch mehr Platz für alle, die fahren müssen.',
     },
   },
   generictext: {
@@ -33,6 +36,6 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
     frage: 'Was ist eine Hintergrundinfo?',
     antwort: 'Fakten, Zahlen oder Kontext, die eine Antwort stützen.',
     ist: ['Überprüfbar, mit Herkunft', 'Knapp: eine Zahl, ein Zusammenhang'],
-    istNicht: ['Meinung ohne Beleg (→ Kommentar)', 'Ganze Studien oder Artikel abschreiben'],
+    istNicht: ['Meinung ohne Beleg (→ Kommentar)', 'Fremde Texte übernehmen – in eigenen Worten zusammenfassen (CC0)'],
   },
 };

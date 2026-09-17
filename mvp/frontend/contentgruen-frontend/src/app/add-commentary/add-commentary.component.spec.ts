@@ -79,13 +79,13 @@ describe('AddCommentaryComponent', () => {
     });
 
     it('zeigt die Qualitaetszeile mit dem ?, anfangs zugeklappt', () => {
-      expect(seite().querySelector('.hilfe-zeile')!.textContent).toContain('unentschiedene Nachbarin');
+      expect(seite().querySelector('.hilfe-zeile')!.textContent).toContain('Deine eigenen Worte – so, dass auch eine unentschiedene Nachbarin mitgeht.');
       expect(seite().querySelector('.hilfe-panel')).toBeNull();
 
       (seite().querySelector('.erklaerung-umschalter') as HTMLButtonElement).click();
       fixture.detectChanges();
 
-      expect(seite().querySelector('.hilfe-panel')!.textContent).toContain('Kopierte Captions oder Zitate');
+      expect(seite().querySelector('.hilfe-panel')!.textContent).toContain('Nimmt die Sorge hinter der Aussage ernst');
     });
 
     it('beschriftet Titel und Kommentar mit je einem Pflichtzeichen', () => {
@@ -97,7 +97,7 @@ describe('AddCommentaryComponent', () => {
     });
 
     it('fragt im Titelfeld nach dem Punkt in einem Satz', () => {
-      const input: HTMLInputElement = seite().querySelector('input#title')!;
+      const input: HTMLTextAreaElement = seite().querySelector('textarea#title')!;
       expect(input.placeholder).toBe('Was ist der Punkt? Ein Satz.');
     });
 
@@ -114,6 +114,24 @@ describe('AddCommentaryComponent', () => {
     });
   });
 
+  describe('Titel und Kartenbezug', () => {
+    it('ist zweizeilig, waechst mit und bricht bei Enter nicht um', () => {
+      const titel: HTMLTextAreaElement = seite().querySelector('textarea#title')!;
+      expect(titel.hasAttribute('cdktextareaautosize')).toBeTrue();
+      expect(titel.getAttribute('cdkautosizeminrows')).toBe('2');
+
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true, bubbles: true });
+      titel.dispatchEvent(enter);
+      expect(enter.defaultPrevented).toBeTrue();
+    });
+
+    it('zeigt Streifen in der Typfarbe und das Typ-Emoji vor der Hilfezeile', () => {
+      const bereich: HTMLElement = seite().querySelector('.formular-bereich')!;
+      expect(bereich.style.getPropertyValue('--typ-farbe')).toBe('var(--commentary-bg)');
+      expect(seite().querySelector('.hilfe-emoji')!.textContent!.trim()).toBe('💬');
+    });
+  });
+
   describe('Grenzen und Zaehler', () => {
     // Titel = Behauptung in einem Satz. Das Limit ist auf die Titelbox der
     // Suchkarte ausgemessen und muss mit dem Backend-Modell uebereinstimmen.
@@ -125,7 +143,7 @@ describe('AddCommentaryComponent', () => {
         control.setValue('a'.repeat(limit + 1));
         expect(control.hasError('maxlength')).withContext(feld).toBeTrue();
       }
-      expect((seite().querySelector('input#title') as HTMLInputElement).maxLength).toBe(120);
+      expect((seite().querySelector('textarea#title') as HTMLTextAreaElement).maxLength).toBe(120);
       expect((seite().querySelector('textarea#text') as HTMLTextAreaElement).maxLength).toBe(500);
     });
 
@@ -172,6 +190,17 @@ describe('AddCommentaryComponent', () => {
       expect('long_text' in anfrage.commentary).toBeFalse();
       expect(anfrage.statement_id).toBeUndefined();
       expect(anfrage.statement_text).toBeUndefined();
+    }));
+
+    it('speichert eingefuegte Umbrueche im Titel als Leerzeichen', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      ausfuellen();
+      component.commentaryForm.patchValue({ title: 'Wärmepumpen\nlohnen sich\r\n im Altbau' });
+
+      component.speichern();
+      flush();
+
+      expect(hinzufuegen.calls.mostRecent().args[0].commentary.title).toBe('Wärmepumpen lohnen sich im Altbau');
     }));
 
     it('meldet nach dem Speichern ID, Aussage und Verknuepfung', fakeAsync(() => {

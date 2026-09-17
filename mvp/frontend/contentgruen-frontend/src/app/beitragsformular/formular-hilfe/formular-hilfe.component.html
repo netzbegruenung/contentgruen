@@ -1,5 +1,6 @@
 <div class="formular-hilfe" *ngIf="hilfe as hilfe">
     <div class="hilfe-kopf">
+        <span class="hilfe-emoji" aria-hidden="true">{{ emoji }}</span>
         <p class="hilfe-zeile">{{ hilfe.zeile }}</p>
         <app-hilfe-umschalter [(offen)]="offen" [steuert]="panelId"
                               [beschriftungZu]="hilfe.frage" beschriftungOffen="Erklärung schließen">

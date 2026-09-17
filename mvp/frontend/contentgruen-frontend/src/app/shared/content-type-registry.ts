@@ -31,6 +31,8 @@ export interface ContentTypeConfig {
    * waehlt, und in der Hilfe. Nennt die Abgrenzung zu den anderen Typen.
    */
   beschreibung?: string;
+  /** Die Farbe des Kartenbands als CSS-Wert - auch der Streifen ueber dem Formular. */
+  farbe?: string;
 }
 
 export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
@@ -41,6 +43,7 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     resultField: 'commentary_result',
     emoji: '💬',
     beschreibung: 'Eine Antwort, die du direkt posten kannst.',
+    farbe: 'var(--commentary-bg)',
   },
   generictext: {
     key: 'generictext',
@@ -49,6 +52,7 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     resultField: 'generictext_result',
     emoji: '📄',
     beschreibung: 'Fakten und Zahlen, die eine Antwort stützen.',
+    farbe: 'var(--generictext-bg)',
   },
   post: {
     key: 'post',
@@ -64,6 +68,7 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     resultField: 'image_result',
     emoji: '🖼️',
     beschreibung: 'Ein Bild mit Unterschrift, das für sich spricht.',
+    farbe: 'var(--image-bg)',
   },
   statement: {
     key: 'statement',
@@ -100,4 +105,16 @@ export function typLabel(contentType: string | undefined | null): string {
 export function typBeschreibung(contentType: string | undefined | null): string {
   const key = resolveContentType(contentType);
   return key ? (CONTENT_TYPE_REGISTRY[key].beschreibung ?? '') : '';
+}
+
+/** Die Farbe des Kartenbands eines Beitragstyps, leer fuer Typen ohne. */
+export function typFarbe(contentType: string | undefined | null): string {
+  const key = resolveContentType(contentType);
+  return key ? (CONTENT_TYPE_REGISTRY[key].farbe ?? '') : '';
+}
+
+/** Das Symbol eines Beitragstyps, leer fuer Typen ohne. */
+export function typEmoji(contentType: string | undefined | null): string {
+  const key = resolveContentType(contentType);
+  return key ? (CONTENT_TYPE_REGISTRY[key].emoji ?? '') : '';
 }

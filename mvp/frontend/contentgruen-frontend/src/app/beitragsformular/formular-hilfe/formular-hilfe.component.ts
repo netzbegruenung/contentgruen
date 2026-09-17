@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormularTyp } from '../../shared/formular-adresse';
 import { HilfeUmschalterComponent } from '../../shared/components/hilfe-umschalter/hilfe-umschalter.component';
 import { FORMULAR_HILFE, FormularHilfe } from './formular-hilfe-texte';
+import { typEmoji } from '../../shared/content-type-registry';
 
 /**
  * Kopf eines Beitragsformulars: eine Zeile, worauf es ankommt, und hinter dem ?
@@ -23,6 +24,11 @@ export class FormularHilfeComponent {
 
   get hilfe(): FormularHilfe | undefined {
     return FORMULAR_HILFE[this.typ];
+  }
+
+  /** Das Symbol des Typs wie im Kartenkopf - der Bezug zur Karte, die hier entsteht. */
+  get emoji(): string {
+    return typEmoji(this.typ);
   }
 
   get panelId(): string {

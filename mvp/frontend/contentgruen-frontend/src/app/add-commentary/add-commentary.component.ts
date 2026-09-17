@@ -15,6 +15,8 @@ import { ReferenceInputComponent } from '../reference-input/reference-input.comp
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { typFarbe } from '../shared/content-type-registry';
+import { einzeilig } from '../beitragsformular/einzeilig';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
@@ -68,6 +70,8 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
 })
 export class AddCommentaryComponent implements OnChanges {
   readonly consentHinweis = CONSENT_HINWEIS;
+  /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
+  readonly typFarbe = typFarbe('commentary');
   readonly titelMax = TITEL_MAX;
   readonly textMax = TEXT_MAX;
   readonly plattformGrenze = PLATTFORM_GRENZE;
@@ -222,7 +226,9 @@ export class AddCommentaryComponent implements OnChanges {
     this.speichert = true;
     this.fehler = null;
 
-    const { title, text, references } = this.commentaryForm.value;
+    const { text, references } = this.commentaryForm.value;
+    // Ein Satz: eingefuegte Umbrueche werden zu Leerzeichen (Enter selbst bricht nicht um).
+    const title = einzeilig(this.commentaryForm.value.title);
     const request: AddCommentaryRequest = {
       commentary: { title, text, references: [] },
       // Die Herkunft als Text; das Backend legt sie an oder findet sie wieder.

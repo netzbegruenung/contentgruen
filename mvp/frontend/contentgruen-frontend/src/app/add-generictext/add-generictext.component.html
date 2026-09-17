@@ -1,4 +1,4 @@
-<div class="add-generictext-container">
+<div class="add-generictext-container formular-bereich" [style.--typ-farbe]="typFarbe">
     <!-- Aus dem Fangkorb: der Einwurf, aus dem die Hintergrundinfo entsteht -->
     <app-beitragskarte *ngIf="vorbefuellung?.kopf as einwurf" class="einwurf-kopf" variante="kopf"
                        [daten]="einwurf">
@@ -15,8 +15,11 @@
 
                 <mat-form-field appearance="outline" class="formular-feld">
                     <mat-label>Titel</mat-label>
-                    <input matInput id="title" formControlName="title" required
-                           [attr.maxlength]="titelMax" placeholder="Was ist der Punkt? Ein Satz." />
+                    <!-- Zweizeilig, damit ein ganzer Satz sichtbar bleibt; Enter bricht nicht um -->
+                    <textarea matInput id="title" formControlName="title" required
+                              [attr.maxlength]="titelMax" placeholder="Was ist der Punkt? Ein Satz."
+                              cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="4"
+                              (keydown.enter)="$event.preventDefault()"></textarea>
                     <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
                     <mat-error *ngIf="generictextForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
                     <mat-error *ngIf="generictextForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>

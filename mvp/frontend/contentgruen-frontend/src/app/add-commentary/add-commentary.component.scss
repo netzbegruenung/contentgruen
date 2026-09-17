@@ -10,6 +10,11 @@
   @include contribution.contribution-container;
 }
 
+// Bezug zur Karte, die hier entsteht: ein schmaler Streifen in der Farbe ihres Bands
+.formular-bereich {
+  border-top: 5px solid var(--typ-farbe, transparent);
+}
+
 // Die Hilfe steht ueber dem Formularkasten; am Handy mit demselben Rand wie die Felder.
 app-formular-hilfe {
   display: block;

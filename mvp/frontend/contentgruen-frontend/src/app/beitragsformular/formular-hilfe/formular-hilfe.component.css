@@ -8,6 +8,13 @@
     gap: 8px;
 }
 
+.hilfe-emoji {
+    flex-shrink: 0;
+    padding-top: 7px;
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
 .hilfe-zeile {
     flex: 1;
     margin: 0;
