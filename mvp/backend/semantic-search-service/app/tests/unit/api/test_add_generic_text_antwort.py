@@ -138,6 +138,44 @@ class TestAddGenericTextAntwort:
         assert aufruf["statement_text"] == "Waermepumpen sind zu teuer"
         assert aufruf["statement_id"] is None
 
+    def test_verschwundene_aussage_ist_warning_ohne_traceback(self, dienste, caplog):
+        import logging
+        from services.content.statement_service import AussageNichtGefunden
+
+        _, statement_service = dienste
+        statement_service.beitrag_als_antwort_verknuepfen.side_effect = (
+            AussageNichtGefunden("weg")
+        )
+
+        with caplog.at_level(logging.WARNING):
+            resp = TestClient(app).post(
+                ADD_URL, json=_anfrage(statement_id=str(uuid.uuid4())), headers=HEADERS
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["verknuepft"] is False
+        eintraege = [r for r in caplog.records if "statement" in r.getMessage()]
+        assert eintraege and all(r.levelno == logging.WARNING for r in eintraege)
+        assert all(r.exc_info is None for r in eintraege)
+
+    def test_anderer_fehler_beim_verknuepfen_ist_error_mit_traceback(
+        self, dienste, caplog
+    ):
+        import logging
+
+        _, statement_service = dienste
+        statement_service.beitrag_als_antwort_verknuepfen.side_effect = RuntimeError(
+            "Qdrant weg"
+        )
+
+        with caplog.at_level(logging.WARNING):
+            TestClient(app).post(
+                ADD_URL, json=_anfrage(statement_id=str(uuid.uuid4())), headers=HEADERS
+            )
+
+        fehler = [r for r in caplog.records if r.levelno == logging.ERROR]
+        assert fehler and fehler[0].exc_info is not None
+
     def test_gescheiterte_verknuepfung_behaelt_den_kommentar(self, dienste):
         commentary_id, statement_service = dienste
         statement_service.beitrag_als_antwort_verknuepfen.side_effect = ValueError(

@@ -18,7 +18,7 @@ from dtos.generic_text import (
 )
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
-from services.content.statement_service import StatementService
+from services.content.statement_service import AussageNichtGefunden, StatementService
 from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextDbEntry, GenericTextReference
 from domain.models.reference import Reference
@@ -224,6 +224,12 @@ async def add_generic_text(
                         statement_text=request.statement_text,
                     )
                 )
+            except AussageNichtGefunden:
+                # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
+                logger.warning(
+                    f"Generic text {generic_text_id} saved, but its statement {request.statement_id} no longer exists"
+                )
+                verknuepft = False
             except Exception as e:
                 logger.error(
                     f"Generic text {generic_text_id} saved, but not linked to its statement: {e}",
