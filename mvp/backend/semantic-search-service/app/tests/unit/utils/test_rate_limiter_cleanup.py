@@ -84,3 +84,13 @@ def test_main_raeumt_beide_limiter_im_takt_auf():
     assert "aufraeumen_im_takt" in quelle
     assert "report_rate_limiter" in quelle
     assert "search_query_statement_rate_limiter" in quelle
+
+
+def test_main_haelt_den_task_und_bricht_ihn_beim_shutdown_ab():
+    import inspect
+    import main
+
+    quelle = inspect.getsource(main.lifespan)
+    assert "app.state.rate_limiter_aufraeumen = asyncio.create_task(" in quelle
+    assert "rate_limiter_aufraeumen" in quelle.split("finally:", 1)[1]
+    assert ".cancel()" in quelle.split("finally:", 1)[1]

@@ -118,7 +118,9 @@ async def lifespan(app: FastAPI):
         logger.info("Starting rate limiter cleanup task...")
         # Frueher stuendlich und ohne await - die Coroutine lief nie, abgelaufene
         # Schluessel blieben bis zum Neustart im Speicher.
-        asyncio.create_task(
+        # Referenz halten: asyncio haelt Tasks nur schwach, und beim Shutdown
+        # wird er abgebrochen statt mit der Schleife zu sterben.
+        app.state.rate_limiter_aufraeumen = asyncio.create_task(
             aufraeumen_im_takt(
                 [report_rate_limiter, search_query_statement_rate_limiter]
             )
@@ -138,6 +140,9 @@ async def lifespan(app: FastAPI):
         # Shutdown
         try:
             logger.info("Shutting down Gut gesagt Semantic Search Service")
+            aufraeumen = getattr(app.state, "rate_limiter_aufraeumen", None)
+            if aufraeumen is not None:
+                aufraeumen.cancel()
             manager = get_embeddings_manager()
             await manager.shutdown()
             close_app_database()
