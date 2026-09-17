@@ -251,6 +251,54 @@ class TestAddCommentaryAntwort:
 
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
+    def test_dublette_mit_aussage_verknuepft_den_vorhandenen(self, dienste):
+        _, statement_service = dienste
+        vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
+        self._dublette(vorhanden)
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            "Waermepumpen sind zu teuer",
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL, json=_anfrage(statement_id=str(statement_id)), headers=HEADERS
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {
+            "id": str(vorhanden),
+            "statement_id": str(statement_id),
+            "statement_text": "Waermepumpen sind zu teuer",
+            "verknuepft": True,
+            "duplikat": True,
+        }
+        statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
+            beitrag_id=vorhanden,
+            content_type=ContentType.COMMENTARY,
+            relevance=KOMMENTAR_RELEVANZ,
+            author="person-1",
+            statement_id=statement_id,
+            statement_text=None,
+        )
+
+    def test_dublette_mit_gescheiterter_verknuepfung(self, dienste):
+        _, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        self._dublette(vorhanden)
+        statement_service.beitrag_als_antwort_verknuepfen.side_effect = RuntimeError(
+            "Qdrant weg"
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text="Waermepumpen sind zu teuer"),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["duplikat"] is True
+        assert resp.json()["verknuepft"] is False
+        assert resp.json()["id"] == str(vorhanden)
+
     def test_ohne_dublette_werden_herkunftsangaben_angelegt(self, dienste):
         commentary_service = app.dependency_overrides[get_commentary_service]()
         reference_service = app.dependency_overrides[get_reference_service]()

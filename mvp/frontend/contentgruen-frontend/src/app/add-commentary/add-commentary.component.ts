@@ -36,6 +36,11 @@ export const PLATTFORM_GRENZE = 280;
 
 export const DUBLETTE_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar.';
 
+/** Hinweis, wenn der vorhandene Kommentar jetzt auch an der gewaehlten Aussage haengt. */
+export function dubletteVerknuepftHinweis(aussage: string): string {
+  return `Diesen Kommentar gibt es schon – er ist jetzt auch mit „${aussage}“ verknüpft.`;
+}
+
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
 
@@ -107,7 +112,12 @@ export class AddCommentaryComponent implements OnChanges {
   responseId = '';
   /** ID eines schon vorhandenen, sehr aehnlichen Kommentars; dann wurde nichts angelegt. */
   dublette: string | null = null;
-  readonly dublettenHinweis = DUBLETTE_HINWEIS;
+  /** Text der Aussage, mit der die Dublette jetzt verknuepft ist; null ohne Verknuepfung. */
+  dubletteAussage: string | null = null;
+
+  get dublettenHinweis(): string {
+    return this.dubletteAussage ? dubletteVerknuepftHinweis(this.dubletteAussage) : DUBLETTE_HINWEIS;
+  }
 
   private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };
 
@@ -237,6 +247,7 @@ export class AddCommentaryComponent implements OnChanges {
     this.fehler = null;
     this.validierung = null;
     this.dublette = null;
+    this.dubletteAussage = null;
 
     const { text, references } = this.commentaryForm.value;
     // Ein Satz: eingefuegte Umbrueche werden zu Leerzeichen (Enter selbst bricht nicht um).
@@ -253,7 +264,11 @@ export class AddCommentaryComponent implements OnChanges {
         this.speichert = false;
         if (antwort.duplikat) {
           // Nichts angelegt: Das Formular bleibt, der Hinweis zeigt den vorhandenen.
+          // War eine Aussage dabei, haengt er jetzt auch an ihr. Kein Erfolg - ein
+          // Einwurf aus dem Fangkorb bleibt damit offen.
           this.dublette = antwort.id;
+          this.dubletteAussage =
+            antwort.verknuepft === true && antwort.statement_text ? antwort.statement_text : null;
           return;
         }
         this.responseId = antwort.id;
@@ -327,5 +342,6 @@ export class AddCommentaryComponent implements OnChanges {
     this.showReferences = false;
     this.fehler = null;
     this.dublette = null;
+    this.dubletteAussage = null;
   }
 }

@@ -42,7 +42,7 @@ export interface AddCommentaryResponse {
     statement_text?: string | null;
     /** false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem. */
     verknuepft?: boolean;
-    /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt, nichts verknuepft. */
+    /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. War eine Aussage dabei, haengt er jetzt an ihr (statement_*, verknuepft). */
     duplikat?: boolean;
 }
 

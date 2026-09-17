@@ -179,9 +179,11 @@ async def add_commentary(
 
         dublette = pruefung.vorhanden
         if dublette is not None:
-            # Nichts angelegt und nichts verknuepft.
-            logger.info(f"Commentary is a duplicate of {dublette.id}")
-            return AddCommentaryResponse(id=dublette.id, duplikat=True)
+            # Nichts angelegt. Wurde eine Aussage mitgeschickt, haengt der vorhandene
+            # Kommentar jetzt (auch) an ihr - die Verknuepfung erkennt, wenn er dort
+            # schon haengt.
+            commentary_id = dublette.id
+            logger.info(f"Commentary is a duplicate of {commentary_id}")
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
         # bleibt der Kommentar gespeichert und die Antwort sagt es.

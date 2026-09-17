@@ -323,6 +323,7 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
                 "description": "NABU zu Hauskatzen",
             }
         ],
+        "statement_text": "Windräder sind Vogel-Schredder!",
     }
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
@@ -341,6 +342,8 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
     assert all(a.status_code == 200 for a in antworten), daten
     assert sorted(d["duplikat"] for d in daten) == [False, True]
     assert daten[0]["id"] == daten[1]["id"]
+    assert all(d["verknuepft"] for d in daten)
+    assert daten[0]["statement_id"] == daten[1]["statement_id"]
 
     manager = commentary_service._repository._shared_manager
 
@@ -354,3 +357,31 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
 
     assert anzahl("commentary") == 1
     assert anzahl("reference") == 1
+    aussage = await statement_service.get(uuid.UUID(daten[0]["statement_id"]))
+    assert [r.id for r in aussage.replysuggestions] == [uuid.UUID(daten[0]["id"])]
+
+
+async def test_dublette_mit_anderer_aussage_wird_dort_verknuepft(
+    statement_service, commentary_service
+):
+    """Die Verknuepfung selbst: der vorhandene Kommentar haengt an beiden Aussagen."""
+    _, kommentar, _ = await commentary_service.add_commentary(
+        _kommentar(KATZEN),
+        "person-1",
+        ContentStatus.RELEASED_INTERNAL,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+    for text in ("Windräder sind Vogel-Schredder!", "Windkraft tötet unsere Vögel"):
+        await statement_service.beitrag_als_antwort_verknuepfen(
+            kommentar, ContentType.COMMENTARY, 1.0, "person-2", statement_text=text
+        )
+    # zweimal dieselbe Aussage: die Verknuepfung erkennt es
+    statement_id, _ = await statement_service.beitrag_als_antwort_verknuepfen(
+        kommentar,
+        ContentType.COMMENTARY,
+        1.0,
+        "person-2",
+        statement_text="Windkraft tötet unsere Vögel",
+    )
+    aussage = await statement_service.get(statement_id)
+    assert [r.id for r in aussage.replysuggestions] == [kommentar]
