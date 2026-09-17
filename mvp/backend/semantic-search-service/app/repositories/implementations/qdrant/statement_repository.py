@@ -138,7 +138,14 @@ class StatementRepository(
                 query=query_text,
                 content_type=self.content_type,
                 limit=limit,
-                filter_dict={"must_not": [_unbeantwortete_suchanfrage()]},
+                # Dieselben Status wie die normale Suche ausschliessen, dazu die
+                # unbeantworteten Suchanfragen.
+                filter_dict={
+                    "must_not": [
+                        *self._status_ausschluss(),
+                        _unbeantwortete_suchanfrage(),
+                    ]
+                },
             )
             return [
                 self.content_search_result_model_class.model_validate(res)

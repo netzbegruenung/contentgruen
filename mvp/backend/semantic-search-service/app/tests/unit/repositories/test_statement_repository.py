@@ -337,7 +337,13 @@ class TestSearchCurated:
         assert aufruf["content_type"] == "statement"
         assert aufruf["limit"] == 5
         ausschluss = aufruf["filter_dict"]["must_not"]
-        assert len(ausschluss) == 1
-        bedingungen = {b.key: b for b in ausschluss[0].must}
+        # Dieselben Status wie die normale Suche, dazu die unbeantworteten Suchanfragen
+        status = {
+            b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
+        }
+        assert status == {"pending_description", "description_failed", "pending_review"}
+        suchanfrage = [b for b in ausschluss if getattr(b, "must", None)]
+        assert len(suchanfrage) == 1
+        bedingungen = {b.key: b for b in suchanfrage[0].must}
         assert bedingungen["origin"].match.value == "search_query"
         assert bedingungen["replysuggestions_count"].range.lt == 1

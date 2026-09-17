@@ -81,3 +81,48 @@ class TestZeitstempelUtc:
         assert (
             json.loads(vorschlag.model_dump_json())["created"] == "2026-09-17T08:06:22Z"
         )
+
+
+@pytest.mark.unit
+class TestCountLastWeek:
+    """count_last_week vergleicht Zeitpunkte, nicht Zeichenketten: naive Altwerte (UTC)
+    und neue Werte mit Offset zaehlen gleich."""
+
+    @pytest.mark.asyncio
+    async def test_zaehlt_naive_und_aware_werte_der_letzten_woche(
+        self, test_settings, test_embeddings_manager
+    ):
+        from unittest.mock import AsyncMock, MagicMock
+        from repositories.implementations.qdrant.statement_repository import (
+            StatementRepository,
+        )
+
+        jetzt = utc_jetzt()
+        vor = lambda tage: (jetzt - datetime.timedelta(days=tage))  # noqa: E731
+        punkte = [
+            # naiv, gestern -> zaehlt
+            MagicMock(payload={"created": vor(1).replace(tzinfo=None).isoformat()}),
+            # mit Z, vor drei Tagen -> zaehlt
+            MagicMock(payload={"created": vor(3).isoformat().replace("+00:00", "Z")}),
+            # naiv, vor zehn Tagen, aber heute geaendert (mit Offset) -> zaehlt
+            MagicMock(
+                payload={
+                    "created": vor(10).replace(tzinfo=None).isoformat(),
+                    "last_modified": jetzt.isoformat(),
+                }
+            ),
+            # vor zehn Tagen -> zaehlt nicht
+            MagicMock(payload={"created": vor(10).isoformat()}),
+            # kaputter Wert -> zaehlt nicht, bricht nichts
+            MagicMock(payload={"created": "kein Datum"}),
+        ]
+        manager = MagicMock()
+        manager.collection_name = "content_collection"
+        manager.async_client.scroll = AsyncMock(side_effect=[(punkte, None)])
+
+        repository = StatementRepository(
+            test_settings, embeddings_manager=test_embeddings_manager
+        )
+        repository._shared_manager = manager
+
+        assert await repository.count_last_week() == 3

@@ -104,32 +104,33 @@ class QdrantBaseRepository(
             self.initialize_with_initial_data()
             return DataSource.JSON
 
+    @staticmethod
+    def _status_ausschluss() -> list:
+        """
+        Lifecycle statuses that must not surface in search results.
+
+        Using must_not + MatchValue (instead of MatchExcept on must) so that legacy
+        points without a status field are left unaffected (MatchExcept on must would
+        drop fieldless points because the must clause is not satisfied).
+        PENDING_REVIEW is excluded because images in that status await human review.
+        """
+        from qdrant_client.models import FieldCondition, MatchValue
+
+        return [
+            FieldCondition(key="status", match=MatchValue(value=status.value))
+            for status in (
+                ContentStatus.PENDING_DESCRIPTION,
+                ContentStatus.DESCRIPTION_FAILED,
+                ContentStatus.PENDING_REVIEW,
+            )
+        ]
+
     async def search(self, query_text: str, limit: int) -> List[TContentSearchResult]:
         """Async implementation of search."""
         try:
             from qdrant_client.models import FieldCondition, MatchValue
 
-            # Exclude lifecycle statuses that must not surface in search results.
-            # Using must_not + MatchValue (instead of MatchExcept on must) so that legacy
-            # points without a status field are left unaffected (MatchExcept on must would
-            # drop fieldless points because the must clause is not satisfied).
-            # PENDING_REVIEW is excluded because images in that status await human review.
-            filter_dict = {
-                "must_not": [
-                    FieldCondition(
-                        key="status",
-                        match=MatchValue(value=ContentStatus.PENDING_DESCRIPTION.value),
-                    ),
-                    FieldCondition(
-                        key="status",
-                        match=MatchValue(value=ContentStatus.DESCRIPTION_FAILED.value),
-                    ),
-                    FieldCondition(
-                        key="status",
-                        match=MatchValue(value=ContentStatus.PENDING_REVIEW.value),
-                    ),
-                ]
-            }
+            filter_dict = {"must_not": self._status_ausschluss()}
 
             # Perform search with optional content_type filter
             search_results = await self._shared_manager.search(
@@ -568,16 +569,25 @@ class QdrantBaseRepository(
     async def count_last_week(self) -> int:
         """Async implementation of count_last_week."""
         try:
-            from datetime import datetime, timedelta
+            from datetime import datetime, timedelta, timezone
+
+            from domain.models.zeit import als_utc
+
+            def zeitpunkt(wert):
+                try:
+                    return als_utc(datetime.fromisoformat(str(wert)))
+                except (TypeError, ValueError):
+                    return None
+
             from qdrant_client.models import (
                 Filter,
                 FieldCondition,
                 MatchValue,
-                DateRange,
             )
 
-            # Calculate date one week ago
-            one_week_ago = (datetime.now() - timedelta(days=7)).isoformat()
+            # Eine Woche zurueck, in UTC. Verglichen wird nach dem Parsen als Zeitpunkt:
+            # gespeichert sind naive Altwerte (UTC) und neue Werte mit Offset.
+            one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
             # Build filter conditions
             must_conditions = []
@@ -615,11 +625,13 @@ class QdrantBaseRepository(
 
                 for point in result[0]:
                     payload = point.payload or {}
-                    created = payload.get("created", "")
-                    last_modified = payload.get("last_modified", "")
+                    created = zeitpunkt(payload.get("created"))
+                    last_modified = zeitpunkt(payload.get("last_modified"))
 
                     # Check if created or modified in the last week
-                    if created >= one_week_ago or last_modified >= one_week_ago:
+                    if (created and created >= one_week_ago) or (
+                        last_modified and last_modified >= one_week_ago
+                    ):
                         count += 1
 
                 current_offset = result[1]
