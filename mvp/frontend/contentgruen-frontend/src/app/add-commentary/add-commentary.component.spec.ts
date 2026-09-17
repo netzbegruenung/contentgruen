@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
@@ -9,7 +9,6 @@ import { of, throwError } from 'rxjs';
 
 import { AddCommentaryComponent, SPEICHERN_FEHLGESCHLAGEN } from './add-commentary.component';
 import { CommentaryService } from '../services/commentary.service';
-import { StatementService } from '../services/statement.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
@@ -262,9 +261,7 @@ describe('AddCommentaryComponent', () => {
     }));
 
     it('legt beim Oeffnen und Tippen keine Aussage an', () => {
-      const statementService = TestBed.inject(StatementService);
-      const anlegen = spyOn(statementService, 'addStatement');
-      const verknuepfen = spyOn(statementService, 'alsAntwortVerknuepfen');
+      const http = TestBed.inject(HttpTestingController);
 
       aussageAusAdresse('Wärmepumpen sind zu teuer');
       const feld: HTMLTextAreaElement = seite().querySelector('.antwort-eingabe')!;
@@ -272,8 +269,7 @@ describe('AddCommentaryComponent', () => {
       feld.dispatchEvent(new Event('input'));
       feld.dispatchEvent(new Event('blur'));
 
-      expect(anlegen).not.toHaveBeenCalled();
-      expect(verknuepfen).not.toHaveBeenCalled();
+      http.expectNone((r) => r.url.includes('/statement/addStatement') || r.url.includes('addReplysuggestion'));
       expect(component.aussage).toEqual({ id: '', text: 'Ganz andere Aussage' });
     });
 

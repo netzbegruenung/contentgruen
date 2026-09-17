@@ -76,40 +76,4 @@ describe('DestillierUebergabeService', () => {
     expect(ergebnis).toEqual(jasmine.objectContaining({ rohinputId: 'id-1', titel: '', url: null }));
     expect(ergebnis!.kopf!.rohling!.kopfSatz).toBeUndefined();
   });
-
-  it('markiert nach dem Speichern mit Beitragstyp als verarbeitet und springt weiter', () => {
-    rawInputService.updateStatus.and.returnValue(of({ id: 'id-1' } as RawInput));
-
-    service.nachSpeichern('id-1', 'beitrag-1', 'generic_text');
-
-    expect(rawInputService.updateStatus).toHaveBeenCalledWith(
-      'id-1',
-      'processed',
-      'beitrag-1',
-      'generic_text',
-    );
-    // Der Beitrag steht: Der Einwurf liegt danach unter "Erledigt".
-    expect(router.navigate).toHaveBeenCalledWith(['/destillieren'], {
-      queryParams: { nach: 'id-1', tab: 'erledigt' },
-    });
-  });
-
-  it('springt auch weiter, wenn das Markieren scheitert, und sagt es', () => {
-    rawInputService.updateStatus.and.returnValue(throwError(() => new Error('kaputt')));
-
-    service.nachSpeichern('id-1', 'beitrag-1', 'commentary');
-
-    expect(snackBar.open).toHaveBeenCalled();
-    expect(snackBar.open.calls.mostRecent().args[0]).toContain('Beitrag ist gespeichert');
-    // Ohne Verknuepfung bleibt der Einwurf bei seinen Saetzen - Tab "Ausformulieren".
-    expect(router.navigate).toHaveBeenCalledWith(['/destillieren'], {
-      queryParams: { nach: 'id-1', tab: 'ausformulieren' },
-    });
-  });
-
-  it('fuehrt beim Abbrechen zurueck zum Einwurf', () => {
-    service.zurueckZumEinwurf('id-1');
-
-    expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-1']);
-  });
 });
