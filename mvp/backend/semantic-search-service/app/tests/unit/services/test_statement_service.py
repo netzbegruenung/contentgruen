@@ -468,3 +468,156 @@ class TestSearchFiltered:
         ergebnis = await service.search_filtered("waermepumpe", 5, min_similarity=0.5)
 
         assert ergebnis == [stark, grenze]
+
+
+@pytest.mark.unit
+class TestAddStatementDubletten:
+    """
+    Wann add_statement eine vorhandene Aussage liefert statt anzulegen: normalisiert
+    gleicher Text immer, sonst erst ab statement_similarity_threshold. Die Werte der
+    echten Einbettung prueft tests/integration/test_aehnlichkeit.py.
+    """
+
+    @pytest.fixture
+    def service(self, test_settings, repository_factory):
+        return StatementService(test_settings, repository_factory=repository_factory)
+
+    @staticmethod
+    async def _anlegen(service, text):
+        return await service.add_statement(
+            Statement(text=text, replysuggestions=[]),
+            "person-1",
+            ContentStatus.RELEASED_INTERNAL,
+            ContentOrigin.MANUALLY_CREATED,
+        )
+
+    @staticmethod
+    def _treffer(text, score):
+        return StatementSearchResult(
+            **create_base_content_fields(),
+            **create_statement_data(text=text),
+            id=uuid.uuid4(),
+            content_type=ContentType.STATEMENT,
+            score=score,
+        )
+
+    @pytest.mark.asyncio
+    async def test_payload_bekommt_normalform(self, service, test_embeddings_manager):
+        _, statement_id, _ = await self._anlegen(
+            service, "„Balkonsolar lohnt sich NIE!“"
+        )
+
+        payload = test_embeddings_manager.get_data()[str(statement_id)]
+        assert payload["text_normalisiert"] == "balkonsolar lohnt sich nie"
+
+    @pytest.mark.asyncio
+    async def test_normalisiert_gleich_wird_wiederverwendet(self, service):
+        neu, erste_id, _ = await self._anlegen(
+            service, "Die Grünen sind eine Verbotspartei!"
+        )
+        wieder_neu, zweite_id, text = await self._anlegen(
+            service, "  die grünen sind eine VERBOTSPARTEI"
+        )
+
+        assert neu is True
+        assert wieder_neu is False
+        assert zweite_id == erste_id
+        assert text == "Die Grünen sind eine Verbotspartei!"
+
+    @pytest.mark.asyncio
+    async def test_normalisiert_gleich_ohne_feld_unter_den_vektortreffern(
+        self, service
+    ):
+        """Altbestand vor dem Nachtrag: kein Feld, gefunden ueber die Vektortreffer."""
+        from unittest.mock import AsyncMock
+
+        vorhanden = self._treffer("E-Autos sind eine Totgeburt!", 0.90)
+        andere = self._treffer("E-Autos sind auch nicht besser für die Umwelt", 0.92)
+        service._repository.finde_normalisiert_gleich = AsyncMock(return_value=None)
+        service._repository.search = AsyncMock(return_value=[andere, vorhanden])
+
+        neu, statement_id, _ = await self._anlegen(
+            service, "E-AUTOS SIND EINE TOTGEBURT!!!"
+        )
+
+        assert neu is False
+        assert statement_id == vorhanden.id
+
+    @pytest.mark.asyncio
+    async def test_aehnliche_aussage_unter_der_schwelle_wird_neu_angelegt(
+        self, service
+    ):
+        from unittest.mock import AsyncMock
+
+        verwandt = self._treffer("Die Grünen sind keine Verbotspartei", 0.969)
+        service._repository.search = AsyncMock(return_value=[verwandt])
+
+        neu, statement_id, _ = await self._anlegen(
+            service, "Die Grünen sind eine Verbotspartei"
+        )
+
+        assert neu is True
+        assert statement_id != verwandt.id
+        eintrag = await service.get(statement_id)
+        assert eintrag.most_similar_similarity_score == 0.969
+        assert eintrag.most_similar_content_id == verwandt.id
+
+    @pytest.mark.asyncio
+    async def test_ab_der_schwelle_wird_wiederverwendet(self, service, test_settings):
+        from unittest.mock import AsyncMock
+
+        fast_gleich = self._treffer(
+            "Deutschland kann das Klima nicht alleine retten",
+            test_settings.statement_similarity_threshold,
+        )
+        service._repository.search = AsyncMock(return_value=[fast_gleich])
+
+        neu, statement_id, _ = await self._anlegen(
+            service, "Deutschland kann nicht alleine das Klima retten!"
+        )
+
+        assert neu is False
+        assert statement_id == fast_gleich.id
+
+    @pytest.mark.asyncio
+    async def test_vektorsuche_mit_query_einbettung_und_ohne_ersetzung(self, service):
+        from unittest.mock import AsyncMock
+
+        service._repository.search = AsyncMock(return_value=[])
+
+        await self._anlegen(service, "Das geht's so nicht")
+
+        service._repository.search.assert_awaited_once()
+        args, kwargs = service._repository.search.call_args
+        assert args[0] == "Das geht's so nicht"
+        assert kwargs["praefix"] == "query"
+
+    @pytest.mark.asyncio
+    async def test_parallel_gleicher_text_legt_nur_eine_aussage_an(
+        self, service, test_embeddings_manager
+    ):
+        import asyncio
+
+        # Die Suche gibt die Kontrolle ab wie echtes Qdrant - ohne Sperre bestuenden
+        # dann beide Anfragen die Pruefung.
+        suche = service._repository.search
+
+        async def langsame_suche(*args, **kwargs):
+            await asyncio.sleep(0.01)
+            return await suche(*args, **kwargs)
+
+        service._repository.search = langsame_suche
+
+        ergebnisse = await asyncio.gather(
+            self._anlegen(service, "Klima schützen lohnt sich"),
+            self._anlegen(service, "  klima SCHÜTZEN lohnt sich!"),
+        )
+
+        assert sorted(neu for neu, _, _ in ergebnisse) == [False, True]
+        assert ergebnisse[0][1] == ergebnisse[1][1]
+        aussagen = [
+            p
+            for p in test_embeddings_manager.get_data().values()
+            if p.get("content_type") == "statement"
+        ]
+        assert len(aussagen) == 1

@@ -95,7 +95,18 @@ class Settings(BaseSettings):
         )
 
     # Business logic configuration
-    statement_similarity_threshold: float = 0.9
+
+    # Dublettenpruefung. Die Schwellen gelten nur fuer EMBEDDING_MODELL - bei einem
+    # Modellwechsel neu messen (tests/regression/test_aehnlichkeit_messset.py).
+    # Normalisiert gleicher Text zaehlt immer als dasselbe, unabhaengig vom Score
+    # (utils/text_normalisierung.py).
+    #
+    # Aussage still wiederverwenden: query/query-Einbettung, >= Schwelle.
+    # Modell: intfloat/multilingual-e5-base. Gemessen an 77 Paaren (hoechster
+    # D-Wert 0,969), in Stufe 2 mit echten Formularentscheidungen ueberpruefen.
+    # Inhaltlich aehnliche Aussagen werden nicht still uebernommen, sondern im
+    # Formular vorgeschlagen (0,885, Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
+    statement_similarity_threshold: float = 0.98
     commentary_similarity_threshold: float = 0.97
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
