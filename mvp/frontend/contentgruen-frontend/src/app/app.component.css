@@ -276,6 +276,14 @@ main * {
 /* Sidenav styles */
 .sidenav-container {
     height: 100%;
+    /*
+     * Die zugeklappte Seitennavigation liegt rechts neben dem Fenster und macht den
+     * Container 640 px breit. overflow: hidden verhindert nur Scrollbalken - beim
+     * Oeffnen eines Dialogs scrollte der Fokus den Container um 124 px nach links,
+     * und die Seite blieb verschoben. clip laesst sich gar nicht scrollen.
+     */
+    overflow: hidden;
+    overflow: clip;
 }
 
 .mobile-sidenav {
