@@ -8,7 +8,7 @@ import { of, throwError } from 'rxjs';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
-import { KartenDaten, ausSuchergebnis } from './karten-daten';
+import { KartenDaten, ausAussage, ausSuchergebnis } from './karten-daten';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
@@ -350,6 +350,12 @@ describe('BeitragskarteComponent', () => {
       expect(element('.textlaenge')).toBeNull();
     });
 
+    it('zeigt bei leerer oder nur aus Leerzeichen bestehender Fassung keinen Umschalter', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: '', long_text: '   ' })));
+
+      expect(element('.textlaenge')).toBeNull();
+    });
+
     it('kuerzt langen Text und klappt ihn mit "mehr" auf', () => {
       zeigen(ausSuchergebnis(paket('generictext_result', { text: 'Sehr langer Text. '.repeat(200) })));
 
@@ -376,6 +382,12 @@ describe('BeitragskarteComponent', () => {
   });
 
   describe('Vorschau', () => {
+    it('laesst ohne Datum das "·" in der Meta-Zeile weg', () => {
+      zeigen({ ...ausSuchergebnis(paket('commentary_result')), erstellt: '', autorName: 'Du' }, { vorschau: true });
+
+      expect(element('.karte-meta').textContent!.trim()).toBe('Von: Du');
+    });
+
     it('reicht die Vorschau an die Aktionen weiter', () => {
       zeigen(ausSuchergebnis(paket('commentary_result')), { vorschau: true });
 
@@ -469,6 +481,58 @@ describe('BeitragskarteComponent', () => {
       element('.karte').click();
 
       expect(voll).not.toHaveBeenCalled();
+      expect(element('.karte').getAttribute('role')).toBeNull();
+    });
+  });
+
+  describe('Kopf', () => {
+    it('zeigt aus einem Einwurf das Sandband mit Link und dem einen Satz, ohne Saetze, Aktionen und Meta', () => {
+      const daten: KartenDaten = {
+        id: 'e-1',
+        typ: null,
+        titel: 'Gute Antwort in den Kommentaren',
+        text: null,
+        erstellt: new Date().toISOString(),
+        autor: 'jemand',
+        autorName: null,
+        nutzung: null,
+        quellen: [],
+        rohling: {
+          einwurfId: 'e-1',
+          zustand: 'ausformulieren',
+          herkunft: 'Instagram',
+          link: 'https://www.instagram.com/reel/ABC/',
+          linkText: 'instagram.com/reel/ABC',
+          saetze: [{ id: 's-1', text: 'Erster Satz', beitraege: 0 } as any, { id: 's-2', text: 'Zweiter', beitraege: 1 } as any],
+          beitraege: [],
+          verwerfbar: true,
+          kopfSatz: 'Wärmepumpen lohnen sich im Altbau',
+        },
+      };
+
+      zeigen(daten, { variante: 'kopf' });
+
+      expect(element('.karte').classList).toContain('zustand-ausformulieren');
+      expect(element('.rohling-kopf .rohling-titel').textContent).toContain('Gute Antwort in den Kommentaren');
+      expect(element('.rohling-herkunft').textContent).toContain('Instagram');
+      expect(element('.rohling-kopfsatz').textContent).toContain('Wärmepumpen lohnen sich im Altbau');
+      expect(element('.rohling-saetze')).toBeNull();
+      expect(element('.rohling-aktion')).toBeNull();
+      expect(element('.rohling-menue')).toBeNull();
+      expect(element('.rohling-meta')).toBeNull();
+    });
+
+    it('zeigt nur das Band mit Symbol und Titel der Aussage', () => {
+      zeigen(ausAussage('a-1', 'Die Grünen wollen uns das Autofahren verbieten'), { variante: 'kopf' });
+
+      expect(element('.karte').classList).toContain('karte--kopf');
+      expect(element('.karte').classList).toContain('typ-statement');
+      expect(element('.karte-icon').textContent!.trim()).toBe('🗨️');
+      expect(element('.karte-titel').textContent!.trim()).toBe('Die Grünen wollen uns das Autofahren verbieten');
+      expect(element('.karte-badges')).toBeNull();
+      expect(element('.karte-inhalt')).toBeNull();
+      expect(element('app-karten-aktionen')).toBeNull();
+      expect(element('.album-fuss')).toBeNull();
       expect(element('.karte').getAttribute('role')).toBeNull();
     });
   });

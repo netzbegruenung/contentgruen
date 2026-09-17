@@ -12,7 +12,7 @@ import { plattformAusUrl, plattformName } from '../shared/plattform';
  * Fangkorb einen Einwurf mit Saetzen und Verknuepfungen. Die Adapter unten bringen
  * alle drei auf diese eine Form; die Karte kennt keine der Quellen.
  */
-export type KartenVariante = 'voll' | 'kompakt' | 'rohling';
+export type KartenVariante = 'voll' | 'kompakt' | 'rohling' | 'kopf';
 
 /**
  * Was eine Rohling-Karte anbietet: der eine Primaerknopf im Fuss und die
@@ -80,6 +80,8 @@ export interface RohlingDaten {
   saetze: RohlingSatz[];
   /** Die entstandenen Beitraege, aelteste zuerst. */
   beitraege: RohlingBeitrag[];
+  /** Nur im Kopf: der Satz, aus dem gerade ein Beitrag entsteht. */
+  kopfSatz?: string;
   /** Verworfen werden darf nur, was offen oder destilliert ist - und nur vom Einwerfer. */
   verwerfbar: boolean;
 }
@@ -171,9 +173,14 @@ function statement(paket: Suchpaket): KartenStatement | undefined {
   };
 }
 
+function befuellt(wert: unknown): string | undefined {
+  return typeof wert === 'string' && wert.trim() ? wert : undefined;
+}
+
 function extra(typ: string | null, inhalt: Record<string, any>): KartenExtra | undefined {
   if (typ === 'commentary') {
-    return { kurz: inhalt['short_text'] || undefined, lang: inhalt['long_text'] || undefined };
+    // Nur befuellte Fassungen: sonst zeigte die Karte einen Umschalter ohne Wirkung.
+    return { kurz: befuellt(inhalt['short_text']), lang: befuellt(inhalt['long_text']) };
   }
   if (typ === 'post') {
     return {
@@ -339,4 +346,21 @@ function plattformNameAusUrl(url: string | null): string | null {
 function hinweis(einwurf: RawInput): string | null {
   const inhalt = einwurf.content?.trim();
   return inhalt && inhalt !== einwurf.url ? inhalt : null;
+}
+
+// Aussage im Beitragsformular
+
+/** Die Aussage, auf die ein Beitrag antwortet, fuer die Kopf-Variante. */
+export function ausAussage(id: string, text: string): KartenDaten {
+  return {
+    id,
+    typ: 'statement',
+    titel: text,
+    text: null,
+    erstellt: '',
+    autor: null,
+    autorName: null,
+    nutzung: null,
+    quellen: [],
+  };
 }

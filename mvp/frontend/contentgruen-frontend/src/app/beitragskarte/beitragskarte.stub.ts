@@ -16,4 +16,5 @@ export class BeitragskarteStubComponent {
   @Input() daten?: KartenDaten;
   @Input() variante: KartenVariante = 'voll';
   @Input() vorschau = false;
+  @Input() abstimmenSichtbar = true;
 }
