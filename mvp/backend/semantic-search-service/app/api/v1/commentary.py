@@ -2,7 +2,11 @@ import datetime
 import logging
 from fastapi import APIRouter, Header, HTTPException, Depends
 
-from dependencies import get_commentary_service, get_reference_service
+from dependencies import (
+    get_commentary_service,
+    get_reference_service,
+    get_statement_service,
+)
 from dtos.commentary import (
     AddCommentaryRequest,
     AddCommentaryResponse,
@@ -10,15 +14,21 @@ from dtos.commentary import (
     SearchCommentaryByTextRequest,
 )
 from services.content.commentary_service import CommentaryService
+from services.content.statement_service import StatementService
 from domain.models.commentary import CommentaryReference
 from services.content.reference_service import ReferenceService
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_type import ContentType
 
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Wie eng ein Kommentar zu seiner Aussage passt, wenn jemand ihn ausdruecklich
+# als Antwort darauf verfasst.
+KOMMENTAR_RELEVANZ = 1.0
 
 
 # Test endpoint to check if the API is running
@@ -88,6 +98,7 @@ async def add_commentary(
     request: AddCommentaryRequest,
     commentary_service: CommentaryService = Depends(get_commentary_service),
     reference_service: ReferenceService = Depends(get_reference_service),
+    statement_service: StatementService = Depends(get_statement_service),
     x_user: str = Header(...),
 ) -> AddCommentaryResponse:
     try:
@@ -159,10 +170,30 @@ async def add_commentary(
             )
         )
 
-        # Create response object
-        response = AddCommentaryResponse(id=commentary_id)
+        # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
+        # bleibt der Kommentar gespeichert und die Antwort sagt es.
+        statement_id = None
+        verknuepft = True
+        if request.statement_id or (request.statement_text or "").strip():
+            try:
+                statement_id = await statement_service.beitrag_als_antwort_verknuepfen(
+                    beitrag_id=commentary_id,
+                    content_type=ContentType.COMMENTARY,
+                    relevance=KOMMENTAR_RELEVANZ,
+                    author=x_user,
+                    statement_id=request.statement_id,
+                    statement_text=request.statement_text,
+                )
+            except Exception as e:
+                logger.error(
+                    f"Commentary {commentary_id} saved, but not linked to its statement: {e}",
+                    exc_info=True,
+                )
+                verknuepft = False
 
-        return response
+        return AddCommentaryResponse(
+            id=commentary_id, statement_id=statement_id, verknuepft=verknuepft
+        )
 
     except HTTPException:
         raise

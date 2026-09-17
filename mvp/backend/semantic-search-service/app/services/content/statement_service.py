@@ -74,6 +74,33 @@ class StatementService(
             sanitized_query_text, limit, min_replysuggestions_count
         )
 
+    async def search_filtered(
+        self,
+        query_text: str,
+        limit: int = 10,
+        nur_kuratiert: bool = False,
+        min_similarity: Optional[float] = None,
+    ) -> List[StatementSearchResult]:
+        """
+        Aehnliche Statements fuer die Vorschlaege im Beitragsformular.
+
+        Args:
+        - nur_kuratiert: Unbeantwortete Suchanfragen weglassen (Kriterium wie
+          count_curated).
+        - min_similarity: Nur Treffer mit mindestens diesem Score. Gefiltert wird
+          nach der Suche; es kommen also hoechstens `limit` Treffer zurueck.
+        """
+        sanitized_query_text = query_text.replace(";", ",").replace("'", '"')
+
+        if nur_kuratiert:
+            results = await self._repository.search_curated(sanitized_query_text, limit)
+        else:
+            results = await self._repository.search(sanitized_query_text, limit)
+
+        if min_similarity is None:
+            return results
+        return [r for r in results if r.score is not None and r.score >= min_similarity]
+
     async def count_curated(self) -> int:
         """
         Anzahl der Statements ohne die unbeantworteten Suchanfragen.
@@ -233,11 +260,22 @@ class StatementService(
         - True if the reply suggestion was successfully added to the statement, False otherwise.
         """
 
+        # Wirft ValueError, wenn es die Aussage nicht (mehr) gibt.
         statement_db_entry = await self.get(statement_id)
 
-        # TODO: Check if the statement exists
+        # Zweimal dieselbe Antwort (etwa ein wiederholter Speicheraufruf) haengt
+        # nicht doppelt an und zaehlt nicht doppelt.
+        if any(
+            vorschlag.id == replysuggestion_id
+            for vorschlag in statement_db_entry.replysuggestions
+        ):
+            logger.info(
+                f"Reply suggestion {replysuggestion_id} already linked to statement {statement_id}"
+            )
+            return True
 
-        # TODO: Check if the reply suggestion is already in the statement
+        # Lesen, aendern, schreiben ohne Sperre: zwei gleichzeitige Verknuepfungen
+        # derselben Aussage koennen sich gegenseitig ueberschreiben.
 
         statement_replysuggestion = StatementReplysuggestion(
             id=replysuggestion_id,
@@ -254,3 +292,47 @@ class StatementService(
         await self.update_statement(statement_db_entry)
 
         return True
+
+    async def beitrag_als_antwort_verknuepfen(
+        self,
+        beitrag_id: uuid.UUID,
+        content_type: ContentType,
+        relevance: float,
+        author: str,
+        statement_id: Optional[uuid.UUID] = None,
+        statement_text: Optional[str] = None,
+    ) -> Optional[uuid.UUID]:
+        """
+        Einen gerade gespeicherten Beitrag als Antwort an seine Aussage haengen.
+
+        Mit statement_id wird direkt verknuepft. Ist nur der Text bekannt, wird
+        die Aussage jetzt gesucht oder angelegt (add_statement erkennt sehr
+        aehnliche Aussagen selbst) - ausdruecklich benannt, also mit der Person
+        als Autorin. Ohne beides passiert nichts.
+
+        Returns:
+        - Die ID der verknuepften Aussage, oder None ohne Aussage.
+
+        Raises:
+        - ValueError, wenn die Aussage zur ID nicht existiert; sonst, was Suche
+          oder Speichern werfen. Der Beitrag selbst ist dann trotzdem gespeichert.
+        """
+        text = (statement_text or "").strip()
+        if statement_id is None and not text:
+            return None
+
+        if statement_id is None:
+            _, statement_id, _ = await self.add_statement(
+                Statement(text=text, replysuggestions=[]),
+                author,
+                ContentStatus.RELEASED_INTERNAL,
+                ContentOrigin.MANUALLY_CREATED,
+            )
+
+        await self.add_statementreplysuggestion_to_statement(
+            statement_id=statement_id,
+            replysuggestion_id=beitrag_id,
+            content_type=content_type,
+            relevance=relevance,
+        )
+        return statement_id

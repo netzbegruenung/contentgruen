@@ -42,3 +42,13 @@ class IStatementRepository(
             Number of statements that carry curated substance
         """
         pass
+
+    @abstractmethod
+    async def search_curated(
+        self, query_text: str, limit: int
+    ) -> List[StatementSearchResult]:
+        """
+        Search statements, leaving out search queries nobody has answered yet
+        (same criterion as count_curated).
+        """
+        pass
