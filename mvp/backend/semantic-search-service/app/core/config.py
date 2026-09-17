@@ -15,6 +15,10 @@ if env_file.exists():
     load_dotenv(env_file)
     logger.debug(f"Loaded environment from {env_file}")
 
+# Das Einbettungsmodell. Die Aehnlichkeitsschwellen in Settings sind dafuer gemessen;
+# das Dockerfile laedt es beim Bauen vor und muss mitgezogen werden.
+EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
+
 
 class Settings(BaseSettings):
 

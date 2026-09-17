@@ -33,7 +33,7 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
 
     @abstractmethod
     async def search(
-        self, query_text: str, limit: int = 10
+        self, query_text: str, limit: int = 10, praefix: str = "query"
     ) -> List[TContentSearchResult]:
         """
         Search for content similar to the provided query text.
@@ -41,9 +41,20 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         Args:
             query_text: The text to search for
             limit: Maximum number of results to return
+            praefix: Einbettung des Suchtexts, "query" oder "passage"
 
         Returns:
             List of search results with similarity scores
+        """
+        pass
+
+    @abstractmethod
+    async def finde_normalisiert_gleich(
+        self, normalform: str
+    ) -> Optional[TContentSearchResult]:
+        """
+        Einen Eintrag mit genau dieser Normalform (utils/text_normalisierung.py),
+        ohne Vektorsuche; None, wenn es keinen gibt.
         """
         pass
 
