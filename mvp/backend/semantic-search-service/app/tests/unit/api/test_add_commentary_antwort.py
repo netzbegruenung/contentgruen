@@ -18,6 +18,8 @@ from dependencies import (
     get_statement_service,
 )
 from domain.models.content_type import ContentType
+from services.content.base_content_service import Dublettenpruefung
+from utils.text_normalisierung import SperreJeText
 
 ADD_URL = "/api/v1/commentary/addCommentary"
 HEADERS = {"X-User": "person-1"}
@@ -46,7 +48,10 @@ def dienste():
     commentary_service.add_commentary = AsyncMock(
         return_value=(True, commentary_id, "text")
     )
-    commentary_service.finde_dublette = AsyncMock(return_value=None)
+    commentary_service.pruefe_dublette = AsyncMock(
+        return_value=Dublettenpruefung(vorhanden=None, aehnlichster=None)
+    )
+    commentary_service.sperre = lambda text: SperreJeText().halten(text)
     statement_service = MagicMock()
     statement_service.beitrag_als_antwort_verknuepfen = AsyncMock()
     reference_service = MagicMock()
@@ -203,14 +208,20 @@ class TestAddCommentaryAntwort:
             "duplikat": False,
         }
 
+    @staticmethod
+    def _dublette(vorhanden):
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+        commentary_service.pruefe_dublette.return_value = Dublettenpruefung(
+            vorhanden=MagicMock(id=vorhanden), aehnlichster=None
+        )
+        return commentary_service
+
     def test_dublette_legt_keine_herkunftsangaben_an(self, dienste):
         """Die Pruefung laeuft vor den Referenzen - sonst blieben sie verwaist."""
-        _, statement_service = dienste
         vorhanden = uuid.uuid4()
-        commentary_service = app.dependency_overrides[get_commentary_service]()
+        commentary_service = self._dublette(vorhanden)
         reference_service = app.dependency_overrides[get_reference_service]()
-        commentary_service.finde_dublette.return_value = MagicMock(id=vorhanden)
-        anfrage = _anfrage(statement_id=str(uuid.uuid4()))
+        anfrage = _anfrage()
         anfrage["references"] = [
             {"reference_string": "https://example.org/studie", "description": "Studie"}
         ]
@@ -218,17 +229,30 @@ class TestAddCommentaryAntwort:
         resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
 
         assert resp.status_code == 200
-        assert resp.json()["id"] == str(vorhanden)
-        assert resp.json()["duplikat"] is True
-        commentary_service.finde_dublette.assert_awaited_once_with(
+        assert resp.json() == {
+            "id": str(vorhanden),
+            "statement_id": None,
+            "statement_text": None,
+            "verknuepft": True,
+            "duplikat": True,
+        }
+        commentary_service.pruefe_dublette.assert_awaited_once_with(
             anfrage["commentary"]["text"]
         )
         reference_service.find_exact_match.assert_not_awaited()
         reference_service.add_reference.assert_not_awaited()
         commentary_service.add_commentary.assert_not_awaited()
+
+    def test_dublette_ohne_aussage_verknuepft_nichts(self, dienste):
+        _, statement_service = dienste
+        self._dublette(uuid.uuid4())
+
+        TestClient(app).post(ADD_URL, json=_anfrage(), headers=HEADERS)
+
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_ohne_dublette_werden_herkunftsangaben_angelegt(self, dienste):
+        commentary_service = app.dependency_overrides[get_commentary_service]()
         reference_service = app.dependency_overrides[get_reference_service]()
         anfrage = _anfrage()
         anfrage["references"] = [
@@ -240,37 +264,12 @@ class TestAddCommentaryAntwort:
         assert resp.status_code == 200
         assert resp.json()["duplikat"] is False
         reference_service.add_reference.assert_awaited_once()
-
-    def test_parallel_gespeicherte_dublette_wird_gemeldet_und_nicht_verknuepft(
-        self, dienste
-    ):
-        commentary_id, statement_service = dienste
-        vorhanden = uuid.uuid4()
-        # Die Vorpruefung fand nichts, add_commentary meldet unter dem Anlegen doch
-        # eine Dublette (derselbe Kommentar wurde gleichzeitig gespeichert).
-        app.dependency_overrides[
-            get_commentary_service
-        ]().add_commentary.return_value = (
-            False,
-            vorhanden,
-            "text",
+        # Das Pruefergebnis geht mit - add_commentary bettet nicht noch einmal ein.
+        pruefung = commentary_service.pruefe_dublette.return_value
+        assert (
+            commentary_service.add_commentary.call_args.kwargs["dublettenpruefung"]
+            is pruefung
         )
-
-        resp = TestClient(app).post(
-            ADD_URL,
-            json=_anfrage(statement_id=str(uuid.uuid4())),
-            headers=HEADERS,
-        )
-
-        assert resp.status_code == 200
-        assert resp.json() == {
-            "id": str(vorhanden),
-            "statement_id": None,
-            "statement_text": None,
-            "verknuepft": True,
-            "duplikat": True,
-        }
-        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_text_ueber_500_zeichen_wird_abgelehnt(self, dienste):
         anfrage = _anfrage()

@@ -24,6 +24,7 @@ from services.orchestration.content_orchestrator import DataProcessor
 from services.wartung.text_normalisiert_nachtrag import nachtragen
 from tests.integration.conftest import requires_qdrant
 from tests.regression.aehnlichkeit_paare import DORF, KATZEN
+from services.content.reference_service import ReferenceService
 from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
@@ -186,24 +187,25 @@ async def test_kommentar_dublette_mit_passage_einbettung(commentary_service):
     )
     assert neu
 
+    async def dublette(text):
+        return (await commentary_service.pruefe_dublette(text)).vorhanden
+
     # A: wortgleich (q/p erreichte nur 0,96 - die alte Pruefung griff nie)
-    assert (await commentary_service.finde_dublette(KATZEN)).id == katzen
+    assert (await dublette(KATZEN)).id == katzen
     # B: nur klein geschrieben
-    assert (await commentary_service.finde_dublette(KATZEN.lower())).id == katzen
+    assert (await dublette(KATZEN.lower())).id == katzen
     # C: Kopie mit Quellenzusatz (p/p 0,997)
-    assert (
-        await commentary_service.finde_dublette(KATZEN + " Quelle: NABU-Studie 2023.")
-    ).id == katzen
+    assert (await dublette(KATZEN + " Quelle: NABU-Studie 2023.")).id == katzen
     # C: eigene Umformulierung (p/p 0,968) und D: anderer Kommentar zur selben Aussage
     assert (
-        await commentary_service.finde_dublette(
+        await dublette(
             "Ich mag Vögel auch. Aber Hauskatzen töten jedes Jahr rund 100 Millionen "
             "Vögel, Windräder weniger als 100.000. Selbst der NABU unterstützt "
             "Windkraft, wenn sie gut geplant ist."
         )
         is None
     )
-    assert await commentary_service.finde_dublette(DORF) is None
+    assert await dublette(DORF) is None
 
 
 async def test_seeding_haengt_antworten_an_die_vorhandene_aussage(statement_service):
@@ -282,3 +284,73 @@ async def test_normalisiert_gleich_ohne_gesperrte_freigegebene_zuerst_dann_aelte
     # Auch add_statement legt dann neu an statt eine gesperrte wiederzuverwenden.
     neu, _, _ = await _aussage(statement_service, "Windräder sind Vogel-Schredder!")
     assert neu is True
+
+
+async def test_parallele_gleiche_kommentare_ueber_den_router(
+    integration_settings, real_repository_factory, statement_service, commentary_service
+):
+    """Zwei gleichzeitige gleiche Kommentare: ein Kommentar, eine Referenz."""
+    import httpx
+    from fastapi import FastAPI
+    from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+    from api.v1.commentary import router
+    from dependencies import (
+        get_commentary_service,
+        get_reference_service,
+        get_statement_service,
+    )
+
+    reference_service = ReferenceService(
+        integration_settings, repository_factory=real_repository_factory
+    )
+    app = FastAPI()
+    app.include_router(router, prefix="/api/v1/commentary")
+    app.dependency_overrides[get_commentary_service] = lambda: commentary_service
+    app.dependency_overrides[get_reference_service] = lambda: reference_service
+    app.dependency_overrides[get_statement_service] = lambda: statement_service
+
+    anfrage = {
+        "commentary": {
+            "title": "Katzen gefaehrden Voegel mehr als Windraeder",
+            "text": KATZEN,
+            "content_type": "commentary",
+            "references": [],
+        },
+        "references": [
+            {
+                "reference_string": "https://www.nabu.de/natur-und-landschaft/katzen",
+                "description": "NABU zu Hauskatzen",
+            }
+        ],
+    }
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        antworten = await asyncio.gather(
+            *(
+                client.post(
+                    "/api/v1/commentary/addCommentary",
+                    json=anfrage,
+                    headers={"X-User": person},
+                )
+                for person in ("person-1", "person-2")
+            )
+        )
+
+    daten = [a.json() for a in antworten]
+    assert all(a.status_code == 200 for a in antworten), daten
+    assert sorted(d["duplikat"] for d in daten) == [False, True]
+    assert daten[0]["id"] == daten[1]["id"]
+
+    manager = commentary_service._repository._shared_manager
+
+    def anzahl(typ):
+        return manager.client.count(
+            manager.collection_name,
+            count_filter=Filter(
+                must=[FieldCondition(key="content_type", match=MatchValue(value=typ))]
+            ),
+        ).count
+
+    assert anzahl("commentary") == 1
+    assert anzahl("reference") == 1

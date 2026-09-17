@@ -4,7 +4,10 @@ import uuid
 import datetime
 
 from core.config import Settings
-from services.content.base_content_service import BaseContentService
+from services.content.base_content_service import (
+    BaseContentService,
+    Dublettenpruefung,
+)
 from repositories.interfaces.commentary_repository import (
     ICommentaryRepository,
 )
@@ -19,6 +22,7 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 
 from core.logging import get_logger
+from utils.text_normalisierung import SperreJeText
 
 logger = get_logger(__name__)
 
@@ -46,6 +50,9 @@ class CommentaryService(
 
             repository_factory = QdrantRepositoryFactory()
 
+        # Eine Sperre je normalisiertem Kommentartext um Pruefen-und-Anlegen.
+        self._text_sperre = SperreJeText()
+
         repository = repository_factory.create_commentary_repository(settings)
         content_repository = repository_factory.create_content_repository(settings)
 
@@ -57,18 +64,25 @@ class CommentaryService(
             CommentarySearchResult,
         )
 
-    async def finde_dublette(self, text: str) -> Optional[CommentarySearchResult]:
+    def sperre(self, text: str):
         """
-        Den vorhandenen Kommentar, von dem dieser Text eine Dublette ist, sonst None.
+        Sperre je normalisiertem Kommentartext, fuer Pruefen und Anlegen als ein
+        Schritt (eigener Namensraum, getrennt von den Aussagen). Liefert als
+        Kontextmanager die Normalform.
+        """
+        return self._text_sperre.halten(text)
+
+    async def pruefe_dublette(self, text: str) -> Dublettenpruefung:
+        """
+        Ist dieser Text eine Dublette eines vorhandenen Kommentars?
 
         Dublette ist: normalisiert gleicher Text oder passage/passage-Aehnlichkeit >=
         commentary_similarity_threshold. passage, weil der Bestand so eingebettet
         ist - mit query erreicht selbst wortgleicher Text nur 0,96.
         """
-        vorhandener, _ = await self._vorhandenen_finden(
+        return await self._vorhandenen_finden(
             text, self.settings.commentary_similarity_threshold, praefix="passage"
         )
-        return vorhandener
 
     async def add_commentary(
         self,
@@ -78,20 +92,23 @@ class CommentaryService(
         origin: ContentOrigin,
         id: Optional[uuid.UUID] = None,
         created_at: Optional[datetime.datetime] = None,
+        dublettenpruefung: Optional[Dublettenpruefung] = None,
     ) -> tuple[bool, uuid.UUID, str]:
         """
         Add a new commentary to the index. If no ID is provided, a new UUID is generated.
 
-        Ist der Text eine Dublette (finde_dublette), wird nichts angelegt.
+        Ist der Text eine Dublette (pruefe_dublette), wird nichts angelegt.
+
+        dublettenpruefung: das Ergebnis einer schon gelaufenen pruefe_dublette fuer
+        genau diesen Text - dann wird nicht noch einmal eingebettet und gesucht. Nur
+        uebergeben, wenn Pruefung und Anlegen unter sperre(text) laufen, sonst kann
+        ein paralleler gleicher Kommentar dazwischenkommen.
 
         Returns:
         - (neu angelegt, ID, Text) - bei einer Dublette ID und Text des vorhandenen.
         """
-        vorhandener, bester = await self._vorhandenen_finden(
-            commentary.text,
-            self.settings.commentary_similarity_threshold,
-            praefix="passage",
-        )
+        pruefung = dublettenpruefung or await self.pruefe_dublette(commentary.text)
+        vorhandener, bester = pruefung.vorhanden, pruefung.aehnlichster
         if vorhandener is not None:
             logger.debug(
                 f"Input commentary is a duplicate of existing commentary with ID {vorhandener.id} "

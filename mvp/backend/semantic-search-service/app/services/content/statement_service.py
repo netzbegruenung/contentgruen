@@ -153,11 +153,12 @@ class StatementService(
             - (neu angelegt, ID, Text) - bei einer vorhandenen Aussage deren ID und Text.
         """
         async with self._text_sperre.halten(statement.text):
-            vorhandene, bester = await self._vorhandenen_finden(
+            pruefung = await self._vorhandenen_finden(
                 statement.text,
                 self.settings.statement_similarity_threshold,
                 praefix="query",
             )
+            vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
             if vorhandene is not None:
                 logger.info(
                     f"Statement already exists with ID {vorhandene.id} "

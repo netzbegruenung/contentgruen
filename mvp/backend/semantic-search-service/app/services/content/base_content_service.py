@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import List, Optional, Tuple, Type, TypeVar, Generic
+from dataclasses import dataclass
+from typing import List, Optional, Type, TypeVar, Generic
 import uuid
 import logging
 
@@ -23,6 +24,20 @@ logger = logging.getLogger(__name__)
 # ohne Payload-Feld (Altbestand vor dem Nachtrag) liegt nicht zwingend auf Platz 1:
 # Grossschreibung senkt den Score auf 0,90, verwandte Aussagen liegen bis 0,97.
 DUBLETTEN_KANDIDATEN = 10
+
+
+@dataclass(frozen=True)
+class Dublettenpruefung:
+    """
+    Ergebnis der Dublettenpruefung.
+
+    - vorhanden: der Eintrag, der als derselbe gilt, sonst None.
+    - aehnlichster: bester Vektortreffer (fuer most_similar_* eines neuen Eintrags).
+    """
+
+    vorhanden: Optional[BaseContentSearchResult]
+    aehnlichster: Optional[BaseContentSearchResult]
+
 
 TRepository = TypeVar("TRepository", bound=IBaseContentRepository)
 TContentDbEntry = TypeVar("TContentDbEntry", bound=BaseContentDbEntry)
@@ -88,38 +103,34 @@ class BaseContentService(
 
     async def _vorhandenen_finden(
         self, text: str, schwelle: float, praefix: str
-    ) -> Tuple[Optional[TContentSearchResult], Optional[TContentSearchResult]]:
+    ) -> Dublettenpruefung:
         """
         Dublettenpruefung: einen Eintrag finden, der als derselbe gilt.
 
         Normalisiert gleicher Text zaehlt immer (erst per Keyword-Index, dann unter
         den Vektortreffern fuer Altbestand ohne Feld), sonst der beste Vektortreffer
-        ab `schwelle`. Der Text geht unveraendert in die Einbettung - anders als
-        search() ersetzt das keine Anfuehrungszeichen, sonst sinkt der Score
-        gleicher Texte.
-
-        Returns:
-        - (vorhandener Eintrag oder None, bester Vektortreffer oder None - fuer
-          most_similar_* des neuen Eintrags)
+        ab `schwelle`. Eintraege mit einem Status aus NICHT_WIEDERVERWENDBAR zaehlen
+        nie. Der Text geht unveraendert in die Einbettung - anders als search()
+        ersetzt das keine Anfuehrungszeichen, sonst sinkt der Score gleicher Texte.
         """
         normalform = text_normalisiert(text)
         if normalform:
             gleich = await self._repository.finde_normalisiert_gleich(normalform)
             if gleich is not None:
-                return gleich, gleich
+                return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
 
         treffer = await self._repository.search(
             text, DUBLETTEN_KANDIDATEN, praefix=praefix
         )
-        bester = treffer[0] if treffer else None
+        aehnlichster = treffer[0] if treffer else None
         for kandidat in treffer:
             if kandidat.status in NICHT_WIEDERVERWENDBAR:
                 continue
             if ist_dasselbe(
                 normalform, text_normalisiert(kandidat.text), kandidat.score, schwelle
             ):
-                return kandidat, bester
-        return None, bester
+                return Dublettenpruefung(vorhanden=kandidat, aehnlichster=aehnlichster)
+        return Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
 
     async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
         """

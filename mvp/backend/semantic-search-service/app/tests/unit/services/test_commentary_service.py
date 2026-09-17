@@ -402,7 +402,9 @@ class TestKommentarDublette:
 
         service._repository.search = AsyncMock(return_value=[])
 
-        assert await service.finde_dublette("Hauskatzen töten mehr Vögel") is None
+        assert (
+            await service.pruefe_dublette("Hauskatzen töten mehr Vögel")
+        ).vorhanden is None
         assert service._repository.search.call_args.kwargs["praefix"] == "passage"
 
     @pytest.mark.asyncio
@@ -414,7 +416,7 @@ class TestKommentarDublette:
         )
         service._repository.search = AsyncMock(return_value=[kopie])
 
-        assert (await service.finde_dublette("Wortlaut")).id == kopie.id
+        assert (await service.pruefe_dublette("Wortlaut")).vorhanden.id == kopie.id
 
     @pytest.mark.asyncio
     async def test_umformulierung_unter_der_schwelle_ist_keine(self, service):
@@ -424,7 +426,44 @@ class TestKommentarDublette:
             return_value=[self._treffer("Anderer Wortlaut", 0.968)]
         )
 
-        assert await service.finde_dublette("Wortlaut") is None
+        assert (await service.pruefe_dublette("Wortlaut")).vorhanden is None
+
+    @pytest.mark.asyncio
+    async def test_gesperrte_vektortreffer_zaehlen_nicht(self, service):
+        from unittest.mock import AsyncMock
+        from domain.models.content_status import ContentStatus
+
+        gesperrt = self._treffer("Wortlaut", 0.999)
+        gesperrt.status = ContentStatus.BLOCKED
+        service._repository.search = AsyncMock(return_value=[gesperrt])
+
+        assert (await service.pruefe_dublette("Wortlaut")).vorhanden is None
+
+    @pytest.mark.asyncio
+    async def test_uebergebene_pruefung_sucht_nicht_noch_einmal(self, service):
+        from unittest.mock import AsyncMock
+        from services.content.base_content_service import Dublettenpruefung
+
+        service._repository.search = AsyncMock(return_value=[])
+        service._repository.finde_normalisiert_gleich = AsyncMock(return_value=None)
+        commentary = Commentary(
+            text="Ein neuer Kommentar",
+            title="Titel",
+            content_type=ContentType.COMMENTARY,
+            references=[],
+        )
+
+        neu, _, _ = await service.add_commentary(
+            commentary,
+            "person-1",
+            _status(),
+            _herkunft(),
+            dublettenpruefung=Dublettenpruefung(vorhanden=None, aehnlichster=None),
+        )
+
+        assert neu is True
+        service._repository.search.assert_not_awaited()
+        service._repository.finde_normalisiert_gleich.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_normalisiert_gleich_wird_nicht_angelegt(self, service):

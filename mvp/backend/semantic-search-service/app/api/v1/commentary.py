@@ -108,84 +108,80 @@ async def add_commentary(
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
 
-        # Dublette zuerst: sonst legten die Herkunftsangaben unten neue Referenzen an,
-        # die dann an keinem Beitrag haengen. add_commentary prueft noch einmal -
-        # das faengt nur den seltenen Fall ab, dass derselbe Kommentar parallel
-        # gespeichert wird.
-        dublette = await commentary_service.finde_dublette(request.commentary.text)
-        if dublette is not None:
-            logger.info(f"Commentary is a duplicate of {dublette.id}")
-            return AddCommentaryResponse(id=dublette.id, duplikat=True)
+        # Pruefen und Anlegen unter einer Sperre je normalisiertem Kommentartext:
+        # Zwei gleichzeitige gleiche Kommentare legen so nur einen an. Die Dublette
+        # wird vor den Herkunftsangaben geprueft - sonst entstuenden Referenzen, die
+        # an keinem Beitrag haengen. add_commentary uebernimmt das Pruefergebnis und
+        # bettet nicht noch einmal ein.
+        async with commentary_service.sperre(request.commentary.text):
+            pruefung = await commentary_service.pruefe_dublette(request.commentary.text)
+            if pruefung.vorhanden is None:
+                # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
+                # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
+                # anders beschrieben sein.
+                new_references = []
+                if request.references is not None and len(request.references) > 0:
+                    # Create or find reference entries with duplicate detection
+                    for ref_input in request.references:
+                        # First check if reference already exists (by exact match)
+                        existing_reference = await reference_service.find_exact_match(
+                            ref_input.reference_string
+                        )
 
-        # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
-        # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
-        # anders beschrieben sein.
-        new_references = []
-        if request.references is not None and len(request.references) > 0:
-            # Create or find reference entries with duplicate detection
-            for ref_input in request.references:
-                # First check if reference already exists (by exact match)
-                existing_reference = await reference_service.find_exact_match(
-                    ref_input.reference_string
+                        if existing_reference:
+                            # Reference exists - reuse it
+                            reference_id = existing_reference.id
+                            logger.info(
+                                f"Reusing existing reference {reference_id}: {ref_input.reference_string}"
+                            )
+                            new_references.append((reference_id, ref_input.description))
+                        else:
+                            # Reference doesn't exist - create new one
+                            reference_item = Reference(
+                                text=ref_input.description
+                                or ref_input.reference_string,  # Use description for semantic indexing, fallback to string
+                                reference_string=ref_input.reference_string,
+                            )
+
+                            # Add new reference
+                            reference_id, was_new, message = (
+                                await reference_service.add_reference(
+                                    reference_item,
+                                    x_user,
+                                    NEW_CONTENT_STATUS,
+                                    ContentOrigin.MANUALLY_CREATED,
+                                )
+                            )
+                            new_references.append((reference_id, ref_input.description))
+                            logger.info(
+                                f"Created new reference {reference_id}: {ref_input.reference_string}"
+                            )
+
+                for reference_id, description in new_references:
+                    commentary_reference = CommentaryReference(
+                        reference_id=reference_id,
+                        created=utc_jetzt(),
+                        description=description,
+                    )
+
+                    if not request.commentary.references:
+                        request.commentary.references = []
+
+                    request.commentary.references.append(commentary_reference)
+
+                _, commentary_id, _ = await commentary_service.add_commentary(
+                    request.commentary,
+                    x_user,
+                    NEW_CONTENT_STATUS,
+                    ContentOrigin.MANUALLY_CREATED,
+                    dublettenpruefung=pruefung,
                 )
 
-                if existing_reference:
-                    # Reference exists - reuse it
-                    reference_id = existing_reference.id
-                    logger.info(
-                        f"Reusing existing reference {reference_id}: {ref_input.reference_string}"
-                    )
-                    new_references.append((reference_id, ref_input.description))
-                else:
-                    # Reference doesn't exist - create new one
-                    reference_item = Reference(
-                        text=ref_input.description
-                        or ref_input.reference_string,  # Use description for semantic indexing, fallback to string
-                        reference_string=ref_input.reference_string,
-                    )
-
-                    # Add new reference
-                    reference_id, was_new, message = (
-                        await reference_service.add_reference(
-                            reference_item,
-                            x_user,
-                            NEW_CONTENT_STATUS,
-                            ContentOrigin.MANUALLY_CREATED,
-                        )
-                    )
-                    new_references.append((reference_id, ref_input.description))
-                    logger.info(
-                        f"Created new reference {reference_id}: {ref_input.reference_string}"
-                    )
-
-        for reference_id, description in new_references:
-            commentary_reference = CommentaryReference(
-                reference_id=reference_id,
-                created=utc_jetzt(),
-                description=description,
-            )
-
-            if not request.commentary.references:
-                request.commentary.references = []
-
-            request.commentary.references.append(commentary_reference)
-
-        # Add commentary to commentary index
-        commentary_was_new, commentary_id, commentary_text = (
-            await commentary_service.add_commentary(
-                request.commentary,
-                x_user,
-                NEW_CONTENT_STATUS,
-                ContentOrigin.MANUALLY_CREATED,
-            )
-        )
-
-        # Schon ein sehr aehnlicher Kommentar da (parallel gespeichert):
-        # add_commentary hat nichts angelegt und liefert dessen ID. Dann auch nichts
-        # verknuepfen - sonst hinge ein fremder Kommentar an der Aussage dieser Person.
-        if not commentary_was_new:
-            logger.info(f"Commentary is a near-duplicate of {commentary_id}")
-            return AddCommentaryResponse(id=commentary_id, duplikat=True)
+        dublette = pruefung.vorhanden
+        if dublette is not None:
+            # Nichts angelegt und nichts verknuepft.
+            logger.info(f"Commentary is a duplicate of {dublette.id}")
+            return AddCommentaryResponse(id=dublette.id, duplikat=True)
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
         # bleibt der Kommentar gespeichert und die Antwort sagt es.
@@ -207,12 +203,12 @@ async def add_commentary(
             except AussageNichtGefunden:
                 # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
                 logger.warning(
-                    f"Commentary {commentary_id} saved, but its statement {request.statement_id} no longer exists"
+                    f"Commentary {commentary_id} stored, but its statement {request.statement_id} no longer exists"
                 )
                 verknuepft = False
             except Exception as e:
                 logger.error(
-                    f"Commentary {commentary_id} saved, but not linked to its statement: {e}",
+                    f"Commentary {commentary_id} stored, but not linked to its statement: {e}",
                     exc_info=True,
                 )
                 verknuepft = False
@@ -222,6 +218,7 @@ async def add_commentary(
             statement_id=statement_id,
             statement_text=statement_text,
             verknuepft=verknuepft,
+            duplikat=dublette is not None,
         )
 
     except HTTPException:
