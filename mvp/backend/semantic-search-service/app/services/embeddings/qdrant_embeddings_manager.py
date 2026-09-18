@@ -26,9 +26,10 @@ from qdrant_client.http.exceptions import UnexpectedResponse, ResponseHandlingEx
 from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
 
-from core.config import Settings
+from core.config import EMBEDDING_MODELL, Settings
 from core.logging import get_logger
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
+from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 
 logger = get_logger(__name__)
 
@@ -99,7 +100,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             logger.info(
                 "📥 Loading multilingual E5 model (this may take a while on first startup)..."
             )
-            self._model = SentenceTransformer("intfloat/multilingual-e5-base")
+            self._model = SentenceTransformer(EMBEDDING_MODELL)
 
             # Create collection if it doesn't exist
             await self._ensure_collection()
@@ -175,9 +176,34 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                     f"✅ Using existing collection {self.collection_name} with {info.points_count} points"
                 )
 
+            await self._text_normalisiert_index_sicherstellen()
+
         except Exception as e:
             logger.error(f"❌ Failed to ensure collection: {e}", exc_info=True)
             raise
+
+    async def _text_normalisiert_index_sicherstellen(self) -> None:
+        """
+        Keyword-Index fuer den exakten Textabgleich der Dublettenpruefung - auch auf
+        einer schon bestehenden Collection. Ohne Index filtert Qdrant trotzdem
+        richtig, nur langsamer; deshalb nur eine Warnung, wenn das Anlegen scheitert.
+        Den Feldinhalt fuer den Altbestand traegt scripts/manual/
+        text_normalisiert_nachtragen.py nach.
+        """
+        try:
+            info = await self._async_client.get_collection(self.collection_name)
+            if FELD_TEXT_NORMALISIERT in (info.payload_schema or {}):
+                return
+            await self._async_client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name=FELD_TEXT_NORMALISIERT,
+                field_schema="keyword",
+            )
+            logger.info(f"✅ Created payload index for {FELD_TEXT_NORMALISIERT}")
+        except Exception as e:
+            logger.warning(
+                f"⚠️ Could not create payload index for {FELD_TEXT_NORMALISIERT}: {e}"
+            )
 
     async def shutdown(self) -> None:
         """Shutdown the Qdrant clients."""
@@ -356,6 +382,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         content_type: Optional[str] = None,
         limit: int = 10,
         filter_dict: Optional[Dict[str, Any]] = None,
+        praefix: Literal["query", "passage"] = "query",
     ) -> List[Dict[str, Any]]:
         """
         Search for similar vectors in Qdrant.
@@ -365,6 +392,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             content_type: Optional content type filter
             limit: Maximum results to return
             filter_dict: Additional filters (can include 'must' key with list of FieldConditions)
+            praefix: Wie der Suchtext eingebettet wird. "query" fuer die Suche;
+                "passage" fuer die Dublettenpruefung gegen passage-Bestand
+                (Kommentare), damit gleicher Text auch gleich eingebettet wird.
 
         Returns:
             List of search results with scores
@@ -374,7 +404,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
         try:
             # Encode query
-            query_vector = self.encode_query(query)
+            query_vector = self.encode_text(
+                query, content_type="statement" if praefix == "query" else "passage"
+            )
 
             # Build filter
             must_conditions = []

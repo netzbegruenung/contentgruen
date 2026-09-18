@@ -146,6 +146,16 @@ class DataProcessor:
             )
             return None
 
+        # Dublette vor den Referenzen pruefen, wie im Router - sonst entstuenden
+        # Referenzen, die an keinem Beitrag haengen.
+        commentary_service = self.orchestrator.commentary_service
+        pruefung = await commentary_service.pruefe_dublette(text)
+        if pruefung.vorhanden is not None:
+            self.orchestrator.mark_content_processed(
+                title, text, "commentary", "skipped"
+            )
+            return pruefung.vorhanden.id
+
         commentary_references = []
 
         for reference_data in commentary_data.get("references", []):
@@ -176,12 +186,14 @@ class DataProcessor:
                     f"Could not parse created_at from metadata: {metadata.get('created_at')}"
                 )
 
-        result = await self.orchestrator.commentary_service.add_commentary(
+        # Seeding laeuft nacheinander; das Pruefergebnis von oben gilt noch.
+        result = await commentary_service.add_commentary(
             commentary,
             self.orchestrator.initial_data_author,
             status=ContentStatus.RELEASED_INTERNAL,
             origin=ContentOrigin.INITIAL_DATA,
             created_at=created_at,
+            dublettenpruefung=pruefung,
         )
 
         # Mark as processed
@@ -316,6 +328,19 @@ class DataProcessor:
             origin=ContentOrigin.INITIAL_DATA,
             created_at=created_at,
         )
+
+        # Gab es die Aussage schon, hat add_statement nichts geschrieben - auch nicht
+        # die Antworten. Die gehoeren dann an die vorhandene Aussage, sonst haengen
+        # die Seed-Beitraege an keiner Aussage.
+        statement_was_new, statement_id, _ = result
+        if not statement_was_new:
+            for vorschlag in statement_replysuggestions:
+                await self.orchestrator.statement_service.add_statementreplysuggestion_to_statement(
+                    statement_id=statement_id,
+                    replysuggestion_id=vorschlag.id,
+                    content_type=vorschlag.content_type,
+                    relevance=vorschlag.relevance,
+                )
 
         # Initialize usage tracking with metadata if provided
         if self.usage_repository and metadata and result and len(result) > 1:

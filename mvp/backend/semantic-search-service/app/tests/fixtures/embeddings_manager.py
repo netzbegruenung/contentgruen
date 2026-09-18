@@ -47,25 +47,26 @@ class TestEmbeddingsManager(IEmbeddingsManager):
             offset = kwargs.get("offset")
             with_payload = kwargs.get("with_payload", True)
 
-            # Filter data based on content_type if filter is provided
+            # Filter: content_type (ohne Gross/klein) und text_normalisiert als
+            # must-Bedingungen; andere Bedingungen ignoriert der Mock.
+            ausgewertet = {"content_type", "text_normalisiert"}
+
             filtered_data = []
             for item_id, item_data in self._data.items():
-                # Check if we should include this item
                 include = True
-                if scroll_filter and hasattr(scroll_filter, "must"):
-                    for condition in scroll_filter.must:
-                        if (
-                            hasattr(condition, "key")
-                            and condition.key == "content_type"
-                        ):
-                            if hasattr(condition.match, "value"):
-                                ct = condition.match.value
-                                if (
-                                    item_data.get("content_type", "").lower()
-                                    != ct.lower()
-                                ):
-                                    include = False
-                                    break
+                for condition in getattr(scroll_filter, "must", None) or []:
+                    key = getattr(condition, "key", None)
+                    wert = getattr(getattr(condition, "match", None), "value", None)
+                    if key not in ausgewertet or wert is None:
+                        continue
+                    vorhanden = item_data.get(key)
+                    if key == "content_type":
+                        gleich = str(vorhanden or "").lower() == str(wert).lower()
+                    else:
+                        gleich = vorhanden == wert
+                    if not gleich:
+                        include = False
+                        break
 
                 if include:
                     # Create a point-like object
@@ -314,6 +315,7 @@ class TestEmbeddingsManager(IEmbeddingsManager):
         content_type: Optional[str] = None,
         limit: int = 10,
         filter_dict: Optional[Dict[str, Any]] = None,
+        praefix: str = "query",
     ) -> List[Dict[str, Any]]:
         """
         Async search method for Qdrant compatibility with Range filter support.

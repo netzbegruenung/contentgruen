@@ -77,6 +77,30 @@ der Filter dafuer ist absichtlich unveraendert geblieben.
 """
 
 
+NICHT_WIEDERVERWENDBAR = frozenset(
+    {
+        ContentStatus.BLOCKED,
+        ContentStatus.REJECTED,
+        ContentStatus.ARCHIVED,
+        ContentStatus.DUPLICATE,
+    }
+)
+"""
+Status, die die Dublettenpruefung nicht als "schon vorhanden" wiederverwendet -
+zusaetzlich zu denen, die die Suche ohnehin ausblendet. Sonst hinge ein neuer
+Beitrag still an einer gesperrten oder archivierten Aussage.
+"""
+
+FREIGEGEBEN = frozenset(
+    {
+        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.PUBLISHED_EXTERNAL,
+        ContentStatus.APPROVED,
+    }
+)
+"""Gibt es mehrere normalisiert gleiche Eintraege, gewinnen diese vor den uebrigen."""
+
+
 def is_valid_transition(
     current_status: ContentStatus, new_status: ContentStatus
 ) -> bool:

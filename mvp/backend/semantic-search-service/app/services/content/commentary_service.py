@@ -4,7 +4,10 @@ import uuid
 import datetime
 
 from core.config import Settings
-from services.content.base_content_service import BaseContentService
+from services.content.base_content_service import (
+    BaseContentService,
+    Dublettenpruefung,
+)
 from repositories.interfaces.commentary_repository import (
     ICommentaryRepository,
 )
@@ -19,6 +22,7 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 
 from core.logging import get_logger
+from utils.text_normalisierung import SperreJeText
 
 logger = get_logger(__name__)
 
@@ -46,6 +50,9 @@ class CommentaryService(
 
             repository_factory = QdrantRepositoryFactory()
 
+        # Eine Sperre je normalisiertem Kommentartext um Pruefen-und-Anlegen.
+        self._text_sperre = SperreJeText()
+
         repository = repository_factory.create_commentary_repository(settings)
         content_repository = repository_factory.create_content_repository(settings)
 
@@ -57,40 +64,25 @@ class CommentaryService(
             CommentarySearchResult,
         )
 
-    async def _check_commentary_similarity(
-        self, commentary_text: str
-    ) -> tuple[Optional[float], Optional[uuid.UUID]]:
+    def sperre(self, text: str):
         """
-        Check if a commentary is too similar to existing commentaries.
-
-        Returns:
-            - Tuple of (similarity_score, content_id) for most similar commentary, or (None, None)
+        Sperre je normalisiertem Kommentartext, fuer Pruefen und Anlegen als ein
+        Schritt (eigener Namensraum, getrennt von den Aussagen). Liefert als
+        Kontextmanager die Normalform.
         """
-        logger.debug("Checking for similar existing commentaries")
+        return self._text_sperre.halten(text)
 
-        similar_commentaries = await self.search(commentary_text, limit=1)
-        if similar_commentaries and similar_commentaries[0].score:
-            return similar_commentaries[0].score, similar_commentaries[0].id
-        return None, None
-
-    async def _is_commentary_too_similar(
-        self, commentary_text: str
-    ) -> tuple[bool, Optional[CommentarySearchResult]]:
+    async def pruefe_dublette(self, text: str) -> Dublettenpruefung:
         """
-        Determine if a commentary is too similar to existing ones based on configured threshold.
+        Ist dieser Text eine Dublette eines vorhandenen Kommentars?
 
-        Returns:
-            - Tuple of (is_too_similar, existing_commentary_if_duplicate)
+        Dublette ist: normalisiert gleicher Text oder passage/passage-Aehnlichkeit >=
+        commentary_similarity_threshold. passage, weil der Bestand so eingebettet
+        ist - mit query erreicht selbst wortgleicher Text nur 0,96.
         """
-        similar_commentaries = await self.search(commentary_text, limit=1)
-
-        if similar_commentaries and similar_commentaries[0].score:
-            is_duplicate = (
-                similar_commentaries[0].score
-                > self.settings.commentary_similarity_threshold
-            )
-            return is_duplicate, similar_commentaries[0] if is_duplicate else None
-        return False, None
+        return await self._vorhandenen_finden(
+            text, self.settings.commentary_similarity_threshold, praefix="passage"
+        )
 
     async def add_commentary(
         self,
@@ -100,31 +92,31 @@ class CommentaryService(
         origin: ContentOrigin,
         id: Optional[uuid.UUID] = None,
         created_at: Optional[datetime.datetime] = None,
+        dublettenpruefung: Optional[Dublettenpruefung] = None,
     ) -> tuple[bool, uuid.UUID, str]:
         """
         Add a new commentary to the index. If no ID is provided, a new UUID is generated.
 
-        Args:
-        - commentary: The Commentary object to be added.
-        - id: Optional UUID for the commentary. If None, a new UUID is generated.
+        Ist der Text eine Dublette (pruefe_dublette), wird nichts angelegt.
+
+        dublettenpruefung: das Ergebnis einer schon gelaufenen pruefe_dublette fuer
+        genau diesen Text - dann wird nicht noch einmal eingebettet und gesucht. Nur
+        uebergeben, wenn Pruefung und Anlegen unter sperre(text) laufen, sonst kann
+        ein paralleler gleicher Kommentar dazwischenkommen.
 
         Returns:
-        - The UUID of the added commentary.
+        - (neu angelegt, ID, Text) - bei einer Dublette ID und Text des vorhandenen.
         """
-        # Check for similarity using extracted business logic
-        most_similar_similarity_score, most_similar_content_id = (
-            await self._check_commentary_similarity(commentary.text)
-        )
-        is_too_similar, existing_commentary = await self._is_commentary_too_similar(
-            commentary.text
-        )
-
-        if is_too_similar and existing_commentary:
+        pruefung = dublettenpruefung or await self.pruefe_dublette(commentary.text)
+        vorhandener, bester = pruefung.vorhanden, pruefung.aehnlichster
+        if vorhandener is not None:
             logger.debug(
-                f"Input commentary is too similar to existing commentary with ID {existing_commentary.id}. "
-                f"Similarity score: {existing_commentary.score:.3f} > threshold: {self.settings.commentary_similarity_threshold}"
+                f"Input commentary is a duplicate of existing commentary with ID {vorhandener.id} "
+                f"(score {vorhandener.score:.3f}, threshold {self.settings.commentary_similarity_threshold})"
             )
-            return False, existing_commentary.id, existing_commentary.text
+            return False, vorhandener.id, vorhandener.text
+        most_similar_similarity_score = bester.score if bester else None
+        most_similar_content_id = bester.id if bester else None
 
         # Create CommentaryInput object from Commentary object
         now = created_at or utc_jetzt()

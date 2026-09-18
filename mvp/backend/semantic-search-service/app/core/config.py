@@ -15,6 +15,10 @@ if env_file.exists():
     load_dotenv(env_file)
     logger.debug(f"Loaded environment from {env_file}")
 
+# Das Einbettungsmodell. Die Aehnlichkeitsschwellen in Settings sind dafuer gemessen;
+# das Dockerfile laedt es beim Bauen vor und muss mitgezogen werden.
+EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
+
 
 class Settings(BaseSettings):
 
@@ -91,8 +95,23 @@ class Settings(BaseSettings):
         )
 
     # Business logic configuration
-    statement_similarity_threshold: float = 0.9
-    commentary_similarity_threshold: float = 0.97
+
+    # Dublettenpruefung. Die Schwellen gelten nur fuer EMBEDDING_MODELL - bei einem
+    # Modellwechsel neu messen (tests/regression/test_aehnlichkeit_messset.py).
+    # Normalisiert gleicher Text zaehlt immer als dasselbe, unabhaengig vom Score
+    # (utils/text_normalisierung.py).
+    #
+    # Aussage still wiederverwenden: query/query-Einbettung, >= Schwelle.
+    # Modell: intfloat/multilingual-e5-base. Gemessen an 77 Paaren (hoechster
+    # D-Wert 0,969), in Stufe 2 mit echten Formularentscheidungen ueberpruefen.
+    # Inhaltlich aehnliche Aussagen werden nicht still uebernommen, sondern im
+    # Formular vorgeschlagen (0,885, Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
+    statement_similarity_threshold: float = 0.98
+    # Kommentar-Dublette: passage/passage-Einbettung, >= Schwelle.
+    # Modell: intfloat/multilingual-e5-base. Umformulierungen hoechstens 0,968,
+    # trivial abweichende Kopien ab 0,984, andere Kommentare zur selben Aussage
+    # hoechstens 0,903.
+    commentary_similarity_threshold: float = 0.975
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
     statement_search_limit: int = 5

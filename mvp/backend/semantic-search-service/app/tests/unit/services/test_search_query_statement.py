@@ -1,17 +1,12 @@
 """
-Aussage aus der Suchanfrage: Rate-Limit je Aufrufer und Sperre je Text.
+Aussage aus der Suchanfrage: Rate-Limit je Aufrufer.
 
-Die Suche ist offen erreichbar und schreibt dabei dauerhaft. Zwei Eigenschaften
-werden hier festgenagelt:
-
-- Ist das Limit erreicht, entfaellt nur das Anlegen. Die Suche selbst laeuft
-  weiter (siehe TestSuchpfad unten).
-- Gleichzeitige Suchen nach demselben Text laufen nacheinander durch
-  add_statement - sonst bestehen beide die Aehnlichkeitspruefung und legen zwei
-  Aussagen an.
+Die Suche ist offen erreichbar und schreibt dabei dauerhaft. Ist das Limit
+erreicht, entfaellt nur das Anlegen; die Suche selbst laeuft weiter (siehe
+TestSuchpfad unten). Die Sperre je Text sitzt in add_statement
+(test_statement_service.py, TestAddStatementDubletten).
 """
 
-import asyncio
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -81,65 +76,6 @@ class TestRecorder:
 
         assert statement_id is not None
         assert service.add_statement.await_count == 2
-
-    async def test_gleicher_text_laeuft_nacheinander(self):
-        """Die zweite Suche prueft erst, wenn die erste geschrieben hat."""
-        laufend = 0
-        hoechstens = 0
-
-        async def add_statement(*_args):
-            nonlocal laufend, hoechstens
-            laufend += 1
-            hoechstens = max(hoechstens, laufend)
-            await asyncio.sleep(0.01)
-            laufend -= 1
-            return True, uuid.uuid4(), "klima"
-
-        service = MagicMock()
-        service.add_statement = add_statement
-        recorder = _recorder()
-
-        await asyncio.gather(
-            recorder.anlegen(service, "Klima schützen", "ip:a"),
-            recorder.anlegen(service, "  klima   SCHÜTZEN ", "ip:b"),
-        )
-
-        assert hoechstens == 1
-
-    async def test_verschiedene_texte_blockieren_sich_nicht(self):
-        laufend = 0
-        hoechstens = 0
-
-        async def add_statement(*_args):
-            nonlocal laufend, hoechstens
-            laufend += 1
-            hoechstens = max(hoechstens, laufend)
-            await asyncio.sleep(0.01)
-            laufend -= 1
-            return True, uuid.uuid4(), "x"
-
-        service = MagicMock()
-        service.add_statement = add_statement
-        recorder = _recorder()
-
-        await asyncio.gather(
-            recorder.anlegen(service, "Klima", "ip:a"),
-            recorder.anlegen(service, "Verkehr", "ip:a"),
-        )
-
-        assert hoechstens == 2
-
-    async def test_sperren_werden_wieder_freigegeben(self):
-        """Auch nach einem Fehler bleibt keine Sperre im Speicher zurueck."""
-        service = MagicMock()
-        service.add_statement = AsyncMock(side_effect=RuntimeError("qdrant weg"))
-        recorder = _recorder()
-
-        with pytest.raises(RuntimeError):
-            await recorder.anlegen(service, "klima", "ip:a")
-
-        assert recorder._sperren == {}
-        assert recorder._belegt == {}
 
 
 SEARCH_URL = "/api/v1/search/searchByText"

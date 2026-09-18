@@ -19,11 +19,24 @@ from domain.models.base_content import (
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import (
+    FREIGEGEBEN,
+    NICHT_WIEDERVERWENDBAR,
+    ContentStatus,
+)
 from domain.models.content_origin import ContentOrigin
 from utils.data_utils import DataSource
+from utils.text_normalisierung import (
+    FELD_TEXT_NORMALISIERT,
+    TYPEN_MIT_TEXT_NORMALISIERT,
+    text_normalisiert,
+)
 
 logger = logging.getLogger(__name__)
+
+# Wie viele normalisiert gleiche Eintraege finde_normalisiert_gleich zum Sortieren
+# holt. Normalerweise einer; mehrere nur aus der Zeit vor der Dublettenpruefung.
+NORMALISIERT_GLEICH_HOECHSTENS = 50
 
 TContentDbEntry = TypeVar("TContentDbEntry", bound=BaseContentDbEntry)
 TContentSearchResult = TypeVar("TContentSearchResult", bound=BaseContentSearchResult)
@@ -125,11 +138,16 @@ class QdrantBaseRepository(
             )
         ]
 
-    async def search(self, query_text: str, limit: int) -> List[TContentSearchResult]:
-        """Async implementation of search."""
-        try:
-            from qdrant_client.models import FieldCondition, MatchValue
+    async def search(
+        self, query_text: str, limit: int, praefix: str = "query"
+    ) -> List[TContentSearchResult]:
+        """
+        Async implementation of search.
 
+        praefix: "query" fuer die Suche; "passage" fuer die Dublettenpruefung gegen
+        passage-Bestand (siehe QdrantEmbeddingsManager.search).
+        """
+        try:
             filter_dict = {"must_not": self._status_ausschluss()}
 
             # Perform search with optional content_type filter
@@ -138,6 +156,7 @@ class QdrantBaseRepository(
                 content_type=self.content_type,
                 limit=limit,
                 filter_dict=filter_dict,
+                praefix=praefix,
             )
 
             content_desc = (
@@ -157,6 +176,65 @@ class QdrantBaseRepository(
         except Exception as e:
             logger.error(f"Search failed: {e}", exc_info=True)
             raise
+
+    async def finde_normalisiert_gleich(
+        self, normalform: str
+    ) -> Optional[TContentSearchResult]:
+        """
+        Einen Eintrag dieses Typs mit genau dieser Normalform (Payload-Feld
+        text_normalisiert, Keyword-Index) - ohne Vektorsuche, also unabhaengig davon,
+        wie weit der Score eines normalisiert gleichen Textes abfaellt. Eintraege ohne
+        das Feld (Altbestand vor dem Nachtrag) findet das nicht.
+
+        Ausgeschlossen sind die Status aus search() und NICHT_WIEDERVERWENDBAR
+        (gesperrt, abgelehnt, archiviert, Dublette). Gibt es mehrere, entscheidet die
+        Reihenfolge deterministisch: freigegebene zuerst, dann der aelteste (created),
+        dann die ID.
+        """
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        must = [
+            FieldCondition(
+                key=FELD_TEXT_NORMALISIERT, match=MatchValue(value=normalform)
+            )
+        ]
+        if self.content_type:
+            must.append(
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                )
+            )
+        must_not = [
+            *self._status_ausschluss(),
+            *(
+                FieldCondition(key="status", match=MatchValue(value=status.value))
+                for status in sorted(NICHT_WIEDERVERWENDBAR, key=lambda s: s.value)
+            ),
+        ]
+        punkte, _ = await self._shared_manager.async_client.scroll(
+            collection_name=self._shared_manager.collection_name,
+            scroll_filter=Filter(must=must, must_not=must_not),
+            limit=NORMALISIERT_GLEICH_HOECHSTENS,
+            with_payload=True,
+            with_vectors=False,
+        )
+        if not punkte:
+            return None
+
+        freigegeben = {status.value for status in FREIGEGEBEN}
+
+        def rang(punkt):
+            payload = punkt.payload or {}
+            return (
+                0 if payload.get("status") in freigegeben else 1,
+                str(payload.get("created") or ""),
+                str(punkt.id),
+            )
+
+        erster = min(punkte, key=rang)
+        return self.content_search_result_model_class.model_validate(
+            {**erster.payload, "id": str(erster.id), "score": 1.0}
+        )
 
     async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
         """
@@ -238,6 +316,10 @@ class QdrantBaseRepository(
             # so get_by_status/update_status can operate on it; status filter in search()
             # prevents it from surfacing in results until a real caption is stored.
             text = data_dict.get("text") or ""
+
+            # Normalform fuer den exakten Abgleich der Dublettenpruefung.
+            if upsert_content_type in TYPEN_MIT_TEXT_NORMALISIERT:
+                data_dict[FELD_TEXT_NORMALISIERT] = text_normalisiert(text)
 
             # Upsert to Qdrant
             await self._shared_manager.upsert_batch(

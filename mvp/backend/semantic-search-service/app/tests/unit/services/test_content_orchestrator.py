@@ -23,6 +23,7 @@ from domain.models.reference import Reference
 from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 from utils.data_utils import DataSource
+from services.content.base_content_service import Dublettenpruefung
 from tests.conftest import (
     create_base_content_fields,
     create_statement_data,
@@ -227,6 +228,9 @@ class TestDataProcessor:
             ]
         )
         commentary_id = uuid.uuid4()
+        mock_orchestrator.commentary_service.pruefe_dublette = AsyncMock(
+            return_value=Dublettenpruefung(vorhanden=None, aehnlichster=None)
+        )
         mock_orchestrator.commentary_service.add_commentary = AsyncMock(
             return_value=(
                 True,
@@ -632,3 +636,90 @@ class TestContentOrchestratorIntegration:
         assert statement_data is not None
         assert statement_data["text"] == "Important climate statement"
         assert len(statement_data.get("replysuggestions", [])) == 3
+
+
+@pytest.mark.unit
+class TestSeedingAussageWiederverwendet:
+    """Gab es die Seed-Aussage schon, haengen ihre Antworten an der vorhandenen."""
+
+    @pytest.fixture
+    def orchestrator(self, test_settings):
+        orchestrator = MagicMock()
+        orchestrator.initial_data_author = test_settings.initial_data_author
+        orchestrator.statement_service.add_statementreplysuggestion_to_statement = (
+            AsyncMock(return_value=True)
+        )
+        return orchestrator
+
+    @pytest.mark.asyncio
+    async def test_antworten_an_vorhandene_aussage(self, orchestrator):
+        vorhandene = uuid.uuid4()
+        orchestrator.statement_service.add_statement = AsyncMock(
+            return_value=(False, vorhandene, "Die Grünen sind eine Verbotspartei!")
+        )
+        antworten = [uuid.uuid4(), uuid.uuid4()]
+
+        await DataProcessor(orchestrator).create_statement_with_replies(
+            "Die Grünen sind eine Verbotspartei", antworten, ContentType.COMMENTARY
+        )
+
+        anhaengen = (
+            orchestrator.statement_service.add_statementreplysuggestion_to_statement
+        )
+        assert anhaengen.await_count == 2
+        assert [
+            c.kwargs["replysuggestion_id"] for c in anhaengen.await_args_list
+        ] == antworten
+        assert all(
+            c.kwargs["statement_id"] == vorhandene for c in anhaengen.await_args_list
+        )
+        assert all(
+            c.kwargs["content_type"] == ContentType.COMMENTARY
+            for c in anhaengen.await_args_list
+        )
+
+    @pytest.mark.asyncio
+    async def test_neue_aussage_bringt_antworten_selbst_mit(self, orchestrator):
+        orchestrator.statement_service.add_statement = AsyncMock(
+            return_value=(True, uuid.uuid4(), "Neu")
+        )
+
+        await DataProcessor(orchestrator).create_statement_with_replies(
+            "Neu", [uuid.uuid4()], ContentType.COMMENTARY
+        )
+
+        orchestrator.statement_service.add_statementreplysuggestion_to_statement.assert_not_awaited()
+
+
+@pytest.mark.unit
+class TestSeedingKommentarDublette:
+    """Seed-Kommentar, den es schon gibt: keine Referenzen, vorhandene ID zurueck."""
+
+    @pytest.mark.asyncio
+    async def test_dublette_legt_keine_referenzen_an(self, test_settings):
+        orchestrator = MagicMock()
+        orchestrator.initial_data_author = test_settings.initial_data_author
+        orchestrator.is_content_processed.return_value = False
+        vorhanden = uuid.uuid4()
+        orchestrator.commentary_service.pruefe_dublette = AsyncMock(
+            return_value=Dublettenpruefung(
+                vorhanden=MagicMock(id=vorhanden), aehnlichster=None
+            )
+        )
+        orchestrator.commentary_service.add_commentary = AsyncMock()
+        orchestrator.reference_service.add_reference = AsyncMock()
+        orchestrator.reference_service.find_exact_match = AsyncMock(return_value=None)
+        verarbeitung = DataProcessor(orchestrator)
+        verarbeitung.process_reference = AsyncMock()
+
+        ergebnis = await verarbeitung.create_commentary_with_references(
+            {
+                "title": "Titel",
+                "text": "Den gibt es schon",
+                "references": [{"text": "Quelle", "reference_string": "https://x.org"}],
+            }
+        )
+
+        assert ergebnis == vorhanden
+        verarbeitung.process_reference.assert_not_awaited()
+        orchestrator.commentary_service.add_commentary.assert_not_awaited()

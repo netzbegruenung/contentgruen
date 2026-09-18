@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import List, Type, TypeVar, Generic
+from dataclasses import dataclass
+from typing import List, Optional, Type, TypeVar, Generic
 import uuid
 import logging
 
@@ -13,10 +14,30 @@ from domain.models.base_content import (
     BaseContentDbEntry,
     BaseContentSearchResult,
 )
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NICHT_WIEDERVERWENDBAR, ContentStatus
 from utils.data_utils import DataSource
+from utils.text_normalisierung import ist_dasselbe, text_normalisiert
 
 logger = logging.getLogger(__name__)
+
+# Wie viele Vektortreffer die Dublettenpruefung ansieht. Normalisiert gleicher Text
+# ohne Payload-Feld (Altbestand vor dem Nachtrag) liegt nicht zwingend auf Platz 1:
+# Grossschreibung senkt den Score auf 0,90, verwandte Aussagen liegen bis 0,97.
+DUBLETTEN_KANDIDATEN = 10
+
+
+@dataclass(frozen=True)
+class Dublettenpruefung:
+    """
+    Ergebnis der Dublettenpruefung.
+
+    - vorhanden: der Eintrag, der als derselbe gilt, sonst None.
+    - aehnlichster: bester Vektortreffer (fuer most_similar_* eines neuen Eintrags).
+    """
+
+    vorhanden: Optional[BaseContentSearchResult]
+    aehnlichster: Optional[BaseContentSearchResult]
+
 
 TRepository = TypeVar("TRepository", bound=IBaseContentRepository)
 TContentDbEntry = TypeVar("TContentDbEntry", bound=BaseContentDbEntry)
@@ -79,6 +100,37 @@ class BaseContentService(
             f"BaseContentService ({self._repository_class.__name__}): searching"
         )
         return await self._repository.search(sanitized_query_text, limit)
+
+    async def _vorhandenen_finden(
+        self, text: str, schwelle: float, praefix: str
+    ) -> Dublettenpruefung:
+        """
+        Dublettenpruefung: einen Eintrag finden, der als derselbe gilt.
+
+        Normalisiert gleicher Text zaehlt immer (erst per Keyword-Index, dann unter
+        den Vektortreffern fuer Altbestand ohne Feld), sonst der beste Vektortreffer
+        ab `schwelle`. Eintraege mit einem Status aus NICHT_WIEDERVERWENDBAR zaehlen
+        nie. Der Text geht unveraendert in die Einbettung - anders als search()
+        ersetzt das keine Anfuehrungszeichen, sonst sinkt der Score gleicher Texte.
+        """
+        normalform = text_normalisiert(text)
+        if normalform:
+            gleich = await self._repository.finde_normalisiert_gleich(normalform)
+            if gleich is not None:
+                return Dublettenpruefung(vorhanden=gleich, aehnlichster=gleich)
+
+        treffer = await self._repository.search(
+            text, DUBLETTEN_KANDIDATEN, praefix=praefix
+        )
+        aehnlichster = treffer[0] if treffer else None
+        for kandidat in treffer:
+            if kandidat.status in NICHT_WIEDERVERWENDBAR:
+                continue
+            if ist_dasselbe(
+                normalform, text_normalisiert(kandidat.text), kandidat.score, schwelle
+            ):
+                return Dublettenpruefung(vorhanden=kandidat, aehnlichster=aehnlichster)
+        return Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
 
     async def get(self, item_id: uuid.UUID) -> TContentDbEntry:
         """
