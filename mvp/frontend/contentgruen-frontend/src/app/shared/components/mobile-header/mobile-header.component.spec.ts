@@ -187,8 +187,12 @@ describe('MobileHeaderComponent – Pfeil an der echten Routentabelle', () => {
     expect(pfeilVon('/workflow/add-commentary?rohinput=e-9')).toBe('/destillieren/e-9');
   }));
 
-  it('fuehrt aus dem Einwerfen in den Fangkorb und aus der Destille ebenso', fakeAsync(() => {
-    expect(pfeilVon('/einwerfen')).toBe('/fangkorb');
+  it('fuehrt aus dem Einwerfen auf die Beitragen-Seite, aus dem Fangkorb heraus zurueck', fakeAsync(() => {
+    expect(pfeilVon('/einwerfen')).toBe('/contribute');
+    expect(pfeilVon('/einwerfen?von=fangkorb')).toBe('/fangkorb');
+  }));
+
+  it('fuehrt aus der Destille in den Fangkorb', fakeAsync(() => {
     expect(pfeilVon('/destillieren/e-1')).toBe('/fangkorb');
   }));
 

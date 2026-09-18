@@ -204,7 +204,9 @@ describe('RawInputListComponent', () => {
 
       klicken(fab);
 
-      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
+      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen'], {
+        queryParams: { von: 'fangkorb' },
+      });
     });
 
     it('zeigt "nur meine" und die Plattformen, "nur offene" nicht mehr', () => {

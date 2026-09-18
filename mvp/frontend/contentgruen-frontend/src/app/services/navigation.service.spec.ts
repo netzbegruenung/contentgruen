@@ -136,7 +136,9 @@ describe('NavigationService.goBack', () => {
     ['/admin', '/search'],
     ['/admin/dashboard', '/search'],
     ['/admin/moderation', '/search'],
-    ['/einwerfen', '/fangkorb'],
+    // Aus dem Fangkorb-FAB kommt ?von=fangkorb dazu; siehe app.routes.spec.ts.
+    ['/einwerfen', '/contribute'],
+    ['/einwerfen?von=fangkorb', '/fangkorb'],
     ['/destillieren', '/fangkorb'],
     ['/destillieren/e-1', '/fangkorb'],
     ['/login/managed', '/login'],
@@ -172,9 +174,8 @@ describe('NavigationService.goBack', () => {
     service.goBack();
     tick();
 
-    // History waere /fangkorb gewesen - das ist hier zufaellig dasselbe.
-    // Entscheidend: aus /einwerfen fuehrt der Pfeil immer in den Fangkorb.
-    expect(router.url).toBe('/fangkorb');
+    // History waere /fangkorb gewesen; der Pfeil nimmt trotzdem das Elternziel.
+    expect(router.url).toBe('/contribute');
 
     router.navigateByUrl('/contributions');
     tick();
@@ -183,6 +184,6 @@ describe('NavigationService.goBack', () => {
     service.goBack();
     tick();
 
-    expect(router.url).toBe('/fangkorb');
+    expect(router.url).toBe('/contribute');
   }));
 });
