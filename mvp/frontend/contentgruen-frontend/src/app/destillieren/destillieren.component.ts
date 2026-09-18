@@ -133,15 +133,26 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Der Einwurf als Kopfband ueber dem Satz-Feld - dasselbe Band wie in der Typwahl und
+   * spaeter ueber dem Formular, nur ohne Satz: Der entsteht ja gerade darunter.
+   */
+  get einwurfBand(): KartenDaten | null {
+    return this.kopfband('');
+  }
+
+  /**
    * Der Einwurf als Kopfband fuer die Typwahl, mit dem gerade formulierten Satz.
    * Zwischengespeichert, solange Einwurf und Satz gleich bleiben.
    */
   get einwurfKopf(): KartenDaten | null {
+    return this.kopfband(this.satz.value.trim());
+  }
+
+  private kopfband(satz: string): KartenDaten | null {
     const einwurf = this.einwurf;
     if (!einwurf) {
       return null;
     }
-    const satz = this.satz.value.trim();
     if (this.kopfCache?.einwurf !== einwurf || this.kopfCache.satz !== satz) {
       const karte = ausEinwurf(einwurf);
       this.kopfCache = {
