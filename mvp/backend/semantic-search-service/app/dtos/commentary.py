@@ -64,8 +64,9 @@ class AddCommentaryResponse(BaseModel):
     # konnte. Der Kommentar ist dann trotzdem gespeichert.
     verknuepft: bool = True
     # True: Es gibt schon einen sehr aehnlichen Kommentar; id ist dessen ID und nichts
-    # wurde angelegt. War eine Aussage angegeben, ist der vorhandene Kommentar jetzt
-    # mit ihr verknuepft (statement_id/statement_text, verknuepft wie oben).
+    # wurde angelegt. Stammt er von derselben Person und war eine Aussage angegeben,
+    # ist er jetzt auch mit ihr verknuepft (statement_id/statement_text, verknuepft wie
+    # oben); ist er von jemand anderem, bleiben die Aussagefelder leer.
     duplikat: bool = False
 
 

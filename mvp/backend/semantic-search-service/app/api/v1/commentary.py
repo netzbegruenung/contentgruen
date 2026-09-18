@@ -177,20 +177,31 @@ async def add_commentary(
                     dublettenpruefung=pruefung,
                 )
 
+        # Nichts angelegt? Dann ist die Antwort der vorhandene Kommentar. Verknuepft
+        # wird nur, wenn er von derselben Person stammt: Sonst haenge man den Beitrag
+        # einer anderen Person an eine selbst gewaehlte Aussage - und diese Aussage
+        # entstuende womoeglich erst dadurch. Wer fremden Inhalt einer Aussage
+        # zuordnen will, tut das ueber die Aussage, nicht ueber ein Beitragsformular.
         dublette = pruefung.vorhanden
+        eigene_dublette = dublette is not None and dublette.original_author == x_user
         if dublette is not None:
-            # Nichts angelegt. Wurde eine Aussage mitgeschickt, haengt der vorhandene
-            # Kommentar jetzt (auch) an ihr - die Verknuepfung erkennt, wenn er dort
-            # schon haengt.
             commentary_id = dublette.id
-            logger.info(f"Commentary is a duplicate of {commentary_id}")
+            logger.info(
+                f"Commentary is a duplicate of {commentary_id} "
+                f"({'same author' if eigene_dublette else 'other author, not linked'})"
+            )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
-        # bleibt der Kommentar gespeichert und die Antwort sagt es.
+        # bleibt der Kommentar gespeichert und die Antwort sagt es. Bei einer eigenen
+        # Dublette haengt der vorhandene Kommentar danach (auch) an dieser Aussage -
+        # die Verknuepfung erkennt, wenn er dort schon haengt.
         statement_id = None
         statement_text = None
         verknuepft = True
-        if request.statement_id or (request.statement_text or "").strip():
+        aussage_mitgeschickt = bool(
+            request.statement_id or (request.statement_text or "").strip()
+        )
+        if aussage_mitgeschickt and (dublette is None or eigene_dublette):
             try:
                 statement_id, statement_text = (
                     await statement_service.beitrag_als_antwort_verknuepfen(

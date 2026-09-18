@@ -209,10 +209,10 @@ class TestAddCommentaryAntwort:
         }
 
     @staticmethod
-    def _dublette(vorhanden):
+    def _dublette(vorhanden, autor="person-1"):
         commentary_service = app.dependency_overrides[get_commentary_service]()
         commentary_service.pruefe_dublette.return_value = Dublettenpruefung(
-            vorhanden=MagicMock(id=vorhanden), aehnlichster=None
+            vorhanden=MagicMock(id=vorhanden, original_author=autor), aehnlichster=None
         )
         return commentary_service
 
@@ -251,7 +251,7 @@ class TestAddCommentaryAntwort:
 
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
-    def test_dublette_mit_aussage_verknuepft_den_vorhandenen(self, dienste):
+    def test_eigene_dublette_mit_aussage_verknuepft_den_vorhandenen(self, dienste):
         _, statement_service = dienste
         vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
         self._dublette(vorhanden)
@@ -280,6 +280,29 @@ class TestAddCommentaryAntwort:
             statement_id=statement_id,
             statement_text=None,
         )
+
+    def test_fremde_dublette_wird_nicht_verknuepft(self, dienste):
+        """Ein fremder Kommentar darf nicht an eine selbst gewaehlte Aussage."""
+        _, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        self._dublette(vorhanden, autor="person-2")
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text="Waermepumpen sind zu teuer"),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {
+            "id": str(vorhanden),
+            "statement_id": None,
+            "statement_text": None,
+            "verknuepft": True,
+            "duplikat": True,
+        }
+        # Auch keine Aussage angelegt - das passiert erst beim Verknuepfen.
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_dublette_mit_gescheiterter_verknuepfung(self, dienste):
         _, statement_service = dienste

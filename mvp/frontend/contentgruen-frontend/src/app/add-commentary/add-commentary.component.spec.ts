@@ -409,7 +409,9 @@ describe('AddCommentaryComponent', () => {
   });
 
   describe('Dublette', () => {
-    it('bleibt im Formular, zeigt den Hinweis mit Link und meldet keinen Erfolg', fakeAsync(() => {
+    it('fremde Dublette: bleibt im Formular, zeigt den Hinweis mit Link, meldet keinen Erfolg', fakeAsync(() => {
+      // Ein fremder Kommentar wird nicht mit der eigenen Aussage verknuepft; das
+      // Backend schickt dann keine Aussage mit.
       speichernMit({ id: 'k-alt', duplikat: true });
       const erfolg = spyOn(component.success, 'emit');
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
@@ -425,11 +427,12 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('sehr ähnlichen Kommentar');
       expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
 
+      expect(component.dubletteAussage).toBeNull();
       (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
       expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
     }));
 
-    it('meldet die Verknuepfung mit der Aussage und bleibt ohne Erfolg', fakeAsync(() => {
+    it('eigene Dublette: meldet die Verknuepfung mit der Aussage und bleibt ohne Erfolg', fakeAsync(() => {
       speichernMit({
         id: 'k-alt',
         duplikat: true,
