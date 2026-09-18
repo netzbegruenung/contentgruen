@@ -439,8 +439,13 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /**
+   * Nach dem Kopieren eine Nutzung mehr - ausser am eigenen Beitrag: Den zaehlt
+   * auch das Backend nicht (api/v1/usage.py), und die Karte soll nicht kurz etwas
+   * anderes behaupten als der naechste Seitenaufruf zeigt.
+   */
   nutzungHochzaehlen(): void {
-    if (this.nutzung === null) {
+    if (this.nutzung === null || this.istEigen) {
       return;
     }
     this.nutzung++;

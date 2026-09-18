@@ -255,6 +255,17 @@ describe('BeitragskarteComponent', () => {
       expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
       tick(600);
     }));
+
+    it('zaehlt die eigene Kopie nicht hoch', fakeAsync(() => {
+      const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 2 }));
+      zeigen({ ...daten, autor: 'test-user' });
+
+      element<HTMLButtonElement>('.kopieren-knopf').click();
+      fixture.detectChanges();
+
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      tick(600);
+    }));
   });
 
   describe('Voting', () => {

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, Subject } from 'rxjs';
-import { catchError, tap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { SessionService } from './session.service';
@@ -44,34 +44,32 @@ export interface TrendingContent {
 export class UsageTrackingService {
   private apiUrl = `${environment.baseUrl}/api/v1/usage`;
 
-  // Debouncing mechanism for rapid copy events
-  private copyEventSubject = new Subject<string>();
-  private recentCopies = new Map<string, number>(); // Track recent copies with timestamps
+  /**
+   * Wann welcher Beitrag zuletzt gezaehlt wurde - gegen das Doppelzaehlen eines
+   * Doppeltipps (siehe trackContentUsage).
+   */
+  private recentCopies = new Map<string, number>();
 
   constructor(
     private http: HttpClient,
     private loggingService: LoggingService,
     private sessionService: SessionService
-  ) {
-    // Set up debounced copy event handler
-    this.setupDebouncedCopyHandler();
-  }
-
-  private setupDebouncedCopyHandler(): void {
-    // Process copy events with debouncing
-    // Wait 500ms after the last event before processing
-    this.copyEventSubject.pipe(
-      debounceTime(500),
-      distinctUntilChanged()
-    ).subscribe(contentId => {
-      this.performUsageTracking(contentId);
-    });
-  }
+  ) {}
 
 
   /**
    * Track that a content item was used (copied).
-   * Uses debouncing to prevent rapid duplicate tracking.
+   *
+   * Gegen den Doppeltipp genuegt die Sperre von zwei Sekunden je Beitrag
+   * (recentCopies). Davor lag hier zusaetzlich ein Subject mit
+   * ``debounceTime(500)`` und ``distinctUntilChanged()``. Beide Operatoren haben
+   * Zaehlungen verschluckt, die haetten zaehlen muessen:
+   * - ``distinctUntilChanged`` vergleicht mit der zuletzt durchgelassenen ID.
+   *   Wer denselben Beitrag ein zweites Mal kopierte - eine Minute oder eine
+   *   Stunde spaeter -, wurde nie gezaehlt, solange dazwischen nichts anderes
+   *   kopiert wurde.
+   * - ``debounceTime`` haelt nur den letzten Wert: Zwei verschiedene Beitraege
+   *   innerhalb einer halben Sekunde ergaben eine einzige Zaehlung.
    *
    * @param contentId - The ID of the content item
    * @returns Observable that completes immediately (fire-and-forget)
@@ -93,15 +91,14 @@ export class UsageTrackingService {
     // Clean up old entries (older than 5 seconds)
     this.cleanupRecentCopies();
 
-    // Emit to the debounced subject
-    this.copyEventSubject.next(contentId);
+    this.performUsageTracking(contentId);
 
     // Return immediately without waiting
     return of({ tracked: true, queued: true });
   }
 
   /**
-   * Perform the actual usage tracking (called after debouncing).
+   * Perform the actual usage tracking.
    * @private
    */
   private performUsageTracking(contentId: string): void {
