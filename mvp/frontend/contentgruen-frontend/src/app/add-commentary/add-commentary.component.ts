@@ -36,6 +36,12 @@ export const PLATTFORM_GRENZE = 280;
 
 export const DUBLETTE_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar.';
 
+/** Dublette von jemand anderem: die wird nicht mit der eigenen Aussage verknüpft. */
+export const DUBLETTE_FREMD_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar von jemand anderem.';
+
+/** Die Absicht geht nicht verloren - nur über einen anderen Weg. */
+export const DUBLETTE_FREMD_ZUORDNEN = 'Du kannst ihn dieser Aussage später über die Karte zuordnen.';
+
 /** Hinweis, wenn der vorhandene Kommentar jetzt auch an der gewaehlten Aussage haengt. */
 export function dubletteVerknuepftHinweis(aussage: string): string {
   return `Diesen Kommentar gibt es schon – er ist jetzt auch mit „${aussage}“ verknüpft.`;
@@ -114,9 +120,16 @@ export class AddCommentaryComponent implements OnChanges {
   dublette: string | null = null;
   /** Text der Aussage, mit der die Dublette jetzt verknuepft ist; null ohne Verknuepfung. */
   dubletteAussage: string | null = null;
+  /** Die Dublette ist von jemand anderem und eine Aussage war mitgeschickt. */
+  dubletteFremdMitAussage = false;
 
   get dublettenHinweis(): string {
-    return this.dubletteAussage ? dubletteVerknuepftHinweis(this.dubletteAussage) : DUBLETTE_HINWEIS;
+    if (this.dubletteAussage) {
+      return dubletteVerknuepftHinweis(this.dubletteAussage);
+    }
+    return this.dubletteFremdMitAussage
+      ? `${DUBLETTE_FREMD_HINWEIS} ${DUBLETTE_FREMD_ZUORDNEN}`
+      : DUBLETTE_HINWEIS;
   }
 
   private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };
@@ -248,6 +261,7 @@ export class AddCommentaryComponent implements OnChanges {
     this.validierung = null;
     this.dublette = null;
     this.dubletteAussage = null;
+    this.dubletteFremdMitAussage = false;
 
     const { text, references } = this.commentaryForm.value;
     // Ein Satz: eingefuegte Umbrueche werden zu Leerzeichen (Enter selbst bricht nicht um).
@@ -264,11 +278,16 @@ export class AddCommentaryComponent implements OnChanges {
         this.speichert = false;
         if (antwort.duplikat) {
           // Nichts angelegt: Das Formular bleibt, der Hinweis zeigt den vorhandenen.
-          // War eine Aussage dabei, haengt er jetzt auch an ihr. Kein Erfolg - ein
-          // Einwurf aus dem Fangkorb bleibt damit offen.
+          // Kein Erfolg - ein Einwurf aus dem Fangkorb bleibt damit offen.
+          // Mit Aussage und Aussagetext in der Antwort: die eigene Dublette haengt
+          // jetzt auch an ihr. Mit Aussage, aber ohne Aussagetext: der Kommentar ist
+          // von jemand anderem, und der Hinweis zeigt auf den Weg ueber die Karte.
+          const mitAussage = !!(request.statement_id || request.statement_text);
           this.dublette = antwort.id;
           this.dubletteAussage =
             antwort.verknuepft === true && antwort.statement_text ? antwort.statement_text : null;
+          this.dubletteFremdMitAussage =
+            !this.dubletteAussage && mitAussage && antwort.verknuepft !== false;
           return;
         }
         this.responseId = antwort.id;
@@ -343,5 +362,6 @@ export class AddCommentaryComponent implements OnChanges {
     this.fehler = null;
     this.dublette = null;
     this.dubletteAussage = null;
+    this.dubletteFremdMitAussage = false;
   }
 }

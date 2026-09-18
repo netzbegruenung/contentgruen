@@ -409,9 +409,7 @@ describe('AddCommentaryComponent', () => {
   });
 
   describe('Dublette', () => {
-    it('fremde Dublette: bleibt im Formular, zeigt den Hinweis mit Link, meldet keinen Erfolg', fakeAsync(() => {
-      // Ein fremder Kommentar wird nicht mit der eigenen Aussage verknuepft; das
-      // Backend schickt dann keine Aussage mit.
+    it('Dublette ohne Aussage: bleibt im Formular, zeigt den Hinweis mit Link, meldet keinen Erfolg', fakeAsync(() => {
       speichernMit({ id: 'k-alt', duplikat: true });
       const erfolg = spyOn(component.success, 'emit');
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
@@ -428,6 +426,27 @@ describe('AddCommentaryComponent', () => {
       expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
 
       expect(component.dubletteAussage).toBeNull();
+      (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
+      expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
+    }));
+
+    it('fremde Dublette mit Aussage: nennt den anderen Autor und den Weg über die Karte', fakeAsync(() => {
+      // Keine Aussage in der Antwort, obwohl eine mitgeschickt wurde: der vorhandene
+      // Kommentar ist von jemand anderem und wurde nicht verknuepft.
+      speichernMit({ id: 'k-alt', duplikat: true });
+      const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const hinweis = seite().querySelector('.dubletten-hinweis')!.textContent!;
+      expect(hinweis).toContain('Es gibt schon einen sehr ähnlichen Kommentar von jemand anderem.');
+      expect(hinweis).toContain('Du kannst ihn dieser Aussage später über die Karte zuordnen.');
+      expect(component.dubletteAussage).toBeNull();
+
       (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
       expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
     }));
@@ -483,6 +502,7 @@ describe('AddCommentaryComponent', () => {
 
       expect(component.dublette).toBeNull();
       expect(component.dubletteAussage).toBeNull();
+      expect(component.dubletteFremdMitAussage).toBeFalse();
       expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();

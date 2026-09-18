@@ -66,7 +66,10 @@ class AddCommentaryResponse(BaseModel):
     # True: Es gibt schon einen sehr aehnlichen Kommentar; id ist dessen ID und nichts
     # wurde angelegt. Stammt er von derselben Person und war eine Aussage angegeben,
     # ist er jetzt auch mit ihr verknuepft (statement_id/statement_text, verknuepft wie
-    # oben); ist er von jemand anderem, bleiben die Aussagefelder leer.
+    # oben). Bei einem fremden Kommentar bleiben die Aussagefelder leer: Fremde
+    # Antworten weiteren Aussagen zuzuordnen ist gewollt, greift ueber dieses Formular
+    # aber nur bei wortgleichem Text - dafuer ist ein eigener Weg an der Karte
+    # vorgesehen ("Passt auch auf ..."), siehe api/v1/commentary.py.
     duplikat: bool = False
 
 

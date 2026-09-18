@@ -178,10 +178,15 @@ async def add_commentary(
                 )
 
         # Nichts angelegt? Dann ist die Antwort der vorhandene Kommentar. Verknuepft
-        # wird nur, wenn er von derselben Person stammt: Sonst haenge man den Beitrag
-        # einer anderen Person an eine selbst gewaehlte Aussage - und diese Aussage
-        # entstuende womoeglich erst dadurch. Wer fremden Inhalt einer Aussage
-        # zuordnen will, tut das ueber die Aussage, nicht ueber ein Beitragsformular.
+        # wird nur die eigene Dublette.
+        #
+        # Nicht, weil fremde Zuordnungen unerwuenscht waeren - im Gegenteil: Eine gute
+        # Antwort passt oft auf viele Aussagen, und dass andere diese Zuordnung
+        # vornehmen, ist gewollt. Ueber das Beitragsformular griffe sie aber nur bei
+        # wortgleichem Text: Ein Wort daneben, und statt der Zuordnung entstuende eine
+        # zweite Kopie derselben Antwort. Die Zuordnung fremder Antworten bekommt
+        # deshalb einen eigenen Weg an der Karte ("Passt auch auf ..."), der immer
+        # funktioniert und die gewaehlte Aussage sichtbar macht.
         dublette = pruefung.vorhanden
         eigene_dublette = dublette is not None and dublette.original_author == x_user
         if dublette is not None:
