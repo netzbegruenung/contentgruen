@@ -1,4 +1,5 @@
 import { typLabel } from '../content-type-registry';
+import { EINWERFEN_TITEL } from '../fangkorb-texte';
 
 export const APP_CONSTANTS = {
   // Breakpoints (should align with CDK breakpoints)
@@ -53,7 +54,7 @@ export const PAGE_TITLES = {
   SEARCH_RESULTS: 'Suchergebnisse',
   CONTRIBUTE: 'Beitrag verfassen',
   CONTRIBUTIONS: 'Meine Beiträge',
-  RAW_INPUT: 'Schnell einwerfen',
+  RAW_INPUT: EINWERFEN_TITEL,
   RAW_INPUT_LIST: 'Fangkorb',
   DESTILLIEREN: 'Destillieren',
   AUSFORMULIEREN: 'Ausformulieren',

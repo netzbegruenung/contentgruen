@@ -28,8 +28,7 @@
                     (login)="login()"
                     (loginToContribute)="loginWithReturnUrl('/contribute')"
                     (logout)="logout()"
-                    (contribute)="navigateToContributeView()"
-                    (contributions)="navigateToContributionsView()">
+                    (contribute)="navigateToContributeView()">
                 </app-mobile-header>
 
                 <!-- Desktop Header - Hidden on mobile -->
@@ -111,10 +110,10 @@
                             role="button" tabindex="0" aria-label="Meine Beiträge anzeigen"
                             (click)="navigateToContributionsView()"
                             (keydown.enter)="navigateToContributionsView()"
-                            (keydown.space)="navigateToContributionsView()">Meine Beiträge</span>
+                            (keydown.space)="navigateToContributionsView()">{{ kettenIcons.meineBeitraege }} Meine Beiträge</span>
 
                             <button mat-raised-button class="dark-green-button" (click)="navigateToContributeView()">
-                                <mat-icon>edit</mat-icon> Beitragen
+                                <mat-icon>add</mat-icon> Beitragen
                             </button>
                         </ng-container>
                         <ng-container *ngIf="!userInfo?.isAuthenticated">

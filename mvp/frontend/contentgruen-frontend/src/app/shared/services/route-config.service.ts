@@ -9,7 +9,6 @@ export interface RouteConfig {
   mobilePageTitle?: string;
   showBackButton: boolean;
   showContributeButton: boolean;
-  showContributionsButton: boolean;
 }
 
 @Injectable({
@@ -27,8 +26,7 @@ export class RouteConfigService {
     const defaultConfig: RouteConfig = {
       pageTitle: PAGE_TITLES.HOME,
       showBackButton: true,
-      showContributeButton: true,
-      showContributionsButton: false
+      showContributeButton: true
     };
 
     // Route-specific configurations
@@ -38,16 +36,14 @@ export class RouteConfigService {
         return {
           pageTitle: PAGE_TITLES.HOME,
           showBackButton: false,
-          showContributeButton: true,
-          showContributionsButton: false
+          showContributeButton: true
         };
 
       case ROUTES.RESULT:
         return {
           pageTitle: PAGE_TITLES.SEARCH_RESULTS,
           showBackButton: true,
-          showContributeButton: true,
-          showContributionsButton: false
+          showContributeButton: true
         };
 
       case ROUTES.CONTRIBUTE:
@@ -66,32 +62,28 @@ export class RouteConfigService {
         return {
           pageTitle: PAGE_TITLES.CONTRIBUTIONS,
           showBackButton: true,
-          showContributeButton: true,
-          showContributionsButton: false
+          showContributeButton: true
         };
 
       case ROUTES.RAW_INPUT:
         return {
           pageTitle: PAGE_TITLES.RAW_INPUT,
           showBackButton: true,
-          showContributeButton: false,
-          showContributionsButton: false
+          showContributeButton: false
         };
 
       case ROUTES.RAW_INPUT_LIST:
         return {
           pageTitle: PAGE_TITLES.RAW_INPUT_LIST,
           showBackButton: true,
-          showContributeButton: true,
-          showContributionsButton: false
+          showContributeButton: true
         };
 
       case ROUTES.SHARE_TARGET:
         return {
           pageTitle: PAGE_TITLES.SHARE_TARGET,
           showBackButton: true,
-          showContributeButton: false,
-          showContributionsButton: false
+          showContributeButton: false
         };
 
       case ROUTES.LOGIN:
@@ -100,16 +92,14 @@ export class RouteConfigService {
         return {
           pageTitle: PAGE_TITLES.LOGIN,
           showBackButton: true,
-          showContributeButton: false,
-          showContributionsButton: false
+          showContributeButton: false
         };
 
       case '/login/managed':
         return {
           pageTitle: 'Gut gesagt – Login',
           showBackButton: true,
-          showContributeButton: false,
-          showContributionsButton: false
+          showContributeButton: false
         };
 
       default:
@@ -118,15 +108,14 @@ export class RouteConfigService {
   }
 
   // Mobil nur der Typname: "Kommentar verfassen" passt bei 360 px nicht neben
-  // Pfeil, Avatar und Menue. Kein Ordner-Icon: "Meine Beitraege" steht im Menue,
-  // auf der Beitragen-Seite und auf der Ergebnisseite.
+  // Pfeil, Avatar und Menue. "Meine Beitraege" steht im Menue, auf der Beitragen-Seite
+  // und auf der Ergebnisseite; einen eigenen Knopf im Kopf gibt es nicht.
   private getFormularConfig(pageTitle: string, mobilePageTitle: string): RouteConfig {
     return {
       pageTitle,
       mobilePageTitle,
       showBackButton: true,
-      showContributeButton: false,
-      showContributionsButton: false
+      showContributeButton: false
     };
   }
 
@@ -135,9 +124,7 @@ export class RouteConfigService {
     return {
       pageTitle: PAGE_TITLES.CONTRIBUTE,
       showBackButton: true,
-      showContributeButton: false,
-      // "Meine Beitraege" ist hier eine Kachel unter Weiterarbeiten.
-      showContributionsButton: false
+      showContributeButton: false
     };
   }
 
@@ -171,8 +158,7 @@ export class RouteConfigService {
             ? PAGE_TITLES.AUSFORMULIEREN
             : PAGE_TITLES.DESTILLIEREN,
         showBackButton: true,
-        showContributeButton: false,
-        showContributionsButton: false
+        showContributeButton: false
       };
     }
 

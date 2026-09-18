@@ -68,6 +68,14 @@
     text-align: center;
 }
 
+/* Die Eintraege unter Beitragen, eingerueckt wie eine Untergruppe */
+.mobile-menu-gruppe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding-left: var(--spacing-lg);
+}
+
 .close-menu-button {
     color: var(--text-secondary);
 }

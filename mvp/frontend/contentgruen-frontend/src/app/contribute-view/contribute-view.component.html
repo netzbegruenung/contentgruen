@@ -9,7 +9,7 @@
     <button type="button" class="typ-zeile rahmen-kachel einwerfen-block" (click)="navigateToRawInput()">
         <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
         <span class="typ-text">
-            <span class="typ-titel">Einwerfen</span>
+            <span class="typ-titel">{{ einwerfenTitel }}</span>
             <span class="typ-satz">{{ fangkorbKurz }}</span>
         </span>
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
@@ -25,7 +25,7 @@
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
     <button type="button" class="typ-zeile rahmen-kachel beitraege-block" (click)="navigateToContributions()">
-        <span class="typ-icon" aria-hidden="true">🗂️</span>
+        <span class="typ-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
         <span class="typ-text">
             <span class="typ-titel">Meine Beiträge</span>
             <span class="typ-satz">Was du eingestellt hast und wie oft es genutzt wurde.</span>

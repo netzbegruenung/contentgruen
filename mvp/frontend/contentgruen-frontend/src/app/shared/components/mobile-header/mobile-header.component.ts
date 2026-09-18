@@ -30,12 +30,10 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
   @Output() loginToContribute = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
   @Output() contribute = new EventEmitter<void>();
-  @Output() contributions = new EventEmitter<void>();
 
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   showContributeButton: boolean = false;
-  showContributionsButton: boolean = false;
   currentRoute: string = '';
   private destroy$ = new Subject<void>();
 
@@ -70,7 +68,6 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     this.pageTitle = config.mobilePageTitle ?? config.pageTitle;
     this.showBackButton = config.showBackButton;
     this.showContributeButton = config.showContributeButton;
-    this.showContributionsButton = config.showContributionsButton;
   }
 
   goBack(): void {
@@ -100,10 +97,6 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
     } else {
       this.loginToContribute.emit();
     }
-  }
-
-  onContributionsClick(): void {
-    this.contributions.emit();
   }
 
   ngOnDestroy(): void {

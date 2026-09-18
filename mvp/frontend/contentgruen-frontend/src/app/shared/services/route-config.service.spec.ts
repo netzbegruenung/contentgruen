@@ -39,12 +39,11 @@ describe('RouteConfigService', () => {
     expect(service.getRouteConfig('/fangkorb').mobilePageTitle).toBeUndefined();
   });
 
-  it('zeigt auf den Formularseiten und /contribute nur den Pfeil, kein Beitragen und kein Ordner-Icon', () => {
+  it('zeigt auf den Formularseiten und /contribute nur den Pfeil, kein Beitragen', () => {
     for (const pfad of ['/workflow/add-commentary', '/workflow/add-generictext', '/workflow/add-image', '/contribute', '/workflow/add-commentary/gespeichert/k-1']) {
       const config = service.getRouteConfig(pfad);
       expect(config.showBackButton).withContext(pfad).toBeTrue();
       expect(config.showContributeButton).withContext(pfad).toBeFalse();
-      expect(config.showContributionsButton).withContext(pfad).toBeFalse();
     }
   });
 

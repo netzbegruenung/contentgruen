@@ -104,8 +104,7 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
     komponente.userInfo = { isAuthenticated: true } as any;
     komponente.pageTitle = titel;
     komponente.showBackButton = true;
-    komponente.showContributeButton = false;
-    komponente.showContributionsButton = true;
+    komponente.showContributeButton = true;
     fixture.componentRef.changeDetectorRef.markForCheck();
     fixture.detectChanges();
   }
@@ -115,11 +114,11 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
   }
 
   for (const titel of ['Beitrag verfassen', 'Ein sehr langer Seitentitel, der niemals passt']) {
-    it(`zeigt Avatar, Ordner und Menue vollstaendig bei "${titel}"`, () => {
+    it(`zeigt Avatar, Beitragen und Menue vollstaendig bei "${titel}"`, () => {
       aufbauen(titel);
       const kopf = rechteck('.mobile-header');
 
-      for (const selektor of ['.mobile-header-avatar-container', '.contributions-button', '.menu-button']) {
+      for (const selektor of ['.mobile-header-avatar-container', '.contribute-button', '.menu-button']) {
         const r = rechteck(selektor);
         expect(r.width).withContext(`${selektor} Breite`).toBeGreaterThan(0);
         expect(r.left).withContext(`${selektor} links`).toBeGreaterThanOrEqual(kopf.left);

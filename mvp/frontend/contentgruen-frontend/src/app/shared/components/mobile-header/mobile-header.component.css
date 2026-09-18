@@ -68,8 +68,7 @@
   margin-right: 4px;
 }
 
-.contribute-button,
-.contributions-button {
+.contribute-button {
   color: rgba(0, 0, 0, 0.87); /* Standard Material Design icon color */
 }
 
