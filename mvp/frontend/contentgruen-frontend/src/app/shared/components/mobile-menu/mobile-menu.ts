@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterLink } from '@angular/router';
 import { UserInfo } from '../../../auth/auth.service';
-import { KETTEN_ICONS } from '../../fangkorb-texte';
+import { EINWERFEN_TITEL, KETTEN_ICONS } from '../../fangkorb-texte';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -22,6 +22,7 @@ import { KETTEN_ICONS } from '../../fangkorb-texte';
 })
 export class MobileMenuComponent {
   readonly kettenIcons = KETTEN_ICONS;
+  readonly einwerfenTitel = EINWERFEN_TITEL;
   @Input() userInfo: UserInfo | null = null;
   @Input() selectedProfilePictureUrl: string = '';
 

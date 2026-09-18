@@ -138,6 +138,8 @@ describe('RawInputListComponent', () => {
           provide: AuthService,
           useValue: {
             getCurrentUserId: () => 'alice',
+            getUserInfo: () => ({ isAuthenticated: true, userId: 'alice' }),
+            userInfo$: of({ isAuthenticated: true, userId: 'alice' }),
             fetchUserInfo: () => of({ userId: 'alice' }),
           },
         },
@@ -204,7 +206,9 @@ describe('RawInputListComponent', () => {
 
       klicken(fab);
 
-      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen']);
+      expect(router.navigate).toHaveBeenCalledWith(['/einwerfen'], {
+        queryParams: { von: 'fangkorb' },
+      });
     });
 
     it('zeigt "nur meine" und die Plattformen, "nur offene" nicht mehr', () => {
@@ -359,7 +363,7 @@ describe('RawInputListComponent', () => {
       expect(karten()[0].querySelector('.rohling-titel')!.textContent!.trim()).toBe('nur eine Notiz');
     });
 
-    it('nennt den Einwerfer nur, wenn es nicht die angemeldete Person ist', () => {
+    it('nennt den Einwerfer, den eigenen Einwurf als "Du"', () => {
       erstellen([einwurf({ id: 'fremd', submitted_by: '0f3c2a9e-1111-2222-3333-444455556666' })]);
       expect(karten()[0].querySelector('.rohling-einwerfer')!.textContent!.trim()).toBe(
         'Von: 0f3c2a9e',
@@ -368,7 +372,7 @@ describe('RawInputListComponent', () => {
       fixture.destroy();
       erstellen([einwurf({ submitted_by: 'alice' })]);
 
-      expect(karten()[0].querySelector('.rohling-einwerfer')).toBeNull();
+      expect(karten()[0].querySelector('.rohling-einwerfer')!.textContent!.trim()).toBe('Von: Du');
     });
 
     it('beschriftet den Primaerknopf nach Zustand und laesst ihn bei Verworfenem weg', () => {

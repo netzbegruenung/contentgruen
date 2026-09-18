@@ -97,7 +97,7 @@
 
         <p class="karte-meta rohling-meta" *ngIf="!istKopf">
             <ng-container *ngIf="zeigtEinwerfer">
-                <span class="rohling-einwerfer" [attr.title]="daten.autor">Von: {{ kurzeKennung(daten.autor) }}</span>
+                <span class="rohling-einwerfer" [attr.title]="daten.autor">Von: {{ autorAnzeige }}</span>
                 ·
             </ng-container>
             <span class="rohling-alter">{{ daten.erstellt | relativeTime }}</span>
@@ -221,7 +221,8 @@
                 [abstimmenSichtbar]="abstimmenSichtbar"
                 (kopiert)="nutzungHochzaehlen()">
             </app-karten-aktionen>
-            <p class="karte-meta">Von: {{ autorAnzeige }}<ng-container *ngIf="daten.erstellt"> · {{ daten.erstellt | relativeTime }}</ng-container></p>
+            <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter. -->
+            <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container></p>
         </footer>
     </ng-container>
 </article>

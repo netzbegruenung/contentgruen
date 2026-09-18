@@ -49,7 +49,7 @@ describe('ContributeViewComponent', () => {
 
     it('zeigt Einwerfen, Fangkorb und die drei Typen als Zeilen', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
-        .toEqual(['Einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild']);
+        .toEqual(['Schnell einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild']);
       expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
         .toContain('Gut gesagt ist neu.');
     });

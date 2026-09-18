@@ -293,8 +293,9 @@ export class RawInputListComponent implements OnInit, OnDestroy {
     return karte.id;
   }
 
+  /** Mit ?von=fangkorb: Der Pfeil auf /einwerfen fuehrt dann hierher zurueck (app.routes.ts). */
   zumEinwerfen(): void {
-    this.router.navigate(['/einwerfen']);
+    this.router.navigate(['/einwerfen'], { queryParams: { von: 'fangkorb' } });
   }
 
   ngOnDestroy(): void {

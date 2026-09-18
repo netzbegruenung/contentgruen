@@ -5,7 +5,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { typBeschreibung, typLabel } from '../shared/content-type-registry';
-import { ERSTNUTZER_SATZ, FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
+import {
+  EINWERFEN_TITEL,
+  ERSTNUTZER_SATZ,
+  FANGKORB_KURZ,
+  KETTEN_ICONS,
+} from '../shared/fangkorb-texte';
 import { FORMULAR_PFAD, FormularTyp, SUCHTEXT_PARAM, aussageParameter, istFormularTyp } from '../shared/formular-adresse';
 
 /**
@@ -29,6 +34,7 @@ export class ContributeViewComponent implements OnInit {
   readonly typBeschreibung = typBeschreibung;
   readonly fangkorbKurz = FANGKORB_KURZ;
   readonly kettenIcons = KETTEN_ICONS;
+  readonly einwerfenTitel = EINWERFEN_TITEL;
   /** Die Route verlangt eine Anmeldung, der Satz braucht deshalb keine eigene Pruefung. */
   readonly erstnutzerSatz = ERSTNUTZER_SATZ;
   private destroyRef = inject(DestroyRef);

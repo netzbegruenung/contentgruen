@@ -74,7 +74,6 @@
         <ul *ngIf="karten.length" class="karten">
             <li *ngFor="let karte of karten; trackBy: nachKarte">
                 <app-beitragskarte variante="rohling" [daten]="karte"
-                                   [eigeneKennung]="eigeneKennung"
                                    (aktion)="aktionAusfuehren(karte, $event)">
                 </app-beitragskarte>
             </li>

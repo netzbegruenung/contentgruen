@@ -20,26 +20,6 @@
   margin-bottom: 16px;
 }
 
-.einwurf-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  color: var(--primary-main);
-  word-break: break-all;
-}
-
-.einwurf-link mat-icon {
-  flex-shrink: 0;
-  font-size: 18px;
-  height: 18px;
-  width: 18px;
-}
-
-.einwurf-notiz {
-  white-space: pre-line;
-}
-
 .einwurf-stand {
   color: var(--text-secondary, #4a4a4a);
   font-style: italic;
@@ -93,6 +73,13 @@
 
 .fehler {
   color: var(--warn-color, #b00020);
+}
+
+/* Steht unter den Knoepfen und erklaert "Ueberspringen". */
+.spaeter-hinweis {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary, #4a4a4a);
 }
 
 .einwurf-kopf {

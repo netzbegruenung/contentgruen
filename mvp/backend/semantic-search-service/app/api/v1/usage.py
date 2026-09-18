@@ -5,7 +5,7 @@ API endpoints for usage tracking functionality.
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ValidationError, validator
 import uuid
 from datetime import datetime, timedelta
 
@@ -75,11 +75,48 @@ class CleanupResultResponse(BaseModel):
     message: str
 
 
+class BeitragUnlesbar(Exception):
+    """
+    Der Datensatz ist da, aber er laesst sich nicht lesen. Das ist kaputt, nicht
+    abwesend - also kein 404, und die Nutzung wird trotzdem gezaehlt.
+    """
+
+
+async def beitrag_laden(content_id: uuid.UUID, settings: Settings):
+    """
+    Den Beitrag zu dieser ID, oder None, wenn es ihn nicht gibt.
+
+    Eigene Funktion, weil der Zaehl-Endpunkt sie fuer zwei Dinge braucht: die
+    Existenzpruefung und den Vergleich mit der zaehlenden Person.
+
+    Raises:
+    - BeitragUnlesbar, wenn der Datensatz existiert, aber nicht validiert.
+    """
+    from repositories.implementations.qdrant.qdrant_repository_factory import (
+        QdrantRepositoryFactory,
+    )
+
+    repository = QdrantRepositoryFactory().create_content_repository(settings)
+    try:
+        return await repository.get(content_id)
+    except ValidationError as fehler:
+        # Vor ValueError, denn Pydantics ValidationError ist einer. Ohne diesen
+        # Zweig gaelte ein kaputter Datensatz als "nicht vorhanden": Der Aufruf
+        # bekaeme 404, die Kopie fiele unter den Tisch und niemand erfuehre, dass
+        # da etwas im Bestand nicht stimmt.
+        logger.error(f"Content {content_id} is not readable: {fehler}", exc_info=True)
+        raise BeitragUnlesbar(str(content_id)) from fehler
+    except ValueError:
+        # Nicht vorhanden - erwartbar bei einem alten Link, kein Fehlerfall.
+        return None
+
+
 @router.post("/content/{content_id}/usage", response_model=TrackUsageResponse)
 async def track_content_usage(
     content_id: str,
     body: TrackUsageRequest,
     user_agent: Optional[str] = Header(None),
+    aufrufer: Optional[str] = Depends(get_current_user_optional),
     settings: Settings = Depends(get_settings),
 ):
     """
@@ -87,6 +124,13 @@ async def track_content_usage(
 
     This endpoint should be called when a user clicks the copy button.
     It increments the usage counter for the specified content.
+
+    Die eigene Kopie zaehlt nicht: Der Zaehler soll sagen, wie oft andere einen
+    Beitrag brauchbar fanden. Wer den eigenen Text kopiert - um ihn zu posten, zu
+    pruefen oder weiterzuschreiben -, erhoeht ihn nicht. Geprueft wird hier und
+    nicht im Frontend, weil das Frontend seine eigene Kennung nur kennt, solange es
+    ihm passt; ``X-User`` setzt das BFF (IdentityHeaderTransform.cs), der Client
+    kann ihn nicht faelschen.
 
     Der User-Agent wird sofort zu einer groben Geraetekategorie verdichtet; der
     Rohwert wird nicht weitergereicht und nicht gespeichert. Die IP-Adresse wird
@@ -100,9 +144,36 @@ async def track_content_usage(
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid content ID format")
 
-        # Validate content_id exists (add check)
         service = get_usage_service()
-        # TODO: Add content existence check once repository method is available
+
+        # Den Beitrag gibt es wirklich? Sonst zaehlte ein alter Link eine Nutzung
+        # auf eine ID, hinter der nichts steht. Ist er da, aber unlesbar, wird im
+        # Zweifel gezaehlt - wem er gehoert, ist dann nicht feststellbar.
+        try:
+            beitrag = await beitrag_laden(content_uuid, settings)
+        except BeitragUnlesbar:
+            beitrag = None
+            unlesbar = True
+        else:
+            unlesbar = False
+
+        if beitrag is None and not unlesbar:
+            raise HTTPException(status_code=404, detail="Content not found")
+
+        # Die eigene Kopie: nicht zaehlen, aber auch kein Fehler - das Frontend hat
+        # nichts falsch gemacht, es hat nur nichts zu melden.
+        if (
+            beitrag is not None
+            and aufrufer
+            and aufrufer != "anonymous"
+            and beitrag.original_author == aufrufer
+        ):
+            logger.debug(f"Own content {content_id} copied by its author, not counted")
+            return TrackUsageResponse(
+                success=True,
+                message="Own content is not counted",
+                usage_count=service.get_content_usage(content_id),
+            )
 
         # Sanitize session_id if provided
         if body.session_id:

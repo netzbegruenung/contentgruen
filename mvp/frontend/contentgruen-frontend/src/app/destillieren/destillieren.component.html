@@ -20,12 +20,12 @@
             Typwahl zurueck zum Satz fuehrt der Knopf unten im Ablauf.
         -->
         <section *ngIf="schritt === 'satz'" class="einwurf">
-            <a *ngIf="einwurf.url" class="einwurf-link" [href]="einwurf.url"
-               target="_blank" rel="noopener noreferrer">
-                <mat-icon>open_in_new</mat-icon>
-                <span>{{ einwurf.url }}</span>
-            </a>
-            <p *ngIf="notiz" class="einwurf-notiz">{{ notiz }}</p>
+            <!--
+                Dasselbe Kopfband wie in der Typwahl und ueber dem Formular, nur ohne
+                Satz: Der entsteht gerade im Feld darunter.
+            -->
+            <app-beitragskarte *ngIf="einwurfBand as band" class="einwurf-kopf" variante="kopf" [daten]="band">
+            </app-beitragskarte>
             <p *ngIf="einwurf.status === 'discarded'" class="einwurf-stand">
                 Verworfen – du kannst ihn trotzdem destillieren.
             </p>
@@ -56,12 +56,14 @@
 
             <div class="knoepfe">
                 <button mat-raised-button color="primary" type="button" class="weiter"
-                        [disabled]="!kannWeiter" (click)="weiter()">Weiter</button>
+                        [disabled]="!kannWeiter" (click)="weiter()">Ausformulieren</button>
                 <button mat-stroked-button type="button" class="spaeter"
-                        [disabled]="arbeitet" (click)="spaeter()">Später</button>
+                        [disabled]="arbeitet" (click)="spaeter()">Überspringen</button>
                 <button *ngIf="istEigenerEinwurf" mat-button color="warn" type="button"
-                        class="verwerfen" [disabled]="arbeitet" (click)="verwerfen()">Verwerfen</button>
+                        class="verwerfen" [disabled]="arbeitet" (click)="verwerfen()">Einwurf verwerfen</button>
             </div>
+            <!-- Nur mit Text im Feld: sonst gibt es nichts zu merken. -->
+            <p *ngIf="satz.value.trim()" class="spaeter-hinweis">Satz wird gemerkt.</p>
         </section>
 
         <section *ngIf="schritt === 'typwahl'" class="typwahl">

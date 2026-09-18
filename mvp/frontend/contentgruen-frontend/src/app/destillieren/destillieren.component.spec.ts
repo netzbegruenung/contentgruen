@@ -70,6 +70,8 @@ describe('DestillierenComponent', () => {
           provide: AuthService,
           useValue: {
             getCurrentUserId: () => 'alice',
+            getUserInfo: () => ({ isAuthenticated: true, userId: 'alice' }),
+            userInfo$: of({ isAuthenticated: true, userId: 'alice' }),
             fetchUserInfo: () => of({ userId: 'alice' }),
           },
         },
@@ -126,7 +128,8 @@ describe('DestillierenComponent', () => {
       expect(component.satz.value).toBe('Mein Satz');
       expect(text()).toContain('Was ist der Punkt? Ein Satz.');
       expect(text()).toContain('9 / 120');
-      expect(text()).toContain('https://example.org/post');
+      // Die Adresse steht im Kopfband, dort gekuerzt ohne Schema.
+      expect(text()).toContain('example.org/post');
     });
 
     it('sperrt Weiter ohne Satz und gibt es mit Satz frei', async () => {

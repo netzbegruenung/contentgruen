@@ -39,22 +39,14 @@
            class="mobile-header-avatar anonymous-avatar-icon">
     </div>
 
-    <!-- Contribute button or My Contributions button -->
+    <!-- Beitragen; "Meine Beitraege" steht im Menue -->
     <button
       *ngIf="showContributeButton"
       mat-icon-button
       (click)="onContributeClick()"
       class="contribute-button"
       [attr.aria-label]="userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen'">
-      <mat-icon>edit</mat-icon>
-    </button>
-    <button
-      *ngIf="showContributionsButton"
-      mat-icon-button
-      (click)="onContributionsClick()"
-      class="contributions-button"
-      aria-label="Meine Beiträge">
-      <mat-icon>folder_open</mat-icon>
+      <mat-icon>add</mat-icon>
     </button>
 
     <button

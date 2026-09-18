@@ -104,8 +104,7 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
     komponente.userInfo = { isAuthenticated: true } as any;
     komponente.pageTitle = titel;
     komponente.showBackButton = true;
-    komponente.showContributeButton = false;
-    komponente.showContributionsButton = true;
+    komponente.showContributeButton = true;
     fixture.componentRef.changeDetectorRef.markForCheck();
     fixture.detectChanges();
   }
@@ -115,11 +114,11 @@ describe('MobileHeaderComponent: Kopfzeile bei 360 px', () => {
   }
 
   for (const titel of ['Beitrag verfassen', 'Ein sehr langer Seitentitel, der niemals passt']) {
-    it(`zeigt Avatar, Ordner und Menue vollstaendig bei "${titel}"`, () => {
+    it(`zeigt Avatar, Beitragen und Menue vollstaendig bei "${titel}"`, () => {
       aufbauen(titel);
       const kopf = rechteck('.mobile-header');
 
-      for (const selektor of ['.mobile-header-avatar-container', '.contributions-button', '.menu-button']) {
+      for (const selektor of ['.mobile-header-avatar-container', '.contribute-button', '.menu-button']) {
         const r = rechteck(selektor);
         expect(r.width).withContext(`${selektor} Breite`).toBeGreaterThan(0);
         expect(r.left).withContext(`${selektor} links`).toBeGreaterThanOrEqual(kopf.left);
@@ -188,8 +187,12 @@ describe('MobileHeaderComponent – Pfeil an der echten Routentabelle', () => {
     expect(pfeilVon('/workflow/add-commentary?rohinput=e-9')).toBe('/destillieren/e-9');
   }));
 
-  it('fuehrt aus dem Einwerfen in den Fangkorb und aus der Destille ebenso', fakeAsync(() => {
-    expect(pfeilVon('/einwerfen')).toBe('/fangkorb');
+  it('fuehrt aus dem Einwerfen auf die Beitragen-Seite, aus dem Fangkorb heraus zurueck', fakeAsync(() => {
+    expect(pfeilVon('/einwerfen')).toBe('/contribute');
+    expect(pfeilVon('/einwerfen?von=fangkorb')).toBe('/fangkorb');
+  }));
+
+  it('fuehrt aus der Destille in den Fangkorb', fakeAsync(() => {
     expect(pfeilVon('/destillieren/e-1')).toBe('/fangkorb');
   }));
 

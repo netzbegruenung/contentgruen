@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
+import { of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -32,6 +33,7 @@ describe('BeitragSheetComponent', () => {
     sheet = jasmine.createSpyObj('MatBottomSheetRef', ['dismiss']);
     const auth = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'user-001' });
+    auth.userInfo$ = of({ isAuthenticated: true, userId: 'user-001' });
 
     TestBed.configureTestingModule({
       imports: [BeitragSheetComponent, NoopAnimationsModule],

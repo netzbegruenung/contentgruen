@@ -29,6 +29,19 @@ describe('Routentabelle', () => {
     expect(eltern(snapshotMit({}))).toBe('/contribute');
   });
 
+  /**
+   * Der Pfeil auf /einwerfen: ohne Parameter auf die Beitragen-Seite, mit
+   * ?von=fangkorb zurueck in die Liste. Den Parameter setzt der FAB im Fangkorb
+   * (raw-input-list.component.ts, zumEinwerfen).
+   */
+  it('fuehrt von /einwerfen nach /contribute, aus dem Fangkorb aber zurueck', () => {
+    const eltern = elternFunktion('einwerfen');
+
+    expect(eltern(snapshotMit({}))).toBe('/contribute');
+    expect(eltern(snapshotMit({ von: 'fangkorb' }))).toBe('/fangkorb');
+    expect(eltern(snapshotMit({ von: 'suche' }))).toBe('/contribute');
+  });
+
   it('nutzt dieselbe Funktion fuer alle drei Beitragsformulare', () => {
     for (const pfad of ['workflow/add-commentary', 'workflow/add-generictext', 'workflow/add-image']) {
       const eltern = elternFunktion(pfad);

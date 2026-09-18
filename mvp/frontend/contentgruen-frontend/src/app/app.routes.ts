@@ -40,6 +40,19 @@ function formularEltern(snapshot: ActivatedRouteSnapshot): string | unknown[] {
   return rohinput ? ['/destillieren', rohinput] : '/contribute';
 }
 
+/**
+ * Einwerfen: Der Pfeil fuehrt auf die Beitragen-Seite - dort steht das Einwerfen als
+ * erster Schritt der Kette, und von dort kommt der haeufigste Weg hierher (Kachel,
+ * Menue, Knopf im Kopf).
+ *
+ * Ausnahme ist der FAB im Fangkorb: Wer dort einwirft, will zurueck in die Liste, in
+ * der der Einwurf gleich liegt. Der FAB sagt das ueber ``?von=fangkorb``
+ * (zumEinwerfen in raw-input-list.component.ts).
+ */
+function einwerfenEltern(snapshot: ActivatedRouteSnapshot): string {
+  return snapshot.queryParamMap.get('von') === 'fangkorb' ? '/fangkorb' : '/contribute';
+}
+
 export const routes: Routes = [
     {
         path: 'search',
@@ -62,12 +75,10 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
-        // Einwerfen gehoert zum Fangkorb: Von dort kommt der FAB, und dorthin
-        // faellt der Einwurf.
         path: 'einwerfen',
         loadComponent: () => import('./add-raw-input/add-raw-input.component').then(m => m.AddRawInputComponent),
         canActivate: [AuthGuard],
-        data: { parent: '/fangkorb' }
+        data: { parent: einwerfenEltern }
     },
     {
         path: 'fangkorb',

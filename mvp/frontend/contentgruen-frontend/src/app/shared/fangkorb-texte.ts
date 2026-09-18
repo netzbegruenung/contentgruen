@@ -12,15 +12,25 @@ export const FANGKORB_KURZ = 'Ein Link, ein Hinweis oder beides – roh, ohne Au
 export const FANGKORB_BESCHREIBUNG = `${FANGKORB_KURZ} Jemand macht später einen Beitrag daraus.`;
 
 /**
+ * Wie die Seite /einwerfen ueberall heisst: im Kopf der Seite (PAGE_TITLES.RAW_INPUT),
+ * im Menue und auf der Kachel der Beitragen-Seite. Eine Stelle, damit dieselbe Seite
+ * nicht unter zwei Namen auftaucht.
+ */
+export const EINWERFEN_TITEL = 'Schnell einwerfen';
+
+/**
  * Die Icons entlang der Kette, an jeder Stelle gleich: Startseite, Beitragen-Seite,
  * Einwurf-Formular, Fangkorb-Kopf, Header und Menue. `verfassen` steht auch fuer
- * Ausformulieren. Die Beitragstypen behalten ihre Icons.
+ * Ausformulieren. `meineBeitraege` ist kein Kettenschritt, steht aber in derselben
+ * Gruppe (Beitragen-Seite, Menue, Desktop-Kopf) und deshalb hier. Die Beitragstypen
+ * behalten ihre Icons.
  */
 export const KETTEN_ICONS = {
   einwerfen: '📥',
   fangkorb: '🧺',
   destillieren: '⚗️',
   verfassen: '🖋️',
+  meineBeitraege: '🗃️',
 } as const;
 
 /**

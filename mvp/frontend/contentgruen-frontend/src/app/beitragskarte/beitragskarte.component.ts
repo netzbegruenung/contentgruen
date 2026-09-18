@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   ElementRef,
   EventEmitter,
   Input,
@@ -12,6 +13,7 @@ import {
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,6 +33,7 @@ import {
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
+import { AuthService } from '../auth/auth.service';
 import { kurzeKennung } from '../shared/kennung';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 
@@ -113,8 +116,6 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input() vorschau = false;
   /** Durchgereicht an app-karten-aktionen; aus beim eigenen Beitrag im Album-Sheet. */
   @Input() abstimmenSichtbar = true;
-  /** Die angemeldete Person; der Rohling nennt den Einwerfer nur, wenn es jemand anders ist. */
-  @Input() eigeneKennung: string | null = null;
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
@@ -136,7 +137,45 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   constructor(
     private cdr: ChangeDetectorRef,
     private zone: NgZone,
-  ) {}
+    private authService: AuthService,
+    destroyRef: DestroyRef,
+  ) {
+    // Die Karte steht oft schon, bevor /api/user-info beantwortet ist. Ohne dieses
+    // Abonnement blieben die Getter bei dem, was beim ersten Zeichnen galt: kein
+    // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf - und die
+    // eigene Kopie zaehlte optimistisch hoch, waehrend das Backend sie verwirft.
+    // OnPush zeichnet von sich aus nicht neu, wenn sich nur der Dienst aendert.
+    this.authService.userInfo$
+      .pipe(takeUntilDestroyed(destroyRef))
+      .subscribe(() => this.cdr.markForCheck());
+  }
+
+  /**
+   * Die angemeldete Person - dieselbe Kennung, die als ``original_author`` am Beitrag
+   * und als ``submitted_by`` am Einwurf steht. Die Karte holt sie sich selbst, statt
+   * sie von jeder Seite durchgereicht zu bekommen: So steht "Du" in der Suche, im
+   * Album-Sheet und im Fangkorb gleichermassen.
+   */
+  private get eigeneKennung(): string | null {
+    return this.authService.getUserInfo()?.userId ?? null;
+  }
+
+  private get angemeldet(): boolean {
+    return !!this.authService.getUserInfo()?.isAuthenticated;
+  }
+
+  /** Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. */
+  get istEigen(): boolean {
+    return !!this.daten.autor && this.daten.autor === this.eigeneKennung;
+  }
+
+  /**
+   * Wer etwas eingestellt hat, sieht nur, wer angemeldet ist: Ohne Anmeldung steht in
+   * der Meta-Zeile allein das Alter.
+   */
+  get zeigtAutor(): boolean {
+    return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName);
+  }
 
   @ViewChild('textElement')
   set textElementRef(ref: ElementRef<HTMLElement> | undefined) {
@@ -247,9 +286,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return STUFEN[this.rohling.zustand].name;
   }
 
-  /** Den Einwerfer nennt die Karte nur, wenn es nicht die angemeldete Person ist. */
+  /** Den Einwerfer nennt die Karte immer; beim eigenen Einwurf als "Du" (autorAnzeige). */
   get zeigtEinwerfer(): boolean {
-    return !!this.daten.autor && this.daten.autor !== this.eigeneKennung;
+    return !!this.daten.autor;
   }
 
   get sichtbareSaetze(): RohlingSatz[] {
@@ -278,7 +317,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   /** Verwerfen darf nur, wer eingeworfen hat - und nur, solange kein Beitrag dranhaengt. */
   get darfVerwerfen(): boolean {
     return (
-      !!this.rohling?.verwerfbar && !!this.daten.autor && this.daten.autor === this.eigeneKennung
+      !!this.rohling?.verwerfbar && this.istEigen
     );
   }
 
@@ -366,7 +405,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.daten.typ === 'image' ? 'Bildunterschrift kopieren' : 'Kopieren';
   }
 
+  /** "Du" am eigenen Beitrag, sonst der Anzeigename und, solange es keinen gibt, die Kennung. */
   get autorAnzeige(): string {
+    if (this.istEigen) {
+      return 'Du';
+    }
     return this.daten.autorName || kurzeKennung(this.daten.autor);
   }
 
@@ -408,8 +451,13 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /**
+   * Nach dem Kopieren eine Nutzung mehr - ausser am eigenen Beitrag: Den zaehlt
+   * auch das Backend nicht (api/v1/usage.py), und die Karte soll nicht kurz etwas
+   * anderes behaupten als der naechste Seitenaufruf zeigt.
+   */
   nutzungHochzaehlen(): void {
-    if (this.nutzung === null) {
+    if (this.nutzung === null || this.istEigen) {
       return;
     }
     this.nutzung++;

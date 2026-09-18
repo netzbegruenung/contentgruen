@@ -9,6 +9,7 @@ import {
   VORSCHLAG_AB_ZEICHEN,
   VORSCHLAG_VERZOEGERUNG_MS,
 } from './antwort-auf.component';
+import { AuthService } from '../../auth/auth.service';
 import { StatementService } from '../../services/statement.service';
 import { LoggingService } from '../../services/logging.service';
 import { StatementSearchResult } from '../../services/dtos/statementDtos';
@@ -35,6 +36,8 @@ describe('AntwortAufComponent', () => {
       providers: [
         { provide: StatementService, useValue: statementService },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn', 'error', 'debug']) },
+        // Die Kopf-Karte fragt den Dienst nach der eigenen Kennung ("Von: Du").
+        { provide: AuthService, useValue: { getUserInfo: () => null, userInfo$: of(null) } },
       ],
     }).compileComponents();
 
