@@ -43,7 +43,11 @@ describe('ContributionsViewComponent', () => {
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
         { provide: ContributionsService, useValue: { getContributions } },
         { provide: UsageTrackingService, useValue: { getUserUsageStats: () => of(null) } },
-        { provide: AuthService, useValue: { getCurrentUserId: () => null } },
+        {
+          provide: AuthService,
+          // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.
+          useValue: { getCurrentUserId: () => null, getUserInfo: () => null, userInfo$: of(null) },
+        },
       ],
     });
 

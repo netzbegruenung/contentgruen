@@ -37,7 +37,7 @@ describe('AntwortAufComponent', () => {
         { provide: StatementService, useValue: statementService },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn', 'error', 'debug']) },
         // Die Kopf-Karte fragt den Dienst nach der eigenen Kennung ("Von: Du").
-        { provide: AuthService, useValue: { getUserInfo: () => null } },
+        { provide: AuthService, useValue: { getUserInfo: () => null, userInfo$: of(null) } },
       ],
     }).compileComponents();
 

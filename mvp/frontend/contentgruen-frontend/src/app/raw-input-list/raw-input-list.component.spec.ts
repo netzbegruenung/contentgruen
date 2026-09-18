@@ -139,6 +139,7 @@ describe('RawInputListComponent', () => {
           useValue: {
             getCurrentUserId: () => 'alice',
             getUserInfo: () => ({ isAuthenticated: true, userId: 'alice' }),
+            userInfo$: of({ isAuthenticated: true, userId: 'alice' }),
             fetchUserInfo: () => of({ userId: 'alice' }),
           },
         },

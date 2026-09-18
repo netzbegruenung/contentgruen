@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   ElementRef,
   EventEmitter,
   Input,
@@ -12,6 +13,7 @@ import {
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
@@ -136,7 +138,17 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     private cdr: ChangeDetectorRef,
     private zone: NgZone,
     private authService: AuthService,
-  ) {}
+    destroyRef: DestroyRef,
+  ) {
+    // Die Karte steht oft schon, bevor /api/user-info beantwortet ist. Ohne dieses
+    // Abonnement blieben die Getter bei dem, was beim ersten Zeichnen galt: kein
+    // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf - und die
+    // eigene Kopie zaehlte optimistisch hoch, waehrend das Backend sie verwirft.
+    // OnPush zeichnet von sich aus nicht neu, wenn sich nur der Dienst aendert.
+    this.authService.userInfo$
+      .pipe(takeUntilDestroyed(destroyRef))
+      .subscribe(() => this.cdr.markForCheck());
+  }
 
   /**
    * Die angemeldete Person - dieselbe Kennung, die als ``original_author`` am Beitrag

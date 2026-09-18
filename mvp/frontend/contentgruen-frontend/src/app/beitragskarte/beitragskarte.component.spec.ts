@@ -4,12 +4,12 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
 import { KartenDaten, ausAussage, ausSuchergebnis } from './karten-daten';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
@@ -25,6 +25,7 @@ describe('BeitragskarteComponent', () => {
   let fixture: ComponentFixture<BeitragskarteComponent>;
   let component: BeitragskarteComponent;
   let votingService: jasmine.SpyObj<VotingService>;
+  let userInfo$: BehaviorSubject<UserInfo | null>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   function inhalt(felder: Record<string, unknown> = {}): any {
@@ -94,6 +95,9 @@ describe('BeitragskarteComponent', () => {
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['getUserInfo', 'login']);
     authServiceSpy.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' });
+    // Die Karte abonniert den Strom, um nach einer spaeten Antwort neu zu zeichnen.
+    userInfo$ = new BehaviorSubject<UserInfo | null>({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
+    authServiceSpy.userInfo$ = userInfo$;
 
     await TestBed.configureTestingModule({
       imports: [BeitragskarteComponent, NoopAnimationsModule],
@@ -191,6 +195,30 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-meta').textContent).not.toContain('Kim Grün');
     });
 
+    it('holt "Von: Du" nach, wenn die Anmeldung erst nach dem Zeichnen ankommt', () => {
+      // Die Karte steht oft vor der Antwort von /api/user-info.
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      userInfo$.next(null);
+      const daten = ausSuchergebnis(paket('commentary_result'));
+      zeigen({ ...daten, autor: 'test-user' });
+      expect(element('.karte-meta').textContent).not.toContain('Von:');
+
+      auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
+      userInfo$.next({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
+      fixture.detectChanges();
+
+      expect(element('.karte-meta').textContent).toContain('Von: Du');
+      // Dass die Karte den Strom ueberhaupt abonniert, haelt dieser Test fest:
+      // Ohne das Abonnement bliebe die Karte unter OnPush stehen, bis sie aus
+      // einem anderen Grund neu gezeichnet wird.
+      expect(userInfo$.observed).withContext('Karte abonniert userInfo$').toBeTrue();
+
+      // Und sie haengt sich beim Zerstoeren wieder aus (takeUntilDestroyed).
+      fixture.destroy();
+      expect(userInfo$.observed).withContext('nach fixture.destroy()').toBeFalse();
+    });
+
     it('laesst ohne Anmeldung die Autorzeile weg und zeigt nur das Alter', () => {
       const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
       auth.getUserInfo.and.returnValue(null);
@@ -253,6 +281,24 @@ describe('BeitragskarteComponent', () => {
       fixture.detectChanges();
 
       expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
+      tick(600);
+    }));
+
+    it('zaehlt die eigene Kopie auch dann nicht hoch, wenn die Anmeldung spaeter ankommt', fakeAsync(() => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      userInfo$.next(null);
+      const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 2 }));
+      zeigen({ ...daten, autor: 'test-user' });
+
+      auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
+      userInfo$.next({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
+      fixture.detectChanges();
+
+      element<HTMLButtonElement>('.kopieren-knopf').click();
+      fixture.detectChanges();
+
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
       tick(600);
     }));
 
