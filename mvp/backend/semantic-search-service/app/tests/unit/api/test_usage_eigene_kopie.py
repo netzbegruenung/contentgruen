@@ -7,15 +7,18 @@ Text kopiert, erhoeht ihn deshalb nicht. Geprueft wird das serverseitig an
 faelschen kann.
 """
 
+import asyncio
+import uuid
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import BaseModel, ValidationError
 
 from api.v1 import usage as usage_module
-from api.v1.usage import router as usage_router
+from api.v1.usage import BeitragUnlesbar, beitrag_laden, router as usage_router
 from dependencies import get_settings
 
 BEITRAG_ID = "11111111-1111-4111-8111-111111111111"
@@ -92,3 +95,66 @@ class TestUnbekannterBeitrag:
 
         assert antwort.status_code == 400
         dienst.track_content_usage.assert_not_called()
+
+
+class TestUnlesbarerBeitrag:
+    """
+    Ein Datensatz, den Pydantic nicht validieren kann, ist kaputt - nicht abwesend.
+    Weil ValidationError ein ValueError ist, waere er ohne eigenen Zweig als 404
+    durchgegangen und die Kopie haette niemand gezaehlt.
+    """
+
+    def test_laden_meldet_unlesbar_statt_nicht_gefunden(self):
+        class Winzig(BaseModel):
+            zahl: int
+
+        try:
+            Winzig(zahl="keine Zahl")
+        except ValidationError as echt:
+            fehler = echt
+
+        repository = Mock()
+        repository.get = AsyncMock(side_effect=fehler)
+        fabrik = Mock()
+        fabrik.return_value.create_content_repository.return_value = repository
+
+        with patch(
+            "repositories.implementations.qdrant.qdrant_repository_factory.QdrantRepositoryFactory",
+            fabrik,
+        ):
+            with pytest.raises(BeitragUnlesbar):
+                asyncio.run(beitrag_laden(uuid.UUID(BEITRAG_ID), Mock()))
+
+    def test_laden_meldet_fehlenden_als_none(self):
+        repository = Mock()
+        repository.get = AsyncMock(side_effect=ValueError("not found"))
+        fabrik = Mock()
+        fabrik.return_value.create_content_repository.return_value = repository
+
+        with patch(
+            "repositories.implementations.qdrant.qdrant_repository_factory.QdrantRepositoryFactory",
+            fabrik,
+        ):
+            assert asyncio.run(beitrag_laden(uuid.UUID(BEITRAG_ID), Mock())) is None
+
+    def test_unlesbarer_beitrag_zaehlt_trotzdem(self, dienst):
+        """Im Zweifel zaehlen: wem er gehoert, ist dann nicht feststellbar."""
+        app = FastAPI()
+        app.include_router(usage_router, prefix="/api/v1/usage")
+        app.dependency_overrides[get_settings] = lambda: Mock()
+
+        async def kaputt(content_id, settings):
+            raise BeitragUnlesbar(str(content_id))
+
+        with patch.object(
+            usage_module, "get_usage_service", return_value=dienst
+        ), patch.object(usage_module, "beitrag_laden", kaputt):
+            client = TestClient(app)
+            antwort = client.post(
+                f"/api/v1/usage/content/{BEITRAG_ID}/usage",
+                json={},
+                headers={"X-User": AUTORIN},
+            )
+
+        assert antwort.status_code == 200
+        dienst.track_content_usage.assert_called_once()
