@@ -30,10 +30,6 @@ class TestTextNormalisiert:
                 "Habeck will mir meine Heizung verbieten",
             ),
             ("Das geht's so nicht", "Das geht’s so nicht"),
-            (
-                "Wärmepumpen funktionieren nur im Neubau?",
-                "Wärmepumpen funktionieren nur im Neubau!",
-            ),
             ("Klima\n schützen …", "klima schützen"),
             ("STRASSE", "straße"),
         ],
@@ -57,6 +53,15 @@ class TestTextNormalisiert:
                 "Deutschland kann nicht alleine das Klima retten!",
             ),
             ("E-Autos sind eine Totgeburt", "E Autos sind eine Totgeburt"),
+            # Die Frage ist nicht die Behauptung - das Fragezeichen bleibt stehen.
+            (
+                "Die Grünen wollen alles verbieten?",
+                "Die Grünen wollen alles verbieten.",
+            ),
+            (
+                "Wärmepumpen funktionieren nur im Neubau?",
+                "Wärmepumpen funktionieren nur im Neubau!",
+            ),
         ],
     )
     def test_verschieden(self, a, b):
@@ -65,7 +70,7 @@ class TestTextNormalisiert:
     def test_leer_und_none(self):
         assert text_normalisiert("") == ""
         assert text_normalisiert(None) == ""
-        assert text_normalisiert(" ?! ") == ""
+        assert text_normalisiert(" !. ") == ""
 
 
 class TestIstDasselbe:

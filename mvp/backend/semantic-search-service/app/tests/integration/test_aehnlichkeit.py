@@ -169,7 +169,7 @@ async def test_parallel_derselbe_neue_text_ergibt_eine_aussage(statement_service
             for text in (
                 "Wärmepumpen funktionieren nur im Neubau!",
                 "wärmepumpen funktionieren nur im neubau",
-                "Wärmepumpen funktionieren nur im Neubau?",
+                "„Wärmepumpen funktionieren nur im Neubau!“",
             )
         )
     )
@@ -342,8 +342,12 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
     assert all(a.status_code == 200 for a in antworten), daten
     assert sorted(d["duplikat"] for d in daten) == [False, True]
     assert daten[0]["id"] == daten[1]["id"]
-    assert all(d["verknuepft"] for d in daten)
-    assert daten[0]["statement_id"] == daten[1]["statement_id"]
+    angelegt = next(d for d in daten if not d["duplikat"])
+    dublette = next(d for d in daten if d["duplikat"])
+    # Die zweite Person bekommt den Kommentar der ersten - fremder Inhalt wird nicht
+    # an ihre Aussage gehaengt.
+    assert angelegt["statement_id"] is not None
+    assert dublette["statement_id"] is None
 
     manager = commentary_service._repository._shared_manager
 
@@ -357,8 +361,8 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
 
     assert anzahl("commentary") == 1
     assert anzahl("reference") == 1
-    aussage = await statement_service.get(uuid.UUID(daten[0]["statement_id"]))
-    assert [r.id for r in aussage.replysuggestions] == [uuid.UUID(daten[0]["id"])]
+    aussage = await statement_service.get(uuid.UUID(angelegt["statement_id"]))
+    assert [r.id for r in aussage.replysuggestions] == [uuid.UUID(angelegt["id"])]
 
 
 async def test_dublette_mit_anderer_aussage_wird_dort_verknuepft(

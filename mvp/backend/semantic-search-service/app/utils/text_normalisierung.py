@@ -24,13 +24,17 @@ TYPEN_MIT_TEXT_NORMALISIERT = frozenset({"statement", "commentary"})
 
 _APOSTROPHE = str.maketrans({"’": "'", "‘": "'", "ʼ": "'"})
 _ANFUEHRUNGSZEICHEN = re.compile(r"[\"„“”‚«»‹›]")
-_SATZZEICHEN_AM_ENDE = ".!?…"
+# Punkt, Ausrufezeichen und Auslassungspunkte am Ende aendern nichts an der Aussage.
+# Das Fragezeichen bleibt: "Die Gruenen wollen alles verbieten?" fragt, "... verbieten."
+# behauptet - das sind nicht dieselben Saetze.
+_SATZZEICHEN_AM_ENDE = ".!…"
 
 
 def text_normalisiert(text: str) -> str:
     """
-    Gross/klein, Leerraum, Anfuehrungszeichen und Satzzeichen am Ende spielen
-    keine Rolle; typografische Apostrophe gelten wie der gerade.
+    Gross/klein, Leerraum, Anfuehrungszeichen sowie Punkt, Ausrufezeichen und
+    Auslassungspunkte am Ende spielen keine Rolle; typografische Apostrophe gelten
+    wie der gerade. Ein Fragezeichen am Ende bleibt stehen.
     """
     t = unicodedata.normalize("NFC", text or "").translate(_APOSTROPHE)
     t = _ANFUEHRUNGSZEICHEN.sub("", t)

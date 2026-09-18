@@ -2,8 +2,8 @@
 Messset Aehnlichkeit: Paare mit Kategorie und den gemessenen Scores fuer
 intfloat/multilingual-e5-base (2026-09-17).
 
-Kategorien: A identisch; B trivial abweichend (Gross/klein, Satzzeichen, Leerraum,
-Anfuehrungszeichen); C gleiche Behauptung, andere Worte; D verwandt, aber andere
+Kategorien: A identisch; B trivial abweichend (Gross/klein, Punkt/Ausrufezeichen,
+Leerraum, Anfuehrungszeichen); C gleiche Behauptung, andere Worte; D verwandt, aber andere
 Behauptung; E fremdes Thema. art: aussage (Formular/Seeding), suche (Suchanfragen),
 kommentar. Quelle: seed = mvp/data/seed/v1.0, eigen = fuer die Messung formuliert.
 
@@ -42,7 +42,9 @@ PAARE = [
     ("B06", "aussage", "B", 'E-AUTOS SIND EINE TOTGEBURT!!!', 'E-Autos sind eine Totgeburt!', "seed+eigen", 0.9024, 0.9173, 0.8797, True),
     ("B07", "aussage", "B", '"Habeck will mir meine Heizung verbieten"', 'Habeck will mir meine Heizung verbieten', "seed+eigen", 0.9871, 0.9825, 0.9312, True),
     ("B08", "aussage", "B", "Das geht's so nicht, Tempolimit ist Unsinn", 'Das geht’s so nicht, Tempolimit ist Unsinn', "eigen", 0.9980, 0.9952, 0.9265, True),
-    ("B09", "aussage", "B", 'Wärmepumpen funktionieren nur im Neubau?', 'Wärmepumpen funktionieren nur im Neubau!', "seed+eigen", 0.9719, 0.9555, 0.9116, True),
+    # Frage statt Behauptung: seit die Normalisierung das Fragezeichen stehen laesst,
+    # keine triviale Abweichung mehr, sondern ein eigener Satz (Kategorie D).
+    ("B09", "aussage", "D", 'Wärmepumpen funktionieren nur im Neubau?', 'Wärmepumpen funktionieren nur im Neubau!', "seed+eigen", 0.9719, 0.9555, 0.9116, False),
     ("B10", "aussage", "B", 'grüne wollen das auto verbieten.', 'Grüne wollen das Auto verbieten', "eigen", 0.9622, 0.9739, 0.9185, True),
     ("C01", "aussage", "C", 'E-Autos sind auch nicht besser für die Umwelt', 'Elektroautos sind gar nicht umweltfreundlich!', "seed", 0.9497, 0.9567, 0.8947, False),
     ("C02", "aussage", "C", 'Deutschland kann das Klima nicht alleine retten', 'Deutschland kann nicht alleine das Klima retten!', "seed", 0.9799, 0.9819, 0.9078, False),
