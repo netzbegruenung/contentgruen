@@ -183,6 +183,23 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-meta').textContent).toContain('Von: Kim Grün');
     });
 
+    it('nennt den eigenen Beitrag "Du", nicht die eigene Kennung', () => {
+      const daten = ausSuchergebnis(paket('commentary_result'));
+      zeigen({ ...daten, autor: 'test-user', autorName: 'Kim Grün' });
+
+      expect(element('.karte-meta').textContent).toContain('Von: Du');
+      expect(element('.karte-meta').textContent).not.toContain('Kim Grün');
+    });
+
+    it('laesst ohne Anmeldung die Autorzeile weg und zeigt nur das Alter', () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue(null);
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(element('.karte-meta').textContent).not.toContain('Von:');
+      expect(element('.karte-meta')).toBeTruthy();
+    });
+
     it('zeigt ohne Herkunft einen Hinweis und sonst die Adressen', () => {
       zeigen(ausSuchergebnis(paket('commentary_result')));
       expect(element('.quellen-leer').textContent).toContain('Keine Herkunft hinterlegt');
