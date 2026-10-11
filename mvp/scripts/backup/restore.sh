@@ -8,11 +8,17 @@ set -e  # Exit on error
 
 # Configuration
 BACKUP_ROOT="/opt/contentgruen-backups"
-POSTGRES_CONTAINER="contentgruen-app-postgres"
-APP_CONTAINER="contentgruen-semantic-search"
-QDRANT_CONTAINER="contentgruen-qdrant"
+# Containernamen wie in backup.sh: ueberall gleich, abweichend per Umgebung.
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
+APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
+QDRANT_CONTAINER="${QDRANT_CONTAINER:-contentgruen-qdrant}"
 DB_NAME="contentgruen_app"
 DB_USER="app_user"
+
+# Exakter Vergleich gegen die Namensspalte (siehe backup.sh).
+container_running() {
+    docker ps --format '{{.Names}}' | grep -qxF -- "$1"
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -72,19 +78,19 @@ fi
 
 # Check if containers are running
 echo -e "\n${YELLOW}Checking Docker containers...${NC}"
-if ! docker ps | grep -q "$POSTGRES_CONTAINER"; then
+if ! container_running "$POSTGRES_CONTAINER"; then
     echo -e "${RED}Error: PostgreSQL container '$POSTGRES_CONTAINER' is not running${NC}"
     echo "Please start the containers first with: docker-compose up -d"
     exit 1
 fi
 
-if ! docker ps | grep -q "$APP_CONTAINER"; then
+if ! container_running "$APP_CONTAINER"; then
     echo -e "${RED}Error: Application container '$APP_CONTAINER' is not running${NC}"
     echo "Please start the containers first with: docker-compose up -d"
     exit 1
 fi
 
-if ! docker ps | grep -q "$QDRANT_CONTAINER"; then
+if ! container_running "$QDRANT_CONTAINER"; then
     echo -e "${RED}Error: Qdrant container '$QDRANT_CONTAINER' is not running${NC}"
     echo "Please start the containers first with: docker-compose up -d"
     exit 1

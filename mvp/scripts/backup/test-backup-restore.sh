@@ -19,9 +19,10 @@ echo -e "${BLUE}========================================${NC}"
 # Configuration
 BACKUP_DIR="/opt/contentgruen-backups"
 TEST_MARKER="TEST_BACKUP_$(date +%Y%m%d_%H%M%S)"
-POSTGRES_CONTAINER="contentgruen-app-postgres"
-APP_CONTAINER="contentgruen-semantic-search"
-QDRANT_CONTAINER="contentgruen-qdrant"
+# Containernamen wie in backup.sh: ueberall gleich, abweichend per Umgebung.
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
+APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
+QDRANT_CONTAINER="${QDRANT_CONTAINER:-contentgruen-qdrant}"
 
 # Function to count Qdrant points
 count_qdrant_points() {

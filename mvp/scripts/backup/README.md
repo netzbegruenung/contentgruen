@@ -125,22 +125,20 @@ du -sh /opt/contentgruen-backups/
 
 ## Docker Compose Configuration
 
-Required volume mounts for backup system:
+Required volume mount for the backup system:
 
 ```yaml
 services:
   contentgruen-semantic-search:
     volumes:
       - /opt/contentgruen-backups:/backups
-
-  qdrant:
-    volumes:
-      - /opt/contentgruen-backups:/backups
-
-  postgres-app:
-    volumes:
-      - /opt/contentgruen-backups:/backups
 ```
+
+The Qdrant snapshot is written by `backup_qdrant.py` inside the application container
+to `/backups/...`; only this mount makes it appear in `/opt/contentgruen-backups` on the
+host. Without it `backup.sh` aborts, because the snapshot is missing on the host. The host
+side of the mount must match `BACKUP_ROOT` in the scripts. PostgreSQL needs no mount:
+`pg_dump` streams to the host via stdout.
 
 ## Production Notes
 
@@ -196,12 +194,21 @@ curl http://localhost:8000/api/v1/health
 
 ### Container Name Mismatch
 
-Edit backup.sh/restore.sh:
+Dev, test and production use the same container names; the scripts default to them and
+accept overrides from the environment (no need to edit the scripts):
+
+| Variable | Default |
+|---|---|
+| `POSTGRES_CONTAINER` | `contentgruen-app-postgres` |
+| `APP_CONTAINER` | `contentgruen-semantic-search` |
+| `QDRANT_CONTAINER` | `contentgruen-qdrant` |
+
 ```bash
-POSTGRES_CONTAINER="your-postgres-container-name"
-APP_CONTAINER="your-app-container-name"
-QDRANT_CONTAINER="your-qdrant-container-name"
+POSTGRES_CONTAINER=other-name ./backup.sh
 ```
+
+A container counts as running only if `docker ps --format '{{.Names}}'` lists exactly
+that name.
 
 ### Permission Issues
 
