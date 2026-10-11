@@ -55,7 +55,8 @@ Then access:
   this environment by itself. The Salt state still contains a Watchtower block, but its
   container is stuck in a restart loop (as of 2026-10-11); the block is being removed from
   the Salt repo (#22)
-- **Backups:** disabled (`enable_backup: false` in the Salt pillar)
+- **Backups:** enabled since the Salt PR `fix/contentgruen-haertung` (`enable_backup: true`,
+  mount `/opt/contentgruen-backups:/backups`); disabled before that
 
 ### Legacy (manual, being discontinued)
 
