@@ -50,8 +50,11 @@ Then access:
 
 - 🔗 Frontend: https://contentgruen-test.netzbegruenung.de
 - **Management:** SaltStack, alongside production
-- **Images:** floating `:main` tag, pulled automatically by a Watchtower sidecar, so every
-  merge to `main` reaches this environment without a Salt run
+- **Images:** floating `:main` tag, deployed **manually**: Salt `state.apply`, then
+  `docker compose pull && docker compose up -d` on the host. A merge to `main` does not reach
+  this environment by itself. The Salt state still contains a Watchtower block, but its
+  container is stuck in a restart loop (as of 2026-10-11); the block is being removed from
+  the Salt repo (#22)
 - **Backups:** disabled (`enable_backup: false` in the Salt pillar)
 
 ### Legacy (manual, being discontinued)
@@ -155,8 +158,8 @@ Passbolt-backed Salt pillar.
 
 CI runs on GitHub Actions:
 - `.github/workflows/build.yml` — builds on every push to `main` and on pull requests,
-  publishing `:main` and `:sha-<short>` tags. The SaltStack-managed test environment tracks
-  `:main` via Watchtower.
+  publishing `:main` and `:sha-<short>` tags. The SaltStack-managed test environment runs
+  `:main`, pulled manually (see above; the Watchtower block in Salt is broken and being removed, #22).
 - `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
   `:latest` for all four images.
 

@@ -92,7 +92,7 @@ run-local.bat   # (or scripts/dev/run-local.bat)
 cd mvp
 run-docker.bat   # Windows (or scripts/dev/run-docker.bat)
 ./run-docker.sh  # Linux/Mac (or scripts/dev/run-docker.sh)
-# Access: http://localhost/
+# Access: http://localhost:8080 (docker-compose.dev.yml publishes the frontend on host port 8080)
 ```
 
 **Run Tests:**
@@ -102,7 +102,7 @@ run-tests.bat   # Windows (or scripts/test/run-all-tests.bat)
 ./run-tests.sh  # Linux/Mac (or scripts/test/run-all-tests.sh)
 ```
 
-**Default Login:** `testuser` / `Liebe>Hass!`
+**Default Login:** `test.user@example.com` / `Liebe>Hass!` (from `mvp/config/managed-users.example.json`)
 
 ## Project Overview
 
@@ -120,7 +120,7 @@ Gut gesagt is a semantic content platform for green political activism, helping 
 ```
 Frontend (Angular) → BFF (.NET) → Semantic Search (Python) → Qdrant + PostgreSQL
         ↓                ↓                    ↓                    ↓
-    [Port 4200/80]   [Port 5054]        [Port 8000]         [Ports 6333, 5433]
+  [Port 4200/8080]  [Port 5054]        [Port 8000]         [Ports 6333, 5433]
 ```
 
 Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
@@ -144,7 +144,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 
 ### Testing in Docker
 1. Use `run-docker.sh/bat`
-2. Access at http://localhost/
+2. Access at http://localhost:8080
 3. Check logs: `docker-compose logs -f [service]`
 
 ## Environment Configuration
@@ -175,7 +175,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 ## Authentication Modes
 
 ### Dummy Auth (Development)
-- Username: `testuser`
+- E-Mail: `test.user@example.com` (login is by e-mail, not by user name)
 - Password: `Liebe>Hass!`
 - Used in local and test environments
 
@@ -216,7 +216,7 @@ When user requests "start docker":
 cd mvp
 run-docker.bat   # Windows
 ./run-docker.sh  # Linux/Mac
-# Access: http://localhost/
+# Access: http://localhost:8080
 ```
 
 ### Run All Tests
@@ -275,6 +275,10 @@ When user requests "view api docs":
 ```bash
 docker exec -it contentgruen-app-postgres psql -U app_user -d contentgruen_app
 ```
+Container names are the same in dev, test and production: `contentgruen-app-postgres`,
+`contentgruen-semantic-search`, `contentgruen-qdrant` (on the hosts once the Salt PR
+`fix/contentgruen-haertung` is rolled out; before that the hosts named PostgreSQL
+`contentgruen-postgres-app`).
 
 ### View Logs
 When user requests "check logs" or "view logs":
@@ -337,6 +341,10 @@ cd mvp/scripts/backup
 
 **Important Notes:**
 - First run: `backup.sh` auto-creates directories (`/opt/contentgruen-backups/daily/`, `/opt/contentgruen-backups/weekly/`)
+- Container names default to the ones above; override with `POSTGRES_CONTAINER`,
+  `APP_CONTAINER`, `QDRANT_CONTAINER` if needed. `BACKUP_ROOT` (default `/opt/contentgruen-backups`)
+  must be mounted at `/backups` in `contentgruen-semantic-search`, otherwise `backup.sh` aborts
+  because the Qdrant snapshot is missing on the host. Dev-stack test: README "Testing in the dev stack"
 - Automatic rotation: Keeps last 7 daily + 4 weekly backups
 - Includes Qdrant vectors and PostgreSQL metadata
 - Restore is destructive - always confirm before running
@@ -365,8 +373,9 @@ dotnet test
 ### Test Environment
 - URL: https://contentgruen-test.netzbegruenung.de (SaltStack-managed, runs the `:main` image tag)
 - Deployment: Manual — Salt `state.apply`, then `docker compose pull && docker compose up -d` on the host.
-  A new `:main` image is **not** rolled out automatically (Watchtower is inactive), so migrations can
-  run before the deploy.
+  A new `:main` image is **not** rolled out automatically, so migrations can run before the deploy.
+  The Salt state still contains a Watchtower block, but its container is stuck in a restart loop
+  (as of 2026-10-11); the block is being removed from the Salt repo (#22).
 - Legacy URL: https://test.contentgruen.de (manual deployment via docker-compose.tst.yml, being discontinued)
 
 ### Production Environment

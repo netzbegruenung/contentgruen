@@ -310,7 +310,9 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - GitHub Actions for automated builds (`.github/workflows/build.yml` on `main` and pull requests,
   `.github/workflows/release.yml` on `v*` tags)
 - Container registry at git.verdigado.com (`netzbegruenung-images`)
-- Test: tracks the floating `:main` tag via a Watchtower sidecar
+- Test: runs the floating `:main` tag, deployed manually (Salt `state.apply`, then
+  `docker compose pull && docker compose up -d`). The Watchtower block still in the Salt state
+  is stuck in a restart loop (as of 2026-10-11) and is being removed (#22)
 - Production: SaltStack, with images pinned by digest and bumped by Renovate — deploys happen
   when the Salt compose file is rewritten, not on a tag push
 
