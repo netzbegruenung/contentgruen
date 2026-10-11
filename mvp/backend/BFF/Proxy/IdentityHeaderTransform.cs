@@ -10,9 +10,10 @@ namespace BFF.Proxy;
 /// Proxy-Request, bevor dieser Code laeuft. Deshalb wird die Liste in
 /// <see cref="ClientControlledIdentityHeaders"/> hier zuerst bedingungslos entfernt -- vor
 /// jeder Verzweigung, damit auch die Pfade ohne angemeldeten Nutzer nichts vom Client
-/// durchreichen -- und danach werden X-User und X-Is-Admin ausschliesslich serverseitig
-/// bestimmt: aus den Claims des angemeldeten Nutzers und der konfigurierten
-/// Admin-Allowlist, beides zusammengefasst in <see cref="AdminPolicy"/>. Gesetzt wird
+/// durchreichen -- und danach werden X-User, X-Is-Admin und X-User-Display-Name
+/// ausschliesslich serverseitig bestimmt: aus den Claims des angemeldeten Nutzers und der
+/// konfigurierten Admin-Allowlist, zusammengefasst in <see cref="AdminPolicy"/> und
+/// <see cref="DisplayNamePolicy"/>. Gesetzt wird
 /// ersetzend, damit beim Backend garantiert genau ein Wert ankommt.
 /// </summary>
 public static class IdentityHeaderTransform
@@ -20,6 +21,12 @@ public static class IdentityHeaderTransform
     public const string UserHeader = "X-User";
     public const string AdminHeader = "X-Is-Admin";
     public const string SessionHeader = "X-Session-Id";
+
+    /// <summary>
+    /// Anzeigename aus <see cref="DisplayNamePolicy"/>, prozentkodiert: HTTP-Header sind
+    /// ASCII, und "Jürgen Ö." darf nicht an HttpHeaders.Add scheitern. Das Backend dekodiert.
+    /// </summary>
+    public const string DisplayNameHeader = "X-User-Display-Name";
 
     public const string AnonymousUser = "anonymous";
 
@@ -43,6 +50,7 @@ public static class IdentityHeaderTransform
         AdminHeader,
         "X-User-Id",
         "X-User-Name",
+        DisplayNameHeader,
         "X-Roles",
         "X-Is-Authenticated"
     };
@@ -74,6 +82,13 @@ public static class IdentityHeaderTransform
         {
             SetSingleValue(proxyRequest, UserHeader, userId);
             logger.LogDebug("Set X-User header for authenticated user: {UserId}", userId);
+
+            // Der Name selbst steht in keinem Log.
+            var anzeigename = DisplayNamePolicy.From(user);
+            if (anzeigename is not null)
+            {
+                SetSingleValue(proxyRequest, DisplayNameHeader, Uri.EscapeDataString(anzeigename));
+            }
 
             if (AdminPolicy.IsAdmin(user, adminUserIds))
             {
