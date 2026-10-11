@@ -90,10 +90,13 @@
         Bei der Anmeldung übermittelt der Identitätsdienst an diese Plattform eine
         Nutzerkennung, Ihre E-Mail-Adresse und Ihren Namen. Diese Angaben werden in einem
         verschlüsselten Cookie in Ihrem Browser abgelegt und beim Aufruf jeder Seite
-        mitgeschickt. Die Zugangs-Tokens des Identitätsdienstes legen wir darin nicht ab. <strong>Ihre E-Mail-Adresse und Ihren Namen
-        legen wir auf unseren Servern nicht ab.</strong> Ihre Nutzerkennung dagegen schon —
-        überall dort, wo etwas von Ihnen stammt: an Beiträgen, Bewertungen, Meldungen und
-        Einwürfen. Was das bedeutet, steht unten unter „Beiträge, die Sie einstellen".
+        mitgeschickt. Die Zugangs-Tokens des Identitätsdienstes legen wir darin nicht ab. <strong>Ihre E-Mail-Adresse und Ihren
+        vollständigen Namen legen wir auf unseren Servern nicht ab.</strong> Aus Ihrem Namen
+        bilden wir einen <strong>Anzeigenamen</strong> — Ihren Vornamen und den ersten
+        Buchstaben Ihres Nachnamens, etwa „Anna B." — und speichern nur diesen, zusammen mit
+        Ihrer Nutzerkennung. Ihre Nutzerkennung speichern wir außerdem überall dort, wo etwas
+        von Ihnen stammt: an Beiträgen, Bewertungen, Meldungen und Einwürfen. Was das
+        bedeutet, steht unten unter „Beiträge, die Sie einstellen".
       </p>
       <p>
         <strong>Zweck:</strong> Sie anzumelden und Ihnen die Funktionen zuzuordnen, die ein
@@ -146,15 +149,25 @@
         freischalten.
       </p>
       <p>
-        Gespeichert und angezeigt wird dabei <strong>nicht Ihr Klarname</strong>, sondern die
-        Kennung, unter der Sie angemeldet sind. Das ist eine Zeichenfolge, kein Name und keine
-        E-Mail-Adresse.
+        Am Beitrag selbst steht <strong>nicht Ihr Name</strong>, sondern die Kennung, unter der
+        Sie angemeldet sind — eine Zeichenfolge, kein Name und keine E-Mail-Adresse. Angezeigt
+        wird an ihrer Stelle Ihr <strong>Anzeigename</strong>: Ihr Vorname und der erste
+        Buchstabe Ihres Nachnamens, etwa „Anna B.". Ihren eigenen Beitrag sehen Sie als „Du".
+        Haben wir zu einer Kennung keinen Anzeigenamen, steht dort „Mitglied".
       </p>
       <p>
-        <strong>Diese Angaben sind öffentlich.</strong> Beiträge erscheinen in der Suche, und
-        die Suche steht allen offen — auch Menschen ohne Konto. Wer einen Beitrag findet,
-        sieht die Kennung der Person, die ihn eingestellt hat. Da dieselbe Kennung an allen
-        Ihren Beiträgen steht, lassen sich Ihre Beiträge untereinander in Beziehung setzen.
+        <strong>Wer den Anzeigenamen sieht:</strong> nur, wer angemeldet ist. Beiträge
+        erscheinen auch in der Suche ohne Anmeldung — dort steht am Beitrag
+        <strong>weder Ihr Anzeigename noch Ihre Kennung</strong>; wir geben beides an Aufrufe
+        ohne Anmeldung gar nicht erst heraus. Angemeldete können Ihre Beiträge über den
+        Anzeigenamen untereinander in Beziehung setzen. Technisch übermitteln wir an
+        angemeldete Browser auch die Kennung – sie dient dazu, Ihre eigenen Einträge als ‚Du'
+        zu erkennen, und wird nicht angezeigt.
+      </p>
+      <p>
+        Den Anzeigenamen übernehmen wir bei Ihren Besuchen aus den Angaben Ihres Kontos. Ändern
+        Sie dort Ihren Namen, ändert sich der Anzeigename beim nächsten Besuch — an allen Ihren
+        Beiträgen zugleich, denn am Beitrag selbst steht er nicht.
       </p>
       <p>
         Beiträge enthalten häufig Angaben über <strong>andere Menschen</strong>. Wer einen
@@ -174,12 +187,17 @@
         Plattform betrieben wird. Das ist Absicht und folgt aus dem Zweck: Beiträge stehen
         nach den <a routerLink="/nutzungsbedingungen">Nutzungsbedingungen</a> unter der Lizenz
         CC0&nbsp;1.0 und bilden einen Bestand, auf dem andere Beiträge und Verweise aufbauen.
-        Löschen wir einen einzelnen Beitrag heraus, zerfällt dieser Zusammenhang.
+        Löschen wir einen einzelnen Beitrag heraus, zerfällt dieser Zusammenhang.<br>
+        <strong>Anzeigename — Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO;
+        unser berechtigtes Interesse ist, dass Mitglieder sehen, von wem ein Beitrag stammt, ohne
+        dass dafür ein vollständiger Name oder eine technische Kennung gezeigt wird.
+        <strong>Dauer:</strong> bis zur Löschung Ihres Kontos.
       </p>
       <p>
         Wenn Sie Ihr Konto aufgeben, löschen wir Ihre Beiträge deshalb nicht, sondern
         <strong>ersetzen Ihre Kennung an allen drei genannten Stellen durch einen
-        Platzhalter</strong>. Damit ist der Personenbezug weg, der Bestand bleibt. Macht der
+        Platzhalter</strong>. Ihren Anzeigenamen löschen wir; Ihre Beiträge zeigen danach
+        „Mitglied". Damit ist der Personenbezug weg, der Bestand bleibt. Macht der
         Text eines Beitrags Sie selbst erkennbar, löschen wir diesen Beitrag auf Ihren Hinweis
         hin vollständig. Mehr dazu unter „Ihre Rechte".
       </p>
@@ -365,13 +383,14 @@
         der destillierenden und der verarbeitenden Person.
       </p>
       <p>
-        <strong>Diese Kennung ist für alle angemeldeten Nutzenden sichtbar</strong>, nicht nur
-        für Sie selbst und nicht nur für die Moderation: Der Fangkorb ist eine gemeinsame
-        Liste, und in ihr steht bei jedem Eintrag, wer ihn eingeworfen hat. Ohne Anmeldung ist
-        der Fangkorb nicht erreichbar. Sichtbar ist dort der ganze Einwurf: Link, Hinweis und
-        Kennung der einwerfenden Person, die Sätze, die beim Destillieren dazu entstehen, jeweils
-        mit der Kennung der Person, die sie gespeichert hat, und die Kennung der Person, die
-        daraus einen Beitrag gemacht hat.
+        <strong>Wer einen Einwurf gemacht hat, sehen alle angemeldeten Nutzenden</strong>, nicht
+        nur Sie selbst und nicht nur die Moderation: Der Fangkorb ist eine gemeinsame Liste, und
+        in ihr steht bei jedem Eintrag Ihr Anzeigename (siehe „Beiträge, die Sie einstellen").
+        Ohne Anmeldung ist der Fangkorb nicht erreichbar. Sichtbar ist dort der ganze Einwurf:
+        Link, Hinweis und der Anzeigename der einwerfenden Person sowie die Sätze, die beim
+        Destillieren dazu entstehen, jeweils mit dem Anzeigenamen der Person, die sie gespeichert
+        hat. Technisch übermitteln wir an angemeldete Browser auch die Kennung – sie dient dazu,
+        Ihre eigenen Einträge als ‚Du' zu erkennen, und wird nicht angezeigt.
       </p>
       <p>
         Einwürfe enthalten häufig Angaben über <strong>andere Menschen</strong> — etwa einen
@@ -602,8 +621,8 @@
       <p>
         <strong>Wie eine Löschung bei uns abläuft, und was sie nicht leistet:</strong> Es gibt
         keine Schaltfläche, die Ihr Konto und alles daran Hängende von selbst entfernt. Wir
-        führen die Löschung von Hand aus. Dabei entfernen wir Ihren Zugang, Ihre Bewertungen,
-        Ihre Meldungen und Ihre Einwürfe. Ihre <strong>Beiträge bleiben erhalten und werden
+        führen die Löschung von Hand aus. Dabei entfernen wir Ihren Zugang, Ihren Anzeigenamen,
+        Ihre Bewertungen, Ihre Meldungen und Ihre Einwürfe. Ihre <strong>Beiträge bleiben erhalten und werden
         anonymisiert</strong> — an die Stelle Ihrer Kennung tritt ein Platzhalter; die Gründe
         stehen oben unter „Beiträge, die Sie einstellen". Macht ein Beitrag Sie selbst
         erkennbar, löschen wir ihn auf Ihren Hinweis hin ganz.

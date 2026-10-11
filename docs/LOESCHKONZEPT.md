@@ -24,7 +24,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen; `reviewed_by` und `raw_input_content_links.created_by`
    auf `NULL` setzen statt löschen — die Zeilen gehören inhaltlich anderen;
-   `raw_inputs` der Person löschen (CASCADE räumt deren Links mit ab).
+   `raw_inputs` der Person löschen (CASCADE räumt deren Links mit ab); die Zeile in
+   `users` (Anzeigename) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
+   noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
+   zeigen nach der Löschung „Mitglied".
 3. **Qdrant.** Beiträge werden **anonymisiert, nicht gelöscht.** `original_author`,
    `last_modified_by`, `authors[].name` und `edit_history[].editor` bekommen den Wert
    `geloeschter-nutzer`. Damit bleiben Antwortvorschläge, Referenzen und
@@ -37,7 +40,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    `managed-users.example.json`. Die Adresse bleibt trotzdem in der Git-Historie, weil die
    Datei dort bis PR #29 lag.
 
-## Drei Fallen
+## Vier Fallen
 
 - **Sitzungskennung vor `content_reports`.** Wird Schritt 2 vor Schritt 1 ausgeführt,
   ist der einzige Weg von der UUID zu den `usage_events` dauerhaft weg. Findet
@@ -46,6 +49,13 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 - **Anonymisieren vor Löschen.** Erst der Payload-Lauf über alle vier Felder, dann
   die Einzelfall-Löschungen. Andersherum fehlen die gelöschten Punkte im
   Anonymisierungslauf, und ein Punkt mit fremden Mitautoren wäre schon weg.
+- **Der Anzeigename kommt mit der nächsten Anfrage zurück.** Der Semantic-Service legt
+  ihn aus dem Header `X-User-Display-Name` an, sobald er ihn nicht im Prozess-Cache hat
+  (`services/anzeigename_service.py`). Solange das Anmelde-Cookie der Person gilt, entsteht
+  die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
+  ein in Keycloak gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet (bis zu
+  14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). Den `DELETE FROM users`
+  deshalb nach 14 Tagen wiederholen.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
@@ -72,6 +82,15 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   alles aus dem `json-file`-Treiber ist unbegrenzt. Einzelne Zeilen daraus zu entfernen ist
   nicht vorgesehen. Einordnung und Belege: `docs/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
 
+## Offene Punkte
+
+- **Sätze an fremden Einwürfen (`raw_input_drafts`).** Schritt 2 löscht die `raw_inputs`
+  der Person, und `ON DELETE CASCADE` räumt die Sätze daran mit ab. Sätze, die die Person
+  beim Destillieren an **Einwürfen anderer** gespeichert hat, bleiben dagegen stehen —
+  mit ihrer Kennung in `raw_input_drafts.user_id` (`NOT NULL`), und angemeldete Nutzende
+  sehen sie im Fangkorb. Noch nicht entschieden: löschen oder die Kennung ersetzen.
+  Bis dahin deckt das Kommando unten diesen Fall nicht ab.
+
 ## Kommandos
 
 ```bash
@@ -93,13 +112,14 @@ DELETE FROM content_reports  WHERE reported_by_user_id = :'uid';
 UPDATE content_reports         SET reviewed_by = NULL WHERE reviewed_by = :'uid';
 UPDATE raw_input_content_links SET created_by  = NULL WHERE created_by  = :'uid';
 DELETE FROM raw_inputs       WHERE submitted_by        = :'uid';
+DELETE FROM users            WHERE user_id             = :'uid';
 -- Nur auf unmigriertem Schema (Spalte user_id vorhanden):
 -- DELETE FROM search_events WHERE user_id = :'uid';
 COMMIT;
 SQL
 
 docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, usage_events;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, usage_events, users;"
 ```
 
 ```bash

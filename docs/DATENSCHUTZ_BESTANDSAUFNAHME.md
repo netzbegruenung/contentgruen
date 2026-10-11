@@ -573,10 +573,16 @@ Das Frontend rendert es sichtbar mit „Von: …":
 für alle Typen; vorher je Typ in `*-result-item.component.html`).
 
 Angezeigt wurde bis zur Beitragskarte der Rohwert des `X-User`-Headers, also die Keycloak-`sub`
-(eine UUID) bzw. `user-001`/`test-user-id-1`; seitdem sind es die ersten 8 Zeichen davon
-(`fe/app/shared/kennung.ts`, bis es Anzeigenamen gibt) — **kein Klarname**. Über die API geht
-weiterhin die volle Kennung. Für Betroffene bleibt es eine dauerhaft öffentliche, über alle
-Beiträge hinweg verknüpfbare Kennung.
+(eine UUID) bzw. `user-001`/`test-user-id-1`; danach die ersten 8 Zeichen davon
+(`fe/app/shared/kennung.ts`, inzwischen entfernt).
+
+**Nachtrag Anzeigenamen (feat/anzeigenamen):** Die Karte zeigt jetzt den Anzeigenamen
+„Vorname N." (BFF `Proxy/DisplayNamePolicy.cs`, Tabelle `users`), ohne Namen „Mitglied".
+Namen gehen nur an angemeldete Aufrufer. Anonyme Aufrufe von `/search/searchByText` und
+`/content/recent` bekommen `original_author`, `last_modified_by`, `authors[]` und
+`edit_history[]` **leer** (`services/anzeigename_service.py`, `kennungsfelder_leer`) — der
+oben beschriebene öffentliche Abfluss der Kennung ist damit geschlossen. An Angemeldete geht
+die volle Kennung weiter mit; das Frontend braucht sie für „Du".
 
 ### Löschung in Qdrant
 
