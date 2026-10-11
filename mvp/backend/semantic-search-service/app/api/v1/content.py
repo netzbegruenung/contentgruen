@@ -14,6 +14,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from domain.models.content import ContentDbEntry, ContentSearchResult
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
+from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.content.reference_service import ReferenceService
 
 router = APIRouter()
@@ -207,6 +208,8 @@ async def get_recent_content(
         logger.debug("Enriching content with usage statistics...")
         usage_service = get_usage_service()
         enriched_results = usage_service.enrich_content_with_usage(all_recent)
+        if angemeldet(x_user):
+            get_anzeigename_service().an_eintraege(enriched_results)
 
         logger.info(f"/recent endpoint returning {len(enriched_results)} results")
 

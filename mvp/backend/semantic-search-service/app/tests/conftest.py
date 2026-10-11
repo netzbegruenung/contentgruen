@@ -11,7 +11,7 @@ import pytest
 import uuid
 import threading
 from typing import Optional
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 # Set test environment before any imports
 os.environ["TESTING"] = "true"
@@ -89,6 +89,25 @@ def clean_singleton_state():
     # Clear singleton after test
     QdrantEmbeddingsManager._instance = None
     QdrantEmbeddingsManager._lock = threading.Lock()
+
+
+@pytest.fixture(autouse=True)
+def anzeigenamen_ohne_datenbank(monkeypatch):
+    """
+    Der AnzeigenameService haengt an jeder angemeldeten Antwort. Ohne diesen Ersatz
+    baute der erste Aufruf das echte UserRepository, und get_app_database() verbaende
+    sich mit dem PostgreSQL aus den Settings - auf der Dev-VM ist das der laufende
+    Dev-Stack. Der Ersatz kennt keine Namen; Tests, die welche brauchen, stellen sie
+    ueber ``anzeigenamen_ohne_datenbank.anzeigenamen.return_value`` ein.
+    """
+    import services.anzeigename_service as modul
+
+    repository = MagicMock()
+    repository.anzeigenamen.return_value = {}
+    monkeypatch.setattr(
+        modul, "_anzeigename_service", modul.AnzeigenameService(repository)
+    )
+    yield repository
 
 
 def create_base_content_fields(**overrides):

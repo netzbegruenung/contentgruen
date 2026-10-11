@@ -254,6 +254,26 @@ class SearchOrchestrator:
             for content_obj, enriched_item in zip(content_objs, enriched):
                 content_obj.usage_count = enriched_item.get("usage_count", 0)
 
+    def apply_author_names(self, anzeigename_service) -> None:
+        """
+        ``autor_name`` an jedes Ergebnis, aus einer Abfrage fuer alle Autoren.
+
+        Steht am Wrapper, nicht am DbEntry: der DbEntry ist das Qdrant-Payload,
+        und ein Name darin wuerde beim naechsten Speichern mitgeschrieben.
+        """
+        paare = [
+            (result, getattr(result, spec.result_field))
+            for spec in self._specs.values()
+            for result in self._results[spec.content_type]
+            if getattr(result, spec.result_field)
+        ]
+        if not paare:
+            return
+
+        namen = anzeigename_service.namen(inhalt.original_author for _, inhalt in paare)
+        for result, inhalt in paare:
+            result.autor_name = namen.get(inhalt.original_author)
+
     def apply_user_votes(self, user: str) -> None:
         all_content_ids = [
             getattr(result, spec.result_field).id

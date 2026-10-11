@@ -13,7 +13,7 @@ eines BFF ohne diese Funktion, und der soll nichts loeschen.
 
 import logging
 import unicodedata
-from typing import Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import unquote
 
 from repositories.user_repository import UserRepository, get_user_repository
@@ -22,6 +22,11 @@ logger = logging.getLogger(__name__)
 
 ANONYM = "anonymous"
 MAX_LAENGE = 100
+
+
+def angemeldet(user_id: Optional[str]) -> bool:
+    """Namen gehen nur an angemeldete Aufrufer; "anonymous" ist die Kennung des BFF fuer niemanden."""
+    return bool(user_id) and user_id != ANONYM
 
 
 def anzeigename_aus_header(roh: Optional[str]) -> Optional[str]:
@@ -47,7 +52,7 @@ class AnzeigenameService:
 
     def merken(self, user_id: Optional[str], roh: Optional[str]) -> None:
         """Den Namen aus dem Header ablegen, falls er neu ist. Wirft nie."""
-        if not user_id or user_id == ANONYM:
+        if not angemeldet(user_id):
             return
         name = anzeigename_aus_header(roh)
         if name is None or self._bekannt.get(user_id) == name:
@@ -63,8 +68,34 @@ class AnzeigenameService:
         self._bekannt[user_id] = name
 
     def namen(self, user_ids: Iterable[Optional[str]]) -> Dict[str, str]:
-        """Kennung -> Anzeigename, eine Abfrage fuer alle."""
-        return self._repository.anzeigenamen(user_ids)
+        """
+        Kennung -> Anzeigename, eine Abfrage fuer alle. Scheitert die Abfrage,
+        kommt die Antwort ohne Namen - die Karte zeigt dann "Mitglied".
+        """
+        try:
+            return self._repository.anzeigenamen(user_ids)
+        except Exception as e:
+            logger.warning(
+                f"Anzeigenamen konnten nicht gelesen werden: {type(e).__name__}"
+            )
+            return {}
+
+    def mit_autor_name(self, inhalt) -> Dict[str, Any]:
+        """Ein einzelner Beitrag als Antwort-Dict mit ``autor_name`` daneben."""
+        antwort = inhalt.model_dump(mode="json")
+        self.an_eintraege([antwort])
+        return antwort
+
+    def an_eintraege(
+        self,
+        eintraege: List[Dict[str, Any]],
+        kennung: str = "original_author",
+        feld: str = "autor_name",
+    ) -> None:
+        """Je Eintrag ``feld`` aus ``kennung`` setzen, eine Abfrage fuer alle."""
+        namen = self.namen(eintrag.get(kennung) for eintrag in eintraege)
+        for eintrag in eintraege:
+            eintrag[feld] = namen.get(eintrag.get(kennung))
 
 
 _anzeigename_service: Optional[AnzeigenameService] = None

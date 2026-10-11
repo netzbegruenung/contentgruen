@@ -44,6 +44,8 @@ class CommentarySearchResult(BaseModel):
     statement_similarity_score: float
     reply_relevance: float
     commentary_result: CommentaryDbEntry
+    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
+    autor_name: Optional[str] = None
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -56,6 +58,8 @@ class GenericTextSearchResult(BaseModel):
     statement_similarity_score: float
     reply_relevance: float
     generictext_result: GenericTextDbEntry
+    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
+    autor_name: Optional[str] = None
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -68,6 +72,8 @@ class PostSearchResult(BaseModel):
     statement_similarity_score: float
     reply_relevance: float
     post_result: PostDbEntry
+    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
+    autor_name: Optional[str] = None
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -80,6 +86,8 @@ class ImageSearchResult(BaseModel):
     statement_similarity_score: Optional[float] = None
     reply_relevance: Optional[float] = None
     image_result: ImageDbEntry
+    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
+    autor_name: Optional[str] = None
     user_vote: Optional[str] = None
     polarity_mismatch_detected: Optional[bool] = None
     original_score: Optional[float] = None

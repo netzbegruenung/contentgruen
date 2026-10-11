@@ -1,6 +1,7 @@
 import datetime
 from domain.models.zeit import utc_jetzt
 import logging
+from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, Depends
 
 from dependencies import (
@@ -15,6 +16,7 @@ from dtos.commentary import (
     SearchCommentaryByTextRequest,
 )
 from services.content.commentary_service import CommentaryService
+from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from domain.models.commentary import CommentaryReference
 from services.content.reference_service import ReferenceService
@@ -49,6 +51,7 @@ async def get_by_id(
         ..., description="The UUID of the commentary to retrieve"
     ),
     commentary_service: CommentaryService = Depends(get_commentary_service),
+    x_user: Optional[str] = Header(default=None),
 ):
     try:
         # Retrieve commentary by ID
@@ -60,6 +63,8 @@ async def get_by_id(
                 status_code=404, detail=f"Commentary with id {commentary_id} not found"
             )
 
+        if angemeldet(x_user):
+            return get_anzeigename_service().mit_autor_name(commentary)
         return commentary
 
     except Exception as e:

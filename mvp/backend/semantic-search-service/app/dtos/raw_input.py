@@ -164,6 +164,8 @@ class RawInputDraftResponse(BaseModel):
 
     id: str
     user_id: str
+    # Anzeigename zu user_id; None ohne gespeicherten Namen.
+    user_name: Optional[str] = None
     sentence: str
     updated_at: datetime.datetime
 
@@ -199,6 +201,8 @@ class RawInputResponse(BaseModel):
     url: Optional[str] = None
     image_url: Optional[str] = None
     submitted_by: Optional[str] = None
+    # Anzeigename zu submitted_by; None ohne gespeicherten Namen.
+    submitted_by_name: Optional[str] = None
     source_channel: str
     status: RawInputStatus
     created_at: datetime.datetime
