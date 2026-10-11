@@ -13,6 +13,8 @@ namespace BFF.Proxy;
 ///   2. Claim "name": erstes Wort + Initial des letzten. Das ist der Weg fuer Managed-Login,
 ///      dort steht der DisplayName aus managed-users.json im Claim "name".
 ///   3. GivenName allein.
+/// Das Initial kommt in 1. und 2. aus dem letzten Wort des Nachnamens und ist immer ein
+/// Grossbuchstabe: "von der Leyen" -> "L.", "Mueller-Luedenscheidt" ist ein Wort -> "M.".
 /// Ein einzelnes Wort bleibt ohne Initial ("Kim").
 ///
 /// Bewusst nie preferred_username, E-Mail oder ClaimTypes.Name: das sind Login-Kennungen,
@@ -30,7 +32,7 @@ public static class DisplayNamePolicy
         var nachnamen = Woerter(Wert(user, ClaimTypes.Surname));
         if (vornamen.Length > 0 && nachnamen.Length > 0)
         {
-            return $"{vornamen[0]} {Initial(nachnamen[0])}.";
+            return $"{vornamen[0]} {Initial(nachnamen[^1])}.";
         }
 
         var name = Woerter(Wert(user, NameClaim));
@@ -56,7 +58,10 @@ public static class DisplayNamePolicy
         wert?.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         ?? Array.Empty<string>();
 
-    /// <summary>Das erste Textelement, nicht das erste char: sonst zerfiele ein Surrogatpaar.</summary>
+    /// <summary>
+    /// Das erste Textelement, nicht das erste char: sonst zerfiele ein Surrogatpaar. Immer gross,
+    /// damit "von der Leyen" nicht als "l." endet.
+    /// </summary>
     private static string Initial(string wort) =>
-        StringInfo.GetNextTextElement(wort, 0);
+        StringInfo.GetNextTextElement(wort, 0).ToUpperInvariant();
 }

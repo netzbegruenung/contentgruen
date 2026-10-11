@@ -38,6 +38,32 @@ public class DisplayNamePolicyTests
         Assert.Equal("Jürgen Ö.", DisplayNamePolicy.From(user));
     }
 
+    [Theory]
+    [InlineData("Ursula", "von der Leyen", "Ursula L.")]
+    [InlineData("Karl-Theodor", "Freiherr zu Guttenberg", "Karl-Theodor G.")]
+    [InlineData("Lena", "Müller-Lüdenscheidt", "Lena M.")]
+    [InlineData("Jan", "de Vries", "Jan V.")]
+    public void From_MultiPartSurname_TakesInitialOfLastWord(string vorname, string nachname, string erwartet)
+    {
+        var user = Mit((ClaimTypes.GivenName, vorname), (ClaimTypes.Surname, nachname));
+
+        Assert.Equal(erwartet, DisplayNamePolicy.From(user));
+    }
+
+    [Fact]
+    public void From_NameClaimWithLowercaseParticle_GivesUppercaseInitial()
+    {
+        Assert.Equal("Ursula L.", DisplayNamePolicy.From(Mit(("name", "Ursula von der leyen"))));
+    }
+
+    [Fact]
+    public void From_LowercaseSurname_GivesUppercaseInitial()
+    {
+        var user = Mit((ClaimTypes.GivenName, "Jürgen"), (ClaimTypes.Surname, "östermann"));
+
+        Assert.Equal("Jürgen Ö.", DisplayNamePolicy.From(user));
+    }
+
     [Fact]
     public void From_OnlyNameClaim_TakesFirstWordAndInitialOfLast()
     {
