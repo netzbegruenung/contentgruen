@@ -17,12 +17,17 @@ echo -e "${BLUE}ContentGrün Backup/Restore Test${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Configuration
-BACKUP_DIR="/opt/contentgruen-backups"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Host-Seite des Mounts /backups im Application-Container. Im Dev-Stack ist der
+# Mount nicht in docker-compose.dev.yml, siehe README "Testing in the dev stack".
+BACKUP_ROOT="${BACKUP_ROOT:-/opt/contentgruen-backups}"
 TEST_MARKER="TEST_BACKUP_$(date +%Y%m%d_%H%M%S)"
 # Containernamen wie in backup.sh: ueberall gleich, abweichend per Umgebung.
 POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
 APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
 QDRANT_CONTAINER="${QDRANT_CONTAINER:-contentgruen-qdrant}"
+# backup.sh und restore.sh sollen dieselben Werte sehen wie dieses Skript.
+export BACKUP_ROOT POSTGRES_CONTAINER APP_CONTAINER QDRANT_CONTAINER
 
 # Function to count Qdrant points
 count_qdrant_points() {
@@ -33,7 +38,7 @@ count_qdrant_points() {
 # Function to count PostgreSQL records
 count_pg_records() {
     local table=$1
-    local count=$(docker exec $POSTGRES_CONTAINER psql -U app_user -d contentgruen_app -t -c "SELECT COUNT(*) FROM $table;" 2>/dev/null || echo "0")
+    local count=$(docker exec $POSTGRES_CONTAINER psql -U app_user -d contentgruen_app -tA -c "SELECT COUNT(*) FROM $table;" 2>/dev/null || echo "0")
     echo $count
 }
 
@@ -61,10 +66,10 @@ fi
 
 echo -e "\n${YELLOW}Step 2: Create backup${NC}"
 echo "Running backup script..."
-./backup.sh
+"$SCRIPT_DIR/backup.sh"
 
-# Check if backup was created
-LATEST_BACKUP=$(readlink -f "$BACKUP_DIR/latest")
+# Check if backup was created (backup.sh pflegt daily/latest)
+LATEST_BACKUP=$(readlink -f "$BACKUP_ROOT/daily/latest")
 if [ ! -d "$LATEST_BACKUP" ]; then
     echo -e "${RED}Error: Backup was not created${NC}"
     exit 1
@@ -105,9 +110,22 @@ curl -X PUT "http://localhost:6333/collections/content_collection/points" \
 
 echo "Test marker added with ID: $TEST_ID"
 
+# Ohne angekommenen Marker waere Test 3 unten immer gruen.
+count_marker() {
+    curl -s "http://localhost:6333/collections/content_collection/points/scroll" \
+      -H "Content-Type: application/json" \
+      -d "{\"filter\": {\"must\": [{\"key\": \"text\", \"match\": {\"value\": \"$TEST_MARKER\"}}]}}" 2>/dev/null \
+      | grep -o "$TEST_MARKER" | wc -l | tr -d ' '
+}
+if [ "$(count_marker)" -eq 0 ]; then
+    echo -e "${RED}Error: test marker did not reach Qdrant, restore check would be meaningless${NC}"
+    exit 1
+fi
+
 echo -e "\n${YELLOW}Step 5: Restore from backup${NC}"
 echo "Running restore script..."
-echo "yes" | ./restore.sh
+# Genau das eben erstellte Backup zurueckspielen, nicht irgendein latest.
+echo "yes" | "$SCRIPT_DIR/restore.sh" "daily/$(basename "$LATEST_BACKUP")"
 
 echo -e "\n${YELLOW}Step 6: Post-restore verification${NC}"
 echo "Checking restored data state..."
@@ -120,11 +138,7 @@ RESTORED_USAGE_COUNT=$(count_pg_records "usage_tracking")
 RESTORED_SAMPLE=$(get_sample_content)
 
 # Check if test marker is gone (should not be in restored data)
-TEST_MARKER_PRESENT=$(curl -s "http://localhost:6333/collections/content_collection/points/scroll" \
-  -H "Content-Type: application/json" \
-  -d "{\"filter\": {\"must\": [{\"key\": \"text\", \"match\": {\"value\": \"$TEST_MARKER\"}}]}}" 2>/dev/null \
-  | grep -c "$TEST_MARKER" 2>/dev/null || echo "0")
-TEST_MARKER_PRESENT=$(echo "$TEST_MARKER_PRESENT" | tr -d '\n\r ')
+TEST_MARKER_PRESENT=$(count_marker)
 
 echo "Restored state:"
 echo "  - Content items (Qdrant): $RESTORED_CONTENT_COUNT (original: $INITIAL_CONTENT_COUNT)"
@@ -172,7 +186,8 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
     # grep auf "healthy": der frueher hier verwendete Debug-Endpunkt /api/v1/test
     # antwortete {"message": "This is a test endpoint"} und enthielt das gesuchte
     # "ok" nie -- die Schleife lief also immer in den Timeout.
-    API_HEALTH=$(docker exec $APP_CONTAINER curl -s http://localhost:8000/api/v1/health 2>/dev/null | grep -c "healthy" 2>/dev/null || echo "0")
+    # Das Image hat kein curl (siehe docker-compose.dev.yml), daher python.
+    API_HEALTH=$(docker exec "$APP_CONTAINER" python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=5).read().decode())' 2>/dev/null | grep -c "healthy" || true)
     API_HEALTH=$(echo "$API_HEALTH" | tr -d '\n\r ')
     if [ "$API_HEALTH" -gt "0" ]; then
         break
@@ -207,3 +222,7 @@ echo -e "\n${YELLOW}Cleaning up test backup...${NC}"
 # Keep the backup for manual inspection if needed
 echo "Test backup kept at: $LATEST_BACKUP"
 echo "To remove it manually: rm -rf $LATEST_BACKUP"
+
+if [ "$TESTS_FAILED" -gt 0 ]; then
+    exit 1
+fi

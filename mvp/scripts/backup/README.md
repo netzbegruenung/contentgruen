@@ -29,6 +29,9 @@ cd mvp/scripts/backup # Or place restore script on server
 
 # Restore specific backup
 ./restore.sh daily/backup_20250106_030000
+
+# Without an argument: daily/latest
+./restore.sh
 ```
 
 ### Test Backup/Restore
@@ -37,6 +40,32 @@ cd mvp/scripts/backup # Or place restore script on server
 cd mvp/scripts/backup # Or place test script next to backup and restore scripts on server
 ./test-backup-restore.sh
 ```
+
+The test exits non-zero if any check fails.
+
+### Testing in the dev stack
+
+`docker-compose.dev.yml` does not mount `/backups`, and `/opt` is usually not writable.
+Point `BACKUP_ROOT` at a writable directory and mount it into the application container
+for the duration of the test (the container names are the defaults):
+
+```bash
+export BACKUP_ROOT="$HOME/cg-backups-test"; mkdir -p "$BACKUP_ROOT"
+cat > /tmp/backup-mount.yml <<YML
+services:
+  contentgruen-semantic-search:
+    volumes:
+      - $BACKUP_ROOT:/backups
+YML
+docker compose -f mvp/docker-compose.dev.yml -f /tmp/backup-mount.yml \
+  up -d --no-build --no-deps contentgruen-semantic-search
+mvp/scripts/backup/test-backup-restore.sh
+# afterwards: drop the extra mount again
+docker compose -f mvp/docker-compose.dev.yml up -d --no-build --no-deps contentgruen-semantic-search
+```
+
+The restore replaces the dev database and the Qdrant collection with the state of the
+backup taken a moment earlier; anything written in between is lost.
 
 ## Production Setup
 
@@ -169,11 +198,12 @@ ssh -L 6333:localhost:6333 user@server
 ```bash
 # Restore only Qdrant
 docker exec contentgruen-semantic-search python /app/scripts/restore_qdrant.py \
-  --input /backups/latest/qdrant_snapshot.tar --delete-existing
+  --input /backups/daily/latest/qdrant_snapshot.tar
 
-# Restore only PostgreSQL
-docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app \
-  < /opt/contentgruen-backups/latest/postgresql.sql
+# Restore only PostgreSQL (the dump drops and recreates the database itself,
+# so connect to "postgres", not to contentgruen_app)
+docker exec -i contentgruen-app-postgres psql -U app_user -d postgres -v ON_ERROR_STOP=1 \
+  < /opt/contentgruen-backups/daily/latest/postgresql.sql
 ```
 
 ## Verification After Restore

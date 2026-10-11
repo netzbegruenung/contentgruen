@@ -8,7 +8,8 @@
 set -e  # Exit on error
 
 # Configuration
-BACKUP_ROOT="/opt/contentgruen-backups"
+# Host-Seite des Mounts /backups im Application-Container; beide muessen zusammenpassen.
+BACKUP_ROOT="${BACKUP_ROOT:-/opt/contentgruen-backups}"
 DAILY_DIR="$BACKUP_ROOT/daily"
 WEEKLY_DIR="$BACKUP_ROOT/weekly"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -46,6 +47,10 @@ container_running() {
 log() {
     echo -e "$(date '+%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"
 }
+
+# Vor dem ersten log: tee schreibt nach $BACKUP_ROOT, und ohne das Verzeichnis
+# bricht set -e schon beim ersten Logeintrag ab.
+mkdir -p "$BACKUP_ROOT"
 
 log "${GREEN}========================================${NC}"
 log "${GREEN}ContentGrün Automated Backup${NC}"
@@ -160,12 +165,14 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
 
     # Update weekly latest symlink
     rm -f "$WEEKLY_DIR/latest"
-    ln -s "$WEEKLY_BACKUP_DIR" "$WEEKLY_DIR/latest"
+    ln -s "backup_$TIMESTAMP" "$WEEKLY_DIR/latest"
 fi
 
 # Update daily latest symlink
+# Relative Ziele: Der Link muss auch im Container unter /backups aufloesen, wo der
+# Host-Pfad $BACKUP_ROOT nicht existiert.
 rm -f "$DAILY_DIR/latest"
-ln -s "$BACKUP_DIR" "$DAILY_DIR/latest"
+ln -s "backup_$TIMESTAMP" "$DAILY_DIR/latest"
 
 # Rotation: Remove old daily backups (keep last 7)
 log "\n${YELLOW}Rotating daily backups (keeping last $KEEP_DAILY)...${NC}"

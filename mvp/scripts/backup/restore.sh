@@ -7,7 +7,8 @@
 set -e  # Exit on error
 
 # Configuration
-BACKUP_ROOT="/opt/contentgruen-backups"
+# Host-Seite des Mounts /backups im Application-Container (wie in backup.sh).
+BACKUP_ROOT="${BACKUP_ROOT:-/opt/contentgruen-backups}"
 # Containernamen wie in backup.sh: ueberall gleich, abweichend per Umgebung.
 POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
 APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
@@ -40,22 +41,30 @@ if [ -n "$1" ]; then
         BACKUP_DIR="$BACKUP_ROOT/backup_$1"
     fi
 else
-    # Use latest backup
-    if [ -L "$BACKUP_ROOT/latest" ]; then
-        BACKUP_DIR=$(readlink -f "$BACKUP_ROOT/latest")
-    else
-        # Find most recent backup
-        BACKUP_DIR=$(ls -dt "$BACKUP_ROOT"/backup_* 2>/dev/null | head -1)
-    fi
+    # backup.sh legt die Backups unter daily/ und weekly/ ab und pflegt dort je
+    # einen latest-Link; ein latest direkt unter $BACKUP_ROOT gibt es nicht.
+    BACKUP_DIR="$BACKUP_ROOT/daily/latest"
 fi
 
 # Validate backup directory
 if [ ! -d "$BACKUP_DIR" ]; then
     echo -e "${RED}Error: Backup directory not found: $BACKUP_DIR${NC}"
     echo "Available backups:"
-    ls -dt "$BACKUP_ROOT"/backup_* 2>/dev/null | head -10 || echo "No backups found"
+    ls -dt "$BACKUP_ROOT"/daily/backup_* "$BACKUP_ROOT"/weekly/backup_* 2>/dev/null | head -10 || echo "No backups found"
     exit 1
 fi
+
+# Der Container sieht $BACKUP_ROOT als /backups. Den Pfad dort aus dem Pfad relativ
+# zu $BACKUP_ROOT bilden, nach Aufloesen des latest-Links -- basename allein liess
+# daily/ bzw. weekly/ weg und ergab bei daily/latest "/backups/latest".
+BACKUP_DIR=$(readlink -f "$BACKUP_DIR")
+BACKUP_ROOT_REAL=$(readlink -f "$BACKUP_ROOT")
+BACKUP_REL="${BACKUP_DIR#"$BACKUP_ROOT_REAL"/}"
+if [ "$BACKUP_REL" = "$BACKUP_DIR" ]; then
+    echo -e "${RED}Error: $BACKUP_DIR is not below $BACKUP_ROOT_REAL, the container cannot see it${NC}"
+    exit 1
+fi
+CONTAINER_BACKUP_DIR="/backups/$BACKUP_REL"
 
 echo "Restoring from: $BACKUP_DIR"
 
@@ -139,10 +148,8 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
 fi
 
 echo "Restoring Qdrant snapshot..."
-docker exec "$APP_CONTAINER" python /app/scripts/restore_qdrant.py \
-    --input /backups/$(basename "$BACKUP_DIR")/qdrant_snapshot.tar
-
-if [ $? -eq 0 ]; then
+if docker exec "$APP_CONTAINER" python /app/scripts/restore_qdrant.py \
+    --input "$CONTAINER_BACKUP_DIR/qdrant_snapshot.tar"; then
     echo -e "${GREEN}✓ Qdrant restore completed${NC}"
 else
     echo -e "${RED}✗ Qdrant restore failed${NC}"
@@ -155,16 +162,13 @@ docker stop "$APP_CONTAINER"
 
 # Restore PostgreSQL database (usage tracking metadata)
 echo -e "\n${YELLOW}Restoring PostgreSQL database (metadata)...${NC}"
-echo "Dropping existing database..."
-docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d postgres -c "DROP DATABASE IF EXISTS $DB_NAME;" || true
-
-echo "Creating fresh database..."
-docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
-
-echo "Restoring from backup..."
-docker exec -i "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" < "$BACKUP_DIR/postgresql.sql"
-
-if [ $? -eq 0 ]; then
+# Der Dump stammt aus pg_dump --clean --create --if-exists und bringt DROP DATABASE,
+# CREATE DATABASE und \connect selbst mit. Deshalb gegen die Datenbank postgres
+# einspielen: Verbunden mit $DB_NAME scheiterte sein DROP an der offenen Datenbank.
+# ON_ERROR_STOP, weil psql Fehler sonst ueberliest und mit 0 endet.
+echo "Restoring from backup (drops and recreates $DB_NAME)..."
+if docker exec -i "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d postgres -v ON_ERROR_STOP=1 -q \
+    < "$BACKUP_DIR/postgresql.sql"; then
     echo -e "${GREEN}✓ PostgreSQL restore completed${NC}"
 else
     echo -e "${RED}✗ PostgreSQL restore failed${NC}"
@@ -183,7 +187,17 @@ echo -n "Checking database connection... "
 docker exec "$POSTGRES_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "SELECT COUNT(*) FROM usage_tracking;" > /dev/null 2>&1 && echo -e "${GREEN}OK${NC}" || echo -e "${YELLOW}WARNING: Database may be empty${NC}"
 
 echo -n "Checking application health... "
-docker exec "$APP_CONTAINER" curl -s http://localhost:8000/api/v1/health > /dev/null 2>&1 && echo -e "${GREEN}OK${NC}" || echo -e "${YELLOW}WARNING: Health check failed${NC}"
+# Das Image hat kein curl, daher python wie im Compose-Healthcheck. Der Start laedt
+# das Einbettungsmodell und dauert laenger als die 5 s oben, deshalb bis zu 60 s.
+HEALTHY=false
+for _ in $(seq 1 30); do
+    if docker exec "$APP_CONTAINER" python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=5)' > /dev/null 2>&1; then
+        HEALTHY=true
+        break
+    fi
+    sleep 2
+done
+[ "$HEALTHY" = true ] && echo -e "${GREEN}OK${NC}" || echo -e "${YELLOW}WARNING: Health check failed${NC}"
 
 # Summary
 echo -e "\n${GREEN}========================================${NC}"
