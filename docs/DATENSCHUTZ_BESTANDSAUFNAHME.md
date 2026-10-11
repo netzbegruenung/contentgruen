@@ -180,43 +180,34 @@ anonymen Meldeweg (1.4): Salt zufällig pro Prozess (`:40`), SHA-256, auf 16 Hex
 gekürzt (`:85`), nur im Arbeitsspeicher des gleitenden Fensters. Weder Datenbank noch Log
 sehen den Wert; das Modul dokumentiert das ausdrücklich (`:14-28`).
 
-### Befund E-3 — UNVERÄNDERT: die 90 Tage sind ein Fallback, kein konfigurierter Wert
+### Befund E-3 — ERLEDIGT: die Cleanup-Einstellungen werden gelesen
 
-`app/core/config.py:146-150` definiert vier Einstellungen in Kleinschreibung
-(Pydantic-Feldnamen, `env_prefix = "SEMANTIC_SEARCH_"`):
+Bis Oktober 2026 las `app/services/cleanup/usage_cleanup_service.py` die vier
+Einstellungen in Großschreibung (`getattr(settings, "USAGE_RETENTION_DAYS", 90)` usw.),
+während `app/core/config.py` sie klein definiert. Die Attribute gab es nicht, es griff
+immer der Fallback: 90 Tage, täglich 02:00, nicht abschaltbar, über die Umgebung nicht
+änderbar.
 
-```
-enable_usage_cleanup: bool = True
-usage_retention_days: int = 90
-cleanup_hour: int = 2
-cleanup_minute: int = 0
-```
+Jetzt liest der Service die echten Felder (`config.py:166-169`,
+`env_prefix = "SEMANTIC_SEARCH_"`):
 
-`app/services/cleanup/usage_cleanup_service.py` liest **alle vier in Großschreibung**:
+| Zeile | Gelesen als | Umgebungsvariable | Default |
+|-------|-------------|-------------------|---------|
+| `usage_cleanup_service.py:172` | `settings.usage_retention_days` | `SEMANTIC_SEARCH_USAGE_RETENTION_DAYS` | 90 |
+| `:184` | `settings.enable_usage_cleanup` | `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP` | an |
+| `:189` | `settings.cleanup_hour` | `SEMANTIC_SEARCH_CLEANUP_HOUR` | 2 |
+| `:190` | `settings.cleanup_minute` | `SEMANTIC_SEARCH_CLEANUP_MINUTE` | 0 |
 
-| Zeile | Gelesen als | Existiert auf `settings`? | Folge |
-|-------|-------------|---------------------------|-------|
-| `:172` | `getattr(settings, "USAGE_RETENTION_DAYS", 90)` | nein | immer **90** |
-| `:184` | `getattr(settings, "ENABLE_USAGE_CLEANUP", True)` | nein | immer **an** |
-| `:189` | `getattr(settings, "CLEANUP_HOUR", 2)` | nein | immer **02** |
-| `:190` | `getattr(settings, "CLEANUP_MINUTE", 0)` | nein | immer **:00** |
+Abgesichert durch `tests/unit/services/test_usage_cleanup_service.py`: Werte aus der
+Umgebung kommen im Service an, und `ENABLE_USAGE_CLEANUP=false` verhindert den Start.
 
-Empirisch nachgeprüft mit `pydantic_settings` (gleiche Feld-/Prefix-Konstellation):
+**Folge für die Datenschutzerklärung:** Die 90 Tage sind jetzt ein Default, kein fest
+verdrahteter Wert. Ein `SEMANTIC_SEARCH_USAGE_RETENTION_DAYS` oder
+`SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=false` im Salt-Pillar wirkt ab diesem Stand. Wer
+die Frist dort ändert oder die Bereinigung abschaltet, muss die Datenschutzerklärung
+mitziehen.
 
-```
-SEMANTIC_SEARCH_USAGE_RETENTION_DAYS=30 gesetzt
-  s.usage_retention_days                      -> 30
-  getattr(s,'USAGE_RETENTION_DAYS','FALLBACK') -> FALLBACK
-```
-
-**Wirksam ist demnach: 90 Tage, täglich 02:00 UTC, nicht abschaltbar, nicht über die
-Umgebung veränderbar.** Ein `SEMANTIC_SEARCH_USAGE_RETENTION_DAYS` im Salt-Pillar hätte
-keine Wirkung. Für die Datenschutzerklärung ist das die günstige Richtung: die Frist ist
-gerade deshalb belastbar, weil sie fest verdrahtet ist. Als Fehler bleibt sie trotzdem
-stehen — wer sie ändern will, muss den Code ändern, und wer sie über den Pillar zu ändern
-glaubt, irrt sich still.
-
-Der Scheduler läuft: `app/main.py:102` ruft `start_cleanup_scheduler()` beim Startup, plus
+Der Scheduler läuft: `app/main.py:94` ruft `start_cleanup_scheduler()` beim Startup, plus
 ein sofortiger Lauf beim Start (`usage_cleanup_service.py:97-99`).
 
 Gelöscht wird ausschließlich aus `usage_events`
@@ -1089,7 +1080,7 @@ Speicher aus 1.1–1.8 mit einem im Repo öffentlich lesbaren Passwort erreichba
 | Vorannahme | Ergebnis auf `fae44b4` |
 |------------|------------------------|
 | „`usage_events` enthält `user_id`, `session_id`, `ip_hash`, `user_agent`, verknüpft mit `content_id`" | **Traf für `95b565e` zu, für `fae44b4` nicht mehr.** Die Tabelle hat jetzt sechs Spalten (`models.py:85-96`): `id`, `content_id`, `event_type`, `timestamp`, `session_id`, `device_category`. `user_id`, `ip_hash` und `user_agent` sind mit PR #27 gefallen, Bestandswerte per `VACUUM FULL` physisch entfernt |
-| „Eine Retention-Einstellung wird unter anderem Namen gelesen, deshalb greift immer der Fallback" | **Bestätigt, größer als vermutet, und weiterhin so:** nicht eine, sondern **alle vier** Cleanup-Einstellungen (`usage_cleanup_service.py:172,184,189,190` gegen `config.py:146-150`). **Wirksam: 90 Tage, täglich 02:00, nicht abschaltbar, über die Umgebung nicht änderbar** (Befund E-3, empirisch verifiziert) |
+| „Eine Retention-Einstellung wird unter anderem Namen gelesen, deshalb greift immer der Fallback" | **Bestätigt, größer als vermutet, inzwischen ERLEDIGT:** Es betraf nicht eine, sondern **alle vier** Cleanup-Einstellungen (`usage_cleanup_service.py:172,184,189,190` gegen `config.py:166-169`). Seit Oktober 2026 liest der Service die echten Felder; die Werte sind über `SEMANTIC_SEARCH_*` änderbar, Default 90 Tage, täglich 02:00 (Befund E-3) |
 | „Für mehrere Tabellen existiert vermutlich gar keine Löschlogik" | **Bestätigt, unverändert.** Von 7 Tabellen hat **eine** eine wirksame Frist: `usage_events` (90 Tage). Ohne jede Löschung: `usage_tracking` (ausdrücklich „preserved forever", `usage_tracking_repository.py:274-276`), `search_events` (Löschcode vorhanden, **kein Aufrufer** — Befund S-3), `content_reports`, `raw_inputs`, `raw_input_content_links`, `votes`. Qdrant ebenso |
 | „Fangkorb: wer wird als Einwerfer gespeichert, wer sieht das?" | **Unverändert.** Gespeichert wird der `X-User`-Wert = Keycloak-`sub` bzw. `user-00x`; `"anonymous"` → `NULL` (`api/v1/raw_input.py:30-40,55`). **Gesehen wird es von jeder angemeldeten Person** — `getRawInputs` liefert bewusst alle Einwürfe, das DTO trägt `submitted_by` (`dtos/raw_input.py:97`), das Frontend zeigt es als Tabellenspalte (`raw-input-list.component.ts:52`). Neu ist nur, dass die Route jetzt in **beiden** Betriebsarten Anmeldung verlangt |
 | „Suchereignisse sollen pseudonymisiert sein (rotierender Actor-Hash) — stimmt das, kommt das Secret aus der Umgebung, was passiert ohne?" | **Implementiert wie beschrieben** (Befund S-1), unverändert: HMAC-SHA256 über `<Kennung>\|<UTC-Datum>`, Suchtext wird gar nicht erst übergeben. Das Secret **kann** aus `SEMANTIC_SEARCH_ACTOR_HASH_SECRET` kommen, ist im Repo aber **nirgends gesetzt**. Ohne Secret: zufälliger 32-Byte-Schlüssel pro Prozess → datenschutzseitig stärker, statistisch unbrauchbar (Befund S-2). Neu: die Metrik-Endpunkte, die darauf lesen, sind admin-only |

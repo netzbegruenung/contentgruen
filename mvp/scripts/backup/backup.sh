@@ -8,15 +8,19 @@
 set -e  # Exit on error
 
 # Configuration
-BACKUP_ROOT="/opt/contentgruen-backups"
+# Host-Seite des Mounts /backups im Application-Container; beide muessen zusammenpassen.
+BACKUP_ROOT="${BACKUP_ROOT:-/opt/contentgruen-backups}"
 DAILY_DIR="$BACKUP_ROOT/daily"
 WEEKLY_DIR="$BACKUP_ROOT/weekly"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 DAY_OF_WEEK=$(date +%u)  # 1=Monday, 7=Sunday
 BACKUP_DIR="$DAILY_DIR/backup_$TIMESTAMP"
-POSTGRES_CONTAINER="contentgruen-app-postgres"
-APP_CONTAINER="contentgruen-semantic-search"
-QDRANT_CONTAINER="contentgruen-qdrant"
+# Containernamen: Dev, Test und Prod nutzen dieselben Namen. Abweichende Namen
+# kommen aus der Umgebung, z. B.:
+#   POSTGRES_CONTAINER=anderer-name ./backup.sh
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
+APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
+QDRANT_CONTAINER="${QDRANT_CONTAINER:-contentgruen-qdrant}"
 DB_NAME="contentgruen_app"
 DB_USER="app_user"
 
@@ -33,10 +37,20 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Exakter Vergleich gegen die Namensspalte. "docker ps | grep" traf jeden Teilstring
+# der Zeile (Image, Ports) und haette auch einen aehnlich benannten Container gefunden.
+container_running() {
+    docker ps --format '{{.Names}}' | grep -qxF -- "$1"
+}
+
 # Function to log with timestamp
 log() {
     echo -e "$(date '+%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"
 }
+
+# Vor dem ersten log: tee schreibt nach $BACKUP_ROOT, und ohne das Verzeichnis
+# bricht set -e schon beim ersten Logeintrag ab.
+mkdir -p "$BACKUP_ROOT"
 
 log "${GREEN}========================================${NC}"
 log "${GREEN}ContentGrün Automated Backup${NC}"
@@ -51,17 +65,17 @@ mkdir -p "$BACKUP_DIR"
 
 # Check if containers are running
 log "\n${YELLOW}Checking Docker containers...${NC}"
-if ! docker ps | grep -q "$POSTGRES_CONTAINER"; then
+if ! container_running "$POSTGRES_CONTAINER"; then
     log "${RED}Error: PostgreSQL container '$POSTGRES_CONTAINER' is not running${NC}"
     exit 1
 fi
 
-if ! docker ps | grep -q "$APP_CONTAINER"; then
+if ! container_running "$APP_CONTAINER"; then
     log "${RED}Error: Application container '$APP_CONTAINER' is not running${NC}"
     exit 1
 fi
 
-if ! docker ps | grep -q "$QDRANT_CONTAINER"; then
+if ! container_running "$QDRANT_CONTAINER"; then
     log "${RED}Error: Qdrant container '$QDRANT_CONTAINER' is not running${NC}"
     exit 1
 fi
@@ -73,16 +87,17 @@ log "\n${YELLOW}Backing up Qdrant collection...${NC}"
 docker exec "$APP_CONTAINER" python /app/scripts/backup_qdrant.py \
     --output /backups/daily/backup_$TIMESTAMP/qdrant_snapshot.tar
 
-if [ $? -eq 0 ]; then
-    log "${GREEN}✓ Qdrant backup completed${NC}"
-    if [ -f "$BACKUP_DIR/qdrant_snapshot.tar" ]; then
-        QDRANT_SIZE=$(du -h "$BACKUP_DIR/qdrant_snapshot.tar" | cut -f1)
-        log "  Size: $QDRANT_SIZE"
-    fi
-else
-    log "${RED}✗ Qdrant backup failed${NC}"
+# Der Snapshot entsteht im Container unter /backups. Ohne den Mount
+# $BACKUP_ROOT:/backups am Application-Container bleibt er dort liegen, und auf dem
+# Host fehlt er -- dann ist das Backup unvollstaendig und muss laut scheitern.
+if [ ! -s "$BACKUP_DIR/qdrant_snapshot.tar" ]; then
+    log "${RED}✗ Qdrant backup failed: $BACKUP_DIR/qdrant_snapshot.tar is missing or empty on the host${NC}"
+    log "  Is $BACKUP_ROOT mounted at /backups in '$APP_CONTAINER'?"
     exit 1
 fi
+QDRANT_SIZE=$(du -h "$BACKUP_DIR/qdrant_snapshot.tar" | cut -f1)
+log "${GREEN}✓ Qdrant backup completed${NC}"
+log "  Size: $QDRANT_SIZE"
 
 # Backup PostgreSQL database
 log "\n${YELLOW}Backing up PostgreSQL database...${NC}"
@@ -150,12 +165,14 @@ if [ "$DAY_OF_WEEK" -eq 7 ]; then
 
     # Update weekly latest symlink
     rm -f "$WEEKLY_DIR/latest"
-    ln -s "$WEEKLY_BACKUP_DIR" "$WEEKLY_DIR/latest"
+    ln -s "backup_$TIMESTAMP" "$WEEKLY_DIR/latest"
 fi
 
 # Update daily latest symlink
+# Relative Ziele: Der Link muss auch im Container unter /backups aufloesen, wo der
+# Host-Pfad $BACKUP_ROOT nicht existiert.
 rm -f "$DAILY_DIR/latest"
-ln -s "$BACKUP_DIR" "$DAILY_DIR/latest"
+ln -s "backup_$TIMESTAMP" "$DAILY_DIR/latest"
 
 # Rotation: Remove old daily backups (keep last 7)
 log "\n${YELLOW}Rotating daily backups (keeping last $KEEP_DAILY)...${NC}"

@@ -29,6 +29,9 @@ cd mvp/scripts/backup # Or place restore script on server
 
 # Restore specific backup
 ./restore.sh daily/backup_20250106_030000
+
+# Without an argument: daily/latest
+./restore.sh
 ```
 
 ### Test Backup/Restore
@@ -37,6 +40,32 @@ cd mvp/scripts/backup # Or place restore script on server
 cd mvp/scripts/backup # Or place test script next to backup and restore scripts on server
 ./test-backup-restore.sh
 ```
+
+The test exits non-zero if any check fails.
+
+### Testing in the dev stack
+
+`docker-compose.dev.yml` does not mount `/backups`, and `/opt` is usually not writable.
+Point `BACKUP_ROOT` at a writable directory and mount it into the application container
+for the duration of the test (the container names are the defaults):
+
+```bash
+export BACKUP_ROOT="$HOME/cg-backups-test"; mkdir -p "$BACKUP_ROOT"
+cat > /tmp/backup-mount.yml <<YML
+services:
+  contentgruen-semantic-search:
+    volumes:
+      - $BACKUP_ROOT:/backups
+YML
+docker compose -f mvp/docker-compose.dev.yml -f /tmp/backup-mount.yml \
+  up -d --no-build --no-deps contentgruen-semantic-search
+mvp/scripts/backup/test-backup-restore.sh
+# afterwards: drop the extra mount again
+docker compose -f mvp/docker-compose.dev.yml up -d --no-build --no-deps contentgruen-semantic-search
+```
+
+The restore replaces the dev database and the Qdrant collection with the state of the
+backup taken a moment earlier; anything written in between is lost.
 
 ## Production Setup
 
@@ -125,22 +154,20 @@ du -sh /opt/contentgruen-backups/
 
 ## Docker Compose Configuration
 
-Required volume mounts for backup system:
+Required volume mount for the backup system:
 
 ```yaml
 services:
   contentgruen-semantic-search:
     volumes:
       - /opt/contentgruen-backups:/backups
-
-  qdrant:
-    volumes:
-      - /opt/contentgruen-backups:/backups
-
-  postgres-app:
-    volumes:
-      - /opt/contentgruen-backups:/backups
 ```
+
+The Qdrant snapshot is written by `backup_qdrant.py` inside the application container
+to `/backups/...`; only this mount makes it appear in `/opt/contentgruen-backups` on the
+host. Without it `backup.sh` aborts, because the snapshot is missing on the host. The host
+side of the mount must match `BACKUP_ROOT` in the scripts. PostgreSQL needs no mount:
+`pg_dump` streams to the host via stdout.
 
 ## Production Notes
 
@@ -171,11 +198,12 @@ ssh -L 6333:localhost:6333 user@server
 ```bash
 # Restore only Qdrant
 docker exec contentgruen-semantic-search python /app/scripts/restore_qdrant.py \
-  --input /backups/latest/qdrant_snapshot.tar --delete-existing
+  --input /backups/daily/latest/qdrant_snapshot.tar
 
-# Restore only PostgreSQL
-docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app \
-  < /opt/contentgruen-backups/latest/postgresql.sql
+# Restore only PostgreSQL (the dump drops and recreates the database itself,
+# so connect to "postgres", not to contentgruen_app)
+docker exec -i contentgruen-app-postgres psql -U app_user -d postgres -v ON_ERROR_STOP=1 \
+  < /opt/contentgruen-backups/daily/latest/postgresql.sql
 ```
 
 ## Verification After Restore
@@ -196,12 +224,21 @@ curl http://localhost:8000/api/v1/health
 
 ### Container Name Mismatch
 
-Edit backup.sh/restore.sh:
+Dev, test and production use the same container names; the scripts default to them and
+accept overrides from the environment (no need to edit the scripts):
+
+| Variable | Default |
+|---|---|
+| `POSTGRES_CONTAINER` | `contentgruen-app-postgres` |
+| `APP_CONTAINER` | `contentgruen-semantic-search` |
+| `QDRANT_CONTAINER` | `contentgruen-qdrant` |
+
 ```bash
-POSTGRES_CONTAINER="your-postgres-container-name"
-APP_CONTAINER="your-app-container-name"
-QDRANT_CONTAINER="your-qdrant-container-name"
+POSTGRES_CONTAINER=other-name ./backup.sh
 ```
+
+A container counts as running only if `docker ps --format '{{.Names}}'` lists exactly
+that name.
 
 ### Permission Issues
 

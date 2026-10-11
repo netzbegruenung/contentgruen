@@ -169,7 +169,7 @@ def get_cleanup_service(retention_days: Optional[int] = None) -> UsageCleanupSer
     global _cleanup_service
 
     if _cleanup_service is None:
-        days = retention_days or getattr(settings, "USAGE_RETENTION_DAYS", 90)
+        days = retention_days or settings.usage_retention_days
         _cleanup_service = UsageCleanupService(retention_days=days)
 
     return _cleanup_service
@@ -181,13 +181,13 @@ def start_cleanup_scheduler():
     Should be called during application startup.
     """
     # Check if cleanup is enabled
-    if not getattr(settings, "ENABLE_USAGE_CLEANUP", True):
+    if not settings.enable_usage_cleanup:
         logger.info("Usage cleanup is disabled in settings")
         return
 
     # Get configuration from settings
-    cleanup_hour = getattr(settings, "CLEANUP_HOUR", 2)
-    cleanup_minute = getattr(settings, "CLEANUP_MINUTE", 0)
+    cleanup_hour = settings.cleanup_hour
+    cleanup_minute = settings.cleanup_minute
 
     # Start the service
     service = get_cleanup_service()
