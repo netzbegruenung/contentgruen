@@ -36,10 +36,14 @@ echo -e "${BLUE}========================================${NC}"
 if [ -n "$1" ]; then
     # Specific backup requested
     BACKUP_DIR="$BACKUP_ROOT/$1"
-    if [ ! -d "$BACKUP_DIR" ]; then
-        # Try without backup_ prefix
-        BACKUP_DIR="$BACKUP_ROOT/backup_$1"
-    fi
+    # Nur der Zeitstempel angegeben: backup.sh legt die Backups unter daily/ und
+    # weekly/ ab, nie direkt unter $BACKUP_ROOT. Daher dort der Reihe nach suchen.
+    for SUBDIR in daily weekly; do
+        [ -d "$BACKUP_DIR" ] && break
+        BACKUP_DIR="$BACKUP_ROOT/$SUBDIR/backup_$1"
+    done
+    # Nichts gefunden: die Fehlermeldung unten nennt den angegebenen Pfad.
+    [ -d "$BACKUP_DIR" ] || BACKUP_DIR="$BACKUP_ROOT/$1"
 else
     # backup.sh legt die Backups unter daily/ und weekly/ ab und pflegt dort je
     # einen latest-Link; ein latest direkt unter $BACKUP_ROOT gibt es nicht.
