@@ -220,6 +220,8 @@ async def search_by_text(
             orchestrator.apply_user_votes(validated_user)
         if angemeldet(validated_user):
             orchestrator.apply_author_names(get_anzeigename_service())
+        else:
+            orchestrator.strip_author_ids()
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

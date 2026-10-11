@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Type
 
 from core.logging import get_logger
+from services.anzeigename_service import kennungsfelder_leer
 from domain.models.content_type import ContentType
 
 logger = get_logger(__name__)
@@ -273,6 +274,23 @@ class SearchOrchestrator:
         namen = anzeigename_service.namen(inhalt.original_author for _, inhalt in paare)
         for result, inhalt in paare:
             result.autor_name = namen.get(inhalt.original_author)
+
+    def strip_author_ids(self) -> None:
+        """
+        Fuer anonyme Aufrufer: die Kennungsfelder leeren.
+
+        Auf einer Kopie, nicht am Objekt selbst - das kann aus einem Cache stammen
+        und gleich darauf einer angemeldeten Person ausgeliefert werden.
+        """
+        for spec in self._specs.values():
+            for result in self._results[spec.content_type]:
+                inhalt = getattr(result, spec.result_field)
+                if inhalt:
+                    setattr(
+                        result,
+                        spec.result_field,
+                        inhalt.model_copy(update=kennungsfelder_leer()),
+                    )
 
     def apply_user_votes(self, user: str) -> None:
         all_content_ids = [

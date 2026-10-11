@@ -24,6 +24,20 @@ ANONYM = "anonymous"
 MAX_LAENGE = 100
 
 
+def kennungsfelder_leer() -> Dict[str, Any]:
+    """
+    Was an einem Beitrag eine Person bezeichnet, geleert - fuer anonyme Aufrufer.
+    Leer statt entfernt, weil das Schema die Felder als Pflicht fuehrt; jedes Mal
+    frisch, damit sich keine zwei Antworten eine Liste teilen.
+    """
+    return {
+        "original_author": "",
+        "last_modified_by": "",
+        "authors": [],
+        "edit_history": [],
+    }
+
+
 def angemeldet(user_id: Optional[str]) -> bool:
     """Namen gehen nur an angemeldete Aufrufer; "anonymous" ist die Kennung des BFF fuer niemanden."""
     return bool(user_id) and user_id != ANONYM
