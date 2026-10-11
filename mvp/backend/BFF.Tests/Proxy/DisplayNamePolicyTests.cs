@@ -87,9 +87,36 @@ public class DisplayNamePolicyTests
     }
 
     [Fact]
-    public void From_SingleWord_HasNoInitial()
+    public void From_SingleWordNameClaim_GivesNothing()
     {
-        Assert.Equal("Kim", DisplayNamePolicy.From(Mit(("name", "Kim"))));
+        // Vor- oder Nachname? Unklar, also "Mitglied" statt eines Nachnamens allein.
+        Assert.Null(DisplayNamePolicy.From(Mit(("name", "Kim"))));
+    }
+
+    [Fact]
+    public void From_ManagedLoginWithSingleWordDisplayName_GivesNothing()
+    {
+        var user = Mit(
+            (ClaimTypes.NameIdentifier, "user-002"),
+            (ClaimTypes.Name, "Redaktion"),
+            ("name", "Redaktion"),
+            ("auth_method", "managed"));
+
+        Assert.Null(DisplayNamePolicy.From(user));
+    }
+
+    [Fact]
+    public void From_GivenNameWithoutSurname_StandsAlone()
+    {
+        Assert.Equal("Kim", DisplayNamePolicy.From(Mit((ClaimTypes.GivenName, "Kim"))));
+    }
+
+    [Fact]
+    public void From_GivenNameAndSingleWordNameClaim_GivesGivenName()
+    {
+        var user = Mit((ClaimTypes.GivenName, "Kim"), ("name", "Kim"));
+
+        Assert.Equal("Kim", DisplayNamePolicy.From(user));
     }
 
     [Fact]

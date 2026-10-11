@@ -11,11 +11,11 @@ namespace BFF.Proxy;
 /// rechnet nichts nach. Quellen in dieser Reihenfolge:
 ///   1. GivenName + Surname (Keycloak: given_name/family_name aus dem Scope profile).
 ///   2. Claim "name": erstes Wort + Initial des letzten. Das ist der Weg fuer Managed-Login,
-///      dort steht der DisplayName aus managed-users.json im Claim "name".
-///   3. GivenName allein.
+///      dort steht der DisplayName aus managed-users.json im Claim "name". Nur ab zwei
+///      Woertern; ein einzelnes Wort ergibt keinen Namen (Vor- oder Nachname? unklar).
+///   3. GivenName allein ("Kim") - hier ist klar, dass es der Vorname ist.
 /// Das Initial kommt in 1. und 2. aus dem letzten Wort des Nachnamens und ist immer ein
 /// Grossbuchstabe: "von der Leyen" -> "L.", "Mueller-Luedenscheidt" ist ein Wort -> "M.".
-/// Ein einzelnes Wort bleibt ohne Initial ("Kim").
 ///
 /// Bewusst nie preferred_username, E-Mail oder ClaimTypes.Name: das sind Login-Kennungen,
 /// keine Namen, und ein Anzeigename ist oeffentlicher als beide. Steht in einer Quelle ein
@@ -35,11 +35,10 @@ public static class DisplayNamePolicy
             return $"{vornamen[0]} {Initial(nachnamen[^1])}.";
         }
 
+        // Ein einzelnes Wort im Claim "name" bleibt ungenutzt: ob es Vor- oder Nachname ist,
+        // laesst sich nicht sagen, und ein Nachname allein waere identifizierender als
+        // "Vorname N.".
         var name = Woerter(Wert(user, NameClaim));
-        if (name.Length == 1)
-        {
-            return name[0];
-        }
         if (name.Length > 1)
         {
             return $"{name[0]} {Initial(name[^1])}.";
