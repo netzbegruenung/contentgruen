@@ -363,11 +363,16 @@ describe('RawInputListComponent', () => {
       expect(karten()[0].querySelector('.rohling-titel')!.textContent!.trim()).toBe('nur eine Notiz');
     });
 
-    it('nennt den Einwerfer, den eigenen Einwurf als "Du"', () => {
-      erstellen([einwurf({ id: 'fremd', submitted_by: '0f3c2a9e-1111-2222-3333-444455556666' })]);
-      expect(karten()[0].querySelector('.rohling-einwerfer')!.textContent!.trim()).toBe(
-        'Von: 0f3c2a9e',
-      );
+    it('nennt den Einwerfer beim Anzeigenamen, ohne Namen "Mitglied", den eigenen Einwurf "Du"', () => {
+      const fremd = '0f3c2a9e-1111-2222-3333-444455556666';
+      erstellen([
+        einwurf({ id: 'fremd', submitted_by: fremd, submitted_by_name: 'Jürgen Ö.' }),
+        einwurf({ id: 'ohne-name', submitted_by: fremd }),
+      ]);
+      const einwerfer = karten().map((karte) => karte.querySelector('.rohling-einwerfer')!);
+      expect(einwerfer.map((zeile) => zeile.textContent!.trim())).toEqual(['Von: Jürgen Ö.', 'Von: Mitglied']);
+      // Die Kennung steht auch nicht im Tooltip.
+      expect(einwerfer.every((zeile) => !zeile.hasAttribute('title'))).toBeTrue();
 
       fixture.destroy();
       erstellen([einwurf({ submitted_by: 'alice' })]);

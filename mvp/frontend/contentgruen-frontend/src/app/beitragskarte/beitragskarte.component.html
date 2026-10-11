@@ -97,7 +97,7 @@
 
         <p class="karte-meta rohling-meta" *ngIf="!istKopf">
             <ng-container *ngIf="zeigtEinwerfer">
-                <span class="rohling-einwerfer" [attr.title]="daten.autor">Von: {{ autorAnzeige }}</span>
+                <span class="rohling-einwerfer">Von: {{ autorAnzeige }}</span>
                 ·
             </ng-container>
             <span class="rohling-alter">{{ daten.erstellt | relativeTime }}</span>

@@ -32,6 +32,7 @@ from dtos.raw_input import (
     SaveDraftRequest,
     UpdateRawInputStatusRequest,
 )
+from services.anzeigename_service import angemeldet, get_anzeigename_service
 from repositories.raw_input_repository import (
     RawInputRepository,
     get_raw_input_repository,
@@ -63,6 +64,25 @@ def _angemeldete_person(x_user: Optional[str]) -> str:
     if person is None:
         raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
     return person
+
+
+def _mit_namen(rows: List[dict], x_user: Optional[str]) -> List[dict]:
+    """
+    Anzeigenamen zu Einwerfer und Satz-Autoren, eine Abfrage fuer die ganze Seite.
+    Nur fuer angemeldete Aufrufer - der Fangkorb ist ohnehin nur ihnen offen.
+    """
+    if not angemeldet(x_user):
+        return rows
+    entwuerfe = [entwurf for row in rows for entwurf in row.get("drafts", [])]
+    namen = get_anzeigename_service().namen(
+        [row.get("submitted_by") for row in rows]
+        + [entwurf.get("user_id") for entwurf in entwuerfe]
+    )
+    for row in rows:
+        row["submitted_by_name"] = namen.get(row.get("submitted_by"))
+    for entwurf in entwuerfe:
+        entwurf["user_name"] = namen.get(entwurf.get("user_id"))
+    return rows
 
 
 @router.post("/addRawInput", response_model=AddRawInputResponse, status_code=201)
@@ -112,7 +132,9 @@ async def get_raw_inputs(
             offset=offset,
             current_user=_einwerfende_person(x_user),
         )
-        results: List[RawInputResponse] = [RawInputResponse(**row) for row in rows]
+        results: List[RawInputResponse] = [
+            RawInputResponse(**row) for row in _mit_namen(rows, x_user)
+        ]
         return GetRawInputsResponse(
             results_count=len(results),
             results=results,
@@ -146,7 +168,7 @@ async def get_raw_input(
         )
     if row is None:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)
-    return RawInputResponse(**row)
+    return RawInputResponse(**_mit_namen([row], x_user)[0])
 
 
 @router.put("/{raw_input_id}/draft", response_model=DraftResponse)
@@ -254,7 +276,7 @@ async def update_status(
             request.content_id,
             request.content_type.value if request.content_type else None,
         )
-        return RawInputResponse(**row)
+        return RawInputResponse(**_mit_namen([row], x_user)[0])
     except HTTPException:
         raise
     except EinwurfNichtGefunden:

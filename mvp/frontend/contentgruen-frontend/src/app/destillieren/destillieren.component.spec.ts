@@ -444,8 +444,8 @@ describe('DestillierenComponent', () => {
   });
   describe('Saetze anderer', () => {
     const saetze = [
-      { id: 's-1', user_id: 'bob-1234-5678-9abc', sentence: 'Satz von Bob', updated_at: '2026-09-13T12:00:00Z' },
-      { id: 's-2', user_id: 'alice', sentence: 'Mein Satz', updated_at: '2026-09-13T12:05:00Z' },
+      { id: 's-1', user_id: 'bob-1234-5678-9abc', user_name: 'Bob K.', sentence: 'Satz von Bob', updated_at: '2026-09-13T12:00:00Z' },
+      { id: 's-2', user_id: 'alice', user_name: 'Alice M.', sentence: 'Mein Satz', updated_at: '2026-09-13T12:05:00Z' },
     ];
 
     it('zeigt vorhandene Saetze anderer oberhalb des eigenen Felds, nicht editierbar', async () => {
@@ -458,10 +458,20 @@ describe('DestillierenComponent', () => {
 
       expect(fremde.length).toBe(1);
       expect(fremde[0].textContent).toContain('Satz von Bob');
-      expect(fremde[0].textContent).toContain('bob-1234');
+      expect(fremde[0].querySelector('.person')!.textContent!.trim()).toBe('Bob K.');
+      expect(fremde[0].textContent).not.toContain('bob-1234');
+      expect(fremde[0].querySelector('.person')!.hasAttribute('title')).toBeFalse();
       expect(fixture.nativeElement.querySelector('.fremde-saetze textarea, .fremde-saetze input')).toBeNull();
       expect(fremde[0].compareDocumentPosition(feld) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(component.satz.value).toBe('Mein Satz');
+    });
+
+    it('nennt einen Satz ohne Anzeigenamen "Mitglied"', async () => {
+      const ohneName = { ...saetze[0], user_name: null };
+      await erstellen('id-1', einwurf({ status: 'in_progress', drafts: [ohneName] }));
+
+      const person = fixture.nativeElement.querySelector('.fremder-satz .person');
+      expect(person.textContent.trim()).toBe('Mitglied');
     });
 
     it('zeigt keinen Kasten, wenn nur der eigene Satz existiert', async () => {

@@ -26,6 +26,7 @@ from dependencies import (
     get_voting_service,
 )
 from services.usage_tracking_service import get_usage_service
+from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.voting_service import VotingService
 from services.search_tracking_service import get_search_tracking_service
 from services.search.search_query_statement import (
@@ -217,6 +218,10 @@ async def search_by_text(
         orchestrator.enrich_with_usage()
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
+        if angemeldet(validated_user):
+            orchestrator.apply_author_names(get_anzeigename_service())
+        else:
+            orchestrator.strip_author_ids()
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

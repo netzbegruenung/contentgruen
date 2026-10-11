@@ -152,6 +152,7 @@ public class IdentityHeaderTransformTests
     [Theory]
     [InlineData("X-User-Id")]
     [InlineData("X-User-Name")]
+    [InlineData(IdentityHeaderTransform.DisplayNameHeader)]
     [InlineData("X-Roles")]
     [InlineData("X-Is-Authenticated")]
     public void Apply_StripsEveryClientControlledIdentityHeader(string header)
@@ -190,6 +191,63 @@ public class IdentityHeaderTransformTests
         Assert.Empty(ValuesOf(proxyRequest, "X-User-Id"));
         Assert.Empty(ValuesOf(proxyRequest, "X-Roles"));
         Assert.Equal(new[] { "echte-kennung" }, ValuesOf(proxyRequest, IdentityHeaderTransform.UserHeader));
+    }
+
+    [Fact]
+    public void Apply_AuthenticatedUserWithName_SetsEncodedDisplayNameOnce()
+    {
+        var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.DisplayNameHeader, "Gefaelscht X."));
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "echte-kennung"),
+            new Claim(ClaimTypes.GivenName, "Jürgen"),
+            new Claim(ClaimTypes.Surname, "Östermann")
+        }, "TestAuth"));
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            user,
+            ProtectedPath,
+            new HeaderDictionary(),
+            NoAllowlist,
+            Logger);
+
+        var werte = ValuesOf(proxyRequest, IdentityHeaderTransform.DisplayNameHeader);
+        Assert.Equal(new[] { "J%C3%BCrgen%20%C3%96." }, werte);
+        Assert.Equal("Jürgen Ö.", Uri.UnescapeDataString(werte[0]));
+    }
+
+    [Fact]
+    public void Apply_AuthenticatedUserWithoutName_SetsNoDisplayName()
+    {
+        // Ohne verwertbaren Namen kein Header -- auch nicht der, den der Client mitschickt.
+        var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.DisplayNameHeader, "Gefaelscht X."));
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AuthenticatedUser("echte-kennung"),
+            ProtectedPath,
+            new HeaderDictionary(),
+            NoAllowlist,
+            Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.DisplayNameHeader));
+    }
+
+    [Fact]
+    public void Apply_AnonymousOnPublicEndpoint_SetsNoDisplayName()
+    {
+        var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.DisplayNameHeader, "Gefaelscht X."));
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AnonymousUser(),
+            PublicPath,
+            new HeaderDictionary(),
+            NoAllowlist,
+            Logger);
+
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.DisplayNameHeader));
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header
 import datetime
@@ -17,6 +17,7 @@ from dtos.generic_text import (
     SearchGenericTextByTextRequest,
 )
 from services.content.generic_text_service import GenericTextService
+from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from domain.models.content_type import ContentType
@@ -51,6 +52,7 @@ async def get_by_id(
         ..., description="The UUID of the generic text to retrieve"
     ),
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
+    x_user: Optional[str] = Header(default=None),
 ):
     try:
         # Retrieve generic text by ID
@@ -63,6 +65,8 @@ async def get_by_id(
                 detail=f"GenericText with id {generic_text_id} not found",
             )
 
+        if angemeldet(x_user):
+            return get_anzeigename_service().mit_autor_name(generic_text)
         return generic_text
 
     except Exception as e:

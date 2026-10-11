@@ -324,3 +324,27 @@ class RawInputDraft(Base):
             unique=True,
         ),
     )
+
+
+class User(Base):
+    """
+    Der Anzeigename einer Person, wie Karten ihn beim Autor und Einwerfer zeigen.
+
+    Einzige Stelle, an der ein Name gespeichert wird: Beitraege in Qdrant und
+    Einwuerfe tragen nur die Kennung, der Name wird beim Ausliefern dazugelesen.
+    Abgeleitet wird er im BFF aus den Claims ("Anna B.") und kommt im Header
+    X-User-Display-Name an; hier wird er nur abgelegt
+    (services/anzeigename_service.py). Eine Person ohne Zeile hat keinen Namen,
+    die Karte zeigt dann "Mitglied".
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-10-11-anzeigenamen.sql dokumentiert das Schema.
+    """
+
+    __tablename__ = "users"
+
+    user_id = Column(String(255), primary_key=True)
+    anzeigename = Column(String(100), nullable=False)
+    aktualisiert_am = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

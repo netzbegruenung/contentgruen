@@ -43,6 +43,8 @@ export type BeitragsTyp = 'commentary' | 'generic_text';
 export interface RawInputDraft {
   id: string;
   user_id: string;
+  /** Anzeigename zu user_id ("Anna B."); null ohne gespeicherten Namen. */
+  user_name?: string | null;
   sentence: string;
   updated_at: string;
 }
@@ -65,6 +67,8 @@ export interface RawInput {
   image_url: string | null;
   /** Null moeglich: Kanaele ohne Sitzung liefern keine Kennung. */
   submitted_by: string | null;
+  /** Anzeigename zu submitted_by; null ohne gespeicherten Namen. */
+  submitted_by_name?: string | null;
   source_channel: string;
   status: RawInputStatus;
   created_at: string;

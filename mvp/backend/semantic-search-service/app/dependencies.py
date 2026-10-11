@@ -12,6 +12,7 @@ from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
+from services.anzeigename_service import get_anzeigename_service
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -228,6 +229,21 @@ def get_current_user_optional(
     unten, das denselben Header schon immer korrekt liest.
     """
     return x_user_id
+
+
+def anzeigename_merken(
+    x_user: Optional[str] = Header(None, alias="X-User"),
+    x_user_display_name: Optional[str] = Header(None, alias="X-User-Display-Name"),
+) -> None:
+    """
+    App-weite Dependency (main.py): den Anzeigenamen aus dem BFF-Header ablegen.
+
+    Synchron, damit FastAPI sie im Threadpool ausfuehrt - der seltene Schreibzugriff
+    blockiert so nicht die Event-Loop. Ohne Header passiert nichts, auch kein
+    Datenbankzugriff.
+    """
+    if x_user_display_name:
+        get_anzeigename_service().merken(x_user, x_user_display_name)
 
 
 def require_admin(

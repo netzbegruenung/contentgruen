@@ -18,6 +18,12 @@ export interface ContentResult {
     created: string;
     last_modified: string;
     original_author: string;
+    /**
+     * Anzeigename zu original_author, nur fuer angemeldete Aufrufer. Gesetzt bei getById;
+     * /getContributionsOfUser liefert ihn nicht - dort stehen nur eigene Beitraege, die Karte
+     * zeigt "Du".
+     */
+    autor_name?: string | null;
     last_modified_by: string;
     edit_history: object;
     /** Leer bei Bildern ohne Bildunterschrift. */
