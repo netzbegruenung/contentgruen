@@ -280,6 +280,13 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - Network isolation
 - Secrets managed by SaltStack
 
+### Known gap: seeding router
+- `/api/v1/seeding/*` (`api/v1/seeding.py`) has no auth dependency. It is closed by the BFF
+  edge block (`BFF/Proxy/EndpointPolicy.cs`, `Blocked`) and by port 8000 not being published
+  on the hosts. `require_admin` would add nothing yet: it trusts `X-Is-Admin`, which anyone
+  who reaches port 8000 can set, because the identity headers are not signed (#26).
+  **Secure the seeding router once #26 is implemented.**
+
 ## Monitoring & Logging
 
 ### Current State
