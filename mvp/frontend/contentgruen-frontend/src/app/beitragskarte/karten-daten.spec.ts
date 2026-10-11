@@ -75,6 +75,18 @@ describe('karten-daten', () => {
       expect(daten.rohling).toBeUndefined();
     });
 
+    it('nimmt den Anzeigenamen vom Paket (Suche) oder vom Inhalt (Einzelabruf, /recent)', () => {
+      expect(ausSuchergebnis(paket('commentary_result', {}, { autor_name: 'Anna B.' })).autorName).toBe('Anna B.');
+      expect(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim' })).autorName).toBe('Kim');
+    });
+
+    it('macht aus der leeren Kennung einer anonymen Antwort null', () => {
+      const daten = ausSuchergebnis(paket('commentary_result', { original_author: '' }));
+
+      expect(daten.autor).toBeNull();
+      expect(daten.autorName).toBeNull();
+    });
+
     it('liest Kurz- und Langfassung eines Kommentars', () => {
       const daten = ausSuchergebnis(paket('commentary_result', { short_text: 'kurz', long_text: 'lang' }));
 
@@ -153,6 +165,11 @@ describe('karten-daten', () => {
       ...felder,
     });
 
+    it('uebernimmt den Anzeigenamen aus dem Einzelabruf', () => {
+      expect(ausBeitrag(eintrag({ autor_name: 'Anna B.' })).autorName).toBe('Anna B.');
+      expect(ausBeitrag(eintrag()).autorName).toBeNull();
+    });
+
     it('bringt die Backend-Schreibweise des Typs auf den Registry-Schluessel', () => {
       const daten = ausBeitrag(eintrag());
 
@@ -223,6 +240,11 @@ describe('karten-daten', () => {
         beitraege: [],
         verwerfbar: true,
       });
+    });
+
+    it('nennt den Einwerfer beim Anzeigenamen, sonst ohne Namen', () => {
+      expect(ausEinwurf(einwurf({ submitted_by_name: 'Jürgen Ö.' })).autorName).toBe('Jürgen Ö.');
+      expect(ausEinwurf(einwurf()).autorName).toBeNull();
     });
 
     it('laesst ohne Notiz den Titel leer - die Link-Zeile ist dann die Aufschrift', () => {

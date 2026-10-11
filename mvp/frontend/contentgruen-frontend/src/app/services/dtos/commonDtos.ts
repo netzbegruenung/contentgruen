@@ -35,7 +35,10 @@ export interface BaseContentResult {
     id: string;
     created: string;
     last_modified: string;
+    /** Leer ('') ohne Anmeldung: dann liefert das Backend keine Kennung. */
     original_author: string;
+    /** Anzeigename zu original_author ("Anna B."); bei Einzelabruf und /recent flach hier. */
+    autor_name?: string | null;
     last_modified_by: string;
     authors: AuthorEntry[];
     edit_history: EditEntry[];
@@ -66,4 +69,6 @@ export interface BaseSearchResult {
     statement_similarity_score: number | null;
     reply_relevance: number | null;
     user_vote?: string;  // "like", "dislike", or undefined
+    /** Anzeigename des Autors ("Anna B."); nur fuer Angemeldete, sonst null. */
+    autor_name?: string | null;
 }

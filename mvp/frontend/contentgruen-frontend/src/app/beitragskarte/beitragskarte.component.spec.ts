@@ -178,13 +178,14 @@ describe('BeitragskarteComponent', () => {
       expect(element('.kopieren-knopf').textContent).toContain('Bildunterschrift kopieren');
     });
 
-    it('zeigt die gekuerzte Kennung, solange es keinen Anzeigenamen gibt', () => {
+    it('zeigt den Anzeigenamen und ohne Namen "Mitglied" - nie die Kennung', () => {
       const daten = ausSuchergebnis(paket('commentary_result'));
       zeigen(daten);
-      expect(element('.karte-meta').textContent).toContain('Von: 0f3c2a9e');
+      expect(element('.karte-meta').textContent).toContain('Von: Mitglied');
+      expect(element('.karte-meta').textContent).not.toContain('0f3c2a9e');
 
-      zeigen({ ...daten, autorName: 'Kim Grün' });
-      expect(element('.karte-meta').textContent).toContain('Von: Kim Grün');
+      zeigen({ ...daten, autorName: 'Kim G.' });
+      expect(element('.karte-meta').textContent).toContain('Von: Kim G.');
     });
 
     it('nennt den eigenen Beitrag "Du", nicht die eigene Kennung', () => {

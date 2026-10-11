@@ -95,9 +95,9 @@ export interface KartenDaten {
   titel: string | null;
   text: string | null;
   erstellt: string;
-  /** Keycloak-Kennung. */
+  /** Keycloak-Kennung; null ohne Anmeldung (das Backend liefert sie dann nicht). */
   autor: string | null;
-  /** Anzeigename; in diesem Paket immer null, ein spaeteres Paket fuellt ihn. */
+  /** Anzeigename ("Anna B."); null ohne Anmeldung oder ohne gespeicherten Namen. */
   autorName: string | null;
   /** Verwendungen; null = unbekannt, dann kein Badge. */
   nutzung: number | null;
@@ -128,8 +128,9 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
     titel: inhalt.title ?? null,
     text: inhalt.text ?? null,
     erstellt: inhalt.created,
-    autor: inhalt.original_author ?? null,
-    autorName: null,
+    autor: inhalt.original_author || null,
+    // Die Suche traegt den Namen am Paket, Einzelabruf und /recent am Inhalt.
+    autorName: paket.autor_name ?? inhalt.autor_name ?? null,
     nutzung: inhalt.usage_count ?? 0,
     quellen: (inhalt.references ?? []).map(quelle),
     bildUrl: inhalt['image_url'] || undefined,
@@ -207,8 +208,8 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     titel: eintrag.title || (eintrag.text ? null : domainAus(eintrag.image_url)),
     text: eintrag.text ?? null,
     erstellt: eintrag.created,
-    autor: eintrag.original_author ?? null,
-    autorName: null,
+    autor: eintrag.original_author || null,
+    autorName: eintrag.autor_name ?? null,
     nutzung: eintrag.usage_count ?? 0,
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
@@ -311,7 +312,7 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
     text: null,
     erstellt: einwurf.created_at,
     autor: einwurf.submitted_by,
-    autorName: null,
+    autorName: einwurf.submitted_by_name ?? null,
     nutzung: null,
     quellen: [],
     rohling: {

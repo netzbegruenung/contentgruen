@@ -18,6 +18,8 @@ export interface ContentResult {
     created: string;
     last_modified: string;
     original_author: string;
+    /** Anzeigename zu original_author; nur bei Einzelabruf (getById) gesetzt. */
+    autor_name?: string | null;
     last_modified_by: string;
     edit_history: object;
     /** Leer bei Bildern ohne Bildunterschrift. */

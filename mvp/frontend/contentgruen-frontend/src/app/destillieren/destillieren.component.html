@@ -40,7 +40,7 @@
                 <ul>
                     <li *ngFor="let fremd of fremdeSaetze" class="fremder-satz">
                         <span class="satz-text">„{{ fremd.sentence }}“</span>
-                        <span class="person" [attr.title]="fremd.user_id">{{ kurzeKennung(fremd.user_id) }}</span>
+                        <span class="person">{{ fremd.user_name || 'Mitglied' }}</span>
                     </li>
                 </ul>
             </div>

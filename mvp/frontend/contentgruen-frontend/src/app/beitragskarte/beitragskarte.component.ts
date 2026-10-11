@@ -34,7 +34,6 @@ import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.compo
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
-import { kurzeKennung } from '../shared/kennung';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 
 type TextModus = 'short' | 'standard' | 'long';
@@ -108,8 +107,6 @@ const STUFEN: Record<FangkorbZustand, { emoji: string; name: string }> = {
   ],
 })
 export class BeitragskarteComponent implements OnChanges, OnDestroy {
-  readonly kurzeKennung = kurzeKennung;
-
   @Input() variante: KartenVariante = 'voll';
   @Input({ required: true }) daten!: KartenDaten;
   /** Formular-Vorschau: Aktionen sichtbar, aber ohne Wirkung. */
@@ -405,12 +402,15 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.daten.typ === 'image' ? 'Bildunterschrift kopieren' : 'Kopieren';
   }
 
-  /** "Du" am eigenen Beitrag, sonst der Anzeigename und, solange es keinen gibt, die Kennung. */
+  /**
+   * "Du" am eigenen Beitrag, sonst der Anzeigename ("Anna B."). Ohne Namen steht
+   * "Mitglied" da - nie die Kennung: die ist kein Name und gehoert nicht auf die Karte.
+   */
   get autorAnzeige(): string {
     if (this.istEigen) {
       return 'Du';
     }
-    return this.daten.autorName || kurzeKennung(this.daten.autor);
+    return this.daten.autorName || 'Mitglied';
   }
 
   get postHerkunft(): string {

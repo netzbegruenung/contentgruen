@@ -14,7 +14,6 @@ import {
 } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
-import { kurzeKennung } from '../shared/kennung';
 import { typBeschreibung, typLabel } from '../shared/content-type-registry';
 import {
   DestillierUebergabeService,
@@ -63,7 +62,6 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 export class DestillierenComponent implements OnInit, OnDestroy {
   readonly satzLimit = SATZ_LIMIT;
   readonly typen = TYPEN;
-  readonly kurzeKennung = kurzeKennung;
 
   satz = new FormControl('', {
     nonNullable: true,
