@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import BackgroundTasks, Depends, FastAPI
 
 # Import configuration first
 from core.config import settings
@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 logger.info("📚 Importing FastAPI app dependencies")
 logger.debug(f"📁 Current directory: {os.getcwd()}")
 
-from dependencies import initialize_services
+from dependencies import anzeigename_merken, initialize_services
 from services.embeddings.qdrant_embeddings_manager import (
     get_qdrant_embeddings_manager,
     get_embeddings_manager,
@@ -177,6 +177,8 @@ app = FastAPI(
     # haengt immer einen Pfad an, und alle Healthchecks rufen /api/v1/health ohne
     # Slash auf.
     redirect_slashes=False,
+    # Legt den Anzeigenamen aus X-User-Display-Name ab, einmal je Person und Aenderung.
+    dependencies=[Depends(anzeigename_merken)],
 )
 
 # Add rate limiting middleware for content creation endpoints
