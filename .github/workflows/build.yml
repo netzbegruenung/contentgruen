@@ -56,12 +56,16 @@ jobs:
   test-bff:
     uses: ./.github/workflows/tests-bff.yml
 
+  # All build jobs push images only from main. The `:main` tag is watched by the
+  # tst deployment, so a manual workflow_dispatch on any other branch must never
+  # push. Never push from PRs either.
   build-frontend:
     name: Build Frontend Image
     runs-on: ubuntu-latest
     needs: [changes, test, test-frontend]
-    # Build only when frontend paths changed (or manual trigger); never push from PRs
+    # Build only on main when frontend paths changed (or manual trigger on main)
     if: |
+      github.ref == 'refs/heads/main' &&
       github.event_name != 'pull_request' &&
       (needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
@@ -109,6 +113,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes, test, test-bff]
     if: |
+      github.ref == 'refs/heads/main' &&
       github.event_name != 'pull_request' &&
       (needs.changes.outputs.bff == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
@@ -151,6 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes, test]
     if: |
+      github.ref == 'refs/heads/main' &&
       github.event_name != 'pull_request' &&
       (needs.changes.outputs.semantic == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
@@ -195,6 +201,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes, test]
     if: |
+      github.ref == 'refs/heads/main' &&
       github.event_name != 'pull_request' &&
       (needs.changes.outputs.postgres_app == 'true' || github.event_name == 'workflow_dispatch')
     permissions:
