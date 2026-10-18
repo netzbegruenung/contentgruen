@@ -4,25 +4,21 @@ This file helps AI assistants (like Claude) understand the Gut gesagt project st
 
 ## IMPORTANT: Git Guidelines
 - **NO EMOJIS** in commit messages
-- **NO CLAUDE REFERENCES** in commit messages (no "Generated with Claude", no "Co-Authored-By: Claude")
+- **Co-author trailer is mandatory.** Every commit an agent writes ends with the agent's
+  `Co-Authored-By:` trailer, e.g. `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+  The commit author stays the maintainer's address from the repo config.
 - Keep commit messages professional and focused on the changes
 - **GitHub repository** — `github.com/netzbegruenung/contentgruen`, which is what `origin` points at.
   (The project was hosted on Forgejo at `git.verdigado.com` before the public open-source release;
   that host now only serves the container registry used by CI.)
-- **The `gh` CLI is not authenticated on the dev VM and will not be** — see
-  [Remote access](#remote-access-ssh--yubikey) below. `gh pr create`, `gh pr view`,
-  `gh pr checks`, `gh pr comment` and `gh api` all fail with a login prompt. Do not run
-  `gh auth login`, and do not add a token or credential helper to work around it — that
-  would reintroduce exactly the bypass this setup removes.
-- **Pushing works, but every push needs a human.** `origin` is SSH only, the key is a
-  FIDO2 YubiKey forwarded from the maintainer's machine, and each connection needs a
-  physical touch. Prepare and push freely, but expect the command to block until someone
-  presses the key — announce a push before running it rather than firing it at an
-  unattended terminal.
-- **Opening a PR is the maintainer's step.** Push the branch, then hand over the compare
-  URL — `https://github.com/netzbegruenung/contentgruen/compare/main...<branch>?expand=1`,
-  which the push output also prints — together with a suggested title and body.
-- Never push directly to `main`; always branch and hand over a PR link.
+- **Agent access.** Agents work as `beztix-bot` through `GH_TOKEN` (classic PAT, scope
+  `public_repo`). `gh` uses it directly; `git` talks to `origin` over HTTPS with the
+  credential helper `gh auth git-credential`. Never print, log or commit the token.
+- **Allowed:** push own branches, open pull requests.
+- **Not allowed:** push to `main`, merge, create tags or releases, change anything under
+  `.github/workflows/` (the push is rejected — hand the diff to the maintainer instead),
+  start workflows (`gh workflow run`) unless explicitly asked.
+- Never push directly to `main`; always branch and open a PR.
 
 ## Dev-VM (Agenten-Sandbox)
 
@@ -40,35 +36,6 @@ nichts im Vordergrund, Exit != 0 bei Fehler:
   Rootless Docker kann keine Ports < 1024 binden — daher 8080 statt 80.
 - VM-Voraussetzung (nicht im Repo): `docker buildx` >= 0.17 in `~/.docker/cli-plugins/`;
   das Debian-Paket 0.13 ist zu alt für Compose 2.40 und lässt jeden Build scheitern.
-
-### Remote access (SSH + YubiKey)
-
-Die Sandbox begrenzt Rechenzeit und Dateisystem — nicht Identität. Ein Push lässt sich
-nicht dadurch zurücknehmen, dass man die VM neu aufsetzt. Deshalb liegt hier bewusst
-**kein Credential, das ohne Menschen schreiben kann**:
-
-- Kein privater SSH-Key auf der VM, kein `gh`-Token, kein Credential-Helper, keine
-  `~/.netrc`. Der einzige Weg zu `origin` ist SSH über den **weitergereichten Agent**
-  des Maintainers mit einem `ED25519-SK`-Key (FIDO2). Jede Verbindung = eine Signatur =
-  ein Touch. Ein Agent-Forward erlaubt das *Anfordern* einer Signatur, nicht deren
-  Erteilung — die bleibt am Stick.
-- Konsequenz für Agenten: Alles Lokale (Branches, Commits, Tests, Dev-Stack) läuft ohne
-  Rückfrage. Alles, was die VM verlässt, blockiert bis jemand drückt.
-
-Damit das in langlebigen tmux-Sessions funktioniert, hängt der Agent-Socket an einem
-**stabilen Pfad** statt am pro Verbindung wechselnden `/tmp/ssh-XXXX/agent.NNN`:
-
-- `~/.ssh/rc` zieht `~/.ssh/agent.sock` bei jedem SSH-Login auf den aktuellen Socket nach.
-- `~/.zshenv` exportiert `SSH_AUTH_SOCK=~/.ssh/agent.sock` — `.zshenv` liest auch jede
-  nicht-interaktive zsh, also greift es für die frischen Shells, die Agent-Harnesses pro
-  Tool-Aufruf starten.
-- `SSH_AUTH_SOCK` ist aus tmux' `update-environment` entfernt, damit tmux seine beim
-  Anlegen der Session eingefrorene Kopie nicht in neue Panes injiziert.
-
-Diese drei Dateien liegen auf der VM, nicht im Repo. Symptom, wenn eins davon fehlt:
-`git push` scheitert mit `Permission denied (publickey)` **statt** den YubiKey blinken zu
-lassen — der Key ist dann nicht weg, es zeigt nur etwas auf einen toten Socket. Prüfen mit
-`readlink -f "$SSH_AUTH_SOCK"` und einem Abgleich gegen die lebenden `/tmp/ssh-*/agent.*`.
 
 ## Quick Start Commands
 
@@ -259,12 +226,9 @@ When user requests "Review PR" or "review pr":
    - Areas to consider
    - Risk assessment
    - Recommendation (Approve/Request Changes)
-6. **Deliver the review in chat.** Posting it is the maintainer's step — `gh` is not
-   authenticated on the dev VM (see [Git Guidelines](#important-git-guidelines)), so
-   `gh pr comment` / `gh pr review` are not available and no workaround should be added.
-   - Write the review to a file as well, so it can be pasted without re-reading the chat.
-   - Note which PR it belongs to. The number cannot be resolved via `gh pr list`; take it
-     from the user, or name the branch and let them match it.
+6. **Deliver the review in chat** and write it to a file as well, so it can be pasted
+   without re-reading the chat. Post it on GitHub (`gh pr review` / `gh pr comment`) only
+   when the maintainer asks for it and has approved the text.
 
 ### View API Documentation
 When user requests "view api docs":
@@ -275,10 +239,9 @@ When user requests "view api docs":
 ```bash
 docker exec -it contentgruen-app-postgres psql -U app_user -d contentgruen_app
 ```
-Container names are the same in dev, test and production: `contentgruen-app-postgres`,
-`contentgruen-semantic-search`, `contentgruen-qdrant` (on the hosts once the Salt PR
-`fix/contentgruen-haertung` is rolled out; before that the hosts named PostgreSQL
-`contentgruen-postgres-app`).
+Container names in the dev stack: `contentgruen-app-postgres`,
+`contentgruen-semantic-search`, `contentgruen-qdrant`. On the hosts they are set by the
+external deployment configuration.
 
 ### View Logs
 When user requests "check logs" or "view logs":
@@ -374,8 +337,6 @@ dotnet test
 - URL: https://contentgruen-test.netzbegruenung.de (SaltStack-managed, runs the `:main` image tag)
 - Deployment: Manual — Salt `state.apply`, then `docker compose pull && docker compose up -d` on the host.
   A new `:main` image is **not** rolled out automatically, so migrations can run before the deploy.
-  The Salt state still contains a Watchtower block, but its container is stuck in a restart loop
-  (as of 2026-10-11); the block is being removed from the Salt repo (#22).
 - Legacy URL: https://test.contentgruen.de (manual deployment via docker-compose.tst.yml, being discontinued)
 
 ### Production Environment
@@ -401,7 +362,24 @@ docker-compose -f docker-compose.local-dbs.yml down -v  # Reset databases (Qdran
 
 ## Project Status
 
-See [STATUS.md](./STATUS.md) for current development status and roadmap.
+See [STATUS.md](./STATUS.md) for goals and environments, [docs/ROADMAP.md](./docs/ROADMAP.md)
+for the long-term direction.
+
+## Task Management
+
+- Tasks live in **GitHub issues**, each with a **milestone**. The milestones form a chain,
+  each one unlocks the next: `Erste Nutzer` → `Prod v1.2` → `Launch` → `Nach Launch`.
+- Labels: one type (`bug`, `enhancement`, `documentation`, `schuld`) plus one or more areas
+  (`frontend`, `backend`, `bff`, `ci`). No other labels.
+- Issue titles are German with a prefix `Bug:`, `Feature:`, `Schuld:` or `Doku:`; the body has
+  **Problem** · **Beleg** (file:line or commit) · **Fertig, wenn** (checkable) · **Quelle**,
+  and dependencies as a line `Blockiert durch #NN`.
+- Do not keep task lists in Markdown files under `docs/` — link the issue instead.
+- New findings: propose them as an issue draft in chat; create the issue only after the
+  maintainer agrees.
+- **Security findings are never public** — no issue, PR text, commit message or doc. Report
+  them privately to the maintainer (see [SECURITY.md](./SECURITY.md)).
+- No personal names in issues.
 
 ## Contributing
 
