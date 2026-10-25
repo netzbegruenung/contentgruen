@@ -4,25 +4,22 @@ This file helps AI assistants (like Claude) understand the Gut gesagt project st
 
 ## IMPORTANT: Git Guidelines
 - **NO EMOJIS** in commit messages
-- **NO CLAUDE REFERENCES** in commit messages (no "Generated with Claude", no "Co-Authored-By: Claude")
-- Keep commit messages professional and focused on the changes
-- **GitHub repository** — `github.com/netzbegruenung/contentgruen`, which is what `origin` points at.
-  (The project was hosted on Forgejo at `git.verdigado.com` before the public open-source release;
-  that host now only serves the container registry used by CI.)
-- **The `gh` CLI is not authenticated on the dev VM and will not be** — see
-  [Remote access](#remote-access-ssh--yubikey) below. `gh pr create`, `gh pr view`,
-  `gh pr checks`, `gh pr comment` and `gh api` all fail with a login prompt. Do not run
-  `gh auth login`, and do not add a token or credential helper to work around it — that
-  would reintroduce exactly the bypass this setup removes.
-- **Pushing works, but every push needs a human.** `origin` is SSH only, the key is a
-  FIDO2 YubiKey forwarded from the maintainer's machine, and each connection needs a
-  physical touch. Prepare and push freely, but expect the command to block until someone
-  presses the key — announce a push before running it rather than firing it at an
-  unattended terminal.
-- **Opening a PR is the maintainer's step.** Push the branch, then hand over the compare
-  URL — `https://github.com/netzbegruenung/contentgruen/compare/main...<branch>?expand=1`,
-  which the push output also prints — together with a suggested title and body.
-- Never push directly to `main`; always branch and hand over a PR link.
+- Keep commit messages professional and focused on the changes; Conventional Commits.
+- Agent commits carry a `Co-Authored-By:` trailer naming the agent/model. No other AI
+  references (no "Generated with …" lines) in commit messages.
+- **Primary repository: Forgejo** — `git.verdigado.com/Netzbegruenung/gutgesagt`, which is
+  what `origin` points at. Branches, pull requests, reviews and issues live there.
+- **GitHub is a read-only mirror** — `github.com/netzbegruenung/contentgruen` (remote
+  `github`). Forgejo pushes every change there automatically (push mirror); GitHub Actions
+  build and release the container images from the mirrored pushes and tags. Never push to
+  GitHub directly and do not open PRs or issues there.
+- **`main` is protected on Forgejo**: nobody pushes to it directly, only listed maintainers
+  merge. Work on a branch (agents: `sb/` prefix), push it, open a PR.
+- **Opening PRs and comments**: via the Forgejo API (`https://git.verdigado.com/api/v1/`),
+  not `tea` and not `gh` (`gh` is not authenticated on the dev VM). Note that
+  `/issues` also returns PRs; filter with `type=issues`.
+- `.github/workflows/` changes reach GitHub CI directly through the mirror; flag them
+  explicitly in the PR.
 
 ## Dev-VM (Agenten-Sandbox)
 
@@ -41,34 +38,21 @@ nichts im Vordergrund, Exit != 0 bei Fehler:
 - VM-Voraussetzung (nicht im Repo): `docker buildx` >= 0.17 in `~/.docker/cli-plugins/`;
   das Debian-Paket 0.13 ist zu alt für Compose 2.40 und lässt jeden Build scheitern.
 
-### Remote access (SSH + YubiKey)
+### Remote access
 
-Die Sandbox begrenzt Rechenzeit und Dateisystem — nicht Identität. Ein Push lässt sich
-nicht dadurch zurücknehmen, dass man die VM neu aufsetzt. Deshalb liegt hier bewusst
-**kein Credential, das ohne Menschen schreiben kann**:
+Die Sandbox begrenzt Rechenzeit und Dateisystem, nicht Identität. Ein Push lässt sich nicht
+dadurch zurücknehmen, dass man die VM neu aufsetzt. Deshalb kann das Credential auf der VM
+nur wenig:
 
-- Kein privater SSH-Key auf der VM, kein `gh`-Token, kein Credential-Helper, keine
-  `~/.netrc`. Der einzige Weg zu `origin` ist SSH über den **weitergereichten Agent**
-  des Maintainers mit einem `ED25519-SK`-Key (FIDO2). Jede Verbindung = eine Signatur =
-  ein Touch. Ein Agent-Forward erlaubt das *Anfordern* einer Signatur, nicht deren
-  Erteilung — die bleibt am Stick.
-- Konsequenz für Agenten: Alles Lokale (Branches, Commits, Tests, Dev-Stack) läuft ohne
-  Rückfrage. Alles, was die VM verlässt, blockiert bis jemand drückt.
-
-Damit das in langlebigen tmux-Sessions funktioniert, hängt der Agent-Socket an einem
-**stabilen Pfad** statt am pro Verbindung wechselnden `/tmp/ssh-XXXX/agent.NNN`:
-
-- `~/.ssh/rc` zieht `~/.ssh/agent.sock` bei jedem SSH-Login auf den aktuellen Socket nach.
-- `~/.zshenv` exportiert `SSH_AUTH_SOCK=~/.ssh/agent.sock` — `.zshenv` liest auch jede
-  nicht-interaktive zsh, also greift es für die frischen Shells, die Agent-Harnesses pro
-  Tool-Aufruf starten.
-- `SSH_AUTH_SOCK` ist aus tmux' `update-environment` entfernt, damit tmux seine beim
-  Anlegen der Session eingefrorene Kopie nicht in neue Panes injiziert.
-
-Diese drei Dateien liegen auf der VM, nicht im Repo. Symptom, wenn eins davon fehlt:
-`git push` scheitert mit `Permission denied (publickey)` **statt** den YubiKey blinken zu
-lassen — der Key ist dann nicht weg, es zeigt nur etwas auf einen toten Socket. Prüfen mit
-`readlink -f "$SSH_AUTH_SOCK"` und einem Abgleich gegen die lebenden `/tmp/ssh-*/agent.*`.
+- Git spricht HTTPS mit `git.verdigado.com` über einen repo-lokalen Credential-Helper. Der
+  liest einen Forgejo-Token des Bot-Accounts, der **nur für dieses Repo** gilt
+  (Schreibrecht, kein Admin). Den Token nie ausgeben, loggen oder in Dateien schreiben.
+- Was der Token nicht kann, erzwingt der Server: kein Push und kein Merge auf `main`
+  (Branch-Schutz), keine Repo-Einstellungen, kein Spiegel-Setup.
+- Kein SSH-Key, kein `gh`-Token und kein GitHub-Zugang auf der VM. Nichts davon
+  nachrüsten, um eine Einschränkung zu umgehen.
+- Konsequenz für Agenten: Branches pushen und PRs öffnen geht ohne Rückfrage; mergen,
+  Releases/Tags und alles an der Infrastruktur bleibt beim Maintainer.
 
 ## Quick Start Commands
 
@@ -259,12 +243,10 @@ When user requests "Review PR" or "review pr":
    - Areas to consider
    - Risk assessment
    - Recommendation (Approve/Request Changes)
-6. **Deliver the review in chat.** Posting it is the maintainer's step — `gh` is not
-   authenticated on the dev VM (see [Git Guidelines](#important-git-guidelines)), so
-   `gh pr comment` / `gh pr review` are not available and no workaround should be added.
+6. **Deliver the review in chat.** Posting it on the PR (Forgejo API,
+   `/pulls/{nr}/reviews`) only after the maintainer has seen and approved the draft.
    - Write the review to a file as well, so it can be pasted without re-reading the chat.
-   - Note which PR it belongs to. The number cannot be resolved via `gh pr list`; take it
-     from the user, or name the branch and let them match it.
+   - Note which PR it belongs to (`/pulls?state=open` via the API lists them).
 
 ### View API Documentation
 When user requests "view api docs":
