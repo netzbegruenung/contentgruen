@@ -85,7 +85,7 @@ python -m venv venv
 # Windows: venv\Scripts\activate
 # Unix: source venv/bin/activate
 pip install -r requirements.txt
-export SEMANTIC_SEARCH_APP_DATABASE_URL="postgresql+psycopg2://app_user:changeme@localhost:5433/contentgruen_app"
+export SEMANTIC_SEARCH_APP_DATABASE_URL="postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app"
 export SEMANTIC_SEARCH_QDRANT_URL="http://localhost:6333"
 cd app
 uvicorn main:app --reload

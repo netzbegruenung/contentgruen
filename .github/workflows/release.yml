@@ -60,7 +60,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-frontend
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-frontend
           # latest=auto is metadata-action's default, stated explicitly because the
           # prd deployment pins :latest by digest. It publishes :latest for normal
           # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates
@@ -109,7 +109,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-bff
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-bff
           # latest=auto is metadata-action's default, stated explicitly because the
           # prd deployment pins :latest by digest. It publishes :latest for normal
           # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates
@@ -153,7 +153,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-semantic-search
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-semantic-search
           # latest=auto is metadata-action's default, stated explicitly because the
           # prd deployment pins :latest by digest. It publishes :latest for normal
           # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates
@@ -199,7 +199,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-postgres-app
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-postgres-app
           # latest=auto is metadata-action's default, stated explicitly because the
           # prd deployment pins :latest by digest. It publishes :latest for normal
           # semver tags and skips prereleases (v1.2.3-rc.1), so release candidates

@@ -22,7 +22,6 @@ cd "$(dirname "$0")/../.."
 echo "Stopping Docker containers..."
 docker-compose -f docker-compose.dev.yml down -v 2>/dev/null
 docker-compose -f docker-compose.local-dbs.yml down -v 2>/dev/null
-docker-compose -f docker-compose.tst.yml down -v 2>/dev/null
 
 # Clean Python environment
 echo "Cleaning Python environment..."

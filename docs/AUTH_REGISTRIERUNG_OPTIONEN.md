@@ -141,7 +141,7 @@ sind rund 30 Zeilen in `Program.cs:489–528`, aber sie dürfen nicht vergessen 
 #### Der Weg der Identität durch den Stack
 
 ```
-Browser ──Cookie "ContentGruenAuthCookie"──▶ BFF
+Browser ──Cookie "GutGesagtAuthCookie"──▶ BFF
                                              │  ClaimUtilities.GetUserId()  → "sub" | NameIdentifier
                                              │  ClaimUtilities.GetUserName() → Name | "name" | GivenName
                                              ▼
@@ -168,7 +168,7 @@ E-Mail-basierte ID einführt, muss diese Prüfung anfassen.
 Der Cookie ist `HttpOnly`, `SameSite=None`/`Secure=Always` im Keycloak-Zweig
 (`Program.cs:57–59`) und `SameSite=Lax`/`SameAsRequest` im lokalen Zweig
 (`Program.cs:134–136`). In Produktion liegen Frontend
-(`contentgruen.netzbegruenung.de`) und BFF (`bff.contentgruen.netzbegruenung.de`) unter
+(`gutgesagt.netzbegruenung.de`) und BFF (`bff.gutgesagt.netzbegruenung.de`) unter
 derselben registrierbaren Domain (`docs/DEPLOYMENT.md:123–125`); `Lax` ist damit
 cross-origin, aber same-site und funktioniert. Die DataProtection-Keys liegen auf einem
 Volume `/keys` (`Program.cs:368–370`), damit Cookies einen Container-Neustart überleben.
@@ -449,7 +449,7 @@ Registrierungs-Endpunkt (das vorhandene Limit schlüsselt auf `X-User` und greif
 nicht), Schutz vor Konto-Enumeration bei „Passwort vergessen“, Bot-Abwehr.
 
 **Infrastruktur/Salt.** Das BFF bekommt erstmals eine Datenbank — entweder ein eigenes
-Schema in der bestehenden `contentgruen_app` oder ein eigener Dienst; Backup-Skript
+Schema in der bestehenden `gutgesagt_app` oder ein eigener Dienst; Backup-Skript
 erweitern. SMTP-Relay oder Versanddienst, Absenderdomain mit SPF/DKIM/DMARC, Pillar-Werte
 für die Zugangsdaten.
 **Externe Zuständigkeit.** **Die geringste aller Optionen im laufenden Betrieb.** Nötig ist
@@ -830,7 +830,7 @@ Ausdrücklich als ungeprüft gekennzeichnet, weil außerhalb dieses Repositories
   und der Betreiber-Bereitschaft, nicht des Codes.
 - **Ob auf den Produktionsmaschinen ein SMTP-Relay verfügbar ist.**
 - **Der Inhalt des produktiven `managed-users.json`.** Die Beispieldatei im Repo enthält
-  zwei offensichtliche Testkonten (`test.user@example.com`, `admin@contentgruen.com`); im
+  zwei offensichtliche Testkonten (`test.user@example.com`, `admin@example.com`); im
   Produktions-Compose wird `./config` gemountet, dessen Inhalt auf dem Server liegt.
 
 ---

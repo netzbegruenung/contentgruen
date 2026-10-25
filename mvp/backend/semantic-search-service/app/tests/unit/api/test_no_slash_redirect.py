@@ -37,7 +37,7 @@ def test_trailing_slash_leaks_no_internal_host(path):
     response = client.get(path)
 
     assert "localhost:8000" not in response.text
-    assert "contentgruen-semantic-search" not in response.text
+    assert "gutgesagt-semantic-search" not in response.text
 
 
 def test_health_without_slash_still_works():

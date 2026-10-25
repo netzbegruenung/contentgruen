@@ -90,7 +90,7 @@ export class LoginSelectorComponent implements OnInit {
   }
 
   getMailtoLink(): string {
-    const email = 'accounts@contentgruen.de';
+    const email = 'gutgesagt@netzbegruenung.de';
     const subject = 'Beta-Account Anfrage';
     return `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   }

@@ -1,7 +1,7 @@
 services:
   qdrant:
     image: qdrant/qdrant:v1.18.2
-    container_name: contentgruen-qdrant
+    container_name: gutgesagt-qdrant
     restart: always
     ports:
       - "6333:6333"  # REST API
@@ -20,12 +20,12 @@ services:
 
   postgres-app:
     image: postgres:16-alpine
-    container_name: contentgruen-app-postgres
+    container_name: gutgesagt-app-postgres
     restart: always
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: changeme
-      POSTGRES_DB: contentgruen_app
+      POSTGRES_DB: gutgesagt_app
     ports:
       - "5433:5432"
     volumes:
@@ -39,6 +39,6 @@ services:
 
 volumes:
   qdrant_storage_local:
-    name: contentgruen_qdrant_storage_local
+    name: gutgesagt_qdrant_storage_local
   pgdata_app_local:
-    name: contentgruen_pgdata_app_local
+    name: gutgesagt_pgdata_app_local

@@ -75,9 +75,9 @@ At startup, the service:
 ### Seeding Issues
 
 If seeding fails with "No JSON files found":
-1. Check that data is mounted correctly: `docker-compose logs contentgruen-semantic-search`
-2. Verify the data path exists: `docker exec contentgruen-semantic-search ls -la /data/seed/v1.0`
-3. Check environment variables: `docker exec contentgruen-semantic-search env | grep SEMANTIC`
+1. Check that data is mounted correctly: `docker-compose logs gutgesagt-semantic-search`
+2. Verify the data path exists: `docker exec gutgesagt-semantic-search ls -la /data/seed/v1.0`
+3. Check environment variables: `docker exec gutgesagt-semantic-search env | grep SEMANTIC`
 4. Ensure seed data files exist in `mvp/data/seed/v1.0/` on the host
 
 ### Local Development Issues

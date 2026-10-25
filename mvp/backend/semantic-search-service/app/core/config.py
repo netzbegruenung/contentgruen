@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     # Application database configuration (PostgreSQL for usage tracking, votes, etc.)
     app_database_url: str = (
-        "postgresql+psycopg2://app_user:changeme@localhost:5433/contentgruen_app"
+        "postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app"
     )
 
     def _get_project_root(self) -> str:

@@ -13,7 +13,6 @@ REM Stop all Docker containers
 echo Stopping Docker containers...
 docker-compose -f docker-compose.dev.yml down 2>nul
 docker-compose -f docker-compose.local-dbs.yml down 2>nul
-docker-compose -f docker-compose.tst.yml down 2>nul
 
 REM Kill any orphaned cmd windows
 echo Closing any orphaned command windows...

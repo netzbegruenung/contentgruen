@@ -16,7 +16,7 @@ cat > environment.ts << 'EOF'
 export const environment = {
   production: false,
   baseUrl: '',
-  clientId: 'contentgruen',
+  clientId: 'gutgesagt',
   mockAuth: true
 };
 EOF

@@ -49,8 +49,8 @@ QDRANT_URL="http://localhost:6333"
 COLLECTION="content_collection"
 
 # Service name / container name / published host port, index-aligned.
-SERVICES=(qdrant postgres-app contentgruen-semantic-search contentgruen-bff contentgruen-frontend)
-CONTAINERS=(contentgruen-qdrant contentgruen-app-postgres contentgruen-semantic-search contentgruen-bff contentgruen-frontend)
+SERVICES=(qdrant postgres-app gutgesagt-semantic-search gutgesagt-bff gutgesagt-frontend)
+CONTAINERS=(gutgesagt-qdrant gutgesagt-app-postgres gutgesagt-semantic-search gutgesagt-bff gutgesagt-frontend)
 HOST_PORTS=(6333 5433 8000 5054 8080)
 
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-600}"   # seconds to wait for all containers
@@ -173,7 +173,7 @@ wait_healthy() {
 
 # --- subcommands -------------------------------------------------------------
 cmd_up() {
-    info "building and starting (compose project: contentgruen-dev)"
+    info "building and starting (compose project: gutgesagt-dev)"
     if ! dc up -d --build >&2; then
         err "compose up failed"
         status_print
@@ -242,7 +242,7 @@ cmd_wipe() {
 # Trigger seeding and block until it is done. Return 0 on success.
 seed_run() {
     local state
-    state="$(container_state contentgruen-semantic-search)"
+    state="$(container_state gutgesagt-semantic-search)"
     if [ "$state" != healthy ]; then
         err "semantic search service is '$state', not healthy -- cannot seed"
         return 1
@@ -271,7 +271,7 @@ seed_run() {
         st="$(json_field "$(curl -fsS --max-time 10 "$SEMANTIC_URL/api/v1/seeding/status" 2>/dev/null)" status)"
         case "$st" in
             completed) ok "seeding completed"; return 0 ;;
-            failed)    err "seeding failed -- see '$0 logs contentgruen-semantic-search'"; return 1 ;;
+            failed)    err "seeding failed -- see '$0 logs gutgesagt-semantic-search'"; return 1 ;;
         esac
         if [ "$(date +%s)" -ge "$deadline" ]; then
             err "timeout after ${SEED_TIMEOUT}s waiting for seeding (last status: ${st:-unknown})"

@@ -9,7 +9,7 @@ cd mvp/scripts/backup # Or place backup script on server
 ./backup.sh
 ```
 
-Creates timestamped backup in `/opt/contentgruen-backups/daily/` with automatic rotation:
+Creates timestamped backup in `/opt/gutgesagt-backups/daily/` with automatic rotation:
 - **Daily backups**: Last 7 days
 - **Weekly backups**: Last 4 weeks (Sundays)
 
@@ -18,7 +18,7 @@ Creates timestamped backup in `/opt/contentgruen-backups/daily/` with automatic 
 ```bash
 cd mvp/scripts/backup # Or place restore script on server
 
-# Paths are resolved relative to /opt/contentgruen-backups/ -- pass a relative
+# Paths are resolved relative to /opt/gutgesagt-backups/ -- pass a relative
 # path, not an absolute one.
 
 # Restore latest daily backup
@@ -53,15 +53,15 @@ for the duration of the test (the container names are the defaults):
 export BACKUP_ROOT="$HOME/cg-backups-test"; mkdir -p "$BACKUP_ROOT"
 cat > /tmp/backup-mount.yml <<YML
 services:
-  contentgruen-semantic-search:
+  gutgesagt-semantic-search:
     volumes:
       - $BACKUP_ROOT:/backups
 YML
 docker compose -f mvp/docker-compose.dev.yml -f /tmp/backup-mount.yml \
-  up -d --no-build --no-deps contentgruen-semantic-search
+  up -d --no-build --no-deps gutgesagt-semantic-search
 mvp/scripts/backup/test-backup-restore.sh
 # afterwards: drop the extra mount again
-docker compose -f mvp/docker-compose.dev.yml up -d --no-build --no-deps contentgruen-semantic-search
+docker compose -f mvp/docker-compose.dev.yml up -d --no-build --no-deps gutgesagt-semantic-search
 ```
 
 The restore replaces the dev database and the Qdrant collection with the state of the
@@ -83,21 +83,21 @@ backup taken a moment earlier; anything written in between is lost.
 crontab -e
 
 # Daily backup at 3 AM
-0 3 * * * /opt/contentgruen/backup.sh >> /opt/contentgruen-backups/backup.log 2>&1
+0 3 * * * /opt/gutgesagt/backup.sh >> /opt/gutgesagt-backups/backup.log 2>&1
 ```
 
 ### Manual Setup
 
 ```bash
 # Create backup directory
-sudo mkdir -p /opt/contentgruen-backups
-sudo chmod 700 /opt/contentgruen-backups
+sudo mkdir -p /opt/gutgesagt-backups
+sudo chmod 700 /opt/gutgesagt-backups
 
 # Extract backup/restore scripts from container
-cd /opt/contentgruen
-docker cp contentgruen-semantic-search:/scripts/backup/backup.sh backup.sh
-docker cp contentgruen-semantic-search:/scripts/backup/restore.sh restore.sh
-docker cp contentgruen-semantic-search:/scripts/backup/test-backup-restore.sh test-backup-restore.sh
+cd /opt/gutgesagt
+docker cp gutgesagt-semantic-search:/scripts/backup/backup.sh backup.sh
+docker cp gutgesagt-semantic-search:/scripts/backup/restore.sh restore.sh
+docker cp gutgesagt-semantic-search:/scripts/backup/test-backup-restore.sh test-backup-restore.sh
 chmod 755 backup.sh restore.sh test-backup-restore.sh
 
 # Run first backup to initialize subdirectories (make sure that there is data in the qdrant DB already)
@@ -124,7 +124,7 @@ chmod 755 backup.sh restore.sh test-backup-restore.sh
 ## Backup Structure
 
 ```
-/opt/contentgruen-backups/
+/opt/gutgesagt-backups/
 ├── daily/
 │   ├── backup_20250106_030000/
 │   │   ├── qdrant_snapshot.tar
@@ -142,14 +142,14 @@ chmod 755 backup.sh restore.sh test-backup-restore.sh
 
 ```bash
 # View backup log
-tail -f /opt/contentgruen-backups/backup.log
+tail -f /opt/gutgesagt-backups/backup.log
 
 # List backups
-ls -lh /opt/contentgruen-backups/daily/
-ls -lh /opt/contentgruen-backups/weekly/
+ls -lh /opt/gutgesagt-backups/daily/
+ls -lh /opt/gutgesagt-backups/weekly/
 
 # Check disk usage
-du -sh /opt/contentgruen-backups/
+du -sh /opt/gutgesagt-backups/
 ```
 
 ## Docker Compose Configuration
@@ -158,13 +158,13 @@ Required volume mount for the backup system:
 
 ```yaml
 services:
-  contentgruen-semantic-search:
+  gutgesagt-semantic-search:
     volumes:
-      - /opt/contentgruen-backups:/backups
+      - /opt/gutgesagt-backups:/backups
 ```
 
 The Qdrant snapshot is written by `backup_qdrant.py` inside the application container
-to `/backups/...`; only this mount makes it appear in `/opt/contentgruen-backups` on the
+to `/backups/...`; only this mount makes it appear in `/opt/gutgesagt-backups` on the
 host. Without it `backup.sh` aborts, because the snapshot is missing on the host. The host
 side of the mount must match `BACKUP_ROOT` in the scripts. PostgreSQL needs no mount:
 `pg_dump` streams to the host via stdout.
@@ -188,22 +188,22 @@ ssh -L 6333:localhost:6333 user@server
 ### Complete System Recovery
 
 1. **Fresh server with Docker/Docker Compose**
-2. **Copy backup files to** `/opt/contentgruen-backups/`
+2. **Copy backup files to** `/opt/gutgesagt-backups/`
 3. **Start containers:** `docker-compose up -d`
-4. **Extract restore script:** `docker cp contentgruen-semantic-search:/scripts/backup/restore.sh /opt/contentgruen/restore.sh && chmod 755 /opt/contentgruen/restore.sh`
-5. **Restore data:** `/opt/contentgruen/restore.sh daily/latest`
+4. **Extract restore script:** `docker cp gutgesagt-semantic-search:/scripts/backup/restore.sh /opt/gutgesagt/restore.sh && chmod 755 /opt/gutgesagt/restore.sh`
+5. **Restore data:** `/opt/gutgesagt/restore.sh daily/latest`
 
 ### Partial Recovery
 
 ```bash
 # Restore only Qdrant
-docker exec contentgruen-semantic-search python /app/scripts/restore_qdrant.py \
+docker exec gutgesagt-semantic-search python /app/scripts/restore_qdrant.py \
   --input /backups/daily/latest/qdrant_snapshot.tar
 
 # Restore only PostgreSQL (the dump drops and recreates the database itself,
-# so connect to "postgres", not to contentgruen_app)
-docker exec -i contentgruen-app-postgres psql -U app_user -d postgres -v ON_ERROR_STOP=1 \
-  < /opt/contentgruen-backups/daily/latest/postgresql.sql
+# so connect to "postgres", not to gutgesagt_app)
+docker exec -i gutgesagt-app-postgres psql -U app_user -d postgres -v ON_ERROR_STOP=1 \
+  < /opt/gutgesagt-backups/daily/latest/postgresql.sql
 ```
 
 ## Verification After Restore
@@ -213,7 +213,7 @@ docker exec -i contentgruen-app-postgres psql -U app_user -d postgres -v ON_ERRO
 curl http://localhost:6333/collections/content_collection
 
 # Check PostgreSQL data
-docker exec contentgruen-app-postgres psql -U app_user -d contentgruen_app \
+docker exec gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
   -c "SELECT COUNT(*) FROM usage_tracking;"
 
 # Check application health
@@ -229,9 +229,9 @@ accept overrides from the environment (no need to edit the scripts):
 
 | Variable | Default |
 |---|---|
-| `POSTGRES_CONTAINER` | `contentgruen-app-postgres` |
-| `APP_CONTAINER` | `contentgruen-semantic-search` |
-| `QDRANT_CONTAINER` | `contentgruen-qdrant` |
+| `POSTGRES_CONTAINER` | `gutgesagt-app-postgres` |
+| `APP_CONTAINER` | `gutgesagt-semantic-search` |
+| `QDRANT_CONTAINER` | `gutgesagt-qdrant` |
 
 ```bash
 POSTGRES_CONTAINER=other-name ./backup.sh
@@ -243,8 +243,8 @@ that name.
 ### Permission Issues
 
 ```bash
-sudo chown -R root:root /opt/contentgruen-backups
-sudo chmod 700 /opt/contentgruen-backups
+sudo chown -R root:root /opt/gutgesagt-backups
+sudo chmod 700 /opt/gutgesagt-backups
 ```
 
 ### Disk Space

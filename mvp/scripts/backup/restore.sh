@@ -2,18 +2,18 @@
 
 # Gut gesagt Restore Script
 # Runs on HOST system to restore Docker containers data
-# Restores from backups in /opt/contentgruen-backups/ on HOST filesystem
+# Restores from backups in /opt/gutgesagt-backups/ on HOST filesystem
 
 set -e  # Exit on error
 
 # Configuration
 # Host-Seite des Mounts /backups im Application-Container (wie in backup.sh).
-BACKUP_ROOT="${BACKUP_ROOT:-/opt/contentgruen-backups}"
+BACKUP_ROOT="${BACKUP_ROOT:-/opt/gutgesagt-backups}"
 # Containernamen wie in backup.sh: ueberall gleich, abweichend per Umgebung.
-POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
-APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
-QDRANT_CONTAINER="${QDRANT_CONTAINER:-contentgruen-qdrant}"
-DB_NAME="contentgruen_app"
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-gutgesagt-app-postgres}"
+APP_CONTAINER="${APP_CONTAINER:-gutgesagt-semantic-search}"
+QDRANT_CONTAINER="${QDRANT_CONTAINER:-gutgesagt-qdrant}"
+DB_NAME="${DB_NAME:-gutgesagt_app}"
 DB_USER="app_user"
 
 # Exakter Vergleich gegen die Namensspalte (siehe backup.sh).

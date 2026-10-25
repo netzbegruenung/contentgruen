@@ -41,11 +41,11 @@ Auf Test/Prod liegt kein Repo-Checkout; die Skripte werden heruntergeladen:
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/bestand_pruefen.py
-docker exec -i contentgruen-semantic-search python - < bestand_pruefen.py
+docker exec -i gutgesagt-semantic-search python - < bestand_pruefen.py
 
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
-docker exec -i contentgruen-semantic-search python - < text_normalisiert_nachtragen.py
-docker exec -i contentgruen-semantic-search python - --ausfuehren < text_normalisiert_nachtragen.py
+docker exec -i gutgesagt-semantic-search python - < text_normalisiert_nachtragen.py
+docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisiert_nachtragen.py
 ```
 
 `bestand_pruefen.py` nutzt nur qdrant_client und die Standardbibliothek und laeuft

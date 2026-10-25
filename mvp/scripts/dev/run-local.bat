@@ -34,7 +34,7 @@ echo Qdrant is ready!
 
 REM Check if app PostgreSQL is ready
 :wait_postgres_app
-docker exec contentgruen-app-postgres pg_isready -U app_user >nul 2>&1
+docker exec gutgesagt-app-postgres pg_isready -U app_user >nul 2>&1
 if errorlevel 1 (
     echo Waiting for App PostgreSQL...
     timeout /t 2 /nobreak >nul
@@ -48,7 +48,7 @@ echo Starting services in separate windows...
 echo.
 
 REM Start Semantic Search Service
-start "Semantic Search Service" cmd /k "cd backend\semantic-search-service && (if not exist venv python -m venv venv) && call venv\Scripts\activate.bat && pip install -q -r requirements.txt && set SEMANTIC_SEARCH_QDRANT_URL=http://localhost:6333 && set SEMANTIC_SEARCH_QDRANT_COLLECTION=content_collection && set \"APP_DATABASE_URL=postgresql+psycopg2://app_user:changeme@localhost:5433/contentgruen_app\" && set SEMANTIC_SEARCH_LOG_LEVEL=DEBUG && set SEEDING_METADATA_PATH=metadata && cd app && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+start "Semantic Search Service" cmd /k "cd backend\semantic-search-service && (if not exist venv python -m venv venv) && call venv\Scripts\activate.bat && pip install -q -r requirements.txt && set SEMANTIC_SEARCH_QDRANT_URL=http://localhost:6333 && set SEMANTIC_SEARCH_QDRANT_COLLECTION=content_collection && set \"APP_DATABASE_URL=postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app\" && set SEMANTIC_SEARCH_LOG_LEVEL=DEBUG && set SEEDING_METADATA_PATH=metadata && cd app && uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 
 REM Wait a bit for semantic search to start
 timeout /t 3 /nobreak >nul

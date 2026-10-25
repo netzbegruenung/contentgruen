@@ -11,7 +11,7 @@ REM Switch to local configuration
 echo export const environment = {
 echo   production: false,
 echo   baseUrl: 'http://localhost:5054',
-echo   clientId: 'contentgruen',
+echo   clientId: 'gutgesagt',
 echo   mockAuth: true
 echo };
 ) > environment.ts
