@@ -1,7 +1,7 @@
 {
-  "name": "contentgruen",
+  "name": "gutgesagt",
   "version": "1.0.0",
-  "description": "ContentGrün development scripts",
+  "description": "Gut gesagt development scripts",
   "scripts": {
     "build:frontend": "cd mvp/frontend/gutgesagt-frontend && docker buildx build --platform linux/amd64 -f Dockerfile -t gutgesagt-frontend-local .",
     "build:bff": "cd mvp/backend/BFF && docker buildx build --platform linux/amd64 -f Dockerfile -t gutgesagt-bff-local .",

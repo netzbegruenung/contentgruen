@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "====================================="
-echo "Cleaning ContentGruen Development Environment"
+echo "Cleaning Gut gesagt Development Environment"
 echo "====================================="
 echo
 echo -e "${YELLOW}WARNING: This will remove all generated files,"

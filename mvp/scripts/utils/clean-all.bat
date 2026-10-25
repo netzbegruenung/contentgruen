@@ -1,6 +1,6 @@
 @echo off
 echo =====================================
-echo Cleaning ContentGruen Development Environment
+echo Cleaning Gut gesagt Development Environment
 echo =====================================
 echo.
 echo WARNING: This will remove all generated files,

@@ -1,6 +1,6 @@
 @echo off
 echo =========================================
-echo Starting ContentGruen in Local Dev mode
+echo Starting Gut gesagt in Local Dev mode
 echo =========================================
 
 REM Check if Docker is running

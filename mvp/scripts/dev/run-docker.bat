@@ -1,6 +1,6 @@
 @echo off
 echo =====================================
-echo Starting ContentGruen in Docker mode
+echo Starting Gut gesagt in Docker mode
 echo (Using Docker cache for fast builds)
 echo =====================================
 echo.

@@ -1,6 +1,6 @@
 @echo off
 echo =====================================
-echo Installing ContentGruen Dependencies
+echo Installing Gut gesagt Dependencies
 echo =====================================
 echo.
 

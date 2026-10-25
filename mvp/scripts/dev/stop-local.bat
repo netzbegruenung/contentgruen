@@ -1,6 +1,6 @@
 @echo off
 echo =========================================
-echo Stopping ContentGruen Local Development
+echo Stopping Gut gesagt Local Development
 echo =========================================
 
 REM Kill the service windows by their title

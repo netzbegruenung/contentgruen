@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "====================================="
-echo "Running All ContentGruen Tests"
+echo "Running All Gut gesagt Tests"
 echo "====================================="
 echo
 

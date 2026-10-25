@@ -1,6 +1,6 @@
-# Contributing to ContentGrün
+# Contributing to Gut gesagt
 
-Welcome! We're glad you're interested in contributing to ContentGrün – a semantic content platform for green political activism.
+Welcome! We're glad you're interested in contributing to Gut gesagt – a semantic content platform for green political activism.
 
 All contributions are welcome: code, design, testing, feedback, and content curation.
 

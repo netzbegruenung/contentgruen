@@ -1,6 +1,6 @@
 @echo off
 echo =====================================
-echo Running All ContentGruen Tests
+echo Running All Gut gesagt Tests
 echo =====================================
 echo.
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Test script for ContentGrün backup/restore functionality
+# Test script for Gut gesagt backup/restore functionality
 # This script verifies that backup and restore work correctly
 
 set -e
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}ContentGrün Backup/Restore Test${NC}"
+echo -e "${BLUE}Gut gesagt Backup/Restore Test${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Configuration

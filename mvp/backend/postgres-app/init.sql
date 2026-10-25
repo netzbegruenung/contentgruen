@@ -1,4 +1,4 @@
--- Initialize ContentGrün Application Database
+-- Initialize Gut gesagt Application Database
 -- This database stores application-specific data separate from the Qdrant vector database
 
 -- The application user and database are created by the postgres entrypoint from

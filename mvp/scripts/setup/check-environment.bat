@@ -1,6 +1,6 @@
 @echo off
 echo =====================================
-echo Testing ContentGruen Setup
+echo Testing Gut gesagt Setup
 echo =====================================
 echo.
 

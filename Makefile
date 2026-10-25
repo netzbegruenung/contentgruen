@@ -1,10 +1,10 @@
-# ContentGrün Local Build & Test Commands
+# Gut gesagt Local Build & Test Commands
 
 .PHONY: help build-frontend build-bff build-semantic-search build-all test-backend test-backend-fast test-ci clean
 
 # Default target
 help:
-	@echo "ContentGrün Development Commands"
+	@echo "Gut gesagt Development Commands"
 	@echo "================================="
 	@echo "Build commands:"
 	@echo "  build-frontend         Build frontend Docker image locally"

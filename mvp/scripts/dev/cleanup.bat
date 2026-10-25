@@ -1,6 +1,6 @@
 @echo off
 echo =========================================
-echo Cleaning up ContentGruen Development Environment
+echo Cleaning up Gut gesagt Development Environment
 echo =========================================
 
 REM Kill any local Python/Node processes that might be running

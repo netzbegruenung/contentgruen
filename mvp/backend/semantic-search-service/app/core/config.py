@@ -74,7 +74,7 @@ class Settings(BaseSettings):
         logger.debug(f"Data path: {self.data_path}")
         logger.debug(f"Metadata path: {self.metadata_path}")
 
-    initial_data_author: str = "ContentGruen Team"
+    initial_data_author: str = "Gut gesagt Team"
 
     # Logging configuration
     log_level: str = "INFO"

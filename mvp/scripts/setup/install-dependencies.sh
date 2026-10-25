@@ -6,7 +6,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo "====================================="
-echo "Installing ContentGruen Dependencies"
+echo "Installing Gut gesagt Dependencies"
 echo "====================================="
 echo
 

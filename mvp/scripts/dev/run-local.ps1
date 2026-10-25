@@ -6,7 +6,7 @@ Push-Location $PSScriptRoot
 
 try {
     if (Test-Path ".\run-local.bat") {
-        Write-Host "Starting ContentGruen via run-local.bat..." -ForegroundColor Green
+        Write-Host "Starting Gut gesagt via run-local.bat..." -ForegroundColor Green
         # Call the batch file from the current directory
         cmd.exe /c "run-local.bat"
     } else {

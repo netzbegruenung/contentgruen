@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ContentGrün Automated Backup Script with Rotation
+# Gut gesagt Automated Backup Script with Rotation
 # Runs daily at 3 AM via cron
 # Keeps: Last 7 daily backups + Last 4 weekly backups (Sundays)
 # Stores backups in /opt/contentgruen-backups/ on HOST filesystem
@@ -53,7 +53,7 @@ log() {
 mkdir -p "$BACKUP_ROOT"
 
 log "${GREEN}========================================${NC}"
-log "${GREEN}ContentGrün Automated Backup${NC}"
+log "${GREEN}Gut gesagt Automated Backup${NC}"
 log "${GREEN}========================================${NC}"
 log "Backup timestamp: $TIMESTAMP"
 log "Day of week: $DAY_OF_WEEK (1=Mon, 7=Sun)"
