@@ -73,7 +73,7 @@ if (useKeycloak)
     })
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        options.Cookie.Name = "ContentGruenAuthCookie";
+        options.Cookie.Name = "GutGesagtAuthCookie";
         options.Cookie.SameSite = SameSiteMode.None;    // Allow cross-site cookies between bff and frontend
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Enforce HTTPS
         options.Cookie.HttpOnly = true; // Prevent client-side JavaScript from accessing the cookie
@@ -137,11 +137,11 @@ if (useKeycloak)
 }
 else
 {
-    // ContentGrün Managed Authentication (replaces Dummy-Authentication)
+    // Gut gesagt Managed Authentication (replaces Dummy-Authentication)
     builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                    .AddCookie(options =>
                    {
-                       options.Cookie.Name = "ContentGruenAuthCookie";
+                       options.Cookie.Name = "GutGesagtAuthCookie";
                        options.Cookie.SameSite = SameSiteMode.Lax;    // Allow same-site cookies
                        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Allow HTTP in dev
                        options.Cookie.HttpOnly = true; // Prevent client-side JavaScript access
@@ -322,7 +322,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 // Without an explicit key ring, DataProtection writes to ~/.aspnet/DataProtection-Keys inside the
-// container layer, so every recreate mints new keys and invalidates every ContentGruenAuthCookie
+// container layer, so every recreate mints new keys and invalidates every GutGesagtAuthCookie
 // along with any in-flight OIDC correlation cookie. /keys is expected to be a mounted volume; if
 // it is not, the directory is simply created in the container layer and behaviour matches today's.
 //
@@ -338,7 +338,7 @@ if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath.Trim()))
-    .SetApplicationName("contentgruen-bff");
+    .SetApplicationName("gutgesagt-bff");
 
 var app = builder.Build();
 
@@ -416,7 +416,7 @@ app.MapControllers();
 
 // Note: /login endpoint removed to allow Angular routing to handle login page
 // Authentication is now handled through AuthController endpoints:
-// - /api/auth/login/managed for ContentGrün managed auth
+// - /api/auth/login/managed for Gut gesagt managed auth
 // - /api/auth/login/keycloak for Keycloak auth
 // - /api/auth/logout for logout (handles both Keycloak and managed users)
 

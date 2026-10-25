@@ -98,7 +98,7 @@ public class AuthGatePipelineTests
             // Sonst legt der Testhost den DataProtection-Schluesselring unter /keys an.
             builder.UseSetting(
                 "DATAPROTECTION_KEYS_PATH",
-                Path.Combine(Path.GetTempPath(), "contentgruen-bff-test-keys"));
+                Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys"));
 
             builder.ConfigureTestServices(services =>
                 services.AddSingleton<IStartupFilter, TestUserStartupFilter>());
