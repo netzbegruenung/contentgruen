@@ -60,10 +60,10 @@ REM Wait a bit for BFF to start
 timeout /t 3 /nobreak >nul
 
 REM Copy local environment configuration
-copy frontend\contentgruen-frontend\src\environments\environment.local.ts frontend\contentgruen-frontend\src\environments\environment.ts >nul
+copy frontend\gutgesagt-frontend\src\environments\environment.local.ts frontend\gutgesagt-frontend\src\environments\environment.ts >nul
 
 REM Start Frontend
-start "Frontend - Angular" cmd /k "cd frontend\contentgruen-frontend && (if not exist node_modules npm install) && npm start"
+start "Frontend - Angular" cmd /k "cd frontend\gutgesagt-frontend && (if not exist node_modules npm install) && npm start"
 
 echo.
 echo ====================================

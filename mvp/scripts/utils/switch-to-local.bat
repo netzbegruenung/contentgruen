@@ -4,7 +4,7 @@ echo Switching to Local Environment Configuration
 echo =====================================
 echo.
 
-cd /d "%~dp0\..\..\frontend\contentgruen-frontend\src\environments"
+cd /d "%~dp0\..\..\frontend\gutgesagt-frontend\src\environments"
 
 REM Switch to local configuration
 (

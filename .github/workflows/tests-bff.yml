@@ -26,7 +26,7 @@ jobs:
           # solution does not use. Restore takes ~10s, so there is little to win here.
 
       - name: Restore dependencies
-        run: dotnet restore ContentGruen.sln
+        run: dotnet restore GutGesagt.sln
 
       - name: Run tests
         # No services needed. AuthGatePipelineTests boots a real host, but points BACKEND_URL
@@ -34,7 +34,7 @@ jobs:
         # answers 502 -- there is nothing to start and nothing to wait for. It also sets
         # DATAPROTECTION_KEYS_PATH to a temp dir itself, so the runner needs no writable /keys.
         # Both are set via UseSetting, and Program.cs reads configuration before environment.
-        run: dotnet test ContentGruen.sln --no-restore --nologo --logger "trx;LogFileName=bff-test-results.trx" --results-directory TestResults
+        run: dotnet test GutGesagt.sln --no-restore --nologo --logger "trx;LogFileName=bff-test-results.trx" --results-directory TestResults
 
       - uses: actions/upload-artifact@v4
         if: always()

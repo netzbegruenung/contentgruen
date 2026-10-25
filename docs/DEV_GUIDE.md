@@ -87,7 +87,7 @@ Requires
 - npm 11.4
 
 ```bash
-cd mvp/frontend/contentgruen-frontend
+cd mvp/frontend/gutgesagt-frontend
 npm install
 ```
 
@@ -106,7 +106,7 @@ ng test
 ### 🐳 Docker
 
 ```bash
-cd mvp/frontend/contentgruen-frontend
+cd mvp/frontend/gutgesagt-frontend
 docker build -t contentgruen-frontend:latest .
 docker run -p 4200:80 -d contentgruen-frontend:latest
 ```

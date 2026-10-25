@@ -10,7 +10,7 @@ echo "Running Angular Frontend Tests"
 echo "====================================="
 echo
 
-cd "$(dirname "$0")/../../frontend/contentgruen-frontend"
+cd "$(dirname "$0")/../../frontend/gutgesagt-frontend"
 
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then

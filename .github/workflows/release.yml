@@ -75,8 +75,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: mvp/frontend/contentgruen-frontend
-          file: mvp/frontend/contentgruen-frontend/Dockerfile
+          context: mvp/frontend/gutgesagt-frontend
+          file: mvp/frontend/gutgesagt-frontend/Dockerfile
           platforms: linux/amd64
           # Commit shown in the footer next to the package.json version
           build-args: |

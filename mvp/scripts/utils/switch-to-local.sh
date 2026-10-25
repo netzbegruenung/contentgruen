@@ -9,7 +9,7 @@ echo "Switching to Local Environment Configuration"
 echo "====================================="
 echo
 
-cd "$(dirname "$0")/../../frontend/contentgruen-frontend/src/environments"
+cd "$(dirname "$0")/../../frontend/gutgesagt-frontend/src/environments"
 
 # Switch to local configuration
 cat > environment.ts << 'EOF'

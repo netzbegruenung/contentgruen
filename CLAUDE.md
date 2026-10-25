@@ -127,7 +127,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 
 ## Key Directories
 
-- `mvp/frontend/contentgruen-frontend/` - Angular frontend
+- `mvp/frontend/gutgesagt-frontend/` - Angular frontend
 - `mvp/backend/BFF/` - .NET Backend-for-Frontend
 - `mvp/backend/semantic-search-service/` - Python semantic search
 - `docs/` - Documentation
@@ -235,7 +235,7 @@ pytest
 
 When user requests "test frontend":
 ```bash
-cd mvp/frontend/contentgruen-frontend
+cd mvp/frontend/gutgesagt-frontend
 ng test
 ```
 
@@ -360,7 +360,7 @@ cd mvp/backend/semantic-search-service/app
 pytest
 
 # Angular tests
-cd mvp/frontend/contentgruen-frontend
+cd mvp/frontend/gutgesagt-frontend
 ng test
 
 # .NET tests (test project is BFF.Tests; run from the solution directory)

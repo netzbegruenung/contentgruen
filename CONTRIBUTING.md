@@ -43,7 +43,7 @@ This runs formatting checks and tests before each commit. See [docs/DEV_GUIDE.md
 ### Frontend (Angular)
 
 ```bash
-cd mvp/frontend/contentgruen-frontend
+cd mvp/frontend/gutgesagt-frontend
 npm install
 ng serve
 ```
@@ -76,7 +76,7 @@ See [docs/DEV_GUIDE.md](docs/DEV_GUIDE.md) for full details.
 cd mvp/backend/semantic-search-service/app && pytest
 
 # Angular
-cd mvp/frontend/contentgruen-frontend && ng test
+cd mvp/frontend/gutgesagt-frontend && ng test
 
 # .NET (test project is BFF.Tests, run from the solution directory)
 cd mvp/backend && dotnet test

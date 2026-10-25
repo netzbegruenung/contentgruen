@@ -101,7 +101,7 @@ dotnet run
 
 #### Start Frontend:
 ```bash
-cd mvp/frontend/contentgruen-frontend
+cd mvp/frontend/gutgesagt-frontend
 # For local development:
 cp src/environments/environment.local.ts src/environments/environment.ts
 npm install

@@ -23,11 +23,11 @@ help:
 # Build individual services (matching the GitHub Actions build workflow)
 build-frontend:
 	@echo "🔨 Building frontend (matching GitHub Actions CI)..."
-	cd mvp/frontend/contentgruen-frontend && \
+	cd mvp/frontend/gutgesagt-frontend && \
 	docker buildx build \
 		--platform linux/amd64 \
 		-f Dockerfile \
-		-t contentgruen-frontend-local:latest \
+		-t gutgesagt-frontend-local:latest \
 		.
 
 build-bff:
@@ -36,7 +36,7 @@ build-bff:
 	docker buildx build \
 		--platform linux/amd64 \
 		-f Dockerfile \
-		-t contentgruen-bff-local:latest \
+		-t gutgesagt-bff-local:latest \
 		.
 
 build-semantic-search:
@@ -45,7 +45,7 @@ build-semantic-search:
 	docker buildx build \
 		--platform linux/amd64 \
 		-f Dockerfile \
-		-t contentgruen-semantic-search-local:latest \
+		-t gutgesagt-semantic-search-local:latest \
 		.
 
 # Build all application services.
@@ -79,7 +79,7 @@ test-ci: test-backend build-all
 # Clean up local test images
 clean:
 	@echo "🧹 Cleaning up local test images..."
-	-docker rmi contentgruen-frontend-local:latest
-	-docker rmi contentgruen-bff-local:latest
-	-docker rmi contentgruen-semantic-search-local:latest
+	-docker rmi gutgesagt-frontend-local:latest
+	-docker rmi gutgesagt-bff-local:latest
+	-docker rmi gutgesagt-semantic-search-local:latest
 	@echo "✅ Cleanup complete!"
