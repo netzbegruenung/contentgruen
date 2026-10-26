@@ -53,7 +53,7 @@ Einen Beitrag direkt anlegen, ohne dass ein Einwurf dahintersteht.
 _Avoid_: Ausformulieren, Erstellen, Beitragen
 
 **Ausformulierer**:
-Die Person, die einen Einwurf mit einem Beitrag verknüpft hat, mit einem neuen oder, bei einer Dublette, mit dem vorhandenen. Wer einem vorhandenen Beitrag zustimmt oder den eigenen vorhandenen nimmt, ist Ausformulierer, aber nicht Autor dieses Beitrags.
+Die Person, die einen Einwurf mit einem Beitrag verknüpft hat, mit einem neuen oder, bei einer Dublette, mit dem vorhandenen. Wer einem vorhandenen Beitrag zustimmt oder den eigenen vorhandenen nimmt, ist Ausformulierer; Autor des vorhandenen wird man dadurch nicht, Autor bleibt, wer ihn gespeichert hat.
 _Avoid_: Verarbeiter, Bearbeiter, Autor
 
 **Verwerfen**:

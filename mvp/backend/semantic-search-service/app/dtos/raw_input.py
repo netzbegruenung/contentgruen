@@ -122,7 +122,8 @@ class UpdateRawInputStatusRequest(BaseModel):
     Statuswechsel aus dem Destillier-Ablauf.
 
     Nur zwei Ziele: ``discarded`` (ohne content_id) und ``processed`` (nur mit
-    content_id - der Beitrag, der entstanden ist). ``in_progress`` wird hier nicht
+    content_id - der Beitrag, mit dem der Einwurf verknuepft wird, neu oder
+    vorhanden). ``in_progress`` wird hier nicht
     vergeben: das setzt der erste gespeicherte Satz.
 
     ``content_type`` ist bei processed optional, damit eine noch zwischengespeicherte
@@ -132,11 +133,11 @@ class UpdateRawInputStatusRequest(BaseModel):
     status: RawInputStatus
     content_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="Der entstandene Beitrag; Pflicht bei processed",
+        description="Der verknuepfte Beitrag (neu oder vorhanden); Pflicht bei processed",
     )
     content_type: Optional[ContentType] = Field(
         default=None,
-        description="Typ des entstandenen Beitrags (commentary oder generic_text)",
+        description="Typ des verknuepften Beitrags (commentary oder generic_text)",
     )
 
     @model_validator(mode="after")

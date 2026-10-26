@@ -237,8 +237,8 @@ class RawInputContentLink(Base):
 
     ``created_by`` haelt fest, *wer* verknuepft hat: den Ausformulierer. Das ist die
     Rolle, die ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung
-    dafuer, spaeter Einwerfer und Ausformulierer getrennt anzuerkennen. Bei einem
-    vorhandenen Beitrag ist der Ausformulierer nicht dessen Autor.
+    dafuer, spaeter Autor und Ausformulierer getrennt anzuerkennen: Bei einem
+    vorhandenen Beitrag wird der Ausformulierer nicht dessen Autor.
     """
 
     __tablename__ = "raw_input_content_links"
