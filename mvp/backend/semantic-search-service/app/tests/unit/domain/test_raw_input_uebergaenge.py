@@ -1,9 +1,9 @@
 """
 Die Statuswechsel des Fangkorbs festnageln.
 
-Kein Lock, Duplikate erlaubt: deshalb darf processed auch aus processed kommen
-(ein zweiter Beitrag aus demselben Einwurf) und ein wiederholter Aufruf nie
-scheitern. Verworfenes darf von anderen trotzdem destilliert werden.
+Kein Lock, ein Einwurf darf mehrfach ausformuliert werden: deshalb darf
+processed auch aus processed kommen (ein zweiter Beitrag aus demselben Einwurf)
+und ein wiederholter Aufruf nie scheitern. Verworfenes darf von anderen trotzdem destilliert werden.
 
 open und in_progress sind kein Ziel eines Statuswechsels, sie ergeben sich aus
 den gespeicherten Saetzen (``status_nach_satz``, ``status_ohne_saetze``).

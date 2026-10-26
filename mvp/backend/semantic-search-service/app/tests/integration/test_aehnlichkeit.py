@@ -340,14 +340,15 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
 
     daten = [a.json() for a in antworten]
     assert all(a.status_code == 200 for a in antworten), daten
-    assert sorted(d["duplikat"] for d in daten) == [False, True]
+    assert sorted(d["dublette"] for d in daten) == [False, True]
     assert daten[0]["id"] == daten[1]["id"]
-    angelegt = next(d for d in daten if not d["duplikat"])
-    dublette = next(d for d in daten if d["duplikat"])
+    angelegt = next(d for d in daten if not d["dublette"])
+    dublette = next(d for d in daten if d["dublette"])
     # Die zweite Person bekommt den Kommentar der ersten - fremder Inhalt wird nicht
     # an ihre Aussage gehaengt.
     assert angelegt["statement_id"] is not None
     assert dublette["statement_id"] is None
+    assert dublette["verknuepft"] is False
 
     manager = commentary_service._repository._shared_manager
 
