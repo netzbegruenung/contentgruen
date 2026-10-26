@@ -39,7 +39,7 @@ async function ausformulieren(page: Page, bild: Bild, einwurf: Einwurf, satz: st
 
   await page
     .locator('textarea#text')
-    .fill(`${TESTDATEN_PRAEFIX} Aus dem Fangkorb ausformuliert: ${satz} – mit Beleg im Link.`);
+    .fill(`${TESTDATEN_PRAEFIX} Aus dem Fangkorb ausformuliert: ${satz} – die Herkunft steht im Link.`);
   const id = await speichernUndErgebnis(page);
   await expect.soft(page.locator('.verknuepfen-fehlgeschlagen')).toHaveCount(0);
   expect.soft(await ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
@@ -122,9 +122,9 @@ test('Fangkorb: zwei Einwuerfe ausformulieren, naechster Einwurf, Ausformuliert'
     }
     test.info().annotations.push({ type: 'andere offene Einwuerfe zurueckgestellt', description: String(zurueckgestellt) });
     // Ohne Zurueckstellen geht es in den Tab mit dem Ergebnis; sonst in den des
-    // zuletzt zurueckgestellten.
+    // zuletzt zurueckgestellten - der war offen (leerer Satz, oben geprueft).
+    await expect.soft(page.locator('.tab.aktiv .tab-wort')).toHaveText(zurueckgestellt === 0 ? 'Ausformuliert' : 'Destillieren');
     if (zurueckgestellt === 0) {
-      await expect.soft(page.locator('.tab.aktiv .tab-wort')).toHaveText('Ausformuliert');
       await expect.soft(page.locator('app-beitragskarte', { hasText: zweiter.hinweis })).toBeVisible();
     }
     await bild('46-naechster-nach-zweitem');

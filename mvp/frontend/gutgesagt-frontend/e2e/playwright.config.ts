@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { SITZUNG } from './tests/konto';
 
 /**
  * End-to-End-Checks der Kernszenarien gegen den laufenden Dev-Stack (mvp/run-local.sh up).
@@ -6,12 +7,12 @@ import { defineConfig, devices } from '@playwright/test';
  * Nicht in CI: Die Tests brauchen den vollen Stack. Start siehe README.md in diesem Verzeichnis.
  * Testdaten beginnen mit TESTDATEN_PRAEFIX (tests/fixtures.ts).
  */
-const BASE_URL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8080';
-const SITZUNG = '.auth/sitzung.json';
+const BASE_URL = process.env['E2E_BASE_URL'] ?? 'http://127.0.0.1:8080';
 
 export default defineConfig({
   testDir: './tests',
-  // Die Szenarien legen Daten an und bauen aufeinander auf (Fangkorb): nacheinander.
+  // Nacheinander: Alle Specs teilen sich das Rate-Limit des Testkontos und den Fangkorb
+  // (04 stellt andere offene Einwuerfe zurueck, auch solche, die eine parallele Spec anlegt).
   fullyParallel: false,
   workers: 1,
   timeout: 90_000,

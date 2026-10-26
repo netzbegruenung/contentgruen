@@ -6,7 +6,7 @@ import * as path from 'path';
 export const TESTDATEN_PRAEFIX = '[e2e-test]';
 
 /** Ablage fuer benannte Screenshots zusaetzlich zu den Report-Anhaengen. */
-const SCREENSHOTS = process.env.E2E_SCREENSHOTS ?? path.join(__dirname, '..', 'screenshots');
+const SCREENSHOTS = process.env['E2E_SCREENSHOTS'] ?? path.join(__dirname, '..', 'screenshots');
 
 export interface Einwurf {
   id: string;
@@ -153,12 +153,27 @@ export async function aufErgebnisWarten(page: Page, seit: number): Promise<strin
       await tastaturSchliessen(page);
       await page.locator('app-formular-leiste .submit-btn').click();
     } else if (Date.now() > frist) {
-      const meldung = (await fehler.count()) ? await fehler.first().textContent() : 'keine Meldung';
-      throw new Error(`Keine Ergebnisseite nach dem Speichern (${meldung?.trim()})`);
+      const fehlertext = (await fehler.count()) ? await fehler.first().textContent() : 'kein Fehlertext';
+      throw new Error(`Keine Ergebnisseite nach dem Speichern (${fehlertext?.trim()})`);
     } else {
       await page.waitForTimeout(250);
     }
   }
   await page.waitForURL(/\/gespeichert\//);
   return new URL(page.url()).pathname.split('/').pop()!;
+}
+
+/**
+ * Zurueck von der aktuellen Seite, per System-Zurueck (``'system'``) oder ueber den Pfeil
+ * oben links (``'pfeil'``). Wartet, bis die Seite verlassen ist, und liefert die neue Adresse.
+ */
+export async function zurueck(page: Page, wie: 'system' | 'pfeil'): Promise<URL> {
+  const vorher = page.url();
+  if (wie === 'system') {
+    await page.goBack();
+  } else {
+    await page.locator('.back-button').click();
+  }
+  await expect(page).not.toHaveURL(vorher);
+  return new URL(page.url());
 }

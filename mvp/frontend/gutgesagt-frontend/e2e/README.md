@@ -3,7 +3,8 @@
 Prüfen die wichtigsten Szenarien am Handy gegen den laufenden Dev-Stack: Verfassen eines Kommentars und
 einer Hintergrundinfo, „Antwort auf“ mit neuer Aussage, aus der Suche ergänzen, die Kette im
 Fangkorb (Einwerfen, Destillieren, Ausformulieren, Nächster Einwurf), Speichern ohne Netz
-sowie die Suche als Besucher. Nicht in CI: Die Tests brauchen den vollen Stack.
+sowie die Suche als Besucher (mit Umleitung zur Anmeldung auf geschützten Seiten und ohne
+Umleitung bei einem 401 der Suche). Nicht in CI: Die Tests brauchen den vollen Stack.
 
 ## Starten
 
@@ -25,15 +26,17 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 | Variable | Standard | Zweck |
 |---|---|---|
 | `E2E_BASE_URL` | `http://127.0.0.1:8080` | Gegen einen anderen Stand, z. B. `ng serve` mit Proxy |
-| `E2E_EMAIL`, `E2E_PASSWORT` | Testkonto aus `mvp/config/managed-users.example.json` | Anmeldung über `/api/auth/login/managed` |
+| `E2E_EMAIL`, `E2E_PASSWORT` | Testkonto aus `mvp/config/managed-users.example.json` (`tests/konto.ts`) | Anmeldung über `/api/auth/login/managed` |
 | `E2E_SCREENSHOTS` | `e2e/screenshots/` | Ablage der benannten Screenshots |
 
 ## Was man wissen muss
 
 - **Daten:** Die Tests legen echte Einwürfe, Aussagen und Beiträge an, alle mit dem Präfix
   `[e2e-test]`. Sie bleiben im Dev-Stack liegen; `mvp/run-local.sh wipe` räumt auf.
-- **Reihenfolge:** Ein Worker, nacheinander. Die Specs sind nummeriert, weil sie sich die
-  Anmeldung (`anmelden.setup.ts`) teilen und Daten anlegen.
+- **Reihenfolge:** Ein Worker, nacheinander. Jede Spec legt ihre Daten selbst an, die
+  Anmeldung (`anmelden.setup.ts`) läuft vorher einmal. Nacheinander, weil alle Specs mit
+  demselben Testkonto am Rate-Limit hängen und `04-fangkorb` andere offene Einwürfe
+  zurückstellt, auch solche, die eine parallele Spec gerade anlegt.
 - **Rate-Limit:** Der Suchdienst erlaubt 10 Anlege-Anfragen pro Minute und 100 pro Stunde je
   Person; ein voller Lauf braucht 20 bis 30. Scheitert Speichern oder Einwerfen mit 429,
   warten die Helfer in `tests/fixtures.ts` eine Minute und versuchen es erneut (im Report als

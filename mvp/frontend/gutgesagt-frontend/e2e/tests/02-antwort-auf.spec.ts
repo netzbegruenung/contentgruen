@@ -1,4 +1,4 @@
-import { TESTDATEN_PRAEFIX, ergebnisKnoepfe, expect, ausfuellen, lauf, speichernUndErgebnis, test } from './fixtures';
+import { TESTDATEN_PRAEFIX, ergebnisKnoepfe, expect, ausfuellen, lauf, speichernUndErgebnis, test, zurueck } from './fixtures';
 
 /** Antwort auf - Vorschlag waehlen und entfernen, neue Aussage anlegen, speichern. */
 test('Antwort auf: Vorschlag, neue Aussage, Ergebnisseite, Suche', async ({ page, bild }) => {
@@ -66,20 +66,16 @@ test('Antwort auf: Vorschlag, neue Aussage, Ergebnisseite, Suche', async ({ page
     await page.goBack();
     await page.waitForURL(/\/gespeichert\//);
     await bild('70-verfassen-zurueck-ergebnis');
-    await page.goBack();
-    await page.waitForTimeout(1500);
-    const nachZurueck = new URL(page.url()).pathname;
-    test.info().annotations.push({ type: 'verfassen: System-Zurueck von der Ergebnisseite', description: nachZurueck });
-    expect.soft(nachZurueck, 'kein Ruecksprung ins Formular').not.toMatch(/\/workflow\/add-commentary$/);
+    const nachZurueck = await zurueck(page, 'system');
+    test.info().annotations.push({ type: 'verfassen: System-Zurueck von der Ergebnisseite', description: nachZurueck.pathname });
+    expect.soft(nachZurueck.pathname, 'kein Ruecksprung ins Formular').not.toMatch(/\/workflow\/add-commentary$/);
     await bild('71-verfassen-system-zurueck');
 
     await page.goForward();
     await page.waitForURL(/\/gespeichert\//);
-    await page.locator('.back-button').click();
-    await page.waitForTimeout(1500);
-    const nachPfeil = new URL(page.url()).pathname;
-    test.info().annotations.push({ type: 'verfassen: Pfeil von der Ergebnisseite', description: nachPfeil });
-    expect.soft(nachPfeil).toBe('/contribute');
+    const nachPfeil = await zurueck(page, 'pfeil');
+    test.info().annotations.push({ type: 'verfassen: Pfeil von der Ergebnisseite', description: nachPfeil.pathname });
+    expect.soft(nachPfeil.pathname).toBe('/contribute');
     await bild('72-verfassen-pfeil');
   });
 

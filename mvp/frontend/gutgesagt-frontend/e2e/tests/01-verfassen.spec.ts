@@ -117,7 +117,7 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
     const dialog = page.locator('mat-dialog-container');
     await expect(dialog).toContainText('Formular zurücksetzen?');
     // Viewport-Bild erst nach der Oeffnungs-Animation
-    await page.waitForTimeout(400);
+    await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
     await bild('12-zuruecksetzen-rueckfrage');
     await dialog.getByRole('button', { name: 'Abbrechen' }).click();
     await expect.soft(page.locator('textarea#title')).toHaveValue(`${TESTDATEN_PRAEFIX} Windräder sind besser als ihr Ruf`);

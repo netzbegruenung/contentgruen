@@ -107,7 +107,7 @@ test('Hintergrundinfo aus dem Fangkorb: Kopfband, vorbelegt, Ergebnisseite', asy
 
 test('Hintergrundinfo: offline speichern, Erneut versuchen behaelt die Eingaben', async ({ page, context, bild }) => {
   const kennung = lauf();
-  const titel = `${TESTDATEN_PRAEFIX} Hintergrundinfo offline ${kennung}`;
+  const titel = `${TESTDATEN_PRAEFIX} Ein Funkloch kostet keine Hintergrundinfo ${kennung}`;
   await page.goto('/workflow/add-generictext');
   await ausfuellen(page, titel, `${TESTDATEN_PRAEFIX} Erst der zweite Versuch geht durch ${kennung}.`);
   await tastaturSchliessen(page);

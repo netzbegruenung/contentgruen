@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { KONTO } from './konto';
 
 /**
  * Besucher: ohne Anmeldung suchen und Ergebnisse lesen; was Mitwirkenden vorbehalten
@@ -15,6 +16,28 @@ test('Besucher: Suche ohne Anmeldung', async ({ page, bild }) => {
   await bild('90-besucher-suche');
 });
 
+test('Besucher: von der Startseite suchen und zurueck', async ({ page }) => {
+  await page.goto('/search');
+  await expect(page).toHaveURL(/\/search$/);
+  const feld = page.locator('input[name="searchQuery"]');
+  await feld.fill('Windräder töten Vögel');
+  await feld.press('Enter');
+  await page.waitForURL(/\/result\?/);
+  expect(new URL(page.url()).searchParams.get('searchQuery')).toBe('Windräder töten Vögel');
+  await expect(page.locator('app-kartenliste app-beitragskarte').first()).toBeVisible({ timeout: 45_000 });
+  await page.goBack();
+  await expect(page).toHaveURL(/\/search$/);
+});
+
+test('Besucher: 401 der Suche fuehrt nicht zur Anmeldung', async ({ page }) => {
+  // Die Suche ist oeffentlich (PublicEndpoints): Ein 401 zeigt einen Fehler, statt umzuleiten.
+  await page.route('**/api/v1/search/searchByText**', (anfrage) => anfrage.fulfill({ status: 401, json: {} }));
+  await page.goto(`/result?searchQuery=${encodeURIComponent('Windräder töten Vögel')}`);
+  await expect(page.locator('app-error-message .error-card')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  expect(new URL(page.url()).pathname).toBe('/result');
+});
+
 for (const pfad of ['/contribute', '/contributions', '/einwerfen', '/fangkorb']) {
   test(`Besucher: ${pfad} fuehrt zur Anmeldung`, async ({ page }) => {
     await page.goto(pfad);
@@ -28,8 +51,8 @@ test('Besucher: nach der Anmeldung zurueck, wohin es gehen sollte', async ({ pag
   await page.waitForURL(/\/login\?/);
   await page.getByRole('button', { name: /Direktanmeldung/ }).click();
   await page.waitForURL(/\/login\/managed/);
-  await page.locator('input[formControlName="email"]').fill(process.env.E2E_EMAIL ?? 'test.user@example.com');
-  await page.locator('input[formControlName="password"]').fill(process.env.E2E_PASSWORT ?? 'Liebe>Hass!');
+  await page.locator('input[formControlName="email"]').fill(KONTO.email);
+  await page.locator('input[formControlName="password"]').fill(KONTO.passwort);
   await page.locator('form.login-form button[type="submit"]').click();
   await page.waitForURL(/\/fangkorb/);
   await expect(page.locator('.tabs')).toBeVisible();

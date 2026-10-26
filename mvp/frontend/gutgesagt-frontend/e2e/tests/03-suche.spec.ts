@@ -1,4 +1,4 @@
-import { TESTDATEN_PRAEFIX, ergebnisKnoepfe, expect, ausfuellen, lauf, speichernUndErgebnis, test } from './fixtures';
+import { TESTDATEN_PRAEFIX, ergebnisKnoepfe, expect, ausfuellen, lauf, speichernUndErgebnis, test, zurueck } from './fixtures';
 
 /** aus der Suche ins Formular, Aussage vorbelegt, zurueck zur Suche. */
 test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) => {
@@ -30,10 +30,11 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     await page.waitForURL(/\/workflow\/add-commentary\?/);
     test.info().annotations.push({ type: 'Formular-Adresse', description: new URL(page.url()).search });
     // Vorbelegt: als gewaehlte Aussage (mit ID) oder als Text im Feld.
-    const vorbelegt =
-      (await page.locator('.gewaehlt-karte .karte-titel').textContent().catch(() => null)) ??
-      (await page.locator('.antwort-eingabe').inputValue().catch(() => ''));
-    expect.soft(vorbelegt?.trim()).toContain(aussageKern);
+    // Das Template wechselt dabei vom Feld zur Karte: gelesen wird, was gerade steht.
+    const vorbelegt = page.locator('.gewaehlt-karte .karte-titel').or(page.locator('.antwort-eingabe')).first();
+    await expect
+      .poll(() => vorbelegt.evaluate((el) => (el instanceof HTMLTextAreaElement ? el.value : (el.textContent ?? '')).trim()))
+      .toContain(aussageKern);
     await bild('31-formular-vorbelegt');
   });
 
@@ -58,18 +59,14 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
   await test.step('Zurueck (System und Pfeil) von der Ergebnisseite', async () => {
     await page.goBack();
     await page.waitForURL(/\/gespeichert\//);
-    await page.goBack();
-    await page.waitForTimeout(1500);
-    const nachZurueck = new URL(page.url());
+    const nachZurueck = await zurueck(page, 'system');
     test.info().annotations.push({ type: 'suche: System-Zurueck', description: nachZurueck.pathname + nachZurueck.search });
     expect.soft(nachZurueck.pathname).not.toMatch(/\/workflow\/add-commentary$/);
     await bild('73-suche-system-zurueck');
 
     await page.goForward();
     await page.waitForURL(/\/gespeichert\//);
-    await page.locator('.back-button').click();
-    await page.waitForTimeout(1500);
-    const nachPfeil = new URL(page.url());
+    const nachPfeil = await zurueck(page, 'pfeil');
     test.info().annotations.push({ type: 'suche: Pfeil', description: nachPfeil.pathname + nachPfeil.search });
     expect.soft(nachPfeil.pathname).toBe('/result');
     expect.soft(nachPfeil.searchParams.get('searchQuery')).toBe(anfrage);
