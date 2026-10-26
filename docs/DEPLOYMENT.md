@@ -53,9 +53,9 @@ Then access:
 - **Images:** floating `:main` tag, deployed **manually**: Salt `state.apply`, then
   `docker compose pull && docker compose up -d` on the host. A merge to `main` does not reach
   this environment by itself. New database migrations are applied before `up -d`, see
-  [`mvp/backend/postgres-app/migrations/README.md`](../mvp/backend/postgres-app/migrations/README.md). The Salt state still contains a Watchtower block, but its
-  container is stuck in a restart loop (as of 2026-10-11); the block is being removed from
-  the Salt repo (#22)
+  [`mvp/backend/postgres-app/migrations/README.md`](../mvp/backend/postgres-app/migrations/README.md).
+  The Salt state still contains a Watchtower block, but its container is stuck in a restart
+  loop (as of 2026-10-11); the block is being removed from the Salt repo (#22)
 - **Backups:** enabled since the Salt PR `fix/contentgruen-haertung` (`enable_backup: true`,
   mount `/opt/gutgesagt-backups:/backups`); disabled before that
 
