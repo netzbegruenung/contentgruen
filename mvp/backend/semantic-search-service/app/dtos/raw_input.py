@@ -172,8 +172,9 @@ class RawInputDraftResponse(BaseModel):
 
 class RawInputLinkResponse(BaseModel):
     """
-    Ein Beitrag, der aus dem Einwurf entstanden ist.
+    Ein Beitrag, mit dem der Einwurf verknuepft ist, neu entstanden oder vorhanden.
 
+    ``processed_by`` ist der Ausformulierer, nicht zwingend der Autor des Beitrags.
     ``draft_id`` ist der ausformulierte Satz; None, wenn die Person ihren Satz
     spaeter geleert hat. ``content_type`` ist None bei Verknuepfungen aus der Zeit
     vor Fangkorb v2.
@@ -192,7 +193,7 @@ class RawInputResponse(BaseModel):
 
     ``drafts`` sind alle Saetze aller Personen, aelteste Aenderung zuerst - sie sind
     fuer alle Angemeldeten sichtbar. ``own_draft`` ist daraus der Satz der
-    anfragenden Person. ``links`` sind alle entstandenen Beitraege, aelteste
+    anfragenden Person. ``links`` sind alle verknuepften Beitraege, aelteste
     zuerst; die processed-Felder beschreiben davon den ersten.
     """
 

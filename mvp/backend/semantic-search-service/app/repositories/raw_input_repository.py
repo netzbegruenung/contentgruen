@@ -303,9 +303,9 @@ class RawInputRepository:
         Verwerfen duerfen der Einwerfer und Admins (``ist_admin``), Admins auch
         einen Einwurf ohne Einwerfer.
 
-        Die Verknuepfung haelt fest, wer verarbeitet hat, welcher Beitragstyp
-        entstanden ist und welcher Satz ausformuliert wurde - der der verarbeitenden
-        Person (``draft_id``), sofern sie einen gespeichert hat.
+        Die Verknuepfung haelt fest, wer verknuepft hat (der Ausformulierer), welchen
+        Beitragstyp der Beitrag hat und welcher Satz ausformuliert wurde - der des
+        Ausformulierers (``draft_id``), sofern er einen gespeichert hat.
 
         Alles in einer Transaktion, die Zeile ist dabei gesperrt (FOR UPDATE),
         damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Die

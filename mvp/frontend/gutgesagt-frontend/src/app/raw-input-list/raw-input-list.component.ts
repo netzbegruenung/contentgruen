@@ -49,9 +49,10 @@ export const LADE_GROESSE = 100;
  * die Rohlinge, an denen dort etwas zu tun ist.
  *
  * Destillieren = noch kein Satz, Ausformulieren = Saetze ohne Beitrag, Erledigt =
- * mindestens ein Beitrag entstanden. Verworfenes liegt unter Erledigt hinter
- * einem Chip. Welcher Zustand gilt, entscheidet ``zustandVonEinwurf``; die Chips
- * (Plattform, "nur meine") wirken quer dazu und gelten auch fuer die Zaehler.
+ * mit mindestens einem Beitrag verknuepft (neu oder vorhanden). Verworfenes liegt
+ * unter Erledigt hinter einem Chip. Welcher Zustand gilt, entscheidet
+ * ``zustandVonEinwurf``; die Chips (Plattform, "nur meine") wirken quer dazu und
+ * gelten auch fuer die Zaehler.
  *
  * Bewusst alle Einwuerfe und nicht nur die eigenen - der Vorrat ist gemeinsam.
  * Sortiert wird hier neueste zuerst, nicht in der Reihenfolge des Servers

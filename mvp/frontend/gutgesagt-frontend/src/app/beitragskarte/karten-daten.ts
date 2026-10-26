@@ -50,7 +50,7 @@ export interface KartenExtra {
   engagement?: number;
 }
 
-/** Ein Satz zum Einwurf, mit der Zahl der daraus entstandenen Beitraege. */
+/** Ein Satz zum Einwurf, mit der Zahl der Beitraege, mit denen er ausformuliert wurde. */
 export interface RohlingSatz {
   id: string;
   text: string;
@@ -78,7 +78,7 @@ export interface RohlingDaten {
   linkText: string | null;
   /** Alle Saetze, aelteste Aenderung zuerst. */
   saetze: RohlingSatz[];
-  /** Die entstandenen Beitraege, aelteste zuerst. */
+  /** Die verknuepften Beitraege, aelteste zuerst. */
   beitraege: RohlingBeitrag[];
   /** Nur im Kopf: der Satz, aus dem gerade ein Beitrag entsteht. */
   kopfSatz?: string;
@@ -258,8 +258,8 @@ export type FangkorbZustand = 'destillieren' | 'ausformulieren' | 'erledigt' | '
  *
  * Verworfen zuerst: Verworfenes bleibt verworfen, auch wenn andere trotzdem
  * weiterdestillieren (das Backend erlaubt das ausdruecklich). Erledigt haengt an
- * den Verknuepfungen, nicht an den Saetzen - ein Beitrag kann auch ohne
- * gespeicherten Satz entstanden sein (processed aus open), und ein spaeter
+ * den Verknuepfungen, nicht an den Saetzen - ein Einwurf kann auch ohne
+ * gespeicherten Satz verknuepft worden sein (processed aus open), und ein spaeter
  * geleerter Satz darf den Einwurf nicht zurueckfallen lassen.
  */
 export function zustandVonEinwurf(einwurf: RawInput): FangkorbZustand {
@@ -281,8 +281,8 @@ export function zustandVonEinwurf(einwurf: RawInput): FangkorbZustand {
  * (Domain und Pfad, ohne Schema und www), nicht als roher Link.
  *
  * ``beitraege`` je Satz zaehlt die Verknuepfungen auf genau diesen Satz - dieselbe
- * Person kann aus ihrem Satz mehr als einen Beitrag gemacht haben. Verknuepfungen
- * ohne Satz (verarbeitet ohne gespeicherten Satz, oder der Satz wurde spaeter
+ * Person kann ihren Satz mit mehr als einem Beitrag ausformuliert haben. Verknuepfungen
+ * ohne Satz (verknuepft ohne gespeicherten Satz, oder der Satz wurde spaeter
  * geleert) haengen an keiner Zeile, bleiben aber unter ``beitraege`` erreichbar -
  * sichtbar werden sie im Sheet.
  */
@@ -298,7 +298,7 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
 
   return {
     id: einwurf.id,
-    // Erledigt traegt die Farbe des ersten entstandenen Beitrags: Die Typklasse
+    // Erledigt traegt die Farbe des ersten verknuepften Beitrags: Die Typklasse
     // setzt --karten-farbe, und davon nimmt das Kopfband. Unfertige Rohlinge
     // haben keinen Typ - ihr Band bleibt Sand.
     // Die erste Verknuepfung *mit* Typ: Verknuepfungen aus der Zeit vor Fangkorb v2

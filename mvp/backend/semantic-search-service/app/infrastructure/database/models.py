@@ -199,8 +199,8 @@ class RawInput(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     # Wer als Erste/r einen Satz gespeichert hat. Weitere Saetze anderer Personen
-    # aendern das nicht; wer den Beitrag gespeichert hat, steht an der Verknuepfung
-    # (raw_input_content_links.created_by).
+    # aendern das nicht; wer den Einwurf mit einem Beitrag verknuepft hat (der
+    # Ausformulierer), steht an der Verknuepfung (raw_input_content_links.created_by).
     destilled_by = Column(String(255), nullable=True)
 
     __table_args__ = (
@@ -219,10 +219,11 @@ class RawInput(Base):
 
 class RawInputContentLink(Base):
     """
-    Verknuepfung zwischen einem Einwurf und dem Beitrag, der daraus entstanden ist.
+    Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
+    wurde: einem neu gespeicherten oder, bei einer Dublette, dem vorhandenen.
 
-    Geschrieben wird sie beim Speichern eines Beitrags aus dem Destillier-Ablauf
-    (``PATCH /rawinput/{id}/status``). Sie existiert von Anfang an, weil die
+    Geschrieben wird sie, wenn der Destillier-Ablauf den Einwurf mit dem Beitrag
+    verknuepft (``PATCH /rawinput/{id}/status``). Sie existiert von Anfang an, weil die
     Beziehung n:m ist: ein
     Thread kann einen Kommentar *und* eine Hintergrundinfo hervorbringen, und ein
     Beitrag kann aus mehreren Einwuerfen entstehen. Ein Feld
@@ -234,9 +235,10 @@ class RawInputContentLink(Base):
     geloescht wuerden (sie werden es nicht), sondern damit ein Loeschen aus
     Datenschutzgruenden keine Verweise auf Nichts hinterlaesst.
 
-    ``created_by`` haelt fest, *wer* verarbeitet hat. Das ist die Rolle, die
-    ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung dafuer,
-    spaeter Finder und Bearbeiter getrennt anzuerkennen.
+    ``created_by`` haelt fest, *wer* verknuepft hat: den Ausformulierer. Das ist die
+    Rolle, die ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung
+    dafuer, spaeter Einwerfer und Ausformulierer getrennt anzuerkennen. Bei einem
+    vorhandenen Beitrag ist der Ausformulierer nicht dessen Autor.
     """
 
     __tablename__ = "raw_input_content_links"

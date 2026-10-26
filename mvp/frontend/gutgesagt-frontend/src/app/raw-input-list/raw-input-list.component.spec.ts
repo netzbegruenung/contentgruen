@@ -582,7 +582,7 @@ describe('RawInputListComponent', () => {
       component.aktionAusfuehren(component.karten[0], 'verwerfen');
 
       expect(snackBar.open).toHaveBeenCalledWith(
-        'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.',
+        'Zu diesem Einwurf gibt es schon einen Beitrag; verwerfen geht nicht mehr.',
         'OK',
         { duration: 6000 },
       );

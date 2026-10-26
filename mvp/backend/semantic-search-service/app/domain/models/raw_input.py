@@ -34,12 +34,15 @@ class RawInputStatus(str, Enum):
 
     IN_PROGRESS = "in_progress"
     """
-    Destilliert: mindestens ein Satz ist gespeichert, ein Beitrag noch nicht.
+    Destilliert: mindestens ein Satz ist gespeichert, verknuepft ist noch kein Beitrag.
     Keine Sperre - andere duerfen weitere Saetze formulieren.
     """
 
     PROCESSED = "processed"
-    """Daraus ist mindestens ein Beitrag entstanden (siehe raw_input_content_links)."""
+    """
+    Ausformuliert: mit mindestens einem Beitrag verknuepft, neu entstanden oder
+    vorhanden (siehe raw_input_content_links).
+    """
 
     DISCARDED = "discarded"
     """Angeschaut und verworfen. Bleibt liegen, damit er nicht wieder auftaucht."""

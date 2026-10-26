@@ -130,7 +130,7 @@
   color: var(--text-secondary, #4a4a4a);
 }
 
-/* Typwahl eines Einwurfs, aus dem schon ein Beitrag entstanden ist */
+/* Typwahl eines Einwurfs, der schon mit einem Beitrag verknuepft ist */
 .schon-entstanden {
   margin: 0 0 12px;
   padding: 10px 14px;

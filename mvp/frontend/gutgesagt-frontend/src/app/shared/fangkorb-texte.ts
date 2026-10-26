@@ -52,7 +52,7 @@ export function verwerfenFehlertext(status: number | undefined): string {
     return 'Verwerfen können nur der Einwerfer und Admins.';
   }
   if (status === 409) {
-    return 'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.';
+    return 'Zu diesem Einwurf gibt es schon einen Beitrag; verwerfen geht nicht mehr.';
   }
   return 'Verwerfen hat nicht geklappt. Bitte versuche es erneut.';
 }

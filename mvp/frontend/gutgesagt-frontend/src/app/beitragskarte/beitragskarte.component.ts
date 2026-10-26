@@ -263,7 +263,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Das Zeichen im Kopfband. Erledigtes traegt das Emoji des entstandenen
+   * Das Zeichen im Kopfband. Erledigtes traegt das Emoji des verknuepften
    * Beitrags - dieselbe Marke, unter der er in Suche und Album steht; die
    * unfertigen Stufen tragen das Icon der Kette.
    */

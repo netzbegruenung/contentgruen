@@ -49,13 +49,14 @@ export interface RawInputDraft {
   updated_at: string;
 }
 
-/** Ein Beitrag, der aus einem Einwurf entstanden ist. */
+/** Ein Beitrag, mit dem ein Einwurf verknuepft ist, neu entstanden oder vorhanden. */
 export interface RawInputLink {
   content_id: string;
   /** Null bei Verknuepfungen aus der Zeit vor Fangkorb v2. */
   content_type: string | null;
   /** Der ausformulierte Satz; null, wenn er spaeter geleert wurde. */
   draft_id: string | null;
+  /** Der Ausformulierer, nicht zwingend der Autor des Beitrags. */
   processed_by: string | null;
   processed_at: string;
 }
@@ -76,13 +77,13 @@ export interface RawInput {
   destilled_by?: string | null;
   /** Der eigene Satz aus ``drafts``. */
   own_draft?: string | null;
-  /** Erste Verknuepfung mit einem Beitrag, falls verarbeitet. */
+  /** Erste Verknuepfung mit einem Beitrag, falls ausformuliert. */
   processed_content_id?: string | null;
   processed_by?: string | null;
   processed_at?: string | null;
   /** Alle Saetze aller Personen, aelteste Aenderung zuerst. */
   drafts?: RawInputDraft[];
-  /** Alle entstandenen Beitraege, aelteste zuerst. */
+  /** Alle verknuepften Beitraege, aelteste zuerst. */
   links?: RawInputLink[];
 }
 
@@ -178,7 +179,7 @@ export class RawInputService {
   }
 
   /**
-   * Verwerfen oder als verarbeitet markieren - dann mit dem entstandenen Beitrag
+   * Verwerfen oder als ausformuliert markieren - dann mit dem verknuepften Beitrag
    * und seinem Typ, nach dem sich die Fangkorb-Karte faerbt.
    */
   updateStatus(
