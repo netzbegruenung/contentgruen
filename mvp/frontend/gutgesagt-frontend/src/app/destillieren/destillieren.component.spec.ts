@@ -213,7 +213,7 @@ describe('DestillierenComponent', () => {
       knopf('verwerfen')!.click();
 
       expect(einwurfService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformuliert');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'destillieren');
     });
 
     it('zeigt Verwerfen bei Ausformuliertem und Verworfenem niemandem', async () => {
@@ -239,9 +239,19 @@ describe('DestillierenComponent', () => {
       knopf('verwerfen')!.click();
 
       expect(einwurfService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
-      // Verworfenes liegt unter "Ausformuliert" - und der Chip dafuer wird eingeschaltet,
-      // sonst waere der Einwurf nach dem Verwerfen scheinbar spurlos weg.
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformuliert');
+      // Verworfenes ohne Satz liegt unter "Destillieren" hinter einem Chip - und der
+      // wird eingeschaltet, sonst waere der Einwurf nach dem Verwerfen scheinbar
+      // spurlos weg.
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'destillieren');
+      expect(filterLaden().verworfenSichtbar).toBeTrue();
+    });
+
+    it('nennt nach dem Verwerfen mit gespeichertem Satz den Tab "Ausformulieren"', async () => {
+      await erstellen('id-1', einwurf({ status: 'in_progress', own_draft: 'Waermepumpe lohnt sich' }));
+
+      knopf('verwerfen')!.click();
+
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformulieren');
       expect(filterLaden().verworfenSichtbar).toBeTrue();
     });
 
@@ -396,13 +406,13 @@ describe('DestillierenComponent', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
     });
 
-    it('nimmt ohne Tab-Angabe den Tab "ausformuliert"', async () => {
+    it('nimmt ohne Tab-Angabe den Tab "Ausformulieren"', async () => {
       queryParams = convertToParamMap({ nach: 'id-vorher' });
       einwurfService.naechsterOffenerEinwurf.and.returnValue(of(null));
 
       await erstellen(null);
 
-      expect(filterLaden().tab).toBe('ausformuliert');
+      expect(filterLaden().tab).toBe('ausformulieren');
     });
 
     it('oeffnet mit ?schritt=typwahl die Typwahl, wenn ein eigener Satz dasteht', async () => {

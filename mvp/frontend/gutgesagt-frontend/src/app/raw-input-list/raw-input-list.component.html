@@ -2,11 +2,15 @@
     <div class="guidance">
         <div class="info-message">
             <div class="fangkorb-kopf">
-                <!-- Die drei Stufen sind die Navigation: was im Tab liegt, sagt der Zaehler -->
-                <div class="tabs" role="tablist" aria-label="Arbeitsstufen im Fangkorb">
+                <!-- Die beiden Arbeitslisten sind die Navigation: was im Tab liegt, sagt der Zaehler.
+                     Tab-Muster nach WAI-ARIA: ein Tab-Stopp, Pfeiltasten wechseln den Tab. -->
+                <div class="tabs" role="tablist" aria-label="Arbeitslisten im Fangkorb" (keydown)="tabTaste($event)">
                     <button *ngFor="let tab of tabs" type="button" role="tab" class="tab"
+                            [id]="'fangkorb-tab-' + tab.wert"
+                            aria-controls="fangkorb-bereich"
                             [class.aktiv]="filter.tab === tab.wert"
                             [attr.aria-selected]="filter.tab === tab.wert"
+                            [attr.tabindex]="filter.tab === tab.wert ? 0 : -1"
                             (click)="tabWaehlen(tab.wert)">
                         <span class="tab-wort">{{ tab.name }}</span>
                         <span class="tab-zahl">{{ zaehler[tab.wert] }}</span>
@@ -44,8 +48,8 @@
             <button type="button" class="filter-chip nur-meine"
                     [class.aktiv]="filter.nurMeine" [attr.aria-pressed]="filter.nurMeine"
                     (click)="nurMeineUmschalten()">nur meine</button>
-            <!-- Nur unter Ausformuliert: Weggelegtes taucht sonst wieder auf -->
-            <button *ngIf="filter.tab === 'ausformuliert'" type="button" class="filter-chip verworfen"
+            <!-- Standardmaessig aus: Weggelegtes taucht sonst wieder auf -->
+            <button type="button" class="filter-chip verworfen"
                     [class.aktiv]="filter.verworfenSichtbar" [attr.aria-pressed]="filter.verworfenSichtbar"
                     (click)="verworfenUmschalten()">verworfen</button>
         </div>
@@ -59,29 +63,32 @@
         </div>
     </div>
 
-    <div *ngIf="isLoading" class="fangkorb-laedt">
-        <p>Lade Fangkorb …</p>
-        <mat-spinner class="mat-spinner-color" diameter="40"></mat-spinner>
+    <!-- Ein Bereich fuer beide Tabs: beide filtern dieselbe Liste, beschriftet vom gewaehlten -->
+    <div id="fangkorb-bereich" role="tabpanel" [attr.aria-labelledby]="'fangkorb-tab-' + filter.tab">
+        <div *ngIf="isLoading" class="fangkorb-laedt">
+            <p>Lade Fangkorb …</p>
+            <mat-spinner class="mat-spinner-color" diameter="40"></mat-spinner>
+        </div>
+
+        <div *ngIf="!isLoading && ladefehler" class="fangkorb-fehler">
+            <p>⚠️ Der Fangkorb konnte nicht geladen werden. Bitte lade die Seite neu.</p>
+        </div>
+
+        <ng-container *ngIf="!isLoading && !ladefehler">
+            <p *ngIf="!sichtbar.length" class="fangkorb-leer">{{ leerText }}</p>
+
+            <ul *ngIf="karten.length" class="karten">
+                <li *ngFor="let karte of karten; trackBy: nachKarte">
+                    <app-beitragskarte variante="einwurf" [daten]="karte"
+                                       (aktion)="aktionAusfuehren(karte, $event)">
+                    </app-beitragskarte>
+                </li>
+            </ul>
+
+            <p *ngIf="gesamt > einwuerfe.length" class="fangkorb-mehr">
+                Von {{ gesamt }} Einwürfen sind die letzten {{ einwuerfe.length }} geladen –
+                ältere fehlen, und die Zähler oben zählen nur die geladenen.
+            </p>
+        </ng-container>
     </div>
-
-    <div *ngIf="!isLoading && ladefehler" class="fangkorb-fehler">
-        <p>⚠️ Der Fangkorb konnte nicht geladen werden. Bitte lade die Seite neu.</p>
-    </div>
-
-    <ng-container *ngIf="!isLoading && !ladefehler">
-        <p *ngIf="!sichtbar.length" class="fangkorb-leer">{{ leerText }}</p>
-
-        <ul *ngIf="karten.length" class="karten">
-            <li *ngFor="let karte of karten; trackBy: nachKarte">
-                <app-beitragskarte variante="einwurf" [daten]="karte"
-                                   (aktion)="aktionAusfuehren(karte, $event)">
-                </app-beitragskarte>
-            </li>
-        </ul>
-
-        <p *ngIf="gesamt > einwuerfe.length" class="fangkorb-mehr">
-            Von {{ gesamt }} Einwürfen sind die letzten {{ einwuerfe.length }} geladen –
-            ältere fehlen, und die Zähler oben zählen nur die geladenen.
-        </p>
-    </ng-container>
 </div>

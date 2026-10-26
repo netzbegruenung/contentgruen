@@ -83,12 +83,14 @@ export class DestillierUebergabeService {
   /**
    * Den naechsten offenen Einwurf oeffnen; ``nach`` wird dabei uebersprungen.
    *
-   * ``tab`` sagt, wo der Fangkorb aufgehen soll, falls keiner mehr offen ist -
+   * ``ergebnis`` sagt, wo der Fangkorb aufgehen soll, falls keiner mehr offen ist -
    * der Tab, in dem das Ergebnis der gerade beendeten Handlung liegt. Er wird
    * durchgereicht statt geraten: Nur die Handlung selbst weiss, was sie bewirkt
-   * hat.
+   * hat. "ausformuliert" heisst: Der Einwurf liegt in keinem Tab mehr; dann geht
+   * es in die Arbeitsliste, aus der er kam.
    */
-  zumNaechsten(nach: string, tab: FangkorbTab): void {
+  zumNaechsten(nach: string, ergebnis: FangkorbTab | 'ausformuliert'): void {
+    const tab: FangkorbTab = ergebnis === 'ausformuliert' ? 'ausformulieren' : ergebnis;
     this.router.navigate(['/destillieren'], { queryParams: { nach, [TAB_PARAM]: tab } });
   }
 }

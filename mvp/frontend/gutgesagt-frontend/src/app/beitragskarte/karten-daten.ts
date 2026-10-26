@@ -250,7 +250,7 @@ function domainAus(adresse: string | null | undefined): string | null {
 /**
  * Die Stufe eines Einwurfs, wie das Glossar sie nennt. Die Tabs des Fangkorbs
  * heissen dagegen nach der naechsten Arbeit (``FangkorbTab``); Verworfenes liegt
- * unter "Ausformuliert" hinter einem Chip.
+ * dort hinter einem Chip, Ausformuliertes in keinem.
  */
 export type EinwurfStufe = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfen';
 
@@ -268,9 +268,14 @@ export type EinwurfStufe = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfe
  * Datenmigration noetig ist.
  */
 export function stufeVonEinwurf(einwurf: Einwurf): EinwurfStufe {
-  if (einwurf.status === 'discarded') {
-    return 'verworfen';
-  }
+  return einwurf.status === 'discarded' ? 'verworfen' : stufeInDerKette(einwurf);
+}
+
+/**
+ * Wie weit ein Einwurf in der Kette ist, gleich ob verworfen: Der Fangkorb legt
+ * Verworfenes in den Tab der Arbeit, die an ihm noch offen waere.
+ */
+export function stufeInDerKette(einwurf: Einwurf): Exclude<EinwurfStufe, 'verworfen'> {
   if ((einwurf.links ?? []).length > 0) {
     return 'ausformuliert';
   }

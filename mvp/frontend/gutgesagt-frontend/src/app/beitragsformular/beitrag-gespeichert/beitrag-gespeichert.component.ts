@@ -107,10 +107,12 @@ export class BeitragGespeichertComponent implements OnInit {
     return this.route.snapshot.queryParamMap.get(ROHINPUT_ADRESSE_PARAM);
   }
 
-  /** Der Tab, in dem der Einwurf jetzt liegt. */
-  private get fangkorbTab(): FangkorbTab {
-    return this.zustand.einwurfVerknuepft === false ? 'ausformulieren' : 'ausformuliert';
-  }
+  /**
+   * Zurueck in den Fangkorb geht es nach "Ausformulieren": Dort liegt der Einwurf
+   * noch, wenn das Verknuepfen scheiterte, und von dort kam er. Verknuepft ist er
+   * ausformuliert und liegt in keinem Tab mehr.
+   */
+  private readonly fangkorbTab: FangkorbTab = 'ausformulieren';
 
   ngOnInit(): void {
     this.typ = this.route.snapshot.data['typ'] ?? 'commentary';

@@ -11,7 +11,7 @@ import { NavigationService } from '../../services/navigation.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../../beitragskarte/beitragskarte.stub';
-import { FILTER_SCHLUESSEL } from '../../raw-input-list/fangkorb-filter';
+import { FILTER_SCHLUESSEL, filterLaden } from '../../raw-input-list/fangkorb-filter';
 
 describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;
@@ -99,11 +99,14 @@ describe('BeitragGespeichertComponent', () => {
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformuliert');
+      // Der Einwurf ist ausformuliert und liegt in keinem Tab mehr; zurueck geht es
+      // in die Arbeitsliste, aus der er kam.
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
 
       (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
       expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
-      expect(sessionStorage.getItem(FILTER_SCHLUESSEL) ?? '').toContain('ausformuliert');
+      expect(filterLaden().tab).toBe('ausformulieren');
+      sessionStorage.removeItem(FILTER_SCHLUESSEL);
     });
 
     it('Fangkorb: nicht verknuepft fuehrt nach Ausformulieren und sagt es', async () => {
