@@ -76,8 +76,8 @@ class AddCommentaryResponse(BaseModel):
     # Das Formular zeigt die Dublette und laesst die Person entscheiden: zustimmen
     # (Stimme) oder mit trotz_dublette trotzdem speichern.
     duplikat: bool = False
-    # Titel der Dublette, damit das Formular sie benennen kann; sonst None.
-    dublette_titel: Optional[str] = None
+    # Titel des vorhandenen Kommentars, damit das Formular ihn nennen kann; sonst None.
+    vorhanden_titel: Optional[str] = None
 
 
 ### SearchCommentary ###

@@ -494,20 +494,20 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar.');
     }));
 
-    it('nennt den Titel der Dublette und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', duplikat: true, dublette_titel: 'Wärmepumpen rechnen sich auch im Altbau' });
+    it('nennt den Titel des vorhandenen Kommentars und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, vorhanden_titel: 'Wärmepumpen rechnen sich auch im Altbau' });
       ausfuellen();
 
       component.speichern();
       flush();
       fixture.detectChanges();
 
-      expect(seite().querySelector('.dublette-titel')!.textContent).toContain('Wärmepumpen rechnen sich auch im Altbau');
+      expect(seite().querySelector('.vorhanden-titel')!.textContent).toContain('Wärmepumpen rechnen sich auch im Altbau');
       expect(seite().querySelector('.dublette-zustimmen')!.textContent).toContain('Zustimmen');
       expect(seite().querySelector('.dublette-trotzdem')!.textContent).toContain('Trotzdem speichern');
     }));
 
-    it('Zustimmen: gibt der Dublette eine Stimme, meldet sie und keinen Erfolg', fakeAsync(() => {
+    it('Zustimmen: gibt dem vorhandenen Kommentar eine Stimme, meldet sie und keinen Erfolg', fakeAsync(() => {
       speichernMit({ id: 'k-alt', duplikat: true });
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
         of({ content_id: 'k-alt', vote_type: 'like', message: 'ok' }),
@@ -574,6 +574,48 @@ describe('AddCommentaryComponent', () => {
       expect(zweite).toEqual({ ...erste, trotz_dublette: true });
       expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ id: 'k-neu' }));
       expect(component.dublette).toBeNull();
+    }));
+
+    it('verschwindet, sobald der Text geaendert wird: der Hinweis galt dem alten Text', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.commentaryForm.patchValue({ text: 'Ein ganz anderer, eigener Text.' });
+      fixture.detectChanges();
+
+      expect(component.dublette).toBeNull();
+      expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+    }));
+
+    it('eigene, schon verknuepfte Dublette: kein Zustimmen, aber Trotzdem speichern', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('nach dem Zustimmen steht in der Leiste kein Fehler', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
+        of({ content_id: 'k-alt', vote_type: 'like', message: 'ok' }),
+      );
+      ausfuellen();
+      component.speichern();
+      flush();
+      component.zustimmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
 
     it('verschwindet mit Zuruecksetzen, auch der Link in der Leiste', fakeAsync(() => {

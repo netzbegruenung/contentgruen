@@ -23,7 +23,7 @@ from utils.text_normalisierung import SperreJeText
 
 ADD_URL = "/api/v1/commentary/addCommentary"
 HEADERS = {"X-User": "person-1"}
-DUBLETTE_TITEL = "Waermepumpen rechnen sich auch im Altbau"
+VORHANDEN_TITEL = "Waermepumpen rechnen sich auch im Altbau"
 
 app = FastAPI()
 app.include_router(commentary_router, prefix="/api/v1/commentary")
@@ -82,7 +82,7 @@ class TestAddCommentaryAntwort:
             "statement_text": None,
             "verknuepft": True,
             "duplikat": False,
-            "dublette_titel": None,
+            "vorhanden_titel": None,
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -208,7 +208,7 @@ class TestAddCommentaryAntwort:
             "statement_text": None,
             "verknuepft": False,
             "duplikat": False,
-            "dublette_titel": None,
+            "vorhanden_titel": None,
         }
 
     @staticmethod
@@ -216,7 +216,7 @@ class TestAddCommentaryAntwort:
         commentary_service = app.dependency_overrides[get_commentary_service]()
         commentary_service.pruefe_dublette.return_value = Dublettenpruefung(
             vorhanden=MagicMock(
-                id=vorhanden, original_author=autor, title=DUBLETTE_TITEL
+                id=vorhanden, original_author=autor, title=VORHANDEN_TITEL
             ),
             aehnlichster=None,
         )
@@ -241,7 +241,7 @@ class TestAddCommentaryAntwort:
             "statement_text": None,
             "verknuepft": True,
             "duplikat": True,
-            "dublette_titel": DUBLETTE_TITEL,
+            "vorhanden_titel": VORHANDEN_TITEL,
         }
         commentary_service.pruefe_dublette.assert_awaited_once_with(
             anfrage["commentary"]["text"]
@@ -278,7 +278,7 @@ class TestAddCommentaryAntwort:
             "statement_text": "Waermepumpen sind zu teuer",
             "verknuepft": True,
             "duplikat": True,
-            "dublette_titel": DUBLETTE_TITEL,
+            "vorhanden_titel": VORHANDEN_TITEL,
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
             beitrag_id=vorhanden,
@@ -308,7 +308,7 @@ class TestAddCommentaryAntwort:
             "statement_text": None,
             "verknuepft": True,
             "duplikat": True,
-            "dublette_titel": DUBLETTE_TITEL,
+            "vorhanden_titel": VORHANDEN_TITEL,
         }
         # Auch keine Aussage angelegt - das passiert erst beim Verknuepfen.
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
@@ -371,7 +371,7 @@ class TestAddCommentaryAntwort:
         """Die Person hat die Dublette gesehen und speichert trotzdem."""
         commentary_id, _ = dienste
         aehnlichster = MagicMock(id=uuid.uuid4(), original_author="person-2")
-        commentary_service = self._dublette(uuid.uuid4(), autor="person-2")
+        commentary_service = app.dependency_overrides[get_commentary_service]()
         commentary_service.pruefe_dublette.return_value = Dublettenpruefung(
             vorhanden=aehnlichster, aehnlichster=aehnlichster
         )
@@ -383,7 +383,7 @@ class TestAddCommentaryAntwort:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(commentary_id)
         assert resp.json()["duplikat"] is False
-        assert resp.json()["dublette_titel"] is None
+        assert resp.json()["vorhanden_titel"] is None
         # Angelegt wird ohne "vorhanden"; der aehnlichste bleibt fuer most_similar_*.
         pruefung = commentary_service.add_commentary.call_args.kwargs[
             "dublettenpruefung"
@@ -423,5 +423,5 @@ class TestAddCommentaryAntwort:
         )
 
         assert resp.json()["duplikat"] is True
-        assert resp.json()["dublette_titel"] == DUBLETTE_TITEL
+        assert resp.json()["vorhanden_titel"] == VORHANDEN_TITEL
         commentary_service.add_commentary.assert_not_awaited()

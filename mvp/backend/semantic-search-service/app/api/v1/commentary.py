@@ -252,7 +252,7 @@ async def add_commentary(
             statement_text=statement_text,
             verknuepft=verknuepft,
             duplikat=dublette is not None,
-            dublette_titel=dublette.title if dublette is not None else None,
+            vorhanden_titel=dublette.title if dublette is not None else None,
         )
 
     except HTTPException:

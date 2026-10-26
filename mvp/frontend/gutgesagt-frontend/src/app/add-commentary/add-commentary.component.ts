@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatDialog } from '@angular/material/dialog';
 import { filter } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { CommentaryService } from '../services/commentary.service';
 import { VotingService } from '../services/voting.service';
@@ -109,7 +110,7 @@ export class AddCommentaryComponent implements OnChanges {
   /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft, der Einwurf als Kopf. */
   @Input() vorbefuellung: Vorbefuellung | null = null;
   @Output() success = new EventEmitter<BeitragGespeichert>();
-  /** Der Dublette zugestimmt statt zu speichern: ihre ID. */
+  /** Dem vorhandenen Kommentar zugestimmt statt zu speichern: seine ID. */
   @Output() zugestimmt = new EventEmitter<string>();
 
   @ViewChild(ReferenceInputComponent) referenceInput?: ReferenceInputComponent;
@@ -135,12 +136,20 @@ export class AddCommentaryComponent implements OnChanges {
   dubletteAussage: string | null = null;
   /** Die Dublette ist von jemand anderem und eine Aussage war mitgeschickt. */
   dubletteFremdMitAussage = false;
-  /** Titel der Dublette, soweit das Backend ihn nennt. */
-  dubletteTitel: string | null = null;
+  /** Titel des vorhandenen Kommentars, soweit das Backend ihn nennt. */
+  vorhandenTitel: string | null = null;
   /** Der Dublette ist zugestimmt; dann gibt es nichts mehr zu entscheiden. */
   zugestimmtDublette = false;
   stimmtZu = false;
   zustimmFehler: string | null = null;
+
+  /**
+   * Zustimmen nur bei fremden oder nicht verknuepften Dubletten: Die eigene haengt
+   * schon an der gewaehlten Aussage, sich selbst zuzustimmen sagt nichts.
+   */
+  get kannZustimmen(): boolean {
+    return !this.zugestimmtDublette && !this.dubletteAussage;
+  }
 
   get dublettenHinweis(): string {
     if (this.zugestimmtDublette) {
@@ -169,6 +178,16 @@ export class AddCommentaryComponent implements OnChanges {
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
       references: [[]],
     });
+    // Der Hinweis gilt nur fuer den Text, der geprueft wurde: Wer ihn aendert,
+    // entscheidet nicht mehr ueber diese Dublette, sondern speichert neu.
+    this.commentaryForm
+      .get('text')!
+      .valueChanges.pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        if (this.dublette && !this.speichert) {
+          this.dubletteVergessen();
+        }
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -317,7 +336,7 @@ export class AddCommentaryComponent implements OnChanges {
           // von jemand anderem, und der Hinweis zeigt auf den Weg ueber die Karte.
           const mitAussage = !!(request.statement_id || request.statement_text);
           this.dublette = antwort.id;
-          this.dubletteTitel = antwort.dublette_titel ?? null;
+          this.vorhandenTitel = antwort.vorhanden_titel ?? null;
           this.dubletteAussage =
             antwort.verknuepft === true && antwort.statement_text ? antwort.statement_text : null;
           this.dubletteFremdMitAussage =
@@ -423,7 +442,7 @@ export class AddCommentaryComponent implements OnChanges {
     this.dublette = null;
     this.dubletteAussage = null;
     this.dubletteFremdMitAussage = false;
-    this.dubletteTitel = null;
+    this.vorhandenTitel = null;
     this.zugestimmtDublette = false;
     this.zustimmFehler = null;
   }

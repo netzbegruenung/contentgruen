@@ -27,7 +27,7 @@ import {
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
 
-/** Nach dem Zustimmen im Destillier-Ablauf: gespeichert wurde nichts, verknuepft schon. */
+/** Nach dem Zustimmen aus dem Fangkorb: gespeichert wurde nichts, verknuepft schon. */
 export const EINWURF_MIT_DUBLETTE_VERKNUEPFT = 'Zugestimmt. Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
 
 export const EINWURF_NICHT_VERKNUEPFT =
@@ -166,7 +166,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   }
 
   /**
-   * Der Dublette zugestimmt statt zu speichern. Aus dem Fangkorb zeigt die
+   * Dem vorhandenen Kommentar zugestimmt statt zu speichern. Aus dem Fangkorb zeigt die
    * Verknuepfung des Einwurfs dann auf den vorhandenen Kommentar - den Beitrag,
    * den die Person gewaehlt hat - und es geht zum naechsten Einwurf. Keine
    * Ergebnisseite: Gespeichert wurde nichts. Ohne Einwurf bleibt das Formular.

@@ -46,8 +46,8 @@ export interface AddCommentaryResponse {
     verknuepft?: boolean;
     /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. War eine Aussage dabei, haengt er jetzt an ihr (statement_*, verknuepft). */
     duplikat?: boolean;
-    /** Titel der Dublette, wenn duplikat. */
-    dublette_titel?: string | null;
+    /** Titel des vorhandenen Kommentars, wenn duplikat. */
+    vorhanden_titel?: string | null;
 }
 
 
