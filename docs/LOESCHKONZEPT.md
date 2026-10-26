@@ -88,6 +88,12 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `actor_hash` stehen dort Klartext-Suchtext, Kennung und IP-Hash, und dann ist
   `DELETE FROM search_events WHERE user_id = …` sehr wohl nötig
   (`mvp/backend/postgres-app/migrations/2026-08-19-search-events-pseudonymisieren.sql`).
+  Der Zeitstempel trägt nur den UTC-Tag, keine Uhrzeit: Sonst ließe sich eine Aussage,
+  die eine Suche angelegt hat, über ihren Anlagezeitpunkt einem Suchereignis und damit
+  einem Tagespseudonym zuordnen. Bestandsumgebungen schneiden alte Uhrzeiten mit
+  `mvp/backend/postgres-app/migrations/2026-10-26-search-events-nur-tag.sql` ab, danach
+  `VACUUM FULL search_events`. In Backups stehen die alten Uhrzeiten, bis diese
+  herausrotiert sind.
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche und Anzahl, weder
   Kennung noch Pseudonym: nichts, was sich einer Person zuordnen ließe. Wochen älter als
   acht löscht ein täglicher Task von selbst (`services/suchen_ohne_treffer_service.py`,

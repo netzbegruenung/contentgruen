@@ -116,6 +116,10 @@ class SearchEvent(Base):
     actor_hash is a keyed SHA-256 over the user or session id plus the UTC date,
     so it cannot be resolved back to a person and cannot be correlated across day
     boundaries. See SearchTrackingService._derive_actor_hash.
+
+    timestamp holds only the UTC day (midnight UTC), never the time of day: an
+    exact time could be matched against the creation time of the statement the
+    same search created, and so tie the statement to the daily pseudonym.
     """
 
     __tablename__ = "search_events"
@@ -124,7 +128,11 @@ class SearchEvent(Base):
     actor_hash = Column(String(64), nullable=True)
     results_count = Column(Integer, default=0, nullable=False)
     timestamp = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=text(
+            "(date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')"
+        ),
+        nullable=False,
     )
 
     # Indexes for performance

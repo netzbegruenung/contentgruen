@@ -6,7 +6,7 @@ or search text may reach the repository, and the stored pseudonym must not be
 correlatable across day boundaries.
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -107,7 +107,7 @@ class TestTrackSearch:
         service.track_search(results_count=5, user_id="alice", session_id="sess-1")
 
         _, kwargs = mock_repository.track_search.call_args
-        assert set(kwargs) == {"results_count", "actor_hash"}
+        assert set(kwargs) == {"results_count", "actor_hash", "tag"}
         assert kwargs["results_count"] == 5
         assert "alice" not in kwargs["actor_hash"]
         assert "sess-1" not in kwargs["actor_hash"]
@@ -125,3 +125,28 @@ class TestTrackSearch:
     ):
         assert service.track_search(results_count=-1) is False
         mock_repository.track_search.assert_not_called()
+
+    def test_track_search_passes_only_the_utc_day(self, service, mock_repository):
+        """Kein Zeitpunkt, nur der Tag: Sonst liesse sich ein Suchereignis ueber
+        die Uhrzeit mit der Aussage verbinden, die dieselbe Suche angelegt hat."""
+        moment = datetime(2026, 10, 26, 23, 30, tzinfo=timezone.utc)
+        with patch("services.search_tracking_service.datetime") as mock_datetime:
+            mock_datetime.now.return_value = moment
+            service.track_search(results_count=0, user_id="alice")
+
+        _, kwargs = mock_repository.track_search.call_args
+        assert kwargs["tag"] == date(2026, 10, 26)
+        assert not isinstance(kwargs["tag"], datetime)
+
+    def test_track_search_pseudonym_and_day_belong_to_the_same_moment(
+        self, service, mock_repository
+    ):
+        moment = datetime(2026, 10, 26, 23, 59, 59, tzinfo=timezone.utc)
+        with patch("services.search_tracking_service.datetime") as mock_datetime:
+            mock_datetime.now.return_value = moment
+            service.track_search(results_count=1, user_id="alice")
+
+        _, kwargs = mock_repository.track_search.call_args
+        assert kwargs["actor_hash"] == SearchTrackingService._derive_actor_hash(
+            user_id="alice", moment=moment
+        )

@@ -229,6 +229,13 @@ Gelöscht wird ausschließlich aus `usage_events`
 `TRUNCATE` (`:25`) plus `VACUUM FULL` (`:42`) verworfen. Begründung im ORM dokumentiert
 (`models.py:109-118`).
 
+**Nachtrag 2026-10-26 (#239):** `timestamp` trägt nur noch den UTC-Tag (Mitternacht UTC),
+keine Uhrzeit. Der Dienst setzt ihn selbst (`search_tracking_repository.py`, `track_search`),
+der Server-Default schneidet ebenfalls auf den Tag ab, der Altbestand ist per
+`migrations/2026-10-26-search-events-nur-tag.sql` abgeschnitten. Grund: Eine Suche kann eine
+Aussage anlegen (siehe unten), deren Anlagezeitpunkt in Qdrant genau ist; über eine genaue
+Uhrzeit am Suchereignis ließe sich die Aussage dem Tagespseudonym zuordnen.
+
 **Lesen:** ausschließlich aggregiert über `GET /api/v1/metrics/daily-active-users`
 (`api/v1/metrics.py:217-221`) und `/searches-per-user` (`:246-250`). Beide verlangen seit
 PR #29 `Depends(require_admin)`; am BFF ist von `/api/v1/metrics/` nur noch der einzelne
