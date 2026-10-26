@@ -14,9 +14,10 @@ class Image(BaseContent):
     A captioned image captured as searchable political content.
 
     The 'text' field (inherited from BaseContent, overridden to Optional here) holds
-    the caption used for semantic search. In Phase A the router enforces a non-empty
-    caption before accepting the submission. In Phase B the field may be None on
-    creation; the background worker fills it after calling the vision AI.
+    the Unterschrift used for semantic search. New images need one (AddImageRequest);
+    an AI suggestion counts only once the person takes it over (ADR 0003). The field
+    stays Optional so that entries without Unterschrift from before #281
+    (pending_description) can still be read.
 
     Attributes:
     -----------
@@ -25,10 +26,10 @@ class Image(BaseContent):
     image_url: str
         Publicly accessible URL of the image.
     text: Optional[str]
-        Caption / AI-generated description used as the embedded search text.
-        None until the background worker fills it (Phase B path only).
+        Unterschrift, the embedded search text. None only for entries from before #281.
     description_model: Optional[str]
-        Identifier of the AI model that generated 'text'; None for user-supplied captions.
+        Identifier of the AI model that generated 'text'. Only the former background
+        worker set it; whether a taken-over suggestion is labelled is open (#223).
     """
 
     content_type: ContentType = ContentType.IMAGE

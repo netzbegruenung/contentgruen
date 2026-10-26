@@ -8,13 +8,9 @@ rung-2 Image type. Verifies:
   entry stored as VISIBLE, all Image-specific fields survive the round-trip,
   and the image is semantically searchable.
 
-* test_image_roundtrip_phase_b -- no caption (Phase B): entry stored as
-  PENDING_DESCRIPTION with text=None; the item is retrievable by id even before
-  the AI description worker fills it.
-
-* test_image_phase_b_to_phase_a_update -- updating an existing Phase-B entry
-  with a caption (simulating the background worker result) makes the image
-  searchable.
+* test_image_altbestand_ohne_unterschrift -- an entry without Unterschrift from
+  before #281 (PENDING_DESCRIPTION, text=None) stays readable by id and never
+  shows up in search. New ones are no longer created (ADR 0003).
 
 All tests auto-skip when Qdrant is not reachable.
 """
@@ -98,8 +94,10 @@ async def test_image_roundtrip_phase_a(integration_settings, real_repository_fac
     assert any(h.id == item_id for h in hits)
 
 
-async def test_image_roundtrip_phase_b(integration_settings, real_repository_factory):
-    """Phase B: no caption — entry stored as PENDING_DESCRIPTION, retrievable by id."""
+async def test_image_altbestand_ohne_unterschrift(
+    integration_settings, real_repository_factory
+):
+    """Altbestand von vor #281: ohne Unterschrift lesbar, aber nie in der Suche."""
     spec = REGISTRY[ContentType.IMAGE]
     service = create_content_service(
         spec, integration_settings, real_repository_factory
@@ -128,44 +126,3 @@ async def test_image_roundtrip_phase_b(integration_settings, real_repository_fac
     # PENDING_DESCRIPTION items must never appear in search results (status filter gate)
     hits = await service.search("Unbekannte Klimademo", limit=10)
     assert not any(h.id == item_id for h in hits)
-
-
-async def test_image_phase_b_to_phase_a_update(
-    integration_settings, real_repository_factory
-):
-    """Simulates the AI worker filling in a caption for a PENDING_DESCRIPTION image."""
-    spec = REGISTRY[ContentType.IMAGE]
-    service = create_content_service(
-        spec, integration_settings, real_repository_factory
-    )
-
-    item_id = uuid.uuid4()
-    phase_b_entry = _make_image_entry(
-        item_id,
-        title="Solaranlage Dachfläche",
-        image_url="https://example.com/solar.jpg",
-        text=None,
-        status=ContentStatus.PENDING_DESCRIPTION,
-    )
-    await service._upsert(phase_b_entry)
-
-    # Simulate worker: fill caption and make the image visible
-    now = datetime.datetime.now()
-    phase_a_entry = ImageDbEntry(
-        **{
-            **phase_b_entry.model_dump(),
-            "text": "Solarmodule auf dem Dach eines Gemeindezentrums in Bayern",
-            "description_model": "gpt-4o",
-            "status": ContentStatus.VISIBLE,
-            "last_modified": now,
-        }
-    )
-    await service._upsert(phase_a_entry)
-
-    fetched = await service.get(item_id)
-    assert fetched.text == "Solarmodule auf dem Dach eines Gemeindezentrums in Bayern"
-    assert fetched.description_model == "gpt-4o"
-    assert fetched.status == ContentStatus.VISIBLE
-
-    hits = await service.search("Solarmodule Gemeindezentrum", limit=5)
-    assert any(h.id == item_id for h in hits)

@@ -85,6 +85,12 @@
                             <mat-spinner *ngIf="captionLoading" diameter="20"></mat-spinner>
                         </div>
 
+                        <p *ngIf="vorschlagEingesetzt" class="vorschlag-hinweis">
+                            <mat-icon>info</mat-icon>
+                            Das ist ein Vorschlag der KI. Prüfe und bearbeite ihn; gespeichert wird erst
+                            mit „Bild speichern“, und dann stehst du als Autor dafür ein.
+                        </p>
+
                         <div *ngIf="captionError" class="caption-error-message">
                             <mat-icon>warning</mat-icon>
                             {{ captionError }}

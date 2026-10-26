@@ -4,10 +4,11 @@ from enum import Enum
 class ContentStatus(Enum):
     """
     Zustand eines Beitrags (GLOSSARY.md, "Zustaende eines Beitrags"): sichtbar,
-    gesperrt oder geloescht. Dazu kommen zwei technische Arbeitsstaende des
-    Hintergrunddienstes fuer ein hochgeladenes Bild ohne Unterschrift. Das ist noch
+    gesperrt oder geloescht. Dazu kommen zwei Altwerte fuer Bilder ohne Unterschrift
+    aus der Zeit, als ein Hintergrunddienst sie nachbeschrieb (bis #281). Das ist
     kein Bild im Sinne des Glossars ("Ein Bild mit Unterschrift") und damit kein
-    Beitrag, den jemand finden kann.
+    Beitrag, den jemand finden kann. Neu angelegt werden sie nicht mehr: Ein Bild
+    wird nur mit Unterschrift gespeichert (ADR 0003).
 
     Die Suche findet nur VISIBLE. Einzelansicht, Listen und "Meine Beitraege"
     blenden BLOCKED und DELETED aus (repositories/implementations/qdrant/
@@ -30,17 +31,17 @@ class ContentStatus(Enum):
     """Geloescht: Der Autor hat den Beitrag entfernt."""
 
     PENDING_DESCRIPTION = "pending_description"
-    """Bild ohne Unterschrift; der Hintergrunddienst erzeugt eine."""
+    """Altwert: Bild ohne Unterschrift, das auf den frueheren Hintergrunddienst wartete."""
 
     DESCRIPTION_FAILED = "description_failed"
-    """Der Hintergrunddienst konnte keine Unterschrift erzeugen."""
+    """Altwert: Der fruehere Hintergrunddienst konnte keine Unterschrift erzeugen."""
 
 
 NEW_CONTENT_STATUS = ContentStatus.VISIBLE
 """
 Zustand, mit dem neue Beitraege angelegt werden - der eine Ort, an dem diese
-Entscheidung faellt. Alle Anlagewege in api/v1, Seeding und der Bild-Worker
-beziehen sich hierauf. Neue Beitraege sind sofort sichtbar.
+Entscheidung faellt. Alle Anlagewege in api/v1 und Seeding beziehen sich
+hierauf. Neue Beitraege sind sofort sichtbar.
 """
 
 AUSGEBLENDET = frozenset({ContentStatus.BLOCKED, ContentStatus.DELETED})

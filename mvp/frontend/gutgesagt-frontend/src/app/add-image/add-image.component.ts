@@ -59,6 +59,8 @@ export class AddImageComponent implements OnDestroy {
   imageError: string | null = null;
   captionLoading = false;
   captionError: string | null = null;
+  /** Die Unterschrift kam als KI-Vorschlag; gespeichert wird sie erst mit „Bild speichern“ (ADR 0003). */
+  vorschlagEingesetzt = false;
   responseId: string = '';
 
   constructor(
@@ -131,6 +133,7 @@ export class AddImageComponent implements OnDestroy {
     this.imageService.suggestCaption({ image_url: imageUrl }).subscribe({
       next: (response) => {
         this.imageForm.get('caption')?.setValue(response.suggested_caption);
+        this.vorschlagEingesetzt = true;
         this.captionLoading = false;
       },
       error: (error) => {
@@ -147,6 +150,7 @@ export class AddImageComponent implements OnDestroy {
     this.imageSaved = false;
     this.imageError = null;
     this.captionError = null;
+    this.vorschlagEingesetzt = false;
     this.imageForm.reset();
     this.updatePreview(this.imageForm.value);
   }

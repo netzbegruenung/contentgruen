@@ -100,7 +100,7 @@ class ContentTypeSpec:
 REGISTRY: dict[ContentType, ContentTypeSpec] = {
     ContentType.COMMENTARY:    ContentTypeSpec(..., ingestion=DirectText()),
     ContentType.GENERIC_TEXT:  ContentTypeSpec(..., ingestion=DirectText()),
-    ContentType.IMAGE:         ContentTypeSpec(..., ingestion=AiVisionDescription(client)),
+    ContentType.IMAGE:         ContentTypeSpec(..., ingestion=DirectText()),  # Unterschrift by the person
     ...
 }
 ```
@@ -119,12 +119,11 @@ class IngestionStrategy(Protocol):
 class DirectText:        # comment, generic_text, speech transcript, paper abstract
     async def derive_text(self, raw): return DerivedContent(text=raw.text)
 
-class AiVisionDescription:   # image, graphic
-    def __init__(self, client): self._client = client
-    async def derive_text(self, raw):
-        description = await self._client.describe(raw.image_url)   # external AI call
-        return DerivedContent(text=description, extra={"image_url": raw.image_url})
 ```
+
+An AI-derived ingestion (e.g. describing an image) is not a strategy here: by ADR 0003 an AI text
+reaches the Vorrat only after a person takes it over. The image form fetches a suggestion
+(`POST /image/suggestCaption`) and the person saves it as the Unterschrift (#281).
 
 **3. Per-type models (Seam 2)** stay tiny — just the extra fields:
 
@@ -145,27 +144,13 @@ duplicated commentary/generictext branches and the four-times-repeated scoring f
 requested content types, applying one shared scoring step and one `enrich(item)` step. `search.py`
 is now ~280 lines and new types are searched automatically — no new branch.
 
-### Asynchronous ingestion for AI-dependent types
+### No asynchronous AI ingestion
 
-Types whose ingestion calls an external service must not block creation or search:
-
-```
-POST image ──▶ persist row {status: PENDING_DESCRIPTION, image_url} ──▶ 202 Accepted
-                       │
-            background ▼  (queue / task)
-              AiVisionDescription.derive_text()
-                       │
-                 success ▼                         failure ▼
-        text + embedding stored,            status: DESCRIPTION_FAILED
-        status: NEW_CONTENT_STATUS          (retryable; surfaced in moderation)
-        (sofort auffindbar)
-```
-
-*(shipped — `services/vision/image_description_worker.py`.)* The `ContentStatus` enum carries
-`PENDING_DESCRIPTION` and `DESCRIPTION_FAILED` next to the three states of a Beitrag (visible,
-blocked, deleted); search only finds `visible`, so an image is found once it has its caption.
-The worker writes only text, embedding and model name, and changes the status only while the item
-is still `PENDING_DESCRIPTION`: an image blocked (gesperrt) during the description stays blocked (#251).
+An earlier version stored captionless images as `PENDING_DESCRIPTION` and let a background worker
+write the caption and make the image visible. That contradicted ADR 0003 and was removed (#281):
+`/image/addImage` rejects an image without Unterschrift (422). `PENDING_DESCRIPTION` and
+`DESCRIPTION_FAILED` remain in `ContentStatus` only so that such entries from before stay readable;
+search never finds them.
 
 ## Frontend design (Angular)
 
@@ -270,7 +255,8 @@ The backend test suite (well-covered) was the safety net.
 7. ✅ **First new type via the new path** — `post` (not `speech`) served as the proof that adding a
    type is now a registry entry + fields + fragment.
 8. ✅ **Image/graphic type** with the `AiVisionDescription` ingestion strategy and the async
-   description lifecycle — the worked example that validates the media path.
+   description lifecycle — the worked example that validates the media path. The async
+   description was removed again in #281 (ADR 0003); the Unterschrift now comes from the person.
 
 Steps 1–2 were low-risk prep; 3–6 were the structural payoff; 7–8 proved the result.
 

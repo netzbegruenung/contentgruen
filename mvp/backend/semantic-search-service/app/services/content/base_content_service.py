@@ -269,15 +269,6 @@ class BaseContentService(
         )
         return await self._repository.get_all(limit, offset)
 
-    async def get_by_status(
-        self, status: ContentStatus, limit: int
-    ) -> List[TContentDbEntry]:
-        """Get items filtered by lifecycle status (used by the description worker)."""
-        logger.debug(
-            f"BaseContentService ({self._repository_class.__name__}): Getting items with status {status}"
-        )
-        return await self._repository.get_by_status(status, limit)
-
     async def update_status(
         self,
         item_id: uuid.UUID,
@@ -292,12 +283,3 @@ class BaseContentService(
             f"BaseContentService ({self._repository_class.__name__}): Updating status of {item_id} to {new_status}"
         )
         await self._repository.update_status(item_id, new_status, nur_aus=nur_aus)
-
-    async def unterschrift_setzen(
-        self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
-    ) -> None:
-        """Set Unterschrift (text) and vector only; status and Sperre stay as they are."""
-        logger.debug(
-            f"BaseContentService ({self._repository_class.__name__}): Setting text of {item_id}"
-        )
-        await self._repository.unterschrift_setzen(item_id, text, extra)

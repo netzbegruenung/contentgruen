@@ -72,6 +72,24 @@ describe('AddImageComponent', () => {
     flush();
   }));
 
+  it('setzt den KI-Vorschlag als bearbeitbare Unterschrift ein und speichert nichts von selbst', () => {
+    const component = fixture.componentInstance;
+    const imageService = TestBed.inject(ImageService);
+    spyOn(imageService, 'suggestCaption').and.returnValue(
+      of({ suggested_caption: 'Solarmodule auf einem Schuldach in Freiburg.' }),
+    );
+    const senden = spyOn(imageService, 'addImage');
+    component.imageForm.patchValue({ image_url: 'https://example.org/bild.jpg' });
+
+    component.suggestCaption();
+    fixture.detectChanges();
+
+    expect(component.imageForm.value.caption).toBe('Solarmodule auf einem Schuldach in Freiburg.');
+    const hinweis: HTMLElement | null = fixture.nativeElement.querySelector('.vorschlag-hinweis');
+    expect(hinweis?.textContent).toContain('Vorschlag');
+    expect(senden).not.toHaveBeenCalled();
+  });
+
   it('beschreibt den Typ mit dem Satz aus der Registry', () => {
     expect(fixture.nativeElement.querySelector('.content-type-description').textContent.trim()).toBe(
       'Ein Bild mit Unterschrift, das für sich spricht.',
