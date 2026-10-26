@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Linq;
 using BFF.Proxy;
+using BFF.Logging;
+using BFF.Tests.Logging;
 
 namespace BFF.Tests.Proxy;
 
@@ -379,5 +381,24 @@ public class IdentityHeaderTransformTests
             Logger);
 
         Assert.Equal(new[] { "session-abc" }, ValuesOf(proxyRequest, IdentityHeaderTransform.SessionHeader));
+    }
+
+    [Fact]
+    public void Apply_AdminUser_LogsOnlyThePseudonym()
+    {
+        // Auch auf Debug: der Dev-Stack laeuft auf Debug, und die Zeile entsteht bei jeder
+        // angemeldeten Anfrage (#277).
+        var logger = new CapturingLogger<IdentityHeaderTransformTests>();
+
+        IdentityHeaderTransform.Apply(
+            new HttpRequestMessage(),
+            AuthenticatedUser("echte-kennung", isAdmin: true),
+            ProtectedPath,
+            new HeaderDictionary(),
+            NoAllowlist,
+            logger);
+
+        Assert.DoesNotContain("echte-kennung", logger.Text);
+        Assert.Contains(LogPseudonym.Of("echte-kennung"), logger.Text);
     }
 }

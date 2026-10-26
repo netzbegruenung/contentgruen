@@ -10,6 +10,8 @@ using System.Text.Json;
 using BFF.Controllers;
 using BFF.Services;
 using BFF.Models;
+using BFF.Logging;
+using BFF.Tests.Logging;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
@@ -197,6 +199,21 @@ public class AuthControllerTests : IDisposable
 
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
+    }
+
+    [Fact]
+    public async Task LoginManaged_LogsOnlyThePseudonym_WhenValidCredentials()
+    {
+        var logger = new CapturingLogger<AuthController>();
+        var controller = new AuthController(_userService, _configuration, logger)
+        {
+            ControllerContext = new ControllerContext { HttpContext = _httpContext }
+        };
+
+        await controller.LoginManaged(new LoginRequest { Email = KnownEmail, Password = KnownPassword });
+
+        Assert.DoesNotContain(KnownUserId, logger.Text);
+        Assert.Contains(LogPseudonym.Of(KnownUserId), logger.Text);
     }
 
     [Fact]

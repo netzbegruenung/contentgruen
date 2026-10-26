@@ -5,6 +5,8 @@ using Moq;
 using System.Collections.Generic;
 using BFF.Services;
 using BFF.Models;
+using BFF.Logging;
+using BFF.Tests.Logging;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
@@ -223,7 +225,7 @@ public class ManagedUserServiceTests
                     LogLevel.Error,
                     It.IsAny<EventId>(),
                     It.Is<It.IsAnyType>((v, t) =>
-                        v.ToString()!.Contains($"userId {reservedId} rejected")
+                        v.ToString()!.Contains($"userId {LogPseudonym.Of(reservedId)} rejected")
                         && !v.ToString()!.Contains("@")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
@@ -261,6 +263,37 @@ public class ManagedUserServiceTests
         Assert.False(ManagedUserService.IsReservedUserId("Ehemalige-Person"));
         Assert.False(ManagedUserService.IsReservedUserId("user-001"));
         Assert.False(ManagedUserService.IsReservedUserId(""));
+    }
+
+    // Die Kennung steht ab Information nicht im Klartext im Log (#277), auch nicht beim
+    // Fehlversuch. Pseudonymisiert wie im Suchdienst, damit Zeilen beider Dienste
+    // zusammenpassen.
+    [Fact]
+    public async Task ValidateUserAsync_LogsOnlyThePseudonym_OnSuccessAndWrongPassword()
+    {
+        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        try
+        {
+            var logger = new CapturingLogger<ManagedUserService>();
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "MANAGED_USERS_PATH", path },
+                    { "ENABLE_MANAGED_AUTH", "true" }
+                })
+                .Build();
+            var service = new ManagedUserService(logger, configuration);
+
+            Assert.NotNull(await service.ValidateUserAsync("ok@example.com", KnownPassword));
+            Assert.Null(await service.ValidateUserAsync("ok@example.com", "falsch"));
+
+            Assert.DoesNotContain("user-001", logger.Text);
+            Assert.Equal(2, logger.Lines.FindAll(l => l.Contains(LogPseudonym.Of("user-001"))).Count);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     private const string KnownPassword = "Passwort1!";

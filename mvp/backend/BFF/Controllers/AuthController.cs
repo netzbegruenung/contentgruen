@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using System.Security.Claims;
+using BFF.Logging;
 using BFF.Models;
 using BFF.Services;
 
@@ -117,7 +118,7 @@ public class AuthController : ControllerBase
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
 
-        _logger.LogInformation("User {UserId} logged in successfully via managed auth", user.UserId);
+        _logger.LogInformation("User {UserId} logged in successfully via managed auth", LogPseudonym.Of(user.UserId));
 
         return Ok(new
         {
