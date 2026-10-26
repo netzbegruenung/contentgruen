@@ -52,7 +52,7 @@ const LESENDE_POSTS = [
 ];
 
 /**
- * Der Fangkorb ist ein gemeinsamer Arbeitsstapel: Andere Mitwirkende aendern ihn
+ * Der Fangkorb ist der gemeinsame Vorrat aller Einwuerfe: Andere Mitwirkende aendern ihn
  * laufend, und was jemand als naechstes destilliert, haengt an der aktuellen Stufe.
  * Ein Stand von vor fuenf Minuten fuehrte zu doppelter Arbeit, daher kein Cache.
  */
@@ -65,14 +65,15 @@ const NIE_CACHEN = ['/api/v1/rawinput/'];
  */
 let aenderungen = 0;
 
-function pfad(url: string): string {
-  return new URL(url, window.location.origin).pathname;
+/** Liegt der Pfad der Anfrage unter einem der Pfade? */
+function pfadUnter(req: HttpRequest<unknown>, pfade: string[]): boolean {
+  const pfad = new URL(req.url, window.location.origin).pathname;
+  return pfade.some((p) => pfad.includes(p));
 }
 
 function istAenderung(req: HttpRequest<unknown>): boolean {
   if (req.method === 'POST') {
-    const p = pfad(req.url);
-    return !LESENDE_POSTS.some((lesend) => p.endsWith(lesend));
+    return !pfadUnter(req, LESENDE_POSTS);
   }
   return req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE';
 }
@@ -99,8 +100,7 @@ export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  const urlPfad = pfad(req.url);
-  if (NIE_CACHEN.some((nie) => urlPfad.includes(nie))) {
+  if (pfadUnter(req, NIE_CACHEN)) {
     return next(req);
   }
 
@@ -113,15 +113,15 @@ export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // Forward request and cache the response
-  const stand = aenderungen;
+  const aenderungenBeiAnfrage = aenderungen;
   return next(req).pipe(
     tap(event => {
-      if (event instanceof HttpResponse && stand === aenderungen) {
+      if (event instanceof HttpResponse && aenderungenBeiAnfrage === aenderungen) {
         cacheService.set(cacheKey, event);
       }
     })
   );
 };
 
-// Export cache service for manual cache management
+// Exported for the tests, which start each case with an empty cache
 export { cacheService };

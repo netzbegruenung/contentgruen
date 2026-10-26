@@ -110,7 +110,7 @@ describe('cacheInterceptor', () => {
   });
 
   describe('Spec: Stufenwechsel eines Einwurfs', () => {
-    it('die Fangkorb-Abfrage liefert danach ohne Wartezeit den neuen Stand', () => {
+    it('Fangkorb und gecachte Listen liefern danach ohne Wartezeit den neuen Stand', () => {
       const einwuerfe = TestBed.inject(EinwurfService);
       const fangkorb = `${api}/rawinput/getRawInputs?page=1&page_size=20`;
       const stufen: string[] = [];
@@ -121,6 +121,9 @@ describe('cacheInterceptor', () => {
 
       laden();
       httpMock.expectOne(fangkorb).flush({ results: [{ id: 'id-1', status: 'open' }] });
+      // Eine Liste, die im Cache liegt, etwa die eigenen Beitraege
+      holen(`${api}/contribution/getContributionsOfUser`);
+      httpMock.expectOne(`${api}/contribution/getContributionsOfUser`).flush({ stand: 'alt' });
 
       einwuerfe.updateStatus('id-1', 'discarded').subscribe();
       httpMock.expectOne(`${api}/rawinput/id-1/status`).flush({ id: 'id-1', status: 'discarded' });
@@ -128,7 +131,11 @@ describe('cacheInterceptor', () => {
       laden();
       httpMock.expectOne(fangkorb).flush({ results: [{ id: 'id-1', status: 'discarded' }] });
 
+      const liste = holen(`${api}/contribution/getContributionsOfUser`);
+      httpMock.expectOne(`${api}/contribution/getContributionsOfUser`).flush({ stand: 'neu' });
+
       expect(stufen).toEqual(['open', 'discarded']);
+      expect(liste).toEqual([{ stand: 'neu' }]);
     });
   });
 });
