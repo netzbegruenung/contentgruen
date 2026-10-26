@@ -67,6 +67,19 @@ class IEmbeddingsManager(ABC):
         pass
 
     @abstractmethod
+    async def update_vector(self, point_id: str, text: str, content_type: str) -> None:
+        """
+        Re-embed text and replace only the vector of an existing point; the
+        payload stays untouched.
+
+        Args:
+            point_id: ID of the point
+            text: Text to embed
+            content_type: Type of content, selects the encoding as in upsert_batch
+        """
+        pass
+
+    @abstractmethod
     async def get_by_id(self, item_id: str) -> Optional[Dict[str, Any]]:
         """
         Get an item by its ID.

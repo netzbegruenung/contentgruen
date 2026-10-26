@@ -103,6 +103,13 @@ FREIGEGEBEN = frozenset(
 )
 """Gibt es mehrere normalisiert gleiche Eintraege, gewinnen diese vor den uebrigen."""
 
+FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
+"""
+Payload-Feld mit dem Status von vor der Sperre, damit Entsperren ihn
+wiederherstellt. Steht darin None (Altbestand ohne Status), entfernt Entsperren
+das Status-Feld wieder (repositories/implementations/qdrant/moderation_repository.py).
+"""
+
 
 def is_valid_transition(
     current_status: ContentStatus, new_status: ContentStatus
