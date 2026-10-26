@@ -16,7 +16,7 @@ from repositories.implementations.qdrant.moderation_repository import (
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
 from domain.models.content_type import ContentType
-from domain.models.content_status import FELD_STATUS_VOR_SPERRE, ContentStatus
+from domain.models.content_status import ContentStatus
 
 logger = logging.getLogger(__name__)
 

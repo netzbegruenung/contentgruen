@@ -82,7 +82,7 @@ def _gesperrt_bedingungen() -> list:
 
 
 # Payload-Felder, die Zustand und Sperre eines Beitrags tragen; status_vor_sperre
-# schreibt services/moderation_service.py. unterschrift_setzen fasst sie nicht an.
+# schreibt die Moderation (moderation_repository.py). unterschrift_setzen fasst sie nicht an.
 FELDER_DES_ZUSTANDS = frozenset({"status", FELD_STATUS_VOR_SPERRE})
 
 

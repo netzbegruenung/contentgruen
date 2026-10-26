@@ -107,7 +107,7 @@ FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 """
 Payload-Feld mit dem Status von vor der Sperre, damit Entsperren ihn
 wiederherstellt. Steht darin None (Altbestand ohne Status), entfernt Entsperren
-das Status-Feld wieder (services/moderation_service.py).
+das Status-Feld wieder (repositories/implementations/qdrant/moderation_repository.py).
 """
 
 

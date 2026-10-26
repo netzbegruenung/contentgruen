@@ -18,10 +18,17 @@ import pytest
 from domain.content_registry import REGISTRY, create_content_service
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_origin import ContentOrigin
-from domain.models.content_status import NEW_CONTENT_STATUS, ContentStatus
+from domain.models.content_status import (
+    FELD_STATUS_VOR_SPERRE,
+    NEW_CONTENT_STATUS,
+    ContentStatus,
+)
 from domain.models.content_type import ContentType
 from domain.models.image import ImageDbEntry
-from services.moderation_service import FELD_STATUS_VOR_SPERRE, ModerationService
+from repositories.implementations.qdrant.moderation_repository import (
+    QdrantModerationRepository,
+)
+from services.moderation_service import ModerationService
 from services.vision.image_description_worker import _description_worker
 from tests.integration.conftest import requires_qdrant
 
@@ -64,14 +71,12 @@ def image_service(integration_settings, real_repository_factory):
 
 @pytest.fixture
 def moderation(real_embeddings_manager):
-    with patch(
-        "services.moderation_service.get_content_report_repository",
-        return_value=MagicMock(),
-    ), patch(
-        "services.moderation_service.get_embeddings_manager",
-        return_value=real_embeddings_manager,
-    ):
-        yield ModerationService()
+    return ModerationService(
+        report_repo=MagicMock(),
+        moderation_repo=QdrantModerationRepository(
+            embeddings_manager=real_embeddings_manager
+        ),
+    )
 
 
 async def _ein_durchlauf(image_service, ingestion_strategy):
@@ -140,7 +145,7 @@ async def test_waehrend_beschreibung_gesperrtes_bild_bleibt_gesperrt(
 
     # Entsperren stellt den Zustand von vor der Sperre her; der Worker beschreibt
     # das Bild im naechsten Durchlauf erneut; erst dann wird es sichtbar.
-    assert await moderation.entsperren(str(item_id), "admin-1")
+    assert await moderation.entsperren(str(item_id))
     payload = await real_embeddings_manager.get_by_id(str(item_id))
     assert payload["status"] == ContentStatus.PENDING_DESCRIPTION.value
 
