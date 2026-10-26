@@ -5,7 +5,7 @@ repos:
         name: Run semantic search service unit tests
         entry: bash -c 'cd mvp/backend/semantic-search-service && if [ -f "./venv/Scripts/python.exe" ]; then PYTHON="./venv/Scripts/python.exe"; else PYTHON="./venv/bin/python"; fi && $PYTHON -m pytest app/tests/unit/ --ignore=app/tests/unit/services/test_seeding_implementation.py --tb=short -q'
         language: system
-        files: ^mvp/backend/semantic-search-service/
+        files: ^mvp/backend/(semantic-search-service|postgres-app/migrations)/
         pass_filenames: false
 
       - id: python-lint
