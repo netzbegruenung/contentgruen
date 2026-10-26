@@ -157,4 +157,6 @@ Lauf ohne Treffer zeigt, dass nichts mehr umzustellen ist.
 Danach die ausgegebenen Texte durchsehen. Macht ein Text die Person erkennbar, wird
 dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{id}` gelöscht — nicht
 direkt gegen Qdrant: nur der Endpunkt räumt verwaiste Antwortvorschläge auf
-(`services/moderation_service.py:186`) und schreibt einen Moderationsvermerk.
+(`QdrantModerationRepository.aus_aussagen_entfernen` in
+`repositories/implementations/qdrant/moderation_repository.py`) und schreibt einen
+Moderationsvermerk.

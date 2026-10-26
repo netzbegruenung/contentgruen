@@ -122,7 +122,7 @@ async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
     await post_service._upsert(_post(post_id))
     await moderation.sperren(str(post_id), gesperrt_von="admin-1")
 
-    assert await moderation.entsperren(str(post_id), entsperrt_von="admin-1") is True
+    assert await moderation.entsperren(str(post_id)) is True
 
     beitrag = await post_service.get(post_id)
     assert beitrag.status == ContentStatus.APPROVED
@@ -141,7 +141,10 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
     from qdrant_client.models import PointStruct
 
     beitrag_id, aussage_id, andere = (str(uuid.uuid4()) for _ in range(3))
-    vektor = [0.1] * 768
+    sammlung = await real_embeddings_manager.async_client.get_collection(
+        real_embeddings_manager.collection_name
+    )
+    vektor = [0.1] * sammlung.config.params.vectors.size
     await real_embeddings_manager.async_client.upsert(
         collection_name=real_embeddings_manager.collection_name,
         points=[

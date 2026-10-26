@@ -17,20 +17,24 @@ class IModerationRepository(ABC):
         pass
 
     @abstractmethod
-    async def sperren(self, beitrag_id: str, status_vorher: Optional[str]) -> None:
-        """Status auf gesperrt setzen und den Status von vorher fuer das Entsperren merken."""
-        pass
-
-    @abstractmethod
-    async def entsperren(self, beitrag_id: str) -> None:
+    async def sperren(self, beitrag: Dict[str, Any]) -> None:
         """
-        Den beim Sperren gemerkten Status zurueckschreiben. Ohne Status von vorher
-        (Altbestand) das Status-Feld entfernen.
+        Den mit laden geholten Beitrag sperren und seinen Status von vorher fuer
+        das Entsperren merken. Ist er schon gesperrt, passiert nichts.
         """
         pass
 
     @abstractmethod
-    async def gesperrte(self, limit: int) -> List[Dict[str, Any]]:
+    async def entsperren(self, beitrag: Dict[str, Any]) -> None:
+        """
+        Den mit laden geholten Beitrag entsperren: den beim Sperren gemerkten
+        Status zurueckschreiben, ohne Status von vorher (Altbestand) das
+        Status-Feld entfernen. Ist er nicht gesperrt, passiert nichts.
+        """
+        pass
+
+    @abstractmethod
+    async def gesperrte_laden(self, limit: int) -> List[Dict[str, Any]]:
         """Alle gesperrten Beitraege, hoechstens limit."""
         pass
 

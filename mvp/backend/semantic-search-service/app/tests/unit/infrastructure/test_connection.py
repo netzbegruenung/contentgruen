@@ -7,6 +7,7 @@ Bearbeiten einer Meldung etwa reviewed_by, also die Kennung des Admins.
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
 
 from infrastructure.database.connection import AppDatabase
 
@@ -18,7 +19,7 @@ def test_fehlermeldung_nennt_keine_parameter(monkeypatch):
     monkeypatch.delenv("APP_DATABASE_ECHO", raising=False)
     datenbank = AppDatabase("sqlite://")
 
-    with pytest.raises(Exception) as fehler:
+    with pytest.raises(DBAPIError) as fehler:
         with datenbank.engine.connect() as verbindung:
             verbindung.execute(
                 text("UPDATE fehlt SET reviewed_by = :wer"), {"wer": ADMIN_KENNUNG}

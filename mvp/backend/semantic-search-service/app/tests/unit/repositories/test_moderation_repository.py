@@ -47,7 +47,7 @@ def _payload(speicher, beitrag_id=BEITRAG_ID) -> dict:
 @pytest.mark.asyncio
 class TestLaden:
     async def test_laedt_auch_gesperrte(self, repo, speicher):
-        await repo.sperren(BEITRAG_ID, status_vorher="approved")
+        await repo.sperren(await repo.laden(BEITRAG_ID))
 
         beitrag = await repo.laden(BEITRAG_ID)
 
@@ -62,15 +62,15 @@ class TestLaden:
 @pytest.mark.asyncio
 class TestSperrenEntsperren:
     async def test_sperren_merkt_status_von_vorher(self, repo, speicher):
-        await repo.sperren(BEITRAG_ID, status_vorher="approved")
+        await repo.sperren(await repo.laden(BEITRAG_ID))
 
         assert _payload(speicher)["status"] == "blocked"
         assert _payload(speicher)["status_vor_sperre"] == "approved"
 
     async def test_entsperren_stellt_status_wieder_her(self, repo, speicher):
-        await repo.sperren(BEITRAG_ID, status_vorher="approved")
+        await repo.sperren(await repo.laden(BEITRAG_ID))
 
-        await repo.entsperren(BEITRAG_ID)
+        await repo.entsperren(await repo.laden(BEITRAG_ID))
 
         assert _payload(speicher)["status"] == "approved"
         assert "status_vor_sperre" not in _payload(speicher)
@@ -78,12 +78,27 @@ class TestSperrenEntsperren:
     async def test_entsperren_ohne_status_von_vorher_entfernt_status(
         self, repo, speicher
     ):
-        await repo.sperren(BEITRAG_ID, status_vorher=None)
+        await repo.sperren({"id": BEITRAG_ID})
 
-        await repo.entsperren(BEITRAG_ID)
+        await repo.entsperren(await repo.laden(BEITRAG_ID))
 
         assert "status" not in _payload(speicher)
         assert "status_vor_sperre" not in _payload(speicher)
+
+    async def test_zweites_sperren_behaelt_status_von_vorher(self, repo, speicher):
+        await repo.sperren(await repo.laden(BEITRAG_ID))
+
+        await repo.sperren(await repo.laden(BEITRAG_ID))
+
+        assert _payload(speicher)["status_vor_sperre"] == "approved"
+
+    async def test_entsperren_eines_nicht_gesperrten_aendert_nichts(
+        self, repo, speicher
+    ):
+        await repo.entsperren(await repo.laden(BEITRAG_ID))
+
+        assert _payload(speicher)["status"] == "approved"
+        speicher.async_client.delete_payload.assert_not_called()
 
 
 @pytest.mark.unit
@@ -95,9 +110,9 @@ class TestGesperrte:
             "reference",
             [{**create_base_content_fields(), "id": anderer, "status": "approved"}],
         )
-        await repo.sperren(BEITRAG_ID, status_vorher="approved")
+        await repo.sperren(await repo.laden(BEITRAG_ID))
 
-        gesperrte = await repo.gesperrte(limit=10)
+        gesperrte = await repo.gesperrte_laden(limit=10)
 
         assert [beitrag["id"] for beitrag in gesperrte] == [BEITRAG_ID]
 

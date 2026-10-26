@@ -98,7 +98,7 @@ class TestSperren:
     async def test_zweimal_sperren_behaelt_status_von_vorher(self, service, speicher):
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
-        await service.entsperren(CONTENT_ID, entsperrt_von="admin-1")
+        await service.entsperren(CONTENT_ID)
 
         assert _payload(speicher)["status"] == "approved"
 
@@ -111,7 +111,7 @@ class TestEntsperren:
     ):
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
 
-        assert await service.entsperren(CONTENT_ID, entsperrt_von="admin-1") is True
+        assert await service.entsperren(CONTENT_ID) is True
 
         assert _payload(speicher)["status"] == "approved"
         assert "status_vor_sperre" not in _payload(speicher)
@@ -124,19 +124,19 @@ class TestEntsperren:
         del _payload(speicher)["status"]
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
 
-        await service.entsperren(CONTENT_ID, entsperrt_von="admin-1")
+        await service.entsperren(CONTENT_ID)
 
         assert "status" not in _payload(speicher)
         assert "status_vor_sperre" not in _payload(speicher)
 
     async def test_entsperren_nicht_gesperrt_aendert_nichts(self, service, speicher):
-        assert await service.entsperren(CONTENT_ID, entsperrt_von="admin-1") is True
+        assert await service.entsperren(CONTENT_ID) is True
 
         assert _payload(speicher)["status"] == "approved"
         speicher.async_client.set_payload.assert_not_called()
 
     async def test_entsperren_unbekannter_beitrag(self, service):
-        assert await service.entsperren(str(uuid.uuid4()), entsperrt_von="a") is False
+        assert await service.entsperren(str(uuid.uuid4())) is False
 
 
 @pytest.mark.unit
@@ -207,7 +207,7 @@ class TestKeineAdminKennungImLog:
         caplog.set_level(logging.DEBUG)
 
         await service.sperren(CONTENT_ID, gesperrt_von=ADMIN_KENNUNG)
-        await service.entsperren(CONTENT_ID, entsperrt_von=ADMIN_KENNUNG)
+        await service.entsperren(CONTENT_ID)
 
         assert "gesperrt" in caplog.text and "entsperrt" in caplog.text
         assert ADMIN_KENNUNG not in caplog.text

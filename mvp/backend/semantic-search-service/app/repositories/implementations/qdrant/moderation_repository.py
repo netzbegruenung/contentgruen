@@ -43,18 +43,21 @@ class QdrantModerationRepository(IModerationRepository):
     async def laden(self, beitrag_id: str) -> Optional[Dict[str, Any]]:
         return await self._manager.get_by_id(beitrag_id)
 
-    async def sperren(self, beitrag_id: str, status_vorher: Optional[str]) -> None:
+    async def sperren(self, beitrag: Dict[str, Any]) -> None:
+        if beitrag.get("status") == ContentStatus.BLOCKED.value:
+            return
         await self._client.set_payload(
             collection_name=self._collection,
             payload={
                 "status": ContentStatus.BLOCKED.value,
-                FELD_STATUS_VOR_SPERRE: status_vorher,
+                FELD_STATUS_VOR_SPERRE: beitrag.get("status"),
             },
-            points=[beitrag_id],
+            points=[beitrag["id"]],
         )
 
-    async def entsperren(self, beitrag_id: str) -> None:
-        beitrag = await self.laden(beitrag_id) or {}
+    async def entsperren(self, beitrag: Dict[str, Any]) -> None:
+        if beitrag.get("status") != ContentStatus.BLOCKED.value:
+            return
         status_vorher = beitrag.get(FELD_STATUS_VOR_SPERRE)
 
         # Zwei Schreibvorgaenge; scheitert der zweite, bleibt nur das Hilfsfeld
@@ -63,16 +66,16 @@ class QdrantModerationRepository(IModerationRepository):
             await self._client.set_payload(
                 collection_name=self._collection,
                 payload={"status": status_vorher},
-                points=[beitrag_id],
+                points=[beitrag["id"]],
             )
             entfernen = [FELD_STATUS_VOR_SPERRE]
         else:
             entfernen = ["status", FELD_STATUS_VOR_SPERRE]
         await self._client.delete_payload(
-            collection_name=self._collection, keys=entfernen, points=[beitrag_id]
+            collection_name=self._collection, keys=entfernen, points=[beitrag["id"]]
         )
 
-    async def gesperrte(self, limit: int) -> List[Dict[str, Any]]:
+    async def gesperrte_laden(self, limit: int) -> List[Dict[str, Any]]:
         punkte, _ = await self._client.scroll(
             collection_name=self._collection,
             scroll_filter=_nur("status", ContentStatus.BLOCKED.value),

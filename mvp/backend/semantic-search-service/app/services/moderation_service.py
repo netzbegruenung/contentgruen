@@ -211,10 +211,7 @@ class ModerationService:
             logger.warning(f"Content {content_id} not found")
             return False
 
-        if beitrag.get("status") != ContentStatus.BLOCKED.value:
-            await self.moderation_repo.sperren(
-                content_id, status_vorher=beitrag.get("status")
-            )
+        await self.moderation_repo.sperren(beitrag)
 
         updated_count = self.report_repo.update_reports_by_content_id(
             content_id=UUID(content_id),
@@ -228,7 +225,7 @@ class ModerationService:
         )
         return True
 
-    async def entsperren(self, content_id: str, entsperrt_von: str) -> bool:
+    async def entsperren(self, content_id: str) -> bool:
         """
         Eine Sperre aufheben: Der Beitrag bekommt den Status von vor der Sperre
         zurueck und ist wieder so sichtbar wie vorher. Die Meldungen bleiben
@@ -245,7 +242,7 @@ class ModerationService:
         if beitrag.get("status") != ContentStatus.BLOCKED.value:
             return True
 
-        await self.moderation_repo.entsperren(content_id)
+        await self.moderation_repo.entsperren(beitrag)
         logger.info(f"Content {content_id} entsperrt")
         return True
 
@@ -259,7 +256,7 @@ class ModerationService:
         Loeschantrag entfernt die Meldungen der Person (docs/LOESCHKONZEPT.md),
         der gesperrte Beitrag bliebe dann fuer niemanden erreichbar.
         """
-        return await self.moderation_repo.gesperrte(limit)
+        return await self.moderation_repo.gesperrte_laden(limit)
 
     async def delete_content(
         self, content_id: str, content_type: str, deleted_by: str

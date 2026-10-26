@@ -274,9 +274,7 @@ async def entsperren(
         logger.info(f"Admin unblocking (entsperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
-        if not await moderation_service.entsperren(
-            str(content_id), entsperrt_von=admin_user
-        ):
+        if not await moderation_service.entsperren(str(content_id)):
             raise HTTPException(status_code=404, detail="Beitrag nicht gefunden")
 
         return SperreResponse(success=True, message=f"Beitrag {content_id} entsperrt")
