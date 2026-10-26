@@ -20,18 +20,17 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 
 ### 3. Test Environment
 - **Purpose**: Integration testing and demos
-- **Access**: https://gutgesagt-test.netzbegruenung.de (SaltStack-managed).
-- **Infrastructure**: Docker containers on test server
+- **Access**: https://gutgesagt-test.netzbegruenung.de
+- **Infrastructure**: Docker containers on verdigado's internal infrastructure
 - **Authentication**: Dummy auth (testuser/Liebe>Hass!)
-- **Management**: SaltStack state, deployed manually (`state.apply`, then `docker compose pull && up -d`)
+- **Management**: Rolled out manually on verdigado's internal infrastructure; details are documented internally
 
 ### 4. Production Environment
 - **Purpose**: Live system for Netzbegrünung members
-- **Access**: https://gutgesagt.netzbegruenung.de and
-  https://gutgesagt.netzbegruenung.verdigado.net (contentgruen.de redirects here, upstream of SaltStack)
-- **Infrastructure**: Docker containers managed by SaltStack
+- **Access**: https://gutgesagt.netzbegruenung.de (contentgruen.de redirects here)
+- **Infrastructure**: Docker containers on verdigado's internal infrastructure
 - **Authentication**: Keycloak SSO integration
-- **Management**: SaltStack automation
+- **Management**: Rolled out on verdigado's internal infrastructure; details are documented internally
 
 ## Service Architecture
 
@@ -137,11 +136,10 @@ listens on 5432 inside the container.
 
 ### Production Environment
 - **Frontend Container nginx**: Serves static files
-- **External nginx** (SaltStack managed):
+- **External nginx** (part of the operated infrastructure):
   - TLS termination
-  - Routes gutgesagt.netzbegruenung.de and gutgesagt.netzbegruenung.verdigado.net
-    → frontend container (127.0.0.1:3000)
-  - Routes bff.gutgesagt.netzbegruenung.de → BFF container (127.0.0.1:3001)
+  - Routes gutgesagt.netzbegruenung.de → frontend container
+  - Routes bff.gutgesagt.netzbegruenung.de → BFF container
   - Keycloak integration
 
 ## Authentication Flow
@@ -166,7 +164,7 @@ listens on 5432 inside the container.
 ### Docker Compose Files
 - **docker-compose.dev.yml**: Full stack for local Docker development
 - **docker-compose.local-dbs.yml**: Qdrant + PostgreSQL only, for local component-based development
-- **docker-compose.prd.yml**: Reference to SaltStack managed production
+- **docker-compose.prd.yml**: Placeholder; the production compose file is managed outside this repository
 
 ### Container Registry
 - Test/Prod images: `git.verdigado.com/netzbegruenung-images/*`
@@ -276,7 +274,7 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - TLS termination at nginx
 - Restricted CORS policy
 - Network isolation
-- Secrets managed by SaltStack
+- Secrets managed outside this repository
 
 ### Known gap: seeding router
 - `/api/v1/seeding/*` (`api/v1/seeding.py`) has no auth dependency. It is closed by the BFF
@@ -308,11 +306,8 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - GitHub Actions for automated builds (`.github/workflows/build.yml` on `main` and pull requests,
   `.github/workflows/release.yml` on `v*` tags)
 - Container registry at git.verdigado.com (`netzbegruenung-images`)
-- Test: runs the floating `:main` tag, deployed manually (Salt `state.apply`, then
-  `docker compose pull && docker compose up -d`). The Watchtower block still in the Salt state
-  is stuck in a restart loop (as of 2026-10-11) and is being removed (#22)
-- Production: SaltStack, with images pinned by digest and bumped by Renovate — deploys happen
-  when the Salt compose file is rewritten, not on a tag push
+- Test: runs the floating `:main` tag, rolled out manually by the operators
+- Production: pins `:latest` by digest; how it updates: `docs/DEPLOYMENT.md`, "Updating Production"
 
 ## Storage & Persistence
 
@@ -322,5 +317,5 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 
 ### Production
 - PostgreSQL with persistent volumes
-- Backup & restore with rotation (`mvp/scripts/backup/`), scheduled via SaltStack
+- Backup & restore with rotation (`mvp/scripts/backup/`), scheduled on verdigado's internal infrastructure
 - Migration tooling (planned)
