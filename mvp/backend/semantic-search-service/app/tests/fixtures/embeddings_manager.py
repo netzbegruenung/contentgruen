@@ -413,13 +413,15 @@ class TestEmbeddingsManager(IEmbeddingsManager):
     async def search_batch(
         self,
         query: str,
-        requests: List[tuple],
+        suchen: list,
         praefix: str = "query",
     ) -> List[List[Dict[str, Any]]]:
-        """Batch search: one search() per (content_type, filter_dict, limit)."""
+        """Batch search: one search() per Suchparameter."""
         return [
-            await self.search(query, content_type, limit, filter_dict, praefix)
-            for content_type, filter_dict, limit in requests
+            await self.search(
+                query, suche.content_type, suche.limit, suche.filter_dict, praefix
+            )
+            for suche in suchen
         ]
 
     async def upsert_batch(self, points: List[tuple], content_type: str) -> None:

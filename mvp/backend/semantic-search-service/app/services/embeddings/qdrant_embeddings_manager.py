@@ -30,7 +30,7 @@ from fastapi import FastAPI
 
 from core.config import EMBEDDING_MODELL, Settings
 from core.logging import get_logger
-from domain.interfaces.embeddings_manager import IEmbeddingsManager
+from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
 from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 
 logger = get_logger(__name__)
@@ -485,7 +485,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
     async def search_batch(
         self,
         query: str,
-        requests: List[Tuple[Optional[str], Optional[Dict[str, Any]], int]],
+        suchen: List[Suchparameter],
         praefix: Literal["query", "passage"] = "query",
     ) -> List[List[Dict[str, Any]]]:
         """
@@ -493,16 +493,16 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
         Args:
             query: Search query text
-            requests: Je Suche (content_type, filter_dict, limit), wie bei search()
+            suchen: Je Suche Beitragstyp, Filter und Limit, wie bei search()
             praefix: wie bei search()
 
         Returns:
-            Je Suche die Treffer, in der Reihenfolge von ``requests`` und in derselben
+            Je Suche die Treffer, in der Reihenfolge von ``suchen`` und in derselben
             Form wie search() - als liefe search() einmal je Eintrag.
         """
         if not self._is_started:
             raise RuntimeError("QdrantEmbeddingsManager not started.")
-        if not requests:
+        if not suchen:
             return []
 
         try:
@@ -515,12 +515,12 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                 requests=[
                     SearchRequest(
                         vector=query_vector,
-                        filter=self._suchfilter(content_type, filter_dict),
-                        limit=limit,
+                        filter=self._suchfilter(suche.content_type, suche.filter_dict),
+                        limit=suche.limit,
                         with_payload=True,
                         with_vector=False,
                     )
-                    for content_type, filter_dict, limit in requests
+                    for suche in suchen
                 ],
             )
 

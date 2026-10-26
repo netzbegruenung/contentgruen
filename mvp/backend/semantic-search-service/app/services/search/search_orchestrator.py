@@ -17,7 +17,7 @@ from typing import Callable, Dict, List, Optional, Type
 
 from core.logging import get_logger
 from services.anzeigename_service import kennungsfelder_leer
-from services.content.base_content_service import search_batch
+from services.content.base_content_service import BaseContentService
 from domain.models.content_type import ContentType
 
 logger = get_logger(__name__)
@@ -198,7 +198,7 @@ class SearchOrchestrator:
         # Eine Anfrage fuer alle Beitragstypen, je Typ mit eigenem Filter und Limit -
         # dieselben Treffer wie spec.service.search() je Typ (#304).
         specs = list(self._specs.values())
-        direct_results_per_spec = await search_batch(
+        direct_results_per_spec = await BaseContentService.search_batch(
             [spec.service for spec in specs], query_text, limit
         )
         for spec, direct_results in zip(specs, direct_results_per_spec):

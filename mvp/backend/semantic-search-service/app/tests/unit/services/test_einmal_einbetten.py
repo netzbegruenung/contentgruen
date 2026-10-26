@@ -3,14 +3,16 @@ Eine Einbettung und eine Anfrage an den Suchindex je Suche (#304).
 
 - einbettungen_teilen(): gleicher Text wird im Block nur einmal eingebettet.
 - QdrantEmbeddingsManager.search_batch(): mehrere Suchen, ein Vektor, eine Anfrage.
-- base_repository.search_batch(): je Repository dasselbe wie dessen search().
+- QdrantBaseRepository.search_batch() / BaseContentService.search_batch(): je
+  Repository bzw. Dienst dasselbe wie dessen search().
+- SearchOrchestrator.collect_direct(): dieselben Treffer wie mit einer Suche je Typ.
 
 Ohne Qdrant und ohne Modell: Client und Modell sind ersetzt.
 """
 
 import uuid
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 import pytest
@@ -18,7 +20,18 @@ from qdrant_client.models import FieldCondition, MatchValue
 
 from domain.models.commentary import CommentarySearchResult
 from domain.models.generic_text import GenericTextSearchResult
-from repositories.implementations.qdrant.base_repository import search_batch
+from domain.interfaces.embeddings_manager import Suchparameter
+from domain.models.content_type import ContentType
+from dtos.search import CommentarySearchResult as CommentaryWrapper
+from dtos.search import GenericTextSearchResult as GenericTextWrapper
+from repositories.implementations.qdrant.base_repository import QdrantBaseRepository
+from services.content.base_content_service import BaseContentService
+from services.content.commentary_service import CommentaryService
+from services.content.generic_text_service import GenericTextService
+from services.search.search_orchestrator import (
+    ContentTypeSearchSpec,
+    SearchOrchestrator,
+)
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
@@ -103,9 +116,9 @@ class TestManagerSearchBatch:
         treffer = await manager.search_batch(
             "Tempolimit jetzt",
             [
-                ("commentary", {"must_not": must_not}, 5),
-                ("generic_text", {"must_not": must_not}, 5),
-                ("post", None, 3),
+                Suchparameter("commentary", {"must_not": must_not}, 5),
+                Suchparameter("generic_text", {"must_not": must_not}, 5),
+                Suchparameter("post", None, 3),
             ],
         )
 
@@ -146,7 +159,9 @@ class TestRepositoriesSearchBatch:
 
     @pytest.mark.asyncio
     async def test_search_batch_liefert_je_repository_dessen_search(self, repositories):
-        gebuendelt = await search_batch(repositories, "tempolimit", 5)
+        gebuendelt = await QdrantBaseRepository.search_batch(
+            repositories, "tempolimit", 5
+        )
         einzeln = [await r.search("tempolimit", 5) for r in repositories]
 
         assert gebuendelt == einzeln
@@ -162,4 +177,75 @@ class TestRepositoriesSearchBatch:
         ).create_commentary_repository(test_settings)
 
         with pytest.raises(ValueError):
-            await search_batch([*repositories, fremd], "tempolimit", 5)
+            await QdrantBaseRepository.search_batch(
+                [*repositories, fremd], "tempolimit", 5
+            )
+
+
+class TestDiensteSearchBatch:
+    """Die Ebene, die der SearchOrchestrator ruft - ohne die Router-Fakes."""
+
+    @pytest.fixture
+    def dienste(self, test_settings, repository_factory, test_embeddings_manager):
+        test_embeddings_manager.add_test_data(
+            "commentary",
+            [
+                _payload("commentary", "Tempolimit rettet Leben"),
+                _payload("commentary", "Ohne Tempolimit mehr Unfaelle"),
+            ],
+        )
+        test_embeddings_manager.add_test_data(
+            "generic_text", [_payload("generic_text", "Tempolimit senkt CO2")]
+        )
+        return [
+            CommentaryService(test_settings, repository_factory),
+            GenericTextService(test_settings, repository_factory),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_search_batch_liefert_je_dienst_dessen_search(self, dienste):
+        gebuendelt = await BaseContentService.search_batch(dienste, "tempolimit", 5)
+        einzeln = [await d.search("tempolimit", 5) for d in dienste]
+
+        assert gebuendelt == einzeln
+        assert [len(t) for t in gebuendelt] == [2, 1]
+
+    @pytest.mark.asyncio
+    async def test_search_batch_ohne_dienste_leer(self):
+        assert await BaseContentService.search_batch([], "tempolimit", 5) == []
+
+    @pytest.mark.asyncio
+    async def test_collect_direct_wie_eine_suche_je_typ(self, dienste):
+        def orchestrator():
+            return SearchOrchestrator(
+                [
+                    ContentTypeSearchSpec(
+                        ContentType.COMMENTARY,
+                        dienste[0],
+                        CommentaryWrapper,
+                        "commentary_result",
+                    ),
+                    ContentTypeSearchSpec(
+                        ContentType.GENERIC_TEXT,
+                        dienste[1],
+                        GenericTextWrapper,
+                        "generictext_result",
+                    ),
+                ],
+                reference_service=MagicMock(),
+                usage_service=MagicMock(),
+                voting_service=MagicMock(),
+            )
+
+        async def je_typ(services, query_text, limit):
+            return [await s.search(query_text, limit) for s in services]
+
+        neu = orchestrator()
+        await neu.collect_direct("tempolimit", 5)
+        alt = orchestrator()
+        with patch.object(BaseContentService, "search_batch", je_typ):
+            await alt.collect_direct("tempolimit", 5)
+
+        for typ in (ContentType.COMMENTARY, ContentType.GENERIC_TEXT):
+            assert neu.results_for(typ) == alt.results_for(typ)
+        assert len(neu.results_for(ContentType.COMMENTARY)) == 2

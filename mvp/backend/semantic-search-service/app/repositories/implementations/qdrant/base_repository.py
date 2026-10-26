@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import datetime
 import json
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Generic
+from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Generic
 import os
 import uuid
 import logging
@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from core.config import Settings
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
-from domain.interfaces.embeddings_manager import IEmbeddingsManager
+from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
 from domain.models.base_content import (
     BaseContentDbEntry,
     BaseContentSearchResult,
@@ -41,30 +41,6 @@ NORMALISIERT_GLEICH_HOECHSTENS = 50
 
 TContentDbEntry = TypeVar("TContentDbEntry", bound=BaseContentDbEntry)
 TContentSearchResult = TypeVar("TContentSearchResult", bound=BaseContentSearchResult)
-
-
-async def search_batch(
-    repositories: Sequence["BaseQdrantRepository"], query_text: str, limit: int
-) -> List[List[BaseContentSearchResult]]:
-    """
-    Dieselbe Suche in mehreren Repositories: eine Einbettung, eine Anfrage an Qdrant.
-
-    Liefert je Repository, was dessen search(query_text, limit) liefern wuerde, in
-    der Reihenfolge von ``repositories``. Alle muessen am selben Manager haengen -
-    das ist der prozessweite Singleton, in Tests ein gemeinsam injizierter.
-    """
-    if not repositories:
-        return []
-    manager = repositories[0]._shared_manager
-    if any(r._shared_manager is not manager for r in repositories):
-        raise ValueError("search_batch: repositories use different managers")
-
-    treffer = await manager.search_batch(
-        query_text, [r.suchanfrage(limit) for r in repositories]
-    )
-    # DEBUG ohne query_text, wie in search() (#239).
-    logger.debug(f"Batch search over {len(repositories)} content types")
-    return [r.suchergebnisse(t) for r, t in zip(repositories, treffer)]
 
 
 def _search_query_origin_conditions() -> list:
@@ -198,14 +174,14 @@ class QdrantBaseRepository(
         passage-Bestand (siehe QdrantEmbeddingsManager.search).
         """
         try:
-            content_type, filter_dict, limit = self.suchanfrage(limit)
+            suche = self._suchparameter(limit)
 
             # Perform search with optional content_type filter
             search_results = await self._shared_manager.search(
                 query=query_text,
-                content_type=content_type,
-                limit=limit,
-                filter_dict=filter_dict,
+                content_type=suche.content_type,
+                limit=suche.limit,
+                filter_dict=suche.filter_dict,
                 praefix=praefix,
             )
 
@@ -219,18 +195,48 @@ class QdrantBaseRepository(
                 f"Search in {content_desc}: found {len(search_results)} results"
             )
 
-            return self.suchergebnisse(search_results)
+            return self._suchergebnisse(search_results)
 
         except Exception as e:
             logger.error(f"Search failed: {e}", exc_info=True)
             raise
 
-    def suchanfrage(self, limit: int) -> Tuple[Optional[str], Dict[str, Any], int]:
-        """Die Suche dieses Typs als (content_type, filter_dict, limit), wie search()
-        sie an den Manager gibt; search_batch() buendelt mehrere davon."""
-        return self.content_type, {"must_not": self._status_ausschluss()}, limit
+    @classmethod
+    async def search_batch(
+        cls,
+        repositories: Sequence["QdrantBaseRepository"],
+        query_text: str,
+        limit: int,
+    ) -> List[List[BaseContentSearchResult]]:
+        """
+        search(query_text, limit) fuer mehrere Repositories: eine Einbettung, eine
+        Anfrage an Qdrant.
 
-    def suchergebnisse(
+        Ergebnis je Repository in der Reihenfolge von ``repositories``. Alle muessen
+        am selben Manager haengen - im Betrieb der prozessweite Singleton.
+        """
+        if not repositories:
+            return []
+        manager = repositories[0]._shared_manager
+        if any(r._shared_manager is not manager for r in repositories):
+            raise ValueError("search_batch: repositories use different managers")
+
+        treffer = await manager.search_batch(
+            query_text, [r._suchparameter(limit) for r in repositories]
+        )
+        # DEBUG ohne query_text, wie in search() (#239).
+        logger.debug(f"Batch search over {len(repositories)} content types")
+        return [r._suchergebnisse(t) for r, t in zip(repositories, treffer)]
+
+    def _suchparameter(self, limit: int) -> Suchparameter:
+        """Beitragstyp, Filter und Limit dieser Suche - fuer search() und search_batch()."""
+        return Suchparameter(
+            content_type=self.content_type,
+            filter_dict={"must_not": self._status_ausschluss()},
+            limit=limit,
+        )
+
+    def _suchergebnisse(
         self, search_results: List[Dict[str, Any]]
     ) -> List[TContentSearchResult]:
         """Rohtreffer des Managers als Suchergebnisse dieses Typs."""
