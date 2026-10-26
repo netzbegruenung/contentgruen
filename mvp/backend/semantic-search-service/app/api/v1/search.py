@@ -288,7 +288,7 @@ async def search_by_text(
                 statement_id,
                 total_results,
                 tagespseudonym(
-                    user_id=validated_user if validated_user != "anonymous" else None,
+                    user_id=validated_user if angemeldet(validated_user) else None,
                     session_id=x_session_id,
                 ),
             )

@@ -23,6 +23,7 @@ from services.suchen_ohne_treffer_service import (
     aufbewahrungsgrenze,
     heute_utc,
     loeschen_im_takt,
+    sekunden_bis_mitternacht,
 )
 
 pytestmark = pytest.mark.unit
@@ -173,14 +174,21 @@ class TestErfassen:
 
 
 class TestPersonenDesTages:
-    def test_personen_des_tages_haelt_kein_pseudonym(self):
-        """Gemerkt wird eine verschluesselte Kennung, nicht das Pseudonym selbst."""
+    def test_verwerfen_vor_vergisst_die_personen_des_vortags(self):
         personen = PersonenDesTages()
-
         personen.neu(PERSON_A, AUSSAGE, MITTWOCH)
 
-        assert PERSON_A not in repr(vars(personen))
-        assert str(AUSSAGE) not in repr(vars(personen))
+        personen.verwerfen_vor(DONNERSTAG)
+
+        assert personen.anzahl() == 0
+
+    def test_verwerfen_vor_behaelt_die_personen_des_laufenden_tags(self):
+        personen = PersonenDesTages()
+        personen.neu(PERSON_A, AUSSAGE, MITTWOCH)
+
+        personen.verwerfen_vor(MITTWOCH)
+
+        assert personen.neu(PERSON_A, AUSSAGE, MITTWOCH) is False
 
 
 class TestAufbewahrung:
@@ -200,12 +208,32 @@ class TestAufbewahrung:
         repo = FakeRepository()
         repo.loeschen_vor = Mock(side_effect=[RuntimeError("weg"), 0, 0])
 
-        task = asyncio.create_task(loeschen_im_takt(repo, takt_sekunden=0))
+        task = asyncio.create_task(
+            loeschen_im_takt(repo, PersonenDesTages(), takt_sekunden=0)
+        )
         while repo.loeschen_vor.call_count < 2:
             await asyncio.sleep(0.01)
         task.cancel()
 
         assert repo.loeschen_vor.call_count >= 2
+
+    @pytest.mark.asyncio
+    async def test_loeschen_im_takt_verwirft_die_personen_des_vortags(self):
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+        personen.neu(PERSON_A, AUSSAGE, date(2000, 1, 1))
+
+        task = asyncio.create_task(loeschen_im_takt(repo, personen, takt_sekunden=0))
+        while not repo.geloescht_vor:
+            await asyncio.sleep(0.01)
+        task.cancel()
+
+        assert personen.anzahl() == 0
+
+    def test_sekunden_bis_mitternacht_rechnet_in_utc(self):
+        jetzt = datetime(2026, 10, 28, 23, 0, tzinfo=timezone.utc)
+
+        assert sekunden_bis_mitternacht(jetzt) == 3600
 
 
 class TestHeuteUtc:

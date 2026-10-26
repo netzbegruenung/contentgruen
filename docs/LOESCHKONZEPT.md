@@ -91,7 +91,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche, Anzahl der Suchen
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
   zuordnen ließe. Welche Tagespseudonyme eine Aussage heute schon gezählt haben, liegt nur
-  im Arbeitsspeicher (verschlüsselt, Schlüssel täglich neu) und verfällt mit dem Tag. Wochen älter als
+  im Arbeitsspeicher (als SHA-256-Prüfwert) und wird um Mitternacht (UTC) verworfen. Wochen älter als
   acht löscht ein täglicher Task von selbst (`services/suchen_ohne_treffer_service.py`,
   `loeschen_im_takt`).
 - **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände,

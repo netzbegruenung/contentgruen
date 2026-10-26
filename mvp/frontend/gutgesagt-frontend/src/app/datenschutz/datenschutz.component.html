@@ -292,11 +292,11 @@
       </p>
       <p>
         Um Personen zu unterscheiden, nutzen wir das oben beschriebene tägliche Pseudonym,
-        aber nur im Arbeitsspeicher des Servers und nur bis zum Ende des Tages: Dort merken
-        wir uns in verschlüsselter Form, dass zu einem Eintrag heute schon jemand gezählt
-        wurde, damit wiederholte Suchen derselben Person nicht als weitere Personen zählen.
-        Der Schlüssel dafür wird täglich neu erzeugt und nie gespeichert. Weil das Pseudonym
-        täglich wechselt, zählt dieselbe Person an zwei verschiedenen Tagen als zwei.
+        aber nur im Arbeitsspeicher des Servers und nur für den laufenden Tag: Dort merken
+        wir uns einen aus Pseudonym und Eintrag berechneten Prüfwert, damit wiederholte
+        Suchen derselben Person nicht als weitere Personen zählen. Diese Merkliste wird
+        nicht gespeichert und um Mitternacht verworfen. Weil das Pseudonym täglich wechselt,
+        zählt dieselbe Person an zwei verschiedenen Tagen als zwei.
       </p>
       <p>
         Unsere Administratorinnen und Administratoren sehen eine Liste der Einträge, zu denen

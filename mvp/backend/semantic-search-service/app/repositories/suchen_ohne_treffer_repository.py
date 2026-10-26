@@ -1,8 +1,9 @@
 """
 Repository fuer die Kennzahl "Suchen ohne Treffer" (Tabelle suchen_ohne_treffer).
 
-Je (Aussage, Woche) eine Zeile mit zwei Zaehlern: Suchen und Personen. Was gezaehlt wird und warum
-nichts weiter gespeichert wird, steht in services/suchen_ohne_treffer_service.py.
+Je (Aussage, Woche) eine Zeile mit zwei Zaehlern: Suchen und Personen. Was
+gezaehlt wird und warum nichts weiter gespeichert wird, steht in
+services/suchen_ohne_treffer_service.py.
 """
 
 import uuid
