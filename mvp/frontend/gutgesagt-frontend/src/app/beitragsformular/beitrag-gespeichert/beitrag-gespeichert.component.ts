@@ -42,7 +42,7 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
 };
 
 export const NICHT_MARKIERT =
-  'Der Einwurf konnte nicht als ausformuliert markiert werden – er steht im Fangkorb weiter unter „Ausformulieren“.';
+  'Der Einwurf ließ sich nicht mit dem Beitrag verknüpfen – er steht im Fangkorb weiter unter „Ausformulieren“.';
 
 /**
  * Die Seite nach dem Speichern eines Beitrags (<Formularpfad>/gespeichert/<id>),

@@ -50,8 +50,9 @@ class SearchQueryStatementRecorder:
         abfaengt.
         """
         if await self._limiter.is_rate_limited(client_key):
-            # Kein Suchtext und kein Schluessel im Log.
-            logger.info("Suchanfrage-Aussage entfaellt: Rate-Limit erreicht")
+            # Kein Suchtext und kein Schluessel im Log, und nur auf DEBUG: eine
+            # Zeile je Suche liesse sich den Suchereignissen zuordnen (#239).
+            logger.debug("Suchanfrage-Aussage entfaellt: Rate-Limit erreicht")
             return False, None, text
 
         return await statement_service.add_statement(

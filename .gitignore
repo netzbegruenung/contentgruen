@@ -15,7 +15,7 @@ mvp/temp_data/
 # Managed Auth angelegten Menschen (Zugangsweg ohne Vereinsmitgliedschaft) und
 # gehoert damit nicht in ein oeffentliches Repository. Die bcrypt-Hashes sind
 # nicht das Problem, die Adressen sind es. Erzeugt wird die Datei mit
-# mvp/config/generate-user-config.py; auf den Servern kommt sie aus SaltStack.
+# mvp/config/generate-user-config.py; auf den Servern kommt sie aus der internen Infrastruktur von verdigado.
 /mvp/config/managed-users.json
 
 # Claude temporary files

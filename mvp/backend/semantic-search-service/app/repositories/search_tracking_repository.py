@@ -4,7 +4,7 @@ Handles database operations for search analytics.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional, Dict, Any, List
 from sqlalchemy import func, distinct, and_
 from sqlalchemy.orm import Session
@@ -24,6 +24,7 @@ class SearchTrackingRepository:
     def track_search(
         self,
         results_count: int,
+        day: date,
         actor_hash: Optional[str] = None,
     ) -> bool:
         """
@@ -31,6 +32,8 @@ class SearchTrackingRepository:
 
         Args:
             results_count: Number of results returned
+            day: UTC day of the search. Stored as midnight UTC, never with the
+                time of day (see SearchTrackingService).
             actor_hash: Daily pseudonym of the searching actor, already derived by
                 SearchTrackingService. Never a raw user or session id.
 
@@ -42,10 +45,11 @@ class SearchTrackingRepository:
                 search_event = SearchEvent(
                     results_count=results_count,
                     actor_hash=actor_hash,
+                    timestamp=datetime.combine(day, time.min, tzinfo=timezone.utc),
                 )
                 session.add(search_event)
                 session.commit()
-                logger.debug(f"Tracked search with {results_count} results")
+                # No log line: its exact time would undo the coarsening above.
                 return True
         except Exception as e:
             logger.error(f"Error tracking search event: {e}", exc_info=True)

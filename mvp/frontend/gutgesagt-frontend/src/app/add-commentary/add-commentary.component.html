@@ -51,7 +51,7 @@
 
                 <div class="formular-fuss">
                     <button type="button" class="text-link zuruecksetzen" (click)="zuruecksetzen()"
-                            [disabled]="speichert || !!responseId">Zurücksetzen</button>
+                            [disabled]="beschaeftigt || !!responseId">Zurücksetzen</button>
                 </div>
 
                 <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
@@ -67,20 +67,23 @@
                     <!-- Die Person entscheidet: den vorhandenen waehlen (fremd: zustimmen, eigen: nehmen) oder trotzdem speichern -->
                     <div *ngIf="offeneEntscheidung" class="dublette-entscheidung">
                         <button *ngIf="kannZustimmen" mat-stroked-button type="button" class="dublette-zustimmen"
-                                [disabled]="stimmtZu || speichert" (click)="zustimmen()">Zustimmen</button>
+                                [disabled]="beschaeftigt" (click)="zustimmen()">Zustimmen</button>
                         <button *ngIf="kannNehmen" mat-stroked-button type="button" class="dublette-nehmen"
-                                [disabled]="speichert" (click)="nehmen()">Vorhandenen nehmen</button>
+                                [disabled]="beschaeftigt || aussageZuKurz" (click)="nehmen()">
+                            <mat-spinner *ngIf="nimmt" diameter="18" class="knopf-spinner"></mat-spinner>
+                            Vorhandenen nehmen
+                        </button>
                         <button mat-button type="button" class="dublette-trotzdem"
-                                [disabled]="stimmtZu || speichert" (click)="trotzdemSpeichern()">Trotzdem speichern</button>
+                                [disabled]="beschaeftigt" (click)="trotzdemSpeichern()">Trotzdem speichern</button>
                     </div>
-                    <p *ngIf="zustimmFehler" class="zustimm-fehler" role="alert">{{ zustimmFehler }}</p>
+                    <p *ngIf="entscheidungsFehler" class="entscheidungs-fehler" role="alert">{{ entscheidungsFehler }}</p>
                 </div>
 
                 <app-formular-leiste *ngIf="!responseId"
                                      [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : offeneEntscheidung ? dublettenHinweis : null"
                                      [aktion]="!fehler && offeneEntscheidung ? 'Ansehen' : null" (aktionGeklickt)="vorhandenAnsehen()">
                     <button mat-raised-button type="submit" class="submit-btn"
-                            [disabled]="speichert || commentaryForm.invalid || aussageZuKurz">
+                            [disabled]="beschaeftigt || commentaryForm.invalid || aussageZuKurz">
                         <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
                         {{ fehler && !validierung ? 'Erneut versuchen' : 'Kommentar speichern' }}
                     </button>

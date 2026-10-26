@@ -33,8 +33,9 @@ docker exec -i "$PG_CONTAINER" psql -U app_user -d "$PG_DB" -v ON_ERROR_STOP=1 \
   Option liefe `psql` nach einem Fehler weiter und meldete am Ende Erfolg.
 - Die Skripte laufen in einer Transaktion (`BEGIN; … COMMIT;`): Schlägt eines
   fehl, bleibt die Datenbank, wie sie war. Ausnahme ist jeweils das
-  `VACUUM FULL` am Ende von `2026-08-19-search-events-pseudonymisieren.sql` und
-  `2026-08-25-usage-events-datensparsamkeit.sql`, das in PostgreSQL nicht in
+  `VACUUM FULL` am Ende von `2026-08-19-search-events-pseudonymisieren.sql`,
+  `2026-08-25-usage-events-datensparsamkeit.sql` und
+  `2026-10-26-search-events-nur-tag.sql`, das in PostgreSQL nicht in
   einer Transaktion laufen darf. Es läuft nach dem `COMMIT`; schlägt es fehl,
   ist die Migration schon festgeschrieben. Dann **nur** das `VACUUM FULL …;`
   einzeln nachholen, nicht das ganze Skript erneut starten (siehe „Erneut

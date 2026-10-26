@@ -89,10 +89,12 @@ class PolarityFilterService:
 
         # Analyze query polarity
         query_analysis = analyze_polarity(query_text)
-        logger.info(
+        # Ohne explanation: Sie zitiert Woerter aus dem Suchtext. Nur auf DEBUG:
+        # je Suche eine Zeile mit Uhrzeit liesse sich den Suchereignissen
+        # zuordnen (#239).
+        logger.debug(
             f"Query polarity: {query_analysis.polarity} "
-            f"(confidence: {query_analysis.confidence:.2f}, "
-            f"explanation: {query_analysis.explanation})"
+            f"(confidence: {query_analysis.confidence:.2f})"
         )
 
         # Filter and adjust results
@@ -147,7 +149,7 @@ class PolarityFilterService:
         # Re-sort by adjusted scores
         filtered_results.sort(key=lambda x: x.score, reverse=True)
 
-        logger.info(
+        logger.debug(
             f"Polarity filtering complete: {len(filtered_results)} results, "
             f"{sum(1 for m in polarity_metadata.values() if m.polarity_mismatch_detected)} mismatches detected"
         )

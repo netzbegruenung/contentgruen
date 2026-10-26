@@ -13,8 +13,8 @@ import { resolveContentType } from '../shared/content-type-registry';
 
 /**
  * Einen gespeicherten Beitrag als volle Karte im Bottom Sheet zeigen - fuer Hinweise
- * wie "Es gibt schon einen sehr aehnlichen Kommentar" oder "Aus diesem Einwurf ist
- * schon ein Beitrag entstanden". Kommentar und Hintergrundinfo; andere Typen nicht.
+ * wie "Es gibt schon einen sehr aehnlichen Kommentar" oder "Zu diesem Einwurf gibt
+ * es schon einen Beitrag". Kommentar und Hintergrundinfo; andere Typen nicht.
  */
 @Injectable({ providedIn: 'root' })
 export class BeitragAnsehenService {

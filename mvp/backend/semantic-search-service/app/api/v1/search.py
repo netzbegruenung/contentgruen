@@ -93,10 +93,9 @@ async def search_by_text(
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
     try:
-        # Der Suchtext wird bewusst nicht protokolliert: er ist der sensibelste
-        # Einzelwert der Plattform. Auch nicht auf DEBUG -- der Dev-Stack laeuft
-        # mit SEMANTIC_SEARCH_LOG_LEVEL=DEBUG.
-        logger.info(f"Search request (limit={request.limit})")
+        # Keine Logzeile je Suche: Der Suchtext ist der sensibelste Einzelwert der
+        # Plattform, und schon die Uhrzeit der Zeile ordnete, je Tag durchgezaehlt,
+        # die Suchereignisse ihrer Uhrzeit zu (#239, search_tracking_service.py).
 
         # Handle both authenticated and anonymous users
         if x_user:
@@ -265,8 +264,8 @@ async def search_by_text(
         )
 
         # Suchereignis und "Suchen ohne Treffer" bilden das Tagespseudonym aus
-        # derselben Kennung. Fuer "Suchen ohne Treffer" gehoeren Pseudonym und Tag
-        # zum selben Zeitpunkt, auch kurz vor Mitternacht.
+        # derselben Kennung und demselben Zeitpunkt: So ist es fuer beide dasselbe,
+        # und Pseudonym und Tag gehoeren zusammen, auch kurz vor Mitternacht.
         user_id = validated_user if angemeldet(validated_user) else None
         jetzt = datetime.now(timezone.utc)
 
@@ -282,6 +281,7 @@ async def search_by_text(
                 results_count=total_results,
                 session_id=x_session_id,
                 user_id=user_id,
+                moment=jetzt,
             )
         except Exception as e:
             # Don't fail the search if tracking fails
