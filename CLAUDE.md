@@ -276,9 +276,8 @@ When user requests "view api docs":
 docker exec -it gutgesagt-app-postgres psql -U app_user -d gutgesagt_app
 ```
 Container names are the same in dev, test and production: `gutgesagt-app-postgres`,
-`gutgesagt-semantic-search`, `gutgesagt-qdrant` (on the hosts once the Salt PR
-`fix/contentgruen-haertung` is rolled out; before that the hosts named PostgreSQL
-`gutgesagt-postgres-app`).
+`gutgesagt-semantic-search`, `gutgesagt-qdrant` (on the hosts once the rename in #206 is rolled
+out; until then the hosts use the old names, e.g. `contentgruen-app-postgres`).
 
 ### View Logs
 When user requests "check logs" or "view logs":
