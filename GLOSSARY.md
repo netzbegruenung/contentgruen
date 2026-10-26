@@ -126,6 +126,10 @@ _Avoid_: Generic Text, generischer Text, Hintergrundinformation
 Ein Bild mit Unterschrift, das für sich spricht.
 _Avoid_: Grafik, Image
 
+**Unterschrift**:
+Der Text zu einem Bild, über den es gefunden wird. Fehlt er beim Einstellen, schreibt ihn ein Hintergrunddienst als Bildbeschreibung nach; bis dahin ist das Bild nicht sichtbar.
+_Avoid_: Caption, Bildtext
+
 **Post**:
 Ein Beitrag, der einen gelungenen Beitrag aus einem sozialen Netzwerk als Vorbild zum Teilen festhält. Er ist fertig und wird so verwendet; ein Einwurf mit demselben Link ist dagegen Material, aus dem erst ein Beitrag werden soll.
 _Avoid_: Social-Media-Post, Posting

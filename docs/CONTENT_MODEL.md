@@ -164,6 +164,8 @@ POST image ──▶ persist row {status: PENDING_DESCRIPTION, image_url} ──
 *(shipped — `services/vision/image_description_worker.py`.)* The `ContentStatus` enum carries
 `PENDING_DESCRIPTION` and `DESCRIPTION_FAILED` next to the three states of a Beitrag (visible,
 blocked, deleted); search only finds `visible`, so an image is found once it has its caption.
+The worker writes only text, embedding and model name, and changes the status only while the item
+is still `PENDING_DESCRIPTION`: an image blocked (gesperrt) during the description stays blocked (#251).
 
 ## Frontend design (Angular)
 

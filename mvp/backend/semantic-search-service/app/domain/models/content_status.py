@@ -87,3 +87,11 @@ def zustand_aus_altwert(wert):
     if wert is None or wert in ALT_SICHTBAR:
         return ContentStatus.VISIBLE.value
     return wert
+
+
+FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
+"""
+Payload-Feld mit dem Zustand von vor der Sperre, damit Entsperren ihn
+wiederherstellt. Fehlt er oder ist er ein Altwert von vor #214, macht Entsperren
+den Beitrag sichtbar (repositories/implementations/qdrant/moderation_repository.py).
+"""

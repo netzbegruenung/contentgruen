@@ -11,6 +11,7 @@ from qdrant_client.models import (
     VectorParams,
     HnswConfigDiff,
     PointStruct,
+    PointVectors,
     Filter,
     FieldCondition,
     MatchValue,
@@ -32,6 +33,11 @@ from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 
 logger = get_logger(__name__)
+
+
+def encoding_fuer(content_type: Optional[str]) -> Literal["statement", "passage"]:
+    """Statements use the "query: " prefix, all other content the "passage: " prefix."""
+    return "statement" if content_type == "statement" else "passage"
 
 
 class QdrantEmbeddingsManager(IEmbeddingsManager):
@@ -333,9 +339,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             for point_id, document, text in points:
                 # Determine encoding type based on content type
                 # Statements use "query: " prefix, all other content uses "passage: " prefix
-                encoding_type = (
-                    "statement" if content_type == "statement" else "passage"
-                )
+                encoding_type = encoding_fuer(content_type)
 
                 # Generate embedding with appropriate prefix
                 embedding = self.encode_text(text, content_type=encoding_type)
@@ -375,6 +379,22 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         except Exception as e:
             logger.error(f"❌ Unexpected error during upsert batch: {e}", exc_info=True)
             raise
+
+    async def update_vector(self, point_id: str, text: str, content_type: str) -> None:
+        """
+        Re-embed text and replace only the vector of an existing point.
+
+        Unlike upsert_batch, the payload stays untouched. Encoding follows the same
+        rule as upsert_batch (encoding_fuer).
+        """
+        if not self._is_started:
+            raise RuntimeError("QdrantEmbeddingsManager not started.")
+
+        embedding = self.encode_text(text, content_type=encoding_fuer(content_type))
+        await self._async_client.update_vectors(
+            collection_name=self.collection_name,
+            points=[PointVectors(id=point_id, vector=embedding)],
+        )
 
     async def search(
         self,

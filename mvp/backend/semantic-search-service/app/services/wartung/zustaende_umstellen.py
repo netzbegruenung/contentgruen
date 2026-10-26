@@ -44,9 +44,10 @@ from qdrant_client.models import (
     SetPayloadOperation,
 )
 
-from domain.models.content_status import ContentStatus, zustand_aus_altwert
-from repositories.implementations.qdrant.moderation_repository import (
+from domain.models.content_status import (
     FELD_STATUS_VOR_SPERRE,
+    ContentStatus,
+    zustand_aus_altwert,
 )
 
 FELD_VISIBILITY = "visibility"

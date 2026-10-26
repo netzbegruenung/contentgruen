@@ -5,17 +5,16 @@ from typing import Any, Dict, List, Optional
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
-from domain.models.content_status import ContentStatus, zustand_aus_altwert
+from domain.models.content_status import (
+    FELD_STATUS_VOR_SPERRE,
+    ContentStatus,
+    zustand_aus_altwert,
+)
 from domain.models.content_type import ContentType
 from repositories.interfaces.moderation_repository import IModerationRepository
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 
 logger = logging.getLogger(__name__)
-
-# Payload-Feld mit dem Zustand von vor der Sperre, damit Entsperren ihn
-# wiederherstellt. Fehlt er oder ist er ein Altwert von vor #214, macht Entsperren
-# den Beitrag sichtbar.
-FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 
 # Wie viele Aussagen aus_aussagen_entfernen je Scroll-Seite holt.
 AUSSAGEN_JE_SEITE = 100

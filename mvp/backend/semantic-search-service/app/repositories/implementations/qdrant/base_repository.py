@@ -23,6 +23,7 @@ from domain.models.content_status import (
     ALT_AUFFINDBAR,
     AUSGEBLENDET,
     AUSGEBLENDET_WERTE,
+    FELD_STATUS_VOR_SPERRE,
     ContentStatus,
 )
 from domain.models.content_origin import ContentOrigin
@@ -110,6 +111,11 @@ def nur_sichtbar_bedingungen() -> list:
             ]
         )
     ]
+
+
+# Payload-Felder, die Zustand und Sperre eines Beitrags tragen; status_vor_sperre
+# schreibt die Moderation (moderation_repository.py). unterschrift_setzen fasst sie nicht an.
+FELDER_DES_ZUSTANDS = frozenset({"status", FELD_STATUS_VOR_SPERRE})
 
 
 class QdrantBaseRepository(
@@ -804,14 +810,41 @@ class QdrantBaseRepository(
             raise
 
     async def update_status(
-        self, item_id: uuid.UUID, new_status: ContentStatus
+        self,
+        item_id: uuid.UUID,
+        new_status: ContentStatus,
+        nur_aus: Optional[ContentStatus] = None,
     ) -> None:
-        """Partial-payload update: change only the status field without re-embedding."""
+        """
+        Partial-payload update: change only the status field without re-embedding.
+
+        Mit nur_aus wechselt der Status nur, wenn der Beitrag gerade in diesem
+        Status steht. Qdrant prueft das per Filter im selben Schreibvorgang; ein
+        inzwischen gesperrter Beitrag bleibt so gesperrt (Hintergrunddienst fuer
+        Bildbeschreibungen, #251).
+        """
         try:
+            from qdrant_client.models import (
+                FieldCondition,
+                Filter,
+                HasIdCondition,
+                MatchValue,
+            )
+
+            auswahl = [str(item_id)]
+            if nur_aus is not None:
+                auswahl = Filter(
+                    must=[
+                        HasIdCondition(has_id=[str(item_id)]),
+                        FieldCondition(
+                            key="status", match=MatchValue(value=nur_aus.value)
+                        ),
+                    ]
+                )
             await self._shared_manager.async_client.set_payload(
                 collection_name=self._shared_manager.collection_name,
                 payload={"status": new_status.value},
-                points=[str(item_id)],
+                points=auswahl,
             )
             logger.debug(f"Updated status of {item_id} to {new_status.value}")
         except Exception as e:
@@ -819,6 +852,40 @@ class QdrantBaseRepository(
                 f"Failed to update status of {item_id} to {new_status}: {e}",
                 exc_info=True,
             )
+            raise
+
+    async def unterschrift_setzen(
+        self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
+    ) -> None:
+        """
+        Unterschrift (das Feld text) und Vektor eines Beitrags neu setzen, sonst nichts.
+
+        Anders als upsert schreibt das nicht den ganzen Beitrag zurueck: Status,
+        Sperre (status_vor_sperre) und alles andere, was sich seit dem Lesen
+        geaendert hat, bleiben stehen. extra sind weitere Payload-Felder zur
+        Beschreibung, etwa description_model; den Status setzt nur update_status.
+
+        Payload und Vektor sind zwei Schreibvorgaenge, nicht atomar. Scheitert der
+        zweite, steht der neue Text mit altem Vektor da; der Hintergrunddienst
+        aendert den Status erst danach, das Bild wird so nicht sichtbar.
+        """
+        if FELDER_DES_ZUSTANDS & extra.keys():
+            raise ValueError("unterschrift_setzen aendert weder Status noch Sperre")
+        try:
+            payload = {**extra, "text": text}
+            if self.content_type in TYPEN_MIT_TEXT_NORMALISIERT:
+                payload[FELD_TEXT_NORMALISIERT] = text_normalisiert(text)
+            await self._shared_manager.async_client.set_payload(
+                collection_name=self._shared_manager.collection_name,
+                payload=payload,
+                points=[str(item_id)],
+            )
+            await self._shared_manager.update_vector(
+                str(item_id), text, self.content_type
+            )
+            logger.debug(f"Set text and vector of {item_id}")
+        except Exception as e:
+            logger.error(f"Failed to set text of {item_id}: {e}", exc_info=True)
             raise
 
     @abstractmethod

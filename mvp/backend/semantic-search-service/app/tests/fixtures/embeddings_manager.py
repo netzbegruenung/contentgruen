@@ -27,6 +27,8 @@ class TestEmbeddingsManager(IEmbeddingsManager):
     def __init__(self):
         """Initialize the test embeddings manager with in-memory storage."""
         self._data: Dict[str, Dict[str, Any]] = {}
+        # Text each point's vector was last rebuilt from (update_vector)
+        self.vector_texts: Dict[str, str] = {}
         self._embeddings_mock = MagicMock()
         self._embeddings_mock.search = self._search_impl
         self._embeddings_mock.upsert = self._upsert_impl
@@ -321,6 +323,7 @@ class TestEmbeddingsManager(IEmbeddingsManager):
     def clear(self) -> None:
         """Clear all test data."""
         self._data.clear()
+        self.vector_texts.clear()
 
     def get_data(self) -> Dict[str, Dict[str, Any]]:
         """Get all stored data for assertions."""
@@ -427,6 +430,11 @@ class TestEmbeddingsManager(IEmbeddingsManager):
                     "content_type": content_type,
                     **getattr(data, "__dict__", {}),
                 }
+
+    async def update_vector(self, point_id: str, text: str, content_type: str) -> None:
+        """Mock update_vector: records which text the vector was built from."""
+        if str(point_id) in self._data:
+            self.vector_texts[str(point_id)] = text
 
     @property
     def is_started(self) -> bool:
