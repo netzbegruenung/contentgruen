@@ -1,6 +1,6 @@
 # Gut gesagt
 
-Gut gesagt ist ein gemeinsamer Vorrat an geprüften Antworten auf typische Angriffe gegen grüne Politik, den Mitwirkende per Suche finden, kopieren und selbst erweitern. Neue Beiträge entstehen entlang einer Kette: Einwerfen, Destillieren, Ausformulieren.
+Gut gesagt ist eine Webapp, die Nutzende dabei unterstützt, schnell gute Argumente und Framings zu finden und ihre eigene Argumentation zu verbessern. Neue Beiträge entstehen entlang einer Kette: Einwerfen, Destillieren, Ausformulieren.
 
 <!--
 ENTWURF für die grill-with-docs-Session, nicht abgestimmt.
@@ -59,9 +59,12 @@ Die Person, die als Erste einen Satz zu einem Einwurf gespeichert hat.
 _Avoid_: Bearbeiter, Verarbeiter
 
 **Ausformulieren**:
-Aus einem Satz einen fertigen Beitrag machen: Typ wählen, Text schreiben, Herkunft angeben.
+Der letzte Schritt der Kette: aus einem Satz zu einem Einwurf einen fertigen Beitrag machen (Typ wählen, Text schreiben, Herkunft angeben).
 _Avoid_: Verfassen, Verarbeiten, Fertigstellen
-_Offene Frage_: „Verfassen“ steht heute im UI für denselben Schritt und für das Schreiben eines Beitrags ohne Einwurf. Ein Begriff oder zwei?
+
+**Verfassen**:
+Einen Beitrag direkt anlegen, ohne dass ein Einwurf dahintersteht.
+_Avoid_: Ausformulieren, Erstellen, Beitragen
 
 **Ausformulierer**:
 Die Person, die aus einem Einwurf einen Beitrag gespeichert hat.
@@ -89,9 +92,11 @@ _Avoid_: Verarbeitet, Erledigt, Fertig
 Ein Einwurf, den sein Einwerfer als nicht verwertbar markiert hat.
 _Avoid_: Gelöscht, Abgelehnt
 
-_Offene Frage_: Heute existieren drei Namenssätze für dieselben vier Stufen (Zustand, Spezifikation v2, Tabs im Fangkorb). Welcher gilt?
+Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
 
 ## Beiträge
+
+Argument und Framing sind keine eigenen Begriffe: Ein Beitrag enthält ein Argument, oft mit einem Framing.
 
 **Beitrag**:
 Ein fertiger, durchsuchbarer Inhalt, den Mitwirkende finden, kopieren und bewerten können. Jeder Beitrag hat genau einen Beitragstyp.
@@ -167,10 +172,17 @@ _Avoid_: Contributions, Profil
 
 ## Personen
 
+**Nutzende**:
+Alle Personen, die Gut gesagt verwenden, angemeldet oder nicht. Sie sind entweder Besucher oder Mitwirkende.
+_Avoid_: User, Nutzer, Anwender
+
 **Mitwirkende**:
-Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen.
-_Avoid_: User, Mitglieder, Nutzer
-_Offene Frage_: Wer darf mitwirken? Die Projektziele nennen Mitglieder der Netzbegrünung, die Registrierungs-Analyse eine breitere Öffentlichkeit.
+Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen. Heute sind das Mitglieder der Netzbegrünung und Personen mit Beta-Zugang.
+_Avoid_: User, Mitglieder
+
+**Beta-Zugang**:
+Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
+_Avoid_: Beta-Account, manueller User, Managed User
 
 **Besucher**:
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.
