@@ -159,24 +159,21 @@ export class UsageTrackingService {
   }
 
   /**
-   * Get usage statistics for a specific user's contributed content.
+   * Wie oft andere die Beitraege der angemeldeten Person genutzt haben.
    *
-   * @param userId - The ID of the user
-   * @returns Observable with user statistics
+   * Die Kennung steht nicht im Pfad: das BFF reicht die Person aus der Anmeldung
+   * weiter, und ein Pfad mit Kennung stuende in den Zugriffslogs der Webserver (#284).
+   *
+   * @returns Observable mit der Statistik, bei einem Fehler null
    */
-  getUserUsageStats(userId: string): Observable<UserUsageStats> {
-    const url = `${this.apiUrl}/users/${userId}/usage-stats`;
+  getOwnUsageStats(): Observable<UserUsageStats | null> {
+    const url = `${this.apiUrl}/users/me/usage-stats`;
 
     return this.http.get<UserUsageStats>(url)
       .pipe(
         catchError(error => {
-          this.loggingService.error(`Failed to get usage stats for user ${userId}`, error);
-          return of({
-            user_id: userId,
-            unique_contents_contributed: 0,
-            total_usage_count: 0,
-            top_content: []
-          });
+          this.loggingService.error('Failed to get own usage stats', error);
+          return of(null);
         })
       );
   }

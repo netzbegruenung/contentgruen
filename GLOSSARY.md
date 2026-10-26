@@ -202,6 +202,10 @@ _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
 _Avoid_: Contributions, Profil
 
+**Nutzungsstatistik**:
+Die Summe der Nutzungen aller Beiträge einer Person, angezeigt unter Meine Beiträge. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
+_Avoid_: Usage Stats, Nutzerstatistik
+
 ## Personen
 
 **Nutzende**:
@@ -223,6 +227,10 @@ _Avoid_: Gast, anonymer Nutzer
 **Autor**:
 Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat. Wer einen Einwurf nur mit einem vorhandenen Beitrag verknüpft, wird dadurch nicht dessen Autor. Einwerfer und Destillierer eines Beitrags aus dem Fangkorb sind nicht seine Autoren, sondern wirken an der Kette mit. Wer einen von KI vorgeschlagenen Text übernimmt und speichert, ist dessen Autor.
 _Avoid_: Ersteller, Owner, Urheber
+
+**Kennung**:
+Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Logs steht er höchstens als Pseudonym, in Adressen gar nicht.
+_Avoid_: User-ID, Nutzer-ID
 
 **Anzeigename**:
 Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt wird. Andere sehen nie den Klarnamen aus dem Login.

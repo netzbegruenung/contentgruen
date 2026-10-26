@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS usage_events (
 
 -- Die frueher hier definierte View user_usage_statistics ist entfallen: sie
 -- gruppierte nach usage_events.user_id. Kein Anwendungscode hat sie je benutzt
--- (die Nutzerstatistik in /api/v1/usage/users/{id}/usage-stats kommt aus Qdrant
+-- (die Nutzerstatistik in /api/v1/usage/users/me/usage-stats kommt aus Qdrant
 -- und usage_tracking, siehe repositories/usage_tracking_repository.py).
 
 -- Create indexes for performance

@@ -276,8 +276,8 @@ public class AuthGatePipelineTests
     public async Task ProxiedRequest_DoesNotPutTheTargetUrlIntoTheLog(string? levelFromOutside)
     {
         // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information ("Proxying to ...").
-        // Einige Pfade tragen die Kennung, etwa die Nutzungsstatistik unter "Meine Beitraege".
-        // Dasselbe gilt fuer "Request starting ..." von ASP.NET Core. Program.cs hebt Yarp
+        // Die Zeile soll auch dann nicht entstehen, wenn ein Pfad doch einmal die Kennung
+        // traegt (bis #284 die Nutzungsstatistik unter "Meine Beitraege"). Dasselbe gilt fuer "Request starting ..." von ASP.NET Core. Program.cs hebt Yarp
         // und Microsoft.AspNetCore im Code auf Warning (#277), also auch dann, wenn die
         // Konfiguration (appsettings.json, Logging__LogLevel__...) diese Kategorien
         // herabsetzt. Geprueft an der echten Pipeline und ueber alle Kategorien.

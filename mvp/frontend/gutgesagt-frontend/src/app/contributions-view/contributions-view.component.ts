@@ -93,9 +93,8 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   }
 
   loadUserStats() {
-    const userId = this.authService.getCurrentUserId();
-    if (userId) {
-      this.usageTrackingService.getUserUsageStats(userId).subscribe(stats => {
+    if (this.authService.getCurrentUserId()) {
+      this.usageTrackingService.getOwnUsageStats().subscribe(stats => {
         this.userStats = stats;
         this.cdr.markForCheck();
       });

@@ -148,11 +148,12 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs`). Wo eine Warn- oder Fehlerzeile den Pfad
-    nennt, steht die Kennung darin ebenfalls nur als Pseudonym (`LogPseudonym.InPath()`).
-    Manche Pfade tragen die Kennung (`/api/v1/usage/users/{id}/usage-stats`). Deshalb sind
-    die Zeilen unterdrückt, in denen YARP jede Weiterleitung mit Ziel-URL und ASP.NET Core
-    jede Anfrage mit Pfad („Request starting“) protokolliert: Die Kategorien `Yarp` und
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warn- und Fehlerzeilen nennen den Pfad
+    unverändert; seit #284 trägt kein Pfad, den das Frontend aufruft, eine Kennung (die
+    Nutzungsstatistik unter „Meine Beiträge“ heißt `/api/v1/usage/users/me/usage-stats`,
+    die Person kommt aus der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
+    denen YARP jede Weiterleitung mit Ziel-URL und ASP.NET Core jede Anfrage mit Pfad
+    („Request starting“) protokolliert: Die Kategorien `Yarp` und
     `Microsoft.AspNetCore` stehen im Code auf `Warning` (`BFF/Program.cs`), unabhängig von
     `BFF/appsettings.json`. Ein Log-Level von außen für genau diese Kategorien ändert daran
     nichts. Eines für eine Unterkategorie (etwa `Logging__LogLevel__Yarp.ReverseProxy` oder
@@ -183,10 +184,12 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     des Basis-Images `nginx:alpine` nach stdout
     (`mvp/frontend/gutgesagt-frontend/Dockerfile:31`). Hinter dem vorgelagerten Reverse
     Proxy steht dort dessen Adresse, nicht die des Besuchers; Zeitpunkt, Pfad, Referrer
-    und User-Agent stehen darin. Der Pfad trägt bei der Nutzungsstatistik unter „Meine
-    Beiträge“ die **Kennung im Klartext** (`/api/v1/usage/users/{id}/usage-stats`,
-    aufgerufen in `usage-tracking.service.ts`), hier wie im Zugriffsprotokoll des
-    vorgelagerten Reverse Proxy; die Regeln im BFF erreichen diese Zeilen nicht.
+    und User-Agent stehen darin. Eine Kennung steht im Pfad nicht: Die Nutzungsstatistik
+    unter „Meine Beiträge“ fragt `/api/v1/usage/users/me/usage-stats`
+    (`usage-tracking.service.ts`), und der Suchdienst nimmt die Person aus `X-User`
+    (`api/v1/usage.py`). Das gilt ebenso für das Zugriffsprotokoll des vorgelagerten
+    Reverse Proxy. Bis #284 stand die Kennung dort im Klartext; ältere Zeilen enthalten
+    sie, bis die Fristen unten sie beseitigen.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
     Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als

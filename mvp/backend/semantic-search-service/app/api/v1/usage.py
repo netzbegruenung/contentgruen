@@ -243,35 +243,28 @@ async def get_content_usage(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/users/{user_id}/usage-stats", response_model=UserUsageStatsResponse)
-async def get_user_usage_stats(
-    user_id: str,
-    current_user: str = Depends(get_current_user_optional),
-    settings: Settings = Depends(get_settings),
+@router.get("/users/me/usage-stats", response_model=UserUsageStatsResponse)
+async def get_own_usage_stats(
+    current_user: Optional[str] = Depends(get_current_user_optional),
 ):
     """
-    Get usage statistics for a specific user's contributed content.
+    Wie oft andere die Beitraege der angemeldeten Person genutzt haben.
 
-    This shows how many times the user's content has been used by others.
+    Die Person kommt aus ``X-User`` (gesetzt vom BFF), nicht aus dem Pfad: ein Pfad
+    mit Kennung stuende im Zugriffslog jedes Webservers davor (#284).
     """
-    try:
-        # Check authorization - users can only see their own stats unless admin
-        # For now, allow users to see their own stats
-        if current_user != user_id and not settings.is_admin_user(current_user):
-            raise HTTPException(
-                status_code=403, detail="Not authorized to view these statistics"
-            )
+    if not current_user or current_user == "anonymous":
+        raise HTTPException(status_code=401, detail="Authentication required")
 
+    try:
         service = get_usage_service()
-        stats = await service.get_user_usage_stats(user_id)
+        stats = await service.get_user_usage_stats(current_user)
 
         return UserUsageStatsResponse(**stats)
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(
-            f"Error getting usage stats for user {log_pseudonym(user_id)}: {e}",
+            f"Error getting usage stats for user {log_pseudonym(current_user)}: {e}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
