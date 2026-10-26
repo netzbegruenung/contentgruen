@@ -35,8 +35,9 @@ logger = logging.getLogger(__name__)
 class RawInputRepository:
     """Repository fuer Einwuerfe im Fangkorb."""
 
-    def __init__(self):
-        self.db = get_app_database()
+    def __init__(self, db=None):
+        """``db``: eine AppDatabase; ohne Angabe die globale."""
+        self.db = db if db is not None else get_app_database()
 
     @staticmethod
     def _to_dict(

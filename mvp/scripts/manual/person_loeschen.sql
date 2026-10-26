@@ -1,8 +1,7 @@
 -- Loeschkommando, PostgreSQL-Teil: Schritt 1 und 2 aus docs/LOESCHKONZEPT.md.
 --
--- Die Kennung kommt als psql-Variable, das Skript per stdin:
---   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
---     -v ON_ERROR_STOP=1 -v uid="$UID" < mvp/scripts/manual/person_loeschen.sql
+-- Die Kennung kommt als psql-Variable uid, das Skript per stdin; der Aufruf steht
+-- in docs/LOESCHKONZEPT.md unter "Kommandos".
 --
 -- Wiederholbar: Ein zweiter Lauf findet nichts mehr, was die Kennung traegt.
 -- Getestet in tests/integration/test_loeschkommando.py.
@@ -36,7 +35,16 @@ SELECT ersatz, 'ehemalige Person' FROM loeschung_saetze;
 -- geleert hat, bekommt einen eigenen.
 UPDATE raw_inputs AS r SET destilled_by = s.ersatz
 FROM loeschung_saetze AS s WHERE r.id = s.raw_input_id AND r.destilled_by = :'uid';
-UPDATE raw_inputs SET destilled_by = 'ehemalige-person-' || gen_random_uuid()
-WHERE destilled_by = :'uid';
+WITH ersetzt AS (
+    UPDATE raw_inputs SET destilled_by = 'ehemalige-person-' || gen_random_uuid()
+    WHERE destilled_by = :'uid' RETURNING destilled_by
+)
+INSERT INTO users (user_id, anzeigename)
+SELECT destilled_by, 'ehemalige Person' FROM ersetzt;
+-- Platzhalter, an denen nichts mehr haengt: Saetze anderer Geloeschter an den eben
+-- geloeschten Einwuerfen der Person.
+DELETE FROM users AS u WHERE u.user_id LIKE 'ehemalige-person-%'
+AND NOT EXISTS (SELECT 1 FROM raw_input_drafts AS d WHERE d.user_id = u.user_id)
+AND NOT EXISTS (SELECT 1 FROM raw_inputs AS r WHERE r.destilled_by = u.user_id);
 DELETE FROM users           WHERE user_id             = :'uid';
 COMMIT;

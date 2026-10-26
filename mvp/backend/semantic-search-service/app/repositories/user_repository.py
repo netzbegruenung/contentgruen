@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 class UserRepository:
     """Anzeigenamen je Kennung."""
 
-    def __init__(self):
-        self.db = get_app_database()
+    def __init__(self, db=None):
+        """``db``: eine AppDatabase; ohne Angabe die globale."""
+        self.db = db if db is not None else get_app_database()
 
     def anzeigename_speichern(self, user_id: str, anzeigename: str) -> None:
         """INSERT ... ON CONFLICT (user_id) DO UPDATE."""
