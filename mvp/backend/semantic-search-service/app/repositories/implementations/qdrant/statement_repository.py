@@ -200,7 +200,8 @@ class StatementRepository(
                 filter_dict=filter_dict,
             )
 
-            logger.info(
+            # DEBUG: je Suche, siehe base_repository.search (#239).
+            logger.debug(
                 f"Search results: {len(search_results)} items "
                 f"(filtered for min_replysuggestions_count >= {min_replysuggestions_count})"
             )

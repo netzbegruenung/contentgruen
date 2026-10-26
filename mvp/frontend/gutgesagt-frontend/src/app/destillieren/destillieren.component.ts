@@ -191,7 +191,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   private kopfCache?: { einwurf: RawInput; satz: string; karte: KartenDaten };
 
   /**
-   * Ein schon entstandener Beitrag aus diesem Einwurf (der erste), fuer den Hinweis
+   * Ein schon verknuepfter Beitrag dieses Einwurfs (der erste), fuer den Hinweis
    * in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur sehen, dass
    * es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
    */

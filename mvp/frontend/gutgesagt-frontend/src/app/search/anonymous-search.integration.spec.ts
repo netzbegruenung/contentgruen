@@ -13,7 +13,6 @@ import { environment } from '../../environments/environment';
 import { SearchResponse } from '../services/dtos/searchDtos';
 import { ContentStatus } from '../services/dtos/content-status-enum';
 import { ContentOrigin } from '../services/dtos/content-origin-enum';
-import { ContentVisibility } from '../services/dtos/content-visibility-enum';
 
 @Component({
   selector: 'app-test-root',
@@ -54,7 +53,6 @@ xdescribe('Anonymous Search Flow Integration', () => {  // TODO: Re-enable when 
           edit_history: [],
           most_similar_similarity_score: 0,
           most_similar_content_id: '',
-          visibility: ContentVisibility.VISIBLE,
           references: [],
           report_count: 0,
           is_archived: false,
