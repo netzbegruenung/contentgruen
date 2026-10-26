@@ -8,6 +8,8 @@ using BFF.Models;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
+using System.IO;
+using System.Linq;
 
 namespace BFF.Tests.Services;
 
@@ -195,5 +197,102 @@ public class ManagedUserServiceTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
+    }
+
+    // Die Kennung "ehemalige-person" und ihr Praefix sind im Backend fuer den Platzhalter
+    // geloeschter Personen reserviert (anzeigename_service.py). Ein Beta-Zugang mit einer
+    // solchen Kennung wuerde dort als "ehemalige Person" erscheinen, und seine
+    // Beitraege waeren von denen geloeschter Personen nicht zu unterscheiden. Der BFF laesst
+    // ihn deshalb gar nicht erst zu.
+    [Theory]
+    [InlineData("ehemalige-person")]
+    [InlineData("ehemalige-person-6f1c2d3e-0000-4000-8000-000000000000")]
+    [InlineData("Ehemalige-Person")]
+    [InlineData(" ehemalige-person ")]
+    public async Task LoadUsers_RejectsReservedUserId(string reservedId)
+    {
+        var path = WriteUsersFile(
+            ("ok@example.com", "user-001"),
+            ("reserved@example.com", reservedId));
+        try
+        {
+            var service = ServiceFor(path);
+
+            Assert.Null(await service.GetUserByIdAsync(reservedId));
+            Assert.Null(await service.GetUserByEmailAsync("reserved@example.com"));
+            Assert.Null(await service.ValidateUserAsync("reserved@example.com", "Passwort1!"));
+            Assert.NotNull(await service.GetUserByIdAsync("user-001"));
+            Assert.NotNull(await service.ValidateUserAsync("ok@example.com", "Passwort1!"));
+
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("reserved")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData("ehemalige-personal")]
+    [InlineData("user-ehemalige-person")]
+    public async Task LoadUsers_AcceptsUserIdThatOnlyResemblesReservedId(string userId)
+    {
+        var path = WriteUsersFile(("someone@example.com", userId));
+        try
+        {
+            Assert.NotNull(await ServiceFor(path).GetUserByIdAsync(userId));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void IsReservedUserId_MatchesPlaceholderAndPrefixOnly()
+    {
+        Assert.True(ManagedUserService.IsReservedUserId("ehemalige-person"));
+        Assert.True(ManagedUserService.IsReservedUserId("ehemalige-person-abc"));
+        Assert.False(ManagedUserService.IsReservedUserId("ehemalige-personal"));
+        Assert.False(ManagedUserService.IsReservedUserId("user-001"));
+        Assert.False(ManagedUserService.IsReservedUserId(""));
+    }
+
+    private ManagedUserService ServiceFor(string path)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "MANAGED_USERS_PATH", path },
+                { "ENABLE_MANAGED_AUTH", "true" }
+            })
+            .Build();
+        return new ManagedUserService(_mockLogger.Object, configuration);
+    }
+
+    private static string WriteUsersFile(params (string Email, string UserId)[] users)
+    {
+        // Ein Hash fuer alle: BCrypt mit niedrigem Work-Factor haelt den Test schnell.
+        var hash = BCrypt.Net.BCrypt.HashPassword("Passwort1!", 4);
+        var config = new ManagedUsersConfig
+        {
+            Users = users.Select(u => new ManagedUser
+            {
+                Email = u.Email,
+                PasswordHash = hash,
+                DisplayName = "Test",
+                UserId = u.UserId
+            }).ToList()
+        };
+        var path = Path.Combine(Path.GetTempPath(), $"managed-users-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(config));
+        return path;
     }
 }

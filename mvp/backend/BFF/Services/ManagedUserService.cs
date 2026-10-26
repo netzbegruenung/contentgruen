@@ -18,6 +18,14 @@ public class ManagedUserService
     private readonly TimeSpan _rateLimitWindow = TimeSpan.FromMinutes(15);
     private readonly int _maxFailedAttempts = 5;
 
+    /// <summary>
+    /// Kennung des Platzhalters "ehemalige Person" an den Beitraegen geloeschter Personen.
+    /// Reserviert, ebenso wie alles mit dem Praefix "ehemalige-person-" (Saetze im
+    /// Fangkorb); muss zu EHEMALIGE_PERSON_KENNUNG in
+    /// semantic-search-service/app/services/anzeigename_service.py passen.
+    /// </summary>
+    public const string EhemaligePersonKennung = "ehemalige-person";
+
     public ManagedUserService(ILogger<ManagedUserService> logger, IConfiguration configuration)
     {
         _logger = logger;
@@ -66,7 +74,9 @@ public class ManagedUserService
         try
         {
             var json = await File.ReadAllTextAsync(validPath);
-            _usersConfig = JsonSerializer.Deserialize<ManagedUsersConfig>(json) ?? new ManagedUsersConfig();
+            var config = JsonSerializer.Deserialize<ManagedUsersConfig>(json) ?? new ManagedUsersConfig();
+            config.Users = WithoutReservedUserIds(config.Users);
+            _usersConfig = config;
             _lastLoadTime = DateTime.UtcNow;
 
             _logger.LogInformation("Loaded {Count} managed users from config", _usersConfig.Users.Count);
@@ -77,6 +87,33 @@ public class ManagedUserService
             _logger.LogError(ex, "Failed to load managed users config from {Path}", validPath);
             return new ManagedUsersConfig();
         }
+    }
+
+    /// <summary>
+    /// Ob eine userId fuer den Platzhalter "ehemalige Person" reserviert ist. Gross- und
+    /// Kleinschreibung und Leerraum am Rand zaehlen nicht: lieber einen Tippfehler zu
+    /// viel ablehnen als einen Beta-Zugang neben den Platzhalter stellen.
+    /// </summary>
+    public static bool IsReservedUserId(string? userId)
+    {
+        var kennung = userId?.Trim() ?? "";
+        return string.Equals(kennung, EhemaligePersonKennung, StringComparison.OrdinalIgnoreCase)
+            || kennung.StartsWith(EhemaligePersonKennung + "-", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Beta-Zugaenge mit reservierter Kennung fallen aus der Liste; die uebrigen bleiben
+    // nutzbar. Geloggt wird nur die Kennung, nicht die Mail-Adresse.
+    private List<ManagedUser> WithoutReservedUserIds(List<ManagedUser> users)
+    {
+        var reserved = users.Where(u => IsReservedUserId(u.UserId)).ToList();
+        foreach (var user in reserved)
+        {
+            _logger.LogError(
+                "Managed user with userId {UserId} rejected: the id is reserved for the placeholder \"{Placeholder}\" of deleted persons. Choose a different userId in the managed users config.",
+                user.UserId, EhemaligePersonKennung);
+        }
+
+        return reserved.Count == 0 ? users : users.Except(reserved).ToList();
     }
 
     private bool IsRateLimited(string email)
