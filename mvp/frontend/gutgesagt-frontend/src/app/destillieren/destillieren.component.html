@@ -30,7 +30,7 @@
                 Verworfen – du kannst ihn trotzdem destillieren.
             </p>
             <p *ngIf="einwurf.status === 'processed'" class="einwurf-stand">
-                Daraus ist schon ein Beitrag entstanden. Ein weiterer ist möglich.
+                Zu diesem Einwurf gibt es schon einen Beitrag. Ein weiterer ist möglich.
             </p>
         </section>
 
@@ -68,7 +68,7 @@
 
         <section *ngIf="schritt === 'typwahl'" class="typwahl">
             <p *ngIf="entstandenerBeitrag" class="schon-entstanden" role="status">
-                Aus diesem Einwurf ist schon ein Beitrag entstanden.
+                Zu diesem Einwurf gibt es schon einen Beitrag.
                 <button *ngIf="entstandenerBeitragAnsehbar" type="button" class="text-link beitrag-ansehen"
                         (click)="beitragAnsehen()">Ansehen</button>
             </p>

@@ -140,7 +140,8 @@ class SearchOrchestrator:
 
                 # Filter sub-threshold (and unknown content types) before any retrieval.
                 if combined_score <= MINIMUM_SCORE_THRESHOLD:
-                    logger.info(
+                    # DEBUG: je Suche, mit Uhrzeit und Aussagetext (#239).
+                    logger.debug(
                         f"❌ FILTERED OUT: statement='{statement_result.text[:50]}...' | "
                         f"combined_score={combined_score:.3f} ≤ threshold={MINIMUM_SCORE_THRESHOLD} | "
                         f"statement_score={statement_result.score:.3f}, "

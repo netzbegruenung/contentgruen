@@ -8,7 +8,7 @@ import datetime
 import uuid
 import pytest
 import pytest_asyncio
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from typing import Optional
 
 from services.content.base_content_service import BaseContentService
@@ -196,6 +196,27 @@ class TestBaseContentService:
         stored_data = test_embeddings_manager.get_data()
         assert str(mock_input.id) in stored_data
         assert stored_data[str(mock_input.id)]["text"] == "Test Input"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("gespeichert", [None, "internal", "visible"])
+    async def test_upsert_visibility_bleibt_in_content_collection(
+        self, content_service, gespeichert
+    ):
+        """Grün-Intern entfällt (#213), gespeicherte Werte bleiben bis #214 liegen."""
+        mock_input = MockDbEntryModel(
+            **create_base_content_fields(),
+            id=uuid.uuid4(),
+            text="Test Input",
+            content_type=ContentType.STATEMENT,
+            visibility=gespeichert,
+        )
+        content_repository = content_service._content_repository
+        content_repository.upsert = AsyncMock(wraps=content_repository.upsert)
+
+        await content_service._upsert(mock_input)
+
+        content_db_entry = content_repository.upsert.await_args.args[1]
+        assert content_db_entry.visibility == gespeichert
 
     @pytest.mark.asyncio
     async def test_count_delegates_to_repository(

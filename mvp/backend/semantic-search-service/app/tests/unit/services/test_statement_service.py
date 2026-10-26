@@ -5,6 +5,9 @@ This module demonstrates clean service testing patterns, focusing on the
 architectural improvements rather than testing every service method.
 """
 
+import logging
+from contextlib import ExitStack, contextmanager
+
 import pytest
 import pytest_asyncio
 import uuid
@@ -470,6 +473,25 @@ class TestSearchFiltered:
         assert ergebnis == [stark, grenze]
 
 
+_LOGGER_DES_SUCHPFADS = (
+    "services.content.statement_service",
+    "services.content.base_content_service",
+    "repositories.implementations.qdrant.base_repository",
+    "repositories.implementations.qdrant.statement_repository",
+)
+
+
+@contextmanager
+def _info_auf_dem_suchpfad(caplog):
+    """INFO fuer die Logger des Suchpfads, unabhaengig davon, was andere Tests
+    an ihren Stufen gedreht haben."""
+    with ExitStack() as stack:
+        stack.enter_context(caplog.at_level(logging.INFO))
+        for name in _LOGGER_DES_SUCHPFADS:
+            stack.enter_context(caplog.at_level(logging.INFO, logger=name))
+        yield
+
+
 @pytest.mark.unit
 class TestAddStatementDubletten:
     """
@@ -542,6 +564,33 @@ class TestAddStatementDubletten:
 
         assert neu is False
         assert statement_id == vorhanden.id
+
+    @pytest.mark.asyncio
+    async def test_add_statement_protokolliert_auf_info_nichts(self, service, caplog):
+        """
+        Jede Suche ruft add_statement. Eine Zeile mit Aussage-ID und Uhrzeit je
+        Aufruf ordnete die Aussage ueber die Reihenfolge einem Suchereignis und
+        damit einem Tagespseudonym zu (#239) - beim Anlegen wie beim Wiederfinden.
+        """
+        with _info_auf_dem_suchpfad(caplog):
+            await self._anlegen(service, "Tempolimit rettet Leben")
+            await self._anlegen(service, "Tempolimit rettet Leben")
+
+        assert [r.getMessage() for r in caplog.records] == []
+
+    @pytest.mark.asyncio
+    async def test_search_statements_und_get_protokollieren_auf_info_nichts(
+        self, service, caplog
+    ):
+        """Der Rest des Suchpfads: Aussagen suchen, Treffer nachladen (#239)."""
+        _, statement_id, _ = await self._anlegen(service, "Tempolimit rettet Leben")
+
+        with _info_auf_dem_suchpfad(caplog):
+            await service.search_statements("Tempolimit", limit=5)
+            await service.search("Tempolimit", limit=5)
+            await service.get(statement_id)
+
+        assert [r.getMessage() for r in caplog.records] == []
 
     @pytest.mark.asyncio
     async def test_aehnliche_aussage_unter_der_schwelle_wird_neu_angelegt(

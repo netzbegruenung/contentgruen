@@ -106,7 +106,8 @@ class KeywordOverlapService:
 
         if self.log_adjustments:
             # Auch die extrahierten Schlagworte sind der Suchtext, nur zerlegt.
-            logger.info(f"Extracted {len(query_keywords)} query keywords")
+            # DEBUG: je Suche, siehe polarity_filter_service (#239).
+            logger.debug(f"Extracted {len(query_keywords)} query keywords")
 
         # Analyze and adjust results
         keyword_metadata = {}
@@ -152,7 +153,7 @@ class KeywordOverlapService:
                 result_text_preview = (
                     result_text[:50] + "..." if len(result_text) > 50 else result_text
                 )
-                logger.info(
+                logger.debug(
                     f"Keyword adjustment: '{result_text_preview}' | "
                     f"overlap={overlap_ratio:.1%}, "
                     f"boost={boost_multiplier:.2f}, "
@@ -171,7 +172,7 @@ class KeywordOverlapService:
                 for m in keyword_metadata.values()
                 if abs(m.keyword_boost_applied - 1.0) > 0.05
             )
-            logger.info(
+            logger.debug(
                 f"Keyword boosting complete: {len(boosted_results)} results, "
                 f"{significant_adjustments} significant adjustments"
             )

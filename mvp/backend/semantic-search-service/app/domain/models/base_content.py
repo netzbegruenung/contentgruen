@@ -78,8 +78,9 @@ class BaseContentDbEntry(BaseContent):
         Reason for rejection if the content was rejected.
     block_reason: Optional[str]
         Reason for blocking if the content was blocked.
-    visibility: str
-        Visibility of the content (e.g., "hidden", "restricted", "visible").
+    visibility: Optional[ContentVisibility]
+        Legacy marker ("Grün-Intern" etc.). Every Beitrag is visible to everyone, so new
+        content sets none; stored values are only kept until the status cleanup (#214).
     """
 
     id: uuid.UUID
@@ -98,7 +99,7 @@ class BaseContentDbEntry(BaseContent):
     report_flagged: bool = False
     rejection_reason: Optional[str] = None
     block_reason: Optional[str] = None
-    visibility: ContentVisibility = ContentVisibility.INTERNAL
+    visibility: Optional[ContentVisibility] = None
 
     @field_validator("id", mode="before")
     def parse_uuid(cls, value):

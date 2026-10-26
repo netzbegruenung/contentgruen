@@ -2,7 +2,8 @@
 Fangkorb-Endpunkte: einwerfen, auflisten, einzeln lesen und destillieren.
 
 Drei Stufen: Einwerfen, Destillieren (einen Satz formulieren, je Person),
-Ausformulieren (einen Beitrag daraus machen und den Einwurf damit verknuepfen).
+Ausformulieren (den Einwurf mit einem Beitrag verknuepfen, einem neuen oder einem
+vorhandenen).
 Eine Sperre gibt es bewusst nicht - mehrere Leute duerfen denselben Einwurf
 gleichzeitig destillieren, und alle Saetze sind fuer alle Angemeldeten sichtbar.
 """
@@ -252,7 +253,8 @@ async def update_status(
     ``require_admin``. Das BFF entfernt den Header aus jeder Client-Anfrage.
 
     ``processed`` schreibt in derselben Transaktion die Verknuepfung mit dem
-    entstandenen Beitrag, seinem Typ und dem Satz des Ausformulierers.
+    Beitrag (neu gespeichert oder vorhanden), seinem Typ und dem Satz des
+    Ausformulierers.
     Erlaubt: discarded aus open oder in_progress, processed aus open, in_progress
     oder discarded; eine Wiederholung desselben Ziels ist unschaedlich. Den
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.

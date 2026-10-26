@@ -7,6 +7,7 @@ TestSuchpfad unten). Die Sperre je Text sitzt in add_statement
 (test_statement_service.py, TestAddStatementDubletten).
 """
 
+import logging
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -77,6 +78,18 @@ class TestRecorder:
 
         assert statement_id is not None
         assert service.add_statement.await_count == 2
+
+    async def test_anlegen_limit_erreicht_protokolliert_auf_info_nichts(self, caplog):
+        """Je Suche eine Zeile mit Uhrzeit liesse sich ueber die Reihenfolge den
+        Suchereignissen des Tages zuordnen (#239)."""
+        service = _dienst()
+        recorder = _recorder(max_requests=1)
+        await recorder.anlegen(service, "eins", "ip:a")
+
+        with caplog.at_level(logging.INFO):
+            await recorder.anlegen(service, "zwei", "ip:a")
+
+        assert caplog.records == []
 
 
 SEARCH_URL = "/api/v1/search/searchByText"

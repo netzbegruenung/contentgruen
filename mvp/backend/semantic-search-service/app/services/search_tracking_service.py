@@ -5,6 +5,12 @@ Provides business logic for tracking and analyzing search behavior.
 No personally identifiable data is persisted. Callers hand in the user or session
 id, this layer turns it into a daily rotating pseudonym, and only that pseudonym
 reaches the database.
+
+A search event carries only its UTC day, not the time of day. A search can
+create a new statement (services/search/search_query_statement.py) whose creation
+time is exact; an exact search time would let the two be matched and tie the
+statement to the searcher's daily pseudonym. All queries on search_events count
+whole days anyway.
 """
 
 import hashlib
@@ -95,13 +101,19 @@ class SearchTrackingService:
             logger.warning(f"Invalid results_count: {results_count}")
             return False
 
-        actor_hash = self._derive_actor_hash(user_id=user_id, session_id=session_id)
+        # One moment for both, so pseudonym and day never straddle midnight.
+        moment = datetime.now(timezone.utc)
+        actor_hash = self._derive_actor_hash(
+            user_id=user_id, session_id=session_id, moment=moment
+        )
 
-        logger.info(f"Tracking search: results={results_count}")
+        # No log line per search: it would carry the exact time again, and
+        # counted per day it lines up with the search events by order.
 
         return self.repository.track_search(
             results_count=results_count,
             actor_hash=actor_hash,
+            day=moment.date(),
         )
 
     def get_daily_active_users(self, date: datetime) -> int:
