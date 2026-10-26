@@ -243,7 +243,9 @@ async def add_commentary(
         # erkennt, wenn er dort schon haengt.
         statement_id = None
         statement_text = None
-        verknuepft = True
+        # Bei einer Dublette nur True, wenn der genommene vorhandene jetzt an der
+        # Aussage haengt - sonst wurde nichts verknuepft (#238).
+        verknuepft = dublette is None
         aussage_mitgeschickt = bool(
             request.statement_id or (request.statement_text or "").strip()
         )
@@ -259,6 +261,7 @@ async def add_commentary(
                         statement_text=request.statement_text,
                     )
                 )
+                verknuepft = True
             except AussageNichtGefunden:
                 # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
                 logger.warning(
@@ -277,7 +280,7 @@ async def add_commentary(
             statement_id=statement_id,
             statement_text=statement_text,
             verknuepft=verknuepft,
-            duplikat=dublette is not None,
+            dublette=dublette is not None,
             vorhanden_titel=dublette.title if dublette is not None else None,
             vorhanden_eigen=eigene_dublette,
         )
