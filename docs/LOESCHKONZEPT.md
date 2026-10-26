@@ -123,7 +123,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`). Ältere Tage
   verdichtet der tägliche Bereinigungsjob (`services/cleanup/usage_cleanup_service.py`,
   derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
-  Einzelzeilen samt Pseudonym und `id` (#289).
+  Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
+  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=true` (Standard); abgeschaltet gilt auch diese
+  Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
+  Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
 - **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen
   und die Zahl der Personen (verschiedene Tagespseudonyme), kein Pseudonym: nichts, was
   sich einer Person zuordnen ließe. Keine Frist.

@@ -195,7 +195,7 @@ Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Auss
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat. Nach 90 Tagen wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat. Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:

@@ -2,17 +2,17 @@
 Repository for search event tracking.
 Handles database operations for search analytics.
 
-Search events are kept as single rows for search_event_retention_days. Older days
-are compacted into day counters (suchen_je_tag: day, searches, distinct daily
-pseudonyms) without any pseudonym (#289). The period counts below add those
-counters, so they stay correct beyond the retention period.
+Suchereignisse bleiben search_event_retention_days Tage als Einzelzeilen. Aeltere
+Tage werden zu Tageszaehlern der Suchen verdichtet (suchen_je_tag: Tag, Zahl der
+Suchen, Zahl der Personen), ohne Tagespseudonym (#289). Die Zaehlungen je Zeitraum
+unten addieren diese Tageszaehler und stimmen so auch ueber die Frist hinaus.
 """
 
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional, Dict, Any, List
 from sqlalchemy import func, distinct, and_, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import SearchEvent, SuchenJeTagZeile
@@ -47,7 +47,7 @@ _VERDICHTEN = text(
 )
 
 
-def _tage_im_zeitraum(start_date: datetime, end_date: datetime) -> tuple:
+def _tage_im_zeitraum(start_date: datetime, end_date: datetime) -> tuple[date, date]:
     """Erster und letzter Tag, dessen Mitternacht im Zeitraum liegt.
 
     So zaehlt ein Tageszaehler genau dann mit, wenn seine Suchereignisse (die nur
@@ -240,7 +240,10 @@ class SearchTrackingRepository:
 
     @staticmethod
     def _summe_tageszaehler(
-        session: Session, spalte, start_date: datetime, end_date: datetime
+        session: Session,
+        spalte: InstrumentedAttribute,
+        start_date: datetime,
+        end_date: datetime,
     ) -> int:
         """Summe einer Spalte der Tageszaehler im Zeitraum."""
         erster, letzter = _tage_im_zeitraum(start_date, end_date)
@@ -261,6 +264,10 @@ class SearchTrackingRepository:
     ) -> int:
         """
         Suchereignisse vor der Frist zu Tageszaehlern verdichten.
+
+        Wirft bei Datenbankfehlern, anders als die Lesemethoden hier: Der
+        Bereinigungsjob soll einen gescheiterten Lauf als Fehler loggen, nicht als
+        "nichts zu tun".
 
         Tage, die mehr als days_to_keep Tage vor heute (UTC) liegen, werden je Tag
         zu Zahl der Suchen und Zahl der Personen (verschiedene Tagespseudonyme)

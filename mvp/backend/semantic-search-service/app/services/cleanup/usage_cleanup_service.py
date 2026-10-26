@@ -2,8 +2,8 @@
 Background service for cleaning up old usage tracking data.
 Implements data retention policy for privacy compliance.
 
-The same daily job compacts search events older than their own retention period
-into day counters without pseudonym (#289, see SearchTrackingRepository).
+Derselbe taegliche Job verdichtet Suchereignisse nach ihrer eigenen Frist zu
+Tageszaehlern der Suchen ohne Tagespseudonym (#289, siehe SearchTrackingRepository).
 """
 
 import logging
