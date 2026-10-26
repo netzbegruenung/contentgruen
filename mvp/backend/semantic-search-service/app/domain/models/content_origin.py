@@ -3,7 +3,7 @@ from enum import Enum
 
 class ContentOrigin(str, Enum):
     """
-    Enum class for content visibility
+    Enum class for content origin
 
     Attributes:
     -----------

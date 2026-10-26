@@ -6,16 +6,16 @@ class ContentVisibility(str, Enum):
     Legacy visibility marker. Every Beitrag is visible to everyone; new content sets no
     visibility. Kept only so stored values still parse until the status cleanup (#214).
 
-    Attributes:
+    Attributes (former meaning; no value restricts who sees a Beitrag):
     -----------
     VISIBLE : str
-        Content is accessible to all authorized users.
+        Was meant as: accessible to all authorized users.
     HIDDEN : str
-        Content is hidden but still exists in the system.
+        Was meant as: hidden but still in the system.
     INTERNAL : str
-        Content is visible only within the organization.
+        Was meant as: visible only within the organization ("Grün-Intern").
     RESTRICTED : str
-        Content is visible to specific roles or groups.
+        Was meant as: visible to specific roles or groups.
     """
 
     VISIBLE = "visible"
