@@ -24,8 +24,8 @@ dokumentiert dann das Schema.
 Aus dem Wurzelverzeichnis des Repos, für jedes noch nicht angewendete Skript:
 
 ```bash
-PG_CONTAINER=gutgesagt-app-postgres
-docker exec -i "$PG_CONTAINER" psql -U app_user -d gutgesagt_app -v ON_ERROR_STOP=1 \
+PG_CONTAINER=gutgesagt-app-postgres PG_DB=gutgesagt_app
+docker exec -i "$PG_CONTAINER" psql -U app_user -d "$PG_DB" -v ON_ERROR_STOP=1 \
   < mvp/backend/postgres-app/migrations/<datei>.sql
 ```
 
@@ -39,9 +39,9 @@ docker exec -i "$PG_CONTAINER" psql -U app_user -d gutgesagt_app -v ON_ERROR_STO
   ist die Migration schon festgeschrieben. Dann **nur** das `VACUUM FULL …;`
   einzeln nachholen, nicht das ganze Skript erneut starten (siehe „Erneut
   anwenden“).
-- `PG_CONTAINER` ist der Name des PostgreSQL-Containers der Umgebung. Wo der
-  Container noch den alten Namen `contentgruen-app-postgres` trägt (vor der
-  Umbenennung aus #206), diesen einsetzen.
+- `PG_CONTAINER` und `PG_DB` sind Container und Datenbank der Umgebung. Wo die
+  Umbenennung aus #206 noch nicht ausgerollt ist, gelten die alten Namen
+  `contentgruen-app-postgres` und `contentgruen_app`.
 - Ob eine Umgebung ein Skript braucht und ob es vor dem Start des neuen
   Dienstes laufen muss, steht im Kopf des Skripts.
 
