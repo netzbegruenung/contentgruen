@@ -1,0 +1,39 @@
+<mat-card class="suchen-ohne-treffer">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>search_off</mat-icon>
+      Suchen ohne Treffer
+    </mat-card-title>
+    <mat-card-subtitle>
+      Häufigste Suchanfragen der letzten {{ wochen }} Wochen, zu denen kein Beitrag passte.
+      Diese Aussagen brauchen noch Antworten.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <p *ngIf="fehler" class="hinweis">Die Suchen ohne Treffer konnten nicht geladen werden.</p>
+
+    <ng-container *ngIf="daten">
+      <table *ngIf="daten.suchanfragen.length > 0; else leer">
+        <thead>
+          <tr>
+            <th scope="col">Suchanfrage</th>
+            <th scope="col" class="anzahl">Anzahl</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of daten.suchanfragen" data-testid="suche-ohne-treffer">
+            <td>{{ s.text }}</td>
+            <td class="anzahl">{{ s.anzahl }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #leer>
+        <p class="hinweis">Keine Suchanfrage ohne Treffer im Zeitraum.</p>
+      </ng-template>
+      <p class="fussnote">
+        Gezählt je Aussage und Woche, ohne Bezug zu den Suchenden. Erscheint erst ab
+        {{ daten.mindestanzahl }} Suchen.
+      </p>
+    </ng-container>
+  </mat-card-content>
+</mat-card>

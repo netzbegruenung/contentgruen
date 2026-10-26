@@ -110,6 +110,21 @@ def anzeigenamen_ohne_datenbank(monkeypatch):
     yield repository
 
 
+@pytest.fixture(autouse=True)
+def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
+    """
+    Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer". Ohne diesen
+    Ersatz baute der erste Aufruf das echte Repository und verbaende sich mit dem
+    PostgreSQL aus den Settings (siehe anzeigenamen_ohne_datenbank).
+    """
+    import services.suchen_ohne_treffer_service as modul
+
+    repository = MagicMock()
+    repository.haeufigste.return_value = []
+    monkeypatch.setattr(modul, "_service", modul.SuchenOhneTrefferService(repository))
+    yield repository
+
+
 def create_base_content_fields(**overrides):
     """
     Create base content fields with all required attributes.

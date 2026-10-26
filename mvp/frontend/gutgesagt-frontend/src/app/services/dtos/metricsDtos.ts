@@ -20,3 +20,18 @@ export interface GetMetricsResponse {
 
     active_users_count: number;
 }
+
+
+// Suchen ohne Treffer (nur Admins)
+
+export interface SucheOhneTreffer {
+    statement_id: string;
+    text: string;
+    anzahl: number;
+}
+
+export interface SuchenOhneTrefferResponse {
+    wochen: number;
+    mindestanzahl: number;
+    suchanfragen: SucheOhneTreffer[];
+}

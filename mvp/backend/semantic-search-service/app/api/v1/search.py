@@ -29,6 +29,10 @@ from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.voting_service import VotingService
 from services.search_tracking_service import get_search_tracking_service
+from services.suchen_ohne_treffer_service import (
+    SuchenOhneTrefferService,
+    get_suchen_ohne_treffer_service,
+)
 from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
@@ -78,6 +82,9 @@ async def search_by_text(
     voting_service: VotingService = Depends(get_voting_service),
     recorder: SearchQueryStatementRecorder = Depends(
         get_search_query_statement_recorder
+    ),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
     ),
     x_user: Optional[str] = Header(None),
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
@@ -247,15 +254,16 @@ async def search_by_text(
             image_search_results=image_search_results,
         )
 
+        total_results = (
+            len(commentary_search_results)
+            + len(generictext_search_results)
+            + len(post_search_results)
+            + len(image_search_results)
+        )
+
         # Track search event for metrics (fire-and-forget, don't block response)
         try:
             search_tracking_service = get_search_tracking_service()
-            total_results = (
-                len(commentary_search_results)
-                + len(generictext_search_results)
-                + len(post_search_results)
-                + len(image_search_results)
-            )
 
             # Neither the query text nor the client IP is handed on: the search
             # text was stored in full without ever being read back, and the IP
@@ -269,6 +277,14 @@ async def search_by_text(
         except Exception as e:
             # Don't fail the search if tracking fails
             logger.warning(f"Failed to track search event: {e}")
+
+        # Kennzahl "Suchen ohne Treffer": gezaehlt an der Aussage zur Suchanfrage,
+        # getrennt vom Suchereignis und ohne Pseudonym. total_results zaehlt nur,
+        # was ueber der Schwelle des SearchOrchestrators lag.
+        try:
+            suchen_ohne_treffer.erfassen(statement_id, total_results)
+        except Exception as e:
+            logger.warning(f"Failed to count search without hits: {e}")
 
         return response
 

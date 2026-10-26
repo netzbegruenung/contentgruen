@@ -170,6 +170,10 @@ _Avoid_: Duplikat, Doppelung
 Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
 
+**Suche ohne Treffer**:
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage zur Suchanfrage, je Woche und ohne Bezug zur suchenden Person; Admins sehen die häufigsten als Kennzahl.
+_Avoid_: Nulltreffer, Fehlsuche, leere Suche
+
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
 _Avoid_: Contributions, Profil

@@ -1,8 +1,9 @@
 import asyncio
 import time
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import Optional
+from typing import List, Optional
 from datetime import date, datetime
 from pydantic import BaseModel, Field
 
@@ -21,6 +22,13 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.metrics_service import get_metrics_service
+from services.suchen_ohne_treffer_service import (
+    MINDESTANZAHL,
+    WOCHEN_MAX,
+    WOCHEN_STANDARD,
+    SuchenOhneTrefferService,
+    get_suchen_ohne_treffer_service,
+)
 from core.config import Settings
 from core.logging import get_logger
 
@@ -115,6 +123,22 @@ class HelpfulRateResponse(BaseModel):
     dislike_count: int
     total_votes: int
     helpful_rate: float
+
+
+class SucheOhneTrefferEintrag(BaseModel):
+    """Eine Suchanfrage ohne Treffer: Text der Aussage und Anzahl, sonst nichts."""
+
+    statement_id: uuid.UUID
+    text: str
+    anzahl: int
+
+
+class SuchenOhneTrefferResponse(BaseModel):
+    """Die haeufigsten Suchanfragen ohne Treffer im Zeitraum."""
+
+    wochen: int
+    mindestanzahl: int
+    suchanfragen: List[SucheOhneTrefferEintrag]
 
 
 # Bewusst oeffentlich: /getMetrics liefert nur aggregierte Bestandszaehler
@@ -360,4 +384,40 @@ async def get_helpful_rate(
         logger.error(f"Error fetching helpful rate: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch helpful rate: {e}"
+        )
+
+
+@router.get("/suchen-ohne-treffer", response_model=SuchenOhneTrefferResponse)
+async def get_suchen_ohne_treffer(
+    wochen: int = Query(
+        WOCHEN_STANDARD,
+        ge=1,
+        le=WOCHEN_MAX,
+        description="Zeitraum in Kalenderwochen, die laufende eingeschlossen",
+    ),
+    admin_user: str = Depends(require_admin),
+    service: SuchenOhneTrefferService = Depends(get_suchen_ohne_treffer_service),
+    statement_service: StatementService = Depends(get_statement_service),
+):
+    """
+    Die haeufigsten Suchanfragen der letzten Wochen, zu denen die Suche keinen
+    Beitrag fand, mit Anzahl. Ohne Personenbezug: gezaehlt wird je Aussage und
+    Woche, nicht je suchender Person (services/suchen_ohne_treffer_service.py).
+    """
+    try:
+        eintraege = await service.haeufigste(statement_service, wochen=wochen)
+        return SuchenOhneTrefferResponse(
+            wochen=wochen,
+            mindestanzahl=MINDESTANZAHL,
+            suchanfragen=[
+                SucheOhneTrefferEintrag(
+                    statement_id=e.statement_id, text=e.text, anzahl=e.anzahl
+                )
+                for e in eintraege
+            ],
+        )
+    except Exception as e:
+        logger.error(f"Error fetching searches without hits: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch searches without hits"
         )
