@@ -774,3 +774,18 @@ class TestSeedingHintergrundinfoDublette:
         verarbeitung.process_reference.assert_awaited_once()
         aufruf = orchestrator.generic_text_service.add_generic_text.call_args
         assert aufruf.kwargs["dublettenpruefung"] is pruefung
+
+    @pytest.mark.asyncio
+    async def test_ohne_text_wird_der_titel_geprueft(self, test_settings):
+        """Wie im Router (zu_pruefender_text): ohne Text der Titel, den add_generic_text speichert."""
+        orchestrator, verarbeitung = self._verarbeitung(
+            test_settings, Dublettenpruefung(vorhanden=None, aehnlichster=None)
+        )
+
+        await verarbeitung.create_generictext_with_references(
+            {**self.DATEN, "text": ""}
+        )
+
+        orchestrator.generic_text_service.pruefe_dublette.assert_awaited_once_with(
+            "Titel"
+        )

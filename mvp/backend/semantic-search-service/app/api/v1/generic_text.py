@@ -209,7 +209,8 @@ async def add_generic_text(
         # Pruefen und Anlegen unter einer Sperre je normalisiertem Text, wie beim
         # Kommentar (api/v1/commentary.py): Zwei gleichzeitige gleiche
         # Hintergrundinfos legen nur eine an, und die Dublette wird vor den
-        # Herkunftsangaben geprueft - sonst entstuenden verwaiste Referenzen.
+        # Herkunftsangaben geprueft - sonst entstuenden Herkuenfte, die an keinem
+        # Beitrag haengen.
         text = zu_pruefender_text(request.generictext)
         async with generic_text_service.sperre(text):
             pruefung = await generic_text_service.pruefe_dublette(text)

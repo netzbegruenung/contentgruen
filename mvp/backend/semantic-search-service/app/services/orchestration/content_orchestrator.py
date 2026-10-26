@@ -10,7 +10,10 @@ from core.logging import get_logger
 from services.content.commentary_service import CommentaryService
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
-from services.content.generic_text_service import GenericTextService
+from services.content.generic_text_service import (
+    GenericTextService,
+    zu_pruefender_text,
+)
 from services.content.base_content_service import BaseContentService
 from utils.data_utils import DataLoader, DataSource
 from repositories.implementations.qdrant.qdrant_repository_factory import (
@@ -232,9 +235,13 @@ class DataProcessor:
             )
             return None
 
-        # Dublette vor den Herkunftsangaben pruefen, wie im Router.
+        # Dublette vor den Herkunftsangaben pruefen, wie im Router - mit demselben
+        # Text, den add_generic_text speichert.
+        generictext = GenericText(text=text, title=title)
         generic_text_service = self.orchestrator.generic_text_service
-        pruefung = await generic_text_service.pruefe_dublette(text or title)
+        pruefung = await generic_text_service.pruefe_dublette(
+            zu_pruefender_text(generictext)
+        )
         if pruefung.vorhanden is not None:
             self.orchestrator.mark_content_processed(
                 title, text, "generic_text", "skipped"
@@ -252,11 +259,7 @@ class DataProcessor:
                 )
             )
 
-        generictext = GenericText(
-            text=text,
-            title=title,
-            references=generictext_references,
-        )
+        generictext.references = generictext_references
 
         # Parse created_at from metadata if available
         created_at = None

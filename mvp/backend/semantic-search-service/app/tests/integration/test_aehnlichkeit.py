@@ -432,7 +432,7 @@ async def test_hintergrundinfo_dublette_mit_passage_einbettung(
     async def dublette(text):
         return (await generic_text_service.pruefe_dublette(text)).vorhanden
 
-    # wortgleich, nur klein geschrieben, Kopie mit Quellenzusatz
+    # wortgleich, nur klein geschrieben, Kopie mit Herkunftszusatz
     assert (await dublette(JAZ)).id == jaz
     assert (await dublette(JAZ.lower())).id == jaz
     assert (await dublette(JAZ + " Quelle: Fraunhofer ISE.")).id == jaz

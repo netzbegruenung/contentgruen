@@ -241,7 +241,7 @@ class TestAddGenericTextAntwort:
         return generic_text_service
 
     def test_dublette_legt_weder_hintergrundinfo_noch_herkunft_an(self, dienste):
-        """Die Pruefung laeuft vor den Referenzen - sonst blieben sie verwaist."""
+        """Die Pruefung laeuft vor den Herkunftsangaben - sonst hingen sie an keinem Beitrag."""
         vorhanden = uuid.uuid4()
         generic_text_service = self._dublette(vorhanden)
         reference_service = app.dependency_overrides[get_reference_service]()
