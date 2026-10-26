@@ -67,8 +67,8 @@ def _gesperrt_bedingungen() -> list:
 
     Ein Admin sperrt einen Beitrag, statt ihn zu loeschen: Er verschwindet aus
     Suche, Einzelansicht, Listen und "Meine Beitraege", bleibt aber im Speicher
-    und damit fuer die Moderation auffindbar (services/moderation_service.py
-    liest am Repository vorbei). must_not statt MatchExcept auf must, damit
+    und damit fuer die Moderation auffindbar (QdrantModerationRepository in
+    moderation_repository.py filtert nicht nach Sperre). must_not statt MatchExcept auf must, damit
     Altbestand ohne Status-Feld sichtbar bleibt.
     """
     from qdrant_client.models import FieldCondition, MatchValue

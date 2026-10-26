@@ -215,9 +215,7 @@ async def get_reports(
     - all: All reports regardless of status
     """
     try:
-        logger.info(
-            f"Admin {admin_user} fetching {status} reports (limit={limit}, offset={offset})"
-        )
+        logger.info(f"Admin fetching {status} reports (limit={limit}, offset={offset})")
 
         moderation_service = get_moderation_service()
         reports = await moderation_service.get_reports(
@@ -246,7 +244,7 @@ async def sperren(
     sich entsperren. Alle Meldungen zum Beitrag stehen danach auf bearbeitet.
     """
     try:
-        logger.info(f"Admin {admin_user} blocking (sperren) content: {content_id}")
+        logger.info(f"Admin blocking (sperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
         if not await moderation_service.sperren(
@@ -273,7 +271,7 @@ async def entsperren(
     wie vor der Sperre.
     """
     try:
-        logger.info(f"Admin {admin_user} unblocking (entsperren) content: {content_id}")
+        logger.info(f"Admin unblocking (entsperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
         if not await moderation_service.entsperren(
@@ -296,7 +294,7 @@ async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
     Alle gesperrten Beitraege (Admin only), auch solche ohne Meldung.
     """
     try:
-        logger.info(f"Admin {admin_user} fetching gesperrte Beitraege")
+        logger.info("Admin fetching gesperrte Beitraege")
 
         beitraege = await get_moderation_service().gesperrte_beitraege()
         return GesperrteResponse(total=len(beitraege), beitraege=beitraege)
@@ -326,7 +324,7 @@ async def delete_content(
     wenn ein Text eine Person erkennbar macht (docs/LOESCHKONZEPT.md).
     """
     try:
-        logger.info(f"Admin {admin_user} deleting content: {content_type}/{content_id}")
+        logger.info(f"Admin deleting content: {content_type}/{content_id}")
 
         moderation_service = get_moderation_service()
         success = await moderation_service.delete_content(
@@ -364,7 +362,7 @@ async def dismiss_report(
     Marks report as reviewed without deleting content.
     """
     try:
-        logger.info(f"Admin {admin_user} dismissing report: {report_id}")
+        logger.info(f"Admin dismissing report: {report_id}")
 
         moderation_service = get_moderation_service()
         success = await moderation_service.dismiss_report(
@@ -397,7 +395,7 @@ async def get_report_stats(
     Returns counts of reports by status.
     """
     try:
-        logger.info(f"Admin {admin_user} fetching report stats")
+        logger.info("Admin fetching report stats")
 
         moderation_service = get_moderation_service()
         stats = moderation_service.get_report_stats()

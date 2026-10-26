@@ -8,10 +8,15 @@ Status von vor der Sperre wieder her.
 """
 
 import uuid
-from unittest.mock import MagicMock, patch
+import json
+import logging
+from unittest.mock import MagicMock
 
 import pytest
 
+from repositories.implementations.qdrant.moderation_repository import (
+    QdrantModerationRepository,
+)
 from services.moderation_service import ModerationService
 from tests.conftest import create_base_content_fields
 
@@ -43,14 +48,11 @@ def _payload(speicher) -> dict:
 def service(speicher):
     report_repo = MagicMock()
     report_repo.update_reports_by_content_id = MagicMock(return_value=2)
-    with patch(
-        "services.moderation_service.get_content_report_repository",
-        return_value=report_repo,
-    ), patch(
-        "services.moderation_service.get_embeddings_manager",
-        return_value=speicher,
-    ):
-        yield ModerationService()
+    report_repo.update_report_status = MagicMock(return_value=MagicMock())
+    return ModerationService(
+        report_repo=report_repo,
+        moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
+    )
 
 
 @pytest.mark.unit
@@ -164,3 +166,64 @@ class TestGesperrteBeitraege:
 
     async def test_leer_ohne_sperre(self, service):
         assert await service.gesperrte_beitraege() == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestLoeschen:
+    async def test_loeschen_entfernt_beitrag_und_verweise_aus_aussagen(
+        self, service, speicher
+    ):
+        aussage_id = str(uuid.uuid4())
+        speicher.add_test_data(
+            "statement",
+            [
+                {
+                    **create_base_content_fields(),
+                    "id": aussage_id,
+                    "replysuggestions": json.dumps([{"id": CONTENT_ID}]),
+                    "replysuggestions_count": 1,
+                }
+            ],
+        )
+
+        assert await service.delete_content(CONTENT_ID, "commentary", "admin-1")
+
+        assert CONTENT_ID not in speicher.get_data()
+        assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 0
+        aufruf = service.report_repo.update_reports_by_content_id.call_args.kwargs
+        assert aufruf["reviewed_by"] == "admin-1"
+
+
+ADMIN_KENNUNG = "admin.person@example.org"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestKeineAdminKennungImLog:
+    """Wer moderiert hat, steht an den Meldungen (reviewed_by), nicht im Log."""
+
+    async def test_sperren_und_entsperren(self, service, caplog):
+        caplog.set_level(logging.DEBUG)
+
+        await service.sperren(CONTENT_ID, gesperrt_von=ADMIN_KENNUNG)
+        await service.entsperren(CONTENT_ID, entsperrt_von=ADMIN_KENNUNG)
+
+        assert "gesperrt" in caplog.text and "entsperrt" in caplog.text
+        assert ADMIN_KENNUNG not in caplog.text
+
+    async def test_loeschen(self, service, caplog):
+        caplog.set_level(logging.DEBUG)
+
+        await service.delete_content(CONTENT_ID, "commentary", ADMIN_KENNUNG)
+
+        assert "deleted" in caplog.text
+        assert ADMIN_KENNUNG not in caplog.text
+
+    async def test_abweisen(self, service, caplog):
+        caplog.set_level(logging.DEBUG)
+
+        assert await service.dismiss_report(str(uuid.uuid4()), ADMIN_KENNUNG)
+
+        assert "dismissed" in caplog.text
+        assert ADMIN_KENNUNG not in caplog.text

@@ -9,7 +9,7 @@ Antwortvorschlaegen und ist nach dem Entsperren wieder da. Die Meldungen
 
 import datetime
 import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -19,6 +19,9 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.post import PostDbEntry
 from dtos.search import PostSearchResult as PostSearchResultWrapper
+from repositories.implementations.qdrant.moderation_repository import (
+    QdrantModerationRepository,
+)
 from services.moderation_service import ModerationService
 from services.search.search_orchestrator import (
     ContentTypeSearchSpec,
@@ -60,14 +63,12 @@ def post_service(integration_settings, real_repository_factory):
 
 @pytest.fixture
 def moderation(real_embeddings_manager):
-    with patch(
-        "services.moderation_service.get_content_report_repository",
-        return_value=MagicMock(),
-    ), patch(
-        "services.moderation_service.get_embeddings_manager",
-        return_value=real_embeddings_manager,
-    ):
-        yield ModerationService()
+    return ModerationService(
+        report_repo=MagicMock(),
+        moderation_repo=QdrantModerationRepository(
+            embeddings_manager=real_embeddings_manager
+        ),
+    )
 
 
 async def _antwortvorschlaege(post_service, post_id):
