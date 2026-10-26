@@ -2,6 +2,7 @@ import datetime
 from domain.models.zeit import utc_jetzt
 import logging
 from typing import Optional
+from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
 from dependencies import (
@@ -15,6 +16,7 @@ from dtos.commentary import (
     CommentarySearchResponse,
     SearchCommentaryByTextRequest,
 )
+from domain.models.base_content import BaseContentSearchResult
 from services.content.base_content_service import Dublettenpruefung
 from services.content.commentary_service import CommentaryService
 from services.anzeigename_service import angemeldet, get_anzeigename_service
@@ -35,6 +37,17 @@ logger = logging.getLogger(__name__)
 KOMMENTAR_RELEVANZ = 1.0
 
 
+def _ist_gezeigter(
+    vorhanden: Optional[BaseContentSearchResult], angefragt: Optional[UUID]
+) -> bool:
+    """Die Entscheidung der Person gilt genau dem vorhandenen, den sie gesehen hat."""
+    return (
+        vorhanden is not None
+        and angefragt is not None
+        and str(vorhanden.id) == str(angefragt)
+    )
+
+
 # Test endpoint to check if the API is running
 @router.get("/")
 async def read_test():
@@ -42,7 +55,6 @@ async def read_test():
 
 
 from fastapi import Query
-from uuid import UUID
 
 
 # Endpoint to search commentary by UUID
@@ -121,11 +133,7 @@ async def add_commentary(
         # bettet nicht noch einmal ein.
         async with commentary_service.sperre(request.commentary.text):
             pruefung = await commentary_service.pruefe_dublette(request.commentary.text)
-            if (
-                pruefung.vorhanden is not None
-                and request.trotz_dublette_von is not None
-                and str(pruefung.vorhanden.id) == str(request.trotz_dublette_von)
-            ):
+            if _ist_gezeigter(pruefung.vorhanden, request.trotz_dublette_von):
                 # Die Person hat genau diesen vorhandenen Kommentar gesehen und
                 # entschieden: anlegen. Der aehnlichste Treffer bleibt fuer
                 # most_similar_* erhalten.
@@ -134,6 +142,13 @@ async def add_commentary(
                 )
                 pruefung = Dublettenpruefung(
                     vorhanden=None, aehnlichster=pruefung.aehnlichster
+                )
+            if pruefung.vorhanden is None and request.vorhanden_nehmen is not None:
+                # Der gewaehlte vorhandene ist weg (geloescht, Text geaendert): Einen
+                # neuen anzulegen, hat die Person nicht gewaehlt.
+                raise HTTPException(
+                    status_code=409,
+                    detail="The existing commentary is no longer available",
                 )
             if pruefung.vorhanden is None:
                 # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
@@ -198,7 +213,9 @@ async def add_commentary(
                 )
 
         # Nichts angelegt? Dann ist die Antwort der vorhandene Kommentar. Verknuepft
-        # wird nur die eigene Dublette.
+        # wird er nur, wenn er von derselben Person ist und sie ihn mit
+        # vorhanden_nehmen gewaehlt hat - beim ersten Versuch entscheidet sie noch,
+        # und wer danach trotzdem speichert, will nur den neuen an der Aussage (#242).
         #
         # Nicht, weil fremde Zuordnungen unerwuenscht waeren - im Gegenteil: Eine gute
         # Antwort passt oft auf viele Aussagen, und dass andere diese Zuordnung
@@ -209,24 +226,28 @@ async def add_commentary(
         # funktioniert und die gewaehlte Aussage sichtbar macht.
         dublette = pruefung.vorhanden
         eigene_dublette = dublette is not None and dublette.original_author == x_user
+        vorhanden_genommen = eigene_dublette and _ist_gezeigter(
+            dublette, request.vorhanden_nehmen
+        )
         if dublette is not None:
             commentary_id = dublette.id
             logger.info(
                 f"Commentary is a duplicate of {commentary_id} "
-                f"({'same author' if eigene_dublette else 'other author, not linked'})"
+                f"({'same author' if eigene_dublette else 'other author'}, "
+                f"{'taken' if vorhanden_genommen else 'not linked'})"
             )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
-        # bleibt der Kommentar gespeichert und die Antwort sagt es. Bei einer eigenen
-        # Dublette haengt der vorhandene Kommentar danach (auch) an dieser Aussage -
-        # die Verknuepfung erkennt, wenn er dort schon haengt.
+        # bleibt der Kommentar gespeichert und die Antwort sagt es. Den eigenen
+        # vorhandenen haengt erst seine Wahl an diese Aussage - die Verknuepfung
+        # erkennt, wenn er dort schon haengt.
         statement_id = None
         statement_text = None
         verknuepft = True
         aussage_mitgeschickt = bool(
             request.statement_id or (request.statement_text or "").strip()
         )
-        if aussage_mitgeschickt and (dublette is None or eigene_dublette):
+        if aussage_mitgeschickt and (dublette is None or vorhanden_genommen):
             try:
                 statement_id, statement_text = (
                     await statement_service.beitrag_als_antwort_verknuepfen(

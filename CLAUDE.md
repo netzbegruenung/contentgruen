@@ -97,7 +97,7 @@ Gut gesagt is a semantic content platform for green political activism, helping 
 - **BFF**: .NET 9.0 with YARP proxy
 - **API**: Python FastAPI with Qdrant vector database
 - **Databases**: Qdrant (vectors), PostgreSQL (metadata)
-- **Infrastructure**: Docker, nginx, SaltStack (prod)
+- **Infrastructure**: Docker, nginx; test and prod run on verdigado's internal infrastructure
 
 ## Architecture Summary
 
@@ -165,7 +165,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 
 ### Keycloak (Production)
 - SSO integration with Netzbegrünung
-- Managed by SaltStack configuration
+- Configured outside this repository
 
 ## Claude Custom Commands
 
@@ -329,7 +329,7 @@ cd mvp/scripts/backup
 - Automatic rotation: Keeps last 7 daily + 4 weekly backups
 - Includes Qdrant vectors and PostgreSQL metadata
 - Restore is destructive - always confirm before running
-- Production: Automated via SaltStack (extracts script from container, sets up cron)
+- Production: scheduled on verdigado's internal infrastructure
 - See `mvp/scripts/backup/README.md` for detailed documentation
 
 ## Testing
@@ -352,17 +352,16 @@ dotnet test
 ## Deployment
 
 ### Test Environment
-- URL: https://gutgesagt-test.netzbegruenung.de (SaltStack-managed, runs the `:main` image tag)
-- Deployment: Manual — Salt `state.apply`, then `docker compose pull && docker compose up -d` on the host.
-  A new `:main` image is **not** rolled out automatically, so migrations can run before the deploy.
+- URL: https://gutgesagt-test.netzbegruenung.de (runs the `:main` image tag)
+- Deployment: Manual, by the operators. A new `:main` image is **not** rolled out
+  automatically, so migrations can run before the deploy.
   How to apply them, and the convention for new ones: `mvp/backend/postgres-app/migrations/README.md`.
-  The Salt state still contains a Watchtower block, but its container is stuck in a restart loop
-  (as of 2026-10-11); the block is being removed from the Salt repo (#22).
 
 ### Production Environment
 - URL: https://gutgesagt.netzbegruenung.de
-- Deployment: Automated via SaltStack
-- Config: External SaltStack repository
+- Deployment: pins `:latest` by digest; a tag push alone deploys nothing. Release flow:
+  `docs/DEPLOYMENT.md`, "Updating Production"
+- Config: verdigado's internal infrastructure, outside this repository
 
 ## Troubleshooting
 
