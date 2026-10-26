@@ -31,6 +31,18 @@ export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string
 ];
 
 /**
+ * Wohin der Fangkorb nach einer Handlung im Destillier-Ablauf zurueckkehrt: der
+ * Tab, in dem der Einwurf jetzt liegt, oder "ausformuliert", wenn er in keinem
+ * mehr liegt.
+ */
+export type Ruecksprung = FangkorbTab | 'ausformuliert';
+
+/** Ausformuliertes liegt in keinem Tab; zurueck geht es in die Arbeitsliste, aus der es kam. */
+export function tabNach(ruecksprung: Ruecksprung): FangkorbTab {
+  return ruecksprung === 'ausformuliert' ? 'ausformulieren' : ruecksprung;
+}
+
+/**
  * Fruehere Tabs: "Erledigt" bis zur Angleichung ans Glossar, danach
  * "Ausformuliert" bis #265. Ein in der Sitzung gemerkter Wert fuehrt auf die
  * erste Arbeitsliste.

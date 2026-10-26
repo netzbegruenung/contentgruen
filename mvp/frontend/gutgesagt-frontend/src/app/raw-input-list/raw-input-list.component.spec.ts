@@ -375,15 +375,18 @@ describe('RawInputListComponent', () => {
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['neu', 'mittel', 'alt']);
     });
 
-    it('sagt in jedem leeren Tab in einer Zeile, dass dort nichts liegt', () => {
+    it('sagt im leeren Tab "Ausformulieren" in einer Zeile, dass dort nichts liegt', () => {
       erstellen([einwurf({ id: 'roh' })]);
       klicken(tabKnopf('Ausformulieren'));
+
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
         'Nichts auszuformulieren.',
       );
+    });
 
+    it('sagt im leeren Tab "Destillieren" in einer Zeile, dass dort nichts liegt', () => {
       erstellen([einwurf({ id: 'satz', status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] })]);
-      klicken(tabKnopf('Destillieren'));
+
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
         'Nichts zu destillieren.',
       );

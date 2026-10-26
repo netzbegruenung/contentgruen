@@ -22,7 +22,7 @@ _Avoid_: Warteschlange, Queue, Rohliste, Arbeitsvorrat
 
 **Arbeitsliste**:
 Eine der beiden Ansichten im Fangkorb, benannt nach der Arbeit, die an ihren Einwürfen als Nächstes ansteht: „Destillieren“ mit den offenen, „Ausformulieren“ mit den destillierten. Ausformulierte Einwürfe stehen in keiner Arbeitsliste, sondern in „Meine Einwürfe“ und als Herkunft am Beitrag.
-_Avoid_: Spalte, Queue, Stapel
+_Avoid_: Spalte, Stapel, Aufgabenliste
 
 **Einwerfer**:
 Die Person, die einen Einwurf angelegt hat. Verwerfen dürfen nur sie und Admins.

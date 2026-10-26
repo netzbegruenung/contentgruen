@@ -14,7 +14,7 @@ import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
-import { FangkorbTab, tabMerken } from '../../raw-input-list/fangkorb-filter';
+import { Ruecksprung, tabMerken, tabNach } from '../../raw-input-list/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,
@@ -107,12 +107,10 @@ export class BeitragGespeichertComponent implements OnInit {
     return this.route.snapshot.queryParamMap.get(ROHINPUT_ADRESSE_PARAM);
   }
 
-  /**
-   * Zurueck in den Fangkorb geht es nach "Ausformulieren": Dort liegt der Einwurf
-   * noch, wenn das Verknuepfen scheiterte, und von dort kam er. Verknuepft ist er
-   * ausformuliert und liegt in keinem Tab mehr.
-   */
-  private readonly fangkorbTab: FangkorbTab = 'ausformulieren';
+  /** Wo der Einwurf jetzt liegt: verknuepft ist er ausformuliert, sonst noch destilliert. */
+  private get fangkorbTab(): Ruecksprung {
+    return this.zustand.einwurfVerknuepft === false ? 'ausformulieren' : 'ausformuliert';
+  }
 
   ngOnInit(): void {
     this.typ = this.route.snapshot.data['typ'] ?? 'commentary';
@@ -145,7 +143,7 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   zumFangkorb(): void {
-    tabMerken(this.fangkorbTab);
+    tabMerken(tabNach(this.fangkorbTab));
     this.router.navigate(['/fangkorb']);
   }
 

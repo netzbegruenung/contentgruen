@@ -8,6 +8,7 @@ import {
   standardFilter,
   tabAus,
   tabMerken,
+  tabNach,
   verworfenEinblenden,
 } from './fangkorb-filter';
 import { Einwurf, Satz, Verknuepfung } from '../services/einwurf.service';
@@ -142,6 +143,14 @@ describe('tabAus', () => {
     expect(tabAus(null)).toBeNull();
     expect(tabAus(undefined)).toBeNull();
     expect(tabAus('constructor')).toBeNull();
+  });
+});
+
+describe('tabNach', () => {
+  it('fuehrt nach dem Ausformulieren in die Arbeitsliste "Ausformulieren", sonst in den genannten Tab', () => {
+    expect(tabNach('ausformuliert')).toBe('ausformulieren');
+    expect(tabNach('destillieren')).toBe('destillieren');
+    expect(tabNach('ausformulieren')).toBe('ausformulieren');
   });
 });
 

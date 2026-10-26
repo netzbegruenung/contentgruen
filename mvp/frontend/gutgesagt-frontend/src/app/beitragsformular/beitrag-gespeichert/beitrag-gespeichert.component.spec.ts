@@ -99,12 +99,11 @@ describe('BeitragGespeichertComponent', () => {
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      // Der Einwurf ist ausformuliert und liegt in keinem Tab mehr; zurueck geht es
-      // in die Arbeitsliste, aus der er kam.
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformuliert');
 
       (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
       expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
+      // Ausformuliertes liegt in keinem Tab; zurueck in die Arbeitsliste, aus der es kam.
       expect(filterLaden().tab).toBe('ausformulieren');
       sessionStorage.removeItem(FILTER_SCHLUESSEL);
     });

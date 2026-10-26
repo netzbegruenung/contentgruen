@@ -5,7 +5,7 @@ import { catchError, map } from 'rxjs/operators';
 
 import { BeitragsTyp, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
-import { FangkorbTab } from '../raw-input-list/fangkorb-filter';
+import { Ruecksprung, tabNach } from '../raw-input-list/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 
@@ -83,14 +83,12 @@ export class DestillierUebergabeService {
   /**
    * Den naechsten offenen Einwurf oeffnen; ``nach`` wird dabei uebersprungen.
    *
-   * ``ergebnis`` sagt, wo der Fangkorb aufgehen soll, falls keiner mehr offen ist -
-   * der Tab, in dem das Ergebnis der gerade beendeten Handlung liegt. Er wird
+   * ``ruecksprung`` sagt, wo der Fangkorb aufgehen soll, falls keiner mehr offen
+   * ist - der Tab, in dem das Ergebnis der gerade beendeten Handlung liegt. Er wird
    * durchgereicht statt geraten: Nur die Handlung selbst weiss, was sie bewirkt
-   * hat. "ausformuliert" heisst: Der Einwurf liegt in keinem Tab mehr; dann geht
-   * es in die Arbeitsliste, aus der er kam.
+   * hat. In die Adresse kommt nur ein Tab (``tabNach``).
    */
-  zumNaechsten(nach: string, ergebnis: FangkorbTab | 'ausformuliert'): void {
-    const tab: FangkorbTab = ergebnis === 'ausformuliert' ? 'ausformulieren' : ergebnis;
-    this.router.navigate(['/destillieren'], { queryParams: { nach, [TAB_PARAM]: tab } });
+  zumNaechsten(nach: string, ruecksprung: Ruecksprung): void {
+    this.router.navigate(['/destillieren'], { queryParams: { nach, [TAB_PARAM]: tabNach(ruecksprung) } });
   }
 }
