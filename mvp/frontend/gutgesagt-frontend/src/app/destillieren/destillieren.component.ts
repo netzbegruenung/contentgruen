@@ -51,7 +51,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
  * Der Ablauf muss am Handy unterbrechbar sein: Der Satz wird verzoegert beim
  * Tippen, beim Verlassen des Felds, bei jedem Knopf und beim Wegwechseln der App
  * (keepalive) serverseitig gespeichert. Ohne ID in der Adresse oeffnet sich der
- * naechste offene Einwurf ohne eigenen Entwurf, sonst "Alles destilliert".
+ * naechste offene Einwurf ohne eigenen Satz, sonst "Alles destilliert".
  */
 @Component({
   selector: 'app-destillieren',
@@ -118,7 +118,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   @HostListener('document:visibilitychange')
   onVisibilityChange(): void {
     if (document.visibilityState === 'hidden') {
-      this.entwurfSichern();
+      this.satzSichern();
     }
   }
 
@@ -209,12 +209,6 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     if (beitrag) {
       this.beitragAnsehenDienst.oeffnen(beitrag.contentId, beitrag.contentType);
     }
-  }
-
-  /** Der Hinweis zum Einwurf, sofern er mehr ist als der Link selbst. */
-  get hinweis(): string | null {
-    const inhalt = this.einwurf?.content;
-    return inhalt && inhalt !== this.einwurf?.url ? inhalt : null;
   }
 
   /**
@@ -453,7 +447,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     });
   }
 
-  private entwurfSichern(): void {
+  private satzSichern(): void {
     const satz = this.satz.value.trim();
     if (!this.einwurf || satz === this.zuletztGespeichert || satz.length > SATZ_LIMIT) {
       return;

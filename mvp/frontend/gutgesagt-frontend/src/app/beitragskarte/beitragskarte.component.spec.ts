@@ -674,6 +674,13 @@ describe('BeitragskarteComponent', () => {
         { variante: 'einwurf' },
       );
       expect(component.stufenName).toBe('Ausformuliert');
+
+      zeigen(
+        einwurf({ status: 'processed', links: [{ content_id: 'c-1', content_type: 'commentary', draft_id: null } as any] }),
+        { variante: 'einwurf' },
+      );
+      expect(component.stufenName).toBe('Ausformuliert: Kommentar');
+      expect(element('.karte-icon').getAttribute('aria-label')).toBe('Ausformuliert: Kommentar');
     });
 
     it('erlaubt auch Admins kein Verwerfen von Ausformuliertem', () => {

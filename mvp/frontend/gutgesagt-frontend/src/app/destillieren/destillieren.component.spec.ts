@@ -123,7 +123,7 @@ describe('DestillierenComponent', () => {
   afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
 
   describe('Satz', () => {
-    it('laedt den Einwurf und uebernimmt den eigenen Entwurf', async () => {
+    it('laedt den Einwurf und uebernimmt den eigenen Satz', async () => {
       await erstellen('id-1', einwurf({ own_draft: 'Mein Satz' }));
 
       expect(rawInputService.getRawInput).toHaveBeenCalledWith('id-1');

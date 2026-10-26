@@ -279,13 +279,13 @@ describe('karten-daten', () => {
       const karte = ausEinwurf(
         einwurf({
           status: 'processed',
-          drafts: [satz('s-1', 'bob', 'Entwurf geblieben'), satz('s-2', 'bob', 'Zweimal genommen')],
+          drafts: [satz('s-1', 'bob', 'Ohne Beitrag geblieben'), satz('s-2', 'bob', 'Zweimal genommen')],
           links: [link('s-2', 'commentary', 'c-1'), link('s-2', 'generic_text', 'c-2')],
         }),
       );
 
       expect(karte.einwurf!.saetze).toEqual([
-        { id: 's-1', text: 'Entwurf geblieben', beitraege: 0 },
+        { id: 's-1', text: 'Ohne Beitrag geblieben', beitraege: 0 },
         { id: 's-2', text: 'Zweimal genommen', beitraege: 2 },
       ]);
       expect(karte.einwurf!.stufe).toBe('ausformuliert');

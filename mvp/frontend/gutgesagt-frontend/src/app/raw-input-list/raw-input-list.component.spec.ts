@@ -400,11 +400,11 @@ describe('RawInputListComponent', () => {
   });
 
   describe('Saetze in der Karte', () => {
-    it('zeigt je Satz den Stand, mehrere Beitraege als Zahl', () => {
+    it('zeigt je Satz den Stand, mehrere Beitraege als Zahl, ohne Beitrag nichts', () => {
       erstellen([
         einwurf({
           status: 'processed',
-          drafts: [satz('s-1', 'bob', 'Entwurf geblieben'), satz('s-2', 'bob', 'Zweimal genommen')],
+          drafts: [satz('s-1', 'bob', 'Ohne Beitrag geblieben'), satz('s-2', 'bob', 'Zweimal genommen')],
           links: [link('s-2', 'commentary', 'c-1'), link('s-2', 'generic_text', 'c-2')],
         }),
       ]);
@@ -412,8 +412,9 @@ describe('RawInputListComponent', () => {
       const zeilen = Array.from(karten()[0].querySelectorAll('.einwurf-satz') as NodeListOf<HTMLElement>);
 
       expect(zeilen.length).toBe(2);
-      expect(zeilen[0].querySelector('.satz-text')!.textContent!.trim()).toBe('Entwurf geblieben');
-      expect(zeilen[0].querySelector('.satz-status')!.textContent!.trim()).toBe('Entwurf');
+      expect(zeilen[0].querySelector('.satz-text')!.textContent!.trim()).toBe('Ohne Beitrag geblieben');
+      expect(zeilen[0].querySelector('.satz-status')!.textContent!.trim()).toBe('');
+      expect(zeilen[0].querySelector('.satz-status')!.getAttribute('aria-label')).toBe('noch kein Beitrag');
       expect(zeilen[1].querySelector('.satz-status')!.textContent!.trim()).toBe('✓ 2');
     });
 

@@ -130,7 +130,7 @@ export class RawInputService {
   }
 
   addRawInput(request: AddRawInputRequest): Observable<AddRawInputResponse> {
-    this.logger.debug('Werfe Rohinput ein');
+    this.logger.debug('Einwurf wird eingeworfen');
     return this.http.post<AddRawInputResponse>(`${this.baseApiUrl}/addRawInput`, request);
   }
 
@@ -201,11 +201,11 @@ export class RawInputService {
 
   /**
    * Der naechste Einwurf fuer den Destillier-Ablauf: offen oder destilliert, ohne
-   * eigenen Entwurf.
+   * eigenen Satz.
    *
    * Destilliert heisst nur, dass jemand anderes schon einen Satz hat - es gibt
    * keine Sperre, der eigene Satz kann trotzdem kommen. Einwuerfe mit eigenem
-   * Entwurf hat man mit "Spaeter" zurueckgestellt; sie bleiben antippbar, werden
+   * Satz hat man mit "Spaeter" zurueckgestellt; sie bleiben antippbar, werden
    * aber nicht automatisch wieder angeboten. Dasselbe gilt fuer Einwuerfe, die in
    * dieser Runde ohne Satz zurueckgestellt wurden (``zurueckstellen``). Die
    * Reihenfolge (eigene zuerst, dann neueste) kommt vom Server.

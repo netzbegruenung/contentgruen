@@ -54,7 +54,7 @@ export interface KartenExtra {
 export interface EinwurfSatz {
   id: string;
   text: string;
-  /** 0 heisst Entwurf; sonst die Zahl der Beitraege aus genau diesem Satz. */
+  /** Die Zahl der Beitraege aus genau diesem Satz; 0, solange keiner daraus entstanden ist. */
   beitraege: number;
 }
 

@@ -63,7 +63,7 @@
                 <li class="einwurf-satz" *ngFor="let satz of sichtbareSaetze">
                     <span class="satz-text">{{ satz.text }}</span>
                     <span class="satz-status" [class.satz-status--fertig]="satz.beitraege > 0"
-                          [attr.aria-label]="satzBeschriftung(satz)">{{ satzStatus(satz) }}</span>
+                          role="img" [attr.aria-label]="satzBeschriftung(satz)">{{ satzStatus(satz) }}</span>
                 </li>
                 <li class="einwurf-mehr" *ngIf="weitereSaetze">+{{ weitereSaetze }} weitere</li>
             </ul>

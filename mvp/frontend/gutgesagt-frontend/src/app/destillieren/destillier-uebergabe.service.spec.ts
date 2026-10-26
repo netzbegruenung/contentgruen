@@ -65,7 +65,7 @@ describe('DestillierUebergabeService', () => {
     expect(snackBar.open).not.toHaveBeenCalled();
   });
 
-  it('laesst Titel und Herkunft leer, wenn es keinen Entwurf und keinen Link gibt', () => {
+  it('laesst Titel und Herkunft leer, wenn es keinen eigenen Satz und keinen Link gibt', () => {
     rawInputService.getRawInput.and.returnValue(
       of({ id: 'id-1', url: null, own_draft: null } as RawInput),
     );

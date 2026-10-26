@@ -282,7 +282,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       return '';
     }
     if (this.einwurf.stufe === 'ausformuliert' && this.daten.typ) {
-      return typLabel(this.daten.typ);
+      return `${STUFEN.ausformuliert.name}: ${typLabel(this.daten.typ)}`;
     }
     return STUFEN[this.einwurf.stufe].name;
   }
@@ -300,17 +300,17 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return Math.max((this.einwurf?.saetze.length ?? 0) - SAETZE_SICHTBAR, 0);
   }
 
-  /** Rechts am Satz: ein Haken je Beitrag daraus, sonst das Wort "Entwurf". */
+  /** Rechts am Satz: ein Haken je Beitrag daraus, sonst nichts. */
   satzStatus(satz: EinwurfSatz): string {
     if (!satz.beitraege) {
-      return 'Entwurf';
+      return '';
     }
     return satz.beitraege === 1 ? '✓' : `✓ ${satz.beitraege}`;
   }
 
   satzBeschriftung(satz: EinwurfSatz): string {
     if (!satz.beitraege) {
-      return 'Entwurf, noch kein Beitrag';
+      return 'noch kein Beitrag';
     }
     return satz.beitraege === 1 ? 'ein Beitrag daraus' : `${satz.beitraege} Beiträge daraus`;
   }

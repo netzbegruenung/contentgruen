@@ -77,15 +77,15 @@ def _mit_namen(rows: List[dict], x_user: Optional[str]) -> List[dict]:
     """
     if not angemeldet(x_user):
         return rows
-    entwuerfe = [entwurf for row in rows for entwurf in row.get("drafts", [])]
+    saetze = [satz for row in rows for satz in row.get("drafts", [])]
     namen = get_anzeigename_service().namen(
         [row.get("submitted_by") for row in rows]
-        + [entwurf.get("user_id") for entwurf in entwuerfe]
+        + [satz.get("user_id") for satz in saetze]
     )
     for row in rows:
         row["submitted_by_name"] = namen.get(row.get("submitted_by"))
-    for entwurf in entwuerfe:
-        entwurf["user_name"] = namen.get(entwurf.get("user_id"))
+    for satz in saetze:
+        satz["user_name"] = namen.get(satz.get("user_id"))
     return rows
 
 
@@ -199,7 +199,7 @@ async def save_draft(
     except Exception as e:
         logger.error(f"Fehler in PUT /rawinput/{{id}}/draft: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail="Der Entwurf konnte nicht gespeichert werden."
+            status_code=500, detail="Der Satz konnte nicht gespeichert werden."
         )
 
 
@@ -252,7 +252,7 @@ async def update_status(
     ``require_admin``. Das BFF entfernt den Header aus jeder Client-Anfrage.
 
     ``processed`` schreibt in derselben Transaktion die Verknuepfung mit dem
-    entstandenen Beitrag, seinem Typ und dem Satz der verarbeitenden Person.
+    entstandenen Beitrag, seinem Typ und dem Satz des Ausformulierers.
     Erlaubt: discarded aus open oder in_progress, processed aus open, in_progress
     oder discarded; eine Wiederholung desselben Ziels ist unschaedlich. Den
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
