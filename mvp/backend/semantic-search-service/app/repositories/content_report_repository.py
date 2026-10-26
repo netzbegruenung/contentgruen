@@ -255,6 +255,10 @@ class ContentReportRepository:
 
         Returns:
             int: Number of reports updated
+
+        Raises:
+            Datenbankfehler werden weitergereicht: Sperren darf keinen Erfolg
+            melden, wenn die Meldungen offen geblieben sind.
         """
         try:
             with self.db.get_session() as session:
@@ -281,7 +285,7 @@ class ContentReportRepository:
             logger.error(
                 f"Error updating reports for content {content_id}: {e}", exc_info=True
             )
-            return 0
+            raise
 
     def get_report_count_by_status(self) -> Dict[str, int]:
         """
