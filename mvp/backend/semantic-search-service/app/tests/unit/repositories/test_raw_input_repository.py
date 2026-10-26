@@ -706,3 +706,65 @@ class TestStatuswechselVorpruefen:
         query.with_for_update.assert_not_called()
         session.execute.assert_not_called()
         session.commit.assert_not_called()
+
+
+@pytest.mark.unit
+class TestMitGleichemLink:
+    """Einwuerfe, deren Link nach der Bereinigung gleich ist (#263)."""
+
+    def _kandidaten(self, session, zeilen):
+        query = MagicMock()
+        session.query.return_value = query
+        query.filter.return_value = query
+        query.order_by.return_value = query
+        query.limit.return_value = query
+        query.all.return_value = zeilen
+        return query
+
+    @pytest.fixture(autouse=True)
+    def _ohne_saetze(self):
+        with patch.object(
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            side_effect=lambda s, rows, user: [
+                RawInputRepository._to_dict(r) for r in rows
+            ],
+        ):
+            yield
+
+    def test_mit_gleichem_link_findet_bereinigt_gleiche(self, repository, session):
+        self._kandidaten(
+            session,
+            [
+                _zeile(content="gleich", url="http://www.example.org/a/?utm_source=x"),
+                _zeile(content="anderer Pfad", url="https://example.org/a/b"),
+                _zeile(content="auch gleich", url="https://example.org/a"),
+            ],
+        )
+
+        treffer = repository.mit_gleichem_link("https://example.org/a/")
+
+        assert [t["content"] for t in treffer] == ["gleich", "auch gleich"]
+
+    def test_mit_gleichem_link_sucht_vor_nach_host_und_pfad(self, repository, session):
+        """Die Datenbank filtert grob vor, ohne Schema, www und Parameter."""
+        query = self._kandidaten(session, [])
+
+        repository.mit_gleichem_link("https://www.example.org/a_b%/?fbclid=1")
+
+        (vorfilter,) = query.filter.call_args.args
+        sql = _sql(vorfilter)
+        assert "raw_inputs.url" in sql and "ILIKE" in sql.upper()
+        # LIKE-Platzhalter aus dem Link gelten als Zeichen, nicht als Muster.
+        assert vorfilter.right.value == r"%example.org/a\_b\%%"
+
+    def test_mit_gleichem_link_ohne_link_fragt_nicht(self, repository, session):
+        assert repository.mit_gleichem_link("kein Link") == []
+        session.query.assert_not_called()
+
+    def test_mit_gleichem_link_begrenzt_treffer(self, repository, session):
+        self._kandidaten(
+            session, [_zeile(url="https://example.org/a") for _ in range(12)]
+        )
+
+        assert len(repository.mit_gleichem_link("https://example.org/a")) == 5

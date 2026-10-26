@@ -9,6 +9,7 @@ sind fuer alle Angemeldeten sichtbar.
 """
 
 import logging
+import re
 import uuid
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence
@@ -16,6 +17,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from sqlalchemy import case, desc, func
 from sqlalchemy.dialects.postgresql import insert
 
+from domain.link_vergleich import gleicher_link, vergleichsform
 from domain.models.raw_input import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
@@ -30,6 +32,13 @@ from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import RawInput, RawInputContentLink, RawInputDraft
 
 logger = logging.getLogger(__name__)
+
+# Hoechstens so viele Einwuerfe mit gleichem Link zeigt das Einwurf-Formular.
+GLEICHER_LINK_TREFFER = 5
+# Hoechstens so viele Kandidaten aus dem groben Vorfilter, neueste zuerst. Er
+# trifft nur bei einem nackten Host ("https://example.org") viel mehr als die
+# echten Treffer.
+GLEICHER_LINK_KANDIDATEN = 500
 
 
 class RawInputRepository:
@@ -202,6 +211,43 @@ class RawInputRepository:
                 )[0]
         except Exception as e:
             logger.error(f"Fehler beim Lesen eines Rohinputs: {e}", exc_info=True)
+            raise
+
+    def mit_gleichem_link(
+        self, url: str, current_user: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Einwuerfe, deren Link als gleich gilt (``domain.link_vergleich``), neueste
+        zuerst, hoechstens ``GLEICHER_LINK_TREFFER``.
+
+        Die Datenbank filtert grob vor: Host ohne www und Pfad ohne Schraegstrich
+        am Ende stehen in jedem gleichen Link, gross/klein-unabhaengig. Ob er
+        wirklich gleich ist, entscheidet danach ``gleicher_link``. Eine eigene
+        Spalte fuer die Vergleichsform braeuchte eine Migration samt Nachtrag fuer
+        alle vorhandenen Einwuerfe.
+        """
+        form = vergleichsform(url)
+        if form is None:
+            return []
+        kern = form.split("?", 1)[0].split("#", 1)[0]
+        muster = "%" + re.sub(r"([\\%_])", r"\\\1", kern) + "%"
+        try:
+            with self.db.get_session() as session:
+                kandidaten = (
+                    session.query(RawInput)
+                    .filter(RawInput.url.ilike(muster, escape="\\"))
+                    .order_by(desc(RawInput.created_at))
+                    .limit(GLEICHER_LINK_KANDIDATEN)
+                    .all()
+                )
+                treffer = [row for row in kandidaten if gleicher_link(url, row.url)][
+                    :GLEICHER_LINK_TREFFER
+                ]
+                return self._mit_saetzen_und_verknuepfungen(
+                    session, treffer, current_user
+                )
+        except Exception as e:
+            logger.error(f"Fehler bei der Suche nach gleichem Link: {e}", exc_info=True)
             raise
 
     def count(self, status: Optional[str] = None) -> int:

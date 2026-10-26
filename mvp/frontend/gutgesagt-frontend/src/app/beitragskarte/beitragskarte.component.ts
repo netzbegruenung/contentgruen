@@ -51,7 +51,7 @@ const SAETZE_SICHTBAR = 3;
  * dagegen die naechste Stufe (siehe primaerAktion). Verworfenes behaelt das Icon
  * des Einwurfs.
  */
-const STUFEN: Record<EinwurfStufe, { emoji: string; name: string }> = {
+export const STUFEN: Record<EinwurfStufe, { emoji: string; name: string }> = {
   offen: { emoji: KETTEN_ICONS.einwerfen, name: 'Offen' },
   destilliert: { emoji: KETTEN_ICONS.destillieren, name: 'Destilliert' },
   ausformuliert: { emoji: KETTEN_ICONS.verfassen, name: 'Ausformuliert' },
