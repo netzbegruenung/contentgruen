@@ -135,9 +135,6 @@ Einzelne Funktionen, die feststehen, aber noch nicht gebaut sind.
   Backend `commentary/getById` und `generictext/getById` existieren. Bis dahin führt der Knopf
   „In der Suche anzeigen“ auf der ausformulierten Fangkorb-Karte als Übergangslösung auf
   `/result?searchQuery=<Satz>` (`raw-input-list.component.html`).
-- **Löschlogik für raw_input_drafts und destilled_by bei Kontolöschung.** Sätze an fremden
-  Einwürfen und die Kennung als destillierende Person bleiben bisher stehen; die
-  Datenschutzerklärung sagt nur, dass eigene Einwürfe mitgelöscht werden.
 - **GET-Cache 5 min für rawinput-Pfade beobachten.** Der Fangkorb ist eine Mehrpersonen-Ansicht:
   Sätze und Standwechsel anderer erscheinen bis zu 5 Minuten verzögert
   (`auth/cache.interceptor.ts`). Bei spürbarer Reibung die rawinput-Pfade vom Cache ausnehmen.

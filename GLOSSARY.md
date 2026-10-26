@@ -75,7 +75,7 @@ Ein Einwurf, aus dem mindestens ein Beitrag entstanden ist.
 _Avoid_: Verarbeitet, Erledigt, Fertig
 
 **Verworfen**:
-Ein Einwurf, den sein Einwerfer als nicht verwertbar markiert hat.
+Ein Einwurf, den sein Einwerfer oder ein Admin als nicht verwertbar markiert hat.
 _Avoid_: Gelöscht, Abgelehnt
 
 Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
@@ -174,6 +174,10 @@ _Avoid_: Duplikat, Doppelung
 Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
 
+**Suche ohne Treffer**:
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen.
+_Avoid_: Nulltreffer, Fehlsuche, leere Suche
+
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
 _Avoid_: Contributions, Profil
@@ -203,6 +207,10 @@ _Avoid_: Ersteller, Owner, Urheber
 **Anzeigename**:
 Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt wird. Andere sehen nie den Klarnamen aus dem Login.
 _Avoid_: Benutzername, Klarname, Kennung
+
+**Ehemalige Person**:
+Der Anzeigename, der im Fangkorb an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer. Die Sätze bleiben, nur der Personenbezug geht.
+_Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
 **Admin**:
 Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Moderation ist keine eigene Rolle.

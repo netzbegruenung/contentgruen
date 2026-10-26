@@ -11,6 +11,7 @@ from sqlalchemy import (
     Column,
     String,
     Integer,
+    Date,
     DateTime,
     ForeignKey,
     BigInteger,
@@ -133,6 +134,24 @@ class SearchEvent(Base):
     )
 
 
+class SucheOhneTrefferZeile(Base):
+    """Suchen ohne Treffer, gezaehlt je Aussage und Kalenderwoche.
+
+    Traegt bewusst weder Pseudonym noch Zeitpunkt: woche ist der Montag der Woche,
+    damit sich eine Zeile nicht ueber den Zeitpunkt mit search_events (und dessen
+    actor_hash) verbinden laesst. Der Suchtext steht an der Aussage in Qdrant,
+    hier nur deren ID. Siehe services/suchen_ohne_treffer_service.py.
+    """
+
+    __tablename__ = "suchen_ohne_treffer"
+
+    statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    woche = Column(Date, primary_key=True)
+    anzahl = Column(Integer, nullable=False)
+
+    __table_args__ = (Index("idx_suchen_ohne_treffer_woche", "woche"),)
+
+
 class ContentReport(Base):
     """Track user reports of inappropriate or problematic content."""
 
@@ -172,7 +191,7 @@ class RawInput(Base):
     Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh und
     unverarbeitet.
 
-    Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/ROHINPUT.md):
+    Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/archiv/ROHINPUT.md):
     Rohinput wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
     eine spaetere Zuweisung ("ich nehm das") ist ein Wettlauf zweier Nutzer um
     dieselbe Zeile, den nur eine Transaktion entscheidet.
@@ -227,7 +246,7 @@ class RawInputContentLink(Base):
     Thread kann einen Kommentar *und* eine Hintergrundinfo hervorbringen, und ein
     Beitrag kann aus mehreren Einwuerfen entstehen. Ein Feld
     ``resulting_content_id`` auf ``raw_inputs`` waere billiger und genau die
-    Blockade, die spaeter teuer wird (docs/ROHINPUT.md, Abschnitt 6).
+    Blockade, die spaeter teuer wird (docs/archiv/ROHINPUT.md, Abschnitt 6).
 
     ``content_id`` zeigt auf einen Qdrant-Punkt und ist deshalb kein Fremdschluessel;
     ``raw_input_id`` ist einer, mit ON DELETE CASCADE - nicht, weil Einwuerfe

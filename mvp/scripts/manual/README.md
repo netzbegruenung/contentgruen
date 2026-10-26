@@ -51,3 +51,11 @@ docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisie
 `bestand_pruefen.py` nutzt nur qdrant_client und die Standardbibliothek und laeuft
 auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
 ausgerollten neuen Stand.
+
+## Loeschkommando (im PostgreSQL-Container)
+
+`person_loeschen.sql` – **schreibend.** Der PostgreSQL-Teil des Loeschkonzepts
+(Schritt 1 und 2): loescht, was an der Kennung einer Person haengt, und ersetzt ihre
+Kennung an Saetzen in fremden Einwuerfen durch einen Platzhalter mit dem Anzeigenamen
+„ehemalige Person“. Ablauf, Reihenfolge und Fallen stehen in `docs/LOESCHKONZEPT.md`;
+dort steht auch der Aufruf. Getestet in `tests/integration/test_loeschkommando.py`.

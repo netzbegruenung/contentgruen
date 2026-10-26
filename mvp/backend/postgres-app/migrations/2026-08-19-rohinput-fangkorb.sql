@@ -1,7 +1,7 @@
 -- Fangkorb: Rohinput als eigene Entitaet
 --
 -- Rohinput ist bewusst kein ContentType in Qdrant, sondern ein Arbeitsvorrat
--- daneben (Begruendung: docs/ROHINPUT.md, Variante C). Er wird nie gesucht,
+-- daneben (Begruendung: docs/archiv/ROHINPUT.md, Variante C). Er wird nie gesucht,
 -- kopiert oder bewertet, aber sein Zustand aendert sich - und eine spaetere
 -- Zuweisung ist ein Wettlauf zweier Nutzer um dieselbe Zeile, den nur eine
 -- Transaktion entscheidet.
@@ -16,7 +16,7 @@
 -- dann direkt dieses Schema. Nur bereits laufende Umgebungen migrieren.
 --
 -- Anwenden:
---   docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app \
+--   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -v ON_ERROR_STOP=1 \
 --     < mvp/backend/postgres-app/migrations/2026-08-19-rohinput-fangkorb.sql
 
 BEGIN;

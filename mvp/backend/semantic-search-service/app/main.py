@@ -43,6 +43,10 @@ from api.v1.moderation import router as moderation_router
 from api.v1.health import router as health_router
 from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
 from services.vision.image_description_worker import start_description_worker
+from services.suchen_ohne_treffer_service import loeschen_im_takt
+from repositories.suchen_ohne_treffer_repository import (
+    get_suchen_ohne_treffer_repository,
+)
 from utils.rate_limiter import (
     aufraeumen_im_takt,
     report_rate_limiter,
@@ -127,6 +131,13 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Rate limiter cleanup task started")
 
+        # Kennzahl "Suchen ohne Treffer": alte Wochen taeglich loeschen, unabhaengig
+        # vom abschaltbaren Usage-Cleanup (services/suchen_ohne_treffer_service.py).
+        app.state.suchen_ohne_treffer_loeschen = asyncio.create_task(
+            loeschen_im_takt(get_suchen_ohne_treffer_repository())
+        )
+        logger.info("✅ Searches-without-hits cleanup task started")
+
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
         )
@@ -140,9 +151,10 @@ async def lifespan(app: FastAPI):
         # Shutdown
         try:
             logger.info("Shutting down Gut gesagt Semantic Search Service")
-            aufraeumen = getattr(app.state, "rate_limiter_aufraeumen", None)
-            if aufraeumen is not None:
-                aufraeumen.cancel()
+            for name in ("rate_limiter_aufraeumen", "suchen_ohne_treffer_loeschen"):
+                task = getattr(app.state, name, None)
+                if task is not None:
+                    task.cancel()
             manager = get_embeddings_manager()
             await manager.shutdown()
             close_app_database()

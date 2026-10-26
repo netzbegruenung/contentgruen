@@ -4,7 +4,8 @@ Step 5 gate: content-type registry parity against REAL Qdrant.
 Proves that a generic ``BaseContentService`` instantiated purely from a declarative
 ``ContentTypeSpec`` behaves identically to the hand-written per-type service it
 replaces -- the exact property the mocked unit suite cannot show, because it never
-touches real collection wiring. See ``docs/RUNG_1_PLAN.md`` Step 5 + requirement 5.
+touches real collection wiring. See ``docs/CONTENT_MODEL.md``
+("Incremental migration path", step 5).
 
 Each test seeds content through the existing concrete service (the pre-refactor path)
 and reads it back through the registry-built generic service (the new path), asserting

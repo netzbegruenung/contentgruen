@@ -3,7 +3,7 @@ Rohinput ("Fangkorb") - Zustaende und Herkunftskanaele.
 
 Rohinput ist bewusst *kein* ContentType: er wird nicht gesucht, nicht kopiert,
 nicht bewertet und nicht moderiert, sondern liegt als Arbeitsvorrat in
-PostgreSQL neben dem Inhalt (siehe docs/ROHINPUT.md, Variante C). Deshalb hat er
+PostgreSQL neben dem Inhalt (siehe docs/archiv/ROHINPUT.md, Variante C). Deshalb hat er
 eigene Enums statt ContentStatus/ContentOrigin - deren Zustaende beschreiben
 Moderation und Erzeugung, nicht Bearbeitung.
 

@@ -26,7 +26,7 @@ from domain.models.raw_input import (
     status_ohne_saetze,
     uebergang_erlaubt,
 )
-from infrastructure.database.connection import get_app_database
+from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import RawInput, RawInputContentLink, RawInputDraft
 
 logger = logging.getLogger(__name__)
@@ -35,8 +35,9 @@ logger = logging.getLogger(__name__)
 class RawInputRepository:
     """Repository fuer Einwuerfe im Fangkorb."""
 
-    def __init__(self):
-        self.db = get_app_database()
+    def __init__(self, db: Optional[AppDatabase] = None):
+        """``db``: eine AppDatabase; ohne Angabe die globale."""
+        self.db = db if db is not None else get_app_database()
 
     @staticmethod
     def _to_dict(
@@ -112,7 +113,7 @@ class RawInputRepository:
         Args:
             content: Hinweis fuer andere, oder der Fund selbst als Text
             url: Link auf den Beitrag draussen
-            image_url: Bild-URL (kein Upload, siehe docs/ROHINPUT.md)
+            image_url: Bild-URL (kein Upload, siehe docs/archiv/ROHINPUT.md)
             submitted_by: Wer eingeworfen hat; None fuer Kanaele ohne Sitzung
             source_channel: Herkunftskanal ("web" oder "share")
 
@@ -293,9 +294,14 @@ class RawInputRepository:
         user_id: str,
         content_id: Optional[uuid.UUID] = None,
         content_type: Optional[str] = None,
+        *,
+        ist_admin: bool = False,
     ) -> Dict[str, Any]:
         """
         Status setzen; bei processed zugleich die Verknuepfung schreiben.
+
+        Verwerfen duerfen der Einwerfer und Admins (``ist_admin``), Admins auch
+        einen Einwurf ohne Einwerfer.
 
         Die Verknuepfung haelt fest, wer verarbeitet hat, welcher Beitragstyp
         entstanden ist und welcher Satz ausformuliert wurde - der der verarbeitenden
@@ -308,7 +314,7 @@ class RawInputRepository:
 
         Raises:
             EinwurfNichtGefunden: den Einwurf gibt es nicht
-            AktionNichtErlaubt: verwerfen will jemand anderes als die einwerfende Person
+            AktionNichtErlaubt: verwerfen will weder der Einwerfer noch ein Admin
             UebergangNichtErlaubt: der Wechsel ist aus dem aktuellen Status nicht erlaubt
         """
         if neuer_status == RawInputStatus.PROCESSED and content_id is None:
@@ -323,7 +329,7 @@ class RawInputRepository:
                     .one_or_none()
                 )
                 aktuell = self._statuswechsel_pruefen(
-                    row, raw_input_id, neuer_status, user_id
+                    row, raw_input_id, neuer_status, user_id, ist_admin
                 )
 
                 row.status = neuer_status.value
@@ -373,7 +379,11 @@ class RawInputRepository:
                 .filter(RawInput.id == raw_input_id)
                 .one_or_none()
             )
-            self._statuswechsel_pruefen(row, raw_input_id, neuer_status, user_id)
+            # Nur der processed-Pfad ruft das; die Admin-Ausnahme gilt allein fuers
+            # Verwerfen, das set_status unter der Sperre prueft.
+            self._statuswechsel_pruefen(
+                row, raw_input_id, neuer_status, user_id, ist_admin=False
+            )
             if content_id is None:
                 return False
             return (
@@ -394,15 +404,18 @@ class RawInputRepository:
         raw_input_id: uuid.UUID,
         neuer_status: RawInputStatus,
         user_id: str,
+        ist_admin: bool,
     ) -> RawInputStatus:
         """Existenz, Berechtigung und Uebergang; gibt den aktuellen Status zurueck."""
         if row is None:
             raise EinwurfNichtGefunden(raw_input_id)
 
-        if neuer_status == RawInputStatus.DISCARDED and row.submitted_by != user_id:
-            raise AktionNichtErlaubt(
-                "Verwerfen darf nur, wer den Einwurf eingeworfen hat"
-            )
+        if (
+            neuer_status == RawInputStatus.DISCARDED
+            and row.submitted_by != user_id
+            and not ist_admin
+        ):
+            raise AktionNichtErlaubt("Verwerfen duerfen nur der Einwerfer und Admins")
 
         aktuell = RawInputStatus(row.status)
         if not uebergang_erlaubt(aktuell, neuer_status):

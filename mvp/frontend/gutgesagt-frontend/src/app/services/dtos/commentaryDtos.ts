@@ -18,6 +18,8 @@ export interface AddCommentaryRequest {
     statement_id?: string;
     /** ... oder, ohne ID, ihr Text; das Backend sucht oder legt sie an. */
     statement_text?: string;
+    /** Die Person hat diesen vorhandenen Kommentar (ID) gesehen und speichert trotzdem. */
+    trotz_dublette_von?: string;
 }
 
 export interface Commentary {
@@ -44,6 +46,10 @@ export interface AddCommentaryResponse {
     verknuepft?: boolean;
     /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. War eine Aussage dabei, haengt er jetzt an ihr (statement_*, verknuepft). */
     duplikat?: boolean;
+    /** Titel des vorhandenen Kommentars, wenn duplikat. */
+    vorhanden_titel?: string | null;
+    /** true: Der vorhandene Kommentar ist von derselben Person, wenn duplikat. */
+    vorhanden_eigen?: boolean;
 }
 
 

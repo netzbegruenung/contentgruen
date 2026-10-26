@@ -1,3 +1,5 @@
+> **Historisch:** Dieses Dokument stammt aus früherer Planung und ist teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # UI-Nachlese mobil, Paket 1
 
 Branch `fix/ui-nachlese-paket1` von `origin/main` (`76055b4`). Grundlage ist die Analyse

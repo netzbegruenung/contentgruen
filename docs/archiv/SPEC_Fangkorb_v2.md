@@ -1,3 +1,5 @@
+> **Historisch:** Dieses Dokument stammt aus früherer Planung und ist teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # SPEC Fangkorb v2
 
 *Stand 13.09.2026, aus Entscheidungsbaum. Baut auf `SPEC_Destillier-Ablauf_v1.md` auf. Bei Widerspruch gilt diese Datei.*

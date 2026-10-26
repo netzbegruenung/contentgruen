@@ -82,7 +82,7 @@ export interface RohlingDaten {
   beitraege: RohlingBeitrag[];
   /** Nur im Kopf: der Satz, aus dem gerade ein Beitrag entsteht. */
   kopfSatz?: string;
-  /** Verworfen werden darf nur, was offen oder destilliert ist - und nur vom Einwerfer. */
+  /** Offen oder destilliert (`istVerwerfbar`); wer verwerfen darf, entscheidet die Karte. */
   verwerfbar: boolean;
 }
 
@@ -327,9 +327,17 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
         typ: resolveContentType(link.content_type) ?? null,
         satz: saetze.find((satz) => satz.id === link.draft_id)?.text ?? null,
       })),
-      verwerfbar: einwurf.status === 'open' || einwurf.status === 'in_progress',
+      verwerfbar: istVerwerfbar(einwurf),
     },
   };
+}
+
+/**
+ * Verwerfen geht nur, solange ein Einwurf offen oder destilliert ist. Fangkorb-Karte
+ * und Destillier-Ansicht fragen beide hier, damit die Regel nicht auseinanderlaeuft.
+ */
+export function istVerwerfbar(einwurf: RawInput): boolean {
+  return einwurf.status === 'open' || einwurf.status === 'in_progress';
 }
 
 /**

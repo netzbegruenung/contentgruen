@@ -29,7 +29,7 @@
 -- laufende Umgebungen migrieren.
 --
 -- Anwenden:
---   docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app \
+--   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -v ON_ERROR_STOP=1 \
 --     < mvp/backend/postgres-app/migrations/2026-08-25-usage-events-datensparsamkeit.sql
 
 BEGIN;

@@ -514,7 +514,61 @@ class TestStatuswechsel:
         assert antwort.status_code == 200
         assert antwort.json()["status"] == "discarded"
         repository.set_status.assert_called_once_with(
-            EINWURF_ID, RawInputStatus.DISCARDED, "alice", None, None
+            EINWURF_ID, RawInputStatus.DISCARDED, "alice", None, None, ist_admin=False
+        )
+
+    @pytest.mark.parametrize(
+        "admin_kopf, ist_admin",
+        [("true", True), ("True", True), ("false", False), (None, False)],
+    )
+    def test_verwerfen_reicht_die_adminrolle_aus_dem_bff_durch(
+        self, client, repository, admin_kopf, ist_admin
+    ):
+        """
+        X-Is-Admin setzt allein das BFF aus den Claims (und entfernt ihn vorher aus
+        jeder Client-Anfrage); dieselbe Grundlage wie require_admin.
+        """
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=RawInputStatus.DISCARDED.value
+        )
+        kopfzeilen = {"X-User": "admin-1"}
+        if admin_kopf is not None:
+            kopfzeilen["X-Is-Admin"] = admin_kopf
+
+        antwort = client.patch(
+            STATUS_URL, json={"status": "discarded"}, headers=kopfzeilen
+        )
+
+        assert antwort.status_code == 200
+        repository.set_status.assert_called_once_with(
+            EINWURF_ID,
+            RawInputStatus.DISCARDED,
+            "admin-1",
+            None,
+            None,
+            ist_admin=ist_admin,
+        )
+
+    def test_adminkopf_ohne_anmeldung_bleibt_401(self, client, repository):
+        antwort = client.patch(
+            STATUS_URL,
+            json={"status": "discarded"},
+            headers={"X-User": "anonymous", "X-Is-Admin": "true"},
+        )
+
+        assert antwort.status_code == 401
+        repository.set_status.assert_not_called()
+
+    def test_fremdes_verwerfen_ohne_adminrechte_ist_403(self, client, repository):
+        repository.set_status.side_effect = AktionNichtErlaubt("nur Einwerfer")
+
+        antwort = client.patch(
+            STATUS_URL, json={"status": "discarded"}, headers={"X-User": "bob"}
+        )
+
+        assert antwort.status_code == 403
+        assert antwort.json()["detail"] == (
+            "Verwerfen können nur der Einwerfer und Admins."
         )
 
     def test_verarbeitet_gibt_beitrag_und_bearbeitenden_zurueck(
@@ -542,7 +596,12 @@ class TestStatuswechsel:
         assert antwort.status_code == 200
         assert antwort.json()["processed_by"] == "alice"
         repository.set_status.assert_called_once_with(
-            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id, "commentary"
+            EINWURF_ID,
+            RawInputStatus.PROCESSED,
+            "alice",
+            inhalt_id,
+            "commentary",
+            ist_admin=False,
         )
 
     def test_verarbeitet_ohne_beitragstyp_bleibt_erlaubt(self, client, repository):
@@ -560,7 +619,12 @@ class TestStatuswechsel:
 
         assert antwort.status_code == 200
         repository.set_status.assert_called_once_with(
-            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id, None
+            EINWURF_ID,
+            RawInputStatus.PROCESSED,
+            "alice",
+            inhalt_id,
+            None,
+            ist_admin=False,
         )
 
     @pytest.mark.parametrize(
