@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -147,7 +147,7 @@ describe('BeitragSheetComponent', () => {
       );
     });
 
-    it('nimmt einen schon verschwundenen Beitrag (404) als gelöscht', () => {
+    it('nimmt einen schon verschwundenen Beitrag (404) als gelöscht, ohne "gelöscht" zu melden', () => {
       rueckfrageBeantworten(true);
       beitraege.beitragLoeschen.and.returnValue(throwError(() => ({ status: 404 })));
       erstellen({ ...daten, loeschbar: true });
@@ -155,6 +155,51 @@ describe('BeitragSheetComponent', () => {
       loeschenKnopf()!.click();
 
       expect(sheet.dismiss).toHaveBeenCalledOnceWith('geloescht');
+      expect(snackBar.open).toHaveBeenCalledWith('Der Beitrag ist nicht mehr da.', 'OK', jasmine.any(Object));
+    });
+
+    it('rät bei 403 nicht zum erneuten Versuch', () => {
+      rueckfrageBeantworten(true);
+      beitraege.beitragLoeschen.and.returnValue(throwError(() => ({ status: 403 })));
+      erstellen({ ...daten, loeschbar: true });
+
+      loeschenKnopf()!.click();
+
+      expect(sheet.dismiss).not.toHaveBeenCalled();
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Löschen kann nur der Autor des Beitrags.',
+        'OK',
+        jasmine.any(Object),
+      );
+    });
+
+    it('öffnet bei zweitem Klick keine zweite Rückfrage, solange die erste offen ist', () => {
+      const offen = new Subject<boolean>();
+      dialog.open.and.returnValue({ afterClosed: () => offen } as any);
+      erstellen({ ...daten, loeschbar: true });
+
+      loeschenKnopf()!.click();
+      fixture.detectChanges();
+      loeschenKnopf()!.click();
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(loeschenKnopf()!.disabled).toBeTrue();
+
+      offen.next(false);
+      offen.complete();
+      fixture.detectChanges();
+
+      expect(loeschenKnopf()!.disabled).toBeFalse();
+    });
+
+    it('sagt in der Rückfrage, dass der Beitrag gespeichert bleibt', () => {
+      rueckfrageBeantworten(false);
+      erstellen({ ...daten, loeschbar: true });
+
+      loeschenKnopf()!.click();
+
+      const [, konfiguration] = dialog.open.calls.mostRecent().args;
+      expect((konfiguration as any).data.text).toContain('Gespeichert bleibt er');
     });
   });
 });

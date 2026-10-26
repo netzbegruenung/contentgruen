@@ -1,11 +1,11 @@
 import { NgIf } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Inject, signal } from '@angular/core';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { filter, switchMap } from 'rxjs/operators';
+import { filter, finalize, switchMap } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenDaten } from './karten-daten';
@@ -26,10 +26,24 @@ export const GELOESCHT = 'geloescht';
 
 const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Beitrag löschen?',
-  text: 'Der Beitrag verschwindet aus der Suche und aus „Meine Beiträge“. Zurückholen kannst du ihn nicht.',
+  text:
+    'Niemand findet ihn danach mehr, auch nicht in „Meine Beiträge“. Gespeichert bleibt er trotzdem, ' +
+    'und zurückholen kannst du ihn nicht. Macht er dich erkennbar, entfernen wir ihn auf deinen Hinweis ganz ' +
+    '(siehe Datenschutz).',
   ja: 'Löschen',
   nein: 'Abbrechen',
 };
+
+/**
+ * Was beim Loeschen schiefging. 401 behandelt der Auth-Interceptor (Anmeldung); 403
+ * heisst, der Beitrag ist nicht der eigene, und "noch einmal" waere ein falscher Rat.
+ */
+export function loeschenFehlertext(status: number | undefined): string {
+  if (status === 403) {
+    return 'Löschen kann nur der Autor des Beitrags.';
+  }
+  return 'Löschen hat nicht geklappt. Versuch es gleich noch einmal.';
+}
 
 /**
  * Ein Beitrag aus dem Album als volle Karte im Bottom Sheet, mit Kopieren, Melden und
@@ -50,7 +64,13 @@ const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
     <!-- Der eigene Beitrag: nicht abstimmen, Kopieren und Melden bleiben -->
     <app-beitragskarte [daten]="daten" variante="voll" [abstimmenSichtbar]="false"></app-beitragskarte>
     <div class="sheet-fuss" *ngIf="daten.loeschbar">
-      <button mat-button type="button" class="loeschen-knopf" (click)="loeschen()">
+      <button
+        mat-button
+        type="button"
+        class="loeschen-knopf"
+        [disabled]="loeschtGerade()"
+        (click)="loeschen()"
+      >
         <mat-icon>delete</mat-icon>
         Beitrag löschen
       </button>
@@ -93,6 +113,9 @@ const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
 export class BeitragSheetComponent {
   private wischStart: number | null = null;
 
+  /** Solange Rueckfrage oder Anfrage laufen: ein zweiter Klick oeffnet keine zweite Rueckfrage. */
+  readonly loeschtGerade = signal(false);
+
   constructor(
     @Inject(MAT_BOTTOM_SHEET_DATA) readonly daten: BeitragSheetDaten,
     private sheet: MatBottomSheetRef<BeitragSheetComponent>,
@@ -104,29 +127,33 @@ export class BeitragSheetComponent {
 
   /** Ein 404 heisst: schon geloescht oder gesperrt. Fuer die Liste ist er so oder so weg. */
   loeschen(): void {
+    if (this.loeschtGerade()) {
+      return;
+    }
+    this.loeschtGerade.set(true);
     this.dialog
       .open(BestaetigungsDialogComponent, { data: LOESCHEN_FRAGE, autoFocus: 'dialog' })
       .afterClosed()
       .pipe(
         filter((ja) => ja === true),
         switchMap(() => this.beitraege.beitragLoeschen(this.daten.id)),
+        finalize(() => this.loeschtGerade.set(false)),
       )
       .subscribe({
-        next: () => this.geloescht(),
+        next: () => this.weg('Beitrag gelöscht'),
         error: (fehler) => {
           if (fehler?.status === 404) {
-            this.geloescht();
+            this.weg('Der Beitrag ist nicht mehr da.');
             return;
           }
-          this.snackBar.open('Löschen hat nicht geklappt. Versuch es gleich noch einmal.', 'OK', {
-            duration: 5000,
-          });
+          this.snackBar.open(loeschenFehlertext(fehler?.status), 'OK', { duration: 5000 });
         },
       });
   }
 
-  private geloescht(): void {
-    this.snackBar.open('Beitrag gelöscht', 'OK', { duration: 3000 });
+  /** Der Beitrag ist fuer die Liste weg: geloescht oder inzwischen nicht mehr da (404). */
+  private weg(meldung: string): void {
+    this.snackBar.open(meldung, 'OK', { duration: 3000 });
     this.sheet.dismiss(GELOESCHT);
   }
 

@@ -6,8 +6,10 @@ Repositories blenden ihn aus. Andere als der Autor duerfen nicht loeschen.
 """
 
 import uuid
+from unittest.mock import AsyncMock
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
 from domain.models.content_status import ContentStatus
 from repositories.aggregated.content_repository import ContentRepository
@@ -109,3 +111,34 @@ class TestBeitragLoeschen:
 
         assert ergebnis is LoeschErgebnis.GELOESCHT
         assert _status(speicher) == ContentStatus.DELETED.value
+
+    async def test_loeschen_sperre_zwischen_lesen_und_schreiben_bleibt(
+        self, service, speicher, repository
+    ):
+        """Sperrt ein Admin, nachdem der Dienst gelesen hat, gewinnt die Sperre."""
+        speicher.add_test_data("commentary", [_beitrag()])
+        lesen = repository.get
+
+        async def lesen_dann_sperren(item_id):
+            beitrag = await lesen(item_id)
+            speicher.get_data()[BEITRAG_ID]["status"] = ContentStatus.BLOCKED.value
+            return beitrag
+
+        repository.get = lesen_dann_sperren
+
+        await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
+
+        assert _status(speicher) == ContentStatus.BLOCKED.value
+
+    async def test_loeschen_unlesbarer_datensatz_ist_fehler(self, service, repository):
+        """ValidationError ist ein ValueError, heisst hier aber nicht "nicht da"."""
+
+        class Modell(BaseModel):
+            text: str
+
+        with pytest.raises(ValidationError) as unlesbar:
+            Modell.model_validate({})
+        repository.get = AsyncMock(side_effect=unlesbar.value)
+
+        with pytest.raises(ValidationError):
+            await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)

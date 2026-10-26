@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, TypeVar, Generic, Optional, Type
+from typing import AbstractSet, Any, Dict, List, TypeVar, Generic, Optional, Type
 import uuid
 
 from domain.models.base_content import (
@@ -242,10 +242,12 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         item_id: uuid.UUID,
         new_status: ContentStatus,
         nur_aus: Optional[ContentStatus] = None,
+        nicht_aus: Optional[AbstractSet[ContentStatus]] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
-        With nur_aus, the status only changes while the item is in that status.
+        With nur_aus, the status only changes while the item is in that status;
+        with nicht_aus, only while it is in none of these.
         Default implementation is a no-op.
         Override in repositories that support status updates.
         """

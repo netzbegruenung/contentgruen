@@ -237,5 +237,5 @@ Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht h
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
 **Admin**:
-Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Moderation ist keine eigene Rolle.
+Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Nur ein Admin entfernt einen Beitrag endgültig, und nur nach dem Löschkonzept. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion

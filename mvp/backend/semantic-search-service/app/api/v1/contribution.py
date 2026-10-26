@@ -7,7 +7,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 )
 from services.content.reference_service import ReferenceService
 from dtos.contribution import ContributionEntry, GetContributionsOfUserResponse
-from domain.models.content_type import BEITRAGSTYPEN
+from domain.content_registry import BEITRAGSTYPEN_WERTE
 from services.usage_tracking_service import get_usage_service
 from core.config import Settings
 from core.logging import get_logger
@@ -16,9 +16,6 @@ logger = get_logger(__name__)
 
 
 router = APIRouter()
-
-# "Meine Beitraege" zeigt nur Beitraege (BEITRAGSTYPEN), keine Aussagen und Herkuenfte.
-AUSFORMULIERTE_TYPEN = sorted(typ.value for typ in BEITRAGSTYPEN)
 
 
 # Test endpoint to check if the API is running
@@ -50,11 +47,11 @@ async def search_content(
             user_id=x_user,
             limit=page_size,
             offset=offset,
-            content_types=AUSFORMULIERTE_TYPEN,
+            content_types=BEITRAGSTYPEN_WERTE,
             eintrag_modell=ContributionEntry,
         )
         total_count = await content_repository.getCountByAuthor(
-            user_id=x_user, content_types=AUSFORMULIERTE_TYPEN
+            user_id=x_user, content_types=BEITRAGSTYPEN_WERTE
         )
 
         logger.debug(f"/getContributionsOfUser got {len(beitraege)} results")

@@ -12,14 +12,14 @@ import uuid
 import pytest
 
 from domain.content_registry import REGISTRY, create_content_service
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import AUSGEBLENDET, ContentStatus
 from domain.models.content_type import ContentType
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
 )
 from tests.integration.conftest import requires_qdrant
-from tests.integration.test_sperren import _antwortvorschlaege, _post
+from tests.integration.beitrag_helfer import antwortvorschlaege, post_beitrag
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
 
@@ -44,11 +44,11 @@ def loeschen(inhalte):
     return BeitragLoeschenService(inhalte)
 
 
-async def test_geloeschter_beitrag_fehlt_ueberall(
+async def test_loeschen_beitrag_fehlt_ueberall_bleibt_gespeichert(
     post_service, inhalte, loeschen, real_embeddings_manager
 ):
     post_id = uuid.uuid4()
-    await post_service._upsert(_post(post_id))
+    await post_service._upsert(post_beitrag(post_id))
     vorher = await post_service.count()
 
     assert await loeschen.loeschen(post_id, AUTOR) is LoeschErgebnis.GELOESCHT
@@ -59,19 +59,41 @@ async def test_geloeschter_beitrag_fehlt_ueberall(
     treffer = await post_service.search("Tempolimit Autobahn", limit=5)
     assert post_id not in [t.id for t in treffer]
     assert post_id not in [b.id for b in await post_service.get_all(limit=10, offset=0)]
-    assert await _antwortvorschlaege(post_service, post_id) == []
+    assert await antwortvorschlaege(post_service, post_id) == []
     assert await inhalte.getByAuthor(user_id=AUTOR, limit=10, offset=0) == []
     assert await inhalte.getCountByAuthor(user_id=AUTOR) == 0
     # Gespeichert bleibt er: Verknuepfungen und Stimmen zeigen nicht ins Leere.
     punkt = await real_embeddings_manager.get_by_id(str(post_id))
     assert punkt["status"] == ContentStatus.DELETED.value
-    assert punkt["text"] == _post(post_id).text
+    assert punkt["text"] == post_beitrag(post_id).text
 
 
-async def test_fremder_beitrag_bleibt_sichtbar(post_service, loeschen):
+async def test_loeschen_fremder_beitrag_bleibt_sichtbar(post_service, loeschen):
     post_id = uuid.uuid4()
-    await post_service._upsert(_post(post_id))
+    await post_service._upsert(post_beitrag(post_id))
 
     assert await loeschen.loeschen(post_id, "andere") is LoeschErgebnis.NICHT_AUTOR
 
     assert (await post_service.get(post_id)).status == ContentStatus.VISIBLE
+
+
+async def test_update_status_nicht_aus_laesst_sperre_stehen(
+    post_service, inhalte, real_embeddings_manager
+):
+    """Der Ausschluss, mit dem das Loeschen eine Sperre zwischen Lesen und Schreiben
+    schuetzt, wertet Qdrant im selben Schreibvorgang aus."""
+    gesperrt, sichtbar = uuid.uuid4(), uuid.uuid4()
+    await post_service._upsert(post_beitrag(gesperrt))
+    await post_service._upsert(post_beitrag(sichtbar))
+    await inhalte.update_status(gesperrt, ContentStatus.BLOCKED)
+
+    for item_id in (gesperrt, sichtbar):
+        await inhalte.update_status(
+            item_id, ContentStatus.DELETED, nicht_aus=AUSGEBLENDET
+        )
+
+    async def status(item_id):
+        return (await real_embeddings_manager.get_by_id(str(item_id)))["status"]
+
+    assert await status(gesperrt) == ContentStatus.BLOCKED.value
+    assert await status(sichtbar) == ContentStatus.DELETED.value

@@ -128,6 +128,17 @@ REGISTRY: Dict[ContentType, ContentTypeSpec] = {
 }
 
 
+BEITRAGSTYPEN = frozenset(REGISTRY)
+"""
+Typen, die Beitraege sind (GLOSSARY.md, "Beitrag"): genau die Registry-Eintraege.
+Aussage und Herkunft bleiben dauerhaft ausserhalb der Registry, weil sie keine
+Beitraege sind (ADR 0002). Sie stehen nicht in "Meine Beitraege" und lassen sich
+nicht vom Autor loeschen.
+"""
+
+BEITRAGSTYPEN_WERTE = sorted(typ.value for typ in BEITRAGSTYPEN)
+
+
 def create_content_service(
     spec: ContentTypeSpec,
     settings: Settings,

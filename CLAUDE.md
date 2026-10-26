@@ -413,7 +413,7 @@ See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed system architect
 
 ### Adding a New Content Type
 As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a FE fragment)** — no per-type service/repository clone and no new search branch (see `docs/CONTENT_MODEL.md`).
-1. Create the model in `domain/models/` (`<Type>DbEntry(BaseContentDbEntry)`, `<Type>SearchResult`) and add the `ContentType` enum member (and to `BEITRAGSTYPEN` next to it: "Meine Beiträge" and deleting by the author use that list).
+1. Create the model in `domain/models/` (`<Type>DbEntry(BaseContentDbEntry)`, `<Type>SearchResult`) and add the `ContentType` enum member.
 2. Register a `ContentTypeSpec` entry in `domain/content_registry.py` (reuse `create_registry_repository` — the generic `RegistryQdrantRepository`; no new repository subclass).
 3. Add a `get_<type>_service` dependency in `dependencies.py` that builds the generic service from the spec, and add an `api/v1/<type>.py` router (ingestion/input is the only type-specific seam) wired in `main.py`.
 4. Add the type to the `/searchByText` spec list and the `SearchResponse` DTO — the `SearchOrchestrator` handles it generically.
