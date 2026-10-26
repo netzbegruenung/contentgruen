@@ -1,6 +1,6 @@
 @use '../shared/styles/breakpoints' as bp;
 
-// Eine Karte, vier Varianten. Modifier (.karte--voll/--kompakt/--rohling/--kopf) regeln
+// Eine Karte, vier Varianten. Modifier (.karte--voll/--kompakt/--einwurf/--kopf) regeln
 // Masse und vorhandene Bereiche, die Typklasse setzt nur --karten-farbe.
 //
 // Keine feste Hoehe: im Karussell gleicht align-items: stretch die Reihe an, in
@@ -63,10 +63,10 @@
 }
 
 // Kopf aus einem Einwurf: der Satz unter der Link-Zeile, noch im Sandband
-.rohling-kopfsatz {
+.einwurf-kopfsatz {
   margin: 0;
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
-  background: var(--rohling-grund);
+  background: var(--einwurf-grund);
   font-weight: 600;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -576,15 +576,16 @@
   color: var(--text-secondary);
 }
 
-// Rohling: dieselbe Anatomie wie die volle Karte - Kopfband, weisser Koerper,
+// Einwurf-Karte: dieselbe Anatomie wie die volle Karte - Kopfband, weisser Koerper,
 // Aktionszeile, Meta. Nur die Fuellung ist unfertig: statt Beitragstext stehen
 // die Saetze da, und statt Abstimmen/Kopieren genau ein Griff.
 //
-// Das Band traegt Sand (--rohling-grund), solange nichts fertig ist; bei Erledigt
-// setzt die Typklasse --karten-farbe, und das Band nimmt die Farbe des ersten
-// entstandenen Beitrags an (das erledigt .karte-kopf schon von selbst).
+// Das Band traegt Sand (--einwurf-grund), solange der Einwurf offen oder
+// destilliert ist; bei Ausformuliert setzt die Typklasse --karten-farbe, und das
+// Band nimmt die Farbe des ersten entstandenen Beitrags an (das uebernimmt
+// .karte-kopf schon von selbst).
 
-.karte--rohling {
+.karte--einwurf {
   width: 100%;
 
   &:focus-visible {
@@ -592,48 +593,48 @@
     outline-offset: 2px;
   }
 
-  &.zustand-verworfen {
+  &.stufe-verworfen {
     opacity: 0.6;
   }
 }
 
 // Band und Link-Zeile tragen dieselbe Farbe - zusammen sind sie der Kopf.
-.zustand-destillieren .rohling-kopf,
-.zustand-destillieren .rohling-linkzeile,
-.zustand-ausformulieren .rohling-kopf,
-.zustand-ausformulieren .rohling-linkzeile {
-  background: var(--rohling-grund);
+.stufe-offen .einwurf-band,
+.stufe-offen .einwurf-linkzeile,
+.stufe-destilliert .einwurf-band,
+.stufe-destilliert .einwurf-linkzeile {
+  background: var(--einwurf-grund);
 }
 
-.zustand-verworfen .rohling-kopf,
-.zustand-verworfen .rohling-linkzeile {
+.stufe-verworfen .einwurf-band,
+.stufe-verworfen .einwurf-linkzeile {
   background: var(--disabled-bg);
 }
 
-.rohling-kopf {
+.einwurf-band {
   align-items: start;
   padding-bottom: var(--spacing-sm);
 }
 
-// Ohne Notiz ist die Link-Zeile die Aufschrift; das Band darueber wird schmal.
-.rohling-kopf--ohne-notiz {
+// Ohne Hinweis ist die Link-Zeile die Aufschrift; das Band darueber wird schmal.
+.einwurf-band--ohne-hinweis {
   padding-bottom: 0;
 }
 
-// Eine Notiz, keine Behauptung: kleiner und halbfett statt 19 px fett.
-.rohling-titel {
+// Ein Hinweis, keine Behauptung: kleiner und halbfett statt 19 px fett.
+.einwurf-titel {
   min-height: 0;
   font-size: 17px;
   font-weight: 600;
 }
 
-.rohling-titel-platz {
+.einwurf-titel-platz {
   min-width: 0;
 }
 
 // Eigener Block ueber die volle Bandbreite, mindestens 44 px, als Ganzes
 // antippbar: zwei Zeilen Text, das Symbol daneben ueber beide zentriert.
-.rohling-linkzeile {
+.einwurf-linkzeile {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
@@ -655,29 +656,29 @@
   }
 }
 
-.rohling-linktexte {
+.einwurf-linktexte {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
 }
 
-.rohling-herkunft {
+.einwurf-herkunft {
   font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
   color: var(--text-primary);
 }
 
-.rohling-adresse {
+.einwurf-adresse {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.4;
 }
 
-// Ohne Notiz traegt dieser Block die Aufschrift: Plattform in Titelgroesse.
-.rohling-linkzeile--titel .rohling-herkunft {
+// Ohne Hinweis traegt dieser Block die Aufschrift: Plattform in Titelgroesse.
+.einwurf-linkzeile--titel .einwurf-herkunft {
   font-size: 17px;
   line-height: 1.3;
 }
@@ -689,7 +690,7 @@
   font-size: 18px;
 }
 
-.rohling-verworfen {
+.einwurf-verworfen {
   flex-shrink: 0;
   padding: 2px var(--spacing-sm);
   border: 1px solid rgba(0, 0, 0, 0.24);
@@ -700,12 +701,12 @@
 }
 
 // Koerper: weiss wie bei der vollen Karte, die Saetze nur am gruenen Balken.
-.rohling-koerper {
+.einwurf-koerper {
   padding: var(--spacing-md) var(--spacing-md) 0;
   background: var(--bg-card);
 }
 
-.rohling-saetze {
+.einwurf-saetze {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -714,7 +715,7 @@
   list-style: none;
 }
 
-.rohling-satz {
+.einwurf-satz {
   display: flex;
   align-items: baseline;
   gap: var(--spacing-sm);
@@ -746,7 +747,7 @@
   font-weight: 600;
 }
 
-.rohling-mehr {
+.einwurf-mehr {
   padding-left: 13px;
   color: var(--text-secondary);
   font-size: 12px;
@@ -754,14 +755,14 @@
 
 // Aktionszeile wie .aktionen der vollen Karte: Griff in der Mitte, ⋮ am Rand.
 // Feste Spalten, damit das Menue auch ohne Griff (verworfen) rechts steht.
-.rohling-aktion {
+.einwurf-aktion {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding: var(--spacing-md);
 }
 
-.rohling-menue {
+.einwurf-menue {
   grid-column: 3;
   justify-self: end;
   color: var(--text-secondary);
@@ -770,7 +771,7 @@
 // Derselbe Knopf wie "Kopieren" auf der vollen Karte: gefuellt, gruen (die Farbe
 // kommt aus .gutgesagt-primary-dark), 40 px hoch, Emoji vor dem Wort. Anders als
 // dort bleibt die Hoehe auch am Handy bei 40 - der Griff ist hier die Hauptsache.
-.rohling-primaer {
+.einwurf-primaer {
   display: inline-flex;
   align-items: center;
   grid-column: 2;
@@ -795,11 +796,11 @@
   font-size: 18px;
 }
 
-.rohling-meta {
+.einwurf-meta {
   padding-top: 0;
 }
 
-.rohling-alter,
-.rohling-einwerfer {
+.einwurf-alter,
+.einwurf-einwerfer {
   white-space: nowrap;
 }

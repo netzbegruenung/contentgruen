@@ -1,5 +1,5 @@
 import { RawInput } from '../services/raw-input.service';
-import { zustandVonEinwurf } from '../beitragskarte/karten-daten';
+import { EinwurfStufe, stufeVonEinwurf } from '../beitragskarte/karten-daten';
 import { Plattform, PLATTFORMEN, plattformAusUrl } from '../shared/plattform';
 
 /**
@@ -15,15 +15,34 @@ export const FILTER_SCHLUESSEL = 'gutgesagt.fangkorb.filter';
  */
 const FRUEHER_BEKANNTE: ReadonlyArray<string> = ['instagram', 'youtube', 'tiktok', 'web'];
 
-/** Die drei Arbeitsstufen als Tabs. Verworfenes liegt unter "Erledigt" hinter einem Chip. */
-export type FangkorbTab = 'destillieren' | 'ausformulieren' | 'erledigt';
+/**
+ * Die drei Tabs. Sie heissen nach der naechsten Arbeit, nicht nach der Stufe:
+ * offene Einwuerfe liegen unter "Destillieren", destillierte unter
+ * "Ausformulieren". Ausformuliertes hat keine naechste Arbeit und heisst nach
+ * seiner Stufe. Verworfenes liegt dort hinter einem Chip.
+ */
+export type FangkorbTab = 'destillieren' | 'ausformulieren' | 'ausformuliert';
 
 /** Reihenfolge, Beschriftung und die eine Zeile, die im leeren Tab steht. */
 export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string }> = [
   { wert: 'destillieren', name: 'Destillieren', leer: 'Nichts zu destillieren.' },
   { wert: 'ausformulieren', name: 'Ausformulieren', leer: 'Nichts auszuformulieren.' },
-  { wert: 'erledigt', name: 'Erledigt', leer: 'Noch nichts erledigt.' },
+  { wert: 'ausformuliert', name: 'Ausformuliert', leer: 'Noch nichts ausformuliert.' },
 ];
+
+/** In welchem Tab ein Einwurf der jeweiligen Stufe liegt. */
+const TAB_DER_STUFE: Record<EinwurfStufe, FangkorbTab> = {
+  offen: 'destillieren',
+  destilliert: 'ausformulieren',
+  ausformuliert: 'ausformuliert',
+  verworfen: 'ausformuliert',
+};
+
+/**
+ * Den Tab "Erledigt" gab es bis zur Angleichung ans Glossar; ein in der Sitzung
+ * gemerkter Wert zeigt weiter auf denselben Tab.
+ */
+const FRUEHERE_TABS: Readonly<Record<string, FangkorbTab>> = { erledigt: 'ausformuliert' };
 
 /** So liegt der Filter im Storage: dazu, welche Plattformen es beim Speichern gab. */
 interface GespeicherterFilter extends FangkorbFilter {
@@ -37,7 +56,7 @@ export interface FangkorbFilter {
   nurMeine: boolean;
   /** Der offene Tab. */
   tab: FangkorbTab;
-  /** Verworfenes unter "Erledigt" mitzeigen; standardmaessig ausgeblendet. */
+  /** Verworfenes unter "Ausformuliert" mitzeigen; standardmaessig ausgeblendet. */
   verworfenSichtbar: boolean;
 }
 
@@ -76,7 +95,7 @@ export function passtZumFilter(
 /**
  * Ob ein Einwurf in diesem Tab liegt.
  *
- * Verworfenes gehoert zu "Erledigt", ist dort aber nur zu sehen, wenn der Chip
+ * Verworfenes gehoert zu "Ausformuliert", ist dort aber nur zu sehen, wenn der Chip
  * "verworfen" an ist - sonst taucht wieder auf, was jemand weggelegt hat.
  */
 export function passtZumTab(
@@ -84,11 +103,11 @@ export function passtZumTab(
   tab: FangkorbTab,
   verworfenSichtbar: boolean,
 ): boolean {
-  const zustand = zustandVonEinwurf(einwurf);
-  if (zustand === 'verworfen') {
-    return tab === 'erledigt' && verworfenSichtbar;
+  const stufe = stufeVonEinwurf(einwurf);
+  if (stufe === 'verworfen' && !verworfenSichtbar) {
+    return false;
   }
-  return zustand === tab;
+  return TAB_DER_STUFE[stufe] === tab;
 }
 
 /**
@@ -117,9 +136,7 @@ export function filterLaden(): FangkorbFilter {
           )
         : standardFilter().plattformen,
       nurMeine: gelesen?.nurMeine === true,
-      tab: TABS.some((eintrag) => eintrag.wert === gelesen?.tab)
-        ? (gelesen!.tab as FangkorbTab)
-        : standardFilter().tab,
+      tab: tabAus(gelesen?.tab) ?? standardFilter().tab,
       verworfenSichtbar: gelesen?.verworfenSichtbar === true,
     };
   } catch {
@@ -131,7 +148,7 @@ export function filterLaden(): FangkorbFilter {
  * Den Tab merken, den der Fangkorb beim naechsten Oeffnen zeigen soll.
  *
  * Gebraucht am Ende des Destillier-Ablaufs: Wer den letzten offenen Einwurf
- * verarbeitet hat, landet wieder im Fangkorb - und zwar dort, wo das Ergebnis
+ * destilliert, ausformuliert oder verworfen hat, landet wieder im Fangkorb - und zwar dort, wo das Ergebnis
  * liegt, nicht in einem leeren "Destillieren".
  */
 export function tabMerken(tab: FangkorbTab): void {
@@ -147,6 +164,18 @@ export function tabMerken(tab: FangkorbTab): void {
  */
 export function verworfenEinblenden(): void {
   filterSpeichern({ ...filterLaden(), verworfenSichtbar: true });
+}
+
+/** Ein Tab aus Storage oder Adresse; auch der fruehere Name "erledigt" gilt. */
+export function tabAus(wert: unknown): FangkorbTab | null {
+  if (typeof wert !== 'string') {
+    return null;
+  }
+  const tab = TABS.find((eintrag) => eintrag.wert === wert);
+  if (tab) {
+    return tab.wert;
+  }
+  return Object.hasOwn(FRUEHERE_TABS, wert) ? FRUEHERE_TABS[wert] : null;
 }
 
 export function filterSpeichern(filter: FangkorbFilter): void {
