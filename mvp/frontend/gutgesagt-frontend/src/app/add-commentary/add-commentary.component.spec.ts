@@ -5,11 +5,14 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import {
   AddCommentaryComponent,
+  DUBLETTE_HINWEIS,
   GENOMMEN_HINWEIS,
+  NEHMEN_FEHLGESCHLAGEN,
+  VORHANDEN_WEG,
   SPEICHERN_FEHLGESCHLAGEN,
   ZUGESTIMMT_HINWEIS,
   ZUSTIMMEN_FEHLGESCHLAGEN,
@@ -458,41 +461,251 @@ describe('AddCommentaryComponent', () => {
       expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
     }));
 
-    it('eigene Dublette: meldet die Verknuepfung mit der Aussage und bleibt ohne Erfolg', fakeAsync(() => {
-      speichernMit({
-        id: 'k-alt',
-        duplikat: true,
-        statement_id: 'a-1',
-        statement_text: 'Wärmepumpen sind zu teuer',
-        verknuepft: true,
-      });
+    it('eigene Dublette mit Aussage: verknuepft noch nichts, bietet Nehmen und Trotzdem speichern an', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
       const erfolg = spyOn(component.success, 'emit');
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
       ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
 
       component.speichern();
       flush();
       fixture.detectChanges();
 
-      const hinweis = 'Diesen Kommentar gibt es schon – er ist jetzt auch mit „Wärmepumpen sind zu teuer“ verknüpft.';
       expect(erfolg).not.toHaveBeenCalled();
       expect(component.responseId).toBe('');
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(hinweis);
-      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain(hinweis);
+      expect(component.vorhanden!.aussage).toBeNull();
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_HINWEIS);
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).not.toContain('verknüpft');
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
 
       (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
       expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
     }));
 
-    it('zeigt den bisherigen Hinweis, wenn die Verknuepfung scheiterte', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', duplikat: true, statement_text: null, verknuepft: false });
+    it('Nehmen mit Aussage: schickt vorhanden_nehmen und meldet den vorhandenen, jetzt verknuepft', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({
+          id: 'k-alt',
+          duplikat: true,
+          vorhanden_eigen: true,
+          statement_id: ID,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddCommentaryResponse),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      const erfolg = spyOn(component.success, 'emit');
+      const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
       ausfuellen();
-
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
       component.speichern();
       flush();
       fixture.detectChanges();
 
-      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar.');
+      (seite().querySelector('.dublette-nehmen') as HTMLButtonElement).click();
+      flush();
+      fixture.detectChanges();
+
+      const [erste, zweite] = speichern.calls.allArgs().map(([anfrage]) => anfrage as AddCommentaryRequest);
+      expect(erste.vorhanden_nehmen).toBeUndefined();
+      expect(zweite).toEqual({ ...erste, vorhanden_nehmen: 'k-alt' });
+      expect(gewaehlt).toHaveBeenCalledOnceWith('k-alt');
+      expect(stimme).not.toHaveBeenCalled();
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(
+        'Diesen Kommentar gibt es schon – er ist jetzt auch mit „Wärmepumpen sind zu teuer“ verknüpft.',
+      );
+      expect(seite().querySelector('.dublette-nehmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeNull();
+    }));
+
+    it('Nehmen scheitert beim Verknuepfen: sagt es, die Entscheidung bleibt offen', fakeAsync(() => {
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true, statement_text: null, verknuepft: false } as AddCommentaryResponse),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(gewaehlt).not.toHaveBeenCalled();
+      expect(seite().querySelector('.entscheidungs-fehler')!.textContent).toContain(NEHMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('Nehmen scheitert mit 422: zeigt die Meldung des Backends', fakeAsync(() => {
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 422,
+              error: { detail: [{ msg: 'Value error, Die Aussage braucht mindestens 10 Zeichen' }] },
+            }),
+        ),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      const fehler = seite().querySelector('.entscheidungs-fehler')!.textContent!;
+      expect(fehler).toContain('Die Aussage braucht mindestens 10 Zeichen');
+      expect(fehler).not.toContain(NEHMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
+    }));
+
+    it('Nehmen, aber der vorhandene ist weg: sagt es und laesst neu speichern', fakeAsync(() => {
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        throwError(() => new HttpErrorResponse({ status: 409 })),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(gewaehlt).not.toHaveBeenCalled();
+      expect(component.vorhanden).toBeNull();
+      expect(component.fehler).toBe(VORHANDEN_WEG);
+      expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
+      expect(seite().querySelector('app-formular-leiste .submit-btn')!.textContent).toContain('Kommentar speichern');
+    }));
+
+    it('Nehmen findet inzwischen einen anderen vorhandenen: zeigt erst ihn, ohne Entscheidung', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-anderer', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({
+          id: 'k-anderer',
+          duplikat: true,
+          vorhanden_eigen: true,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddCommentaryResponse),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(gewaehlt).not.toHaveBeenCalled();
+      expect(component.vorhanden!.id).toBe('k-anderer');
+      expect(component.offeneEntscheidung).toBeTrue();
+      expect(component.vorhanden!.anfrage.vorhanden_nehmen).toBeUndefined();
+
+      component.nehmen();
+      flush();
+
+      expect((speichern.calls.mostRecent().args[0] as AddCommentaryRequest).vorhanden_nehmen).toBe('k-anderer');
+      expect(gewaehlt).toHaveBeenCalledOnceWith('k-anderer');
+    }));
+
+    it('nach Trotzdem speichern ein anderer eigener vorhandener: Nehmen schickt nur vorhanden_nehmen', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-anderer', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({
+          id: 'k-anderer',
+          duplikat: true,
+          vorhanden_eigen: true,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddCommentaryResponse),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      component.trotzdemSpeichern();
+      flush();
+
+      component.nehmen();
+      flush();
+
+      const nehmen = speichern.calls.mostRecent().args[0] as AddCommentaryRequest;
+      // Beides zusammen lehnt das Backend mit 422 ab.
+      expect(nehmen.trotz_dublette_von).toBeUndefined();
+      expect(nehmen.vorhanden_nehmen).toBe('k-anderer');
+      expect(component.vorhanden!.gewaehlt).toBe('genommen');
+    }));
+
+    it('waehrend Nehmen: Knoepfe gesperrt, Speichern dreht sich nicht', fakeAsync(() => {
+      const verknuepfen = new Subject<AddCommentaryResponse>();
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        verknuepfen,
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      fixture.detectChanges();
+
+      expect(component.speichert).toBeFalse();
+      expect(seite().querySelector('app-formular-leiste mat-spinner')).toBeNull();
+      expect(seite().querySelector('.dublette-nehmen mat-spinner')).toBeTruthy();
+      expect((seite().querySelector('.dublette-nehmen') as HTMLButtonElement).disabled).toBeTrue();
+      expect((seite().querySelector('.dublette-trotzdem') as HTMLButtonElement).disabled).toBeTrue();
+      expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeTrue();
+
+      verknuepfen.next({ id: 'k-alt', duplikat: true, vorhanden_eigen: true, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+      verknuepfen.complete();
+      flush();
+      expect(component.nimmt).toBeFalse();
+      expect(component.vorhanden!.gewaehlt).toBe('genommen');
+    }));
+
+    it('Nehmen mit zu kurzer Aussage: gesperrt, keine Anfrage', fakeAsync(() => {
+      const speichern = speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const feld: HTMLTextAreaElement = seite().querySelector('.antwort-eingabe')!;
+      feld.value = 'Windrad';
+      feld.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(component.aussageZuKurz).toBeTrue();
+      expect((seite().querySelector('.dublette-nehmen') as HTMLButtonElement).disabled).toBeTrue();
+      component.nehmen();
+      flush();
+      expect(speichern).toHaveBeenCalledTimes(1);
+      expect(component.vorhanden!.gewaehlt).toBeNull();
     }));
 
     it('nennt den Titel des vorhandenen Kommentars und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {
@@ -550,7 +763,7 @@ describe('AddCommentaryComponent', () => {
       fixture.detectChanges();
 
       expect(zugestimmt).not.toHaveBeenCalled();
-      expect(seite().querySelector('.zustimm-fehler')!.textContent).toContain(ZUSTIMMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.entscheidungs-fehler')!.textContent).toContain(ZUSTIMMEN_FEHLGESCHLAGEN);
       expect(seite().querySelector('.dublette-zustimmen')).toBeTruthy();
     }));
 
@@ -592,8 +805,8 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
     }));
 
-    it('eigene, schon verknuepfte Dublette: kein Zustimmen, aber Trotzdem speichern', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', duplikat: true, statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+    it('eigene Dublette: kein Zustimmen, aber Trotzdem speichern', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
       ausfuellen();
       component.speichern();
       flush();
@@ -615,8 +828,8 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
     }));
 
-    it('eigene Dublette aus dem Fangkorb: Nehmen meldet den vorhandenen ohne Stimme', fakeAsync(() => {
-      speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
+    it('eigene Dublette aus dem Fangkorb ohne Aussage: Nehmen meldet den vorhandenen ohne Stimme', fakeAsync(() => {
+      const speichern = speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       const erfolg = spyOn(component.success, 'emit');
@@ -631,6 +844,8 @@ describe('AddCommentaryComponent', () => {
       fixture.detectChanges();
 
       expect(gewaehlt).toHaveBeenCalledOnceWith('k-alt');
+      // Ohne Aussage gibt es nichts zu verknuepfen: kein zweiter Aufruf.
+      expect(speichern).toHaveBeenCalledTimes(1);
       expect(stimme).not.toHaveBeenCalled();
       expect(erfolg).not.toHaveBeenCalled();
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(GENOMMEN_HINWEIS);
