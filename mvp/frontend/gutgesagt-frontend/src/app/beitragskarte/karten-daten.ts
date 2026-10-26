@@ -298,6 +298,16 @@ export function stufeVonEinwurf(einwurf: Einwurf): EinwurfStufe {
   return (einwurf.drafts ?? []).length > 0 ? 'destilliert' : 'offen';
 }
 
+/** Die mit einem Einwurf verknuepften Beitraege, aelteste zuerst, samt ausformuliertem Satz. */
+export function beitraegeVonEinwurf(einwurf: Einwurf): EinwurfBeitrag[] {
+  const saetze = einwurf.drafts ?? [];
+  return (einwurf.links ?? []).map((link) => ({
+    contentId: link.content_id,
+    typ: resolveContentType(link.content_type) ?? null,
+    satz: saetze.find((satz) => satz.id === link.draft_id)?.sentence ?? null,
+  }));
+}
+
 /**
  * Ein Einwurf als eine Karte: Herkunft im Kopf, der Inhalt als Titel, die Saetze
  * innen.
@@ -348,11 +358,7 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
       link: adresse,
       linkText: adresseKurz(adresse),
       saetze,
-      beitraege: links.map((link) => ({
-        contentId: link.content_id,
-        typ: resolveContentType(link.content_type) ?? null,
-        satz: saetze.find((satz) => satz.id === link.draft_id)?.text ?? null,
-      })),
+      beitraege: beitraegeVonEinwurf(einwurf),
       verwerfbar: istVerwerfbar(einwurf),
     },
   };

@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pydantic import BaseModel, ValidationError
 
@@ -934,6 +934,23 @@ class TestGleicherLink:
         repository.mit_gleichem_link.assert_called_once_with(
             "http://www.example.org/a/", "alice"
         )
+
+    def test_gleicher_link_ohne_anzeigenamen(self, client, repository):
+        """Das Formular zeigt nur Stufe und Beitrag; Namen fragt es nicht ab."""
+        repository.mit_gleichem_link.return_value = [
+            _gespeicherter_einwurf(url="https://example.org/a")
+        ]
+
+        with patch("api.v1.raw_input.get_anzeigename_service") as namen:
+            antwort = client.post(
+                GLEICHER_LINK_URL,
+                json={"url": "https://example.org/a"},
+                headers={"X-User": "alice"},
+            )
+
+        assert antwort.status_code == 200
+        assert antwort.json()["results"][0]["submitted_by_name"] is None
+        namen.assert_not_called()
 
     def test_gleicher_link_ohne_treffer_ist_leer(self, client, repository):
         antwort = client.post(

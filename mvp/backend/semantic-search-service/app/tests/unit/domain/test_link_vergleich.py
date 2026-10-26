@@ -16,8 +16,8 @@ from domain.link_vergleich import (
     TRACKING_PARAMETER,
     TRACKING_PRAEFIXE,
     gleicher_link,
-    vergleichskern,
     vergleichsform,
+    vorfilter_teile,
 )
 
 pytestmark = pytest.mark.unit
@@ -71,6 +71,11 @@ class TestGleicherLink:
             # Andere Subdomain ist ein anderer Host
             ("https://m.example.org/artikel", "https://example.org/artikel"),
             ("https://example.org/artikel", "https://example.org/artikel-2"),
+            # Nur ein Schraegstrich am Ende faellt weg
+            ("https://example.org/artikel//", "https://example.org/artikel"),
+            # Userinfo und Anker sind kein Bereinigungsgrund
+            ("https://jemand@example.org/artikel", "https://example.org/artikel"),
+            ("https://example.org/artikel#teil", "https://example.org/artikel"),
         ],
     )
     def test_gleicher_link_sonst_verschieden(self, eingeworfen, vorhanden):
@@ -93,10 +98,27 @@ class TestVergleichsform:
     def test_vergleichsform_kein_link_ist_none(self):
         assert vergleichsform("einfach Text") is None
 
-    def test_vergleichskern_nur_host_und_pfad(self):
-        assert (
-            vergleichskern("https://www.example.org/a/?seite=2#teil") == "example.org/a"
-        )
+    def test_vorfilter_teile_host_pfad_und_uebrige_parameter(self):
+        assert vorfilter_teile(
+            "https://jemand@www.youtube.com/watch/?v=abc&si=x&t=1#teil"
+        ) == ["youtube.com/watch", "v=abc", "t=1"]
+
+    def test_vorfilter_teile_kein_link_ist_none(self):
+        assert vorfilter_teile("einfach Text") is None
+
+    @pytest.mark.parametrize(
+        "vorhanden",
+        [
+            "http://WWW.YouTube.com/watch/?v=abc&utm_source=x&t=1",
+            "https://youtube.com/watch?v=abc&t=1",
+        ],
+    )
+    def test_vorfilter_teile_stehen_in_jedem_gleichen_link(self, vorhanden):
+        """Sonst verwirft die Datenbank einen gleichen Link schon im Vorfilter."""
+        eingeworfen = "https://www.youtube.com/watch?v=abc&t=1&si=TEILEN"
+        assert gleicher_link(eingeworfen, vorhanden)
+        for teil in vorfilter_teile(eingeworfen):
+            assert teil.lower() in vorhanden.lower()
 
 
 FRONTEND_BEREINIGUNG = (

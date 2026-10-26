@@ -8,7 +8,7 @@ import {
   EinwurfBeitrag,
   STUFEN,
   StufenAnzeige,
-  ausEinwurf,
+  beitraegeVonEinwurf,
   stufeVonEinwurf,
 } from '../beitragskarte/karten-daten';
 import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
@@ -35,14 +35,19 @@ export const LINK_PRUEFEN_NACH_MS = 400;
 /** Ein vorhandener Einwurf mit gleichem Link, wie das Formular ihn zeigt. */
 export interface GleicherEinwurf {
   stufe: StufenAnzeige;
-  /** Die verknuepften Beitraege; leer, solange er nicht ausformuliert ist. */
+  /**
+   * Die verknuepften Beitraege; leer, solange er nicht ausformuliert ist. Auch ein
+   * verworfener Einwurf kann welche haben, wenn ihn jemand vorher ausformuliert
+   * hat - dann zeigt das Formular die Stufe "Verworfen" und trotzdem den Beitrag,
+   * denn den gibt es ja.
+   */
   beitraege: EinwurfBeitrag[];
 }
 
 function alsGleicherEinwurf(einwurf: Einwurf): GleicherEinwurf {
   return {
     stufe: STUFEN[stufeVonEinwurf(einwurf)],
-    beitraege: ausEinwurf(einwurf).einwurfAngaben?.beitraege ?? [],
+    beitraege: beitraegeVonEinwurf(einwurf),
   };
 }
 
@@ -208,6 +213,18 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$),
       )
       .subscribe((einwuerfe) => (this.gleicheEinwuerfe = einwuerfe.map(alsGleicherEinwurf)));
+  }
+
+  /**
+   * Zugaenglicher Name des Knopfs: Bei mehreren Einwuerfen hiesse sonst jeder
+   * Knopf gleich. Die Stufe allein reicht nicht, zwei koennen dieselbe haben.
+   */
+  beitragAnsehenLabel(einwurf: GleicherEinwurf, index: number): string {
+    const was = einwurf.beitraege.length === 1 ? 'Beitrag' : 'Beiträge';
+    if (this.gleicheEinwuerfe.length === 1) {
+      return `${was} ansehen`;
+    }
+    return `${was} ansehen, Einwurf ${index + 1} von ${this.gleicheEinwuerfe.length}, ${einwurf.stufe.name}`;
   }
 
   /** Die Beitraege eines vorhandenen Einwurfs, im selben Sheet wie im Fangkorb. */

@@ -5,7 +5,8 @@ Entscheidung des Maintainers vom 2026-10-26: Zwei Links sind gleich nach
 Bereinigung um Tracking-Parameter, "www.", Schraegstrich am Ende und den
 Unterschied http/https. Alles andere bleibt ein Unterschied: inhaltliche
 Parameter, die Reihenfolge der Parameter, Gross- und Kleinschreibung im Pfad,
-andere Subdomains. Der Host ist ohnehin nicht gross/klein-empfindlich.
+andere Subdomains, Anker, Userinfo, mehr als ein Schraegstrich am Ende. Der Host
+ist ohnehin nicht gross/klein-empfindlich.
 
 Die Tracking-Listen spiegeln ``shared/url-bereinigen.ts`` im Frontend, das die
 Parameter schon beim Einwerfen entfernt. Hier werden sie trotzdem noch einmal
@@ -14,7 +15,7 @@ muss sich nicht daran halten. Wer eine Liste aendert, aendert beide;
 ``test_link_vergleich_tracking_wie_frontend`` prueft das.
 """
 
-from typing import Optional
+from typing import List, Optional, Tuple
 from urllib.parse import unquote_plus, urlsplit
 
 # Parameter, die vollstaendig entfernt werden.
@@ -50,13 +51,10 @@ def _ist_tracking(name: str, host_parameter: frozenset) -> bool:
     )
 
 
-def vergleichsform(url: Optional[str]) -> Optional[str]:
+def _zerlegt(url: Optional[str]) -> Optional[Tuple[str, str, List[str], str]]:
     """
-    Die Form eines Links, in der gleiche Links gleich aussehen, oder None.
-
-    Ohne Schema, ohne "www.", ohne Schraegstrich am Ende des Pfads und ohne
-    Tracking-Parameter: ``http://www.example.org/a/?utm_source=x`` wird
-    ``example.org/a``. Kein http(s)-Link: None.
+    Ein http(s)-Link, bereinigt und zerlegt in Userinfo, Host samt Pfad, die
+    uebrigen Parameter und den Anker; kein http(s)-Link: None.
     """
     if not url:
         return None
@@ -75,6 +73,9 @@ def vergleichsform(url: Optional[str]) -> Optional[str]:
     if port is not None:
         host = f"{host}:{port}"
 
+    # Genau ein Schraegstrich am Ende faellt weg; "/a//" bleibt von "/a" verschieden.
+    pfad = teile.path[:-1] if teile.path.endswith("/") else teile.path
+
     # Nur die Tracking-Parameter fallen weg; die uebrigen bleiben wie geschrieben,
     # damit ein Umschreiben die Kodierung nicht veraendert.
     parameter = [
@@ -83,26 +84,44 @@ def vergleichsform(url: Optional[str]) -> Optional[str]:
         if teil
         and not _ist_tracking(unquote_plus(teil.split("=", 1)[0]), host_parameter)
     ]
+    userinfo = teile.netloc.rpartition("@")[0]
+    return userinfo, host + pfad, parameter, teile.fragment
 
-    form = host + teile.path.rstrip("/")
+
+def vergleichsform(url: Optional[str]) -> Optional[str]:
+    """
+    Die Form eines Links, in der gleiche Links gleich aussehen, oder None.
+
+    Ohne Schema, ohne "www.", ohne Schraegstrich am Ende des Pfads und ohne
+    Tracking-Parameter: ``http://www.example.org/a/?utm_source=x`` wird
+    ``example.org/a``. Kein http(s)-Link: None.
+    """
+    zerlegt = _zerlegt(url)
+    if zerlegt is None:
+        return None
+    userinfo, adresse, parameter, anker = zerlegt
+    form = f"{userinfo}@{adresse}" if userinfo else adresse
     if parameter:
         form += "?" + "&".join(parameter)
-    if teile.fragment:
-        form += "#" + teile.fragment
+    if anker:
+        form += "#" + anker
     return form
 
 
-def vergleichskern(url: Optional[str]) -> Optional[str]:
+def vorfilter_teile(url: Optional[str]) -> Optional[List[str]]:
     """
-    Host und Pfad aus der Vergleichsform, oder None.
+    Teilzeichenketten, die in jedem gleichen Link stehen, gross/klein-unabhaengig:
+    Host samt Pfad und jeder uebrige Parameter. Kein http(s)-Link: None.
 
-    Steht als Teilzeichenkette in jedem gleichen Link, gross/klein-unabhaengig;
-    damit kann die Datenbank grob vorfiltern, bevor ``gleicher_link`` entscheidet.
+    Damit kann die Datenbank grob vorfiltern, bevor ``gleicher_link`` entscheidet.
+    Die Parameter gehoeren dazu, weil bei vielen Links erst sie den Inhalt
+    bestimmen (``youtube.com/watch?v=…``).
     """
-    form = vergleichsform(url)
-    if form is None:
+    zerlegt = _zerlegt(url)
+    if zerlegt is None:
         return None
-    return form.split("?", 1)[0].split("#", 1)[0]
+    _, adresse, parameter, _ = zerlegt
+    return [adresse, *parameter]
 
 
 def gleicher_link(link: Optional[str], anderer: Optional[str]) -> bool:

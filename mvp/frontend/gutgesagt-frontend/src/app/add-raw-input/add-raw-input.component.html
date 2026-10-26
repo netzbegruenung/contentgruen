@@ -23,26 +23,31 @@
             <mat-error>Bitte nur einen Link, der mit http:// oder https:// beginnt.</mat-error>
         </mat-form-field>
 
-        <!-- Ein gleicher Link liegt schon im Fangkorb (#263). Haelt nicht auf. -->
-        <div *ngIf="gleicheEinwuerfe.length" class="hinweis-box gleicher-link" role="status">
-            <p class="gleicher-link-titel">
-                <mat-icon aria-hidden="true">info</mat-icon>
-                Diesen Link gibt es schon im Fangkorb.
-            </p>
-            <ul class="gleicher-link-liste">
-                <li *ngFor="let einwurf of gleicheEinwuerfe" class="gleicher-link-eintrag">
-                    <span class="gleicher-link-stufe">
-                        <span aria-hidden="true">{{ einwurf.stufe.emoji }}</span>
-                        {{ einwurf.stufe.name }}
-                    </span>
-                    <button *ngIf="einwurf.beitraege.length" mat-button type="button"
-                            class="beitrag-ansehen"
-                            (click)="beitragAnsehen(einwurf)">
-                        {{ einwurf.beitraege.length === 1 ? 'Beitrag ansehen' : 'Beiträge ansehen' }}
-                    </button>
-                </li>
-            </ul>
-            <p class="gleicher-link-fuss">Du kannst ihn trotzdem einwerfen.</p>
+        <!-- Ein gleicher Link liegt schon im Fangkorb (#263). Haelt nicht auf.
+             Die Live-Region steht immer da, nur ihr Inhalt kommt und geht: Eine
+             Region, die mit ihrem Inhalt entsteht, sagen Screenreader oft nicht an. -->
+        <div class="gleicher-link-region" role="status" aria-live="polite">
+            <div *ngIf="gleicheEinwuerfe.length" class="hinweis-box gleicher-link">
+                <p class="gleicher-link-titel">
+                    <mat-icon aria-hidden="true">info</mat-icon>
+                    Diesen Link gibt es schon im Fangkorb.
+                </p>
+                <ul class="gleicher-link-liste">
+                    <li *ngFor="let einwurf of gleicheEinwuerfe; let i = index" class="gleicher-link-eintrag">
+                        <span class="gleicher-link-stufe">
+                            <span aria-hidden="true">{{ einwurf.stufe.emoji }}</span>
+                            {{ einwurf.stufe.name }}
+                        </span>
+                        <button *ngIf="einwurf.beitraege.length" mat-button type="button"
+                                class="beitrag-ansehen"
+                                [attr.aria-label]="beitragAnsehenLabel(einwurf, i)"
+                                (click)="beitragAnsehen(einwurf)">
+                            {{ einwurf.beitraege.length === 1 ? 'Beitrag ansehen' : 'Beiträge ansehen' }}
+                        </button>
+                    </li>
+                </ul>
+                <p class="gleicher-link-fuss">Du kannst ihn trotzdem einwerfen.</p>
+            </div>
         </div>
 
         <mat-form-field appearance="outline" class="einwurf-feld hinweis-feld"

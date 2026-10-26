@@ -415,6 +415,36 @@ describe('AddRawInputComponent', () => {
       });
     }));
 
+    it('kuendigt die Anzeige in einer Live-Region an, die schon vorher dasteht', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      const region = fixture.nativeElement.querySelector('.gleicher-link-region');
+      expect(region?.getAttribute('role')).toBe('status');
+      expect(region?.textContent?.trim()).toBe('');
+      einwurfService.mitGleichemLink.and.returnValue(of([ausformuliert]));
+
+      linkTippen('https://example.org/a');
+
+      expect(fixture.nativeElement.querySelector('.gleicher-link-region')).toBe(region);
+      expect(region.textContent).toContain('Diesen Link gibt es schon im Fangkorb');
+    }));
+
+    it('unterscheidet die Beitrag-Knoepfe bei mehreren Einwuerfen', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      einwurfService.mitGleichemLink.and.returnValue(
+        of([ausformuliert, { ...ausformuliert, id: 'zweiter', status: 'discarded' }]),
+      );
+
+      linkTippen('https://example.org/a');
+
+      const knoepfe = gleicherLinkBox()!.querySelectorAll('button.beitrag-ansehen');
+      expect(Array.from(knoepfe).map((knopf) => knopf.getAttribute('aria-label'))).toEqual([
+        'Beitrag ansehen, Einwurf 1 von 2, Ausformuliert',
+        'Beitrag ansehen, Einwurf 2 von 2, Verworfen',
+      ]);
+    }));
+
     it('laesst trotzdem einwerfen', fakeAsync(() => {
       erstellen();
       flushMicrotasks();

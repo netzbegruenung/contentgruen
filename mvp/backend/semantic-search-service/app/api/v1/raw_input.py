@@ -156,7 +156,7 @@ async def get_raw_inputs(
 
 
 @router.post("/gleicherLink", response_model=GleicherLinkResponse)
-async def gleicher_link(
+async def einwuerfe_mit_gleichem_link(
     request: GleicherLinkRequest,
     x_user: Optional[str] = Header(default=None),
     repository: RawInputRepository = Depends(get_raw_input_repository),
@@ -170,14 +170,13 @@ async def gleicher_link(
 
     POST statt GET, obwohl nur gelesen wird: Der Link steht so im Body und nicht
     in der Adresse, die Webserver und Proxy protokollieren. Links fuehren oft auf
-    Profile Dritter.
+    Profile Dritter. Anzeigenamen loest der Endpunkt nicht auf: Das Formular
+    zeigt nur Stufe und Beitrag.
     """
     person = _angemeldete_person(x_user)
     try:
         rows = repository.mit_gleichem_link(request.url, person)
-        return GleicherLinkResponse(
-            results=[RawInputResponse(**row) for row in _mit_namen(rows, x_user)]
-        )
+        return GleicherLinkResponse(results=[RawInputResponse(**row) for row in rows])
     except Exception as e:
         logger.error(f"Fehler in /gleicherLink: {e}", exc_info=True)
         raise HTTPException(
