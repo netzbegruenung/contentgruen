@@ -3,7 +3,7 @@ Antwortformat der Bild-Endpunkte.
 
 Jede Route in api/v1/image.py beschreibt ihre Antwort mit einem response_model
 und baut sie ueber DTOs. Die Antworten selbst bleiben, wie das Frontend sie
-kennt: addImage gibt 201 mit der ID, ohne Bildunterschrift 202 mit ID und Status.
+kennt: addImage gibt 201 mit der ID, ohne Unterschrift 202 mit ID und Status.
 """
 
 import datetime
@@ -23,6 +23,9 @@ from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.image import ImageDbEntry
 
 BILD_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
+TITEL = "Solardach auf der Schule"
+BILD_URL = "https://example.org/solar.jpg"
+UNTERSCHRIFT = "Ein Solardach auf einer Grundschule"
 
 
 @pytest.fixture
@@ -45,9 +48,9 @@ def _bild_eintrag() -> ImageDbEntry:
     jetzt = datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc)
     return ImageDbEntry(
         id=BILD_ID,
-        title="Solardach auf der Schule",
-        image_url="https://example.org/solar.jpg",
-        text="Ein Solardach auf einer Grundschule",
+        title=TITEL,
+        image_url=BILD_URL,
+        text=UNTERSCHRIFT,
         created=jetzt,
         last_modified=jetzt,
         original_author="autorin",
@@ -58,27 +61,21 @@ def _bild_eintrag() -> ImageDbEntry:
     )
 
 
-def test_jede_route_hat_ein_response_model():
+def test_image_router_jede_route_hat_response_model():
     routen = [r for r in image_router.routes if isinstance(r, APIRoute)]
 
     assert routen
     assert [r.path for r in routen if r.response_model is None] == []
 
 
-def test_kein_testendpunkt_unter_dem_praefix(client):
+def test_image_router_kein_testendpunkt_unter_dem_praefix(client):
     assert client.get("/api/v1/image/").status_code == 404
 
 
 def test_add_image_mit_bildunterschrift_antwortet_201_mit_id(client):
     response = client.post(
         "/api/v1/image/addImage",
-        json={
-            "image": {
-                "title": "Solardach auf der Schule",
-                "image_url": "https://example.org/solar.jpg",
-                "text": "Ein Solardach auf einer Grundschule",
-            }
-        },
+        json={"image": {"title": TITEL, "image_url": BILD_URL, "text": UNTERSCHRIFT}},
         headers={"X-User": "autorin"},
     )
 
@@ -89,12 +86,7 @@ def test_add_image_mit_bildunterschrift_antwortet_201_mit_id(client):
 def test_add_image_ohne_bildunterschrift_antwortet_202_mit_status(client):
     response = client.post(
         "/api/v1/image/addImage",
-        json={
-            "image": {
-                "title": "Solardach auf der Schule",
-                "image_url": "https://example.org/solar.jpg",
-            }
-        },
+        json={"image": {"title": TITEL, "image_url": BILD_URL}},
         headers={"X-User": "autorin"},
     )
 
@@ -124,9 +116,9 @@ def test_get_by_id_liefert_den_eintrag(client, image_service):
     assert response.status_code == 200
     body = response.json()
     assert body["id"] == str(BILD_ID)
-    assert body["title"] == "Solardach auf der Schule"
-    assert body["image_url"] == "https://example.org/solar.jpg"
-    assert body["text"] == "Ein Solardach auf einer Grundschule"
+    assert body["title"] == TITEL
+    assert body["image_url"] == BILD_URL
+    assert body["text"] == UNTERSCHRIFT
 
 
 def test_get_by_id_unbekannte_id_ist_404(client, image_service):

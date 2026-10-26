@@ -1,7 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Literal, Optional
+from typing import List, Optional
 from uuid import UUID
 
+from domain.models.content_status import ContentStatus
 from domain.models.image import (
     Image,
     ImageDbEntry,
@@ -13,14 +14,14 @@ class AddImageRequest(BaseModel):
 
 
 class AddImageResponse(BaseModel):
-    """Antwort auf addImage: die ID, ohne Bildunterschrift zusaetzlich der Status.
+    """Antwort auf addImage: die ID, ohne Unterschrift zusaetzlich der Status.
 
     status steht nur in der 202-Antwort; die Route laesst None-Felder weg, damit
     die 201-Antwort wie bisher nur die ID enthaelt.
     """
 
     id: UUID
-    status: Optional[Literal["pending_description"]] = None
+    status: Optional[ContentStatus] = None
 
 
 class ImageGetAllResponse(BaseModel):

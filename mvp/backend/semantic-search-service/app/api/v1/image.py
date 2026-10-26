@@ -73,7 +73,7 @@ async def get_all(
     responses={
         202: {
             "model": AddImageResponse,
-            "description": "Ohne Bildunterschrift angenommen; die Bildbeschreibung folgt.",
+            "description": "Ohne Unterschrift angenommen; die Bildbeschreibung folgt.",
         }
     },
 )
@@ -119,9 +119,7 @@ async def add_image(
             return AddImageResponse(id=image_id)
 
         response.status_code = 202
-        return AddImageResponse(
-            id=image_id, status=ContentStatus.PENDING_DESCRIPTION.value
-        )
+        return AddImageResponse(id=image_id, status=ContentStatus.PENDING_DESCRIPTION)
 
     except HTTPException:
         raise
