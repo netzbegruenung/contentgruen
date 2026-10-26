@@ -309,7 +309,7 @@ class TestImageRepository:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_interface_unterschrift_setzen_is_not_a_silent_no_op():
-    """Ohne Override wuerde ein Bild ohne Unterschrift freigegeben; daher ein Fehler."""
+    """Ohne Override wuerde ein Bild ohne Unterschrift sichtbar; daher ein Fehler."""
     from repositories.interfaces.base_content_repository import (
         IBaseContentRepository,
     )

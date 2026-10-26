@@ -55,7 +55,7 @@ async def _description_worker(
                             nur_aus=ContentStatus.PENDING_DESCRIPTION,
                         )
                         continue
-                    # Kein Upsert des ganzen Eintrags: Er truege den gelesenen
+                    # Kein Upsert des ganzen Beitrags: Er truege den gelesenen
                     # Status zurueck und hoebe eine zwischenzeitliche Sperre auf.
                     # Der Status zuletzt, damit das Bild erst mit Unterschrift
                     # sichtbar wird.

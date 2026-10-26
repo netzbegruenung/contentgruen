@@ -230,7 +230,7 @@ class TestWorkerStateMachine:
 
     async def test_valid_unterschrift_does_not_rewrite_whole_entry(self):
         """
-        Kein Upsert des ganzen Eintrags: Er truege den Status von vor der
+        Kein Upsert des ganzen Beitrags: Er truege den Status von vor der
         Beschreibung zurueck und hoebe eine zwischenzeitliche Sperre auf.
         """
         item_id = uuid.uuid4()

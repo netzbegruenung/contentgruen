@@ -814,7 +814,7 @@ class QdrantBaseRepository(
         """
         Partial-payload update: change only the status field without re-embedding.
 
-        Mit nur_aus wechselt der Status nur, wenn der Eintrag gerade in diesem
+        Mit nur_aus wechselt der Status nur, wenn der Beitrag gerade in diesem
         Status steht. Qdrant prueft das per Filter im selben Schreibvorgang; ein
         inzwischen gesperrter Beitrag bleibt so gesperrt (Hintergrunddienst fuer
         Bildbeschreibungen, #251).
@@ -854,9 +854,9 @@ class QdrantBaseRepository(
         self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
     ) -> None:
         """
-        Unterschrift (das Feld text) und Vektor eines Eintrags neu setzen, sonst nichts.
+        Unterschrift (das Feld text) und Vektor eines Beitrags neu setzen, sonst nichts.
 
-        Anders als upsert schreibt das nicht den ganzen Eintrag zurueck: Status,
+        Anders als upsert schreibt das nicht den ganzen Beitrag zurueck: Status,
         Sperre (status_vor_sperre) und alles andere, was sich seit dem Lesen
         geaendert hat, bleiben stehen. extra sind weitere Payload-Felder zur
         Beschreibung, etwa description_model; den Status setzt nur update_status.
