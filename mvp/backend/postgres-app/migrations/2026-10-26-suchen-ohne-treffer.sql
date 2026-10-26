@@ -14,9 +14,7 @@
 -- Skript dokumentiert das Schema und dient Umgebungen, in denen die Tabelle vor
 -- dem ersten Start des neuen Dienstes existieren soll.
 --
--- Anwenden:
---   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
---     < mvp/backend/postgres-app/migrations/2026-10-26-suchen-ohne-treffer.sql
+-- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;
 
