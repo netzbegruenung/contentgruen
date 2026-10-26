@@ -211,7 +211,7 @@ def anweisungen(skript: str) -> Iterator[str]:
             yield anweisung
 
 
-def init_skript(db: Datenbank, skript: Path = INIT_SKRIPT) -> None:
+def init_skript_anwenden(db: Datenbank, skript: Path = INIT_SKRIPT) -> None:
     """
     Ein Init-Skript in einem Aufruf anwenden, wie es das Postgres-Image bei leerem
     Volume tut, aber ohne die GRANTs: Die gelten dem Schema public und der Rolle

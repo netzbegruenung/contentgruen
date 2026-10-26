@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS usage_events (
 CREATE INDEX idx_usage_events_content_id ON usage_events(content_id);
 CREATE INDEX idx_usage_events_timestamp ON usage_events(timestamp);
 
--- Kein Trigger fuer updated_at: Das setzt das Modell (onupdate), alle Schreibwege
--- laufen ueber das ORM.
+-- Kein Trigger fuer updated_at: Das setzt das Modell (onupdate), alle Aenderungen
+-- an usage_tracking laufen ueber das ORM.
 
 -- Grant appropriate permissions
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_user;

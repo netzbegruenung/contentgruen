@@ -124,7 +124,7 @@ def _aus_init_skript(db: Datenbank, skript: Path) -> Datenbank:
     Wie eine Bestandsdatenbank entstanden ist: Das Init-Skript laeuft bei leerem
     Volume, beim ersten Start legt der Dienst mit create_all die uebrigen Tabellen an.
     """
-    postgres.init_skript(db, skript)
+    postgres.init_skript_anwenden(db, skript)
     Base.metadata.create_all(db.engine)
     return db
 

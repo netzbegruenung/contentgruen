@@ -2,20 +2,22 @@
 --
 -- Test- und Produktionsdatenbanken entstanden aus init.sql, das bis #285 vom
 -- Modell (infrastructure/database/models.py) abwich, gegen das Code und Tests
--- pruefen. Es gilt das Modell:
+-- pruefen. Es gilt das Modell, nur die Server-Defaults kommen aus init.sql:
 --
 -- - idx_usage_events_timestamp aufsteigend statt absteigend. Fuer einen Index auf
 --   einer Spalte ist die Richtung gleichwertig, beide Abfragen filtern nur nach
---   Bereich (Trending, Aufraeumen).
--- - idx_usage_events_content_timestamp, idx_usage_tracking_usage_count und
---   idx_usage_tracking_last_used entfallen: Keine Abfrage sortiert nach diesen
---   Spalten oder filtert nach content_id und Zeit zugleich.
+--   Bereich (Trending, Aufraeumen). Das Skript baut ihn bei jedem Lauf neu.
+-- - idx_usage_events_content_timestamp und idx_usage_tracking_usage_count
+--   entfallen: Keine Abfrage sortiert nach diesen Spalten oder filtert nach
+--   content_id und Zeit zugleich. idx_usage_tracking_last_used entfaellt auch;
+--   die Kennzahlen filtern zwar nach einem Bereich von last_used, aber
+--   usage_tracking hat nur eine Zeile je Beitrag, dafuer reicht ein Scan.
 -- - Der Trigger update_usage_tracking_updated_at und seine Funktion
 --   update_updated_at_column entfallen: updated_at setzt das Modell (onupdate),
---   alle Schreibwege laufen ueber das ORM.
+--   alle Aenderungen an usage_tracking laufen ueber das ORM.
 -- - usage_events.id wird BIGINT wie im Modell, samt Sequenz. Das schreibt die
 --   Tabelle neu und sperrt sie dabei; sie haelt nur die Nutzungen der letzten
---   90 Tage.
+--   Tage (standardmaessig 90, usage_retention_days).
 -- - Die Server-Defaults von usage_events.event_type ('copy') und
 --   usage_tracking.usage_count (0) stehen jetzt auch im Modell; das Skript setzt
 --   sie fuer Datenbanken, die create_all ohne init.sql angelegt hat.
@@ -23,7 +25,8 @@
 -- Neue Datenbanken brauchen das Skript nicht: init.sql und create_all legen das
 -- Schema schon so an. Es muss nicht vor dem Start des neuen Dienstes laufen; der
 -- Code liest und schreibt beide Tabellen davor und danach gleich. Daten aendern
--- sich nicht. Wiederholbar.
+-- sich nicht. Wiederholbar; nach dem Einspielen einer Sicherung von vor dem
+-- Skript erneut anwenden.
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;
