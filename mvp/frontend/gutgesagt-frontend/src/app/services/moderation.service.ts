@@ -39,7 +39,6 @@ export interface GemeldeterBeitrag {
   [feld: string]: any;
 }
 
-
 export interface PendingReportsResponse {
   total: number;
   reports: ContentReport[];

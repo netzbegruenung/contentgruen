@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import ContentStatus, zustand_aus_altwert
 from domain.models.content_type import ContentType
 from repositories.interfaces.moderation_repository import IModerationRepository
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
@@ -13,7 +13,8 @@ from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 logger = logging.getLogger(__name__)
 
 # Payload-Feld mit dem Zustand von vor der Sperre, damit Entsperren ihn
-# wiederherstellt. Fehlt er, macht Entsperren den Beitrag sichtbar.
+# wiederherstellt. Fehlt er oder ist er ein Altwert von vor #214, macht Entsperren
+# den Beitrag sichtbar.
 FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 
 # Wie viele Aussagen aus_aussagen_entfernen je Scroll-Seite holt.
@@ -57,9 +58,7 @@ class QdrantModerationRepository(IModerationRepository):
     async def entsperren(self, beitrag: Dict[str, Any]) -> None:
         if beitrag.get("status") != ContentStatus.BLOCKED.value:
             return
-        status_vorher = (
-            beitrag.get(FELD_STATUS_VOR_SPERRE) or ContentStatus.VISIBLE.value
-        )
+        status_vorher = zustand_aus_altwert(beitrag.get(FELD_STATUS_VOR_SPERRE) or None)
 
         # Zwei Schreibvorgaenge; scheitert der zweite, bleibt nur das Hilfsfeld
         # stehen, der Beitrag ist trotzdem entsperrt.

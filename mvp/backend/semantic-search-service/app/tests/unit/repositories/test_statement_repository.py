@@ -5,14 +5,13 @@ This module demonstrates clean testing patterns without complex mocking.
 """
 
 import pytest
-
-from repositories.implementations.qdrant.base_repository import _nur_sichtbar
 import pytest_asyncio
 import uuid
 from datetime import datetime
 
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from domain.models.content_type import ContentType
+from repositories.implementations.qdrant.base_repository import nur_sichtbar_bedingungen
 from tests.conftest import create_base_content_fields, create_statement_data
 
 
@@ -305,7 +304,7 @@ class TestCountCurated:
         await repository.count_curated()
 
         count_filter = client.count.call_args.kwargs["count_filter"]
-        assert all(b in count_filter.must for b in _nur_sichtbar())
+        assert all(b in count_filter.must for b in nur_sichtbar_bedingungen())
 
     @pytest.mark.asyncio
     async def test_gibt_null_zurueck_statt_zu_scheitern(
@@ -354,7 +353,7 @@ class TestSearchCurated:
         assert aufruf["content_type"] == "statement"
         assert aufruf["limit"] == 5
         # Wie die normale Suche nur sichtbare, ohne die unbeantworteten Suchanfragen
-        assert aufruf["filter_dict"]["must"] == _nur_sichtbar()
+        assert aufruf["filter_dict"]["must"] == nur_sichtbar_bedingungen()
         ausschluss = aufruf["filter_dict"]["must_not"]
         suchanfrage = [b for b in ausschluss if getattr(b, "must", None)]
         assert len(suchanfrage) == 1
@@ -387,4 +386,6 @@ class TestSearchWithReplyFilter:
         await repository.search_with_reply_filter("waermepumpe", 5, mindestens)
 
         bedingungen = manager.search.call_args.kwargs["filter_dict"]["must"]
-        assert bedingungen[: len(_nur_sichtbar())] == _nur_sichtbar()
+        assert (
+            bedingungen[: len(nur_sichtbar_bedingungen())] == nur_sichtbar_bedingungen()
+        )

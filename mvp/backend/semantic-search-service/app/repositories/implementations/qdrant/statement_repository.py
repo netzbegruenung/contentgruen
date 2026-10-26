@@ -6,7 +6,7 @@ from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from repositories.implementations.qdrant.base_repository import (
     QdrantBaseRepository,
-    _nur_sichtbar,
+    nur_sichtbar_bedingungen,
 )
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
@@ -118,7 +118,7 @@ class StatementRepository(
                             key="content_type",
                             match=MatchValue(value=self.content_type),
                         ),
-                        *_nur_sichtbar(),
+                        *nur_sichtbar_bedingungen(),
                     ],
                     must_not=[_unbeantwortete_suchanfrage()],
                 ),
@@ -146,7 +146,7 @@ class StatementRepository(
                 # Wie die normale Suche nur sichtbare, ohne die unbeantworteten
                 # Suchanfragen.
                 filter_dict={
-                    "must": _nur_sichtbar(),
+                    "must": nur_sichtbar_bedingungen(),
                     "must_not": [_unbeantwortete_suchanfrage()],
                 },
             )
@@ -181,7 +181,7 @@ class StatementRepository(
 
             # Wie search() nur sichtbare Aussagen; der Text einer gesperrten
             # erschiene sonst als statement_text an den Treffern.
-            filter_dict = {"must": _nur_sichtbar()}
+            filter_dict = {"must": nur_sichtbar_bedingungen()}
             if min_replysuggestions_count > 0:
                 # Use Qdrant's range filter for efficient server-side filtering
                 filter_dict["must"].append(

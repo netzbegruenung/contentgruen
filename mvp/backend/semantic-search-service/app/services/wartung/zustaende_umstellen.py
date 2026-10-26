@@ -16,9 +16,11 @@ Umstellung ab:
 - Das Feld ``visibility`` (Markierung aus #5, ohne Wirkung seit #213) entfaellt,
   auch mit leerem Wert.
 
-Unbekannte Werte bleiben stehen und stehen im Bericht; der Mensch entscheidet.
-Idempotent: Ein zweiter Lauf findet nichts mehr. Ohne ausfuehren=True wird nur
-gezaehlt. Die Altwerte kennt nur noch der Uebergang in
+Unbekannte Werte, auch in ``status_vor_sperre``, bleiben stehen und stehen im
+Bericht; der Mensch entscheidet. Geschrieben wird nur, wenn der Status noch der
+gelesene ist: Sperrt oder entsperrt ein Admin waehrend des Laufs, bleibt seine
+Aenderung stehen, und ein zweiter Lauf stellt den Rest um. Idempotent: Ein zweiter
+Lauf findet nichts mehr. Ohne ausfuehren=True wird nur gezaehlt. Die Altwerte kennt nur noch der Uebergang in
 domain/models/content_status.py, der nach dieser Umstellung entfaellt.
 
 Aufruf: scripts/manual/zustaende_umstellen.py
@@ -32,6 +34,12 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import (
     DeletePayload,
     DeletePayloadOperation,
+    FieldCondition,
+    Filter,
+    HasIdCondition,
+    IsEmptyCondition,
+    MatchValue,
+    PayloadField,
     SetPayload,
     SetPayloadOperation,
 )
@@ -48,14 +56,14 @@ SEITE = 256
 
 SICHTBAR = ContentStatus.VISIBLE.value
 
-BLEIBEN = frozenset(status.value for status in ContentStatus)
+GUELTIGE_WERTE = frozenset(status.value for status in ContentStatus)
 """Werte, die schon dem neuen Modell entsprechen."""
 
 
 def neuer_zustand(alt: Optional[str]) -> Optional[str]:
     """Neuer Wert fuer einen gespeicherten Status; None, wenn er unbekannt ist."""
     neu = zustand_aus_altwert(alt)
-    return neu if neu in BLEIBEN else None
+    return neu if neu in GUELTIGE_WERTE else None
 
 
 @dataclass
@@ -87,12 +95,16 @@ def _aenderung(
     if neu == ContentStatus.BLOCKED.value:
         vorher = payload.get(FELD_STATUS_VOR_SPERRE)
         vorher_neu = neuer_zustand(vorher)
-        # Eine Sperre ist kein Zustand vor einer Sperre.
-        if vorher_neu in (None, ContentStatus.BLOCKED.value):
-            vorher_neu = SICHTBAR
-        if FELD_STATUS_VOR_SPERRE not in payload or vorher_neu != vorher:
-            setzen[FELD_STATUS_VOR_SPERRE] = vorher_neu
-            bericht.status_vor_sperre_umgestellt += 1
+        if vorher_neu is None:
+            schluessel = f"{FELD_STATUS_VOR_SPERRE}={vorher}"
+            bericht.unbekannt[schluessel] = bericht.unbekannt.get(schluessel, 0) + 1
+        else:
+            # Eine Sperre ist kein Zustand vor einer Sperre.
+            if vorher_neu == ContentStatus.BLOCKED.value:
+                vorher_neu = SICHTBAR
+            if FELD_STATUS_VOR_SPERRE not in payload or vorher_neu != vorher:
+                setzen[FELD_STATUS_VOR_SPERRE] = vorher_neu
+                bericht.status_vor_sperre_umgestellt += 1
 
     if FELD_VISIBILITY in payload:
         entfernen.append(FELD_VISIBILITY)
@@ -101,11 +113,23 @@ def _aenderung(
     return setzen, entfernen
 
 
+def _noch_gelesen(punkt_id: Union[int, str], status: Optional[str]) -> Filter:
+    """Der Punkt, solange sein Status noch der gelesene ist."""
+    bedingung = (
+        IsEmptyCondition(is_empty=PayloadField(key="status"))
+        if status is None
+        else FieldCondition(key="status", match=MatchValue(value=status))
+    )
+    return Filter(must=[HasIdCondition(has_id=[punkt_id]), bedingung])
+
+
 def zustaende_umstellen(
     client: QdrantClient, collection: str, ausfuehren: bool = False
 ) -> UmstellungBericht:
     bericht = UmstellungBericht(ausgefuehrt=ausfuehren)
-    aenderungen: List[Tuple[Union[int, str], Dict[str, Any], List[str]]] = []
+    aenderungen: List[
+        Tuple[Union[int, str], Optional[str], Dict[str, Any], List[str]]
+    ] = []
 
     # Erst alles lesen, dann schreiben: so aendert sich nichts unter dem Scroll.
     offset = None
@@ -118,9 +142,10 @@ def zustaende_umstellen(
             with_vectors=False,
         )
         for punkt in punkte:
-            setzen, entfernen = _aenderung(punkt.payload or {}, bericht)
+            payload = punkt.payload or {}
+            setzen, entfernen = _aenderung(payload, bericht)
             if setzen or entfernen:
-                aenderungen.append((punkt.id, setzen, entfernen))
+                aenderungen.append((punkt.id, payload.get("status"), setzen, entfernen))
         if offset is None:
             break
     bericht.zu_aendern = len(aenderungen)
@@ -128,11 +153,15 @@ def zustaende_umstellen(
     if ausfuehren:
         for start in range(0, len(aenderungen), SEITE):
             operationen: List[Any] = []
-            for punkt_id, setzen, entfernen in aenderungen[start : start + SEITE]:
+            for punkt_id, status, setzen, entfernen in aenderungen[
+                start : start + SEITE
+            ]:
                 if setzen:
                     operationen.append(
                         SetPayloadOperation(
-                            set_payload=SetPayload(payload=setzen, points=[punkt_id])
+                            set_payload=SetPayload(
+                                payload=setzen, filter=_noch_gelesen(punkt_id, status)
+                            )
                         )
                     )
                 if entfernen:

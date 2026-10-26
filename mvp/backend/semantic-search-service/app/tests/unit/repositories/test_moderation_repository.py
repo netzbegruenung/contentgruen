@@ -85,6 +85,16 @@ class TestSperrenEntsperren:
         assert _payload(speicher)["status"] == "visible"
         assert "status_vor_sperre" not in _payload(speicher)
 
+    async def test_entsperren_mit_altwert_von_vorher_macht_sichtbar(
+        self, repo, speicher
+    ):
+        """Vor der Umstellung (#214) gemerkt: kein entfernter Zustand kommt zurueck."""
+        await repo.sperren({"id": BEITRAG_ID, "status": "pending_review"})
+
+        await repo.entsperren(await repo.laden(BEITRAG_ID))
+
+        assert _payload(speicher)["status"] == "visible"
+
     async def test_zweites_sperren_behaelt_status_von_vorher(self, repo, speicher):
         await repo.sperren(await repo.laden(BEITRAG_ID))
 

@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from qdrant_client import QdrantClient
 
-from tests.unit.services.test_zustaende_umstellen import COLLECTION, punkte_anlegen
+from tests.unit.services.zustaende_altbestand import COLLECTION, punkte_anlegen
 
 pytestmark = pytest.mark.unit
 

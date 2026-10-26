@@ -62,7 +62,7 @@ def _search_query_origin_conditions() -> list:
     ]
 
 
-def _ausgeblendet_bedingungen() -> list:
+def ausgeblendet_bedingungen() -> list:
     """
     must_not-Bedingungen, die gesperrte und geloeschte Beitraege ausschliessen.
 
@@ -71,7 +71,7 @@ def _ausgeblendet_bedingungen() -> list:
     und damit fuer die Moderation auffindbar (QdrantModerationRepository in
     moderation_repository.py filtert nicht nach Zustand). Bilder, die noch auf
     ihre Unterschrift warten, bleiben in Listen und "Meine Beitraege" stehen; nur
-    die Suche verlangt sichtbar (_nur_sichtbar).
+    die Suche verlangt sichtbar (nur_sichtbar_bedingungen).
     """
     from qdrant_client.models import FieldCondition, MatchValue
 
@@ -81,7 +81,7 @@ def _ausgeblendet_bedingungen() -> list:
     ]
 
 
-def _nur_sichtbar() -> list:
+def nur_sichtbar_bedingungen() -> list:
     """
     must-Bedingung der Suche: nur sichtbare Beitraege.
 
@@ -178,7 +178,7 @@ class QdrantBaseRepository(
         passage-Bestand (siehe QdrantEmbeddingsManager.search).
         """
         try:
-            filter_dict = {"must": _nur_sichtbar()}
+            filter_dict = {"must": nur_sichtbar_bedingungen()}
 
             # Perform search with optional content_type filter
             search_results = await self._shared_manager.search(
@@ -235,7 +235,7 @@ class QdrantBaseRepository(
                     key="content_type", match=MatchValue(value=self.content_type)
                 )
             )
-        must.extend(_nur_sichtbar())
+        must.extend(nur_sichtbar_bedingungen())
         punkte, _ = await self._shared_manager.async_client.scroll(
             collection_name=self._shared_manager.collection_name,
             scroll_filter=Filter(must=must),
@@ -464,7 +464,7 @@ class QdrantBaseRepository(
                     key="content_type", match=MatchValue(value=self.content_type)
                 )
             ]
-        return Filter(must=must, must_not=_ausgeblendet_bedingungen())
+        return Filter(must=must, must_not=ausgeblendet_bedingungen())
 
     def _autoren_filter(self, user_id: str, content_types: Optional[List[str]] = None):
         """
@@ -497,7 +497,7 @@ class QdrantBaseRepository(
 
         return Filter(
             must=must_conditions,
-            must_not=_search_query_origin_conditions() + _ausgeblendet_bedingungen(),
+            must_not=_search_query_origin_conditions() + ausgeblendet_bedingungen(),
         )
 
     async def get_by_author(

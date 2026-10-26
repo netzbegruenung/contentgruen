@@ -4,9 +4,10 @@ from enum import Enum
 class ContentStatus(Enum):
     """
     Zustand eines Beitrags (GLOSSARY.md, "Zustaende eines Beitrags"): sichtbar,
-    gesperrt oder geloescht. Dazu kommen zwei technische Vorstufen eines Bildes, das
-    noch auf seine Unterschrift wartet; ein solches Bild ist noch kein Beitrag, den
-    jemand finden kann.
+    gesperrt oder geloescht. Dazu kommen zwei technische Arbeitsstaende des
+    Hintergrunddienstes fuer ein hochgeladenes Bild ohne Unterschrift. Das ist noch
+    kein Bild im Sinne des Glossars ("Ein Bild mit Unterschrift") und damit kein
+    Beitrag, den jemand finden kann.
 
     Die Suche findet nur VISIBLE. Einzelansicht, Listen und "Meine Beitraege"
     blenden BLOCKED und DELETED aus (repositories/implementations/qdrant/
@@ -80,7 +81,8 @@ wurde; einen Arbeitsschritt, der auf diese Punkte wartet, gibt es nicht.
 def zustand_aus_altwert(wert):
     """
     Der Zustand fuer einen gespeicherten Altwert oder einen fehlenden Status (den die
-    Suche vorher ebenfalls fand); andere Werte unveraendert.
+    Suche vorher ebenfalls fand); andere Werte unveraendert. Nutzen das Lesen
+    (BaseContentDbEntry), Entsperren (moderation_repository.py) und die Umstellung.
     """
     if wert is None or wert in ALT_SICHTBAR:
         return ContentStatus.VISIBLE.value

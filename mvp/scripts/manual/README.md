@@ -60,7 +60,8 @@ geloescht um (auch `status_vor_sperre` gesperrter Beitraege) und entfernt das Fe
 `visibility`. Bisher auffindbare Status (`released_internal`, `approved`, `draft`,
 `archived`, `duplicate` u. a., auch Punkte ohne Status) und `pending_review` werden
 `visible`; `blocked` und die Bild-Vorstufen bleiben. Unbekannte Werte bleiben stehen,
-werden gemeldet und das Skript endet mit Exit 1. Idempotent.
+auch in `status_vor_sperre`, werden gemeldet und das Skript endet mit Exit 1.
+Idempotent.
 
 Reihenfolge:
 
@@ -68,10 +69,17 @@ Reihenfolge:
 2. Die Version mit den neuen Zustaenden ausrollen. Bis Schritt 4 liest sie Altwerte
    als sichtbar und die Suche findet, was sie vorher fand (Uebergang in
    `domain/models/content_status.py`); gesperrte Beitraege bleiben ausgeblendet.
-3. Ohne `--ausfuehren` laufen lassen und die Zaehler pruefen. Steht `pending_review`
-   mit mehr als 0 da: Diese Punkte sind heute ausgeblendet und werden sichtbar; vorher
-   ansehen.
-4. Mit `--ausfuehren` laufen lassen; ein zweiter Lauf meldet `umzustellen: 0`.
+3. Ohne `--ausfuehren` laufen lassen und die Zaehler pruefen. Vorher ansehen, was
+   mit mehr als 0 dasteht bei
+   - `pending_review`: heute in der Suche ausgeblendet, wird sichtbar;
+   - `rejected`, `archived`, `duplicate`: heute schon in der Suche, aber nicht in der
+     Dublettenpruefung und nicht in „Suchen ohne Treffer“; werden voll sichtbar.
+     Zwischen Ausrollen und Umstellung zaehlt „Suchen ohne Treffer“ diese Aussagen
+     bereits mit (das Modell liest sie als sichtbar).
+4. Mit `--ausfuehren` laufen lassen; ein zweiter Lauf meldet `umzustellen: 0`. Die
+   Umstellung schreibt nur Punkte, deren Status sich seit dem Lesen nicht geaendert
+   hat; was ein Admin waehrend des Laufs sperrt oder entsperrt, bleibt stehen. Meldet
+   der zweite Lauf noch etwas, ihn mit `--ausfuehren` wiederholen.
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/zustaende_umstellen.py

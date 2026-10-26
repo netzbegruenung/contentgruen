@@ -15,16 +15,18 @@ from tests.conftest import create_base_content_fields, create_commentary_data
 pytestmark = pytest.mark.unit
 
 
+def _daten(**felder) -> dict:
+    return {
+        **create_base_content_fields(),
+        **create_commentary_data(),
+        "id": str(uuid.uuid4()),
+        "content_type": "commentary",
+        **felder,
+    }
+
+
 def _kommentar(status) -> CommentaryDbEntry:
-    return CommentaryDbEntry.model_validate(
-        {
-            **create_base_content_fields(),
-            **create_commentary_data(),
-            "id": str(uuid.uuid4()),
-            "content_type": "commentary",
-            "status": status,
-        }
-    )
+    return CommentaryDbEntry.model_validate(_daten(status=status))
 
 
 @pytest.mark.parametrize(
@@ -42,12 +44,7 @@ def test_status_neuer_wert_bleibt(wert):
 
 
 def test_status_fehlt_liest_sich_als_sichtbar():
-    daten = {
-        **create_base_content_fields(),
-        **create_commentary_data(),
-        "id": str(uuid.uuid4()),
-        "content_type": "commentary",
-    }
+    daten = _daten()
     del daten["status"]
 
     assert CommentaryDbEntry.model_validate(daten).status is ContentStatus.VISIBLE
@@ -59,13 +56,5 @@ def test_status_unbekannter_wert_scheitert():
 
 
 def test_status_altes_visibility_feld_wird_ignoriert():
-    beitrag = CommentaryDbEntry.model_validate(
-        {
-            **create_base_content_fields(),
-            **create_commentary_data(),
-            "id": str(uuid.uuid4()),
-            "content_type": "commentary",
-            "visibility": "internal",
-        }
-    )
+    beitrag = CommentaryDbEntry.model_validate(_daten(visibility="internal"))
     assert "visibility" not in beitrag.model_dump()
