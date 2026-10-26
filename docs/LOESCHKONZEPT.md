@@ -4,7 +4,10 @@
 > erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht;
 > was hier steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
-> zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), aber
+> zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
+> Qdrant-Teil gegen eine Collection im Speicher und gegen einen echten Qdrant
+> (`tests/unit/services/test_beitraege_anonymisieren.py`,
+> `tests/integration/test_beitraege_anonymisieren_qdrant.py`), aber
 > **nie an echten Daten gelaufen**. Wer sie zum ersten Mal ausführt, macht vorher ein Backup und
 > protokolliert jede Zeilenzahl mit.
 
@@ -32,7 +35,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
    `users` (Anzeigename) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
-   zeigen nach der Löschung „Mitglied".
+   zeigen nach Schritt 3 „ehemalige Person“.
 
    **Sätze an fremden Einwürfen bleiben stehen**, nur der Personenbezug geht: Jeder
    Satz bekommt statt der Kennung einen eigenen Platzhalter `ehemalige-person-<UUID>`,
@@ -48,9 +51,14 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    Platzhalter, deren Satz nicht mehr existiert (Sätze früher Gelöschter an den eben
    gelöschten Einwürfen der Person), räumt das Kommando aus `users` ab.
 3. **Qdrant.** Beiträge werden **anonymisiert, nicht gelöscht.** `original_author`,
-   `last_modified_by`, `authors[].name` und `edit_history[].editor` bekommen den Wert
-   `geloeschter-nutzer`. Damit bleiben Antwortvorschläge, Referenzen und
-   Nutzungszähler intakt und der Personenbezug ist trotzdem weg. **Gelöscht wird nur,
+   `last_modified_by`, `authors[].name` und `edit_history[].editor` bekommen den
+   Platzhalter `ehemalige-person`; Karten und Detailansichten zeigen dazu wie im
+   Fangkorb „ehemalige Person“. Anders als bei den Sätzen ist es ein gemeinsamer
+   Platzhalter für alle Gelöschten und ohne Zeile in `users`: Den Namen setzt der
+   Dienst selbst (`services/anzeigename_service.py`), und ein gemeinsamer Wert
+   verbindet nichts, was nicht alle Gelöschten teilen. Damit bleiben
+   Antwortvorschläge, Referenzen und Nutzungszähler intakt und der Personenbezug ist
+   trotzdem weg. **Gelöscht wird nur,
    wo der Text selbst die Person erkennbar macht** — das ist eine Einzelfallprüfung,
    kein Filterlauf.
 4. **Konto.** Keycloak-Konto im Realm löschen, bzw. Eintrag aus
@@ -74,9 +82,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
   ein in Keycloak gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet (bis zu
   14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). In der Zeit kann sie auch
-  neue Sätze, Stimmen und Einwürfe anlegen. Das Kommando für Schritt 1 und 2 deshalb
-  nach 14 Tagen noch einmal laufen lassen, danach auch das `VACUUM FULL`; das Kommando
-  ist wiederholbar.
+  neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Kommando für Schritt 1 und 2
+  und den Lauf für Schritt 3 deshalb nach 14 Tagen noch einmal laufen lassen, danach
+  auch das `VACUUM FULL`; beide sind wiederholbar.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
@@ -105,7 +113,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Anwendungszeilen und die vollen Client-IPs in den Zugriffsprotokollen des vorgelagerten
   Reverse Proxy. Für Letztere gilt eine Frist — `logrotate` auf dem Prod-Host, 14 Tage;
   alles aus dem `json-file`-Treiber ist unbegrenzt. Einzelne Zeilen daraus zu entfernen ist
-  nicht vorgesehen. Einordnung und Belege: `docs/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
+  nicht vorgesehen. Einordnung und Belege: `docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
 
 ## Kommandos
 
@@ -130,41 +138,21 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
 
 ```bash
 # Schritt 3: Beitraege anonymisieren. Vor jeder Einzelfall-Loeschung.
-python3 - "$KENNUNG" <<'EOF'
-import json, sys, urllib.request
-Q, UID, ERSATZ = "http://localhost:6333/collections/content_collection/points", sys.argv[1], "geloeschter-nutzer"
-
-def post(pfad, body):
-    r = urllib.request.Request(Q + pfad, data=json.dumps(body).encode(),
-                               headers={"Content-Type": "application/json"})
-    return json.load(urllib.request.urlopen(r))["result"]
-
-filt = {"should": [{"key": k, "match": {"value": UID}} for k in
-        ("original_author", "last_modified_by", "authors[].name", "edit_history[].editor")]}
-
-off, n = None, 0
-while True:
-    body = {"limit": 256, "with_payload": True, "with_vector": False, "filter": filt}
-    if off: body["offset"] = off
-    r = post("/scroll", body)
-    for p in r["points"]:
-        pl, neu = p["payload"], {}
-        for feld in ("original_author", "last_modified_by"):
-            if pl.get(feld) == UID: neu[feld] = ERSATZ
-        for feld, schluessel in (("authors", "name"), ("edit_history", "editor")):
-            eintraege = pl.get(feld) or []
-            if any(e.get(schluessel) == UID for e in eintraege):
-                neu[feld] = [{**e, schluessel: ERSATZ} if e.get(schluessel) == UID else e
-                             for e in eintraege]
-        if neu:
-            post("/payload", {"payload": neu, "points": [p["id"]], "wait": True})
-            n += 1
-            print(p["id"], pl.get("content_type"), repr(pl.get("text"))[:80])
-    off = r.get("next_page_offset")
-    if not off: break
-print("anonymisiert:", n)
-EOF
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/beitraege_anonymisieren.py
+docker exec -i gutgesagt-semantic-search python - "$KENNUNG" \
+  < beitraege_anonymisieren.py                # zeigt nur, aendert nichts
+docker exec -i gutgesagt-semantic-search python - "$KENNUNG" --ausfuehren \
+  < beitraege_anonymisieren.py                # Ausgabe protokollieren
 ```
+
+Anders als `person_loeschen.sql` trägt das Skript die Logik nicht selbst: Es kommt von
+`main`, importiert sie aber aus dem laufenden Container. Ein Image ohne #236 bricht mit
+`ModuleNotFoundError` ab, bevor es etwas schreibt; dann erst das neue Image ausrollen.
+
+Bis #236 hieß der Platzhalter in Qdrant `geloeschter-nutzer`, und die Karten zeigten
+dazu „Mitglied“. Bestand mit dem alten Wert stellt derselbe Lauf einmalig um: statt
+`"$KENNUNG"` die Kennung `geloeschter-nutzer` übergeben. Er ist wiederholbar; ein
+Lauf ohne Treffer zeigt, dass nichts mehr umzustellen ist.
 
 Danach die ausgegebenen Texte durchsehen. Macht ein Text die Person erkennbar, wird
 dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{id}` gelöscht — nicht

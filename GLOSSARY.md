@@ -78,7 +78,7 @@ _Avoid_: Verarbeitet, Erledigt, Fertig
 Ein Einwurf, den sein Einwerfer oder ein Admin als nicht verwertbar markiert hat.
 _Avoid_: Gelöscht, Abgelehnt
 
-Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
+Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. Nur die dritte Ansicht heißt nach ihrer Stufe („Ausformuliert“), weil dort keine Arbeit mehr ansteht; Verworfenes liegt ebenfalls dort, hinter einem Schalter. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
 
 ## Umwandlungen
 
@@ -209,7 +209,7 @@ Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt w
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:
-Der Anzeigename, der im Fangkorb an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer. Die Sätze bleiben, nur der Personenbezug geht.
+Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
 **Admin**:
