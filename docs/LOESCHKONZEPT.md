@@ -101,8 +101,8 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Der Zeitstempel trägt nur den UTC-Tag, keine Uhrzeit: Sonst ließe sich eine Aussage,
   die eine Suche angelegt hat, über ihren Anlagezeitpunkt einem Suchereignis und damit
   einem Tagespseudonym zuordnen. Bestandsumgebungen schneiden alte Uhrzeiten mit
-  `mvp/backend/postgres-app/migrations/2026-10-26-search-events-nur-tag.sql` ab, danach
-  `VACUUM FULL search_events`. In Backups stehen die alten Uhrzeiten, bis diese
+  `mvp/backend/postgres-app/migrations/2026-10-26-search-events-nur-tag.sql` ab (samt
+  `VACUUM FULL search_events`). In Backups stehen die alten Uhrzeiten, bis diese
   herausrotiert sind; ebenso in Anwendungsprotokollen älterer Stände die Zeilen je
   Suche („Tracking search“, „Search request“, „Statement already exists with ID …“,
   „Successfully created new statement with ID …“, „Found entry with id …“, „Query

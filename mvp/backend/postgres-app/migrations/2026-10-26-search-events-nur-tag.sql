@@ -7,19 +7,17 @@
 -- Suchereignis nur Mitternacht UTC seines Tages. Alle Auswertungen zaehlen ohnehin
 -- ganze Tage (Daily Active Users, Searches per User).
 --
--- Der Dienst setzt den Tag selbst (repositories/search_tracking_repository.py);
--- der Default unten gilt fuer jeden anderen Schreiber. Neue Datenbanken bekommen
--- ihn von SQLAlchemy (infrastructure/database/models.py, SearchEvent).
+-- Neue Datenbanken brauchen das Skript nicht: SQLAlchemy legt die Tabelle mit
+-- demselben Default an (infrastructure/database/models.py, SearchEvent). Der
+-- neue Dienst setzt den Tag ohnehin selbst
+-- (repositories/search_tracking_repository.py); das Skript muss also nicht vor
+-- seinem Start laufen. Es setzt den Default fuer jeden anderen Schreiber und
+-- schneidet die Uhrzeit vom Altbestand ab.
 --
--- Anwenden (wiederholbar):
---   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -v ON_ERROR_STOP=1 \
---     < mvp/backend/postgres-app/migrations/2026-10-26-search-events-nur-tag.sql
---
--- Danach, ausserhalb einer Transaktion: UPDATE schreibt in PostgreSQL neue
--- Zeilenversionen, die alten Uhrzeiten bleiben bis zu einem Table-Rewrite auf der
--- Platte stehen.
---   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
---     -c 'VACUUM FULL search_events;'
+-- Wiederholbar. Das VACUUM FULL steht nach dem COMMIT, weil es nicht in einer
+-- Transaktion laufen darf: UPDATE schreibt in PostgreSQL neue Zeilenversionen,
+-- die alten Uhrzeiten blieben bis zu einem Table-Rewrite auf der Platte stehen.
+-- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;
 
@@ -32,3 +30,5 @@ SET timestamp = date_trunc('day', timestamp AT TIME ZONE 'UTC') AT TIME ZONE 'UT
 WHERE timestamp <> date_trunc('day', timestamp AT TIME ZONE 'UTC') AT TIME ZONE 'UTC';
 
 COMMIT;
+
+VACUUM FULL search_events;
