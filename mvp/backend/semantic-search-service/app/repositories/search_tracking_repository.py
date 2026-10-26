@@ -1,18 +1,62 @@
 """
 Repository for search event tracking.
 Handles database operations for search analytics.
+
+Search events are kept as single rows for search_event_retention_days. Older days
+are compacted into day counters (suchen_je_tag: day, searches, distinct daily
+pseudonyms) without any pseudonym (#289). The period counts below add those
+counters, so they stay correct beyond the retention period.
 """
 
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional, Dict, Any, List
-from sqlalchemy import func, distinct, and_
+from sqlalchemy import func, distinct, and_, text
 from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import get_app_database
-from infrastructure.database.models import SearchEvent
+from infrastructure.database.models import SearchEvent, SuchenJeTagZeile
 
 logger = logging.getLogger(__name__)
+
+
+# Verdichtet in einer Anweisung: Was DELETE entfernt, landet im selben Schritt im
+# Tageszaehler. grenze ist Mitternacht UTC und Suchereignisse tragen nur den Tag,
+# also wird ein Tag immer ganz verdichtet. Einen Konflikt gibt es nur, wenn ein
+# schon verdichteter Tag spaeter noch Suchereignisse bekommt; neue tragen aber
+# immer den laufenden Tag. Fuer diesen Fall addiert ON CONFLICT, statt Zeilen zu
+# verlieren; personen kann dann eine Person doppelt zaehlen.
+_VERDICHTEN = text(
+    """
+    WITH weg AS (
+        DELETE FROM search_events
+        WHERE timestamp < :grenze
+        RETURNING timestamp, actor_hash
+    ), tage AS (
+        INSERT INTO suchen_je_tag (tag, suchen, personen)
+        SELECT (timestamp AT TIME ZONE 'UTC')::date, count(*),
+               count(DISTINCT actor_hash)
+        FROM weg
+        GROUP BY 1
+        ON CONFLICT (tag) DO UPDATE
+        SET suchen = suchen_je_tag.suchen + EXCLUDED.suchen,
+            personen = suchen_je_tag.personen + EXCLUDED.personen
+    )
+    SELECT count(*) FROM weg
+    """
+)
+
+
+def _tage_im_zeitraum(start_date: datetime, end_date: datetime) -> tuple:
+    """Erster und letzter Tag, dessen Mitternacht im Zeitraum liegt.
+
+    So zaehlt ein Tageszaehler genau dann mit, wenn seine Suchereignisse (die nur
+    Mitternacht UTC tragen) mitgezaehlt worden waeren.
+    """
+    erster = start_date.date()
+    if start_date.time() != time.min:
+        erster += timedelta(days=1)
+    return erster, end_date.date()
 
 
 class SearchTrackingRepository:
@@ -88,6 +132,10 @@ class SearchTrackingRepository:
                     )
                     .scalar()
                     or 0
+                )
+                # Additiv, weil das Tagespseudonym an jedem Tag ein anderes ist.
+                total += self._summe_tageszaehler(
+                    session, SuchenJeTagZeile.personen, start_date, end_date
                 )
 
                 logger.debug(f"Active actors {start_date} to {end_date}: {total}")
@@ -183,36 +231,57 @@ class SearchTrackingRepository:
                     .scalar()
                     or 0
                 )
-                return count
+                return count + self._summe_tageszaehler(
+                    session, SuchenJeTagZeile.suchen, start_date, end_date
+                )
         except Exception as e:
             logger.error(f"Error getting search count: {e}", exc_info=True)
             return 0
 
-    def cleanup_old_events(self, days_to_keep: int = 90) -> int:
+    @staticmethod
+    def _summe_tageszaehler(
+        session: Session, spalte, start_date: datetime, end_date: datetime
+    ) -> int:
+        """Summe einer Spalte der Tageszaehler im Zeitraum."""
+        erster, letzter = _tage_im_zeitraum(start_date, end_date)
+        return (
+            session.query(func.sum(spalte))
+            .filter(
+                and_(
+                    SuchenJeTagZeile.tag >= erster,
+                    SuchenJeTagZeile.tag <= letzter,
+                )
+            )
+            .scalar()
+            or 0
+        )
+
+    def verdichte_alte_suchereignisse(
+        self, days_to_keep: int, heute: Optional[date] = None
+    ) -> int:
         """
-        Clean up old search events.
+        Suchereignisse vor der Frist zu Tageszaehlern verdichten.
+
+        Tage, die mehr als days_to_keep Tage vor heute (UTC) liegen, werden je Tag
+        zu Zahl der Suchen und Zahl der Personen (verschiedene Tagespseudonyme)
+        zusammengefasst; die Einzelzeilen samt Pseudonym werden geloescht.
 
         Args:
-            days_to_keep: Number of days of data to retain
+            days_to_keep: Tage, die als Einzelzeilen bleiben (vor heute)
+            heute: Bezugstag, Standard heute in UTC
 
         Returns:
-            int: Number of records deleted
+            int: Zahl der geloeschten Suchereignisse
         """
-        try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
-
-            with self.db.get_session() as session:
-                deleted_count = (
-                    session.query(SearchEvent)
-                    .filter(SearchEvent.timestamp < cutoff_date)
-                    .delete()
-                )
-                session.commit()
-                logger.info(f"Cleaned up {deleted_count} old search events")
-                return deleted_count
-        except Exception as e:
-            logger.error(f"Error cleaning up old search events: {e}", exc_info=True)
-            return 0
+        heute = heute or datetime.now(timezone.utc).date()
+        grenze = datetime.combine(
+            heute - timedelta(days=days_to_keep), time.min, tzinfo=timezone.utc
+        )
+        with self.db.get_session() as session:
+            geloescht = session.execute(_VERDICHTEN, {"grenze": grenze}).scalar() or 0
+            session.commit()
+        logger.info(f"Compacted {geloescht} old search events into day counters")
+        return geloescht
 
 
 # Global repository instance
