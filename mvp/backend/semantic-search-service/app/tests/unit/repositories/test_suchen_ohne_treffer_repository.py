@@ -15,6 +15,8 @@ from sqlalchemy.dialects import postgresql
 
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
 
+pytestmark = pytest.mark.unit
+
 AUSSAGE = uuid.UUID("11111111-1111-1111-1111-111111111111")
 
 
@@ -47,9 +49,9 @@ def repository(session):
 
 class TestZaehlen:
     def test_zaehlen_erhoeht_die_anzahl_je_aussage_und_woche(self, repository, session):
-        repository.zaehlen(AUSSAGE, date(2026, 10, 26), date(2026, 9, 7))
+        repository.zaehlen(AUSSAGE, date(2026, 10, 26))
 
-        upsert = session.execute.call_args_list[0].args[0]
+        upsert = session.execute.call_args.args[0]
         sql = _sql(upsert)
         assert sql.startswith("INSERT INTO suchen_ohne_treffer")
         assert "ON CONFLICT (statement_id, woche) DO UPDATE" in sql
@@ -60,20 +62,26 @@ class TestZaehlen:
         assert params["anzahl"] == 1
         session.commit.assert_called_once()
 
-    def test_zaehlen_loescht_wochen_vor_der_aufbewahrung(self, repository, session):
-        repository.zaehlen(AUSSAGE, date(2026, 10, 26), date(2026, 9, 7))
+    def test_zaehlen_gibt_datenbankfehler_an_den_aufrufer(self, repository, session):
+        """Abgefangen wird im Suchpfad, nicht hier."""
+        session.execute.side_effect = RuntimeError("weg")
 
-        loeschen = session.execute.call_args_list[1].args[0]
+        with pytest.raises(RuntimeError):
+            repository.zaehlen(AUSSAGE, date(2026, 10, 26))
+
+
+class TestLoeschenVor:
+    def test_loeschen_vor_entfernt_aeltere_wochen(self, repository, session):
+        session.execute.return_value.rowcount = 3
+
+        geloescht = repository.loeschen_vor(date(2026, 9, 7))
+
+        loeschen = session.execute.call_args.args[0]
         sql = _sql(loeschen)
         assert sql.startswith("DELETE FROM suchen_ohne_treffer")
         assert "suchen_ohne_treffer.woche <" in sql
         assert date(2026, 9, 7) in _params(loeschen).values()
-
-    def test_zaehlen_schluckt_datenbankfehler(self, repository, session):
-        """Die Suche darf an der Kennzahl nicht scheitern."""
-        session.execute.side_effect = RuntimeError("weg")
-
-        repository.zaehlen(AUSSAGE, date(2026, 10, 26), date(2026, 9, 7))
+        assert geloescht == 3
 
 
 class TestHaeufigste:

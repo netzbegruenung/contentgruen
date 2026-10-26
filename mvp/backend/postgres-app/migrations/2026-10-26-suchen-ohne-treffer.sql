@@ -6,7 +6,7 @@
 --
 -- Die Tabelle traegt kein Pseudonym und keinen Zeitpunkt, nur den Montag der
 -- Woche: Ein genauer Zeitpunkt liesse sich mit search_events verbinden. Wochen,
--- die aelter als acht Wochen sind, loescht der Dienst bei jedem Zaehlen.
+-- die aelter als acht Wochen sind, loescht der taegliche Aufraeumlauf des Dienstes.
 --
 -- Neue Datenbanken brauchen dieses Skript nicht: die Tabelle wird beim Start
 -- von SQLAlchemy angelegt (infrastructure/database/connection.py:48), und

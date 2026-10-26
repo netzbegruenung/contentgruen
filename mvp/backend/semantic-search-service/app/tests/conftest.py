@@ -113,15 +113,16 @@ def anzeigenamen_ohne_datenbank(monkeypatch):
 @pytest.fixture(autouse=True)
 def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
     """
-    Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer". Ohne diesen
-    Ersatz baute der erste Aufruf das echte Repository und verbaende sich mit dem
-    PostgreSQL aus den Settings (siehe anzeigenamen_ohne_datenbank).
+    Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer", und der
+    taegliche Aufraeumlauf loescht alte Wochen. Ohne diesen Ersatz baute der erste
+    Aufruf das echte Repository und verbaende sich mit dem PostgreSQL aus den
+    Settings (siehe anzeigenamen_ohne_datenbank).
     """
-    import services.suchen_ohne_treffer_service as modul
+    import repositories.suchen_ohne_treffer_repository as modul
 
     repository = MagicMock()
     repository.haeufigste.return_value = []
-    monkeypatch.setattr(modul, "_service", modul.SuchenOhneTrefferService(repository))
+    monkeypatch.setattr(modul, "_repository", repository)
     yield repository
 
 

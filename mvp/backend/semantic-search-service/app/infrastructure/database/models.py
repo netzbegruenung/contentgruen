@@ -134,7 +134,7 @@ class SearchEvent(Base):
     )
 
 
-class SucheOhneTreffer(Base):
+class SucheOhneTrefferZeile(Base):
     """Suchen ohne Treffer, gezaehlt je Aussage und Kalenderwoche.
 
     Traegt bewusst weder Pseudonym noch Zeitpunkt: woche ist der Montag der Woche,

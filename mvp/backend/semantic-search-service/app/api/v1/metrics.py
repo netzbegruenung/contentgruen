@@ -397,7 +397,6 @@ async def get_suchen_ohne_treffer(
     ),
     admin_user: str = Depends(require_admin),
     service: SuchenOhneTrefferService = Depends(get_suchen_ohne_treffer_service),
-    statement_service: StatementService = Depends(get_statement_service),
 ):
     """
     Die haeufigsten Suchanfragen der letzten Wochen, zu denen die Suche keinen
@@ -405,7 +404,7 @@ async def get_suchen_ohne_treffer(
     Woche, nicht je suchender Person (services/suchen_ohne_treffer_service.py).
     """
     try:
-        eintraege = await service.haeufigste(statement_service, wochen=wochen)
+        eintraege = await service.haeufigste(wochen=wochen)
         return SuchenOhneTrefferResponse(
             wochen=wochen,
             mindestanzahl=MINDESTANZAHL,

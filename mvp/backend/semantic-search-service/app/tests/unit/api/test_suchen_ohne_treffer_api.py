@@ -13,11 +13,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1.metrics import router as metrics_router
-from dependencies import get_statement_service
 from services.suchen_ohne_treffer_service import (
     SucheOhneTreffer,
     get_suchen_ohne_treffer_service,
 )
+
+pytestmark = [pytest.mark.unit, pytest.mark.api]
 
 PFAD = "/api/v1/metrics/suchen-ohne-treffer"
 ADMIN = {"X-User": "admin", "X-Is-Admin": "true"}
@@ -38,7 +39,6 @@ def client(service):
     app = FastAPI()
     app.include_router(metrics_router, prefix="/api/v1/metrics")
     app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: service
-    app.dependency_overrides[get_statement_service] = lambda: Mock()
     return TestClient(app)
 
 
