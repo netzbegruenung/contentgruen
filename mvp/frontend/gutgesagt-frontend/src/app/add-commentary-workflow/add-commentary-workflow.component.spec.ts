@@ -53,11 +53,11 @@ describe('AddCommentaryWorkflowComponent', () => {
 
   it('macht nach der Wahl des vorhandenen ohne Einwurf nichts weiter', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
-    const markieren = spyOn(TestBed.inject(DestillierUebergabeService), 'mitBeitragVerknuepfen');
+    const verknuepfen = spyOn(TestBed.inject(DestillierUebergabeService), 'mitBeitragVerknuepfen');
 
     component.onVorhandenGewaehlt('k-alt');
 
-    expect(markieren).not.toHaveBeenCalled();
+    expect(verknuepfen).not.toHaveBeenCalled();
     expect(navigieren).not.toHaveBeenCalled();
   });
 

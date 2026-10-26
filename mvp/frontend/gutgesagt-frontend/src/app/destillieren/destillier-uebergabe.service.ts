@@ -64,10 +64,10 @@ export class DestillierUebergabeService {
   }
 
   /**
-   * Der Beitrag ist gespeichert: Einwurf als ausformuliert markieren, ohne weiterzuspringen.
+   * Der Beitrag ist gespeichert: Einwurf mit ihm verknuepfen, ohne weiterzuspringen.
    *
    * Fuer Formulare mit Ergebnisseite - dort waehlt man selbst den naechsten
-   * Einwurf. Liefert, ob das Markieren geklappt hat; ein Fehler bricht nichts ab,
+   * Einwurf. Liefert, ob das Verknuepfen geklappt hat; ein Fehler bricht nichts ab,
    * der Beitrag ist ja da.
    */
   mitBeitragVerknuepfen(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {

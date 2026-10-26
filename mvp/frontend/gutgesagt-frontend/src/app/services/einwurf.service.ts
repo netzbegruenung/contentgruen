@@ -7,7 +7,7 @@ import { cacheService } from '../auth/cache.interceptor';
 import { LoggingService } from './logging.service';
 
 /** Spiegelt RawInputSource im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
-export type EinwurfKanal = 'web' | 'share';
+export type EinwurfWeg = 'web' | 'share';
 
 /**
  * Der Satz im Destillier-Ablauf wird der Titel des Beitrags und hat deshalb
@@ -23,7 +23,7 @@ export interface EinwerfenRequest {
   content?: string;
   url?: string;
   image_url?: string;
-  source_channel?: EinwurfKanal;
+  source_channel?: EinwurfWeg;
 }
 
 export interface EinwerfenResponse {
@@ -178,7 +178,7 @@ export class EinwurfService {
   }
 
   /**
-   * Verwerfen oder als ausformuliert markieren - dann mit dem entstandenen Beitrag
+   * Verwerfen oder mit einem Beitrag verknuepfen - dann mit dem Beitrag
    * und seinem Typ, nach dem sich die Fangkorb-Karte faerbt.
    */
   updateStatus(
