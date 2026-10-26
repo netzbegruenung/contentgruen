@@ -3,8 +3,12 @@ Die Migrationen (mvp/backend/postgres-app/migrations) gegen ein echtes PostgreSQ
 
 Prueft die beiden README-Regeln, die der Unit-Test test_migrationskonvention.py
 ohne Datenbank nicht pruefen kann: Jedes Skript laeuft zweimal fehlerfrei auf einer
-Datenbank im aktuellen Schema, und danach ist das Schema genau das, was
-``create_all`` aus den Modellen anlegt (Spalten, Defaults, Indizes, Constraints).
+Datenbank im aktuellen Schema, und danach gleicht das Schema dem, was ``create_all``
+aus den Modellen anlegt.
+
+Verglichen werden Spalten (Typ, Laenge, Nullbarkeit, Default), Indizes und Constraints
+samt Fremdschluesseln. Trigger, Funktionen und Sequenzen nicht: ``create_all`` legt
+keine Trigger oder Funktionen an, die Sequenzen folgen aus den Spalten-Defaults.
 """
 
 import re
@@ -33,8 +37,8 @@ def _schema_der(db: Datenbank) -> dict:
     """Tabellen, Spalten, Indizes und Constraints im Schema, ohne dessen Namen."""
     abfragen = {
         "spalten": """
-            SELECT table_name, column_name, data_type, character_maximum_length,
-                   is_nullable, column_default
+            SELECT table_name, column_name, data_type, udt_name,
+                   character_maximum_length, is_nullable, column_default
             FROM information_schema.columns
             WHERE table_schema = current_schema()
         """,
@@ -144,8 +148,6 @@ def test_kette_legt_tabellen_an_wie_das_modell(aktuelle_datenbank, modell_schema
 def test_vergleich_sieht_einen_anderen_default(aktuelle_datenbank, modell_schema):
     """Gegenprobe: Der Vergleich wuerde den alten Default von search_events zeigen."""
     with aktuelle_datenbank.engine.begin() as c:
-        c.execute(
-            text("ALTER TABLE search_events ALTER COLUMN timestamp SET DEFAULT now()")
-        )
+        c.execute(text(postgres.SUCHEREIGNIS_DEFAULT_VOR_256))
 
     assert _abweichungen(_schema_der(aktuelle_datenbank), modell_schema) != {}

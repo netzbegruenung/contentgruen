@@ -170,7 +170,9 @@ class TestMigrationsdateien:
         """
         Die README ordnet nach dem Namen ohne ``.sql``; ``ls`` und ``*.sql``
         ordnen mit Endung. Beides muss dieselbe Reihenfolge ergeben, bis auf das
-        Paar, das schon angewendet ist und in der README steht.
+        Paar, das in der README steht: Es ist gemergt, und gemergte Skripte
+        werden nicht umbenannt, weil Betreiber angewendete Skripte am Namen
+        erkennen.
         """
         bekannt = {
             "2026-10-26-suchen-ohne-treffer.sql",

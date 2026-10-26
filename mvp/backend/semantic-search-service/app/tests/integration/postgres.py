@@ -34,6 +34,13 @@ POSTGRES_APP = REPO_WURZEL / "mvp" / "backend" / "postgres-app"
 MIGRATIONEN = POSTGRES_APP / "migrations"
 
 
+# Der Default von search_events.timestamp vor #256: die volle Uhrzeit statt
+# Mitternacht UTC. Damit stellen Tests eine Datenbank vor der Migration her.
+SUCHEREIGNIS_DEFAULT_VOR_256 = (
+    "ALTER TABLE search_events ALTER COLUMN timestamp SET DEFAULT now()"
+)
+
+
 def migrationen() -> list:
     """
     Die Migrationen in der Reihenfolge der README: nach dem Namen ohne Endung,
@@ -92,25 +99,30 @@ def wegwerf_container(warten_s: int = 60) -> Iterator[str]:
     """PostgreSQL in einem Container starten, die URL liefern, danach entfernen."""
     name = f"gutgesagt-itest-postgres-{uuid.uuid4().hex[:8]}"
     passwort = secrets.token_hex(16)
-    _docker(
-        "run",
-        "--detach",
-        "--rm",
-        "--name",
-        name,
-        "--env",
-        f"POSTGRES_USER={_BENUTZER}",
-        "--env",
-        f"POSTGRES_PASSWORD={passwort}",
-        "--env",
-        f"POSTGRES_DB={_DATENBANK}",
-        "--publish",
-        "127.0.0.1::5432",
-        basis_image(),
-        # Der erste Lauf laedt das Image.
-        timeout=300,
-    )
+    # Schon der Start steht im try: Laeuft "docker run" in den Timeout, kann der
+    # Container trotzdem angelegt sein. Reste eines harten Abbruchs findet
+    # "docker ps --filter label=gutgesagt-itest".
     try:
+        _docker(
+            "run",
+            "--detach",
+            "--rm",
+            "--name",
+            name,
+            "--label",
+            "gutgesagt-itest",
+            "--env",
+            f"POSTGRES_USER={_BENUTZER}",
+            "--env",
+            f"POSTGRES_PASSWORD={passwort}",
+            "--env",
+            f"POSTGRES_DB={_DATENBANK}",
+            "--publish",
+            "127.0.0.1::5432",
+            basis_image(),
+            # Der erste Lauf laedt das Image.
+            timeout=300,
+        )
         # "127.0.0.1:49153"; bei mehreren Zeilen (IPv4/IPv6) gilt die erste.
         adresse = _docker("port", name, "5432/tcp").splitlines()[0]
         url = f"postgresql+psycopg2://{_BENUTZER}:{passwort}@{adresse}/{_DATENBANK}"
@@ -151,9 +163,14 @@ class Datenbank:
         with self.sessions.begin() as session:
             yield session
 
-    def mit_zeitzone(self, zeitzone: str) -> "Datenbank":
+    @contextmanager
+    def mit_zeitzone(self, zeitzone: str) -> Iterator["Datenbank"]:
         """Dasselbe Schema, Sitzungen aber in einer anderen Zeitzone."""
-        return Datenbank(self.url, self.schema, zeitzone)
+        db = Datenbank(self.url, self.schema, zeitzone)
+        try:
+            yield db
+        finally:
+            db.engine.dispose()
 
 
 @contextmanager

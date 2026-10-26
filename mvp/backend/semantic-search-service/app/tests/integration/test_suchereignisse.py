@@ -3,8 +3,11 @@ Der Zeitstempel von Suchereignissen (search_events.timestamp) gegen ein echtes P
 
 Ein Suchereignis traegt nur den UTC-Tag, als Mitternacht UTC. Der Unit-Test prueft den
 Server-Default nur als Text; hier rechnet PostgreSQL ihn aus, auch wenn die Zeitzone
-der Sitzung nicht UTC ist. Jede Sitzung erbt die Server-Zeitzone (``timezone``), hier
-wird sie je Sitzung gesetzt: Kiritimati (UTC+14) und Pago Pago (UTC-11) weichen
+der Sitzung nicht UTC ist. Server (``postgresql.conf``, ``TZ`` beim initdb), Datenbank
+und Rolle (``ALTER DATABASE/ROLE ... SET timezone``) und ``PGTZ`` setzen alle nur den
+Anfangswert desselben Sitzungswerts ``TimeZone``, und nur von ihm haengt der Default
+ab. Der Test setzt ihn deshalb je Sitzung; ``ALTER DATABASE`` traefe bei
+``POSTGRES_TEST_DATABASE_URL`` die ganze Datenbank. Kiritimati (UTC+14) und Pago Pago (UTC-11) weichen
 ganzjaehrig von UTC ab, ein Default nach der Mitternacht der Sitzung ergaebe dort nie
 Mitternacht UTC.
 """
@@ -37,9 +40,7 @@ def migrierte_datenbank(wegwerf_schema):
     """search_events mit dem Default vor #256, dann die Migration darauf."""
     Base.metadata.create_all(wegwerf_schema.engine, tables=[SearchEvent.__table__])
     with wegwerf_schema.engine.begin() as c:
-        c.execute(
-            text("ALTER TABLE search_events ALTER COLUMN timestamp SET DEFAULT now()")
-        )
+        c.execute(text(postgres.SUCHEREIGNIS_DEFAULT_VOR_256))
     postgres.migration(wegwerf_schema, NUR_TAG)
     return wegwerf_schema
 
@@ -62,25 +63,28 @@ def _ohne_zeitstempel_einfuegen(db) -> tuple:
 @pytest.mark.parametrize("zeitzone", ZEITZONEN)
 @pytest.mark.parametrize("herkunft", ["neue_datenbank", "migrierte_datenbank"])
 def test_default_ist_mitternacht_utc_des_utc_tages(herkunft, zeitzone, request):
-    db = request.getfixturevalue(herkunft).mit_zeitzone(zeitzone)
-    with db.engine.connect() as c:
-        assert c.execute(text("SHOW timezone")).scalar() == zeitzone
+    with request.getfixturevalue(herkunft).mit_zeitzone(zeitzone) as db:
+        with db.engine.connect() as c:
+            assert c.execute(text("SHOW timezone")).scalar() == zeitzone
 
-    gespeichert, jetzt_utc = _ohne_zeitstempel_einfuegen(db)
+        gespeichert, jetzt_utc = _ohne_zeitstempel_einfuegen(db)
 
     assert gespeichert == datetime.combine(jetzt_utc.date(), time.min)
 
 
 @pytest.mark.parametrize("zeitzone", ZEITZONEN)
 def test_repository_speichert_mitternacht_utc(neue_datenbank, zeitzone):
-    db = neue_datenbank.mit_zeitzone(zeitzone)
-    with patch(
-        "repositories.search_tracking_repository.get_app_database", return_value=db
-    ):
-        repository = SearchTrackingRepository()
+    with neue_datenbank.mit_zeitzone(zeitzone) as db:
+        with patch(
+            "repositories.search_tracking_repository.get_app_database",
+            return_value=db,
+        ):
+            repository = SearchTrackingRepository()
 
-    assert repository.track_search(results_count=3, day=date(2026, 10, 28))
+        assert repository.track_search(results_count=3, day=date(2026, 10, 28))
 
-    with db.engine.connect() as c:
-        gespeichert = c.execute(text("SELECT timestamp FROM search_events")).scalar()
+        with db.engine.connect() as c:
+            gespeichert = c.execute(
+                text("SELECT timestamp FROM search_events")
+            ).scalar()
     assert gespeichert == datetime(2026, 10, 28, tzinfo=timezone.utc)

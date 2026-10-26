@@ -55,6 +55,8 @@ pytest tests/integration/test_migrationen.py tests/integration/test_suchereignis
 - **Database:** without further setup the run starts a throwaway container with
   Docker (the base image of `mvp/backend/postgres-app/Dockerfile`, published on
   `127.0.0.1` at a free port, removed afterwards; the first run pulls the image).
+  Leftovers of a hard abort carry the label `gutgesagt-itest`:
+  `docker ps --filter label=gutgesagt-itest`.
   To use an existing database instead, set
   `POSTGRES_TEST_DATABASE_URL`, e.g. the dev stack:
   `postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app`. It must be

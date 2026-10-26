@@ -1,10 +1,10 @@
 """
 "Suchen ohne Treffer" gegen ein echtes PostgreSQL (#243).
 
-Die Unit-Tests pruefen das SQL nur als Text. Hier laeuft die Zaehlung durch das
-Repository allein und durch Service und Repository bis in die Tabelle, und die Admin-Liste kommt aus dem
-echten HAVING: Eine Aussage erscheint erst ab zwei verschiedenen Personen.
-Dazu laufen die beiden Migrationen auf einer Tabelle im alten Schema.
+Die Unit-Tests pruefen das SQL nur als Text. Hier zaehlt erst das Repository allein,
+dann Service und Repository zusammen bis in die Tabelle. Die Admin-Liste kommt aus dem
+echten HAVING: Eine Aussage erscheint erst ab zwei verschiedenen Personen. Dazu laufen
+die beiden Migrationen auf einer Tabelle im alten Schema.
 
 Jeder Test bekommt ein eigenes Schema und raeumt es wieder ab; Datenbank und
 Schema kommen aus ``conftest.py`` (siehe ``postgres.py``).
@@ -32,10 +32,14 @@ TABELLE = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer.sql"
 PERSONEN = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer-personen.sql"
 
 AUSSAGE = uuid.UUID("11111111-1111-1111-1111-111111111111")
-# Mittwoch und Donnerstag derselben Woche, dazu ein Tag der Vorwoche.
+# Tage fuer den Service: Mittwoch und Donnerstag derselben Woche, dazu ein Tag der
+# Vorwoche.
 MITTWOCH = date(2026, 10, 28)
 DONNERSTAG = date(2026, 10, 29)
 VORWOCHE = date(2026, 10, 21)
+# Wochenanfaenge (Montag) fuer das Repository: die Woche von MITTWOCH und die davor.
+WOCHE = date(2026, 10, 26)
+VORIGE_WOCHE = date(2026, 10, 19)
 PERSON_A = "a" * 64
 PERSON_B = "b" * 64
 
@@ -61,7 +65,7 @@ def bestehende_datenbank(postgres_url):
                     "INSERT INTO suchen_ohne_treffer (statement_id, woche, anzahl)"
                     " VALUES (:id, :woche, 5)"
                 ),
-                {"id": AUSSAGE, "woche": date(2026, 10, 26)},
+                {"id": AUSSAGE, "woche": WOCHE},
             )
         yield db
 
@@ -106,10 +110,6 @@ def _zeilen(db: Datenbank) -> list:
 
 def _aussage(nummer: int) -> uuid.UUID:
     return uuid.UUID(int=nummer)
-
-
-WOCHE = date(2026, 10, 26)
-VORIGE_WOCHE = date(2026, 10, 19)
 
 
 class TestRepository:
