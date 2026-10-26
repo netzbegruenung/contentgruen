@@ -449,6 +449,13 @@ They may reformat files and fail on the first commit attempt, then pass on the s
 intentional. Don't bypass with `--no-verify` except in emergencies. The `safe-commit.sh`/`.bat`
 helpers automate the retry.
 
+### Full check and review rules
+- `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests,
+  frontend tests, BFF tests in the .NET SDK container). Run it before opening a PR.
+- Replaced names are listed in `scripts/retired-words.txt`; the check and a pre-commit hook reject
+  them in added lines.
+- Reviews check the judgement rules in `CODING_STANDARDS.md`.
+
 ## Agent skills
 
 ### Issue tracker
