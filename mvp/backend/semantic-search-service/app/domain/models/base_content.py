@@ -4,13 +4,13 @@ import json
 from typing import List, Optional
 import uuid
 from jsonschema import ValidationError
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from domain.models.author_entry import AuthorEntry
 from domain.models.edit_entry import EditEntry
 from domain.models.model_utils import ModelValidator
 from domain.models.content_type import ContentType
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import ContentStatus, zustand_aus_altwert
 from domain.models.content_origin import ContentOrigin
 
 
@@ -95,6 +95,14 @@ class BaseContentDbEntry(BaseContent):
     report_flagged: bool = False
     rejection_reason: Optional[str] = None
     block_reason: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_status(cls, daten):
+        # Uebergang bis zur Umstellung der Altwerte (#214), auch fuer Punkte ohne Status.
+        if isinstance(daten, dict):
+            return {**daten, "status": zustand_aus_altwert(daten.get("status"))}
+        return daten
 
     @field_validator("id", mode="before")
     def parse_uuid(cls, value):

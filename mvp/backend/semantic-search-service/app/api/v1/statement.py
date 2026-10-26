@@ -160,7 +160,7 @@ async def add_statement(
             else x_user
         )
 
-        # Aussagen sind sofort sichtbar, eine Freigabe gibt es nicht.
+        # Aussagen sind sofort sichtbar.
         statement_was_new, statement_id, statement_text = (
             await statement_service.add_statement(
                 statement,

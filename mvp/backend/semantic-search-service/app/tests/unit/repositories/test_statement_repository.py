@@ -5,6 +5,8 @@ This module demonstrates clean testing patterns without complex mocking.
 """
 
 import pytest
+
+from repositories.implementations.qdrant.base_repository import _nur_sichtbar
 import pytest_asyncio
 import uuid
 from datetime import datetime
@@ -270,7 +272,11 @@ class TestCountCurated:
         assert await repository.count_curated() == 16
 
         count_filter = client.count.call_args.kwargs["count_filter"]
-        must_keys = {bedingung.key: bedingung for bedingung in count_filter.must}
+        must_keys = {
+            bedingung.key: bedingung
+            for bedingung in count_filter.must
+            if hasattr(bedingung, "key")
+        }
         assert must_keys["content_type"].match.value == "statement"
 
     @pytest.mark.asyncio
@@ -299,12 +305,7 @@ class TestCountCurated:
         await repository.count_curated()
 
         count_filter = client.count.call_args.kwargs["count_filter"]
-        status = [
-            b.match.value
-            for b in count_filter.must
-            if getattr(b, "key", None) == "status"
-        ]
-        assert status == ["visible"]
+        assert all(b in count_filter.must for b in _nur_sichtbar())
 
     @pytest.mark.asyncio
     async def test_gibt_null_zurueck_statt_zu_scheitern(
@@ -353,12 +354,7 @@ class TestSearchCurated:
         assert aufruf["content_type"] == "statement"
         assert aufruf["limit"] == 5
         # Wie die normale Suche nur sichtbare, ohne die unbeantworteten Suchanfragen
-        status = [
-            b.match.value
-            for b in aufruf["filter_dict"]["must"]
-            if getattr(b, "key", None) == "status"
-        ]
-        assert status == ["visible"]
+        assert aufruf["filter_dict"]["must"] == _nur_sichtbar()
         ausschluss = aufruf["filter_dict"]["must_not"]
         suchanfrage = [b for b in ausschluss if getattr(b, "must", None)]
         assert len(suchanfrage) == 1
@@ -391,7 +387,4 @@ class TestSearchWithReplyFilter:
         await repository.search_with_reply_filter("waermepumpe", 5, mindestens)
 
         bedingungen = manager.search.call_args.kwargs["filter_dict"]["must"]
-        status = [
-            b.match.value for b in bedingungen if getattr(b, "key", None) == "status"
-        ]
-        assert status == ["visible"]
+        assert bedingungen[: len(_nur_sichtbar())] == _nur_sichtbar()

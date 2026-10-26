@@ -619,10 +619,11 @@ class TestGesperrteBeitraege:
 
         await repository.search("Wärmepumpe", limit=5)
 
+        from repositories.implementations.qdrant.base_repository import _nur_sichtbar
+
+        # Was Qdrant daraus macht, zeigt tests/integration/test_zustaende.py.
         filter_dict = manager.search.call_args.kwargs["filter_dict"]
-        assert [(b.key, b.match.value) for b in filter_dict["must"]] == [
-            ("status", "visible")
-        ]
+        assert filter_dict["must"] == _nur_sichtbar()
 
     @pytest.mark.asyncio
     async def test_get_all_blendet_gesperrte_aus(self, repository_mit_client):

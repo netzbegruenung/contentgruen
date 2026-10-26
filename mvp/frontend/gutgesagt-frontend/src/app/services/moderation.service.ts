@@ -3,7 +3,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SessionService } from './session.service';
-import { ContentStatus } from './dtos/content-status-enum';
 
 export interface ReportContentRequest {
   content_id: string;
@@ -40,8 +39,6 @@ export interface GemeldeterBeitrag {
   [feld: string]: any;
 }
 
-/** Zustand eines gesperrten Beitrags. */
-export const STATUS_GESPERRT: string = ContentStatus.BLOCKED;
 
 export interface PendingReportsResponse {
   total: number;

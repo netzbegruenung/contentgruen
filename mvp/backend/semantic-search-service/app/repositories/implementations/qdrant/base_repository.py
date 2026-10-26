@@ -19,7 +19,12 @@ from domain.models.base_content import (
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
-from domain.models.content_status import NICHT_DA, ContentStatus
+from domain.models.content_status import (
+    ALT_AUFFINDBAR,
+    AUSGEBLENDET,
+    AUSGEBLENDET_WERTE,
+    ContentStatus,
+)
 from domain.models.content_origin import ContentOrigin
 from utils.data_utils import DataSource
 from utils.text_normalisierung import (
@@ -57,7 +62,7 @@ def _search_query_origin_conditions() -> list:
     ]
 
 
-def _nicht_da_bedingungen() -> list:
+def _ausgeblendet_bedingungen() -> list:
     """
     must_not-Bedingungen, die gesperrte und geloeschte Beitraege ausschliessen.
 
@@ -72,17 +77,37 @@ def _nicht_da_bedingungen() -> list:
 
     return [
         FieldCondition(key="status", match=MatchValue(value=status.value))
-        for status in sorted(NICHT_DA, key=lambda s: s.value)
+        for status in sorted(AUSGEBLENDET, key=lambda s: s.value)
     ]
 
 
 def _nur_sichtbar() -> list:
-    """must-Bedingung der Suche: nur sichtbare Beitraege."""
-    from qdrant_client.models import FieldCondition, MatchValue
+    """
+    must-Bedingung der Suche: nur sichtbare Beitraege.
+
+    Bis zur Umstellung der Altwerte (#214, ALT_AUFFINDBAR in content_status.py) auch
+    Punkte mit einem Altwert, den die Suche vorher fand, und Punkte ohne Status.
+    """
+    from qdrant_client.models import (
+        FieldCondition,
+        Filter,
+        IsEmptyCondition,
+        MatchAny,
+        MatchValue,
+        PayloadField,
+    )
 
     return [
-        FieldCondition(
-            key="status", match=MatchValue(value=ContentStatus.VISIBLE.value)
+        Filter(
+            should=[
+                FieldCondition(
+                    key="status", match=MatchValue(value=ContentStatus.VISIBLE.value)
+                ),
+                FieldCondition(
+                    key="status", match=MatchAny(any=sorted(ALT_AUFFINDBAR))
+                ),
+                IsEmptyCondition(is_empty=PayloadField(key="status")),
+            ]
         )
     ]
 
@@ -267,7 +292,7 @@ class QdrantBaseRepository(
         # Gesperrt oder geloescht heisst fuer jeden Leser hier "nicht da":
         # Einzelansicht, Stimmen, Antwortvorschlaege der Suche (SearchOrchestrator
         # ueberspringt ValueError).
-        if result.get("status") in {status.value for status in NICHT_DA}:
+        if result.get("status") in AUSGEBLENDET_WERTE:
             meldung = (
                 f"Entry with id {item_id} is gesperrt oder geloescht "
                 f"({result.get('status')})"
@@ -439,7 +464,7 @@ class QdrantBaseRepository(
                     key="content_type", match=MatchValue(value=self.content_type)
                 )
             ]
-        return Filter(must=must, must_not=_nicht_da_bedingungen())
+        return Filter(must=must, must_not=_ausgeblendet_bedingungen())
 
     def _autoren_filter(self, user_id: str, content_types: Optional[List[str]] = None):
         """
@@ -472,7 +497,7 @@ class QdrantBaseRepository(
 
         return Filter(
             must=must_conditions,
-            must_not=_search_query_origin_conditions() + _nicht_da_bedingungen(),
+            must_not=_search_query_origin_conditions() + _ausgeblendet_bedingungen(),
         )
 
     async def get_by_author(

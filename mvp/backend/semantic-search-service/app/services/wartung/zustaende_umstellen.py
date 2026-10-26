@@ -7,7 +7,8 @@ davon nur ``pending_review``, ``blocked`` und die beiden Bild-Vorstufen aus; all
 andere, auch Punkte ganz ohne Status, war auffindbar. Genau das bildet die
 Umstellung ab:
 
-- bisher auffindbar (und ``pending_review``, siehe ALT_SICHTBAR) -> ``visible``
+- bisher auffindbar und ``pending_review`` (ALT_SICHTBAR in
+  domain/models/content_status.py) -> ``visible``
 - ``blocked`` bleibt; ``status_vor_sperre`` wird genauso umgestellt, fehlt er oder
   ist er leer, gilt ``visible``. Sonst braechte Entsperren einen entfernten Wert
   zurueck.
@@ -17,8 +18,8 @@ Umstellung ab:
 
 Unbekannte Werte bleiben stehen und stehen im Bericht; der Mensch entscheidet.
 Idempotent: Ein zweiter Lauf findet nichts mehr. Ohne ausfuehren=True wird nur
-gezaehlt. Die Altwerte stehen nur hier, das Modell (domain/models/content_status.py)
-kennt sie nicht mehr.
+gezaehlt. Die Altwerte kennt nur noch der Uebergang in
+domain/models/content_status.py, der nach dieser Umstellung entfaellt.
 
 Aufruf: scripts/manual/zustaende_umstellen.py
 """
@@ -35,9 +36,11 @@ from qdrant_client.models import (
     SetPayloadOperation,
 )
 
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import ContentStatus, zustand_aus_altwert
+from repositories.implementations.qdrant.moderation_repository import (
+    FELD_STATUS_VOR_SPERRE,
+)
 
-FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 FELD_VISIBILITY = "visibility"
 OHNE_STATUS = "(ohne)"
 
@@ -45,35 +48,14 @@ SEITE = 256
 
 SICHTBAR = ContentStatus.VISIBLE.value
 
-ALT_SICHTBAR = frozenset(
-    {
-        "draft",
-        "flagged",
-        "approved",
-        "rejected",
-        "released_internal",
-        "published_external",
-        "archived",
-        "duplicate",
-        # Von der Suche ausgeblendet, aber nur ein Rest des frueheren Anlage-Status;
-        # scripts/manual/promote_pending_review_content.py hatte ihn schon einmal
-        # auf den sichtbaren Status gehoben.
-        "pending_review",
-    }
-)
-"""Altwerte, die zu sichtbar werden."""
-
 BLEIBEN = frozenset(status.value for status in ContentStatus)
 """Werte, die schon dem neuen Modell entsprechen."""
 
 
 def neuer_zustand(alt: Optional[str]) -> Optional[str]:
     """Neuer Wert fuer einen gespeicherten Status; None, wenn er unbekannt ist."""
-    if alt is None or alt in ALT_SICHTBAR:
-        return SICHTBAR
-    if alt in BLEIBEN:
-        return alt
-    return None
+    neu = zustand_aus_altwert(alt)
+    return neu if neu in BLEIBEN else None
 
 
 @dataclass

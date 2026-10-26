@@ -5,7 +5,7 @@ Mirrors the structure of test_post_type.py (rung-1 step-6 gate) for the
 rung-2 Image type. Verifies:
 
 * test_image_roundtrip_phase_a -- caption provided at creation time (Phase A):
-  entry stored as APPROVED, all Image-specific fields survive the round-trip,
+  entry stored as VISIBLE, all Image-specific fields survive the round-trip,
   and the image is semantically searchable.
 
 * test_image_roundtrip_phase_b -- no caption (Phase B): entry stored as
@@ -149,7 +149,7 @@ async def test_image_phase_b_to_phase_a_update(
     )
     await service._upsert(phase_b_entry)
 
-    # Simulate worker: fill caption and promote to PENDING_REVIEW
+    # Simulate worker: fill caption and make the image visible
     now = datetime.datetime.now()
     phase_a_entry = ImageDbEntry(
         **{
