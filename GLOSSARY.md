@@ -18,7 +18,6 @@ _Avoid_: Workflow, Ablauf, Dreischritt, Pipeline
 **Einwurf**:
 Ein roh abgelegtes Fundstück (ein Link, ein Hinweis oder beides), das später jemand zu einem Beitrag macht. Ein Einwurf ist Arbeit, kein Inhalt: Er wird nicht gesucht, nicht kopiert und nicht bewertet.
 _Avoid_: Rohinput, Raw Input, Rohling, Eintrag, Arbeitsauftrag
-_Offene Frage_: Ist „Einwurf“ der kanonische Begriff, oder „Rohinput“ (Titel von docs/ROHINPUT.md)? „Rohling“ ist heute der Name der Karte, nicht des Dings.
 
 **Einwerfen**:
 Einen Einwurf in den Fangkorb legen, ohne dabei schon über Typ, Titel oder Argument zu entscheiden.
@@ -29,7 +28,7 @@ Der gemeinsame Vorrat aller Einwürfe, den alle angemeldeten Mitwirkenden sehen 
 _Avoid_: Warteschlange, Queue, Rohliste, Arbeitsvorrat
 
 **Einwerfer**:
-Die Person, die einen Einwurf angelegt hat. Nur sie darf ihn verwerfen.
+Die Person, die einen Einwurf angelegt hat. Verwerfen dürfen nur sie und Admins.
 _Avoid_: Finder, Einreicher, Submitter
 
 **Hinweis**:
@@ -50,9 +49,8 @@ Das Argument eines Einwurfs in genau einem Satz formulieren, bevor ein Beitrag e
 _Avoid_: Verarbeiten, Bearbeiten, Zusammenfassen
 
 **Satz**:
-Die Kernaussage, die eine Person beim Destillieren zu einem Einwurf festhält: eine Behauptung mit Haltung, die später der Titel des Beitrags wird. Jede Person hat höchstens einen Satz je Einwurf, mehrere Personen dürfen je einen haben.
+Die Kernaussage, die eine Person beim Destillieren zu einem Einwurf festhält: eine Behauptung mit Haltung, die beim Ausformulieren zum Titel des Beitrags wird und dort noch geändert werden darf. Jede Person hat höchstens einen Satz je Einwurf, mehrere Personen dürfen je einen haben.
 _Avoid_: Entwurf, Entwurfssatz, Draft, Kernsatz
-_Offene Frage_: Gilt für den Satz dieselbe Längengrenze wie für den Titel? Die Spezifikation v1 nennt eine andere als der heutige Stand.
 
 **Destillierer**:
 Die Person, die als Erste einen Satz zu einem Einwurf gespeichert hat.
@@ -71,7 +69,7 @@ Die Person, die aus einem Einwurf einen Beitrag gespeichert hat.
 _Avoid_: Verarbeiter, Bearbeiter, Autor
 
 **Verwerfen**:
-Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, und darf trotzdem noch destilliert werden.
+Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
 _Avoid_: Löschen, Ablehnen
 
 ### Stufen eines Einwurfs
@@ -189,9 +187,8 @@ Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitrage
 _Avoid_: Gast, anonymer Nutzer
 
 **Autor**:
-Die Person, die einen Beitrag angelegt hat.
-_Avoid_: Ersteller, Owner, Ausformulierer (wenn kein Einwurf beteiligt war)
-_Offene Frage_: Ist der Autor eines Beitrags aus dem Fangkorb immer der Ausformulierer, oder zählen Einwerfer und Destillierer mit?
+Die Person, die einen Beitrag ausformuliert oder verfasst hat. Einwerfer und Destillierer eines Beitrags aus dem Fangkorb sind nicht seine Autoren, sondern wirken an der Kette mit. Wer einen von KI vorgeschlagenen Text übernimmt und speichert, ist dessen Autor.
+_Avoid_: Ersteller, Owner, Urheber
 
 **Anzeigename**:
 Der Name, unter dem eine Person anderen in Gut gesagt gezeigt wird.
