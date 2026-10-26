@@ -32,6 +32,10 @@ _Avoid_: Notiz, Kommentar, Beschreibung
 Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs stammt (etwa Instagram, YouTube, TikTok oder Web).
 _Avoid_: Kanal, Quelle
 
+**Weg**:
+Wie ein Einwurf in den Fangkorb kam: über das Formular oder über das Teilen-Menü des Geräts. Nicht zu verwechseln mit der Plattform, aus der sein Link stammt.
+_Avoid_: Kanal, Quelle, Herkunft
+
 **Destillieren**:
 Das Argument eines Einwurfs in genau einem Satz formulieren, bevor ein Beitrag entsteht. Wer das nicht kann, verwirft.
 _Avoid_: Verarbeiten, Bearbeiten, Zusammenfassen
@@ -59,6 +63,10 @@ _Avoid_: Verarbeiter, Bearbeiter, Autor
 **Verwerfen**:
 Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
 _Avoid_: Löschen, Ablehnen
+
+**Verknüpfung**:
+Die Zuordnung eines Einwurfs zu einem Beitrag, die beim Ausformulieren entsteht; festgehalten wird auch, wer verknüpft hat. Ein Einwurf kann mit mehreren Beiträgen verknüpft sein und ein Beitrag mit mehreren Einwürfen.
+_Avoid_: Markierung, Verarbeitung
 
 ### Stufen eines Einwurfs
 

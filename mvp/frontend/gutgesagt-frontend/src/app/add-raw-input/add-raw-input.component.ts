@@ -4,9 +4,9 @@ import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { EinwurfService, EinwerfenRequest } from '../services/einwurf.service';
 import {
-  GeteilterEinwurf,
-  SHARE_EINWURF_SCHLUESSEL,
-  einwurfAusShareDaten,
+  GeteilteFelder,
+  SHARE_FELDER_SCHLUESSEL,
+  felderAusShareDaten,
 } from '../share-target/share-target.guard';
 import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
 import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
@@ -33,8 +33,8 @@ function nurEinLink(control: AbstractControl): ValidationErrors | null {
   return wert && !NUR_EIN_LINK.test(wert) ? { keinLink: true } : null;
 }
 
-/** Der Vorschlag fuer das Hinweis-Feld aus einem geteilten Einwurf, oder null. */
-export function hinweisVorschlag(geteilt: GeteilterEinwurf): string | null {
+/** Der Vorschlag fuer das Hinweis-Feld aus geteilten Feldern, oder null. */
+export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
   const zeilen = [
     geteilt.titel ? `${SEITENTITEL_PRAEFIX}${geteilt.titel}` : null,
     geteilt.text,
@@ -73,7 +73,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   eingeworfen = 0;
   /**
    * Ob der aktuelle Feldinhalt aus dem Teilen-Menue stammt. Steuert nur den
-   * Herkunftskanal des naechsten Einwurfs und wird danach zurueckgesetzt: das
+   * Weg des naechsten Einwurfs und wird danach zurueckgesetzt: das
    * Formular bleibt offen, und was jemand danach von Hand eintippt, ist wieder
    * ein Web-Einwurf.
    */
@@ -95,7 +95,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const geteilt = this.geteiltenEinwurfHolen();
+    const geteilt = this.geteilteFelderHolen();
     if (geteilt) {
       this.vorbelegung = hinweisVorschlag(geteilt);
       this.einwurfForm.patchValue({ link: geteilt.url ?? '', hinweis: this.vorbelegung ?? '' });
@@ -104,7 +104,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Holt einen ueber das Teilen-Menue hereingereichten Einwurf und raeumt ihn weg.
+   * Holt die ueber das Teilen-Menue hereingereichten Felder und raeumt sie weg.
    *
    * Einmalig mit Absicht: bleibt der Wert liegen, befuellt sich das Formular auch
    * beim naechsten regulaeren Aufruf wieder mit demselben Link. Der Zugriff kann
@@ -112,12 +112,12 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
    * Vorbelegung, aber das Formular funktioniert. Liegt noch Klartext einer
    * aelteren Version dort, wird er wie ein geteilter Text zerlegt.
    */
-  private geteiltenEinwurfHolen(): GeteilterEinwurf | null {
+  private geteilteFelderHolen(): GeteilteFelder | null {
     let wert: string | null;
     try {
-      wert = sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL);
+      wert = sessionStorage.getItem(SHARE_FELDER_SCHLUESSEL);
       if (wert) {
-        sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL);
+        sessionStorage.removeItem(SHARE_FELDER_SCHLUESSEL);
       }
     } catch {
       return null;
@@ -127,7 +127,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const gelesen = JSON.parse(wert) as Partial<GeteilterEinwurf> | null;
+      const gelesen = JSON.parse(wert) as Partial<GeteilteFelder> | null;
       if (gelesen && typeof gelesen === 'object') {
         return {
           url: typeof gelesen.url === 'string' ? gelesen.url : null,
@@ -138,7 +138,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
     } catch {
       // Kein JSON: Klartext einer aelteren Version, siehe unten.
     }
-    return einwurfAusShareDaten({ text: wert });
+    return felderAusShareDaten({ text: wert });
   }
 
   get link(): string {

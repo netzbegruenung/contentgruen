@@ -9,7 +9,7 @@ import {
   hinweisVorschlag,
 } from './add-raw-input.component';
 import { EinwurfService } from '../services/einwurf.service';
-import { SHARE_EINWURF_SCHLUESSEL } from '../share-target/share-target.guard';
+import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
@@ -43,9 +43,9 @@ describe('AddRawInputComponent', () => {
    */
   async function erstellen(ablage: string | null = null): Promise<void> {
     if (ablage === null) {
-      sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL);
+      sessionStorage.removeItem(SHARE_FELDER_SCHLUESSEL);
     } else {
-      sessionStorage.setItem(SHARE_EINWURF_SCHLUESSEL, ablage);
+      sessionStorage.setItem(SHARE_FELDER_SCHLUESSEL, ablage);
     }
 
     const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen']);
@@ -79,7 +79,7 @@ describe('AddRawInputComponent', () => {
   }
 
   beforeEach(() => TestBed.resetTestingModule());
-  afterEach(() => sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL));
+  afterEach(() => sessionStorage.removeItem(SHARE_FELDER_SCHLUESSEL));
 
   describe('Felder', () => {
     beforeEach(() => erstellen());
@@ -294,7 +294,7 @@ describe('AddRawInputComponent', () => {
     it('raeumt die Ablage weg, damit der naechste Aufruf leer beginnt', async () => {
       await erstellen(vomBrowser);
 
-      expect(sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL)).toBeNull();
+      expect(sessionStorage.getItem(SHARE_FELDER_SCHLUESSEL)).toBeNull();
     });
 
     it('zaehlt den naechsten Einwurf wieder als web', async () => {

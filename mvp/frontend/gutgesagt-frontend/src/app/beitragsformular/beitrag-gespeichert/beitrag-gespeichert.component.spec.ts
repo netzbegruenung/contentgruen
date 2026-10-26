@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
-import { BeitragGespeichertComponent, EINWURF_NICHT_VERKNUEPFT } from './beitrag-gespeichert.component';
+import { BeitragGespeichertComponent, EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT } from './beitrag-gespeichert.component';
 import { GespeichertZustand, gespeichertEltern } from './gespeichert-adresse';
 import { CommentaryService } from '../../services/commentary.service';
 import { GenericTextService } from '../../services/generic-text.service';
@@ -109,7 +109,7 @@ describe('BeitragGespeichertComponent', () => {
     it('Fangkorb: nicht verknuepft fuehrt nach Ausformulieren und sagt es', async () => {
       await oeffnen({ rohinput: 'e-1' }, { einwurfVerknuepft: false });
 
-      expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_VERKNUEPFT);
+      expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
       expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
     });

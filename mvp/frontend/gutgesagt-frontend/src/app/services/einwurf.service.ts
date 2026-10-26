@@ -65,7 +65,7 @@ export interface Einwurf {
   content: string | null;
   url: string | null;
   image_url: string | null;
-  /** Null moeglich: Kanaele ohne Sitzung liefern keine Kennung. */
+  /** Null moeglich: Wege ohne Sitzung liefern keine Kennung. */
   submitted_by: string | null;
   /** Anzeigename zu submitted_by; null ohne gespeicherten Namen. */
   submitted_by_name?: string | null;

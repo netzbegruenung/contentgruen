@@ -82,7 +82,7 @@ describe('EinwurfService', () => {
       anfrage.flush(einwurf());
     });
 
-    it('speichert den Entwurf per PUT und leert danach den Fangkorb-Cache', () => {
+    it('speichert den Satz per PUT und leert danach den Fangkorb-Cache', () => {
       const leeren = spyOn(cacheService, 'delete');
 
       service.satzSpeichern('id-1', 'Mein Satz').subscribe();
@@ -95,7 +95,7 @@ describe('EinwurfService', () => {
       expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
-    it('sichert den Entwurf per fetch mit keepalive', () => {
+    it('sichert den Satz per fetch mit keepalive', () => {
       const fetchSpy = spyOn(window, 'fetch').and.returnValue(Promise.resolve(new Response()));
 
       service.satzSpeichernKeepalive('id-1', 'Mein Satz');
@@ -140,7 +140,7 @@ describe('EinwurfService', () => {
       anfrage.flush(einwurf({ status: 'processed' }));
     });
 
-    it('bietet als naechstes nur offene Einwuerfe ohne eigenen Entwurf an', () => {
+    it('bietet als naechstes nur offene Einwuerfe ohne eigenen Satz an', () => {
       let naechster: Einwurf | null | undefined;
       service.naechsterOffenerEinwurf('id-aktuell').subscribe((e) => (naechster = e));
 

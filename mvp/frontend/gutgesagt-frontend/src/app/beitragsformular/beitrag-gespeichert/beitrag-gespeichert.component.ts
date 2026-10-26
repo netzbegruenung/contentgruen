@@ -41,7 +41,7 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
   },
 };
 
-export const EINWURF_NICHT_VERKNUEPFT =
+export const EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT =
   'Der Einwurf konnte nicht als ausformuliert markiert werden – er steht im Fangkorb weiter unter „Ausformulieren“.';
 
 /**
@@ -64,7 +64,7 @@ export const EINWURF_NICHT_VERKNUEPFT =
 export class BeitragGespeichertComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
-  readonly einwurfNichtVerknuepft = EINWURF_NICHT_VERKNUEPFT;
+  readonly einwurfNichtVerknuepft = EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT;
 
   typ: GespeichertTyp = 'commentary';
   herkunft: Herkunft = 'frei';
