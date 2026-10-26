@@ -273,6 +273,38 @@ class TestImageRepository:
                 uuid.uuid4(), "Windräder", {feld: "released_internal"}
             )
 
+    @pytest.mark.asyncio
+    async def test_unterschrift_setzen_writes_text_extra_and_vector_only(
+        self, repository, test_embeddings_manager
+    ):
+        """Text, extra und Vektor neu; Status und Sperre bleiben, wie sie sind."""
+        test_embeddings_manager.clear()
+        test_id = uuid.uuid4()
+        test_embeddings_manager.add_test_data(
+            "image",
+            [
+                {
+                    **create_base_content_fields(),
+                    **create_image_data(text=None, title="Windpark"),
+                    "id": str(test_id),
+                    "content_type": "image",
+                    "status": "blocked",
+                    "status_vor_sperre": "pending_description",
+                }
+            ],
+        )
+
+        await repository.unterschrift_setzen(
+            test_id, "Windräder", {"description_model": "gpt-4o"}
+        )
+
+        gespeichert = test_embeddings_manager.get_data()[str(test_id)]
+        assert gespeichert["text"] == "Windräder"
+        assert gespeichert["description_model"] == "gpt-4o"
+        assert gespeichert["status"] == "blocked"
+        assert gespeichert["status_vor_sperre"] == "pending_description"
+        assert test_embeddings_manager.vector_texts[str(test_id)] == "Windräder"
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio

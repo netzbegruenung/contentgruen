@@ -102,7 +102,7 @@ def _sperrt_waehrend_beschreibung(moderation, item_id, ergebnis):
 async def test_bild_wird_ohne_sperre_mit_unterschrift_sichtbar(
     image_service, real_embeddings_manager
 ):
-    """Gegenprobe: ohne Sperre traegt der Worker die Unterschrift ein und gibt frei."""
+    """Gegenprobe: ohne Sperre traegt der Worker die Unterschrift ein, das Bild wird sichtbar."""
     item_id = uuid.uuid4()
     await image_service.add(_wartendes_bild(item_id))
     strategie = MagicMock()
@@ -139,7 +139,7 @@ async def test_waehrend_beschreibung_gesperrtes_bild_bleibt_gesperrt(
     assert all(t.id != item_id for t in treffer)
 
     # Entsperren stellt den Zustand von vor der Sperre her; der Worker beschreibt
-    # das Bild im naechsten Durchlauf erneut und gibt es erst dann frei.
+    # das Bild im naechsten Durchlauf erneut; erst dann wird es sichtbar.
     assert await moderation.entsperren(str(item_id), "admin-1")
     payload = await real_embeddings_manager.get_by_id(str(item_id))
     assert payload["status"] == ContentStatus.PENDING_DESCRIPTION.value
@@ -180,3 +180,46 @@ async def test_update_status_nur_aus_laesst_anderen_status_stehen(
     )
     payload = await real_embeddings_manager.get_by_id(str(item_id))
     assert payload["status"] == ContentStatus.DESCRIPTION_FAILED.value
+
+
+async def test_sperre_zwischen_unterschrift_und_statuswechsel_bleibt(
+    image_service, moderation, real_embeddings_manager
+):
+    """Sperrt ein Admin nach dem Schreiben der Unterschrift, wechselt der Status nicht mehr."""
+    item_id = uuid.uuid4()
+    await image_service.add(_wartendes_bild(item_id))
+    unterschrift_setzen = image_service.unterschrift_setzen
+
+    async def setzen_dann_sperren(*args):
+        await unterschrift_setzen(*args)
+        assert await moderation.sperren(str(item_id), "admin-1")
+
+    image_service.unterschrift_setzen = setzen_dann_sperren
+    strategie = MagicMock()
+    strategie.derive_text = AsyncMock(return_value=_ergebnis(UNTERSCHRIFT))
+
+    await _ein_durchlauf(image_service, strategie)
+
+    payload = await real_embeddings_manager.get_by_id(str(item_id))
+    assert payload["status"] == ContentStatus.BLOCKED.value
+    assert payload[FELD_STATUS_VOR_SPERRE] == ContentStatus.PENDING_DESCRIPTION.value
+    assert payload["text"] == UNTERSCHRIFT
+
+
+async def test_waehrend_beschreibung_geloeschtes_bild_bleibt_geloescht(
+    image_service, real_embeddings_manager
+):
+    """Anders als der fruehere Upsert legt der Worker ein geloeschtes Bild nicht neu an."""
+    item_id = uuid.uuid4()
+    await image_service.add(_wartendes_bild(item_id))
+
+    async def beschreiben(_eingabe):
+        assert await real_embeddings_manager.delete_by_id(str(item_id))
+        return _ergebnis(UNTERSCHRIFT)
+
+    strategie = MagicMock()
+    strategie.derive_text = AsyncMock(side_effect=beschreiben)
+
+    await _ein_durchlauf(image_service, strategie)
+
+    assert await real_embeddings_manager.get_by_id(str(item_id)) is None

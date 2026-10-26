@@ -11,14 +11,9 @@ import json
 from repositories.content_report_repository import get_content_report_repository
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 from domain.models.content_type import ContentType
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import FELD_STATUS_VOR_SPERRE, ContentStatus
 
 logger = logging.getLogger(__name__)
-
-# Payload-Feld mit dem Status von vor der Sperre, damit Entsperren ihn
-# wiederherstellt. Steht darin None (Altbestand ohne Status), entfernt Entsperren
-# das Status-Feld wieder.
-FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 
 # Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
 GESPERRTE_HOECHSTENS = 500

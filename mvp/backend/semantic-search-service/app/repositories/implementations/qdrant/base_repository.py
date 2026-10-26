@@ -10,10 +10,7 @@ import asyncio
 from pydantic import ValidationError
 
 from core.config import Settings
-from services.embeddings.qdrant_embeddings_manager import (
-    encoding_fuer,
-    get_embeddings_manager,
-)
+from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from domain.models.base_content import (
     BaseContentDbEntry,
@@ -23,6 +20,7 @@ from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
 from domain.models.content_status import (
+    FELD_STATUS_VOR_SPERRE,
     FREIGEGEBEN,
     NICHT_WIEDERVERWENDBAR,
     ContentStatus,
@@ -85,7 +83,7 @@ def _gesperrt_bedingungen() -> list:
 
 # Payload-Felder, die Zustand und Sperre eines Beitrags tragen; status_vor_sperre
 # schreibt services/moderation_service.py. unterschrift_setzen fasst sie nicht an.
-FELDER_DES_ZUSTANDS = frozenset({"status", "status_vor_sperre"})
+FELDER_DES_ZUSTANDS = frozenset({"status", FELD_STATUS_VOR_SPERRE})
 
 
 class QdrantBaseRepository(
@@ -858,12 +856,14 @@ class QdrantBaseRepository(
         Sperre (status_vor_sperre) und alles andere, was sich seit dem Lesen
         geaendert hat, bleiben stehen. extra sind weitere Payload-Felder zur
         Beschreibung, etwa description_model; den Status setzt nur update_status.
+
+        Payload und Vektor sind zwei Schreibvorgaenge, nicht atomar. Scheitert der
+        zweite, steht der neue Text mit altem Vektor da; der Hintergrunddienst
+        aendert den Status erst danach, das Bild wird so nicht sichtbar.
         """
         if FELDER_DES_ZUSTANDS & extra.keys():
             raise ValueError("unterschrift_setzen aendert weder Status noch Sperre")
         try:
-            from qdrant_client.models import PointVectors
-
             payload = {**extra, "text": text}
             if self.content_type in TYPEN_MIT_TEXT_NORMALISIERT:
                 payload[FELD_TEXT_NORMALISIERT] = text_normalisiert(text)
@@ -872,17 +872,8 @@ class QdrantBaseRepository(
                 payload=payload,
                 points=[str(item_id)],
             )
-            encoding_type = encoding_fuer(self.content_type)
-            await self._shared_manager.async_client.update_vectors(
-                collection_name=self._shared_manager.collection_name,
-                points=[
-                    PointVectors(
-                        id=str(item_id),
-                        vector=self._shared_manager.encode_text(
-                            text, content_type=encoding_type
-                        ),
-                    )
-                ],
+            await self._shared_manager.update_vector(
+                str(item_id), text, self.content_type
             )
             logger.debug(f"Set text and vector of {item_id}")
         except Exception as e:

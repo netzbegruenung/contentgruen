@@ -203,8 +203,8 @@ class TestWorkerStateMachine:
             nur_aus=ContentStatus.PENDING_DESCRIPTION,
         )
 
-    async def test_valid_caption_promotes_to_new_content_status(self):
-        """Good caption → Unterschrift gesetzt, then NEW_CONTENT_STATUS only from PENDING_DESCRIPTION."""
+    async def test_valid_unterschrift_promotes_to_new_content_status(self):
+        """Good Unterschrift → gesetzt, then NEW_CONTENT_STATUS only from PENDING_DESCRIPTION."""
         item_id = uuid.uuid4()
         entry = _make_pending_image(item_id)
 
@@ -228,7 +228,7 @@ class TestWorkerStateMachine:
             item_id, NEW_CONTENT_STATUS, nur_aus=ContentStatus.PENDING_DESCRIPTION
         )
 
-    async def test_valid_caption_does_not_rewrite_whole_entry(self):
+    async def test_valid_unterschrift_does_not_rewrite_whole_entry(self):
         """
         Kein Upsert des ganzen Eintrags: Er truege den Status von vor der
         Beschreibung zurueck und hoebe eine zwischenzeitliche Sperre auf.
@@ -251,7 +251,7 @@ class TestWorkerStateMachine:
 
         image_service.add.assert_not_called()
 
-    async def test_valid_caption_sets_status_after_unterschrift(self):
+    async def test_valid_unterschrift_sets_status_afterwards(self):
         """Sichtbar erst mit Unterschrift: der Status wechselt nach dem Schreiben des Texts."""
         item_id = uuid.uuid4()
         entry = _make_pending_image(item_id)

@@ -3,14 +3,14 @@ Async background worker that processes PENDING_DESCRIPTION images.
 
 The worker polls `image_service.get_by_status(PENDING_DESCRIPTION)` on a fixed
 interval, calls the configured IngestionStrategy (AiVisionDescription) to derive a
-German caption, then writes only the caption (text, vector, extra fields) and moves
-the entry to NEW_CONTENT_STATUS.
+German Unterschrift, then writes only the Unterschrift (text, vector, extra fields)
+and moves the entry to NEW_CONTENT_STATUS.
 
 Status changes are conditional: they apply only while the entry is still
 PENDING_DESCRIPTION. Describing takes seconds; an admin may sperren the image in the
-meantime, and the worker must not lift that Sperre (#251). The caption is still
+meantime, and the worker must not lift that Sperre (#251). The Unterschrift is still
 written. Entsperren restores PENDING_DESCRIPTION, so the worker describes the image
-once more on its next poll and only then releases it.
+once more on its next poll; only then does it become sichtbar.
 
 On failure it sets DESCRIPTION_FAILED. On OpenAI rate-limit it backs off 60 s and
 re-picks up remaining items on the next poll cycle. The loop is idempotent: a hard
@@ -69,7 +69,7 @@ async def _description_worker(
                     )
                     logger.info(
                         f"Description worker: processed image {entry.id} "
-                        f"({len(result.text)} chars caption)"
+                        f"({len(result.text)} chars Unterschrift)"
                     )
                 except Exception as e:
                     # Import here to avoid hard dependency when openai is not installed.
