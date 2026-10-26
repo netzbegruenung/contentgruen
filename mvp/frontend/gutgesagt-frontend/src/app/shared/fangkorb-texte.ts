@@ -40,3 +40,19 @@ export const KETTEN_ICONS = {
  */
 export const ERSTNUTZER_SATZ =
   'Gut gesagt ist neu. Alles, was du hier einträgst, prägt mit, was hier Standard wird. Also: kein Scheiß.';
+
+/**
+ * Was beim Verwerfen schiefging, im Fangkorb und in der Destillier-Ansicht gleich:
+ * 403 heisst, die Person ist weder Einwerfer noch Admin; 409 heisst, daraus ist
+ * inzwischen ein Beitrag geworden - dann ist Verwerfen nicht mehr vorgesehen, und
+ * "versuche es erneut" waere ein falscher Rat.
+ */
+export function verwerfenFehlertext(status: number | undefined): string {
+  if (status === 403) {
+    return 'Verwerfen können nur der Einwerfer und Admins.';
+  }
+  if (status === 409) {
+    return 'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.';
+  }
+  return 'Verwerfen hat nicht geklappt. Bitte versuche es erneut.';
+}

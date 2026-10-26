@@ -245,6 +245,17 @@ describe('DestillierenComponent', () => {
       expect(filterLaden().verworfenSichtbar).toBeTrue();
     });
 
+    it('nennt bei einer Ablehnung, wer verwerfen darf', async () => {
+      await erstellen('id-1');
+      rawInputService.updateStatus.and.returnValue(throwError(() => ({ status: 403 })));
+
+      knopf('verwerfen')!.click();
+
+      expect(component.fehler).toBe('Verwerfen können nur der Einwerfer und Admins.');
+      expect(component.arbeitet).toBeFalse();
+      expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
+    });
+
     it('speichert bei Spaeter den Satz und oeffnet den naechsten', async () => {
       await erstellen('id-1');
       component.satz.setValue('Noch nicht ganz', { emitEvent: false });

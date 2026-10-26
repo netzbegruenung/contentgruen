@@ -246,7 +246,7 @@ async def update_status(
     generic_text_service=Depends(get_generic_text_service),
 ) -> RawInputResponse:
     """
-    Verwerfen (die einwerfende Person oder ein Admin) oder als verarbeitet markieren.
+    Verwerfen (der Einwerfer oder ein Admin) oder als ausformuliert markieren.
 
     Admin ist, wem das BFF ``X-Is-Admin: true`` mitgibt - dieselbe Grundlage wie
     ``require_admin``. Das BFF entfernt den Header aus jeder Client-Anfrage.

@@ -23,7 +23,7 @@ import { RawInput, RawInputService } from '../services/raw-input.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { Plattform, PLATTFORMEN } from '../shared/plattform';
-import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG, verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, RohlingAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
@@ -269,24 +269,9 @@ export class RawInputListComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.logger.error('Einwurf konnte nicht verworfen werden', error);
-          this.snackBar.open(this.verwerfenFehler(error?.status), 'OK', { duration: 6000 });
+          this.snackBar.open(verwerfenFehlertext(error?.status), 'OK', { duration: 6000 });
         },
       });
-  }
-
-  /**
-   * Wortlaut wie in der Destillier-Ansicht: 403 heisst fremder Einwurf, 409 heisst
-   * daraus ist inzwischen ein Beitrag geworden - dann ist Verwerfen nicht mehr
-   * vorgesehen, und "versuche es erneut" waere ein falscher Rat.
-   */
-  private verwerfenFehler(status: number | undefined): string {
-    if (status === 403) {
-      return 'Verwerfen können nur der Einwerfer und Admins.';
-    }
-    if (status === 409) {
-      return 'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.';
-    }
-    return 'Verwerfen hat nicht geklappt. Bitte versuche es erneut.';
   }
 
   nachKarte(_index: number, karte: KartenDaten): string {

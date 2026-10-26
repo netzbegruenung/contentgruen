@@ -299,7 +299,7 @@ class RawInputRepository:
         """
         Status setzen; bei processed zugleich die Verknuepfung schreiben.
 
-        Verwerfen duerfen die einwerfende Person und Admins (``ist_admin``), auch
+        Verwerfen duerfen der Einwerfer und Admins (``ist_admin``), Admins auch
         einen Einwurf ohne Einwerfer.
 
         Die Verknuepfung haelt fest, wer verarbeitet hat, welcher Beitragstyp
@@ -313,7 +313,7 @@ class RawInputRepository:
 
         Raises:
             EinwurfNichtGefunden: den Einwurf gibt es nicht
-            AktionNichtErlaubt: verwerfen will weder die einwerfende Person noch ein Admin
+            AktionNichtErlaubt: verwerfen will weder der Einwerfer noch ein Admin
             UebergangNichtErlaubt: der Wechsel ist aus dem aktuellen Status nicht erlaubt
         """
         if neuer_status == RawInputStatus.PROCESSED and content_id is None:
@@ -414,9 +414,7 @@ class RawInputRepository:
             and row.submitted_by != user_id
             and not ist_admin
         ):
-            raise AktionNichtErlaubt(
-                "Verwerfen duerfen nur die einwerfende Person und Admins"
-            )
+            raise AktionNichtErlaubt("Verwerfen duerfen nur der Einwerfer und Admins")
 
         aktuell = RawInputStatus(row.status)
         if not uebergang_erlaubt(aktuell, neuer_status):

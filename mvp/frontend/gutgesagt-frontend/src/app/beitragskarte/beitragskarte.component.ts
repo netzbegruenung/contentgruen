@@ -317,7 +317,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   /**
    * Verwerfen duerfen der Einwerfer und Admins - und nur, solange kein Beitrag
-   * dranhaengt. Admins nehmen so verwaiste Einwuerfe aus dem Fangkorb.
+   * dranhaengt. Admins nehmen so Einwuerfe aus dem Fangkorb, um die sich kein
+   * Einwerfer mehr kuemmert (toter Link, inaktive Person, kein Einwerfer).
    */
   get darfVerwerfen(): boolean {
     return !!this.rohling?.verwerfbar && (this.istEigen || this.istAdmin);

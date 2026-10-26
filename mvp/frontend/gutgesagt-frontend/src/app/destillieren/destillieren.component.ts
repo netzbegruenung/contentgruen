@@ -26,7 +26,8 @@ import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
-import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
+import { KartenDaten, ausEinwurf, istVerwerfbar } from '../beitragskarte/karten-daten';
+import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -128,7 +129,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
    */
   get darfVerwerfen(): boolean {
     const einwurf = this.einwurf;
-    if (!einwurf || (einwurf.status !== 'open' && einwurf.status !== 'in_progress')) {
+    if (!einwurf || !istVerwerfbar(einwurf)) {
       return false;
     }
     const eigen = !!einwurf.submitted_by && einwurf.submitted_by === this.eigeneKennung;
@@ -304,10 +305,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.logger.error('Verwerfen fehlgeschlagen', error);
         this.arbeitet = false;
-        this.fehler =
-          error?.status === 409
-            ? 'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.'
-            : 'Verwerfen hat nicht geklappt. Bitte versuche es erneut.';
+        this.fehler = verwerfenFehlertext(error?.status);
       },
     });
   }

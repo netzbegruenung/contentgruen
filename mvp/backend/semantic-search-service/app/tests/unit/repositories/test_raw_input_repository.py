@@ -539,7 +539,7 @@ class TestStatusSetzen:
         session.commit.assert_called_once()
 
     def test_admin_verwirft_auch_einwurf_ohne_einwerfer(self, repository, session):
-        """Verwaiste Einwuerfe sind genau der Fall, fuer den Admins verwerfen."""
+        """Einen Einwurf ohne Einwerfer kann nur ein Admin aus dem Fangkorb nehmen."""
         zeile = _zeile(submitted_by=None, status=RawInputStatus.OPEN.value)
         _gesperrte_zeile(session, zeile)
 
@@ -549,7 +549,7 @@ class TestStatusSetzen:
 
         assert zeile.status == RawInputStatus.DISCARDED.value
 
-    def test_admin_verwirft_kein_verarbeitetes(self, repository, session):
+    def test_admin_verwirft_kein_ausformuliertes(self, repository, session):
         zeile = _zeile(submitted_by="alice", status=RawInputStatus.PROCESSED.value)
         _gesperrte_zeile(session, zeile)
 
@@ -558,7 +558,9 @@ class TestStatusSetzen:
                 zeile.id, RawInputStatus.DISCARDED, "admin", ist_admin=True
             )
 
-    def test_einwurf_ohne_einwerfer_kann_niemand_verwerfen(self, repository, session):
+    def test_einwurf_ohne_einwerfer_verwirft_kein_mitwirkender_ohne_adminrechte(
+        self, repository, session
+    ):
         zeile = _zeile(submitted_by=None, status=RawInputStatus.OPEN.value)
         _gesperrte_zeile(session, zeile)
 

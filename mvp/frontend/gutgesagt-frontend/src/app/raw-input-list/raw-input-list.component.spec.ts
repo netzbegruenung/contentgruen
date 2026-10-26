@@ -485,7 +485,7 @@ describe('RawInputListComponent', () => {
       expect(router.navigate).not.toHaveBeenCalledWith(['/result'], jasmine.anything());
     });
 
-    it('bietet im Menue Link kopieren und Verwerfen nur dem Einwerfer', () => {
+    it('bietet Mitwirkenden ohne Adminrechte Verwerfen nur am eigenen Einwurf', () => {
       erstellen([einwurf({ id: 'eigen', submitted_by: 'alice' }), einwurf({ id: 'fremd', submitted_by: 'bob' })]);
       const [eigen, fremd] = kartenKomponenten();
 
