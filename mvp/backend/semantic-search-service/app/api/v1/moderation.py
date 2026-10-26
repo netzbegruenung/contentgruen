@@ -68,6 +68,13 @@ class DeleteContentResponse(BaseModel):
     message: str
 
 
+class SperreResponse(BaseModel):
+    """Response model for sperren and entsperren."""
+
+    success: bool
+    message: str
+
+
 class DismissReportResponse(BaseModel):
     """Response model for report dismissal."""
 
@@ -196,7 +203,7 @@ async def get_reports(
 
     Status options:
     - pending: Reports awaiting review (default)
-    - reviewed: Reports where content was deleted
+    - reviewed: Reports that were handled (bearbeitet), e.g. the content was gesperrt
     - dismissed: Reports that were dismissed
     - all: All reports regardless of status
     """
@@ -219,6 +226,62 @@ async def get_reports(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+# Admin Endpoints - Sperren / Entsperren
+@router.put("/content/{content_id}/sperren", response_model=SperreResponse)
+async def sperren(
+    content_id: str,
+    admin_user: str = Depends(require_admin),
+    settings: Settings = Depends(get_settings),
+):
+    """
+    Einen gemeldeten Beitrag sperren (Admin only).
+
+    Der Beitrag verschwindet aus Suche und Ansicht, bleibt aber erhalten und laesst
+    sich entsperren. Alle Meldungen zum Beitrag stehen danach auf bearbeitet.
+    """
+    try:
+        logger.info(f"Admin {admin_user} sperrt content: {content_id}")
+
+        moderation_service = get_moderation_service()
+        if not await moderation_service.sperren(content_id, gesperrt_von=admin_user):
+            raise HTTPException(status_code=404, detail="Content not found")
+
+        return SperreResponse(success=True, message=f"Content {content_id} gesperrt")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in sperren endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.put("/content/{content_id}/entsperren", response_model=SperreResponse)
+async def entsperren(
+    content_id: str,
+    admin_user: str = Depends(require_admin),
+    settings: Settings = Depends(get_settings),
+):
+    """
+    Eine Sperre aufheben (Admin only). Der Beitrag ist danach wieder sichtbar.
+    """
+    try:
+        logger.info(f"Admin {admin_user} entsperrt content: {content_id}")
+
+        moderation_service = get_moderation_service()
+        if not await moderation_service.entsperren(
+            content_id, entsperrt_von=admin_user
+        ):
+            raise HTTPException(status_code=404, detail="Content not found")
+
+        return SperreResponse(success=True, message=f"Content {content_id} entsperrt")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in entsperren endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 # Admin Endpoint - Delete Content
 @router.delete(
     "/content/{content_type}/{content_id}", response_model=DeleteContentResponse
@@ -233,6 +296,10 @@ async def delete_content(
     Delete content from the system (Admin only).
 
     Removes content from Qdrant and marks related reports as resolved.
+
+    Kein Moderationsweg mehr: Gemeldete Beitraege sperrt ein Admin (siehe
+    sperren). Der Endpunkt bleibt fuer Loeschungen aus Datenschutzgruenden, etwa
+    wenn ein Text eine Person erkennbar macht (docs/LOESCHKONZEPT.md).
     """
     try:
         logger.info(f"Admin {admin_user} deleting content: {content_type}/{content_id}")

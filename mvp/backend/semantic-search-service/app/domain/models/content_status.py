@@ -31,8 +31,10 @@ class ContentStatus(Enum):
 
     BLOCKED = "blocked"
     """
-    Content has been restricted due to a violation of community guidelines,
-    ongoing investigation, or other serious issues.
+    Gesperrt: Ein Admin hat den Beitrag aus Suche und Ansicht genommen, etwa nach
+    einer Meldung. Er bleibt gespeichert und laesst sich entsperren; der Status
+    von vor der Sperre steht dann im Payload-Feld status_vor_sperre
+    (services/moderation_service.py).
     """
 
     RELEASED_INTERNAL = "released_internal"
@@ -111,11 +113,23 @@ def is_valid_transition(
         ContentStatus.APPROVED: [
             ContentStatus.RELEASED_INTERNAL,
             ContentStatus.PUBLISHED_EXTERNAL,
+            ContentStatus.BLOCKED,
         ],
         ContentStatus.REJECTED: [ContentStatus.DRAFT],
-        ContentStatus.BLOCKED: [],
-        ContentStatus.RELEASED_INTERNAL: [ContentStatus.ARCHIVED],
-        ContentStatus.PUBLISHED_EXTERNAL: [ContentStatus.ARCHIVED],
+        # Entsperren: zurueck in den Status von vor der Sperre.
+        ContentStatus.BLOCKED: [
+            ContentStatus.APPROVED,
+            ContentStatus.RELEASED_INTERNAL,
+            ContentStatus.PUBLISHED_EXTERNAL,
+        ],
+        ContentStatus.RELEASED_INTERNAL: [
+            ContentStatus.ARCHIVED,
+            ContentStatus.BLOCKED,
+        ],
+        ContentStatus.PUBLISHED_EXTERNAL: [
+            ContentStatus.ARCHIVED,
+            ContentStatus.BLOCKED,
+        ],
         ContentStatus.ARCHIVED: [],
         ContentStatus.DUPLICATE: [ContentStatus.REJECTED],
         ContentStatus.PENDING_DESCRIPTION: [

@@ -18,15 +18,15 @@
       appearance="standard">
       <mat-button-toggle value="pending">
         <mat-icon>pending</mat-icon>
-        Ausstehend
+        Offen
       </mat-button-toggle>
       <mat-button-toggle value="reviewed">
         <mat-icon>check_circle</mat-icon>
-        Geprüft
+        Bearbeitet
       </mat-button-toggle>
       <mat-button-toggle value="dismissed">
         <mat-icon>cancel</mat-icon>
-        Abgelehnt
+        Abgewiesen
       </mat-button-toggle>
       <mat-button-toggle value="all">
         <mat-icon>list</mat-icon>
@@ -47,8 +47,8 @@
 
   <div *ngIf="!loading && !error && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>
-    <h2>Keine ausstehenden Meldungen</h2>
-    <p>Aktuell gibt es keine gemeldeten Inhalte zur Überprüfung.</p>
+    <h2>Keine Meldungen</h2>
+    <p>In dieser Ansicht gibt es keine Meldungen.</p>
   </div>
 
   <div *ngIf="!loading && !error && reports.length > 0" class="reports-table">
@@ -113,7 +113,7 @@
 
       <!-- Reviewed By Column -->
       <ng-container matColumnDef="reviewed_by">
-        <th mat-header-cell *matHeaderCellDef>Geprüft von</th>
+        <th mat-header-cell *matHeaderCellDef>Bearbeitet von</th>
         <td mat-cell *matCellDef="let report">
           <span *ngIf="report.reviewed_by">{{ report.reviewed_by }}</span>
           <span *ngIf="!report.reviewed_by" class="not-reviewed">-</span>
@@ -125,20 +125,31 @@
         <th mat-header-cell *matHeaderCellDef>Aktionen</th>
         <td mat-cell *matCellDef="let report">
           <div class="action-buttons">
+            <span *ngIf="istGesperrt(report)" class="status-badge status-gesperrt">Gesperrt</span>
             <button
+              *ngIf="report.content && !istGesperrt(report)"
               mat-raised-button
               color="warn"
-              (click)="deleteContent(report); $event.stopPropagation()"
-              matTooltip="Inhalt löschen">
-              <mat-icon>delete</mat-icon>
-              Löschen
+              (click)="sperren(report); $event.stopPropagation()"
+              matTooltip="Beitrag aus Suche und Ansicht nehmen">
+              <mat-icon>block</mat-icon>
+              Sperren
             </button>
             <button
+              *ngIf="istGesperrt(report)"
+              mat-button
+              (click)="entsperren(report); $event.stopPropagation()"
+              matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
+              <mat-icon>lock_open</mat-icon>
+              Entsperren
+            </button>
+            <button
+              *ngIf="report.status === 'pending'"
               mat-button
               (click)="dismissReport(report); $event.stopPropagation()"
-              matTooltip="Meldung verwerfen">
+              matTooltip="Meldung abweisen, Beitrag bleibt sichtbar">
               <mat-icon>close</mat-icon>
-              Verwerfen
+              Abweisen
             </button>
           </div>
         </td>
@@ -149,7 +160,7 @@
         <td mat-cell *matCellDef="let report" [attr.colspan]="displayedColumns.length">
           <div class="content-preview" [@expandCollapse]="isExpanded(report) ? 'expanded' : 'collapsed'">
             <div *ngIf="isExpanded(report) && report.content" class="content-display">
-              <h3>Gemeldeter Inhalt:</h3>
+              <h3>Gemeldeter Beitrag:</h3>
               <div class="content-info">
                 <p class="content-id"><strong>Content-ID:</strong> <code>{{ report.content_id }}</code></p>
               </div>
@@ -214,7 +225,7 @@
             </div>
             <div *ngIf="isExpanded(report) && !report.content" class="content-not-found">
               <mat-icon>warning</mat-icon>
-              <p>Inhalt konnte nicht geladen werden (möglicherweise bereits gelöscht)</p>
+              <p>Beitrag konnte nicht geladen werden (möglicherweise gelöscht)</p>
             </div>
           </div>
         </td>

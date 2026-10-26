@@ -341,7 +341,12 @@ class TestSearchCurated:
         status = {
             b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
         }
-        assert status == {"pending_description", "description_failed", "pending_review"}
+        assert status == {
+            "pending_description",
+            "description_failed",
+            "pending_review",
+            "blocked",
+        }
         suchanfrage = [b for b in ausschluss if getattr(b, "must", None)]
         assert len(suchanfrage) == 1
         bedingungen = {b.key: b for b in suchanfrage[0].must}

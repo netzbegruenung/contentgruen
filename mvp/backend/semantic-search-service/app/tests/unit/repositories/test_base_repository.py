@@ -533,3 +533,117 @@ class TestAutorenzuordnungOhneSuchanfragen:
 
         assert isinstance(ergebnisse[0], MockDbEntry)
         assert not hasattr(ergebnisse[0], "title")
+
+
+@pytest.mark.unit
+class TestGesperrteBeitraege:
+    """
+    Ein gesperrter Beitrag verschwindet aus Suche, Einzelansicht und Zaehlern.
+
+    Die Sperre sitzt im Repository, damit jeder Lesepfad sie erbt: Suche,
+    getById, Antwortvorschlaege einer Aussage (die ueber get() aufgeloest
+    werden), "Meine Beitraege" und die Listen. Admins finden gesperrte Beitraege
+    ueber die Moderation, die den Speicher direkt liest.
+    """
+
+    @pytest.fixture
+    def repository(self, test_settings, test_embeddings_manager):
+        return TestBaseRepository(
+            "test_repo",
+            "statement",
+            test_settings,
+            MockDbEntry,
+            MockSearchResult,
+            embeddings_manager=test_embeddings_manager,
+        )
+
+    @pytest.fixture
+    def repository_mit_client(self, test_settings, test_embeddings_manager):
+        from unittest.mock import AsyncMock
+
+        client = MagicMock()
+        client.scroll = AsyncMock(return_value=([], None))
+        client.count = AsyncMock(return_value=MagicMock(count=0))
+
+        manager = MagicMock()
+        manager.async_client = client
+        manager.collection_name = "content_collection"
+        manager.search = AsyncMock(return_value=[])
+
+        repository = TestBaseRepository(
+            "test_index",
+            "statement",
+            test_settings,
+            MockDbEntry,
+            MockSearchResult,
+            test_embeddings_manager,
+        )
+        repository._shared_manager = manager
+        return repository, client, manager
+
+    @staticmethod
+    def _gesperrte_ausgeschlossen(bedingungen) -> bool:
+        return any(
+            bedingung.key == "status" and bedingung.match.value == "blocked"
+            for bedingung in (bedingungen or [])
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_verweigert_gesperrten_beitrag(
+        self, repository, test_embeddings_manager
+    ):
+        test_id = uuid.uuid4()
+        test_embeddings_manager.add_test_data(
+            "statement",
+            [
+                {
+                    **create_base_content_fields(),
+                    "id": str(test_id),
+                    "text": "Gesperrter Text",
+                    "content_type": "statement",
+                    "status": "blocked",
+                }
+            ],
+        )
+
+        with pytest.raises(ValueError, match="gesperrt"):
+            await repository.get(test_id)
+
+    @pytest.mark.asyncio
+    async def test_suche_blendet_gesperrte_aus(self, repository_mit_client):
+        repository, _, manager = repository_mit_client
+
+        await repository.search("Wärmepumpe", limit=5)
+
+        filter_dict = manager.search.call_args.kwargs["filter_dict"]
+        assert self._gesperrte_ausgeschlossen(filter_dict["must_not"])
+
+    @pytest.mark.asyncio
+    async def test_get_all_blendet_gesperrte_aus(self, repository_mit_client):
+        repository, client, _ = repository_mit_client
+
+        await repository.get_all(limit=10, offset=0)
+
+        such_filter = client.scroll.call_args.kwargs["scroll_filter"]
+        assert self._gesperrte_ausgeschlossen(such_filter.must_not)
+
+    @pytest.mark.asyncio
+    async def test_get_recent_blendet_gesperrte_aus(self, repository_mit_client):
+        repository, client, _ = repository_mit_client
+
+        await repository.get_recent(limit=10)
+
+        such_filter = client.scroll.call_args.kwargs["scroll_filter"]
+        assert self._gesperrte_ausgeschlossen(such_filter.must_not)
+
+    @pytest.mark.asyncio
+    async def test_meine_beitraege_ohne_gesperrte(self, repository_mit_client):
+        repository, client, _ = repository_mit_client
+
+        await repository.get_by_author("testuser", limit=10, offset=0)
+        await repository.get_count_by_author("testuser")
+
+        liste = client.scroll.call_args.kwargs["scroll_filter"]
+        zaehlung = client.count.call_args.kwargs["count_filter"]
+        assert self._gesperrte_ausgeschlossen(liste.must_not)
+        assert self._gesperrte_ausgeschlossen(zaehlung.must_not)

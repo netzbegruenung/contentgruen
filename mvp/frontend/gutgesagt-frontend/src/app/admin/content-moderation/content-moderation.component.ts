@@ -11,7 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatBadgeModule } from '@angular/material/badge';
 import { trigger, state, style, transition, animate } from '@angular/animations';
-import { ModerationService, ContentReport } from '../../services/moderation.service';
+import { ModerationService, ContentReport, STATUS_GESPERRT } from '../../services/moderation.service';
 import { typLabel } from '../../shared/content-type-registry';
 
 @Component({
@@ -107,27 +107,42 @@ export class ContentModerationComponent implements OnInit {
       baseColumns.push('reviewed_by');
     }
 
-    // Add actions column only for pending reports
-    if (this.selectedStatus === 'pending') {
-      baseColumns.push('actions');
-    }
+    // Aktionen in jeder Ansicht: Entsperren betrifft bearbeitete Meldungen.
+    baseColumns.push('actions');
 
     this.displayedColumns = baseColumns;
   }
 
-  deleteContent(report: ContentReport) {
-    if (!confirm(`Möchten Sie diesen Inhalt wirklich löschen?\n\nInhalt-ID: ${report.content_id}\nTyp: ${report.content_type}\n\nDieser Vorgang kann nicht rückgängig gemacht werden.`)) {
+  istGesperrt(report: ContentReport): boolean {
+    return report.content?.status === STATUS_GESPERRT;
+  }
+
+  sperren(report: ContentReport) {
+    if (!confirm(`Diesen Beitrag sperren?\n\nEr verschwindet aus Suche und Ansicht, bleibt aber erhalten. Die Sperre lässt sich aufheben. Alle Meldungen zum Beitrag stehen danach auf bearbeitet.`)) {
       return;
     }
 
-    this.moderationService.deleteContent(report.content_type, report.content_id).subscribe({
-      next: (response) => {
-        this.snackBar.open('Inhalt erfolgreich gelöscht', 'OK', { duration: 3000 });
-        this.loadReports(); // Reload to remove from list
+    this.moderationService.sperren(report.content_id).subscribe({
+      next: () => {
+        this.snackBar.open('Beitrag gesperrt', 'OK', { duration: 3000 });
+        this.loadReports();
       },
       error: (error) => {
-        this.snackBar.open('Fehler beim Löschen des Inhalts', 'OK', { duration: 3000 });
-        console.error('Error deleting content:', error);
+        this.snackBar.open('Fehler beim Sperren des Beitrags', 'OK', { duration: 3000 });
+        console.error('Error sperren content:', error);
+      }
+    });
+  }
+
+  entsperren(report: ContentReport) {
+    this.moderationService.entsperren(report.content_id).subscribe({
+      next: () => {
+        this.snackBar.open('Sperre aufgehoben', 'OK', { duration: 3000 });
+        this.loadReports();
+      },
+      error: (error) => {
+        this.snackBar.open('Fehler beim Entsperren des Beitrags', 'OK', { duration: 3000 });
+        console.error('Error entsperren content:', error);
       }
     });
   }
@@ -135,11 +150,11 @@ export class ContentModerationComponent implements OnInit {
   dismissReport(report: ContentReport) {
     this.moderationService.dismissReport(report.id, 'Dismissed by admin').subscribe({
       next: (response) => {
-        this.snackBar.open('Meldung verworfen', 'OK', { duration: 3000 });
+        this.snackBar.open('Meldung abgewiesen', 'OK', { duration: 3000 });
         this.loadReports(); // Reload to remove from list
       },
       error: (error) => {
-        this.snackBar.open('Fehler beim Verwerfen der Meldung', 'OK', { duration: 3000 });
+        this.snackBar.open('Fehler beim Abweisen der Meldung', 'OK', { duration: 3000 });
         console.error('Error dismissing report:', error);
       }
     });
@@ -149,7 +164,7 @@ export class ContentModerationComponent implements OnInit {
     const labels: { [key: string]: string } = {
       'spam': 'Spam',
       'inappropriate': 'Unangemessen',
-      'duplicate': 'Duplikat',
+      'duplicate': 'Dublette',
       'other': 'Andere'
     };
     return labels[reason] || reason;
@@ -185,9 +200,9 @@ export class ContentModerationComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     const labels: { [key: string]: string } = {
-      'pending': 'Ausstehend',
-      'reviewed': 'Geprüft',
-      'dismissed': 'Abgelehnt'
+      'pending': 'Offen',
+      'reviewed': 'Bearbeitet',
+      'dismissed': 'Abgewiesen'
     };
     return labels[status] || status;
   }

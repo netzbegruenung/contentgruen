@@ -61,6 +61,25 @@ def _search_query_origin_conditions() -> list:
     ]
 
 
+def _gesperrt_bedingungen() -> list:
+    """
+    must_not-Bedingung, die gesperrte Beitraege ausschliesst.
+
+    Ein Admin sperrt einen Beitrag, statt ihn zu loeschen: Er verschwindet aus
+    Suche, Einzelansicht, Listen und "Meine Beitraege", bleibt aber im Speicher
+    und damit fuer die Moderation auffindbar (services/moderation_service.py
+    liest am Repository vorbei). must_not statt MatchExcept auf must, damit
+    Altbestand ohne Status-Feld sichtbar bleibt.
+    """
+    from qdrant_client.models import FieldCondition, MatchValue
+
+    return [
+        FieldCondition(
+            key="status", match=MatchValue(value=ContentStatus.BLOCKED.value)
+        )
+    ]
+
+
 class QdrantBaseRepository(
     IBaseContentRepository[TContentDbEntry, TContentSearchResult]
 ):
@@ -126,6 +145,7 @@ class QdrantBaseRepository(
         points without a status field are left unaffected (MatchExcept on must would
         drop fieldless points because the must clause is not satisfied).
         PENDING_REVIEW is excluded because images in that status await human review.
+        BLOCKED (gesperrt) is excluded because an admin took the item out of search.
         """
         from qdrant_client.models import FieldCondition, MatchValue
 
@@ -136,7 +156,7 @@ class QdrantBaseRepository(
                 ContentStatus.DESCRIPTION_FAILED,
                 ContentStatus.PENDING_REVIEW,
             )
-        ]
+        ] + _gesperrt_bedingungen()
 
     async def search(
         self, query_text: str, limit: int, praefix: str = "query"
@@ -267,6 +287,13 @@ class QdrantBaseRepository(
             logger.warning(meldung)
             raise ValueError(meldung)
 
+        # Gesperrt heisst fuer jeden Leser hier "nicht da": Einzelansicht, Stimmen,
+        # Antwortvorschlaege der Suche (SearchOrchestrator ueberspringt ValueError).
+        if result.get("status") == ContentStatus.BLOCKED.value:
+            meldung = f"Entry with id {item_id} is gesperrt"
+            logger.warning(meldung)
+            raise ValueError(meldung)
+
         try:
             entry = self.content_db_entry_model_class.model_validate(result)
         except Exception as e:
@@ -356,16 +383,19 @@ class QdrantBaseRepository(
             from qdrant_client.models import Filter, FieldCondition, MatchValue
 
             # Build filter
-            search_filter = None
-            if self.content_type:
-                search_filter = Filter(
-                    must=[
+            search_filter = Filter(
+                must=(
+                    [
                         FieldCondition(
                             key="content_type",
                             match=MatchValue(value=self.content_type),
                         )
                     ]
-                )
+                    if self.content_type
+                    else None
+                ),
+                must_not=_gesperrt_bedingungen(),
+            )
 
             # Scroll through results
             points_collected = 0
@@ -447,7 +477,10 @@ class QdrantBaseRepository(
                 )
             )
 
-        return Filter(must=must_conditions, must_not=_search_query_origin_conditions())
+        return Filter(
+            must=must_conditions,
+            must_not=_search_query_origin_conditions() + _gesperrt_bedingungen(),
+        )
 
     async def get_by_author(
         self,
@@ -581,16 +614,19 @@ class QdrantBaseRepository(
             )
 
             # Build filter for content_type if needed
-            search_filter = None
-            if self.content_type:
-                search_filter = Filter(
-                    must=[
+            search_filter = Filter(
+                must=(
+                    [
                         FieldCondition(
                             key="content_type",
                             match=MatchValue(value=self.content_type),
                         )
                     ]
-                )
+                    if self.content_type
+                    else None
+                ),
+                must_not=_gesperrt_bedingungen(),
+            )
 
             # For MVP: Fetch a reasonable batch (10x requested limit) and sort in memory
             # This is acceptable for small datasets. For production with large datasets,

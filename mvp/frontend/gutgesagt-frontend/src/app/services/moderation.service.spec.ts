@@ -129,19 +129,33 @@ describe('ModerationService', () => {
     });
   });
 
-  describe('deleteContent', () => {
-    it('should send delete request with correct parameters', () => {
-      const contentType = 'commentary';
+  describe('sperren', () => {
+    it('sperrt den Beitrag per PUT, ohne Beitragstyp im Pfad', () => {
       const contentId = 'content-123';
 
-      service.deleteContent(contentType, contentId).subscribe();
+      service.sperren(contentId).subscribe();
 
       const req = httpMock.expectOne(
-        `${environment.baseUrl}/api/v1/moderation/content/${contentType}/${contentId}`
+        `${environment.baseUrl}/api/v1/moderation/content/${contentId}/sperren`
       );
-      expect(req.request.method).toBe('DELETE');
+      expect(req.request.method).toBe('PUT');
 
-      req.flush({ success: true, message: 'Content deleted' });
+      req.flush({ success: true, message: 'gesperrt' });
+    });
+  });
+
+  describe('entsperren', () => {
+    it('hebt die Sperre per PUT auf', () => {
+      const contentId = 'content-123';
+
+      service.entsperren(contentId).subscribe();
+
+      const req = httpMock.expectOne(
+        `${environment.baseUrl}/api/v1/moderation/content/${contentId}/entsperren`
+      );
+      expect(req.request.method).toBe('PUT');
+
+      req.flush({ success: true, message: 'entsperrt' });
     });
   });
 

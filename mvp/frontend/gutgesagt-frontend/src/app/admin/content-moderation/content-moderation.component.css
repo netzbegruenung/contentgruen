@@ -54,6 +54,11 @@
   color: #1565c0;
 }
 
+.status-gesperrt {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
 .not-reviewed {
   color: #999;
   font-style: italic;

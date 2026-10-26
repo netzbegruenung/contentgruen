@@ -11,8 +11,14 @@ import json
 from repositories.content_report_repository import get_content_report_repository
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 from domain.models.content_type import ContentType
+from domain.models.content_status import ContentStatus, NEW_CONTENT_STATUS
 
 logger = logging.getLogger(__name__)
+
+# Payload-Feld mit dem Status von vor der Sperre, damit Entsperren ihn
+# wiederherstellt. Fehlt es (Altbestand ohne Status), wird der Beitrag beim
+# Entsperren sichtbar wie neu angelegt.
+FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 
 
 class ModerationService:
@@ -170,6 +176,89 @@ class ModerationService:
         except Exception as e:
             logger.error(f"Error getting reports (status={status}): {e}", exc_info=True)
             return []
+
+    async def sperren(self, content_id: str, gesperrt_von: str) -> bool:
+        """
+        Einen gemeldeten Beitrag sperren, statt ihn zu loeschen.
+
+        Der Beitrag bleibt im Speicher und bekommt den Status BLOCKED; die
+        Repositories blenden ihn damit aus Suche, Einzelansicht, Listen und
+        "Meine Beitraege" aus. Die Moderation findet ihn weiter, weil sie den
+        Speicher direkt liest. Alle Meldungen zum Beitrag stehen danach auf
+        bearbeitet. Erneutes Sperren ist harmlos: Der Status von vor der
+        ersten Sperre bleibt erhalten.
+
+        Returns:
+            bool: False, wenn es den Beitrag nicht gibt
+        """
+        try:
+            content_uuid = UUID(content_id)
+        except ValueError:
+            logger.error(f"Invalid content_id format: {content_id}")
+            return False
+
+        eintrag = await self.embeddings_manager.get_by_id(content_id)
+        if eintrag is None:
+            logger.warning(f"Content {content_id} not found, nothing to sperren")
+            return False
+
+        if eintrag.get("status") != ContentStatus.BLOCKED.value:
+            await self.embeddings_manager.async_client.set_payload(
+                collection_name=self.embeddings_manager.collection_name,
+                payload={
+                    "status": ContentStatus.BLOCKED.value,
+                    FELD_STATUS_VOR_SPERRE: eintrag.get("status"),
+                },
+                points=[content_id],
+            )
+
+        updated_count = self.report_repo.update_reports_by_content_id(
+            content_id=content_uuid,
+            status="reviewed",
+            reviewed_by=gesperrt_von,
+            resolution_notes="Beitrag gesperrt",
+        )
+        logger.info(
+            f"Content {content_id} gesperrt by {gesperrt_von}, "
+            f"{updated_count} reports marked as reviewed"
+        )
+        return True
+
+    async def entsperren(self, content_id: str, entsperrt_von: str) -> bool:
+        """
+        Eine Sperre aufheben: Der Beitrag bekommt den Status von vor der Sperre
+        zurueck und ist wieder sichtbar. Die Meldungen bleiben bearbeitet.
+
+        Returns:
+            bool: False, wenn es den Beitrag nicht gibt
+        """
+        try:
+            UUID(content_id)
+        except ValueError:
+            logger.error(f"Invalid content_id format: {content_id}")
+            return False
+
+        eintrag = await self.embeddings_manager.get_by_id(content_id)
+        if eintrag is None:
+            logger.warning(f"Content {content_id} not found, nothing to entsperren")
+            return False
+
+        if eintrag.get("status") != ContentStatus.BLOCKED.value:
+            return True
+
+        vorher = eintrag.get(FELD_STATUS_VOR_SPERRE) or NEW_CONTENT_STATUS.value
+        await self.embeddings_manager.async_client.set_payload(
+            collection_name=self.embeddings_manager.collection_name,
+            payload={"status": vorher},
+            points=[content_id],
+        )
+        await self.embeddings_manager.async_client.delete_payload(
+            collection_name=self.embeddings_manager.collection_name,
+            keys=[FELD_STATUS_VOR_SPERRE],
+            points=[content_id],
+        )
+        logger.info(f"Content {content_id} entsperrt by {entsperrt_von}")
+        return True
 
     async def delete_content(
         self, content_id: str, content_type: str, deleted_by: str
