@@ -13,7 +13,10 @@ from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
-from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
+from services.suchen_ohne_treffer_service import (
+    SuchenOhneTrefferService,
+    get_personen_des_tages,
+)
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
@@ -112,7 +115,9 @@ def get_suchen_ohne_treffer_service(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> SuchenOhneTrefferService:
     return SuchenOhneTrefferService(
-        get_suchen_ohne_treffer_repository(), statement_service
+        get_suchen_ohne_treffer_repository(),
+        statement_service,
+        get_personen_des_tages(),
     )
 
 

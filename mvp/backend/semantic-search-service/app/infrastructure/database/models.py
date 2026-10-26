@@ -145,6 +145,9 @@ class SearchEvent(Base):
 class SucheOhneTrefferZeile(Base):
     """Suchen ohne Treffer, gezaehlt je Aussage und Kalenderwoche.
 
+    anzahl zaehlt Suchen, personen verschiedene Tagespseudonyme; die Pseudonyme
+    selbst stehen nicht hier.
+
     Traegt bewusst weder Pseudonym noch Zeitpunkt: woche ist der Montag der Woche,
     damit sich eine Zeile nicht ueber den Zeitpunkt mit search_events (und dessen
     actor_hash) verbinden laesst. Der Suchtext steht an der Aussage in Qdrant,
@@ -156,6 +159,7 @@ class SucheOhneTrefferZeile(Base):
     statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
     woche = Column(Date, primary_key=True)
     anzahl = Column(Integer, nullable=False)
+    personen = Column(Integer, nullable=False, server_default=text("0"))
 
     __table_args__ = (Index("idx_suchen_ohne_treffer_woche", "woche"),)
 

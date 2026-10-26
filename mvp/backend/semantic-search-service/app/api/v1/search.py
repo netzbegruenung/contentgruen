@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from typing import List, Optional
 
@@ -29,7 +31,10 @@ from dependencies import (
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.voting_service import VotingService
-from services.search_tracking_service import get_search_tracking_service
+from services.search_tracking_service import (
+    get_search_tracking_service,
+    tagespseudonym,
+)
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
@@ -258,6 +263,12 @@ async def search_by_text(
             + len(image_search_results)
         )
 
+        # Suchereignis und "Suchen ohne Treffer" bilden das Tagespseudonym aus
+        # derselben Kennung und demselben Zeitpunkt: So ist es fuer beide dasselbe,
+        # und Pseudonym und Tag gehoeren zusammen, auch kurz vor Mitternacht.
+        user_id = validated_user if angemeldet(validated_user) else None
+        jetzt = datetime.now(timezone.utc)
+
         # Track search event for metrics (fire-and-forget, don't block response)
         try:
             search_tracking_service = get_search_tracking_service()
@@ -269,17 +280,24 @@ async def search_by_text(
             search_tracking_service.track_search(
                 results_count=total_results,
                 session_id=x_session_id,
-                user_id=validated_user if validated_user != "anonymous" else None,
+                user_id=user_id,
+                moment=jetzt,
             )
         except Exception as e:
             # Don't fail the search if tracking fails
             logger.warning(f"Failed to track search event: {e}")
 
         # Kennzahl "Suchen ohne Treffer": gezaehlt an der Aussage zur Suchanfrage,
-        # getrennt vom Suchereignis und ohne Pseudonym. total_results zaehlt nur,
+        # getrennt vom Suchereignis. Das Tagespseudonym dient nur dazu, Personen zu
+        # unterscheiden, gespeichert wird es dort nicht. total_results zaehlt nur,
         # was ueber der Schwelle des SearchOrchestrators lag.
         try:
-            suchen_ohne_treffer.erfassen(statement_id, total_results)
+            suchen_ohne_treffer.erfassen(
+                statement_id,
+                total_results,
+                tagespseudonym(user_id=user_id, session_id=x_session_id, moment=jetzt),
+                heute=jetzt.date(),
+            )
         except Exception as e:
             # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und
             # statement_id neben dem Zeitstempel der Logzeile waere genau der

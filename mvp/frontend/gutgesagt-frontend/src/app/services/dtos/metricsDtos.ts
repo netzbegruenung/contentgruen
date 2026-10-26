@@ -32,6 +32,7 @@ export interface SucheOhneTreffer {
 
 export interface SuchenOhneTrefferResponse {
     wochen: number;
+    /** Verschiedene Personen, ab denen eine Aussage erscheint (nicht Suchen). */
     mindestanzahl: number;
     suchanfragen: SucheOhneTreffer[];
 }

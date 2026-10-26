@@ -33,7 +33,9 @@
       </ng-template>
       <p class="fussnote">
         Ähnliche Suchanfragen landen auf derselben Aussage. Gezählt je Aussage und Woche,
-        ohne Bezug zu den Suchenden. Erscheint erst ab {{ daten.mindestanzahl }} Suchen.
+        ohne Bezug zu den Suchenden. Eine Aussage erscheint erst, wenn
+        {{ daten.mindestanzahl }} verschiedene Personen ohne Treffer danach gesucht haben;
+        die Anzahl zählt Suchen.
       </p>
     </ng-container>
   </mat-card-content>

@@ -179,7 +179,7 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Unterschieden werden die Personen über ihr Tagespseudonym, deshalb zählt dieselbe Person an zwei Tagen zweimal.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
@@ -187,8 +187,8 @@ Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung.
-_Avoid_: Actor-Hash, Hash, anonyme ID
+Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+_Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.

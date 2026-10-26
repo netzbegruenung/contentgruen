@@ -285,12 +285,36 @@
       <p>
         Findet eine Suche keinen passenden Beitrag, zählen wir das an dem Eintrag, der zu
         Ihrer Suchanfrage ohnehin entsteht (siehe „Ihre Suchanfragen“). Gespeichert wird nur,
-        <strong>in welcher Kalenderwoche wie oft</strong> zu diesem Eintrag nichts gefunden
-        wurde — ohne Pseudonym, ohne Uhrzeit und ohne Verbindung zum oben beschriebenen
-        Suchvorgang. Aus diesen Zählern lässt sich nicht ablesen, wer gesucht hat. Unsere
-        Administratorinnen und Administratoren sehen eine Liste der Einträge, zu denen am
-        häufigsten nichts gefunden wurde, mit ihrer Anzahl, aber nicht, wer gesucht hat; ein
-        Eintrag erscheint dort erst, wenn mehrfach ohne Treffer danach gesucht wurde.
+        <strong>in welcher Kalenderwoche wie oft und von wie vielen verschiedenen
+        Personen</strong> zu diesem Eintrag nichts gefunden wurde — ohne Pseudonym, ohne
+        Uhrzeit und ohne Verbindung zum oben beschriebenen Suchvorgang. Aus diesen Zählern
+        lässt sich nicht ablesen, wer gesucht hat.
+      </p>
+      <p>
+        Um Personen zu unterscheiden, nutzen wir das oben beschriebene tägliche Pseudonym,
+        aber nur im Arbeitsspeicher des Servers und nur für den laufenden Tag: Dort merken
+        wir uns einen aus Pseudonym und Eintrag berechneten Prüfwert, damit wiederholte
+        Suchen derselben Person nicht als weitere Personen zählen. Diese Merkliste wird
+        nicht gespeichert und um Mitternacht (UTC, in Deutschland 1 bzw. 2 Uhr nachts)
+        verworfen.
+      </p>
+      <p>
+        „Person“ heißt hier deshalb: dasselbe Pseudonym am selben Tag. Als weitere Person
+        zählt dieselbe Person, wenn sie <strong>an einem anderen Tag</strong> sucht (das
+        Pseudonym wechselt täglich), wenn sie sich <strong>im Laufe des Tages
+        anmeldet</strong> (vorher geht die Sitzungskennung ein, danach ihre Kennung; beides
+        zu verknüpfen wäre ein neuer Bezug zu ihrer Person), wenn sie einen
+        <strong>anderen Browser</strong> nutzt oder dessen Speicher löscht (neue
+        Sitzungskennung) und wenn der <strong>Server neu startet</strong> (die Merkliste
+        geht dabei verloren).
+      </p>
+      <p>
+        Unsere Administratorinnen und Administratoren sehen eine Liste der Einträge, zu denen
+        am häufigsten nichts gefunden wurde, mit der Zahl der Suchen, aber nicht, wer gesucht
+        hat. Ein Eintrag erscheint dort erst, wenn <strong>mindestens zwei verschiedene
+        Personen</strong> im obigen Sinn ohne Treffer danach gesucht haben. Wer am selben Tag
+        im selben Browser mehrfach dasselbe sucht, bringt den Eintrag also nicht allein in
+        die Liste, außer der Server startet zwischendurch neu.
       </p>
       <p>
         <strong>Zweck:</strong> zu erkennen, auf welche Fragen und Behauptungen der Bestand

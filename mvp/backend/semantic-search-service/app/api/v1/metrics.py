@@ -136,7 +136,11 @@ class SucheOhneTrefferEintrag(BaseModel):
 
 
 class SuchenOhneTrefferResponse(BaseModel):
-    """Die haeufigsten Suchanfragen ohne Treffer im Zeitraum."""
+    """Die haeufigsten Suchanfragen ohne Treffer im Zeitraum.
+
+    mindestanzahl ist die Zahl verschiedener Personen, ab der eine Aussage
+    erscheint, nicht die Zahl der Suchen.
+    """
 
     wochen: int
     mindestanzahl: int
@@ -402,8 +406,10 @@ async def get_suchen_ohne_treffer(
 ):
     """
     Die haeufigsten Suchanfragen der letzten Wochen, zu denen die Suche keinen
-    Beitrag fand, mit Anzahl. Ohne Personenbezug: gezaehlt wird je Aussage und
-    Woche, nicht je suchender Person (services/suchen_ohne_treffer_service.py).
+    Beitrag fand, mit Anzahl der Suchen. Eine Aussage erscheint erst, wenn
+    mindestanzahl verschiedene Personen ohne Treffer danach gesucht haben. Ohne
+    Personenbezug: gezaehlt wird je Aussage und Woche, Pseudonyme stehen weder in
+    der Tabelle noch in der Antwort (services/suchen_ohne_treffer_service.py).
     """
     try:
         eintraege = await service.haeufigste(wochen=wochen)

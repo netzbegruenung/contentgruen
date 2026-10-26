@@ -9,6 +9,7 @@ TestSuchpfad unten). Die Sperre je Text sitzt in add_statement
 
 import logging
 import uuid
+from datetime import date, datetime, time, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -30,6 +31,7 @@ from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
 )
+from services.search_tracking_service import tagespseudonym
 from utils.rate_limiter import RateLimiter
 
 
@@ -93,6 +95,11 @@ class TestRecorder:
 
 
 SEARCH_URL = "/api/v1/search/searchByText"
+
+
+def _mittag(tag):
+    """Das Tagespseudonym haengt nur am UTC-Datum; Mittag liegt sicher darin."""
+    return datetime.combine(tag, time(12), timezone.utc)
 
 
 @pytest.fixture
@@ -192,9 +199,93 @@ class TestSuchenOhneTreffer:
         service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
         app.dependency_overrides[get_search_query_statement_recorder] = _recorder
 
+        TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "klima", "limit": 10},
+            headers={"X-Session-Id": "sitzung-1"},
+        )
+
+        aufruf = suchen_ohne_treffer.erfassen.call_args
+        heute = aufruf.kwargs["heute"]
+        assert aufruf.args == (
+            aussage,
+            0,
+            tagespseudonym(session_id="sitzung-1", moment=_mittag(heute)),
+        )
+
+    def test_angemeldet_meldet_dieselbe_kennung_wie_das_suchereignis(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        """Beide Kennzahlen bilden das Tagespseudonym aus der Nutzerkennung."""
+        app, service = suchapp
+        aussage = uuid.uuid4()
+        service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+
+        with patch("api.v1.search.get_search_tracking_service") as tracking:
+            TestClient(app).post(
+                SEARCH_URL,
+                json={"query_text": "klima", "limit": 10},
+                headers={"X-User": "person-1", "X-Session-Id": "sitzung-1"},
+            )
+
+        _, ereignis = tracking.return_value.track_search.call_args
+        assert ereignis["results_count"] == 0
+        assert ereignis["session_id"] == "sitzung-1"
+        assert ereignis["user_id"] == "person-1"
+        aufruf = suchen_ohne_treffer.erfassen.call_args
+        assert aufruf.args[2] == tagespseudonym(
+            user_id="person-1", moment=_mittag(aufruf.kwargs["heute"])
+        )
+        # Derselbe Zeitpunkt fuer beide, also dasselbe Tagespseudonym.
+        assert ereignis["moment"].date() == aufruf.kwargs["heute"]
+        assert aufruf.args[2] == tagespseudonym(
+            user_id="person-1", moment=ereignis["moment"]
+        )
+
+    def test_suchereignis_und_kennzahl_teilen_den_zeitpunkt_vor_mitternacht(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        """Auch wenn die Uhr zwischen beiden Aufrufen ueber Mitternacht laeuft,
+        bekommen Suchereignis und Kennzahl dasselbe Tagespseudonym."""
+        app, service = suchapp
+        aussage = uuid.uuid4()
+        service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+        vor_mitternacht = datetime(
+            2026, 10, 26, 23, 59, 59, 999999, tzinfo=timezone.utc
+        )
+
+        with patch("api.v1.search.get_search_tracking_service") as tracking, patch(
+            "api.v1.search.datetime"
+        ) as uhr:
+            uhr.now.return_value = vor_mitternacht
+            TestClient(app).post(
+                SEARCH_URL,
+                json={"query_text": "klima", "limit": 10},
+                headers={"X-Session-Id": "sitzung-1"},
+            )
+
+        _, ereignis = tracking.return_value.track_search.call_args
+        assert ereignis["moment"] == vor_mitternacht
+        aufruf = suchen_ohne_treffer.erfassen.call_args
+        assert aufruf.kwargs["heute"] == date(2026, 10, 26)
+        assert aufruf.args[2] == tagespseudonym(
+            session_id="sitzung-1", moment=vor_mitternacht
+        )
+
+    def test_suche_ohne_sitzung_meldet_kein_pseudonym(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        app, service = suchapp
+        aussage = uuid.uuid4()
+        service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+
         TestClient(app).post(SEARCH_URL, json={"query_text": "klima", "limit": 10})
 
-        suchen_ohne_treffer.erfassen.assert_called_once_with(aussage, 0)
+        aufruf = suchen_ohne_treffer.erfassen.call_args
+        assert aufruf.args == (aussage, 0, None)
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
         self, suchapp, suchen_ohne_treffer

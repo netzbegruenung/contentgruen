@@ -1,8 +1,9 @@
 """
 Repository fuer die Kennzahl "Suchen ohne Treffer" (Tabelle suchen_ohne_treffer).
 
-Je (Aussage, Woche) eine Zeile mit einem Zaehler. Was gezaehlt wird und warum
-nichts weiter gespeichert wird, steht in services/suchen_ohne_treffer_service.py.
+Je (Aussage, Woche) eine Zeile mit zwei Zaehlern: Suchen und Personen. Was
+gezaehlt wird und warum nichts weiter gespeichert wird, steht in
+services/suchen_ohne_treffer_service.py.
 """
 
 import uuid
@@ -20,17 +21,26 @@ class SuchenOhneTrefferRepository:
     def __init__(self):
         self.db = get_app_database()
 
-    def zaehlen(self, statement_id: uuid.UUID, woche: date) -> None:
-        """Eine Suche ohne Treffer zur Aussage in der Woche zaehlen."""
+    def zaehlen(self, statement_id: uuid.UUID, woche: date, neue_person: bool) -> None:
+        """
+        Eine Suche ohne Treffer zur Aussage in der Woche zaehlen, und eine Person
+        dazu, wenn neue_person gesetzt ist.
+        """
         upsert = insert(SucheOhneTrefferZeile).values(
-            statement_id=statement_id, woche=woche, anzahl=1
+            statement_id=statement_id,
+            woche=woche,
+            anzahl=1,
+            personen=1 if neue_person else 0,
         )
         upsert = upsert.on_conflict_do_update(
             index_elements=[
                 SucheOhneTrefferZeile.statement_id,
                 SucheOhneTrefferZeile.woche,
             ],
-            set_={"anzahl": SucheOhneTrefferZeile.anzahl + upsert.excluded.anzahl},
+            set_={
+                "anzahl": SucheOhneTrefferZeile.anzahl + upsert.excluded.anzahl,
+                "personen": SucheOhneTrefferZeile.personen + upsert.excluded.personen,
+            },
         )
         with self.db.get_session() as session:
             session.execute(upsert)
@@ -48,13 +58,19 @@ class SuchenOhneTrefferRepository:
     def haeufigste(
         self, seit_woche: date, mindestanzahl: int, limit: int, offset: int = 0
     ) -> List[Tuple[uuid.UUID, int]]:
-        """(Aussage-ID, Anzahl) ab seit_woche, absteigend nach Anzahl, seitenweise."""
+        """
+        (Aussage-ID, Anzahl der Suchen) ab seit_woche, absteigend nach Anzahl,
+        seitenweise; nur Aussagen mit mindestens mindestanzahl Personen. Die
+        Personen der Wochen duerfen summiert werden: Tagespseudonyme verschiedener
+        Tage sind immer verschieden.
+        """
         summe = func.sum(SucheOhneTrefferZeile.anzahl)
+        personen = func.sum(SucheOhneTrefferZeile.personen)
         abfrage = (
             select(SucheOhneTrefferZeile.statement_id, summe.label("anzahl"))
             .where(SucheOhneTrefferZeile.woche >= seit_woche)
             .group_by(SucheOhneTrefferZeile.statement_id)
-            .having(summe >= mindestanzahl)
+            .having(personen >= mindestanzahl)
             .order_by(desc("anzahl"), SucheOhneTrefferZeile.statement_id)
             .limit(limit)
             .offset(offset)

@@ -2,8 +2,8 @@
 Unit-Tests fuer die Kennzahl "Suchen ohne Treffer".
 
 Das Repository ist durch eine Fake-Klasse ersetzt, die Aussagen kommen aus einem
-gemockten StatementService. Geprueft wird, wann eine Suche zaehlt, in welche Woche
-sie faellt und was Admins am Ende sehen.
+gemockten StatementService. Geprueft wird, wann eine Suche zaehlt, wann sie als
+weitere Person zaehlt, in welche Woche sie faellt und was Admins am Ende sehen.
 """
 
 import asyncio
@@ -17,11 +17,13 @@ import pytest
 import services.suchen_ohne_treffer_service as modul
 from domain.models.content_status import ContentStatus
 from services.suchen_ohne_treffer_service import (
+    PersonenDesTages,
     SuchenOhneTrefferService,
     alte_wochen_loeschen,
     aufbewahrungsgrenze,
     heute_utc,
     loeschen_im_takt,
+    sekunden_bis_mitternacht,
 )
 
 pytestmark = pytest.mark.unit
@@ -33,7 +35,12 @@ GESPERRT = uuid.UUID("44444444-4444-4444-4444-444444444444")
 
 # Ein Mittwoch; die Woche beginnt am Montag, dem 2026-10-26.
 MITTWOCH = date(2026, 10, 28)
+DONNERSTAG = date(2026, 10, 29)
 MONTAG = date(2026, 10, 26)
+
+# Tagespseudonyme zweier Personen, wie sie SearchTrackingService bildet.
+PERSON_A = "a" * 64
+PERSON_B = "b" * 64
 
 
 class FakeRepository:
@@ -43,8 +50,8 @@ class FakeRepository:
         self.geloescht_vor = []
         self._haeufigste = haeufigste or []
 
-    def zaehlen(self, statement_id, woche):
-        self.gezaehlt.append((statement_id, woche))
+    def zaehlen(self, statement_id, woche, neue_person):
+        self.gezaehlt.append((statement_id, woche, neue_person))
 
     def haeufigste(self, seit_woche, mindestanzahl, limit, offset=0):
         self.abfragen.append((seit_woche, mindestanzahl, limit, offset))
@@ -69,8 +76,10 @@ def _statement_service(aussagen):
     return service
 
 
-def _service(repo, aussagen=None):
-    return SuchenOhneTrefferService(repo, _statement_service(aussagen or {}))
+def _service(repo, aussagen=None, personen=None):
+    return SuchenOhneTrefferService(
+        repo, _statement_service(aussagen or {}), personen or PersonenDesTages()
+    )
 
 
 FREI = ContentStatus.RELEASED_INTERNAL
@@ -80,14 +89,14 @@ class TestErfassen:
     def test_erfassen_ohne_treffer_zaehlt_in_der_woche_ab_montag(self):
         repo = FakeRepository()
 
-        _service(repo).erfassen(AUSSAGE, treffer=0, heute=MITTWOCH)
+        _service(repo).erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
 
-        assert repo.gezaehlt == [(AUSSAGE, MONTAG)]
+        assert repo.gezaehlt == [(AUSSAGE, MONTAG, True)]
 
     def test_erfassen_mit_treffern_zaehlt_nicht(self):
         repo = FakeRepository()
 
-        _service(repo).erfassen(AUSSAGE, treffer=1, heute=MITTWOCH)
+        _service(repo).erfassen(AUSSAGE, 1, PERSON_A, heute=MITTWOCH)
 
         assert repo.gezaehlt == []
 
@@ -95,9 +104,130 @@ class TestErfassen:
         """Ohne Aussage (Rate-Limit beim Anlegen) gibt es nichts, woran man zaehlt."""
         repo = FakeRepository()
 
-        _service(repo).erfassen(None, treffer=0, heute=MITTWOCH)
+        _service(repo).erfassen(None, 0, PERSON_A, heute=MITTWOCH)
 
         assert repo.gezaehlt == []
+
+    def test_erfassen_zaehlt_dieselbe_person_am_selben_tag_nur_einmal(self):
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+
+        assert repo.gezaehlt == [
+            (AUSSAGE, MONTAG, True),
+            (AUSSAGE, MONTAG, False),
+        ]
+
+    def test_erfassen_zaehlt_zwei_personen_als_zwei(self):
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, True]
+
+    def test_erfassen_zaehlt_dieselbe_person_je_aussage(self):
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        service.erfassen(ANDERE, 0, PERSON_A, heute=MITTWOCH)
+
+        assert repo.gezaehlt == [
+            (AUSSAGE, MONTAG, True),
+            (ANDERE, MONTAG, True),
+        ]
+
+    def test_erfassen_ohne_pseudonym_zaehlt_die_suche_aber_keine_person(self):
+        """Ohne Nutzer- und Sitzungskennung laesst sich keine Person unterscheiden."""
+        repo = FakeRepository()
+
+        _service(repo).erfassen(AUSSAGE, 0, None, heute=MITTWOCH)
+
+        assert repo.gezaehlt == [(AUSSAGE, MONTAG, False)]
+
+    def test_erfassen_am_naechsten_tag_zaehlt_wieder_als_person(self):
+        """
+        Das Tagespseudonym wechselt um Mitternacht (UTC): am naechsten Tag ist es
+        ein anderes, und die Merkliste des Vortags ist verworfen.
+        """
+        repo = FakeRepository()
+        service = _service(repo)
+
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=DONNERSTAG)
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, True]
+
+    def test_erfassen_merkt_sich_personen_ueber_anfragen_hinweg(self):
+        """Der Service entsteht je Anfrage neu; die Merkliste des Tages bleibt."""
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+
+        _service(repo, personen=personen).erfassen(AUSSAGE, 0, PERSON_A, MITTWOCH)
+        _service(repo, personen=personen).erfassen(AUSSAGE, 0, PERSON_A, MITTWOCH)
+
+        assert [neu for *_, neu in repo.gezaehlt] == [True, False]
+
+    def test_erfassen_vergisst_die_person_wenn_das_schreiben_scheitert(self):
+        """Sonst galte sie fuer den Rest des Tages als gezaehlt, ohne es zu sein."""
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+        service = _service(repo, personen=personen)
+        repo.zaehlen = Mock(side_effect=[RuntimeError("weg"), None])
+
+        with pytest.raises(RuntimeError):
+            service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+
+        assert repo.zaehlen.call_args.args == (AUSSAGE, MONTAG, True)
+
+    def test_erfassen_vergisst_bei_fehler_keine_schon_gezaehlte_person(self):
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+        service = _service(repo, personen=personen)
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        repo.zaehlen = Mock(side_effect=RuntimeError("weg"))
+
+        with pytest.raises(RuntimeError):
+            service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+
+        assert personen.neu(PERSON_A, AUSSAGE, MITTWOCH) is False
+
+
+class TestPersonenDesTages:
+    def test_neu_zaehlt_bei_voller_merkliste_keine_weitere_person(self):
+        """Lieber eine Person zu wenig: so rutscht keine Aussage ueber die Schwelle."""
+        personen = PersonenDesTages(obergrenze=1)
+
+        assert personen.neu(PERSON_A, AUSSAGE, MITTWOCH) is True
+        assert personen.neu(PERSON_B, AUSSAGE, MITTWOCH) is False
+        assert personen.anzahl() == 1
+
+    def test_neu_beginnt_am_naechsten_tag_mit_leerer_merkliste(self):
+        personen = PersonenDesTages(obergrenze=1)
+        personen.neu(PERSON_A, AUSSAGE, MITTWOCH)
+
+        assert personen.neu(PERSON_B, AUSSAGE, DONNERSTAG) is True
+
+    def test_verwerfen_vor_vergisst_die_personen_des_vortags(self):
+        personen = PersonenDesTages()
+        personen.neu(PERSON_A, AUSSAGE, MITTWOCH)
+
+        personen.verwerfen_vor(DONNERSTAG)
+
+        assert personen.anzahl() == 0
+
+    def test_verwerfen_vor_behaelt_die_personen_des_laufenden_tags(self):
+        personen = PersonenDesTages()
+        personen.neu(PERSON_A, AUSSAGE, MITTWOCH)
+
+        personen.verwerfen_vor(MITTWOCH)
+
+        assert personen.neu(PERSON_A, AUSSAGE, MITTWOCH) is False
 
 
 class TestAufbewahrung:
@@ -117,12 +247,32 @@ class TestAufbewahrung:
         repo = FakeRepository()
         repo.loeschen_vor = Mock(side_effect=[RuntimeError("weg"), 0, 0])
 
-        task = asyncio.create_task(loeschen_im_takt(repo, takt_sekunden=0))
+        task = asyncio.create_task(
+            loeschen_im_takt(repo, PersonenDesTages(), takt_sekunden=0)
+        )
         while repo.loeschen_vor.call_count < 2:
             await asyncio.sleep(0.01)
         task.cancel()
 
         assert repo.loeschen_vor.call_count >= 2
+
+    @pytest.mark.asyncio
+    async def test_loeschen_im_takt_verwirft_die_personen_des_vortags(self):
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+        personen.neu(PERSON_A, AUSSAGE, date(2000, 1, 1))
+
+        task = asyncio.create_task(loeschen_im_takt(repo, personen, takt_sekunden=0))
+        while not repo.geloescht_vor:
+            await asyncio.sleep(0.01)
+        task.cancel()
+
+        assert personen.anzahl() == 0
+
+    def test_sekunden_bis_mitternacht_rechnet_in_utc(self):
+        jetzt = datetime(2026, 10, 28, 23, 0, tzinfo=timezone.utc)
+
+        assert sekunden_bis_mitternacht(jetzt) == 3600
 
 
 class TestHeuteUtc:

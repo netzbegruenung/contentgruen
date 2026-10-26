@@ -82,6 +82,7 @@ class SearchTrackingService:
         results_count: int,
         session_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        moment: Optional[datetime] = None,
     ) -> bool:
         """
         Track a search event.
@@ -93,6 +94,9 @@ class SearchTrackingService:
             results_count: Number of results returned
             session_id: Optional session identifier, hashed before storage
             user_id: Optional user identifier, hashed before storage
+            moment: Point in time of the search (defaults to now, UTC). The
+                caller passes the moment it also uses for "Suchen ohne Treffer",
+                so both see the same daily pseudonym even around midnight.
 
         Returns:
             bool: True if tracking was successful
@@ -102,7 +106,8 @@ class SearchTrackingService:
             return False
 
         # One moment for both, so pseudonym and day never straddle midnight.
-        moment = datetime.now(timezone.utc)
+        if moment is None:
+            moment = datetime.now(timezone.utc)
         actor_hash = self._derive_actor_hash(
             user_id=user_id, session_id=session_id, moment=moment
         )
@@ -148,6 +153,17 @@ class SearchTrackingService:
             Dict with average, median, and distribution stats
         """
         return self.repository.get_searches_per_user(days)
+
+
+def tagespseudonym(
+    user_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    moment: Optional[datetime] = None,
+) -> Optional[str]:
+    """Das Tagespseudonym zum Zeitpunkt (Standard: jetzt), wie in search_events."""
+    return SearchTrackingService._derive_actor_hash(
+        user_id=user_id, session_id=session_id, moment=moment
+    )
 
 
 # Global service instance
