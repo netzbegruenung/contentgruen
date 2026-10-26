@@ -1,5 +1,5 @@
 from typing import Optional, TYPE_CHECKING
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
 
 if TYPE_CHECKING:
     # Only needed for the type annotation on the lazily-built Post service; imported
@@ -13,6 +13,10 @@ from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
+from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
+from repositories.suchen_ohne_treffer_repository import (
+    get_suchen_ohne_treffer_repository,
+)
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -102,6 +106,14 @@ def get_statement_service() -> StatementService:
     if statement_service_instance is None:
         raise ValueError("StatementService has not been initialized.")
     return statement_service_instance
+
+
+def get_suchen_ohne_treffer_service(
+    statement_service: StatementService = Depends(get_statement_service),
+) -> SuchenOhneTrefferService:
+    return SuchenOhneTrefferService(
+        get_suchen_ohne_treffer_repository(), statement_service
+    )
 
 
 def get_commentary_service() -> CommentaryService:

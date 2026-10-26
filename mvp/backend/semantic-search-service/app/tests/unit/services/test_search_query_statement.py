@@ -21,6 +21,7 @@ from dependencies import (
     get_post_service,
     get_reference_service,
     get_statement_service,
+    get_suchen_ohne_treffer_service,
     get_voting_service,
 )
 from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
@@ -82,7 +83,12 @@ SEARCH_URL = "/api/v1/search/searchByText"
 
 
 @pytest.fixture
-def suchapp():
+def suchen_ohne_treffer():
+    return MagicMock()
+
+
+@pytest.fixture
+def suchapp(suchen_ohne_treffer):
     app = FastAPI()
     app.include_router(search_router, prefix="/api/v1/search")
 
@@ -102,6 +108,9 @@ def suchapp():
         app.dependency_overrides[abhaengigkeit] = lambda: leerer_dienst
     app.dependency_overrides[get_voting_service] = lambda: MagicMock(
         get_user_votes_for_contents=MagicMock(return_value={})
+    )
+    app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: (
+        suchen_ohne_treffer
     )
 
     patches = [
@@ -156,3 +165,33 @@ class TestSuchpfad:
             )
 
         assert service.add_statement.await_count == 1
+
+
+@pytest.mark.api
+class TestSuchenOhneTreffer:
+    """Der Suchpfad meldet jede Suche mit Aussage und Trefferzahl zur Kennzahl."""
+
+    def test_suche_ohne_treffer_meldet_aussage_und_null_treffer(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        app, service = suchapp
+        aussage = uuid.uuid4()
+        service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+
+        TestClient(app).post(SEARCH_URL, json={"query_text": "klima", "limit": 10})
+
+        suchen_ohne_treffer.erfassen.assert_called_once_with(aussage, 0)
+
+    def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        app, _ = suchapp
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+        suchen_ohne_treffer.erfassen.side_effect = RuntimeError("weg")
+
+        resp = TestClient(app).post(
+            SEARCH_URL, json={"query_text": "klima", "limit": 10}
+        )
+
+        assert resp.status_code == 200
