@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
-import { GeteilterEinwurf, einwurfAusShareDaten } from '../share-target/share-target.guard';
+import { GeteilteFelder, felderAusShareDaten } from '../share-target/share-target.guard';
 
 /**
  * Diagnose-Ansicht fuer das Android-Teilen-Menue -- Schritt 0.
@@ -51,11 +51,11 @@ export class ShareTargetDebugComponent implements OnInit {
   url: string | null = null;
 
   /**
-   * Was ``einwurfAusShareDaten`` aus title, text und url machen wuerde -- dieselbe
+   * Was ``felderAusShareDaten`` aus title, text und url machen wuerde -- dieselbe
    * Trennung, mit der das Teilen-Menue das Einwurf-Formular befuellt. Nur zur
    * Anschauung.
    */
-  zerlegung: GeteilterEinwurf | null = null;
+  zerlegung: GeteilteFelder | null = null;
 
   /** Anzeigekontext: aus dem installierten Fenster heraus oder aus dem Browser-Tab. */
   anzeigeModus = '';
@@ -94,7 +94,7 @@ export class ShareTargetDebugComponent implements OnInit {
     this.url = suchteil.get('url');
 
     if (this.title || this.text || this.url) {
-      this.zerlegung = einwurfAusShareDaten({ title: this.title, text: this.text, url: this.url });
+      this.zerlegung = felderAusShareDaten({ title: this.title, text: this.text, url: this.url });
     }
   }
 

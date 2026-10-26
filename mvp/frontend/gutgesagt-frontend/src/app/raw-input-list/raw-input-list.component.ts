@@ -19,7 +19,7 @@ import { takeUntil } from 'rxjs/operators';
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
 import { SCHRITT_PARAM } from '../destillieren/destillier-uebergabe.service';
 
-import { RawInput, RawInputService } from '../services/raw-input.service';
+import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { Plattform, PLATTFORMEN } from '../shared/plattform';
@@ -74,10 +74,10 @@ export class RawInputListComponent implements OnInit, OnDestroy {
 
   /** Die Langfassung hinter dem Hilfe-Icon; zu, bis jemand danach fragt. */
   erklaerungOffen = false;
-  einwuerfe: RawInput[] = [];
+  einwuerfe: Einwurf[] = [];
   /** Was die Chips uebrig lassen, neueste zuerst - die Grundlage der Zaehler. */
-  gefiltert: RawInput[] = [];
-  sichtbar: RawInput[] = [];
+  gefiltert: Einwurf[] = [];
+  sichtbar: Einwurf[] = [];
   /** Die sichtbaren Einwuerfe als Karten, einmal je Filterlauf berechnet. */
   karten: KartenDaten[] = [];
   zaehler: Record<FangkorbTab, number> = { destillieren: 0, ausformulieren: 0, ausformuliert: 0 };
@@ -92,7 +92,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
-    private rawInputService: RawInputService,
+    private einwurfService: EinwurfService,
     private router: Router,
     private authService: AuthService,
     private logger: LoggingService,
@@ -122,8 +122,8 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   laden(): void {
     this.isLoading = true;
     this.ladefehler = false;
-    this.rawInputService
-      .getRawInputs(1, LADE_GROESSE)
+    this.einwurfService
+      .fangkorbLaden(1, LADE_GROESSE)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (daten) => {
@@ -214,8 +214,8 @@ export class RawInputListComponent implements OnInit, OnDestroy {
    * eigenes Formular mit fremdem Satz gibt es nicht.
    */
   aktionAusfuehren(karte: KartenDaten, aktion: EinwurfAktion): void {
-    const einwurf = karte.einwurf;
-    if (!einwurf) {
+    const angaben = karte.einwurfAngaben;
+    if (!angaben) {
       return;
     }
     switch (aktion) {
@@ -223,25 +223,25 @@ export class RawInputListComponent implements OnInit, OnDestroy {
         // Der Satz steht schon - dann beginnt das Ausformulieren bei der Typwahl,
         // nicht wieder im Satzfeld. Ohne eigenen Satz faellt die Ansicht selbst
         // auf das Satzfeld zurueck.
-        this.router.navigate(['/destillieren', einwurf.einwurfId], {
+        this.router.navigate(['/destillieren', angaben.einwurfId], {
           queryParams: { [SCHRITT_PARAM]: 'typwahl' },
         });
         break;
       case 'destillieren':
       case 'weiterDestillieren':
-        this.router.navigate(['/destillieren', einwurf.einwurfId]);
+        this.router.navigate(['/destillieren', angaben.einwurfId]);
         break;
       case 'ansehen':
         this.bottomSheet.open(EinwurfBeitragSheetComponent, {
-          data: { beitraege: einwurf.beitraege },
+          data: { beitraege: angaben.beitraege },
           ariaLabel: karte.titel || 'Beitrag zu diesem Einwurf',
         });
         break;
       case 'linkKopieren':
-        this.linkKopieren(einwurf.link);
+        this.linkKopieren(angaben.link);
         break;
       case 'verwerfen':
-        this.verwerfen(einwurf.einwurfId);
+        this.verwerfen(angaben.einwurfId);
         break;
     }
   }
@@ -261,7 +261,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
    * Zaehler oben muss das mitbekommen.
    */
   private verwerfen(einwurfId: string): void {
-    this.rawInputService
+    this.einwurfService
       .updateStatus(einwurfId, 'discarded')
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -315,7 +315,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   }
 
   /** Ein unlesbarer Zeitstempel sortiert nach hinten, statt die Liste zu wuerfeln. */
-  private alter(einwurf: RawInput): number {
+  private alter(einwurf: Einwurf): number {
     const millis = new Date(einwurf.created_at).getTime();
     return Number.isNaN(millis) ? 0 : millis;
   }

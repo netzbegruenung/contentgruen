@@ -149,7 +149,7 @@ class TestGetAll:
 
         with patch.object(
             RawInputRepository,
-            "_mit_bearbeitungsstand",
+            "_mit_saetzen_und_verknuepfungen",
             side_effect=lambda s, rows, user: [
                 RawInputRepository._to_dict(r) for r in rows
             ],
@@ -209,20 +209,22 @@ class TestGetAll:
         assert len(reihenfolge) == 1
         assert "created_at DESC" in _sql(reihenfolge[0])
 
-    def test_get_all_haengt_bearbeitungsstand_an(self, repository, session):
+    def test_get_all_haengt_saetze_und_verknuepfungen_an(self, repository, session):
         zeile = _zeile()
         self._query_kette(session, [zeile])
         with patch.object(
-            RawInputRepository, "_mit_bearbeitungsstand", return_value=[{"id": "x"}]
-        ) as stand:
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            return_value=[{"id": "x"}],
+        ) as anhaengen:
             ergebnis = repository.get_all(current_user="alice")
 
         assert ergebnis == [{"id": "x"}]
-        assert stand.call_args.args[1:] == ([zeile], "alice")
+        assert anhaengen.call_args.args[1:] == ([zeile], "alice")
 
 
 @pytest.mark.unit
-class TestBearbeitungsstand:
+class TestSaetzeUndVerknuepfungen:
     def test_to_dict_uebersetzt_erste_verknuepfung_in_processed_felder(self):
         satz_id = uuid.uuid4()
         zuerst = _verknuepfung("bob", draft_id=satz_id)
@@ -342,16 +344,20 @@ class TestGetById:
 
         assert repository.get_by_id(uuid.uuid4(), "alice") is None
 
-    def test_gefundener_einwurf_bekommt_bearbeitungsstand(self, repository, session):
+    def test_gefundener_einwurf_bekommt_saetze_und_verknuepfungen(
+        self, repository, session
+    ):
         zeile = _zeile()
         self._query_kette(session, zeile)
         with patch.object(
-            RawInputRepository, "_mit_bearbeitungsstand", return_value=[{"id": "x"}]
-        ) as stand:
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            return_value=[{"id": "x"}],
+        ) as anhaengen:
             ergebnis = repository.get_by_id(zeile.id, "alice")
 
         assert ergebnis == {"id": "x"}
-        assert stand.call_args.args[1:] == ([zeile], "alice")
+        assert anhaengen.call_args.args[1:] == ([zeile], "alice")
 
 
 @pytest.mark.unit
@@ -481,9 +487,11 @@ class TestEntwurfSpeichern:
 @pytest.mark.unit
 class TestStatusSetzen:
     @pytest.fixture(autouse=True)
-    def _ohne_bearbeitungsstand(self):
+    def _ohne_saetze_und_verknuepfungen(self):
         with patch.object(
-            RawInputRepository, "_mit_bearbeitungsstand", return_value=[{"id": "x"}]
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            return_value=[{"id": "x"}],
         ):
             yield
 

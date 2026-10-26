@@ -8,8 +8,9 @@ Antwortvorschlaegen und ist nach dem Entsperren wieder da. Die Meldungen
 """
 
 import datetime
+import json
 import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -19,6 +20,9 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.post import PostDbEntry
 from dtos.search import PostSearchResult as PostSearchResultWrapper
+from repositories.implementations.qdrant.moderation_repository import (
+    QdrantModerationRepository,
+)
 from services.moderation_service import ModerationService
 from services.search.search_orchestrator import (
     ContentTypeSearchSpec,
@@ -60,14 +64,12 @@ def post_service(integration_settings, real_repository_factory):
 
 @pytest.fixture
 def moderation(real_embeddings_manager):
-    with patch(
-        "services.moderation_service.get_content_report_repository",
-        return_value=MagicMock(),
-    ), patch(
-        "services.moderation_service.get_embeddings_manager",
-        return_value=real_embeddings_manager,
-    ):
-        yield ModerationService()
+    return ModerationService(
+        report_repo=MagicMock(),
+        moderation_repo=QdrantModerationRepository(
+            embeddings_manager=real_embeddings_manager
+        ),
+    )
 
 
 async def _antwortvorschlaege(post_service, post_id):
@@ -120,10 +122,69 @@ async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
     await post_service._upsert(_post(post_id))
     await moderation.sperren(str(post_id), gesperrt_von="admin-1")
 
-    assert await moderation.entsperren(str(post_id), entsperrt_von="admin-1") is True
+    assert await moderation.entsperren(str(post_id)) is True
 
     beitrag = await post_service.get(post_id)
     assert beitrag.status == ContentStatus.APPROVED
     treffer = await post_service.search("Tempolimit Autobahn", limit=5)
     assert post_id in [t.id for t in treffer]
     assert await _antwortvorschlaege(post_service, post_id) == [post_id]
+
+
+async def test_loeschen_entfernt_verweis_aus_aussage(
+    real_embeddings_manager, moderation
+):
+    """
+    Die Kaskade schreibt nur die Antwortvorschlaege; der Vektor der Aussage bleibt.
+    Ein upsert ohne Vektor lehnt Qdrant ab.
+    """
+    from qdrant_client.models import PointStruct
+
+    beitrag_id, aussage_id, andere = (str(uuid.uuid4()) for _ in range(3))
+    sammlung = await real_embeddings_manager.async_client.get_collection(
+        real_embeddings_manager.collection_name
+    )
+    vektor = [0.1] * sammlung.config.params.vectors.size
+    await real_embeddings_manager.async_client.upsert(
+        collection_name=real_embeddings_manager.collection_name,
+        points=[
+            PointStruct(
+                id=beitrag_id,
+                vector=vektor,
+                payload={"content_type": ContentType.COMMENTARY.value, "text": TEXT},
+            ),
+            PointStruct(
+                id=aussage_id,
+                vector=vektor,
+                payload={
+                    "content_type": ContentType.STATEMENT.value,
+                    "text": "Bringt ein Tempolimit etwas?",
+                    "replysuggestions": json.dumps(
+                        [{"id": beitrag_id}, {"id": andere}]
+                    ),
+                    "replysuggestions_count": 2,
+                },
+            ),
+        ],
+        wait=True,
+    )
+    [vorher] = await real_embeddings_manager.async_client.retrieve(
+        collection_name=real_embeddings_manager.collection_name,
+        ids=[aussage_id],
+        with_vectors=True,
+    )
+
+    assert await moderation.delete_content(
+        beitrag_id, ContentType.COMMENTARY.value, deleted_by="admin-1"
+    )
+
+    assert await real_embeddings_manager.get_by_id(beitrag_id) is None
+    [aussage] = await real_embeddings_manager.async_client.retrieve(
+        collection_name=real_embeddings_manager.collection_name,
+        ids=[aussage_id],
+        with_payload=True,
+        with_vectors=True,
+    )
+    assert json.loads(aussage.payload["replysuggestions"]) == [{"id": andere}]
+    assert aussage.payload["replysuggestions_count"] == 1
+    assert aussage.vector == vorher.vector

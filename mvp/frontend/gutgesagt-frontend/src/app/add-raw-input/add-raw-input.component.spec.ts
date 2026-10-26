@@ -8,8 +8,8 @@ import {
   SEITENTITEL_PRAEFIX,
   hinweisVorschlag,
 } from './add-raw-input.component';
-import { RawInputService } from '../services/raw-input.service';
-import { SHARE_EINWURF_SCHLUESSEL } from '../share-target/share-target.guard';
+import { EinwurfService } from '../services/einwurf.service';
+import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
@@ -35,7 +35,7 @@ describe('hinweisVorschlag', () => {
 describe('AddRawInputComponent', () => {
   let component: AddRawInputComponent;
   let fixture: ComponentFixture<AddRawInputComponent>;
-  let rawInputService: jasmine.SpyObj<RawInputService>;
+  let einwurfService: jasmine.SpyObj<EinwurfService>;
 
   /**
    * Die Vorbelegung passiert in ngOnInit, also muss eine Ablage liegen, bevor die
@@ -43,19 +43,19 @@ describe('AddRawInputComponent', () => {
    */
   async function erstellen(ablage: string | null = null): Promise<void> {
     if (ablage === null) {
-      sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL);
+      sessionStorage.removeItem(SHARE_FELDER_SCHLUESSEL);
     } else {
-      sessionStorage.setItem(SHARE_EINWURF_SCHLUESSEL, ablage);
+      sessionStorage.setItem(SHARE_FELDER_SCHLUESSEL, ablage);
     }
 
-    const serviceSpy = jasmine.createSpyObj('RawInputService', ['addRawInput']);
-    serviceSpy.addRawInput.and.returnValue(of({ id: 'neue-id' }));
+    const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen']);
+    serviceSpy.einwerfen.and.returnValue(of({ id: 'neue-id' }));
 
     await TestBed.configureTestingModule({
       imports: [AddRawInputComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
-        { provide: RawInputService, useValue: serviceSpy },
+        { provide: EinwurfService, useValue: serviceSpy },
         {
           provide: LoggingService,
           useValue: jasmine.createSpyObj('LoggingService', ['debug', 'error', 'warn']),
@@ -65,7 +65,7 @@ describe('AddRawInputComponent', () => {
 
     fixture = TestBed.createComponent(AddRawInputComponent);
     component = fixture.componentInstance;
-    rawInputService = TestBed.inject(RawInputService) as jasmine.SpyObj<RawInputService>;
+    einwurfService = TestBed.inject(EinwurfService) as jasmine.SpyObj<EinwurfService>;
     fixture.detectChanges();
   }
 
@@ -79,7 +79,7 @@ describe('AddRawInputComponent', () => {
   }
 
   beforeEach(() => TestBed.resetTestingModule());
-  afterEach(() => sessionStorage.removeItem(SHARE_EINWURF_SCHLUESSEL));
+  afterEach(() => sessionStorage.removeItem(SHARE_FELDER_SCHLUESSEL));
 
   describe('Felder', () => {
     beforeEach(() => erstellen());
@@ -128,7 +128,7 @@ describe('AddRawInputComponent', () => {
 
       component.einwerfen();
 
-      expect(rawInputService.addRawInput).not.toHaveBeenCalled();
+      expect(einwurfService.einwerfen).not.toHaveBeenCalled();
     });
 
     it('nimmt einen Hinweis ohne Link an', () => {
@@ -136,7 +136,7 @@ describe('AddRawInputComponent', () => {
 
       component.einwerfen();
 
-      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+      expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         content: 'Waermepumpen-Foerderung wurde gekuerzt',
       });
     });
@@ -146,7 +146,7 @@ describe('AddRawInputComponent', () => {
 
       component.einwerfen();
 
-      expect(rawInputService.addRawInput).toHaveBeenCalledWith({ url: 'https://example.org/post' });
+      expect(einwurfService.einwerfen).toHaveBeenCalledWith({ url: 'https://example.org/post' });
     });
 
     it('schickt Link und Hinweis getrennt', () => {
@@ -154,7 +154,7 @@ describe('AddRawInputComponent', () => {
 
       component.einwerfen();
 
-      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+      expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         url: 'https://example.org/post',
         content: 'Gute Antwort in den Kommentaren',
       });
@@ -167,7 +167,7 @@ describe('AddRawInputComponent', () => {
 
       component.einwerfen();
 
-      expect(rawInputService.addRawInput).not.toHaveBeenCalled();
+      expect(einwurfService.einwerfen).not.toHaveBeenCalled();
       expect(component.kannEinwerfen).toBeFalse();
       expect(text()).toContain('Bitte nur einen Link');
     });
@@ -180,7 +180,7 @@ describe('AddRawInputComponent', () => {
 
       component.einwerfen();
 
-      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+      expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         url: 'https://www.instagram.com/reel/ABC/',
         content: 'siehe auch https://example.org/b',
       });
@@ -198,7 +198,7 @@ describe('AddRawInputComponent', () => {
     });
 
     it('meldet einen abgewiesenen Einwurf verstaendlich', () => {
-      rawInputService.addRawInput.and.returnValue(throwError(() => ({ status: 422 })));
+      einwurfService.einwerfen.and.returnValue(throwError(() => ({ status: 422 })));
       eingeben('https://example.org/a', '');
 
       component.einwerfen();
@@ -208,7 +208,7 @@ describe('AddRawInputComponent', () => {
     });
 
     it('behaelt die Eingabe, wenn das Speichern fehlschlaegt', () => {
-      rawInputService.addRawInput.and.returnValue(throwError(() => ({ status: 500 })));
+      einwurfService.einwerfen.and.returnValue(throwError(() => ({ status: 500 })));
       eingeben('https://example.org/a', 'nicht verlieren');
 
       component.einwerfen();
@@ -258,7 +258,7 @@ describe('AddRawInputComponent', () => {
 
       component.einwerfen();
 
-      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+      expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         url: 'https://www.tagesschau.de/inland/x-100.html',
         content: 'Seitentitel: AfD klar vor SPD | tagesschau.de',
         source_channel: 'share',
@@ -276,7 +276,7 @@ describe('AddRawInputComponent', () => {
       component.einwerfen();
 
       expect(fixture.nativeElement.querySelector('button.vorbelegung-entfernen')).toBeNull();
-      expect(rawInputService.addRawInput).toHaveBeenCalledWith({
+      expect(einwurfService.einwerfen).toHaveBeenCalledWith({
         url: 'https://www.tagesschau.de/inland/x-100.html',
         source_channel: 'share',
       });
@@ -294,7 +294,7 @@ describe('AddRawInputComponent', () => {
     it('raeumt die Ablage weg, damit der naechste Aufruf leer beginnt', async () => {
       await erstellen(vomBrowser);
 
-      expect(sessionStorage.getItem(SHARE_EINWURF_SCHLUESSEL)).toBeNull();
+      expect(sessionStorage.getItem(SHARE_FELDER_SCHLUESSEL)).toBeNull();
     });
 
     it('zaehlt den naechsten Einwurf wieder als web', async () => {
@@ -304,7 +304,7 @@ describe('AddRawInputComponent', () => {
       eingeben('', 'von Hand getippt');
       component.einwerfen();
 
-      expect(rawInputService.addRawInput.calls.mostRecent().args[0]).toEqual({
+      expect(einwurfService.einwerfen.calls.mostRecent().args[0]).toEqual({
         content: 'von Hand getippt',
       });
     });

@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-import { BeitragsTyp, RawInputService } from '../services/raw-input.service';
+import { BeitragsTyp, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
 import { FangkorbTab } from '../raw-input-list/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
@@ -43,13 +43,13 @@ export interface Vorbefuellung {
 @Injectable({ providedIn: 'root' })
 export class DestillierUebergabeService {
   constructor(
-    private rawInputService: RawInputService,
+    private einwurfService: EinwurfService,
     private router: Router,
     private logger: LoggingService,
   ) {}
 
   vorbefuellungLaden(rohinputId: string): Observable<Vorbefuellung> {
-    return this.rawInputService.getRawInput(rohinputId).pipe(
+    return this.einwurfService.einwurfLaden(rohinputId).pipe(
       map((einwurf) => {
         const karte = ausEinwurf(einwurf);
         const titel = einwurf.own_draft ?? '';
@@ -57,7 +57,7 @@ export class DestillierUebergabeService {
           rohinputId: einwurf.id,
           titel,
           url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
-          kopf: karte.einwurf ? { ...karte, einwurf: { ...karte.einwurf, kopfSatz: titel || undefined } } : karte,
+          kopf: karte.einwurfAngaben ? { ...karte, einwurfAngaben: { ...karte.einwurfAngaben, kopfSatz: titel || undefined } } : karte,
         };
       }),
     );
@@ -70,8 +70,8 @@ export class DestillierUebergabeService {
    * Liefert, ob das Verknuepfen geklappt hat; ein Fehler bricht nichts ab, der
    * Beitrag ist ja da. Den naechsten Einwurf waehlt der Aufrufer.
    */
-  alsAusformuliertMarkieren(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
-    return this.rawInputService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
+  mitBeitragVerknuepfen(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
+    return this.einwurfService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
       map(() => true),
       catchError((error) => {
         this.logger.error('Einwurf konnte nicht mit dem Beitrag verknuepft werden', error);

@@ -1,6 +1,6 @@
 import { BaseContentResult, BaseSearchResult, ContentReference } from '../services/dtos/commonDtos';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { RawInput } from '../services/raw-input.service';
+import { Einwurf } from '../services/einwurf.service';
 import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-type-registry';
 import { plattformAusUrl, plattformName } from '../shared/plattform';
 
@@ -67,7 +67,7 @@ export interface EinwurfBeitrag {
   satz: string | null;
 }
 
-export interface EinwurfDaten {
+export interface EinwurfAngaben {
   einwurfId: string;
   stufe: EinwurfStufe;
   /** Marke links in der Link-Zeile: Plattformname, sonst die Domain. */
@@ -106,7 +106,7 @@ export interface KartenDaten {
   statement?: KartenStatement;
   stimme?: 'like' | 'dislike';
   extra?: KartenExtra;
-  einwurf?: EinwurfDaten;
+  einwurfAngaben?: EinwurfAngaben;
 }
 
 // Suchergebnis und /recent
@@ -267,7 +267,7 @@ export type EinwurfStufe = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfe
  * die alten Namen; die Stufe leitet sich hier ab, damit dafuer keine
  * Datenmigration noetig ist.
  */
-export function stufeVonEinwurf(einwurf: RawInput): EinwurfStufe {
+export function stufeVonEinwurf(einwurf: Einwurf): EinwurfStufe {
   if (einwurf.status === 'discarded') {
     return 'verworfen';
   }
@@ -291,7 +291,7 @@ export function stufeVonEinwurf(einwurf: RawInput): EinwurfStufe {
  * geleert) haengen an keiner Zeile, bleiben aber unter ``beitraege`` erreichbar -
  * sichtbar werden sie im Sheet.
  */
-export function ausEinwurf(einwurf: RawInput): KartenDaten {
+export function ausEinwurf(einwurf: Einwurf): KartenDaten {
   const links = einwurf.links ?? [];
   const adresse = einwurf.url ?? einwurf.image_url;
   const stufe = stufeVonEinwurf(einwurf);
@@ -320,7 +320,7 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
     autorName: einwurf.submitted_by_name ?? null,
     nutzung: null,
     quellen: [],
-    einwurf: {
+    einwurfAngaben: {
       einwurfId: einwurf.id,
       stufe,
       herkunft: plattformNameAusUrl(einwurf.url) ?? domainAus(adresse),
@@ -341,7 +341,7 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
  * Verwerfen geht nur, solange ein Einwurf offen oder destilliert ist. Fangkorb-Karte
  * und Destillier-Ansicht fragen beide hier, damit die Regel nicht auseinanderlaeuft.
  */
-export function istVerwerfbar(einwurf: RawInput): boolean {
+export function istVerwerfbar(einwurf: Einwurf): boolean {
   return einwurf.status === 'open' || einwurf.status === 'in_progress';
 }
 
@@ -357,7 +357,7 @@ function plattformNameAusUrl(url: string | null): string | null {
   return plattform && plattform !== 'web' ? plattformName(plattform) : null;
 }
 
-function hinweis(einwurf: RawInput): string | null {
+function hinweis(einwurf: Einwurf): string | null {
   const inhalt = einwurf.content?.trim();
   return inhalt && inhalt !== einwurf.url ? inhalt : null;
 }

@@ -1,4 +1,4 @@
-import { RawInput } from '../services/raw-input.service';
+import { Einwurf } from '../services/einwurf.service';
 import { EinwurfStufe, stufeVonEinwurf } from '../beitragskarte/karten-daten';
 import { Plattform, PLATTFORMEN, plattformAusUrl } from '../shared/plattform';
 
@@ -78,7 +78,7 @@ export function standardFilter(): FangkorbFilter {
  * alles.
  */
 export function passtZumFilter(
-  einwurf: RawInput,
+  einwurf: Einwurf,
   filter: FangkorbFilter,
   eigeneKennung: string | null,
 ): boolean {
@@ -99,7 +99,7 @@ export function passtZumFilter(
  * "verworfen" an ist - sonst taucht wieder auf, was jemand weggelegt hat.
  */
 export function passtZumTab(
-  einwurf: RawInput,
+  einwurf: Einwurf,
   tab: FangkorbTab,
   verworfenSichtbar: boolean,
 ): boolean {
