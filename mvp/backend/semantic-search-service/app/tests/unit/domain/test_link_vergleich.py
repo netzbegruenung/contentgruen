@@ -16,8 +16,11 @@ from domain.link_vergleich import (
     TRACKING_PARAMETER,
     TRACKING_PRAEFIXE,
     gleicher_link,
+    vergleichskern,
     vergleichsform,
 )
+
+pytestmark = pytest.mark.unit
 
 
 class TestGleicherLink:
@@ -89,6 +92,11 @@ class TestVergleichsform:
 
     def test_vergleichsform_kein_link_ist_none(self):
         assert vergleichsform("einfach Text") is None
+
+    def test_vergleichskern_nur_host_und_pfad(self):
+        assert (
+            vergleichskern("https://www.example.org/a/?seite=2#teil") == "example.org/a"
+        )
 
 
 FRONTEND_BEREINIGUNG = (

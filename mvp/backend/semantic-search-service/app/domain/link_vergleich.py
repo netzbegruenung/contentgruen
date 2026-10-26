@@ -92,6 +92,19 @@ def vergleichsform(url: Optional[str]) -> Optional[str]:
     return form
 
 
+def vergleichskern(url: Optional[str]) -> Optional[str]:
+    """
+    Host und Pfad aus der Vergleichsform, oder None.
+
+    Steht als Teilzeichenkette in jedem gleichen Link, gross/klein-unabhaengig;
+    damit kann die Datenbank grob vorfiltern, bevor ``gleicher_link`` entscheidet.
+    """
+    form = vergleichsform(url)
+    if form is None:
+        return None
+    return form.split("?", 1)[0].split("#", 1)[0]
+
+
 def gleicher_link(link: Optional[str], anderer: Optional[str]) -> bool:
     """Ob zwei Links nach der Bereinigung gleich sind. Kein Link ist nie gleich."""
     form = vergleichsform(link)

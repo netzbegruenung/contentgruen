@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from sqlalchemy import case, desc, func
 from sqlalchemy.dialects.postgresql import insert
 
-from domain.link_vergleich import gleicher_link, vergleichsform
+from domain.link_vergleich import gleicher_link, vergleichskern
 from domain.models.raw_input import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
@@ -220,16 +220,14 @@ class RawInputRepository:
         Einwuerfe, deren Link als gleich gilt (``domain.link_vergleich``), neueste
         zuerst, hoechstens ``GLEICHER_LINK_TREFFER``.
 
-        Die Datenbank filtert grob vor: Host ohne www und Pfad ohne Schraegstrich
-        am Ende stehen in jedem gleichen Link, gross/klein-unabhaengig. Ob er
+        Die Datenbank filtert grob nach dem ``vergleichskern`` vor; ob ein Link
         wirklich gleich ist, entscheidet danach ``gleicher_link``. Eine eigene
         Spalte fuer die Vergleichsform braeuchte eine Migration samt Nachtrag fuer
         alle vorhandenen Einwuerfe.
         """
-        form = vergleichsform(url)
-        if form is None:
+        kern = vergleichskern(url)
+        if kern is None:
             return []
-        kern = form.split("?", 1)[0].split("#", 1)[0]
         muster = "%" + re.sub(r"([\\%_])", r"\\\1", kern) + "%"
         try:
             with self.db.get_session() as session:

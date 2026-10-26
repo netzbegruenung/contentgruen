@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 
@@ -429,6 +429,21 @@ describe('AddRawInputComponent', () => {
 
       expect(einwurfService.einwerfen).toHaveBeenCalledWith({ url: 'https://example.org/a' });
       // Das Formular ist danach leer, die Anzeige gehoert zum alten Link.
+      expect(gleicherLinkBox()).toBeNull();
+    }));
+
+    it('zeigt keine spaete Antwort zu einem Link, der nicht mehr dasteht', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      const antwort = new Subject<Einwurf[]>();
+      einwurfService.mitGleichemLink.and.returnValue(antwort);
+
+      linkTippen('https://example.org/a');
+      component.einwerfen();
+      antwort.next([ausformuliert]);
+      tick(LINK_PRUEFEN_NACH_MS);
+      fixture.detectChanges();
+
       expect(gleicherLinkBox()).toBeNull();
     }));
 

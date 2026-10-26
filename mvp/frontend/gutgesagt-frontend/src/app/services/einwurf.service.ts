@@ -140,9 +140,8 @@ export class EinwurfService {
   }
 
   /**
-   * Einwuerfe mit demselben Link, neueste zuerst (#263). Gleich heisst: gleich
-   * nach Bereinigung um Tracking-Parameter, "www.", Schraegstrich am Ende und
-   * http/https - das entscheidet der Server.
+   * Einwuerfe mit gleichem Link (Glossar), neueste zuerst (#263). Was gleich ist,
+   * entscheidet der Server.
    *
    * POST, damit der Link nicht in Adresse und Protokollen steht. Nebenbei greift
    * so der GET-Cache nicht, der sonst nach dem Einwerfen fuenf Minuten lang

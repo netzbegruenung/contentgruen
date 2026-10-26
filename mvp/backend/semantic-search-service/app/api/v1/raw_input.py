@@ -164,8 +164,7 @@ async def gleicher_link(
     """
     Einwuerfe mit gleichem Link, fuer die Anzeige beim Einwerfen (#263).
 
-    Gleich heisst: gleich nach Bereinigung um Tracking-Parameter, "www.",
-    Schraegstrich am Ende und http/https (``domain.link_vergleich``). Die Anzeige
+    Was als gleicher Link gilt, steht in ``domain.link_vergleich``. Die Anzeige
     haelt niemanden auf - eingeworfen werden darf trotzdem. Kein Link ergibt eine
     leere Liste, keinen Fehler: Das Formular fragt schon beim Tippen.
 

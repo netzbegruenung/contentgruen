@@ -226,7 +226,7 @@ describe('EinwurfService', () => {
   });
 
   describe('gleicher Link (#263)', () => {
-    it('fragt den Fangkorb nach Einwuerfen mit demselben Link', () => {
+    it('fragt den Fangkorb nach Einwuerfen mit gleichem Link', () => {
       let gefunden: Einwurf[] | undefined;
       service.mitGleichemLink('https://example.org/a?x=1&y=2').subscribe((e) => (gefunden = e));
 

@@ -23,12 +23,12 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import {
-  EinwurfStufe,
   KartenDaten,
   KartenVariante,
   EinwurfAktion,
   EinwurfAngaben,
   EinwurfSatz,
+  STUFEN,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
@@ -43,20 +43,6 @@ const BELIEBT_AB = 5;
 
 /** So viele Saetze stehen in der Einwurf-Karte; der Rest wird nur gezaehlt. */
 const SAETZE_SICHTBAR = 3;
-
-/**
- * Die Stufe, an der der Einwurf gerade steht - dasselbe Icon wie ueberall entlang
- * der Kette. Das Band zeigt damit die Stufe: Ein offener Einwurf traegt das
- * Einwurf-Icon, ein destillierter das der Destille. Der Primaerknopf zeigt
- * dagegen die naechste Stufe (siehe primaerAktion). Verworfenes behaelt das Icon
- * des Einwurfs.
- */
-export const STUFEN: Record<EinwurfStufe, { emoji: string; name: string }> = {
-  offen: { emoji: KETTEN_ICONS.einwerfen, name: 'Offen' },
-  destilliert: { emoji: KETTEN_ICONS.destillieren, name: 'Destilliert' },
-  ausformuliert: { emoji: KETTEN_ICONS.verfassen, name: 'Ausformuliert' },
-  verworfen: { emoji: KETTEN_ICONS.einwerfen, name: 'Verworfen' },
-};
 
 /**
  * Die eine Karte fuer Beitraege, in vier Varianten (siehe KartenVariante).

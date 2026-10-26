@@ -4,8 +4,13 @@ import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Einwurf, EinwurfService, EinwerfenRequest } from '../services/einwurf.service';
-import { STUFEN } from '../beitragskarte/beitragskarte.component';
-import { EinwurfBeitrag, ausEinwurf, stufeVonEinwurf } from '../beitragskarte/karten-daten';
+import {
+  EinwurfBeitrag,
+  STUFEN,
+  StufenAnzeige,
+  ausEinwurf,
+  stufeVonEinwurf,
+} from '../beitragskarte/karten-daten';
 import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
 import {
   GeteilteFelder,
@@ -19,25 +24,23 @@ import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
 import { Router, RouterLink } from '@angular/router';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
-import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, map, switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, of, timer } from 'rxjs';
+import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 export const HINWEIS_LIMIT = 5000;
 
 /** So lange nach dem letzten Tastendruck wird gefragt, ob es den Link schon gibt. */
 export const LINK_PRUEFEN_NACH_MS = 400;
 
-/** Ein vorhandener Einwurf mit demselben Link, wie das Formular ihn zeigt. */
+/** Ein vorhandener Einwurf mit gleichem Link, wie das Formular ihn zeigt. */
 export interface GleicherEinwurf {
-  id: string;
-  stufe: { emoji: string; name: string };
+  stufe: StufenAnzeige;
   /** Die verknuepften Beitraege; leer, solange er nicht ausformuliert ist. */
   beitraege: EinwurfBeitrag[];
 }
 
 function alsGleicherEinwurf(einwurf: Einwurf): GleicherEinwurf {
   return {
-    id: einwurf.id,
     stufe: STUFEN[stufeVonEinwurf(einwurf)],
     beitraege: ausEinwurf(einwurf).einwurfAngaben?.beitraege ?? [],
   };
@@ -108,7 +111,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   ausShare = false;
   /** Der Text, mit dem das Hinweis-Feld aus dem Teilen vorbelegt wurde. */
   vorbelegung: string | null = null;
-  /** Einwuerfe mit demselben Link wie im Link-Feld, neueste zuerst. */
+  /** Einwuerfe mit gleichem Link wie im Link-Feld, neueste zuerst. */
   gleicheEinwuerfe: GleicherEinwurf[] = [];
 
   constructor(
@@ -175,24 +178,26 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fragt nach einer Tipppause, ob der Link schon im Fangkorb liegt.
+   * Fragt nach einer Tipppause, ob ein gleicher Link schon im Fangkorb liegt.
    *
    * Gefragt wird mit dem Link, wie er gespeichert wuerde (ohne Tracking-Parameter);
-   * was als gleich gilt, entscheidet der Server. switchMap verwirft die Antwort zu
-   * einem Link, der nicht mehr dasteht. Scheitert die Frage, gibt es eben keine
-   * Anzeige - am Einwerfen aendert sie nichts.
+   * was als gleich gilt, entscheidet der Server. Jede Aenderung am Feld leert die
+   * Anzeige und bricht Wartezeit und laufende Frage ab (switchMap vor dem Timer):
+   * Eine spaete Antwort zu einem Link, der nicht mehr dasteht, kommt so nie an,
+   * auch nicht nach dem Einwerfen, wenn das Feld leer ist. Scheitert die Frage,
+   * gibt es eben keine Anzeige - am Einwerfen aendert sie nichts.
    */
   private gleichenLinkPruefen(): void {
     this.einwurfForm
       .get('link')!
       .valueChanges.pipe(
-        debounceTime(LINK_PRUEFEN_NACH_MS),
         map((wert: string | null) => (wert ?? '').trim()),
         map((link) => (NUR_EIN_LINK.test(link) ? trackingParameterEntfernen(link) : '')),
-        distinctUntilChanged(),
+        tap(() => (this.gleicheEinwuerfe = [])),
         switchMap((link) =>
           link
-            ? this.einwurfService.mitGleichemLink(link).pipe(
+            ? timer(LINK_PRUEFEN_NACH_MS).pipe(
+                switchMap(() => this.einwurfService.mitGleichemLink(link)),
                 catchError((error) => {
                   this.logger.warn('Pruefung auf gleichen Link fehlgeschlagen', error);
                   return of([]);
@@ -270,8 +275,6 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
         // Formular bleibt offen und leer: drei Sachen hintereinander einwerfen
         // ist der Normalfall, nicht die Ausnahme.
         this.einwurfForm.reset({ link: '', hinweis: '' });
-        // Die Anzeige gehoerte zum alten Link; nicht erst nach der Tipppause weg.
-        this.gleicheEinwuerfe = [];
         this.vorbelegung = null;
         this.ausShare = false;
       },
