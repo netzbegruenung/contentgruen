@@ -246,6 +246,14 @@ def anzeigename_merken(
         get_anzeigename_service().merken(x_user, x_user_display_name)
 
 
+def ist_admin_kopf(x_is_admin: Optional[str]) -> bool:
+    """
+    X-Is-Admin auswerten. Den Header setzt allein das BFF aus den Claims; aus
+    Client-Anfragen entfernt es ihn vorher.
+    """
+    return (x_is_admin or "").lower() == "true"
+
+
 def require_admin(
     x_user_id: Optional[str] = Header(None, alias="X-User"),
     x_is_admin: Optional[str] = Header(None, alias="X-Is-Admin"),
@@ -258,8 +266,7 @@ def require_admin(
     if not x_user_id or x_user_id == "anonymous":
         raise HTTPException(status_code=401, detail="Authentication required")
 
-    # Case-insensitive check for admin header
-    if (x_is_admin or "").lower() != "true":
+    if not ist_admin_kopf(x_is_admin):
         raise HTTPException(status_code=403, detail="Admin privileges required")
 
     return x_user_id

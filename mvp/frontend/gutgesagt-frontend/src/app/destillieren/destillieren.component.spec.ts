@@ -216,6 +216,23 @@ describe('DestillierenComponent', () => {
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'erledigt');
     });
 
+    it('zeigt Verwerfen bei Ausformuliertem und Verworfenem niemandem', async () => {
+      nutzer = { ...nutzer, isAdmin: true };
+      await erstellen('id-1', einwurf({ status: 'processed' }));
+      expect(knopf('verwerfen')).toBeNull();
+
+      TestBed.resetTestingModule();
+      await erstellen('id-1', einwurf({ status: 'discarded' }));
+      expect(knopf('verwerfen')).toBeNull();
+    });
+
+    it('zeigt Mitwirkenden ohne Adminrechte bei fremdem Einwurf kein Verwerfen', async () => {
+      nutzer = { ...nutzer, isAdmin: false };
+      await erstellen('id-1', einwurf({ submitted_by: 'bob', status: 'in_progress' }));
+
+      expect(knopf('verwerfen')).toBeNull();
+    });
+
     it('verwirft den eigenen Einwurf und oeffnet den naechsten', async () => {
       await erstellen('id-1');
 

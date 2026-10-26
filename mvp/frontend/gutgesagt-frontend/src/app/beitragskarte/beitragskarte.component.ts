@@ -139,7 +139,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   ) {
     // Die Karte steht oft schon, bevor /api/user-info beantwortet ist. Ohne dieses
     // Abonnement blieben die Getter bei dem, was beim ersten Zeichnen galt: kein
-    // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf (oder als Admin) - und die
+    // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf - und die
     // eigene Kopie zaehlte optimistisch hoch, waehrend das Backend sie verwirft.
     // OnPush zeichnet von sich aus nicht neu, wenn sich nur der Dienst aendert.
     this.authService.userInfo$

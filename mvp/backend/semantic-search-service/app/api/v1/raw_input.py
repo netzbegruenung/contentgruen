@@ -14,7 +14,11 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import ValidationError
 
-from dependencies import get_commentary_service, get_generic_text_service
+from dependencies import (
+    get_commentary_service,
+    get_generic_text_service,
+    ist_admin_kopf,
+)
 from domain.models.content_type import ContentType
 from domain.models.raw_input import (
     AktionNichtErlaubt,
@@ -254,7 +258,7 @@ async def update_status(
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
     """
     person = _angemeldete_person(x_user)
-    ist_admin = (x_is_admin or "").lower() == "true"
+    ist_admin = ist_admin_kopf(x_is_admin)
     try:
         if request.status == RawInputStatus.PROCESSED:
             # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt

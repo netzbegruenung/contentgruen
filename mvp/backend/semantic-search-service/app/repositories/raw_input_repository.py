@@ -356,8 +356,6 @@ class RawInputRepository:
         neuer_status: RawInputStatus,
         user_id: str,
         content_id: Optional[uuid.UUID] = None,
-        *,
-        ist_admin: bool = False,
     ) -> bool:
         """
         Dieselben Pruefungen wie set_status, nur lesend und ohne Sperre.
@@ -380,8 +378,10 @@ class RawInputRepository:
                 .filter(RawInput.id == raw_input_id)
                 .one_or_none()
             )
+            # Nur der processed-Pfad ruft das; die Admin-Ausnahme gilt allein fuers
+            # Verwerfen, das set_status unter der Sperre prueft.
             self._statuswechsel_pruefen(
-                row, raw_input_id, neuer_status, user_id, ist_admin
+                row, raw_input_id, neuer_status, user_id, ist_admin=False
             )
             if content_id is None:
                 return False

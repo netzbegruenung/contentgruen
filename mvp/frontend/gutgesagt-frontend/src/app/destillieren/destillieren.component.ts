@@ -121,10 +121,22 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Verwerfen duerfen der Einwerfer und Admins; das Backend prueft dasselbe. */
+  /**
+   * Verwerfen duerfen der Einwerfer und Admins, und nur offen oder destilliert -
+   * dieselbe Regel wie im Fangkorb. Ueber "Weiter destillieren" kommen auch
+   * Ausformuliertes und Verworfenes hierher; dort gaebe es nur ein 409.
+   */
   get darfVerwerfen(): boolean {
-    const eigen = !!this.einwurf?.submitted_by && this.einwurf.submitted_by === this.eigeneKennung;
-    return eigen || !!this.authService.getUserInfo()?.isAdmin;
+    const einwurf = this.einwurf;
+    if (!einwurf || (einwurf.status !== 'open' && einwurf.status !== 'in_progress')) {
+      return false;
+    }
+    const eigen = !!einwurf.submitted_by && einwurf.submitted_by === this.eigeneKennung;
+    return eigen || this.istAdmin;
+  }
+
+  private get istAdmin(): boolean {
+    return !!this.authService.getUserInfo()?.isAdmin;
   }
 
   get kannWeiter(): boolean {

@@ -664,16 +664,6 @@ class TestStatuswechselVorpruefen:
                 uuid.uuid4(), RawInputStatus.DISCARDED, "bob"
             )
 
-    def test_admin_darf_fremdes_verwerfen(self, repository, session):
-        self._abfragen(session, _zeile(submitted_by="alice"), None)
-
-        assert (
-            repository.statuswechsel_vorpruefen(
-                uuid.uuid4(), RawInputStatus.DISCARDED, "admin", ist_admin=True
-            )
-            is False
-        )
-
     def test_meldet_vorhandene_verknuepfung(self, repository, session):
         self._abfragen(
             session, _zeile(status="processed"), SimpleNamespace(content_id="x")
