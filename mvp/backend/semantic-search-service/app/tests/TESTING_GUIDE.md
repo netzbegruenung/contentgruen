@@ -35,8 +35,37 @@ Or invoke pytest directly from `mvp/backend/semantic-search-service/app`:
 pytest                                  # Unit tests (pytest.ini testpaths)
 pytest tests/unit/path/to/test_x.py     # Specific test file
 pytest -k "pattern"                     # Pattern matching
-pytest tests/integration/               # Integration tests (needs Qdrant on :6333)
+pytest tests/integration/               # Integration tests (Qdrant on :6333, PostgreSQL see below)
 ```
+
+### Integration Tests Against PostgreSQL
+
+Repositories, migrations and SQL scripts that only show their behaviour in a real
+database are tested in `tests/integration/` against PostgreSQL: migrations
+(`test_migrationen.py`), the search event timestamp (`test_suchereignisse.py`),
+"Suchen ohne Treffer" (`test_suchen_ohne_treffer.py`) and the deletion command
+(`test_loeschkommando.py`).
+
+```bash
+# from mvp/backend/semantic-search-service/app
+pytest tests/integration/test_migrationen.py tests/integration/test_suchereignisse.py \
+       tests/integration/test_suchen_ohne_treffer.py tests/integration/test_loeschkommando.py
+```
+
+- **Database:** without further setup the run starts a throwaway container with
+  Docker (the base image of `mvp/backend/postgres-app/Dockerfile`, published on
+  `127.0.0.1` at a free port, removed afterwards; the first run pulls the image).
+  To use an existing database instead, set
+  `POSTGRES_TEST_DATABASE_URL`, e.g. the dev stack:
+  `postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app`. It must be
+  reachable, otherwise the tests fail. Without the variable and without Docker the
+  tests are skipped.
+- **Isolation:** every test works in its own schema (`search_path`) and drops it
+  afterwards, so existing data stays untouched.
+- **Writing a test:** take the `wegwerf_schema` fixture (an empty schema, see
+  `tests/integration/conftest.py`), create the tables with `Base.metadata.create_all`
+  or apply a migration with `postgres.migration(...)`, and hand the schema to a
+  repository by patching its `get_app_database`. Helpers: `tests/integration/postgres.py`.
 
 ### Setup (One-Time)
 

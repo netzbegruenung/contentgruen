@@ -3,27 +3,16 @@ Das Loeschkommando (mvp/scripts/manual/person_loeschen.sql) gegen ein echtes Pos
 
 Das Skript ist fuer psql geschrieben; hier laeuft es Anweisung fuer Anweisung ueber
 SQLAlchemy auf einer Verbindung, ``:'uid'`` wird zum Bind-Parameter - das ist
-dieselbe Ersetzung, die psql mit ``-v uid=...`` vornimmt. Die Zerlegung an ``;``
-traegt, solange das Skript keine Strings mit Semikolon und keine $$-Bloecke hat.
-Jeder Test bekommt ein eigenes Schema und raeumt es wieder ab, die Daten der
-Datenbank bleiben unberuehrt.
-
-Ohne erreichbares PostgreSQL wird das Modul uebersprungen. Ziel ueber
-``LOESCHKOMMANDO_DATABASE_URL``, sonst der Dev-Stack (Port 5433).
+dieselbe Ersetzung, die psql mit ``-v uid=...`` vornimmt. Datenbank und Wegwerf-Schema
+kommen aus ``conftest.py`` (siehe ``postgres.py``).
 """
 
-import os
 import uuid
-from contextlib import contextmanager
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
+from sqlalchemy import text
 
 from api.v1.raw_input import _mit_namen
 from infrastructure.database.models import (
@@ -39,13 +28,9 @@ from infrastructure.database.models import (
 from repositories.raw_input_repository import RawInputRepository
 from repositories.user_repository import UserRepository
 from services.anzeigename_service import AnzeigenameService
+from tests.integration import postgres
 
-DATABASE_URL = os.environ.get(
-    "LOESCHKOMMANDO_DATABASE_URL",
-    "postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app",
-)
-REPO_WURZEL = next(p for p in Path(__file__).parents if (p / "mvp").is_dir())
-SKRIPT = REPO_WURZEL / "mvp" / "scripts" / "manual" / "person_loeschen.sql"
+SKRIPT = postgres.REPO_WURZEL / "mvp" / "scripts" / "manual" / "person_loeschen.sql"
 
 PERSON = "person-die-loescht"
 ANDERE = "andere-person"
@@ -54,65 +39,23 @@ DRITTE = "dritte-person"
 SATZ_DER_PERSON = "Waermepumpen lohnen sich auch im Altbau"
 SATZ_DER_ANDEREN = "Die Foerderung macht den Unterschied"
 
-
-def _postgres_erreichbar() -> bool:
-    try:
-        engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 2})
-        with engine.connect():
-            return True
-    except OperationalError:
-        return False
-
-
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skipif(
-        not _postgres_erreichbar(), reason="PostgreSQL nicht erreichbar"
-    ),
-]
+pytestmark = pytest.mark.integration
 
 
 def _anweisungen(skript: str):
-    """Das psql-Skript in einzelne Anweisungen zerlegen, ohne Kommentarzeilen."""
-    ohne_kommentare = "\n".join(
-        zeile for zeile in skript.splitlines() if not zeile.lstrip().startswith("--")
-    )
-    for anweisung in ohne_kommentare.split(";"):
-        if anweisung.strip():
-            anweisung = anweisung.replace(":'uid'", ":uid")
-            # Was nur psql versteht, liefe hier still falsch: andere Variablen,
-            # Metakommandos.
-            assert ":'" not in anweisung and "\\" not in anweisung, anweisung
-            yield anweisung
-
-
-class _Datenbank:
-    """Ein Wegwerf-Schema; ``get_session`` wie bei AppDatabase, fuer die Repositories."""
-
-    def __init__(self, schema: str):
-        self.schema = schema
-        # NullPool: jeder Lauf des Skripts ist eine eigene Sitzung, wie bei psql.
-        self.engine = create_engine(
-            DATABASE_URL,
-            poolclass=NullPool,
-            connect_args={"options": f"-csearch_path={schema}"},
-        )
-        self.sessions = sessionmaker(bind=self.engine)
-
-    @contextmanager
-    def get_session(self):
-        with self.sessions.begin() as session:
-            yield session
+    """Die Anweisungen des Skripts, ``:'uid'`` als Bind-Parameter."""
+    for anweisung in postgres.anweisungen(skript):
+        anweisung = anweisung.replace(":'uid'", ":uid")
+        # Was nur psql versteht, liefe hier still falsch: andere Variablen,
+        # Metakommandos.
+        assert ":'" not in anweisung and "\\" not in anweisung, anweisung
+        yield anweisung
 
 
 @pytest.fixture
-def datenbank():
-    schema = f"itest_loeschung_{uuid.uuid4().hex[:8]}"
-    with create_engine(DATABASE_URL, isolation_level="AUTOCOMMIT").connect() as c:
-        c.execute(text(f"CREATE SCHEMA {schema}"))
-    db = _Datenbank(schema)
-    Base.metadata.create_all(db.engine)
-    with db.engine.begin() as c:
+def datenbank(wegwerf_schema):
+    Base.metadata.create_all(wegwerf_schema.engine)
+    with wegwerf_schema.engine.begin() as c:
         # votes legt vote_repository.py per Hand an, nicht create_all.
         c.execute(
             text(
@@ -122,10 +65,7 @@ def datenbank():
                 " DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, content_id))"
             )
         )
-    yield db
-    db.engine.dispose()
-    with create_engine(DATABASE_URL, isolation_level="AUTOCOMMIT").connect() as c:
-        c.execute(text(f"DROP SCHEMA {schema} CASCADE"))
+    return wegwerf_schema
 
 
 def _loeschen(datenbank, uid: str = PERSON) -> None:

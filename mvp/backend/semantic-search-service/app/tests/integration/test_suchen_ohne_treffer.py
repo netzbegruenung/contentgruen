@@ -1,29 +1,22 @@
 """
 "Suchen ohne Treffer" gegen ein echtes PostgreSQL (#243).
 
-Die Unit-Tests pruefen das SQL nur als Text. Hier laeuft die Zaehlung durch
-Service und Repository bis in die Tabelle, und die Admin-Liste kommt aus dem
+Die Unit-Tests pruefen das SQL nur als Text. Hier laeuft die Zaehlung durch das
+Repository allein und durch Service und Repository bis in die Tabelle, und die Admin-Liste kommt aus dem
 echten HAVING: Eine Aussage erscheint erst ab zwei verschiedenen Personen.
 Dazu laufen die beiden Migrationen auf einer Tabelle im alten Schema.
 
-Jeder Test bekommt ein eigenes Schema und raeumt es wieder ab. Ohne erreichbares
-PostgreSQL wird das Modul uebersprungen. Ziel ueber
-``SUCHEN_OHNE_TREFFER_DATABASE_URL``, sonst der Dev-Stack (Port 5433).
+Jeder Test bekommt ein eigenes Schema und raeumt es wieder ab; Datenbank und
+Schema kommen aus ``conftest.py`` (siehe ``postgres.py``).
 """
 
-import os
 import uuid
-from contextlib import contextmanager
 from datetime import date
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
+from sqlalchemy import text
 
 from domain.models.content_status import ContentStatus
 from infrastructure.database.models import Base, SucheOhneTrefferZeile
@@ -32,15 +25,11 @@ from services.suchen_ohne_treffer_service import (
     PersonenDesTages,
     SuchenOhneTrefferService,
 )
+from tests.integration import postgres
+from tests.integration.postgres import Datenbank
 
-DATABASE_URL = os.environ.get(
-    "SUCHEN_OHNE_TREFFER_DATABASE_URL",
-    "postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app",
-)
-REPO_WURZEL = next(p for p in Path(__file__).parents if (p / "mvp").is_dir())
-MIGRATIONEN = REPO_WURZEL / "mvp" / "backend" / "postgres-app" / "migrations"
-TABELLE = MIGRATIONEN / "2026-10-26-suchen-ohne-treffer.sql"
-PERSONEN = MIGRATIONEN / "2026-10-26-suchen-ohne-treffer-personen.sql"
+TABELLE = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer.sql"
+PERSONEN = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer-personen.sql"
 
 AUSSAGE = uuid.UUID("11111111-1111-1111-1111-111111111111")
 # Mittwoch und Donnerstag derselben Woche, dazu ein Tag der Vorwoche.
@@ -50,74 +39,22 @@ VORWOCHE = date(2026, 10, 21)
 PERSON_A = "a" * 64
 PERSON_B = "b" * 64
 
-
-def _postgres_erreichbar() -> bool:
-    try:
-        engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 2})
-        with engine.connect():
-            return True
-    except OperationalError:
-        return False
-
-
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skipif(
-        not _postgres_erreichbar(), reason="PostgreSQL nicht erreichbar"
-    ),
-]
-
-
-class _Datenbank:
-    """Ein Wegwerf-Schema; ``get_session`` wie bei AppDatabase, fuer das Repository."""
-
-    def __init__(self, schema: str):
-        self.engine = create_engine(
-            DATABASE_URL,
-            poolclass=NullPool,
-            connect_args={"options": f"-csearch_path={schema}"},
-        )
-        self.sessions = sessionmaker(bind=self.engine)
-
-    @contextmanager
-    def get_session(self):
-        with self.sessions.begin() as session:
-            yield session
-
-
-@contextmanager
-def _schema():
-    schema = f"itest_sot_{uuid.uuid4().hex[:8]}"
-    with create_engine(DATABASE_URL, isolation_level="AUTOCOMMIT").connect() as c:
-        c.execute(text(f"CREATE SCHEMA {schema}"))
-    db = _Datenbank(schema)
-    try:
-        yield db
-    finally:
-        db.engine.dispose()
-        with create_engine(DATABASE_URL, isolation_level="AUTOCOMMIT").connect() as c:
-            c.execute(text(f"DROP SCHEMA {schema} CASCADE"))
-
-
-def _migration(db: _Datenbank, skript: Path) -> None:
-    """Das Skript wie psql anwenden: BEGIN/COMMIT stehen darin selbst."""
-    with db.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as c:
-        c.exec_driver_sql(skript.read_text(encoding="utf-8"))
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
-def neue_datenbank():
+def neue_datenbank(postgres_url):
     """Schema, wie create_all es in einer neuen Datenbank anlegt."""
-    with _schema() as db:
+    with postgres.schema(postgres_url, "itest_sot") as db:
         Base.metadata.create_all(db.engine, tables=[SucheOhneTrefferZeile.__table__])
         yield db
 
 
 @pytest.fixture
-def bestehende_datenbank():
+def bestehende_datenbank(postgres_url):
     """Tabelle im Schema von #216, mit einer schon gezaehlten Woche."""
-    with _schema() as db:
-        _migration(db, TABELLE)
+    with postgres.schema(postgres_url, "itest_sot") as db:
+        postgres.migration(db, TABELLE)
         with db.engine.begin() as c:
             c.execute(
                 text(
@@ -129,12 +66,16 @@ def bestehende_datenbank():
         yield db
 
 
-def _service(db: _Datenbank) -> SuchenOhneTrefferService:
+def _repository(db: Datenbank) -> SuchenOhneTrefferRepository:
     with patch(
         "repositories.suchen_ohne_treffer_repository.get_app_database",
         return_value=db,
     ):
-        repository = SuchenOhneTrefferRepository()
+        return SuchenOhneTrefferRepository()
+
+
+def _service(db: Datenbank) -> SuchenOhneTrefferService:
+    repository = _repository(db)
     aussagen = Mock()
     aussagen.get = AsyncMock(
         return_value=SimpleNamespace(
@@ -151,6 +92,102 @@ async def _liste(service: SuchenOhneTrefferService):
         (e.statement_id, e.anzahl)
         for e in await service.haeufigste(wochen=4, heute=DONNERSTAG)
     ]
+
+
+def _zeilen(db: Datenbank) -> list:
+    with db.engine.connect() as c:
+        return c.execute(
+            text(
+                "SELECT statement_id, woche, anzahl, personen FROM suchen_ohne_treffer"
+                " ORDER BY statement_id, woche"
+            )
+        ).all()
+
+
+def _aussage(nummer: int) -> uuid.UUID:
+    return uuid.UUID(int=nummer)
+
+
+WOCHE = date(2026, 10, 26)
+VORIGE_WOCHE = date(2026, 10, 19)
+
+
+class TestRepository:
+    """Das Repository allein, ohne Service: Hochzaehlen, Mindestanzahl, Blaettern."""
+
+    def test_zaehlen_legt_an_und_zaehlt_hoch(self, neue_datenbank):
+        repository = _repository(neue_datenbank)
+
+        repository.zaehlen(AUSSAGE, WOCHE, neue_person=True)
+        repository.zaehlen(AUSSAGE, WOCHE, neue_person=False)
+        repository.zaehlen(AUSSAGE, WOCHE, neue_person=True)
+
+        assert _zeilen(neue_datenbank) == [(AUSSAGE, WOCHE, 3, 2)]
+
+    def test_zaehlen_je_woche_eine_zeile(self, neue_datenbank):
+        repository = _repository(neue_datenbank)
+
+        repository.zaehlen(AUSSAGE, VORIGE_WOCHE, neue_person=True)
+        repository.zaehlen(AUSSAGE, WOCHE, neue_person=False)
+
+        assert _zeilen(neue_datenbank) == [
+            (AUSSAGE, VORIGE_WOCHE, 1, 1),
+            (AUSSAGE, WOCHE, 1, 0),
+        ]
+
+    def test_haeufigste_nur_ab_mindestanzahl_personen(self, neue_datenbank):
+        repository = _repository(neue_datenbank)
+        for _ in range(5):
+            repository.zaehlen(_aussage(1), WOCHE, neue_person=False)
+        repository.zaehlen(_aussage(1), WOCHE, neue_person=True)
+        repository.zaehlen(_aussage(2), WOCHE, neue_person=True)
+        repository.zaehlen(_aussage(2), WOCHE, neue_person=True)
+
+        assert repository.haeufigste(WOCHE, mindestanzahl=2, limit=10) == [
+            (_aussage(2), 2)
+        ]
+        assert repository.haeufigste(WOCHE, mindestanzahl=1, limit=10) == [
+            (_aussage(1), 6),
+            (_aussage(2), 2),
+        ]
+
+    def test_haeufigste_summiert_ab_der_woche(self, neue_datenbank):
+        repository = _repository(neue_datenbank)
+        repository.zaehlen(AUSSAGE, date(2026, 10, 12), neue_person=True)
+        repository.zaehlen(AUSSAGE, VORIGE_WOCHE, neue_person=True)
+        repository.zaehlen(AUSSAGE, WOCHE, neue_person=True)
+
+        assert repository.haeufigste(VORIGE_WOCHE, mindestanzahl=1, limit=10) == [
+            (AUSSAGE, 2)
+        ]
+
+    def test_haeufigste_blaettert_in_fester_reihenfolge(self, neue_datenbank):
+        """Absteigend nach Anzahl, bei gleicher Anzahl nach Aussage-ID."""
+        repository = _repository(neue_datenbank)
+        anzahlen = {_aussage(1): 1, _aussage(2): 3, _aussage(3): 1, _aussage(4): 2}
+        for aussage, anzahl in anzahlen.items():
+            for _ in range(anzahl):
+                repository.zaehlen(aussage, WOCHE, neue_person=True)
+
+        seiten = [
+            repository.haeufigste(WOCHE, mindestanzahl=1, limit=2, offset=offset)
+            for offset in (0, 2, 4)
+        ]
+
+        assert seiten == [
+            [(_aussage(2), 3), (_aussage(4), 2)],
+            [(_aussage(1), 1), (_aussage(3), 1)],
+            [],
+        ]
+
+    def test_loeschen_vor_entfernt_nur_aeltere_wochen(self, neue_datenbank):
+        repository = _repository(neue_datenbank)
+        repository.zaehlen(AUSSAGE, date(2026, 10, 12), neue_person=True)
+        repository.zaehlen(AUSSAGE, VORIGE_WOCHE, neue_person=True)
+        repository.zaehlen(AUSSAGE, WOCHE, neue_person=True)
+
+        assert repository.loeschen_vor(VORIGE_WOCHE) == 1
+        assert [z.woche for z in _zeilen(neue_datenbank)] == [VORIGE_WOCHE, WOCHE]
 
 
 @pytest.mark.asyncio
@@ -210,7 +247,7 @@ class TestMindestanzahlZaehltPersonen:
 @pytest.mark.asyncio
 class TestMigration:
     async def test_bestehende_zeilen_bekommen_null_personen(self, bestehende_datenbank):
-        _migration(bestehende_datenbank, PERSONEN)
+        postgres.migration(bestehende_datenbank, PERSONEN)
         service = _service(bestehende_datenbank)
 
         assert await _liste(service) == []
@@ -219,8 +256,8 @@ class TestMigration:
         assert await _liste(service) == [(AUSSAGE, 7)]
 
     def test_migration_darf_mehrfach_laufen(self, bestehende_datenbank):
-        _migration(bestehende_datenbank, PERSONEN)
-        _migration(bestehende_datenbank, PERSONEN)
+        postgres.migration(bestehende_datenbank, PERSONEN)
+        postgres.migration(bestehende_datenbank, PERSONEN)
 
         with bestehende_datenbank.engine.connect() as c:
             assert c.execute(
@@ -230,7 +267,7 @@ class TestMigration:
     def test_migration_ergibt_dasselbe_schema_wie_create_all(
         self, bestehende_datenbank, neue_datenbank
     ):
-        _migration(bestehende_datenbank, PERSONEN)
+        postgres.migration(bestehende_datenbank, PERSONEN)
         abfrage = text(
             "SELECT column_name, data_type, is_nullable, column_default"
             " FROM information_schema.columns"
