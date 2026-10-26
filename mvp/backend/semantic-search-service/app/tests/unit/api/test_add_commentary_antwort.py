@@ -377,6 +377,17 @@ class TestAddCommentaryAntwort:
         commentary_service.add_commentary.assert_not_awaited()
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
+    def test_nehmen_und_trotzdem_speichern_schliessen_einander_aus(self, dienste):
+        vorhanden = str(uuid.uuid4())
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(trotz_dublette_von=vorhanden, vorhanden_nehmen=vorhanden),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 422
+
     def test_trotz_eigener_dublette_haengt_nur_der_neue_an_der_aussage(self, dienste):
         commentary_id, statement_service = dienste
         vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()

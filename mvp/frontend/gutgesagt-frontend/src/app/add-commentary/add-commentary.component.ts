@@ -58,8 +58,9 @@ export const GENOMMEN_HINWEIS = 'Du nimmst deinen vorhandenen Kommentar.';
 
 export const ZUSTIMMEN_FEHLGESCHLAGEN = 'Zustimmen hat nicht geklappt. Versuch es gleich noch einmal.';
 
+/** Verknuepfen gescheitert - voruebergehend oder weil es die Aussage nicht mehr gibt. */
 export const NEHMEN_FEHLGESCHLAGEN =
-  'Dein vorhandener Kommentar ließ sich nicht mit der Aussage verknüpfen. Versuch es gleich noch einmal.';
+  'Dein vorhandener Kommentar ließ sich nicht mit der Aussage verknüpfen. Versuch es noch einmal oder wähl eine andere Aussage.';
 
 /** Der gewaehlte vorhandene ist inzwischen weg: Die Eingaben bleiben, Speichern legt neu an. */
 export const VORHANDEN_WEG = 'Den vorhandenen Kommentar gibt es nicht mehr. Du kannst deinen jetzt speichern.';
@@ -165,7 +166,7 @@ export class AddCommentaryComponent implements OnChanges {
   vorhanden: Vorhanden | null = null;
   stimmtZu = false;
   /** Fehler beim Zustimmen oder Nehmen; die Entscheidung bleibt offen. */
-  zustimmFehler: string | null = null;
+  entscheidungsFehler: string | null = null;
 
   /** Zu entscheiden ist, solange es einen vorhandenen gibt und noch nichts gewaehlt ist. */
   get offeneEntscheidung(): boolean {
@@ -183,8 +184,7 @@ export class AddCommentaryComponent implements OnChanges {
    * nichts zu waehlen.
    */
   get kannNehmen(): boolean {
-    const vorhanden = this.vorhanden;
-    return this.offeneEntscheidung && vorhanden!.eigen && (this.mitAussage || !!this.vorbefuellung);
+    return this.offeneEntscheidung && this.vorhanden!.eigen && (this.mitAussage || !!this.vorbefuellung);
   }
 
   get dublettenHinweis(): string {
@@ -432,7 +432,7 @@ export class AddCommentaryComponent implements OnChanges {
       return;
     }
     this.stimmtZu = true;
-    this.zustimmFehler = null;
+    this.entscheidungsFehler = null;
     this.votingService.setLike(vorhanden.id).subscribe({
       next: () => {
         this.stimmtZu = false;
@@ -442,7 +442,7 @@ export class AddCommentaryComponent implements OnChanges {
       error: (error: Error) => {
         this.logger.error('Error voting for the existing commentary', error);
         this.stimmtZu = false;
-        this.zustimmFehler = ZUSTIMMEN_FEHLGESCHLAGEN;
+        this.entscheidungsFehler = ZUSTIMMEN_FEHLGESCHLAGEN;
       },
     });
   }
@@ -474,7 +474,7 @@ export class AddCommentaryComponent implements OnChanges {
       return;
     }
     this.speichert = true;
-    this.zustimmFehler = null;
+    this.entscheidungsFehler = null;
     // Die Aussage, die jetzt im Antwort-auf-Block steht - die Person kann sie seit dem
     // ersten Versuch geaendert haben. Der Text kann es nicht: Dann waere der Hinweis weg.
     const { statement_id, statement_text, ...anfrage } = vorhanden.anfrage;
@@ -488,7 +488,7 @@ export class AddCommentaryComponent implements OnChanges {
           return;
         }
         if (antwort.verknuepft !== true || !antwort.statement_text) {
-          this.zustimmFehler = NEHMEN_FEHLGESCHLAGEN;
+          this.entscheidungsFehler = NEHMEN_FEHLGESCHLAGEN;
           return;
         }
         vorhanden.aussage = antwort.statement_text;
@@ -507,7 +507,8 @@ export class AddCommentaryComponent implements OnChanges {
           this.validierung = VORHANDEN_WEG;
           return;
         }
-        this.zustimmFehler = NEHMEN_FEHLGESCHLAGEN;
+        // Bei 422 sagt das Backend, was nicht passt (etwa eine zu kurze Aussage).
+        this.entscheidungsFehler = validierungsMeldung(error) ?? NEHMEN_FEHLGESCHLAGEN;
       },
     });
   }
@@ -541,6 +542,6 @@ export class AddCommentaryComponent implements OnChanges {
 
   private vorhandenVergessen(): void {
     this.vorhanden = null;
-    this.zustimmFehler = null;
+    this.entscheidungsFehler = null;
   }
 }

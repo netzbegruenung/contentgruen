@@ -2,6 +2,7 @@ import datetime
 from domain.models.zeit import utc_jetzt
 import logging
 from typing import Optional
+from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
 from dependencies import (
@@ -35,6 +36,15 @@ logger = logging.getLogger(__name__)
 KOMMENTAR_RELEVANZ = 1.0
 
 
+def _ist_gezeigter(vorhanden, angefragt: Optional[UUID]) -> bool:
+    """Die Entscheidung der Person gilt genau dem vorhandenen, den sie gesehen hat."""
+    return (
+        vorhanden is not None
+        and angefragt is not None
+        and str(vorhanden.id) == str(angefragt)
+    )
+
+
 # Test endpoint to check if the API is running
 @router.get("/")
 async def read_test():
@@ -42,7 +52,6 @@ async def read_test():
 
 
 from fastapi import Query
-from uuid import UUID
 
 
 # Endpoint to search commentary by UUID
@@ -121,11 +130,7 @@ async def add_commentary(
         # bettet nicht noch einmal ein.
         async with commentary_service.sperre(request.commentary.text):
             pruefung = await commentary_service.pruefe_dublette(request.commentary.text)
-            if (
-                pruefung.vorhanden is not None
-                and request.trotz_dublette_von is not None
-                and str(pruefung.vorhanden.id) == str(request.trotz_dublette_von)
-            ):
+            if _ist_gezeigter(pruefung.vorhanden, request.trotz_dublette_von):
                 # Die Person hat genau diesen vorhandenen Kommentar gesehen und
                 # entschieden: anlegen. Der aehnlichste Treffer bleibt fuer
                 # most_similar_* erhalten.
@@ -218,10 +223,8 @@ async def add_commentary(
         # funktioniert und die gewaehlte Aussage sichtbar macht.
         dublette = pruefung.vorhanden
         eigene_dublette = dublette is not None and dublette.original_author == x_user
-        vorhanden_genommen = (
-            eigene_dublette
-            and request.vorhanden_nehmen is not None
-            and str(dublette.id) == str(request.vorhanden_nehmen)
+        vorhanden_genommen = eigene_dublette and _ist_gezeigter(
+            dublette, request.vorhanden_nehmen
         )
         if dublette is not None:
             commentary_id = dublette.id

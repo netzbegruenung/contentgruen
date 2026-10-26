@@ -540,9 +540,36 @@ describe('AddCommentaryComponent', () => {
       fixture.detectChanges();
 
       expect(gewaehlt).not.toHaveBeenCalled();
-      expect(seite().querySelector('.zustimm-fehler')!.textContent).toContain(NEHMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.entscheidungs-fehler')!.textContent).toContain(NEHMEN_FEHLGESCHLAGEN);
       expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
       expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('Nehmen scheitert mit 422: zeigt die Meldung des Backends', fakeAsync(() => {
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 422,
+              error: { detail: [{ msg: 'Value error, Die Aussage braucht mindestens 10 Zeichen' }] },
+            }),
+        ),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      const fehler = seite().querySelector('.entscheidungs-fehler')!.textContent!;
+      expect(fehler).toContain('Die Aussage braucht mindestens 10 Zeichen');
+      expect(fehler).not.toContain(NEHMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
     }));
 
     it('Nehmen, aber der vorhandene ist weg: sagt es und laesst neu speichern', fakeAsync(() => {
@@ -622,7 +649,7 @@ describe('AddCommentaryComponent', () => {
       fixture.detectChanges();
 
       expect(zugestimmt).not.toHaveBeenCalled();
-      expect(seite().querySelector('.zustimm-fehler')!.textContent).toContain(ZUSTIMMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.entscheidungs-fehler')!.textContent).toContain(ZUSTIMMEN_FEHLGESCHLAGEN);
       expect(seite().querySelector('.dublette-zustimmen')).toBeTruthy();
     }));
 

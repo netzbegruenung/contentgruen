@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
 from domain.models.commentary import Commentary, CommentarySearchResult
@@ -34,6 +34,15 @@ class AddCommentaryRequest(BaseModel):
     # verknuepft - beim ersten Versuch entscheidet die Person noch. Gilt wie
     # trotz_dublette_von nur fuer den gezeigten.
     vorhanden_nehmen: Optional[UUID] = None
+
+    # Trotzdem speichern und den vorhandenen nehmen schliessen einander aus.
+    @model_validator(mode="after")
+    def hoechstens_eine_entscheidung(self) -> "AddCommentaryRequest":
+        if self.trotz_dublette_von is not None and self.vorhanden_nehmen is not None:
+            raise ValueError(
+                "trotz_dublette_von und vorhanden_nehmen schliessen einander aus"
+            )
+        return self
 
     # Leer (oder nur Leerraum) heisst: keine Aussage. Sonst mindestens
     # AUSSAGE_MIN_ZEICHEN - kuerzer ist keine Aussage, auf die man antworten kann.

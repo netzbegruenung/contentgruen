@@ -73,7 +73,7 @@
                         <button mat-button type="button" class="dublette-trotzdem"
                                 [disabled]="stimmtZu || speichert" (click)="trotzdemSpeichern()">Trotzdem speichern</button>
                     </div>
-                    <p *ngIf="zustimmFehler" class="zustimm-fehler" role="alert">{{ zustimmFehler }}</p>
+                    <p *ngIf="entscheidungsFehler" class="entscheidungs-fehler" role="alert">{{ entscheidungsFehler }}</p>
                 </div>
 
                 <app-formular-leiste *ngIf="!responseId"
