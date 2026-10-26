@@ -200,6 +200,10 @@ _Avoid_: Ersteller, Owner, Urheber
 Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt wird. Andere sehen nie den Klarnamen aus dem Login.
 _Avoid_: Benutzername, Klarname, Kennung
 
+**Ehemalige Person**:
+Der Anzeigename, der im Fangkorb an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer. Die Sätze bleiben, nur der Personenbezug geht.
+_Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
+
 **Admin**:
 Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion
