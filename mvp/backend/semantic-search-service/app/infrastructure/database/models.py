@@ -116,6 +116,10 @@ class SearchEvent(Base):
     actor_hash is a keyed SHA-256 over the user or session id plus the UTC date,
     so it cannot be resolved back to a person and cannot be correlated across day
     boundaries. See SearchTrackingService._derive_actor_hash.
+
+    timestamp holds only the UTC day (midnight UTC), never the time of day: an
+    exact time could be matched against the creation time of the statement the
+    same search created, and so tie the statement to the daily pseudonym.
     """
 
     __tablename__ = "search_events"
@@ -124,7 +128,11 @@ class SearchEvent(Base):
     actor_hash = Column(String(64), nullable=True)
     results_count = Column(Integer, default=0, nullable=False)
     timestamp = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=text(
+            "(date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')"
+        ),
+        nullable=False,
     )
 
     # Indexes for performance
@@ -188,8 +196,8 @@ class ContentReport(Base):
 
 class RawInput(Base):
     """
-    Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh und
-    unverarbeitet.
+    Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh, wie
+    eingeworfen.
 
     Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/archiv/ROHINPUT.md):
     Rohinput wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
@@ -218,8 +226,8 @@ class RawInput(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     # Wer als Erste/r einen Satz gespeichert hat. Weitere Saetze anderer Personen
-    # aendern das nicht; wer den Beitrag gespeichert hat, steht an der Verknuepfung
-    # (raw_input_content_links.created_by).
+    # aendern das nicht; wer den Einwurf mit einem Beitrag verknuepft hat (der
+    # Ausformulierer), steht an der Verknuepfung (raw_input_content_links.created_by).
     destilled_by = Column(String(255), nullable=True)
 
     __table_args__ = (
@@ -238,13 +246,13 @@ class RawInput(Base):
 
 class RawInputContentLink(Base):
     """
-    Verknuepfung zwischen einem Einwurf und dem Beitrag, der daraus entstanden ist.
+    Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
+    wurde: einem neu gespeicherten oder, bei einer Dublette, dem vorhandenen.
 
-    Geschrieben wird sie beim Speichern eines Beitrags aus dem Destillier-Ablauf
-    (``PATCH /rawinput/{id}/status``). Sie existiert von Anfang an, weil die
-    Beziehung n:m ist: ein
-    Thread kann einen Kommentar *und* eine Hintergrundinfo hervorbringen, und ein
-    Beitrag kann aus mehreren Einwuerfen entstehen. Ein Feld
+    Geschrieben wird sie, wenn der Destillier-Ablauf den Einwurf mit dem Beitrag
+    verknuepft (``PATCH /rawinput/{id}/status``). Sie existiert von Anfang an, weil die
+    Beziehung n:m ist: ein Einwurf kann mit einem Kommentar *und* einer
+    Hintergrundinfo verknuepft sein, und ein Beitrag mit mehreren Einwuerfen. Ein Feld
     ``resulting_content_id`` auf ``raw_inputs`` waere billiger und genau die
     Blockade, die spaeter teuer wird (docs/archiv/ROHINPUT.md, Abschnitt 6).
 
@@ -253,9 +261,10 @@ class RawInputContentLink(Base):
     geloescht wuerden (sie werden es nicht), sondern damit ein Loeschen aus
     Datenschutzgruenden keine Verweise auf Nichts hinterlaesst.
 
-    ``created_by`` haelt fest, *wer* verarbeitet hat. Das ist die Rolle, die
-    ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung dafuer,
-    spaeter Finder und Bearbeiter getrennt anzuerkennen.
+    ``created_by`` haelt fest, *wer* verknuepft hat: den Ausformulierer. Das ist die
+    Rolle, die ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung
+    dafuer, spaeter Autor und Ausformulierer getrennt anzuerkennen: Bei einem
+    vorhandenen Beitrag wird der Ausformulierer nicht dessen Autor.
     """
 
     __tablename__ = "raw_input_content_links"
@@ -290,7 +299,7 @@ class RawInputContentLink(Base):
         Index("idx_raw_input_links_raw_input_id", "raw_input_id"),
         Index("idx_raw_input_links_content_id", "content_id"),
         Index("idx_raw_input_links_draft_id", "draft_id"),
-        # Dieselbe Paarung nur einmal - zweimal "verarbeitet" zaehlt spaeter sonst
+        # Dieselbe Paarung nur einmal - zweimal verknuepft zaehlt spaeter sonst
         # doppelt.
         Index(
             "idx_raw_input_links_unique",

@@ -429,7 +429,7 @@ describe('DestillierenComponent', () => {
       expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
       expect(component.schritt).toBe('typwahl');
       const hinweis: HTMLElement = fixture.nativeElement.querySelector('.schon-verknuepft');
-      expect(hinweis.textContent).toContain('Aus diesem Einwurf ist schon ein Beitrag entstanden');
+      expect(hinweis.textContent).toContain('Zu diesem Einwurf gibt es schon einen Beitrag');
       expect(fixture.nativeElement.querySelector('.typen')).toBeTruthy();
 
       (hinweis.querySelector('.beitrag-ansehen') as HTMLButtonElement).click();

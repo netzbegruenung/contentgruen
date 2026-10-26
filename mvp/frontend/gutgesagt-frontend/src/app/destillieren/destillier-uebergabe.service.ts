@@ -37,8 +37,8 @@ export interface Vorbefuellung {
  *
  * In der Adresse steht nur die ID des Einwurfs (?rohinput=...). Satz und Link
  * holt das Formular vom Server, damit ein PWA-Neustart nichts verliert und kein
- * Freitext in der Adresse landet. Nach dem Speichern wird der Einwurf als
- * ausformuliert markiert; den naechsten waehlt man auf der Ergebnisseite.
+ * Freitext in der Adresse landet. Nach dem Speichern wird der Einwurf mit dem
+ * Beitrag verknuepft; den naechsten waehlt man auf der Ergebnisseite.
  */
 @Injectable({ providedIn: 'root' })
 export class DestillierUebergabeService {
@@ -64,17 +64,17 @@ export class DestillierUebergabeService {
   }
 
   /**
-   * Der Beitrag ist gespeichert: Einwurf mit ihm verknuepfen, ohne weiterzuspringen.
+   * Den Einwurf mit einem Beitrag verknuepfen, ohne weiterzuspringen: einem eben
+   * gespeicherten oder, bei einer Dublette, dem vorhandenen. Damit ist er ausformuliert.
    *
-   * Fuer Formulare mit Ergebnisseite - dort waehlt man selbst den naechsten
-   * Einwurf. Liefert, ob das Verknuepfen geklappt hat; ein Fehler bricht nichts ab,
-   * der Beitrag ist ja da.
+   * Liefert, ob das Verknuepfen geklappt hat; ein Fehler bricht nichts ab, der
+   * Beitrag ist ja da. Den naechsten Einwurf waehlt der Aufrufer.
    */
   mitBeitragVerknuepfen(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
     return this.einwurfService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
       map(() => true),
       catchError((error) => {
-        this.logger.error('Einwurf konnte nicht als ausformuliert markiert werden', error);
+        this.logger.error('Einwurf konnte nicht mit dem Beitrag verknuepft werden', error);
         return of(false);
       }),
     );

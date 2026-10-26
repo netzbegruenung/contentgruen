@@ -49,10 +49,11 @@ export const LADE_GROESSE = 100;
  * Einwuerfe, an denen dort etwas zu tun ist.
  *
  * Destillieren = offen (noch kein Satz), Ausformulieren = destilliert (Saetze ohne
- * Beitrag), Ausformuliert = mindestens ein Beitrag entstanden. Verworfenes liegt
- * unter Ausformuliert hinter einem Chip. Welche Stufe gilt, entscheidet
- * ``stufeVonEinwurf``, welcher Tab dazu gehoert ``passtZumTab``; die Chips
- * (Plattform, "nur meine") wirken quer dazu und gelten auch fuer die Zaehler.
+ * Beitrag), Ausformuliert = mit mindestens einem Beitrag verknuepft (neu oder
+ * vorhanden). Verworfenes liegt unter Ausformuliert hinter einem Chip. Welche
+ * Stufe gilt, entscheidet ``stufeVonEinwurf``, welcher Tab dazu gehoert
+ * ``passtZumTab``; die Chips (Plattform, "nur meine") wirken quer dazu und gelten
+ * auch fuer die Zaehler.
  *
  * Bewusst alle Einwuerfe und nicht nur die eigenen - der Vorrat ist gemeinsam.
  * Sortiert wird hier neueste zuerst, nicht in der Reihenfolge des Servers
@@ -233,7 +234,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
       case 'ansehen':
         this.bottomSheet.open(EinwurfBeitragSheetComponent, {
           data: { beitraege: angaben.beitraege },
-          ariaLabel: karte.titel || 'Beitrag aus diesem Einwurf',
+          ariaLabel: karte.titel || 'Beitrag zu diesem Einwurf',
         });
         break;
       case 'linkKopieren':

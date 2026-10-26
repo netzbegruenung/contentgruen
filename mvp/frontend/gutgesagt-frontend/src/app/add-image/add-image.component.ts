@@ -11,7 +11,6 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ContentStatus } from '../services/dtos/content-status-enum';
 import { ContentOrigin } from '../services/dtos/content-origin-enum';
-import { ContentVisibility } from '../services/dtos/content-visibility-enum';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -107,7 +106,6 @@ export class AddImageComponent implements OnDestroy {
         edit_history: [],
         content_type: 'image',
         status: ContentStatus.APPROVED,
-        visibility: ContentVisibility.VISIBLE,
         origin: ContentOrigin.MANUALLY_CREATED,
         score: 1.0,
         most_similar_similarity_score: 0,

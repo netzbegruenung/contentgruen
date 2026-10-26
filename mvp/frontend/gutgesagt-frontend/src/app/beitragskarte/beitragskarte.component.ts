@@ -263,7 +263,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Das Zeichen im Kopfband. Ausformuliertes traegt das Emoji des entstandenen
+   * Das Zeichen im Kopfband. Ausformuliertes traegt das Emoji des verknuepften
    * Beitrags - dieselbe Marke, unter der er in Suche und Album steht; die
    * unfertigen Stufen tragen das Icon der Kette.
    */
@@ -300,7 +300,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return Math.max((this.einwurfAngaben?.saetze.length ?? 0) - SAETZE_SICHTBAR, 0);
   }
 
-  /** Rechts am Satz: ein Haken je Beitrag daraus, sonst nichts. */
+  /** Rechts am Satz: ein Haken je verknuepftem Beitrag, sonst nichts. */
   satzStatus(satz: EinwurfSatz): string {
     if (!satz.beitraege) {
       return '';
@@ -312,7 +312,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     if (!satz.beitraege) {
       return 'noch kein Beitrag';
     }
-    return satz.beitraege === 1 ? 'ein Beitrag daraus' : `${satz.beitraege} Beiträge daraus`;
+    return satz.beitraege === 1 ? 'mit einem Beitrag verknüpft' : `mit ${satz.beitraege} Beiträgen verknüpft`;
   }
 
   /**

@@ -72,7 +72,8 @@ class RawInputRepository:
             "created_at": raw_input.created_at,
             "destilled_by": raw_input.destilled_by,
             "own_draft": eigener_satz,
-            # In der Tabelle created_by/created_at, nach aussen der Bearbeitungsstand.
+            # Die erste Verknuepfung: in der Tabelle created_by/created_at, nach aussen
+            # processed_*.
             "processed_content_id": str(erste.content_id) if erste else None,
             "processed_by": erste.created_by if erste else None,
             "processed_at": erste.created_at if erste else None,
@@ -305,9 +306,9 @@ class RawInputRepository:
         Verwerfen duerfen der Einwerfer und Admins (``ist_admin``), Admins auch
         einen Einwurf ohne Einwerfer.
 
-        Die Verknuepfung haelt fest, wer verarbeitet hat, welcher Beitragstyp
-        entstanden ist und welcher Satz ausformuliert wurde - der der verarbeitenden
-        Person (``draft_id``), sofern sie einen gespeichert hat.
+        Die Verknuepfung haelt fest, wer verknuepft hat (der Ausformulierer), welchen
+        Beitragstyp der Beitrag hat und welcher Satz ausformuliert wurde - der des
+        Ausformulierers (``draft_id``), sofern er einen gespeichert hat.
 
         Alles in einer Transaktion, die Zeile ist dabei gesperrt (FOR UPDATE),
         damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Die
