@@ -1,4 +1,4 @@
-> **Historisch:** Dieses Dokument ist ein Beleg früherer Planung und teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+> **Historisch:** Dieses Dokument stammt aus früherer Planung und ist teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
 
 # PR: Startseite und Einstieg mobil (UI-Nachlese Paket 2)
 
