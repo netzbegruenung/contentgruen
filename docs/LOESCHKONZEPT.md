@@ -23,7 +23,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    (`api/v1/moderation.py:114`). Nur über sie sind die `usage_events` einer Person
    erreichbar.
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
-   `content_reports` löschen; `reviewed_by` und `raw_input_content_links.created_by`
+   `content_reports` löschen (ein von der Person gemeldeter, inzwischen gesperrter
+   Beitrag bleibt über die Moderationsansicht „Gesperrt“ erreichbar);
+   `reviewed_by` und `raw_input_content_links.created_by`
    auf `NULL` setzen statt löschen — die Zeilen gehören inhaltlich anderen;
    `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in

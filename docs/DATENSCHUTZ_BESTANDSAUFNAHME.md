@@ -329,6 +329,9 @@ alle vier mit `Depends(require_admin)` (`api/v1/moderation.py:191,229,267,300`).
 **und** `X-Is-Admin: true`; letzteres setzt ausschließlich das BFF
 (`IdentityHeaderTransform.cs:74-82`) und entfernt einen mitgeschickten Wert vorher
 bedingungslos (`:47`). Das ist der einzige Speicher mit funktionierender Admin-Schranke.
+Dieselbe Schranke tragen `PUT …/content/{id}/sperren`, `…/entsperren` und
+`GET …/gesperrt` (Sperren statt Löschen, #212); sie lesen und schreiben Beiträge in
+Qdrant, keine Meldungsdaten über `reviewed_by` hinaus.
 
 **Seit PR #33 gibt es zwei Wege zu diesem Header** (`BFF/Proxy/AdminPolicy.cs:56-79`),
 mit ODER verknüpft:

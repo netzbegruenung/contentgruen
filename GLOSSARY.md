@@ -129,8 +129,12 @@ Der Normalfall: Alle Nutzenden, auch Besucher, können den Beitrag finden und ko
 _Avoid_: Veröffentlicht, Freigegeben, Grün-Intern
 
 **Gesperrt**:
-Ein Beitrag, den ein Admin aus Suche und Ansicht genommen hat.
+Ein Beitrag, den ein Admin aus Suche und Ansicht genommen hat. Er bleibt erhalten, und nur Admins finden ihn noch, über die Moderation.
 _Avoid_: Blockiert, Abgelehnt, Versteckt
+
+**Entsperren**:
+Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sperre. Die Meldungen zu ihm bleiben bearbeitet.
+_Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
 Ein Beitrag, den sein Autor entfernt hat.
