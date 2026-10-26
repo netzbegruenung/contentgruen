@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "contentgruen-frontend": {
+    "gutgesagt-frontend": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/contentgruen-frontend",
+            "outputPath": "dist/gutgesagt-frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -76,10 +76,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "contentgruen-frontend:build:production"
+              "buildTarget": "gutgesagt-frontend:build:production"
             },
             "development": {
-              "buildTarget": "contentgruen-frontend:build:development"
+              "buildTarget": "gutgesagt-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"

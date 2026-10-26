@@ -6,7 +6,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo "====================================="
-echo "Installing ContentGruen Dependencies"
+echo "Installing Gut gesagt Dependencies"
 echo "====================================="
 echo
 
@@ -50,7 +50,7 @@ echo
 # Install Node.js dependencies
 echo "[3/3] Installing Node.js dependencies..."
 echo "-------------------------------------"
-cd frontend/contentgruen-frontend
+cd frontend/gutgesagt-frontend
 npm install
 if [ $? -ne 0 ]; then
     echo -e "${RED}[ERROR]${NC} Failed to install Node.js dependencies"

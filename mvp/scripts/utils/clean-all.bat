@@ -1,6 +1,6 @@
 @echo off
 echo =====================================
-echo Cleaning ContentGruen Development Environment
+echo Cleaning Gut gesagt Development Environment
 echo =====================================
 echo.
 echo WARNING: This will remove all generated files,
@@ -46,16 +46,16 @@ echo [OK] .NET artifacts removed
 
 REM Clean Node.js dependencies and build
 echo Cleaning Node.js environment...
-if exist "frontend\contentgruen-frontend\node_modules" (
-    rmdir /s /q "frontend\contentgruen-frontend\node_modules"
+if exist "frontend\gutgesagt-frontend\node_modules" (
+    rmdir /s /q "frontend\gutgesagt-frontend\node_modules"
     echo [OK] node_modules removed
 )
-if exist "frontend\contentgruen-frontend\dist" (
-    rmdir /s /q "frontend\contentgruen-frontend\dist"
+if exist "frontend\gutgesagt-frontend\dist" (
+    rmdir /s /q "frontend\gutgesagt-frontend\dist"
     echo [OK] dist directory removed
 )
-if exist "frontend\contentgruen-frontend\.angular" (
-    rmdir /s /q "frontend\contentgruen-frontend\.angular"
+if exist "frontend\gutgesagt-frontend\.angular" (
+    rmdir /s /q "frontend\gutgesagt-frontend\.angular"
     echo [OK] .angular cache removed
 )
 

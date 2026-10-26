@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# ContentGrün dev-stack control script (agent sandbox VM).
+# Gut gesagt dev-stack control script (agent sandbox VM).
 #
 # Everything runs in Docker via docker-compose.dev.yml. No subcommand leaves a
 # process in the foreground, every subcommand terminates, and the exit code is

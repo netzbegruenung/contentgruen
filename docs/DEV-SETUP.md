@@ -5,7 +5,7 @@
    `docker compose -f docker-compose.dev.yml up -d qdrant postgres-app contentgruen-semantic-search contentgruen-bff`
    Ports: BFF 5054, Semantic Search 8000, PostgreSQL 5433, Qdrant 6333.
    Der Frontend-Container (8080) wird dafür nicht gebraucht; `mvp/run-local.sh up` startet ihn trotzdem mit.
-3. Frontend: `cd mvp/frontend/contentgruen-frontend && npm ci && npx ng serve`
+3. Frontend: `cd mvp/frontend/gutgesagt-frontend && npm ci && npx ng serve`
    Fehlt `src/environments/environment.ts`, vorher `environment.local.ts` dorthin kopieren.
 4. http://localhost:4200 → Anmelden → Direktanmeldung: `test.user@example.com` / `Liebe>Hass!`.
    `testuser` gilt nur für den alten Dummy-Endpunkt `POST /login`; ein Formular dafür hat die App nicht mehr.

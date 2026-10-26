@@ -113,7 +113,7 @@ def test_protected_endpoint():
 def main():
     """Run all tests."""
     print("=" * 50)
-    print("Testing Anonymous Access to ContentGrün API")
+    print("Testing Anonymous Access to Gut gesagt API")
     print("=" * 50)
     print(f"BFF URL: {BFF_URL}")
 

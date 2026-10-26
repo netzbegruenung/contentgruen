@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "====================================="
-echo "Cleaning ContentGruen Development Environment"
+echo "Cleaning Gut gesagt Development Environment"
 echo "====================================="
 echo
 echo -e "${YELLOW}WARNING: This will remove all generated files,"
@@ -48,16 +48,16 @@ echo -e "${GREEN}[OK]${NC} .NET artifacts removed"
 
 # Clean Node.js dependencies and build
 echo "Cleaning Node.js environment..."
-if [ -d "frontend/contentgruen-frontend/node_modules" ]; then
-    rm -rf frontend/contentgruen-frontend/node_modules
+if [ -d "frontend/gutgesagt-frontend/node_modules" ]; then
+    rm -rf frontend/gutgesagt-frontend/node_modules
     echo -e "${GREEN}[OK]${NC} node_modules removed"
 fi
-if [ -d "frontend/contentgruen-frontend/dist" ]; then
-    rm -rf frontend/contentgruen-frontend/dist
+if [ -d "frontend/gutgesagt-frontend/dist" ]; then
+    rm -rf frontend/gutgesagt-frontend/dist
     echo -e "${GREEN}[OK]${NC} dist directory removed"
 fi
-if [ -d "frontend/contentgruen-frontend/.angular" ]; then
-    rm -rf frontend/contentgruen-frontend/.angular
+if [ -d "frontend/gutgesagt-frontend/.angular" ]; then
+    rm -rf frontend/gutgesagt-frontend/.angular
     echo -e "${GREEN}[OK]${NC} .angular cache removed"
 fi
 

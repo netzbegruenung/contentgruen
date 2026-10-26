@@ -39,7 +39,7 @@ This test requires special database setup and is meant for integration testing e
 ## Angular Frontend Tests
 
 ### Location
-`mvp/frontend/contentgruen-frontend/src/app/`
+`mvp/frontend/gutgesagt-frontend/src/app/`
 
 ### Run Tests
 ```bash
@@ -47,7 +47,7 @@ This test requires special database setup and is meant for integration testing e
 scripts/test/run-frontend-tests.bat
 
 # Or manually
-cd frontend/contentgruen-frontend
+cd frontend/gutgesagt-frontend
 npm run test:ci
 ```
 

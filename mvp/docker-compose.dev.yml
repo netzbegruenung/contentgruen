@@ -167,7 +167,7 @@ services:
         max-size: "20m"
         max-file: "3"
     build:
-      context: ./frontend/contentgruen-frontend
+      context: ./frontend/gutgesagt-frontend
       dockerfile: Dockerfile
       args:
         - NGINX_CONF=nginx.docker.conf

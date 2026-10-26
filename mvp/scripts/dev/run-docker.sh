@@ -4,7 +4,7 @@
 # This script starts all services in Docker containers
 
 echo "====================================="
-echo "Starting ContentGrün in Docker mode"
+echo "Starting Gut gesagt in Docker mode"
 echo "====================================="
 
 # Colors for output

@@ -87,7 +87,7 @@ Requires
 - npm 11.4
 
 ```bash
-cd mvp/frontend/contentgruen-frontend
+cd mvp/frontend/gutgesagt-frontend
 npm install
 ```
 
@@ -106,9 +106,9 @@ ng test
 ### 🐳 Docker
 
 ```bash
-cd mvp/frontend/contentgruen-frontend
-docker build -t contentgruen-frontend:latest .
-docker run -p 4200:80 -d contentgruen-frontend:latest
+cd mvp/frontend/gutgesagt-frontend
+docker build -t gutgesagt-frontend:latest .
+docker run -p 4200:80 -d gutgesagt-frontend:latest
 ```
 
 Open: [http://localhost:4200](http://localhost:4200)
@@ -138,8 +138,8 @@ dotnet run
 
 ```bash
 cd mvp/backend/BFF
-docker build -t contentgruen-bff:latest .
-docker run -p 5054:5054 -d contentgruen-bff:latest
+docker build -t gutgesagt-bff:latest .
+docker run -p 5054:5054 -d gutgesagt-bff:latest
 ```
 
 Open: [http://localhost:5054](http://localhost:5054)
@@ -209,8 +209,8 @@ curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
 
 ```bash
 cd mvp/backend/semantic-search-service
-docker build -t contentgruen-semantic-search:latest .
-docker run -p 8000:8000 -d contentgruen-semantic-search:latest
+docker build -t gutgesagt-semantic-search:latest .
+docker run -p 8000:8000 -d gutgesagt-semantic-search:latest
 ```
 
 Open Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)

@@ -1,6 +1,6 @@
 @echo off
 echo =====================================
-echo Installing ContentGruen Dependencies
+echo Installing Gut gesagt Dependencies
 echo =====================================
 echo.
 
@@ -40,7 +40,7 @@ echo.
 REM Install Node.js dependencies
 echo [3/3] Installing Node.js dependencies...
 echo -------------------------------------
-cd frontend\contentgruen-frontend
+cd frontend\gutgesagt-frontend
 npm install
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Failed to install Node.js dependencies

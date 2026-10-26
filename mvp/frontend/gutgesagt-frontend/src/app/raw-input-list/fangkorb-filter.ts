@@ -7,7 +7,7 @@ import { Plattform, PLATTFORMEN, plattformAusUrl } from '../shared/plattform';
  * darueber hinaus - wer den Fangkorb morgen oeffnet, sieht wieder alles und
  * beginnt beim Destillieren.
  */
-export const FILTER_SCHLUESSEL = 'contentgruen.fangkorb.filter';
+export const FILTER_SCHLUESSEL = 'gutgesagt.fangkorb.filter';
 
 /**
  * Die Plattformen, die ein gespeicherter Filter ohne Angabe "bekannte" kannte -

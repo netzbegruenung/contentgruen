@@ -118,7 +118,7 @@ public class KeycloakLoginCookieTests
             builder.UseSetting("Keycloak:ClientSecret", "test-secret");
             builder.UseSetting(
                 "DATAPROTECTION_KEYS_PATH",
-                Path.Combine(Path.GetTempPath(), "contentgruen-bff-test-keys"));
+                Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys"));
 
             // Registriert nach AddOpenIdConnect, laeuft also nach dessen PostConfigure und
             // ersetzt den ConfigurationManager, der sonst die Metadaten aus dem Netz holen wuerde.
@@ -175,7 +175,7 @@ public class KeycloakLoginCookieTests
     {
         Assert.True(response.Headers.TryGetValues("Set-Cookie", out var values), "no Set-Cookie on the callback");
         var authCookies = SetCookieHeaderValue.ParseList(values!.ToList())
-            .Where(c => c.Name == "ContentGruenAuthCookie")
+            .Where(c => c.Name == "GutGesagtAuthCookie")
             .ToList();
 
         // Genau eines: frueher stellte OnTokenValidated ein zweites aus, das das des Handlers

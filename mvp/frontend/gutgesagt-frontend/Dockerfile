@@ -23,7 +23,7 @@ RUN if [ "$BUILD_CONFIGURATION" = "development" ] || [ "$BUILD_CONFIGURATION" = 
     fi
 
 # Build with the specified configuration
-RUN npx ng build contentgruen-frontend --configuration ${BUILD_CONFIGURATION}
+RUN npx ng build gutgesagt-frontend --configuration ${BUILD_CONFIGURATION}
 
 
 # Stage 2: Serve the application with Nginx
@@ -37,7 +37,7 @@ ARG NGINX_CONF=nginx.conf
 COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
 
 # Note that due to Angular Universal the path since a while needs to be set to the browser subfolder
-COPY --from=build /app/dist/contentgruen-frontend/browser /usr/share/nginx/html
+COPY --from=build /app/dist/gutgesagt-frontend/browser /usr/share/nginx/html
 
 # Add script to replace environment variables at runtime
 COPY replace-env.sh /usr/share/nginx/html/

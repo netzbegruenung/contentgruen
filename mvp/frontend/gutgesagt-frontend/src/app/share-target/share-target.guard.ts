@@ -18,7 +18,7 @@ import { ersteAdresse, urlsInTextBereinigen } from '../shared/url-bereinigen';
  */
 
 /** Schluessel im sessionStorage. Bewusst mit Praefix, der Storage ist geteilt. */
-export const SHARE_EINWURF_SCHLUESSEL = 'contentgruen.share.einwurf';
+export const SHARE_EINWURF_SCHLUESSEL = 'gutgesagt.share.einwurf';
 
 /** Was das Teilen-Menue liefert -- alle drei Felder sind optional. */
 export interface ShareDaten {

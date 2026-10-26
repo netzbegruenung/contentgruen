@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ContentGrün Restore Script
+# Gut gesagt Restore Script
 # Runs on HOST system to restore Docker containers data
 # Restores from backups in /opt/contentgruen-backups/ on HOST filesystem
 
@@ -29,7 +29,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}ContentGrün Restore System${NC}"
+echo -e "${BLUE}Gut gesagt Restore System${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Determine which backup to restore

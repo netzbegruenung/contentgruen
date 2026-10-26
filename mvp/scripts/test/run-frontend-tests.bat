@@ -4,7 +4,7 @@ echo Running Angular Frontend Tests
 echo =====================================
 echo.
 
-cd /d "%~dp0\..\..\frontend\contentgruen-frontend"
+cd /d "%~dp0\..\..\frontend\gutgesagt-frontend"
 
 REM Check if node_modules exists
 if not exist "node_modules" (
