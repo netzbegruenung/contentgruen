@@ -93,8 +93,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   einem Tagespseudonym zuordnen. Bestandsumgebungen schneiden alte Uhrzeiten mit
   `mvp/backend/postgres-app/migrations/2026-10-26-search-events-nur-tag.sql` ab, danach
   `VACUUM FULL search_events`. In Backups stehen die alten Uhrzeiten, bis diese
-  herausrotiert sind; ebenso in Anwendungsprotokollen älterer Stände die Zeile
-  „Tracking search“ je Suche, die der Dienst nicht mehr schreibt.
+  herausrotiert sind; ebenso in Anwendungsprotokollen älterer Stände die Zeilen je
+  Suche („Tracking search“, „Search request“, „Statement already exists with ID …“,
+  „Successfully created new statement with ID …“, „Found entry with id …“, „Query
+  polarity …“ mit Wörtern aus dem Suchtext), die der Dienst auf INFO nicht mehr schreibt.
   **Offen:** Die fortlaufende `id` verrät weiter die Reihenfolge der Suchen eines Tages.
   An ruhigen Tagen lässt sie sich mit der Reihenfolge der Aussagen aus Suchen abgleichen.
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche und Anzahl, weder

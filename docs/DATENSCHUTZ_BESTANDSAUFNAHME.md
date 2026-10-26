@@ -219,25 +219,30 @@ Gelöscht wird ausschließlich aus `usage_events`
 
 | Feld | Typ | Definiert in | Personenbezug | Wer schreibt | Wer kann lesen | Wirksame Löschfrist |
 |------|-----|--------------|---------------|--------------|----------------|---------------------|
-| `id` | BigInteger PK | `models.py:122` | nein | ORM | s.u. | **keine** |
-| `actor_hash` | VARCHAR(64), nullable | `models.py:123` | **pseudonym, tagesrotierend** — Details unten | `app/repositories/search_tracking_repository.py:44` ← `services/search_tracking_service.py:98-105` ← `api/v1/search.py:256-264` | s.u. | **keine** |
-| `results_count` | Integer | `models.py:124` | nein | `search_tracking_repository.py:44` | s.u. | **keine** |
-| `timestamp` | Timestamptz | `models.py:125-127` | nein für sich | Server-Default | s.u. | **keine** |
+| `id` | BigInteger PK | `models.py:127` | nein | ORM | s.u. | **keine** |
+| `actor_hash` | VARCHAR(64), nullable | `models.py:128` | **pseudonym, tagesrotierend** — Details unten | `app/repositories/search_tracking_repository.py:45` ← `services/search_tracking_service.py:104-117` ← `api/v1/search.py:269-273` | s.u. | **keine** |
+| `results_count` | Integer | `models.py:129` | nein | `search_tracking_repository.py:45` | s.u. | **keine** |
+| `timestamp` | Timestamptz, nur der UTC-Tag | `models.py:130-136` | nein für sich | `search_tracking_repository.py:48` (Mitternacht UTC); Server-Default ebenso nur der Tag | s.u. | **keine** |
 
 **Nicht (mehr) vorhanden:** `query_text`, `user_id`, `session_id`, `ip_hash` — entfernt durch
 `migrations/2026-08-19-search-events-pseudonymisieren.sql:30-33`, Bestandsdaten per
 `TRUNCATE` (`:25`) plus `VACUUM FULL` (`:42`) verworfen. Begründung im ORM dokumentiert
-(`models.py:109-118`).
+(`models.py:110-123`).
 
 **Nachtrag 2026-10-26 (#239):** `timestamp` trägt nur noch den UTC-Tag (Mitternacht UTC),
 keine Uhrzeit. Der Dienst setzt ihn selbst (`search_tracking_repository.py`, `track_search`),
 der Server-Default schneidet ebenfalls auf den Tag ab, der Altbestand ist per
 `migrations/2026-10-26-search-events-nur-tag.sql` abgeschnitten. Grund: Eine Suche kann eine
 Aussage anlegen (siehe unten), deren Anlagezeitpunkt in Qdrant genau ist; über eine genaue
-Uhrzeit am Suchereignis ließe sich die Aussage dem Tagespseudonym zuordnen.
+Uhrzeit am Suchereignis ließe sich die Aussage dem Tagespseudonym zuordnen. Aus demselben
+Grund schreibt der Suchpfad keine Logzeile je Suche auf INFO mehr (Endpunkt
+`api/v1/search.py`, `StatementService.add_statement`, Qdrant-Repositories, Polaritätsfilter,
+Schlagwort-Boost, `search_orchestrator.py`):
+Durchgezählt je Tag gäbe sie jedem Suchereignis seine Uhrzeit zurück, mit Aussage-ID sogar
+die Aussage.
 
 **Lesen:** ausschließlich aggregiert über `GET /api/v1/metrics/daily-active-users`
-(`api/v1/metrics.py:217-221`) und `/searches-per-user` (`:246-250`). Beide verlangen seit
+(`api/v1/metrics.py:243-247`) und `/searches-per-user` (`:272-276`). Beide verlangen seit
 PR #29 `Depends(require_admin)`; am BFF ist von `/api/v1/metrics/` nur noch der einzelne
 Pfad `/getMetrics` ohne Anmeldung erreichbar (`BFF/Proxy/EndpointPolicy.cs:30-34`, mit
 Begründung). Vorher stand das ganze Präfix in der Public-Liste und keiner der sechs

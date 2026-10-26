@@ -43,7 +43,9 @@ def _gespeichertes_ereignis(session) -> SearchEvent:
 
 
 class TestTrackSearch:
-    def test_speichert_nur_den_tag_als_zeitstempel(self, repository, session):
+    def test_track_search_speichert_nur_den_tag_als_zeitstempel(
+        self, repository, session
+    ):
         assert repository.track_search(
             results_count=0, actor_hash="a" * 64, day=date(2026, 10, 26)
         )
@@ -53,7 +55,7 @@ class TestTrackSearch:
         assert ereignis.results_count == 0
         assert ereignis.actor_hash == "a" * 64
 
-    def test_zwei_suchen_am_selben_tag_sind_zeitlich_nicht_unterscheidbar(
+    def test_track_search_zwei_suchen_am_selben_tag_gleicher_zeitstempel(
         self, repository, session
     ):
         """Zwei Suchen eines Tages tragen denselben Zeitstempel; eine Aussage, die
@@ -65,14 +67,14 @@ class TestTrackSearch:
 
         assert frueh == spaet
 
-    def test_db_default_ist_ebenfalls_nur_der_tag(self):
+    def test_timestamp_server_default_ist_nur_der_tag(self):
         """Wer ohne Zeitstempel schreibt, bekommt von PostgreSQL auch nur den Tag."""
         default = str(SearchEvent.__table__.c.timestamp.server_default.arg)
 
         assert "date_trunc('day'" in default
         assert "UTC" in default
 
-    def test_protokolliert_die_suche_nicht(self, repository, caplog):
+    def test_track_search_protokolliert_nichts(self, repository, caplog):
         """Eine Logzeile je Suche traegt die Uhrzeit und liesse sich ueber die
         Reihenfolge den Suchereignissen des Tages zuordnen."""
         with caplog.at_level(logging.DEBUG):

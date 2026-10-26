@@ -6,8 +6,8 @@ or search text may reach the repository, and the stored pseudonym must not be
 correlatable across day boundaries.
 """
 
-from datetime import date, datetime, timezone
 import logging
+from datetime import date, datetime, timezone
 from unittest.mock import Mock, patch
 
 import pytest
