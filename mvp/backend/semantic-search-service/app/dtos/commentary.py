@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
 from domain.models.commentary import Commentary, CommentarySearchResult
@@ -29,6 +29,20 @@ class AddCommentaryRequest(BaseModel):
     # Dann wird der neue angelegt, obwohl er dessen Dublette ist. Gilt nur fuer den
     # gezeigten - ist inzwischen ein anderer vorhanden, sieht die Person erst ihn.
     trotz_dublette_von: Optional[UUID] = None
+    # Die Person nimmt diesen vorhandenen, eigenen Kommentar statt einen neuen zu
+    # speichern: Dann haengt er an der mitgeschickten Aussage. Erst diese Wahl
+    # verknuepft - beim ersten Versuch entscheidet die Person noch. Gilt wie
+    # trotz_dublette_von nur fuer den gezeigten.
+    vorhanden_nehmen: Optional[UUID] = None
+
+    # Trotzdem speichern und den vorhandenen nehmen schliessen einander aus.
+    @model_validator(mode="after")
+    def hoechstens_eine_entscheidung(self) -> "AddCommentaryRequest":
+        if self.trotz_dublette_von is not None and self.vorhanden_nehmen is not None:
+            raise ValueError(
+                "trotz_dublette_von und vorhanden_nehmen schliessen einander aus"
+            )
+        return self
 
     # Leer (oder nur Leerraum) heisst: keine Aussage. Sonst mindestens
     # AUSSAGE_MIN_ZEICHEN - kuerzer ist keine Aussage, auf die man antworten kann.
@@ -65,17 +79,19 @@ class AddCommentaryResponse(BaseModel):
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
     # False nur, wenn eine Aussage angegeben war und nicht verknuepft werden
-    # konnte. Der Kommentar ist dann trotzdem gespeichert.
+    # konnte. Der Kommentar ist dann trotzdem gespeichert. Bei einer Dublette ohne
+    # vorhanden_nehmen wurde nichts versucht: True, die Aussagefelder bleiben leer.
     verknuepft: bool = True
     # True: Es gibt schon einen sehr aehnlichen Kommentar; id ist dessen ID und nichts
-    # wurde angelegt. Stammt er von derselben Person und war eine Aussage angegeben,
-    # ist er jetzt auch mit ihr verknuepft (statement_id/statement_text, verknuepft wie
-    # oben). Bei einem fremden Kommentar bleiben die Aussagefelder leer: Fremde
+    # wurde angelegt und nichts verknuepft. Die Aussagefelder bleiben leer, bis die
+    # Person den eigenen mit vorhanden_nehmen waehlt (dann statement_*, verknuepft wie
+    # oben). Einen fremden verknuepft auch das nicht: Fremde
     # Antworten weiteren Aussagen zuzuordnen ist gewollt, greift ueber dieses Formular
     # aber nur bei wortgleichem Text - dafuer ist ein eigener Weg an der Karte
     # vorgesehen ("Passt auch auf ..."), siehe api/v1/commentary.py.
     # Das Formular zeigt den vorhandenen Kommentar und laesst die Person entscheiden:
-    # zustimmen (Stimme), den eigenen nehmen oder mit trotz_dublette_von trotzdem speichern.
+    # zustimmen (Stimme), den eigenen mit vorhanden_nehmen nehmen oder mit
+    # trotz_dublette_von trotzdem speichern.
     duplikat: bool = False
     # Titel des vorhandenen Kommentars, damit das Formular ihn nennen kann; sonst None.
     vorhanden_titel: Optional[str] = None

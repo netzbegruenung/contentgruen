@@ -23,7 +23,8 @@ DELETE FROM raw_inputs       WHERE submitted_by        = :'uid';
 -- Saetze an fremden Einwuerfen bleiben, die Kennung wird ersetzt: je Satz ein
 -- eigener Platzhalter, weil der eindeutige Index (raw_input_id, user_id) keinen
 -- gemeinsamen zulaesst und so auch nichts die Saetze untereinander verbindet.
--- Der Fangkorb zeigt dazu den Anzeigenamen "ehemalige Person".
+-- Der Fangkorb zeigt dazu den Anzeigenamen "ehemalige Person" (derselbe wie
+-- EHEMALIGE_PERSON_NAME in services/anzeigename_service.py fuer Beitraege).
 CREATE TEMP TABLE loeschung_saetze AS
 SELECT id, raw_input_id, 'ehemalige-person-' || gen_random_uuid() AS ersatz
 FROM raw_input_drafts WHERE user_id = :'uid';

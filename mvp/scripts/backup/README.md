@@ -69,13 +69,11 @@ backup taken a moment earlier; anything written in between is lost.
 
 ## Production Setup
 
-### Automated (Recommended)
+### Scheduling
 
-**For production servers with SaltStack:**
-- Backup system is automatically configured via Salt states
-- Extracts `backup.sh` from Docker container on deployment
-- Creates backup directories and sets permissions
-- Configures daily cron job (3 AM) and logrotate
+**In the operated test and production environments** the backup schedule is part of
+verdigado's internal infrastructure and documented there. For any other host, set it up by
+hand as below.
 
 **Manual cron setup:**
 ```bash
@@ -169,19 +167,16 @@ host. Without it `backup.sh` aborts, because the snapshot is missing on the host
 side of the mount must match `BACKUP_ROOT` in the scripts. PostgreSQL needs no mount:
 `pg_dump` streams to the host via stdout.
 
-## Production Notes
+## Notes for Self-Hosted Setups
 
 ### Port Exposure (Security)
-- Qdrant and PostgreSQL exposed to **localhost only** (`127.0.0.1:6333`, `127.0.0.1:5432`)
-- Allows backup scripts to access databases securely
-- Admin access: SSH to server, then use localhost ports
+- Publish Qdrant and PostgreSQL on **localhost only**, as `docker-compose.dev.yml` does
+  (`127.0.0.1:6333`, `127.0.0.1:5433`)
+- The backup scripts reach the databases through `docker exec`, not through these ports
 
 ### Qdrant Admin Dashboard
-```bash
-# Access via SSH tunnel
-ssh -L 6333:localhost:6333 user@server
-# Open http://localhost:6333/dashboard in local browser
-```
+On the host, open http://localhost:6333/dashboard. From another machine, forward the port
+over SSH first (`ssh -L 6333:localhost:6333 <host>`).
 
 ## Disaster Recovery
 
