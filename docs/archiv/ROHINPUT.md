@@ -249,6 +249,10 @@ Löschkonzept). Kein Grund, nicht zu bauen — aber der interne Charakter des Fa
 (`ContentVisibility.INTERNAL` ist Default) sollte eine bewusste Zusage bleiben, keine
 Voreinstellung, die irgendwann jemand umstellt.
 
+> Nachtrag (#213): Die Markierung „Grün-Intern“ ist entfallen. Sie hat nie gefiltert; jeder
+> Beitrag ist für alle Nutzenden sichtbar. Der Fangkorb liegt ohnehin in PostgreSQL
+> (`raw_inputs`) und hing nie an diesem Feld.
+
 ---
 
 ## 5. Frage 4 — Die kleinste sichtbare Umsetzung
