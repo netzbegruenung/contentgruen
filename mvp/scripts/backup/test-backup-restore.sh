@@ -20,12 +20,12 @@ echo -e "${BLUE}========================================${NC}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Host-Seite des Mounts /backups im Application-Container. Im Dev-Stack ist der
 # Mount nicht in docker-compose.dev.yml, siehe README "Testing in the dev stack".
-BACKUP_ROOT="${BACKUP_ROOT:-/opt/contentgruen-backups}"
+BACKUP_ROOT="${BACKUP_ROOT:-/opt/gutgesagt-backups}"
 TEST_MARKER="TEST_BACKUP_$(date +%Y%m%d_%H%M%S)"
 # Containernamen wie in backup.sh: ueberall gleich, abweichend per Umgebung.
-POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
-APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
-QDRANT_CONTAINER="${QDRANT_CONTAINER:-contentgruen-qdrant}"
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-gutgesagt-app-postgres}"
+APP_CONTAINER="${APP_CONTAINER:-gutgesagt-semantic-search}"
+QDRANT_CONTAINER="${QDRANT_CONTAINER:-gutgesagt-qdrant}"
 # backup.sh und restore.sh sollen dieselben Werte sehen wie dieses Skript.
 export BACKUP_ROOT POSTGRES_CONTAINER APP_CONTAINER QDRANT_CONTAINER
 
@@ -38,7 +38,7 @@ count_qdrant_points() {
 # Function to count PostgreSQL records
 count_pg_records() {
     local table=$1
-    local count=$(docker exec $POSTGRES_CONTAINER psql -U app_user -d contentgruen_app -tA -c "SELECT COUNT(*) FROM $table;" 2>/dev/null || echo "0")
+    local count=$(docker exec $POSTGRES_CONTAINER psql -U app_user -d gutgesagt_app -tA -c "SELECT COUNT(*) FROM $table;" 2>/dev/null || echo "0")
     echo $count
 }
 

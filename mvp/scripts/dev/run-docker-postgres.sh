@@ -23,7 +23,7 @@ fi
 echo
 echo -e "${GREEN}Qdrant is running on port 6333${NC}"
 echo -e "${GREEN}PostgreSQL is running on port 5433${NC}"
-echo "Connection string: postgresql://app_user:changeme@localhost:5433/contentgruen_app"
+echo "Connection string: postgresql://app_user:changeme@localhost:5433/gutgesagt_app"
 echo
 echo "To stop: docker compose -f docker-compose.local-dbs.yml down"
 echo "To reset: docker compose -f docker-compose.local-dbs.yml down -v"

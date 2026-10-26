@@ -2,7 +2,7 @@
 
 1. Einmalig `cp mvp/config/managed-users.example.json mvp/config/managed-users.json` (gitignoriert; ohne Datei ist die Direktanmeldung aus).
 2. Backend aus `mvp/` starten – Compose-Datei `docker-compose.dev.yml`, nur diese Container:
-   `docker compose -f docker-compose.dev.yml up -d qdrant postgres-app contentgruen-semantic-search contentgruen-bff`
+   `docker compose -f docker-compose.dev.yml up -d qdrant postgres-app gutgesagt-semantic-search gutgesagt-bff`
    Ports: BFF 5054, Semantic Search 8000, PostgreSQL 5433, Qdrant 6333.
    Der Frontend-Container (8080) wird dafür nicht gebraucht; `mvp/run-local.sh up` startet ihn trotzdem mit.
 3. Frontend: `cd mvp/frontend/gutgesagt-frontend && npm ci && npx ng serve`

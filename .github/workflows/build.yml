@@ -86,7 +86,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-frontend
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-frontend
           tags: |
             # :main — moves with every push; watched by the tst deployment
             type=raw,value=main
@@ -134,7 +134,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-bff
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-bff
           tags: |
             type=raw,value=main
             type=sha,prefix=sha-,format=short
@@ -177,7 +177,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-semantic-search
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-semantic-search
           tags: |
             type=raw,value=main
             type=sha,prefix=sha-,format=short
@@ -222,7 +222,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/contentgruen-postgres-app
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/gutgesagt-postgres-app
           tags: |
             type=raw,value=main
             type=sha,prefix=sha-,format=short

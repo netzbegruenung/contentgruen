@@ -24,7 +24,7 @@ This file helps AI assistants (like Claude) understand the Gut gesagt project st
 ## Dev-VM (Agenten-Sandbox)
 
 Wegwerf-Sandbox, kein Mensch entwickelt hier interaktiv: alles läuft in Docker Compose
-(`mvp/docker-compose.dev.yml`, Projekt `contentgruen-dev`) und darf jederzeit gelöscht und
+(`mvp/docker-compose.dev.yml`, Projekt `gutgesagt-dev`) und darf jederzeit gelöscht und
 neu aufgebaut werden. Dev-Loop über `mvp/run-local.sh` — aus jedem Verzeichnis aufrufbar,
 nichts im Vordergrund, Exit != 0 bei Fehler:
 
@@ -255,18 +255,17 @@ When user requests "view api docs":
 
 ### Database Access
 ```bash
-docker exec -it contentgruen-app-postgres psql -U app_user -d contentgruen_app
+docker exec -it gutgesagt-app-postgres psql -U app_user -d gutgesagt_app
 ```
-Container names are the same in dev, test and production: `contentgruen-app-postgres`,
-`contentgruen-semantic-search`, `contentgruen-qdrant` (on the hosts once the Salt PR
-`fix/contentgruen-haertung` is rolled out; before that the hosts named PostgreSQL
-`contentgruen-postgres-app`).
+Container names are the same in dev, test and production: `gutgesagt-app-postgres`,
+`gutgesagt-semantic-search`, `gutgesagt-qdrant` (on the hosts once the rename in #206 is rolled
+out; until then the hosts use the old names, e.g. `contentgruen-app-postgres`).
 
 ### View Logs
 When user requests "check logs" or "view logs":
 ```bash
 # Docker mode
-docker-compose logs -f [contentgruen-frontend|contentgruen-bff|contentgruen-semantic-search]
+docker-compose logs -f [gutgesagt-frontend|gutgesagt-bff|gutgesagt-semantic-search]
 
 # Local mode - check terminal windows
 ```
@@ -301,7 +300,7 @@ When user requests "backup data" or "create backup":
 ```bash
 cd mvp/scripts/backup
 ./backup.sh
-# Creates backup in /opt/contentgruen-backups/daily/
+# Creates backup in /opt/gutgesagt-backups/daily/
 # On Sundays: Also creates weekly backup
 # Auto-rotates: Keeps last 7 daily + 4 weekly backups
 ```
@@ -309,7 +308,7 @@ cd mvp/scripts/backup
 When user requests "restore data" or "restore backup":
 ```bash
 cd mvp/scripts/backup
-# Paths are resolved relative to /opt/contentgruen-backups/ -- pass a relative path
+# Paths are resolved relative to /opt/gutgesagt-backups/ -- pass a relative path
 ./restore.sh daily/latest                    # Restore latest daily
 ./restore.sh weekly/latest                   # Restore latest weekly
 ./restore.sh daily/backup_YYYYMMDD_HHMMSS    # Restore specific
@@ -322,10 +321,10 @@ cd mvp/scripts/backup
 ```
 
 **Important Notes:**
-- First run: `backup.sh` auto-creates directories (`/opt/contentgruen-backups/daily/`, `/opt/contentgruen-backups/weekly/`)
+- First run: `backup.sh` auto-creates directories (`/opt/gutgesagt-backups/daily/`, `/opt/gutgesagt-backups/weekly/`)
 - Container names default to the ones above; override with `POSTGRES_CONTAINER`,
-  `APP_CONTAINER`, `QDRANT_CONTAINER` if needed. `BACKUP_ROOT` (default `/opt/contentgruen-backups`)
-  must be mounted at `/backups` in `contentgruen-semantic-search`, otherwise `backup.sh` aborts
+  `APP_CONTAINER`, `QDRANT_CONTAINER` if needed. `BACKUP_ROOT` (default `/opt/gutgesagt-backups`)
+  must be mounted at `/backups` in `gutgesagt-semantic-search`, otherwise `backup.sh` aborts
   because the Qdrant snapshot is missing on the host. Dev-stack test: README "Testing in the dev stack"
 - Automatic rotation: Keeps last 7 daily + 4 weekly backups
 - Includes Qdrant vectors and PostgreSQL metadata
@@ -353,15 +352,14 @@ dotnet test
 ## Deployment
 
 ### Test Environment
-- URL: https://contentgruen-test.netzbegruenung.de (SaltStack-managed, runs the `:main` image tag)
+- URL: https://gutgesagt-test.netzbegruenung.de (SaltStack-managed, runs the `:main` image tag)
 - Deployment: Manual — Salt `state.apply`, then `docker compose pull && docker compose up -d` on the host.
   A new `:main` image is **not** rolled out automatically, so migrations can run before the deploy.
   The Salt state still contains a Watchtower block, but its container is stuck in a restart loop
   (as of 2026-10-11); the block is being removed from the Salt repo (#22).
-- Legacy URL: https://test.contentgruen.de (manual deployment via docker-compose.tst.yml, being discontinued)
 
 ### Production Environment
-- URL: https://contentgruen.netzbegruenung.de
+- URL: https://gutgesagt.netzbegruenung.de
 - Deployment: Automated via SaltStack
 - Config: External SaltStack repository
 

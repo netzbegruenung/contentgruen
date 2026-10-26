@@ -7,7 +7,7 @@
 #   semantic -> python (no curl in the image)
 #   bff      -> bash (/dev/tcp; the BFF exposes no health endpoint)
 #   frontend -> wget (busybox)
-name: contentgruen-dev
+name: gutgesagt-dev
 
 services:
   qdrant:
@@ -19,7 +19,7 @@ services:
         max-size: "20m"
         max-file: "3"
     image: qdrant/qdrant:v1.18.2
-    container_name: contentgruen-qdrant
+    container_name: gutgesagt-qdrant
     restart: unless-stopped
     ports:
       - "127.0.0.1:6333:6333"  # REST API
@@ -50,12 +50,12 @@ services:
         max-size: "20m"
         max-file: "3"
     image: postgres:16-alpine
-    container_name: contentgruen-app-postgres
+    container_name: gutgesagt-app-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: app_user
       POSTGRES_PASSWORD: changeme
-      POSTGRES_DB: contentgruen_app
+      POSTGRES_DB: gutgesagt_app
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
@@ -64,13 +64,13 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - 'pg_isready -U app_user -d contentgruen_app'
+        - 'pg_isready -U app_user -d gutgesagt_app'
       interval: 5s
       timeout: 5s
       retries: 12
       start_period: 10s
 
-  contentgruen-semantic-search:
+  gutgesagt-semantic-search:
     # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
     # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
     logging:
@@ -81,14 +81,14 @@ services:
     build:
       context: .
       dockerfile: backend/semantic-search-service/Dockerfile
-    container_name: contentgruen-semantic-search
+    container_name: gutgesagt-semantic-search
     restart: unless-stopped
     ports:
       - "127.0.0.1:8000:8000"
     environment:
       - SEMANTIC_SEARCH_QDRANT_URL=http://qdrant:6333
       - SEMANTIC_SEARCH_QDRANT_COLLECTION=content_collection
-      - SEMANTIC_SEARCH_APP_DATABASE_URL=postgresql+psycopg2://app_user:changeme@postgres-app:5432/contentgruen_app
+      - SEMANTIC_SEARCH_APP_DATABASE_URL=postgresql+psycopg2://app_user:changeme@postgres-app:5432/gutgesagt_app
       - DOCKER_CONTAINER=true
       - SEMANTIC_SEARCH_DATA_PATH=/data/seed/v1.0
       - SEMANTIC_SEARCH_METADATA_PATH=/metadata
@@ -117,7 +117,7 @@ services:
       postgres-app:
         condition: service_healthy
 
-  contentgruen-bff:
+  gutgesagt-bff:
     # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
     # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
     logging:
@@ -128,13 +128,13 @@ services:
     build:
       context: ./backend/BFF
       dockerfile: Dockerfile
-    container_name: contentgruen-bff
+    container_name: gutgesagt-bff
     restart: unless-stopped
     ports:
       - "127.0.0.1:5054:5054"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - BACKEND_URL=http://contentgruen-semantic-search:8000
+      - BACKEND_URL=http://gutgesagt-semantic-search:8000
       # Must match the published frontend port below - drives CORS and the auth redirect.
       - FRONTEND_URL=http://localhost:8080
       - USE_KEYCLOAK=false
@@ -155,10 +155,10 @@ services:
       retries: 12
       start_period: 20s
     depends_on:
-      contentgruen-semantic-search:
+      gutgesagt-semantic-search:
         condition: service_healthy
 
-  contentgruen-frontend:
+  gutgesagt-frontend:
     # Ohne max-size waechst die json-file-Logdatei, bis die Platte voll ist.
     # 20m x 3 = 60 MB je Dienst; beim Seeding-Debugging will man Historie.
     logging:
@@ -172,7 +172,7 @@ services:
       args:
         - NGINX_CONF=nginx.docker.conf
         - BUILD_CONFIGURATION=development
-    container_name: contentgruen-frontend
+    container_name: gutgesagt-frontend
     restart: unless-stopped
     environment:
       - PRODUCTION=false
@@ -194,7 +194,7 @@ services:
       retries: 12
       start_period: 10s
     depends_on:
-      contentgruen-bff:
+      gutgesagt-bff:
         condition: service_healthy
 
 volumes:

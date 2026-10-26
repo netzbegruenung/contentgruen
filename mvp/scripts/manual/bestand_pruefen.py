@@ -14,11 +14,11 @@ ohne /app im Pfad, gegen einen Container ohne utils/text_normalisierung.py).
 Auf Test/Prod liegt kein Repo-Checkout - Skript herunterladen, dann ausfuehren:
 
     curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/bestand_pruefen.py
-    docker exec -i contentgruen-semantic-search python - < bestand_pruefen.py
+    docker exec -i gutgesagt-semantic-search python - < bestand_pruefen.py
 
     # zusaetzlich Vektorpraefix-Stichprobe (laedt das Einbettungsmodell, ~1,5 GB RAM,
     # 20 Punkte je Inhaltstyp)
-    docker exec -i contentgruen-semantic-search python - --praefix 20 < bestand_pruefen.py
+    docker exec -i gutgesagt-semantic-search python - --praefix 20 < bestand_pruefen.py
 
 Ausgabe (JSON):
 - punkte_je_typ_und_herkunft

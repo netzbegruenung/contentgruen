@@ -20,16 +20,15 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 
 ### 3. Test Environment
 - **Purpose**: Integration testing and demos
-- **Access**: https://contentgruen-test.netzbegruenung.de (SaltStack-managed).
-  The older manually-managed https://test.contentgruen.de is being discontinued.
+- **Access**: https://gutgesagt-test.netzbegruenung.de (SaltStack-managed).
 - **Infrastructure**: Docker containers on test server
 - **Authentication**: Dummy auth (testuser/Liebe>Hass!)
-- **Management**: Manual deployment via `docker-compose.tst.yml`
+- **Management**: SaltStack state, deployed manually (`state.apply`, then `docker compose pull && up -d`)
 
 ### 4. Production Environment
 - **Purpose**: Live system for Netzbegrünung members
-- **Access**: https://contentgruen.netzbegruenung.de and
-  https://contentgruen.netzbegruenung.verdigado.net (contentgruen.de redirects here, upstream of SaltStack)
+- **Access**: https://gutgesagt.netzbegruenung.de and
+  https://gutgesagt.netzbegruenung.verdigado.net (contentgruen.de redirects here, upstream of SaltStack)
 - **Infrastructure**: Docker containers managed by SaltStack
 - **Authentication**: Keycloak SSO integration
 - **Management**: SaltStack automation
@@ -112,13 +111,13 @@ listens on 5432 inside the container.
 ### PostgreSQL
 - **Purpose**: Application data — votes, usage tracking, search tracking, moderation reports.
   Content and its vector embeddings live in Qdrant, not in PostgreSQL.
-- **Image**: `postgres:16-alpine` (service `postgres-app`, container `contentgruen-app-postgres`)
+- **Image**: `postgres:16-alpine` (service `postgres-app`, container `gutgesagt-app-postgres`)
 - **Access**:
   - Local/Docker: localhost:5433 (container port 5432)
   - Test/Prod: Internal Docker network
 
 > The schema is defined once, in `mvp/backend/postgres-app/init.sql`. It is baked into the
-> `contentgruen-postgres-app` image used by test and production, and bind-mounted by the local
+> `gutgesagt-postgres-app` image used by test and production, and bind-mounted by the local
 > compose files, so every environment provisions the same tables.
 
 ## Nginx Configuration
@@ -140,9 +139,9 @@ listens on 5432 inside the container.
 - **Frontend Container nginx**: Serves static files
 - **External nginx** (SaltStack managed):
   - TLS termination
-  - Routes contentgruen.netzbegruenung.de and contentgruen.netzbegruenung.verdigado.net
+  - Routes gutgesagt.netzbegruenung.de and gutgesagt.netzbegruenung.verdigado.net
     → frontend container (127.0.0.1:3000)
-  - Routes bff.contentgruen.netzbegruenung.de → BFF container (127.0.0.1:3001)
+  - Routes bff.gutgesagt.netzbegruenung.de → BFF container (127.0.0.1:3001)
   - Keycloak integration
 
 ## Authentication Flow
@@ -167,7 +166,6 @@ listens on 5432 inside the container.
 ### Docker Compose Files
 - **docker-compose.dev.yml**: Full stack for local Docker development
 - **docker-compose.local-dbs.yml**: Qdrant + PostgreSQL only, for local component-based development
-- **docker-compose.tst.yml**: Test environment configuration
 - **docker-compose.prd.yml**: Reference to SaltStack managed production
 
 ### Container Registry

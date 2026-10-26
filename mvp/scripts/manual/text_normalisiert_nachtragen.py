@@ -16,10 +16,10 @@ Auf Test/Prod liegt kein Repo-Checkout - Skript herunterladen, dann ausfuehren:
     curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/text_normalisiert_nachtragen.py
 
     # 1. Zaehlen, was nachzutragen waere - aendert nichts
-    docker exec -i contentgruen-semantic-search python - < text_normalisiert_nachtragen.py
+    docker exec -i gutgesagt-semantic-search python - < text_normalisiert_nachtragen.py
 
     # 2. Nachtragen
-    docker exec -i contentgruen-semantic-search python - --ausfuehren \
+    docker exec -i gutgesagt-semantic-search python - --ausfuehren \
         < text_normalisiert_nachtragen.py
 
 Idempotent: ein zweiter Lauf mit --ausfuehren meldet nachzutragen = 0. Geschrieben

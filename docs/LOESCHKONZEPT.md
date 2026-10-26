@@ -69,7 +69,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `actor_hash` stehen dort Klartext-Suchtext, Kennung und IP-Hash, und dann ist
   `DELETE FROM search_events WHERE user_id = …` sehr wohl nötig
   (`mvp/backend/postgres-app/migrations/2026-08-19-search-events-pseudonymisieren.sql`).
-- **Backups** unter `/opt/contentgruen-backups` halten 7 Tages- und 4 Wochenstände,
+- **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände,
   gelöschte Daten leben dort bis zu 28 Tage weiter. Selektives Editieren von
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
@@ -95,7 +95,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 
 ```bash
 UID=a1b2c3d4-0000-0000-0000-000000000000
-docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app <<SQL
+docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app <<SQL
 \set uid '$UID'
 
 -- Schritt 1: Sitzungskennungen sichern. VOR jedem DELETE.
@@ -118,7 +118,7 @@ DELETE FROM users            WHERE user_id             = :'uid';
 COMMIT;
 SQL
 
-docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app -c \
+docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
   "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, usage_events, users;"
 ```
 

@@ -3,13 +3,13 @@
 # Gut gesagt Automated Backup Script with Rotation
 # Runs daily at 3 AM via cron
 # Keeps: Last 7 daily backups + Last 4 weekly backups (Sundays)
-# Stores backups in /opt/contentgruen-backups/ on HOST filesystem
+# Stores backups in /opt/gutgesagt-backups/ on HOST filesystem
 
 set -e  # Exit on error
 
 # Configuration
 # Host-Seite des Mounts /backups im Application-Container; beide muessen zusammenpassen.
-BACKUP_ROOT="${BACKUP_ROOT:-/opt/contentgruen-backups}"
+BACKUP_ROOT="${BACKUP_ROOT:-/opt/gutgesagt-backups}"
 DAILY_DIR="$BACKUP_ROOT/daily"
 WEEKLY_DIR="$BACKUP_ROOT/weekly"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -18,10 +18,10 @@ BACKUP_DIR="$DAILY_DIR/backup_$TIMESTAMP"
 # Containernamen: Dev, Test und Prod nutzen dieselben Namen. Abweichende Namen
 # kommen aus der Umgebung, z. B.:
 #   POSTGRES_CONTAINER=anderer-name ./backup.sh
-POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-contentgruen-app-postgres}"
-APP_CONTAINER="${APP_CONTAINER:-contentgruen-semantic-search}"
-QDRANT_CONTAINER="${QDRANT_CONTAINER:-contentgruen-qdrant}"
-DB_NAME="contentgruen_app"
+POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-gutgesagt-app-postgres}"
+APP_CONTAINER="${APP_CONTAINER:-gutgesagt-semantic-search}"
+QDRANT_CONTAINER="${QDRANT_CONTAINER:-gutgesagt-qdrant}"
+DB_NAME="${DB_NAME:-gutgesagt_app}"
 DB_USER="app_user"
 
 # Retention settings
@@ -216,5 +216,5 @@ log "Type: Daily backup"
 [ "$DAY_OF_WEEK" -eq 7 ] && log "Also saved as weekly backup"
 log ""
 log "To restore this backup, run:"
-log "  cd /opt/contentgruen/mvp/scripts/backup"
+log "  cd /opt/gutgesagt/mvp/scripts/backup"
 log "  ./restore.sh $DAILY_DIR/backup_$TIMESTAMP"

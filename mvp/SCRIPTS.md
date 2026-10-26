@@ -121,8 +121,8 @@ Creates a complete backup of Qdrant and PostgreSQL:
 - Qdrant vector database (content + embeddings)
 - PostgreSQL metadata (usage tracking)
 - Backup metadata with checksums
-- Stored in `/opt/contentgruen-backups/daily/backup_YYYYMMDD_HHMMSS/`
-- On Sundays, additionally copied to `/opt/contentgruen-backups/weekly/`
+- Stored in `/opt/gutgesagt-backups/daily/backup_YYYYMMDD_HHMMSS/`
+- On Sundays, additionally copied to `/opt/gutgesagt-backups/weekly/`
 - Creates the backup directories on first run
 - Automatic rotation keeps the last 7 daily and 4 weekly backups
   (`KEEP_DAILY` / `KEEP_WEEKLY` at the top of the script)
@@ -143,7 +143,7 @@ Restores data from a backup:
 
 **Usage:**
 ```bash
-# Paths are resolved relative to /opt/contentgruen-backups/
+# Paths are resolved relative to /opt/gutgesagt-backups/
 scripts/backup/restore.sh daily/latest                    # Restore latest daily backup
 scripts/backup/restore.sh weekly/latest                   # Restore latest weekly backup
 scripts/backup/restore.sh daily/backup_20250916_103000    # Restore a specific backup
@@ -165,7 +165,7 @@ scripts/backup/test-backup-restore.sh
 
 **Note:** Backup scripts are Linux/Unix only and require:
 - Docker running with Gut gesagt containers
-- `/opt/contentgruen-backups/` directory (created by setup script)
+- `/opt/gutgesagt-backups/` directory (created by setup script)
 - GNU coreutils (stat, md5sum, readlink)
 
 See `scripts/backup/README.md` for detailed documentation.

@@ -48,7 +48,7 @@ Then access:
 
 ### Current (SaltStack-managed)
 
-- 🔗 Frontend: https://contentgruen-test.netzbegruenung.de
+- 🔗 Frontend: https://gutgesagt-test.netzbegruenung.de
 - **Management:** SaltStack, alongside production
 - **Images:** floating `:main` tag, deployed **manually**: Salt `state.apply`, then
   `docker compose pull && docker compose up -d` on the host. A merge to `main` does not reach
@@ -56,57 +56,7 @@ Then access:
   container is stuck in a restart loop (as of 2026-10-11); the block is being removed from
   the Salt repo (#22)
 - **Backups:** enabled since the Salt PR `fix/contentgruen-haertung` (`enable_backup: true`,
-  mount `/opt/contentgruen-backups:/backups`); disabled before that
-
-### Legacy (manual, being discontinued)
-
-- 🔗 Frontend: [https://test.contentgruen.de](https://test.contentgruen.de)
-- 🔗 BFF API: [https://bff.test.contentgruen.de](https://bff.test.contentgruen.de)
-- 🔗 API Docs: [https://bff.test.contentgruen.de/docs](https://bff.test.contentgruen.de/docs)
-
-### Server Details (legacy system)
-
-- **Host:** Hetzner VPS — hostname and credentials are not published here.
-  Ask in the project channel if you need access.
-- **OS:** Ubuntu 24.04 LTS
-- **Access:** SSH with key authentication
-- **Management:** Manual (not in SaltStack)
-
-### Deployment Process (legacy system)
-
-1. **SSH to the test server** (host and user from the project channel):
-   ```bash
-   ssh <user>@<test-host>
-   ```
-
-2. **Update the compose file:**
-   ```bash
-   cd <deployment-dir>
-   nano docker-compose.yml  # Use mvp/docker-compose.tst.yml from this repo
-   ```
-
-3. **Deploy:**
-   ```bash
-   docker compose pull
-   docker compose up -d
-   docker compose logs -f  # Check for errors
-   ```
-
-### Service Configuration (legacy system)
-
-Services are configured to only listen on localhost and are proxied via Nginx:
-- Frontend: `127.0.0.1:3000` → nginx → `https://test.contentgruen.de`
-- BFF: `127.0.0.1:3001` → nginx → `https://bff.test.contentgruen.de`
-- Semantic Search: Internal only (accessed via BFF)
-- PostgreSQL: Internal only
-
-### Nginx Configuration (legacy system)
-
-Located in `/etc/nginx/sites-available/`:
-- `test.contentgruen.de.conf` - Frontend proxy
-- `bff.test.contentgruen.de.conf` - BFF proxy
-
-TLS certificates are managed by Certbot with automatic renewal.
+  mount `/opt/gutgesagt-backups:/backups`); disabled before that
 
 ---
 
@@ -114,7 +64,7 @@ TLS certificates are managed by Certbot with automatic renewal.
 
 ### 🖥 Server
 
-- **Host:** `contentgruen.netzbegruenung.verdigado.net`
+- **Host:** `gutgesagt.netzbegruenung.verdigado.net`
 - **Access:** SSH via Netzbegruenung SaltStack managed users
 - **Management:** Fully automated via SaltStack
 
@@ -124,35 +74,35 @@ In production, Gut gesagt is accessed via subdomains routed by an external Nginx
 
 | Domain/Subdomain                                | Target Service          |
 | ----------------------------------------------- | ----------------------- |
-| `contentgruen.netzbegruenung.de`                | Angular Frontend (:3000)|
-| `contentgruen.netzbegruenung.verdigado.net`     | Angular Frontend (:3000)|
-| `bff.contentgruen.netzbegruenung.de`            | .NET API Gateway (:3001)|
+| `gutgesagt.netzbegruenung.de`                | Angular Frontend (:3000)|
+| `gutgesagt.netzbegruenung.verdigado.net`     | Angular Frontend (:3000)|
+| `bff.gutgesagt.netzbegruenung.de`            | .NET API Gateway (:3001)|
 
 The two frontend hostnames share one nginx server block. Port 80 is a blanket redirect to
 HTTPS.
 
-`contentgruen.de` redirects to `contentgruen.netzbegruenung.de`. That redirect is **not** part
+`contentgruen.de` redirects to `gutgesagt.netzbegruenung.de`. That redirect is **not** part
 of the SaltStack state — it is handled upstream (registrar/DNS level).
 
 Server and Nginx are managed via the Netzbegruenung/Verdigado SaltStack:
-> https://git.verdigado.com/verdigado-Privileged/Salt/src/branch/master/states/contentgruen
+> https://git.verdigado.com/verdigado-Privileged/Salt/src/branch/master/states/gutgesagt
 
 TLS is managed automatically using Let's Encrypt certificates.
 Renewal is handled via certbot by the default nginx-reverse-proxy from the SaltStack setup.
 
 ### 📂 Data & Persistence
 
-Compose runs with a working directory of `/opt/contentgruen`, so Docker prefixes the declared
-volume names with `contentgruen_`:
+The Compose project is named `gutgesagt` (working directory `/opt/gutgesagt`), so Docker
+prefixes the declared volume names with `gutgesagt_`:
 
 | Service          | Docker volume                            | Note                                    |
 | ---------------- | ---------------------------------------- | --------------------------------------- |
-| Qdrant           | `contentgruen_qdrant_storage`            | Content and vector embeddings           |
-| PostgreSQL       | `contentgruen_pgdata_app`                | Application data (votes, usage, reports)|
-| Semantic Search  | `contentgruen_semantic_search_metadata`  | Index metadata                          |
+| Qdrant           | `gutgesagt_qdrant_storage`            | Content and vector embeddings           |
+| PostgreSQL       | `gutgesagt_pgdata_app`                | Application data (votes, usage, reports)|
+| Semantic Search  | `gutgesagt_semantic_search_metadata`  | Index metadata                          |
 | TLS certs        | `/etc/letsencrypt/`                      | Managed outside containers              |
 
-The production database is `contentgruen_app`, user `app_user`; the password comes from a
+The production database is `gutgesagt_app`, user `app_user`; the password comes from a
 Passbolt-backed Salt pillar.
 
 ### 🚧 Updating Production
@@ -211,20 +161,20 @@ Gut gesagt uses an automated backup system that backs up both Qdrant vector data
 
 **First-time setup:**
 
-No setup script is required — `backup.sh` creates `/opt/contentgruen-backups/{daily,weekly}/`
+No setup script is required — `backup.sh` creates `/opt/gutgesagt-backups/{daily,weekly}/`
 on first run. In production the cron schedule is provisioned by SaltStack.
 
 **Create backup:**
 ```bash
-cd /opt/contentgruen/mvp/scripts/backup
+cd /opt/gutgesagt/mvp/scripts/backup
 ./backup.sh
 ```
 
 **Restore from backup:**
 
-Paths are resolved relative to `/opt/contentgruen-backups/`:
+Paths are resolved relative to `/opt/gutgesagt-backups/`:
 ```bash
-cd /opt/contentgruen/mvp/scripts/backup
+cd /opt/gutgesagt/mvp/scripts/backup
 ./restore.sh daily/latest                    # Latest daily backup
 ./restore.sh weekly/latest                   # Latest weekly backup
 ./restore.sh daily/backup_YYYYMMDD_HHMMSS    # A specific backup
@@ -232,7 +182,7 @@ cd /opt/contentgruen/mvp/scripts/backup
 
 **Test backup/restore:**
 ```bash
-cd /opt/contentgruen/mvp/scripts/backup
+cd /opt/gutgesagt/mvp/scripts/backup
 ./test-backup-restore.sh
 ```
 
@@ -242,7 +192,7 @@ cd /opt/contentgruen/mvp/scripts/backup
 - ✅ Backup metadata with checksums for integrity verification
 
 **Storage location:**
-- Backups are stored in `/opt/contentgruen-backups/{daily,weekly}/` on the host
+- Backups are stored in `/opt/gutgesagt-backups/{daily,weekly}/` on the host
 - Runs on Sunday additionally produce a weekly backup
 - Automatic rotation keeps the last 7 daily and 4 weekly backups
   (`KEEP_DAILY` / `KEEP_WEEKLY` at the top of `backup.sh`)
@@ -260,7 +210,7 @@ cd /opt/contentgruen/mvp/scripts/backup
 docker compose logs -f --tail=100
 
 # Specific service
-docker compose logs contentgruen-bff -f --tail=50
+docker compose logs gutgesagt-bff -f --tail=50
 ```
 
 ---
@@ -277,7 +227,7 @@ docker compose ps
 docker compose logs -f
 
 # Test internal connectivity
-docker exec contentgruen-bff curl http://contentgruen-semantic-search:8000/health
+docker exec gutgesagt-bff curl http://gutgesagt-semantic-search:8000/health
 ```
 
 ### Nginx issues?
@@ -307,10 +257,10 @@ sudo certbot renew --force-renewal
 
 ```bash
 # Check if PostgreSQL is running
-docker exec contentgruen-app-postgres pg_isready
+docker exec gutgesagt-app-postgres pg_isready
 
 # Connect to database
-docker exec -it contentgruen-app-postgres psql -U app_user -d contentgruen_app
+docker exec -it gutgesagt-app-postgres psql -U app_user -d gutgesagt_app
 ```
 
 ---
@@ -326,8 +276,8 @@ docker exec -it contentgruen-app-postgres psql -U app_user -d contentgruen_app
 ## 🤝 Need help?
 
 Talk to us in the Chatbegrünung channel:
-- 📢 `#ProjektContentGrün`
-- 🔗 [chatbegruenung.de](https://chatbegruenung.de/channel/ProjektContentGruen)
+- 📢 `#GutGesagt`
+- 🔗 [chatbegruenung.de](https://chatbegruenung.de/channel/GutGesagt)
 
 Ask in the channel for test-system or production access — the maintainers are reachable there.
 

@@ -15,7 +15,6 @@ REM Stop and remove Docker containers
 echo Stopping Docker containers...
 docker-compose -f docker-compose.dev.yml down -v 2>nul
 docker-compose -f docker-compose.local-dbs.yml down -v 2>nul
-docker-compose -f docker-compose.tst.yml down -v 2>nul
 
 REM Clean Python environment
 echo Cleaning Python environment...

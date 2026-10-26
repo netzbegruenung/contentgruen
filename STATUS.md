@@ -74,7 +74,6 @@ Candidate features:
 
 ## Environments
 
-* **Test:** https://contentgruen-test.netzbegruenung.de — SaltStack-managed, tracks `:main`.
-  The older https://test.contentgruen.de (manual, `mvp/docker-compose.tst.yml`) is being discontinued.
-* **Production:** https://contentgruen.netzbegruenung.de — SaltStack-managed, images pinned by
+* **Test:** https://gutgesagt-test.netzbegruenung.de — SaltStack-managed, tracks `:main`.
+* **Production:** https://gutgesagt.netzbegruenung.de — SaltStack-managed, images pinned by
   digest and bumped by Renovate. https://contentgruen.de redirects here.

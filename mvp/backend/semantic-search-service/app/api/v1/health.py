@@ -129,7 +129,7 @@ def check_memory_usage() -> Dict[str, Any]:
 def get_last_backup_time() -> Optional[str]:
     """Get the timestamp of the last backup."""
     try:
-        backup_base_path = "/opt/contentgruen-backups"
+        backup_base_path = "/opt/gutgesagt-backups"
         latest_daily = os.path.join(backup_base_path, "daily", "latest")
         latest_weekly = os.path.join(backup_base_path, "weekly", "latest")
 
