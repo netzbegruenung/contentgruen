@@ -32,7 +32,7 @@ import { ReportDialogComponent } from '../../shared/components/report-dialog/rep
  *
  * Abstimmen ist optimistisch mit Entprellung und Ruecknahme, dazu 401/403/429-Behandlung
  * (urspruenglich aus BaseResultItemComponent). Die Leiste sitzt in einer eigenen
- * Komponente, damit kompakte Karten und Rohlinge, die als Ganzes antippbar sind,
+ * Komponente, damit kompakte Karten und Einwurf-Karten, die als Ganzes antippbar sind,
  * keine Knoepfe und keine Dienste mitschleppen.
  *
  * In der Formular-Vorschau ist die Leiste sichtbar wie in der Suche, reagiert aber

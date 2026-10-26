@@ -24,7 +24,7 @@ export const TAB_PARAM = 'tab';
 /** Was aus dem Einwurf ins Beitragsformular uebernommen wird. Alles bleibt aenderbar. */
 export interface Vorbefuellung {
   rohinputId: string;
-  /** Der eigene Entwurfssatz - er wird der Titel. */
+  /** Der eigene Satz - er wird der Titel. */
   titel: string;
   /** Der Link des Einwurfs, ohne Tracking-Parameter - er wird die Herkunft. */
   url: string | null;
@@ -57,7 +57,7 @@ export class DestillierUebergabeService {
           rohinputId: einwurf.id,
           titel,
           url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
-          kopf: karte.rohling ? { ...karte, rohling: { ...karte.rohling, kopfSatz: titel || undefined } } : karte,
+          kopf: karte.einwurf ? { ...karte, einwurf: { ...karte.einwurf, kopfSatz: titel || undefined } } : karte,
         };
       }),
     );
@@ -70,7 +70,7 @@ export class DestillierUebergabeService {
    * Liefert, ob das Verknuepfen geklappt hat; ein Fehler bricht nichts ab, der
    * Beitrag ist ja da. Den naechsten Einwurf waehlt der Aufrufer.
    */
-  alsVerarbeitetMarkieren(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
+  alsAusformuliertMarkieren(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
     return this.rawInputService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
       map(() => true),
       catchError((error) => {

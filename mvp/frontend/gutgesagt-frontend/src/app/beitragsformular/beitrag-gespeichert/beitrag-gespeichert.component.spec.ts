@@ -99,11 +99,11 @@ describe('BeitragGespeichertComponent', () => {
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'erledigt');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformuliert');
 
       (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
       expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
-      expect(sessionStorage.getItem(FILTER_SCHLUESSEL) ?? '').toContain('erledigt');
+      expect(sessionStorage.getItem(FILTER_SCHLUESSEL) ?? '').toContain('ausformuliert');
     });
 
     it('Fangkorb: nicht markiert fuehrt nach Ausformulieren und sagt es', async () => {

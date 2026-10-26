@@ -15,7 +15,7 @@ import { Observable, Subject, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
-import { KartenDaten, RohlingBeitrag, ausBeitrag } from '../beitragskarte/karten-daten';
+import { KartenDaten, EinwurfBeitrag, ausBeitrag } from '../beitragskarte/karten-daten';
 import { ContentResult } from '../services/dtos/contributionDtos';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
@@ -23,7 +23,7 @@ import { LoggingService } from '../services/logging.service';
 
 /** Was das Sheet braucht: die Beitraege eines Einwurfs, aelteste zuerst. */
 export interface EinwurfBeitragSheetDaten {
-  beitraege: RohlingBeitrag[];
+  beitraege: EinwurfBeitrag[];
 }
 
 /** Ergebnis einer Anfrage: entweder eine Karte oder die Ansage, dass es sie nicht gibt. */
@@ -152,7 +152,7 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
   auswahlOffen = false;
 
   /** Jede Anfrage loest die vorige ab; die Antwort der abgeloesten zaehlt nicht mehr. */
-  private readonly anfragen = new Subject<RohlingBeitrag>();
+  private readonly anfragen = new Subject<EinwurfBeitrag>();
 
   constructor(
     @Inject(MAT_BOTTOM_SHEET_DATA) readonly daten: EinwurfBeitragSheetDaten,
@@ -185,7 +185,7 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
     this.anfragen.complete();
   }
 
-  oeffnen(beitrag: RohlingBeitrag): void {
+  oeffnen(beitrag: EinwurfBeitrag): void {
     this.auswahlOffen = false;
     this.karte = null;
     this.fehler = false;
@@ -201,7 +201,7 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
     this.laedt = false;
   }
 
-  private laden(beitrag: RohlingBeitrag): Observable<Geladen> {
+  private laden(beitrag: EinwurfBeitrag): Observable<Geladen> {
     const quelle = this.quelle(beitrag);
     if (!quelle) {
       return of({ karte: null, fehler: true });
@@ -219,7 +219,7 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
    * Beide Endpunkte liefern den Beitrag flach - dieselbe Form, die das Album aus
    * /getContributionsOfUser bekommt. Ohne bekannten Typ gibt es keinen Endpunkt.
    */
-  private quelle(beitrag: RohlingBeitrag): Observable<ContentResult> | null {
+  private quelle(beitrag: EinwurfBeitrag): Observable<ContentResult> | null {
     if (beitrag.typ === 'commentary') {
       return this.commentaryService.getCommentaryById(beitrag.contentId) as unknown as Observable<ContentResult>;
     }

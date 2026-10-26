@@ -14,7 +14,7 @@ import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
-import { tabMerken } from '../../raw-input-list/fangkorb-filter';
+import { FangkorbTab, tabMerken } from '../../raw-input-list/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,
@@ -108,8 +108,8 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   /** Der Tab, in dem der Einwurf jetzt liegt. */
-  private get fangkorbTab(): 'erledigt' | 'ausformulieren' {
-    return this.zustand.markiert === false ? 'ausformulieren' : 'erledigt';
+  private get fangkorbTab(): FangkorbTab {
+    return this.zustand.markiert === false ? 'ausformulieren' : 'ausformuliert';
   }
 
   ngOnInit(): void {

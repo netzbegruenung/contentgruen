@@ -12,13 +12,13 @@ import { plattformAusUrl, plattformName } from '../shared/plattform';
  * Fangkorb einen Einwurf mit Saetzen und Verknuepfungen. Die Adapter unten bringen
  * alle drei auf diese eine Form; die Karte kennt keine der Quellen.
  */
-export type KartenVariante = 'voll' | 'kompakt' | 'rohling' | 'kopf';
+export type KartenVariante = 'voll' | 'kompakt' | 'einwurf' | 'kopf';
 
 /**
- * Was eine Rohling-Karte anbietet: der eine Primaerknopf im Fuss und die
+ * Was eine Einwurf-Karte anbietet: der eine Primaerknopf im Fuss und die
  * Eintraege im ⋮-Menue. Wohin das fuehrt, entscheidet die Seite, nicht die Karte.
  */
-export type RohlingAktion =
+export type EinwurfAktion =
   | 'destillieren'
   | 'ausformulieren'
   | 'ansehen'
@@ -51,15 +51,15 @@ export interface KartenExtra {
 }
 
 /** Ein Satz zum Einwurf, mit der Zahl der Beitraege, mit denen er ausformuliert wurde. */
-export interface RohlingSatz {
+export interface EinwurfSatz {
   id: string;
   text: string;
-  /** 0 heisst Entwurf; sonst die Zahl der Beitraege aus genau diesem Satz. */
+  /** Die Zahl der Beitraege aus genau diesem Satz; 0, solange keiner mit ihm verknuepft ist. */
   beitraege: number;
 }
 
 /** Ein Beitrag aus dem Einwurf - was das Sheet braucht, um ihn nachzuladen. */
-export interface RohlingBeitrag {
+export interface EinwurfBeitrag {
   contentId: string;
   /** Registry-Schluessel; null bei Verknuepfungen aus der Zeit vor Fangkorb v2. */
   typ: string | null;
@@ -67,9 +67,9 @@ export interface RohlingBeitrag {
   satz: string | null;
 }
 
-export interface RohlingDaten {
+export interface EinwurfDaten {
   einwurfId: string;
-  zustand: FangkorbZustand;
+  stufe: EinwurfStufe;
   /** Marke links in der Link-Zeile: Plattformname, sonst die Domain. */
   herkunft: string | null;
   /** Ziel der Link-Zeile: der Link, sonst die Bildadresse. */
@@ -77,9 +77,9 @@ export interface RohlingDaten {
   /** Der Link, wie er dasteht: ohne Schema und www, Domain und Pfad. */
   linkText: string | null;
   /** Alle Saetze, aelteste Aenderung zuerst. */
-  saetze: RohlingSatz[];
+  saetze: EinwurfSatz[];
   /** Die verknuepften Beitraege, aelteste zuerst. */
-  beitraege: RohlingBeitrag[];
+  beitraege: EinwurfBeitrag[];
   /** Nur im Kopf: der Satz, aus dem gerade ein Beitrag entsteht. */
   kopfSatz?: string;
   /** Offen oder destilliert (`istVerwerfbar`); wer verwerfen darf, entscheidet die Karte. */
@@ -87,7 +87,7 @@ export interface RohlingDaten {
 }
 
 export interface KartenDaten {
-  /** Content-ID; beim Rohling die ID des Einwurfs bzw. des Satzes. */
+  /** Content-ID; bei der Einwurf-Karte die ID des Einwurfs bzw. des Satzes. */
   id: string;
   /** Registry-Schluessel ('generictext'), null ohne Beitrag oder bei unbekanntem Typ. */
   typ: string | null;
@@ -106,7 +106,7 @@ export interface KartenDaten {
   statement?: KartenStatement;
   stimme?: 'like' | 'dislike';
   extra?: KartenExtra;
-  rohling?: RohlingDaten;
+  einwurf?: EinwurfDaten;
 }
 
 // Suchergebnis und /recent
@@ -248,35 +248,40 @@ function domainAus(adresse: string | null | undefined): string | null {
 // Fangkorb
 
 /**
- * Woran ein Einwurf gerade ist - zugleich die drei Tabs des Fangkorbs und der
- * vierte Zustand, der hinter einem Chip unter "Erledigt" liegt.
+ * Die Stufe eines Einwurfs, wie das Glossar sie nennt. Die Tabs des Fangkorbs
+ * heissen dagegen nach der naechsten Arbeit (``FangkorbTab``); Verworfenes liegt
+ * unter "Ausformuliert" hinter einem Chip.
  */
-export type FangkorbZustand = 'destillieren' | 'ausformulieren' | 'erledigt' | 'verworfen';
+export type EinwurfStufe = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfen';
 
 /**
- * Den Bearbeitungsstand eines Einwurfs bestimmen.
+ * Die Stufe eines Einwurfs bestimmen.
  *
  * Verworfen zuerst: Verworfenes bleibt verworfen, auch wenn andere trotzdem
- * weiterdestillieren (das Backend erlaubt das ausdruecklich). Erledigt haengt an
- * den Verknuepfungen, nicht an den Saetzen - ein Einwurf kann auch ohne
+ * weiterdestillieren (das Backend erlaubt das ausdruecklich). Ausformuliert haengt
+ * an den Verknuepfungen, nicht an den Saetzen - ein Einwurf kann auch ohne
  * gespeicherten Satz verknuepft worden sein (processed aus open), und ein spaeter
  * geleerter Satz darf den Einwurf nicht zurueckfallen lassen.
+ *
+ * Der gespeicherte Status (open, in_progress, processed, discarded) traegt noch
+ * die alten Namen; die Stufe leitet sich hier ab, damit dafuer keine
+ * Datenmigration noetig ist.
  */
-export function zustandVonEinwurf(einwurf: RawInput): FangkorbZustand {
+export function stufeVonEinwurf(einwurf: RawInput): EinwurfStufe {
   if (einwurf.status === 'discarded') {
     return 'verworfen';
   }
   if ((einwurf.links ?? []).length > 0) {
-    return 'erledigt';
+    return 'ausformuliert';
   }
-  return (einwurf.drafts ?? []).length > 0 ? 'ausformulieren' : 'destillieren';
+  return (einwurf.drafts ?? []).length > 0 ? 'destilliert' : 'offen';
 }
 
 /**
  * Ein Einwurf als eine Karte: Herkunft im Kopf, der Inhalt als Titel, die Saetze
  * innen.
  *
- * Titel ist, was jemand mitgegeben hat - die Notiz, sonst nichts: Ohne Notiz ist
+ * Titel ist, was jemand mitgegeben hat - der Hinweis, sonst nichts: Ohne Hinweis ist
  * die Link-Zeile die Aufschrift der Karte. Die Adresse steht dort gekuerzt
  * (Domain und Pfad, ohne Schema und www), nicht als roher Link.
  *
@@ -289,8 +294,8 @@ export function zustandVonEinwurf(einwurf: RawInput): FangkorbZustand {
 export function ausEinwurf(einwurf: RawInput): KartenDaten {
   const links = einwurf.links ?? [];
   const adresse = einwurf.url ?? einwurf.image_url;
-  const zustand = zustandVonEinwurf(einwurf);
-  const saetze: RohlingSatz[] = (einwurf.drafts ?? []).map((satz) => ({
+  const stufe = stufeVonEinwurf(einwurf);
+  const saetze: EinwurfSatz[] = (einwurf.drafts ?? []).map((satz) => ({
     id: satz.id,
     text: satz.sentence,
     beitraege: links.filter((link) => link.draft_id === satz.id).length,
@@ -298,14 +303,14 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
 
   return {
     id: einwurf.id,
-    // Erledigt traegt die Farbe des ersten verknuepften Beitrags: Die Typklasse
-    // setzt --karten-farbe, und davon nimmt das Kopfband. Unfertige Rohlinge
+    // Ausformuliertes traegt die Farbe des ersten verknuepften Beitrags: Die Typklasse
+    // setzt --karten-farbe, und davon nimmt das Kopfband. Offene und destillierte Einwuerfe
     // haben keinen Typ - ihr Band bleibt Sand.
     // Die erste Verknuepfung *mit* Typ: Verknuepfungen aus der Zeit vor Fangkorb v2
     // tragen keinen, und stuende so eine vorn, blieben Band und Emoji farblos,
     // obwohl ein typisierter Beitrag daneben liegt.
     typ:
-      zustand === 'erledigt'
+      stufe === 'ausformuliert'
         ? (links.map((link) => resolveContentType(link.content_type)).find(Boolean) ?? null)
         : null,
     titel: hinweis(einwurf),
@@ -315,9 +320,9 @@ export function ausEinwurf(einwurf: RawInput): KartenDaten {
     autorName: einwurf.submitted_by_name ?? null,
     nutzung: null,
     quellen: [],
-    rohling: {
+    einwurf: {
       einwurfId: einwurf.id,
-      zustand,
+      stufe,
       herkunft: plattformNameAusUrl(einwurf.url) ?? domainAus(adresse),
       link: adresse,
       linkText: adresseKurz(adresse),

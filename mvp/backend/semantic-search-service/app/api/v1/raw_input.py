@@ -78,15 +78,15 @@ def _mit_namen(rows: List[dict], x_user: Optional[str]) -> List[dict]:
     """
     if not angemeldet(x_user):
         return rows
-    entwuerfe = [entwurf for row in rows for entwurf in row.get("drafts", [])]
+    saetze = [satz for row in rows for satz in row.get("drafts", [])]
     namen = get_anzeigename_service().namen(
         [row.get("submitted_by") for row in rows]
-        + [entwurf.get("user_id") for entwurf in entwuerfe]
+        + [satz.get("user_id") for satz in saetze]
     )
     for row in rows:
         row["submitted_by_name"] = namen.get(row.get("submitted_by"))
-    for entwurf in entwuerfe:
-        entwurf["user_name"] = namen.get(entwurf.get("user_id"))
+    for satz in saetze:
+        satz["user_name"] = namen.get(satz.get("user_id"))
     return rows
 
 
@@ -200,7 +200,7 @@ async def save_draft(
     except Exception as e:
         logger.error(f"Fehler in PUT /rawinput/{{id}}/draft: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail="Der Entwurf konnte nicht gespeichert werden."
+            status_code=500, detail="Der Satz konnte nicht gespeichert werden."
         )
 
 
@@ -213,7 +213,7 @@ async def _beitrag_pruefen(
     Gibt es den Beitrag, mit dem der Einwurf verknuepft werden soll?
 
     Ohne diese Pruefung konnte jede angemeldete Person jeden Einwurf mit einer
-    erfundenen ID nach "Erledigt" schieben; die Verknuepfung zeigte ins Leere.
+    erfundenen ID auf "ausformuliert" setzen; die Verknuepfung zeigte ins Leere.
     Geprueft werden Existenz und Typ, nicht der Autor: Wer beim Ausformulieren
     einem vorhandenen, fremden Kommentar zustimmt, verknuepft den Einwurf mit ihm.
 

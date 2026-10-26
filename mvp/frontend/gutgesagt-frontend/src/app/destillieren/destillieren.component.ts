@@ -21,7 +21,7 @@ import {
   SCHRITT_PARAM,
   TAB_PARAM,
 } from './destillier-uebergabe.service';
-import { FangkorbTab, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
+import { tabAus, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -51,7 +51,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
  * Der Ablauf muss am Handy unterbrechbar sein: Der Satz wird verzoegert beim
  * Tippen, beim Verlassen des Felds, bei jedem Knopf und beim Wegwechseln der App
  * (keepalive) serverseitig gespeichert. Ohne ID in der Adresse oeffnet sich der
- * naechste offene Einwurf ohne eigenen Entwurf, sonst "Alles destilliert".
+ * naechste offene Einwurf ohne eigenen Satz, sonst "Alles destilliert".
  */
 @Component({
   selector: 'app-destillieren',
@@ -111,14 +111,14 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
     this.satz.valueChanges
       .pipe(debounceTime(AUTOSAVE_VERZOEGERUNG_MS), takeUntil(this.destroy$))
-      .subscribe(() => this.entwurfSpeichern());
+      .subscribe(() => this.satzSpeichern());
   }
 
   /** Android friert die Seite beim App-Wechsel ein - vorher noch sichern. */
   @HostListener('document:visibilitychange')
   onVisibilityChange(): void {
     if (document.visibilityState === 'hidden') {
-      this.entwurfSichern();
+      this.satzSichern();
     }
   }
 
@@ -171,15 +171,15 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       this.kopfCache = {
         einwurf,
         satz,
-        karte: karte.rohling
+        karte: karte.einwurf
           ? {
               ...karte,
-              rohling: {
-                ...karte.rohling,
+              einwurf: {
+                ...karte.einwurf,
                 kopfSatz: satz || undefined,
                 // Der Einwurf ist vor dem Speichern des Satzes geladen; mit Satz ist er
-                // schon auszuformulieren, auch wenn seine drafts das noch nicht zeigen.
-                zustand: satz && karte.rohling.zustand === 'destillieren' ? 'ausformulieren' : karte.rohling.zustand,
+                // schon destilliert, auch wenn seine drafts das noch nicht zeigen.
+                stufe: satz && karte.einwurf.stufe === 'offen' ? 'destilliert' : karte.einwurf.stufe,
               },
             }
           : karte,
@@ -211,12 +211,6 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Die Notiz zum Einwurf, sofern sie mehr ist als der Link selbst. */
-  get notiz(): string | null {
-    const inhalt = this.einwurf?.content;
-    return inhalt && inhalt !== this.einwurf?.url ? inhalt : null;
-  }
-
   /**
    * Die Saetze anderer Personen zu diesem Einwurf. Solange die eigene Kennung
    * nicht bekannt ist, lieber keine als den eigenen Satz doppelt.
@@ -229,7 +223,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   }
 
   onBlur(): void {
-    this.entwurfSpeichern();
+    this.satzSpeichern();
   }
 
   weiter(): void {
@@ -296,11 +290,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.fehler = null;
     this.rawInputService.updateStatus(einwurf.id, 'discarded').subscribe({
       next: () => {
-        // Verworfenes liegt unter "Erledigt" hinter einem Chip, der normalerweise
+        // Verworfenes liegt unter "Ausformuliert" hinter einem Chip, der normalerweise
         // aus ist - fuer diese Sitzung wird er eingeschaltet, sonst ist der
         // Einwurf nach dem Verwerfen scheinbar spurlos weg.
         verworfenEinblenden();
-        this.uebergabe.zumNaechsten(einwurf.id, 'erledigt');
+        this.uebergabe.zumNaechsten(einwurf.id, 'ausformuliert');
       },
       error: (error) => {
         this.logger.error('Verwerfen fehlgeschlagen', error);
@@ -346,7 +340,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.navigation.unregisterBeforeBack(this.satzSichernVorZurueck);
     // Wer innerhalb der App wegnavigiert, verliert den Satz nicht.
-    this.entwurfSpeichern();
+    this.satzSpeichern();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -393,7 +387,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
   private naechstenOeffnen(): void {
     const nach = this.route.snapshot?.queryParamMap?.get('nach') ?? null;
-    const tab = this.route.snapshot?.queryParamMap?.get(TAB_PARAM) as FangkorbTab | null;
+    const tab = tabAus(this.route.snapshot?.queryParamMap?.get(TAB_PARAM));
     // Ohne "nach" beginnt eine neue Runde: Zurueckgestelltes kommt wieder dran.
     if (!nach) {
       this.rawInputService.rundeBeginnen();
@@ -415,7 +409,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // dieselbe Weiterleitung.
         if (nach) {
           this.rawInputService.rundeBeginnen();
-          tabMerken(tab ?? 'erledigt');
+          tabMerken(tab ?? 'ausformuliert');
           this.router.navigate(['/fangkorb'], { replaceUrl: true });
           return;
         }
@@ -447,13 +441,13 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     );
   }
 
-  private entwurfSpeichern(): void {
+  private satzSpeichern(): void {
     this.speichernWennGeaendert().subscribe({
-      error: (error) => this.logger.warn('Entwurf konnte nicht gespeichert werden', error),
+      error: (error) => this.logger.warn('Satz konnte nicht gespeichert werden', error),
     });
   }
 
-  private entwurfSichern(): void {
+  private satzSichern(): void {
     const satz = this.satz.value.trim();
     if (!this.einwurf || satz === this.zuletztGespeichert || satz.length > SATZ_LIMIT) {
       return;

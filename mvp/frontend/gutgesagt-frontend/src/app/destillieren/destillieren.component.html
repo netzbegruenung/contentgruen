@@ -58,7 +58,7 @@
                 <button mat-raised-button color="primary" type="button" class="weiter"
                         [disabled]="!kannWeiter" (click)="weiter()">Ausformulieren</button>
                 <button mat-stroked-button type="button" class="spaeter"
-                        [disabled]="arbeitet" (click)="spaeter()">Überspringen</button>
+                        [disabled]="arbeitet" (click)="spaeter()">Später</button>
                 <button *ngIf="darfVerwerfen" mat-button color="warn" type="button"
                         class="verwerfen" [disabled]="arbeitet" (click)="verwerfen()">Einwurf verwerfen</button>
             </div>

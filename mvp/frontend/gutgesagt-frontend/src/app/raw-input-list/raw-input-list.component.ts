@@ -25,7 +25,7 @@ import { LoggingService } from '../services/logging.service';
 import { Plattform, PLATTFORMEN } from '../shared/plattform';
 import { FANGKORB_BESCHREIBUNG, verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
-import { KartenDaten, RohlingAktion, ausEinwurf } from '../beitragskarte/karten-daten';
+import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
 import {
   FangkorbFilter,
@@ -45,18 +45,19 @@ import {
 export const LADE_GROESSE = 100;
 
 /**
- * Der Fangkorb als Arbeitsvorrat: drei Tabs entlang der Arbeitsstufen, in jedem
- * die Rohlinge, an denen dort etwas zu tun ist.
+ * Der Fangkorb: drei Tabs, benannt nach der naechsten Arbeit, in jedem die
+ * Einwuerfe, an denen dort etwas zu tun ist.
  *
- * Destillieren = noch kein Satz, Ausformulieren = Saetze ohne Beitrag, Erledigt =
- * mit mindestens einem Beitrag verknuepft (neu oder vorhanden). Verworfenes liegt
- * unter Erledigt hinter einem Chip. Welcher Zustand gilt, entscheidet
- * ``zustandVonEinwurf``; die Chips (Plattform, "nur meine") wirken quer dazu und
- * gelten auch fuer die Zaehler.
+ * Destillieren = offen (noch kein Satz), Ausformulieren = destilliert (Saetze ohne
+ * Beitrag), Ausformuliert = mit mindestens einem Beitrag verknuepft (neu oder
+ * vorhanden). Verworfenes liegt unter Ausformuliert hinter einem Chip. Welche
+ * Stufe gilt, entscheidet ``stufeVonEinwurf``, welcher Tab dazu gehoert
+ * ``passtZumTab``; die Chips (Plattform, "nur meine") wirken quer dazu und gelten
+ * auch fuer die Zaehler.
  *
  * Bewusst alle Einwuerfe und nicht nur die eigenen - der Vorrat ist gemeinsam.
  * Sortiert wird hier neueste zuerst, nicht in der Reihenfolge des Servers
- * (eigene zuerst): im Arbeitsvorrat zaehlt das Alter, nicht die Person.
+ * (eigene zuerst): im Fangkorb zaehlt das Alter, nicht die Person.
  */
 @Component({
   selector: 'app-raw-input-list',
@@ -79,7 +80,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   sichtbar: RawInput[] = [];
   /** Die sichtbaren Einwuerfe als Karten, einmal je Filterlauf berechnet. */
   karten: KartenDaten[] = [];
-  zaehler: Record<FangkorbTab, number> = { destillieren: 0, ausformulieren: 0, erledigt: 0 };
+  zaehler: Record<FangkorbTab, number> = { destillieren: 0, ausformulieren: 0, ausformuliert: 0 };
   gesamt = 0;
   filter: FangkorbFilter = filterLaden();
   isLoading = true;
@@ -212,9 +213,9 @@ export class RawInputListComponent implements OnInit, OnDestroy {
    * steht der eigene Satz schon im Feld, und "Weiter" fuehrt zur Typwahl. Ein
    * eigenes Formular mit fremdem Satz gibt es nicht.
    */
-  aktionAusfuehren(karte: KartenDaten, aktion: RohlingAktion): void {
-    const rohling = karte.rohling;
-    if (!rohling) {
+  aktionAusfuehren(karte: KartenDaten, aktion: EinwurfAktion): void {
+    const einwurf = karte.einwurf;
+    if (!einwurf) {
       return;
     }
     switch (aktion) {
@@ -222,25 +223,25 @@ export class RawInputListComponent implements OnInit, OnDestroy {
         // Der Satz steht schon - dann beginnt das Ausformulieren bei der Typwahl,
         // nicht wieder im Satzfeld. Ohne eigenen Satz faellt die Ansicht selbst
         // auf das Satzfeld zurueck.
-        this.router.navigate(['/destillieren', rohling.einwurfId], {
+        this.router.navigate(['/destillieren', einwurf.einwurfId], {
           queryParams: { [SCHRITT_PARAM]: 'typwahl' },
         });
         break;
       case 'destillieren':
       case 'weiterDestillieren':
-        this.router.navigate(['/destillieren', rohling.einwurfId]);
+        this.router.navigate(['/destillieren', einwurf.einwurfId]);
         break;
       case 'ansehen':
         this.bottomSheet.open(EinwurfBeitragSheetComponent, {
-          data: { beitraege: rohling.beitraege },
+          data: { beitraege: einwurf.beitraege },
           ariaLabel: karte.titel || 'Beitrag zu diesem Einwurf',
         });
         break;
       case 'linkKopieren':
-        this.linkKopieren(rohling.link);
+        this.linkKopieren(einwurf.link);
         break;
       case 'verwerfen':
-        this.verwerfen(rohling.einwurfId);
+        this.verwerfen(einwurf.einwurfId);
         break;
     }
   }

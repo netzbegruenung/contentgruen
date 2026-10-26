@@ -131,7 +131,7 @@ export class RawInputService {
   }
 
   addRawInput(request: AddRawInputRequest): Observable<AddRawInputResponse> {
-    this.logger.debug('Werfe Rohinput ein');
+    this.logger.debug('Einwurf wird eingeworfen');
     return this.http.post<AddRawInputResponse>(`${this.baseApiUrl}/addRawInput`, request);
   }
 
@@ -148,7 +148,7 @@ export class RawInputService {
     return this.http.get<RawInput>(this.einwurfUrl(id));
   }
 
-  /** Den eigenen Entwurfssatz speichern; ein leerer Satz loescht ihn. */
+  /** Den eigenen Satz speichern; ein leerer Satz loescht ihn. */
   saveDraft(id: string, sentence: string): Observable<DraftResponse> {
     return this.http
       .put<DraftResponse>(`${this.einwurfUrl(id)}/draft`, { sentence })
@@ -156,7 +156,7 @@ export class RawInputService {
   }
 
   /**
-   * Den Entwurfssatz sichern, wenn die Seite gleich eingefroren oder beendet wird.
+   * Den eigenen Satz sichern, wenn die Seite gleich eingefroren oder beendet wird.
    *
    * Android raeumt die PWA beim Wechsel in eine andere App weg; ein normaler
    * XHR wird dabei abgebrochen. fetch mit keepalive darf die Seite ueberleben.
@@ -172,9 +172,9 @@ export class RawInputService {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sentence }),
-      }).catch((error) => this.logger.warn('Entwurf konnte nicht gesichert werden', error));
+      }).catch((error) => this.logger.warn('Satz konnte nicht gesichert werden', error));
     } catch (error) {
-      this.logger.warn('Entwurf konnte nicht gesichert werden', error);
+      this.logger.warn('Satz konnte nicht gesichert werden', error);
     }
   }
 
@@ -202,11 +202,11 @@ export class RawInputService {
 
   /**
    * Der naechste Einwurf fuer den Destillier-Ablauf: offen oder destilliert, ohne
-   * eigenen Entwurf.
+   * eigenen Satz.
    *
    * Destilliert heisst nur, dass jemand anderes schon einen Satz hat - es gibt
    * keine Sperre, der eigene Satz kann trotzdem kommen. Einwuerfe mit eigenem
-   * Entwurf hat man mit "Spaeter" zurueckgestellt; sie bleiben antippbar, werden
+   * Satz hat man mit "Spaeter" zurueckgestellt; sie bleiben antippbar, werden
    * aber nicht automatisch wieder angeboten. Dasselbe gilt fuer Einwuerfe, die in
    * dieser Runde ohne Satz zurueckgestellt wurden (``zurueckstellen``). Die
    * Reihenfolge (eigene zuerst, dann neueste) kommt vom Server.
@@ -233,7 +233,7 @@ export class RawInputService {
   /**
    * Der Cache-Interceptor haelt GETs fuenf Minuten und kennt PATCH nicht. Ohne
    * das hier zeigte die Liste nach einem Statuswechsel den alten Stand, und das
-   * Weiterspringen boete den gerade erledigten Einwurf erneut an.
+   * Weiterspringen boete den Einwurf, an dem man gerade war, erneut an.
    */
   private cacheLeeren(): void {
     cacheService.delete('/api/v1/rawinput');
