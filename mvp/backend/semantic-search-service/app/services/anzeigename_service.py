@@ -34,6 +34,14 @@ EHEMALIGE_PERSON_KENNUNG = "ehemalige-person"
 EHEMALIGE_PERSON_NAME = "ehemalige Person"
 
 
+# Was an einem Beitrag eine Person bezeichnet: zwei Felder mit der Kennung und zwei
+# Listen, deren Eintraege sie unter dem genannten Schluessel tragen. Geleert fuer
+# anonyme Aufrufer (kennungsfelder_leer), ersetzt im Loeschkonzept Schritt 3
+# (services/wartung/beitraege_anonymisieren.py).
+KENNUNGSFELDER = ("original_author", "last_modified_by")
+KENNUNGSLISTEN = (("authors", "name"), ("edit_history", "editor"))
+
+
 def kennungsfelder_leer() -> Dict[str, Any]:
     """
     Was an einem Beitrag eine Person bezeichnet, geleert - fuer anonyme Aufrufer.
@@ -41,10 +49,8 @@ def kennungsfelder_leer() -> Dict[str, Any]:
     frisch, damit sich keine zwei Antworten eine Liste teilen.
     """
     return {
-        "original_author": "",
-        "last_modified_by": "",
-        "authors": [],
-        "edit_history": [],
+        **{feld: "" for feld in KENNUNGSFELDER},
+        **{liste: [] for liste, _ in KENNUNGSLISTEN},
     }
 
 

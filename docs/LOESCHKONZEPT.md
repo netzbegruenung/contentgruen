@@ -5,7 +5,9 @@
 > was hier steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
 > Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
 > zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), der
-> Qdrant-Teil gegen eine Collection im Speicher (`tests/unit/services/test_beitraege_anonymisieren.py`), aber
+> Qdrant-Teil gegen eine Collection im Speicher und gegen einen echten Qdrant
+> (`tests/unit/services/test_beitraege_anonymisieren.py`,
+> `tests/integration/test_beitraege_anonymisieren_qdrant.py`), aber
 > **nie an echten Daten gelaufen**. Wer sie zum ersten Mal ausführt, macht vorher ein Backup und
 > protokolliert jede Zeilenzahl mit.
 
@@ -80,9 +82,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
   ein in Keycloak gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet (bis zu
   14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). In der Zeit kann sie auch
-  neue Sätze, Stimmen und Einwürfe anlegen. Das Kommando für Schritt 1 und 2 deshalb
-  nach 14 Tagen noch einmal laufen lassen, danach auch das `VACUUM FULL`; das Kommando
-  ist wiederholbar.
+  neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Kommando für Schritt 1 und 2
+  und den Lauf für Schritt 3 deshalb nach 14 Tagen noch einmal laufen lassen, danach
+  auch das `VACUUM FULL`; beide sind wiederholbar.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
@@ -142,6 +144,10 @@ docker exec -i gutgesagt-semantic-search python - "$KENNUNG" \
 docker exec -i gutgesagt-semantic-search python - "$KENNUNG" --ausfuehren \
   < beitraege_anonymisieren.py                # Ausgabe protokollieren
 ```
+
+Anders als `person_loeschen.sql` trägt das Skript die Logik nicht selbst: Es kommt von
+`main`, importiert sie aber aus dem laufenden Container. Ein Image ohne #236 bricht mit
+`ModuleNotFoundError` ab, bevor es etwas schreibt; dann erst das neue Image ausrollen.
 
 Bis #236 hieß der Platzhalter in Qdrant `geloeschter-nutzer`, und die Karten zeigten
 dazu „Mitglied“. Bestand mit dem alten Wert stellt derselbe Lauf einmalig um: statt

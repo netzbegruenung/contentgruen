@@ -2,13 +2,11 @@
 Beitraege einer geloeschten Person anonymisieren (Loeschkonzept Schritt 3) und die
 einmalige Umstellung des alten Platzhalters ``geloeschter-nutzer``.
 
-Laeuft immer gegen qdrant_client im Speicher-Modus und zusaetzlich gegen einen
-echten Qdrant, wenn unter QDRANT_URL einer antwortet (Dev-Stack: Port 6333) - der
-Speicher-Modus wertet Filter wie ``authors[].name`` selbst aus, nicht der Server.
-Dort in einer eigenen Collection, die der Test wieder abraeumt.
+Laeuft gegen qdrant_client im Speicher-Modus. Der wertet Filter wie
+``authors[].name`` selbst aus, nicht der Server; dieselben Faelle gegen einen echten
+Qdrant: tests/integration/test_beitraege_anonymisieren_qdrant.py.
 """
 
-import os
 import uuid
 
 import pytest
@@ -20,6 +18,10 @@ from services.wartung.beitraege_anonymisieren import (
     ALTER_PLATZHALTER,
     anonymisieren,
 )
+
+# Am Modul, nicht an der Klasse: Die Integrationstests erben die Klasse und sind
+# keine Unit-Tests.
+pytestmark = pytest.mark.unit
 
 # Eigener Name je Lauf: Auf dem Server laufen parallel andere Tests und Dev-Daten.
 COLLECTION = f"test_anonymisieren_{uuid.uuid4().hex[:8]}"
@@ -40,36 +42,14 @@ def _payload(original_author, last_modified_by=None, authors=(), editors=()):
     }
 
 
-QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+@pytest.fixture
+def client():
+    client = QdrantClient(":memory:")
+    punkte_anlegen(client)
+    return client
 
 
-def _qdrant_erreichbar() -> bool:
-    try:
-        QdrantClient(
-            url=QDRANT_URL, timeout=2, check_compatibility=False
-        ).get_collections()
-        return True
-    except Exception:
-        return False
-
-
-@pytest.fixture(
-    params=[
-        "speicher",
-        pytest.param(
-            "server",
-            marks=pytest.mark.skipif(
-                not _qdrant_erreichbar(), reason=f"kein Qdrant unter {QDRANT_URL}"
-            ),
-        ),
-    ]
-)
-def client(request):
-    if request.param == "speicher":
-        client = QdrantClient(":memory:")
-    else:
-        client = QdrantClient(url=QDRANT_URL, timeout=10, check_compatibility=False)
-        request.addfinalizer(lambda: client.delete_collection(COLLECTION))
+def punkte_anlegen(client):
     client.create_collection(
         COLLECTION, vectors_config=VectorParams(size=2, distance=Distance.COSINE)
     )
@@ -83,7 +63,6 @@ def client(request):
         COLLECTION,
         [PointStruct(id=i, vector=[1.0, 0.0], payload=p) for i, p in punkte.items()],
     )
-    return client
 
 
 def _gelesen(client, punkt_id):
@@ -99,7 +78,6 @@ def _kennungen(payload):
     }
 
 
-@pytest.mark.unit
 class TestAnonymisieren:
     def test_alle_vier_felder_bekommen_den_platzhalter(self, client):
         anonymisieren(client, COLLECTION, PERSON, ausfuehren=True)

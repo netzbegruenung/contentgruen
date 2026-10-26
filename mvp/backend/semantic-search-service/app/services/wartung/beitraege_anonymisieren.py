@@ -30,14 +30,17 @@ from qdrant_client.models import (
     SetPayloadOperation,
 )
 
-from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG, angemeldet
+from services.anzeigename_service import (
+    EHEMALIGE_PERSON_KENNUNG,
+    KENNUNGSFELDER,
+    KENNUNGSLISTEN,
+    angemeldet,
+)
 
 # Platzhalter bis #236; Karten zeigten dazu "Mitglied".
 ALTER_PLATZHALTER = "geloeschter-nutzer"
 
 SEITE = 256
-_FELDER = ("original_author", "last_modified_by")
-_LISTEN = (("authors", "name"), ("edit_history", "editor"))
 
 
 @dataclass
@@ -53,14 +56,14 @@ class AnonymisierungBericht:
     treffer: List[Treffer] = field(default_factory=list)
 
 
-def _ersetzt(payload: Dict[str, Any], kennung: str) -> Dict[str, Any]:
+def _geaenderte_felder(payload: Dict[str, Any], kennung: str) -> Dict[str, Any]:
     """Nur die Felder, in denen die Kennung vorkommt, mit dem Platzhalter."""
     neu: Dict[str, Any] = {
         feld: EHEMALIGE_PERSON_KENNUNG
-        for feld in _FELDER
+        for feld in KENNUNGSFELDER
         if payload.get(feld) == kennung
     }
-    for feld, schluessel in _LISTEN:
+    for feld, schluessel in KENNUNGSLISTEN:
         eintraege = payload.get(feld) or []
         if any(e.get(schluessel) == kennung for e in eintraege):
             neu[feld] = [
@@ -87,10 +90,10 @@ def anonymisieren(
     ):
         raise ValueError("keine Kennung einer Person")
 
-    filt = Filter(
+    traegt_kennung = Filter(
         should=[
             FieldCondition(key=k, match=MatchValue(value=kennung))
-            for k in (*_FELDER, *(f"{f}[].{s}" for f, s in _LISTEN))
+            for k in (*KENNUNGSFELDER, *(f"{f}[].{s}" for f, s in KENNUNGSLISTEN))
         ]
     )
     bericht = AnonymisierungBericht(ausgefuehrt=ausfuehren)
@@ -101,7 +104,7 @@ def anonymisieren(
     while True:
         punkte, offset = client.scroll(
             collection_name=collection,
-            scroll_filter=filt,
+            scroll_filter=traegt_kennung,
             limit=SEITE,
             offset=offset,
             with_payload=True,
@@ -109,7 +112,7 @@ def anonymisieren(
         )
         for punkt in punkte:
             payload = punkt.payload or {}
-            neu = _ersetzt(payload, kennung)
+            neu = _geaenderte_felder(payload, kennung)
             if not neu:
                 continue
             bericht.treffer.append(

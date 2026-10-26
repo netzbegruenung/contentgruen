@@ -67,4 +67,6 @@ dort steht auch der Aufruf. Getestet in `tests/integration/test_loeschkommando.p
 Qdrant durch den Platzhalter `ehemalige-person` (Anzeige „ehemalige Person“) und
 listet die Treffer fuer die Einzelfallpruefung. Mit der Kennung `geloeschter-nutzer`
 stellt es einmalig den Bestand mit dem alten Platzhalter um. Aufruf in
-`docs/LOESCHKONZEPT.md`; getestet in `tests/unit/services/test_beitraege_anonymisieren.py`.
+`docs/LOESCHKONZEPT.md`; getestet in `tests/unit/services/test_beitraege_anonymisieren.py`
+(Speicher-Modus), `test_beitraege_anonymisieren_skript.py` (Aufruf) und
+`tests/integration/test_beitraege_anonymisieren_qdrant.py` (echter Qdrant).
