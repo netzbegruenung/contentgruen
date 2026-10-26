@@ -32,7 +32,7 @@ class TestKeineSichtbarkeit:
 
     def test_neuer_beitrag_speichert_kein_gruen_intern(self):
         payload = json.loads(_kommentar().model_dump_json())
-        assert payload.get("visibility") != "internal"
+        assert payload["visibility"] is None
 
     @pytest.mark.parametrize("gespeichert", ["internal", "visible"])
     def test_gespeicherter_wert_bleibt_beim_zurueckschreiben(self, gespeichert):

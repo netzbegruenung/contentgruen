@@ -3,7 +3,8 @@ from enum import Enum
 
 class ContentVisibility(str, Enum):
     """
-    Enum class for content visibility
+    Legacy visibility marker. Every Beitrag is visible to everyone; new content sets no
+    visibility. Kept only so stored values still parse until the status cleanup (#214).
 
     Attributes:
     -----------
