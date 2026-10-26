@@ -1,3 +1,5 @@
+> **Historisch:** Dieses Dokument stammt aus früherer Planung und ist teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # Datenschutz-Bestandsaufnahme (Art. 13 DSGVO)
 
 > **Zweck:** belegte Faktenbasis für die Datenschutzerklärung. Keine juristische Bewertung,
