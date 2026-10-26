@@ -8,39 +8,35 @@ Status von vor der Sperre wieder her.
 """
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from services.moderation_service import ModerationService
+from tests.conftest import create_base_content_fields
 
 CONTENT_ID = str(uuid.uuid4())
 
 
 @pytest.fixture
-def speicher():
-    """Ein Beitrag im Speicher; get_by_id liefert, was gerade im Payload steht."""
-    payload = {"id": CONTENT_ID, "content_type": "commentary", "status": "approved"}
+def speicher(test_embeddings_manager):
+    """Ein freigegebener Kommentar im Test-Speicher."""
+    test_embeddings_manager.add_test_data(
+        "commentary",
+        [
+            {
+                **create_base_content_fields(),
+                "id": CONTENT_ID,
+                "text": "Gemeldeter Kommentar",
+                "status": "approved",
+            }
+        ],
+    )
+    return test_embeddings_manager
 
-    manager = MagicMock()
-    manager.collection_name = "content_collection"
 
-    async def get_by_id(point_id):
-        return dict(payload) if point_id == CONTENT_ID else None
-
-    async def set_payload(collection_name, payload: dict, points):
-        speicher.payload.update(payload)
-
-    async def delete_payload(collection_name, keys, points):
-        for key in keys:
-            speicher.payload.pop(key, None)
-
-    manager.get_by_id = AsyncMock(side_effect=get_by_id)
-    manager.async_client.set_payload = AsyncMock(side_effect=set_payload)
-    manager.async_client.delete_payload = AsyncMock(side_effect=delete_payload)
-    speicher.payload = payload
-    speicher.manager = manager
-    return speicher
+def _payload(speicher) -> dict:
+    return speicher.get_data()[CONTENT_ID]
 
 
 @pytest.fixture
@@ -52,7 +48,7 @@ def service(speicher):
         return_value=report_repo,
     ), patch(
         "services.moderation_service.get_embeddings_manager",
-        return_value=speicher.manager,
+        return_value=speicher,
     ):
         yield ModerationService()
 
@@ -63,7 +59,7 @@ class TestSperren:
     async def test_sperren_setzt_status_gesperrt(self, service, speicher):
         assert await service.sperren(CONTENT_ID, gesperrt_von="admin-1") is True
 
-        assert speicher.payload["status"] == "blocked"
+        assert _payload(speicher)["status"] == "blocked"
 
     async def test_sperren_setzt_meldungen_auf_bearbeitet(self, service):
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
@@ -76,7 +72,7 @@ class TestSperren:
     async def test_sperren_loescht_nichts(self, service, speicher):
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
 
-        speicher.manager.delete_by_id.assert_not_called()
+        assert CONTENT_ID in speicher.get_data()
 
     async def test_sperren_unbekannter_beitrag(self, service):
         assert await service.sperren(str(uuid.uuid4()), gesperrt_von="a") is False
@@ -90,7 +86,7 @@ class TestSperren:
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
         await service.entsperren(CONTENT_ID, entsperrt_von="admin-1")
 
-        assert speicher.payload["status"] == "approved"
+        assert _payload(speicher)["status"] == "approved"
 
 
 @pytest.mark.unit
@@ -103,25 +99,25 @@ class TestEntsperren:
 
         assert await service.entsperren(CONTENT_ID, entsperrt_von="admin-1") is True
 
-        assert speicher.payload["status"] == "approved"
-        assert "status_vor_sperre" not in speicher.payload
+        assert _payload(speicher)["status"] == "approved"
+        assert "status_vor_sperre" not in _payload(speicher)
 
     async def test_entsperren_ohne_status_von_vorher_macht_sichtbar(
         self, service, speicher
     ):
         # Altbestand ohne Status-Feld: nach dem Entsperren sichtbar wie neu angelegt.
-        del speicher.payload["status"]
+        del _payload(speicher)["status"]
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
 
         await service.entsperren(CONTENT_ID, entsperrt_von="admin-1")
 
-        assert speicher.payload["status"] == "released_internal"
+        assert _payload(speicher)["status"] == "released_internal"
 
     async def test_entsperren_nicht_gesperrt_aendert_nichts(self, service, speicher):
         assert await service.entsperren(CONTENT_ID, entsperrt_von="admin-1") is True
 
-        assert speicher.payload["status"] == "approved"
-        speicher.manager.async_client.set_payload.assert_not_called()
+        assert _payload(speicher)["status"] == "approved"
+        speicher.async_client.set_payload.assert_not_called()
 
     async def test_entsperren_unbekannter_beitrag(self, service):
         assert await service.entsperren(str(uuid.uuid4()), entsperrt_von="a") is False

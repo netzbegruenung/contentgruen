@@ -231,7 +231,6 @@ async def get_reports(
 async def sperren(
     content_id: str,
     admin_user: str = Depends(require_admin),
-    settings: Settings = Depends(get_settings),
 ):
     """
     Einen gemeldeten Beitrag sperren (Admin only).
@@ -240,7 +239,7 @@ async def sperren(
     sich entsperren. Alle Meldungen zum Beitrag stehen danach auf bearbeitet.
     """
     try:
-        logger.info(f"Admin {admin_user} sperrt content: {content_id}")
+        logger.info(f"Admin {admin_user} blocking (sperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
         if not await moderation_service.sperren(content_id, gesperrt_von=admin_user):
@@ -259,13 +258,12 @@ async def sperren(
 async def entsperren(
     content_id: str,
     admin_user: str = Depends(require_admin),
-    settings: Settings = Depends(get_settings),
 ):
     """
     Eine Sperre aufheben (Admin only). Der Beitrag ist danach wieder sichtbar.
     """
     try:
-        logger.info(f"Admin {admin_user} entsperrt content: {content_id}")
+        logger.info(f"Admin {admin_user} unblocking (entsperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
         if not await moderation_service.entsperren(

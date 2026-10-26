@@ -352,3 +352,33 @@ class TestSearchCurated:
         bedingungen = {b.key: b for b in suchanfrage[0].must}
         assert bedingungen["origin"].match.value == "search_query"
         assert bedingungen["replysuggestions_count"].range.lt == 1
+
+
+@pytest.mark.unit
+class TestSearchWithReplyFilter:
+    """Die Aussagen-Suche der Hauptsuche schliesst dieselben Status aus wie search()."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("mindestens", [0, 1])
+    async def test_schliesst_gesperrte_aussagen_aus(
+        self, test_settings, test_embeddings_manager, mindestens
+    ):
+        from unittest.mock import AsyncMock, MagicMock
+        from repositories.implementations.qdrant.statement_repository import (
+            StatementRepository,
+        )
+
+        manager = MagicMock()
+        manager.search = AsyncMock(return_value=[])
+        repository = StatementRepository(
+            test_settings, embeddings_manager=test_embeddings_manager
+        )
+        repository._shared_manager = manager
+
+        await repository.search_with_reply_filter("waermepumpe", 5, mindestens)
+
+        ausschluss = manager.search.call_args.kwargs["filter_dict"]["must_not"]
+        status = {
+            b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
+        }
+        assert "blocked" in status

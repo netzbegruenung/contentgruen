@@ -2,7 +2,7 @@
 Sperren und Entsperren gegen echtes Qdrant.
 
 Die Unit-Tests pruefen die Filter als Objekte; hier zeigt sich, dass Qdrant sie so
-auswertet wie gedacht: Ein gesperrter Beitrag fehlt in Suche, Einzelansicht und
+auswertet wie gedacht: Ein gesperrter Beitrag fehlt in Suche, Einzelansicht, Zaehlern und
 Antwortvorschlaegen und ist nach dem Entsperren wieder da. Die Meldungen
 (PostgreSQL) sind gemockt, sie pruefen die Service-Tests.
 """
@@ -97,8 +97,11 @@ async def _antwortvorschlaege(post_service, post_id):
 async def test_gesperrter_beitrag_fehlt_ueberall(post_service, moderation):
     post_id = uuid.uuid4()
     await post_service._upsert(_post(post_id))
+    vorher = await post_service.count()
 
     assert await moderation.sperren(str(post_id), gesperrt_von="admin-1") is True
+
+    assert await post_service.count() == vorher - 1
 
     with pytest.raises(ValueError):
         await post_service.get(post_id)

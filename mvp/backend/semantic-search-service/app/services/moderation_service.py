@@ -177,6 +177,19 @@ class ModerationService:
             logger.error(f"Error getting reports (status={status}): {e}", exc_info=True)
             return []
 
+    async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
+        """Payload eines Beitrags am Repository vorbei, also auch gesperrt; None, wenn es ihn nicht gibt."""
+        try:
+            UUID(content_id)
+        except ValueError:
+            logger.error(f"Invalid content_id format: {content_id}")
+            return None
+
+        eintrag = await self.embeddings_manager.get_by_id(content_id)
+        if eintrag is None:
+            logger.warning(f"Content {content_id} not found")
+        return eintrag
+
     async def sperren(self, content_id: str, gesperrt_von: str) -> bool:
         """
         Einen gemeldeten Beitrag sperren, statt ihn zu loeschen.
@@ -191,15 +204,8 @@ class ModerationService:
         Returns:
             bool: False, wenn es den Beitrag nicht gibt
         """
-        try:
-            content_uuid = UUID(content_id)
-        except ValueError:
-            logger.error(f"Invalid content_id format: {content_id}")
-            return False
-
-        eintrag = await self.embeddings_manager.get_by_id(content_id)
+        eintrag = await self._beitrag_laden(content_id)
         if eintrag is None:
-            logger.warning(f"Content {content_id} not found, nothing to sperren")
             return False
 
         if eintrag.get("status") != ContentStatus.BLOCKED.value:
@@ -213,7 +219,7 @@ class ModerationService:
             )
 
         updated_count = self.report_repo.update_reports_by_content_id(
-            content_id=content_uuid,
+            content_id=UUID(content_id),
             status="reviewed",
             reviewed_by=gesperrt_von,
             resolution_notes="Beitrag gesperrt",
@@ -232,15 +238,8 @@ class ModerationService:
         Returns:
             bool: False, wenn es den Beitrag nicht gibt
         """
-        try:
-            UUID(content_id)
-        except ValueError:
-            logger.error(f"Invalid content_id format: {content_id}")
-            return False
-
-        eintrag = await self.embeddings_manager.get_by_id(content_id)
+        eintrag = await self._beitrag_laden(content_id)
         if eintrag is None:
-            logger.warning(f"Content {content_id} not found, nothing to entsperren")
             return False
 
         if eintrag.get("status") != ContentStatus.BLOCKED.value:

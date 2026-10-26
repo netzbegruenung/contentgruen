@@ -647,3 +647,34 @@ class TestGesperrteBeitraege:
         zaehlung = client.count.call_args.kwargs["count_filter"]
         assert self._gesperrte_ausgeschlossen(liste.must_not)
         assert self._gesperrte_ausgeschlossen(zaehlung.must_not)
+
+    @staticmethod
+    def _eintrag(status: str) -> dict:
+        return {
+            **create_base_content_fields(),
+            "id": str(uuid.uuid4()),
+            "text": f"Eintrag {status}",
+            "content_type": "statement",
+            "status": status,
+        }
+
+    @pytest.mark.asyncio
+    async def test_count_zaehlt_gesperrte_nicht(
+        self, repository, test_embeddings_manager
+    ):
+        test_embeddings_manager.add_test_data(
+            "statement",
+            [self._eintrag("released_internal"), self._eintrag("blocked")],
+        )
+
+        assert await repository.count() == 1
+
+    @pytest.mark.asyncio
+    async def test_has_content_auch_wenn_alles_gesperrt(
+        self, repository, test_embeddings_manager
+    ):
+        # Sonst saehe die Initialisierung einen leeren Bestand und spielte die
+        # Startdaten erneut ein.
+        test_embeddings_manager.add_test_data("statement", [self._eintrag("blocked")])
+
+        assert await repository.has_content() is True

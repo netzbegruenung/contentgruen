@@ -129,7 +129,7 @@ export class ContentModerationComponent implements OnInit {
       },
       error: (error) => {
         this.snackBar.open('Fehler beim Sperren des Beitrags', 'OK', { duration: 3000 });
-        console.error('Error sperren content:', error);
+        console.error('Error blocking content:', error);
       }
     });
   }
@@ -142,7 +142,7 @@ export class ContentModerationComponent implements OnInit {
       },
       error: (error) => {
         this.snackBar.open('Fehler beim Entsperren des Beitrags', 'OK', { duration: 3000 });
-        console.error('Error entsperren content:', error);
+        console.error('Error unblocking content:', error);
       }
     });
   }

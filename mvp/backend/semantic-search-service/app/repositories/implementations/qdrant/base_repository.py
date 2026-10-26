@@ -290,7 +290,7 @@ class QdrantBaseRepository(
         # Gesperrt heisst fuer jeden Leser hier "nicht da": Einzelansicht, Stimmen,
         # Antwortvorschlaege der Suche (SearchOrchestrator ueberspringt ValueError).
         if result.get("status") == ContentStatus.BLOCKED.value:
-            meldung = f"Entry with id {item_id} is gesperrt"
+            meldung = f"Entry with id {item_id} is gesperrt (blocked)"
             logger.warning(meldung)
             raise ValueError(meldung)
 
@@ -362,9 +362,18 @@ class QdrantBaseRepository(
 
     async def count(self) -> int:
         """
-        Get the total count of items in the repository.
+        Anzahl der sichtbaren Eintraege, also ohne gesperrte: Sie speist die
+        Bestandszaehler (getMetrics) und total_records_count der Listen.
         """
-        return await self._shared_manager.count(self.content_type)
+        try:
+            result = await self._shared_manager.async_client.count(
+                collection_name=self._shared_manager.collection_name,
+                count_filter=self._sichtbar_filter(),
+            )
+            return result.count
+        except Exception as e:
+            logger.error(f"Failed to count items: {e}", exc_info=True)
+            return 0
 
     async def get_all(self, limit: int, offset: int) -> List[TContentDbEntry]:
         """Async implementation of get_all."""
@@ -383,19 +392,7 @@ class QdrantBaseRepository(
             from qdrant_client.models import Filter, FieldCondition, MatchValue
 
             # Build filter
-            search_filter = Filter(
-                must=(
-                    [
-                        FieldCondition(
-                            key="content_type",
-                            match=MatchValue(value=self.content_type),
-                        )
-                    ]
-                    if self.content_type
-                    else None
-                ),
-                must_not=_gesperrt_bedingungen(),
-            )
+            search_filter = self._sichtbar_filter()
 
             # Scroll through results
             points_collected = 0
@@ -447,6 +444,19 @@ class QdrantBaseRepository(
         except Exception as e:
             logger.error(f"Failed to get all items: {e}", exc_info=True)
             raise
+
+    def _sichtbar_filter(self):
+        """Filter fuer Listen: der Typ des Repositorys, falls es einen hat, ohne Gesperrte."""
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        must = None
+        if self.content_type:
+            must = [
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                )
+            ]
+        return Filter(must=must, must_not=_gesperrt_bedingungen())
 
     def _autoren_filter(self, user_id: str, content_types: Optional[List[str]] = None):
         """
@@ -591,7 +601,9 @@ class QdrantBaseRepository(
             True if content exists, False otherwise.
         """
         try:
-            count = await self.count()
+            # Ungefiltert: Auch ein ganz gesperrter Bestand ist ein Bestand, sonst
+            # spielte initialize_repository die Startdaten erneut ein.
+            count = await self._shared_manager.count(self.content_type)
             has_content = count > 0
             content_desc = (
                 f"all content types"
@@ -614,19 +626,7 @@ class QdrantBaseRepository(
             )
 
             # Build filter for content_type if needed
-            search_filter = Filter(
-                must=(
-                    [
-                        FieldCondition(
-                            key="content_type",
-                            match=MatchValue(value=self.content_type),
-                        )
-                    ]
-                    if self.content_type
-                    else None
-                ),
-                must_not=_gesperrt_bedingungen(),
-            )
+            search_filter = self._sichtbar_filter()
 
             # For MVP: Fetch a reasonable batch (10x requested limit) and sort in memory
             # This is acceptable for small datasets. For production with large datasets,
