@@ -58,6 +58,10 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
 
 ## Konvention für neue Migrationen
 
+Dateiname, Kopf und Transaktion prüft
+`mvp/backend/semantic-search-service/app/tests/unit/test_migrationskonvention.py`
+für jede Datei hier; er läuft mit den Unit-Tests (Pre-commit-Hook, CI).
+
 - **Dateiname:** `JJJJ-MM-TT-<thema>.sql`, Datum der Erstellung, Thema kurz,
   kleingeschrieben, mit Bindestrichen. Das Datum legt die Reihenfolge fest;
   bei gleichem Datum gilt die alphabetische Reihenfolge des Dateinamens.
