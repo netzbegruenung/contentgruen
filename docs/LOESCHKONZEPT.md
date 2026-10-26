@@ -14,7 +14,8 @@
 ## Ausgangspunkt
 
 Alles hängt am Wert des Headers `X-User`. Das BFF setzt ihn ausschließlich aus dem
-Claim `sub`, ersatzweise `NameIdentifier` (`Program.cs:617`, `IdentityHeaderTransform.cs:50`).
+Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:647`, `ClaimUtilities.GetUserId`,
+aufgerufen in `BFF/Proxy/IdentityHeaderTransform.cs:79`).
 Mit Keycloak ist das die Keycloak-UUID, mit `USE_KEYCLOAK=false` (dev/tst) die
 `userId` aus `managed-users.json` (`user-001`). **Vorher prüfen, welche Form die
 Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert nicht.
@@ -23,7 +24,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
    die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
-   (`api/v1/moderation.py:114`). Nur über sie sind die `usage_events` einer Person
+   (`api/v1/moderation.py:169-174`). Nur über sie sind die `usage_events` einer Person
    erreichbar.
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen (ein von der Person gemeldeter, inzwischen gesperrter
@@ -62,10 +63,11 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    wo der Text selbst die Person erkennbar macht** — das ist eine Einzelfallprüfung,
    kein Filterlauf.
 4. **Konto.** Keycloak-Konto im Realm löschen, bzw. Eintrag aus
-   `mvp/config/managed-users.json` entfernen und das BFF neu starten (Cache 5 min).
-   Die Datei ist seit PR #29 **nicht mehr eingecheckt** (`.gitignore:19`); getrackt ist nur
-   `managed-users.example.json`. Die Adresse bleibt trotzdem in der Git-Historie, weil die
-   Datei dort bis PR #29 lag.
+   `mvp/config/managed-users.json` entfernen und das BFF neu starten (Cache 5 min,
+   `BFF/Services/ManagedUserService.cs:14`). Die Datei ist **nicht mehr eingecheckt**
+   (`.gitignore:19`); getrackt ist nur `managed-users.example.json`. Was bis zur Umbenennung
+   in `b993b0c4` darin stand, bleibt in der Git-Historie
+   (`git log --follow -- mvp/config/managed-users.example.json`).
 
 ## Vier Fallen
 
@@ -80,22 +82,27 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   ihn aus dem Header `X-User-Display-Name` an, sobald er ihn nicht im Prozess-Cache hat
   (`services/anzeigename_service.py`). Solange das Anmelde-Cookie der Person gilt, entsteht
   die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
-  ein in Keycloak gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet (bis zu
-  14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). In der Zeit kann sie auch
-  neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Kommando für Schritt 1 und 2
-  und den Lauf für Schritt 3 deshalb nach 14 Tagen noch einmal laufen lassen, danach
-  auch das `VACUUM FULL`; beide sind wiederholbar.
+  ein gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet. Das Cookie läuft
+  **gleitend**: 14 Tage ab der letzten Nutzung (`BFF/Program.cs:92-93`, `ExpireTimeSpan`
+  und `SlidingExpiration`, für den Beta-Zugang `:149-150`), und das BFF prüft das Konto bei
+  späteren Anfragen nicht mehr. Wer weiter Gut gesagt benutzt, bleibt also ohne Ende
+  angemeldet und kann neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Kommando für
+  Schritt 1 und 2 und den Lauf für Schritt 3 deshalb nach 14 Tagen noch einmal laufen
+  lassen, danach auch das `VACUUM FULL`; beide sind wiederholbar. Findet der zweite Lauf
+  noch Zeilen, war die Person in der Zwischenzeit aktiv: nach weiteren 14 Tagen
+  wiederholen, bis ein Lauf leer bleibt.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
 ## Was nicht gelöscht wird
 
-- **`search_events`** trägt seit PR #14 nur `actor_hash`, ein täglich rotierendes
-  HMAC-SHA256 über Kennung + UTC-Datum (`services/search_tracking_service.py:33`).
+- **`search_events`** trägt seit der Migration vom 19.08.2026 (unten) nur `actor_hash`,
+  ein täglich rotierendes HMAC-SHA256 über Kennung + UTC-Datum
+  (`services/search_tracking_service.py:35`, `_derive_actor_hash`).
   Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur tageweise nachrechenbar: Löschen
   auf Antrag ist unmöglich und mangels Personenbezug auch nicht geschuldet.
   **Vorher prüfen, ob die Zielumgebung migriert ist** — auf einem Stand ohne
-  `actor_hash` stehen dort Klartext-Suchtext, Kennung und IP-Hash, und dann ist
+  `actor_hash` stehen dort Suchanfrage im Klartext, Kennung und IP-Hash, und dann ist
   `DELETE FROM search_events WHERE user_id = …` sehr wohl nötig
   (`mvp/backend/postgres-app/migrations/2026-08-19-search-events-pseudonymisieren.sql`).
   Der Zeitstempel trägt nur den UTC-Tag, keine Uhrzeit: Sonst ließe sich eine Aussage,
@@ -113,18 +120,60 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Kennung noch Pseudonym: nichts, was sich einer Person zuordnen ließe. Wochen älter als
   acht löscht ein täglicher Task von selbst (`services/suchen_ohne_treffer_service.py`,
   `loeschen_im_takt`).
-- **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände,
-  gelöschte Daten leben dort bis zu 28 Tage weiter. Selektives Editieren von
+- **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände
+  (`mvp/scripts/backup/backup.sh:12,28-29`), gelöschte Daten leben dort bis zu 28 Tage
+  weiter. Selektives Editieren von
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
-- **Logs.** Der Inhalt ist seit PR #29 kleiner, als hier früher stand: **E-Mail-Adressen
-  stehen nicht mehr im Log**, Suchtexte seit dem Nachtrag vom 08.09.2026 auch nicht mehr im
-  Fehlerzweig, und Nutzerkennungen erscheinen nur noch als achtstelliges Pseudonym
-  (`app/core/logging.py`, `log_pseudonym()`). Was bleibt: dieses Pseudonym in den
-  Anwendungszeilen und die vollen Client-IPs in den Zugriffsprotokollen des vorgelagerten
-  Reverse Proxy. Für Letztere gilt eine Frist — `logrotate` auf dem Prod-Host, 14 Tage;
-  alles aus dem `json-file`-Treiber ist unbegrenzt. Einzelne Zeilen daraus zu entfernen ist
-  nicht vorgesehen. Einordnung und Belege: `docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
+- **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
+  am Code geprüft am 26.10.2026 (Stand `main` d3446548):
+  - **Semantic-Service:** Kennungen von Nutzenden nur als achtstelliges Pseudonym
+    (`app/core/logging.py`, `log_pseudonym()`; aufgerufen in `services/voting_service.py`,
+    `middleware/rate_limiter.py`, `api/v1/usage.py`). Das Pseudonym ist ein ungesalzener
+    Hash: über Zeilen verkettbar und bei bekanntem Kennungsraum zurückrechenbar
+    (Docstring von `log_pseudonym()`), bei Kennungen wie `user-001` also kein Schutz.
+    **Ausnahme Admins:** Deren Kennung
+    steht im Klartext auf INFO in jeder Moderationsaktion (`api/v1/moderation.py:219-400`,
+    `f"Admin {admin_user} …"`) und beim manuellen Cleanup (`api/v1/usage.py:356`).
+    Die Suchanfrage der Person steht ab INFO weder auf dem Anfragepfad
+    (`api/v1/search.py`, nur `limit`) noch im Fehlerzweig der Suche
+    (`repositories/implementations/qdrant/statement_repository.py`). Wohl aber stehen ab INFO
+    die ersten 50 Zeichen jeder Aussage, die die Suche unter der Schwelle aussortiert
+    (`services/search/search_orchestrator.py:143-144`); da jede Suchanfrage als Aussage
+    gespeichert wird (`api/v1/search.py:119-127`), sind das auch frühere Suchanfragen
+    anderer, ohne Bezug zu einer Person. Auf DEBUG steht die Suchanfrage selbst darin, wenn
+    sie eine aufgehobene Verneinung enthält (`utils/negation_detector.py:157`; nur bei
+    eingeschaltetem Polaritätsfilter, Default an, `core/config.py:172`, und wenn die Suche
+    Treffer hat, `services/polarity_filter_service.py:83-88`); der Dev-Stack läuft auf
+    DEBUG (`mvp/docker-compose.dev.yml`). Die Zugriffszeilen von
+    uvicorn sind unterdrückt (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
+  - **BFF:** keine E-Mail-Adressen, aber die **Kennung im Klartext**: beim Beta-Zugang
+    die `UserId` jeder erfolgreichen Anmeldung und jedes Fehlversuchs mit falschem Passwort
+    (`BFF/Services/ManagedUserService.cs:147,153`, `BFF/Controllers/AuthController.cs:120`,
+    Level Information/Warning, also beim Standard-Level aus `appsettings.json` im Log),
+    zusätzlich auf Debug-Level bei jeder angemeldeten Anfrage
+    (`BFF/Proxy/IdentityHeaderTransform.cs:84,96`). Der Beta-Zugang ist per Default aktiv
+    (`ENABLE_MANAGED_AUTH`, `ManagedUserService.cs:199`) und laut `AuthController.cs:58`
+    bewusst auch neben Keycloak vorgesehen, für Personen ohne Netzbegrünung-Mitgliedschaft;
+    ob er in Produktion eingeschaltet ist, steht nicht im Repo. Über `managed-users.json`
+    ist die `UserId` einer Adresse zugeordnet.
+  - **Frontend-nginx:** setzt weder `access_log` noch `log_format` noch `real_ip`
+    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`), schreibt also das Standardformat
+    des Basis-Images `nginx:alpine` nach stdout
+    (`mvp/frontend/gutgesagt-frontend/Dockerfile:31`). Hinter dem vorgelagerten Reverse
+    Proxy steht dort dessen Adresse, nicht die des Besuchers; Zeitpunkt, Pfad, Referrer
+    und User-Agent stehen darin.
+  - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
+    (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
+    Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als
+    Stand der Bestandsaufnahme (`docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.4):
+    - **Stand 04.09.2026, vom Maintainer am Host geprüft:** Die Zugriffsprotokolle des
+      vorgelagerten Reverse Proxy, die als einzige die volle Client-IP enthalten, löscht
+      `logrotate` nach 14 Tagen.
+    - **Undatierte Auskunft des Maintainers, vor dem 04.09.2026:** Alles aus dem
+      `json-file`-Treiber ist in Produktion unbegrenzt.
+
+    Beides vor einer Auskunft am Host nachprüfen.
 
 ## Kommandos
 
@@ -168,4 +217,5 @@ Lauf ohne Treffer zeigt, dass nichts mehr umzustellen ist.
 Danach die ausgegebenen Texte durchsehen. Macht ein Text die Person erkennbar, wird
 dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{id}` gelöscht — nicht
 direkt gegen Qdrant: nur der Endpunkt räumt verwaiste Antwortvorschläge auf
-(`services/moderation_service.py:186`) und schreibt einen Moderationsvermerk.
+(`services/moderation_service.py:337`, `_remove_orphaned_reply_suggestions`) und schreibt
+einen Moderationsvermerk.
