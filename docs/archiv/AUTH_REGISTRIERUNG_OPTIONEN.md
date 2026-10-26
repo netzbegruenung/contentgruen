@@ -54,12 +54,12 @@ Wo diese Werte herkommen:
 | `mvp/backend/BFF/Properties/launchSettings.json` | `USE_KEYCLOAK=false` |
 | `mvp/docker-compose.dev.yml:112` | `USE_KEYCLOAK=false` |
 | `mvp/docker-compose.tst.yml:66` | `USE_KEYCLOAK=false` |
-| Produktion | **nicht im Repo** — SaltStack-Compose, Secrets aus Passbolt-gestütztem Pillar (`docs/DEPLOYMENT.md:133`, `:152`) |
+| Produktion | **nicht im Repo** — [intern] (`docs/DEPLOYMENT.md:133`, `:152`) |
 
 **Konsequenz:** Realm, Issuer, Client-ID und Client-Secret stehen an *keiner* Stelle in
 diesem Repository. Sie kommen ausschließlich als Umgebungsvariablen
 (`Keycloak__Authority`, `Keycloak__ClientId`, `Keycloak__ClientSecret`) aus einer Datei,
-die im SaltStack-Repo der Verdigado liegt und auf die dieses Projekt keinen Schreibzugriff
+die [intern] liegt und auf die dieses Projekt keinen Schreibzugriff
 hat.
 
 Fest verdrahtet im Code sind dagegen:
@@ -75,7 +75,7 @@ Die Antwort fällt scharf auseinander:
 
 **Anderer IdP / anderer Realm, aber weiterhin genau einer:**
 **null Zeilen Anwendungscode.** Der BFF spricht generisches OIDC über den
-Microsoft-Standard-Handler. Es ändern sich drei Umgebungsvariablen im Salt-Pillar. Der
+Microsoft-Standard-Handler. Es ändern sich drei Umgebungsvariablen [intern]. Der
 einzige denkbare Codeeingriff ist das Claim-Mapping, falls ein IdP `sub` oder `name`
 anders benennt — die Extraktion liegt gekapselt in `ClaimUtilities`
 (`Program.cs:683–698`), das ist eine Klasse mit zwei Methoden.
@@ -109,7 +109,7 @@ Wichtig für alles Weitere: neben Keycloak existiert bereits eine vollständige
   Compose-Stack. **Nicht im Repo**: sie enthält die E-Mail-Adressen der so angelegten
   Menschen. Für den Dev-Stack liegt `managed-users.example.json` mit zwei Testkonten
   daneben (`cp managed-users.example.json managed-users.json`); auf den Servern kommt
-  die echte Datei aus SaltStack.
+  die echte Datei aus [intern].
 - `mvp/config/generate-user-config.py` — erzeugt diese Datei aus einer lokalen
   `user-passwords.txt` im Format `email:passwort:anzeigename`
 - Mount: `./config:/config:ro` in `docker-compose.dev.yml:114` und `.tst.yml:69`
@@ -296,7 +296,7 @@ Anlage neuer Konten. Ein Registrierungs-Endpunkt bräuchte eine eigene, IP-basie
 
 | Fläche | Dateien | Bewertung |
 | --- | --- | --- |
-| Ein IdP gegen einen anderen tauschen | 0 Code, 3 Env-Variablen im Salt-Pillar | trivial |
+| Ein IdP gegen einen anderen tauschen | 0 Code, 3 Env-Variablen [intern] | trivial |
 | Claim-Abweichungen eines anderen IdP | `Program.cs:683–698` | klein, gekapselt |
 | Zweiter IdP parallel | 7 Dateien, 2 DTOs, 1 Frontend-Komponente | mittel |
 | Keycloak in Produktion abschalten | zusätzlich `Program.cs:489–528` | klein, aber sicherheitsrelevant |
@@ -327,14 +327,14 @@ erreichbar: „User registration“ ist in Keycloak eine **Realm**-Einstellung, 
 Client-Attribut. Sie einzuschalten öffnet die Registrierung für *alle* Anwendungen, die an
 diesem Realm hängen — also für die gesamte Netzbegrünung-Landschaft.
 
-**Code-Änderungen.** Keine. `Keycloak__ClientId` und `Keycloak__ClientSecret` im Pillar.
-**Infrastruktur/Salt.** Zwei Pillar-Werte, ein Neustart des BFF-Containers.
+**Code-Änderungen.** Keine. `Keycloak__ClientId` und `Keycloak__ClientSecret` [intern].
+**Infrastruktur/[intern].** Zwei Werte [intern], ein Neustart des BFF-Containers.
 **Externe Zuständigkeit.** Client-Anlage und Secret-Hinterlegung beim Verdigado-Team.
 Für Self-Registration: eine Realm-weite Entscheidung, die dieses Projekt nicht treffen kann
 und die realistischerweise abgelehnt wird.
 **Aufwand.** 1–2 h. Kalenderzeit für die Client-Anlage: Tage bis Wochen.
 **Betriebsaufwand.** Unverändert null.
-**Reversibilität.** Vollständig — zwei Pillar-Werte zurücksetzen.
+**Reversibilität.** Vollständig — zwei Werte [intern] zurücksetzen.
 **Recht.** Unverändert. Keine öffentliche Anmeldung, also keine neuen Pflichten.
 
 **Fazit:** löst das gestellte Problem nicht. Nur relevant, falls man Branding und
@@ -356,7 +356,7 @@ bestehenden Realm gekoppelt, damit Netzbegrünung-Mitglieder ihren Account weite
   in Keycloak, nicht in unserem Frontend. Dafür kommt der `sub` aus dem neuen Realm,
   also andere IDs für alle bestehenden Nutzer.
 
-**Infrastruktur/Salt.** `Keycloak__Authority` im Pillar. Im Keycloak selbst: Realm anlegen,
+**Infrastruktur/[intern].** `Keycloak__Authority` [intern]. Im Keycloak selbst: Realm anlegen,
 Registrierungsformular konfigurieren, E-Mail-Verifikation aktivieren, SMTP des Realms
 einrichten, Theme/Branding auf GutGesagt, Brute-Force-Schutz, ggf. reCAPTCHA gegen
 Bot-Registrierungen, ggf. Identity Provider zum Alt-Realm.
@@ -397,13 +397,13 @@ Realistisch dazu:
   „Netzbegrünung Login / SSO über Keycloak“ (`login-selector.component.html:52–53`). Rein
   redaktionell, aber sonst irreführend.
 
-**Infrastruktur/Salt.** Substanziell: Container plus eigene Datenbank im Salt-Compose,
+**Infrastruktur/[intern].** Substanziell: Container plus eigene Datenbank [intern],
 DNS-Eintrag, nginx-Server-Block, TLS-Zertifikat, Backup des IdP-Datenbestands zusätzlich zu
 den bestehenden zwei Datenbanken (`mvp/scripts/backup/backup.sh` deckt heute Qdrant und
 PostgreSQL ab, nicht einen dritten Dienst), SMTP-Anbindung für Verifikation und
 Passwort-Reset, Monitoring. `docs/DEPLOYMENT.md` und `docs/ARCHITECTURE.md` beschreiben
 danach eine andere Topologie.
-**Externe Zuständigkeit.** **Einmalig hoch, danach gering.** Server, Salt-States und nginx
+**Externe Zuständigkeit.** **Einmalig hoch, danach gering.** Server, [intern] und nginx
 gehören dem Verdigado-Admin-Team; ohne die geht kein neuer Dienst auf die Maschine. Nach
 dem Aufsetzen ist die inhaltliche Kontrolle über Realm, Registrierung, Branding und
 Nutzerverwaltung vollständig beim Projekt.
@@ -450,9 +450,9 @@ Zusätzlich zwingend, weil öffentlich erreichbar: IP-basiertes Rate-Limit auf d
 Registrierungs-Endpunkt (das vorhandene Limit schlüsselt auf `X-User` und greift hier
 nicht), Schutz vor Konto-Enumeration bei „Passwort vergessen“, Bot-Abwehr.
 
-**Infrastruktur/Salt.** Das BFF bekommt erstmals eine Datenbank — entweder ein eigenes
+**Infrastruktur/[intern].** Das BFF bekommt erstmals eine Datenbank — entweder ein eigenes
 Schema in der bestehenden `gutgesagt_app` oder ein eigener Dienst; Backup-Skript
-erweitern. SMTP-Relay oder Versanddienst, Absenderdomain mit SPF/DKIM/DMARC, Pillar-Werte
+erweitern. SMTP-Relay oder Versanddienst, Absenderdomain mit SPF/DKIM/DMARC, [intern]
 für die Zugangsdaten.
 **Externe Zuständigkeit.** **Die geringste aller Optionen im laufenden Betrieb.** Nötig ist
 ein Versandweg für E-Mails und die DNS-Einträge der Absenderdomain. Kein fremder
@@ -495,7 +495,7 @@ ein und erhalten einen einmalig gültigen, kurzlebigen Anmeldelink.
 `BFF.csproj` braucht weiterhin Mail-Bibliothek und Datenbanktreiber; `EmailService.cs`
 ist weiterhin neu zu bauen. Das Frontend wird schlanker (ein Feld statt vier Formulare).
 
-**Infrastruktur/Salt.** Identisch zu (c).
+**Infrastruktur/[intern].** Identisch zu (c).
 **Externe Zuständigkeit.** Identisch zu (c) — nur der Versandweg.
 **Aufwand.** 30–55 h. Etwa 20–25 % unter (c), weil Passwort-Reset, Passwortwechsel und
 Passwort-Policy komplett entfallen — das ist erfahrungsgemäß der aufwendigste Teil von (c).
@@ -538,8 +538,8 @@ und zwar in ihrer offenen Form — nicht zwei Anbieter, sondern n:
   sieht seine eigenen Beiträge nicht mehr. Bei (a)–(d) ist die Tabelle empfehlenswert,
   hier ist sie Voraussetzung.
 
-**Infrastruktur/Salt.** Kein neuer Dienst, kein Mailversand. Je Anbieter ein Client-Secret
-im Pillar und eine registrierte Redirect-URI.
+**Infrastruktur/[intern].** Kein neuer Dienst, kein Mailversand. Je Anbieter ein Client-Secret
+[intern] und eine registrierte Redirect-URI.
 **Externe Zuständigkeit.** **Hoch und dauerhaft, verteilt auf mehrere Parteien.** Je
 Anbieter eine Entwickler-Registrierung, ein Konto, Zustimmung zu dessen
 Nutzungsbedingungen, ggf. ein Review-Verfahren (Apple, teils Google) und die dauerhafte
@@ -584,7 +584,7 @@ Zwei Ausbaustufen mit sehr unterschiedlichem Profil.
 „Mitgliedschaft bei Netzbegrünung“ und „nenne uns den Grünen Kreisverband, in dem du
 Mitglied bist“ streichen bzw. auf das breitere Publikum umformulieren; Zeile 52–53 die
 Kachelbeschriftung. Dazu die Umbenennung auf GutGesagt, wo sie ansteht.
-**Infrastruktur/Salt.** Keine.
+**Infrastruktur/[intern].** Keine.
 **Externe Zuständigkeit.** Ein funktionierendes Postfach. Sonst nichts.
 **Aufwand.** 1–3 h.
 **Betriebsaufwand danach.** **Wächst linear mit der Nutzerzahl und ist der Kern des
@@ -612,7 +612,7 @@ weil sie heute Platzhalter enthalten.
 | `src/app/admin/` | neuer Bereich neben `content-moderation` und `mvp-dashboard`; `AdminGuard` und `require_admin` sind vorhanden und nutzbar |
 | `src/app/login/login-selector.component.html` | Formular statt `mailto:` |
 
-**Infrastruktur/Salt.** Datenbank für das BFF; Mailversand, sobald die Freischaltung nicht
+**Infrastruktur/[intern].** Datenbank für das BFF; Mailversand, sobald die Freischaltung nicht
 mehr händisch beantwortet wird.
 **Externe Zuständigkeit.** Gering — dieselbe wie (c), nur ohne Verifikationsmail, solange
 manuell geantwortet wird.
@@ -736,7 +736,7 @@ gleichauf bei null Zeilen Anwendungscode.**
 Das ist kein Näherungswert. Der BFF spricht generisches OIDC über den
 Standard-Handler; Issuer, Client-ID und Secret kommen aus der Konfiguration
 (`Program.cs:42`) und stehen nicht im Repository. Ein anderer Realm oder ein völlig
-anderer Identitätsanbieter ist eine Änderung an drei Umgebungsvariablen im Salt-Pillar.
+anderer Identitätsanbieter ist eine Änderung an drei Umgebungsvariablen [intern].
 Der einzige realistische Codeeingriff wäre ein abweichendes Claim-Mapping in
 `ClaimUtilities` (`Program.cs:683–698`) — zwei Methoden.
 
@@ -825,8 +825,8 @@ Ausdrücklich als ungeprüft gekennzeichnet, weil außerhalb dieses Repositories
   `docker-compose.dev.yml:112`, `docker-compose.tst.yml:66` — setzen `false`. Dass
   Produktion `true` fährt, steht in `docs/DEPLOYMENT.md:15` und `STATUS.md:17`, ist aber
   nicht in einer Konfigurationsdatei dieses Repos belegt.
-- **Realm-Name, Issuer-URL, Client-ID und Client-Secret der Produktion.** Liegen im
-  SaltStack-Repo der Verdigado bzw. in Passbolt (`docs/DEPLOYMENT.md:133`, `:152`).
+- **Realm-Name, Issuer-URL, Client-ID und Client-Secret der Produktion.** Liegen
+  [intern] (`docs/DEPLOYMENT.md:133`, `:152`).
 - **Ob der Realm `user.netzbegruenung.de` Self-Registration, Identity Brokering oder
   Custom-Attribute unterstützt bzw. erlaubt.** Das ist eine Frage der Realm-Konfiguration
   und der Betreiber-Bereitschaft, nicht des Codes.
@@ -859,4 +859,4 @@ Ausdrücklich als ungeprüft gekennzeichnet, weil außerhalb dieses Repositories
 | Admin-Prüfung | `mvp/backend/BFF/Proxy/AdminPolicy.cs:56–79`, `app/dependencies.py:233–249` |
 | Rate-Limiting | `app/middleware/rate_limit.py`, `app/utils/rate_limiter.py` |
 | Rechtstexte | `src/app/{impressum,datenschutz,nutzungsbedingungen}/*.component.html` |
-| Deployment und Salt | `docs/DEPLOYMENT.md:113–176` |
+| Deployment und [intern] | `docs/DEPLOYMENT.md:113–176` |
