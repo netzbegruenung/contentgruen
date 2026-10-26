@@ -135,6 +135,13 @@ async def add_commentary(
                 pruefung = Dublettenpruefung(
                     vorhanden=None, aehnlichster=pruefung.aehnlichster
                 )
+            if pruefung.vorhanden is None and request.vorhanden_nehmen is not None:
+                # Der gewaehlte vorhandene ist weg (geloescht, Text geaendert): Einen
+                # neuen anzulegen, hat die Person nicht gewaehlt.
+                raise HTTPException(
+                    status_code=409,
+                    detail="The existing commentary is no longer available",
+                )
             if pruefung.vorhanden is None:
                 # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
                 # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
@@ -198,7 +205,9 @@ async def add_commentary(
                 )
 
         # Nichts angelegt? Dann ist die Antwort der vorhandene Kommentar. Verknuepft
-        # wird nur die eigene Dublette.
+        # wird er nur, wenn er von derselben Person ist und sie ihn mit
+        # vorhanden_nehmen gewaehlt hat - beim ersten Versuch entscheidet sie noch,
+        # und wer danach trotzdem speichert, will nur den neuen an der Aussage (#242).
         #
         # Nicht, weil fremde Zuordnungen unerwuenscht waeren - im Gegenteil: Eine gute
         # Antwort passt oft auf viele Aussagen, und dass andere diese Zuordnung
@@ -209,24 +218,30 @@ async def add_commentary(
         # funktioniert und die gewaehlte Aussage sichtbar macht.
         dublette = pruefung.vorhanden
         eigene_dublette = dublette is not None and dublette.original_author == x_user
+        vorhanden_genommen = (
+            eigene_dublette
+            and request.vorhanden_nehmen is not None
+            and str(dublette.id) == str(request.vorhanden_nehmen)
+        )
         if dublette is not None:
             commentary_id = dublette.id
             logger.info(
                 f"Commentary is a duplicate of {commentary_id} "
-                f"({'same author' if eigene_dublette else 'other author, not linked'})"
+                f"({'same author' if eigene_dublette else 'other author'}, "
+                f"{'taken' if vorhanden_genommen else 'not linked'})"
             )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
-        # bleibt der Kommentar gespeichert und die Antwort sagt es. Bei einer eigenen
-        # Dublette haengt der vorhandene Kommentar danach (auch) an dieser Aussage -
-        # die Verknuepfung erkennt, wenn er dort schon haengt.
+        # bleibt der Kommentar gespeichert und die Antwort sagt es. Den eigenen
+        # vorhandenen haengt erst seine Wahl an diese Aussage - die Verknuepfung
+        # erkennt, wenn er dort schon haengt.
         statement_id = None
         statement_text = None
         verknuepft = True
         aussage_mitgeschickt = bool(
             request.statement_id or (request.statement_text or "").strip()
         )
-        if aussage_mitgeschickt and (dublette is None or eigene_dublette):
+        if aussage_mitgeschickt and (dublette is None or vorhanden_genommen):
             try:
                 statement_id, statement_text = (
                     await statement_service.beitrag_als_antwort_verknuepfen(

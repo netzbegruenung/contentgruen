@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
@@ -10,7 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommentaryService } from '../services/commentary.service';
 import { VotingService } from '../services/voting.service';
 import { LoggingService } from '../services/logging.service';
-import { AddCommentaryRequest } from '../services/dtos/commentaryDtos';
+import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
@@ -44,7 +45,7 @@ export const DUBLETTE_FREMD_HINWEIS = 'Es gibt schon einen sehr ähnlichen Komme
 /** Die Absicht geht nicht verloren - nur über einen anderen Weg. */
 export const DUBLETTE_FREMD_ZUORDNEN = 'Du kannst ihn dieser Aussage später über die Karte zuordnen.';
 
-/** Hinweis, wenn der vorhandene Kommentar jetzt auch an der gewaehlten Aussage haengt. */
+/** Hinweis, wenn der genommene vorhandene Kommentar jetzt auch an der gewaehlten Aussage haengt. */
 export function dubletteVerknuepftHinweis(aussage: string): string {
   return `Diesen Kommentar gibt es schon – er ist jetzt auch mit „${aussage}“ verknüpft.`;
 }
@@ -56,6 +57,12 @@ export const ZUGESTIMMT_HINWEIS = 'Du hast dem vorhandenen Kommentar zugestimmt.
 export const GENOMMEN_HINWEIS = 'Du nimmst deinen vorhandenen Kommentar.';
 
 export const ZUSTIMMEN_FEHLGESCHLAGEN = 'Zustimmen hat nicht geklappt. Versuch es gleich noch einmal.';
+
+export const NEHMEN_FEHLGESCHLAGEN =
+  'Dein vorhandener Kommentar ließ sich nicht mit der Aussage verknüpfen. Versuch es gleich noch einmal.';
+
+/** Der gewaehlte vorhandene ist inzwischen weg: Die Eingaben bleiben, Speichern legt neu an. */
+export const VORHANDEN_WEG = 'Den vorhandenen Kommentar gibt es nicht mehr. Du kannst deinen jetzt speichern.';
 
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
@@ -70,10 +77,10 @@ export interface Vorhanden {
   titel: string | null;
   /** Von derselben Person: Zustimmen sagt dann nichts, nehmen schon. */
   eigen: boolean;
-  /** Text der Aussage, mit der er jetzt verknuepft ist; null ohne Verknuepfung. */
+  /** Text der Aussage, mit der er nach dem Nehmen verknuepft ist; sonst null. */
   aussage: string | null;
-  /** Von jemand anderem, und eine Aussage war mitgeschickt. */
-  fremdMitAussage: boolean;
+  /** Die Anfrage, die ihn gefunden hat; Nehmen schickt sie mit vorhanden_nehmen noch einmal. */
+  anfrage: AddCommentaryRequest;
   /** Wie die Person ihn gewaehlt hat; null, solange sie nicht entschieden hat. */
   gewaehlt: 'zugestimmt' | 'genommen' | null;
 }
@@ -93,11 +100,13 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
  * sonst mit ihrem Text. Danach meldet `success` ID, Aussage und ob verknuepft
  * wurde; wohin es weitergeht, entscheidet der Workflow.
  *
- * Ist der Kommentar eine Dublette, wird nichts gespeichert: Das Formular zeigt den
- * vorhandenen, und die Person entscheidet. Zustimmen gibt einem fremden eine Stimme,
- * den eigenen kann sie aus dem Fangkorb ohne Stimme nehmen; beides meldet ihn ueber
- * `vorhandenGewaehlt`. Trotzdem speichern schickt dasselbe noch einmal mit
- * `trotz_dublette_von` und endet wie jedes Speichern in `success`.
+ * Ist der Kommentar eine Dublette, wird nichts gespeichert und nichts verknuepft: Das
+ * Formular zeigt den vorhandenen, und die Person entscheidet. Zustimmen gibt einem
+ * fremden eine Stimme. Den eigenen kann sie ohne Stimme nehmen - mit Aussage schickt
+ * das dasselbe noch einmal mit `vorhanden_nehmen`, und erst dann haengt er an der
+ * Aussage. Beides meldet ihn ueber `vorhandenGewaehlt`. Trotzdem speichern schickt
+ * dasselbe mit `trotz_dublette_von` und endet wie jedes Speichern in `success`; an der
+ * Aussage haengt dann nur der neue.
  */
 @Component({
   standalone: true,
@@ -155,6 +164,7 @@ export class AddCommentaryComponent implements OnChanges {
   /** Der eigene Kommentar ist eine Dublette dieses vorhandenen; sonst null. */
   vorhanden: Vorhanden | null = null;
   stimmtZu = false;
+  /** Fehler beim Zustimmen oder Nehmen; die Entscheidung bleibt offen. */
   zustimmFehler: string | null = null;
 
   /** Zu entscheiden ist, solange es einen vorhandenen gibt und noch nichts gewaehlt ist. */
@@ -168,11 +178,13 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   /**
-   * Den eigenen nehmen nur aus dem Fangkorb: Dort braucht der Einwurf einen Beitrag.
-   * Sonst ist der eigene ohnehin da, und es gibt nichts zu waehlen.
+   * Den eigenen nehmen, wenn es etwas zu verknuepfen gibt: die mitgeschickte Aussage
+   * oder, aus dem Fangkorb, den Einwurf. Sonst ist der eigene ohnehin da, und es gibt
+   * nichts zu waehlen.
    */
   get kannNehmen(): boolean {
-    return this.offeneEntscheidung && this.vorhanden!.eigen && !!this.vorbefuellung;
+    const vorhanden = this.vorhanden;
+    return this.offeneEntscheidung && vorhanden!.eigen && (this.mitAussage || !!this.vorbefuellung);
   }
 
   get dublettenHinweis(): string {
@@ -181,12 +193,9 @@ export class AddCommentaryComponent implements OnChanges {
       return ZUGESTIMMT_HINWEIS;
     }
     if (vorhanden?.gewaehlt === 'genommen') {
-      return GENOMMEN_HINWEIS;
+      return vorhanden.aussage ? dubletteVerknuepftHinweis(vorhanden.aussage) : GENOMMEN_HINWEIS;
     }
-    if (vorhanden?.aussage) {
-      return dubletteVerknuepftHinweis(vorhanden.aussage);
-    }
-    return vorhanden?.fremdMitAussage
+    return vorhanden && !vorhanden.eigen && this.mitAussage
       ? `${DUBLETTE_FREMD_HINWEIS} ${DUBLETTE_FREMD_ZUORDNEN}`
       : DUBLETTE_HINWEIS;
   }
@@ -359,24 +368,10 @@ export class AddCommentaryComponent implements OnChanges {
       next: (antwort) => {
         this.speichert = false;
         if (antwort.duplikat) {
-          // Nichts angelegt: Das Formular bleibt, der Hinweis zeigt den vorhandenen.
-          // Kein Erfolg - ein Einwurf aus dem Fangkorb bleibt, wie er war.
-          // Mit Aussage und Aussagetext in der Antwort: die eigene Dublette haengt
-          // jetzt auch an ihr. Mit Aussage, aber ohne Aussagetext: der Kommentar ist
-          // von jemand anderem, und der Hinweis zeigt auf den Weg ueber die Karte.
-          const mitAussage = !!(request.statement_id || request.statement_text);
-          const aussage =
-            antwort.verknuepft === true && antwort.statement_text ? antwort.statement_text : null;
-          // Verknuepft wird nur der eigene - auch ohne vorhanden_eigen (aelteres Backend).
-          const eigen = antwort.vorhanden_eigen === true || !!aussage;
-          this.vorhanden = {
-            id: antwort.id,
-            titel: antwort.vorhanden_titel ?? null,
-            eigen,
-            aussage,
-            fremdMitAussage: !eigen && mitAussage && antwort.verknuepft !== false,
-            gewaehlt: null,
-          };
+          // Nichts angelegt und nichts verknuepft: Das Formular bleibt, der Hinweis
+          // zeigt den vorhandenen. Kein Erfolg - ein Einwurf aus dem Fangkorb bleibt,
+          // wie er war.
+          this.vorhandenZeigen(request, antwort);
           return;
         }
         this.responseId = antwort.id;
@@ -410,6 +405,11 @@ export class AddCommentaryComponent implements OnChanges {
         ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
         : this.aussage;
     return { id: antwort.id, aussage, verknuepft };
+  }
+
+  /** Im Antwort-auf-Block steht eine Aussage (per ID oder als Text). */
+  get mitAussage(): boolean {
+    return !!(this.aussage.id || this.aussage.text);
   }
 
   /** Aussage ohne Auswahl mit 1-9 Zeichen: Speichern bleibt gesperrt, leer ist erlaubt. */
@@ -447,14 +447,69 @@ export class AddCommentaryComponent implements OnChanges {
     });
   }
 
-  /** Den eigenen vorhandenen Kommentar nehmen, ohne Stimme und ohne zweite Kopie. */
+  private vorhandenZeigen(anfrage: AddCommentaryRequest, antwort: AddCommentaryResponse): void {
+    this.vorhanden = {
+      id: antwort.id,
+      titel: antwort.vorhanden_titel ?? null,
+      eigen: antwort.vorhanden_eigen === true,
+      aussage: null,
+      anfrage,
+      gewaehlt: null,
+    };
+  }
+
+  /**
+   * Den eigenen vorhandenen Kommentar nehmen, ohne Stimme und ohne zweite Kopie. Mit
+   * Aussage haengt ihn erst diese Wahl an sie: dieselbe Anfrage noch einmal, mit
+   * `vorhanden_nehmen`. Scheitert das Verknuepfen, bleibt die Entscheidung offen.
+   */
   nehmen(): void {
     const vorhanden = this.vorhanden;
-    if (!vorhanden || !this.kannNehmen) {
+    if (!vorhanden || !this.kannNehmen || this.speichert) {
       return;
     }
-    vorhanden.gewaehlt = 'genommen';
-    this.vorhandenGewaehlt.emit(vorhanden.id);
+    if (!this.mitAussage) {
+      vorhanden.gewaehlt = 'genommen';
+      this.vorhandenGewaehlt.emit(vorhanden.id);
+      return;
+    }
+    this.speichert = true;
+    this.zustimmFehler = null;
+    // Die Aussage, die jetzt im Antwort-auf-Block steht - die Person kann sie seit dem
+    // ersten Versuch geaendert haben. Der Text kann es nicht: Dann waere der Hinweis weg.
+    const { statement_id, statement_text, ...anfrage } = vorhanden.anfrage;
+    const nehmen: AddCommentaryRequest = { ...anfrage, ...this.aussageFuerAnfrage(), vorhanden_nehmen: vorhanden.id };
+    this.commentaryService.addCommentary(nehmen).subscribe({
+      next: (antwort) => {
+        this.speichert = false;
+        if (antwort.duplikat && antwort.id !== vorhanden.id) {
+          // Inzwischen ist ein anderer vorhanden: Die Person sieht erst ihn.
+          this.vorhandenZeigen(nehmen, antwort);
+          return;
+        }
+        if (antwort.verknuepft !== true || !antwort.statement_text) {
+          this.zustimmFehler = NEHMEN_FEHLGESCHLAGEN;
+          return;
+        }
+        vorhanden.aussage = antwort.statement_text;
+        vorhanden.gewaehlt = 'genommen';
+        this.vorhandenGewaehlt.emit(vorhanden.id);
+      },
+      error: (error: Error) => {
+        this.logger.error('Error taking the existing commentary', error);
+        this.speichert = false;
+        if (error instanceof HttpErrorResponse && error.status === 409) {
+          // Der vorhandene ist weg; die Eingaben bleiben, Speichern legt neu an.
+          this.vorhandenVergessen();
+          // Wie eine Validierungsmeldung: in der Leiste steht der Text, der Knopf
+          // heisst "Kommentar speichern", nicht "Erneut versuchen".
+          this.fehler = VORHANDEN_WEG;
+          this.validierung = VORHANDEN_WEG;
+          return;
+        }
+        this.zustimmFehler = NEHMEN_FEHLGESCHLAGEN;
+      },
+    });
   }
 
   vorhandenAnsehen(): void {

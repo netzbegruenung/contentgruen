@@ -261,17 +261,43 @@ class TestAddCommentaryAntwort:
 
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
-    def test_eigene_dublette_mit_aussage_verknuepft_den_vorhandenen(self, dienste):
+    def test_eigene_dublette_mit_aussage_verknuepft_noch_nichts(self, dienste):
+        """Erst die Entscheidung der Person verknuepft (#242)."""
         _, statement_service = dienste
         vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
         self._dublette(vorhanden)
+
+        resp = TestClient(app).post(
+            ADD_URL, json=_anfrage(statement_id=str(statement_id)), headers=HEADERS
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {
+            "id": str(vorhanden),
+            "statement_id": None,
+            "statement_text": None,
+            "verknuepft": True,
+            "duplikat": True,
+            "vorhanden_titel": VORHANDEN_TITEL,
+            "vorhanden_eigen": True,
+        }
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
+
+    def test_vorhanden_nehmen_verknuepft_den_eigenen_mit_der_aussage(self, dienste):
+        _, statement_service = dienste
+        vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
+        commentary_service = self._dublette(vorhanden)
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Waermepumpen sind zu teuer",
         )
 
         resp = TestClient(app).post(
-            ADD_URL, json=_anfrage(statement_id=str(statement_id)), headers=HEADERS
+            ADD_URL,
+            json=_anfrage(
+                statement_id=str(statement_id), vorhanden_nehmen=str(vorhanden)
+            ),
+            headers=HEADERS,
         )
 
         assert resp.status_code == 200
@@ -291,6 +317,91 @@ class TestAddCommentaryAntwort:
             author="person-1",
             statement_id=statement_id,
             statement_text=None,
+        )
+        # Kein neuer Kommentar.
+        commentary_service.add_commentary.assert_not_awaited()
+
+    def test_vorhanden_nehmen_verknuepft_keinen_fremden(self, dienste):
+        _, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        commentary_service = self._dublette(vorhanden, autor="person-2")
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(
+                statement_text="Waermepumpen sind zu teuer",
+                vorhanden_nehmen=str(vorhanden),
+            ),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["duplikat"] is True
+        assert resp.json()["statement_id"] is None
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
+        commentary_service.add_commentary.assert_not_awaited()
+
+    def test_vorhanden_nehmen_gilt_nur_fuer_den_gezeigten(self, dienste):
+        """Ist inzwischen ein anderer vorhanden, sieht die Person erst ihn."""
+        _, statement_service = dienste
+        anderer = uuid.uuid4()
+        self._dublette(anderer)
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(
+                statement_text="Waermepumpen sind zu teuer",
+                vorhanden_nehmen=str(uuid.uuid4()),
+            ),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["id"] == str(anderer)
+        assert resp.json()["duplikat"] is True
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
+
+    def test_vorhanden_nehmen_legt_nie_einen_neuen_an(self, dienste):
+        """Ist der gewaehlte nicht mehr da, entsteht kein Kommentar, den niemand wollte."""
+        _, statement_service = dienste
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(
+                statement_text="Waermepumpen sind zu teuer",
+                vorhanden_nehmen=str(uuid.uuid4()),
+            ),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 409
+        commentary_service.add_commentary.assert_not_awaited()
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
+
+    def test_trotz_eigener_dublette_haengt_nur_der_neue_an_der_aussage(self, dienste):
+        commentary_id, statement_service = dienste
+        vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
+        self._dublette(vorhanden)
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            "Waermepumpen sind zu teuer",
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(
+                statement_id=str(statement_id), trotz_dublette_von=str(vorhanden)
+            ),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["id"] == str(commentary_id)
+        assert resp.json()["duplikat"] is False
+        statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once()
+        assert (
+            statement_service.beitrag_als_antwort_verknuepfen.call_args.kwargs[
+                "beitrag_id"
+            ]
+            == commentary_id
         )
 
     def test_fremde_dublette_wird_nicht_verknuepft(self, dienste):
@@ -318,7 +429,7 @@ class TestAddCommentaryAntwort:
         # Auch keine Aussage angelegt - das passiert erst beim Verknuepfen.
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
-    def test_dublette_mit_gescheiterter_verknuepfung(self, dienste):
+    def test_vorhanden_nehmen_mit_gescheiterter_verknuepfung(self, dienste):
         _, statement_service = dienste
         vorhanden = uuid.uuid4()
         self._dublette(vorhanden)
@@ -328,7 +439,10 @@ class TestAddCommentaryAntwort:
 
         resp = TestClient(app).post(
             ADD_URL,
-            json=_anfrage(statement_text="Waermepumpen sind zu teuer"),
+            json=_anfrage(
+                statement_text="Waermepumpen sind zu teuer",
+                vorhanden_nehmen=str(vorhanden),
+            ),
             headers=HEADERS,
         )
 

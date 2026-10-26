@@ -29,6 +29,11 @@ class AddCommentaryRequest(BaseModel):
     # Dann wird der neue angelegt, obwohl er dessen Dublette ist. Gilt nur fuer den
     # gezeigten - ist inzwischen ein anderer vorhanden, sieht die Person erst ihn.
     trotz_dublette_von: Optional[UUID] = None
+    # Die Person nimmt diesen vorhandenen, eigenen Kommentar statt einen neuen zu
+    # speichern: Dann haengt er an der mitgeschickten Aussage. Erst diese Wahl
+    # verknuepft - beim ersten Versuch entscheidet die Person noch. Gilt wie
+    # trotz_dublette_von nur fuer den gezeigten.
+    vorhanden_nehmen: Optional[UUID] = None
 
     # Leer (oder nur Leerraum) heisst: keine Aussage. Sonst mindestens
     # AUSSAGE_MIN_ZEICHEN - kuerzer ist keine Aussage, auf die man antworten kann.
@@ -75,7 +80,9 @@ class AddCommentaryResponse(BaseModel):
     # aber nur bei wortgleichem Text - dafuer ist ein eigener Weg an der Karte
     # vorgesehen ("Passt auch auf ..."), siehe api/v1/commentary.py.
     # Das Formular zeigt den vorhandenen Kommentar und laesst die Person entscheiden:
-    # zustimmen (Stimme), den eigenen nehmen oder mit trotz_dublette_von trotzdem speichern.
+    # zustimmen (Stimme), den eigenen mit vorhanden_nehmen nehmen oder mit
+    # trotz_dublette_von trotzdem speichern. Mit einer Aussage verknuepft ist der
+    # vorhandene nur nach vorhanden_nehmen (dann statement_*, verknuepft).
     duplikat: bool = False
     # Titel des vorhandenen Kommentars, damit das Formular ihn nennen kann; sonst None.
     vorhanden_titel: Optional[str] = None
