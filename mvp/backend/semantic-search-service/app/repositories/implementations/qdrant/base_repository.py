@@ -231,15 +231,20 @@ class QdrantBaseRepository(
         if any(r._shared_manager is not manager for r in repositories):
             raise ValueError("search_batch: repositories use different managers")
 
-        treffer = await manager.search_batch(
-            query_text, [r._suchparameter(limit) for r in repositories]
-        )
-        # DEBUG ohne query_text, wie in search() (#239).
-        logger.debug(f"Batch search over {len(repositories)} content types")
-        return [r._suchergebnisse(t) for r, t in zip(repositories, treffer)]
+        try:
+            treffer = await manager.search_batch(
+                query_text, [r._suchparameter(limit) for r in repositories]
+            )
+            # DEBUG ohne query_text, wie in search() (#239).
+            logger.debug(f"Batch search over {len(repositories)} content types")
+            return [r._suchergebnisse(t) for r, t in zip(repositories, treffer)]
+
+        except Exception as e:
+            logger.error(f"Batch search failed: {e}", exc_info=True)
+            raise
 
     def _suchparameter(self, limit: int) -> Suchparameter:
-        """Beitragstyp, Filter und Limit dieser Suche - fuer search() und search_batch()."""
+        """Typ (content_type), Filter und Limit dieser Suche - fuer search() und search_batch()."""
         return Suchparameter(
             content_type=self.content_type,
             filter_dict={"must": nur_sichtbar_bedingungen()},

@@ -12,10 +12,13 @@ Ohne Qdrant und ohne Modell: Client und Modell sind ersetzt.
 
 import uuid
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import httpx
+import inspect
 import numpy as np
 import pytest
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.models import FieldCondition, MatchValue
 
 from domain.models.commentary import CommentarySearchResult
@@ -24,7 +27,10 @@ from domain.interfaces.embeddings_manager import Suchparameter
 from domain.models.content_type import ContentType
 from dtos.search import CommentarySearchResult as CommentaryWrapper
 from dtos.search import GenericTextSearchResult as GenericTextWrapper
-from repositories.implementations.qdrant.base_repository import QdrantBaseRepository
+from repositories.implementations.qdrant.base_repository import (
+    QdrantBaseRepository,
+    nur_sichtbar_bedingungen,
+)
 from services.content.base_content_service import BaseContentService
 from services.content.commentary_service import CommentaryService
 from services.content.generic_text_service import GenericTextService
@@ -37,8 +43,10 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 )
 from services.embeddings.qdrant_embeddings_manager import (
     QdrantEmbeddingsManager,
+    einbettungen_geteilt,
     einbettungen_teilen,
 )
+from tests.fixtures.direktsuche import direktsuche_ueber_dienste
 from tests.fixtures.embeddings_manager import TestEmbeddingsManager
 
 
@@ -104,6 +112,28 @@ class TestEinbettungenTeilen:
             manager.encode_text("Tempolimit jetzt").append(9.9)
             assert manager.encode_text("Tempolimit jetzt") == [0.1, 0.2]
 
+    @pytest.mark.asyncio
+    async def test_einbettungen_geteilt_endpunkt_teilt_je_aufruf(self, manager):
+        @einbettungen_geteilt
+        async def endpunkt(text: str):
+            manager.encode_text(text)
+            manager.encode_text(text)
+
+        await endpunkt("Tempolimit jetzt")
+        await endpunkt("Tempolimit jetzt")
+
+        assert manager._model.encode.call_count == 2  # je Aufruf einmal
+        manager.encode_text("Tempolimit jetzt")
+        assert manager._model.encode.call_count == 3  # danach nicht mehr geteilt
+
+    def test_einbettungen_geteilt_signatur_bleibt_fuer_fastapi(self):
+        async def endpunkt(text: str, limit: int = 5):
+            pass
+
+        assert inspect.signature(einbettungen_geteilt(endpunkt)) == inspect.signature(
+            endpunkt
+        )
+
 
 class TestManagerSearchBatch:
     @pytest.mark.asyncio
@@ -134,6 +164,55 @@ class TestManagerSearchBatch:
         assert treffer[0][0]["score"] == 0.9
 
     @pytest.mark.asyncio
+    async def test_search_batch_anfragen_wie_search_je_suche(self, manager):
+        """Was an Qdrant geht: je Suche derselbe Vektor, Filter und dasselbe Limit."""
+        punkte = [[_punkt(0.9, text="a"), _punkt(0.8, text="b")], [_punkt(0.7)], []]
+        manager._async_client.search = AsyncMock(side_effect=punkte)
+        manager._async_client.search_batch = AsyncMock(return_value=punkte)
+        sichtbar = {"must": nur_sichtbar_bedingungen()}
+        suchen = [
+            Suchparameter("commentary", sichtbar, 10),
+            Suchparameter("generic_text", sichtbar, 1),
+            Suchparameter("statement", None, 3),
+        ]
+
+        einzeln = [
+            await manager.search(
+                "Tempolimit jetzt",
+                content_type=suche.content_type,
+                limit=suche.limit,
+                filter_dict=suche.filter_dict,
+            )
+            for suche in suchen
+        ]
+        gebuendelt = await manager.search_batch("Tempolimit jetzt", suchen)
+
+        assert gebuendelt == einzeln
+        anfragen = manager._async_client.search_batch.call_args.kwargs["requests"]
+        for anfrage, aufruf in zip(
+            anfragen, manager._async_client.search.call_args_list
+        ):
+            assert anfrage.vector == aufruf.kwargs["query_vector"]
+            assert anfrage.filter == aufruf.kwargs["query_filter"]
+            assert anfrage.limit == aufruf.kwargs["limit"]
+            assert anfrage.with_payload == aufruf.kwargs["with_payload"]
+            assert anfrage.with_vector == aufruf.kwargs["with_vectors"]
+        assert anfragen[0].filter.must[0] == FieldCondition(
+            key="content_type", match=MatchValue(value="commentary")
+        )
+
+    @pytest.mark.asyncio
+    async def test_search_batch_qdrant_fehler_als_runtime_error(self, manager):
+        manager._async_client.search_batch = AsyncMock(
+            side_effect=UnexpectedResponse(500, "Server Error", b"", httpx.Headers())
+        )
+
+        with pytest.raises(RuntimeError, match="Vector database search failed"):
+            await manager.search_batch(
+                "Tempolimit jetzt", [Suchparameter("commentary", None, 5)]
+            )
+
+    @pytest.mark.asyncio
     async def test_search_batch_ohne_suchen_fragt_nicht_an(self, manager):
         manager._async_client.search_batch = AsyncMock()
 
@@ -143,6 +222,10 @@ class TestManagerSearchBatch:
 
 
 class TestRepositoriesSearchBatch:
+    """Gegen den TestEmbeddingsManager, dessen search_batch() je Eintrag search()
+    ruft: belegt die Verdrahtung (Parameter, Ergebnismodell). Was an Qdrant geht,
+    vergleicht TestManagerSearchBatch."""
+
     @pytest.fixture
     def repositories(self, test_settings, test_embeddings_manager):
         test_embeddings_manager.add_test_data(
@@ -237,13 +320,10 @@ class TestDiensteSearchBatch:
                 voting_service=MagicMock(),
             )
 
-        async def je_typ(services, query_text, limit):
-            return [await s.search(query_text, limit) for s in services]
-
         neu = orchestrator()
         await neu.collect_direct("tempolimit", 5)
         alt = orchestrator()
-        with patch.object(BaseContentService, "search_batch", je_typ):
+        with direktsuche_ueber_dienste():
             await alt.collect_direct("tempolimit", 5)
 
         for typ in (ContentType.COMMENTARY, ContentType.GENERIC_TEXT):

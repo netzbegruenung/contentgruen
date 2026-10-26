@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, AsyncMock
 import uuid
 from datetime import datetime
 
-from domain.interfaces.embeddings_manager import IEmbeddingsManager
+from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
 
 
 class TestEmbeddingsManager(IEmbeddingsManager):
@@ -413,7 +413,7 @@ class TestEmbeddingsManager(IEmbeddingsManager):
     async def search_batch(
         self,
         query: str,
-        suchen: list,
+        suchen: List[Suchparameter],
         praefix: str = "query",
     ) -> List[List[Dict[str, Any]]]:
         """Batch search: one search() per Suchparameter."""

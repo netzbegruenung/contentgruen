@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any, List, Tuple, Literal
+import functools
 import threading
 import asyncio
 from contextlib import asynccontextmanager, contextmanager
@@ -59,6 +60,17 @@ def einbettungen_teilen():
         yield
     finally:
         _geteilte_einbettungen.reset(token)
+
+
+def einbettungen_geteilt(endpunkt):
+    """Dekorator: der ganze Endpunkt laeuft in einbettungen_teilen()."""
+
+    @functools.wraps(endpunkt)
+    async def geteilt(*args, **kwargs):
+        with einbettungen_teilen():
+            return await endpunkt(*args, **kwargs)
+
+    return geteilt
 
 
 def encoding_fuer(content_type: Optional[str]) -> Literal["statement", "passage"]:
@@ -458,10 +470,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             raise RuntimeError("QdrantEmbeddingsManager not started.")
 
         try:
-            # Encode query
-            query_vector = self.encode_text(
-                query, content_type="statement" if praefix == "query" else "passage"
-            )
+            query_vector = self._suchvektor(query, praefix)
 
             # Perform search
             results = await self._async_client.search(
@@ -493,7 +502,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
         Args:
             query: Search query text
-            suchen: Je Suche Beitragstyp, Filter und Limit, wie bei search()
+            suchen: Je Suche Typ (content_type), Filter und Limit, wie bei search()
             praefix: wie bei search()
 
         Returns:
@@ -506,9 +515,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             return []
 
         try:
-            query_vector = self.encode_text(
-                query, content_type="statement" if praefix == "query" else "passage"
-            )
+            query_vector = self._suchvektor(query, praefix)
 
             results = await self._async_client.search_batch(
                 collection_name=self.collection_name,
@@ -535,11 +542,19 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             logger.error(f"❌ Unexpected error during batch search: {e}", exc_info=True)
             raise
 
+    def _suchvektor(
+        self, query: str, praefix: Literal["query", "passage"]
+    ) -> List[float]:
+        """Der Suchtext eingebettet wie bei search(): "query: …" oder "passage: …"."""
+        return self.encode_text(
+            query, content_type="statement" if praefix == "query" else "passage"
+        )
+
     @staticmethod
     def _suchfilter(
         content_type: Optional[str], filter_dict: Optional[Dict[str, Any]]
     ) -> Optional[Filter]:
-        """Der Qdrant-Filter einer Suche: Beitragstyp plus 'must'/'must_not'-Listen."""
+        """Der Qdrant-Filter einer Suche: Typ (content_type) plus 'must'/'must_not'-Listen."""
         must_conditions = []
         if content_type:
             must_conditions.append(

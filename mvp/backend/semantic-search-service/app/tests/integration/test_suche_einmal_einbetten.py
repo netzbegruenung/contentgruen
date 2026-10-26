@@ -8,6 +8,8 @@ Bewertungen, Suchereignis), ist ersetzt.
 
 Der Paritaetstest belegt, dass Treffer, Scores und Reihenfolge dieselben sind wie
 mit einer Einbettung und einer Abfrage je Beitragstyp - so lief die Suche vor #304.
+Im Bestand liegt ein gesperrter Beitrag, und ein Lauf schneidet am Limit ab: Ginge
+im Batch der Sichtbarkeitsfilter oder das Limit je Typ verloren, fiele es auf.
 """
 
 import datetime
@@ -73,16 +75,21 @@ class _ZaehlenderClient:
 
 def _felder(**extra):
     now = datetime.datetime.now()
-    return dict(
-        id=uuid.uuid4(),
-        created=now,
-        last_modified=now,
-        original_author="tester",
-        last_modified_by="tester",
-        status=ContentStatus.VISIBLE,
-        origin=ContentOrigin.MANUALLY_CREATED,
+    return {
+        **dict(
+            id=uuid.uuid4(),
+            created=now,
+            last_modified=now,
+            original_author="tester",
+            last_modified_by="tester",
+            status=ContentStatus.VISIBLE,
+            origin=ContentOrigin.MANUALLY_CREATED,
+        ),
         **extra,
-    )
+    }
+
+
+GESPERRT_ID = uuid.uuid4()
 
 
 @pytest_asyncio.fixture
@@ -117,6 +124,17 @@ async def suche(integration_settings, real_repository_factory, real_embeddings_m
             references=[],
             references_count=0,
             **_felder(),
+        )
+    )
+    # Passt am besten zur Suchanfrage, ist aber gesperrt: darf nie erscheinen.
+    await commentaries.add(
+        CommentaryDbEntry(
+            text="Lohnen sich Wärmepumpen im Altbau? Ja, Wärmepumpen lohnen sich "
+            "im Altbau.",
+            title="Wärmepumpen lohnen sich im Altbau, sagt die Rechnung",
+            references=[],
+            references_count=0,
+            **_felder(id=GESPERRT_ID, status=ContentStatus.BLOCKED),
         )
     )
     await generic_texts.add(
@@ -186,11 +204,11 @@ async def suche(integration_settings, real_repository_factory, real_embeddings_m
             transport=transport, base_url="http://test"
         ) as client:
 
-            async def suchen(text=SUCHANFRAGE):
+            async def suchen(text=SUCHANFRAGE, limit=10):
                 zaehler.anfragen.clear()
                 einbettungen.clear()
                 antwort = await client.post(
-                    SEARCH_URL, json={"query_text": text, "limit": 10}
+                    SEARCH_URL, json={"query_text": text, "limit": limit}
                 )
                 assert antwort.status_code == 200, antwort.text
                 return antwort.json(), list(einbettungen), list(zaehler.anfragen)
@@ -217,7 +235,7 @@ def _treffer(antwort):
     }
 
 
-async def test_neue_suchanfrage_einmal_eingebettet(suche):
+async def test_search_by_text_neue_suchanfrage_einmal_eingebettet(suche):
     """Neue Aussage: Dublettenpruefung, Speichern, Aussagen- und Direktsuche.
 
     Vor #304: 8 Einbettungen, 10 Anfragen (scroll, search, 2x upsert, search,
@@ -233,7 +251,7 @@ async def test_neue_suchanfrage_einmal_eingebettet(suche):
     )
 
 
-async def test_vorhandene_suchanfrage_einmal_eingebettet(suche):
+async def test_search_by_text_vorhandene_suchanfrage_einmal_eingebettet(suche):
     """Die Aussage gibt es schon (normalisiert gleich): keine Dublettensuche.
 
     Vor #304: 5 Einbettungen, 7 Anfragen.
@@ -246,7 +264,7 @@ async def test_vorhandene_suchanfrage_einmal_eingebettet(suche):
     assert sorted(anfragen) == sorted(["scroll", "search", "retrieve", "search_batch"])
 
 
-async def test_suchanfrage_mit_apostroph_zweimal_eingebettet(suche):
+async def test_search_by_text_suchanfrage_mit_apostroph_zweimal_eingebettet(suche):
     """Die Suche ersetzt ' und ; vor dem Einbetten, die Aussage behaelt den Text.
 
     Zwei verschiedene Texte, also zwei Einbettungen - bewusst so gelassen, damit
@@ -260,17 +278,26 @@ async def test_suchanfrage_mit_apostroph_zweimal_eingebettet(suche):
     )
 
 
-async def test_treffer_wie_mit_einbettung_je_abfrage(suche):
-    """Paritaet: Treffer, Scores und Reihenfolge wie vor #304."""
+@pytest.mark.parametrize("limit", [10, 1])
+async def test_search_by_text_treffer_wie_mit_einbettung_je_abfrage(suche, limit):
+    """Paritaet: Treffer, Scores und Reihenfolge wie vor #304; limit=1 schneidet ab."""
     await suche()  # Aussage anlegen, damit beide Laeufe dieselbe Lage sehen
-    neu, _, _ = await suche()
+    neu, _, _ = await suche(limit=limit)
 
     with (
-        patch("api.v1.search.einbettungen_teilen", nullcontext),
+        patch(
+            "services.embeddings.qdrant_embeddings_manager.einbettungen_teilen",
+            nullcontext,
+        ),
         direktsuche_ueber_dienste(),
     ):
-        alt, einbettungen_alt, _ = await suche()
+        alt, einbettungen_alt, _ = await suche(limit=limit)
 
     assert len(einbettungen_alt) == 5  # wirklich der alte Weg
     assert _treffer(neu) == _treffer(alt)
-    assert sum(len(t) for t in _treffer(neu).values()) >= 3
+    ids = [i for liste in _treffer(neu).values() for i, _ in liste]
+    assert str(GESPERRT_ID) not in ids
+    if limit == 1:
+        assert all(len(t) <= 1 for t in _treffer(neu).values())
+    else:
+        assert len(ids) >= 3

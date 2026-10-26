@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any, Literal, Tuple
 
 @dataclass(frozen=True)
 class Suchparameter:
-    """Eine Suche innerhalb von search_batch(): Beitragstyp, Filter, Limit wie bei search()."""
+    """Eine Suche in search_batch(): Typ (content_type), Filter, Limit wie bei search()."""
 
     content_type: Optional[str]
     filter_dict: Optional[Dict[str, Any]]

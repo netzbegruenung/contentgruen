@@ -39,7 +39,7 @@ class ContentTypeSearchSpec:
     """Ties a content type to the pieces search needs to handle it uniformly."""
 
     content_type: ContentType
-    service: object  # BaseContentService: async get(id); searched via search_batch()
+    service: BaseContentService  # get(id); searched together via search_batch()
     result_cls: Type  # the per-type search-result wrapper DTO
     result_field: str  # name of the nested content field on the wrapper (e.g. "commentary_result")
 
