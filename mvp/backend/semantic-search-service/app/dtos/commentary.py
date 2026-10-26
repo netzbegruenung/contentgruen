@@ -78,9 +78,11 @@ class AddCommentaryResponse(BaseModel):
     # Ihr Text - bei Text-Anfragen kann das eine schon vorhandene, sehr aehnliche
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
-    # False nur, wenn eine Aussage angegeben war und nicht verknuepft werden
-    # konnte. Der Kommentar ist dann trotzdem gespeichert. Bei einer Dublette ohne
-    # vorhanden_nehmen wurde nichts versucht: True, die Aussagefelder bleiben leer.
+    # Ohne Dublette: False nur, wenn eine Aussage angegeben war und nicht verknuepft
+    # werden konnte. Der Kommentar ist dann trotzdem gespeichert. Ohne Aussage True.
+    # Bei einer Dublette True nur, wenn die Person den eigenen mit vorhanden_nehmen
+    # genommen hat und er jetzt an der Aussage haengt; sonst False - auch, wenn gar
+    # nichts versucht wurde (kein vorhanden_nehmen, keine Aussage, fremder vorhandener).
     verknuepft: bool = True
     # True: Es gibt schon einen sehr aehnlichen Kommentar; id ist dessen ID und nichts
     # wurde angelegt und nichts verknuepft. Die Aussagefelder bleiben leer, bis die
@@ -92,7 +94,7 @@ class AddCommentaryResponse(BaseModel):
     # Das Formular zeigt den vorhandenen Kommentar und laesst die Person entscheiden:
     # zustimmen (Stimme), den eigenen mit vorhanden_nehmen nehmen oder mit
     # trotz_dublette_von trotzdem speichern.
-    duplikat: bool = False
+    dublette: bool = False
     # Titel des vorhandenen Kommentars, damit das Formular ihn nennen kann; sonst None.
     vorhanden_titel: Optional[str] = None
     # Der vorhandene Kommentar ist von derselben Person: Zustimmen saehe sich selbst

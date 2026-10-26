@@ -377,7 +377,7 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryService.addCommentary(request).subscribe({
       next: (antwort) => {
         this.speichert = false;
-        if (antwort.duplikat) {
+        if (antwort.dublette) {
           // Nichts angelegt und nichts verknuepft: Das Formular bleibt, der Hinweis
           // zeigt den vorhandenen. Kein Erfolg - ein Einwurf aus dem Fangkorb bleibt,
           // wie er war.
@@ -502,7 +502,7 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryService.addCommentary(nehmen).subscribe({
       next: (antwort) => {
         this.nimmt = false;
-        if (antwort.duplikat && antwort.id !== vorhanden.id) {
+        if (antwort.dublette && antwort.id !== vorhanden.id) {
           // Inzwischen ist ein anderer vorhanden: Die Person sieht erst ihn.
           this.vorhandenZeigen(nehmen, antwort);
           return;

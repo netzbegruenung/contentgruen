@@ -81,7 +81,7 @@ class TestAddCommentaryAntwort:
             "statement_id": None,
             "statement_text": None,
             "verknuepft": True,
-            "duplikat": False,
+            "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
         }
@@ -208,7 +208,7 @@ class TestAddCommentaryAntwort:
             "statement_id": None,
             "statement_text": None,
             "verknuepft": False,
-            "duplikat": False,
+            "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
         }
@@ -241,8 +241,8 @@ class TestAddCommentaryAntwort:
             "id": str(vorhanden),
             "statement_id": None,
             "statement_text": None,
-            "verknuepft": True,
-            "duplikat": True,
+            "verknuepft": False,
+            "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
         }
@@ -262,7 +262,8 @@ class TestAddCommentaryAntwort:
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_eigene_dublette_mit_aussage_verknuepft_noch_nichts(self, dienste):
-        """Erst die Entscheidung der Person verknuepft (#242)."""
+        """Erst die Entscheidung der Person verknuepft (#242) - bis dahin sagt die
+        Antwort nicht verknuepft (#238)."""
         _, statement_service = dienste
         vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
         self._dublette(vorhanden)
@@ -276,8 +277,8 @@ class TestAddCommentaryAntwort:
             "id": str(vorhanden),
             "statement_id": None,
             "statement_text": None,
-            "verknuepft": True,
-            "duplikat": True,
+            "verknuepft": False,
+            "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
         }
@@ -306,7 +307,7 @@ class TestAddCommentaryAntwort:
             "statement_id": str(statement_id),
             "statement_text": "Waermepumpen sind zu teuer",
             "verknuepft": True,
-            "duplikat": True,
+            "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
         }
@@ -335,8 +336,9 @@ class TestAddCommentaryAntwort:
             headers=HEADERS,
         )
 
-        assert resp.json()["duplikat"] is True
+        assert resp.json()["dublette"] is True
         assert resp.json()["statement_id"] is None
+        assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
         commentary_service.add_commentary.assert_not_awaited()
 
@@ -356,7 +358,8 @@ class TestAddCommentaryAntwort:
         )
 
         assert resp.json()["id"] == str(anderer)
-        assert resp.json()["duplikat"] is True
+        assert resp.json()["dublette"] is True
+        assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_vorhanden_nehmen_legt_nie_einen_neuen_an(self, dienste):
@@ -402,8 +405,9 @@ class TestAddCommentaryAntwort:
 
         assert resp.status_code == 200
         assert resp.json()["id"] == str(vorhanden)
-        assert resp.json()["duplikat"] is True
+        assert resp.json()["dublette"] is True
         assert resp.json()["statement_id"] is None
+        assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
         commentary_service.add_commentary.assert_not_awaited()
 
@@ -425,7 +429,7 @@ class TestAddCommentaryAntwort:
         )
 
         assert resp.json()["id"] == str(commentary_id)
-        assert resp.json()["duplikat"] is False
+        assert resp.json()["dublette"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once()
         assert (
             statement_service.beitrag_als_antwort_verknuepfen.call_args.kwargs[
@@ -451,8 +455,8 @@ class TestAddCommentaryAntwort:
             "id": str(vorhanden),
             "statement_id": None,
             "statement_text": None,
-            "verknuepft": True,
-            "duplikat": True,
+            "verknuepft": False,
+            "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": False,
         }
@@ -476,7 +480,7 @@ class TestAddCommentaryAntwort:
             headers=HEADERS,
         )
 
-        assert resp.json()["duplikat"] is True
+        assert resp.json()["dublette"] is True
         assert resp.json()["verknuepft"] is False
         assert resp.json()["id"] == str(vorhanden)
 
@@ -491,7 +495,7 @@ class TestAddCommentaryAntwort:
         resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
 
         assert resp.status_code == 200
-        assert resp.json()["duplikat"] is False
+        assert resp.json()["dublette"] is False
         reference_service.add_reference.assert_awaited_once()
         # Das Pruefergebnis geht mit - add_commentary bettet nicht noch einmal ein.
         pruefung = commentary_service.pruefe_dublette.return_value
@@ -533,7 +537,7 @@ class TestAddCommentaryAntwort:
 
         assert resp.status_code == 200
         assert resp.json()["id"] == str(commentary_id)
-        assert resp.json()["duplikat"] is False
+        assert resp.json()["dublette"] is False
         assert resp.json()["vorhanden_titel"] is None
         assert resp.json()["vorhanden_eigen"] is False
         # Angelegt wird ohne "vorhanden"; der aehnlichste bleibt fuer most_similar_*.
@@ -575,9 +579,10 @@ class TestAddCommentaryAntwort:
 
         resp = TestClient(app).post(ADD_URL, json=_anfrage(), headers=HEADERS)
 
-        assert resp.json()["duplikat"] is True
+        assert resp.json()["dublette"] is True
         assert resp.json()["vorhanden_titel"] == VORHANDEN_TITEL
         assert resp.json()["vorhanden_eigen"] is False
+        assert resp.json()["verknuepft"] is False
         commentary_service.add_commentary.assert_not_awaited()
 
     def test_trotz_dublette_von_gilt_nur_fuer_den_gezeigten(self, dienste):
@@ -592,7 +597,7 @@ class TestAddCommentaryAntwort:
         )
 
         assert resp.json()["id"] == str(anderer)
-        assert resp.json()["duplikat"] is True
+        assert resp.json()["dublette"] is True
         commentary_service.add_commentary.assert_not_awaited()
 
     def test_eigene_dublette_ohne_aussage_nennt_sich_eigen(self, dienste):
@@ -600,5 +605,5 @@ class TestAddCommentaryAntwort:
 
         resp = TestClient(app).post(ADD_URL, json=_anfrage(), headers=HEADERS)
 
-        assert resp.json()["duplikat"] is True
+        assert resp.json()["dublette"] is True
         assert resp.json()["vorhanden_eigen"] is True
