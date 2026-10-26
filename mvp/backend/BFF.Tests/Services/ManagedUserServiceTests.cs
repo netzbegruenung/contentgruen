@@ -207,8 +207,6 @@ public class ManagedUserServiceTests
     [Theory]
     [InlineData("ehemalige-person")]
     [InlineData("ehemalige-person-6f1c2d3e-0000-4000-8000-000000000000")]
-    [InlineData("Ehemalige-Person")]
-    [InlineData(" ehemalige-person ")]
     public async Task LoadUsers_RejectsReservedUserId(string reservedId)
     {
         var path = WriteUsersFile(
@@ -220,9 +218,9 @@ public class ManagedUserServiceTests
 
             Assert.Null(await service.GetUserByIdAsync(reservedId));
             Assert.Null(await service.GetUserByEmailAsync("reserved@example.com"));
-            Assert.Null(await service.ValidateUserAsync("reserved@example.com", "Passwort1!"));
+            Assert.Null(await service.ValidateUserAsync("reserved@example.com", KnownPassword));
             Assert.NotNull(await service.GetUserByIdAsync("user-001"));
-            Assert.NotNull(await service.ValidateUserAsync("ok@example.com", "Passwort1!"));
+            Assert.NotNull(await service.ValidateUserAsync("ok@example.com", KnownPassword));
 
             _mockLogger.Verify(
                 x => x.Log(
@@ -242,6 +240,7 @@ public class ManagedUserServiceTests
     [Theory]
     [InlineData("ehemalige-personal")]
     [InlineData("user-ehemalige-person")]
+    [InlineData("Ehemalige-Person")]
     public async Task LoadUsers_AcceptsUserIdThatOnlyResemblesReservedId(string userId)
     {
         var path = WriteUsersFile(("someone@example.com", userId));
@@ -261,9 +260,12 @@ public class ManagedUserServiceTests
         Assert.True(ManagedUserService.IsReservedUserId("ehemalige-person"));
         Assert.True(ManagedUserService.IsReservedUserId("ehemalige-person-abc"));
         Assert.False(ManagedUserService.IsReservedUserId("ehemalige-personal"));
+        Assert.False(ManagedUserService.IsReservedUserId("Ehemalige-Person"));
         Assert.False(ManagedUserService.IsReservedUserId("user-001"));
         Assert.False(ManagedUserService.IsReservedUserId(""));
     }
+
+    private const string KnownPassword = "Passwort1!";
 
     private ManagedUserService ServiceFor(string path)
     {
@@ -280,7 +282,7 @@ public class ManagedUserServiceTests
     private static string WriteUsersFile(params (string Email, string UserId)[] users)
     {
         // Ein Hash fuer alle: BCrypt mit niedrigem Work-Factor haelt den Test schnell.
-        var hash = BCrypt.Net.BCrypt.HashPassword("Passwort1!", 4);
+        var hash = BCrypt.Net.BCrypt.HashPassword(KnownPassword, 4);
         var config = new ManagedUsersConfig
         {
             Users = users.Select(u => new ManagedUser

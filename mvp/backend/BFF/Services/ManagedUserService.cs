@@ -90,15 +90,14 @@ public class ManagedUserService
     }
 
     /// <summary>
-    /// Ob eine userId fuer den Platzhalter "ehemalige Person" reserviert ist. Gross- und
-    /// Kleinschreibung und Leerraum am Rand zaehlen nicht: lieber einen Tippfehler zu
-    /// viel ablehnen als einen Beta-Zugang neben den Platzhalter stellen.
+    /// Ob eine userId fuer den Platzhalter "ehemalige Person" reserviert ist. Verglichen
+    /// wird ordinal wie im Backend, das die Kennung ebenso exakt prueft.
     /// </summary>
     public static bool IsReservedUserId(string? userId)
     {
-        var kennung = userId?.Trim() ?? "";
-        return string.Equals(kennung, EhemaligePersonKennung, StringComparison.OrdinalIgnoreCase)
-            || kennung.StartsWith(EhemaligePersonKennung + "-", StringComparison.OrdinalIgnoreCase);
+        return userId != null
+            && (userId == EhemaligePersonKennung
+                || userId.StartsWith(EhemaligePersonKennung + "-", StringComparison.Ordinal));
     }
 
     // Beta-Zugaenge mit reservierter Kennung fallen aus der Liste; die uebrigen bleiben
@@ -109,7 +108,7 @@ public class ManagedUserService
         foreach (var user in reserved)
         {
             _logger.LogError(
-                "Managed user with userId {UserId} rejected: the id is reserved for the placeholder \"{Placeholder}\" of deleted persons. Choose a different userId in the managed users config.",
+                "Beta-Zugang with userId {UserId} rejected: the id is reserved for the placeholder \"{Placeholder}\" of deleted persons. Choose a different userId in the managed users config.",
                 user.UserId, EhemaligePersonKennung);
         }
 
