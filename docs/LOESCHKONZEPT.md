@@ -109,30 +109,35 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `restore.sh` ist der Löschlauf zu wiederholen.
 - **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
   am Code geprüft am 26.10.2026 (Stand `main` 82f53a7b):
-  - **Semantic-Service:** Nutzerkennungen nur als achtstelliges Pseudonym
+  - **Semantic-Service:** Kennungen von Nutzenden nur als achtstelliges Pseudonym
     (`app/core/logging.py`, `log_pseudonym()`; aufgerufen in `services/voting_service.py`,
-    `middleware/rate_limiter.py`, `api/v1/usage.py`). Der Suchtext steht weder auf dem
-    Anfragepfad (`api/v1/search.py`, nur `limit`) noch im Fehlerzweig der Suche
-    (`repositories/implementations/qdrant/statement_repository.py`). Die Zugriffszeilen von
+    `middleware/rate_limiter.py`, `api/v1/usage.py`). **Ausnahme Admins:** Deren Kennung
+    steht im Klartext auf INFO in jeder Moderationsaktion (`api/v1/moderation.py:219-400`,
+    `f"Admin {admin_user} …"`) und beim manuellen Cleanup (`api/v1/usage.py:356`).
+    Ab INFO steht der Suchtext weder auf dem Anfragepfad (`api/v1/search.py`, nur `limit`)
+    noch im Fehlerzweig der Suche
+    (`repositories/implementations/qdrant/statement_repository.py`). Auf DEBUG steht er
+    doch darin, wenn er eine aufgehobene Verneinung enthält
+    (`utils/negation_detector.py:157`, bei jeder Suche über den Polaritätsfilter); der
+    Dev-Stack läuft auf DEBUG (`mvp/docker-compose.dev.yml`). Die Zugriffszeilen von
     uvicorn sind unterdrückt (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
   - **BFF:** keine E-Mail-Adressen, aber die **Kennung im Klartext**: bei Managed Auth
     die `UserId` jeder erfolgreichen Anmeldung und jedes Fehlversuchs mit falschem Passwort
     (`BFF/Services/ManagedUserService.cs:147,153`, `BFF/Controllers/AuthController.cs:120`,
     Level Information/Warning, also beim Standard-Level aus `appsettings.json` im Log),
     zusätzlich auf Debug-Level bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs:84,96`). Managed Auth ist auch in Produktion
-    aktiv: Der Schalter `ENABLE_MANAGED_AUTH` steht per Default auf `true`
-    (`ManagedUserService.cs:199`), und laut `AuthController.cs` ist Managed Auth bewusst der
-    Zugang ohne Vereinsmitgliedschaft. Über `managed-users.json` ist die `UserId` einer
-    Adresse zugeordnet.
+    (`BFF/Proxy/IdentityHeaderTransform.cs:84,96`). Managed Auth ist per Default aktiv
+    (`ENABLE_MANAGED_AUTH`, `ManagedUserService.cs:199`) und laut `AuthController.cs:58`
+    bewusst auch neben Keycloak vorgesehen, als Zugang ohne Vereinsmitgliedschaft; ob es in
+    Produktion eingeschaltet ist, steht nicht im Repo. Über `managed-users.json` ist die
+    `UserId` einer Adresse zugeordnet.
   - **Frontend-nginx:** setzt weder `access_log` noch `log_format` noch `real_ip`
     (`mvp/frontend/gutgesagt-frontend/nginx*.conf`), schreibt also das Standardformat
     nach stdout. Hinter dem vorgelagerten Reverse Proxy steht dort dessen Adresse, nicht die
     des Besuchers; Zeitpunkt, Pfad, Referrer und User-Agent stehen darin.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
-    Produktionskonfiguration liegt nicht im Repo (`mvp/docker-compose.prd.yml` ist nur ein
-    Verweis). **Stand der Bestandsaufnahme vom 04.09.2026**, nach Auskunft des Maintainers
+    Produktionskonfiguration liegt nicht im Repo. **Stand der Bestandsaufnahme vom 04.09.2026**, nach Auskunft des Maintainers
     am Host und im Repo nicht belegbar: Die Zugriffsprotokolle des vorgelagerten Reverse
     Proxy, die als einzige die volle Client-IP enthalten, löscht `logrotate` nach 14 Tagen;
     alles aus dem `json-file`-Treiber ist in Produktion unbegrenzt. Vor einer Auskunft am
