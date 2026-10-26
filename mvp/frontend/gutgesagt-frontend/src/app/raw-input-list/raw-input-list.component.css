@@ -179,7 +179,7 @@
   outline-offset: 2px;
 }
 
-/* Ein Rohling, eine Karte: die Saetze liegen in der Karte, nicht darunter */
+/* Ein Einwurf, eine Karte: die Saetze liegen in der Karte, nicht darunter */
 .karten {
   display: flex;
   flex-direction: column;

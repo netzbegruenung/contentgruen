@@ -573,9 +573,9 @@ describe('BeitragskarteComponent', () => {
         autorName: null,
         nutzung: null,
         quellen: [],
-        rohling: {
+        einwurf: {
           einwurfId: 'e-1',
-          zustand: 'ausformulieren',
+          stufe: 'destilliert',
           herkunft: 'Instagram',
           link: 'https://www.instagram.com/reel/ABC/',
           linkText: 'instagram.com/reel/ABC',
@@ -588,14 +588,14 @@ describe('BeitragskarteComponent', () => {
 
       zeigen(daten, { variante: 'kopf' });
 
-      expect(element('.karte').classList).toContain('zustand-ausformulieren');
-      expect(element('.rohling-kopf .rohling-titel').textContent).toContain('Gute Antwort in den Kommentaren');
-      expect(element('.rohling-herkunft').textContent).toContain('Instagram');
-      expect(element('.rohling-kopfsatz').textContent).toContain('Wärmepumpen lohnen sich im Altbau');
-      expect(element('.rohling-saetze')).toBeNull();
-      expect(element('.rohling-aktion')).toBeNull();
-      expect(element('.rohling-menue')).toBeNull();
-      expect(element('.rohling-meta')).toBeNull();
+      expect(element('.karte').classList).toContain('stufe-destilliert');
+      expect(element('.einwurf-band .einwurf-titel').textContent).toContain('Gute Antwort in den Kommentaren');
+      expect(element('.einwurf-herkunft').textContent).toContain('Instagram');
+      expect(element('.einwurf-kopfsatz').textContent).toContain('Wärmepumpen lohnen sich im Altbau');
+      expect(element('.einwurf-saetze')).toBeNull();
+      expect(element('.einwurf-aktion')).toBeNull();
+      expect(element('.einwurf-menue')).toBeNull();
+      expect(element('.einwurf-meta')).toBeNull();
     });
 
     it('zeigt nur das Band mit Symbol und Titel der Aussage', () => {
@@ -638,27 +638,55 @@ describe('BeitragskarteComponent', () => {
     it('erlaubt Admins das Verwerfen fremder und einwerferloser Einwuerfe', () => {
       alsNutzer({ isAdmin: true });
 
-      zeigen(einwurf(), { variante: 'rohling' });
+      zeigen(einwurf(), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeTrue();
 
-      zeigen(einwurf({ submitted_by: null }), { variante: 'rohling' });
+      zeigen(einwurf({ submitted_by: null }), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeTrue();
     });
 
     it('erlaubt Mitwirkenden ohne Adminrechte nur eigene Einwuerfe', () => {
       alsNutzer({ isAdmin: false });
 
-      zeigen(einwurf(), { variante: 'rohling' });
+      zeigen(einwurf(), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeFalse();
 
-      zeigen(einwurf({ submitted_by: 'test-user' }), { variante: 'rohling' });
+      zeigen(einwurf({ submitted_by: 'test-user' }), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeTrue();
+    });
+
+    it('nennt im Band die Stufe des Einwurfs, wie das Glossar sie nennt', () => {
+      zeigen(einwurf(), { variante: 'einwurf' });
+      expect(component.stufenName).toBe('Offen');
+      expect(element('.karte').classList).toContain('stufe-offen');
+
+      zeigen(
+        einwurf({ status: 'in_progress', drafts: [{ id: 's-1', sentence: 'Ein Satz' } as any] }),
+        { variante: 'einwurf' },
+      );
+      expect(component.stufenName).toBe('Destilliert');
+
+      zeigen(einwurf({ status: 'discarded' }), { variante: 'einwurf' });
+      expect(component.stufenName).toBe('Verworfen');
+
+      zeigen(
+        einwurf({ status: 'processed', links: [{ content_id: 'c-1', content_type: null, draft_id: null } as any] }),
+        { variante: 'einwurf' },
+      );
+      expect(component.stufenName).toBe('Ausformuliert');
+
+      zeigen(
+        einwurf({ status: 'processed', links: [{ content_id: 'c-1', content_type: 'commentary', draft_id: null } as any] }),
+        { variante: 'einwurf' },
+      );
+      expect(component.stufenName).toBe('Ausformuliert: Kommentar');
+      expect(element('.karte-icon').getAttribute('aria-label')).toBe('Ausformuliert: Kommentar');
     });
 
     it('erlaubt auch Admins kein Verwerfen von Ausformuliertem', () => {
       alsNutzer({ isAdmin: true });
 
-      zeigen(einwurf({ status: 'processed' }), { variante: 'rohling' });
+      zeigen(einwurf({ status: 'processed' }), { variante: 'einwurf' });
 
       expect(component.darfVerwerfen).toBeFalse();
     });

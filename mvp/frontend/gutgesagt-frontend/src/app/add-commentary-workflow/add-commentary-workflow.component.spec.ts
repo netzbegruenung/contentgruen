@@ -53,7 +53,7 @@ describe('AddCommentaryWorkflowComponent', () => {
 
   it('macht nach der Wahl des vorhandenen ohne Einwurf nichts weiter', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
-    const markieren = spyOn(TestBed.inject(DestillierUebergabeService), 'alsVerarbeitetMarkieren');
+    const markieren = spyOn(TestBed.inject(DestillierUebergabeService), 'alsAusformuliertMarkieren');
 
     component.onVorhandenGewaehlt('k-alt');
 
@@ -82,10 +82,10 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
   beforeEach(async () => {
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', [
       'vorbefuellungLaden',
-      'alsVerarbeitetMarkieren',
+      'alsAusformuliertMarkieren',
       'zumNaechsten',
     ]);
-    uebergabe.alsVerarbeitetMarkieren.and.returnValue(of(true));
+    uebergabe.alsAusformuliertMarkieren.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
       of({
         rohinputId: 'id-1',
@@ -130,7 +130,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true });
 
-    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
+    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary', 'gespeichert', 'beitrag-1'], {
       queryParams: { rohinput: 'id-1' },
       state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, markiert: true },
@@ -144,15 +144,15 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onVorhandenGewaehlt('k-alt');
 
-    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'erledigt');
+    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
     expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', jasmine.anything());
     // Keine Ergebnisseite: gespeichert wurde nichts.
     expect(navigieren).not.toHaveBeenCalled();
   });
 
   it('bleibt nach der Wahl im Formular, wenn das Verknuepfen scheitert, und laesst es wiederholen', () => {
-    uebergabe.alsVerarbeitetMarkieren.and.returnValues(of(false), of(true));
+    uebergabe.alsAusformuliertMarkieren.and.returnValues(of(false), of(true));
     const erneut = new Subject<void>();
     const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open').and.returnValue({
       onAction: () => erneut,
@@ -165,8 +165,8 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     erneut.next();
 
-    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledTimes(2);
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'erledigt');
+    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledTimes(2);
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
   });
 
   it('verknuepft beim Trotzdem-Speichern den Einwurf mit dem neuen Kommentar', () => {
@@ -174,7 +174,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onSuccess({ id: 'k-neu', aussage: { id: '', text: '' }, verknuepft: true });
 
-    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-neu', 'commentary');
+    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-neu', 'commentary');
   });
 });
 

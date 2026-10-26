@@ -32,7 +32,7 @@ ADD_URL = "/api/v1/rawinput/addRawInput"
 LIST_URL = "/api/v1/rawinput/getRawInputs"
 EINWURF_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
 EINZEL_URL = f"/api/v1/rawinput/{EINWURF_ID}"
-ENTWURF_URL = f"/api/v1/rawinput/{EINWURF_ID}/draft"
+SATZ_URL = f"/api/v1/rawinput/{EINWURF_ID}/draft"
 STATUS_URL = f"/api/v1/rawinput/{EINWURF_ID}/status"
 
 app = FastAPI()
@@ -316,8 +316,8 @@ class TestFangkorbListe:
 
         assert repository.get_all.call_args.kwargs["current_user"] is None
 
-    def test_liste_liefert_entwurf_und_bearbeitungsstand(self, client, repository):
-        verarbeitet_am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
+    def test_liste_liefert_eigenen_satz_und_ausformulierer(self, client, repository):
+        ausformuliert_am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
         inhalt_id = str(uuid.uuid4())
         repository.get_all.return_value = [
             _gespeicherter_einwurf(own_draft="Mein Satz"),
@@ -325,7 +325,7 @@ class TestFangkorbListe:
                 status=RawInputStatus.PROCESSED.value,
                 processed_content_id=inhalt_id,
                 processed_by="bob",
-                processed_at=verarbeitet_am,
+                processed_at=ausformuliert_am,
             ),
         ]
         repository.count.return_value = 2
@@ -394,7 +394,7 @@ class TestFangkorbListe:
 @pytest.mark.unit
 @pytest.mark.api
 class TestEinzelabruf:
-    def test_einzelabruf_liefert_einwurf_mit_eigenem_entwurf(self, client, repository):
+    def test_einzelabruf_liefert_einwurf_mit_eigenem_satz(self, client, repository):
         repository.get_by_id.return_value = _gespeicherter_einwurf(
             id=str(EINWURF_ID), own_draft="Mein Satz"
         )
@@ -429,8 +429,8 @@ class TestEinzelabruf:
 
 @pytest.mark.unit
 @pytest.mark.api
-class TestEntwurf:
-    def test_entwurf_wird_fuer_die_person_gespeichert(self, client, repository):
+class TestSatz:
+    def test_satz_wird_fuer_die_person_gespeichert(self, client, repository):
         repository.save_draft.return_value = {
             "raw_input_id": str(EINWURF_ID),
             "sentence": "Waermepumpe lohnt sich auch im Altbau",
@@ -438,7 +438,7 @@ class TestEntwurf:
         }
 
         antwort = client.put(
-            ENTWURF_URL,
+            SATZ_URL,
             json={"sentence": "  Waermepumpe lohnt sich auch im Altbau "},
             headers={"X-User": "alice"},
         )
@@ -449,7 +449,7 @@ class TestEntwurf:
             EINWURF_ID, "alice", "Waermepumpe lohnt sich auch im Altbau"
         )
 
-    def test_entwurf_120_zeichen_sind_erlaubt(self, client, repository):
+    def test_satz_120_zeichen_sind_erlaubt(self, client, repository):
         repository.save_draft.return_value = {
             "raw_input_id": str(EINWURF_ID),
             "sentence": "a" * 120,
@@ -457,43 +457,43 @@ class TestEntwurf:
         }
 
         antwort = client.put(
-            ENTWURF_URL, json={"sentence": "a" * 120}, headers={"X-User": "alice"}
+            SATZ_URL, json={"sentence": "a" * 120}, headers={"X-User": "alice"}
         )
 
         assert antwort.status_code == 200
 
-    def test_entwurf_121_zeichen_werden_abgewiesen(self, client, repository):
+    def test_satz_121_zeichen_werden_abgewiesen(self, client, repository):
         """Der Satz wird der Titel - und der hat 120 Zeichen."""
         antwort = client.put(
-            ENTWURF_URL, json={"sentence": "a" * 121}, headers={"X-User": "alice"}
+            SATZ_URL, json={"sentence": "a" * 121}, headers={"X-User": "alice"}
         )
 
         assert antwort.status_code == 422
         repository.save_draft.assert_not_called()
 
-    def test_leerer_satz_loescht_den_entwurf(self, client, repository):
+    def test_leerer_satz_loescht_den_gespeicherten_satz(self, client, repository):
         repository.save_draft.return_value = {
             "raw_input_id": str(EINWURF_ID),
             "sentence": None,
             "updated_at": None,
         }
 
-        client.put(ENTWURF_URL, json={"sentence": "   "}, headers={"X-User": "alice"})
+        client.put(SATZ_URL, json={"sentence": "   "}, headers={"X-User": "alice"})
 
         repository.save_draft.assert_called_once_with(EINWURF_ID, "alice", None)
 
     @pytest.mark.parametrize("kopfzeilen", [{}, {"X-User": "anonymous"}])
-    def test_entwurf_ohne_anmeldung_ist_401(self, client, repository, kopfzeilen):
-        antwort = client.put(ENTWURF_URL, json={"sentence": "x"}, headers=kopfzeilen)
+    def test_satz_ohne_anmeldung_ist_401(self, client, repository, kopfzeilen):
+        antwort = client.put(SATZ_URL, json={"sentence": "x"}, headers=kopfzeilen)
 
         assert antwort.status_code == 401
         repository.save_draft.assert_not_called()
 
-    def test_entwurf_zu_unbekanntem_einwurf_ist_404(self, client, repository):
+    def test_satz_zu_unbekanntem_einwurf_ist_404(self, client, repository):
         repository.save_draft.side_effect = EinwurfNichtGefunden(EINWURF_ID)
 
         antwort = client.put(
-            ENTWURF_URL, json={"sentence": "x"}, headers={"X-User": "alice"}
+            SATZ_URL, json={"sentence": "x"}, headers={"X-User": "alice"}
         )
 
         assert antwort.status_code == 404
@@ -571,7 +571,7 @@ class TestStatuswechsel:
             "Verwerfen können nur der Einwerfer und Admins."
         )
 
-    def test_verarbeitet_gibt_beitrag_und_bearbeitenden_zurueck(
+    def test_ausformuliert_gibt_beitrag_und_ausformulierer_zurueck(
         self, client, repository
     ):
         inhalt_id = uuid.uuid4()
@@ -604,7 +604,7 @@ class TestStatuswechsel:
             ist_admin=False,
         )
 
-    def test_verarbeitet_ohne_beitragstyp_bleibt_erlaubt(self, client, repository):
+    def test_ausformuliert_ohne_beitragstyp_bleibt_erlaubt(self, client, repository):
         """Eine noch zwischengespeicherte aeltere App schickt keinen Typ mit."""
         inhalt_id = uuid.uuid4()
         repository.set_status.return_value = _gespeicherter_einwurf(
@@ -656,10 +656,10 @@ class TestStatuswechsel:
         assert antwort.status_code == 422
         repository.set_status.assert_not_called()
 
-    def test_verarbeitet_mit_unbekanntem_beitrag_ist_422(
+    def test_ausformuliert_mit_unbekanntem_beitrag_ist_422(
         self, client, repository, beitraege
     ):
-        """Eine erfundene ID schiebt keinen fremden Einwurf nach "Erledigt"."""
+        """Eine erfundene ID setzt keinen fremden Einwurf auf "ausformuliert"."""
         beitraege["commentary"].get.side_effect = ValueError("not found")
         inhalt_id = uuid.uuid4()
 
@@ -678,7 +678,7 @@ class TestStatuswechsel:
         beitraege["commentary"].get.assert_awaited_once_with(inhalt_id)
         repository.set_status.assert_not_called()
 
-    def test_verarbeitet_mit_beitrag_anderen_typs_ist_422(
+    def test_ausformuliert_mit_beitrag_anderen_typs_ist_422(
         self, client, repository, beitraege
     ):
         """Der Dienst des genannten Typs findet die ID nicht; der andere wird nicht gefragt."""
@@ -698,7 +698,7 @@ class TestStatuswechsel:
         beitraege["commentary"].get.assert_not_called()
         repository.set_status.assert_not_called()
 
-    def test_verarbeitet_ohne_typ_genuegt_ein_beitrag_eines_der_typen(
+    def test_ausformuliert_ohne_typ_genuegt_ein_beitrag_eines_der_typen(
         self, client, repository, beitraege
     ):
         beitraege["commentary"].get.side_effect = ValueError("wrong content_type")
@@ -715,7 +715,7 @@ class TestStatuswechsel:
         assert antwort.status_code == 200
         beitraege["generic_text"].get.assert_awaited_once()
 
-    def test_verarbeitet_ohne_typ_und_ohne_beitrag_ist_422(
+    def test_ausformuliert_ohne_typ_und_ohne_beitrag_ist_422(
         self, client, repository, beitraege
     ):
         for dienst in beitraege.values():
