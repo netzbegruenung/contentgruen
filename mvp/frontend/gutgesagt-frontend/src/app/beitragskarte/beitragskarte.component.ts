@@ -99,6 +99,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   @Input() vorschau = false;
   /** Durchgereicht an app-karten-aktionen; aus beim eigenen Beitrag im Album-Sheet. */
   @Input() abstimmenSichtbar = true;
+  /**
+   * Einwurf-Karte: die Stufe als Wort in der Meta-Zeile statt des Einwerfers. Fuer
+   * "Meine Einwuerfe", wo alle Karten die eigenen sind und die Stufe die Rueckmeldung ist.
+   */
+  @Input() stufeZeigen = false;
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
@@ -273,9 +278,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return STUFEN[this.einwurfAngaben.stufe].name;
   }
 
-  /** Den Einwerfer nennt die Karte immer; beim eigenen Einwurf als "Du" (autorAnzeige). */
+  /** Den Einwerfer nennt die Karte, beim eigenen als "Du" (autorAnzeige) - ausser sie zeigt die Stufe. */
   get zeigtEinwerfer(): boolean {
-    return !!this.daten.autor;
+    return !!this.daten.autor && !this.stufeZeigen;
   }
 
   get sichtbareSaetze(): EinwurfSatz[] {

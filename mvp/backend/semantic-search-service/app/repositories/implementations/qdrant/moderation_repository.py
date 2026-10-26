@@ -5,7 +5,11 @@ from typing import Any, Dict, List, Optional
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
-from domain.models.content_status import FELD_STATUS_VOR_SPERRE, ContentStatus
+from domain.models.content_status import (
+    FELD_STATUS_VOR_SPERRE,
+    ContentStatus,
+    zustand_aus_altwert,
+)
 from domain.models.content_type import ContentType
 from repositories.interfaces.moderation_repository import IModerationRepository
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
@@ -53,21 +57,19 @@ class QdrantModerationRepository(IModerationRepository):
     async def entsperren(self, beitrag: Dict[str, Any]) -> None:
         if beitrag.get("status") != ContentStatus.BLOCKED.value:
             return
-        status_vorher = beitrag.get(FELD_STATUS_VOR_SPERRE)
+        status_vorher = zustand_aus_altwert(beitrag.get(FELD_STATUS_VOR_SPERRE) or None)
 
         # Zwei Schreibvorgaenge; scheitert der zweite, bleibt nur das Hilfsfeld
         # stehen, der Beitrag ist trotzdem entsperrt.
-        if status_vorher:
-            await self._client.set_payload(
-                collection_name=self._collection,
-                payload={"status": status_vorher},
-                points=[beitrag["id"]],
-            )
-            entfernen = [FELD_STATUS_VOR_SPERRE]
-        else:
-            entfernen = ["status", FELD_STATUS_VOR_SPERRE]
+        await self._client.set_payload(
+            collection_name=self._collection,
+            payload={"status": status_vorher},
+            points=[beitrag["id"]],
+        )
         await self._client.delete_payload(
-            collection_name=self._collection, keys=entfernen, points=[beitrag["id"]]
+            collection_name=self._collection,
+            keys=[FELD_STATUS_VOR_SPERRE],
+            points=[beitrag["id"]],
         )
 
     async def gesperrte_laden(self, limit: int) -> List[Dict[str, Any]]:

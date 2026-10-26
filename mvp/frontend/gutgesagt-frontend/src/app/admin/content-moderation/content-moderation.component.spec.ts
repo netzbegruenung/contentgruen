@@ -15,7 +15,7 @@ function meldung(overrides: Partial<ContentReport> = {}): ContentReport {
     reported_by_session_id: 'sess-123456789',
     created: '2026-10-26T10:00:00',
     status: 'pending',
-    content: { status: 'released_internal', title: 'Titel', text: 'Text' },
+    content: { status: 'visible', title: 'Titel', text: 'Text' },
     ...overrides
   };
 }

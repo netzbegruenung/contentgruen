@@ -1,3 +1,4 @@
+using BFF.Logging;
 using System.Security.Claims;
 
 namespace BFF.Proxy;
@@ -81,7 +82,7 @@ public static class IdentityHeaderTransform
         if (!string.IsNullOrEmpty(userId))
         {
             SetSingleValue(proxyRequest, UserHeader, userId);
-            logger.LogDebug("Set X-User header for authenticated user: {UserId}", userId);
+            logger.LogDebug("Set X-User header for authenticated user: {UserId}", LogPseudonym.Of(userId));
 
             // Der Name selbst steht in keinem Log.
             var anzeigename = DisplayNamePolicy.From(user);
@@ -93,7 +94,7 @@ public static class IdentityHeaderTransform
             if (AdminPolicy.IsAdmin(user, adminUserIds))
             {
                 SetSingleValue(proxyRequest, AdminHeader, "true");
-                logger.LogDebug("Set X-Is-Admin header for admin user: {UserId}", userId);
+                logger.LogDebug("Set X-Is-Admin header for admin user: {UserId}", LogPseudonym.Of(userId));
             }
         }
         // Dieselbe Menge, die auch der Auth-Gate in Program.cs verwendet. Vorher lag hier
@@ -107,7 +108,7 @@ public static class IdentityHeaderTransform
         }
         else
         {
-            logger.LogWarning("No user identifier found for protected endpoint: {Path}", path);
+            logger.LogWarning("No user identifier found for protected endpoint: {Path}", LogPseudonym.InPath(path));
         }
 
         // X-Session-Id ist bewusst clientseitig (anonyme Votes und Meldungen) und traegt keine

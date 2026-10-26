@@ -39,9 +39,6 @@ export interface GemeldeterBeitrag {
   [feld: string]: any;
 }
 
-/** Status eines gesperrten Beitrags (ContentStatus.BLOCKED im Backend). */
-export const STATUS_GESPERRT = 'blocked';
-
 export interface PendingReportsResponse {
   total: number;
   reports: ContentReport[];

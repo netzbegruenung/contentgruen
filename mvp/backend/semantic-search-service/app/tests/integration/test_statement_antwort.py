@@ -32,7 +32,7 @@ async def _anlegen(service, text, author, origin):
     _, statement_id, _ = await service.add_statement(
         Statement(text=text, replysuggestions=[]),
         author,
-        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.VISIBLE,
         origin,
     )
     return statement_id

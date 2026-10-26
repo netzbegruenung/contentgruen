@@ -93,6 +93,16 @@ def _mit_namen(rows: List[dict], x_user: Optional[str]) -> List[dict]:
     return rows
 
 
+def _seite(
+    rows: List[dict], gesamt: int, x_user: Optional[str]
+) -> GetRawInputsResponse:
+    """Eine Seite Einwuerfe mit Anzeigenamen, wie Fangkorb und Meine Einwuerfe sie liefern."""
+    results = [RawInputResponse(**row) for row in _mit_namen(rows, x_user)]
+    return GetRawInputsResponse(
+        results_count=len(results), results=results, total_records_count=gesamt
+    )
+
+
 @router.post("/addRawInput", response_model=AddRawInputResponse, status_code=201)
 async def add_raw_input(
     request: AddRawInputRequest,
@@ -140,14 +150,7 @@ async def get_raw_inputs(
             offset=offset,
             current_user=_einwerfende_person(x_user),
         )
-        results: List[RawInputResponse] = [
-            RawInputResponse(**row) for row in _mit_namen(rows, x_user)
-        ]
-        return GetRawInputsResponse(
-            results_count=len(results),
-            results=results,
-            total_records_count=repository.count(),
-        )
+        return _seite(rows, repository.count(), x_user)
     except Exception as e:
         logger.error(f"Fehler in /getRawInputs: {e}", exc_info=True)
         raise HTTPException(
@@ -181,6 +184,36 @@ async def einwuerfe_mit_gleichem_link(
         logger.error(f"Fehler in /gleicherLink: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail="Der Fangkorb konnte nicht geprüft werden."
+        )
+
+
+@router.get("/getOwnRawInputs", response_model=GetRawInputsResponse)
+async def get_own_raw_inputs(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    x_user: Optional[str] = Header(default=None),
+    repository: RawInputRepository = Depends(get_raw_input_repository),
+) -> GetRawInputsResponse:
+    """
+    Meine Einwuerfe: nur, was die anfragende Person eingeworfen hat, neueste zuerst.
+
+    Die Rueckmeldung an den Einwerfer, was aus seinen Einwuerfen geworden ist - jede
+    Stufe, auch verworfen, mit allen verknuepften Beitraegen. Steht vor /{id}, sonst
+    lese FastAPI den Pfad als Einwurf-ID.
+    """
+    person = _angemeldete_person(x_user)
+    try:
+        rows = repository.get_all(
+            limit=page_size,
+            offset=(page - 1) * page_size,
+            current_user=person,
+            submitted_by=person,
+        )
+        return _seite(rows, repository.count(submitted_by=person), x_user)
+    except Exception as e:
+        logger.error(f"Fehler in /getOwnRawInputs: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Deine Einwürfe konnten nicht geladen werden."
         )
 
 

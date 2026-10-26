@@ -188,6 +188,23 @@ class TestGetAll:
         assert repository.count() == 3
         query.filter.assert_not_called()
 
+    def test_get_all_filtert_auf_den_einwerfer(self, repository, session):
+        """Meine Einwuerfe: gefiltert in der Datenbank, weil die Liste paginiert ist."""
+        query = self._query_kette(session, [])
+
+        repository.get_all(submitted_by="alice")
+
+        (bedingung,) = query.filter.call_args.args
+        assert _sql(bedingung) == "raw_inputs.submitted_by = %(submitted_by_1)s"
+        assert bedingung.right.value == "alice"
+
+    def test_count_zaehlt_nur_die_des_einwerfers(self, repository, session):
+        query = self._query_kette(session, [_zeile()])
+
+        assert repository.count(submitted_by="alice") == 1
+        (bedingung,) = query.filter.call_args.args
+        assert bedingung.right.value == "alice"
+
     def test_get_all_sortiert_eigene_zuerst(self, repository, session):
         """Erst die eigenen, dann nach Neuheit - in der Datenbank, wegen Paginierung."""
         query = self._query_kette(session, [])

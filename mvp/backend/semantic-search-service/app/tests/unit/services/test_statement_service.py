@@ -318,7 +318,7 @@ class TestAntwortVerknuepfen:
         statement, autor, status, herkunft = service.add_statement.call_args.args
         assert statement.text == "Waermepumpen sind zu teuer"
         assert autor == "person-1"
-        assert status is ContentStatus.RELEASED_INTERNAL
+        assert status is ContentStatus.VISIBLE
         assert herkunft is ContentOrigin.MANUALLY_CREATED
 
     @pytest.mark.asyncio
@@ -509,7 +509,7 @@ class TestAddStatementDubletten:
         return await service.add_statement(
             Statement(text=text, replysuggestions=[]),
             "person-1",
-            ContentStatus.RELEASED_INTERNAL,
+            ContentStatus.VISIBLE,
             ContentOrigin.MANUALLY_CREATED,
         )
 

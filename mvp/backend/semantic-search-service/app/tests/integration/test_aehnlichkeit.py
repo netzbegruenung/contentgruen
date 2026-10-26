@@ -48,7 +48,7 @@ async def _aussage(service, text, author="person-1", origin=None):
     return await service.add_statement(
         Statement(text=text, replysuggestions=[]),
         author,
-        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.VISIBLE,
         origin or ContentOrigin.MANUALLY_CREATED,
     )
 
@@ -182,7 +182,7 @@ async def test_kommentar_dublette_mit_passage_einbettung(commentary_service):
     neu, katzen, _ = await commentary_service.add_commentary(
         _kommentar(KATZEN),
         "person-1",
-        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
     )
     assert neu
@@ -228,7 +228,7 @@ async def test_seeding_haengt_antworten_an_die_vorhandene_aussage(statement_serv
     assert {r.id for r in aussagen[0].replysuggestions} == {erste, zweite}
 
 
-async def test_normalisiert_gleich_ohne_gesperrte_freigegebene_zuerst_dann_aelteste(
+async def test_normalisiert_gleich_nur_sichtbare_aelteste_zuerst(
     statement_service, real_embeddings_manager
 ):
     """Mehrere normalisiert gleiche Aussagen (Altbestand): deterministische Wahl."""
@@ -259,27 +259,23 @@ async def test_normalisiert_gleich_ohne_gesperrte_freigegebene_zuerst_dann_aelte
 
     normalform = "windräder sind vogel-schredder"
     gesperrt = await punkt("Windräder sind Vogel-Schredder!", 0, ContentStatus.BLOCKED)
-    archiviert = await punkt(
-        "windräder sind Vogel-Schredder", 1, ContentStatus.ARCHIVED
+    geloescht = await punkt("windräder sind Vogel-Schredder", 1, ContentStatus.DELETED)
+    sichtbar_neu = await punkt(
+        "WINDRÄDER SIND VOGEL-SCHREDDER", 4, ContentStatus.VISIBLE
     )
-    entwurf = await punkt("Windräder sind Vogel-Schredder.", 2, ContentStatus.DRAFT)
-    freigegeben_neu = await punkt(
-        "WINDRÄDER SIND VOGEL-SCHREDDER", 4, ContentStatus.RELEASED_INTERNAL
-    )
-    freigegeben_alt = await punkt(
-        "Windräder sind Vogel-Schredder!!", 3, ContentStatus.RELEASED_INTERNAL
+    sichtbar_alt = await punkt(
+        "Windräder sind Vogel-Schredder!!", 3, ContentStatus.VISIBLE
     )
 
+    # Gesperrte und geloeschte nie, unter den sichtbaren die aelteste.
     treffer = await repository.finde_normalisiert_gleich(normalform)
-    assert treffer.id == freigegeben_alt
+    assert treffer.id == sichtbar_alt
 
-    for status_aendern in (freigegeben_alt, freigegeben_neu):
-        await repository.update_status(status_aendern, ContentStatus.BLOCKED)
-    # Nur noch der Entwurf ist wiederverwendbar - gesperrt und archiviert nie.
-    assert (await repository.finde_normalisiert_gleich(normalform)).id == entwurf
-    await repository.update_status(entwurf, ContentStatus.DUPLICATE)
+    await repository.update_status(sichtbar_alt, ContentStatus.BLOCKED)
+    assert (await repository.finde_normalisiert_gleich(normalform)).id == sichtbar_neu
+    await repository.update_status(sichtbar_neu, ContentStatus.DELETED)
     assert await repository.finde_normalisiert_gleich(normalform) is None
-    assert gesperrt and archiviert
+    assert gesperrt and geloescht
 
     # Auch add_statement legt dann neu an statt eine gesperrte wiederzuverwenden.
     neu, _, _ = await _aussage(statement_service, "Windräder sind Vogel-Schredder!")
@@ -373,7 +369,7 @@ async def test_dublette_mit_anderer_aussage_wird_dort_verknuepft(
     _, kommentar, _ = await commentary_service.add_commentary(
         _kommentar(KATZEN),
         "person-1",
-        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
     )
     for text in ("Windräder sind Vogel-Schredder!", "Windkraft tötet unsere Vögel"):

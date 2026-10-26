@@ -31,6 +31,7 @@ from repositories.raw_input_repository import get_raw_input_repository
 ADD_URL = "/api/v1/rawinput/addRawInput"
 LIST_URL = "/api/v1/rawinput/getRawInputs"
 GLEICHER_LINK_URL = "/api/v1/rawinput/gleicherLink"
+EIGENE_URL = "/api/v1/rawinput/getOwnRawInputs"
 EINWURF_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
 EINZEL_URL = f"/api/v1/rawinput/{EINWURF_ID}"
 SATZ_URL = f"/api/v1/rawinput/{EINWURF_ID}/draft"
@@ -426,6 +427,72 @@ class TestEinzelabruf:
 
         assert antwort.status_code == 200
         repository.get_all.assert_called_once()
+        repository.get_by_id.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.api
+class TestMeineEinwuerfe:
+    """Die persoenliche Sicht: nur, was die anfragende Person eingeworfen hat."""
+
+    def test_ohne_anmeldung_gibt_es_keine_eigenen_einwuerfe(self, client, repository):
+        for kopf in ({}, {"X-User": "anonymous"}):
+            antwort = client.get(EIGENE_URL, headers=kopf)
+
+            assert antwort.status_code == 401
+        repository.get_all.assert_not_called()
+
+    def test_liste_ist_auf_den_einwerfer_gefiltert(self, client, repository):
+        client.get(EIGENE_URL, headers={"X-User": "alice"})
+
+        assert repository.get_all.call_args.kwargs["submitted_by"] == "alice"
+        assert repository.count.call_args.kwargs == {"submitted_by": "alice"}
+
+    def test_seitenwechsel_rechnet_offset_aus(self, client, repository):
+        client.get(
+            EIGENE_URL, params={"page": 2, "page_size": 24}, headers={"X-User": "alice"}
+        )
+
+        assert repository.get_all.call_args.kwargs == {
+            "limit": 24,
+            "offset": 24,
+            "current_user": "alice",
+            "submitted_by": "alice",
+        }
+
+    def test_liefert_stufe_und_verknuepfte_beitraege(self, client, repository):
+        beitrag = str(uuid.uuid4())
+        repository.get_all.return_value = [
+            _gespeicherter_einwurf(
+                submitted_by="alice",
+                status=RawInputStatus.PROCESSED.value,
+                links=[
+                    {
+                        "content_id": beitrag,
+                        "content_type": "commentary",
+                        "processed_at": datetime(2026, 9, 13, tzinfo=timezone.utc),
+                    }
+                ],
+            ),
+            _gespeicherter_einwurf(
+                submitted_by="alice", status=RawInputStatus.DISCARDED.value
+            ),
+        ]
+        repository.count.return_value = 2
+
+        daten = client.get(EIGENE_URL, headers={"X-User": "alice"}).json()
+
+        assert daten["total_records_count"] == 2
+        ausformuliert, verworfen = daten["results"]
+        assert ausformuliert["status"] == "processed"
+        assert ausformuliert["links"][0]["content_id"] == beitrag
+        assert verworfen["status"] == "discarded"
+
+    def test_wird_nicht_als_einwurf_id_gelesen(self, client, repository):
+        """/getOwnRawInputs steht vor /{id}; sonst kaeme 422 fuer eine ungueltige UUID."""
+        antwort = client.get(EIGENE_URL, headers={"X-User": "alice"})
+
+        assert antwort.status_code == 200
         repository.get_by_id.assert_not_called()
 
 

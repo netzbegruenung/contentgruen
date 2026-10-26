@@ -203,8 +203,12 @@ Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar 
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Meine Beiträge**:
-Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
+Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
+
+**Meine Einwürfe**:
+Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Hier erfährt der Einwerfer, was aus seinen Fundstücken geworden ist. Die Karten bieten dieselben Griffe wie im Fangkorb; ein offener Einwurf lässt sich von hier aus gleich destillieren.
+_Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 
 ## Personen
 

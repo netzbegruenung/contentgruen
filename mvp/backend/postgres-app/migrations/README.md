@@ -3,7 +3,7 @@
 Handgeschriebene SQL-Skripte für **bestehende** Datenbanken. Es gibt kein
 Migrationswerkzeug und keine Tabelle, die festhält, was schon gelaufen ist: Wer
 deployt, wendet die neuen Skripte selbst an, in der Reihenfolge ihrer
-Dateinamen.
+Dateinamen ohne `.sql` (siehe „Konvention für neue Migrationen“, Dateiname).
 
 ## Wann eine Migration nötig ist
 
@@ -62,14 +62,31 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
 Der Unit-Test
 `mvp/backend/semantic-search-service/app/tests/unit/test_migrationskonvention.py`
 prüft für jede Datei hier den Dateinamen, die letzte Kopfzeile, dass kein
-Kommentar einen Befehl zum Anwenden enthält, und die Transaktion. Den übrigen
-Inhalt des Kopfs, die Idempotenz und die Gleichheit mit `create_all` prüft er
-nicht. Er läuft mit den Unit-Tests: im Pre-commit-Hook, mit
-`make test-backend(-fast)` und in der GitHub-CI nach dem Merge.
+Kommentar einen Befehl zum Anwenden enthält, und die Transaktion, dazu dass die
+Reihenfolge mit und ohne `.sql` gleich ist (außer beim Paar unten). Er läuft mit
+den Unit-Tests: im Pre-commit-Hook, mit `make test-backend(-fast)` und in der
+GitHub-CI nach dem Merge.
+
+Idempotenz und Gleichheit mit `create_all` prüft der Integrationstest
+`mvp/backend/semantic-search-service/app/tests/integration/test_migrationen.py`
+gegen ein echtes PostgreSQL: Jedes Skript läuft zweimal auf einer Datenbank im
+aktuellen Schema, und die ganze Kette läuft auf einer Datenbank ohne die Tabellen,
+die Skripte selbst anlegen; danach muss das Schema dem von `create_all` gleichen
+(Spalten, Defaults, Indizes, Constraints). Ausgenommen ist
+`2026-08-25-usage-events-datensparsamkeit.sql`, das beim zweiten Lauf abbricht
+(„Erneut anwenden“); `2026-08-19-search-events-pseudonymisieren.sql` läuft mit,
+sein `TRUNCATE` trifft im Test nur leere Tabellen. Starten:
+`tests/TESTING_GUIDE.md` im Semantic-Service, Abschnitt „Integration Tests Against
+PostgreSQL“. Den übrigen Inhalt des Kopfs prüft kein Test.
 
 - **Dateiname:** `JJJJ-MM-TT-<thema>.sql`, Datum der Erstellung, Thema kurz,
   kleingeschrieben, mit Bindestrichen. Das Datum legt die Reihenfolge fest;
-  bei gleichem Datum gilt die alphabetische Reihenfolge des Dateinamens.
+  bei gleichem Datum gilt die alphabetische Reihenfolge des Namens **ohne**
+  `.sql`: `2026-10-26-suchen-ohne-treffer.sql` vor
+  `2026-10-26-suchen-ohne-treffer-personen.sql`, das die Tabelle des ersten
+  voraussetzt. `ls` und `*.sql` sortieren mit Endung und damit diese beiden
+  falsch herum. Ein neues Thema deshalb nicht so benennen, dass es mit dem
+  Thema eines anderen Skripts vom selben Tag beginnt; der Unit-Test weist das ab.
 - **Kopf:** ein SQL-Kommentar, der sagt
   1. was sich ändert und warum,
   2. ob neue Datenbanken das Skript brauchen (meist nicht, siehe oben) und ob es

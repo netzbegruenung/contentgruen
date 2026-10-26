@@ -36,7 +36,7 @@ erzwungen wird es nicht) und kommt ohne Sperre aus, weil erfassen synchron in de
 Event-Loop laeuft. Mehr als MERKLISTE_MAX Paare je Tag merkt sie sich nicht; was
 darueber hinaus kommt, zaehlt als Suche, aber nicht als Person, damit die Liste
 nicht unbegrenzt waechst und keine Aussage dadurch ueber die Schwelle rutscht.
-Aussagen, die nicht freigegeben sind (Status BLOCKED, DUPLICATE), erscheinen nicht.
+Nur sichtbare Aussagen erscheinen, gesperrte und geloeschte nicht.
 Admins sehen den Text der Aussage, nicht die eingegebene Suchanfrage: aehnliche
 Suchanfragen landen auf derselben Aussage.
 
@@ -54,7 +54,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Set
 
 from core.logging import get_logger
-from domain.models.content_status import FREIGEGEBEN
+from domain.models.content_status import ContentStatus
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
 from services.content.statement_service import StatementService
 
@@ -245,7 +245,7 @@ class SuchenOhneTrefferService:
         Die haeufigsten Suchanfragen ohne Treffer der letzten Wochen.
 
         Der Zeitraum umfasst die laufende Woche und die (wochen - 1) davor. Aussagen,
-        die es nicht mehr gibt oder die nicht freigegeben sind, fallen heraus; damit
+        die es nicht mehr gibt oder die nicht sichtbar sind, fallen heraus; damit
         die Liste trotzdem bis zu limit Eintraege hat, wird seitenweise nachgeladen.
         """
         seit_woche = wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
@@ -257,10 +257,7 @@ class SuchenOhneTrefferService:
                 seit_woche, MINDESTANZAHL, limit, offset
             )
             aussagen = await asyncio.gather(
-                *(
-                    self._freigegebene_aussage(statement_id)
-                    for statement_id, _ in zeilen
-                )
+                *(self._sichtbare_aussage(statement_id) for statement_id, _ in zeilen)
             )
             for (statement_id, anzahl), aussage in zip(zeilen, aussagen):
                 if aussage is not None:
@@ -272,9 +269,9 @@ class SuchenOhneTrefferService:
             offset += limit
         return ergebnis[:limit]
 
-    async def _freigegebene_aussage(self, statement_id: uuid.UUID):
+    async def _sichtbare_aussage(self, statement_id: uuid.UUID):
         try:
             aussage = await self._statement_service.get(statement_id)
         except ValueError:
             return None
-        return aussage if aussage.status in FREIGEGEBEN else None
+        return aussage if aussage.status == ContentStatus.VISIBLE else None

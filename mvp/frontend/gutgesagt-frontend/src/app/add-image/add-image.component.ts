@@ -105,7 +105,7 @@ export class AddImageComponent implements OnDestroy {
         authors: [{ name: 'Du', role: 'author' }],
         edit_history: [],
         content_type: 'image',
-        status: ContentStatus.APPROVED,
+        status: ContentStatus.VISIBLE,
         origin: ContentOrigin.MANUALLY_CREATED,
         score: 1.0,
         most_similar_similarity_score: 0,

@@ -43,7 +43,7 @@ make test-ci
 pytest                                  # Unit tests (pytest.ini testpaths)
 pytest tests/unit/path/to/test_x.py     # Specific test file
 pytest -k "pattern"                     # Pattern matching
-pytest tests/integration/               # Integration tests (needs Qdrant on :6333)
+pytest tests/integration/               # Integration tests (Qdrant on :6333, PostgreSQL: TESTING_GUIDE.md)
 make clean              # Clean artifacts
 make help               # All commands
 ```
@@ -55,7 +55,8 @@ make help               # All commands
 ## Status
 
 - ✅ **379 unit tests collected** — CI runs 366 of them (the seeding implementation suite is excluded); 355 pass, 11 skip
-- ✅ **85 integration tests** — CI runs the 8 that need only Qdrant; the 77 under
+- ✅ **161 integration tests** — CI runs the 84 outside `tests/integration/api/`
+  (Qdrant as a service, PostgreSQL in a throwaway container); the 77 under
   `tests/integration/api/` need a full stack (BFF + auth) and are skipped there
 - ✅ **Dependency injection architecture**
 - ✅ **Pre-commit hooks integrated**
