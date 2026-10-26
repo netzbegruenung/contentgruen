@@ -149,7 +149,7 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin.
 _Avoid_: Archiviert
 
 **Titel**:

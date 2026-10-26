@@ -20,6 +20,21 @@ Mit Keycloak ist das die Keycloak-UUID, mit `USE_KEYCLOAK=false` (dev/tst) die
 `userId` aus `managed-users.json` (`user-001`). **Vorher prüfen, welche Form die
 Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert nicht.
 
+## Zwei Wege, einen Beitrag zu löschen
+
+- **Der Autor löscht** (`DELETE /api/v1/content/{id}`, „Beitrag löschen“ in „Meine
+  Beiträge“): Der Beitrag bekommt nur den Zustand „gelöscht“
+  (`services/content/beitrag_loeschen_service.py`). Er verschwindet aus Suche, Ansicht,
+  Listen, Zählern und „Meine Beiträge“, bleibt aber gespeichert, damit Verknüpfungen und
+  Stimmen nicht ins Leere zeigen. Das ist **kein Löschen im Sinne von Art. 17**: Text und
+  Kennung stehen weiter in Qdrant. Ein Löschantrag erfasst gelöschte Beiträge deshalb
+  genauso wie sichtbare und gesperrte; der Lauf in Schritt 3 filtert nur nach der Kennung,
+  nicht nach dem Zustand.
+- **Ein Admin entfernt endgültig**
+  (`DELETE /api/v1/moderation/content/{content_type}/{id}`): Der Punkt ist danach aus
+  Qdrant weg. Das ist der Weg für Schritt 3, wenn ein Text die Person erkennbar macht,
+  und sonst für nichts: Gemeldete Beiträge sperrt ein Admin, statt sie zu entfernen.
+
 ## Ablauf
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
@@ -239,7 +254,7 @@ dazu „Mitglied“. Bestand mit dem alten Wert stellt derselbe Lauf einmalig um
 Lauf ohne Treffer zeigt, dass nichts mehr umzustellen ist.
 
 Danach die ausgegebenen Texte durchsehen. Macht ein Text die Person erkennbar, wird
-dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{id}` gelöscht — nicht
+dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{content_type}/{id}` gelöscht — nicht
 direkt gegen Qdrant: nur der Endpunkt räumt verwaiste Antwortvorschläge auf
 (`repositories/implementations/qdrant/moderation_repository.py:91`, `aus_aussagen_entfernen`)
 und schreibt einen Moderationsvermerk.
