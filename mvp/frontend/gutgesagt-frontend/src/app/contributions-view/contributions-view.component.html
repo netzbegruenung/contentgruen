@@ -1,27 +1,46 @@
 <div class="component-box">
-    <div *ngIf="isLoading">
-        <p>Lade eigene Beiträge …</p>
-        <div class="loading-container">
-            <mat-spinner class="mat-spinner-color"></mat-spinner>
+    <!-- Tab-Muster nach WAI-ARIA: ein Tab-Stopp, Pfeiltasten wechseln den Tab -->
+    <div class="tabs" role="tablist" aria-label="Meine Beiträge und Einwürfe" (keydown)="tabTaste($event)">
+        <button *ngFor="let eintrag of tabs" type="button" role="tab" class="tab"
+                [id]="'meine-tab-' + eintrag.wert"
+                [attr.aria-controls]="'meine-bereich-' + eintrag.wert"
+                [class.aktiv]="tab === eintrag.wert"
+                [attr.aria-selected]="tab === eintrag.wert"
+                [attr.tabindex]="tab === eintrag.wert ? 0 : -1"
+                (click)="tabWaehlen(eintrag.wert)">{{ eintrag.name }}</button>
+    </div>
+
+    <div id="meine-bereich-beitraege" role="tabpanel" aria-labelledby="meine-tab-beitraege"
+         [hidden]="tab !== 'beitraege'">
+        <div *ngIf="isLoading">
+            <p>Lade eigene Beiträge …</p>
+            <div class="loading-container">
+                <mat-spinner class="mat-spinner-color"></mat-spinner>
+            </div>
         </div>
+
+        <div *ngIf="!isLoading">
+            <p *ngIf="!karten.length" class="beitraege-leer">Du hast noch keine Beiträge.</p>
+
+            <p *ngIf="karten.length" class="album-statistik">{{ statistik }}</p>
+
+            <app-kartenliste *ngIf="karten.length"
+                             variante="kompakt"
+                             [daten]="karten"
+                             (angetippt)="beitragOeffnen($event)">
+            </app-kartenliste>
+        </div>
+
+        <!-- Ausserhalb des Ladezweigs: sonst entsteht der Paginator bei jedem Seitenwechsel neu und steht wieder auf Seite 1 -->
+        <mat-paginator *ngIf="totalRecords > SEITENGROESSE" [length]="totalRecords"
+            [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
+            (page)="onPageChange($event)">
+        </mat-paginator>
     </div>
 
-    <div *ngIf="!isLoading">
-        <p *ngIf="!karten.length" class="beitraege-leer">Du hast noch keine Beiträge.</p>
-
-        <p *ngIf="karten.length" class="album-statistik">{{ statistik }}</p>
-
-        <app-kartenliste *ngIf="karten.length"
-                         variante="kompakt"
-                         [daten]="karten"
-                         (angetippt)="beitragOeffnen($event)">
-        </app-kartenliste>
+    <!-- Erst beim ersten Oeffnen geladen, danach nur versteckt: Seite und Liste bleiben beim Wechseln stehen -->
+    <div id="meine-bereich-einwuerfe" role="tabpanel" aria-labelledby="meine-tab-einwuerfe"
+         [hidden]="tab !== 'einwuerfe'">
+        <app-meine-einwuerfe *ngIf="einwuerfeGeoeffnet"></app-meine-einwuerfe>
     </div>
-
-    <!-- Ausserhalb des Ladezweigs: sonst entsteht der Paginator bei jedem Seitenwechsel neu und steht wieder auf Seite 1 -->
-    <mat-paginator *ngIf="totalRecords > SEITENGROESSE" [length]="totalRecords"
-        [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
-        (page)="onPageChange($event)">
-    </mat-paginator>
-
 </div>
