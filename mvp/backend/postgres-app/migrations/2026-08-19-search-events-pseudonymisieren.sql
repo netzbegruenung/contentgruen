@@ -12,9 +12,10 @@
 -- von SQLAlchemy angelegt (infrastructure/database/connection.py:48) und hat
 -- dann direkt das neue Schema. Nur bereits laufende Umgebungen migrieren.
 --
--- Anwenden:
---   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -v ON_ERROR_STOP=1 \
---     < mvp/backend/postgres-app/migrations/2026-08-19-search-events-pseudonymisieren.sql
+-- Nicht erneut anwenden: TRUNCATE leert search_events bei jedem Lauf, ein
+-- zweiter Lauf loescht also alle seither erfassten Suchereignisse.
+--
+-- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;
 
