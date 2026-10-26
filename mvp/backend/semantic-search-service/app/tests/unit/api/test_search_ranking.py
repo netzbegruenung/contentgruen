@@ -69,7 +69,7 @@ def _base_fields(**overrides):
         last_modified_by="test",
         authors=[],
         edit_history=[],
-        status=ContentStatus.APPROVED,
+        status=ContentStatus.VISIBLE,
         origin=ContentOrigin.INITIAL_DATA,
         report_count=0,
         is_archived=False,

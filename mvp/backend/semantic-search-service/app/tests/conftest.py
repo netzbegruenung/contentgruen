@@ -140,7 +140,7 @@ def create_base_content_fields(**overrides):
         "last_modified_by": "test_user",
         "authors": [],
         "edit_history": [],
-        "status": ContentStatus.APPROVED,
+        "status": ContentStatus.VISIBLE,
         "origin": ContentOrigin.INITIAL_DATA,
         "most_similar_similarity_score": None,
         "most_similar_content_id": None,

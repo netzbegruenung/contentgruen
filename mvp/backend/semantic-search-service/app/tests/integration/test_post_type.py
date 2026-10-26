@@ -62,7 +62,7 @@ def _make_post_db_entry(
         author=author,
         url=url,
         engagement=engagement,
-        status=ContentStatus.APPROVED,
+        status=ContentStatus.VISIBLE,
         origin=ContentOrigin.MANUALLY_CREATED,
     )
 

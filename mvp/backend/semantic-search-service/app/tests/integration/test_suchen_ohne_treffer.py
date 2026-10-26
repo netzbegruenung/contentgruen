@@ -85,7 +85,7 @@ def _service(db: Datenbank) -> SuchenOhneTrefferService:
         return_value=SimpleNamespace(
             id=AUSSAGE,
             text="Lohnt sich eine Waermepumpe im Altbau?",
-            status=ContentStatus.RELEASED_INTERNAL,
+            status=ContentStatus.VISIBLE,
         )
     )
     return SuchenOhneTrefferService(repository, aussagen, PersonenDesTages())

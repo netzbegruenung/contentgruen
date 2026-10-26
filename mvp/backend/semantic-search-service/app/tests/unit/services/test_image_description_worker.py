@@ -74,7 +74,7 @@ class TestWorkerStateMachine:
                 pass
 
     async def test_empty_derived_text_marks_description_failed(self):
-        """Empty caption from ingestion strategy → DESCRIPTION_FAILED, not PENDING_REVIEW."""
+        """Empty caption from ingestion strategy → DESCRIPTION_FAILED, not visible."""
         item_id = uuid.uuid4()
         entry = _make_pending_image(item_id)
 

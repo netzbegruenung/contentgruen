@@ -227,9 +227,9 @@ class ModerationService:
 
     async def entsperren(self, content_id: str) -> bool:
         """
-        Eine Sperre aufheben: Der Beitrag bekommt den Status von vor der Sperre
-        zurueck und ist wieder so sichtbar wie vorher. Die Meldungen bleiben
-        bearbeitet.
+        Eine Sperre aufheben: Der Beitrag bekommt den Zustand von vor der Sperre
+        zurueck (ohne gemerkten Zustand: sichtbar) und ist wieder so sichtbar wie
+        vorher. Die Meldungen bleiben bearbeitet.
 
         Returns:
             bool: False, wenn es den Beitrag nicht gibt
