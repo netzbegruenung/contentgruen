@@ -6,19 +6,19 @@ Provides business logic for reporting and managing flagged content.
 import logging
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-import json
 
-from repositories.content_report_repository import get_content_report_repository
-from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
+from repositories.content_report_repository import (
+    ContentReportRepository,
+    get_content_report_repository,
+)
+from repositories.implementations.qdrant.moderation_repository import (
+    get_moderation_repository,
+)
+from repositories.interfaces.moderation_repository import IModerationRepository
 from domain.models.content_type import ContentType
 from domain.models.content_status import ContentStatus
 
 logger = logging.getLogger(__name__)
-
-# Payload-Feld mit dem Status von vor der Sperre, damit Entsperren ihn
-# wiederherstellt. Steht darin None (Altbestand ohne Status), entfernt Entsperren
-# das Status-Feld wieder.
-FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 
 # Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
 GESPERRTE_HOECHSTENS = 500
@@ -27,9 +27,13 @@ GESPERRTE_HOECHSTENS = 500
 class ModerationService:
     """Service for managing content reports and moderation actions."""
 
-    def __init__(self):
-        self.report_repo = get_content_report_repository()
-        self.embeddings_manager = get_embeddings_manager()
+    def __init__(
+        self,
+        report_repo: Optional[ContentReportRepository] = None,
+        moderation_repo: Optional[IModerationRepository] = None,
+    ):
+        self.report_repo = report_repo or get_content_report_repository()
+        self.moderation_repo = moderation_repo or get_moderation_repository()
 
     async def report_content(
         self,
@@ -162,7 +166,7 @@ class ModerationService:
                 content_id = report.get("content_id")
                 if content_id:
                     try:
-                        content = await self.embeddings_manager.get_by_id(content_id)
+                        content = await self.moderation_repo.laden(content_id)
                         report["content"] = content
                     except Exception as e:
                         # Content might be deleted for reviewed reports
@@ -175,14 +179,14 @@ class ModerationService:
             return []
 
     async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
-        """Payload eines Beitrags am Repository vorbei, also auch gesperrt; None, wenn es ihn nicht gibt."""
+        """Payload eines Beitrags, auch gesperrt; None, wenn es ihn nicht gibt."""
         try:
             UUID(content_id)
         except ValueError:
             logger.warning(f"Invalid content_id format: {content_id}")
             return None
 
-        return await self.embeddings_manager.get_by_id(content_id)
+        return await self.moderation_repo.laden(content_id)
 
     async def sperren(self, content_id: str, gesperrt_von: str) -> bool:
         """
@@ -190,9 +194,9 @@ class ModerationService:
 
         Der Beitrag bleibt im Speicher und bekommt den Status BLOCKED; die
         Repositories blenden ihn damit aus Suche, Einzelansicht, Listen, Zaehlern
-        und "Meine Beitraege" aus. Die Moderation findet ihn weiter, weil sie den
-        Speicher direkt liest. Alle Meldungen zum Beitrag stehen danach auf
-        bearbeitet.
+        und "Meine Beitraege" aus. Die Moderation findet ihn weiter, weil ihr
+        Repository nicht nach Sperre filtert. Alle Meldungen zum Beitrag stehen
+        danach auf bearbeitet.
 
         Erst Qdrant, dann PostgreSQL, ohne gemeinsame Transaktion. Scheitert das
         Meldungs-Update, ist der Beitrag schon gesperrt und der Fehler geht an den
@@ -207,15 +211,7 @@ class ModerationService:
             logger.warning(f"Content {content_id} not found")
             return False
 
-        if beitrag.get("status") != ContentStatus.BLOCKED.value:
-            await self.embeddings_manager.async_client.set_payload(
-                collection_name=self.embeddings_manager.collection_name,
-                payload={
-                    "status": ContentStatus.BLOCKED.value,
-                    FELD_STATUS_VOR_SPERRE: beitrag.get("status"),
-                },
-                points=[content_id],
-            )
+        await self.moderation_repo.sperren(beitrag)
 
         updated_count = self.report_repo.update_reports_by_content_id(
             content_id=UUID(content_id),
@@ -224,19 +220,16 @@ class ModerationService:
             resolution_notes="Beitrag gesperrt",
         )
         logger.info(
-            f"Content {content_id} gesperrt by {gesperrt_von}, "
+            f"Content {content_id} gesperrt, "
             f"{updated_count} reports marked as reviewed"
         )
         return True
 
-    async def entsperren(self, content_id: str, entsperrt_von: str) -> bool:
+    async def entsperren(self, content_id: str) -> bool:
         """
         Eine Sperre aufheben: Der Beitrag bekommt den Status von vor der Sperre
         zurueck und ist wieder so sichtbar wie vorher. Die Meldungen bleiben
         bearbeitet.
-
-        Zwei Schreibvorgaenge; scheitert der zweite, bleibt nur das Hilfsfeld
-        status_vor_sperre stehen, der Beitrag ist trotzdem entsperrt.
 
         Returns:
             bool: False, wenn es den Beitrag nicht gibt
@@ -249,22 +242,8 @@ class ModerationService:
         if beitrag.get("status") != ContentStatus.BLOCKED.value:
             return True
 
-        client = self.embeddings_manager.async_client
-        collection = self.embeddings_manager.collection_name
-        vorher = beitrag.get(FELD_STATUS_VOR_SPERRE)
-        if vorher:
-            await client.set_payload(
-                collection_name=collection,
-                payload={"status": vorher},
-                points=[content_id],
-            )
-            entfernen = [FELD_STATUS_VOR_SPERRE]
-        else:
-            entfernen = ["status", FELD_STATUS_VOR_SPERRE]
-        await client.delete_payload(
-            collection_name=collection, keys=entfernen, points=[content_id]
-        )
-        logger.info(f"Content {content_id} entsperrt by {entsperrt_von}")
+        await self.moderation_repo.entsperren(beitrag)
+        logger.info(f"Content {content_id} entsperrt")
         return True
 
     async def gesperrte_beitraege(
@@ -277,23 +256,7 @@ class ModerationService:
         Loeschantrag entfernt die Meldungen der Person (docs/LOESCHKONZEPT.md),
         der gesperrte Beitrag bliebe dann fuer niemanden erreichbar.
         """
-        from qdrant_client.models import Filter, FieldCondition, MatchValue
-
-        punkte, _ = await self.embeddings_manager.async_client.scroll(
-            collection_name=self.embeddings_manager.collection_name,
-            scroll_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="status",
-                        match=MatchValue(value=ContentStatus.BLOCKED.value),
-                    )
-                ]
-            ),
-            limit=limit,
-            with_payload=True,
-            with_vectors=False,
-        )
-        return [{**(punkt.payload or {}), "id": str(punkt.id)} for punkt in punkte]
+        return await self.moderation_repo.gesperrte_laden(limit)
 
     async def delete_content(
         self, content_id: str, content_type: str, deleted_by: str
@@ -313,7 +276,7 @@ class ModerationService:
             content_uuid = UUID(content_id)
 
             # Delete from Qdrant vector database
-            deleted = await self.embeddings_manager.delete_by_id(content_id)
+            deleted = await self.moderation_repo.entfernen(content_id)
 
             if deleted:
                 # Mark all related reports as reviewed. Der Beitrag ist schon weg;
@@ -329,7 +292,7 @@ class ModerationService:
                     updated_count = 0
 
                 logger.info(
-                    f"Content {content_id} ({content_type}) deleted by {deleted_by}, {updated_count} reports marked as reviewed"
+                    f"Content {content_id} ({content_type}) deleted, {updated_count} reports marked as reviewed"
                 )
 
                 # If deleting a commentary, remove orphaned reply suggestions from statements
@@ -356,99 +319,12 @@ class ModerationService:
             deleted_content_id: UUID of the deleted content
         """
         try:
-            from qdrant_client.models import (
-                Filter,
-                FieldCondition,
-                MatchValue,
-                ScrollRequest,
-            )
-
             logger.info(
                 f"Removing orphaned reply suggestions for deleted content {deleted_content_id}"
             )
-
-            # Scroll through all statements to find those with the deleted content in their reply suggestions
-            offset = None
-            statements_updated = 0
-
-            while True:
-                # Fetch batch of statements
-                scroll_result = await self.embeddings_manager._async_client.scroll(
-                    collection_name=self.embeddings_manager.collection_name,
-                    scroll_filter=Filter(
-                        must=[
-                            FieldCondition(
-                                key="content_type",
-                                match=MatchValue(value=ContentType.STATEMENT.value),
-                            )
-                        ]
-                    ),
-                    limit=100,
-                    offset=offset,
-                    with_payload=True,
-                    with_vectors=False,
-                )
-
-                points, next_offset = scroll_result
-
-                if not points:
-                    break
-
-                # Check each statement for orphaned reply suggestions
-                for point in points:
-                    payload = point.payload
-                    replysuggestions = payload.get("replysuggestions", [])
-
-                    # Parse replysuggestions if it's a JSON string
-                    if isinstance(replysuggestions, str):
-                        try:
-                            replysuggestions = json.loads(replysuggestions)
-                        except json.JSONDecodeError:
-                            logger.warning(
-                                f"Failed to parse replysuggestions for statement {point.id}"
-                            )
-                            continue
-
-                    # Check if this statement references the deleted content
-                    original_count = len(replysuggestions)
-                    filtered_suggestions = [
-                        rs
-                        for rs in replysuggestions
-                        if str(rs.get("id")) != deleted_content_id
-                    ]
-
-                    # If we removed any suggestions, update the statement
-                    if len(filtered_suggestions) < original_count:
-                        payload["replysuggestions"] = json.dumps(
-                            filtered_suggestions, default=str
-                        )
-                        payload["replysuggestions_count"] = len(filtered_suggestions)
-
-                        # Update the point in Qdrant
-                        from qdrant_client.models import PointStruct
-
-                        await self.embeddings_manager._async_client.upsert(
-                            collection_name=self.embeddings_manager.collection_name,
-                            points=[
-                                PointStruct(
-                                    id=point.id,
-                                    vector=point.vector or [],
-                                    payload=payload,
-                                )
-                            ],
-                        )
-
-                        statements_updated += 1
-                        logger.debug(
-                            f"Removed orphaned reply suggestion from statement {point.id} "
-                            f"({original_count} -> {len(filtered_suggestions)} suggestions)"
-                        )
-
-                # Check if we've scrolled through all points
-                if next_offset is None:
-                    break
-
-                offset = next_offset
+            statements_updated = await self.moderation_repo.aus_aussagen_entfernen(
+                deleted_content_id
+            )
 
             if statements_updated > 0:
                 logger.info(
@@ -490,7 +366,7 @@ class ModerationService:
                 resolution_notes=notes or "Report dismissed",
             )
             if updated_report:
-                logger.info(f"Report {report_id} dismissed by {dismissed_by}")
+                logger.info(f"Report {report_id} dismissed")
                 return True
             else:
                 logger.warning(f"Report {report_id} not found")

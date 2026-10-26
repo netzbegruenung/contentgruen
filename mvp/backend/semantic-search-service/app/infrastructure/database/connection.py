@@ -31,11 +31,17 @@ class AppDatabase:
 
         self.database_url = database_url
 
+        echo = os.getenv("APP_DATABASE_ECHO", "false").lower() == "true"
+
         # Create engine with connection pooling appropriate for FastAPI
         self.engine = create_engine(
             self.database_url,
             poolclass=NullPool,  # Use NullPool for thread safety in async context
-            echo=os.getenv("APP_DATABASE_ECHO", "false").lower() == "true",
+            echo=echo,
+            # Fehlermeldungen ohne gebundene Werte: Darin stuenden sonst
+            # Personendaten wie reviewed_by (Admin-Kennung) und landeten im Log.
+            # Nur wer zum Debuggen APP_DATABASE_ECHO setzt, sieht sie.
+            hide_parameters=not echo,
         )
 
         # Create session factory

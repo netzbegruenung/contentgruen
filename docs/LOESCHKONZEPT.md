@@ -138,8 +138,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     Hash: über Zeilen verkettbar und bei bekanntem Kennungsraum zurückrechenbar
     (Docstring von `log_pseudonym()`), bei Kennungen wie `user-001` also kein Schutz.
     **Ausnahme Admins:** Deren Kennung
-    steht im Klartext auf INFO in jeder Moderationsaktion (`api/v1/moderation.py:219-400`,
-    `f"Admin {admin_user} …"`) und beim manuellen Cleanup (`api/v1/usage.py:356`).
+    steht im Klartext auf INFO beim manuellen Cleanup (`api/v1/usage.py:356`). Die
+    Moderationsaktionen nennen sie seit #271 nicht mehr (`api/v1/moderation.py`,
+    `services/moderation_service.py`); sie steht nur noch in `content_reports.reviewed_by`.
     Die Suchanfrage der Person steht ab INFO weder auf dem Anfragepfad
     (`api/v1/search.py`, nur `limit`) noch im Fehlerzweig der Suche
     (`repositories/implementations/qdrant/statement_repository.py`). Wohl aber stehen ab INFO
@@ -222,5 +223,5 @@ Lauf ohne Treffer zeigt, dass nichts mehr umzustellen ist.
 Danach die ausgegebenen Texte durchsehen. Macht ein Text die Person erkennbar, wird
 dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{id}` gelöscht — nicht
 direkt gegen Qdrant: nur der Endpunkt räumt verwaiste Antwortvorschläge auf
-(`services/moderation_service.py:337`, `_remove_orphaned_reply_suggestions`) und schreibt
-einen Moderationsvermerk.
+(`repositories/implementations/qdrant/moderation_repository.py:91`, `aus_aussagen_entfernen`)
+und schreibt einen Moderationsvermerk.
