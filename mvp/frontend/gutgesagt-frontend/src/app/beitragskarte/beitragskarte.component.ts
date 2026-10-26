@@ -157,6 +157,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.authService.getUserInfo()?.userId ?? null;
   }
 
+  private get istAdmin(): boolean {
+    return !!this.authService.getUserInfo()?.isAdmin;
+  }
+
   private get angemeldet(): boolean {
     return !!this.authService.getUserInfo()?.isAuthenticated;
   }
@@ -311,11 +315,13 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return satz.beitraege === 1 ? 'ein Beitrag daraus' : `${satz.beitraege} Beiträge daraus`;
   }
 
-  /** Verwerfen darf nur, wer eingeworfen hat - und nur, solange kein Beitrag dranhaengt. */
+  /**
+   * Verwerfen duerfen der Einwerfer und Admins - und nur, solange kein Beitrag
+   * dranhaengt. Admins nehmen so Einwuerfe aus dem Fangkorb, um die sich kein
+   * Einwerfer mehr kuemmert (toter Link, inaktive Person, kein Einwerfer).
+   */
   get darfVerwerfen(): boolean {
-    return (
-      !!this.rohling?.verwerfbar && this.istEigen
-    );
+    return !!this.rohling?.verwerfbar && (this.istEigen || this.istAdmin);
   }
 
   /**

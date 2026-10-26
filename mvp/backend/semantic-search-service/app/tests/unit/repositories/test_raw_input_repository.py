@@ -526,7 +526,41 @@ class TestStatusSetzen:
         assert zeile.status == RawInputStatus.OPEN.value
         session.commit.assert_not_called()
 
-    def test_einwurf_ohne_einwerfer_kann_niemand_verwerfen(self, repository, session):
+    @pytest.mark.parametrize("stand", [RawInputStatus.OPEN, RawInputStatus.IN_PROGRESS])
+    def test_admin_verwirft_fremden_einwurf(self, repository, session, stand):
+        zeile = _zeile(submitted_by="alice", status=stand.value)
+        _gesperrte_zeile(session, zeile)
+
+        repository.set_status(
+            zeile.id, RawInputStatus.DISCARDED, "admin", ist_admin=True
+        )
+
+        assert zeile.status == RawInputStatus.DISCARDED.value
+        session.commit.assert_called_once()
+
+    def test_admin_verwirft_auch_einwurf_ohne_einwerfer(self, repository, session):
+        """Einen Einwurf ohne Einwerfer kann nur ein Admin aus dem Fangkorb nehmen."""
+        zeile = _zeile(submitted_by=None, status=RawInputStatus.OPEN.value)
+        _gesperrte_zeile(session, zeile)
+
+        repository.set_status(
+            zeile.id, RawInputStatus.DISCARDED, "admin", ist_admin=True
+        )
+
+        assert zeile.status == RawInputStatus.DISCARDED.value
+
+    def test_admin_verwirft_kein_ausformuliertes(self, repository, session):
+        zeile = _zeile(submitted_by="alice", status=RawInputStatus.PROCESSED.value)
+        _gesperrte_zeile(session, zeile)
+
+        with pytest.raises(UebergangNichtErlaubt):
+            repository.set_status(
+                zeile.id, RawInputStatus.DISCARDED, "admin", ist_admin=True
+            )
+
+    def test_einwurf_ohne_einwerfer_verwirft_kein_mitwirkender_ohne_adminrechte(
+        self, repository, session
+    ):
         zeile = _zeile(submitted_by=None, status=RawInputStatus.OPEN.value)
         _gesperrte_zeile(session, zeile)
 

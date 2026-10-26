@@ -7,7 +7,7 @@ import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent, TYPEN } from './destil
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { DestillierUebergabeService } from './destillier-uebergabe.service';
 import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { FILTER_SCHLUESSEL, filterLaden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
@@ -32,6 +32,7 @@ describe('DestillierenComponent', () => {
   let component: DestillierenComponent;
   let rawInputService: jasmine.SpyObj<RawInputService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
+  let nutzer: UserInfo;
   let navigation: jasmine.SpyObj<NavigationService>;
   let beitragAnsehen: jasmine.SpyObj<BeitragAnsehenService>;
   let router: Router;
@@ -69,10 +70,10 @@ describe('DestillierenComponent', () => {
         {
           provide: AuthService,
           useValue: {
-            getCurrentUserId: () => 'alice',
-            getUserInfo: () => ({ isAuthenticated: true, userId: 'alice' }),
-            userInfo$: of({ isAuthenticated: true, userId: 'alice' }),
-            fetchUserInfo: () => of({ userId: 'alice' }),
+            getCurrentUserId: () => nutzer.userId,
+            getUserInfo: () => nutzer,
+            userInfo$: of(nutzer),
+            fetchUserInfo: () => of(nutzer),
           },
         },
         {
@@ -101,6 +102,7 @@ describe('DestillierenComponent', () => {
     // Tab und Chip liegen im sessionStorage - sonst traegt ein Test den Stand des
     // vorigen weiter.
     sessionStorage.removeItem(FILTER_SCHLUESSEL);
+    nutzer = { isAuthenticated: true, userId: 'alice', userName: null, claims: null };
     queryParams = convertToParamMap({});
     rawInputService = jasmine.createSpyObj('RawInputService', [
       'getRawInput',
@@ -204,6 +206,33 @@ describe('DestillierenComponent', () => {
       expect(knopf('spaeter')).toBeTruthy();
     });
 
+    it('zeigt Admins Verwerfen auch beim fremden Einwurf', async () => {
+      nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
+      await erstellen('id-1', einwurf({ submitted_by: 'bob' }));
+
+      knopf('verwerfen')!.click();
+
+      expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'erledigt');
+    });
+
+    it('zeigt Verwerfen bei Ausformuliertem und Verworfenem niemandem', async () => {
+      nutzer = { ...nutzer, isAdmin: true };
+      await erstellen('id-1', einwurf({ status: 'processed' }));
+      expect(knopf('verwerfen')).toBeNull();
+
+      TestBed.resetTestingModule();
+      await erstellen('id-1', einwurf({ status: 'discarded' }));
+      expect(knopf('verwerfen')).toBeNull();
+    });
+
+    it('zeigt Mitwirkenden ohne Adminrechte bei fremdem Einwurf kein Verwerfen', async () => {
+      nutzer = { ...nutzer, isAdmin: false };
+      await erstellen('id-1', einwurf({ submitted_by: 'bob', status: 'in_progress' }));
+
+      expect(knopf('verwerfen')).toBeNull();
+    });
+
     it('verwirft den eigenen Einwurf und oeffnet den naechsten', async () => {
       await erstellen('id-1');
 
@@ -214,6 +243,17 @@ describe('DestillierenComponent', () => {
       // sonst waere der Einwurf nach dem Verwerfen scheinbar spurlos weg.
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'erledigt');
       expect(filterLaden().verworfenSichtbar).toBeTrue();
+    });
+
+    it('nennt bei einer Ablehnung, wer verwerfen darf', async () => {
+      await erstellen('id-1');
+      rawInputService.updateStatus.and.returnValue(throwError(() => ({ status: 403 })));
+
+      knopf('verwerfen')!.click();
+
+      expect(component.fehler).toBe('Verwerfen können nur der Einwerfer und Admins.');
+      expect(component.arbeitet).toBeFalse();
+      expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
     });
 
     it('speichert bei Spaeter den Satz und oeffnet den naechsten', async () => {

@@ -59,7 +59,7 @@
                         [disabled]="!kannWeiter" (click)="weiter()">Ausformulieren</button>
                 <button mat-stroked-button type="button" class="spaeter"
                         [disabled]="arbeitet" (click)="spaeter()">Überspringen</button>
-                <button *ngIf="istEigenerEinwurf" mat-button color="warn" type="button"
+                <button *ngIf="darfVerwerfen" mat-button color="warn" type="button"
                         class="verwerfen" [disabled]="arbeitet" (click)="verwerfen()">Einwurf verwerfen</button>
             </div>
             <!-- Nur mit Text im Feld: sonst gibt es nichts zu merken. -->

@@ -75,7 +75,7 @@ Ein Einwurf, aus dem mindestens ein Beitrag entstanden ist.
 _Avoid_: Verarbeitet, Erledigt, Fertig
 
 **Verworfen**:
-Ein Einwurf, den sein Einwerfer als nicht verwertbar markiert hat.
+Ein Einwurf, den sein Einwerfer oder ein Admin als nicht verwertbar markiert hat.
 _Avoid_: Gelöscht, Abgelehnt
 
 Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.

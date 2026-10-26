@@ -8,11 +8,12 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
-import { KartenDaten, ausAussage, ausSuchergebnis } from './karten-daten';
+import { KartenDaten, ausAussage, ausEinwurf, ausSuchergebnis } from './karten-daten';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
+import { RawInput } from '../services/raw-input.service';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -609,6 +610,57 @@ describe('BeitragskarteComponent', () => {
       expect(element('app-karten-aktionen')).toBeNull();
       expect(element('.album-fuss')).toBeNull();
       expect(element('.karte').getAttribute('role')).toBeNull();
+    });
+  });
+
+  describe('Verwerfen', () => {
+    function einwurf(felder: Partial<RawInput> = {}): KartenDaten {
+      return ausEinwurf({
+        id: 'e-1',
+        content: 'Hinweis',
+        url: null,
+        image_url: null,
+        submitted_by: 'bob',
+        source_channel: 'web',
+        status: 'open',
+        created_at: '2026-09-13T12:00:00Z',
+        drafts: [],
+        links: [],
+        ...felder,
+      });
+    }
+
+    function alsNutzer(nutzer: Partial<UserInfo>): void {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user', ...nutzer } as UserInfo);
+    }
+
+    it('erlaubt Admins das Verwerfen fremder und einwerferloser Einwuerfe', () => {
+      alsNutzer({ isAdmin: true });
+
+      zeigen(einwurf(), { variante: 'rohling' });
+      expect(component.darfVerwerfen).toBeTrue();
+
+      zeigen(einwurf({ submitted_by: null }), { variante: 'rohling' });
+      expect(component.darfVerwerfen).toBeTrue();
+    });
+
+    it('erlaubt Mitwirkenden ohne Adminrechte nur eigene Einwuerfe', () => {
+      alsNutzer({ isAdmin: false });
+
+      zeigen(einwurf(), { variante: 'rohling' });
+      expect(component.darfVerwerfen).toBeFalse();
+
+      zeigen(einwurf({ submitted_by: 'test-user' }), { variante: 'rohling' });
+      expect(component.darfVerwerfen).toBeTrue();
+    });
+
+    it('erlaubt auch Admins kein Verwerfen von Ausformuliertem', () => {
+      alsNutzer({ isAdmin: true });
+
+      zeigen(einwurf({ status: 'processed' }), { variante: 'rohling' });
+
+      expect(component.darfVerwerfen).toBeFalse();
     });
   });
 });
