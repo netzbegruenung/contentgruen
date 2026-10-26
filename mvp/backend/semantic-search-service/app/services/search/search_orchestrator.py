@@ -17,6 +17,7 @@ from typing import Callable, Dict, List, Optional, Type
 
 from core.logging import get_logger
 from services.anzeigename_service import kennungsfelder_leer
+from services.content.base_content_service import search_batch
 from domain.models.content_type import ContentType
 
 logger = get_logger(__name__)
@@ -38,9 +39,7 @@ class ContentTypeSearchSpec:
     """Ties a content type to the pieces search needs to handle it uniformly."""
 
     content_type: ContentType
-    service: (
-        object  # BaseContentService-like: async get(id) / async search(query, limit)
-    )
+    service: object  # BaseContentService: async get(id); searched via search_batch()
     result_cls: Type  # the per-type search-result wrapper DTO
     result_field: str  # name of the nested content field on the wrapper (e.g. "commentary_result")
 
@@ -196,8 +195,13 @@ class SearchOrchestrator:
             if getattr(result, spec.result_field)
         }
 
-        for spec in self._specs.values():
-            direct_results = await spec.service.search(query_text, limit=limit)
+        # Eine Anfrage fuer alle Beitragstypen, je Typ mit eigenem Filter und Limit -
+        # dieselben Treffer wie spec.service.search() je Typ (#304).
+        specs = list(self._specs.values())
+        direct_results_per_spec = await search_batch(
+            [spec.service for spec in specs], query_text, limit
+        )
+        for spec, direct_results in zip(specs, direct_results_per_spec):
             for content_result in direct_results:
                 if content_result.id in statement_based_ids:
                     continue

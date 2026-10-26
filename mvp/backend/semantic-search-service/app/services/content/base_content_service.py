@@ -1,6 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Type, TypeVar, Generic
+from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Generic
 import uuid
 import logging
 
@@ -9,6 +9,9 @@ from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
 from repositories.interfaces.content_repository import IContentRepository
+from repositories.implementations.qdrant.base_repository import (
+    search_batch as repositories_search_batch,
+)
 from domain.models.content import ContentDbEntry
 from domain.models.base_content import (
     BaseContentDbEntry,
@@ -37,6 +40,25 @@ class Dublettenpruefung:
 
     vorhanden: Optional[BaseContentSearchResult]
     aehnlichster: Optional[BaseContentSearchResult]
+
+
+def _bereinigt(query_text: str) -> str:
+    """Der Suchtext, wie search() ihn einbettet."""
+    return query_text.replace(";", ",").replace("'", '"')
+
+
+async def search_batch(
+    services: Sequence["BaseContentService"], query_text: str, limit: int
+) -> List[List[BaseContentSearchResult]]:
+    """
+    search(query_text, limit) fuer mehrere Dienste, als eine Anfrage an den Suchindex.
+
+    Ergebnis je Dienst in der Reihenfolge von ``services``, gleich dem von
+    service.search(); der Suchtext wird dafuer einmal eingebettet (#304).
+    """
+    return await repositories_search_batch(
+        [service._repository for service in services], _bereinigt(query_text), limit
+    )
 
 
 TRepository = TypeVar("TRepository", bound=IBaseContentRepository)
@@ -94,12 +116,10 @@ class BaseContentService(
         """
         Search the repository for items similar to the provided query text.
         """
-        sanitized_query_text = query_text.replace(";", ",").replace("'", '"')
-
         logger.debug(
             f"BaseContentService ({self._repository_class.__name__}): searching"
         )
-        return await self._repository.search(sanitized_query_text, limit)
+        return await self._repository.search(_bereinigt(query_text), limit)
 
     async def _vorhandenen_finden(
         self, text: str, schwelle: float, praefix: str

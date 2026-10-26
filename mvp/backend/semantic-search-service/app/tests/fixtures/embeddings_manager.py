@@ -410,6 +410,18 @@ class TestEmbeddingsManager(IEmbeddingsManager):
                     break
         return results
 
+    async def search_batch(
+        self,
+        query: str,
+        requests: List[tuple],
+        praefix: str = "query",
+    ) -> List[List[Dict[str, Any]]]:
+        """Batch search: one search() per (content_type, filter_dict, limit)."""
+        return [
+            await self.search(query, content_type, limit, filter_dict, praefix)
+            for content_type, filter_dict, limit in requests
+        ]
+
     async def upsert_batch(self, points: List[tuple], content_type: str) -> None:
         """
         Async batch upsert for Qdrant compatibility.

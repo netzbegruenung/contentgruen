@@ -36,6 +36,7 @@ from services.search_tracking_service import (
     tagespseudonym,
 )
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
+from services.embeddings.qdrant_embeddings_manager import einbettungen_teilen
 from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
@@ -92,227 +93,240 @@ async def search_by_text(
     x_user: Optional[str] = Header(None),
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
-    try:
-        # Keine Logzeile je Suche: Der Suchtext ist der sensibelste Einzelwert der
-        # Plattform, und schon die Uhrzeit der Zeile ordnete, je Tag durchgezaehlt,
-        # die Suchereignisse ihrer Uhrzeit zu (#239, search_tracking_service.py).
-
-        # Handle both authenticated and anonymous users
-        if x_user:
-            validated_user = require_auth(x_user, operation="read")
-            # Ohne Kennung: zusammen mit der Zeile darueber waere sonst genau die
-            # Verknuepfung "wer hat wonach gesucht" im Log, die hier vermieden wird.
-            logger.debug("👤 Authorized user search")
-        else:
-            validated_user = "anonymous"
-            logger.debug("👤 Anonymous user search")
-
-        # Check that request is valid
-        if request.query_text is None or request.query_text == "":
-            raise HTTPException(status_code=400, detail="query_text cannot be empty")
-        if request.limit is None or request.limit < 1 or request.limit > 20:
-            raise HTTPException(
-                status_code=400,
-                detail="limit must be a positive integer between 1 and 20",
-            )
-
-        statement_was_new = False
-        statement_id = None
-        statement_text = request.query_text
-
-        # Die Suchanfrage wird als Aussage aufgenommen (SEARCH_QUERY, Systemautor)
-        # - nur hier, das Frontend legt nichts mehr an. Rate-Limit und Sperre je
-        # Text: services/search/search_query_statement.py.
+    # Die Suchanfrage wird hier mehrfach gebraucht: Dublettenpruefung und Speichern
+    # der Aussage, Aussagensuche, Direktsuche. Eingebettet wird sie nur einmal (#304).
+    with einbettungen_teilen():
         try:
-            statement_was_new, statement_id, statement_text = await recorder.anlegen(
-                statement_service,
-                request.query_text,
-                derive_client_key(http_request),
-            )
-        except Exception as e:
-            logger.warning(f"Failed to auto-create statement during search: {e}")
-            # Continue with search even if auto-creation fails
+            # Keine Logzeile je Suche: Der Suchtext ist der sensibelste Einzelwert der
+            # Plattform, und schon die Uhrzeit der Zeile ordnete, je Tag durchgezaehlt,
+            # die Suchereignisse ihrer Uhrzeit zu (#239, search_tracking_service.py).
 
-        # Business logic: Query most similar statements that do contain replysuggestions from the statement index
-        statement_index_results: List[StatementSearchResult] = (
-            await statement_service.search_statements(
-                request.query_text,
-                settings.statement_search_limit,
-                settings.min_reply_suggestions_for_search,
-            )
-        )
-        logger.debug(
-            f"📊 Statement search results: {len(statement_index_results)} items"
-        )
+            # Handle both authenticated and anonymous users
+            if x_user:
+                validated_user = require_auth(x_user, operation="read")
+                # Ohne Kennung: zusammen mit der Zeile darueber waere sonst genau die
+                # Verknuepfung "wer hat wonach gesucht" im Log, die hier vermieden wird.
+                logger.debug("👤 Authorized user search")
+            else:
+                validated_user = "anonymous"
+                logger.debug("👤 Anonymous user search")
 
-        # Apply polarity filtering to statement results
-        polarity_filter = get_polarity_filter_service(
-            enable_filtering=settings.enable_polarity_filtering
-        )
-        statement_index_results, polarity_metadata = (
-            polarity_filter.analyze_and_filter_statement_results(
-                query_text=request.query_text,
-                statement_results=statement_index_results,
-                get_text_fn=lambda r: r.text,
-            )
-        )
-        logger.debug(
-            f"📊 After polarity filtering: {len(statement_index_results)} statement results"
-        )
+            # Check that request is valid
+            if request.query_text is None or request.query_text == "":
+                raise HTTPException(
+                    status_code=400, detail="query_text cannot be empty"
+                )
+            if request.limit is None or request.limit < 1 or request.limit > 20:
+                raise HTTPException(
+                    status_code=400,
+                    detail="limit must be a positive integer between 1 and 20",
+                )
 
-        # Apply keyword overlap boosting to statement results
-        keyword_overlap_service = get_keyword_overlap_service(
-            enable_boosting=settings.enable_keyword_overlap_boost,
-            boost_strength=settings.keyword_overlap_boost_strength,
-        )
-        statement_index_results, keyword_metadata = (
-            keyword_overlap_service.analyze_and_boost_results(
-                query_text=request.query_text,
-                results=statement_index_results,
-                get_text_fn=lambda r: r.text,
-            )
-        )
-        logger.debug(
-            f"📊 After keyword overlap boosting: {len(statement_index_results)} statement results"
-        )
+            statement_was_new = False
+            statement_id = None
+            statement_text = request.query_text
 
-        # Run the type-agnostic search pipeline over the registered content types.
-        specs = [
-            ContentTypeSearchSpec(
-                content_type=ContentType.COMMENTARY,
-                service=commentary_service,
-                result_cls=CommentarySearchResult,
-                result_field="commentary_result",
-            ),
-            ContentTypeSearchSpec(
-                content_type=ContentType.GENERIC_TEXT,
-                service=generictext_service,
-                result_cls=GenericTextSearchResult,
-                result_field="generictext_result",
-            ),
-            ContentTypeSearchSpec(
-                content_type=ContentType.POST,
-                service=post_service,
-                result_cls=PostSearchResult,
-                result_field="post_result",
-            ),
-            *(
-                [
-                    ContentTypeSearchSpec(
-                        content_type=ContentType.IMAGE,
-                        service=image_service,
-                        result_cls=ImageSearchResult,
-                        result_field="image_result",
+            # Die Suchanfrage wird als Aussage aufgenommen (SEARCH_QUERY, Systemautor)
+            # - nur hier, das Frontend legt nichts mehr an. Rate-Limit und Sperre je
+            # Text: services/search/search_query_statement.py.
+            try:
+                statement_was_new, statement_id, statement_text = (
+                    await recorder.anlegen(
+                        statement_service,
+                        request.query_text,
+                        derive_client_key(http_request),
                     )
-                ]
-                if image_service is not None
-                else []
-            ),
-        ]
-        orchestrator = SearchOrchestrator(
-            specs,
-            reference_service=reference_service,
-            usage_service=get_usage_service(),
-            voting_service=voting_service,
-        )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to auto-create statement during search: {e}")
+                # Continue with search even if auto-creation fails
 
-        # Phase 1: statement-based reply retrieval. Phase 2: direct-search fallback.
-        await orchestrator.collect_statement_based(
-            statement_index_results, request.limit, polarity_metadata
-        )
-        await orchestrator.collect_direct(request.query_text, request.limit)
-
-        # Phase 3: sort/truncate, then enrich with usage counts and (if any) user votes.
-        orchestrator.sort_and_truncate(request.limit)
-        orchestrator.enrich_with_usage()
-        if validated_user and validated_user != "anonymous":
-            orchestrator.apply_user_votes(validated_user)
-        if angemeldet(validated_user):
-            orchestrator.apply_author_names(get_anzeigename_service())
-        else:
-            orchestrator.strip_author_ids()
-
-        commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
-        generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)
-        post_search_results = orchestrator.results_for(ContentType.POST)
-        image_search_results = orchestrator.results_for(ContentType.IMAGE)
-
-        logger.debug(
-            f"🎯 Final results: {len(commentary_search_results)} commentaries, "
-            f"{len(generictext_search_results)} generictexts"
-        )
-
-        response = SearchResponse(
-            query_was_newly_added_as_statement=statement_was_new,
-            statement_id=str(statement_id) if statement_id is not None else None,
-            statement_text=statement_text,
-            commentary_search_results_count=len(commentary_search_results),
-            commentary_search_results=commentary_search_results,
-            generictext_search_results_count=len(generictext_search_results),
-            generictext_search_results=generictext_search_results,
-            post_search_results_count=len(post_search_results),
-            post_search_results=post_search_results,
-            image_search_results_count=len(image_search_results),
-            image_search_results=image_search_results,
-        )
-
-        total_results = (
-            len(commentary_search_results)
-            + len(generictext_search_results)
-            + len(post_search_results)
-            + len(image_search_results)
-        )
-
-        # Suchereignis und "Suchen ohne Treffer" bilden das Tagespseudonym aus
-        # derselben Kennung und demselben Zeitpunkt: So ist es fuer beide dasselbe,
-        # und Pseudonym und Tag gehoeren zusammen, auch kurz vor Mitternacht.
-        user_id = validated_user if angemeldet(validated_user) else None
-        jetzt = datetime.now(timezone.utc)
-
-        # Track search event for metrics (fire-and-forget, don't block response)
-        try:
-            search_tracking_service = get_search_tracking_service()
-
-            # Neither the query text nor the client IP is handed on: the search
-            # text was stored in full without ever being read back, and the IP
-            # hash was written but never evaluated. The user or session id is
-            # turned into a daily pseudonym inside the tracking service.
-            search_tracking_service.track_search(
-                results_count=total_results,
-                session_id=x_session_id,
-                user_id=user_id,
-                moment=jetzt,
+            # Business logic: Query most similar statements that do contain replysuggestions from the statement index
+            statement_index_results: List[StatementSearchResult] = (
+                await statement_service.search_statements(
+                    request.query_text,
+                    settings.statement_search_limit,
+                    settings.min_reply_suggestions_for_search,
+                )
             )
-        except Exception as e:
-            # Don't fail the search if tracking fails
-            logger.warning(f"Failed to track search event: {e}")
-
-        # Kennzahl "Suchen ohne Treffer": gezaehlt an der Aussage zur Suchanfrage,
-        # getrennt vom Suchereignis. Das Tagespseudonym dient nur dazu, Personen zu
-        # unterscheiden, gespeichert wird es dort nicht. total_results zaehlt nur,
-        # was ueber der Schwelle des SearchOrchestrators lag.
-        try:
-            suchen_ohne_treffer.erfassen(
-                statement_id,
-                total_results,
-                tagespseudonym(user_id=user_id, session_id=x_session_id, moment=jetzt),
-                heute=jetzt.date(),
+            logger.debug(
+                f"📊 Statement search results: {len(statement_index_results)} items"
             )
+
+            # Apply polarity filtering to statement results
+            polarity_filter = get_polarity_filter_service(
+                enable_filtering=settings.enable_polarity_filtering
+            )
+            statement_index_results, polarity_metadata = (
+                polarity_filter.analyze_and_filter_statement_results(
+                    query_text=request.query_text,
+                    statement_results=statement_index_results,
+                    get_text_fn=lambda r: r.text,
+                )
+            )
+            logger.debug(
+                f"📊 After polarity filtering: {len(statement_index_results)} statement results"
+            )
+
+            # Apply keyword overlap boosting to statement results
+            keyword_overlap_service = get_keyword_overlap_service(
+                enable_boosting=settings.enable_keyword_overlap_boost,
+                boost_strength=settings.keyword_overlap_boost_strength,
+            )
+            statement_index_results, keyword_metadata = (
+                keyword_overlap_service.analyze_and_boost_results(
+                    query_text=request.query_text,
+                    results=statement_index_results,
+                    get_text_fn=lambda r: r.text,
+                )
+            )
+            logger.debug(
+                f"📊 After keyword overlap boosting: {len(statement_index_results)} statement results"
+            )
+
+            # Run the type-agnostic search pipeline over the registered content types.
+            specs = [
+                ContentTypeSearchSpec(
+                    content_type=ContentType.COMMENTARY,
+                    service=commentary_service,
+                    result_cls=CommentarySearchResult,
+                    result_field="commentary_result",
+                ),
+                ContentTypeSearchSpec(
+                    content_type=ContentType.GENERIC_TEXT,
+                    service=generictext_service,
+                    result_cls=GenericTextSearchResult,
+                    result_field="generictext_result",
+                ),
+                ContentTypeSearchSpec(
+                    content_type=ContentType.POST,
+                    service=post_service,
+                    result_cls=PostSearchResult,
+                    result_field="post_result",
+                ),
+                *(
+                    [
+                        ContentTypeSearchSpec(
+                            content_type=ContentType.IMAGE,
+                            service=image_service,
+                            result_cls=ImageSearchResult,
+                            result_field="image_result",
+                        )
+                    ]
+                    if image_service is not None
+                    else []
+                ),
+            ]
+            orchestrator = SearchOrchestrator(
+                specs,
+                reference_service=reference_service,
+                usage_service=get_usage_service(),
+                voting_service=voting_service,
+            )
+
+            # Phase 1: statement-based reply retrieval. Phase 2: direct-search fallback.
+            await orchestrator.collect_statement_based(
+                statement_index_results, request.limit, polarity_metadata
+            )
+            await orchestrator.collect_direct(request.query_text, request.limit)
+
+            # Phase 3: sort/truncate, then enrich with usage counts and (if any) user votes.
+            orchestrator.sort_and_truncate(request.limit)
+            orchestrator.enrich_with_usage()
+            if validated_user and validated_user != "anonymous":
+                orchestrator.apply_user_votes(validated_user)
+            if angemeldet(validated_user):
+                orchestrator.apply_author_names(get_anzeigename_service())
+            else:
+                orchestrator.strip_author_ids()
+
+            commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
+            generictext_search_results = orchestrator.results_for(
+                ContentType.GENERIC_TEXT
+            )
+            post_search_results = orchestrator.results_for(ContentType.POST)
+            image_search_results = orchestrator.results_for(ContentType.IMAGE)
+
+            logger.debug(
+                f"🎯 Final results: {len(commentary_search_results)} commentaries, "
+                f"{len(generictext_search_results)} generictexts"
+            )
+
+            response = SearchResponse(
+                query_was_newly_added_as_statement=statement_was_new,
+                statement_id=str(statement_id) if statement_id is not None else None,
+                statement_text=statement_text,
+                commentary_search_results_count=len(commentary_search_results),
+                commentary_search_results=commentary_search_results,
+                generictext_search_results_count=len(generictext_search_results),
+                generictext_search_results=generictext_search_results,
+                post_search_results_count=len(post_search_results),
+                post_search_results=post_search_results,
+                image_search_results_count=len(image_search_results),
+                image_search_results=image_search_results,
+            )
+
+            total_results = (
+                len(commentary_search_results)
+                + len(generictext_search_results)
+                + len(post_search_results)
+                + len(image_search_results)
+            )
+
+            # Suchereignis und "Suchen ohne Treffer" bilden das Tagespseudonym aus
+            # derselben Kennung und demselben Zeitpunkt: So ist es fuer beide dasselbe,
+            # und Pseudonym und Tag gehoeren zusammen, auch kurz vor Mitternacht.
+            user_id = validated_user if angemeldet(validated_user) else None
+            jetzt = datetime.now(timezone.utc)
+
+            # Track search event for metrics (fire-and-forget, don't block response)
+            try:
+                search_tracking_service = get_search_tracking_service()
+
+                # Neither the query text nor the client IP is handed on: the search
+                # text was stored in full without ever being read back, and the IP
+                # hash was written but never evaluated. The user or session id is
+                # turned into a daily pseudonym inside the tracking service.
+                search_tracking_service.track_search(
+                    results_count=total_results,
+                    session_id=x_session_id,
+                    user_id=user_id,
+                    moment=jetzt,
+                )
+            except Exception as e:
+                # Don't fail the search if tracking fails
+                logger.warning(f"Failed to track search event: {e}")
+
+            # Kennzahl "Suchen ohne Treffer": gezaehlt an der Aussage zur Suchanfrage,
+            # getrennt vom Suchereignis. Das Tagespseudonym dient nur dazu, Personen zu
+            # unterscheiden, gespeichert wird es dort nicht. total_results zaehlt nur,
+            # was ueber der Schwelle des SearchOrchestrators lag.
+            try:
+                suchen_ohne_treffer.erfassen(
+                    statement_id,
+                    total_results,
+                    tagespseudonym(
+                        user_id=user_id, session_id=x_session_id, moment=jetzt
+                    ),
+                    heute=jetzt.date(),
+                )
+            except Exception as e:
+                # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und
+                # statement_id neben dem Zeitstempel der Logzeile waere genau der
+                # Zeitpunkt, den die Tabelle nicht speichert.
+                logger.warning(
+                    f"Failed to count search without hits: {type(e).__name__}"
+                )
+
+            return response
+
+        except HTTPException:
+            # Intentional client errors (e.g. invalid limit) must surface with their own
+            # status code, not be re-wrapped as a 500 by the catch-all below.
+            raise
         except Exception as e:
-            # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und
-            # statement_id neben dem Zeitstempel der Logzeile waere genau der
-            # Zeitpunkt, den die Tabelle nicht speichert.
-            logger.warning(f"Failed to count search without hits: {type(e).__name__}")
-
-        return response
-
-    except HTTPException:
-        # Intentional client errors (e.g. invalid limit) must surface with their own
-        # status code, not be re-wrapped as a 500 by the catch-all below.
-        raise
-    except Exception as e:
-        logger.error(f"❌ Error in searchByText: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"❌ Error in searchByText: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 # searchByTopic(topic)

@@ -54,6 +54,27 @@ class IEmbeddingsManager(ABC):
         pass
 
     @abstractmethod
+    async def search_batch(
+        self,
+        query: str,
+        requests: List[Tuple[Optional[str], Optional[Dict[str, Any]], int]],
+        praefix: Literal["query", "passage"] = "query",
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Several searches with the same query text, embedded once.
+
+        Args:
+            query: Search query text
+            requests: One (content_type, filter_dict, limit) per search, as in search()
+            praefix: as in search()
+
+        Returns:
+            Per request its results, in the order of ``requests``, each as search()
+            would return it
+        """
+        pass
+
+    @abstractmethod
     async def upsert_batch(
         self, points: List[Tuple[str, Dict[str, Any], str]], content_type: str
     ) -> None:
