@@ -6,7 +6,8 @@ Prueft die README-Regeln, die der Unit-Test test_migrationskonvention.py ohne
 Datenbank nicht pruefen kann: Jedes Skript laeuft zweimal fehlerfrei auf einer
 Datenbank im aktuellen Schema, und danach gleicht das Schema dem, was ``create_all``
 aus den Modellen anlegt. Dasselbe gilt fuer eine Datenbank, die wie Test und
-Produktion aus dem Init-Skript entstanden ist, vor und nach #285.
+Produktion aus dem Init-Skript entstanden ist: im heutigen Stand, vor #285 und im
+aeltesten Stand der oeffentlichen Historie, vor der Datensparsamkeit.
 
 Verglichen werden Spalten (Typ, Laenge, Nullbarkeit, Default), Indizes, Constraints
 samt Fremdschluesseln, Sequenzen (Typ), Trigger und Funktionen. ``create_all`` legt
@@ -35,11 +36,14 @@ NUR_EINMAL = {"2026-08-25-usage-events-datensparsamkeit.sql"}
 SKRIPTE = postgres.migrationen()
 WIEDERHOLBAR = [s for s in SKRIPTE if s.name not in NUR_EINMAL]
 ANGELEGT = re.compile(r"CREATE TABLE IF NOT EXISTS (\w+)", re.IGNORECASE)
+INHALT = {"id": "6f1c1e9e-0000-4000-8000-000000000285"}
 
-# Das Init-Skript, aus dem Test- und Produktionsdatenbanken vor #285 entstanden sind,
-# ohne GRANTs. Es wich vom Modell ab (Indizes, Trigger, Typ von usage_events.id);
-# die Migration 2026-10-27-init-angleichen.sql gleicht das an.
+# Fruehere Staende des Init-Skripts, aus denen Test- und Produktionsdatenbanken
+# entstanden sind, ohne GRANTs. Beide wichen vom Modell ab (Indizes, Trigger, Typ
+# von usage_events.id); die Migration 2026-10-26-init-angleichen.sql gleicht das an.
+# Der aeltere hat zudem noch die Spalten, die die Datensparsamkeit entfernt.
 INIT_VOR_285 = Path(__file__).with_name("init_vor_285.sql")
+INIT_VOR_DATENSPARSAMKEIT = Path(__file__).with_name("init_vor_datensparsamkeit.sql")
 
 
 def _schema_der(db: Datenbank) -> dict:
@@ -129,6 +133,20 @@ def _aus_init_skript(db: Datenbank, skript: Path) -> Datenbank:
     return db
 
 
+def _kette(db: Datenbank, mit_einmaligen: bool) -> None:
+    """
+    Alle Migrationen in der Reihenfolge der README, die wiederholbaren zweimal. Die
+    nur einmal lauffaehigen nur, wenn die Datenbank sie noch braucht.
+    """
+    for skript in SKRIPTE:
+        if skript.name in NUR_EINMAL:
+            if mit_einmaligen:
+                postgres.migration(db, skript)
+        else:
+            postgres.migration(db, skript)
+            postgres.migration(db, skript)
+
+
 def test_es_gibt_migrationen():
     """Ohne Skripte waere der parametrisierte Test still leer."""
     assert len(SKRIPTE) > 1
@@ -195,20 +213,49 @@ def test_init_skript_legt_das_schema_des_modells_an(wegwerf_schema, modell_schem
 
 
 @pytest.mark.parametrize(
-    "init", [postgres.INIT_SKRIPT, INIT_VOR_285], ids=["init", "init_vor_285"]
+    "init, mit_einmaligen",
+    [
+        (postgres.INIT_SKRIPT, False),
+        (INIT_VOR_285, False),
+        (INIT_VOR_DATENSPARSAMKEIT, True),
+    ],
+    ids=["init", "init_vor_285", "init_vor_datensparsamkeit"],
 )
-def test_kette_ab_init_skript_ergibt_das_modell(init, wegwerf_schema, modell_schema):
+def test_kette_ab_init_skript_ergibt_das_modell(
+    init, mit_einmaligen, wegwerf_schema, modell_schema
+):
     """
-    Eine Bestandsdatenbank aus dem Init-Skript hat nach der Kette, je Skript
-    zweimal, das Schema des Modells, Trigger eingeschlossen.
+    Eine Bestandsdatenbank aus dem Init-Skript hat nach der Kette, je
+    wiederholbarem Skript zweimal, das Schema des Modells, Trigger eingeschlossen.
     """
     db = _aus_init_skript(wegwerf_schema, init)
 
-    for skript in WIEDERHOLBAR:
-        postgres.migration(db, skript)
-        postgres.migration(db, skript)
+    _kette(db, mit_einmaligen)
 
     assert _abweichungen(_schema_der(db), modell_schema) == {}
+
+
+def test_kette_ab_aeltestem_init_skript_behaelt_die_nutzungen(wegwerf_schema):
+    """
+    Der Typwechsel von usage_events.id laesst Zeilen, IDs und den Stand der Sequenz
+    unberuehrt; die naechste Nutzung bekommt die naechste ID.
+    """
+    db = _aus_init_skript(wegwerf_schema, INIT_VOR_DATENSPARSAMKEIT)
+    with db.engine.begin() as c:
+        c.execute(text("INSERT INTO usage_tracking (content_id) VALUES (:id)"), INHALT)
+        c.execute(
+            text("INSERT INTO usage_events (content_id) VALUES (:id), (:id)"), INHALT
+        )
+        vorher = c.execute(text("SELECT id FROM usage_events ORDER BY id")).all()
+
+    _kette(db, mit_einmaligen=True)
+
+    with db.engine.begin() as c:
+        nachher = c.execute(text("SELECT id FROM usage_events ORDER BY id")).all()
+        c.execute(text("INSERT INTO usage_events (content_id) VALUES (:id)"), INHALT)
+        neu = c.execute(text("SELECT max(id) FROM usage_events")).scalar_one()
+    assert nachher == vorher
+    assert neu == vorher[-1][0] + 1
 
 
 def test_vergleich_sieht_das_init_skript_vor_285(wegwerf_schema, modell_schema):

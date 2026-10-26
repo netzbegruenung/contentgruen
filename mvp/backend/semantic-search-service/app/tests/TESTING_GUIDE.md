@@ -42,9 +42,9 @@ pytest tests/integration/               # Integration tests (Qdrant on :6333, Po
 
 Repositories, migrations and SQL scripts that only show their behaviour in a real
 database are tested in `tests/integration/` against PostgreSQL: migrations and
-`init.sql` against the model (`test_migrationen.py`), the timestamp of a Suchereignis (`test_suchereignisse.py`),
-"Suchen ohne Treffer" (`test_suchen_ohne_treffer.py`) and the deletion command
-(`test_loeschkommando.py`).
+`init.sql` against the model (`test_migrationen.py`), the timestamp of a
+Suchereignis (`test_suchereignisse.py`), "Suchen ohne Treffer"
+(`test_suchen_ohne_treffer.py`) and the deletion command (`test_loeschkommando.py`).
 
 ```bash
 # from mvp/backend/semantic-search-service/app

@@ -9,7 +9,7 @@
 -- Das Schema hier muss genau dem entsprechen, was create_all aus den Modellen
 -- (app/infrastructure/database/models.py) anlegt: Spalten, Defaults, Indizes,
 -- keine Trigger. tests/integration/test_migrationen.py prueft das. Bis #285 wich
--- es ab; Bestandsdatenbanken gleicht migrations/2026-10-27-init-angleichen.sql an.
+-- es ab; Bestandsdatenbanken gleicht migrations/2026-10-26-init-angleichen.sql an.
 
 -- Create usage tracking table
 CREATE TABLE IF NOT EXISTS usage_tracking (

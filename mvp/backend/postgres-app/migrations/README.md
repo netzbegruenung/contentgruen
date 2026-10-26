@@ -71,13 +71,14 @@ Idempotenz und Gleichheit mit `create_all` prüft der Integrationstest
 `mvp/backend/semantic-search-service/app/tests/integration/test_migrationen.py`
 gegen ein echtes PostgreSQL: Jedes Skript läuft zweimal auf einer Datenbank im
 aktuellen Schema, und die ganze Kette läuft auf einer Datenbank ohne die Tabellen,
-die Skripte selbst anlegen, sowie auf Datenbanken aus `init.sql`, dem heutigen und
-dem vor #285; danach muss das Schema dem von `create_all` gleichen (Spalten,
-Defaults, Indizes, Constraints, Sequenzen, Trigger, Funktionen). `init.sql` allein
-muss es ebenfalls ergeben. Ausgenommen ist
-`2026-08-25-usage-events-datensparsamkeit.sql`, das beim zweiten Lauf abbricht
-(„Erneut anwenden“); `2026-08-19-search-events-pseudonymisieren.sql` läuft mit,
-sein `TRUNCATE` trifft im Test nur leere Tabellen. Starten:
+die Skripte selbst anlegen, sowie auf Datenbanken aus `init.sql`: dem heutigen,
+dem vor #285 und dem ältesten der öffentlichen Historie; danach muss das Schema
+dem von `create_all` gleichen (Spalten, Defaults, Indizes, Constraints,
+Sequenzen, Trigger, Funktionen). `init.sql` allein muss es ebenfalls ergeben.
+Ausgenommen ist `2026-08-25-usage-events-datensparsamkeit.sql`, das beim zweiten
+Lauf abbricht („Erneut anwenden“); es läuft nur auf der Datenbank aus dem
+ältesten `init.sql`, dort einmal. `2026-08-19-search-events-pseudonymisieren.sql`
+läuft mit, sein `TRUNCATE` trifft im Test nur leere Tabellen. Starten:
 `tests/TESTING_GUIDE.md` im Semantic-Service, Abschnitt „Integration Tests Against
 PostgreSQL“. Den übrigen Inhalt des Kopfs prüft kein Test.
 
