@@ -111,7 +111,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
     this.satz.valueChanges
       .pipe(debounceTime(AUTOSAVE_VERZOEGERUNG_MS), takeUntil(this.destroy$))
-      .subscribe(() => this.entwurfSpeichern());
+      .subscribe(() => this.satzSpeichern());
   }
 
   /** Android friert die Seite beim App-Wechsel ein - vorher noch sichern. */
@@ -211,8 +211,8 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Der Hinweis zum Einwurf, sofern sie mehr ist als der Link selbst. */
-  get notiz(): string | null {
+  /** Der Hinweis zum Einwurf, sofern er mehr ist als der Link selbst. */
+  get hinweis(): string | null {
     const inhalt = this.einwurf?.content;
     return inhalt && inhalt !== this.einwurf?.url ? inhalt : null;
   }
@@ -229,7 +229,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   }
 
   onBlur(): void {
-    this.entwurfSpeichern();
+    this.satzSpeichern();
   }
 
   weiter(): void {
@@ -346,7 +346,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.navigation.unregisterBeforeBack(this.satzSichernVorZurueck);
     // Wer innerhalb der App wegnavigiert, verliert den Satz nicht.
-    this.entwurfSpeichern();
+    this.satzSpeichern();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -447,7 +447,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     );
   }
 
-  private entwurfSpeichern(): void {
+  private satzSpeichern(): void {
     this.speichernWennGeaendert().subscribe({
       error: (error) => this.logger.warn('Satz konnte nicht gespeichert werden', error),
     });

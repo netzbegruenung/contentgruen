@@ -171,7 +171,11 @@ export function tabAus(wert: unknown): FangkorbTab | null {
   if (typeof wert !== 'string') {
     return null;
   }
-  return TABS.find((eintrag) => eintrag.wert === wert)?.wert ?? (Object.hasOwn(FRUEHERE_TABS, wert) ? FRUEHERE_TABS[wert] : null);
+  const tab = TABS.find((eintrag) => eintrag.wert === wert);
+  if (tab) {
+    return tab.wert;
+  }
+  return Object.hasOwn(FRUEHERE_TABS, wert) ? FRUEHERE_TABS[wert] : null;
 }
 
 export function filterSpeichern(filter: FangkorbFilter): void {

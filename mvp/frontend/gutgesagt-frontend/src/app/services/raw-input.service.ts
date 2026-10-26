@@ -147,7 +147,7 @@ export class RawInputService {
     return this.http.get<RawInput>(this.einwurfUrl(id));
   }
 
-  /** Den eigenen Entwurfssatz speichern; ein leerer Satz loescht ihn. */
+  /** Den eigenen Satz speichern; ein leerer Satz loescht ihn. */
   saveDraft(id: string, sentence: string): Observable<DraftResponse> {
     return this.http
       .put<DraftResponse>(`${this.einwurfUrl(id)}/draft`, { sentence })
@@ -155,7 +155,7 @@ export class RawInputService {
   }
 
   /**
-   * Den Entwurfssatz sichern, wenn die Seite gleich eingefroren oder beendet wird.
+   * Den eigenen Satz sichern, wenn die Seite gleich eingefroren oder beendet wird.
    *
    * Android raeumt die PWA beim Wechsel in eine andere App weg; ein normaler
    * XHR wird dabei abgebrochen. fetch mit keepalive darf die Seite ueberleben.

@@ -656,7 +656,7 @@ class TestStatuswechsel:
         assert antwort.status_code == 422
         repository.set_status.assert_not_called()
 
-    def test_verarbeitet_mit_unbekanntem_beitrag_ist_422(
+    def test_ausformuliert_mit_unbekanntem_beitrag_ist_422(
         self, client, repository, beitraege
     ):
         """Eine erfundene ID setzt keinen fremden Einwurf auf "ausformuliert"."""
