@@ -18,6 +18,7 @@ Weg "Beitrag ergaenzen" - unterschieden allein ueber das Feld `source`; nur dort
 bleibt die Person Autorin.
 """
 
+import logging
 import uuid
 
 import pytest
@@ -169,6 +170,28 @@ class TestSuchpfadBackend:
         assert author == SEARCH_QUERY_AUTHOR
         assert "testuser" not in author
         assert origin is ContentOrigin.SEARCH_QUERY
+
+
+@pytest.mark.api
+class TestSuchpfadOhneLogzeile:
+    """
+    Eine Logzeile je Suche traegt die genaue Uhrzeit. Durchgezaehlt je Tag passt die
+    k-te Zeile zum k-ten Suchereignis (fortlaufende id) und gibt ihm die Uhrzeit
+    zurueck, die search_events seit #239 nicht mehr speichert. Damit waere die
+    Aussage aus der Suche wieder dem Tagespseudonym zuordenbar.
+    """
+
+    def test_search_by_text_protokolliert_auf_info_nichts(
+        self, statement_service, caplog
+    ):
+        with caplog.at_level(logging.INFO):
+            resp = TestClient(app).post(
+                SEARCH_URL, json={"query_text": "klimaschutz", "limit": 10}
+            )
+
+        assert resp.status_code == 200
+        # httpx ist der Test-Client, nicht der Dienst.
+        assert [r.getMessage() for r in caplog.records if r.name != "httpx"] == []
 
 
 @pytest.mark.api
