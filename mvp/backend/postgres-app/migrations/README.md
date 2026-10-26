@@ -59,6 +59,14 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
 
 ## Konvention für neue Migrationen
 
+Der Unit-Test
+`mvp/backend/semantic-search-service/app/tests/unit/test_migrationskonvention.py`
+prüft für jede Datei hier den Dateinamen, die letzte Kopfzeile, dass kein
+Kommentar einen Befehl zum Anwenden enthält, und die Transaktion. Den übrigen
+Inhalt des Kopfs, die Idempotenz und die Gleichheit mit `create_all` prüft er
+nicht. Er läuft mit den Unit-Tests: im Pre-commit-Hook, mit
+`make test-backend(-fast)` und in der GitHub-CI nach dem Merge.
+
 - **Dateiname:** `JJJJ-MM-TT-<thema>.sql`, Datum der Erstellung, Thema kurz,
   kleingeschrieben, mit Bindestrichen. Das Datum legt die Reihenfolge fest;
   bei gleichem Datum gilt die alphabetische Reihenfolge des Dateinamens.
@@ -69,14 +77,17 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
   3. wie vorhandene Daten nachgetragen oder verworfen werden,
   4. als letzte Zeile: `-- Anwenden: siehe README.md in diesem Verzeichnis.`
 
-  Den Befehl selbst nicht in den Kopf kopieren. Er steht nur hier, damit eine
-  Umbenennung (Container, Datenbank, Pfad) nur diese Datei ändert.
+  Den Befehl selbst nicht in den Kopf oder einen anderen Kommentar kopieren.
+  Er steht nur hier, damit eine Umbenennung (Container, Datenbank, Pfad) nur
+  diese Datei ändert.
 - **Idempotent:** `IF NOT EXISTS` / `IF EXISTS` und Nachträge, die einen zweiten
   Lauf überstehen. Ein neues Skript darf mehrfach laufen, ohne Daten zu
   verlieren. Geht das nicht, sagt der Kopf es ausdrücklich und hier steht es
   unter „Erneut anwenden“.
 - **Transaktion:** `BEGIN;` am Anfang, `COMMIT;` am Ende. Was nicht in einer
-  Transaktion laufen darf (etwa `VACUUM`), steht danach und ist im Kopf erklärt.
+  Transaktion laufen darf, steht danach und ist im Kopf erklärt. Der Test lässt
+  dort nur `VACUUM` und die `CONCURRENTLY`-Formen von `CREATE INDEX`,
+  `DROP INDEX` und `REINDEX` zu.
 - **Gleiches Schema wie `create_all`:** Was das Skript anlegt, muss genau dem
   entsprechen, was die SQLAlchemy-Modelle in einer neuen Datenbank erzeugen.
   Ändert sich eine Tabelle, die auch `mvp/backend/postgres-app/init.sql`

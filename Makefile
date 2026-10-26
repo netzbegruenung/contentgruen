@@ -58,10 +58,9 @@ test-backend:
 	@echo "🧪 Running backend tests (matching GitHub Actions CI)..."
 	@echo "Note: On Windows, use 'make test-backend-fast' for better performance"
 	@echo "This command replicates the CI test environment (python:3.13)"
-	cd mvp/backend/semantic-search-service && \
 	docker run --rm \
-		-v "$(CURDIR)/mvp/backend/semantic-search-service:/app" \
-		-w /app \
+		-v "$(CURDIR):/repo" \
+		-w /repo/mvp/backend/semantic-search-service \
 		python:3.13 \
 		/bin/bash -c "pip install -r requirements.txt && cd app && python -m pytest tests/unit/ --ignore=tests/unit/services/test_seeding_implementation.py --tb=short -v"
 
