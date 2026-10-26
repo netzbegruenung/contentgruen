@@ -117,7 +117,7 @@ class Settings(BaseSettings):
     statement_search_limit: int = 5
     min_reply_suggestions_for_search: int = 1
 
-    # OpenAI vision API (caption suggestion for the image form)
+    # OpenAI vision API (suggested Unterschrift in the image form)
     # Accepts bare OPENAI_API_KEY (SDK default) or the prefixed SEMANTIC_SEARCH_OPENAI_API_KEY.
     #
     # PRIVACY WARNING -- setting this key enables a transfer to a third country.

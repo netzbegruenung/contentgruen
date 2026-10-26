@@ -13,8 +13,7 @@ class AddImageRequest(BaseModel):
     @field_validator("image")
     @classmethod
     def unterschrift_erforderlich(cls, image: Image) -> Image:
-        # Ohne Unterschrift ist es kein Bild (GLOSSARY.md). Die Person schreibt sie
-        # oder uebernimmt einen KI-Vorschlag; nachgeschrieben wird nichts (ADR 0003).
+        # Ohne Unterschrift ist es kein Bild (GLOSSARY.md, ADR 0003).
         if not image.text or not image.text.strip():
             raise ValueError("Ein Bild braucht eine Unterschrift")
         return image

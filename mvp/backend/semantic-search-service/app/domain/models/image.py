@@ -14,10 +14,9 @@ class Image(BaseContent):
     A captioned image captured as searchable political content.
 
     The 'text' field (inherited from BaseContent, overridden to Optional here) holds
-    the Unterschrift used for semantic search. New images need one (AddImageRequest);
-    an AI suggestion counts only once the person takes it over (ADR 0003). The field
-    stays Optional so that entries without Unterschrift from before #281
-    (pending_description) can still be read.
+    the Unterschrift used for semantic search. New images need one (AddImageRequest,
+    ADR 0003); the field stays Optional so that entries without Unterschrift from
+    before #281 (pending_description) can still be read.
 
     Attributes:
     -----------

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 import datetime
 import json
-from typing import Any, Dict, List, Optional, Type, TypeVar, Generic
+from typing import List, Optional, Type, TypeVar, Generic
 import os
 import uuid
 import logging
@@ -23,7 +23,6 @@ from domain.models.content_status import (
     ALT_AUFFINDBAR,
     AUSGEBLENDET,
     AUSGEBLENDET_WERTE,
-    FELD_STATUS_VOR_SPERRE,
     ContentStatus,
 )
 from domain.models.content_origin import ContentOrigin

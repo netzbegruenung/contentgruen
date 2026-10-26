@@ -122,7 +122,7 @@ class TestImageRepository:
     async def test_upsert_without_caption_stores_item(
         self, repository, test_embeddings_manager
     ):
-        """Phase B path: image stored without caption (text=None)."""
+        """Altbestand von vor #281: ein Bild ohne Unterschrift (text=None) bleibt speicher- und lesbar."""
         test_id = uuid.uuid4()
         new_item = ImageDbEntry(
             id=test_id,

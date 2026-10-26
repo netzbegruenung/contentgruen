@@ -1,6 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Type, TypeVar, Generic
+from typing import List, Optional, Type, TypeVar, Generic
 import uuid
 import logging
 
@@ -168,7 +168,8 @@ class BaseContentService(
         )
 
         content_db_entry: ContentDbEntry = ContentDbEntry(
-            text=input_db_entry.text or "",  # coerce None → "" for captionless images
+            text=input_db_entry.text
+            or "",  # coerce None → "" for images without Unterschrift from before #281
             content_type=input_db_entry.content_type,
             id=input_db_entry.id,
             created=input_db_entry.created,

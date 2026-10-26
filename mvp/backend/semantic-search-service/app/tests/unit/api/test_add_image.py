@@ -5,8 +5,6 @@ gespeichert wird er erst, wenn die Person ihn uebernimmt und absendet. Ein Bild
 ohne Unterschrift, das ein Hintergrunddienst nachbeschreibt, gibt es nicht mehr.
 """
 
-import uuid
-
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import FastAPI
@@ -88,7 +86,7 @@ class TestSuggestCaption:
         image_service.add.assert_not_awaited()
 
 
-def test_kein_dienst_beschreibt_bilder_im_hintergrund():
+def test_image_description_worker_entfernt():
     """Ohne Hintergrunddienst schickt nur der Klick auf den Vorschlag Daten an die KI."""
     import importlib.util
 

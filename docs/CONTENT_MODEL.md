@@ -146,8 +146,8 @@ is now ~280 lines and new types are searched automatically — no new branch.
 
 ### No asynchronous AI ingestion
 
-An earlier version stored captionless images as `PENDING_DESCRIPTION` and let a background worker
-write the caption and make the image visible. That contradicted ADR 0003 and was removed (#281):
+An earlier version stored images without Unterschrift as `PENDING_DESCRIPTION` and let a background
+worker write it and make the image visible. That contradicted ADR 0003 and was removed (#281):
 `/image/addImage` rejects an image without Unterschrift (422). `PENDING_DESCRIPTION` and
 `DESCRIPTION_FAILED` remain in `ContentStatus` only so that such entries from before stay readable;
 search never finds them.
