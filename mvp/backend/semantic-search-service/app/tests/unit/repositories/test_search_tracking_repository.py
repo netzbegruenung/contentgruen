@@ -6,6 +6,7 @@ wuerde: Trefferzahl, Tagespseudonym und als Zeitstempel nur der Tag (Mitternacht
 UTC), keine Uhrzeit.
 """
 
+import logging
 from datetime import date, datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -44,7 +45,7 @@ def _gespeichertes_ereignis(session) -> SearchEvent:
 class TestTrackSearch:
     def test_speichert_nur_den_tag_als_zeitstempel(self, repository, session):
         assert repository.track_search(
-            results_count=0, actor_hash="a" * 64, tag=date(2026, 10, 26)
+            results_count=0, actor_hash="a" * 64, day=date(2026, 10, 26)
         )
 
         ereignis = _gespeichertes_ereignis(session)
@@ -57,9 +58,9 @@ class TestTrackSearch:
     ):
         """Zwei Suchen eines Tages tragen denselben Zeitstempel; eine Aussage, die
         eine von ihnen angelegt hat, laesst sich ueber die Uhrzeit keiner zuordnen."""
-        repository.track_search(results_count=0, tag=date(2026, 10, 26))
+        repository.track_search(results_count=0, day=date(2026, 10, 26))
         frueh = _gespeichertes_ereignis(session).timestamp
-        repository.track_search(results_count=3, tag=date(2026, 10, 26))
+        repository.track_search(results_count=3, day=date(2026, 10, 26))
         spaet = _gespeichertes_ereignis(session).timestamp
 
         assert frueh == spaet
@@ -70,3 +71,11 @@ class TestTrackSearch:
 
         assert "date_trunc('day'" in default
         assert "UTC" in default
+
+    def test_protokolliert_die_suche_nicht(self, repository, caplog):
+        """Eine Logzeile je Suche traegt die Uhrzeit und liesse sich ueber die
+        Reihenfolge den Suchereignissen des Tages zuordnen."""
+        with caplog.at_level(logging.DEBUG):
+            repository.track_search(results_count=0, day=date(2026, 10, 26))
+
+        assert caplog.records == []

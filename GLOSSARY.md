@@ -171,8 +171,12 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und ein täglich wechselndes Pseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Ohne Uhrzeit lässt sich ein Suchereignis nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Ohne Uhrzeit lässt sich ein Suchereignis nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat.
 _Avoid_: Search Event, Suchprotokoll, Suchlog
+
+**Tagespseudonym**:
+Ein Wert, der dieselbe Person an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg und nicht zurück auf sie. Er steht an Suchereignissen statt einer Kennung.
+_Avoid_: Actor-Hash, Hash, anonyme ID
 
 **Suche ohne Treffer**:
 Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen.
