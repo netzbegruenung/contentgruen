@@ -348,6 +348,7 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
     # an ihre Aussage gehaengt.
     assert angelegt["statement_id"] is not None
     assert dublette["statement_id"] is None
+    assert dublette["verknuepft"] is False
 
     manager = commentary_service._repository._shared_manager
 

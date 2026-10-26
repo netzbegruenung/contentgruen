@@ -359,6 +359,7 @@ class TestAddCommentaryAntwort:
 
         assert resp.json()["id"] == str(anderer)
         assert resp.json()["dublette"] is True
+        assert resp.json()["verknuepft"] is False
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
     def test_vorhanden_nehmen_legt_nie_einen_neuen_an(self, dienste):
@@ -581,6 +582,7 @@ class TestAddCommentaryAntwort:
         assert resp.json()["dublette"] is True
         assert resp.json()["vorhanden_titel"] == VORHANDEN_TITEL
         assert resp.json()["vorhanden_eigen"] is False
+        assert resp.json()["verknuepft"] is False
         commentary_service.add_commentary.assert_not_awaited()
 
     def test_trotz_dublette_von_gilt_nur_fuer_den_gezeigten(self, dienste):
