@@ -39,6 +39,7 @@ public class LogPseudonymTests
     [Theory]
     [InlineData("/api/v1/usage/users/user-001/usage-stats", "/api/v1/usage/users/85c5fb49/usage-stats")]
     [InlineData("/api/v1/usage/users/user-001", "/api/v1/usage/users/85c5fb49")]
+    [InlineData("/API/V1/Usage/Users/user-001/usage-stats", "/API/V1/Usage/Users/85c5fb49/usage-stats")]
     [InlineData("/api/v1/statement/addStatement", "/api/v1/statement/addStatement")]
     [InlineData("/api/v1/usage/content/abc/usage", "/api/v1/usage/content/abc/usage")]
     public void InPath_ReplacesOnlyTheKennungSegment(string path, string expected)

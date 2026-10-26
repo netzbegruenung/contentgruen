@@ -6,10 +6,11 @@ Nutzerkennung darf in keiner Logzeile im Klartext landen -- auch nicht auf
 DEBUG, weil der Dev-Stack mit SEMANTIC_SEARCH_LOG_LEVEL=DEBUG laeuft.
 """
 
-import asyncio
 import logging
 import uuid
 from unittest.mock import Mock, patch
+
+import pytest
 
 from api.v1.usage import run_cleanup_manually
 from core.logging import log_pseudonym
@@ -40,6 +41,13 @@ class TestLogPseudonym:
 
     def test_empty_identifier_is_treated_as_anonymous(self):
         assert log_pseudonym("") == "anonymous"
+
+    def test_matches_the_bff(self):
+        # Dieselben Werte stehen in BFF.Tests/Logging/LogPseudonymTests.cs. Weichen die
+        # beiden Rechnungen ab, passen die Zeilen von BFF und Suchdienst nicht mehr
+        # zusammen, ohne dass ein Test auf nur einer Seite das merkt.
+        assert log_pseudonym("user-001") == "85c5fb49"
+        assert log_pseudonym("Grüne-01") == "ea6a3637"
 
 
 class TestVotingServiceLogging:
@@ -94,7 +102,8 @@ class TestVotingServiceLogging:
 class TestManualCleanupLogging:
     """Der manuelle Cleanup nannte die Kennung des Admins im Klartext auf INFO (#277)."""
 
-    def test_run_cleanup_manually_does_not_log_the_raw_admin_id(self, caplog):
+    @pytest.mark.asyncio
+    async def test_run_cleanup_manually_does_not_log_the_raw_admin_id(self, caplog):
         settings = Mock()
         settings.is_admin_user.return_value = True
         usage_service = Mock()
@@ -102,10 +111,8 @@ class TestManualCleanupLogging:
 
         with patch("api.v1.usage.get_usage_service", return_value=usage_service):
             with caplog.at_level(logging.DEBUG):
-                asyncio.run(
-                    run_cleanup_manually(
-                        days_to_keep=30, current_user="admin-001", settings=settings
-                    )
+                await run_cleanup_manually(
+                    days_to_keep=30, current_user="admin-001", settings=settings
                 )
 
         assert "admin-001" not in caplog.text

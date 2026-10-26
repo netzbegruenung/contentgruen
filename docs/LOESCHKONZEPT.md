@@ -149,14 +149,15 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
     (`BFF/Proxy/IdentityHeaderTransform.cs`). Wo eine Warn- oder Fehlerzeile den Pfad
-    nennt, steht die Kennung darin ebenfalls nur als Pseudonym (`LogPseudonym.InPath()`). Die Zeilen, in denen YARP jede Weiterleitung
-    mit Ziel-URL protokolliert, sind unterdrückt (Kategorie `Yarp` auf `Warning`,
-    `BFF/Program.cs`); manche Pfade tragen die Kennung
-    (`/api/v1/usage/users/{id}/usage-stats`). Die Zeilen von ASP.NET Core selbst (u. a.
-    „Request starting“ mit Pfad) stehen erst ab Warning, aber nur über
-    `Microsoft.AspNetCore` in `BFF/appsettings.json`; ein Log-Level von außen, das diese
-    Kategorie herabsetzt, bringt die Pfade zurück; ebenso eines für eine Unterkategorie von
-    YARP (etwa `Logging__LogLevel__Yarp.ReverseProxy`), das die Regel im Code übersteuert.
+    nennt, steht die Kennung darin ebenfalls nur als Pseudonym (`LogPseudonym.InPath()`).
+    Manche Pfade tragen die Kennung (`/api/v1/usage/users/{id}/usage-stats`). Deshalb sind
+    die Zeilen unterdrückt, in denen YARP jede Weiterleitung mit Ziel-URL und ASP.NET Core
+    jede Anfrage mit Pfad („Request starting“) protokolliert: Die Kategorien `Yarp` und
+    `Microsoft.AspNetCore` stehen im Code auf `Warning` (`BFF/Program.cs`), unabhängig von
+    `BFF/appsettings.json`. Ein Log-Level von außen für genau diese Kategorien ändert daran
+    nichts. Eines für eine Unterkategorie (etwa `Logging__LogLevel__Yarp.ReverseProxy` oder
+    `Logging__LogLevel__Microsoft.AspNetCore.Hosting`) übersteuert die Regel aber und bringt
+    die Pfade zurück.
   - **Semantic-Service, Texte:** Ab INFO steht weder die Suchanfrage (`api/v1/search.py`,
     nur `limit`; Fehlerzweig in
     `repositories/implementations/qdrant/statement_repository.py`) noch der Text einer
@@ -182,7 +183,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     des Basis-Images `nginx:alpine` nach stdout
     (`mvp/frontend/gutgesagt-frontend/Dockerfile:31`). Hinter dem vorgelagerten Reverse
     Proxy steht dort dessen Adresse, nicht die des Besuchers; Zeitpunkt, Pfad, Referrer
-    und User-Agent stehen darin.
+    und User-Agent stehen darin. Der Pfad trägt bei der Nutzungsstatistik unter „Meine
+    Beiträge“ die **Kennung im Klartext** (`/api/v1/usage/users/{id}/usage-stats`,
+    aufgerufen in `usage-tracking.service.ts`), hier wie im Zugriffsprotokoll des
+    vorgelagerten Reverse Proxy; die Regeln im BFF erreichen diese Zeilen nicht.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
     Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als

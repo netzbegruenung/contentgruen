@@ -16,10 +16,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
-// YARP schreibt jede Weiterleitung samt Ziel-URL auf Information, und manche Pfade tragen
-// die Kennung (/api/v1/usage/users/{id}/...). Wie uvicorn.access im Suchdienst erst ab
-// Warning. Im Code statt in appsettings.json, damit es auch ohne die Datei gilt (#277).
+// YARP schreibt jede Weiterleitung samt Ziel-URL auf Information, ASP.NET Core jede Anfrage
+// samt Pfad ("Request starting ..."), und manche Pfade tragen die Kennung
+// (/api/v1/usage/users/{id}/...). Wie uvicorn.access im Suchdienst erst ab Warning. Im Code
+// statt nur in appsettings.json, damit es auch ohne die Datei gilt (#277).
 builder.Logging.AddFilter("Yarp", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 
 var useKeycloak = builder.Configuration.GetValue<bool>("USE_KEYCLOAK", defaultValue: true);
 
@@ -253,7 +255,7 @@ builder.Services.AddReverseProxy()
                     var httpContext = transformContext.HttpContext;
                     var logger = httpContext.RequestServices.GetRequiredService<ILogger<Program>>();
 
-                    logger.LogTrace("Processing request transform for path: {Path}", httpContext.Request.Path.Value);
+                    logger.LogTrace("Processing request transform for path: {Path}", LogPseudonym.InPath(httpContext.Request.Path.Value));
 
                     IdentityHeaderTransform.Apply(
                         transformContext.ProxyRequest,

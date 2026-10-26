@@ -13,10 +13,11 @@ public sealed class CapturingLoggerProvider : ILoggerProvider
 {
     public ConcurrentQueue<(string Category, LogLevel Level, string Message)> Entries { get; } = new();
 
-    public string TextFrom(string categoryPrefix, LogLevel minimum) => string.Join(
+    /// <summary>Alle Zeilen ab dieser Stufe, ueber alle Kategorien.</summary>
+    public string TextAtOrAbove(LogLevel minimum) => string.Join(
         Environment.NewLine,
         Entries
-            .Where(e => e.Category.StartsWith(categoryPrefix, StringComparison.Ordinal) && e.Level >= minimum)
+            .Where(e => e.Level >= minimum)
             .Select(e => $"{e.Category} {e.Level}: {e.Message}"));
 
     public ILogger CreateLogger(string categoryName) => new Logger(this, categoryName);

@@ -40,15 +40,18 @@ public static class LogPseudonym
     /// </summary>
     public static string InPath(string? path)
     {
-        if (string.IsNullOrEmpty(path) || !path.StartsWith(UsersPrefix, StringComparison.Ordinal))
+        // Das Routing von ASP.NET Core und YARP ignoriert Gross- und Kleinschreibung, also
+        // auch dieser Vergleich; sonst stuende /API/v1/usage/users/{id} im Klartext im Log.
+        if (string.IsNullOrEmpty(path) || !path.StartsWith(UsersPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return path ?? "";
         }
 
+        var prefix = path[..UsersPrefix.Length];
         var rest = path[UsersPrefix.Length..];
         var end = rest.IndexOf('/');
         var userId = end < 0 ? rest : rest[..end];
         var tail = end < 0 ? "" : rest[end..];
-        return UsersPrefix + Of(userId) + tail;
+        return prefix + Of(userId) + tail;
     }
 }

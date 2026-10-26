@@ -270,18 +270,27 @@ public class AuthGatePipelineTests
         Assert.False(await UserInfoIsAdmin(adminUserIds: null));
     }
 
-    [Fact]
-    public async Task ProxiedRequest_DoesNotPutTheTargetUrlIntoTheLog()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Information")]
+    public async Task ProxiedRequest_DoesNotPutTheTargetUrlIntoTheLog(string? levelFromOutside)
     {
         // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information ("Proxying to ...").
         // Einige Pfade tragen die Kennung, etwa die Nutzungsstatistik unter "Meine Beitraege".
         // Dasselbe gilt fuer "Request starting ..." von ASP.NET Core. Program.cs hebt Yarp
-        // auf Warning, BFF/appsettings.json die Kategorie Microsoft.AspNetCore (#277).
-        // Geprueft an der echten Pipeline und ueber alle Kategorien. Die Datei liegt per
-        // ProjectReference auch im Testverzeichnis, das hier Content-Root ist, und gilt also
-        // mit -- trotz "hermetisch" in CreateHost.
+        // und Microsoft.AspNetCore im Code auf Warning (#277), also auch dann, wenn die
+        // Konfiguration (appsettings.json, Logging__LogLevel__...) diese Kategorien
+        // herabsetzt. Geprueft an der echten Pipeline und ueber alle Kategorien.
         var logs = new CapturingLoggerProvider();
-        using var factory = CreateHost(useKeycloak: true, logs: logs);
+        using var host = CreateHost(useKeycloak: true, logs: logs);
+        using var fromOutside = levelFromOutside is null
+            ? null
+            : host.WithWebHostBuilder(builder =>
+            {
+                builder.UseSetting("Logging:LogLevel:Yarp", levelFromOutside);
+                builder.UseSetting("Logging:LogLevel:Microsoft.AspNetCore", levelFromOutside);
+            });
+        var factory = fromOutside ?? host;
         using var client = factory.CreateClient(
             new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
@@ -291,6 +300,6 @@ public class AuthGatePipelineTests
 
         // 502: YARP hat weitergeleitet (und kein Backend gefunden), die Zeile waere also entstanden.
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
-        Assert.DoesNotContain("test-user", logs.TextFrom("", LogLevel.Information));
+        Assert.DoesNotContain("test-user", logs.TextAtOrAbove(LogLevel.Information));
     }
 }
