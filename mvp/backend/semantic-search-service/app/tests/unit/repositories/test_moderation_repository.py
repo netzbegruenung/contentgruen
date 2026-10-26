@@ -70,7 +70,7 @@ class TestSperrenEntsperren:
     async def test_entsperren_stellt_status_wieder_her(self, repo, speicher):
         await repo.sperren(BEITRAG_ID, status_vorher="approved")
 
-        await repo.entsperren(BEITRAG_ID, status_vorher="approved")
+        await repo.entsperren(BEITRAG_ID)
 
         assert _payload(speicher)["status"] == "approved"
         assert "status_vor_sperre" not in _payload(speicher)
@@ -80,12 +80,16 @@ class TestSperrenEntsperren:
     ):
         await repo.sperren(BEITRAG_ID, status_vorher=None)
 
-        await repo.entsperren(BEITRAG_ID, status_vorher=None)
+        await repo.entsperren(BEITRAG_ID)
 
         assert "status" not in _payload(speicher)
         assert "status_vor_sperre" not in _payload(speicher)
 
-    async def test_gesperrte_listet_nur_gesperrte(self, repo, speicher):
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestGesperrte:
+    async def test_listet_nur_gesperrte(self, repo, speicher):
         anderer = str(uuid.uuid4())
         speicher.add_test_data(
             "reference",
@@ -109,7 +113,11 @@ class TestEntfernen:
     async def test_unbekannter_beitrag(self, repo):
         assert await repo.entfernen(str(uuid.uuid4())) is False
 
-    async def test_entfernt_verweise_aus_aussagen(self, repo, speicher):
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestAusAussagenEntfernen:
+    async def test_entfernt_verweis_aus_aussage(self, repo, speicher):
         aussage_id = str(uuid.uuid4())
         andere_antwort = str(uuid.uuid4())
         speicher.add_test_data(

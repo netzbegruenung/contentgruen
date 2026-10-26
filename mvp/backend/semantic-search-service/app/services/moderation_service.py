@@ -12,7 +12,6 @@ from repositories.content_report_repository import (
     get_content_report_repository,
 )
 from repositories.implementations.qdrant.moderation_repository import (
-    FELD_STATUS_VOR_SPERRE,
     get_moderation_repository,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
@@ -246,9 +245,7 @@ class ModerationService:
         if beitrag.get("status") != ContentStatus.BLOCKED.value:
             return True
 
-        await self.moderation_repo.entsperren(
-            content_id, status_vorher=beitrag.get(FELD_STATUS_VOR_SPERRE)
-        )
+        await self.moderation_repo.entsperren(content_id)
         logger.info(f"Content {content_id} entsperrt")
         return True
 

@@ -22,10 +22,10 @@ class IModerationRepository(ABC):
         pass
 
     @abstractmethod
-    async def entsperren(self, beitrag_id: str, status_vorher: Optional[str]) -> None:
+    async def entsperren(self, beitrag_id: str) -> None:
         """
-        Den gemerkten Status zurueckschreiben. Ohne Status von vorher (Altbestand)
-        das Status-Feld entfernen.
+        Den beim Sperren gemerkten Status zurueckschreiben. Ohne Status von vorher
+        (Altbestand) das Status-Feld entfernen.
         """
         pass
 

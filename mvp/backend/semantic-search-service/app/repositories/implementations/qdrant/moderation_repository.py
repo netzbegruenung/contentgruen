@@ -21,6 +21,11 @@ FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 AUSSAGEN_JE_SEITE = 100
 
 
+def _nur(feld: str, wert: str) -> Filter:
+    """Filter auf Punkte, deren Payload-Feld genau diesen Wert hat."""
+    return Filter(must=[FieldCondition(key=feld, match=MatchValue(value=wert))])
+
+
 class QdrantModerationRepository(IModerationRepository):
     """Moderationszugriff auf die Qdrant-Collection aller Beitraege, ohne Sperrfilter."""
 
@@ -48,7 +53,10 @@ class QdrantModerationRepository(IModerationRepository):
             points=[beitrag_id],
         )
 
-    async def entsperren(self, beitrag_id: str, status_vorher: Optional[str]) -> None:
+    async def entsperren(self, beitrag_id: str) -> None:
+        beitrag = await self.laden(beitrag_id) or {}
+        status_vorher = beitrag.get(FELD_STATUS_VOR_SPERRE)
+
         # Zwei Schreibvorgaenge; scheitert der zweite, bleibt nur das Hilfsfeld
         # stehen, der Beitrag ist trotzdem entsperrt.
         if status_vorher:
@@ -67,14 +75,7 @@ class QdrantModerationRepository(IModerationRepository):
     async def gesperrte(self, limit: int) -> List[Dict[str, Any]]:
         punkte, _ = await self._client.scroll(
             collection_name=self._collection,
-            scroll_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="status",
-                        match=MatchValue(value=ContentStatus.BLOCKED.value),
-                    )
-                ]
-            ),
+            scroll_filter=_nur("status", ContentStatus.BLOCKED.value),
             limit=limit,
             with_payload=True,
             with_vectors=False,
@@ -91,14 +92,7 @@ class QdrantModerationRepository(IModerationRepository):
         while True:
             punkte, naechster = await self._client.scroll(
                 collection_name=self._collection,
-                scroll_filter=Filter(
-                    must=[
-                        FieldCondition(
-                            key="content_type",
-                            match=MatchValue(value=ContentType.STATEMENT.value),
-                        )
-                    ]
-                ),
+                scroll_filter=_nur("content_type", ContentType.STATEMENT.value),
                 limit=AUSSAGEN_JE_SEITE,
                 offset=offset,
                 with_payload=True,
