@@ -1,3 +1,5 @@
+> **Historisch:** Dieses Dokument ist ein Beleg früherer Planung und teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # Nachlese Destillier-Ablauf v1
 
 Stand: 13.09.2026. Gesammelt bei der Analyse und Umsetzung des Destillier-Ablaufs
@@ -117,7 +119,7 @@ liegt nur im Payload.
     `mvp/data/seed/v1.0/statements_with_commentaries/top10.json`; „Stadtflucht dank
     Grüner Politik“ lässt sich gegen die eigene Position lesen. Ob es einen Update-Weg für
     Titel bestehender Einträge gibt, ist ungeklärt.
-17. Veraltete Doku: `docs/ROHINPUT.md:3-4` („Nichts davon ist implementiert“),
+17. Veraltete Doku: `docs/archiv/ROHINPUT.md:5-6` („Nichts davon ist implementiert“),
     `docs/DATENSCHUTZ_BESTANDSAUFNAHME.md` verweist auf `dtos/raw_input.py:97` (tatsächlich
     `:102`, seit v1 verschoben).
 18. Der lokale Dev-Stack enthielt drei Testeinträge vom 13.08. („Testinhalt Quellen-Flush“,

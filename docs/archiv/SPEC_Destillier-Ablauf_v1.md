@@ -1,3 +1,5 @@
+> **Historisch:** Dieses Dokument ist ein Beleg früherer Planung und teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # Spezifikation: Destillier-Ablauf v1 (Fangkorb → Beitrag)
 
 Stand: 13.09.2026, Ergebnis einer strukturierten Befragung. Entscheidungen sind markiert als **[E]** (vom Product Owner entschieden) oder **[A]** (Annahme, in Phase 1 bestätigen). Zeitbox für die Umsetzung: ein Nachmittag. Wenn das nicht reicht, wird v1 verkleinert, nicht verlängert.

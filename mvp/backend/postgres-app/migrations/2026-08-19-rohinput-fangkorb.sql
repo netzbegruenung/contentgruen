@@ -1,7 +1,7 @@
 -- Fangkorb: Rohinput als eigene Entitaet
 --
 -- Rohinput ist bewusst kein ContentType in Qdrant, sondern ein Arbeitsvorrat
--- daneben (Begruendung: docs/ROHINPUT.md, Variante C). Er wird nie gesucht,
+-- daneben (Begruendung: docs/archiv/ROHINPUT.md, Variante C). Er wird nie gesucht,
 -- kopiert oder bewertet, aber sein Zustand aendert sich - und eine spaetere
 -- Zuweisung ist ein Wettlauf zweier Nutzer um dieselbe Zeile, den nur eine
 -- Transaktion entscheidet.

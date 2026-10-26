@@ -1,11 +1,13 @@
+> **Historisch:** Dieses Dokument ist ein Beleg früherer Planung und teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # Rohinput ("Fangkorb") — Analyse und Entwurf
 
 > Status: **Entwurf, Phase 1 (Analyse).** Nichts davon ist implementiert. Das Dokument
 > beantwortet fünf Fragen: Wo gehört Rohinput ins Modell, wo liegt der Übergang zum
 > fertigen Beitrag, welche Felder braucht er, was ist die kleinste sichtbare Umsetzung,
 > und was am Datenmodell würde eine spätere Queue mit Zuweisung und Punkten blockieren.
-> Companion zu [CONTENT_MODEL.md](./CONTENT_MODEL.md) (Architektur) und
-> [ROADMAP.md](./ROADMAP.md) (Reihenfolge).
+> Companion zu [CONTENT_MODEL.md](../CONTENT_MODEL.md) (Architektur) und
+> [ROADMAP.md](../ROADMAP.md) (Reihenfolge).
 
 ## Die Idee in einem Satz
 
@@ -242,7 +244,7 @@ eigenen, sichtbar getrennten Schritt planen — und im UI nicht so tun, als ging
 Ein Fangkorb sammelt fremde Inhalte (Posts namentlich bekannter Personen) wörtlich und
 dauerhaft. Der `post`-Typ tut das heute schon, der Fangkorb würde es in größerem Volumen und
 ohne Kuratierung tun. Das berührt die offenen Punkte in
-[RECHTSTEXTE_LUECKEN.md](./RECHTSTEXTE_LUECKEN.md) (Urheberrecht, personenbezogene Daten,
+[RECHTSTEXTE_LUECKEN.md](../RECHTSTEXTE_LUECKEN.md) (Urheberrecht, personenbezogene Daten,
 Löschkonzept). Kein Grund, nicht zu bauen — aber der interne Charakter des Fangkorbs
 (`ContentVisibility.INTERNAL` ist Default) sollte eine bewusste Zusage bleiben, keine
 Voreinstellung, die irgendwann jemand umstellt.

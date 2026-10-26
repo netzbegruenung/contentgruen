@@ -4,7 +4,7 @@ Das Schema des Fangkorbs festnageln.
 ``raw_input_content_links`` ist die n:m-Verknuepfung zwischen Einwurf und
 Beitrag. Eine schmale Tabelle ist die erste, die jemand beim Aufraeumen
 "vereinfacht" - etwa zu einem Feld ``resulting_content_id`` auf ``raw_inputs``.
-Das waere billiger und genau die Blockade, die docs/ROHINPUT.md (Abschnitt 6)
+Das waere billiger und genau die Blockade, die docs/archiv/ROHINPUT.md (Abschnitt 6)
 benennt: ein Einwurf kann mehrere Beitraege hervorbringen und ein Beitrag aus
 mehreren Einwuerfen entstehen.
 

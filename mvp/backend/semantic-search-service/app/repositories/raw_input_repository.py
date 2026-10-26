@@ -112,7 +112,7 @@ class RawInputRepository:
         Args:
             content: Hinweis fuer andere, oder der Fund selbst als Text
             url: Link auf den Beitrag draussen
-            image_url: Bild-URL (kein Upload, siehe docs/ROHINPUT.md)
+            image_url: Bild-URL (kein Upload, siehe docs/archiv/ROHINPUT.md)
             submitted_by: Wer eingeworfen hat; None fuer Kanaele ohne Sitzung
             source_channel: Herkunftskanal ("web" oder "share")
 

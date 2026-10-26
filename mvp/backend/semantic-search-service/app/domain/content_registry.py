@@ -4,7 +4,7 @@ Declarative content-type registry (rung-1 Step 5).
 Replaces the per-type ``Service`` subclass tower with one declarative ``ContentTypeSpec``
 per type, from which a generic ``BaseContentService`` is instantiated. See
 ``docs/CONTENT_MODEL.md`` ("A content-type registry replaces the per-type class tower")
-and ``docs/RUNG_1_PLAN.md`` Step 5.
+and its "Incremental migration path", step 5.
 
 This is the *minimal* introduction: each spec reuses the existing repository via the
 ``IRepositoryFactory`` (so persistence/search behavior is byte-for-byte unchanged), and

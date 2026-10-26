@@ -15,7 +15,7 @@ This is the rung-1 proof that adding a content type costs only *a spec + a model
   score (0.7*statement + 0.3*relevance) above ``MINIMUM_SCORE_THRESHOLD``; the
   direct-search phase applies ``DIRECT_MATCH_PENALTY`` and is score-magnitude sensitive.
 
-See ``docs/RUNG_1_PLAN.md`` Step 6 and ``docs/CONTENT_MODEL.md``.
+See ``docs/CONTENT_MODEL.md`` ("Incremental migration path", step 7).
 """
 
 import datetime
