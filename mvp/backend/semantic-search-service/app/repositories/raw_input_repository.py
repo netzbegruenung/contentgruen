@@ -148,20 +148,22 @@ class RawInputRepository:
         offset: int = 0,
         status: Optional[str] = None,
         current_user: Optional[str] = None,
+        submitted_by: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Einwuerfe auflisten: eigene zuerst, dann neueste zuerst.
 
-        Absichtlich ohne Filter auf die einwerfende Person: der Fangkorb ist ein
-        gemeinsamer Vorrat. ``current_user`` bestimmt nur die Reihenfolge und
-        welcher Satz als ``own_draft`` mitkommt. Sortiert wird in der Datenbank,
-        weil die Liste paginiert ist.
+        Der Fangkorb fragt ohne ``submitted_by``: er ist ein gemeinsamer Vorrat.
+        ``current_user`` bestimmt nur die Reihenfolge und welcher Satz als
+        ``own_draft`` mitkommt. Nur "Meine Einwuerfe" filtert auf den Einwerfer.
+        Sortiert und gefiltert wird in der Datenbank, weil die Liste paginiert ist.
 
         Args:
             limit: maximale Anzahl
             offset: zu ueberspringende Eintraege
             status: optionaler Filter auf einen Bearbeitungsstand
             current_user: die anfragende Person, oder None
+            submitted_by: nur die Einwuerfe dieses Einwerfers, oder alle
 
         Returns:
             List[Dict[str, Any]]: die Einwuerfe mit Bearbeitungsstand
@@ -171,6 +173,8 @@ class RawInputRepository:
                 query = session.query(RawInput)
                 if status is not None:
                     query = query.filter(RawInput.status == status)
+                if submitted_by is not None:
+                    query = query.filter(RawInput.submitted_by == submitted_by)
 
                 reihenfolge = [desc(RawInput.created_at)]
                 if current_user is not None:
@@ -204,13 +208,17 @@ class RawInputRepository:
             logger.error(f"Fehler beim Lesen eines Rohinputs: {e}", exc_info=True)
             raise
 
-    def count(self, status: Optional[str] = None) -> int:
-        """Anzahl der Einwuerfe, optional auf einen Bearbeitungsstand gefiltert."""
+    def count(
+        self, status: Optional[str] = None, submitted_by: Optional[str] = None
+    ) -> int:
+        """Anzahl der Einwuerfe, optional nach Bearbeitungsstand und Einwerfer."""
         try:
             with self.db.get_session() as session:
                 query = session.query(RawInput)
                 if status is not None:
                     query = query.filter(RawInput.status == status)
+                if submitted_by is not None:
+                    query = query.filter(RawInput.submitted_by == submitted_by)
                 return query.count()
         except Exception as e:
             logger.error(f"Fehler beim Zaehlen der Rohinputs: {e}", exc_info=True)
