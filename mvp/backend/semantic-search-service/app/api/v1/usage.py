@@ -62,6 +62,7 @@ class CleanupStatusResponse(BaseModel):
 
     running: bool
     retention_days: int
+    search_event_retention_days: int
     last_cleanup: Optional[str]
     last_cleanup_count: int
     next_cleanup: Optional[str]

@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 import pytest
 from pydantic import ValidationError
 
+from api.v1.usage import CleanupStatusResponse
 from core.config import Settings
 from services.cleanup import usage_cleanup_service
 
@@ -74,7 +75,9 @@ class TestUsageCleanupServiceSettings:
 
         status = usage_cleanup_service.get_cleanup_service().get_status()
 
-        assert status["search_event_retention_days"] == 120
+        # Ueber das Antwortmodell von GET /usage/cleanup/status, das unbekannte
+        # Felder verwerfen wuerde.
+        assert CleanupStatusResponse(**status).search_event_retention_days == 120
 
     def test_start_cleanup_scheduler_uses_configured_time(self, settings_from_env):
         settings_from_env(CLEANUP_HOUR="4", CLEANUP_MINUTE="15")
