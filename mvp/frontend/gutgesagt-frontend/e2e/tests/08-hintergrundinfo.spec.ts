@@ -3,6 +3,8 @@ import {
   aufErgebnisWarten,
   ausfuellen,
   einwurfAnlegen,
+  einwurfStand,
+  ergebnisKnoepfe,
   expect,
   lauf,
   speichernUndErgebnis,
@@ -54,7 +56,7 @@ test('Hintergrundinfo verfassen: Aufbau, neue Aussage, Ergebnisseite', async ({ 
       `${TESTDATEN_PRAEFIX} Bei 800 Watt und 30 Cent je Kilowattstunde spart ein Balkonkraftwerk rund 150 Euro im Jahr.`,
     );
     await page.locator('.herkunft-link').click();
-    await page.locator('.reference-source-input').fill(`${TESTDATEN_PRAEFIX} Verbraucherzentrale, Rechner Balkonkraftwerk`);
+    await page.locator('.reference-source-input').fill(`${TESTDATEN_PRAEFIX} Herkunft: Verbraucherzentrale, Rechner Balkonkraftwerk`);
     await page.locator('.reference-source-input').press('Enter');
     await expect.soft(page.locator('.reference-item')).toHaveCount(1);
     await bild('82-hintergrundinfo-ausgefuellt');
@@ -67,8 +69,7 @@ test('Hintergrundinfo verfassen: Aufbau, neue Aussage, Ergebnisseite', async ({ 
     test.info().annotations.push({ type: 'verknuepfte Aussage', description: (await page.locator('.gespeichert-aussage .karte-titel').textContent()) ?? '' });
     await expect.soft(page.locator('.gespeichert-karte')).toContainText(titel);
     await expect.soft(page.locator('.gespeichert-karte .karte-meta')).toContainText('vor wenigen Sekunden');
-    const knoepfe = await page.locator('.gespeichert-knoepfe > *').allTextContents();
-    expect.soft(knoepfe.map((k) => k.trim())).toEqual(['Noch eine Hintergrundinfo', 'Meine Beiträge']);
+    expect.soft(await ergebnisKnoepfe(page)).toEqual(['Noch eine Hintergrundinfo', 'Meine Beiträge']);
     await bild('83-hintergrundinfo-ergebnis');
   });
 });
@@ -99,10 +100,8 @@ test('Hintergrundinfo aus dem Fangkorb: Kopfband, vorbelegt, Ergebnisseite', asy
 
   await page.locator('textarea#text').fill(`${TESTDATEN_PRAEFIX} Laut Studie im Link rechnet sich die Anlage nach sechs Jahren.`);
   await speichernUndErgebnis(page);
-  const knoepfe = await page.locator('.gespeichert-knoepfe > *').allTextContents();
-  expect.soft(knoepfe.map((k) => k.trim())).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
-  const stand = await (await page.request.get(`/api/v1/rawinput/${einwurf.id}`)).json();
-  expect.soft(stand.status).toBe('processed');
+  expect.soft(await ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+  expect.soft((await einwurfStand(page, einwurf.id)).status).toBe('processed');
   await bild('86-hintergrundinfo-ergebnis-fangkorb');
 });
 

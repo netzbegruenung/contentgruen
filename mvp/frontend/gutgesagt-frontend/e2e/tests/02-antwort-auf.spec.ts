@@ -1,4 +1,4 @@
-import { TESTDATEN_PRAEFIX, expect, ausfuellen, lauf, speichernUndErgebnis, test } from './fixtures';
+import { TESTDATEN_PRAEFIX, ergebnisKnoepfe, expect, ausfuellen, lauf, speichernUndErgebnis, test } from './fixtures';
 
 /** Antwort auf - Vorschlag waehlen und entfernen, neue Aussage anlegen, speichern. */
 test('Antwort auf: Vorschlag, neue Aussage, Ergebnisseite, Suche', async ({ page, bild }) => {
@@ -51,8 +51,7 @@ test('Antwort auf: Vorschlag, neue Aussage, Ergebnisseite, Suche', async ({ page
     test.info().annotations.push({ type: 'verknuepfte Aussage', description: (await page.locator('.gespeichert-aussage .karte-titel').textContent()) ?? '' });
     await expect.soft(page.locator('.verknuepfung-fehlgeschlagen')).toHaveCount(0);
     await expect.soft(page.locator('.gespeichert-karte')).toContainText(titel);
-    const knoepfe = await page.locator('.gespeichert-knoepfe > *').allTextContents();
-    expect.soft(knoepfe.map((k) => k.trim())).toEqual(['Noch einen Kommentar', 'Meine Beiträge']);
+    expect.soft(await ergebnisKnoepfe(page)).toEqual(['Noch einen Kommentar', 'Meine Beiträge']);
     test.info().annotations.push({ type: 'Kommentar-ID', description: id });
     await bild('25-ergebnis-verfassen');
   });

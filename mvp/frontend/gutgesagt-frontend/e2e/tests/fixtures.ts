@@ -17,12 +17,15 @@ export interface Einwurf {
 /** Wann eine Seite zuletzt ein 429 vom Rate-Limit bekam (siehe kontingentAbwarten). */
 const zuletztGebremst = new WeakMap<Page, number>();
 
-export const test = basis.extend<{ bild: (name: string, ganz?: boolean) => Promise<void>; bremseMerken: void }>({
+/** Benannter Screenshot, im Report angehaengt; ``ganzeSeite`` statt nur des sichtbaren Ausschnitts. */
+export type Bild = (name: string, ganzeSeite?: boolean) => Promise<void>;
+
+export const test = basis.extend<{ bild: Bild; bremseMerken: void }>({
   bild: async ({ page }, use, testInfo) => {
     fs.mkdirSync(SCREENSHOTS, { recursive: true });
-    await use(async (name, ganz = false) => {
+    await use(async (name, ganzeSeite = false) => {
       const datei = path.join(SCREENSHOTS, `${testInfo.project.name}-${name}.png`);
-      await page.screenshot({ path: datei, fullPage: ganz });
+      await page.screenshot({ path: datei, fullPage: ganzeSeite });
       await testInfo.attach(name, { path: datei, contentType: 'image/png' });
     });
   },
@@ -56,7 +59,7 @@ async function kontingentAbwarten(page: Page, seit: number): Promise<boolean> {
   return true;
 }
 
-/** Eindeutiger Zusatz je Lauf, damit sich Titel und Aussagen wiederfinden lassen. */
+/** Uhrzeit (HHMMSS) als Kennung des Laufs, damit sich Titel und Aussagen wiederfinden lassen. */
 export function lauf(): string {
   return new Date().toISOString().slice(11, 19).replace(/:/g, '');
 }
@@ -80,6 +83,11 @@ export async function einwurfAnlegen(page: Page, hinweis: string, link: string):
   await expect(page.locator('.einwurf-rueckmeldung .erfolg')).toBeVisible();
   expect(angelegt.id, `Einwurf "${hinweis}" angelegt`).toBeTruthy();
   return { id: angelegt.id, hinweis, link };
+}
+
+/** Die Knoepfe unter dem gespeicherten Beitrag, in Reihenfolge. */
+export async function ergebnisKnoepfe(page: Page): Promise<string[]> {
+  return (await page.locator('.gespeichert-knoepfe > *').allTextContents()).map((k) => k.trim());
 }
 
 /** Stufe und verknuepfte Beitraege eines Einwurfs, direkt vom Server. */

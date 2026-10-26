@@ -71,7 +71,7 @@ test('Verfassen: Aufbau und Bedienung des Kommentarformulars', async ({ page, bi
   await test.step('Herkunft kompakt hinzufuegen und loeschen', async () => {
     await page.locator('.herkunft-link').click();
     await expect(page.locator('.reference-input-container.kompakt')).toBeVisible();
-    await page.locator('.reference-source-input').fill(`${TESTDATEN_PRAEFIX} Beispielquelle Windkraftstudie`);
+    await page.locator('.reference-source-input').fill(`${TESTDATEN_PRAEFIX} Beispiel-Herkunft Windkraftstudie`);
     await page.locator('.reference-source-input').press('Enter');
     await expect.soft(page.locator('.reference-item')).toHaveCount(1);
     await expect.soft(page.locator('.reference-count')).toHaveCount(0);

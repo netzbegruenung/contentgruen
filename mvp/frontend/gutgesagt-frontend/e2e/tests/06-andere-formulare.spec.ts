@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures';
 
-/** Hintergrundinfo und Bild nur ansehen - nach den zentralen Style-Aenderungen nichts kaputt. */
+/** Formulare fuer Hintergrundinfo und Bild nur ansehen: Bei 360 px kein seitlicher Ueberlauf. */
 for (const [nr, name, pfad] of [
   ['60', 'hintergrundinfo', '/workflow/add-generictext'],
   ['61', 'bild', '/workflow/add-image'],

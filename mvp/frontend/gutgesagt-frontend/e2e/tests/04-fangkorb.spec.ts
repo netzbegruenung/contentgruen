@@ -1,19 +1,19 @@
 import { Page } from '@playwright/test';
 import {
+  Bild,
   Einwurf,
   TESTDATEN_PRAEFIX,
   einwurfAnlegen,
   einwurfStand,
+  ergebnisKnoepfe,
   expect,
   lauf,
   speichernUndErgebnis,
   test,
 } from './fixtures';
 
-type Bild = (name: string, ganz?: boolean) => Promise<void>;
-
 /**
- * Destillieren (Satz, dann Typwahl) und Ausformulieren als Kommentar, speichern;
+ * Destillieren (Satz) und Ausformulieren als Kommentar (Typwahl, Formular), speichern;
  * liefert die Kommentar-ID.
  */
 async function ausformulieren(page: Page, bild: Bild, einwurf: Einwurf, satz: string, nr: number): Promise<string> {
@@ -42,8 +42,7 @@ async function ausformulieren(page: Page, bild: Bild, einwurf: Einwurf, satz: st
     .fill(`${TESTDATEN_PRAEFIX} Aus dem Fangkorb ausformuliert: ${satz} – mit Beleg im Link.`);
   const id = await speichernUndErgebnis(page);
   await expect.soft(page.locator('.verknuepfen-fehlgeschlagen')).toHaveCount(0);
-  const knoepfe = await page.locator('.gespeichert-knoepfe > *').allTextContents();
-  expect.soft(knoepfe.map((k) => k.trim())).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+  expect.soft(await ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
   expect.soft(new URL(page.url()).search).toContain(einwurf.id);
   await bild(`4${nr}c-ergebnis-fangkorb`);
 
@@ -104,15 +103,27 @@ test('Fangkorb: zwei Einwuerfe ausformulieren, naechster Einwurf, Ausformuliert'
 
   const ergebnis = page.url();
 
-  await test.step('Naechster Einwurf nach dem zweiten: nie wieder einer der beiden', async () => {
+  await test.step('Naechster Einwurf nach dem zweiten: Ende der Runde im Fangkorb', async () => {
+    // Andere offene Einwuerfe (Seed, fruehere Laeufe) kommen vorher dran: "Spaeter"
+    // ohne Satz stellt sie fuer diese Runde zurueck, ohne sie zu aendern.
     await page.locator('.naechster-einwurf').click();
-    await page.waitForURL(/\/(destillieren\/[0-9a-f-]{36}|fangkorb)/, { timeout: 20_000 });
-    const ziel = new URL(page.url()).pathname;
-    test.info().annotations.push({ type: 'Naechster nach Einwurf 2', description: ziel });
-    expect.soft(ziel).not.toBe(`/destillieren/${erster.id}`);
-    expect.soft(ziel).not.toBe(`/destillieren/${zweiter.id}`);
-    // Liegt sonst nichts offen im Fangkorb, geht es in den Tab mit dem Ergebnis.
-    if (ziel === '/fangkorb') {
+    let zurueckgestellt = 0;
+    for (;;) {
+      await page.waitForURL(/\/(destillieren\/[0-9a-f-]{36}|fangkorb)/, { timeout: 20_000 });
+      const ziel = new URL(page.url()).pathname;
+      if (ziel === '/fangkorb') break;
+      expect(ziel).not.toBe(`/destillieren/${erster.id}`);
+      expect(ziel).not.toBe(`/destillieren/${zweiter.id}`);
+      expect(zurueckgestellt, 'mehr andere offene Einwuerfe als erwartet').toBeLessThan(50);
+      await expect(page.locator('#satz')).toHaveValue('');
+      await page.locator('.spaeter').click();
+      await page.waitForURL((url) => url.pathname !== ziel);
+      zurueckgestellt++;
+    }
+    test.info().annotations.push({ type: 'andere offene Einwuerfe zurueckgestellt', description: String(zurueckgestellt) });
+    // Ohne Zurueckstellen geht es in den Tab mit dem Ergebnis; sonst in den des
+    // zuletzt zurueckgestellten.
+    if (zurueckgestellt === 0) {
       await expect.soft(page.locator('.tab.aktiv .tab-wort')).toHaveText('Ausformuliert');
       await expect.soft(page.locator('app-beitragskarte', { hasText: zweiter.hinweis })).toBeVisible();
     }

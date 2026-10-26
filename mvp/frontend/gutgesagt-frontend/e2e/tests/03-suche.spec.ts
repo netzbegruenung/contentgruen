@@ -1,4 +1,4 @@
-import { TESTDATEN_PRAEFIX, expect, ausfuellen, lauf, speichernUndErgebnis, test } from './fixtures';
+import { TESTDATEN_PRAEFIX, ergebnisKnoepfe, expect, ausfuellen, lauf, speichernUndErgebnis, test } from './fixtures';
 
 /** aus der Suche ins Formular, Aussage vorbelegt, zurueck zur Suche. */
 test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) => {
@@ -46,8 +46,7 @@ test('Suche: Beitrag ergaenzen und zurueck zur Suche', async ({ page, bild }) =>
     const id = await speichernUndErgebnis(page);
     test.info().annotations.push({ type: 'Kommentar-ID', description: id });
     await expect.soft(page.locator('.gespeichert-aussage')).toContainText(aussageKern);
-    const knoepfe = await page.locator('.gespeichert-knoepfe > *').allTextContents();
-    expect.soft(knoepfe.map((k) => k.trim())).toEqual(['Zurück zur Suche', 'Meine Beiträge']);
+    expect.soft(await ergebnisKnoepfe(page)).toEqual(['Zurück zur Suche', 'Meine Beiträge']);
     await bild('32-ergebnis-suche');
 
     await page.locator('.zur-suche').click();
