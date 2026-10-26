@@ -177,6 +177,9 @@ def log_pseudonym(user: str) -> str:
     das hier ist ein ungesalzener Hash, also ueber Zeilen hinweg verkettbar und
     bei bekanntem Kennungsraum zurueckrechenbar. Fuer eine fluechtige Logzeile
     ist das der richtige Kompromiss, fuer gespeicherte Daten nicht.
+
+    Das BFF rechnet dasselbe (BFF/Logging/LogPseudonym.cs); wer eines der beiden
+    aendert, aendert das andere mit, sonst passen die Zeilen nicht mehr zusammen.
     """
     if not user or user == "anonymous":
         return "anonymous"

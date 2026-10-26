@@ -353,7 +353,7 @@ async def run_cleanup_manually(
             )
 
         logger.info(
-            f"Manual cleanup triggered by {current_user} with {days_to_keep} days retention"
+            f"Manual cleanup triggered by {log_pseudonym(current_user)} with {days_to_keep} days retention"
         )
 
         # Run cleanup

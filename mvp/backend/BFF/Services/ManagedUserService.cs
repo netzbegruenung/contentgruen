@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Collections.Concurrent;
+using BFF.Logging;
 using BFF.Models;
 using BCrypt.Net;
 
@@ -101,7 +102,8 @@ public class ManagedUserService
     }
 
     // Beta-Zugaenge mit reservierter Kennung fallen aus der Liste; die uebrigen bleiben
-    // nutzbar. Geloggt wird nur die Kennung, nicht die Mail-Adresse.
+    // nutzbar. Geloggt wird nur das Pseudonym der Kennung, nicht die Mail-Adresse; wer den
+    // Eintrag sucht, sucht in managed-users.json nach dem Platzhalter.
     private List<ManagedUser> WithoutReservedUserIds(List<ManagedUser> users)
     {
         var reserved = users.Where(u => IsReservedUserId(u.UserId)).ToList();
@@ -109,7 +111,7 @@ public class ManagedUserService
         {
             _logger.LogError(
                 "Beta-Zugang with userId {UserId} rejected: the id is reserved for the placeholder \"{Placeholder}\" of deleted persons. Choose a different userId in managed-users.json.",
-                user.UserId, EhemaligePersonKennung);
+                LogPseudonym.Of(user.UserId), EhemaligePersonKennung);
         }
 
         return reserved.Count == 0 ? users : users.Except(reserved).ToList();
@@ -180,13 +182,13 @@ public class ManagedUserService
             if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 ClearFailedAttempts(email);
-                _logger.LogInformation("Authentication successful for user: {UserId}", user.UserId);
+                _logger.LogInformation("Authentication successful for user: {UserId}", LogPseudonym.Of(user.UserId));
                 return user;
             }
             else
             {
                 RecordFailedAttempt(email);
-                _logger.LogWarning("Authentication failed - invalid password for user: {UserId}", user.UserId);
+                _logger.LogWarning("Authentication failed - invalid password for user: {UserId}", LogPseudonym.Of(user.UserId));
                 return null;
             }
         }
