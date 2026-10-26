@@ -129,8 +129,12 @@ Der Normalfall: Alle Nutzenden, auch Besucher, können den Beitrag finden und ko
 _Avoid_: Veröffentlicht, Freigegeben, Grün-Intern
 
 **Gesperrt**:
-Ein Beitrag, den ein Admin aus Suche und Ansicht genommen hat.
+Ein Beitrag, den ein Admin aus Suche und Ansicht genommen hat. Er bleibt erhalten, und nur Admins finden ihn noch, über die Moderation.
 _Avoid_: Blockiert, Abgelehnt, Versteckt
+
+**Entsperren**:
+Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sperre. Die Meldungen zu ihm bleiben bearbeitet.
+_Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
 Ein Beitrag, den sein Autor entfernt hat.
@@ -209,7 +213,7 @@ Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt w
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:
-Der Anzeigename, der im Fangkorb an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer. Die Sätze bleiben, nur der Personenbezug geht.
+Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
 **Admin**:

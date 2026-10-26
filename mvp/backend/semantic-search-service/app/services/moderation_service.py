@@ -11,8 +11,17 @@ import json
 from repositories.content_report_repository import get_content_report_repository
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 from domain.models.content_type import ContentType
+from domain.models.content_status import ContentStatus
 
 logger = logging.getLogger(__name__)
+
+# Payload-Feld mit dem Status von vor der Sperre, damit Entsperren ihn
+# wiederherstellt. Steht darin None (Altbestand ohne Status), entfernt Entsperren
+# das Status-Feld wieder.
+FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
+
+# Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
+GESPERRTE_HOECHSTENS = 500
 
 
 class ModerationService:
@@ -106,13 +115,7 @@ class ModerationService:
             bool: True, wenn der Inhalt in Qdrant liegt
         """
         try:
-            UUID(content_id)
-        except ValueError:
-            return False
-
-        try:
-            entry = await self.embeddings_manager.get_by_id(content_id)
-            return entry is not None
+            return await self._beitrag_laden(content_id) is not None
         except Exception as e:
             logger.error(f"Error checking content existence: {e}", exc_info=True)
             # Im Zweifel durchlassen: eine Meldung zu verlieren waere schlimmer
@@ -171,6 +174,127 @@ class ModerationService:
             logger.error(f"Error getting reports (status={status}): {e}", exc_info=True)
             return []
 
+    async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
+        """Payload eines Beitrags am Repository vorbei, also auch gesperrt; None, wenn es ihn nicht gibt."""
+        try:
+            UUID(content_id)
+        except ValueError:
+            logger.warning(f"Invalid content_id format: {content_id}")
+            return None
+
+        return await self.embeddings_manager.get_by_id(content_id)
+
+    async def sperren(self, content_id: str, gesperrt_von: str) -> bool:
+        """
+        Einen gemeldeten Beitrag sperren, statt ihn zu loeschen.
+
+        Der Beitrag bleibt im Speicher und bekommt den Status BLOCKED; die
+        Repositories blenden ihn damit aus Suche, Einzelansicht, Listen, Zaehlern
+        und "Meine Beitraege" aus. Die Moderation findet ihn weiter, weil sie den
+        Speicher direkt liest. Alle Meldungen zum Beitrag stehen danach auf
+        bearbeitet.
+
+        Erst Qdrant, dann PostgreSQL, ohne gemeinsame Transaktion. Scheitert das
+        Meldungs-Update, ist der Beitrag schon gesperrt und der Fehler geht an den
+        Aufrufer; erneutes Sperren holt die Meldungen nach, weil der Status von
+        vor der ersten Sperre erhalten bleibt.
+
+        Returns:
+            bool: False, wenn es den Beitrag nicht gibt
+        """
+        beitrag = await self._beitrag_laden(content_id)
+        if beitrag is None:
+            logger.warning(f"Content {content_id} not found")
+            return False
+
+        if beitrag.get("status") != ContentStatus.BLOCKED.value:
+            await self.embeddings_manager.async_client.set_payload(
+                collection_name=self.embeddings_manager.collection_name,
+                payload={
+                    "status": ContentStatus.BLOCKED.value,
+                    FELD_STATUS_VOR_SPERRE: beitrag.get("status"),
+                },
+                points=[content_id],
+            )
+
+        updated_count = self.report_repo.update_reports_by_content_id(
+            content_id=UUID(content_id),
+            status="reviewed",
+            reviewed_by=gesperrt_von,
+            resolution_notes="Beitrag gesperrt",
+        )
+        logger.info(
+            f"Content {content_id} gesperrt by {gesperrt_von}, "
+            f"{updated_count} reports marked as reviewed"
+        )
+        return True
+
+    async def entsperren(self, content_id: str, entsperrt_von: str) -> bool:
+        """
+        Eine Sperre aufheben: Der Beitrag bekommt den Status von vor der Sperre
+        zurueck und ist wieder so sichtbar wie vorher. Die Meldungen bleiben
+        bearbeitet.
+
+        Zwei Schreibvorgaenge; scheitert der zweite, bleibt nur das Hilfsfeld
+        status_vor_sperre stehen, der Beitrag ist trotzdem entsperrt.
+
+        Returns:
+            bool: False, wenn es den Beitrag nicht gibt
+        """
+        beitrag = await self._beitrag_laden(content_id)
+        if beitrag is None:
+            logger.warning(f"Content {content_id} not found")
+            return False
+
+        if beitrag.get("status") != ContentStatus.BLOCKED.value:
+            return True
+
+        client = self.embeddings_manager.async_client
+        collection = self.embeddings_manager.collection_name
+        vorher = beitrag.get(FELD_STATUS_VOR_SPERRE)
+        if vorher:
+            await client.set_payload(
+                collection_name=collection,
+                payload={"status": vorher},
+                points=[content_id],
+            )
+            entfernen = [FELD_STATUS_VOR_SPERRE]
+        else:
+            entfernen = ["status", FELD_STATUS_VOR_SPERRE]
+        await client.delete_payload(
+            collection_name=collection, keys=entfernen, points=[content_id]
+        )
+        logger.info(f"Content {content_id} entsperrt by {entsperrt_von}")
+        return True
+
+    async def gesperrte_beitraege(
+        self, limit: int = GESPERRTE_HOECHSTENS
+    ) -> List[Dict[str, Any]]:
+        """
+        Alle gesperrten Beitraege, auch ohne Meldung.
+
+        Ueber die Meldungen allein waeren sie nicht sicher auffindbar: Ein
+        Loeschantrag entfernt die Meldungen der Person (docs/LOESCHKONZEPT.md),
+        der gesperrte Beitrag bliebe dann fuer niemanden erreichbar.
+        """
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        punkte, _ = await self.embeddings_manager.async_client.scroll(
+            collection_name=self.embeddings_manager.collection_name,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="status",
+                        match=MatchValue(value=ContentStatus.BLOCKED.value),
+                    )
+                ]
+            ),
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return [{**(punkt.payload or {}), "id": str(punkt.id)} for punkt in punkte]
+
     async def delete_content(
         self, content_id: str, content_type: str, deleted_by: str
     ) -> bool:
@@ -192,13 +316,17 @@ class ModerationService:
             deleted = await self.embeddings_manager.delete_by_id(content_id)
 
             if deleted:
-                # Mark all related reports as reviewed
-                updated_count = self.report_repo.update_reports_by_content_id(
-                    content_id=content_uuid,
-                    status="reviewed",
-                    reviewed_by=deleted_by,
-                    resolution_notes="Content deleted",
-                )
+                # Mark all related reports as reviewed. Der Beitrag ist schon weg;
+                # ein Fehler hier macht die Loeschung nicht rueckgaengig.
+                try:
+                    updated_count = self.report_repo.update_reports_by_content_id(
+                        content_id=content_uuid,
+                        status="reviewed",
+                        reviewed_by=deleted_by,
+                        resolution_notes="Content deleted",
+                    )
+                except Exception:
+                    updated_count = 0
 
                 logger.info(
                     f"Content {content_id} ({content_type}) deleted by {deleted_by}, {updated_count} reports marked as reviewed"

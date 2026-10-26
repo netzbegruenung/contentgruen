@@ -355,6 +355,7 @@ dotnet test
 - URL: https://gutgesagt-test.netzbegruenung.de (SaltStack-managed, runs the `:main` image tag)
 - Deployment: Manual — Salt `state.apply`, then `docker compose pull && docker compose up -d` on the host.
   A new `:main` image is **not** rolled out automatically, so migrations can run before the deploy.
+  How to apply them, and the convention for new ones: `mvp/backend/postgres-app/migrations/README.md`.
   The Salt state still contains a Watchtower block, but its container is stuck in a restart loop
   (as of 2026-10-11); the block is being removed from the Salt repo (#22).
 
@@ -408,6 +409,8 @@ See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for detailed system architect
 - Domain models in `domain/models/`, interfaces in `domain/interfaces/`
 - Services in `services/` (by concern), repositories in `repositories/` (by type)
 - Tests mirror source structure
+- Schema changes for existing databases: a dated SQL script in `mvp/backend/postgres-app/migrations/`,
+  convention in its `README.md`
 
 ### Adding a New Content Type
 As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a FE fragment)** — no per-type service/repository clone and no new search branch (see `docs/CONTENT_MODEL.md`).

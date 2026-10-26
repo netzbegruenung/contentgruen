@@ -29,16 +29,33 @@ export interface ContentReport {
   reviewed_by?: string | null;
   reviewed_at?: string | null;
   resolution_notes?: string | null;
+  // Der gemeldete Beitrag, wie die Moderation ihn liest -- auch gesperrt.
+  // null, wenn er nicht mehr existiert.
+  content?: GemeldeterBeitrag | null;
 }
+
+export interface GemeldeterBeitrag {
+  status?: string;
+  [feld: string]: any;
+}
+
+/** Status eines gesperrten Beitrags (ContentStatus.BLOCKED im Backend). */
+export const STATUS_GESPERRT = 'blocked';
 
 export interface PendingReportsResponse {
   total: number;
   reports: ContentReport[];
 }
 
-export interface DeleteContentResponse {
+export interface SperreResponse {
   success: boolean;
   message: string;
+}
+
+/** Gesperrte Beiträge, auch ohne Meldung (GET /moderation/gesperrt). */
+export interface GesperrteResponse {
+  total: number;
+  beitraege: GemeldeterBeitrag[];
 }
 
 @Injectable({
@@ -102,10 +119,16 @@ export class ModerationService {
     );
   }
 
-  deleteContent(contentType: string, contentId: string): Observable<DeleteContentResponse> {
-    return this.http.delete<DeleteContentResponse>(
-      `${this.baseUrl}/content/${contentType}/${contentId}`
-    );
+  sperren(contentId: string): Observable<SperreResponse> {
+    return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/sperren`, {});
+  }
+
+  entsperren(contentId: string): Observable<SperreResponse> {
+    return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/entsperren`, {});
+  }
+
+  getGesperrte(): Observable<GesperrteResponse> {
+    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
   }
 
   dismissReport(reportId: string, notes?: string): Observable<any> {

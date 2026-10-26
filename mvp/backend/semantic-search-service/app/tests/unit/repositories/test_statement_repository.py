@@ -282,13 +282,29 @@ class TestCountCurated:
         await repository.count_curated()
 
         count_filter = client.count.call_args.kwargs["count_filter"]
-        assert len(count_filter.must_not) == 1
+        verbunden = [b for b in count_filter.must_not if getattr(b, "must", None)]
+        assert len(verbunden) == 1
 
         # Beide Bedingungen muessen zusammen zutreffen, damit ausgeschlossen wird.
-        ausschluss = count_filter.must_not[0]
+        ausschluss = verbunden[0]
         bedingungen = {bedingung.key: bedingung for bedingung in ausschluss.must}
         assert bedingungen["origin"].match.value == "search_query"
         assert bedingungen["replysuggestions_count"].range.lt == 1
+
+    @pytest.mark.asyncio
+    async def test_zaehlt_gesperrte_aussagen_nicht(self, repository_mit_zaehler):
+        """Gesperrte Aussagen fehlen in der Suche, also auch im Startseiten-Zaehler."""
+        repository, client = repository_mit_zaehler
+
+        await repository.count_curated()
+
+        count_filter = client.count.call_args.kwargs["count_filter"]
+        status_ausschluesse = {
+            b.match.value
+            for b in count_filter.must_not
+            if getattr(b, "key", None) == "status"
+        }
+        assert status_ausschluesse == {"blocked"}
 
     @pytest.mark.asyncio
     async def test_gibt_null_zurueck_statt_zu_scheitern(
@@ -341,9 +357,44 @@ class TestSearchCurated:
         status = {
             b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
         }
-        assert status == {"pending_description", "description_failed", "pending_review"}
+        assert status == {
+            "pending_description",
+            "description_failed",
+            "pending_review",
+            "blocked",
+        }
         suchanfrage = [b for b in ausschluss if getattr(b, "must", None)]
         assert len(suchanfrage) == 1
         bedingungen = {b.key: b for b in suchanfrage[0].must}
         assert bedingungen["origin"].match.value == "search_query"
         assert bedingungen["replysuggestions_count"].range.lt == 1
+
+
+@pytest.mark.unit
+class TestSearchWithReplyFilter:
+    """Die Aussagen-Suche der Hauptsuche schliesst dieselben Status aus wie search()."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("mindestens", [0, 1])
+    async def test_schliesst_gesperrte_aussagen_aus(
+        self, test_settings, test_embeddings_manager, mindestens
+    ):
+        from unittest.mock import AsyncMock, MagicMock
+        from repositories.implementations.qdrant.statement_repository import (
+            StatementRepository,
+        )
+
+        manager = MagicMock()
+        manager.search = AsyncMock(return_value=[])
+        repository = StatementRepository(
+            test_settings, embeddings_manager=test_embeddings_manager
+        )
+        repository._shared_manager = manager
+
+        await repository.search_with_reply_filter("waermepumpe", 5, mindestens)
+
+        ausschluss = manager.search.call_args.kwargs["filter_dict"]["must_not"]
+        status = {
+            b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
+        }
+        assert "blocked" in status

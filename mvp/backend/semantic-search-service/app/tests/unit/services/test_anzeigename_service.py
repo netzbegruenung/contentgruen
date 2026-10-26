@@ -9,7 +9,11 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 import dependencies
-from services.anzeigename_service import AnzeigenameService, anzeigename_aus_header
+from services.anzeigename_service import (
+    EHEMALIGE_PERSON_KENNUNG,
+    AnzeigenameService,
+    anzeigename_aus_header,
+)
 
 
 @pytest.fixture
@@ -79,6 +83,45 @@ class TestMerken:
         service.merken("kennung-1", "Anna%20B.")
 
         assert repository.anzeigename_speichern.call_count == 2
+
+
+@pytest.mark.unit
+class TestNamen:
+    def test_namen_aus_der_tabelle(self, service, repository):
+        repository.anzeigenamen.return_value = {"kennung-1": "Anna B."}
+
+        assert service.namen(["kennung-1", "kennung-2"]) == {"kennung-1": "Anna B."}
+
+    def test_platzhalter_heisst_ehemalige_person(self, service, repository):
+        repository.anzeigenamen.return_value = {"kennung-1": "Anna B."}
+
+        assert service.namen(["kennung-1", EHEMALIGE_PERSON_KENNUNG]) == {
+            "kennung-1": "Anna B.",
+            EHEMALIGE_PERSON_KENNUNG: "ehemalige Person",
+        }
+
+    def test_platzhalter_auch_wenn_die_datenbank_fehlt(self, service, repository):
+        repository.anzeigenamen.side_effect = RuntimeError("weg")
+
+        assert service.namen([EHEMALIGE_PERSON_KENNUNG]) == {
+            EHEMALIGE_PERSON_KENNUNG: "ehemalige Person"
+        }
+
+    def test_platzhalter_bekommt_keinen_namen_aus_dem_header(self, service, repository):
+        service.merken(EHEMALIGE_PERSON_KENNUNG, "Anna%20B.")
+
+        repository.anzeigename_speichern.assert_not_called()
+
+    def test_autor_name_am_beitrag(self, service, repository):
+        repository.anzeigenamen.return_value = {}
+        eintraege = [
+            {"original_author": EHEMALIGE_PERSON_KENNUNG},
+            {"original_author": "x"},
+        ]
+
+        service.an_eintraege(eintraege)
+
+        assert [e["autor_name"] for e in eintraege] == ["ehemalige Person", None]
 
 
 @pytest.mark.unit

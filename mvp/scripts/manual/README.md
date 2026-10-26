@@ -59,3 +59,14 @@ ausgerollten neuen Stand.
 Kennung an Saetzen in fremden Einwuerfen durch einen Platzhalter mit dem Anzeigenamen
 „ehemalige Person“. Ablauf, Reihenfolge und Fallen stehen in `docs/LOESCHKONZEPT.md`;
 dort steht auch der Aufruf. Getestet in `tests/integration/test_loeschkommando.py`.
+
+## Beitraege anonymisieren (im semantic-search-Container)
+
+`beitraege_anonymisieren.py <kennung> [--ausfuehren]` – **schreibend mit
+`--ausfuehren`.** Schritt 3 des Loeschkonzepts: ersetzt die Kennung an Beitraegen in
+Qdrant durch den Platzhalter `ehemalige-person` (Anzeige „ehemalige Person“) und
+listet die Treffer fuer die Einzelfallpruefung. Mit der Kennung `geloeschter-nutzer`
+stellt es einmalig den Bestand mit dem alten Platzhalter um. Aufruf in
+`docs/LOESCHKONZEPT.md`; getestet in `tests/unit/services/test_beitraege_anonymisieren.py`
+(Speicher-Modus), `test_beitraege_anonymisieren_skript.py` (Aufruf) und
+`tests/integration/test_beitraege_anonymisieren_qdrant.py` (echter Qdrant).

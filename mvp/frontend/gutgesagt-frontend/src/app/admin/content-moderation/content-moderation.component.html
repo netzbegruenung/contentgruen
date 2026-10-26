@@ -18,26 +18,30 @@
       appearance="standard">
       <mat-button-toggle value="pending">
         <mat-icon>pending</mat-icon>
-        Ausstehend
+        Offen
       </mat-button-toggle>
       <mat-button-toggle value="reviewed">
         <mat-icon>check_circle</mat-icon>
-        Geprüft
+        Bearbeitet
       </mat-button-toggle>
       <mat-button-toggle value="dismissed">
         <mat-icon>cancel</mat-icon>
-        Abgelehnt
+        Abgewiesen
       </mat-button-toggle>
       <mat-button-toggle value="all">
         <mat-icon>list</mat-icon>
         Alle
+      </mat-button-toggle>
+      <mat-button-toggle value="gesperrt">
+        <mat-icon>block</mat-icon>
+        Gesperrt
       </mat-button-toggle>
     </mat-button-toggle-group>
   </div>
 
   <div *ngIf="loading" class="loading">
     <mat-spinner diameter="50"></mat-spinner>
-    <p>Lade Meldungen...</p>
+    <p>Lade...</p>
   </div>
 
   <div *ngIf="error && !loading" class="error">
@@ -45,13 +49,36 @@
     <p>{{ error }}</p>
   </div>
 
-  <div *ngIf="!loading && !error && reports.length === 0" class="empty-state">
+  <ng-container *ngIf="selectedStatus === 'gesperrt' && !loading && !error">
+    <div *ngIf="gesperrte.length === 0" class="empty-state">
+      <mat-icon class="large-icon">check_circle</mat-icon>
+      <h2>Keine gesperrten Beiträge</h2>
+    </div>
+    <div *ngIf="gesperrte.length > 0" class="gesperrte-liste">
+      <div *ngFor="let beitrag of gesperrte" class="gesperrter-beitrag mat-elevation-z2">
+        <span class="content-type-badge">{{ getContentTypeLabel(beitrag['content_type']) }}</span>
+        <div class="gesperrter-text">
+          <strong>{{ beitragsTitel(beitrag) }}</strong>
+          <code>{{ beitrag['id'] }}</code>
+        </div>
+        <button
+          mat-button
+          (click)="entsperren(beitrag['id'])"
+          matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
+          <mat-icon>lock_open</mat-icon>
+          Entsperren
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <div *ngIf="selectedStatus !== 'gesperrt' && !loading && !error && reports.length === 0" class="empty-state">
     <mat-icon class="large-icon">check_circle</mat-icon>
-    <h2>Keine ausstehenden Meldungen</h2>
-    <p>Aktuell gibt es keine gemeldeten Inhalte zur Überprüfung.</p>
+    <h2>Keine Meldungen</h2>
+    <p>In dieser Ansicht gibt es keine Meldungen.</p>
   </div>
 
-  <div *ngIf="!loading && !error && reports.length > 0" class="reports-table">
+  <div *ngIf="selectedStatus !== 'gesperrt' && !loading && !error && reports.length > 0" class="reports-table">
     <table mat-table [dataSource]="reports" class="mat-elevation-z2" multiTemplateDataRows>
       <!-- Expand Column -->
       <ng-container matColumnDef="expand">
@@ -113,7 +140,7 @@
 
       <!-- Reviewed By Column -->
       <ng-container matColumnDef="reviewed_by">
-        <th mat-header-cell *matHeaderCellDef>Geprüft von</th>
+        <th mat-header-cell *matHeaderCellDef>Bearbeitet von</th>
         <td mat-cell *matCellDef="let report">
           <span *ngIf="report.reviewed_by">{{ report.reviewed_by }}</span>
           <span *ngIf="!report.reviewed_by" class="not-reviewed">-</span>
@@ -125,20 +152,31 @@
         <th mat-header-cell *matHeaderCellDef>Aktionen</th>
         <td mat-cell *matCellDef="let report">
           <div class="action-buttons">
+            <span *ngIf="istGesperrt(report)" class="status-badge status-gesperrt">Gesperrt</span>
             <button
+              *ngIf="report.content && !istGesperrt(report)"
               mat-raised-button
               color="warn"
-              (click)="deleteContent(report); $event.stopPropagation()"
-              matTooltip="Inhalt löschen">
-              <mat-icon>delete</mat-icon>
-              Löschen
+              (click)="sperren(report); $event.stopPropagation()"
+              matTooltip="Beitrag aus Suche und Ansicht nehmen">
+              <mat-icon>block</mat-icon>
+              Sperren
             </button>
             <button
+              *ngIf="istGesperrt(report)"
+              mat-button
+              (click)="entsperren(report.content_id); $event.stopPropagation()"
+              matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
+              <mat-icon>lock_open</mat-icon>
+              Entsperren
+            </button>
+            <button
+              *ngIf="report.status === 'pending'"
               mat-button
               (click)="dismissReport(report); $event.stopPropagation()"
-              matTooltip="Meldung verwerfen">
+              matTooltip="Meldung abweisen, Beitrag bleibt sichtbar">
               <mat-icon>close</mat-icon>
-              Verwerfen
+              Abweisen
             </button>
           </div>
         </td>
@@ -149,9 +187,9 @@
         <td mat-cell *matCellDef="let report" [attr.colspan]="displayedColumns.length">
           <div class="content-preview" [@expandCollapse]="isExpanded(report) ? 'expanded' : 'collapsed'">
             <div *ngIf="isExpanded(report) && report.content" class="content-display">
-              <h3>Gemeldeter Inhalt:</h3>
+              <h3>Gemeldeter Beitrag:</h3>
               <div class="content-info">
-                <p class="content-id"><strong>Content-ID:</strong> <code>{{ report.content_id }}</code></p>
+                <p class="content-id"><strong>Beitrags-ID:</strong> <code>{{ report.content_id }}</code></p>
               </div>
               <div class="content-wrapper">
                 <ng-container *ngIf="report.content_type === 'commentary'">
@@ -214,7 +252,7 @@
             </div>
             <div *ngIf="isExpanded(report) && !report.content" class="content-not-found">
               <mat-icon>warning</mat-icon>
-              <p>Inhalt konnte nicht geladen werden (möglicherweise bereits gelöscht)</p>
+              <p>Beitrag konnte nicht geladen werden (möglicherweise gelöscht)</p>
             </div>
           </div>
         </td>

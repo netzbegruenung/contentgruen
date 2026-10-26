@@ -47,9 +47,9 @@ class TestEmbeddingsManager(IEmbeddingsManager):
             offset = kwargs.get("offset")
             with_payload = kwargs.get("with_payload", True)
 
-            # Filter: content_type (ohne Gross/klein) und text_normalisiert als
-            # must-Bedingungen; andere Bedingungen ignoriert der Mock.
-            ausgewertet = {"content_type", "text_normalisiert"}
+            # Filter: content_type (ohne Gross/klein), text_normalisiert und status
+            # als must-Bedingungen; andere Bedingungen ignoriert der Mock.
+            ausgewertet = {"content_type", "text_normalisiert", "status"}
 
             filtered_data = []
             for item_id, item_data in self._data.items():
@@ -84,24 +84,42 @@ class TestEmbeddingsManager(IEmbeddingsManager):
         self._async_client.scroll = mock_scroll
 
         async def mock_count(*args, **kwargs):
-            """Mock count that uses our test data."""
+            """Mock count: content_type in must, status-Ausschluesse in must_not."""
             count_filter = kwargs.get("count_filter")
-            if count_filter and hasattr(count_filter, "must"):
-                # Try to find content_type in filter
-                for condition in count_filter.must:
-                    if hasattr(condition, "key") and condition.key == "content_type":
-                        if hasattr(condition.match, "value"):
-                            ct = condition.match.value
-                            count = sum(
-                                1
-                                for item in self._data.values()
-                                if item.get("content_type", "").lower() == ct.lower()
-                            )
-                            return MagicMock(count=count)
-            # Return total count if no filter
-            return MagicMock(count=len(self._data))
+            items = list(self._data.values())
+            for condition in getattr(count_filter, "must", None) or []:
+                if getattr(condition, "key", None) == "content_type" and hasattr(
+                    condition.match, "value"
+                ):
+                    ct = condition.match.value.lower()
+                    items = [
+                        i for i in items if i.get("content_type", "").lower() == ct
+                    ]
+            for condition in getattr(count_filter, "must_not", None) or []:
+                if getattr(condition, "key", None) == "status" and hasattr(
+                    condition.match, "value"
+                ):
+                    items = [
+                        i for i in items if i.get("status") != condition.match.value
+                    ]
+            return MagicMock(count=len(items))
 
         self._async_client.count = mock_count
+
+        async def mock_set_payload(collection_name, payload, points, **kwargs):
+            """Mock set_payload: merges the fields into the stored points."""
+            for point_id in points:
+                if str(point_id) in self._data:
+                    self._data[str(point_id)].update(payload)
+
+        async def mock_delete_payload(collection_name, keys, points, **kwargs):
+            """Mock delete_payload: removes the fields from the stored points."""
+            for point_id in points:
+                for key in keys:
+                    self._data.get(str(point_id), {}).pop(key, None)
+
+        self._async_client.set_payload = AsyncMock(side_effect=mock_set_payload)
+        self._async_client.delete_payload = AsyncMock(side_effect=mock_delete_payload)
 
     @property
     def embeddings(self):
