@@ -68,6 +68,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    (`.gitignore:19`); getrackt ist nur `managed-users.example.json`. Was bis zur Umbenennung
    in `b993b0c4` darin stand, bleibt in der Git-Historie
    (`git log --follow -- mvp/config/managed-users.example.json`).
+   Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
+   oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
+   (`BFF/Services/ManagedUserService.cs:110`).
 
 ## Vier Fallen
 
@@ -149,11 +152,11 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     uvicorn sind unterdrückt (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
   - **BFF:** keine E-Mail-Adressen, aber die **Kennung im Klartext**: beim Beta-Zugang
     die `UserId` jeder erfolgreichen Anmeldung und jedes Fehlversuchs mit falschem Passwort
-    (`BFF/Services/ManagedUserService.cs:147,153`, `BFF/Controllers/AuthController.cs:120`,
+    (`BFF/Services/ManagedUserService.cs:183,189`, `BFF/Controllers/AuthController.cs:120`,
     Level Information/Warning, also beim Standard-Level aus `appsettings.json` im Log),
     zusätzlich auf Debug-Level bei jeder angemeldeten Anfrage
     (`BFF/Proxy/IdentityHeaderTransform.cs:84,96`). Der Beta-Zugang ist per Default aktiv
-    (`ENABLE_MANAGED_AUTH`, `ManagedUserService.cs:199`) und laut `AuthController.cs:58`
+    (`ENABLE_MANAGED_AUTH`, `ManagedUserService.cs:235`) und laut `AuthController.cs:58`
     bewusst auch neben Keycloak vorgesehen, für Personen ohne Netzbegrünung-Mitgliedschaft;
     ob er in Produktion eingeschaltet ist, steht nicht im Repo. Über `managed-users.json`
     ist die `UserId` einer Adresse zugeordnet.

@@ -8,6 +8,8 @@ using BFF.Models;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
+using System.IO;
+using System.Linq;
 
 namespace BFF.Tests.Services;
 
@@ -195,5 +197,102 @@ public class ManagedUserServiceTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
+    }
+
+    // Warum reserviert: siehe ManagedUserService.EhemaligePersonKennung.
+    [Theory]
+    [InlineData("ehemalige-person")]
+    [InlineData("ehemalige-person-6f1c2d3e-0000-4000-8000-000000000000")]
+    public async Task ValidateUserAsync_ReturnsNull_WhenUserIdIsReserved(string reservedId)
+    {
+        var path = WriteUsersFile(
+            ("ok@example.com", "user-001"),
+            ("reserved@example.com", reservedId));
+        try
+        {
+            var service = ServiceFor(path);
+
+            Assert.Null(await service.GetUserByIdAsync(reservedId));
+            Assert.Null(await service.GetUserByEmailAsync("reserved@example.com"));
+            Assert.Null(await service.ValidateUserAsync("reserved@example.com", KnownPassword));
+            Assert.NotNull(await service.GetUserByIdAsync("user-001"));
+            Assert.NotNull(await service.ValidateUserAsync("ok@example.com", KnownPassword));
+
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) =>
+                        v.ToString()!.Contains($"userId {reservedId} rejected")
+                        && !v.ToString()!.Contains("@")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [InlineData("ehemalige-personal")]
+    [InlineData("user-ehemalige-person")]
+    [InlineData("Ehemalige-Person")]
+    public async Task GetUserByIdAsync_ReturnsUser_WhenUserIdOnlyResemblesReservedId(string userId)
+    {
+        var path = WriteUsersFile(("someone@example.com", userId));
+        try
+        {
+            Assert.NotNull(await ServiceFor(path).GetUserByIdAsync(userId));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void IsReservedUserId_MatchesPlaceholderAndPrefixOnly()
+    {
+        Assert.True(ManagedUserService.IsReservedUserId("ehemalige-person"));
+        Assert.True(ManagedUserService.IsReservedUserId("ehemalige-person-abc"));
+        Assert.False(ManagedUserService.IsReservedUserId("ehemalige-personal"));
+        Assert.False(ManagedUserService.IsReservedUserId("Ehemalige-Person"));
+        Assert.False(ManagedUserService.IsReservedUserId("user-001"));
+        Assert.False(ManagedUserService.IsReservedUserId(""));
+    }
+
+    private const string KnownPassword = "Passwort1!";
+
+    private ManagedUserService ServiceFor(string path)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "MANAGED_USERS_PATH", path },
+                { "ENABLE_MANAGED_AUTH", "true" }
+            })
+            .Build();
+        return new ManagedUserService(_mockLogger.Object, configuration);
+    }
+
+    private static string WriteUsersFile(params (string Email, string UserId)[] users)
+    {
+        // Ein Hash fuer alle: BCrypt mit niedrigem Work-Factor haelt den Test schnell.
+        var hash = BCrypt.Net.BCrypt.HashPassword(KnownPassword, 4);
+        var config = new ManagedUsersConfig
+        {
+            Users = users.Select(u => new ManagedUser
+            {
+                Email = u.Email,
+                PasswordHash = hash,
+                DisplayName = "Test",
+                UserId = u.UserId
+            }).ToList()
+        };
+        var path = Path.Combine(Path.GetTempPath(), $"managed-users-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(config));
+        return path;
     }
 }

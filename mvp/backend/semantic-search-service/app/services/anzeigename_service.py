@@ -29,7 +29,9 @@ MAX_LAENGE = 100
 # andere geloeschte Person teilt. Der Name kommt von hier, nicht aus users - so
 # braucht der Platzhalter keine Zeile, die ein Loeschlauf mit abraeumen koennte.
 # Saetze im Fangkorb tragen stattdessen je einen eigenen "ehemalige-person-<UUID>"
-# mit Zeile in users (mvp/scripts/manual/person_loeschen.sql).
+# mit Zeile in users (mvp/scripts/manual/person_loeschen.sql). Kennung und Praefix
+# sind reserviert: Das BFF lehnt Beta-Zugaenge damit ab (ManagedUserService.cs,
+# EhemaligePersonKennung) - wer sie hier aendert, aendert sie dort mit.
 EHEMALIGE_PERSON_KENNUNG = "ehemalige-person"
 EHEMALIGE_PERSON_NAME = "ehemalige Person"
 
