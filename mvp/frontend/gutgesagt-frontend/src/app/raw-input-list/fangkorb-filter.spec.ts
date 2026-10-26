@@ -6,6 +6,7 @@ import {
   passtZumFilter,
   passtZumTab,
   standardFilter,
+  tabAus,
   tabMerken,
   verworfenEinblenden,
 } from './fangkorb-filter';
@@ -84,7 +85,7 @@ describe('passtZumTab', () => {
 
     expect(passtZumTab(roh, 'destillieren', false)).toBeTrue();
     expect(passtZumTab(roh, 'ausformulieren', false)).toBeFalse();
-    expect(passtZumTab(roh, 'erledigt', false)).toBeFalse();
+    expect(passtZumTab(roh, 'ausformuliert', false)).toBeFalse();
   });
 
   it('legt einen Einwurf mit Satz, aber ohne Beitrag unter Ausformulieren', () => {
@@ -94,22 +95,38 @@ describe('passtZumTab', () => {
     expect(passtZumTab(roh, 'destillieren', false)).toBeFalse();
   });
 
-  it('legt einen Einwurf mit Beitrag unter Erledigt, auch ohne Satz', () => {
+  it('legt einen Einwurf mit Beitrag unter Ausformuliert, auch ohne Satz', () => {
     const mitSatz = einwurf({ status: 'processed', drafts: [satz('s-1')], links: [link('s-1')] });
     const ohneSatz = einwurf({ status: 'processed', links: [link(null)] });
 
-    expect(passtZumTab(mitSatz, 'erledigt', false)).toBeTrue();
-    expect(passtZumTab(ohneSatz, 'erledigt', false)).toBeTrue();
+    expect(passtZumTab(mitSatz, 'ausformuliert', false)).toBeTrue();
+    expect(passtZumTab(ohneSatz, 'ausformuliert', false)).toBeTrue();
     expect(passtZumTab(ohneSatz, 'destillieren', false)).toBeFalse();
   });
 
-  it('zeigt Verworfenes nur unter Erledigt und nur mit Chip', () => {
+  it('zeigt Verworfenes nur unter Ausformuliert und nur mit Chip', () => {
     const verworfen = einwurf({ status: 'discarded', drafts: [satz('s-1')] });
 
-    expect(passtZumTab(verworfen, 'erledigt', false)).toBeFalse();
-    expect(passtZumTab(verworfen, 'erledigt', true)).toBeTrue();
+    expect(passtZumTab(verworfen, 'ausformuliert', false)).toBeFalse();
+    expect(passtZumTab(verworfen, 'ausformuliert', true)).toBeTrue();
     expect(passtZumTab(verworfen, 'destillieren', true)).toBeFalse();
     expect(passtZumTab(verworfen, 'ausformulieren', true)).toBeFalse();
+  });
+});
+
+describe('tabAus', () => {
+  it('kennt die drei Tabs und den frueheren Namen "erledigt"', () => {
+    expect(tabAus('destillieren')).toBe('destillieren');
+    expect(tabAus('ausformulieren')).toBe('ausformulieren');
+    expect(tabAus('ausformuliert')).toBe('ausformuliert');
+    expect(tabAus('erledigt')).toBe('ausformuliert');
+  });
+
+  it('liefert fuer Unbekanntes null', () => {
+    expect(tabAus('einwerfen')).toBeNull();
+    expect(tabAus(null)).toBeNull();
+    expect(tabAus(undefined)).toBeNull();
+    expect(tabAus('constructor')).toBeNull();
   });
 });
 
@@ -127,7 +144,7 @@ describe('Filter im sessionStorage', () => {
     const gespeichert = filter({
       plattformen: ['web'],
       nurMeine: true,
-      tab: 'erledigt',
+      tab: 'ausformuliert',
       verworfenSichtbar: true,
     });
 
@@ -149,9 +166,15 @@ describe('Filter im sessionStorage', () => {
   it('merkt einen Tab, ohne den uebrigen Filter anzufassen', () => {
     filterSpeichern(filter({ plattformen: ['web'], nurMeine: true }));
 
-    tabMerken('erledigt');
+    tabMerken('ausformuliert');
 
-    expect(filterLaden()).toEqual(filter({ plattformen: ['web'], nurMeine: true, tab: 'erledigt' }));
+    expect(filterLaden()).toEqual(filter({ plattformen: ['web'], nurMeine: true, tab: 'ausformuliert' }));
+  });
+
+  it('oeffnet einen in der Sitzung gemerkten Tab "erledigt" als "Ausformuliert"', () => {
+    sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify({ tab: 'erledigt' }));
+
+    expect(filterLaden().tab).toBe('ausformuliert');
   });
 
   it('faellt bei unlesbarem Inhalt auf den Standard zurueck', () => {

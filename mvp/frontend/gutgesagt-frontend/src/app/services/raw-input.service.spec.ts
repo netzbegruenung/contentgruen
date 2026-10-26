@@ -120,7 +120,7 @@ describe('RawInputService', () => {
       expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
-    it('markiert als verarbeitet mit dem entstandenen Beitrag und seinem Typ', () => {
+    it('markiert als ausformuliert mit dem entstandenen Beitrag und seinem Typ', () => {
       service.updateStatus('id-1', 'processed', 'beitrag-1', 'commentary').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/status`);
@@ -151,7 +151,7 @@ describe('RawInputService', () => {
           einwurf({ id: 'id-aktuell' }),
           einwurf({ id: 'id-verworfen', status: 'discarded' }),
           einwurf({ id: 'id-spaeter', own_draft: 'zurueckgestellt' }),
-          einwurf({ id: 'id-verarbeitet', status: 'processed' }),
+          einwurf({ id: 'id-ausformuliert', status: 'processed' }),
           einwurf({ id: 'id-naechster' }),
         ],
       });

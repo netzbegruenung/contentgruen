@@ -6,12 +6,12 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Subject, of, throwError } from 'rxjs';
 
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
-import { RohlingBeitrag } from '../beitragskarte/karten-daten';
+import { EinwurfBeitrag } from '../beitragskarte/karten-daten';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { LoggingService } from '../services/logging.service';
 
-function beitrag(overrides: Partial<RohlingBeitrag> = {}): RohlingBeitrag {
+function beitrag(overrides: Partial<EinwurfBeitrag> = {}): EinwurfBeitrag {
   return { contentId: 'c-1', typ: 'commentary', satz: 'Ein Satz', ...overrides };
 }
 
@@ -35,7 +35,7 @@ describe('EinwurfBeitragSheetComponent', () => {
   let genericText: jasmine.SpyObj<GenericTextService>;
 
   async function erstellen(
-    beitraege: RohlingBeitrag[],
+    beitraege: EinwurfBeitrag[],
   ): Promise<ComponentFixture<EinwurfBeitragSheetComponent>> {
     await TestBed.configureTestingModule({
       imports: [EinwurfBeitragSheetComponent, NoopAnimationsModule],
