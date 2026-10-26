@@ -25,7 +25,7 @@ from typing import Optional, Tuple
 
 from core.logging import get_logger
 from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.statement import Statement
 from utils.rate_limiter import RateLimiter, search_query_statement_rate_limiter
 
@@ -58,7 +58,7 @@ class SearchQueryStatementRecorder:
         return await statement_service.add_statement(
             Statement(text=text, replysuggestions=[]),
             SEARCH_QUERY_AUTHOR,
-            ContentStatus.RELEASED_INTERNAL,
+            NEW_CONTENT_STATUS,
             ContentOrigin.SEARCH_QUERY,
         )
 

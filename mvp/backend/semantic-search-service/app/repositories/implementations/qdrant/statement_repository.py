@@ -6,7 +6,7 @@ from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from repositories.implementations.qdrant.base_repository import (
     QdrantBaseRepository,
-    _gesperrt_bedingungen,
+    nur_sichtbar_bedingungen,
 )
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
@@ -112,14 +112,15 @@ class StatementRepository(
             result = await self._shared_manager.async_client.count(
                 collection_name=self._shared_manager.collection_name,
                 count_filter=Filter(
+                    # Nur sichtbare Aussagen, wie in der Suche.
                     must=[
                         FieldCondition(
                             key="content_type",
                             match=MatchValue(value=self.content_type),
-                        )
+                        ),
+                        *nur_sichtbar_bedingungen(),
                     ],
-                    # Gesperrte Aussagen fehlen in der Suche, also auch hier.
-                    must_not=[_unbeantwortete_suchanfrage(), *_gesperrt_bedingungen()],
+                    must_not=[_unbeantwortete_suchanfrage()],
                 ),
             )
             return result.count
@@ -142,13 +143,11 @@ class StatementRepository(
                 query=query_text,
                 content_type=self.content_type,
                 limit=limit,
-                # Dieselben Status wie die normale Suche ausschliessen, dazu die
-                # unbeantworteten Suchanfragen.
+                # Wie die normale Suche nur sichtbare, ohne die unbeantworteten
+                # Suchanfragen.
                 filter_dict={
-                    "must_not": [
-                        *self._status_ausschluss(),
-                        _unbeantwortete_suchanfrage(),
-                    ]
+                    "must": nur_sichtbar_bedingungen(),
+                    "must_not": [_unbeantwortete_suchanfrage()],
                 },
             )
             return [
@@ -180,17 +179,17 @@ class StatementRepository(
         try:
             from qdrant_client.models import Range, FieldCondition, Filter
 
-            # Dieselben Status wie search() ausschliessen, also auch gesperrte
-            # Aussagen; ihr Text erschiene sonst als statement_text an den Treffern.
-            filter_dict = {"must_not": self._status_ausschluss()}
+            # Wie search() nur sichtbare Aussagen; der Text einer gesperrten
+            # erschiene sonst als statement_text an den Treffern.
+            filter_dict = {"must": nur_sichtbar_bedingungen()}
             if min_replysuggestions_count > 0:
                 # Use Qdrant's range filter for efficient server-side filtering
-                filter_dict["must"] = [
+                filter_dict["must"].append(
                     FieldCondition(
                         key="replysuggestions_count",
                         range=Range(gte=min_replysuggestions_count),
                     )
-                ]
+                )
 
             # Perform search with server-side filtering
             search_results = await self._shared_manager.search(

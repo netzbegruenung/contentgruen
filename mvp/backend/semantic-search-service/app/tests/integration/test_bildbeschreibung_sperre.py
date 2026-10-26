@@ -173,7 +173,7 @@ async def test_update_status_nur_aus_laesst_anderen_status_stehen(
     await image_service.add(_wartendes_bild(item_id))
 
     await image_service.update_status(
-        item_id, ContentStatus.DESCRIPTION_FAILED, nur_aus=ContentStatus.APPROVED
+        item_id, ContentStatus.DESCRIPTION_FAILED, nur_aus=ContentStatus.VISIBLE
     )
     payload = await real_embeddings_manager.get_by_id(str(item_id))
     assert payload["status"] == ContentStatus.PENDING_DESCRIPTION.value

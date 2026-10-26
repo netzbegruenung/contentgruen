@@ -52,6 +52,48 @@ docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisie
 auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
 ausgerollten neuen Stand.
 
+## Zustaende umstellen (im semantic-search-Container)
+
+`zustaende_umstellen.py [--ausfuehren]` – **schreibend mit `--ausfuehren`.** Einmalig
+mit #214: stellt den Status aller Punkte auf die Zustaende sichtbar, gesperrt,
+geloescht um (auch `status_vor_sperre` gesperrter Beitraege) und entfernt das Feld
+`visibility`. Bisher auffindbare Status (`released_internal`, `approved`, `draft`,
+`archived`, `duplicate` u. a., auch Punkte ohne Status) und `pending_review` werden
+`visible`; `blocked` und die Bild-Vorstufen bleiben. Unbekannte Werte bleiben stehen,
+auch in `status_vor_sperre`, werden gemeldet und das Skript endet mit Exit 1.
+Idempotent.
+
+Reihenfolge:
+
+1. Backup ziehen (`mvp/scripts/backup/backup.sh`, enthaelt den Qdrant-Snapshot).
+2. Die Version mit den neuen Zustaenden ausrollen. Bis Schritt 4 liest sie Altwerte
+   als sichtbar und die Suche findet, was sie vorher fand (Uebergang in
+   `domain/models/content_status.py`); gesperrte Beitraege bleiben ausgeblendet.
+3. Ohne `--ausfuehren` laufen lassen und die Zaehler pruefen. Vorher ansehen, was
+   mit mehr als 0 dasteht bei
+   - `pending_review`: heute in der Suche ausgeblendet, wird sichtbar;
+   - `rejected`, `archived`, `duplicate`: heute schon in der Suche, aber nicht in der
+     Dublettenpruefung und nicht in „Suchen ohne Treffer“; werden voll sichtbar.
+     Zwischen Ausrollen und Umstellung zaehlt „Suchen ohne Treffer“ diese Aussagen
+     bereits mit (das Modell liest sie als sichtbar).
+4. Mit `--ausfuehren` laufen lassen; ein zweiter Lauf meldet `umzustellen: 0`. Die
+   Umstellung schreibt nur Punkte, deren Status sich seit dem Lesen nicht geaendert
+   hat; was ein Admin waehrend des Laufs sperrt oder entsperrt, bleibt stehen. Meldet
+   der zweite Lauf noch etwas, ihn mit `--ausfuehren` wiederholen.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/zustaende_umstellen.py
+docker exec -i gutgesagt-semantic-search python - < zustaende_umstellen.py
+docker exec -i gutgesagt-semantic-search python - --ausfuehren < zustaende_umstellen.py
+```
+
+Getestet in `tests/unit/services/test_zustaende_umstellen.py` (Logik),
+`test_zustaende_umstellen_skript.py` (Aufruf) und `tests/integration/test_zustaende.py`
+(echter Qdrant, vor und nach der Umstellung). Ist die Umstellung auf Test und
+Produktion gelaufen, entfaellt der Uebergang im Modell. Das fruehere Einmal-Skript
+`promote_pending_review_content.py` ist entfallen: Es setzte `released_internal`, einen
+Status, den es nicht mehr gibt.
+
 ## Loeschkommando (im PostgreSQL-Container)
 
 `person_loeschen.sql` – **schreibend.** Der PostgreSQL-Teil des Loeschkonzepts

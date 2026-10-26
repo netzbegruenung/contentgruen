@@ -21,7 +21,7 @@ _BASE = dict(
     last_modified=_dt.datetime(2024, 1, 1),
     original_author="testuser",
     last_modified_by="testuser",
-    status=ContentStatus.DRAFT,
+    status=ContentStatus.VISIBLE,
     origin=ContentOrigin.MANUALLY_CREATED,
 )
 

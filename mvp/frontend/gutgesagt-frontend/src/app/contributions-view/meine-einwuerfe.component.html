@@ -1,0 +1,26 @@
+<div *ngIf="isLoading" class="einwuerfe-laedt">
+    <p>Lade eigene Einwürfe …</p>
+    <mat-spinner class="mat-spinner-color" diameter="40"></mat-spinner>
+</div>
+
+<p *ngIf="!isLoading && ladefehler" class="einwuerfe-fehler">Deine Einwürfe konnten nicht geladen werden. Bitte lade die Seite neu.</p>
+
+<ng-container *ngIf="!isLoading && !ladefehler">
+    <p *ngIf="!karten.length" class="einwuerfe-leer">Du hast noch nichts eingeworfen.</p>
+
+    <p *ngIf="karten.length" class="einwuerfe-statistik">{{ statistik }}</p>
+
+    <ul *ngIf="karten.length" class="karten">
+        <li *ngFor="let karte of karten; trackBy: nachKarte">
+            <app-beitragskarte variante="einwurf" [daten]="karte" [stufeZeigen]="true"
+                               (aktion)="aktionAusfuehren(karte, $event)">
+            </app-beitragskarte>
+        </li>
+    </ul>
+</ng-container>
+
+<!-- Ausserhalb des Ladezweigs: sonst entsteht der Paginator bei jedem Seitenwechsel neu und steht wieder auf Seite 1 -->
+<mat-paginator *ngIf="gesamt > SEITENGROESSE" [length]="gesamt"
+    [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="[24, 48, 96]" [hidePageSize]="istMobil"
+    (page)="onPageChange($event)">
+</mat-paginator>

@@ -5,7 +5,7 @@ Mirrors the structure of test_post_type.py (rung-1 step-6 gate) for the
 rung-2 Image type. Verifies:
 
 * test_image_roundtrip_phase_a -- caption provided at creation time (Phase A):
-  entry stored as APPROVED, all Image-specific fields survive the round-trip,
+  entry stored as VISIBLE, all Image-specific fields survive the round-trip,
   and the image is semantically searchable.
 
 * test_image_roundtrip_phase_b -- no caption (Phase B): entry stored as
@@ -43,7 +43,7 @@ def _make_image_entry(
     image_url: str = "https://example.com/demo.jpg",
     text: str | None = "Tausende Menschen demonstrieren für Klimaschutz in Berlin",
     description_model: str | None = None,
-    status: ContentStatus = ContentStatus.APPROVED,
+    status: ContentStatus = ContentStatus.VISIBLE,
 ) -> ImageDbEntry:
     now = datetime.datetime.now()
     return ImageDbEntry(
@@ -76,7 +76,7 @@ async def test_image_roundtrip_phase_a(integration_settings, real_repository_fac
         title="Windkraft Niedersachsen",
         image_url="https://example.com/wind.jpg",
         text="Windräder auf einer grünen Wiese in Niedersachsen bei Sonnenuntergang",
-        status=ContentStatus.APPROVED,
+        status=ContentStatus.VISIBLE,
     )
 
     stored_id = await service._upsert(entry)
@@ -92,7 +92,7 @@ async def test_image_roundtrip_phase_a(integration_settings, real_repository_fac
         == "Windräder auf einer grünen Wiese in Niedersachsen bei Sonnenuntergang"
     )
     assert fetched.description_model is None
-    assert fetched.status == ContentStatus.APPROVED
+    assert fetched.status == ContentStatus.VISIBLE
 
     hits = await service.search("Windräder Niedersachsen", limit=5)
     assert any(h.id == item_id for h in hits)
@@ -149,14 +149,14 @@ async def test_image_phase_b_to_phase_a_update(
     )
     await service._upsert(phase_b_entry)
 
-    # Simulate worker: fill caption and promote to PENDING_REVIEW
+    # Simulate worker: fill caption and make the image visible
     now = datetime.datetime.now()
     phase_a_entry = ImageDbEntry(
         **{
             **phase_b_entry.model_dump(),
             "text": "Solarmodule auf dem Dach eines Gemeindezentrums in Bayern",
             "description_model": "gpt-4o",
-            "status": ContentStatus.APPROVED,
+            "status": ContentStatus.VISIBLE,
             "last_modified": now,
         }
     )
@@ -165,7 +165,7 @@ async def test_image_phase_b_to_phase_a_update(
     fetched = await service.get(item_id)
     assert fetched.text == "Solarmodule auf dem Dach eines Gemeindezentrums in Bayern"
     assert fetched.description_model == "gpt-4o"
-    assert fetched.status == ContentStatus.APPROVED
+    assert fetched.status == ContentStatus.VISIBLE
 
     hits = await service.search("Solarmodule Gemeindezentrum", limit=5)
     assert any(h.id == item_id for h in hits)

@@ -13,7 +13,7 @@ import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component'
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { PLATTFORMEN } from '../shared/plattform';
 import {
-  FangkorbResponse,
+  EinwurfSeite,
   Einwurf,
   Satz,
   Verknuepfung,
@@ -69,7 +69,7 @@ function jeTab(): Einwurf[] {
   ];
 }
 
-function antwort(results: Einwurf[], gesamt = results.length): FangkorbResponse {
+function antwort(results: Einwurf[], gesamt = results.length): EinwurfSeite {
   return { results_count: results.length, results, total_records_count: gesamt };
 }
 

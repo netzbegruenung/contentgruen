@@ -33,7 +33,7 @@ def speicher(test_embeddings_manager):
                 **create_base_content_fields(),
                 "id": CONTENT_ID,
                 "text": "Gemeldeter Kommentar",
-                "status": "approved",
+                "status": "visible",
             }
         ],
     )
@@ -100,7 +100,7 @@ class TestSperren:
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
         await service.entsperren(CONTENT_ID)
 
-        assert _payload(speicher)["status"] == "approved"
+        assert _payload(speicher)["status"] == "visible"
 
 
 @pytest.mark.unit
@@ -113,26 +113,26 @@ class TestEntsperren:
 
         assert await service.entsperren(CONTENT_ID) is True
 
-        assert _payload(speicher)["status"] == "approved"
+        assert _payload(speicher)["status"] == "visible"
         assert "status_vor_sperre" not in _payload(speicher)
 
-    async def test_entsperren_ohne_status_von_vorher_entfernt_status(
+    async def test_entsperren_ohne_status_von_vorher_macht_sichtbar(
         self, service, speicher
     ):
-        # Altbestand ohne Status-Feld: nach dem Entsperren wieder ohne Status,
-        # also genau so sichtbar wie vor der Sperre.
+        # Ohne gemerkten Zustand gilt sichtbar: Die Suche findet nur sichtbare,
+        # ein Beitrag ohne Status-Feld waere nach dem Entsperren nicht auffindbar.
         del _payload(speicher)["status"]
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
 
         await service.entsperren(CONTENT_ID)
 
-        assert "status" not in _payload(speicher)
+        assert _payload(speicher)["status"] == "visible"
         assert "status_vor_sperre" not in _payload(speicher)
 
     async def test_entsperren_nicht_gesperrt_aendert_nichts(self, service, speicher):
         assert await service.entsperren(CONTENT_ID) is True
 
-        assert _payload(speicher)["status"] == "approved"
+        assert _payload(speicher)["status"] == "visible"
         speicher.async_client.set_payload.assert_not_called()
 
     async def test_entsperren_unbekannter_beitrag(self, service):
@@ -153,7 +153,7 @@ class TestGesperrteBeitraege:
                     **create_base_content_fields(),
                     "id": anderer,
                     "text": "Sichtbare Hintergrundinfo",
-                    "status": "approved",
+                    "status": "visible",
                 }
             ],
         )
