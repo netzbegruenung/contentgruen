@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, TypeVar, Generic, Optional, Type
+from typing import Any, Dict, List, TypeVar, Generic, Optional, Type
 import uuid
 
 from domain.models.base_content import (
@@ -238,12 +238,27 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         return []
 
     async def update_status(
-        self, item_id: uuid.UUID, new_status: ContentStatus
+        self,
+        item_id: uuid.UUID,
+        new_status: ContentStatus,
+        nur_aus: Optional[ContentStatus] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
+        With nur_aus, the status only changes while the item is in that status.
         Default implementation is a no-op.
         Override in repositories that support status updates.
+        """
+        pass
+
+    async def unterschrift_setzen(
+        self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
+    ) -> None:
+        """
+        Partial update: set text (and its vector) plus the extra payload fields,
+        leaving status, Sperre and everything else untouched.
+        Default implementation is a no-op.
+        Override in repositories that support partial updates.
         """
         pass
 

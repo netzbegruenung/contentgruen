@@ -3,7 +3,14 @@ Async background worker that processes PENDING_DESCRIPTION images.
 
 The worker polls `image_service.get_by_status(PENDING_DESCRIPTION)` on a fixed
 interval, calls the configured IngestionStrategy (AiVisionDescription) to derive a
-German caption, then upserts the enriched entry and moves it to NEW_CONTENT_STATUS.
+German caption, then writes only the caption (text, vector, extra fields) and moves
+the entry to NEW_CONTENT_STATUS.
+
+Status changes are conditional: they apply only while the entry is still
+PENDING_DESCRIPTION. Describing takes seconds; an admin may sperren the image in the
+meantime, and the worker must not lift that Sperre (#251). The caption is still
+written, so a later Entsperren finds it (the worker then promotes the image on its
+next poll).
 
 On failure it sets DESCRIPTION_FAILED. On OpenAI rate-limit it backs off 60 s and
 re-picks up remaining items on the next poll cycle. The loop is idempotent: a hard
@@ -43,17 +50,23 @@ async def _description_worker(
                             "marking DESCRIPTION_FAILED"
                         )
                         await image_service.update_status(
-                            entry.id, ContentStatus.DESCRIPTION_FAILED
+                            entry.id,
+                            ContentStatus.DESCRIPTION_FAILED,
+                            nur_aus=ContentStatus.PENDING_DESCRIPTION,
                         )
                         continue
-                    updated = entry.model_copy(
-                        update={
-                            "text": result.text,
-                            "status": NEW_CONTENT_STATUS,
-                            **result.extra,
-                        }
+                    # Kein Upsert des ganzen Eintrags: Er truege den gelesenen
+                    # Status zurueck und hoebe eine zwischenzeitliche Sperre auf.
+                    # Der Status zuletzt, damit das Bild erst mit Unterschrift
+                    # sichtbar wird.
+                    await image_service.unterschrift_setzen(
+                        entry.id, result.text, result.extra
                     )
-                    await image_service.add(updated)
+                    await image_service.update_status(
+                        entry.id,
+                        NEW_CONTENT_STATUS,
+                        nur_aus=ContentStatus.PENDING_DESCRIPTION,
+                    )
                     logger.info(
                         f"Description worker: processed image {entry.id} "
                         f"({len(result.text)} chars caption)"
@@ -89,7 +102,9 @@ async def _description_worker(
                         exc_info=True,
                     )
                     await image_service.update_status(
-                        entry.id, ContentStatus.DESCRIPTION_FAILED
+                        entry.id,
+                        ContentStatus.DESCRIPTION_FAILED,
+                        nur_aus=ContentStatus.PENDING_DESCRIPTION,
                     )
 
                 await asyncio.sleep(0.5)  # stay within OpenAI RPM limits

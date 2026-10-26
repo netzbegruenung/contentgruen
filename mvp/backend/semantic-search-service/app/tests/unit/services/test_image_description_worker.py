@@ -6,6 +6,8 @@ Tests verify:
 - Transient OpenAI errors (connection, 5xx) leave the item at PENDING_DESCRIPTION
 - Permanent errors transition to DESCRIPTION_FAILED
 - RateLimitError breaks the current batch and re-polls after sleep
+- Status changes only apply while the image is still PENDING_DESCRIPTION, so a
+  Sperre set during the description is not overwritten (#251)
 """
 
 import asyncio
@@ -80,6 +82,7 @@ class TestWorkerStateMachine:
         image_service.get_by_status = AsyncMock(return_value=[entry])
         image_service.update_status = AsyncMock()
         image_service.add = AsyncMock()
+        image_service.unterschrift_setzen = AsyncMock()
 
         ingestion_strategy = MagicMock()
         ingestion_strategy.derive_text = AsyncMock(return_value=_make_derived(""))
@@ -87,7 +90,9 @@ class TestWorkerStateMachine:
         await self._run_one_cycle(image_service, ingestion_strategy)
 
         image_service.update_status.assert_called_once_with(
-            item_id, ContentStatus.DESCRIPTION_FAILED
+            item_id,
+            ContentStatus.DESCRIPTION_FAILED,
+            nur_aus=ContentStatus.PENDING_DESCRIPTION,
         )
         image_service.add.assert_not_called()
 
@@ -100,6 +105,7 @@ class TestWorkerStateMachine:
         image_service.get_by_status = AsyncMock(return_value=[entry])
         image_service.update_status = AsyncMock()
         image_service.add = AsyncMock()
+        image_service.unterschrift_setzen = AsyncMock()
 
         ingestion_strategy = MagicMock()
         ingestion_strategy.derive_text = AsyncMock(return_value=_make_derived("   "))
@@ -107,7 +113,9 @@ class TestWorkerStateMachine:
         await self._run_one_cycle(image_service, ingestion_strategy)
 
         image_service.update_status.assert_called_once_with(
-            item_id, ContentStatus.DESCRIPTION_FAILED
+            item_id,
+            ContentStatus.DESCRIPTION_FAILED,
+            nur_aus=ContentStatus.PENDING_DESCRIPTION,
         )
         image_service.add.assert_not_called()
 
@@ -125,6 +133,7 @@ class TestWorkerStateMachine:
         image_service.get_by_status = AsyncMock(return_value=[entry])
         image_service.update_status = AsyncMock()
         image_service.add = AsyncMock()
+        image_service.unterschrift_setzen = AsyncMock()
 
         ingestion_strategy = MagicMock()
         ingestion_strategy.derive_text = AsyncMock(
@@ -150,6 +159,7 @@ class TestWorkerStateMachine:
         image_service.get_by_status = AsyncMock(return_value=[entry])
         image_service.update_status = AsyncMock()
         image_service.add = AsyncMock()
+        image_service.unterschrift_setzen = AsyncMock()
 
         # Use __new__ to avoid complex constructor requirements (response, body kwargs)
         err = APIStatusError.__new__(APIStatusError)
@@ -177,6 +187,7 @@ class TestWorkerStateMachine:
         image_service.get_by_status = AsyncMock(return_value=[entry])
         image_service.update_status = AsyncMock()
         image_service.add = AsyncMock()
+        image_service.unterschrift_setzen = AsyncMock()
 
         err = APIStatusError.__new__(APIStatusError)
         err.status_code = 400
@@ -187,11 +198,13 @@ class TestWorkerStateMachine:
         await self._run_one_cycle(image_service, ingestion_strategy)
 
         image_service.update_status.assert_called_once_with(
-            item_id, ContentStatus.DESCRIPTION_FAILED
+            item_id,
+            ContentStatus.DESCRIPTION_FAILED,
+            nur_aus=ContentStatus.PENDING_DESCRIPTION,
         )
 
     async def test_valid_caption_promotes_to_new_content_status(self):
-        """Good caption → NEW_CONTENT_STATUS via service.add()."""
+        """Good caption → Unterschrift gesetzt, then NEW_CONTENT_STATUS only from PENDING_DESCRIPTION."""
         item_id = uuid.uuid4()
         entry = _make_pending_image(item_id)
 
@@ -199,6 +212,35 @@ class TestWorkerStateMachine:
         image_service.get_by_status = AsyncMock(return_value=[entry])
         image_service.update_status = AsyncMock()
         image_service.add = AsyncMock(return_value=item_id)
+        image_service.unterschrift_setzen = AsyncMock()
+
+        derived = _make_derived("Windräder in Niedersachsen")
+        derived.extra = {"description_model": "gpt-4o"}
+        ingestion_strategy = MagicMock()
+        ingestion_strategy.derive_text = AsyncMock(return_value=derived)
+
+        await self._run_one_cycle(image_service, ingestion_strategy)
+
+        image_service.unterschrift_setzen.assert_called_once_with(
+            item_id, "Windräder in Niedersachsen", {"description_model": "gpt-4o"}
+        )
+        image_service.update_status.assert_called_once_with(
+            item_id, NEW_CONTENT_STATUS, nur_aus=ContentStatus.PENDING_DESCRIPTION
+        )
+
+    async def test_valid_caption_does_not_rewrite_whole_entry(self):
+        """
+        Kein Upsert des ganzen Eintrags: Er truege den Status von vor der
+        Beschreibung zurueck und hoebe eine zwischenzeitliche Sperre auf.
+        """
+        item_id = uuid.uuid4()
+        entry = _make_pending_image(item_id)
+
+        image_service = MagicMock()
+        image_service.get_by_status = AsyncMock(return_value=[entry])
+        image_service.update_status = AsyncMock()
+        image_service.add = AsyncMock(return_value=item_id)
+        image_service.unterschrift_setzen = AsyncMock()
 
         ingestion_strategy = MagicMock()
         ingestion_strategy.derive_text = AsyncMock(
@@ -207,8 +249,28 @@ class TestWorkerStateMachine:
 
         await self._run_one_cycle(image_service, ingestion_strategy)
 
-        image_service.update_status.assert_not_called()
-        image_service.add.assert_called_once()
-        updated = image_service.add.call_args[0][0]
-        assert updated.status == NEW_CONTENT_STATUS
-        assert updated.text == "Windräder in Niedersachsen"
+        image_service.add.assert_not_called()
+
+    async def test_status_comes_after_unterschrift(self):
+        """Sichtbar erst mit Unterschrift: der Status wechselt nach dem Schreiben des Texts."""
+        item_id = uuid.uuid4()
+        entry = _make_pending_image(item_id)
+        reihenfolge = []
+
+        image_service = MagicMock()
+        image_service.get_by_status = AsyncMock(return_value=[entry])
+        image_service.unterschrift_setzen = AsyncMock(
+            side_effect=lambda *a, **k: reihenfolge.append("unterschrift")
+        )
+        image_service.update_status = AsyncMock(
+            side_effect=lambda *a, **k: reihenfolge.append("status")
+        )
+
+        ingestion_strategy = MagicMock()
+        ingestion_strategy.derive_text = AsyncMock(
+            return_value=_make_derived("Windräder in Niedersachsen")
+        )
+
+        await self._run_one_cycle(image_service, ingestion_strategy)
+
+        assert reihenfolge == ["unterschrift", "status"]

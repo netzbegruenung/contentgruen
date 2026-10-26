@@ -1,6 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import List, Optional, Type, TypeVar, Generic
+from typing import Any, Dict, List, Optional, Type, TypeVar, Generic
 import uuid
 import logging
 
@@ -278,10 +278,25 @@ class BaseContentService(
         return await self._repository.get_by_status(status, limit)
 
     async def update_status(
-        self, item_id: uuid.UUID, new_status: ContentStatus
+        self,
+        item_id: uuid.UUID,
+        new_status: ContentStatus,
+        nur_aus: Optional[ContentStatus] = None,
     ) -> None:
-        """Partial-payload update: change only the status field without re-embedding."""
+        """
+        Partial-payload update: change only the status field without re-embedding.
+        With nur_aus, only while the item is still in that status.
+        """
         logger.debug(
             f"BaseContentService ({self._repository_class.__name__}): Updating status of {item_id} to {new_status}"
         )
-        await self._repository.update_status(item_id, new_status)
+        await self._repository.update_status(item_id, new_status, nur_aus=nur_aus)
+
+    async def unterschrift_setzen(
+        self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
+    ) -> None:
+        """Set text (Bildunterschrift) and vector only; status and Sperre stay as they are."""
+        logger.debug(
+            f"BaseContentService ({self._repository_class.__name__}): Setting text of {item_id}"
+        )
+        await self._repository.unterschrift_setzen(item_id, text, extra)
