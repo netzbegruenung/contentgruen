@@ -50,6 +50,14 @@ describe('SuchenOhneTrefferComponent', () => {
     expect(text()).toContain('Aussage');
   });
 
+  it('nennt die Mindestanzahl als Personen, nicht als Suchen', () => {
+    http.expectOne(URL).flush({ wochen: 4, mindestanzahl: 2, suchanfragen: [] });
+    fixture.detectChanges();
+
+    expect(text()).toContain('2 verschiedene Personen');
+    expect(text()).not.toContain('ab 2 Suchen');
+  });
+
   it('sagt, wenn es keine Suchanfrage ohne Treffer gibt', () => {
     http.expectOne(URL).flush({ wochen: 4, mindestanzahl: 2, suchanfragen: [] });
     fixture.detectChanges();

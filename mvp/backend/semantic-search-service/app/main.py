@@ -43,7 +43,10 @@ from api.v1.moderation import router as moderation_router
 from api.v1.health import router as health_router
 from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
 from services.vision.image_description_worker import start_description_worker
-from services.suchen_ohne_treffer_service import loeschen_im_takt
+from services.suchen_ohne_treffer_service import (
+    get_personen_des_tages,
+    loeschen_im_takt,
+)
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
@@ -134,7 +137,9 @@ async def lifespan(app: FastAPI):
         # Kennzahl "Suchen ohne Treffer": alte Wochen taeglich loeschen, unabhaengig
         # vom abschaltbaren Usage-Cleanup (services/suchen_ohne_treffer_service.py).
         app.state.suchen_ohne_treffer_loeschen = asyncio.create_task(
-            loeschen_im_takt(get_suchen_ohne_treffer_repository())
+            loeschen_im_takt(
+                get_suchen_ohne_treffer_repository(), get_personen_des_tages()
+            )
         )
         logger.info("✅ Searches-without-hits cleanup task started")
 

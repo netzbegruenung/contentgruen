@@ -2,8 +2,8 @@
 Unit-Tests fuer das SuchenOhneTrefferRepository.
 
 Die Datenbanksitzung ist gemockt; geprueft wird das SQL, das PostgreSQL bekaeme:
-Hochzaehlen per Upsert je (Aussage, Woche), Aufraeumen alter Wochen und die
-Rangliste mit Mindestanzahl.
+Hochzaehlen von Suchen und Personen per Upsert je (Aussage, Woche), Aufraeumen
+alter Wochen und die Rangliste mit Mindestanzahl an Personen.
 """
 
 import uuid
@@ -49,7 +49,7 @@ def repository(session):
 
 class TestZaehlen:
     def test_zaehlen_erhoeht_die_anzahl_je_aussage_und_woche(self, repository, session):
-        repository.zaehlen(AUSSAGE, date(2026, 10, 26))
+        repository.zaehlen(AUSSAGE, date(2026, 10, 26), neue_person=True)
 
         upsert = session.execute.call_args.args[0]
         sql = _sql(upsert)
@@ -62,12 +62,22 @@ class TestZaehlen:
         assert params["anzahl"] == 1
         session.commit.assert_called_once()
 
+    @pytest.mark.parametrize("neue_person, personen", [(True, 1), (False, 0)])
+    def test_zaehlen_erhoeht_personen_nur_fuer_neue_person(
+        self, repository, session, neue_person, personen
+    ):
+        repository.zaehlen(AUSSAGE, date(2026, 10, 26), neue_person=neue_person)
+
+        upsert = session.execute.call_args.args[0]
+        assert "personen = (suchen_ohne_treffer.personen + " in _sql(upsert)
+        assert _params(upsert)["personen"] == personen
+
     def test_zaehlen_gibt_datenbankfehler_an_den_aufrufer(self, repository, session):
         """Abgefangen wird im Suchpfad, nicht hier."""
         session.execute.side_effect = RuntimeError("weg")
 
         with pytest.raises(RuntimeError):
-            repository.zaehlen(AUSSAGE, date(2026, 10, 26))
+            repository.zaehlen(AUSSAGE, date(2026, 10, 26), neue_person=True)
 
 
 class TestLoeschenVor:
@@ -85,7 +95,9 @@ class TestLoeschenVor:
 
 
 class TestHaeufigste:
-    def test_haeufigste_summiert_ab_woche_mit_mindestanzahl(self, repository, session):
+    def test_haeufigste_summiert_ab_woche_mit_mindestanzahl_an_personen(
+        self, repository, session
+    ):
         session.execute.return_value.all.return_value = [(AUSSAGE, 5)]
 
         zeilen = repository.haeufigste(date(2026, 10, 5), 2, 20)
@@ -95,7 +107,7 @@ class TestHaeufigste:
         assert "sum(suchen_ohne_treffer.anzahl)" in sql
         assert "WHERE suchen_ohne_treffer.woche >=" in sql
         assert "GROUP BY suchen_ohne_treffer.statement_id" in sql
-        assert "HAVING sum(suchen_ohne_treffer.anzahl) >=" in sql
+        assert "HAVING sum(suchen_ohne_treffer.personen) >=" in sql
         assert "ORDER BY" in sql and "DESC" in sql
         assert "LIMIT" in sql
         params = _params(abfrage)

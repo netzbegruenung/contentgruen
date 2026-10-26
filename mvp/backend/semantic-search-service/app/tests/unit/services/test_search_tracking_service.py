@@ -152,6 +152,22 @@ class TestTrackSearch:
             user_id="alice", moment=moment
         )
 
+    def test_track_search_uses_the_moment_handed_in(self, service, mock_repository):
+        """The search path hands in the moment it also uses for "Suchen ohne
+        Treffer", so both get the same daily pseudonym."""
+        moment = datetime(2026, 10, 26, 23, 59, 59, tzinfo=timezone.utc)
+        with patch("services.search_tracking_service.datetime") as mock_datetime:
+            mock_datetime.now.return_value = datetime(
+                2026, 10, 27, 0, 0, 1, tzinfo=timezone.utc
+            )
+            service.track_search(results_count=0, user_id="alice", moment=moment)
+
+        _, kwargs = mock_repository.track_search.call_args
+        assert kwargs["day"] == date(2026, 10, 26)
+        assert kwargs["actor_hash"] == SearchTrackingService._derive_actor_hash(
+            user_id="alice", moment=moment
+        )
+
     def test_track_search_logs_nothing_at_info(self, service, mock_repository, caplog):
         """A log line per search carries its exact time; counted per day it lines
         up with the search events by order and undoes the coarsening."""

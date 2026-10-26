@@ -53,6 +53,8 @@ def test_admin_sieht_suchanfragen_mit_anzahl_ohne_personenbezug(client):
 
     assert response.status_code == 200
     body = response.json()
+    # Nichts ueber die Suchenden, auch keine Zahl der Personen je Aussage.
+    assert set(body) == {"wochen", "mindestanzahl", "suchanfragen"}
     assert body["wochen"] == 4
     assert body["mindestanzahl"] == 2
     # Ohne ID der Aussage: ueber deren created-Zeitpunkt liesse sich die Zeile
