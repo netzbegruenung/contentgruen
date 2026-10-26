@@ -203,7 +203,7 @@ describe('DestillierenComponent', () => {
       await erstellen('id-1', einwurf({ submitted_by: 'bob' }));
 
       expect(knopf('verwerfen')).toBeNull();
-      expect(knopf('spaeter')).toBeTruthy();
+      expect(knopf('spaeter')!.textContent!.trim()).toBe('Später');
     });
 
     it('zeigt Admins Verwerfen auch beim fremden Einwurf', async () => {
@@ -213,7 +213,7 @@ describe('DestillierenComponent', () => {
       knopf('verwerfen')!.click();
 
       expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'erledigt');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformuliert');
     });
 
     it('zeigt Verwerfen bei Ausformuliertem und Verworfenem niemandem', async () => {
@@ -239,9 +239,9 @@ describe('DestillierenComponent', () => {
       knopf('verwerfen')!.click();
 
       expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
-      // Verworfenes liegt unter "Erledigt" - und der Chip dafuer wird eingeschaltet,
+      // Verworfenes liegt unter "Ausformuliert" - und der Chip dafuer wird eingeschaltet,
       // sonst waere der Einwurf nach dem Verwerfen scheinbar spurlos weg.
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'erledigt');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformuliert');
       expect(filterLaden().verworfenSichtbar).toBeTrue();
     });
 
@@ -396,13 +396,13 @@ describe('DestillierenComponent', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
     });
 
-    it('nimmt ohne Tab-Angabe den Tab "erledigt"', async () => {
+    it('nimmt ohne Tab-Angabe den Tab "ausformuliert"', async () => {
       queryParams = convertToParamMap({ nach: 'id-vorher' });
       rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
 
       await erstellen(null);
 
-      expect(filterLaden().tab).toBe('erledigt');
+      expect(filterLaden().tab).toBe('ausformuliert');
     });
 
     it('oeffnet mit ?schritt=typwahl die Typwahl, wenn ein eigener Satz dasteht', async () => {
@@ -414,17 +414,17 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('Waermepumpe lohnt sich auch im Altbau');
     });
 
-    const verarbeitet = () =>
+    const ausformuliert = () =>
       einwurf({
         own_draft: 'Waermepumpe lohnt sich',
         status: 'processed',
         links: [{ content_id: 'k-1', content_type: 'commentary', draft_id: null, processed_by: 'alice', processed_at: '' }],
       } as any);
 
-    it('zeigt bei einem verarbeiteten Einwurf die Typwahl mit Hinweis statt umzuleiten (Rueckweg von der Ergebnisseite)', async () => {
+    it('zeigt bei einem ausformulierten Einwurf die Typwahl mit Hinweis statt umzuleiten (Rueckweg von der Ergebnisseite)', async () => {
       queryParams = convertToParamMap({ schritt: 'typwahl' });
 
-      await erstellen('id-1', verarbeitet());
+      await erstellen('id-1', ausformuliert());
 
       expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
       expect(component.schritt).toBe('typwahl');
@@ -444,8 +444,8 @@ describe('DestillierenComponent', () => {
       expect(fixture.nativeElement.querySelector('.schon-entstanden')).toBeNull();
     });
 
-    it('laesst einen verarbeiteten Einwurf ohne ?schritt beim Satz (Weiter destillieren)', async () => {
-      await erstellen('id-1', verarbeitet());
+    it('laesst einen ausformulierten Einwurf ohne ?schritt beim Satz (Weiter destillieren)', async () => {
+      await erstellen('id-1', ausformuliert());
 
       expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
       expect(component.schritt).toBe('satz');
@@ -459,11 +459,11 @@ describe('DestillierenComponent', () => {
       const seite: HTMLElement = fixture.nativeElement;
       expect(seite.querySelector('.einwurf-link')).toBeNull();
       expect(seite.querySelector('.satz-vorschau')).toBeNull();
-      expect(seite.querySelector('.einwurf-kopf .rohling-kopf')).toBeTruthy();
-      expect(seite.querySelector('.einwurf-kopf .rohling-titel')!.textContent).toContain('Guter Thread');
-      expect(seite.querySelector('.einwurf-kopf .rohling-kopfsatz')!.textContent).toContain('Waermepumpe lohnt sich auch im Altbau');
+      expect(seite.querySelector('.einwurf-kopf .einwurf-band')).toBeTruthy();
+      expect(seite.querySelector('.einwurf-kopf .einwurf-titel')!.textContent).toContain('Guter Thread');
+      expect(seite.querySelector('.einwurf-kopf .einwurf-kopfsatz')!.textContent).toContain('Waermepumpe lohnt sich auch im Altbau');
       // Mit Satz ist der Einwurf auszuformulieren - auch wenn er vor dem Speichern geladen wurde.
-      expect(seite.querySelector('.einwurf-kopf .karte')!.classList).toContain('zustand-ausformulieren');
+      expect(seite.querySelector('.einwurf-kopf .karte')!.classList).toContain('stufe-destilliert');
     });
 
     it('beschreibt die Typen mit den Saetzen aus der Registry', () => {

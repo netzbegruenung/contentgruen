@@ -91,7 +91,7 @@ describe('RawInputListComponent', () => {
   }
 
   function karten(): HTMLElement[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('article.karte--rohling'));
+    return Array.from(fixture.nativeElement.querySelectorAll('article.karte--einwurf'));
   }
 
   function kartenKomponenten(): BeitragskarteComponent[] {
@@ -167,11 +167,11 @@ describe('RawInputListComponent', () => {
         (wort) => wort.textContent!.trim(),
       );
 
-      expect(woerter).toEqual(['Destillieren', 'Ausformulieren', 'Erledigt']);
+      expect(woerter).toEqual(['Destillieren', 'Ausformulieren', 'Ausformuliert']);
       expect(fixture.nativeElement.textContent).not.toContain('Einwerfen →');
       expect(zaehler('Destillieren')).toBe('1');
       expect(zaehler('Ausformulieren')).toBe('1');
-      expect(zaehler('Erledigt')).toBe('1');
+      expect(zaehler('Ausformuliert')).toBe('1');
     });
 
     it('beginnt beim Destillieren und wechselt auf Tipp', () => {
@@ -180,9 +180,9 @@ describe('RawInputListComponent', () => {
       expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
 
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
 
-      expect(tabKnopf('Erledigt').getAttribute('aria-selected')).toBe('true');
+      expect(tabKnopf('Ausformuliert').getAttribute('aria-selected')).toBe('true');
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig']);
     });
 
@@ -239,28 +239,28 @@ describe('RawInputListComponent', () => {
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz']);
     });
 
-    it('legt alles mit Beitrag unter Erledigt, auch ohne Satz', () => {
+    it('legt alles mit Beitrag unter Ausformuliert, auch ohne Satz', () => {
       erstellen([
         ...jeTab(),
         einwurf({ id: 'alt', status: 'processed', created_at: '2026-09-01T10:00:00Z', links: [link(null, null)] }),
       ]);
 
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
 
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig', 'alt']);
     });
 
-    it('zeigt Verworfenes erst mit dem Chip, und den nur unter Erledigt', () => {
+    it('zeigt Verworfenes erst mit dem Chip, und den nur unter Ausformuliert', () => {
       erstellen(jeTab());
       expect(filterKnopf('verworfen')).toBeUndefined();
 
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig']);
 
       klicken(filterKnopf('verworfen'));
 
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig', 'weg']);
-      expect(zaehler('Erledigt')).toBe('2');
+      expect(zaehler('Ausformuliert')).toBe('2');
     });
 
     it('sortiert neueste zuerst, nicht eigene zuerst', () => {
@@ -280,9 +280,9 @@ describe('RawInputListComponent', () => {
         'Nichts auszuformulieren.',
       );
 
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
-        'Noch nichts erledigt.',
+        'Noch nichts ausformuliert.',
       );
     });
   });
@@ -322,7 +322,7 @@ describe('RawInputListComponent', () => {
   });
 
   describe('Karte', () => {
-    it('zeigt Plattform und Link-Icon im Kopf, die Notiz als Titel, Alter und Knopf im Fuss', () => {
+    it('zeigt Plattform und Link-Icon im Kopf, den Hinweis als Titel, Alter und Knopf im Fuss', () => {
       erstellen([
         einwurf({
           url: 'https://www.instagram.com/reel/ABC/',
@@ -332,37 +332,37 @@ describe('RawInputListComponent', () => {
       ]);
       const [karte] = karten();
 
-      const linkzeile = karte.querySelector<HTMLAnchorElement>('a.rohling-linkzeile')!;
+      const linkzeile = karte.querySelector<HTMLAnchorElement>('a.einwurf-linkzeile')!;
       expect(linkzeile.getAttribute('href')).toBe('https://www.instagram.com/reel/ABC/');
       expect(linkzeile.getAttribute('target')).toBe('_blank');
-      expect(linkzeile.querySelector('.rohling-herkunft')!.textContent!.trim()).toBe('Instagram');
-      expect(linkzeile.querySelector('.rohling-adresse')!.textContent!.trim()).toBe(
+      expect(linkzeile.querySelector('.einwurf-herkunft')!.textContent!.trim()).toBe('Instagram');
+      expect(linkzeile.querySelector('.einwurf-adresse')!.textContent!.trim()).toBe(
         'instagram.com/reel/ABC',
       );
       expect(linkzeile.textContent).not.toContain('https://');
-      expect(karte.querySelector('.rohling-titel')!.textContent!.trim()).toBe(
+      expect(karte.querySelector('.einwurf-titel')!.textContent!.trim()).toBe(
         'Gute Antwort in den Kommentaren',
       );
-      expect(karte.querySelector('.rohling-alter')!.textContent!.trim()).toBeTruthy();
-      expect(karte.querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Destillieren');
+      expect(karte.querySelector('.einwurf-alter')!.textContent!.trim()).toBeTruthy();
+      expect(karte.querySelector('.einwurf-primaer .knopf-wort')!.textContent!.trim()).toBe('Destillieren');
     });
 
-    it('zeigt ohne Notiz keinen Titel - dann traegt die Link-Zeile die Aufschrift', () => {
+    it('zeigt ohne Hinweis keinen Titel - dann traegt die Link-Zeile die Aufschrift', () => {
       erstellen([einwurf({ url: 'https://beispiel-zeitung.de/artikel/1', content: null })]);
       const [karte] = karten();
 
-      expect(karte.querySelector('.rohling-titel')).toBeNull();
-      expect(karte.querySelector('.rohling-herkunft')!.textContent!.trim()).toBe('beispiel-zeitung.de');
-      expect(karte.querySelector('.rohling-adresse')!.textContent!.trim()).toBe(
+      expect(karte.querySelector('.einwurf-titel')).toBeNull();
+      expect(karte.querySelector('.einwurf-herkunft')!.textContent!.trim()).toBe('beispiel-zeitung.de');
+      expect(karte.querySelector('.einwurf-adresse')!.textContent!.trim()).toBe(
         'beispiel-zeitung.de/artikel/1',
       );
     });
 
     it('zeigt ohne Link keine Link-Zeile', () => {
-      erstellen([einwurf({ url: null, content: 'nur eine Notiz' })]);
+      erstellen([einwurf({ url: null, content: 'nur ein Hinweis' })]);
 
-      expect(karten()[0].querySelector('.rohling-linkzeile')).toBeNull();
-      expect(karten()[0].querySelector('.rohling-titel')!.textContent!.trim()).toBe('nur eine Notiz');
+      expect(karten()[0].querySelector('.einwurf-linkzeile')).toBeNull();
+      expect(karten()[0].querySelector('.einwurf-titel')!.textContent!.trim()).toBe('nur ein Hinweis');
     });
 
     it('nennt den Einwerfer beim Anzeigenamen, ohne Namen "Mitglied", den eigenen Einwurf "Du"', () => {
@@ -371,7 +371,7 @@ describe('RawInputListComponent', () => {
         einwurf({ id: 'fremd', submitted_by: fremd, submitted_by_name: 'Jürgen Ö.' }),
         einwurf({ id: 'ohne-name', submitted_by: fremd }),
       ]);
-      const einwerfer = karten().map((karte) => karte.querySelector('.rohling-einwerfer')!);
+      const einwerfer = karten().map((karte) => karte.querySelector('.einwurf-einwerfer')!);
       expect(einwerfer.map((zeile) => zeile.textContent!.trim())).toEqual(['Von: Jürgen Ö.', 'Von: Mitglied']);
       // Die Kennung steht auch nicht im Tooltip.
       expect(einwerfer.every((zeile) => !zeile.hasAttribute('title'))).toBeTrue();
@@ -379,23 +379,23 @@ describe('RawInputListComponent', () => {
       fixture.destroy();
       erstellen([einwurf({ submitted_by: 'alice' })]);
 
-      expect(karten()[0].querySelector('.rohling-einwerfer')!.textContent!.trim()).toBe('Von: Du');
+      expect(karten()[0].querySelector('.einwurf-einwerfer')!.textContent!.trim()).toBe('Von: Du');
     });
 
-    it('beschriftet den Primaerknopf nach Zustand und laesst ihn bei Verworfenem weg', () => {
+    it('beschriftet den Primaerknopf nach Stufe und laesst ihn bei Verworfenem weg', () => {
       erstellen(jeTab());
-      expect(karten()[0].querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Destillieren');
+      expect(karten()[0].querySelector('.einwurf-primaer .knopf-wort')!.textContent!.trim()).toBe('Destillieren');
 
       klicken(tabKnopf('Ausformulieren'));
-      expect(karten()[0].querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Ausformulieren');
+      expect(karten()[0].querySelector('.einwurf-primaer .knopf-wort')!.textContent!.trim()).toBe('Ausformulieren');
 
-      klicken(tabKnopf('Erledigt'));
-      expect(karten()[0].querySelector('.rohling-primaer .knopf-wort')!.textContent!.trim()).toBe('Ansehen');
+      klicken(tabKnopf('Ausformuliert'));
+      expect(karten()[0].querySelector('.einwurf-primaer .knopf-wort')!.textContent!.trim()).toBe('Ansehen');
 
       klicken(filterKnopf('verworfen'));
-      const verworfen = karten().find((karte) => karte.classList.contains('zustand-verworfen'))!;
-      expect(verworfen.querySelector('.rohling-primaer')).toBeNull();
-      expect(verworfen.querySelector('.rohling-verworfen')!.textContent!.trim()).toBe('verworfen');
+      const verworfen = karten().find((karte) => karte.classList.contains('stufe-verworfen'))!;
+      expect(verworfen.querySelector('.einwurf-primaer')).toBeNull();
+      expect(verworfen.querySelector('.einwurf-verworfen')!.textContent!.trim()).toBe('verworfen');
     });
   });
 
@@ -408,8 +408,8 @@ describe('RawInputListComponent', () => {
           links: [link('s-2', 'commentary', 'c-1'), link('s-2', 'generic_text', 'c-2')],
         }),
       ]);
-      klicken(tabKnopf('Erledigt'));
-      const zeilen = Array.from(karten()[0].querySelectorAll('.rohling-satz') as NodeListOf<HTMLElement>);
+      klicken(tabKnopf('Ausformuliert'));
+      const zeilen = Array.from(karten()[0].querySelectorAll('.einwurf-satz') as NodeListOf<HTMLElement>);
 
       expect(zeilen.length).toBe(2);
       expect(zeilen[0].querySelector('.satz-text')!.textContent!.trim()).toBe('Entwurf geblieben');
@@ -427,15 +427,15 @@ describe('RawInputListComponent', () => {
       klicken(tabKnopf('Ausformulieren'));
       const [karte] = karten();
 
-      expect(karte.querySelectorAll('.rohling-satz').length).toBe(3);
-      expect(karte.querySelector('.rohling-mehr')!.textContent!.trim()).toBe('+2 weitere');
+      expect(karte.querySelectorAll('.einwurf-satz').length).toBe(3);
+      expect(karte.querySelector('.einwurf-mehr')!.textContent!.trim()).toBe('+2 weitere');
     });
 
     it('zeigt einen einzelnen Beitrag als Haken', () => {
       erstellen([
         einwurf({ status: 'processed', drafts: [satz('s-1', 'bob', 'Genommen')], links: [link('s-1')] }),
       ]);
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
 
       expect(karten()[0].querySelector('.satz-status')!.textContent!.trim()).toBe('✓');
     });
@@ -445,7 +445,7 @@ describe('RawInputListComponent', () => {
     it('fuehrt Destillieren in die Destillier-Ansicht, an den Anfang', () => {
       erstellen(jeTab());
 
-      klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
+      klicken(karten()[0].querySelector<HTMLButtonElement>('.einwurf-primaer')!);
 
       expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'roh']);
     });
@@ -454,7 +454,7 @@ describe('RawInputListComponent', () => {
       erstellen(jeTab());
       klicken(tabKnopf('Ausformulieren'));
 
-      klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
+      klicken(karten()[0].querySelector<HTMLButtonElement>('.einwurf-primaer')!);
 
       // Der Satz steht schon - dann beginnt das Ausformulieren bei der Typwahl.
       expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'satz'], {
@@ -464,7 +464,7 @@ describe('RawInputListComponent', () => {
 
     it('fuehrt Weiterdestillieren an den Anfang, nicht in die Typwahl', () => {
       erstellen(jeTab());
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
 
       component.aktionAusfuehren(component.karten[0], 'weiterDestillieren');
 
@@ -473,9 +473,9 @@ describe('RawInputListComponent', () => {
 
     it('oeffnet mit "Ansehen" das Sheet statt einer Suche', () => {
       erstellen(jeTab());
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
 
-      klicken(karten()[0].querySelector<HTMLButtonElement>('.rohling-primaer')!);
+      klicken(karten()[0].querySelector<HTMLButtonElement>('.einwurf-primaer')!);
 
       const [komponente, optionen] = (bottomSheet.open as jasmine.Spy).calls.mostRecent().args;
       expect(komponente).toBe(EinwurfBeitragSheetComponent);
@@ -505,10 +505,10 @@ describe('RawInputListComponent', () => {
       }
     });
 
-    it('bietet Admins bei Erledigtem kein Verwerfen', () => {
+    it('bietet Admins bei Ausformuliertem kein Verwerfen', () => {
       nutzer = { ...nutzer, isAdmin: true };
       erstellen(jeTab());
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
 
       expect(kartenKomponenten()[0].menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
         'Link kopieren',
@@ -526,16 +526,16 @@ describe('RawInputListComponent', () => {
       expect(rawInputService.updateStatus).toHaveBeenCalledWith('fremd', 'discarded');
     });
 
-    it('bietet bei Erledigtem und Verworfenem Weiterarbeiten statt Verwerfen', () => {
+    it('bietet bei Ausformuliertem und Verworfenem Weiterarbeiten statt Verwerfen', () => {
       erstellen(jeTab());
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
       expect(kartenKomponenten()[0].menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
         'Link kopieren',
         'Weiter destillieren',
       ]);
 
       klicken(filterKnopf('verworfen'));
-      const verworfen = kartenKomponenten().find((karte) => karte.daten.rohling!.zustand === 'verworfen')!;
+      const verworfen = kartenKomponenten().find((karte) => karte.daten.einwurf!.stufe === 'verworfen')!;
 
       expect(verworfen.menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
         'Link kopieren',
@@ -590,7 +590,7 @@ describe('RawInputListComponent', () => {
 
     it('fuehrt Weiterdestillieren in die Destillier-Ansicht', () => {
       erstellen(jeTab());
-      klicken(tabKnopf('Erledigt'));
+      klicken(tabKnopf('Ausformuliert'));
 
       component.aktionAusfuehren(component.karten[0], 'weiterDestillieren');
 

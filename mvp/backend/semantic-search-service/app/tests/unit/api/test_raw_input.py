@@ -659,7 +659,7 @@ class TestStatuswechsel:
     def test_verarbeitet_mit_unbekanntem_beitrag_ist_422(
         self, client, repository, beitraege
     ):
-        """Eine erfundene ID schiebt keinen fremden Einwurf nach "Erledigt"."""
+        """Eine erfundene ID setzt keinen fremden Einwurf auf "ausformuliert"."""
         beitraege["commentary"].get.side_effect = ValueError("not found")
         inhalt_id = uuid.uuid4()
 

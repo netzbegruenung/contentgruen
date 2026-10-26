@@ -76,7 +76,7 @@ export interface RawInput {
   destilled_by?: string | null;
   /** Der eigene Satz aus ``drafts``. */
   own_draft?: string | null;
-  /** Erste Verknuepfung mit einem Beitrag, falls verarbeitet. */
+  /** Erste Verknuepfung mit einem Beitrag, falls ausformuliert. */
   processed_content_id?: string | null;
   processed_by?: string | null;
   processed_at?: string | null;
@@ -171,14 +171,14 @@ export class RawInputService {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sentence }),
-      }).catch((error) => this.logger.warn('Entwurf konnte nicht gesichert werden', error));
+      }).catch((error) => this.logger.warn('Satz konnte nicht gesichert werden', error));
     } catch (error) {
-      this.logger.warn('Entwurf konnte nicht gesichert werden', error);
+      this.logger.warn('Satz konnte nicht gesichert werden', error);
     }
   }
 
   /**
-   * Verwerfen oder als verarbeitet markieren - dann mit dem entstandenen Beitrag
+   * Verwerfen oder als ausformuliert markieren - dann mit dem entstandenen Beitrag
    * und seinem Typ, nach dem sich die Fangkorb-Karte faerbt.
    */
   updateStatus(
@@ -232,7 +232,7 @@ export class RawInputService {
   /**
    * Der Cache-Interceptor haelt GETs fuenf Minuten und kennt PATCH nicht. Ohne
    * das hier zeigte die Liste nach einem Statuswechsel den alten Stand, und das
-   * Weiterspringen boete den gerade erledigten Einwurf erneut an.
+   * Weiterspringen boete den Einwurf, an dem man gerade war, erneut an.
    */
   private cacheLeeren(): void {
     cacheService.delete('/api/v1/rawinput');

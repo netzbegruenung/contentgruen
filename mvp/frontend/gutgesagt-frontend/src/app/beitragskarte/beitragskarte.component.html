@@ -4,7 +4,7 @@
          [attr.aria-label]="antippbar ? beschriftung : null"
          (click)="antippen()" (keyup.enter)="antippen()">
 
-    <header class="karte-kopf" *ngIf="!rohling" [class.karte-kopf--bild]="kopfBild">
+    <header class="karte-kopf" *ngIf="!einwurf" [class.karte-kopf--bild]="kopfBild">
         <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf -->
         <img *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || ''" loading="lazy">
         <span class="karte-icon" role="img"
@@ -26,53 +26,53 @@
         </div>
     </header>
 
-    <!-- Rohling: dieselbe Anatomie wie die volle Karte - Band, Koerper, Aktion, Meta -->
-    <ng-container *ngIf="rohling as rohling">
-        <header class="karte-kopf rohling-kopf" [class.rohling-kopf--ohne-notiz]="!daten.titel">
+    <!-- Einwurf-Karte: dieselbe Anatomie wie die volle Karte - Band, Koerper, Aktion, Meta -->
+    <ng-container *ngIf="einwurf as einwurf">
+        <header class="karte-kopf einwurf-band" [class.einwurf-band--ohne-hinweis]="!daten.titel">
             <span class="karte-icon" role="img" [attr.aria-label]="stufenName"
                   [matTooltip]="stufenName" matTooltipPosition="below">{{ stufenEmoji }}</span>
 
-            <h3 class="karte-titel rohling-titel" *ngIf="daten.titel">{{ daten.titel }}</h3>
-            <span class="rohling-titel-platz" *ngIf="!daten.titel" aria-hidden="true"></span>
+            <h3 class="karte-titel einwurf-titel" *ngIf="daten.titel">{{ daten.titel }}</h3>
+            <span class="einwurf-titel-platz" *ngIf="!daten.titel" aria-hidden="true"></span>
 
-            <span class="rohling-verworfen" *ngIf="rohling.zustand === 'verworfen'">verworfen</span>
+            <span class="einwurf-verworfen" *ngIf="einwurf.stufe === 'verworfen'">verworfen</span>
         </header>
 
         <!--
             Eigener Block ueber die ganze Bandbreite, als Ganzes ein Tipp-Ziel:
-            oben die Plattform, darunter die Adresse. Ohne Notiz ist er die
+            oben die Plattform, darunter die Adresse. Ohne Hinweis ist er die
             Aufschrift der Karte - dann steht die Plattform in Titelgroesse.
         -->
-        <a *ngIf="rohling.link" class="rohling-linkzeile" [href]="rohling.link"
-           [class.rohling-linkzeile--titel]="!daten.titel"
+        <a *ngIf="einwurf.link" class="einwurf-linkzeile" [href]="einwurf.link"
+           [class.einwurf-linkzeile--titel]="!daten.titel"
            target="_blank" rel="noopener noreferrer"
-           [attr.aria-label]="'Original öffnen: ' + (rohling.linkText || rohling.link)">
-            <span class="rohling-linktexte">
-                <span class="rohling-herkunft" *ngIf="rohling.herkunft">{{ rohling.herkunft }}</span>
-                <span class="rohling-adresse">{{ rohling.linkText }}</span>
+           [attr.aria-label]="'Original öffnen: ' + (einwurf.linkText || einwurf.link)">
+            <span class="einwurf-linktexte">
+                <span class="einwurf-herkunft" *ngIf="einwurf.herkunft">{{ einwurf.herkunft }}</span>
+                <span class="einwurf-adresse">{{ einwurf.linkText }}</span>
             </span>
             <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
         </a>
 
         <!-- Im Kopf nur der eine Satz, aus dem der Beitrag entsteht -->
-        <p class="rohling-kopfsatz" *ngIf="istKopf && rohling.kopfSatz">„{{ rohling.kopfSatz }}“</p>
+        <p class="einwurf-kopfsatz" *ngIf="istKopf && einwurf.kopfSatz">„{{ einwurf.kopfSatz }}“</p>
 
         <!-- Koerper weiss: die Saetze am gruenen Balken, je Satz rechts der Stand -->
-        <div class="rohling-koerper" *ngIf="!istKopf && sichtbareSaetze.length">
-            <ul class="rohling-saetze">
-                <li class="rohling-satz" *ngFor="let satz of sichtbareSaetze">
+        <div class="einwurf-koerper" *ngIf="!istKopf && sichtbareSaetze.length">
+            <ul class="einwurf-saetze">
+                <li class="einwurf-satz" *ngFor="let satz of sichtbareSaetze">
                     <span class="satz-text">{{ satz.text }}</span>
                     <span class="satz-status" [class.satz-status--fertig]="satz.beitraege > 0"
                           [attr.aria-label]="satzBeschriftung(satz)">{{ satzStatus(satz) }}</span>
                 </li>
-                <li class="rohling-mehr" *ngIf="weitereSaetze">+{{ weitereSaetze }} weitere</li>
+                <li class="einwurf-mehr" *ngIf="weitereSaetze">+{{ weitereSaetze }} weitere</li>
             </ul>
         </div>
 
         <!-- Aktionszeile wie bei der vollen Karte: Griff in der Mitte, ⋮ rechts -->
-        <div class="rohling-aktion" *ngIf="!istKopf && (primaerAktion || menueEintraege.length)">
+        <div class="einwurf-aktion" *ngIf="!istKopf && (primaerAktion || menueEintraege.length)">
             <button *ngIf="primaerAktion as primaer" type="button" mat-raised-button
-                    class="gutgesagt-primary-dark rohling-primaer"
+                    class="gutgesagt-primary-dark einwurf-primaer"
                     (click)="aktionAusloesen(primaer.aktion, $event)">
                 <!-- Das Zeichen der naechsten Stufe: wohin der Griff fuehrt -->
                 <span class="knopf-emoji" *ngIf="primaer.emoji as emoji" aria-hidden="true">{{ emoji }}</span>
@@ -80,13 +80,13 @@
                 <span class="knopf-wort">{{ primaer.wort }}</span>
             </button>
 
-            <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="rohling-menue"
-                    [matMenuTriggerFor]="rohlingMenue"
+            <button *ngIf="menueEintraege.length" type="button" mat-icon-button class="einwurf-menue"
+                    [matMenuTriggerFor]="einwurfMenue"
                     aria-label="Mehr zu diesem Einwurf"
                     (click)="$event.stopPropagation()">
                 <mat-icon>more_vert</mat-icon>
             </button>
-            <mat-menu #rohlingMenue="matMenu">
+            <mat-menu #einwurfMenue="matMenu">
                 <button mat-menu-item type="button" *ngFor="let eintrag of menueEintraege"
                         (click)="aktionAusloesen(eintrag.aktion, $event)">
                     <mat-icon>{{ eintrag.icon }}</mat-icon>
@@ -95,12 +95,12 @@
             </mat-menu>
         </div>
 
-        <p class="karte-meta rohling-meta" *ngIf="!istKopf">
+        <p class="karte-meta einwurf-meta" *ngIf="!istKopf">
             <ng-container *ngIf="zeigtEinwerfer">
-                <span class="rohling-einwerfer">Von: {{ autorAnzeige }}</span>
+                <span class="einwurf-einwerfer">Von: {{ autorAnzeige }}</span>
                 ·
             </ng-container>
-            <span class="rohling-alter">{{ daten.erstellt | relativeTime }}</span>
+            <span class="einwurf-alter">{{ daten.erstellt | relativeTime }}</span>
         </p>
     </ng-container>
 

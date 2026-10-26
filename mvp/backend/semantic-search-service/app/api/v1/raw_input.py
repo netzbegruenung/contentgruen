@@ -212,7 +212,7 @@ async def _beitrag_pruefen(
     Gibt es den Beitrag, mit dem der Einwurf verknuepft werden soll?
 
     Ohne diese Pruefung konnte jede angemeldete Person jeden Einwurf mit einer
-    erfundenen ID nach "Erledigt" schieben; die Verknuepfung zeigte ins Leere.
+    erfundenen ID auf "ausformuliert" setzen; die Verknuepfung zeigte ins Leere.
     Geprueft werden Existenz und Typ, nicht der Autor: Der stille Dedup beim
     Kommentar liefert im regulaeren Ablauf die ID eines fremden Kommentars.
 

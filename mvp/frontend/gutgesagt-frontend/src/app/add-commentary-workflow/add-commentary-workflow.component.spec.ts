@@ -67,9 +67,9 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
   beforeEach(async () => {
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', [
       'vorbefuellungLaden',
-      'alsVerarbeitetMarkieren',
+      'alsAusformuliertMarkieren',
     ]);
-    uebergabe.alsVerarbeitetMarkieren.and.returnValue(of(true));
+    uebergabe.alsAusformuliertMarkieren.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
       of({
         rohinputId: 'id-1',
@@ -114,7 +114,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true });
 
-    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
+    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary', 'gespeichert', 'beitrag-1'], {
       queryParams: { rohinput: 'id-1' },
       state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, markiert: true },

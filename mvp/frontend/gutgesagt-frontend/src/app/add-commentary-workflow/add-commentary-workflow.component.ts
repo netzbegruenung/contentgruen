@@ -145,7 +145,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
 
     if (this.rohinputId) {
       const rohinputId = this.rohinputId;
-      this.uebergabe.alsVerarbeitetMarkieren(rohinputId, ergebnis.id, 'commentary').subscribe((markiert) =>
+      this.uebergabe.alsAusformuliertMarkieren(rohinputId, ergebnis.id, 'commentary').subscribe((markiert) =>
         this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, markiert }),
       );
       return;
