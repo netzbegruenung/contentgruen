@@ -43,8 +43,7 @@ _SALT = secrets.token_bytes(32)
 # Header, den nginx setzt (proxy_set_header X-Real-IP $remote_addr) und den YARP
 # unveraendert weiterreicht. nginx ueberschreibt einen vom Client mitgeschickten
 # Wert, weshalb er hinter dem Reverse Proxy vertrauenswuerdig ist. Voraussetzung
-# ist, dass das BFF nur ueber nginx erreichbar ist -- auf tst und prod bindet es
-# an 127.0.0.1, siehe "Erforderliche Salt-Aenderungen" in der PR.
+# ist, dass das BFF nur ueber nginx erreichbar ist, also nur an localhost bindet.
 _REAL_IP_HEADER = "X-Real-IP"
 
 
