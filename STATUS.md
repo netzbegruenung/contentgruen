@@ -25,7 +25,7 @@ use existing comments/background info, and contribute their own.
 * [x] Content reporting and moderation system (incl. anonymous reporting with session tracking)
 * [x] Admin area with MVP metrics dashboard
 * [x] PostgreSQL persistence for application data (votes, usage tracking, moderation); vectors live in Qdrant
-* [x] Backup & restore (with rotation; automated in prod via SaltStack)
+* [x] Backup & restore (with rotation; scheduled in prod)
 * [x] Start page value proposition, recent-content display, help dialog, branding/favicon
 * [x] CI/CD via GitHub Actions (build on `main`/PRs, tagged releases); test and production systems deployed
 
@@ -74,6 +74,8 @@ Candidate features:
 
 ## Environments
 
-* **Test:** https://gutgesagt-test.netzbegruenung.de — SaltStack-managed, tracks `:main`.
-* **Production:** https://gutgesagt.netzbegruenung.de — SaltStack-managed, images pinned by
-  digest and bumped by Renovate. https://contentgruen.de redirects here.
+* **Test:** https://gutgesagt-test.netzbegruenung.de — tracks `:main`, rolled out manually.
+* **Production:** https://gutgesagt.netzbegruenung.de — pins `:latest` by digest (release flow: `docs/DEPLOYMENT.md`).
+  https://contentgruen.de redirects here.
+
+Both run on verdigado's internal infrastructure; operational details are documented internally.
