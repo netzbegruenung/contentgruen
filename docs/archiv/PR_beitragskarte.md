@@ -1,3 +1,5 @@
+> **Historisch:** Dieses Dokument stammt aus früherer Planung und ist teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # Beitragskarte: eine Karte mit Varianten
 
 **Branch:** `feat/beitragskarte`, Basis `main` `7f8ff9d`.

@@ -52,7 +52,7 @@ class AddRawInputRequest(BaseModel):
     Ein Einwurf. Mindestens eines von ``content``, ``url``, ``image_url``.
 
     ``image_url`` verweist auf ein bereits im Netz liegendes Bild - einen
-    Datei-Upload gibt es im gesamten Stack nicht (siehe docs/ROHINPUT.md).
+    Datei-Upload gibt es im gesamten Stack nicht (siehe docs/archiv/ROHINPUT.md).
     """
 
     content: Optional[str] = Field(
