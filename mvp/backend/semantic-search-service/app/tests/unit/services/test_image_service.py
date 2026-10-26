@@ -28,7 +28,7 @@ def _make_image_entry(**overrides) -> ImageDbEntry:
         original_author="test_user",
         last_modified_by="test_user",
         authors=[AuthorEntry(name="test_user")],
-        status=ContentStatus.PENDING_REVIEW,
+        status=ContentStatus.VISIBLE,
         origin=ContentOrigin.MANUALLY_CREATED,
     )
     defaults.update(overrides)
@@ -130,7 +130,7 @@ class TestImageService:
             title="Wind Park Niedersachsen",
             image_url="https://example.com/wind.jpg",
             text="Wind turbines in Lower Saxony near an organic farm",
-            status=ContentStatus.PENDING_REVIEW,
+            status=ContentStatus.VISIBLE,
         )
 
         image_id = await service.add(entry)

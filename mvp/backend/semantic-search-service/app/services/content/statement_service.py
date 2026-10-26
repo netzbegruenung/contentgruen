@@ -22,7 +22,7 @@ from domain.models.statement import (
 )
 from domain.models.content_type import ContentType
 from domain.models.author_entry import AuthorEntry
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS, ContentStatus
 from domain.models.content_origin import ContentOrigin
 from utils.text_normalisierung import SperreJeText
 
@@ -312,7 +312,7 @@ class StatementService(
             _, statement_id, aussage_text = await self.add_statement(
                 Statement(text=text, replysuggestions=[]),
                 author,
-                ContentStatus.RELEASED_INTERNAL,
+                NEW_CONTENT_STATUS,
                 ContentOrigin.MANUALLY_CREATED,
             )
         else:

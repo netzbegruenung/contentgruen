@@ -125,7 +125,7 @@ class TestSuchpfadBackend:
         _, author, status, origin = _aufruf_argumente(statement_service)
         assert origin is ContentOrigin.SEARCH_QUERY
         assert author == SEARCH_QUERY_AUTHOR
-        assert status is ContentStatus.RELEASED_INTERNAL
+        assert status is ContentStatus.VISIBLE
 
     def test_suche_liefert_statement_id_der_angelegten_suchanfrage(
         self, statement_service

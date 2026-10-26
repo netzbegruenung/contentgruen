@@ -14,7 +14,7 @@ from domain.models.base_content import (
     BaseContentDbEntry,
     BaseContentSearchResult,
 )
-from domain.models.content_status import NICHT_WIEDERVERWENDBAR, ContentStatus
+from domain.models.content_status import ContentStatus
 from utils.data_utils import DataSource
 from utils.text_normalisierung import ist_dasselbe, text_normalisiert
 
@@ -128,9 +128,9 @@ class BaseContentService(
 
         Normalisiert gleicher Text zaehlt immer (erst per Keyword-Index, dann unter
         den Vektortreffern fuer Altbestand ohne Feld), sonst der beste Vektortreffer
-        ab `schwelle`. Eintraege mit einem Status aus NICHT_WIEDERVERWENDBAR zaehlen
-        nie. Der Text geht unveraendert in die Einbettung - anders als search()
-        ersetzt das keine Anfuehrungszeichen, sonst sinkt der Score gleicher Texte.
+        ab `schwelle`. Wie in der Suche zaehlen nur sichtbare Eintraege. Der Text geht
+        unveraendert in die Einbettung - anders als search() ersetzt das keine
+        Anfuehrungszeichen, sonst sinkt der Score gleicher Texte.
         """
         normalform = text_normalisiert(text)
         if normalform:
@@ -143,7 +143,9 @@ class BaseContentService(
         )
         aehnlichster = treffer[0] if treffer else None
         for kandidat in treffer:
-            if kandidat.status in NICHT_WIEDERVERWENDBAR:
+            # search() liefert nur sichtbare; ein gesperrter Treffer, der doch
+            # durchrutscht, darf nie wiederverwendet werden.
+            if kandidat.status != ContentStatus.VISIBLE:
                 continue
             if ist_dasselbe(
                 normalform, text_normalisiert(kandidat.text), kandidat.score, schwelle
@@ -203,7 +205,6 @@ class BaseContentService(
             report_flagged=input_db_entry.report_flagged,
             rejection_reason=input_db_entry.rejection_reason,
             block_reason=input_db_entry.block_reason,
-            visibility=input_db_entry.visibility,
         )
 
         # Use injected content repository for aggregated view

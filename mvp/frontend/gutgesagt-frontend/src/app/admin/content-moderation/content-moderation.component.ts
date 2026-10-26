@@ -11,7 +11,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatBadgeModule } from '@angular/material/badge';
 import { trigger, state, style, transition, animate } from '@angular/animations';
-import { ModerationService, ContentReport, GemeldeterBeitrag, STATUS_GESPERRT } from '../../services/moderation.service';
+import { ModerationService, ContentReport, GemeldeterBeitrag } from '../../services/moderation.service';
+import { ContentStatus } from '../../services/dtos/content-status-enum';
 import { typLabel } from '../../shared/content-type-registry';
 
 type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
@@ -137,7 +138,7 @@ export class ContentModerationComponent implements OnInit {
   }
 
   istGesperrt(report: ContentReport): boolean {
-    return report.content?.status === STATUS_GESPERRT;
+    return report.content?.status === ContentStatus.BLOCKED;
   }
 
   sperren(report: ContentReport) {

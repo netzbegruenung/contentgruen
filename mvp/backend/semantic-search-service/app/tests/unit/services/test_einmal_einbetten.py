@@ -64,7 +64,7 @@ def _payload(content_type, text):
         "last_modified": jetzt,
         "original_author": "tester",
         "last_modified_by": "tester",
-        "status": "approved",
+        "status": "visible",
         "origin": "manually_created",
         "references": [],
         "references_count": 0,

@@ -79,7 +79,7 @@ def _felder(**extra):
         last_modified=now,
         original_author="tester",
         last_modified_by="tester",
-        status=ContentStatus.APPROVED,
+        status=ContentStatus.VISIBLE,
         origin=ContentOrigin.MANUALLY_CREATED,
         **extra,
     )
@@ -143,7 +143,7 @@ async def suche(integration_settings, real_repository_factory, real_embeddings_m
     _, aussage_id, _ = await statements.add_statement(
         Statement(text="Wärmepumpen lohnen sich nicht im Altbau", replysuggestions=[]),
         "tester",
-        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
     )
     await statements.add_statementreplysuggestion_to_statement(
