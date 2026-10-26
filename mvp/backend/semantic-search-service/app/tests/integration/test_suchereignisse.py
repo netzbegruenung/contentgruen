@@ -4,8 +4,9 @@ Der Zeitstempel von Suchereignissen (search_events.timestamp) gegen ein echtes P
 Ein Suchereignis traegt nur den UTC-Tag, als Mitternacht UTC. Der Unit-Test prueft den
 Server-Default nur als Text; hier rechnet PostgreSQL ihn aus, auch wenn die Zeitzone
 der Sitzung nicht UTC ist. Jede Sitzung erbt die Server-Zeitzone (``timezone``), hier
-wird sie je Sitzung gesetzt: Kiritimati (UTC+14) und Pago Pago (UTC-11) liegen fast
-immer auf einem anderen Kalendertag als UTC.
+wird sie je Sitzung gesetzt: Kiritimati (UTC+14) und Pago Pago (UTC-11) weichen
+ganzjaehrig von UTC ab, ein Default nach der Mitternacht der Sitzung ergaebe dort nie
+Mitternacht UTC.
 """
 
 from datetime import date, datetime, time, timezone

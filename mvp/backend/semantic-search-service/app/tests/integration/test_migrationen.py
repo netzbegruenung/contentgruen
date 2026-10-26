@@ -19,13 +19,12 @@ from tests.integration.postgres import Datenbank
 pytestmark = pytest.mark.integration
 
 # Laeuft nur einmal, auf dem Schema davor: benennt user_agent um, das es seither
-# nicht mehr gibt. Steht in der README unter "Erneut anwenden".
+# nicht mehr gibt. Steht in der README unter "Erneut anwenden". Das zweite Skript
+# dort (search-events-pseudonymisieren) laeuft mit: Sein TRUNCATE verliert auf den
+# leeren Tabellen hier nichts, das Schema bleibt pruefbar.
 NUR_EINMAL = {"2026-08-25-usage-events-datensparsamkeit.sql"}
 
-# Reihenfolge der README: nach dem Namen ohne Endung, damit
-# "...-suchen-ohne-treffer" vor "...-suchen-ohne-treffer-personen" laeuft. Mit
-# Endung (sorted, ls) kaeme "-personen.sql" zuerst, vor der Tabelle.
-SKRIPTE = sorted(postgres.MIGRATIONEN.glob("*.sql"), key=lambda s: s.stem)
+SKRIPTE = postgres.migrationen()
 WIEDERHOLBAR = [s for s in SKRIPTE if s.name not in NUR_EINMAL]
 ANGELEGT = re.compile(r"CREATE TABLE IF NOT EXISTS (\w+)", re.IGNORECASE)
 
@@ -52,14 +51,14 @@ def _schema_der(db: Datenbank) -> dict:
     with db.engine.connect() as c:
         return {
             art: sorted(
-                tuple(_ohne_schreibweise(wert, db.schema) for wert in zeile)
+                tuple(_normalisiert(wert, db.schema) for wert in zeile)
                 for zeile in c.execute(text(abfrage))
             )
             for art, abfrage in abfragen.items()
         }
 
 
-def _ohne_schreibweise(wert, schema: str) -> str:
+def _normalisiert(wert, schema: str) -> str:
     """
     Den Schemanamen weglassen und CURRENT_TIMESTAMP als now() lesen: Fuer
     timestamptz ist das in PostgreSQL dieselbe Funktion, die Skripte schreiben

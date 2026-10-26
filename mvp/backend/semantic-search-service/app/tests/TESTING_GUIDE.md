@@ -42,7 +42,7 @@ pytest tests/integration/               # Integration tests (Qdrant on :6333, Po
 
 Repositories, migrations and SQL scripts that only show their behaviour in a real
 database are tested in `tests/integration/` against PostgreSQL: migrations
-(`test_migrationen.py`), the search event timestamp (`test_suchereignisse.py`),
+(`test_migrationen.py`), the timestamp of a Suchereignis (`test_suchereignisse.py`),
 "Suchen ohne Treffer" (`test_suchen_ohne_treffer.py`) and the deletion command
 (`test_loeschkommando.py`).
 
@@ -59,7 +59,7 @@ pytest tests/integration/test_migrationen.py tests/integration/test_suchereignis
   `POSTGRES_TEST_DATABASE_URL`, e.g. the dev stack:
   `postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app`. It must be
   reachable, otherwise the tests fail. Without the variable and without Docker the
-  tests are skipped.
+  tests are skipped, except in CI (`CI` set), where they fail.
 - **Isolation:** every test works in its own schema (`search_path`) and drops it
   afterwards, so existing data stays untouched.
 - **Writing a test:** take the `wegwerf_schema` fixture (an empty schema, see

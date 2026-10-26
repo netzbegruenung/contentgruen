@@ -4,7 +4,8 @@ Gemeinsame Hilfen fuer Integrationstests gegen ein echtes PostgreSQL.
 Die Datenbank kommt aus ``POSTGRES_TEST_DATABASE_URL`` oder, ohne die Variable,
 aus einem Wegwerf-Container: dasselbe Basis-Image wie ``mvp/backend/postgres-app``,
 nur an 127.0.0.1 auf einem freien Port, nach dem Lauf entfernt. Ohne Variable und
-ohne Docker werden die Tests uebersprungen. Die Fixtures dazu stehen in
+ohne Docker werden die Tests uebersprungen, ausser in der CI (``CI`` gesetzt): Dort
+waere ein Ueberspringen ein falsches Gruen. Die Fixtures dazu stehen in
 ``conftest.py`` (``postgres_url``, ``wegwerf_schema``).
 
 Jeder Test arbeitet in einem eigenen Schema (``search_path``) und raeumt es wieder
@@ -12,7 +13,6 @@ ab; die Daten der Datenbank bleiben unberuehrt. Das gilt auch, wenn die Variable
 auf den Dev-Stack zeigt.
 """
 
-import os
 import re
 import secrets
 import shutil
@@ -32,6 +32,16 @@ URL_VARIABLE = "POSTGRES_TEST_DATABASE_URL"
 REPO_WURZEL = next(p for p in Path(__file__).parents if (p / "mvp").is_dir())
 POSTGRES_APP = REPO_WURZEL / "mvp" / "backend" / "postgres-app"
 MIGRATIONEN = POSTGRES_APP / "migrations"
+
+
+def migrationen() -> list:
+    """
+    Die Migrationen in der Reihenfolge der README: nach dem Namen ohne Endung,
+    damit "...-suchen-ohne-treffer" vor "...-suchen-ohne-treffer-personen" laeuft.
+    Mit Endung (sorted, ls) kaeme "-personen.sql" zuerst, vor der Tabelle.
+    """
+    return sorted(MIGRATIONEN.glob("*.sql"), key=lambda s: s.stem)
+
 
 # Benutzer und Datenbank wie in docker-compose.dev.yml, das Passwort nur fuer diesen Lauf.
 _BENUTZER = "app_user"
@@ -57,9 +67,13 @@ def erreichbar(url: str, timeout: int = 2) -> bool:
         engine.dispose()
 
 
-def _docker(*argumente: str) -> str:
+def _docker(*argumente: str, timeout: int = 30) -> str:
     return subprocess.run(
-        ["docker", *argumente], check=True, capture_output=True, text=True
+        ["docker", *argumente],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
     ).stdout.strip()
 
 
@@ -69,7 +83,7 @@ def docker_verfuegbar() -> bool:
     try:
         _docker("info", "--format", "{{.ServerVersion}}")
         return True
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return False
 
 
@@ -93,6 +107,8 @@ def wegwerf_container(warten_s: int = 60) -> Iterator[str]:
         "--publish",
         "127.0.0.1::5432",
         basis_image(),
+        # Der erste Lauf laedt das Image.
+        timeout=300,
     )
     try:
         # "127.0.0.1:49153"; bei mehreren Zeilen (IPv4/IPv6) gilt die erste.
@@ -107,7 +123,9 @@ def wegwerf_container(warten_s: int = 60) -> Iterator[str]:
             time.sleep(0.5)
         yield url
     finally:
-        subprocess.run(["docker", "rm", "--force", name], capture_output=True)
+        subprocess.run(
+            ["docker", "rm", "--force", name], capture_output=True, timeout=60
+        )
 
 
 class Datenbank:
@@ -143,15 +161,17 @@ def schema(url: str, praefix: str = "itest") -> Iterator[Datenbank]:
     """Ein leeres Wegwerf-Schema anlegen und nach dem Block mit allem Inhalt loeschen."""
     name = f"{praefix}_{uuid.uuid4().hex[:8]}"
     verwaltung = create_engine(url, poolclass=NullPool, isolation_level="AUTOCOMMIT")
-    with verwaltung.connect() as c:
-        c.execute(text(f"CREATE SCHEMA {name}"))
-    db = Datenbank(url, name)
     try:
-        yield db
-    finally:
-        db.engine.dispose()
         with verwaltung.connect() as c:
-            c.execute(text(f"DROP SCHEMA {name} CASCADE"))
+            c.execute(text(f"CREATE SCHEMA {name}"))
+        db = Datenbank(url, name)
+        try:
+            yield db
+        finally:
+            db.engine.dispose()
+            with verwaltung.connect() as c:
+                c.execute(text(f"DROP SCHEMA {name} CASCADE"))
+    finally:
         verwaltung.dispose()
 
 
@@ -160,8 +180,9 @@ def anweisungen(skript: str) -> Iterator[str]:
     Ein psql-Skript in einzelne Anweisungen zerlegen, ohne Kommentarzeilen.
 
     Einzeln, weil PostgreSQL ``VACUUM`` in einem Aufruf mit mehreren Anweisungen
-    ablehnt. Die Zerlegung an ``;`` traegt, solange kein String ein Semikolon
-    enthaelt und es keine $$-Bloecke gibt; beides wird hier abgewiesen.
+    ablehnt. Die Zerlegung an ``;`` traegt, solange weder ein String noch ein
+    Kommentar am Zeilenende ein Semikolon enthaelt (das prueft sie nicht) und es
+    keine $$-Bloecke gibt (die weist sie ab).
     """
     ohne_kommentare = "\n".join(
         zeile for zeile in skript.splitlines() if not zeile.lstrip().startswith("--")

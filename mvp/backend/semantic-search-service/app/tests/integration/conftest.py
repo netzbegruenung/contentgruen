@@ -104,7 +104,8 @@ def postgres_url():
     """URL eines echten PostgreSQL fuer den ganzen Lauf, siehe ``postgres.py``.
 
     Ist ``POSTGRES_TEST_DATABASE_URL`` gesetzt, muss die Datenbank erreichbar sein;
-    sonst ein Wegwerf-Container, ohne Docker werden die Tests uebersprungen.
+    sonst ein Wegwerf-Container; ohne Docker werden die Tests uebersprungen,
+    in der CI schlagen sie fehl.
     """
     url = os.environ.get(postgres.URL_VARIABLE)
     if url:
@@ -112,7 +113,11 @@ def postgres_url():
         yield url
         return
     if not postgres.docker_verfuegbar():
-        pytest.skip(f"Weder {postgres.URL_VARIABLE} gesetzt noch Docker verfuegbar")
+        grund = f"Weder {postgres.URL_VARIABLE} gesetzt noch Docker verfuegbar"
+        # In der CI waere Ueberspringen ein falsches Gruen.
+        if os.environ.get("CI"):
+            pytest.fail(grund)
+        pytest.skip(grund)
     with postgres.wegwerf_container() as url:
         yield url
 

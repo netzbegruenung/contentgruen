@@ -72,8 +72,10 @@ Idempotenz und Gleichheit mit `create_all` prüft der Integrationstest
 gegen ein echtes PostgreSQL: Jedes Skript läuft zweimal auf einer Datenbank im
 aktuellen Schema, und die ganze Kette läuft auf einer Datenbank ohne die Tabellen,
 die Skripte selbst anlegen; danach muss das Schema dem von `create_all` gleichen
-(Spalten, Defaults, Indizes, Constraints). Ausgenommen sind die Skripte unter
-„Erneut anwenden“, die nicht zweimal laufen dürfen. Starten:
+(Spalten, Defaults, Indizes, Constraints). Ausgenommen ist
+`2026-08-25-usage-events-datensparsamkeit.sql`, das beim zweiten Lauf abbricht
+(„Erneut anwenden“); `2026-08-19-search-events-pseudonymisieren.sql` läuft mit,
+sein `TRUNCATE` trifft im Test nur leere Tabellen. Starten:
 `tests/TESTING_GUIDE.md` im Semantic-Service, Abschnitt „Integration Tests Against
 PostgreSQL“. Den übrigen Inhalt des Kopfs prüft kein Test.
 
