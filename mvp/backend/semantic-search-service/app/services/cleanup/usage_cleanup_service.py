@@ -26,17 +26,17 @@ class UsageCleanupService:
     Service for managing automated cleanup of old usage data.
     """
 
-    def __init__(self, retention_days: int = 90, search_retention_days: int = 90):
+    def __init__(self, retention_days: int = 90, search_event_retention_days: int = 90):
         """
         Initialize cleanup service.
 
         Args:
             retention_days: Number of days of usage data to retain (default 90)
-            search_retention_days: Number of days of search events to keep as
+            search_event_retention_days: Number of days of search events to keep as
                 single rows before they become day counters (default 90)
         """
         self.retention_days = retention_days
-        self.search_retention_days = search_retention_days
+        self.search_event_retention_days = search_event_retention_days
         self.usage_service = get_usage_service()
         self.search_repository = get_search_tracking_repository()
         self._running = False
@@ -85,7 +85,7 @@ class UsageCleanupService:
         """
         try:
             self.search_repository.verdichte_alte_suchereignisse(
-                self.search_retention_days
+                self.search_event_retention_days
             )
         except Exception as e:
             logger.error(f"Error compacting old search events: {e}", exc_info=True)
@@ -151,6 +151,7 @@ class UsageCleanupService:
         return {
             "running": self._running,
             "retention_days": self.retention_days,
+            "search_event_retention_days": self.search_event_retention_days,
             "last_cleanup": (
                 self.last_cleanup.isoformat() if self.last_cleanup else None
             ),
@@ -194,7 +195,7 @@ def get_cleanup_service(retention_days: Optional[int] = None) -> UsageCleanupSer
         days = retention_days or settings.usage_retention_days
         _cleanup_service = UsageCleanupService(
             retention_days=days,
-            search_retention_days=settings.search_event_retention_days,
+            search_event_retention_days=settings.search_event_retention_days,
         )
 
     return _cleanup_service

@@ -9,6 +9,7 @@ Defaults zurueck.
 
 from unittest.mock import Mock, patch
 import pytest
+from pydantic import ValidationError
 
 from core.config import Settings
 from services.cleanup import usage_cleanup_service
@@ -50,18 +51,30 @@ class TestUsageCleanupServiceSettings:
         assert service.retention_days == 7
 
     def test_get_cleanup_service_search_retention_from_env(self, settings_from_env):
-        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="30")
+        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
 
         service = usage_cleanup_service.get_cleanup_service()
 
-        assert service.search_retention_days == 30
+        assert service.search_event_retention_days == 120
 
     def test_search_retention_default_is_90_days(self, settings_from_env):
         settings_from_env()
 
         service = usage_cleanup_service.get_cleanup_service()
 
-        assert service.search_retention_days == 90
+        assert service.search_event_retention_days == 90
+
+    @pytest.mark.parametrize("tage", ["89", "0", "-1"])
+    def test_search_retention_unter_90_tagen_abgelehnt(self, settings_from_env, tage):
+        with pytest.raises(ValidationError):
+            settings_from_env(SEARCH_EVENT_RETENTION_DAYS=tage)
+
+    def test_get_status_nennt_frist_der_suchereignisse(self, settings_from_env):
+        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
+
+        status = usage_cleanup_service.get_cleanup_service().get_status()
+
+        assert status["search_event_retention_days"] == 120
 
     def test_start_cleanup_scheduler_uses_configured_time(self, settings_from_env):
         settings_from_env(CLEANUP_HOUR="4", CLEANUP_MINUTE="15")
@@ -91,13 +104,13 @@ class TestUsageCleanupServiceSuchereignisse:
     def test_cleanup_old_data_verdichtet_suchereignisse_mit_frist(
         self, settings_from_env
     ):
-        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="30")
+        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
         service = usage_cleanup_service.get_cleanup_service()
 
         service.cleanup_old_data()
 
         service.search_repository.verdichte_alte_suchereignisse.assert_called_once_with(
-            30
+            120
         )
 
     def test_cleanup_old_data_nutzung_bleibt_bei_fehler_der_suchereignisse(

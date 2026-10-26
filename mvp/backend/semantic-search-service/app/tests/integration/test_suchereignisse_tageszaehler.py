@@ -8,8 +8,7 @@ Sie muss dasselbe Schema anlegen wie create_all.
 
 Jeder Test bekommt ein eigenes Schema und raeumt es wieder ab. Ohne erreichbares
 PostgreSQL wird das Modul uebersprungen. Ziel ueber
-``SUCHEN_OHNE_TREFFER_DATABASE_URL`` (wie test_suchen_ohne_treffer.py), sonst der
-Dev-Stack (Port 5433).
+``SUCHEREIGNISSE_DATABASE_URL``, sonst der Dev-Stack (Port 5433).
 """
 
 import os
@@ -29,7 +28,7 @@ from infrastructure.database.models import Base, SearchEvent, SuchenJeTagZeile
 from repositories.search_tracking_repository import SearchTrackingRepository
 
 DATABASE_URL = os.environ.get(
-    "SUCHEN_OHNE_TREFFER_DATABASE_URL",
+    "SUCHEREIGNISSE_DATABASE_URL",
     "postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app",
 )
 REPO_WURZEL = next(p for p in Path(__file__).parents if (p / "mvp").is_dir())
@@ -39,7 +38,7 @@ MIGRATION = (
     / "backend"
     / "postgres-app"
     / "migrations"
-    / "2026-10-27-suchereignisse-tageszaehler.sql"
+    / "2026-10-26-suchereignisse-tageszaehler.sql"
 )
 
 HEUTE = date(2026, 10, 27)
@@ -156,7 +155,9 @@ def _suchereignis_tage(datenbank: _Datenbank):
 
 
 class TestVerdichteAlteSuchereignisse:
-    def test_tage_vor_der_frist_werden_zu_tageszaehlern(self, db):
+    def test_verdichte_alte_suchereignisse_tage_vor_der_frist_werden_tageszaehler(
+        self, db
+    ):
         for actor in (PERSON_A, PERSON_A, PERSON_B, None):
             _suche(db, ALT, actor)
         _suche(db, NOCH_IN_FRIST, PERSON_A)
@@ -167,7 +168,7 @@ class TestVerdichteAlteSuchereignisse:
         assert _tageszaehler(db) == [(ALT, 4, 2)]
         assert _suchereignis_tage(db) == [NOCH_IN_FRIST]
 
-    def test_zweiter_lauf_aendert_nichts(self, db):
+    def test_verdichte_alte_suchereignisse_zweiter_lauf_aendert_nichts(self, db):
         _suche(db, ALT, PERSON_A)
         repository = _repository(db)
         repository.verdichte_alte_suchereignisse(90, heute=HEUTE)
@@ -175,7 +176,7 @@ class TestVerdichteAlteSuchereignisse:
         assert repository.verdichte_alte_suchereignisse(90, heute=HEUTE) == 0
         assert _tageszaehler(db) == [(ALT, 1, 1)]
 
-    def test_ohne_alte_suchereignisse_kein_tageszaehler(self, db):
+    def test_verdichte_alte_suchereignisse_ohne_alte_kein_tageszaehler(self, db):
         _suche(db, NOCH_IN_FRIST, PERSON_A)
 
         assert _repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE) == 0
@@ -194,7 +195,7 @@ class TestKennzahlenUeberDieFrist:
         repository.verdichte_alte_suchereignisse(90, heute=HEUTE)
         return repository
 
-    def test_personen_zaehlen_tageszaehler_mit(self, db):
+    def test_get_unique_active_users_zaehlt_tageszaehler_mit(self, db):
         repository = self._verdichtet(db)
 
         personen = repository.get_unique_active_users(
@@ -203,7 +204,7 @@ class TestKennzahlenUeberDieFrist:
 
         assert personen == 2 + 1
 
-    def test_suchen_zaehlen_tageszaehler_mit(self, db):
+    def test_get_search_count_by_period_zaehlt_tageszaehler_mit(self, db):
         repository = self._verdichtet(db)
 
         suchen = repository.get_search_count_by_period(
@@ -212,7 +213,7 @@ class TestKennzahlenUeberDieFrist:
 
         assert suchen == 3 + 2
 
-    def test_tageszaehler_ausserhalb_des_zeitraums_zaehlt_nicht(self, db):
+    def test_get_unique_active_users_tageszaehler_ausserhalb_zaehlt_nicht(self, db):
         repository = self._verdichtet(db)
 
         assert (
@@ -221,6 +222,10 @@ class TestKennzahlenUeberDieFrist:
             )
             == 1
         )
+
+    def test_get_search_count_by_period_tageszaehler_ausserhalb_zaehlt_nicht(self, db):
+        repository = self._verdichtet(db)
+
         assert (
             repository.get_search_count_by_period(
                 datetime(2026, 7, 28, 12), datetime(2026, 8, 1)

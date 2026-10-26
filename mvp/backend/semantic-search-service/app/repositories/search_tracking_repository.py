@@ -11,8 +11,9 @@ unten addieren diese Tageszaehler und stimmen so auch ueber die Frist hinaus.
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional, Dict, Any, List
-from sqlalchemy import func, distinct, and_, text
+from sqlalchemy import func, distinct, and_, select, text
 from sqlalchemy.orm import InstrumentedAttribute, Session
+from sqlalchemy.sql.selectable import ScalarSelect
 
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import SearchEvent, SuchenJeTagZeile
@@ -47,12 +48,20 @@ _VERDICHTEN = text(
 )
 
 
+def _in_utc(zeitpunkt: datetime) -> datetime:
+    """Naive Zeitpunkte gelten als UTC (wie bei den Aufrufern), andere werden umgerechnet."""
+    if zeitpunkt.tzinfo is None:
+        return zeitpunkt
+    return zeitpunkt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def _tage_im_zeitraum(start_date: datetime, end_date: datetime) -> tuple[date, date]:
-    """Erster und letzter Tag, dessen Mitternacht im Zeitraum liegt.
+    """Erster und letzter UTC-Tag, dessen Mitternacht im Zeitraum liegt.
 
     So zaehlt ein Tageszaehler genau dann mit, wenn seine Suchereignisse (die nur
     Mitternacht UTC tragen) mitgezaehlt worden waeren.
     """
+    start_date, end_date = _in_utc(start_date), _in_utc(end_date)
     erster = start_date.date()
     if start_date.time() != time.min:
         erster += timedelta(days=1)
@@ -120,22 +129,25 @@ class SearchTrackingRepository:
             end_date = datetime.utcnow()
 
         try:
-            with self.db.get_session() as session:
-                total = (
-                    session.query(func.count(distinct(SearchEvent.actor_hash)))
-                    .filter(
-                        and_(
-                            SearchEvent.timestamp >= start_date,
-                            SearchEvent.timestamp <= end_date,
-                            SearchEvent.actor_hash.isnot(None),
-                        )
+            einzelzeilen = (
+                select(func.count(distinct(SearchEvent.actor_hash)))
+                .where(
+                    and_(
+                        SearchEvent.timestamp >= start_date,
+                        SearchEvent.timestamp <= end_date,
+                        SearchEvent.actor_hash.isnot(None),
                     )
-                    .scalar()
-                    or 0
                 )
+                .scalar_subquery()
+            )
+            with self.db.get_session() as session:
                 # Additiv, weil das Tagespseudonym an jedem Tag ein anderes ist.
-                total += self._summe_tageszaehler(
-                    session, SuchenJeTagZeile.personen, start_date, end_date
+                total = self._mit_tageszaehlern(
+                    session,
+                    einzelzeilen,
+                    SuchenJeTagZeile.personen,
+                    start_date,
+                    end_date,
                 )
 
                 logger.debug(f"Active actors {start_date} to {end_date}: {total}")
@@ -219,45 +231,53 @@ class SearchTrackingRepository:
             end_date = datetime.utcnow()
 
         try:
-            with self.db.get_session() as session:
-                count = (
-                    session.query(func.count(SearchEvent.id))
-                    .filter(
-                        and_(
-                            SearchEvent.timestamp >= start_date,
-                            SearchEvent.timestamp <= end_date,
-                        )
+            einzelzeilen = (
+                select(func.count(SearchEvent.id))
+                .where(
+                    and_(
+                        SearchEvent.timestamp >= start_date,
+                        SearchEvent.timestamp <= end_date,
                     )
-                    .scalar()
-                    or 0
                 )
-                return count + self._summe_tageszaehler(
-                    session, SuchenJeTagZeile.suchen, start_date, end_date
+                .scalar_subquery()
+            )
+            with self.db.get_session() as session:
+                return self._mit_tageszaehlern(
+                    session,
+                    einzelzeilen,
+                    SuchenJeTagZeile.suchen,
+                    start_date,
+                    end_date,
                 )
         except Exception as e:
             logger.error(f"Error getting search count: {e}", exc_info=True)
             return 0
 
     @staticmethod
-    def _summe_tageszaehler(
+    def _mit_tageszaehlern(
         session: Session,
+        einzelzeilen: ScalarSelect,
         spalte: InstrumentedAttribute,
         start_date: datetime,
         end_date: datetime,
     ) -> int:
-        """Summe einer Spalte der Tageszaehler im Zeitraum."""
+        """Zaehlung ueber Einzelzeilen plus Summe einer Spalte der Tageszaehler.
+
+        Eine Anweisung, also ein Snapshot: Ein Verdichten zwischen zwei Abfragen
+        zaehlte einen Tag sonst doppelt.
+        """
         erster, letzter = _tage_im_zeitraum(start_date, end_date)
-        return (
-            session.query(func.sum(spalte))
-            .filter(
+        tageszaehler = (
+            select(func.coalesce(func.sum(spalte), 0))
+            .where(
                 and_(
                     SuchenJeTagZeile.tag >= erster,
                     SuchenJeTagZeile.tag <= letzter,
                 )
             )
-            .scalar()
-            or 0
+            .scalar_subquery()
         )
+        return session.execute(select(einzelzeilen + tageszaehler)).scalar() or 0
 
     def verdichte_alte_suchereignisse(
         self, days_to_keep: int, heute: Optional[date] = None

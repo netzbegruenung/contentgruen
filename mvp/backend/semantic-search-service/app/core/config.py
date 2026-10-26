@@ -172,8 +172,10 @@ class Settings(BaseSettings):
     # Frist der Suchereignisse (#289). Aeltere Tage verdichtet der Bereinigungsjob
     # zu Tageszaehlern ohne Pseudonym. 90 wie bei den Nutzungsereignissen: deckt die
     # laengste Auswertung ueber Einzelzeilen (searches-per-user, hoechstens 90 Tage).
+    # Darum auch die Untergrenze: Kuerzer zaehlte searches-per-user still zu wenig,
+    # und ein negativer Wert verdichtete den laufenden Tag (Personen doppelt).
     # Laeuft im selben Job: enable_usage_cleanup=false schaltet auch diese Frist ab.
-    search_event_retention_days: int = 90
+    search_event_retention_days: int = Field(default=90, ge=90)
     cleanup_hour: int = 2  # 2 AM
     cleanup_minute: int = 0
 

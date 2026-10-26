@@ -120,7 +120,8 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   **Offen:** Die fortlaufende `id` verrät weiter die Reihenfolge der Suchen eines Tages.
   An ruhigen Tagen lässt sie sich mit der Reihenfolge der Aussagen aus Suchen abgleichen.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
-  (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`). Ältere Tage
+  (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
+  `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
   verdichtet der tägliche Bereinigungsjob (`services/cleanup/usage_cleanup_service.py`,
   derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
   Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
