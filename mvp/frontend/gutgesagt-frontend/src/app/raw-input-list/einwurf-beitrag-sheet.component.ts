@@ -37,7 +37,7 @@ interface Geladen {
  *
  * Der Fangkorb kennt nur die IDs; den Beitrag holt das Sheet beim Oeffnen nach.
  * Bei genau einem Beitrag laedt es sofort, bei mehreren steht erst eine Auswahl -
- * beschriftet mit dem Satz, aus dem der Beitrag entstanden ist.
+ * beschriftet mit dem Satz, der dabei ausformuliert wurde.
  *
  * Die Anfragen laufen durch ein Subject mit switchMap: Wer in der Auswahl
  * weiterklickt, bricht die vorige Anfrage ab. Sonst koennte eine langsame erste
@@ -62,7 +62,7 @@ interface Geladen {
     <div class="sheet-griff" aria-hidden="true"></div>
 
     <ng-container *ngIf="auswahlOffen; else beitrag">
-      <p class="sheet-titel">Aus diesem Einwurf sind mehrere Beiträge entstanden.</p>
+      <p class="sheet-titel">Zu diesem Einwurf gibt es mehrere Beiträge.</p>
       <ul class="auswahl">
         <li *ngFor="let eintrag of daten.beitraege; let i = index">
           <button type="button" mat-stroked-button class="auswahl-knopf" (click)="oeffnen(eintrag)">
