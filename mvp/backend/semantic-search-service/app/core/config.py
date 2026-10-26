@@ -112,6 +112,10 @@ class Settings(BaseSettings):
     # trivial abweichende Kopien ab 0,984, andere Kommentare zur selben Aussage
     # hoechstens 0,903.
     commentary_similarity_threshold: float = 0.975
+    # Hintergrundinfo-Dublette: dieselbe Einbettung und Schwelle wie beim Kommentar.
+    # Noch nicht an eigenen Paaren gemessen; die Integrationstests pruefen
+    # wortgleich, Kopie mit Zusatz und eine andere Hintergrundinfo zum selben Thema.
+    generic_text_similarity_threshold: float = 0.975
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
     statement_search_limit: int = 5

@@ -3,6 +3,7 @@ from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header
 import datetime
 import logging
+from uuid import UUID
 
 from dependencies import (
     get_generic_text_service,
@@ -16,7 +17,12 @@ from dtos.generic_text import (
     GenericTextSearchResponse,
     SearchGenericTextByTextRequest,
 )
-from services.content.generic_text_service import GenericTextService
+from domain.models.base_content import BaseContentSearchResult
+from services.content.base_content_service import Dublettenpruefung
+from services.content.generic_text_service import (
+    GenericTextService,
+    zu_pruefender_text,
+)
 from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import AussageNichtGefunden, StatementService
@@ -35,6 +41,62 @@ logger = logging.getLogger(__name__)
 HINTERGRUNDINFO_RELEVANZ = 0.9
 
 
+def _ist_gezeigte(
+    vorhanden: Optional[BaseContentSearchResult], angefragt: Optional[UUID]
+) -> bool:
+    """Die Entscheidung der Person gilt genau der vorhandenen, die sie gesehen hat."""
+    return (
+        vorhanden is not None
+        and angefragt is not None
+        and str(vorhanden.id) == str(angefragt)
+    )
+
+
+async def _herkunft_anlegen(
+    request: AddGenericTextRequest, reference_service: ReferenceService, x_user: str
+) -> List[GenericTextReference]:
+    """
+    Die Herkunftsangaben der Anfrage als Verknuepfungen: vorhandene Referenzen
+    wiederverwenden, neue anlegen. Die Notiz gehoert an die Verknuepfung, nicht an
+    die Referenz - dieselbe Quelle kann in einem anderen Beitrag anders beschrieben
+    sein.
+    """
+    verknuepfungen = []
+    for ref_input in request.references or []:
+        # First check if reference already exists (by exact match)
+        existing_reference = await reference_service.find_exact_match(
+            ref_input.reference_string
+        )
+        if existing_reference:
+            reference_id = existing_reference.id
+            logger.info(
+                f"Reusing existing reference {reference_id}: {ref_input.reference_string}"
+            )
+        else:
+            reference_item = Reference(
+                text=ref_input.description
+                or ref_input.reference_string,  # Use description for semantic indexing, fallback to string
+                reference_string=ref_input.reference_string,
+            )
+            reference_id, _, _ = await reference_service.add_reference(
+                reference_item,
+                x_user,
+                NEW_CONTENT_STATUS,
+                ContentOrigin.MANUALLY_CREATED,
+            )
+            logger.info(
+                f"Created new reference {reference_id}: {ref_input.reference_string}"
+            )
+        verknuepfungen.append(
+            GenericTextReference(
+                reference_id=reference_id,
+                created=utc_jetzt(),
+                description=ref_input.description,
+            )
+        )
+    return verknuepfungen
+
+
 # Test endpoint to check if the API is running
 @router.get("/")
 async def read_test():
@@ -42,7 +104,6 @@ async def read_test():
 
 
 from fastapi import Query
-from uuid import UUID
 
 
 # Endpoint to search generic text by UUID
@@ -145,78 +206,75 @@ async def add_generic_text(
         if not x_user:
             raise HTTPException(status_code=400, detail="X-User header missing")
 
-        # Handle references first if provided.
-        # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
-        # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
-        # anders beschrieben sein.
-        new_references = []
-        if request.references is not None and len(request.references) > 0:
-            # Create or find reference entries with duplicate detection
-            for ref_input in request.references:
-                # First check if reference already exists (by exact match)
-                existing_reference = await reference_service.find_exact_match(
-                    ref_input.reference_string
+        # Pruefen und Anlegen unter einer Sperre je normalisiertem Text, wie beim
+        # Kommentar (api/v1/commentary.py): Zwei gleichzeitige gleiche
+        # Hintergrundinfos legen nur eine an, und die Dublette wird vor den
+        # Herkunftsangaben geprueft - sonst entstuenden verwaiste Referenzen.
+        text = zu_pruefender_text(request.generictext)
+        async with generic_text_service.sperre(text):
+            pruefung = await generic_text_service.pruefe_dublette(text)
+            if _ist_gezeigte(pruefung.vorhanden, request.trotz_dublette_von):
+                # Die Person hat genau diese vorhandene gesehen und entschieden:
+                # anlegen. Der aehnlichste Treffer bleibt fuer most_similar_* erhalten.
+                logger.info(
+                    f"Generic text saved although an existing one is similar: {pruefung.vorhanden.id}"
                 )
-
-                if existing_reference:
-                    # Reference exists - reuse it
-                    reference_id = existing_reference.id
-                    logger.info(
-                        f"Reusing existing reference {reference_id}: {ref_input.reference_string}"
+                pruefung = Dublettenpruefung(
+                    vorhanden=None, aehnlichster=pruefung.aehnlichster
+                )
+            if pruefung.vorhanden is None and request.vorhanden_nehmen is not None:
+                # Die gewaehlte vorhandene ist weg: Eine neue anzulegen, hat die
+                # Person nicht gewaehlt.
+                raise HTTPException(
+                    status_code=409,
+                    detail="The existing generic text is no longer available",
+                )
+            if pruefung.vorhanden is None:
+                request.generictext.references = await _herkunft_anlegen(
+                    request, reference_service, x_user
+                )
+                success, generic_text_id, _ = (
+                    await generic_text_service.add_generic_text(
+                        request.generictext,
+                        x_user,
+                        NEW_CONTENT_STATUS,
+                        ContentOrigin.MANUALLY_CREATED,
+                        dublettenpruefung=pruefung,
                     )
-                    new_references.append((reference_id, ref_input.description))
-                else:
-                    # Reference doesn't exist - create new one
-                    reference_item = Reference(
-                        text=ref_input.description
-                        or ref_input.reference_string,  # Use description for semantic indexing, fallback to string
-                        reference_string=ref_input.reference_string,
-                    )
-
-                    # Add new reference
-                    reference_id, was_new, message = (
-                        await reference_service.add_reference(
-                            reference_item,
-                            x_user,
-                            NEW_CONTENT_STATUS,
-                            ContentOrigin.MANUALLY_CREATED,
-                        )
-                    )
-                    new_references.append((reference_id, ref_input.description))
-                    logger.info(
-                        f"Created new reference {reference_id}: {ref_input.reference_string}"
+                )
+                if not success:
+                    raise HTTPException(
+                        status_code=400, detail="Failed to add generic text"
                     )
 
-        # Create generictext references list for the model
-        generictext_references = []
-        for reference_id, description in new_references:
-            generictext_reference = GenericTextReference(
-                reference_id=reference_id,
-                created=utc_jetzt(),
-                description=description,
-            )
-            generictext_references.append(generictext_reference)
-
-        # Add references to the generic text model
-        request.generictext.references = generictext_references
-
-        # Add generic text to generic_text index - generic texts require review
-        success, generic_text_id, text = await generic_text_service.add_generic_text(
-            request.generictext,
-            x_user,
-            NEW_CONTENT_STATUS,
-            ContentOrigin.MANUALLY_CREATED,
+        # Nichts angelegt? Dann ist die Antwort die vorhandene Hintergrundinfo.
+        # Verknuepft wird sie nur, wenn sie von derselben Person ist und sie sie mit
+        # vorhanden_nehmen gewaehlt hat - eine fremde nie (Glossar "Dublette"; zur
+        # Begruendung siehe api/v1/commentary.py).
+        vorhanden = pruefung.vorhanden
+        dublette = vorhanden is not None
+        vorhanden_eigen = dublette and vorhanden.original_author == x_user
+        vorhanden_genommen = vorhanden_eigen and _ist_gezeigte(
+            vorhanden, request.vorhanden_nehmen
         )
-
-        if not success:
-            raise HTTPException(status_code=400, detail="Failed to add generic text")
+        if dublette:
+            generic_text_id = vorhanden.id
+            logger.info(
+                f"Generic text is a duplicate of {generic_text_id} "
+                f"({'same author' if vorhanden_eigen else 'other author'}, "
+                f"{'taken' if vorhanden_genommen else 'not linked'})"
+            )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
-        # bleibt die Hintergrundinfo gespeichert und die Antwort sagt es.
+        # bleibt die Hintergrundinfo gespeichert und die Antwort sagt es. Bei einer
+        # Dublette True nur, wenn die genommene jetzt an der Aussage haengt.
         statement_id = None
         statement_text = None
-        verknuepft = True
-        if request.statement_id or (request.statement_text or "").strip():
+        verknuepft = not dublette
+        aussage_mitgeschickt = bool(
+            request.statement_id or (request.statement_text or "").strip()
+        )
+        if aussage_mitgeschickt and (not dublette or vorhanden_genommen):
             try:
                 statement_id, statement_text = (
                     await statement_service.beitrag_als_antwort_verknuepfen(
@@ -228,6 +286,7 @@ async def add_generic_text(
                         statement_text=request.statement_text,
                     )
                 )
+                verknuepft = True
             except AussageNichtGefunden:
                 # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
                 logger.warning(
@@ -246,6 +305,9 @@ async def add_generic_text(
             statement_id=statement_id,
             statement_text=statement_text,
             verknuepft=verknuepft,
+            dublette=dublette,
+            vorhanden_titel=vorhanden.title if dublette else None,
+            vorhanden_eigen=vorhanden_eigen,
         )
 
     except HTTPException:

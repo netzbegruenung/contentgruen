@@ -232,6 +232,15 @@ class DataProcessor:
             )
             return None
 
+        # Dublette vor den Referenzen pruefen, wie im Router.
+        generic_text_service = self.orchestrator.generic_text_service
+        pruefung = await generic_text_service.pruefe_dublette(text or title)
+        if pruefung.vorhanden is not None:
+            self.orchestrator.mark_content_processed(
+                title, text, "generic_text", "skipped"
+            )
+            return pruefung.vorhanden.id
+
         generictext_references = []
 
         for reference_data in generictext_data.get("references", []):
@@ -259,12 +268,14 @@ class DataProcessor:
                     f"Could not parse created_at from metadata: {metadata.get('created_at')}"
                 )
 
-        result = await self.orchestrator.generic_text_service.add_generic_text(
+        # Seeding laeuft nacheinander; das Pruefergebnis von oben gilt noch.
+        result = await generic_text_service.add_generic_text(
             generictext,
             self.orchestrator.initial_data_author,
             status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.INITIAL_DATA,
             created_at=created_at,
+            dublettenpruefung=pruefung,
         )
 
         # Mark as processed

@@ -4,7 +4,10 @@ import uuid
 import datetime
 
 from core.config import Settings
-from services.content.base_content_service import BaseContentService
+from services.content.base_content_service import (
+    BaseContentService,
+    Dublettenpruefung,
+)
 from repositories.interfaces.generic_text_repository import (
     IGenericTextRepository,
 )
@@ -19,8 +22,14 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 
 from core.logging import get_logger
+from utils.text_normalisierung import SperreJeText
 
 logger = get_logger(__name__)
+
+
+def zu_pruefender_text(generic_text: GenericText) -> str:
+    """Der Text, der gespeichert und auf Dubletten geprueft wird: ohne Text der Titel."""
+    return generic_text.text or generic_text.title
 
 
 class GenericTextService(
@@ -48,6 +57,9 @@ class GenericTextService(
 
             repository_factory = QdrantRepositoryFactory()
 
+        # Eine Sperre je normalisiertem Text um Pruefen-und-Anlegen.
+        self._text_sperre = SperreJeText()
+
         repository = repository_factory.create_generic_text_repository(settings)
         content_repository = repository_factory.create_content_repository(settings)
 
@@ -59,6 +71,25 @@ class GenericTextService(
             GenericTextSearchResult,
         )
 
+    def sperre(self, text: str):
+        """
+        Sperre je normalisiertem Text, fuer Pruefen und Anlegen als ein Schritt
+        (eigener Namensraum, getrennt von Aussagen und Kommentaren). Liefert als
+        Kontextmanager die Normalform.
+        """
+        return self._text_sperre.halten(text)
+
+    async def pruefe_dublette(self, text: str) -> Dublettenpruefung:
+        """
+        Ist dieser Text eine Dublette einer vorhandenen Hintergrundinfo?
+
+        Wie beim Kommentar: normalisiert gleicher Text oder passage/passage-
+        Aehnlichkeit >= generic_text_similarity_threshold.
+        """
+        return await self._vorhandenen_finden(
+            text, self.settings.generic_text_similarity_threshold, praefix="passage"
+        )
+
     async def add_generic_text(
         self,
         generic_text: GenericText,
@@ -67,9 +98,12 @@ class GenericTextService(
         origin: ContentOrigin,
         id: Optional[uuid.UUID] = None,
         created_at: Optional[datetime.datetime] = None,
+        dublettenpruefung: Optional[Dublettenpruefung] = None,
     ) -> tuple[bool, uuid.UUID, str]:
         """
         Add a new generic text to the index. If no ID is provided, a new UUID is generated.
+
+        Ist der Text eine Dublette (pruefe_dublette), wird nichts angelegt.
 
         Args:
         - generic_text: The GenericText object to be added.
@@ -77,17 +111,26 @@ class GenericTextService(
         - status: Content status
         - origin: Content origin
         - id: Optional UUID for the generic text. If None, a new UUID is generated.
+        - dublettenpruefung: das Ergebnis einer schon gelaufenen pruefe_dublette fuer
+          genau diesen Text - dann wird nicht noch einmal eingebettet und gesucht. Nur
+          uebergeben, wenn Pruefung und Anlegen unter sperre(text) laufen.
 
         Returns:
-        - Tuple of (success: bool, id: UUID, text: str)
+        - (neu angelegt, ID, Text) - bei einer Dublette ID und Text der vorhandenen.
         """
-        # TODO: Perform similarity check (see StatementService for example)
+        # Default description text to title if not provided
+        generic_text.text = zu_pruefender_text(generic_text)
+
+        pruefung = dublettenpruefung or await self.pruefe_dublette(generic_text.text)
+        vorhandene, beste = pruefung.vorhanden, pruefung.aehnlichster
+        if vorhandene is not None:
+            logger.debug(
+                f"Input generic text is a duplicate of existing generic text with ID {vorhandene.id} "
+                f"(score {vorhandene.score:.3f}, threshold {self.settings.generic_text_similarity_threshold})"
+            )
+            return False, vorhandene.id, vorhandene.text
 
         logger.debug("Adding generic text")
-
-        # Default description text to title if not provided
-        if not generic_text.text:
-            generic_text.text = generic_text.title
 
         # Create GenericTextDbEntry object from GenericText object
         now = created_at or utc_jetzt()
@@ -105,6 +148,8 @@ class GenericTextService(
             references_count=len(generic_text.references),
             status=status,
             origin=origin,
+            most_similar_similarity_score=beste.score if beste else None,
+            most_similar_content_id=beste.id if beste else None,
         )
 
         # Call upsert method of base class

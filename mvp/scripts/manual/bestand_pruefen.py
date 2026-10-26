@@ -44,7 +44,7 @@ from qdrant_client import QdrantClient
 
 MODELL = "intfloat/multilingual-e5-base"
 FELD = "text_normalisiert"
-TYPEN_MIT_FELD = ("statement", "commentary")
+TYPEN_MIT_FELD = ("statement", "commentary", "generic_text")
 BEITRAGSTYPEN = ("commentary", "generic_text")
 
 _APOSTROPHE = str.maketrans({"’": "'", "‘": "'", "ʼ": "'"})

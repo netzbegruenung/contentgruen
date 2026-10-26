@@ -723,3 +723,54 @@ class TestSeedingKommentarDublette:
         assert ergebnis == vorhanden
         verarbeitung.process_reference.assert_not_awaited()
         orchestrator.commentary_service.add_commentary.assert_not_awaited()
+
+
+@pytest.mark.unit
+class TestSeedingHintergrundinfoDublette:
+    """Seed-Hintergrundinfo, die es schon gibt: keine Referenzen, vorhandene ID zurueck."""
+
+    @staticmethod
+    def _verarbeitung(test_settings, pruefung):
+        orchestrator = MagicMock()
+        orchestrator.initial_data_author = test_settings.initial_data_author
+        orchestrator.is_content_processed.return_value = False
+        orchestrator.generic_text_service.pruefe_dublette = AsyncMock(
+            return_value=pruefung
+        )
+        orchestrator.generic_text_service.add_generic_text = AsyncMock(
+            return_value=(True, uuid.uuid4(), "Text")
+        )
+        verarbeitung = DataProcessor(orchestrator)
+        verarbeitung.process_reference = AsyncMock(return_value=uuid.uuid4())
+        return orchestrator, verarbeitung
+
+    DATEN = {
+        "title": "Titel",
+        "text": "Die gibt es schon",
+        "references": [{"text": "Quelle", "reference_string": "https://x.org"}],
+    }
+
+    @pytest.mark.asyncio
+    async def test_dublette_legt_keine_referenzen_an(self, test_settings):
+        vorhanden = uuid.uuid4()
+        orchestrator, verarbeitung = self._verarbeitung(
+            test_settings,
+            Dublettenpruefung(vorhanden=MagicMock(id=vorhanden), aehnlichster=None),
+        )
+
+        ergebnis = await verarbeitung.create_generictext_with_references(self.DATEN)
+
+        assert ergebnis == vorhanden
+        verarbeitung.process_reference.assert_not_awaited()
+        orchestrator.generic_text_service.add_generic_text.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_ohne_dublette_geht_die_pruefung_mit(self, test_settings):
+        pruefung = Dublettenpruefung(vorhanden=None, aehnlichster=None)
+        orchestrator, verarbeitung = self._verarbeitung(test_settings, pruefung)
+
+        await verarbeitung.create_generictext_with_references(self.DATEN)
+
+        verarbeitung.process_reference.assert_awaited_once()
+        aufruf = orchestrator.generic_text_service.add_generic_text.call_args
+        assert aufruf.kwargs["dublettenpruefung"] is pruefung
