@@ -3,8 +3,9 @@
 > **Vorsorge, keine erprobte Prozedur.** Es gibt heute keine Nutzer und keine
 > erhaltenswerten Daten. Die Anlage hat keinen Codepfad, der eine Person löscht;
 > was hier steht, sind Handkommandos gegen PostgreSQL und Qdrant. Sie sind aus dem
-> Code hergeleitet und gegen ein leeres Dev-System gelesen, aber **nie an echten
-> Daten gelaufen**. Wer sie zum ersten Mal ausführt, macht vorher ein Backup und
+> Code hergeleitet und gegen ein leeres Dev-System gelesen, der PostgreSQL-Teil
+> zusätzlich gegen Testdaten geprüft (`tests/integration/test_loeschkommando.py`), aber
+> **nie an echten Daten gelaufen**. Wer sie zum ersten Mal ausführt, macht vorher ein Backup und
 > protokolliert jede Zeilenzahl mit.
 
 ## Ausgangspunkt
@@ -24,10 +25,23 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen; `reviewed_by` und `raw_input_content_links.created_by`
    auf `NULL` setzen statt löschen — die Zeilen gehören inhaltlich anderen;
-   `raw_inputs` der Person löschen (CASCADE räumt deren Links mit ab); die Zeile in
+   `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
+   ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
+   `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
    `users` (Anzeigename) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
    zeigen nach der Löschung „Mitglied".
+
+   **Sätze an fremden Einwürfen bleiben stehen**, nur der Personenbezug geht: Jeder
+   Satz bekommt statt der Kennung einen eigenen Platzhalter `ehemalige-person-<UUID>`,
+   und zu jedem Platzhalter legt das Kommando eine Zeile in `users` mit dem Anzeigenamen
+   „ehemalige Person“ an — so steht es im Fangkorb. Ein Platzhalter je Satz statt eines
+   gemeinsamen, weil der eindeutige Index `(raw_input_id, user_id)` zwei Sätze mit
+   derselben Kennung am selben Einwurf nicht zulässt (zwei gelöschte Personen am selben
+   Einwurf) und weil so auch nichts die Sätze einer Person untereinander verbindet.
+   `destilled_by` bekommt den Platzhalter des eigenen Satzes; hat die Person ihren Satz
+   inzwischen geleert, einen eigenen. Verknüpfungen auf den Satz
+   (`raw_input_content_links.draft_id`) bleiben gültig, weil die Zeile bleibt.
 3. **Qdrant.** Beiträge werden **anonymisiert, nicht gelöscht.** `original_author`,
    `last_modified_by`, `authors[].name` und `edit_history[].editor` bekommen den Wert
    `geloeschter-nutzer`. Damit bleiben Antwortvorschläge, Referenzen und
@@ -54,8 +68,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   (`services/anzeigename_service.py`). Solange das Anmelde-Cookie der Person gilt, entsteht
   die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
   ein in Keycloak gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet (bis zu
-  14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). Den `DELETE FROM users`
-  deshalb nach 14 Tagen wiederholen.
+  14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). In der Zeit kann sie auch
+  neue Sätze, Stimmen und Einwürfe anlegen. Das Kommando für Schritt 1 und 2 deshalb
+  nach 14 Tagen noch einmal laufen lassen; es ist wiederholbar.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
@@ -82,49 +97,29 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   alles aus dem `json-file`-Treiber ist unbegrenzt. Einzelne Zeilen daraus zu entfernen ist
   nicht vorgesehen. Einordnung und Belege: `docs/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
 
-## Offene Punkte
-
-- **Sätze an fremden Einwürfen (`raw_input_drafts`).** Schritt 2 löscht die `raw_inputs`
-  der Person, und `ON DELETE CASCADE` räumt die Sätze daran mit ab. Sätze, die die Person
-  beim Destillieren an **Einwürfen anderer** gespeichert hat, bleiben dagegen stehen —
-  mit ihrer Kennung in `raw_input_drafts.user_id` (`NOT NULL`), und angemeldete Nutzende
-  sehen sie im Fangkorb. Noch nicht entschieden: löschen oder die Kennung ersetzen.
-  Bis dahin deckt das Kommando unten diesen Fall nicht ab.
-
 ## Kommandos
 
+Schritt 1 und 2 stehen als Skript in `mvp/scripts/manual/person_loeschen.sql`, getestet
+gegen PostgreSQL in `tests/integration/test_loeschkommando.py`. Auf den Hosts liegt kein
+Repo-Checkout; das Skript wird wie die anderen in `mvp/scripts/manual/` heruntergeladen.
+Die Variable heißt `KENNUNG`, nicht `UID`: `UID` ist in bash schreibgeschützt.
+
 ```bash
-UID=a1b2c3d4-0000-0000-0000-000000000000
-docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app <<SQL
-\set uid '$UID'
-
--- Schritt 1: Sitzungskennungen sichern. VOR jedem DELETE.
-CREATE TEMP TABLE loeschung_sessions AS
-SELECT DISTINCT reported_by_session_id AS session_id FROM content_reports
-WHERE reported_by_user_id = :'uid' AND reported_by_session_id IS NOT NULL;
-SELECT * FROM loeschung_sessions;   -- protokollieren
-
--- Schritt 2
-BEGIN;
-DELETE FROM usage_events WHERE session_id IN (SELECT session_id FROM loeschung_sessions);
-DELETE FROM votes            WHERE user_id             = :'uid';
-DELETE FROM content_reports  WHERE reported_by_user_id = :'uid';
-UPDATE content_reports         SET reviewed_by = NULL WHERE reviewed_by = :'uid';
-UPDATE raw_input_content_links SET created_by  = NULL WHERE created_by  = :'uid';
-DELETE FROM raw_inputs       WHERE submitted_by        = :'uid';
-DELETE FROM users            WHERE user_id             = :'uid';
--- Nur auf unmigriertem Schema (Spalte user_id vorhanden):
--- DELETE FROM search_events WHERE user_id = :'uid';
-COMMIT;
-SQL
+KENNUNG=a1b2c3d4-0000-0000-0000-000000000000
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/person_loeschen.sql
+docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
+  -v ON_ERROR_STOP=1 -v uid="$KENNUNG" < person_loeschen.sql   # Ausgabe protokollieren
+# Nur auf unmigriertem Schema (Spalte user_id vorhanden):
+# docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
+#   -c "DELETE FROM search_events WHERE user_id = '$KENNUNG';"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, usage_events, users;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users;"
 ```
 
 ```bash
 # Schritt 3: Beitraege anonymisieren. Vor jeder Einzelfall-Loeschung.
-python3 - "$UID" <<'EOF'
+python3 - "$KENNUNG" <<'EOF'
 import json, sys, urllib.request
 Q, UID, ERSATZ = "http://localhost:6333/collections/content_collection/points", sys.argv[1], "geloeschter-nutzer"
 
