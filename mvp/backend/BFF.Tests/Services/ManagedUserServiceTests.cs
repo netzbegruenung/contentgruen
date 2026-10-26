@@ -199,15 +199,11 @@ public class ManagedUserServiceTests
             Times.AtLeastOnce);
     }
 
-    // Die Kennung "ehemalige-person" und ihr Praefix sind im Backend fuer den Platzhalter
-    // geloeschter Personen reserviert (anzeigename_service.py). Ein Beta-Zugang mit einer
-    // solchen Kennung wuerde dort als "ehemalige Person" erscheinen, und seine
-    // Beitraege waeren von denen geloeschter Personen nicht zu unterscheiden. Der BFF laesst
-    // ihn deshalb gar nicht erst zu.
+    // Warum reserviert: siehe ManagedUserService.EhemaligePersonKennung.
     [Theory]
     [InlineData("ehemalige-person")]
     [InlineData("ehemalige-person-6f1c2d3e-0000-4000-8000-000000000000")]
-    public async Task LoadUsers_RejectsReservedUserId(string reservedId)
+    public async Task ValidateUserAsync_ReturnsNull_WhenUserIdIsReserved(string reservedId)
     {
         var path = WriteUsersFile(
             ("ok@example.com", "user-001"),
@@ -226,7 +222,9 @@ public class ManagedUserServiceTests
                 x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("reserved")),
+                    It.Is<It.IsAnyType>((v, t) =>
+                        v.ToString()!.Contains($"userId {reservedId} rejected")
+                        && !v.ToString()!.Contains("@")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.AtLeastOnce);
@@ -241,7 +239,7 @@ public class ManagedUserServiceTests
     [InlineData("ehemalige-personal")]
     [InlineData("user-ehemalige-person")]
     [InlineData("Ehemalige-Person")]
-    public async Task LoadUsers_AcceptsUserIdThatOnlyResemblesReservedId(string userId)
+    public async Task GetUserByIdAsync_ReturnsUser_WhenUserIdOnlyResemblesReservedId(string userId)
     {
         var path = WriteUsersFile(("someone@example.com", userId));
         try

@@ -108,7 +108,7 @@ public class ManagedUserService
         foreach (var user in reserved)
         {
             _logger.LogError(
-                "Beta-Zugang with userId {UserId} rejected: the id is reserved for the placeholder \"{Placeholder}\" of deleted persons. Choose a different userId in the managed users config.",
+                "Beta-Zugang with userId {UserId} rejected: the id is reserved for the placeholder \"{Placeholder}\" of deleted persons. Choose a different userId in managed-users.json.",
                 user.UserId, EhemaligePersonKennung);
         }
 

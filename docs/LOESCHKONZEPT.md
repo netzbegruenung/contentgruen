@@ -66,6 +66,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    Die Datei ist seit PR #29 **nicht mehr eingecheckt** (`.gitignore:19`); getrackt ist nur
    `managed-users.example.json`. Die Adresse bleibt trotzdem in der Git-Historie, weil die
    Datei dort bis PR #29 lag.
+   Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
+   oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
+   (`BFF/Services/ManagedUserService.cs`).
 
 ## Vier Fallen
 
