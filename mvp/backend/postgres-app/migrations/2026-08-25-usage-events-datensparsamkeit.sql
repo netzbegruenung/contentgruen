@@ -30,7 +30,6 @@
 --
 -- Nur einmal anwenden: ein zweiter Lauf bricht an RENAME COLUMN ab, weil
 -- user_agent dann fehlt. Die Transaktion laesst die Datenbank dabei unveraendert.
---
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;

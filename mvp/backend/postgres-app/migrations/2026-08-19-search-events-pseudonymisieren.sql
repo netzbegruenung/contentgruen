@@ -14,7 +14,6 @@
 --
 -- Nicht erneut anwenden: TRUNCATE leert search_events bei jedem Lauf, ein
 -- zweiter Lauf loescht also alle seither erfassten Suchereignisse.
---
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;

@@ -8,8 +8,8 @@ deployt, wendet die neuen Skripte selbst an, in der Reihenfolge ihres Datums.
 
 Beim Start legt der Semantic-Service fehlende Tabellen selbst an
 (`Base.metadata.create_all` in
-`semantic-search-service/app/infrastructure/database/connection.py`), bei einem
-leeren Volume zusätzlich `../init.sql`. Neue Datenbanken haben dadurch sofort das
+`mvp/backend/semantic-search-service/app/infrastructure/database/connection.py`),
+bei einem leeren Volume zusätzlich `mvp/backend/postgres-app/init.sql`. Neue Datenbanken haben dadurch sofort das
 aktuelle Schema.
 
 `create_all` legt aber nur **fehlende Tabellen** an. Es ergänzt keine Spalten,
@@ -31,9 +31,10 @@ docker exec -i "$PG_CONTAINER" psql -U app_user -d gutgesagt_app -v ON_ERROR_STO
 - `-v ON_ERROR_STOP=1` bricht beim ersten Fehler ab (Exit-Code 3). Ohne die
   Option liefe `psql` nach einem Fehler weiter und meldete am Ende Erfolg.
 - Die Skripte laufen in einer Transaktion (`BEGIN; … COMMIT;`): Schlägt eines
-  fehl, bleibt die Datenbank, wie sie war. Einzige Ausnahme ist das
-  `VACUUM FULL` am Ende von `2026-08-25-usage-events-datensparsamkeit.sql`, das
-  in PostgreSQL nicht in einer Transaktion laufen darf.
+  fehl, bleibt die Datenbank, wie sie war. Ausnahme ist jeweils das
+  `VACUUM FULL` am Ende von `2026-08-19-search-events-pseudonymisieren.sql` und
+  `2026-08-25-usage-events-datensparsamkeit.sql`, das in PostgreSQL nicht in
+  einer Transaktion laufen darf.
 - `PG_CONTAINER` ist der Name des PostgreSQL-Containers der Umgebung. Wo der
   Container noch einen älteren Namen trägt, diesen einsetzen.
 - Ob eine Umgebung ein Skript braucht und ob es vor dem Start des neuen
@@ -71,7 +72,7 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
   Transaktion laufen darf (etwa `VACUUM`), steht danach und ist im Kopf erklärt.
 - **Gleiches Schema wie `create_all`:** Was das Skript anlegt, muss genau dem
   entsprechen, was die SQLAlchemy-Modelle in einer neuen Datenbank erzeugen.
-  Ändert sich eine Tabelle, die auch `../init.sql` anlegt, dort mitziehen.
+  Ändert sich eine Tabelle, die auch `mvp/backend/postgres-app/init.sql` anlegt, dort mitziehen.
 - **Angewendete Skripte nicht ändern.** Ein Fehler wird mit einem neuen Skript
   korrigiert. Ausnahme sind reine Kommentaränderungen; das SQL bleibt Zeichen
   für Zeichen gleich.
