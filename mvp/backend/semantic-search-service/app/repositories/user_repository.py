@@ -8,7 +8,7 @@ from typing import Dict, Iterable, Optional
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
-from infrastructure.database.connection import get_app_database
+from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import User
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class UserRepository:
     """Anzeigenamen je Kennung."""
 
-    def __init__(self, db=None):
+    def __init__(self, db: Optional[AppDatabase] = None):
         """``db``: eine AppDatabase; ohne Angabe die globale."""
         self.db = db if db is not None else get_app_database()
 

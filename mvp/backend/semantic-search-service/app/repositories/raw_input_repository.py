@@ -26,7 +26,7 @@ from domain.models.raw_input import (
     status_ohne_saetze,
     uebergang_erlaubt,
 )
-from infrastructure.database.connection import get_app_database
+from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import RawInput, RawInputContentLink, RawInputDraft
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class RawInputRepository:
     """Repository fuer Einwuerfe im Fangkorb."""
 
-    def __init__(self, db=None):
+    def __init__(self, db: Optional[AppDatabase] = None):
         """``db``: eine AppDatabase; ohne Angabe die globale."""
         self.db = db if db is not None else get_app_database()
 

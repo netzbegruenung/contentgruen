@@ -32,19 +32,15 @@ FROM loeschung_saetze AS s WHERE d.id = s.id;
 INSERT INTO users (user_id, anzeigename)
 SELECT ersatz, 'ehemalige Person' FROM loeschung_saetze;
 -- Destillierer: der Platzhalter des eigenen Satzes; wer den ersten Satz spaeter
--- geleert hat, bekommt einen eigenen.
+-- geleert hat, bekommt einen eigenen. Der braucht keine Zeile in users: Kein
+-- Codepfad zeigt einen Namen zu destilled_by.
 UPDATE raw_inputs AS r SET destilled_by = s.ersatz
 FROM loeschung_saetze AS s WHERE r.id = s.raw_input_id AND r.destilled_by = :'uid';
-WITH ersetzt AS (
-    UPDATE raw_inputs SET destilled_by = 'ehemalige-person-' || gen_random_uuid()
-    WHERE destilled_by = :'uid' RETURNING destilled_by
-)
-INSERT INTO users (user_id, anzeigename)
-SELECT destilled_by, 'ehemalige Person' FROM ersetzt;
--- Platzhalter, an denen nichts mehr haengt: Saetze anderer Geloeschter an den eben
--- geloeschten Einwuerfen der Person.
+UPDATE raw_inputs SET destilled_by = 'ehemalige-person-' || gen_random_uuid()
+WHERE destilled_by = :'uid';
+-- Platzhalter ohne Satz: Saetze anderer Geloeschter an den eben geloeschten
+-- Einwuerfen der Person.
 DELETE FROM users AS u WHERE u.user_id LIKE 'ehemalige-person-%'
-AND NOT EXISTS (SELECT 1 FROM raw_input_drafts AS d WHERE d.user_id = u.user_id)
-AND NOT EXISTS (SELECT 1 FROM raw_inputs AS r WHERE r.destilled_by = u.user_id);
+AND NOT EXISTS (SELECT 1 FROM raw_input_drafts AS d WHERE d.user_id = u.user_id);
 DELETE FROM users           WHERE user_id             = :'uid';
 COMMIT;

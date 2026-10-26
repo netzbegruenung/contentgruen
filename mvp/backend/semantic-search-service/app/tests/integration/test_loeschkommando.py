@@ -26,7 +26,16 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
 from api.v1.raw_input import _mit_namen
-from infrastructure.database.models import Base, RawInput, RawInputDraft, User
+from infrastructure.database.models import (
+    Base,
+    ContentReport,
+    RawInput,
+    RawInputContentLink,
+    RawInputDraft,
+    UsageEvent,
+    UsageTracking,
+    User,
+)
 from repositories.raw_input_repository import RawInputRepository
 from repositories.user_repository import UserRepository
 from services.anzeigename_service import AnzeigenameService
@@ -70,7 +79,11 @@ def _anweisungen(skript: str):
     )
     for anweisung in ohne_kommentare.split(";"):
         if anweisung.strip():
-            yield anweisung.replace(":'uid'", ":uid")
+            anweisung = anweisung.replace(":'uid'", ":uid")
+            # Was nur psql versteht, liefe hier still falsch: andere Variablen,
+            # Metakommandos.
+            assert ":'" not in anweisung and "\\" not in anweisung, anweisung
+            yield anweisung
 
 
 class _Datenbank:
@@ -188,7 +201,7 @@ def _kennung_irgendwo(datenbank, uid: str):
 
 
 @pytest.fixture
-def fangkorb(datenbank):
+def einwuerfe(datenbank):
     """
     Ein fremder Einwurf, den die Person als Erste destilliert hat, daneben der Satz
     einer anderen Person; ein eigener Einwurf mit einem fremden Satz daran.
@@ -205,18 +218,18 @@ def fangkorb(datenbank):
 
 
 class TestSaetzeAnFremdenEinwuerfen:
-    def test_satz_bleibt_ohne_kennung_der_person(self, datenbank, fangkorb):
+    def test_satz_bleibt_ohne_kennung_der_person(self, datenbank, einwuerfe):
         _loeschen(datenbank)
 
-        saetze = _saetze(datenbank, fangkorb.fremd)
+        saetze = _saetze(datenbank, einwuerfe.fremd)
         assert set(saetze) == {SATZ_DER_PERSON, SATZ_DER_ANDEREN}
         assert PERSON not in saetze.values()
         assert saetze[SATZ_DER_ANDEREN] == ANDERE
 
-    def test_fangkorb_zeigt_ehemalige_person(self, datenbank, fangkorb):
+    def test_fangkorb_zeigt_ehemalige_person(self, datenbank, einwuerfe):
         _loeschen(datenbank)
 
-        einwurf = _im_fangkorb(datenbank, fangkorb.fremd)
+        einwurf = _im_fangkorb(datenbank, einwuerfe.fremd)
         namen = {d["sentence"]: d["user_name"] for d in einwurf["drafts"]}
         assert namen == {
             SATZ_DER_PERSON: "ehemalige Person",
@@ -224,12 +237,12 @@ class TestSaetzeAnFremdenEinwuerfen:
         }
         assert einwurf["own_draft"] == SATZ_DER_ANDEREN
 
-    def test_destillierer_ist_der_platzhalter_des_satzes(self, datenbank, fangkorb):
+    def test_destillierer_ist_der_platzhalter_des_satzes(self, datenbank, einwuerfe):
         _loeschen(datenbank)
 
-        destilled_by = _destilled_by(datenbank, fangkorb.fremd)
+        destilled_by = _destilled_by(datenbank, einwuerfe.fremd)
         assert destilled_by != PERSON
-        assert destilled_by == _saetze(datenbank, fangkorb.fremd)[SATZ_DER_PERSON]
+        assert destilled_by == _saetze(datenbank, einwuerfe.fremd)[SATZ_DER_PERSON]
 
     def test_destillierer_ohne_eigenen_satz_wird_ersetzt(self, datenbank):
         """Wer den ersten Satz spaeter geleert hat, bleibt trotzdem Destillierer."""
@@ -240,20 +253,19 @@ class TestSaetzeAnFremdenEinwuerfen:
         _loeschen(datenbank)
 
         destilled_by = _destilled_by(datenbank, einwurf)
-        assert destilled_by not in (None, PERSON)
-        assert _anzeigenamen(datenbank, [destilled_by]) == {
-            destilled_by: "ehemalige Person"
-        }
+        assert destilled_by.startswith("ehemalige-person-")
+        # Kein Codepfad zeigt einen Namen zu destilled_by, also keine Zeile in users.
+        assert _anzeigenamen(datenbank, [destilled_by]) == {}
 
-    def test_zwei_geloeschte_personen_am_selben_einwurf(self, datenbank, fangkorb):
+    def test_zwei_geloeschte_personen_am_selben_einwurf(self, datenbank, einwuerfe):
         """Der eindeutige Index (Einwurf, Person) laesst keinen gemeinsamen Platzhalter zu."""
         with datenbank.get_session() as s:
-            _satz(s, fangkorb.fremd, DRITTE, "Ein dritter Satz")
+            _satz(s, einwuerfe.fremd, DRITTE, "Ein dritter Satz")
 
         _loeschen(datenbank, PERSON)
         _loeschen(datenbank, DRITTE)
 
-        saetze = _saetze(datenbank, fangkorb.fremd)
+        saetze = _saetze(datenbank, einwuerfe.fremd)
         assert len(saetze) == 3
         assert PERSON not in saetze.values() and DRITTE not in saetze.values()
         ersatz = {saetze[SATZ_DER_PERSON], saetze["Ein dritter Satz"]}
@@ -273,31 +285,93 @@ class TestSaetzeAnFremdenEinwuerfen:
         assert _anzeigenamen(datenbank, [platzhalter]) == {}
 
 
-class TestLoeschkommando:
-    def test_keine_kennung_mehr_in_postgresql(self, datenbank, fangkorb):
-        with datenbank.get_session() as s:
-            s.execute(
-                text(
-                    "INSERT INTO votes (user_id, content_id, vote_type)"
-                    " VALUES (:uid, gen_random_uuid(), 'like')"
-                ),
-                {"uid": PERSON},
+@pytest.fixture
+def spuren(datenbank, einwuerfe):
+    """
+    Was sonst an der Kennung haengt: Stimme, Meldung samt Sitzung und deren
+    Nutzung, eine bearbeitete Meldung, eine Verknuepfung auf den Satz der Person.
+    """
+    beitrag = uuid.uuid4()
+    with datenbank.get_session() as s:
+        s.execute(
+            text(
+                "INSERT INTO votes (user_id, content_id, vote_type)"
+                " VALUES (:uid, :beitrag, 'like')"
+            ),
+            {"uid": PERSON, "beitrag": beitrag},
+        )
+        s.add(UsageTracking(content_id=beitrag))
+        s.flush()
+        s.add(UsageEvent(content_id=beitrag, session_id="sitzung-der-person"))
+        s.add(UsageEvent(content_id=beitrag, session_id="sitzung-anderer"))
+        s.add(
+            ContentReport(
+                content_id=beitrag,
+                content_type="commentary",
+                reported_by_user_id=PERSON,
+                reported_by_session_id="sitzung-der-person",
+                reason="spam",
             )
+        )
+        bearbeitet = ContentReport(
+            content_id=beitrag,
+            content_type="commentary",
+            reported_by_user_id=ANDERE,
+            reason="spam",
+            reviewed_by=PERSON,
+        )
+        s.add(bearbeitet)
+        satz = (
+            s.query(RawInputDraft)
+            .filter_by(raw_input_id=einwuerfe.fremd, user_id=PERSON)
+            .one()
+        )
+        link = RawInputContentLink(
+            raw_input_id=einwuerfe.fremd,
+            content_id=beitrag,
+            created_by=PERSON,
+            draft_id=satz.id,
+        )
+        s.add(link)
+        s.flush()
+        return SimpleNamespace(bearbeitet=bearbeitet.id, link=link.id, satz=satz.id)
 
+
+class TestLoeschkommando:
+    def test_keine_kennung_mehr_in_postgresql(self, datenbank, spuren):
         _loeschen(datenbank)
 
         assert _kennung_irgendwo(datenbank, PERSON) == []
 
-    def test_eigene_einwuerfe_samt_saetzen_weg(self, datenbank, fangkorb):
+    def test_fremdes_bleibt_ohne_kennung(self, datenbank, spuren):
         _loeschen(datenbank)
 
-        assert RawInputRepository(datenbank).get_by_id(fangkorb.eigen) is None
-        assert _saetze(datenbank, fangkorb.eigen) == {}
+        with datenbank.get_session() as s:
+            meldungen = s.query(ContentReport).all()
+            assert [(m.id, m.reviewed_by) for m in meldungen] == [
+                (spuren.bearbeitet, None)
+            ]
+            link = s.get(RawInputContentLink, spuren.link)
+            assert (link.created_by, link.draft_id) == (None, spuren.satz)
+            assert s.get(RawInputDraft, spuren.satz).sentence == SATZ_DER_PERSON
 
-    def test_zweiter_lauf_aendert_nichts(self, datenbank, fangkorb):
+    def test_nutzung_der_sitzung_weg(self, datenbank, spuren):
         _loeschen(datenbank)
-        vorher = _saetze(datenbank, fangkorb.fremd)
+
+        with datenbank.get_session() as s:
+            sitzungen = [e.session_id for e in s.query(UsageEvent)]
+        assert sitzungen == ["sitzung-anderer"]
+
+    def test_eigene_einwuerfe_samt_saetzen_weg(self, datenbank, einwuerfe):
+        _loeschen(datenbank)
+
+        assert RawInputRepository(datenbank).get_by_id(einwuerfe.eigen) is None
+        assert _saetze(datenbank, einwuerfe.eigen) == {}
+
+    def test_zweiter_lauf_aendert_nichts(self, datenbank, einwuerfe):
+        _loeschen(datenbank)
+        vorher = _saetze(datenbank, einwuerfe.fremd)
 
         _loeschen(datenbank)
 
-        assert _saetze(datenbank, fangkorb.fremd) == vorher
+        assert _saetze(datenbank, einwuerfe.fremd) == vorher

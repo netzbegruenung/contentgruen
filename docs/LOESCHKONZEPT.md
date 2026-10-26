@@ -40,10 +40,11 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    derselben Kennung am selben Einwurf nicht zulässt (zwei gelöschte Personen am selben
    Einwurf) und weil so auch nichts die Sätze einer Person untereinander verbindet.
    `destilled_by` bekommt den Platzhalter des eigenen Satzes; hat die Person ihren Satz
-   inzwischen geleert, einen eigenen, ebenfalls mit Zeile in `users`. Verknüpfungen auf
+   inzwischen geleert, einen eigenen, ohne Zeile in `users` — kein Codepfad zeigt einen
+   Namen zu `destilled_by`. Verknüpfungen auf
    den Satz (`raw_input_content_links.draft_id`) bleiben gültig, weil die Zeile bleibt.
-   Platzhalter, an denen nach dem Lauf nichts mehr hängt (Sätze früher Gelöschter an den
-   eben gelöschten Einwürfen der Person), räumt das Kommando aus `users` ab.
+   Platzhalter, deren Satz nicht mehr existiert (Sätze früher Gelöschter an den eben
+   gelöschten Einwürfen der Person), räumt das Kommando aus `users` ab.
 3. **Qdrant.** Beiträge werden **anonymisiert, nicht gelöscht.** `original_author`,
    `last_modified_by`, `authors[].name` und `edit_history[].editor` bekommen den Wert
    `geloeschter-nutzer`. Damit bleiben Antwortvorschläge, Referenzen und
@@ -72,7 +73,8 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   ein in Keycloak gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet (bis zu
   14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). In der Zeit kann sie auch
   neue Sätze, Stimmen und Einwürfe anlegen. Das Kommando für Schritt 1 und 2 deshalb
-  nach 14 Tagen noch einmal laufen lassen; es ist wiederholbar.
+  nach 14 Tagen noch einmal laufen lassen, danach auch das `VACUUM FULL`; das Kommando
+  ist wiederholbar.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
@@ -112,8 +114,9 @@ curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/m
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
   -v ON_ERROR_STOP=1 -v uid="$KENNUNG" < person_loeschen.sql   # Ausgabe protokollieren
 # Nur auf unmigriertem Schema (Spalte user_id vorhanden):
-# docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
-#   -c "DELETE FROM search_events WHERE user_id = '$KENNUNG';"
+# echo "DELETE FROM search_events WHERE user_id = :'uid';" | \
+#   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
+#   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
   "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users;"
