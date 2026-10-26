@@ -24,7 +24,7 @@ export const TAB_PARAM = 'tab';
 /** Was aus dem Einwurf ins Beitragsformular uebernommen wird. Alles bleibt aenderbar. */
 export interface Vorbefuellung {
   rohinputId: string;
-  /** Der eigene Entwurfssatz - er wird der Titel. */
+  /** Der eigene Satz - er wird der Titel. */
   titel: string;
   /** Der Link des Einwurfs, ohne Tracking-Parameter - er wird die Herkunft. */
   url: string | null;
@@ -38,7 +38,7 @@ export interface Vorbefuellung {
  * In der Adresse steht nur die ID des Einwurfs (?rohinput=...). Satz und Link
  * holt das Formular vom Server, damit ein PWA-Neustart nichts verliert und kein
  * Freitext in der Adresse landet. Nach dem Speichern wird der Einwurf als
- * verarbeitet markiert; den naechsten waehlt man auf der Ergebnisseite.
+ * ausformuliert markiert; den naechsten waehlt man auf der Ergebnisseite.
  */
 @Injectable({ providedIn: 'root' })
 export class DestillierUebergabeService {
@@ -57,24 +57,24 @@ export class DestillierUebergabeService {
           rohinputId: einwurf.id,
           titel,
           url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
-          kopf: karte.rohling ? { ...karte, rohling: { ...karte.rohling, kopfSatz: titel || undefined } } : karte,
+          kopf: karte.einwurf ? { ...karte, einwurf: { ...karte.einwurf, kopfSatz: titel || undefined } } : karte,
         };
       }),
     );
   }
 
   /**
-   * Der Beitrag ist gespeichert: Einwurf als verarbeitet markieren, ohne weiterzuspringen.
+   * Der Beitrag ist gespeichert: Einwurf als ausformuliert markieren, ohne weiterzuspringen.
    *
    * Fuer Formulare mit Ergebnisseite - dort waehlt man selbst den naechsten
    * Einwurf. Liefert, ob das Markieren geklappt hat; ein Fehler bricht nichts ab,
    * der Beitrag ist ja da.
    */
-  alsVerarbeitetMarkieren(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
+  alsAusformuliertMarkieren(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
     return this.rawInputService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
       map(() => true),
       catchError((error) => {
-        this.logger.error('Einwurf konnte nicht als verarbeitet markiert werden', error);
+        this.logger.error('Einwurf konnte nicht als ausformuliert markiert werden', error);
         return of(false);
       }),
     );

@@ -78,7 +78,7 @@ _Avoid_: Verarbeitet, Erledigt, Fertig
 Ein Einwurf, den sein Einwerfer oder ein Admin als nicht verwertbar markiert hat.
 _Avoid_: Gelöscht, Abgelehnt
 
-Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
+Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. Nur die dritte Ansicht heißt nach ihrer Stufe („Ausformuliert“), weil dort keine Arbeit mehr ansteht; Verworfenes liegt ebenfalls dort, hinter einem Schalter. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
 
 ## Umwandlungen
 

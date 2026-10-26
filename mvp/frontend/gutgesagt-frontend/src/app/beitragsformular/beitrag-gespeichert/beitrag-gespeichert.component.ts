@@ -14,7 +14,7 @@ import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
-import { tabMerken } from '../../raw-input-list/fangkorb-filter';
+import { FangkorbTab, tabMerken } from '../../raw-input-list/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,
@@ -42,7 +42,7 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
 };
 
 export const NICHT_MARKIERT =
-  'Der Einwurf konnte nicht als verarbeitet markiert werden – er steht im Fangkorb weiter unter „Ausformulieren“.';
+  'Der Einwurf konnte nicht als ausformuliert markiert werden – er steht im Fangkorb weiter unter „Ausformulieren“.';
 
 /**
  * Die Seite nach dem Speichern eines Beitrags (<Formularpfad>/gespeichert/<id>),
@@ -108,8 +108,8 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   /** Der Tab, in dem der Einwurf jetzt liegt. */
-  private get fangkorbTab(): 'erledigt' | 'ausformulieren' {
-    return this.zustand.markiert === false ? 'ausformulieren' : 'erledigt';
+  private get fangkorbTab(): FangkorbTab {
+    return this.zustand.markiert === false ? 'ausformulieren' : 'ausformuliert';
   }
 
   ngOnInit(): void {

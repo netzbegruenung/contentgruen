@@ -23,12 +23,12 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import {
-  FangkorbZustand,
+  EinwurfStufe,
   KartenDaten,
   KartenVariante,
-  RohlingAktion,
-  RohlingDaten,
-  RohlingSatz,
+  EinwurfAktion,
+  EinwurfDaten,
+  EinwurfSatz,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
@@ -41,20 +41,20 @@ type TextModus = 'short' | 'standard' | 'long';
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
 
-/** So viele Saetze stehen in der Rohling-Karte; der Rest wird nur gezaehlt. */
+/** So viele Saetze stehen in der Einwurf-Karte; der Rest wird nur gezaehlt. */
 const SAETZE_SICHTBAR = 3;
 
 /**
- * Die Stufe, an der der Rohling gerade steht - dasselbe Icon wie ueberall entlang
- * der Kette. Das Band zeigt damit den Ist-Zustand: Ein Einwurf ohne Satz traegt
- * das Einwurf-Icon, ein destillierter das der Destille. Der Primaerknopf zeigt
+ * Die Stufe, an der der Einwurf gerade steht - dasselbe Icon wie ueberall entlang
+ * der Kette. Das Band zeigt damit die Stufe: Ein offener Einwurf traegt das
+ * Einwurf-Icon, ein destillierter das der Destille. Der Primaerknopf zeigt
  * dagegen die naechste Stufe (siehe primaerAktion). Verworfenes behaelt das Icon
  * des Einwurfs.
  */
-const STUFEN: Record<FangkorbZustand, { emoji: string; name: string }> = {
-  destillieren: { emoji: KETTEN_ICONS.einwerfen, name: 'Zu destillieren' },
-  ausformulieren: { emoji: KETTEN_ICONS.destillieren, name: 'Auszuformulieren' },
-  erledigt: { emoji: KETTEN_ICONS.verfassen, name: 'Erledigt' },
+const STUFEN: Record<EinwurfStufe, { emoji: string; name: string }> = {
+  offen: { emoji: KETTEN_ICONS.einwerfen, name: 'Offen' },
+  destilliert: { emoji: KETTEN_ICONS.destillieren, name: 'Destilliert' },
+  ausformuliert: { emoji: KETTEN_ICONS.verfassen, name: 'Ausformuliert' },
   verworfen: { emoji: KETTEN_ICONS.einwerfen, name: 'Verworfen' },
 };
 
@@ -66,13 +66,13 @@ const STUFEN: Record<FangkorbZustand, { emoji: string; name: string }> = {
  * stecken in app-karten-aktionen und erscheinen nur in der vollen Variante.
  *
  * Die volle Karte hat Knoepfe und ist deshalb selbst kein Tipp-Ziel. Kompakte Karten
- * sind als Ganzes antippbar und melden das ueber `angetippt`. Der Rohling traegt
+ * sind als Ganzes antippbar und melden das ueber `angetippt`. Die Einwurf-Karte traegt
  * statt eines Flaechentipps genau einen Primaerknopf und ein ⋮-Menue und meldet
  * beides ueber `aktion`; wohin es geht, entscheidet die Seite.
  *
  * Der Kopf ist nur das Band - Symbol und Titel, ohne Badges, Inhalt und Aktionen.
  * Das Beitragsformular zeigt damit die Aussage, auf die geantwortet wird, und
- * mit Rohling-Daten den Einwurf, aus dem der Beitrag entsteht (Sandband, Link,
+ * mit Einwurf-Daten den Einwurf, aus dem der Beitrag entsteht (Sandband, Link,
  * der eine Satz - ohne Saetze-Liste, Aktionen, ⋮ und Meta).
  *
  * Die Hoehe ergibt sich aus dem Inhalt. Langer Text wird gekuerzt und laesst sich mit
@@ -116,8 +116,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   /** Tipp auf eine antippbare Karte (kompakt). */
   @Output() angetippt = new EventEmitter<KartenDaten>();
-  /** Primaerknopf oder Menueeintrag auf einer Rohling-Karte. */
-  @Output() aktion = new EventEmitter<RohlingAktion>();
+  /** Primaerknopf oder Menueeintrag auf einer Einwurf-Karte. */
+  @Output() aktion = new EventEmitter<EinwurfAktion>();
 
   nutzung: number | null = null;
   nutzungAnimiert = false;
@@ -219,15 +219,15 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return this.variante === 'kopf';
   }
 
-  /** Die Rohling-Daten: in der Variante rohling und im Kopf, wenn er aus einem Einwurf kommt. */
-  get rohling(): RohlingDaten | null {
-    return this.variante === 'rohling' || this.variante === 'kopf' ? (this.daten.rohling ?? null) : null;
+  /** Die Einwurf-Daten: in der Variante einwurf und im Kopf, wenn er aus einem Einwurf kommt. */
+  get einwurf(): EinwurfDaten | null {
+    return this.variante === 'einwurf' || this.variante === 'kopf' ? (this.daten.einwurf ?? null) : null;
   }
 
   get kartenKlassen(): string[] {
     const klassen = [`karte--${this.variante}`, `typ-${this.daten.typ ?? 'ohne'}`];
-    if (this.rohling) {
-      klassen.push(`zustand-${this.rohling.zustand}`);
+    if (this.einwurf) {
+      klassen.push(`stufe-${this.einwurf.stufe}`);
     }
     return klassen;
   }
@@ -242,20 +242,20 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Der eine Griff im Fuss, nach Zustand. Verworfenes bietet keinen an: Ansehen
+   * Der eine Griff im Fuss, nach Stufe. Verworfenes bietet keinen an: Ansehen
    * gibt es ohne Beitrag nicht, und Weiterarbeiten steht im ⋮-Menue.
    *
    * Das Zeichen auf dem Knopf ist das der *naechsten* Stufe - es sagt, wohin der
-   * Griff fuehrt, nicht wo der Rohling steht (das zeigt das Band). Ansehen fuehrt
+   * Griff fuehrt, nicht wo der Einwurf steht (das zeigt das Band). Ansehen fuehrt
    * auf keine Stufe der Kette weiter und traegt deshalb ein Material-Icon.
    */
-  get primaerAktion(): { aktion: RohlingAktion; wort: string; emoji?: string; icon?: string } | null {
-    switch (this.rohling?.zustand) {
-      case 'destillieren':
+  get primaerAktion(): { aktion: EinwurfAktion; wort: string; emoji?: string; icon?: string } | null {
+    switch (this.einwurf?.stufe) {
+      case 'offen':
         return { aktion: 'destillieren', wort: 'Destillieren', emoji: KETTEN_ICONS.destillieren };
-      case 'ausformulieren':
+      case 'destilliert':
         return { aktion: 'ausformulieren', wort: 'Ausformulieren', emoji: KETTEN_ICONS.verfassen };
-      case 'erledigt':
+      case 'ausformuliert':
         return { aktion: 'ansehen', wort: 'Ansehen', icon: 'visibility' };
       default:
         return null;
@@ -263,28 +263,28 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Das Zeichen im Kopfband. Erledigtes traegt das Emoji des entstandenen
+   * Das Zeichen im Kopfband. Ausformuliertes traegt das Emoji des entstandenen
    * Beitrags - dieselbe Marke, unter der er in Suche und Album steht; die
    * unfertigen Stufen tragen das Icon der Kette.
    */
   get stufenEmoji(): string {
-    if (!this.rohling) {
+    if (!this.einwurf) {
       return '';
     }
-    if (this.rohling.zustand === 'erledigt' && this.daten.typ) {
-      return CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji || STUFEN.erledigt.emoji;
+    if (this.einwurf.stufe === 'ausformuliert' && this.daten.typ) {
+      return CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji || STUFEN.ausformuliert.emoji;
     }
-    return STUFEN[this.rohling.zustand].emoji;
+    return STUFEN[this.einwurf.stufe].emoji;
   }
 
   get stufenName(): string {
-    if (!this.rohling) {
+    if (!this.einwurf) {
       return '';
     }
-    if (this.rohling.zustand === 'erledigt' && this.daten.typ) {
-      return typLabel(this.daten.typ);
+    if (this.einwurf.stufe === 'ausformuliert' && this.daten.typ) {
+      return `${STUFEN.ausformuliert.name}: ${typLabel(this.daten.typ)}`;
     }
-    return STUFEN[this.rohling.zustand].name;
+    return STUFEN[this.einwurf.stufe].name;
   }
 
   /** Den Einwerfer nennt die Karte immer; beim eigenen Einwurf als "Du" (autorAnzeige). */
@@ -292,25 +292,25 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return !!this.daten.autor;
   }
 
-  get sichtbareSaetze(): RohlingSatz[] {
-    return (this.rohling?.saetze ?? []).slice(0, SAETZE_SICHTBAR);
+  get sichtbareSaetze(): EinwurfSatz[] {
+    return (this.einwurf?.saetze ?? []).slice(0, SAETZE_SICHTBAR);
   }
 
   get weitereSaetze(): number {
-    return Math.max((this.rohling?.saetze.length ?? 0) - SAETZE_SICHTBAR, 0);
+    return Math.max((this.einwurf?.saetze.length ?? 0) - SAETZE_SICHTBAR, 0);
   }
 
-  /** Rechts am Satz: ein Haken je Beitrag daraus, sonst das Wort "Entwurf". */
-  satzStatus(satz: RohlingSatz): string {
+  /** Rechts am Satz: ein Haken je Beitrag daraus, sonst nichts. */
+  satzStatus(satz: EinwurfSatz): string {
     if (!satz.beitraege) {
-      return 'Entwurf';
+      return '';
     }
     return satz.beitraege === 1 ? '✓' : `✓ ${satz.beitraege}`;
   }
 
-  satzBeschriftung(satz: RohlingSatz): string {
+  satzBeschriftung(satz: EinwurfSatz): string {
     if (!satz.beitraege) {
-      return 'Entwurf, noch kein Beitrag';
+      return 'noch kein Beitrag';
     }
     return satz.beitraege === 1 ? 'ein Beitrag daraus' : `${satz.beitraege} Beiträge daraus`;
   }
@@ -321,29 +321,29 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * Einwerfer mehr kuemmert (toter Link, inaktive Person, kein Einwerfer).
    */
   get darfVerwerfen(): boolean {
-    return !!this.rohling?.verwerfbar && (this.istEigen || this.istAdmin);
+    return !!this.einwurf?.verwerfbar && (this.istEigen || this.istAdmin);
   }
 
   /**
    * Das ⋮-Menue: alles, was nicht der eine Primaergriff ist.
    *
-   * Erledigtes und Verworfenes laesst sich weiter destillieren - das Backend
+   * Ausformuliertes und Verworfenes laesst sich weiter destillieren - das Backend
    * erlaubt beides ausdruecklich, ein zweiter Beitrag aus demselben Einwurf ist
    * kein Fehler.
    */
-  get menueEintraege(): { aktion: RohlingAktion; wort: string; icon: string }[] {
-    const rohling = this.rohling;
-    if (!rohling) {
+  get menueEintraege(): { aktion: EinwurfAktion; wort: string; icon: string }[] {
+    const einwurf = this.einwurf;
+    if (!einwurf) {
       return [];
     }
-    const eintraege: { aktion: RohlingAktion; wort: string; icon: string }[] = [];
-    if (rohling.link) {
+    const eintraege: { aktion: EinwurfAktion; wort: string; icon: string }[] = [];
+    if (einwurf.link) {
       eintraege.push({ aktion: 'linkKopieren', wort: 'Link kopieren', icon: 'link' });
     }
-    if (rohling.zustand === 'erledigt') {
+    if (einwurf.stufe === 'ausformuliert') {
       eintraege.push({ aktion: 'weiterDestillieren', wort: 'Weiter destillieren', icon: 'science' });
     }
-    if (rohling.zustand === 'verworfen') {
+    if (einwurf.stufe === 'verworfen') {
       eintraege.push({ aktion: 'weiterDestillieren', wort: 'Trotzdem destillieren', icon: 'science' });
     }
     if (this.darfVerwerfen) {
@@ -434,8 +434,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     }
   }
 
-  /** Knoepfe im Rohling melden nur, was gewollt ist - wohin es fuehrt, weiss die Seite. */
-  aktionAusloesen(aktion: RohlingAktion, event?: Event): void {
+  /** Knoepfe auf der Einwurf-Karte melden nur, was gewollt ist - wohin es fuehrt, weiss die Seite. */
+  aktionAusloesen(aktion: EinwurfAktion, event?: Event): void {
     event?.stopPropagation();
     this.aktion.emit(aktion);
   }
