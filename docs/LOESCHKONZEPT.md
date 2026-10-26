@@ -131,7 +131,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
 - **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
-  am Code geprüft am 26.10.2026 (Stand nach #277):
+  am Code geprüft am 26.10.2026 (Stand nach #284):
   - **Kennungen:** Ab INFO steht in BFF und Semantic-Service keine Kennung im Klartext,
     nur ihr achtstelliges Pseudonym. Beide Dienste rechnen dasselbe (erste acht
     Hex-Zeichen von SHA-256): `log_pseudonym()` in `app/core/logging.py` und
@@ -188,8 +188,14 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     unter „Meine Beiträge“ fragt `/api/v1/usage/users/me/usage-stats`
     (`usage-tracking.service.ts`), und der Suchdienst nimmt die Person aus `X-User`
     (`api/v1/usage.py`). Das gilt ebenso für das Zugriffsprotokoll des vorgelagerten
-    Reverse Proxy. Bis #284 stand die Kennung dort im Klartext; ältere Zeilen enthalten
-    sie, bis die Fristen unten sie beseitigen.
+    Reverse Proxy. **Altbestand:** Bis #284 stand die Kennung in beiden Protokollen im
+    Klartext. Beim vorgelagerten Reverse Proxy verschwinden diese Zeilen mit dessen Frist.
+    Das Frontend-nginx schreibt dagegen in den `json-file`-Strom, für den in Produktion
+    keine Frist gilt (siehe Fristen unten); dort bleiben die alten Zeilen mit Kennung
+    stehen, bis jemand den Strom am Host rotiert oder leert. Bei einer Auskunft oder
+    Löschung also am Host nach der Kennung im Pfad `/api/v1/usage/users/` suchen; das
+    gilt auch für Aufrufe aus einem noch zwischengespeicherten alten Frontend, die die
+    alte Adresse weiter anfragen (Antwort 404).
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
     Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als

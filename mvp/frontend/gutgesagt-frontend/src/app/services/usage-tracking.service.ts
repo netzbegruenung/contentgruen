@@ -172,7 +172,7 @@ export class UsageTrackingService {
     return this.http.get<UserUsageStats>(url)
       .pipe(
         catchError(error => {
-          this.loggingService.error('Failed to get own Nutzungsstatistik', error);
+          this.loggingService.error('Eigene Nutzungsstatistik nicht geladen', error);
           return of(null);
         })
       );

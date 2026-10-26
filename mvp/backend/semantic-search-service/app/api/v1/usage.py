@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, ValidationError, validator
 import uuid
 from datetime import datetime, timedelta
 
-from dependencies import get_settings, get_current_user_optional
+from dependencies import get_settings, get_current_user_optional, require_user
 from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
 from services.cleanup.usage_cleanup_service import get_cleanup_service
@@ -245,7 +245,7 @@ async def get_content_usage(
 
 @router.get("/users/me/usage-stats", response_model=UserUsageStatsResponse)
 async def eigene_nutzungsstatistik(
-    current_user: Optional[str] = Depends(get_current_user_optional),
+    current_user: str = Depends(require_user),
 ):
     """
     Wie oft andere die Beitraege der angemeldeten Person genutzt haben.
@@ -253,9 +253,6 @@ async def eigene_nutzungsstatistik(
     Die Person kommt aus ``X-User`` (gesetzt vom BFF), nicht aus dem Pfad: ein Pfad
     mit Kennung stuende im Zugriffslog jedes Webservers davor (#284).
     """
-    if not current_user or current_user == "anonymous":
-        raise HTTPException(status_code=401, detail="Authentication required")
-
     try:
         service = get_usage_service()
         stats = await service.get_user_usage_stats(current_user)
@@ -264,7 +261,7 @@ async def eigene_nutzungsstatistik(
 
     except Exception as e:
         logger.error(
-            f"Error getting usage stats for user {log_pseudonym(current_user)}: {e}",
+            f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {e}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")

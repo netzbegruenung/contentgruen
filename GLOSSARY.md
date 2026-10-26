@@ -207,7 +207,7 @@ Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit 
 _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 
 **Nutzungsstatistik**:
-Die Summe der Nutzungen aller Beiträge einer Person, angezeigt unter Meine Beiträge. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
+Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
 _Avoid_: Usage Stats, Nutzerstatistik
 
 ## Personen
@@ -233,7 +233,7 @@ Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat
 _Avoid_: Ersteller, Owner, Urheber
 
 **Kennung**:
-Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Logs steht er höchstens als Pseudonym, in Adressen gar nicht.
+Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Adressen steht er nicht, in Logs nur als gekürzter Hash. Dieser Hash ist ungesalzen und bei bekannten Kennungen zurückrechenbar, also kein Tagespseudonym.
 _Avoid_: User-ID, Nutzer-ID
 
 **Anzeigename**:

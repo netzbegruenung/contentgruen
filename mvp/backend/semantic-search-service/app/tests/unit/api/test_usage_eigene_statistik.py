@@ -44,7 +44,7 @@ def client(dienst):
 
 
 class TestEigeneNutzungsstatistik:
-    def test_person_kommt_aus_der_anmeldung(self, client, dienst):
+    def test_eigene_nutzungsstatistik_person_aus_der_anmeldung(self, client, dienst):
         antwort = client.get(URL, headers={"X-User": "kim-1"})
 
         assert antwort.status_code == 200
@@ -52,13 +52,13 @@ class TestEigeneNutzungsstatistik:
         dienst.get_user_usage_stats.assert_awaited_once_with("kim-1")
 
     @pytest.mark.parametrize("kopf", [{}, {"X-User": "anonymous"}])
-    def test_ohne_anmeldung_401(self, client, dienst, kopf):
+    def test_eigene_nutzungsstatistik_ohne_anmeldung_401(self, client, dienst, kopf):
         antwort = client.get(URL, headers=kopf)
 
         assert antwort.status_code == 401
         dienst.get_user_usage_stats.assert_not_awaited()
 
-    def test_kennung_im_pfad_gibt_es_nicht_mehr(self, client, dienst):
+    def test_eigene_nutzungsstatistik_ohne_kennung_im_pfad(self, client, dienst):
         antwort = client.get(
             "/api/v1/usage/users/bo-2/usage-stats", headers={"X-User": "kim-1"}
         )
@@ -66,7 +66,9 @@ class TestEigeneNutzungsstatistik:
         assert antwort.status_code == 404
         dienst.get_user_usage_stats.assert_not_awaited()
 
-    def test_fehler_ohne_kennung_im_log(self, client, dienst, caplog):
+    def test_eigene_nutzungsstatistik_fehler_ohne_kennung_im_log(
+        self, client, dienst, caplog
+    ):
         dienst.get_user_usage_stats.side_effect = RuntimeError("kaputt")
 
         antwort = client.get(URL, headers={"X-User": "kim-1"})
