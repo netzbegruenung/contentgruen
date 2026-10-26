@@ -102,7 +102,7 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
 
   /** Nach dem Verwerfen dieselbe Seite neu: Die Karte zeigt dann "Verworfen". */
   aktionAusfuehren(karte: KartenDaten, aktion: EinwurfAktion): void {
-    this.einwurfAktionen.ausfuehren(karte, aktion, () => this.laden());
+    this.einwurfAktionen.ausfuehren(karte, aktion, () => this.laden(), this.destroy$);
   }
 
   nachKarte(_index: number, karte: KartenDaten): string {

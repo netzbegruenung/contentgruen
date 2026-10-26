@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Observable } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
 import { SCHRITT_PARAM } from '../destillieren/destillier-uebergabe.service';
@@ -30,8 +32,16 @@ export class EinwurfAktionenService {
     private snackBar: MatSnackBar,
   ) {}
 
-  /** ``nachVerwerfen``: Die Liste laedt neu, weil der Einwurf seine Stufe gewechselt hat. */
-  ausfuehren(karte: KartenDaten, aktion: EinwurfAktion, nachVerwerfen: () => void): void {
+  /**
+   * ``nachVerwerfen``: Die Liste laedt neu, weil der Einwurf seine Stufe gewechselt hat.
+   * ``bis``: das Ende der aufrufenden Seite - danach laeuft kein Neuladen mehr an.
+   */
+  ausfuehren(
+    karte: KartenDaten,
+    aktion: EinwurfAktion,
+    nachVerwerfen: () => void,
+    bis: Observable<unknown>,
+  ): void {
     const angaben = karte.einwurfAngaben;
     if (!angaben) {
       return;
@@ -59,7 +69,7 @@ export class EinwurfAktionenService {
         this.linkKopieren(angaben.link);
         break;
       case 'verwerfen':
-        this.verwerfen(angaben.einwurfId, nachVerwerfen);
+        this.verwerfen(angaben.einwurfId, nachVerwerfen, bis);
         break;
     }
   }
@@ -74,16 +84,19 @@ export class EinwurfAktionenService {
     });
   }
 
-  private verwerfen(einwurfId: string, nachVerwerfen: () => void): void {
-    this.einwurfService.updateStatus(einwurfId, 'discarded').subscribe({
-      next: () => {
-        this.snackBar.open('Verworfen.', undefined, { duration: 3000 });
-        nachVerwerfen();
-      },
-      error: (error) => {
-        this.logger.error('Einwurf konnte nicht verworfen werden', error);
-        this.snackBar.open(verwerfenFehlertext(error?.status), 'OK', { duration: 6000 });
-      },
-    });
+  private verwerfen(einwurfId: string, nachVerwerfen: () => void, bis: Observable<unknown>): void {
+    this.einwurfService
+      .updateStatus(einwurfId, 'discarded')
+      .pipe(takeUntil(bis))
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Verworfen.', undefined, { duration: 3000 });
+          nachVerwerfen();
+        },
+        error: (error) => {
+          this.logger.error('Einwurf konnte nicht verworfen werden', error);
+          this.snackBar.open(verwerfenFehlertext(error?.status), 'OK', { duration: 6000 });
+        },
+      });
   }
 }

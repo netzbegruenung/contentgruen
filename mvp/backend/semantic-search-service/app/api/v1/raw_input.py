@@ -90,6 +90,16 @@ def _mit_namen(rows: List[dict], x_user: Optional[str]) -> List[dict]:
     return rows
 
 
+def _seite(
+    rows: List[dict], gesamt: int, x_user: Optional[str]
+) -> GetRawInputsResponse:
+    """Eine Seite Einwuerfe mit Anzeigenamen, wie Fangkorb und Meine Einwuerfe sie liefern."""
+    results = [RawInputResponse(**row) for row in _mit_namen(rows, x_user)]
+    return GetRawInputsResponse(
+        results_count=len(results), results=results, total_records_count=gesamt
+    )
+
+
 @router.post("/addRawInput", response_model=AddRawInputResponse, status_code=201)
 async def add_raw_input(
     request: AddRawInputRequest,
@@ -137,14 +147,7 @@ async def get_raw_inputs(
             offset=offset,
             current_user=_einwerfende_person(x_user),
         )
-        results: List[RawInputResponse] = [
-            RawInputResponse(**row) for row in _mit_namen(rows, x_user)
-        ]
-        return GetRawInputsResponse(
-            results_count=len(results),
-            results=results,
-            total_records_count=repository.count(),
-        )
+        return _seite(rows, repository.count(), x_user)
     except Exception as e:
         logger.error(f"Fehler in /getRawInputs: {e}", exc_info=True)
         raise HTTPException(
@@ -174,14 +177,7 @@ async def get_own_raw_inputs(
             current_user=person,
             submitted_by=person,
         )
-        results: List[RawInputResponse] = [
-            RawInputResponse(**row) for row in _mit_namen(rows, x_user)
-        ]
-        return GetRawInputsResponse(
-            results_count=len(results),
-            results=results,
-            total_records_count=repository.count(submitted_by=person),
-        )
+        return _seite(rows, repository.count(submitted_by=person), x_user)
     except Exception as e:
         logger.error(f"Fehler in /getOwnRawInputs: {e}", exc_info=True)
         raise HTTPException(

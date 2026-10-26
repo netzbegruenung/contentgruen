@@ -206,7 +206,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
    * oben muss das mitbekommen.
    */
   aktionAusfuehren(karte: KartenDaten, aktion: EinwurfAktion): void {
-    this.einwurfAktionen.ausfuehren(karte, aktion, () => this.laden());
+    this.einwurfAktionen.ausfuehren(karte, aktion, () => this.laden(), this.destroy$);
   }
 
   nachKarte(_index: number, karte: KartenDaten): string {
