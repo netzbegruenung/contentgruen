@@ -64,14 +64,13 @@ def _search_query_origin_conditions() -> list:
 
 def ausgeblendet_bedingungen() -> list:
     """
-    must_not-Bedingungen, die gesperrte und geloeschte Beitraege ausschliessen.
+    must_not-Bedingungen, die alles in AUSGEBLENDET ausschliessen: gesperrte und
+    geloeschte Beitraege und Bilder ohne Unterschrift von vor #281.
 
     Ein Admin sperrt einen Beitrag, statt ihn zu loeschen: Er verschwindet aus
     Suche, Einzelansicht, Listen und "Meine Beitraege", bleibt aber im Speicher
     und damit fuer die Moderation auffindbar (QdrantModerationRepository in
-    moderation_repository.py filtert nicht nach Zustand). Bilder, die noch auf
-    ihre Unterschrift warten, bleiben in Listen und "Meine Beitraege" stehen; nur
-    die Suche verlangt sichtbar (nur_sichtbar_bedingungen).
+    moderation_repository.py filtert nicht nach Zustand).
     """
     from qdrant_client.models import FieldCondition, MatchValue
 
@@ -289,13 +288,13 @@ class QdrantBaseRepository(
             logger.warning(meldung)
             raise ValueError(meldung)
 
-        # Gesperrt oder geloescht heisst fuer jeden Leser hier "nicht da":
+        # Gesperrt, geloescht oder Bild ohne Unterschrift heisst fuer jeden Leser
+        # hier "nicht da":
         # Einzelansicht, Stimmen, Antwortvorschlaege der Suche (SearchOrchestrator
         # ueberspringt ValueError).
         if result.get("status") in AUSGEBLENDET_WERTE:
             meldung = (
-                f"Entry with id {item_id} is gesperrt oder geloescht "
-                f"({result.get('status')})"
+                f"Entry with id {item_id} is ausgeblendet " f"({result.get('status')})"
             )
             logger.warning(meldung)
             raise ValueError(meldung)
@@ -772,37 +771,15 @@ class QdrantBaseRepository(
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
-        nur_aus: Optional[ContentStatus] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
-
-        Mit nur_aus wechselt der Status nur, wenn der Beitrag gerade in diesem
-        Status steht. Qdrant prueft das per Filter im selben Schreibvorgang; ein
-        inzwischen gesperrter Beitrag bleibt so gesperrt (#251).
         """
         try:
-            from qdrant_client.models import (
-                FieldCondition,
-                Filter,
-                HasIdCondition,
-                MatchValue,
-            )
-
-            auswahl = [str(item_id)]
-            if nur_aus is not None:
-                auswahl = Filter(
-                    must=[
-                        HasIdCondition(has_id=[str(item_id)]),
-                        FieldCondition(
-                            key="status", match=MatchValue(value=nur_aus.value)
-                        ),
-                    ]
-                )
             await self._shared_manager.async_client.set_payload(
                 collection_name=self._shared_manager.collection_name,
                 payload={"status": new_status.value},
-                points=auswahl,
+                points=[str(item_id)],
             )
             logger.debug(f"Updated status of {item_id} to {new_status.value}")
         except Exception as e:

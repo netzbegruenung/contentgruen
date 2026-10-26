@@ -1,8 +1,6 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import (
-    Any,
-    Dict,
     Optional,
     Protocol,
     List,
@@ -38,7 +36,7 @@ class BaseContentResultProtocol(BaseContentInputProtocol):
     score: Optional[float]
 
 
-# --- Ingestion strategy protocol (rung-2 Phase B) ---
+# --- Ingestion strategy protocol (Seam 1 of CONTENT_MODEL.md) ---
 
 
 @dataclass
@@ -46,15 +44,13 @@ class ContentInput:
     """Raw input passed to an ingestion strategy."""
 
     text: str = ""
-    image_url: str = ""
 
 
 @dataclass
 class DerivedContent:
-    """Searchable text and optional extra fields produced by an ingestion strategy."""
+    """Searchable text produced by an ingestion strategy."""
 
     text: str
-    extra: Dict[str, Any] = field(default_factory=dict)
 
 
 @runtime_checkable

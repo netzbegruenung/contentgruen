@@ -90,6 +90,35 @@ describe('AddImageComponent', () => {
     expect(senden).not.toHaveBeenCalled();
   });
 
+  it('nimmt einen unbearbeiteten Vorschlag zurueck, wenn die Bild-URL wechselt', () => {
+    const component = fixture.componentInstance;
+    spyOn(TestBed.inject(ImageService), 'suggestCaption').and.returnValue(
+      of({ suggested_caption: 'Solarmodule auf einem Schuldach in Freiburg.' }),
+    );
+    component.imageForm.patchValue({ image_url: 'https://example.org/bild.jpg' });
+    component.suggestCaption();
+
+    component.imageForm.patchValue({ image_url: 'https://example.org/anderes-bild.jpg' });
+    fixture.detectChanges();
+
+    expect(component.imageForm.value.caption).toBe('');
+    expect(fixture.nativeElement.querySelector('.vorschlag-hinweis')).toBeNull();
+  });
+
+  it('behaelt einen bearbeiteten Vorschlag, wenn die Bild-URL wechselt', () => {
+    const component = fixture.componentInstance;
+    spyOn(TestBed.inject(ImageService), 'suggestCaption').and.returnValue(
+      of({ suggested_caption: 'Solarmodule auf einem Schuldach in Freiburg.' }),
+    );
+    component.imageForm.patchValue({ image_url: 'https://example.org/bild.jpg' });
+    component.suggestCaption();
+    component.imageForm.patchValue({ caption: 'Solarmodule auf dem Dach der Grundschule.' });
+
+    component.imageForm.patchValue({ image_url: 'https://example.org/anderes-bild.jpg' });
+
+    expect(component.imageForm.value.caption).toBe('Solarmodule auf dem Dach der Grundschule.');
+  });
+
   it('beschreibt den Typ mit dem Satz aus der Registry', () => {
     expect(fixture.nativeElement.querySelector('.content-type-description').textContent.trim()).toBe(
       'Ein Bild mit Unterschrift, das für sich spricht.',

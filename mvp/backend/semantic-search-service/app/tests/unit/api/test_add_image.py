@@ -39,7 +39,16 @@ def image_service():
     service.add = AsyncMock(side_effect=lambda entry: entry.id)
     app.dependency_overrides[get_image_service] = lambda: service
     yield service
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_image_service, None)
+
+
+@pytest.fixture
+def vorschlag_service():
+    service = MagicMock()
+    service.suggest_caption = AsyncMock(return_value=UNTERSCHRIFT)
+    app.dependency_overrides[get_caption_suggestion_service] = lambda: service
+    yield service
+    app.dependency_overrides.pop(get_caption_suggestion_service, None)
 
 
 @pytest.mark.api
@@ -67,14 +76,8 @@ class TestAddImage:
 @pytest.mark.api
 class TestSuggestCaption:
     def test_suggest_caption_liefert_vorschlag_und_speichert_nichts(
-        self, image_service
+        self, image_service, vorschlag_service
     ):
-        caption_service = MagicMock()
-        caption_service.suggest_caption = AsyncMock(return_value=UNTERSCHRIFT)
-        app.dependency_overrides[get_caption_suggestion_service] = (
-            lambda: caption_service
-        )
-
         resp = TestClient(app).post(
             SUGGEST_URL,
             json={"image_url": "https://example.com/demo.jpg"},
@@ -84,10 +87,3 @@ class TestSuggestCaption:
         assert resp.status_code == 200
         assert resp.json() == {"suggested_caption": UNTERSCHRIFT}
         image_service.add.assert_not_awaited()
-
-
-def test_image_description_worker_entfernt():
-    """Ohne Hintergrunddienst schickt nur der Klick auf den Vorschlag Daten an die KI."""
-    import importlib.util
-
-    assert importlib.util.find_spec("services.vision.image_description_worker") is None

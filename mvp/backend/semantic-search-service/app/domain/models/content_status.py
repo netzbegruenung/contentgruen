@@ -11,7 +11,7 @@ class ContentStatus(Enum):
     wird nur mit Unterschrift gespeichert (ADR 0003).
 
     Die Suche findet nur VISIBLE. Einzelansicht, Listen und "Meine Beitraege"
-    blenden BLOCKED und DELETED aus (repositories/implementations/qdrant/
+    blenden alles in AUSGEBLENDET aus (repositories/implementations/qdrant/
     base_repository.py). Altwerte aus der Zeit vor #214 stellt
     services/wartung/zustaende_umstellen.py um; bis dahin gilt der Uebergang unten.
     """
@@ -44,8 +44,19 @@ Entscheidung faellt. Alle Anlagewege in api/v1 und Seeding beziehen sich
 hierauf. Neue Beitraege sind sofort sichtbar.
 """
 
-AUSGEBLENDET = frozenset({ContentStatus.BLOCKED, ContentStatus.DELETED})
-"""Zustaende, in denen ein Beitrag fuer Leser nicht da ist, auch nicht ueber seine ID."""
+AUSGEBLENDET = frozenset(
+    {
+        ContentStatus.BLOCKED,
+        ContentStatus.DELETED,
+        ContentStatus.PENDING_DESCRIPTION,
+        ContentStatus.DESCRIPTION_FAILED,
+    }
+)
+"""
+Zustaende, in denen ein Beitrag fuer Leser nicht da ist, auch nicht ueber seine ID.
+Die beiden Altwerte fuer Bilder ohne Unterschrift gehoeren dazu: Das ist kein Bild,
+und seit #281 holt es nichts mehr aus diesem Zustand.
+"""
 
 AUSGEBLENDET_WERTE = frozenset(status.value for status in AUSGEBLENDET)
 

@@ -40,7 +40,7 @@ That leaves exactly **three seams** where types are allowed to differ:
 
 | Seam | What varies | Example |
 |------|-------------|---------|
-| **1. Ingestion / text-derivation** | how `searchable_text` is produced | image → call vision API for a description; comment → user types it |
+| **1. Ingestion / text-derivation** | how `searchable_text` is produced | today the person types it for every type, the image's Unterschrift included (ADR 0003) |
 | **2. Content model** | extra fields beyond the base | `image_url`, `speaker`, `doi`, `publication_date` |
 | **3. Rendering** | how a result is displayed | image card shows the picture; speech shows speaker + date |
 
@@ -56,15 +56,12 @@ Everything else is shared.
                                                                           content model (SEAM 2)
 ```
 
-- For most types the ingestion strategy is **identity**: `searchable_text = user input`.
-- For an **image/graphic**, ingestion calls an external AI vision endpoint, receives a textual
-  description, and stores it as `searchable_text`. From that point on the image is just another
-  text-bearing content item — matched on its description, rendered as a picture.
-- The derived text is **persisted, never recomputed**: the AI call happens once at ingestion. Search
-  is thereafter cheap and deterministic, and the one-time AI cost is at index time, not query time.
-
-This also keeps the "MVP launches without AI generation" stance intact: the AI describes/indexes at
-ingestion — it does **not** generate content shown to users. Different thing, deliberately.
+- For every type the ingestion strategy is **identity**: `searchable_text = user input`.
+- For an **image/graphic**, that input is the Unterschrift. The image form can ask the AI vision
+  endpoint for a suggestion (`POST /image/suggestCaption`), but only the text the person saves is
+  stored (ADR 0003, #281). From that point on the image is just another text-bearing content item —
+  matched on its Unterschrift, rendered as a picture.
+- The text is **persisted, never recomputed**. Search is cheap and deterministic.
 
 ## Backend design (Python)
 
@@ -109,16 +106,17 @@ The generic `BaseContentService` is instantiated from a spec — no per-type sub
 there is **real** behavior (e.g. `StatementService`'s similarity/dedup stays a subclass or a
 `ContentBehavior` strategy).
 
-**2. Ingestion strategy (Seam 1) — the only place type-specific input handling lives.**
+**2. Ingestion strategy (Seam 1).** Every type uses `DirectText`, and since #281 no code path
+reads `spec.ingestion`: the routers store the text as the person gave it. The seam stays as the
+place for a future non-AI derivation (e.g. a paper abstract); an AI text is never one (ADR 0003).
 
 ```python
 class IngestionStrategy(Protocol):
     async def derive_text(self, raw: ContentInput) -> DerivedContent: ...
-    # DerivedContent = searchable_text + any extra fields to persist (e.g. image_url)
+    # DerivedContent = searchable_text
 
 class DirectText:        # comment, generic_text, speech transcript, paper abstract
     async def derive_text(self, raw): return DerivedContent(text=raw.text)
-
 ```
 
 An AI-derived ingestion (e.g. describing an image) is not a strategy here: by ADR 0003 an AI text
@@ -149,8 +147,9 @@ is now ~280 lines and new types are searched automatically — no new branch.
 An earlier version stored images without Unterschrift as `PENDING_DESCRIPTION` and let a background
 worker write it and make the image visible. That contradicted ADR 0003 and was removed (#281):
 `/image/addImage` rejects an image without Unterschrift (422). `PENDING_DESCRIPTION` and
-`DESCRIPTION_FAILED` remain in `ContentStatus` only so that such entries from before stay readable;
-search never finds them.
+`DESCRIPTION_FAILED` remain in `ContentStatus` only so that such entries from before still validate;
+like blocked and deleted ones they are in `AUSGEBLENDET`, so no reader sees them (not by id, not in
+lists, not in search).
 
 ## Frontend design (Angular)
 
@@ -226,8 +225,8 @@ per-service URL/header/error duplication that every type's service still re-copi
 | **Display** | — | Seam 3 (adapter fields + body block in the card) |
 | Special behavior (e.g. dedup) | — | optional behavior strategy |
 
-**Adding a new type =** one registry entry + a model/DTO with its extra fields + an ingestion
-strategy (usually `DirectText`) + its fields in the card adapter and, only if it needs its own body,
+**Adding a new type =** one registry entry + a model/DTO with its extra fields (ingestion defaults
+to `DirectText`) + its fields in the card adapter and, only if it needs its own body,
 a block in `app-beitragskarte`. No engine changes, no cloning.
 
 ## Incremental migration path
@@ -272,13 +271,12 @@ dedup behavior as a strategy) and `reference`.
   (`references_count`, `usage_count`, `content_type`), so the frontend DTOs adopt snake_case to
   match — no per-field transformation, no `DtoMapper` boundary. This unblocked the shared
   `BaseContentResult` DTO base (`services/dtos/commonDtos.ts`).
-- **AI vision provider — DECIDED.** OpenAI `gpt-4o-mini`, called from the search service at
-  ingestion time behind the `IngestionStrategy` interface, so the provider stays swappable.
-  Configured via `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`); without a key the image
-  type falls back to `DirectText`.
+- **AI vision provider — DECIDED.** OpenAI `gpt-4o-mini`, called from the search service only for
+  the suggested Unterschrift in the image form (`CaptionSuggestionService`, `POST
+  /image/suggestCaption`). Configured via `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`);
+  without a key there is no suggestion and the person writes the Unterschrift. Since #281 the AI is
+  no longer called at ingestion (ADR 0003).
 
 ## Open decisions
-- **Reprocessing**: if the description model improves, do we re-derive text for existing images? (Make
-  ingestion idempotent and re-runnable to allow it.)
 - **Legacy type migration**: whether to move `statement` and `reference` onto the registry, or leave
   them as the two types with genuinely type-specific behavior.

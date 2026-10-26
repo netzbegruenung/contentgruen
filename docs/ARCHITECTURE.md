@@ -242,8 +242,9 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - `SEMANTIC_SEARCH_DATA_PATH` - Seed data path
 - `SEMANTIC_SEARCH_METADATA_PATH` - Persistent metadata storage path
 - `SEMANTIC_SEARCH_LOG_LEVEL` - DEBUG/INFO
-- `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`) - enables AI image captioning; without it
-  the image type falls back to direct text ingestion
+- `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`) - enables the suggested Unterschrift in the
+  image form (`POST /api/v1/image/suggestCaption`); without it the person writes the Unterschrift.
+  Setting it starts a transfer to a third country, see the privacy warning in `CLAUDE.md`
 - `DOCKER_CONTAINER` - set to `true` inside containers to enforce strict path validation
 
 ## Startup Scripts

@@ -58,7 +58,7 @@ Candidate features:
 
 ## Strategic Decisions
 
-* MVP launches **without AI generation of argumentative replies** — Gut gesagt is a curated exchange of human-vetted arguments, not a generator. AI is used only at ingestion time to assist with image captions.
+* MVP launches **without AI generation of argumentative replies** — Gut gesagt is a curated exchange of human-vetted arguments, not a generator. AI only suggests an image's Unterschrift in the image form; the person takes it over and saves it (ADR 0003).
 * UI kept **simple and mobile-first** for the MVP.
 
 ## Next Steps (high → low priority)

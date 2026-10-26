@@ -39,7 +39,8 @@ class ContentTypeSpec:
     incrementally (see CONTENT_MODEL.md migration plan).
 
     ``ingestion`` is Seam 1 (CONTENT_MODEL.md): how searchable_text is produced from
-    raw input. Defaults to DirectText (user-supplied text = searchable text).
+    raw input. Every type uses DirectText (user-supplied text = searchable text); since
+    #281 nothing reads the field, the routers store the text as given (ADR 0003).
     """
 
     content_type: ContentType

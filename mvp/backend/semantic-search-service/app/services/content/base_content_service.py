@@ -167,9 +167,9 @@ class BaseContentService(
             f"BaseContentService ({self._repository_class.__name__}): Upserting item of type {type(input_db_entry).__name__} with id: {input_db_entry.id}"
         )
 
+        # Coerce None -> "" for images without Unterschrift from before #281.
         content_db_entry: ContentDbEntry = ContentDbEntry(
-            text=input_db_entry.text
-            or "",  # coerce None → "" for images without Unterschrift from before #281
+            text=input_db_entry.text or "",
             content_type=input_db_entry.content_type,
             id=input_db_entry.id,
             created=input_db_entry.created,
@@ -274,13 +274,11 @@ class BaseContentService(
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
-        nur_aus: Optional[ContentStatus] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
-        With nur_aus, only while the item is still in that status.
         """
         logger.debug(
             f"BaseContentService ({self._repository_class.__name__}): Updating status of {item_id} to {new_status}"
         )
-        await self._repository.update_status(item_id, new_status, nur_aus=nur_aus)
+        await self._repository.update_status(item_id, new_status)

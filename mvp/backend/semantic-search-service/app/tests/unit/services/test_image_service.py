@@ -122,10 +122,10 @@ class TestImageService:
             await service.get(uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_add_image_with_caption_phase_a(
+    async def test_add_image_mit_unterschrift_wird_gespeichert(
         self, service, test_embeddings_manager
     ):
-        """Phase A: caption provided — entry is stored and retrievable."""
+        """Bild mit Unterschrift: wird gespeichert und ist lesbar."""
         entry = _make_image_entry(
             title="Wind Park Niedersachsen",
             image_url="https://example.com/wind.jpg",

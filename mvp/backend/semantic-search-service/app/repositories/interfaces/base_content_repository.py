@@ -231,11 +231,9 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
-        nur_aus: Optional[ContentStatus] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
-        With nur_aus, the status only changes while the item is in that status.
         Default implementation is a no-op.
         Override in repositories that support status updates.
         """

@@ -16,7 +16,8 @@ class Image(BaseContent):
     The 'text' field (inherited from BaseContent, overridden to Optional here) holds
     the Unterschrift used for semantic search. New images need one (AddImageRequest,
     ADR 0003); the field stays Optional so that entries without Unterschrift from
-    before #281 (pending_description) can still be read.
+    before #281 (pending_description) still validate. Readers never see them
+    (AUSGEBLENDET in content_status.py).
 
     Attributes:
     -----------
