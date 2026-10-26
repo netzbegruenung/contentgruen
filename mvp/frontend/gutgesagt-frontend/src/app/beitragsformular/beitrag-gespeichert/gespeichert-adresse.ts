@@ -30,7 +30,7 @@ export interface GespeichertZustand {
   aussage?: { id: string; text: string };
   /** false: Aussage angegeben, aber nicht verknuepft. */
   verknuepft?: boolean;
-  /** Nur Fangkorb: false, wenn der Einwurf nicht als verarbeitet markiert wurde. */
+  /** Nur Fangkorb: false, wenn der Einwurf nicht als ausformuliert markiert wurde. */
   markiert?: boolean;
 }
 

@@ -44,8 +44,8 @@
             <button type="button" class="filter-chip nur-meine"
                     [class.aktiv]="filter.nurMeine" [attr.aria-pressed]="filter.nurMeine"
                     (click)="nurMeineUmschalten()">nur meine</button>
-            <!-- Nur unter Erledigt: Weggelegtes taucht sonst wieder auf -->
-            <button *ngIf="filter.tab === 'erledigt'" type="button" class="filter-chip verworfen"
+            <!-- Nur unter Ausformuliert: Weggelegtes taucht sonst wieder auf -->
+            <button *ngIf="filter.tab === 'ausformuliert'" type="button" class="filter-chip verworfen"
                     [class.aktiv]="filter.verworfenSichtbar" [attr.aria-pressed]="filter.verworfenSichtbar"
                     (click)="verworfenUmschalten()">verworfen</button>
         </div>
@@ -73,7 +73,7 @@
 
         <ul *ngIf="karten.length" class="karten">
             <li *ngFor="let karte of karten; trackBy: nachKarte">
-                <app-beitragskarte variante="rohling" [daten]="karte"
+                <app-beitragskarte variante="einwurf" [daten]="karte"
                                    (aktion)="aktionAusfuehren(karte, $event)">
                 </app-beitragskarte>
             </li>
