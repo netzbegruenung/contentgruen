@@ -20,7 +20,7 @@ angefasst.
   - die Verknüpfung Einwurf → Beitrag (`raw_input_content_links`).
   - Entwurfssätze (`raw_input_drafts`): je Person gespeichert, nur für diese Person
     sichtbar, ohne Löschfrist.
-- **`docs/DATENSCHUTZ_BESTANDSAUFNAHME.md`**
+- **`docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`**
   - §1.5: `status` wird jetzt geschrieben (`discarded`, `processed`).
   - §1.6: „Wer schreibt: niemand“ stimmt nicht mehr (`PATCH /rawinput/{id}/status`).
   - neuer Abschnitt `raw_input_drafts` (`user_id`, `sentence`, `updated_at`).
@@ -120,7 +120,7 @@ liegt nur im Payload.
     Grüner Politik“ lässt sich gegen die eigene Position lesen. Ob es einen Update-Weg für
     Titel bestehender Einträge gibt, ist ungeklärt.
 17. Veraltete Doku: `docs/archiv/ROHINPUT.md:5-6` („Nichts davon ist implementiert“),
-    `docs/DATENSCHUTZ_BESTANDSAUFNAHME.md` verweist auf `dtos/raw_input.py:97` (tatsächlich
+    `docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md` verweist auf `dtos/raw_input.py:97` (tatsächlich
     `:102`, seit v1 verschoben).
 18. Der lokale Dev-Stack enthielt drei Testeinträge vom 13.08. („Testinhalt Quellen-Flush“,
     „Quellentest gt7“, „Quellentest verify2“).
