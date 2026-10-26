@@ -281,7 +281,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
    */
   private verwerfenFehler(status: number | undefined): string {
     if (status === 403) {
-      return 'Verwerfen kann nur, wer den Einwurf eingeworfen hat.';
+      return 'Verwerfen können nur der Einwerfer und Admins.';
     }
     if (status === 409) {
       return 'Aus diesem Einwurf ist schon ein Beitrag entstanden; verwerfen geht nicht mehr.';

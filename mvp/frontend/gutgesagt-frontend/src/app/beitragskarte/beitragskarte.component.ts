@@ -139,7 +139,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   ) {
     // Die Karte steht oft schon, bevor /api/user-info beantwortet ist. Ohne dieses
     // Abonnement blieben die Getter bei dem, was beim ersten Zeichnen galt: kein
-    // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf - und die
+    // "Von: Du" am eigenen Beitrag, kein Verwerfen am eigenen Einwurf (oder als Admin) - und die
     // eigene Kopie zaehlte optimistisch hoch, waehrend das Backend sie verwirft.
     // OnPush zeichnet von sich aus nicht neu, wenn sich nur der Dienst aendert.
     this.authService.userInfo$
@@ -155,6 +155,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    */
   private get eigeneKennung(): string | null {
     return this.authService.getUserInfo()?.userId ?? null;
+  }
+
+  private get istAdmin(): boolean {
+    return !!this.authService.getUserInfo()?.isAdmin;
   }
 
   private get angemeldet(): boolean {
@@ -311,11 +315,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return satz.beitraege === 1 ? 'ein Beitrag daraus' : `${satz.beitraege} Beiträge daraus`;
   }
 
-  /** Verwerfen darf nur, wer eingeworfen hat - und nur, solange kein Beitrag dranhaengt. */
+  /**
+   * Verwerfen duerfen der Einwerfer und Admins - und nur, solange kein Beitrag
+   * dranhaengt. Admins nehmen so verwaiste Einwuerfe aus dem Fangkorb.
+   */
   get darfVerwerfen(): boolean {
-    return (
-      !!this.rohling?.verwerfbar && this.istEigen
-    );
+    return !!this.rohling?.verwerfbar && (this.istEigen || this.istAdmin);
   }
 
   /**

@@ -19,7 +19,7 @@ import {
   RawInputLink,
   RawInputService,
 } from '../services/raw-input.service';
-import { AuthService } from '../auth/auth.service';
+import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 
 function einwurf(overrides: Partial<RawInput> = {}): RawInput {
@@ -81,6 +81,7 @@ describe('RawInputListComponent', () => {
   let bottomSheet: MatBottomSheet;
   let clipboard: jasmine.SpyObj<Clipboard>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let nutzer: UserInfo;
 
   function erstellen(results: RawInput[], gesamt?: number): void {
     rawInputService.getRawInputs.and.returnValue(of(antwort(results, gesamt)));
@@ -122,6 +123,7 @@ describe('RawInputListComponent', () => {
 
   beforeEach(async () => {
     sessionStorage.removeItem(FILTER_SCHLUESSEL);
+    nutzer = { isAuthenticated: true, userId: 'alice', userName: null, claims: null };
     rawInputService = jasmine.createSpyObj('RawInputService', ['getRawInputs', 'updateStatus']);
     clipboard = jasmine.createSpyObj('Clipboard', ['copy']);
     clipboard.copy.and.returnValue(true);
@@ -137,10 +139,10 @@ describe('RawInputListComponent', () => {
         {
           provide: AuthService,
           useValue: {
-            getCurrentUserId: () => 'alice',
-            getUserInfo: () => ({ isAuthenticated: true, userId: 'alice' }),
-            userInfo$: of({ isAuthenticated: true, userId: 'alice' }),
-            fetchUserInfo: () => of({ userId: 'alice' }),
+            getCurrentUserId: () => nutzer.userId,
+            getUserInfo: () => nutzer,
+            userInfo$: of(nutzer),
+            fetchUserInfo: () => of(nutzer),
           },
         },
         {
@@ -491,6 +493,39 @@ describe('RawInputListComponent', () => {
       expect(fremd.menueEintraege.map((eintrag) => eintrag.wort)).toEqual(['Link kopieren']);
     });
 
+    it('bietet Admins Verwerfen auch an fremden Einwuerfen', () => {
+      nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
+      erstellen([
+        einwurf({ id: 'fremd', submitted_by: 'bob' }),
+        einwurf({ id: 'verwaist', submitted_by: null }),
+      ]);
+
+      for (const karte of kartenKomponenten()) {
+        expect(karte.menueEintraege.map((eintrag) => eintrag.wort)).toEqual(['Link kopieren', 'Verwerfen']);
+      }
+    });
+
+    it('bietet Admins bei Erledigtem kein Verwerfen', () => {
+      nutzer = { ...nutzer, isAdmin: true };
+      erstellen(jeTab());
+      klicken(tabKnopf('Erledigt'));
+
+      expect(kartenKomponenten()[0].menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
+        'Link kopieren',
+        'Weiter destillieren',
+      ]);
+    });
+
+    it('verwirft als Admin einen fremden Einwurf', () => {
+      nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
+      erstellen([einwurf({ id: 'fremd', submitted_by: 'bob' })]);
+      rawInputService.updateStatus.and.returnValue(of(einwurf({ id: 'fremd', status: 'discarded' })));
+
+      component.aktionAusfuehren(component.karten[0], 'verwerfen');
+
+      expect(rawInputService.updateStatus).toHaveBeenCalledWith('fremd', 'discarded');
+    });
+
     it('bietet bei Erledigtem und Verworfenem Weiterarbeiten statt Verwerfen', () => {
       erstellen(jeTab());
       klicken(tabKnopf('Erledigt'));
@@ -534,7 +569,7 @@ describe('RawInputListComponent', () => {
       component.aktionAusfuehren(component.karten[0], 'verwerfen');
 
       expect(snackBar.open).toHaveBeenCalledWith(
-        'Verwerfen kann nur, wer den Einwurf eingeworfen hat.',
+        'Verwerfen können nur der Einwerfer und Admins.',
         'OK',
         { duration: 6000 },
       );

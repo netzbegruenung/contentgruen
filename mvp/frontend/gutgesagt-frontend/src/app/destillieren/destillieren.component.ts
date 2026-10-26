@@ -121,8 +121,10 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     }
   }
 
-  get istEigenerEinwurf(): boolean {
-    return !!this.einwurf?.submitted_by && this.einwurf.submitted_by === this.eigeneKennung;
+  /** Verwerfen duerfen der Einwerfer und Admins; das Backend prueft dasselbe. */
+  get darfVerwerfen(): boolean {
+    const eigen = !!this.einwurf?.submitted_by && this.einwurf.submitted_by === this.eigeneKennung;
+    return eigen || !!this.authService.getUserInfo()?.isAdmin;
   }
 
   get kannWeiter(): boolean {
@@ -274,7 +276,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
   verwerfen(): void {
     const einwurf = this.einwurf;
-    if (!einwurf || !this.istEigenerEinwurf) {
+    if (!einwurf || !this.darfVerwerfen) {
       return;
     }
     this.arbeitet = true;

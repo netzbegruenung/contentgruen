@@ -236,12 +236,16 @@ async def update_status(
     raw_input_id: uuid.UUID,
     request: UpdateRawInputStatusRequest,
     x_user: Optional[str] = Header(default=None),
+    x_is_admin: Optional[str] = Header(default=None),
     repository: RawInputRepository = Depends(get_raw_input_repository),
     commentary_service=Depends(get_commentary_service),
     generic_text_service=Depends(get_generic_text_service),
 ) -> RawInputResponse:
     """
-    Verwerfen (nur die einwerfende Person) oder als verarbeitet markieren.
+    Verwerfen (die einwerfende Person oder ein Admin) oder als verarbeitet markieren.
+
+    Admin ist, wem das BFF ``X-Is-Admin: true`` mitgibt - dieselbe Grundlage wie
+    ``require_admin``. Das BFF entfernt den Header aus jeder Client-Anfrage.
 
     ``processed`` schreibt in derselben Transaktion die Verknuepfung mit dem
     entstandenen Beitrag, seinem Typ und dem Satz der verarbeitenden Person.
@@ -250,6 +254,7 @@ async def update_status(
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
     """
     person = _angemeldete_person(x_user)
+    ist_admin = (x_is_admin or "").lower() == "true"
     try:
         if request.status == RawInputStatus.PROCESSED:
             # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt
@@ -275,6 +280,7 @@ async def update_status(
             person,
             request.content_id,
             request.content_type.value if request.content_type else None,
+            ist_admin=ist_admin,
         )
         return RawInputResponse(**_mit_namen([row], x_user)[0])
     except HTTPException:
@@ -284,7 +290,7 @@ async def update_status(
     except AktionNichtErlaubt:
         raise HTTPException(
             status_code=403,
-            detail="Verwerfen kann nur, wer den Einwurf eingeworfen hat.",
+            detail="Verwerfen können nur der Einwerfer und Admins.",
         )
     except UebergangNichtErlaubt as e:
         raise HTTPException(status_code=409, detail=str(e))
