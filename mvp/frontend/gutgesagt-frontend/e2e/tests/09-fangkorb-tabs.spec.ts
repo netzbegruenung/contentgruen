@@ -1,0 +1,27 @@
+import { expect, test } from './fixtures';
+
+/** Fangkorb-Tabs: bei 320 und 360 px werden die Namen nicht gekuerzt. */
+
+for (const breite of [320, 360]) {
+  test(`Tabs bei ${breite}`, async ({ page, bild }) => {
+    // Bekannter Befund: Seit die Tabs "Ausformulieren" und "Ausformuliert" heissen,
+    // passen sie bei 320 px nicht mehr. Meldet sich als unerwartet bestanden, sobald
+    // das behoben ist - dann diese Zeile entfernen.
+    test.fail(breite === 320, 'Tab-Namen bei 320 px gekuerzt');
+    await page.setViewportSize({ width: breite, height: 740 });
+    await page.goto('/fangkorb');
+    await page.locator('button.tab').first().waitFor();
+    const werte = await page.$$eval('button.tab', (tabs) =>
+      tabs.map((t) => {
+        const wort = t.querySelector('.tab-wort') as HTMLElement;
+        return { wort: wort.textContent!.trim(), gekuerzt: wort.scrollWidth > wort.clientWidth, noetig: wort.scrollWidth, platz: wort.clientWidth, tab: Math.round(t.getBoundingClientRect().width) };
+      }),
+    );
+    const schiene = await page.locator('.tabs').evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    for (const w of werte) {
+      expect.soft(w.gekuerzt, `${w.wort} bei ${breite} px`).toBe(false);
+    }
+    test.info().annotations.push({ type: `Tabs ${breite}`, description: `${schiene}px: ${JSON.stringify(werte)}` });
+    await bild(`42-fangkorb-tabs-${breite}`);
+  });
+}

@@ -349,6 +349,9 @@ cd mvp/backend
 dotnet test
 ```
 
+E2E tests (Playwright, against the running dev stack, not in CI and not part of `scripts/check.sh`):
+`mvp/frontend/gutgesagt-frontend/e2e/`, how to run them in its `README.md`.
+
 ## Deployment
 
 ### Test Environment
