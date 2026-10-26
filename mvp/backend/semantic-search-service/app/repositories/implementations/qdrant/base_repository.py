@@ -10,7 +10,10 @@ import asyncio
 from pydantic import ValidationError
 
 from core.config import Settings
-from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
+from services.embeddings.qdrant_embeddings_manager import (
+    encoding_fuer,
+    get_embeddings_manager,
+)
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from domain.models.base_content import (
     BaseContentDbEntry,
@@ -78,6 +81,11 @@ def _gesperrt_bedingungen() -> list:
             key="status", match=MatchValue(value=ContentStatus.BLOCKED.value)
         )
     ]
+
+
+# Payload-Felder, die Zustand und Sperre eines Beitrags tragen; status_vor_sperre
+# schreibt services/moderation_service.py. unterschrift_setzen fasst sie nicht an.
+FELDER_DES_ZUSTANDS = frozenset({"status", "status_vor_sperre"})
 
 
 class QdrantBaseRepository(
@@ -817,11 +825,11 @@ class QdrantBaseRepository(
                 MatchValue,
             )
 
-            punkte = [str(item_id)]
+            auswahl = [str(item_id)]
             if nur_aus is not None:
-                punkte = Filter(
+                auswahl = Filter(
                     must=[
-                        HasIdCondition(has_id=punkte),
+                        HasIdCondition(has_id=[str(item_id)]),
                         FieldCondition(
                             key="status", match=MatchValue(value=nur_aus.value)
                         ),
@@ -830,7 +838,7 @@ class QdrantBaseRepository(
             await self._shared_manager.async_client.set_payload(
                 collection_name=self._shared_manager.collection_name,
                 payload={"status": new_status.value},
-                points=punkte,
+                points=auswahl,
             )
             logger.debug(f"Updated status of {item_id} to {new_status.value}")
         except Exception as e:
@@ -844,15 +852,15 @@ class QdrantBaseRepository(
         self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
     ) -> None:
         """
-        Text (Bildunterschrift) und Vektor eines Eintrags neu setzen, sonst nichts.
+        Unterschrift (das Feld text) und Vektor eines Eintrags neu setzen, sonst nichts.
 
         Anders als upsert schreibt das nicht den ganzen Eintrag zurueck: Status,
         Sperre (status_vor_sperre) und alles andere, was sich seit dem Lesen
         geaendert hat, bleiben stehen. extra sind weitere Payload-Felder zur
         Beschreibung, etwa description_model; den Status setzt nur update_status.
         """
-        if "status" in extra:
-            raise ValueError("unterschrift_setzen aendert keinen Status")
+        if FELDER_DES_ZUSTANDS & extra.keys():
+            raise ValueError("unterschrift_setzen aendert weder Status noch Sperre")
         try:
             from qdrant_client.models import PointVectors
 
@@ -864,9 +872,7 @@ class QdrantBaseRepository(
                 payload=payload,
                 points=[str(item_id)],
             )
-            encoding_type = (
-                "statement" if self.content_type == "statement" else "passage"
-            )
+            encoding_type = encoding_fuer(self.content_type)
             await self._shared_manager.async_client.update_vectors(
                 collection_name=self._shared_manager.collection_name,
                 points=[

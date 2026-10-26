@@ -257,10 +257,10 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         """
         Partial update: set text (and its vector) plus the extra payload fields,
         leaving status, Sperre and everything else untouched.
-        Default implementation is a no-op.
-        Override in repositories that support partial updates.
+        No silent no-op default: the caller would then release an image without
+        its Unterschrift. Override in repositories that support partial updates.
         """
-        pass
+        raise NotImplementedError
 
     async def count_last_week(self) -> int:
         """

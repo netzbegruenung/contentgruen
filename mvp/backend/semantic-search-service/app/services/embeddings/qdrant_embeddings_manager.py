@@ -34,6 +34,11 @@ from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 logger = get_logger(__name__)
 
 
+def encoding_fuer(content_type: Optional[str]) -> Literal["statement", "passage"]:
+    """Statements use the "query: " prefix, all other content the "passage: " prefix."""
+    return "statement" if content_type == "statement" else "passage"
+
+
 class QdrantEmbeddingsManager(IEmbeddingsManager):
     """
     Singleton manager for Qdrant vector database with multilingual E5 embeddings.
@@ -333,9 +338,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             for point_id, document, text in points:
                 # Determine encoding type based on content type
                 # Statements use "query: " prefix, all other content uses "passage: " prefix
-                encoding_type = (
-                    "statement" if content_type == "statement" else "passage"
-                )
+                encoding_type = encoding_fuer(content_type)
 
                 # Generate embedding with appropriate prefix
                 embedding = self.encode_text(text, content_type=encoding_type)

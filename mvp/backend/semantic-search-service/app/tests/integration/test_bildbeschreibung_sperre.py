@@ -138,8 +138,8 @@ async def test_waehrend_beschreibung_gesperrtes_bild_bleibt_gesperrt(
     treffer = await image_service.search("Windräder Niedersachsen", limit=5)
     assert all(t.id != item_id for t in treffer)
 
-    # Entsperren stellt den Zustand von vor der Sperre her; der Worker gibt das
-    # Bild danach im naechsten Durchlauf frei.
+    # Entsperren stellt den Zustand von vor der Sperre her; der Worker beschreibt
+    # das Bild im naechsten Durchlauf erneut und gibt es erst dann frei.
     assert await moderation.entsperren(str(item_id), "admin-1")
     payload = await real_embeddings_manager.get_by_id(str(item_id))
     assert payload["status"] == ContentStatus.PENDING_DESCRIPTION.value

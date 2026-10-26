@@ -263,3 +263,26 @@ class TestImageRepository:
     def test_initialize_with_initial_data_is_noop(self, repository):
         """Registry-driven types do not seed from JSON; method must not raise."""
         repository.initialize_with_initial_data()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("feld", ["status", "status_vor_sperre"])
+    async def test_unterschrift_setzen_rejects_zustand_fields(self, repository, feld):
+        """Zustand und Sperre setzt unterschrift_setzen nie, auch nicht ueber extra."""
+        with pytest.raises(ValueError):
+            await repository.unterschrift_setzen(
+                uuid.uuid4(), "Windräder", {feld: "released_internal"}
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_interface_unterschrift_setzen_is_not_a_silent_no_op():
+    """Ohne Override wuerde ein Bild ohne Unterschrift freigegeben; daher ein Fehler."""
+    from repositories.interfaces.base_content_repository import (
+        IBaseContentRepository,
+    )
+
+    with pytest.raises(NotImplementedError):
+        await IBaseContentRepository.unterschrift_setzen(
+            None, uuid.uuid4(), "Windräder", {}
+        )

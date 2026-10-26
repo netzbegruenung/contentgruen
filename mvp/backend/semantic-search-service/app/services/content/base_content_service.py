@@ -295,7 +295,7 @@ class BaseContentService(
     async def unterschrift_setzen(
         self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
     ) -> None:
-        """Set text (Bildunterschrift) and vector only; status and Sperre stay as they are."""
+        """Set Unterschrift (text) and vector only; status and Sperre stay as they are."""
         logger.debug(
             f"BaseContentService ({self._repository_class.__name__}): Setting text of {item_id}"
         )

@@ -251,7 +251,7 @@ class TestWorkerStateMachine:
 
         image_service.add.assert_not_called()
 
-    async def test_status_comes_after_unterschrift(self):
+    async def test_valid_caption_sets_status_after_unterschrift(self):
         """Sichtbar erst mit Unterschrift: der Status wechselt nach dem Schreiben des Texts."""
         item_id = uuid.uuid4()
         entry = _make_pending_image(item_id)

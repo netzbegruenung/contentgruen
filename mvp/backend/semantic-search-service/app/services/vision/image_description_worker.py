@@ -9,8 +9,8 @@ the entry to NEW_CONTENT_STATUS.
 Status changes are conditional: they apply only while the entry is still
 PENDING_DESCRIPTION. Describing takes seconds; an admin may sperren the image in the
 meantime, and the worker must not lift that Sperre (#251). The caption is still
-written, so a later Entsperren finds it (the worker then promotes the image on its
-next poll).
+written. Entsperren restores PENDING_DESCRIPTION, so the worker describes the image
+once more on its next poll and only then releases it.
 
 On failure it sets DESCRIPTION_FAILED. On OpenAI rate-limit it backs off 60 s and
 re-picks up remaining items on the next poll cycle. The loop is idempotent: a hard

@@ -165,7 +165,7 @@ POST image ──▶ persist row {status: PENDING_DESCRIPTION, image_url} ──
 `PENDING_DESCRIPTION` and `DESCRIPTION_FAILED` alongside the other lifecycle states. The search
 engine simply ignores items without an embedding — no special-casing in the query path.
 The worker writes only text, embedding and model name, and changes the status only while the item
-is still `PENDING_DESCRIPTION`: an image gesperrt during the description stays gesperrt (#251).
+is still `PENDING_DESCRIPTION`: an image blocked (gesperrt) during the description stays blocked (#251).
 
 ## Frontend design (Angular)
 
