@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from typing import List, Optional
 
@@ -262,6 +264,12 @@ async def search_by_text(
             + len(image_search_results)
         )
 
+        # Suchereignis und "Suchen ohne Treffer" bilden das Tagespseudonym aus
+        # derselben Kennung. Fuer "Suchen ohne Treffer" gehoeren Pseudonym und Tag
+        # zum selben Zeitpunkt, auch kurz vor Mitternacht.
+        user_id = validated_user if angemeldet(validated_user) else None
+        jetzt = datetime.now(timezone.utc)
+
         # Track search event for metrics (fire-and-forget, don't block response)
         try:
             search_tracking_service = get_search_tracking_service()
@@ -273,7 +281,7 @@ async def search_by_text(
             search_tracking_service.track_search(
                 results_count=total_results,
                 session_id=x_session_id,
-                user_id=validated_user if validated_user != "anonymous" else None,
+                user_id=user_id,
             )
         except Exception as e:
             # Don't fail the search if tracking fails
@@ -287,10 +295,8 @@ async def search_by_text(
             suchen_ohne_treffer.erfassen(
                 statement_id,
                 total_results,
-                tagespseudonym(
-                    user_id=validated_user if angemeldet(validated_user) else None,
-                    session_id=x_session_id,
-                ),
+                tagespseudonym(user_id=user_id, session_id=x_session_id, moment=jetzt),
+                heute=jetzt.date(),
             )
         except Exception as e:
             # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und

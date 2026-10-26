@@ -101,9 +101,9 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche, Anzahl der Suchen
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
   zuordnen ließe. Welche Tagespseudonyme eine Aussage heute schon gezählt haben, liegt nur
-  im Arbeitsspeicher (als SHA-256-Prüfwert) und wird um Mitternacht (UTC) verworfen. Wochen älter als
-  acht löscht ein täglicher Task von selbst (`services/suchen_ohne_treffer_service.py`,
-  `loeschen_im_takt`).
+  im Arbeitsspeicher (als SHA-256-Prüfwert) und wird um Mitternacht (UTC) verworfen.
+  Wochen älter als acht löscht ein täglicher Task von selbst
+  (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
 - **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände,
   gelöschte Daten leben dort bis zu 28 Tage weiter. Selektives Editieren von
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem

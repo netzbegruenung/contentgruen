@@ -179,7 +179,7 @@ Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Auss
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Tagespseudonym**:
-Der Wert, unter dem die Suchen einer Person an einem Tag zusammengehören: aus ihrer Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet, nicht zurückrechenbar und jeden Tag neu. Wer an zwei Tagen sucht, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+Der Wert, unter dem die Suchen einer Person an einem Tag zusammengehören: aus ihrer Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet, nicht zurückrechenbar und jeden Tag neu. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
 _Avoid_: Nutzer-ID, Hash, Actor
 
 **Meine Beiträge**:

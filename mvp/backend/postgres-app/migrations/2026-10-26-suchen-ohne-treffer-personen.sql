@@ -10,13 +10,12 @@
 -- nicht mehr feststellen. Die Aussagen erscheinen wieder, sobald neue Suchen
 -- die Schwelle erreichen; alte Wochen fallen ohnehin nach acht Wochen weg.
 --
--- Anders als die Tabelle selbst legt SQLAlchemy die Spalte in bestehenden
--- Datenbanken NICHT an (create_all ergaenzt keine Spalten). Das Skript muss
--- daher vor dem Start des neuen Dienstes laufen, sonst scheitert das Zaehlen.
+-- Neue Datenbanken brauchen dieses Skript nicht: create_all legt die Tabelle
+-- dort gleich mit der Spalte an. In bestehenden Datenbanken ergaenzt create_all
+-- keine Spalten. Das Skript muss dort vor dem Start des neuen Dienstes laufen,
+-- sonst scheitert das Zaehlen. Es darf mehrfach laufen.
 --
--- Anwenden:
---   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
---     < mvp/backend/postgres-app/migrations/2026-10-26-suchen-ohne-treffer-personen.sql
+-- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;
 

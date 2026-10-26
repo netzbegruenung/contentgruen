@@ -8,6 +8,7 @@ TestSuchpfad unten). Die Sperre je Text sitzt in add_statement
 """
 
 import uuid
+from datetime import datetime, time, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -81,6 +82,11 @@ class TestRecorder:
 
 
 SEARCH_URL = "/api/v1/search/searchByText"
+
+
+def _mittag(tag):
+    """Das Tagespseudonym haengt nur am UTC-Datum; Mittag liegt sicher darin."""
+    return datetime.combine(tag, time(12), timezone.utc)
 
 
 @pytest.fixture
@@ -186,8 +192,36 @@ class TestSuchenOhneTreffer:
             headers={"X-Session-Id": "sitzung-1"},
         )
 
-        suchen_ohne_treffer.erfassen.assert_called_once_with(
-            aussage, 0, tagespseudonym(session_id="sitzung-1")
+        aufruf = suchen_ohne_treffer.erfassen.call_args
+        heute = aufruf.kwargs["heute"]
+        assert aufruf.args == (
+            aussage,
+            0,
+            tagespseudonym(session_id="sitzung-1", moment=_mittag(heute)),
+        )
+
+    def test_angemeldet_meldet_dieselbe_kennung_wie_das_suchereignis(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        """Beide Kennzahlen bilden das Tagespseudonym aus der Nutzerkennung."""
+        app, service = suchapp
+        aussage = uuid.uuid4()
+        service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+
+        with patch("api.v1.search.get_search_tracking_service") as tracking:
+            TestClient(app).post(
+                SEARCH_URL,
+                json={"query_text": "klima", "limit": 10},
+                headers={"X-User": "person-1", "X-Session-Id": "sitzung-1"},
+            )
+
+        tracking.return_value.track_search.assert_called_once_with(
+            results_count=0, session_id="sitzung-1", user_id="person-1"
+        )
+        aufruf = suchen_ohne_treffer.erfassen.call_args
+        assert aufruf.args[2] == tagespseudonym(
+            user_id="person-1", moment=_mittag(aufruf.kwargs["heute"])
         )
 
     def test_suche_ohne_sitzung_meldet_kein_pseudonym(
@@ -200,7 +234,8 @@ class TestSuchenOhneTreffer:
 
         TestClient(app).post(SEARCH_URL, json={"query_text": "klima", "limit": 10})
 
-        suchen_ohne_treffer.erfassen.assert_called_once_with(aussage, 0, None)
+        aufruf = suchen_ohne_treffer.erfassen.call_args
+        assert aufruf.args == (aussage, 0, None)
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
         self, suchapp, suchen_ohne_treffer

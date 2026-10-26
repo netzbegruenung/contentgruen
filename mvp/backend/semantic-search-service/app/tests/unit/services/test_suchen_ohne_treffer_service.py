@@ -172,8 +172,47 @@ class TestErfassen:
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, False]
 
+    def test_erfassen_vergisst_die_person_wenn_das_schreiben_scheitert(self):
+        """Sonst galte sie fuer den Rest des Tages als gezaehlt, ohne es zu sein."""
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+        service = _service(repo, personen=personen)
+        repo.zaehlen = Mock(side_effect=[RuntimeError("weg"), None])
+
+        with pytest.raises(RuntimeError):
+            service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+
+        assert repo.zaehlen.call_args.args == (AUSSAGE, MONTAG, True)
+
+    def test_erfassen_vergisst_bei_fehler_keine_schon_gezaehlte_person(self):
+        repo = FakeRepository()
+        personen = PersonenDesTages()
+        service = _service(repo, personen=personen)
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+        repo.zaehlen = Mock(side_effect=RuntimeError("weg"))
+
+        with pytest.raises(RuntimeError):
+            service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
+
+        assert personen.neu(PERSON_A, AUSSAGE, MITTWOCH) is False
+
 
 class TestPersonenDesTages:
+    def test_neu_zaehlt_bei_voller_merkliste_keine_weitere_person(self):
+        """Lieber eine Person zu wenig: so rutscht keine Aussage ueber die Schwelle."""
+        personen = PersonenDesTages(obergrenze=1)
+
+        assert personen.neu(PERSON_A, AUSSAGE, MITTWOCH) is True
+        assert personen.neu(PERSON_B, AUSSAGE, MITTWOCH) is False
+        assert personen.anzahl() == 1
+
+    def test_neu_beginnt_am_naechsten_tag_mit_leerer_merkliste(self):
+        personen = PersonenDesTages(obergrenze=1)
+        personen.neu(PERSON_A, AUSSAGE, MITTWOCH)
+
+        assert personen.neu(PERSON_B, AUSSAGE, DONNERSTAG) is True
+
     def test_verwerfen_vor_vergisst_die_personen_des_vortags(self):
         personen = PersonenDesTages()
         personen.neu(PERSON_A, AUSSAGE, MITTWOCH)

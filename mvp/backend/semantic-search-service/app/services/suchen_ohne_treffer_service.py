@@ -15,26 +15,35 @@ Suchen, Anzahl der Personen):
   Suchanfragen landen dort schon auf derselben Aussage.
 
 Admins sehen nur Aussagen, zu denen im Zeitraum mindestens MINDESTANZAHL
-verschiedene Personen ohne Treffer gesucht haben. Eine Person, die dasselbe
-mehrfach sucht, bringt die Aussage nicht allein in die Liste: Die Schwelle misst
-Bedarf und schuetzt vor Rueckschluessen auf Einzelne. "Person" heisst hier
-Tagespseudonym (SearchTrackingService): dieselbe Person an zwei Tagen zaehlt
-zweimal, denn ein tagesuebergreifendes Merkmal gibt es bewusst nicht.
+verschiedene Personen ohne Treffer gesucht haben. Eine Person, die am selben Tag
+mehrfach dasselbe sucht, bringt die Aussage nicht allein in die Liste: Die Schwelle
+misst Bedarf und schuetzt vor Rueckschluessen auf Einzelne. "Person" heisst hier
+Tagespseudonym (SearchTrackingService), und das hat Grenzen:
+
+- dieselbe Person an zwei Tagen zaehlt zweimal, denn ein tagesuebergreifendes
+  Merkmal gibt es bewusst nicht;
+- wer sich am selben Tag anmeldet, zaehlt danach unter der Nutzerkennung als
+  weitere Person; Sitzung und Konto zu verbinden waere neuer Personenbezug;
+- die Sitzungskennung setzt der Browser. Wer sie wechselt, ist eine neue Person.
 
 Welche Personen eine Aussage heute schon gezaehlt haben, haelt PersonenDesTages
 nur im Speicher und nur fuer den laufenden UTC-Tag; um Mitternacht verwirft
 loeschen_im_takt die Merkliste. In der Datenbank landet nur die Zahl. Nach einem
 Neustart am selben Tag kann eine Person deshalb ein zweites Mal zaehlen; das ist
-der Preis dafuer, dass keine Kennung je Person und Aussage gespeichert wird. Der
-Dienst laeuft mit einem uvicorn-Worker.
+der Preis dafuer, dass keine Kennung je Person und Aussage gespeichert wird. Die
+Merkliste setzt einen uvicorn-Worker voraus (so startet das Dockerfile den Dienst;
+erzwungen wird es nicht) und kommt ohne Sperre aus, weil erfassen synchron in der
+Event-Loop laeuft. Mehr als MERKLISTE_MAX Paare je Tag merkt sie sich nicht; was
+darueber hinaus kommt, zaehlt als Suche, aber nicht als Person, damit die Liste
+nicht unbegrenzt waechst und keine Aussage dadurch ueber die Schwelle rutscht.
 Aussagen, die nicht freigegeben sind (Status BLOCKED, DUPLICATE), erscheinen nicht.
 Admins sehen den Text der Aussage, nicht die eingegebene Suchanfrage: aehnliche
 Suchanfragen landen auf derselben Aussage.
 
 Wochen vor der Aufbewahrungsgrenze loescht loeschen_im_takt, ein eigener
-Hintergrund-Task aus main.py, taeglich und zusaetzlich um Mitternacht (UTC). Er haengt bewusst nicht am Usage-Cleanup, der sich
-abschalten laesst: Die Datenschutzerklaerung sagt die Loeschung nach acht Wochen
-ohne Bedingung zu. Gerechnet wird in UTC wie bei search_events.
+Hintergrund-Task aus main.py, taeglich und zusaetzlich um Mitternacht (UTC). Er
+haengt bewusst nicht am Usage-Cleanup, der sich abschalten laesst: Die
+Datenschutzerklaerung sagt die Loeschung nach acht Wochen ohne Bedingung zu. Gerechnet wird in UTC wie bei search_events.
 """
 
 import asyncio
@@ -59,6 +68,9 @@ WOCHEN_MAX = AUFBEWAHRUNG_WOCHEN
 MINDESTANZAHL = 2
 LIMIT_STANDARD = 20
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
+# Obergrenze der Merkliste: (Person, Aussage)-Paare je Tag, je Eintrag 32 Bytes
+# plus Verwaltung des Sets, zusammen gut 10 MB.
+MERKLISTE_MAX = 100_000
 
 
 @dataclass(frozen=True)
@@ -100,9 +112,57 @@ def sekunden_bis_mitternacht(jetzt: Optional[datetime] = None) -> float:
     return (morgen - jetzt).total_seconds()
 
 
+def _kennung(pseudonym: str, statement_id: uuid.UUID) -> bytes:
+    return hashlib.sha256(f"{pseudonym}|{statement_id}".encode("utf-8")).digest()
+
+
+class PersonenDesTages:
+    """
+    Merkt sich fuer den laufenden UTC-Tag, welche Personen zu welcher Aussage schon
+    gezaehlt sind, als SHA-256 ueber (Tagespseudonym, Aussage). Der Hash haelt nur
+    Pseudonym und Aussage-ID aus Logs und Fehlermeldungen heraus; wer den Speicher
+    des Prozesses auslesen kann, kann ihn mit search_events abgleichen. Der Schutz
+    liegt darin, dass nichts davon gespeichert wird und die Liste mit dem Tag
+    verfaellt.
+    """
+
+    def __init__(self, obergrenze: int = MERKLISTE_MAX):
+        self._tag: Optional[date] = None
+        self._gezaehlt: Set[bytes] = set()
+        self._obergrenze = obergrenze
+
+    def neu(self, pseudonym: str, statement_id: uuid.UUID, tag: date) -> bool:
+        """
+        True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat.
+        Ist die Merkliste voll, False: lieber eine Person zu wenig als eine zu viel.
+        """
+        if tag != self._tag:
+            self._tag = tag
+            self._gezaehlt = set()
+        kennung = _kennung(pseudonym, statement_id)
+        if kennung in self._gezaehlt or len(self._gezaehlt) >= self._obergrenze:
+            return False
+        self._gezaehlt.add(kennung)
+        return True
+
+    def vergessen(self, pseudonym: str, statement_id: uuid.UUID) -> None:
+        """Eine Person wieder streichen, deren Zaehlung nicht geschrieben wurde."""
+        self._gezaehlt.discard(_kennung(pseudonym, statement_id))
+
+    def verwerfen_vor(self, tag: date) -> None:
+        """Die Merkliste vergessen, wenn sie zu einem frueheren Tag gehoert."""
+        if self._tag is not None and self._tag < tag:
+            self._tag = None
+            self._gezaehlt = set()
+
+    def anzahl(self) -> int:
+        """Wie viele (Person, Aussage)-Paare gerade gemerkt sind."""
+        return len(self._gezaehlt)
+
+
 async def loeschen_im_takt(
     repository: SuchenOhneTrefferRepository,
-    personen: "PersonenDesTages",
+    personen: PersonenDesTages,
     takt_sekunden: float = LOESCH_TAKT_SEKUNDEN,
 ) -> None:
     """
@@ -121,42 +181,6 @@ async def loeschen_im_takt(
             )
         # Eine Sekunde Puffer, damit der Lauf sicher im neuen Tag liegt.
         await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))
-
-
-class PersonenDesTages:
-    """
-    Merkt sich fuer den laufenden UTC-Tag, welche Personen zu welcher Aussage schon
-    gezaehlt sind, als SHA-256 ueber (Tagespseudonym, Aussage). Der Hash haelt nur
-    Pseudonym und Aussage-ID aus Logs und Fehlermeldungen heraus; wer den Speicher
-    des Prozesses auslesen kann, kann ihn mit search_events abgleichen. Der Schutz
-    liegt darin, dass nichts davon gespeichert wird und die Liste mit dem Tag
-    verfaellt.
-    """
-
-    def __init__(self):
-        self._tag: Optional[date] = None
-        self._gezaehlt: Set[bytes] = set()
-
-    def neu(self, pseudonym: str, statement_id: uuid.UUID, tag: date) -> bool:
-        """True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat."""
-        if tag != self._tag:
-            self._tag = tag
-            self._gezaehlt = set()
-        kennung = hashlib.sha256(f"{pseudonym}|{statement_id}".encode("utf-8")).digest()
-        if kennung in self._gezaehlt:
-            return False
-        self._gezaehlt.add(kennung)
-        return True
-
-    def verwerfen_vor(self, tag: date) -> None:
-        """Die Merkliste vergessen, wenn sie zu einem frueheren Tag gehoert."""
-        if self._tag is not None and self._tag < tag:
-            self._tag = None
-            self._gezaehlt = set()
-
-    def anzahl(self) -> int:
-        """Wie viele (Person, Aussage)-Paare gerade gemerkt sind."""
-        return len(self._gezaehlt)
 
 
 _personen_des_tages = PersonenDesTages()
@@ -189,8 +213,9 @@ class SuchenOhneTrefferService:
         Eine Suche zaehlen, wenn sie keinen Beitrag fand, und die suchende Person,
         wenn sie die Aussage heute noch nicht gezaehlt hat.
 
-        pseudonym ist das Tagespseudonym aus SearchTrackingService. Ohne Pseudonym
-        (weder Nutzer- noch Sitzungskennung) zaehlt die Suche, aber keine Person.
+        pseudonym ist das Tagespseudonym aus SearchTrackingService und heute der
+        Tag, zu dem es gehoert. Ohne Pseudonym (weder Nutzer- noch
+        Sitzungskennung) zaehlt die Suche, aber keine Person.
         Ohne Aussage (das Rate-Limit hat das Anlegen ausgelassen) gibt es nichts,
         woran sich zaehlen liesse; die Suche faellt dann aus der Kennzahl.
         Datenbankfehler gehen an den Aufrufer.
@@ -201,7 +226,14 @@ class SuchenOhneTrefferService:
         neue_person = pseudonym is not None and self._personen.neu(
             pseudonym, statement_id, tag
         )
-        self._repository.zaehlen(statement_id, wochenbeginn(tag), neue_person)
+        try:
+            self._repository.zaehlen(statement_id, wochenbeginn(tag), neue_person)
+        except Exception:
+            # Nicht geschrieben, also auch nicht gezaehlt: die naechste Suche der
+            # Person soll sie nachtragen koennen.
+            if neue_person:
+                self._personen.vergessen(pseudonym, statement_id)
+            raise
 
     async def haeufigste(
         self,

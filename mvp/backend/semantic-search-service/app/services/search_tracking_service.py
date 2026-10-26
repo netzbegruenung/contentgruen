@@ -139,11 +139,13 @@ class SearchTrackingService:
 
 
 def tagespseudonym(
-    user_id: Optional[str] = None, session_id: Optional[str] = None
+    user_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    moment: Optional[datetime] = None,
 ) -> Optional[str]:
-    """Das heutige Pseudonym der suchenden Person, wie es search_events speichert."""
+    """Das Tagespseudonym zum Zeitpunkt (Standard: jetzt), wie in search_events."""
     return SearchTrackingService._derive_actor_hash(
-        user_id=user_id, session_id=session_id
+        user_id=user_id, session_id=session_id, moment=moment
     )
 
 
