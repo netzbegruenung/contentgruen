@@ -105,7 +105,7 @@ class TestGenericTextService:
         success, result_id, text = await service.add_generic_text(
             new_generic_text,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
 
@@ -152,7 +152,7 @@ class TestGenericTextService:
         success, result_id, text = await service.add_generic_text(
             updated_generic_text,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
             id=test_id,
         )
@@ -300,7 +300,7 @@ class TestGenericTextService:
         success, id1, text = await service1.add_generic_text(
             generic_text1,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
 
@@ -338,7 +338,7 @@ class TestGenericTextService:
         success, id1, text = await service1.add_generic_text(
             generic_text,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
 

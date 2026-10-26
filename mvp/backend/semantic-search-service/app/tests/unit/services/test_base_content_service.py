@@ -198,17 +198,13 @@ class TestBaseContentService:
         assert stored_data[str(mock_input.id)]["text"] == "Test Input"
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("gespeichert", [None, "internal", "visible"])
-    async def test_upsert_visibility_bleibt_in_content_collection(
-        self, content_service, gespeichert
-    ):
-        """Grün-Intern entfällt (#213), gespeicherte Werte bleiben bis #214 liegen."""
+    async def test_upsert_schreibt_kein_visibility_feld(self, content_service):
+        """Die Markierung aus #5 ist entfernt (#214), auch als leerer Wert."""
         mock_input = MockDbEntryModel(
             **create_base_content_fields(),
             id=uuid.uuid4(),
             text="Test Input",
             content_type=ContentType.STATEMENT,
-            visibility=gespeichert,
         )
         content_repository = content_service._content_repository
         content_repository.upsert = AsyncMock(wraps=content_repository.upsert)
@@ -216,7 +212,7 @@ class TestBaseContentService:
         await content_service._upsert(mock_input)
 
         content_db_entry = content_repository.upsert.await_args.args[1]
-        assert content_db_entry.visibility == gespeichert
+        assert "visibility" not in content_db_entry.model_dump()
 
     @pytest.mark.asyncio
     async def test_count_delegates_to_repository(

@@ -3,130 +3,44 @@ from enum import Enum
 
 class ContentStatus(Enum):
     """
-    Enumeration representing the lifecycle and moderation states of content
-    within the CMS. Each status is mutually exclusive and provides clarity
-    for the current state and next steps of content.
+    Zustand eines Beitrags (GLOSSARY.md, "Zustaende eines Beitrags"): sichtbar,
+    gesperrt oder geloescht. Dazu kommen zwei technische Vorstufen eines Bildes, das
+    noch auf seine Unterschrift wartet; ein solches Bild ist noch kein Beitrag, den
+    jemand finden kann.
+
+    Die Suche findet nur VISIBLE. Einzelansicht, Listen und "Meine Beitraege"
+    blenden BLOCKED und DELETED aus (repositories/implementations/qdrant/
+    base_repository.py). Altwerte aus der Zeit vor #214 stellt
+    services/wartung/zustaende_umstellen.py um.
     """
 
-    DRAFT = "draft"
-    """Content is being created but has not yet been submitted for review."""
-
-    FLAGGED = "flagged"
-    """
-    Content has been flagged for review due to user reports,
-    similarity detection, or automated checks.
-    """
-
-    PENDING_REVIEW = "pending_review"
-    """Content has been submitted and is awaiting moderation or approval."""
-
-    APPROVED = "approved"
-    """Content has been approved by the moderation team for release."""
-
-    REJECTED = "rejected"
-    """
-    Content has been reviewed and deemed unsuitable for release.
-    May include reasons such as policy violations or low quality.
-    """
+    VISIBLE = "visible"
+    """Sichtbar: Alle Nutzenden, auch Besucher, koennen den Beitrag finden und kopieren."""
 
     BLOCKED = "blocked"
     """
     Gesperrt: Ein Admin hat den Beitrag aus Suche und Ansicht genommen, etwa nach
-    einer Meldung. Er bleibt gespeichert und laesst sich entsperren; der Status
+    einer Meldung. Er bleibt gespeichert und laesst sich entsperren; der Zustand
     von vor der Sperre steht dann im Payload-Feld status_vor_sperre
-    (services/moderation_service.py). Sperren und Entsperren gehen nicht ueber
-    is_valid_transition, das niemand aufruft.
+    (repositories/implementations/qdrant/moderation_repository.py).
     """
 
-    RELEASED_INTERNAL = "released_internal"
-    """Content has been published within the organization but not externally."""
-
-    PUBLISHED_EXTERNAL = "published_external"
-    """Content has been published to external audiences (e.g., social media)."""
-
-    ARCHIVED = "archived"
-    """
-    Content is no longer actively used but is retained for historical purposes.
-    Typically excluded from active searches unless explicitly requested.
-    """
-
-    DUPLICATE = "duplicate"
-    """
-    Content has been identified as redundant or overly similar to existing content.
-    Requires further action to either merge, revise, or reject.
-    """
+    DELETED = "deleted"
+    """Geloescht: Der Autor hat den Beitrag entfernt."""
 
     PENDING_DESCRIPTION = "pending_description"
-    """Image stored without a caption; background worker will generate one."""
+    """Bild ohne Unterschrift; der Hintergrunddienst erzeugt eine."""
 
     DESCRIPTION_FAILED = "description_failed"
-    """Background worker failed to generate a caption; human review required."""
+    """Der Hintergrunddienst konnte keine Unterschrift erzeugen."""
 
 
-NEW_CONTENT_STATUS = ContentStatus.RELEASED_INTERNAL
+NEW_CONTENT_STATUS = ContentStatus.VISIBLE
 """
-Status, mit dem neu eingestellte Inhalte angelegt werden - der eine Ort, an dem
-diese Entscheidung faellt. Alle Ingestion-Pfade in api/v1 (und der Bild-Worker)
-beziehen sich hierauf, statt einen Status selbst zu waehlen.
-
-RELEASED_INTERNAL, weil die Suche PENDING_REVIEW herausfiltert
-(repositories/implementations/qdrant/base_repository.py) und selbst eingestellte
-Beitraege sonst erst nach einer Moderation auffindbar waeren, die es noch nicht
-gibt. Es ist derselbe Status, den Seeding (services/orchestration/
-content_orchestrator.py) und Statements (api/v1/search.py) schon verwenden.
-
-Sobald es eine Moderation gibt, wird hier wieder PENDING_REVIEW eingetragen -
-der Filter dafuer ist absichtlich unveraendert geblieben.
+Zustand, mit dem neue Beitraege angelegt werden - der eine Ort, an dem diese
+Entscheidung faellt. Alle Anlagewege in api/v1, Seeding und der Bild-Worker
+beziehen sich hierauf. Eine Freigabe vor dem Sichtbarwerden gibt es nicht.
 """
 
-
-NICHT_WIEDERVERWENDBAR = frozenset(
-    {
-        ContentStatus.BLOCKED,
-        ContentStatus.REJECTED,
-        ContentStatus.ARCHIVED,
-        ContentStatus.DUPLICATE,
-    }
-)
-"""
-Status, die die Dublettenpruefung nicht als "schon vorhanden" wiederverwendet -
-zusaetzlich zu denen, die die Suche ohnehin ausblendet. Sonst hinge ein neuer
-Beitrag still an einer gesperrten oder archivierten Aussage.
-"""
-
-FREIGEGEBEN = frozenset(
-    {
-        ContentStatus.RELEASED_INTERNAL,
-        ContentStatus.PUBLISHED_EXTERNAL,
-        ContentStatus.APPROVED,
-    }
-)
-"""Gibt es mehrere normalisiert gleiche Eintraege, gewinnen diese vor den uebrigen."""
-
-
-def is_valid_transition(
-    current_status: ContentStatus, new_status: ContentStatus
-) -> bool:
-    valid_transitions = {
-        ContentStatus.DRAFT: [ContentStatus.PENDING_REVIEW, ContentStatus.ARCHIVED],
-        ContentStatus.FLAGGED: [ContentStatus.PENDING_REVIEW, ContentStatus.BLOCKED],
-        ContentStatus.PENDING_REVIEW: [ContentStatus.APPROVED, ContentStatus.REJECTED],
-        ContentStatus.APPROVED: [
-            ContentStatus.RELEASED_INTERNAL,
-            ContentStatus.PUBLISHED_EXTERNAL,
-        ],
-        ContentStatus.REJECTED: [ContentStatus.DRAFT],
-        ContentStatus.BLOCKED: [],
-        ContentStatus.RELEASED_INTERNAL: [ContentStatus.ARCHIVED],
-        ContentStatus.PUBLISHED_EXTERNAL: [ContentStatus.ARCHIVED],
-        ContentStatus.ARCHIVED: [],
-        ContentStatus.DUPLICATE: [ContentStatus.REJECTED],
-        ContentStatus.PENDING_DESCRIPTION: [
-            ContentStatus.PENDING_REVIEW,
-            ContentStatus.DESCRIPTION_FAILED,
-        ],
-        ContentStatus.DESCRIPTION_FAILED: [
-            ContentStatus.PENDING_DESCRIPTION,
-        ],
-    }
-    return new_status in valid_transitions.get(current_status, [])
+NICHT_DA = frozenset({ContentStatus.BLOCKED, ContentStatus.DELETED})
+"""Zustaende, in denen ein Beitrag fuer Leser nicht da ist, auch nicht ueber seine ID."""

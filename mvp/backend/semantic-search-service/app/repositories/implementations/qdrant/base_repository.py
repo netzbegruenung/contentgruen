@@ -19,11 +19,7 @@ from domain.models.base_content import (
 from repositories.interfaces.base_content_repository import (
     IBaseContentRepository,
 )
-from domain.models.content_status import (
-    FREIGEGEBEN,
-    NICHT_WIEDERVERWENDBAR,
-    ContentStatus,
-)
+from domain.models.content_status import NICHT_DA, ContentStatus
 from domain.models.content_origin import ContentOrigin
 from utils.data_utils import DataSource
 from utils.text_normalisierung import (
@@ -61,21 +57,32 @@ def _search_query_origin_conditions() -> list:
     ]
 
 
-def _gesperrt_bedingungen() -> list:
+def _nicht_da_bedingungen() -> list:
     """
-    must_not-Bedingung, die gesperrte Beitraege ausschliesst.
+    must_not-Bedingungen, die gesperrte und geloeschte Beitraege ausschliessen.
 
     Ein Admin sperrt einen Beitrag, statt ihn zu loeschen: Er verschwindet aus
     Suche, Einzelansicht, Listen und "Meine Beitraege", bleibt aber im Speicher
     und damit fuer die Moderation auffindbar (QdrantModerationRepository in
-    moderation_repository.py filtert nicht nach Sperre). must_not statt
-    MatchExcept auf must, damit Altbestand ohne Status-Feld sichtbar bleibt.
+    moderation_repository.py filtert nicht nach Zustand). Bilder, die noch auf
+    ihre Unterschrift warten, bleiben in Listen und "Meine Beitraege" stehen; nur
+    die Suche verlangt sichtbar (_nur_sichtbar).
     """
     from qdrant_client.models import FieldCondition, MatchValue
 
     return [
+        FieldCondition(key="status", match=MatchValue(value=status.value))
+        for status in sorted(NICHT_DA, key=lambda s: s.value)
+    ]
+
+
+def _nur_sichtbar() -> list:
+    """must-Bedingung der Suche: nur sichtbare Beitraege."""
+    from qdrant_client.models import FieldCondition, MatchValue
+
+    return [
         FieldCondition(
-            key="status", match=MatchValue(value=ContentStatus.BLOCKED.value)
+            key="status", match=MatchValue(value=ContentStatus.VISIBLE.value)
         )
     ]
 
@@ -136,28 +143,6 @@ class QdrantBaseRepository(
             self.initialize_with_initial_data()
             return DataSource.JSON
 
-    @staticmethod
-    def _status_ausschluss() -> list:
-        """
-        Lifecycle statuses that must not surface in search results.
-
-        Using must_not + MatchValue (instead of MatchExcept on must) so that legacy
-        points without a status field are left unaffected (MatchExcept on must would
-        drop fieldless points because the must clause is not satisfied).
-        PENDING_REVIEW is excluded because images in that status await human review.
-        BLOCKED (gesperrt) is excluded because an admin took the item out of search.
-        """
-        from qdrant_client.models import FieldCondition, MatchValue
-
-        return [
-            FieldCondition(key="status", match=MatchValue(value=status.value))
-            for status in (
-                ContentStatus.PENDING_DESCRIPTION,
-                ContentStatus.DESCRIPTION_FAILED,
-                ContentStatus.PENDING_REVIEW,
-            )
-        ] + _gesperrt_bedingungen()
-
     async def search(
         self, query_text: str, limit: int, praefix: str = "query"
     ) -> List[TContentSearchResult]:
@@ -168,7 +153,7 @@ class QdrantBaseRepository(
         passage-Bestand (siehe QdrantEmbeddingsManager.search).
         """
         try:
-            filter_dict = {"must_not": self._status_ausschluss()}
+            filter_dict = {"must": _nur_sichtbar()}
 
             # Perform search with optional content_type filter
             search_results = await self._shared_manager.search(
@@ -208,10 +193,9 @@ class QdrantBaseRepository(
         wie weit der Score eines normalisiert gleichen Textes abfaellt. Eintraege ohne
         das Feld (Altbestand vor dem Nachtrag) findet das nicht.
 
-        Ausgeschlossen sind die Status aus search() und NICHT_WIEDERVERWENDBAR
-        (gesperrt, abgelehnt, archiviert, Dublette). Gibt es mehrere, entscheidet die
-        Reihenfolge deterministisch: freigegebene zuerst, dann der aelteste (created),
-        dann die ID.
+        Wie search() nur sichtbare: Ein neuer Beitrag haengt sich nie still an einen
+        gesperrten oder geloeschten. Gibt es mehrere, entscheidet die Reihenfolge
+        deterministisch: der aelteste (created), dann die ID.
         """
         from qdrant_client.models import Filter, FieldCondition, MatchValue
 
@@ -226,16 +210,10 @@ class QdrantBaseRepository(
                     key="content_type", match=MatchValue(value=self.content_type)
                 )
             )
-        must_not = [
-            *self._status_ausschluss(),
-            *(
-                FieldCondition(key="status", match=MatchValue(value=status.value))
-                for status in sorted(NICHT_WIEDERVERWENDBAR, key=lambda s: s.value)
-            ),
-        ]
+        must.extend(_nur_sichtbar())
         punkte, _ = await self._shared_manager.async_client.scroll(
             collection_name=self._shared_manager.collection_name,
-            scroll_filter=Filter(must=must, must_not=must_not),
+            scroll_filter=Filter(must=must),
             limit=NORMALISIERT_GLEICH_HOECHSTENS,
             with_payload=True,
             with_vectors=False,
@@ -243,12 +221,9 @@ class QdrantBaseRepository(
         if not punkte:
             return None
 
-        freigegeben = {status.value for status in FREIGEGEBEN}
-
         def rang(punkt):
             payload = punkt.payload or {}
             return (
-                0 if payload.get("status") in freigegeben else 1,
                 str(payload.get("created") or ""),
                 str(punkt.id),
             )
@@ -289,10 +264,14 @@ class QdrantBaseRepository(
             logger.warning(meldung)
             raise ValueError(meldung)
 
-        # Gesperrt heisst fuer jeden Leser hier "nicht da": Einzelansicht, Stimmen,
-        # Antwortvorschlaege der Suche (SearchOrchestrator ueberspringt ValueError).
-        if result.get("status") == ContentStatus.BLOCKED.value:
-            meldung = f"Entry with id {item_id} is gesperrt (blocked)"
+        # Gesperrt oder geloescht heisst fuer jeden Leser hier "nicht da":
+        # Einzelansicht, Stimmen, Antwortvorschlaege der Suche (SearchOrchestrator
+        # ueberspringt ValueError).
+        if result.get("status") in {status.value for status in NICHT_DA}:
+            meldung = (
+                f"Entry with id {item_id} is gesperrt oder geloescht "
+                f"({result.get('status')})"
+            )
             logger.warning(meldung)
             raise ValueError(meldung)
 
@@ -460,7 +439,7 @@ class QdrantBaseRepository(
                     key="content_type", match=MatchValue(value=self.content_type)
                 )
             ]
-        return Filter(must=must, must_not=_gesperrt_bedingungen())
+        return Filter(must=must, must_not=_nicht_da_bedingungen())
 
     def _autoren_filter(self, user_id: str, content_types: Optional[List[str]] = None):
         """
@@ -493,7 +472,7 @@ class QdrantBaseRepository(
 
         return Filter(
             must=must_conditions,
-            must_not=_search_query_origin_conditions() + _gesperrt_bedingungen(),
+            must_not=_search_query_origin_conditions() + _nicht_da_bedingungen(),
         )
 
     async def get_by_author(

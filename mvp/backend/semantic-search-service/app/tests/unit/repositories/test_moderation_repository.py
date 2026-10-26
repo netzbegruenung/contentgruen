@@ -27,7 +27,7 @@ def speicher(test_embeddings_manager):
                 **create_base_content_fields(),
                 "id": BEITRAG_ID,
                 "text": "Gemeldeter Kommentar",
-                "status": "approved",
+                "status": "visible",
             }
         ],
     )
@@ -65,24 +65,24 @@ class TestSperrenEntsperren:
         await repo.sperren(await repo.laden(BEITRAG_ID))
 
         assert _payload(speicher)["status"] == "blocked"
-        assert _payload(speicher)["status_vor_sperre"] == "approved"
+        assert _payload(speicher)["status_vor_sperre"] == "visible"
 
     async def test_entsperren_stellt_status_wieder_her(self, repo, speicher):
         await repo.sperren(await repo.laden(BEITRAG_ID))
 
         await repo.entsperren(await repo.laden(BEITRAG_ID))
 
-        assert _payload(speicher)["status"] == "approved"
+        assert _payload(speicher)["status"] == "visible"
         assert "status_vor_sperre" not in _payload(speicher)
 
-    async def test_entsperren_ohne_status_von_vorher_entfernt_status(
+    async def test_entsperren_ohne_status_von_vorher_macht_sichtbar(
         self, repo, speicher
     ):
         await repo.sperren({"id": BEITRAG_ID})
 
         await repo.entsperren(await repo.laden(BEITRAG_ID))
 
-        assert "status" not in _payload(speicher)
+        assert _payload(speicher)["status"] == "visible"
         assert "status_vor_sperre" not in _payload(speicher)
 
     async def test_zweites_sperren_behaelt_status_von_vorher(self, repo, speicher):
@@ -90,14 +90,14 @@ class TestSperrenEntsperren:
 
         await repo.sperren(await repo.laden(BEITRAG_ID))
 
-        assert _payload(speicher)["status_vor_sperre"] == "approved"
+        assert _payload(speicher)["status_vor_sperre"] == "visible"
 
     async def test_entsperren_eines_nicht_gesperrten_aendert_nichts(
         self, repo, speicher
     ):
         await repo.entsperren(await repo.laden(BEITRAG_ID))
 
-        assert _payload(speicher)["status"] == "approved"
+        assert _payload(speicher)["status"] == "visible"
         speicher.async_client.delete_payload.assert_not_called()
 
 
@@ -108,7 +108,7 @@ class TestGesperrte:
         anderer = str(uuid.uuid4())
         speicher.add_test_data(
             "reference",
-            [{**create_base_content_fields(), "id": anderer, "status": "approved"}],
+            [{**create_base_content_fields(), "id": anderer, "status": "visible"}],
         )
         await repo.sperren(await repo.laden(BEITRAG_ID))
 

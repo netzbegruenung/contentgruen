@@ -11,7 +11,6 @@ from domain.models.edit_entry import EditEntry
 from domain.models.model_utils import ModelValidator
 from domain.models.content_type import ContentType
 from domain.models.content_status import ContentStatus
-from domain.models.content_visibility import ContentVisibility
 from domain.models.content_origin import ContentOrigin
 
 
@@ -61,7 +60,7 @@ class BaseContentDbEntry(BaseContent):
     edit_history: List[EditEntry]
         Detailed edit tracking.
     status: ContentStatus
-        Current status of the content (e.g., "draft", "flagged", "approved").
+        Zustand des Beitrags: sichtbar, gesperrt oder geloescht (siehe ContentStatus).
     origin: ContentOrigin
         Origin of the content (e.g., "initial_data", "manually_created", "ai-generated").
     most_similar_similarity_score: Optional[float]
@@ -78,9 +77,6 @@ class BaseContentDbEntry(BaseContent):
         Reason for rejection if the content was rejected.
     block_reason: Optional[str]
         Reason for blocking if the content was blocked.
-    visibility: Optional[ContentVisibility]
-        Legacy marker ("Grün-Intern" etc.). Every Beitrag is visible to everyone, so new
-        content sets none; stored values are only kept until the status cleanup (#214).
     """
 
     id: uuid.UUID
@@ -99,7 +95,6 @@ class BaseContentDbEntry(BaseContent):
     report_flagged: bool = False
     rejection_reason: Optional[str] = None
     block_reason: Optional[str] = None
-    visibility: Optional[ContentVisibility] = None
 
     @field_validator("id", mode="before")
     def parse_uuid(cls, value):

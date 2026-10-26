@@ -43,7 +43,7 @@ xdescribe('Anonymous Search Flow Integration', () => {  // TODO: Re-enable when 
           id: '123',
           text: 'Test commentary about renewable energy',
           content_type: 'commentary',
-          status: ContentStatus.APPROVED,
+          status: ContentStatus.VISIBLE,
           origin: ContentOrigin.MANUALLY_CREATED,
           original_author: 'Author',
           created: new Date().toISOString(),

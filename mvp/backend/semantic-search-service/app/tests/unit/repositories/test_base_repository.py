@@ -583,14 +583,18 @@ class TestGesperrteBeitraege:
 
     @staticmethod
     def _gesperrte_ausgeschlossen(bedingungen) -> bool:
-        return any(
-            bedingung.key == "status" and bedingung.match.value == "blocked"
+        """Gesperrte und geloeschte stehen beide im Ausschluss."""
+        status = {
+            bedingung.match.value
             for bedingung in (bedingungen or [])
-        )
+            if bedingung.key == "status"
+        }
+        return status == {"blocked", "deleted"}
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("status", ["blocked", "deleted"])
     async def test_get_verweigert_gesperrten_beitrag(
-        self, repository, test_embeddings_manager
+        self, repository, test_embeddings_manager, status
     ):
         test_id = uuid.uuid4()
         test_embeddings_manager.add_test_data(
@@ -601,22 +605,24 @@ class TestGesperrteBeitraege:
                     "id": str(test_id),
                     "text": "Gesperrter Text",
                     "content_type": "statement",
-                    "status": "blocked",
+                    "status": status,
                 }
             ],
         )
 
-        with pytest.raises(ValueError, match="gesperrt"):
+        with pytest.raises(ValueError, match="gesperrt oder geloescht"):
             await repository.get(test_id)
 
     @pytest.mark.asyncio
-    async def test_suche_blendet_gesperrte_aus(self, repository_mit_client):
+    async def test_search_findet_nur_sichtbare(self, repository_mit_client):
         repository, _, manager = repository_mit_client
 
         await repository.search("Wärmepumpe", limit=5)
 
         filter_dict = manager.search.call_args.kwargs["filter_dict"]
-        assert self._gesperrte_ausgeschlossen(filter_dict["must_not"])
+        assert [(b.key, b.match.value) for b in filter_dict["must"]] == [
+            ("status", "visible")
+        ]
 
     @pytest.mark.asyncio
     async def test_get_all_blendet_gesperrte_aus(self, repository_mit_client):
@@ -664,7 +670,7 @@ class TestGesperrteBeitraege:
     ):
         test_embeddings_manager.add_test_data(
             "statement",
-            [self._beitrag("released_internal"), self._beitrag("blocked")],
+            [self._beitrag("visible"), self._beitrag("blocked")],
         )
 
         assert await repository.count() == 1

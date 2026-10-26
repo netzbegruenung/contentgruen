@@ -12,9 +12,8 @@ from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 
 logger = logging.getLogger(__name__)
 
-# Payload-Feld mit dem Status von vor der Sperre, damit Entsperren ihn
-# wiederherstellt. Steht darin None (Altbestand ohne Status), entfernt Entsperren
-# das Status-Feld wieder.
+# Payload-Feld mit dem Zustand von vor der Sperre, damit Entsperren ihn
+# wiederherstellt. Fehlt er, macht Entsperren den Beitrag sichtbar.
 FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 
 # Wie viele Aussagen aus_aussagen_entfernen je Scroll-Seite holt.
@@ -58,21 +57,21 @@ class QdrantModerationRepository(IModerationRepository):
     async def entsperren(self, beitrag: Dict[str, Any]) -> None:
         if beitrag.get("status") != ContentStatus.BLOCKED.value:
             return
-        status_vorher = beitrag.get(FELD_STATUS_VOR_SPERRE)
+        status_vorher = (
+            beitrag.get(FELD_STATUS_VOR_SPERRE) or ContentStatus.VISIBLE.value
+        )
 
         # Zwei Schreibvorgaenge; scheitert der zweite, bleibt nur das Hilfsfeld
         # stehen, der Beitrag ist trotzdem entsperrt.
-        if status_vorher:
-            await self._client.set_payload(
-                collection_name=self._collection,
-                payload={"status": status_vorher},
-                points=[beitrag["id"]],
-            )
-            entfernen = [FELD_STATUS_VOR_SPERRE]
-        else:
-            entfernen = ["status", FELD_STATUS_VOR_SPERRE]
+        await self._client.set_payload(
+            collection_name=self._collection,
+            payload={"status": status_vorher},
+            points=[beitrag["id"]],
+        )
         await self._client.delete_payload(
-            collection_name=self._collection, keys=entfernen, points=[beitrag["id"]]
+            collection_name=self._collection,
+            keys=[FELD_STATUS_VOR_SPERRE],
+            points=[beitrag["id"]],
         )
 
     async def gesperrte_laden(self, limit: int) -> List[Dict[str, Any]]:

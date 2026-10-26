@@ -162,8 +162,8 @@ POST image ──▶ persist row {status: PENDING_DESCRIPTION, image_url} ──
 ```
 
 *(shipped — `services/vision/image_description_worker.py`.)* The `ContentStatus` enum carries
-`PENDING_DESCRIPTION` and `DESCRIPTION_FAILED` alongside the other lifecycle states. The search
-engine simply ignores items without an embedding — no special-casing in the query path.
+`PENDING_DESCRIPTION` and `DESCRIPTION_FAILED` next to the three states of a Beitrag (visible,
+blocked, deleted); search only finds `visible`, so an image is found once it has its caption.
 
 ## Frontend design (Angular)
 

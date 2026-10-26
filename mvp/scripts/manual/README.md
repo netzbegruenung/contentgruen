@@ -52,6 +52,35 @@ docker exec -i gutgesagt-semantic-search python - --ausfuehren < text_normalisie
 auch gegen aeltere Versionen; `text_normalisiert_nachtragen.py` braucht den
 ausgerollten neuen Stand.
 
+## Zustaende umstellen (im semantic-search-Container)
+
+`zustaende_umstellen.py [--ausfuehren]` – **schreibend mit `--ausfuehren`.** Einmalig
+mit #214: stellt den Status aller Punkte auf die Zustaende sichtbar, gesperrt,
+geloescht um (auch `status_vor_sperre` gesperrter Beitraege) und entfernt das Feld
+`visibility`. Bisher auffindbare Status (`released_internal`, `approved`, `draft`,
+`archived`, `duplicate` u. a., auch Punkte ohne Status) und `pending_review` werden
+`visible`; `blocked` und die Bild-Vorstufen bleiben. Unbekannte Werte bleiben stehen,
+werden gemeldet und das Skript endet mit Exit 1. Idempotent.
+
+Reihenfolge:
+
+1. Backup ziehen (`mvp/scripts/backup/backup.sh`, enthaelt den Qdrant-Snapshot).
+2. Die Version mit den neuen Zustaenden ausrollen. Bis Schritt 4 findet die Suche
+   nichts, weil sie nur `visible` sucht; gesperrte Beitraege bleiben ausgeblendet.
+3. Ohne `--ausfuehren` laufen lassen und die Zaehler pruefen.
+4. Mit `--ausfuehren` laufen lassen; ein zweiter Lauf meldet `umzustellen: 0`.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/zustaende_umstellen.py
+docker exec -i gutgesagt-semantic-search python - < zustaende_umstellen.py
+docker exec -i gutgesagt-semantic-search python - --ausfuehren < zustaende_umstellen.py
+```
+
+Getestet in `tests/unit/services/test_zustaende_umstellen.py` (Logik) und
+`test_zustaende_umstellen_skript.py` (Aufruf). Das fruehere Einmal-Skript
+`promote_pending_review_content.py` ist entfallen: Es setzte `released_internal`, einen
+Status, den es nicht mehr gibt.
+
 ## Loeschkommando (im PostgreSQL-Container)
 
 `person_loeschen.sql` – **schreibend.** Der PostgreSQL-Teil des Loeschkonzepts

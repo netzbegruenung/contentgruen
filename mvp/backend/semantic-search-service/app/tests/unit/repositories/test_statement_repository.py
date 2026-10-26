@@ -292,19 +292,19 @@ class TestCountCurated:
         assert bedingungen["replysuggestions_count"].range.lt == 1
 
     @pytest.mark.asyncio
-    async def test_zaehlt_gesperrte_aussagen_nicht(self, repository_mit_zaehler):
-        """Gesperrte Aussagen fehlen in der Suche, also auch im Startseiten-Zaehler."""
+    async def test_count_curated_zaehlt_nur_sichtbare(self, repository_mit_zaehler):
+        """Wie die Suche nur sichtbare Aussagen, gesperrte fehlen im Startseiten-Zaehler."""
         repository, client = repository_mit_zaehler
 
         await repository.count_curated()
 
         count_filter = client.count.call_args.kwargs["count_filter"]
-        status_ausschluesse = {
+        status = [
             b.match.value
-            for b in count_filter.must_not
+            for b in count_filter.must
             if getattr(b, "key", None) == "status"
-        }
-        assert status_ausschluesse == {"blocked"}
+        ]
+        assert status == ["visible"]
 
     @pytest.mark.asyncio
     async def test_gibt_null_zurueck_statt_zu_scheitern(
@@ -352,17 +352,14 @@ class TestSearchCurated:
         aufruf = manager.search.call_args.kwargs
         assert aufruf["content_type"] == "statement"
         assert aufruf["limit"] == 5
+        # Wie die normale Suche nur sichtbare, ohne die unbeantworteten Suchanfragen
+        status = [
+            b.match.value
+            for b in aufruf["filter_dict"]["must"]
+            if getattr(b, "key", None) == "status"
+        ]
+        assert status == ["visible"]
         ausschluss = aufruf["filter_dict"]["must_not"]
-        # Dieselben Status wie die normale Suche, dazu die unbeantworteten Suchanfragen
-        status = {
-            b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
-        }
-        assert status == {
-            "pending_description",
-            "description_failed",
-            "pending_review",
-            "blocked",
-        }
         suchanfrage = [b for b in ausschluss if getattr(b, "must", None)]
         assert len(suchanfrage) == 1
         bedingungen = {b.key: b for b in suchanfrage[0].must}
@@ -372,11 +369,11 @@ class TestSearchCurated:
 
 @pytest.mark.unit
 class TestSearchWithReplyFilter:
-    """Die Aussagen-Suche der Hauptsuche schliesst dieselben Status aus wie search()."""
+    """Die Aussagen-Suche der Hauptsuche findet wie search() nur sichtbare Aussagen."""
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("mindestens", [0, 1])
-    async def test_schliesst_gesperrte_aussagen_aus(
+    async def test_search_with_reply_filter_nur_sichtbare(
         self, test_settings, test_embeddings_manager, mindestens
     ):
         from unittest.mock import AsyncMock, MagicMock
@@ -393,8 +390,8 @@ class TestSearchWithReplyFilter:
 
         await repository.search_with_reply_filter("waermepumpe", 5, mindestens)
 
-        ausschluss = manager.search.call_args.kwargs["filter_dict"]["must_not"]
-        status = {
-            b.match.value for b in ausschluss if getattr(b, "key", None) == "status"
-        }
-        assert "blocked" in status
+        bedingungen = manager.search.call_args.kwargs["filter_dict"]["must"]
+        status = [
+            b.match.value for b in bedingungen if getattr(b, "key", None) == "status"
+        ]
+        assert status == ["visible"]
