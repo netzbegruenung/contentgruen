@@ -146,7 +146,7 @@ listens on 5432 inside the container.
 
 ## Authentication Flow
 
-### Dummy Auth (Local/Docker/Test)
+### Managed Login (Local/Docker/Test)
 1. User enters e-mail address and password in frontend ("Direktanmeldung")
 2. Frontend POSTs to BFF `/api/auth/login/managed`
 3. BFF validates against `managed-users.json` (bcrypt hashes; example users in
@@ -154,8 +154,9 @@ listens on 5432 inside the container.
 4. BFF sets session cookie
 5. BFF returns user info
 
-With `USE_KEYCLOAK=false` the BFF also still answers the old hardcoded `POST /login`
-(`testuser`/`Liebe>Hass!`, user id `test-user-id-1`); the frontend no longer has a form for it.
+With `USE_KEYCLOAK=false` the BFF also still answers the old dummy `POST /login`
+(default `testuser`/`Liebe>Hass!`, overridable via `DUMMY_AUTH_USERNAME`/`DUMMY_AUTH_PASSWORD`;
+user id `test-user-id-1`). The frontend no longer has a form for it.
 
 ### Keycloak (Production)
 1. User accesses protected resource
