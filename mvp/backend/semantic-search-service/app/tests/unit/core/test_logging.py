@@ -6,10 +6,12 @@ Nutzerkennung darf in keiner Logzeile im Klartext landen -- auch nicht auf
 DEBUG, weil der Dev-Stack mit SEMANTIC_SEARCH_LOG_LEVEL=DEBUG laeuft.
 """
 
+import asyncio
 import logging
 import uuid
 from unittest.mock import Mock, patch
 
+from api.v1.usage import run_cleanup_manually
 from core.logging import log_pseudonym
 from services.voting_service import VotingService
 
@@ -93,10 +95,6 @@ class TestManualCleanupLogging:
     """Der manuelle Cleanup nannte die Kennung des Admins im Klartext auf INFO (#277)."""
 
     def test_run_cleanup_manually_does_not_log_the_raw_admin_id(self, caplog):
-        import asyncio
-
-        from api.v1.usage import run_cleanup_manually
-
         settings = Mock()
         settings.is_admin_user.return_value = True
         usage_service = Mock()

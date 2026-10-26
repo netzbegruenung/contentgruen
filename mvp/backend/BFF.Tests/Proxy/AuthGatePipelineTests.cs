@@ -73,9 +73,10 @@ public class AuthGatePipelineTests
         bool useKeycloak, string? adminUserIds = null, ILoggerProvider? logs = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            // Bewusst hermetisch: der Host laeuft nicht auf BFF/appsettings.json, sondern
-            // ausschliesslich auf den Werten hier, damit ein spaeter geaenderter
-            // Konfigurationswert diese Tests nicht stillschweigend umdeutet.
+            // Die Werte hier ueberschreiben BFF/appsettings.json, damit ein spaeter
+            // geaenderter Konfigurationswert diese Tests nicht stillschweigend umdeutet.
+            // Ganz hermetisch ist das nicht: die Datei liegt per ProjectReference im
+            // Testverzeichnis (= Content-Root), ihre Log-Regeln gelten also mit.
             builder.UseContentRoot(AppContext.BaseDirectory);
             builder.UseEnvironment("Development");
             builder.UseSetting("USE_KEYCLOAK", useKeycloak ? "true" : "false");
@@ -274,9 +275,11 @@ public class AuthGatePipelineTests
     {
         // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information ("Proxying to ...").
         // Einige Pfade tragen die Kennung, etwa die Nutzungsstatistik unter "Meine Beitraege".
-        // Program.cs hebt die YARP-Kategorien auf Warning, wie uvicorn.access im Suchdienst
-        // (#277). Geprueft an der echten Pipeline, weil der Host hier ohne appsettings.json
-        // laeuft: eine Regel nur dort waere im Test nicht zu sehen.
+        // Dasselbe gilt fuer "Request starting ..." von ASP.NET Core. Program.cs hebt Yarp
+        // auf Warning, BFF/appsettings.json die Kategorie Microsoft.AspNetCore (#277).
+        // Geprueft an der echten Pipeline und ueber alle Kategorien. Die Datei liegt per
+        // ProjectReference auch im Testverzeichnis, das hier Content-Root ist, und gilt also
+        // mit -- trotz "hermetisch" in CreateHost.
         var logs = new CapturingLoggerProvider();
         using var factory = CreateHost(useKeycloak: true, logs: logs);
         using var client = factory.CreateClient(
@@ -288,6 +291,6 @@ public class AuthGatePipelineTests
 
         // 502: YARP hat weitergeleitet (und kein Backend gefunden), die Zeile waere also entstanden.
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
-        Assert.DoesNotContain("test-user", logs.TextFrom("Yarp", LogLevel.Information));
+        Assert.DoesNotContain("test-user", logs.TextFrom("", LogLevel.Information));
     }
 }

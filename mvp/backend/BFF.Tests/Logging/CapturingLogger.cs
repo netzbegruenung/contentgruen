@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace BFF.Tests.Logging;
@@ -11,21 +12,27 @@ namespace BFF.Tests.Logging;
 /// </summary>
 public sealed class CapturingLogger<T> : ILogger<T>
 {
-    public List<string> Lines { get; } = new();
+    private readonly CapturingLoggerProvider _provider = new();
+    private readonly ILogger _inner;
+
+    public CapturingLogger()
+    {
+        _inner = _provider.CreateLogger(typeof(T).FullName!);
+    }
+
+    public List<string> Lines => _provider.Entries.Select(e => $"{e.Level}: {e.Message}").ToList();
 
     public string Text => string.Join(Environment.NewLine, Lines);
 
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _inner.BeginScope(state);
 
-    public bool IsEnabled(LogLevel logLevel) => true;
+    public bool IsEnabled(LogLevel logLevel) => _inner.IsEnabled(logLevel);
 
     public void Log<TState>(
         LogLevel logLevel,
         EventId eventId,
         TState state,
         Exception? exception,
-        Func<TState, Exception?, string> formatter)
-    {
-        Lines.Add($"{logLevel}: {formatter(state, exception)}");
-    }
+        Func<TState, Exception?, string> formatter) =>
+        _inner.Log(logLevel, eventId, state, exception, formatter);
 }

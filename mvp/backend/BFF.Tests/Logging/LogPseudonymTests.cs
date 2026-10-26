@@ -33,4 +33,22 @@ public class LogPseudonymTests
         // "anonymous" ist keine Kennung, sondern deren Abwesenheit.
         Assert.Equal("anonymous", LogPseudonym.Of(userId));
     }
+
+    // Die Nutzungsstatistik unter "Meine Beitraege" traegt die Kennung im Pfad; Zeilen,
+    // die den Pfad nennen, sollen sie nicht im Klartext enthalten (#277).
+    [Theory]
+    [InlineData("/api/v1/usage/users/user-001/usage-stats", "/api/v1/usage/users/85c5fb49/usage-stats")]
+    [InlineData("/api/v1/usage/users/user-001", "/api/v1/usage/users/85c5fb49")]
+    [InlineData("/api/v1/statement/addStatement", "/api/v1/statement/addStatement")]
+    [InlineData("/api/v1/usage/content/abc/usage", "/api/v1/usage/content/abc/usage")]
+    public void InPath_ReplacesOnlyTheKennungSegment(string path, string expected)
+    {
+        Assert.Equal(expected, LogPseudonym.InPath(path));
+    }
+
+    [Fact]
+    public void InPath_KeepsAMissingPathEmpty()
+    {
+        Assert.Equal("", LogPseudonym.InPath(null));
+    }
 }

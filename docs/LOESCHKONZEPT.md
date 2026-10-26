@@ -131,7 +131,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
 - **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
-  am Code geprüft am 26.10.2026 (Stand #277):
+  am Code geprüft am 26.10.2026 (Stand nach #277):
   - **Kennungen:** Ab INFO steht in BFF und Semantic-Service keine Kennung im Klartext,
     nur ihr achtstelliges Pseudonym. Beide Dienste rechnen dasselbe (erste acht
     Hex-Zeichen von SHA-256): `log_pseudonym()` in `app/core/logging.py` und
@@ -148,13 +148,15 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs`). Die Zeilen, in denen YARP jede Weiterleitung
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Wo eine Warn- oder Fehlerzeile den Pfad
+    nennt, steht die Kennung darin ebenfalls nur als Pseudonym (`LogPseudonym.InPath()`). Die Zeilen, in denen YARP jede Weiterleitung
     mit Ziel-URL protokolliert, sind unterdrückt (Kategorie `Yarp` auf `Warning`,
     `BFF/Program.cs`); manche Pfade tragen die Kennung
     (`/api/v1/usage/users/{id}/usage-stats`). Die Zeilen von ASP.NET Core selbst (u. a.
     „Request starting“ mit Pfad) stehen erst ab Warning, aber nur über
     `Microsoft.AspNetCore` in `BFF/appsettings.json`; ein Log-Level von außen, das diese
-    Kategorie herabsetzt, bringt die Pfade zurück.
+    Kategorie herabsetzt, bringt die Pfade zurück; ebenso eines für eine Unterkategorie von
+    YARP (etwa `Logging__LogLevel__Yarp.ReverseProxy`), das die Regel im Code übersteuert.
   - **Semantic-Service, Texte:** Ab INFO steht weder die Suchanfrage (`api/v1/search.py`,
     nur `limit`; Fehlerzweig in
     `repositories/implementations/qdrant/statement_repository.py`) noch der Text einer
@@ -167,8 +169,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     Treffer hat, `services/polarity_filter_service.py`). Der Dev-Stack läuft auf DEBUG
     (`mvp/docker-compose.dev.yml`). Auf INFO steht die Herkunft eines neuen Kommentars
     oder einer neuen Hintergrundinfo als eingegebener Text (`reference_string`,
-    `api/v1/commentary.py`, `api/v1/generic_text.py`), also meist eine URL oder Quelle,
-    ohne Bezug zu einer Person. Die Zugriffszeilen von uvicorn sind unterdrückt
+    `api/v1/commentary.py`, `api/v1/generic_text.py`), also meist ein Link oder eine
+    Fundstelle, ohne Bezug zu einer Person. Beim Seeding stehen auf INFO die Titel der
+    eingespielten Beiträge (`services/orchestration/content_orchestrator.py`), kuratierte
+    Daten aus dem Repo. Die Zugriffszeilen von uvicorn sind unterdrückt
     (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
   - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
     (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
