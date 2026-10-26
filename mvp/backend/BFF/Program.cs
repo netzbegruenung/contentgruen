@@ -15,6 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
+// YARP schreibt jede Weiterleitung samt Ziel-URL auf Information, und manche Pfade tragen
+// die Kennung (/api/v1/usage/users/{id}/...). Wie uvicorn.access im Suchdienst erst ab
+// Warning. Im Code statt in appsettings.json, damit es auch ohne die Datei gilt (#277).
+builder.Logging.AddFilter("Yarp", LogLevel.Warning);
 
 var useKeycloak = builder.Configuration.GetValue<bool>("USE_KEYCLOAK", defaultValue: true);
 

@@ -14,6 +14,8 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BFF.Tests.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace BFF.Tests.Proxy;
 
@@ -67,7 +69,8 @@ public class AuthGatePipelineTests
         };
     }
 
-    private static WebApplicationFactory<Program> CreateHost(bool useKeycloak, string? adminUserIds = null) =>
+    private static WebApplicationFactory<Program> CreateHost(
+        bool useKeycloak, string? adminUserIds = null, ILoggerProvider? logs = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             // Bewusst hermetisch: der Host laeuft nicht auf BFF/appsettings.json, sondern
@@ -101,7 +104,13 @@ public class AuthGatePipelineTests
                 Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys"));
 
             builder.ConfigureTestServices(services =>
-                services.AddSingleton<IStartupFilter, TestUserStartupFilter>());
+            {
+                services.AddSingleton<IStartupFilter, TestUserStartupFilter>();
+                if (logs is not null)
+                {
+                    services.AddSingleton(logs);
+                }
+            });
         });
 
     private static async Task<HttpStatusCode> Request(bool useKeycloak, string path, bool authenticated)
@@ -258,5 +267,27 @@ public class AuthGatePipelineTests
         // Der Normalfall, und das unveraenderte Verhalten von vor der Variablen: ohne
         // Allowlist entscheidet allein der Claim, und der Testnutzer traegt keinen.
         Assert.False(await UserInfoIsAdmin(adminUserIds: null));
+    }
+
+    [Fact]
+    public async Task ProxiedRequest_DoesNotPutTheTargetUrlIntoTheLog()
+    {
+        // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information ("Proxying to ...").
+        // Einige Pfade tragen die Kennung, etwa die Nutzungsstatistik unter "Meine Beitraege".
+        // Program.cs hebt die YARP-Kategorien auf Warning, wie uvicorn.access im Suchdienst
+        // (#277). Geprueft an der echten Pipeline, weil der Host hier ohne appsettings.json
+        // laeuft: eine Regel nur dort waere im Test nicht zu sehen.
+        var logs = new CapturingLoggerProvider();
+        using var factory = CreateHost(useKeycloak: true, logs: logs);
+        using var client = factory.CreateClient(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/usage/users/test-user/usage-stats");
+        request.Headers.Add(TestUserHeader, "1");
+        using var response = await client.SendAsync(request);
+
+        // 502: YARP hat weitergeleitet (und kein Backend gefunden), die Zeile waere also entstanden.
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.DoesNotContain("test-user", logs.TextFrom("Yarp", LogLevel.Information));
     }
 }

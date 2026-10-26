@@ -131,38 +131,48 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
 - **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
-  am Code geprüft am 26.10.2026 (Stand `main` d3446548):
-  - **Semantic-Service:** Kennungen von Nutzenden nur als achtstelliges Pseudonym
-    (`app/core/logging.py`, `log_pseudonym()`; aufgerufen in `services/voting_service.py`,
-    `middleware/rate_limiter.py`, `api/v1/usage.py`). Das Pseudonym ist ein ungesalzener
-    Hash: über Zeilen verkettbar und bei bekanntem Kennungsraum zurückrechenbar
-    (Docstring von `log_pseudonym()`), bei Kennungen wie `user-001` also kein Schutz.
-    **Ausnahme Admins:** Deren Kennung
-    steht im Klartext auf INFO beim manuellen Cleanup (`api/v1/usage.py:356`). Die
-    Moderationsaktionen nennen sie seit #271 nicht mehr (`api/v1/moderation.py`,
-    `services/moderation_service.py`); sie steht nur noch in `content_reports.reviewed_by`.
-    Die Suchanfrage der Person steht ab INFO weder auf dem Anfragepfad
-    (`api/v1/search.py`, nur `limit`) noch im Fehlerzweig der Suche
-    (`repositories/implementations/qdrant/statement_repository.py`). Wohl aber stehen ab INFO
-    die ersten 50 Zeichen jeder Aussage, die die Suche unter der Schwelle aussortiert
-    (`services/search/search_orchestrator.py:143-144`); da jede Suchanfrage als Aussage
-    gespeichert wird (`api/v1/search.py:119-127`), sind das auch frühere Suchanfragen
-    anderer, ohne Bezug zu einer Person. Auf DEBUG steht die Suchanfrage selbst darin, wenn
-    sie eine aufgehobene Verneinung enthält (`utils/negation_detector.py:157`; nur bei
-    eingeschaltetem Polaritätsfilter, Default an, `core/config.py:172`, und wenn die Suche
-    Treffer hat, `services/polarity_filter_service.py:83-88`); der Dev-Stack läuft auf
-    DEBUG (`mvp/docker-compose.dev.yml`). Die Zugriffszeilen von
-    uvicorn sind unterdrückt (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
-  - **BFF:** keine E-Mail-Adressen, aber die **Kennung im Klartext**: beim Beta-Zugang
-    die `UserId` jeder erfolgreichen Anmeldung und jedes Fehlversuchs mit falschem Passwort
-    (`BFF/Services/ManagedUserService.cs:183,189`, `BFF/Controllers/AuthController.cs:120`,
-    Level Information/Warning, also beim Standard-Level aus `appsettings.json` im Log),
-    zusätzlich auf Debug-Level bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs:84,96`). Der Beta-Zugang ist per Default aktiv
-    (`ENABLE_MANAGED_AUTH`, `ManagedUserService.cs:235`) und laut `AuthController.cs:58`
-    bewusst auch neben Keycloak vorgesehen, für Personen ohne Netzbegrünung-Mitgliedschaft;
-    ob er in Produktion eingeschaltet ist, steht nicht im Repo. Über `managed-users.json`
-    ist die `UserId` einer Adresse zugeordnet.
+  am Code geprüft am 26.10.2026 (Stand #277):
+  - **Kennungen:** Ab INFO steht in BFF und Semantic-Service keine Kennung im Klartext,
+    nur ihr achtstelliges Pseudonym. Beide Dienste rechnen dasselbe (erste acht
+    Hex-Zeichen von SHA-256): `log_pseudonym()` in `app/core/logging.py` und
+    `LogPseudonym.Of()` in `BFF/Logging/LogPseudonym.cs`; dieselbe Kennung hat also in
+    beiden Logs dasselbe Pseudonym. Das Pseudonym ist ein ungesalzener Hash: über Zeilen
+    verkettbar und bei bekanntem Kennungsraum zurückrechenbar (Docstring von
+    `log_pseudonym()`), bei Kennungen wie `user-001` also kein Schutz. Das gilt auch für
+    Admins (manueller Cleanup, `api/v1/usage.py`); die Moderationsaktionen nennen sie seit
+    #271 gar nicht mehr, sie steht nur in `content_reports.reviewed_by`.
+  - **BFF:** keine E-Mail-Adressen. Beim Beta-Zugang stehen erfolgreiche Anmeldungen und
+    Fehlversuche mit falschem Passwort mit dem Pseudonym der `UserId` im Log
+    (`BFF/Services/ManagedUserService.cs`, `BFF/Controllers/AuthController.cs`, Level
+    Information/Warning), ebenso ein Beta-Zugang mit reservierter Kennung (Error). Über
+    `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
+    rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
+    Debug steht das Pseudonym bei jeder angemeldeten Anfrage
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Die Zeilen, in denen YARP jede Weiterleitung
+    mit Ziel-URL protokolliert, sind unterdrückt (Kategorie `Yarp` auf `Warning`,
+    `BFF/Program.cs`); manche Pfade tragen die Kennung
+    (`/api/v1/usage/users/{id}/usage-stats`). Die Zeilen von ASP.NET Core selbst (u. a.
+    „Request starting“ mit Pfad) stehen erst ab Warning, aber nur über
+    `Microsoft.AspNetCore` in `BFF/appsettings.json`; ein Log-Level von außen, das diese
+    Kategorie herabsetzt, bringt die Pfade zurück.
+  - **Semantic-Service, Texte:** Ab INFO steht weder die Suchanfrage (`api/v1/search.py`,
+    nur `limit`; Fehlerzweig in
+    `repositories/implementations/qdrant/statement_repository.py`) noch der Text einer
+    Aussage. Auf DEBUG stehen die ersten 50 Zeichen jeder Aussage, die die Suche unter der
+    Schwelle aussortiert (`services/search/search_orchestrator.py`); da jede Suchanfrage
+    als Aussage gespeichert wird (`api/v1/search.py`), sind das auch frühere Suchanfragen
+    anderer, ohne Bezug zu einer Person. Ebenfalls auf DEBUG steht die Suchanfrage selbst,
+    wenn sie eine aufgehobene Verneinung enthält (`utils/negation_detector.py`; nur bei
+    eingeschaltetem Polaritätsfilter, Default an, `core/config.py`, und wenn die Suche
+    Treffer hat, `services/polarity_filter_service.py`). Der Dev-Stack läuft auf DEBUG
+    (`mvp/docker-compose.dev.yml`). Auf INFO steht die Herkunft eines neuen Kommentars
+    oder einer neuen Hintergrundinfo als eingegebener Text (`reference_string`,
+    `api/v1/commentary.py`, `api/v1/generic_text.py`), also meist eine URL oder Quelle,
+    ohne Bezug zu einer Person. Die Zugriffszeilen von uvicorn sind unterdrückt
+    (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
+  - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
+    (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
+    eine Validierungsmeldung, stehen diese mit darin.
   - **Frontend-nginx:** setzt weder `access_log` noch `log_format` noch `real_ip`
     (`mvp/frontend/gutgesagt-frontend/nginx*.conf`), schreibt also das Standardformat
     des Basis-Images `nginx:alpine` nach stdout

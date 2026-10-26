@@ -87,3 +87,28 @@ class TestVotingServiceLogging:
             service.remove_dislike("user-001", content_id)
 
         assert "user-001" not in caplog.text
+
+
+class TestManualCleanupLogging:
+    """Der manuelle Cleanup nannte die Kennung des Admins im Klartext auf INFO (#277)."""
+
+    def test_run_cleanup_manually_does_not_log_the_raw_admin_id(self, caplog):
+        import asyncio
+
+        from api.v1.usage import run_cleanup_manually
+
+        settings = Mock()
+        settings.is_admin_user.return_value = True
+        usage_service = Mock()
+        usage_service.cleanup_old_events.return_value = 0
+
+        with patch("api.v1.usage.get_usage_service", return_value=usage_service):
+            with caplog.at_level(logging.DEBUG):
+                asyncio.run(
+                    run_cleanup_manually(
+                        days_to_keep=30, current_user="admin-001", settings=settings
+                    )
+                )
+
+        assert "admin-001" not in caplog.text
+        assert log_pseudonym("admin-001") in caplog.text
