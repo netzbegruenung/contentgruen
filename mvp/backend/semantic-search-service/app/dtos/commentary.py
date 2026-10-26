@@ -25,6 +25,9 @@ class AddCommentaryRequest(BaseModel):
     # keine bekannt ist, ihr Text. Ohne beides steht der Kommentar fuer sich.
     statement_id: Optional[UUID] = None
     statement_text: Optional[str] = Field(default=None, max_length=1000)
+    # Die Person hat die Dublette gesehen und speichert trotzdem: Dann wird der
+    # Kommentar angelegt, auch wenn ein sehr aehnlicher schon da ist.
+    trotz_dublette: bool = False
 
     # Leer (oder nur Leerraum) heisst: keine Aussage. Sonst mindestens
     # AUSSAGE_MIN_ZEICHEN - kuerzer ist keine Aussage, auf die man antworten kann.
@@ -70,7 +73,11 @@ class AddCommentaryResponse(BaseModel):
     # Antworten weiteren Aussagen zuzuordnen ist gewollt, greift ueber dieses Formular
     # aber nur bei wortgleichem Text - dafuer ist ein eigener Weg an der Karte
     # vorgesehen ("Passt auch auf ..."), siehe api/v1/commentary.py.
+    # Das Formular zeigt die Dublette und laesst die Person entscheiden: zustimmen
+    # (Stimme) oder mit trotz_dublette trotzdem speichern.
     duplikat: bool = False
+    # Titel der Dublette, damit das Formular sie benennen kann; sonst None.
+    dublette_titel: Optional[str] = None
 
 
 ### SearchCommentary ###

@@ -18,6 +18,8 @@ export interface AddCommentaryRequest {
     statement_id?: string;
     /** ... oder, ohne ID, ihr Text; das Backend sucht oder legt sie an. */
     statement_text?: string;
+    /** Die Person hat die Dublette gesehen und speichert trotzdem. */
+    trotz_dublette?: boolean;
 }
 
 export interface Commentary {
@@ -44,6 +46,8 @@ export interface AddCommentaryResponse {
     verknuepft?: boolean;
     /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. War eine Aussage dabei, haengt er jetzt an ihr (statement_*, verknuepft). */
     duplikat?: boolean;
+    /** Titel der Dublette, wenn duplikat. */
+    dublette_titel?: string | null;
 }
 
 

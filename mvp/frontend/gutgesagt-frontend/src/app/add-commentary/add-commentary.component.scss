@@ -122,3 +122,23 @@ app-formular-hilfe {
   border-radius: 4px;
   background: #fff3e0;
 }
+
+.dubletten-hinweis p {
+  margin: 0;
+}
+
+.dublette-titel {
+  font-weight: 500;
+}
+
+.dublette-entscheidung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.zustimm-fehler {
+  margin-top: 8px;
+  color: var(--error, #d32f2f);
+}

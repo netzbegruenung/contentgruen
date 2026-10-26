@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AddCommentaryComponent } from '../add-commentary/add-commentary.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { StatementService } from '../services/statement.service';
@@ -25,6 +26,12 @@ import {
   ROHINPUT_PARAM,
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
+
+/** Nach dem Zustimmen im Destillier-Ablauf: gespeichert wurde nichts, verknuepft schon. */
+export const EINWURF_MIT_DUBLETTE_VERKNUEPFT = 'Zugestimmt. Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
+
+export const EINWURF_NICHT_VERKNUEPFT =
+  'Zugestimmt. Der Einwurf ließ sich aber nicht mit dem Kommentar verknüpfen und ist noch offen.';
 
 /** Hinweis im Formular, wenn ?aussage= auf nichts (mehr) zeigt. */
 export const AUSSAGE_NICHT_VERFUEGBAR =
@@ -65,6 +72,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     private contentRefreshService: ContentRefreshService,
     private uebergabe: DestillierUebergabeService,
     private stateService: StateManagementService,
+    private snackBar: MatSnackBar,
   ) { }
 
   ngOnInit(): void {
@@ -155,6 +163,27 @@ export class AddCommentaryWorkflowComponent implements OnInit {
       ? { [VON_PARAM]: 'suche', ...(this.ausSuche.anfrage ? { [SUCHE_PARAM]: this.ausSuche.anfrage } : {}) }
       : {};
     this.zurErgebnisseite(ergebnis.id, queryParams, zustand);
+  }
+
+  /**
+   * Der Dublette zugestimmt statt zu speichern. Aus dem Fangkorb zeigt die
+   * Verknuepfung des Einwurfs dann auf den vorhandenen Kommentar - den Beitrag,
+   * den die Person gewaehlt hat - und es geht zum naechsten Einwurf. Keine
+   * Ergebnisseite: Gespeichert wurde nichts. Ohne Einwurf bleibt das Formular.
+   */
+  onZugestimmt(kommentarId: string): void {
+    if (!this.rohinputId) {
+      return;
+    }
+    const rohinputId = this.rohinputId;
+    this.uebergabe.alsVerarbeitetMarkieren(rohinputId, kommentarId, 'commentary').subscribe((markiert) => {
+      if (!markiert) {
+        this.snackBar.open(EINWURF_NICHT_VERKNUEPFT, 'OK', { duration: 8000 });
+        return;
+      }
+      this.snackBar.open(EINWURF_MIT_DUBLETTE_VERKNUEPFT, 'OK', { duration: 5000 });
+      this.uebergabe.zumNaechsten(rohinputId, 'erledigt');
+    });
   }
 
   private zurErgebnisseite(id: string, queryParams: Record<string, string>, state: GespeichertZustand): void {

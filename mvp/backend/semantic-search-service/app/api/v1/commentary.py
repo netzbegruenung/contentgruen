@@ -15,6 +15,7 @@ from dtos.commentary import (
     CommentarySearchResponse,
     SearchCommentaryByTextRequest,
 )
+from services.content.base_content_service import Dublettenpruefung
 from services.content.commentary_service import CommentaryService
 from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.content.statement_service import AussageNichtGefunden, StatementService
@@ -120,6 +121,15 @@ async def add_commentary(
         # bettet nicht noch einmal ein.
         async with commentary_service.sperre(request.commentary.text):
             pruefung = await commentary_service.pruefe_dublette(request.commentary.text)
+            if request.trotz_dublette and pruefung.vorhanden is not None:
+                # Die Person hat die Dublette gesehen und entschieden: anlegen. Der
+                # aehnlichste Treffer bleibt fuer most_similar_* erhalten.
+                logger.info(
+                    f"Commentary saved despite duplicate {pruefung.vorhanden.id}"
+                )
+                pruefung = Dublettenpruefung(
+                    vorhanden=None, aehnlichster=pruefung.aehnlichster
+                )
             if pruefung.vorhanden is None:
                 # Je Eintrag (reference_id, Notiz): die Notiz gehoert an die Verknuepfung,
                 # nicht an die Referenz - dieselbe Quelle kann in einem anderen Beitrag
@@ -242,6 +252,7 @@ async def add_commentary(
             statement_text=statement_text,
             verknuepft=verknuepft,
             duplikat=dublette is not None,
+            dublette_titel=dublette.title if dublette is not None else None,
         )
 
     except HTTPException:

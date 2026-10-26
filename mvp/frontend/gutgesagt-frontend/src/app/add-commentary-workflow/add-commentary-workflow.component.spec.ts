@@ -1,7 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { BehaviorSubject, of } from 'rxjs';
-import { AddCommentaryWorkflowComponent } from './add-commentary-workflow.component';
+import {
+  AddCommentaryWorkflowComponent,
+  EINWURF_MIT_DUBLETTE_VERKNUEPFT,
+  EINWURF_NICHT_VERKNUEPFT,
+} from './add-commentary-workflow.component';
 import { AddCommentaryComponent } from '../add-commentary/add-commentary.component';
 import { DestillierUebergabeService } from '../destillieren/destillier-uebergabe.service';
 import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter, Router } from '@angular/router';
@@ -9,7 +13,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { environment } from '../../environments/environment';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 describe('AddCommentaryWorkflowComponent', () => {
   let component: AddCommentaryWorkflowComponent;
@@ -46,6 +50,16 @@ describe('AddCommentaryWorkflowComponent', () => {
     expect(component.vorbefuellung).toBeNull();
   });
 
+  it('macht nach dem Zustimmen ohne Einwurf nichts weiter', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate');
+    const markieren = spyOn(TestBed.inject(DestillierUebergabeService), 'alsVerarbeitetMarkieren');
+
+    component.onZugestimmt('k-alt');
+
+    expect(markieren).not.toHaveBeenCalled();
+    expect(navigieren).not.toHaveBeenCalled();
+  });
+
   it('oeffnet nach dem Speichern die Ergebnisseite und ersetzt das Formular im Verlauf', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
@@ -68,6 +82,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', [
       'vorbefuellungLaden',
       'alsVerarbeitetMarkieren',
+      'zumNaechsten',
     ]);
     uebergabe.alsVerarbeitetMarkieren.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
@@ -120,6 +135,37 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
       state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, markiert: true },
       replaceUrl: true,
     });
+  });
+
+  it('verknuepft nach dem Zustimmen den Einwurf mit der Dublette und geht zum naechsten', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate');
+    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+
+    component.onZugestimmt('k-alt');
+
+    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'erledigt');
+    expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_DUBLETTE_VERKNUEPFT, 'OK', jasmine.anything());
+    // Keine Ergebnisseite: gespeichert wurde nichts.
+    expect(navigieren).not.toHaveBeenCalled();
+  });
+
+  it('bleibt nach dem Zustimmen im Formular, wenn das Verknuepfen scheitert', () => {
+    uebergabe.alsVerarbeitetMarkieren.and.returnValue(of(false));
+    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+
+    component.onZugestimmt('k-alt');
+
+    expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
+    expect(meldung).toHaveBeenCalledWith(EINWURF_NICHT_VERKNUEPFT, 'OK', jasmine.anything());
+  });
+
+  it('verknuepft beim Trotzdem-Speichern den Einwurf mit dem neuen Kommentar', () => {
+    spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'k-neu', aussage: { id: '', text: '' }, verknuepft: true });
+
+    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-neu', 'commentary');
   });
 });
 

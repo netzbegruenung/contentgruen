@@ -58,10 +58,21 @@
                        rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
-                <p *ngIf="dublette" class="dubletten-hinweis" role="status">
-                    {{ dublettenHinweis }}
-                    <button type="button" class="text-link dublette-ansehen" (click)="dubletteAnsehen()">Ansehen</button>
-                </p>
+                <div *ngIf="dublette" class="dubletten-hinweis" role="status">
+                    <p>
+                        {{ dublettenHinweis }}
+                        <span *ngIf="dubletteTitel" class="dublette-titel">„{{ dubletteTitel }}“</span>
+                        <button type="button" class="text-link dublette-ansehen" (click)="dubletteAnsehen()">Ansehen</button>
+                    </p>
+                    <!-- Die Person entscheidet: dem vorhandenen zustimmen oder den eigenen trotzdem speichern -->
+                    <div *ngIf="!zugestimmtDublette" class="dublette-entscheidung">
+                        <button mat-stroked-button type="button" class="dublette-zustimmen"
+                                [disabled]="stimmtZu || speichert" (click)="zustimmen()">Zustimmen</button>
+                        <button mat-button type="button" class="dublette-trotzdem"
+                                [disabled]="stimmtZu || speichert" (click)="trotzdemSpeichern()">Trotzdem speichern</button>
+                    </div>
+                    <p *ngIf="zustimmFehler" class="zustimm-fehler" role="alert">{{ zustimmFehler }}</p>
+                </div>
 
                 <app-formular-leiste *ngIf="!responseId"
                                      [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : dublette ? dublettenHinweis : null"

@@ -7,6 +7,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { filter } from 'rxjs/operators';
 
 import { CommentaryService } from '../services/commentary.service';
+import { VotingService } from '../services/voting.service';
 import { LoggingService } from '../services/logging.service';
 import { AddCommentaryRequest } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -47,6 +48,11 @@ export function dubletteVerknuepftHinweis(aussage: string): string {
   return `Diesen Kommentar gibt es schon – er ist jetzt auch mit „${aussage}“ verknüpft.`;
 }
 
+/** Nach dem Zustimmen: Die Stimme ist gezaehlt, gespeichert wurde nichts. */
+export const ZUGESTIMMT_HINWEIS = 'Du hast dem vorhandenen Kommentar zugestimmt.';
+
+export const ZUSTIMMEN_FEHLGESCHLAGEN = 'Zustimmen hat nicht geklappt. Versuch es gleich noch einmal.';
+
 export const SPEICHERN_FEHLGESCHLAGEN =
   'Speichern hat nicht geklappt. Deine Eingaben sind noch da – versuch es gleich noch einmal.';
 
@@ -64,6 +70,11 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
  * Gespeichert wird in einem Aufruf, samt Aussage: mit ID, wenn eine gewaehlt ist,
  * sonst mit ihrem Text. Danach meldet `success` ID, Aussage und ob verknuepft
  * wurde; wohin es weitergeht, entscheidet der Workflow.
+ *
+ * Ist der Kommentar eine Dublette, wird nichts gespeichert: Das Formular zeigt den
+ * vorhandenen, und die Person entscheidet. Zustimmen gibt ihm eine Stimme und
+ * meldet ihn ueber `zugestimmt`; Trotzdem speichern schickt dasselbe noch einmal
+ * mit `trotz_dublette` und endet wie jedes Speichern in `success`.
  */
 @Component({
   standalone: true,
@@ -98,6 +109,8 @@ export class AddCommentaryComponent implements OnChanges {
   /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft, der Einwurf als Kopf. */
   @Input() vorbefuellung: Vorbefuellung | null = null;
   @Output() success = new EventEmitter<BeitragGespeichert>();
+  /** Der Dublette zugestimmt statt zu speichern: ihre ID. */
+  @Output() zugestimmt = new EventEmitter<string>();
 
   @ViewChild(ReferenceInputComponent) referenceInput?: ReferenceInputComponent;
   @ViewChild(AntwortAufComponent) antwortAuf?: AntwortAufComponent;
@@ -122,8 +135,17 @@ export class AddCommentaryComponent implements OnChanges {
   dubletteAussage: string | null = null;
   /** Die Dublette ist von jemand anderem und eine Aussage war mitgeschickt. */
   dubletteFremdMitAussage = false;
+  /** Titel der Dublette, soweit das Backend ihn nennt. */
+  dubletteTitel: string | null = null;
+  /** Der Dublette ist zugestimmt; dann gibt es nichts mehr zu entscheiden. */
+  zugestimmtDublette = false;
+  stimmtZu = false;
+  zustimmFehler: string | null = null;
 
   get dublettenHinweis(): string {
+    if (this.zugestimmtDublette) {
+      return ZUGESTIMMT_HINWEIS;
+    }
     if (this.dubletteAussage) {
       return dubletteVerknuepftHinweis(this.dubletteAussage);
     }
@@ -140,6 +162,7 @@ export class AddCommentaryComponent implements OnChanges {
     private logger: LoggingService,
     private dialog: MatDialog,
     private beitragAnsehen: BeitragAnsehenService,
+    private votingService: VotingService,
   ) {
     this.commentaryForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
@@ -244,6 +267,17 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   speichern(): void {
+    this.absenden(false);
+  }
+
+  /** Die Person hat die Dublette gesehen und will ihren Kommentar trotzdem. */
+  trotzdemSpeichern(): void {
+    if (this.dublette && !this.zugestimmtDublette) {
+      this.absenden(true);
+    }
+  }
+
+  private absenden(trotzDublette: boolean): void {
     // Noch nicht bestaetigte Herkunft uebernehmen, bevor der Formularwert gelesen
     // wird - sonst geht sie beim Speichern stumm verloren.
     this.referenceInput?.flushPendingInput();
@@ -252,16 +286,14 @@ export class AddCommentaryComponent implements OnChanges {
       this.commentaryForm.markAllAsTouched();
       return;
     }
-    if (this.speichert) {
+    if (this.speichert || this.stimmtZu) {
       return;
     }
 
     this.speichert = true;
     this.fehler = null;
     this.validierung = null;
-    this.dublette = null;
-    this.dubletteAussage = null;
-    this.dubletteFremdMitAussage = false;
+    this.dubletteVergessen();
 
     const { text, references } = this.commentaryForm.value;
     // Ein Satz: eingefuegte Umbrueche werden zu Leerzeichen (Enter selbst bricht nicht um).
@@ -271,6 +303,7 @@ export class AddCommentaryComponent implements OnChanges {
       // Die Herkunft als Text; das Backend legt sie an oder findet sie wieder.
       references: references || [],
       ...this.aussageFuerAnfrage(),
+      ...(trotzDublette ? { trotz_dublette: true } : {}),
     };
 
     this.commentaryService.addCommentary(request).subscribe({
@@ -284,6 +317,7 @@ export class AddCommentaryComponent implements OnChanges {
           // von jemand anderem, und der Hinweis zeigt auf den Weg ueber die Karte.
           const mitAussage = !!(request.statement_id || request.statement_text);
           this.dublette = antwort.id;
+          this.dubletteTitel = antwort.dublette_titel ?? null;
           this.dubletteAussage =
             antwort.verknuepft === true && antwort.statement_text ? antwort.statement_text : null;
           this.dubletteFremdMitAussage =
@@ -336,6 +370,28 @@ export class AddCommentaryComponent implements OnChanges {
     return this.aussage.text ? { statement_text: this.aussage.text } : {};
   }
 
+  /** Der Dublette eine Stimme geben statt den eigenen Kommentar zu speichern. */
+  zustimmen(): void {
+    const dublette = this.dublette;
+    if (!dublette || this.stimmtZu || this.zugestimmtDublette) {
+      return;
+    }
+    this.stimmtZu = true;
+    this.zustimmFehler = null;
+    this.votingService.setLike(dublette).subscribe({
+      next: () => {
+        this.stimmtZu = false;
+        this.zugestimmtDublette = true;
+        this.zugestimmt.emit(dublette);
+      },
+      error: (error: Error) => {
+        this.logger.error('Error voting for duplicate commentary', error);
+        this.stimmtZu = false;
+        this.zustimmFehler = ZUSTIMMEN_FEHLGESCHLAGEN;
+      },
+    });
+  }
+
   dubletteAnsehen(): void {
     if (this.dublette) {
       this.beitragAnsehen.oeffnen(this.dublette, 'commentary');
@@ -360,8 +416,15 @@ export class AddCommentaryComponent implements OnChanges {
     this.aussage = OHNE_AUSSAGE;
     this.showReferences = false;
     this.fehler = null;
+    this.dubletteVergessen();
+  }
+
+  private dubletteVergessen(): void {
     this.dublette = null;
     this.dubletteAussage = null;
     this.dubletteFremdMitAussage = false;
+    this.dubletteTitel = null;
+    this.zugestimmtDublette = false;
+    this.zustimmFehler = null;
   }
 }
