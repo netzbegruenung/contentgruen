@@ -7,7 +7,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 )
 from services.content.reference_service import ReferenceService
 from dtos.contribution import ContributionEntry, GetContributionsOfUserResponse
-from domain.models.content_type import ContentType
+from domain.models.content_type import BEITRAGSTYPEN
 from services.usage_tracking_service import get_usage_service
 from core.config import Settings
 from core.logging import get_logger
@@ -17,15 +17,8 @@ logger = get_logger(__name__)
 
 router = APIRouter()
 
-# "Meine Beitraege" zeigt nur ausformulierte Beitraege. Aussagen entstehen beim
-# Beitragen nebenbei (das Formular legt die beantwortete Aussage an), Herkunftsangaben
-# ueber die Herkunftseingabe - beide gehoeren nicht in die Liste.
-AUSFORMULIERTE_TYPEN = [
-    ContentType.COMMENTARY.value,
-    ContentType.GENERIC_TEXT.value,
-    ContentType.IMAGE.value,
-    ContentType.POST.value,
-]
+# "Meine Beitraege" zeigt nur Beitraege (BEITRAGSTYPEN), keine Aussagen und Herkuenfte.
+AUSFORMULIERTE_TYPEN = sorted(typ.value for typ in BEITRAGSTYPEN)
 
 
 # Test endpoint to check if the API is running

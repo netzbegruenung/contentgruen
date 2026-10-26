@@ -31,3 +31,18 @@ class ContentType(str, Enum):
     IMAGE = "image"
     TEST = "test"
     DEFAULT = "default"
+
+
+BEITRAGSTYPEN = frozenset(
+    {
+        ContentType.COMMENTARY,
+        ContentType.GENERIC_TEXT,
+        ContentType.IMAGE,
+        ContentType.POST,
+    }
+)
+"""
+Typen, die Beitraege sind (GLOSSARY.md, "Beitrag"). Aussage und Herkunft sind keine:
+Sie entstehen beim Beitragen nebenbei, stehen nicht in "Meine Beitraege" und lassen
+sich nicht vom Autor loeschen. Ein neuer Beitragstyp gehoert hier hinein.
+"""

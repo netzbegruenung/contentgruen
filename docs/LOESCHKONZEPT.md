@@ -25,7 +25,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 - **Der Autor löscht** (`DELETE /api/v1/content/{id}`, „Beitrag löschen“ in „Meine
   Beiträge“): Der Beitrag bekommt nur den Zustand „gelöscht“
   (`services/content/beitrag_loeschen_service.py`). Er verschwindet aus Suche, Ansicht,
-  Listen, Zählern und „Meine Beiträge“, bleibt aber gespeichert, damit Verknüpfungen und
+  Listen, Bestandszählern und „Meine Beiträge“, bleibt aber gespeichert, damit Verknüpfungen und
   Stimmen nicht ins Leere zeigen. Das ist **kein Löschen im Sinne von Art. 17**: Text und
   Kennung stehen weiter in Qdrant. Ein Löschantrag erfasst gelöschte Beiträge deshalb
   genauso wie sichtbare und gesperrte; der Lauf in Schritt 3 filtert nur nach der Kennung,

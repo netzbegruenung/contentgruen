@@ -3,7 +3,7 @@ Der Autor loescht seinen Beitrag (GLOSSARY.md, "Geloescht"; #250).
 
 Loeschen setzt nur den Zustand "geloescht". Der Beitrag bleibt gespeichert, damit
 Verknuepfungen und Stimmen nicht ins Leere zeigen; Suche, Einzelansicht, Listen,
-Zaehler und "Meine Beitraege" blenden ihn ueber die vorhandenen Filter der
+Bestandszaehler und "Meine Beitraege" blenden ihn ueber die vorhandenen Filter der
 Repositories aus (AUSGEBLENDET in domain/models/content_status.py). Endgueltig
 entfernt wird ein Beitrag nur ueber das Loeschkonzept (docs/LOESCHKONZEPT.md).
 """
@@ -13,23 +13,10 @@ import uuid
 from enum import Enum
 
 from domain.models.content_status import ContentStatus
-from domain.models.content_type import ContentType
+from domain.models.content_type import BEITRAGSTYPEN
 from repositories.interfaces.base_content_repository import IBaseContentRepository
 
 logger = logging.getLogger(__name__)
-
-BEITRAGSTYPEN = frozenset(
-    {
-        ContentType.COMMENTARY,
-        ContentType.GENERIC_TEXT,
-        ContentType.IMAGE,
-        ContentType.POST,
-    }
-)
-"""
-Typen, die Beitraege sind (GLOSSARY.md, "Beitrag"). Aussage und Herkunft sind
-keine: Sie entstehen nebenbei und gehoeren niemandem zum Loeschen.
-"""
 
 
 class LoeschErgebnis(Enum):
@@ -50,6 +37,13 @@ class BeitragLoeschenService:
         Gesperrte und geloeschte Beitraege sind fuer den Autor nicht da (get()
         blendet sie aus): Eine Sperre bleibt so stehen, und wiederholtes Loeschen
         aendert nichts.
+
+        Lesen und Schreiben sind zwei Schritte. Sperrt ein Admin genau dazwischen,
+        ueberschreibt "geloescht" die Sperre; der Beitrag bleibt ausgeblendet.
+        update_status(nur_aus=...) schuetzt davor nicht, solange Altwerte von vor
+        #214 im Bestand stehen: get() liest sie als sichtbar, der Filter auf
+        "visible" traefe den gespeicherten Altwert nicht, und Loeschen bliebe still
+        ohne Wirkung.
         """
         try:
             beitrag = await self.repository.get(beitrag_id)
