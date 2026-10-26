@@ -19,9 +19,10 @@ Issues, specs and tickets for this repo live as issues in the primary Forgejo re
 
 ## Approval
 
-- Creating issues needs no approval.
-- Comments, label changes on existing issues and closing an issue need the maintainer's approval: show the draft first.
-- Every issue body and comment starts with the attribution line the maintainer requires (who commissioned the agent, which model). Triage's own disclaimer goes on the line below.
+- **No approval needed** for: new issues, comments, adding/removing labels, creating labels, dependencies, assignments, editing and closing the bot's own issues, comment-only reviews on any PR. These go out directly, without showing a draft first. This overrides the general approval rule for this repo only.
+- **Approval still needed** for: deleting anything (comments, labels, branches other than the bot's own `sb/` branches); editing other people's issues, PR descriptions or comments; closing other people's issues or PRs; approve or request-changes reviews on PRs not opened by the bot; @-mentioning anyone other than the maintainer who commissioned the agent. Show the draft and wait.
+- Every issue body, comment and review starts with the attribution line the maintainer requires (who commissioned the agent, which model). Triage's own disclaimer goes on the line below.
+- No personal data (names, mail addresses) and no secrets in titles, bodies or comments.
 
 ## Pull requests as a triage surface
 
