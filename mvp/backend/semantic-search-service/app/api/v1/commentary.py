@@ -121,11 +121,16 @@ async def add_commentary(
         # bettet nicht noch einmal ein.
         async with commentary_service.sperre(request.commentary.text):
             pruefung = await commentary_service.pruefe_dublette(request.commentary.text)
-            if request.trotz_dublette and pruefung.vorhanden is not None:
-                # Die Person hat die Dublette gesehen und entschieden: anlegen. Der
-                # aehnlichste Treffer bleibt fuer most_similar_* erhalten.
+            if (
+                pruefung.vorhanden is not None
+                and request.trotz_dublette_von is not None
+                and str(pruefung.vorhanden.id) == str(request.trotz_dublette_von)
+            ):
+                # Die Person hat genau diesen vorhandenen Kommentar gesehen und
+                # entschieden: anlegen. Der aehnlichste Treffer bleibt fuer
+                # most_similar_* erhalten.
                 logger.info(
-                    f"Commentary saved despite duplicate {pruefung.vorhanden.id}"
+                    f"Commentary saved although an existing one is similar: {pruefung.vorhanden.id}"
                 )
                 pruefung = Dublettenpruefung(
                     vorhanden=None, aehnlichster=pruefung.aehnlichster
@@ -253,6 +258,7 @@ async def add_commentary(
             verknuepft=verknuepft,
             duplikat=dublette is not None,
             vorhanden_titel=dublette.title if dublette is not None else None,
+            vorhanden_eigen=eigene_dublette,
         )
 
     except HTTPException:

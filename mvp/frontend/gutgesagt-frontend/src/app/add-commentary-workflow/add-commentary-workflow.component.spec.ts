@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, Subject, of } from 'rxjs';
 import {
   AddCommentaryWorkflowComponent,
-  EINWURF_MIT_DUBLETTE_VERKNUEPFT,
+  EINWURF_MIT_VORHANDENEM_VERKNUEPFT,
   EINWURF_NICHT_VERKNUEPFT,
+  ERNEUT_VERKNUEPFEN,
 } from './add-commentary-workflow.component';
 import { AddCommentaryComponent } from '../add-commentary/add-commentary.component';
 import { DestillierUebergabeService } from '../destillieren/destillier-uebergabe.service';
@@ -50,11 +51,11 @@ describe('AddCommentaryWorkflowComponent', () => {
     expect(component.vorbefuellung).toBeNull();
   });
 
-  it('macht nach dem Zustimmen ohne Einwurf nichts weiter', () => {
+  it('macht nach der Wahl des vorhandenen ohne Einwurf nichts weiter', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
     const markieren = spyOn(TestBed.inject(DestillierUebergabeService), 'alsVerarbeitetMarkieren');
 
-    component.onZugestimmt('k-alt');
+    component.onVorhandenGewaehlt('k-alt');
 
     expect(markieren).not.toHaveBeenCalled();
     expect(navigieren).not.toHaveBeenCalled();
@@ -137,27 +138,35 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
     });
   });
 
-  it('verknuepft nach dem Zustimmen den Einwurf mit der Dublette und geht zum naechsten', () => {
+  it('verknuepft nach der Wahl den Einwurf mit dem vorhandenen Kommentar und geht zum naechsten', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
     const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
 
-    component.onZugestimmt('k-alt');
+    component.onVorhandenGewaehlt('k-alt');
 
     expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
     expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'erledigt');
-    expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_DUBLETTE_VERKNUEPFT, 'OK', jasmine.anything());
+    expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', jasmine.anything());
     // Keine Ergebnisseite: gespeichert wurde nichts.
     expect(navigieren).not.toHaveBeenCalled();
   });
 
-  it('bleibt nach dem Zustimmen im Formular, wenn das Verknuepfen scheitert', () => {
-    uebergabe.alsVerarbeitetMarkieren.and.returnValue(of(false));
-    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+  it('bleibt nach der Wahl im Formular, wenn das Verknuepfen scheitert, und laesst es wiederholen', () => {
+    uebergabe.alsVerarbeitetMarkieren.and.returnValues(of(false), of(true));
+    const erneut = new Subject<void>();
+    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open').and.returnValue({
+      onAction: () => erneut,
+    } as any);
 
-    component.onZugestimmt('k-alt');
+    component.onVorhandenGewaehlt('k-alt');
 
     expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
-    expect(meldung).toHaveBeenCalledWith(EINWURF_NICHT_VERKNUEPFT, 'OK', jasmine.anything());
+    expect(meldung).toHaveBeenCalledWith(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, jasmine.anything());
+
+    erneut.next();
+
+    expect(uebergabe.alsVerarbeitetMarkieren).toHaveBeenCalledTimes(2);
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'erledigt');
   });
 
   it('verknuepft beim Trotzdem-Speichern den Einwurf mit dem neuen Kommentar', () => {

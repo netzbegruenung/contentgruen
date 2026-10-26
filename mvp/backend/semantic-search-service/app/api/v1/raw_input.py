@@ -213,8 +213,8 @@ async def _beitrag_pruefen(
 
     Ohne diese Pruefung konnte jede angemeldete Person jeden Einwurf mit einer
     erfundenen ID nach "Erledigt" schieben; die Verknuepfung zeigte ins Leere.
-    Geprueft werden Existenz und Typ, nicht der Autor: Der stille Dedup beim
-    Kommentar liefert im regulaeren Ablauf die ID eines fremden Kommentars.
+    Geprueft werden Existenz und Typ, nicht der Autor: Wer beim Ausformulieren
+    einem vorhandenen, fremden Kommentar zustimmt, verknuepft den Einwurf mit ihm.
 
     Ohne ``content_type`` (aeltere App-Version) genuegt ein Beitrag eines der
     beiden Typen. "Nicht gefunden" und "anderer Typ" melden die Dienste als

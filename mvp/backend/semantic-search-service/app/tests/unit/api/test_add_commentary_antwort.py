@@ -83,6 +83,7 @@ class TestAddCommentaryAntwort:
             "verknuepft": True,
             "duplikat": False,
             "vorhanden_titel": None,
+            "vorhanden_eigen": False,
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -209,6 +210,7 @@ class TestAddCommentaryAntwort:
             "verknuepft": False,
             "duplikat": False,
             "vorhanden_titel": None,
+            "vorhanden_eigen": False,
         }
 
     @staticmethod
@@ -242,6 +244,7 @@ class TestAddCommentaryAntwort:
             "verknuepft": True,
             "duplikat": True,
             "vorhanden_titel": VORHANDEN_TITEL,
+            "vorhanden_eigen": True,
         }
         commentary_service.pruefe_dublette.assert_awaited_once_with(
             anfrage["commentary"]["text"]
@@ -279,6 +282,7 @@ class TestAddCommentaryAntwort:
             "verknuepft": True,
             "duplikat": True,
             "vorhanden_titel": VORHANDEN_TITEL,
+            "vorhanden_eigen": True,
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
             beitrag_id=vorhanden,
@@ -309,6 +313,7 @@ class TestAddCommentaryAntwort:
             "verknuepft": True,
             "duplikat": True,
             "vorhanden_titel": VORHANDEN_TITEL,
+            "vorhanden_eigen": False,
         }
         # Auch keine Aussage angelegt - das passiert erst beim Verknuepfen.
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
@@ -367,8 +372,8 @@ class TestAddCommentaryAntwort:
 
         assert resp.status_code == 200
 
-    def test_trotz_dublette_legt_den_kommentar_an(self, dienste):
-        """Die Person hat die Dublette gesehen und speichert trotzdem."""
+    def test_trotz_dublette_von_legt_den_kommentar_an(self, dienste):
+        """Die Person hat den vorhandenen gesehen und speichert trotzdem."""
         commentary_id, _ = dienste
         aehnlichster = MagicMock(id=uuid.uuid4(), original_author="person-2")
         commentary_service = app.dependency_overrides[get_commentary_service]()
@@ -377,23 +382,27 @@ class TestAddCommentaryAntwort:
         )
 
         resp = TestClient(app).post(
-            ADD_URL, json=_anfrage(trotz_dublette=True), headers=HEADERS
+            ADD_URL,
+            json=_anfrage(trotz_dublette_von=str(aehnlichster.id)),
+            headers=HEADERS,
         )
 
         assert resp.status_code == 200
         assert resp.json()["id"] == str(commentary_id)
         assert resp.json()["duplikat"] is False
         assert resp.json()["vorhanden_titel"] is None
+        assert resp.json()["vorhanden_eigen"] is False
         # Angelegt wird ohne "vorhanden"; der aehnlichste bleibt fuer most_similar_*.
         pruefung = commentary_service.add_commentary.call_args.kwargs[
             "dublettenpruefung"
         ]
         assert pruefung == Dublettenpruefung(vorhanden=None, aehnlichster=aehnlichster)
 
-    def test_trotz_dublette_verknuepft_den_neuen_mit_der_aussage(self, dienste):
+    def test_trotz_dublette_von_verknuepft_den_neuen_mit_der_aussage(self, dienste):
         commentary_id, statement_service = dienste
         statement_id = uuid.uuid4()
-        self._dublette(uuid.uuid4(), autor="person-2")
+        vorhanden = uuid.uuid4()
+        self._dublette(vorhanden, autor="person-2")
         statement_service.beitrag_als_antwort_verknuepfen.return_value = (
             statement_id,
             "Waermepumpen sind zu teuer",
@@ -401,7 +410,9 @@ class TestAddCommentaryAntwort:
 
         resp = TestClient(app).post(
             ADD_URL,
-            json=_anfrage(trotz_dublette=True, statement_id=str(statement_id)),
+            json=_anfrage(
+                trotz_dublette_von=str(vorhanden), statement_id=str(statement_id)
+            ),
             headers=HEADERS,
         )
 
@@ -415,13 +426,35 @@ class TestAddCommentaryAntwort:
             == commentary_id
         )
 
-    def test_ohne_trotz_dublette_bleibt_es_bei_der_dublette(self, dienste):
+    def test_ohne_trotz_dublette_von_bleibt_es_bei_der_dublette(self, dienste):
         commentary_service = self._dublette(uuid.uuid4(), autor="person-2")
 
-        resp = TestClient(app).post(
-            ADD_URL, json=_anfrage(trotz_dublette=False), headers=HEADERS
-        )
+        resp = TestClient(app).post(ADD_URL, json=_anfrage(), headers=HEADERS)
 
         assert resp.json()["duplikat"] is True
         assert resp.json()["vorhanden_titel"] == VORHANDEN_TITEL
+        assert resp.json()["vorhanden_eigen"] is False
         commentary_service.add_commentary.assert_not_awaited()
+
+    def test_trotz_dublette_von_gilt_nur_fuer_den_gezeigten(self, dienste):
+        """Ist inzwischen ein anderer vorhanden, sieht die Person erst ihn."""
+        anderer = uuid.uuid4()
+        commentary_service = self._dublette(anderer, autor="person-2")
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(trotz_dublette_von=str(uuid.uuid4())),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["id"] == str(anderer)
+        assert resp.json()["duplikat"] is True
+        commentary_service.add_commentary.assert_not_awaited()
+
+    def test_eigene_dublette_ohne_aussage_nennt_sich_eigen(self, dienste):
+        self._dublette(uuid.uuid4())
+
+        resp = TestClient(app).post(ADD_URL, json=_anfrage(), headers=HEADERS)
+
+        assert resp.json()["duplikat"] is True
+        assert resp.json()["vorhanden_eigen"] is True

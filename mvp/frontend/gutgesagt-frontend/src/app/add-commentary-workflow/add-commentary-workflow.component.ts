@@ -27,11 +27,13 @@ import {
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
 
-/** Nach dem Zustimmen aus dem Fangkorb: gespeichert wurde nichts, verknuepft schon. */
-export const EINWURF_MIT_DUBLETTE_VERKNUEPFT = 'Zugestimmt. Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
+/** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
+export const EINWURF_MIT_VORHANDENEM_VERKNUEPFT = 'Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
 
 export const EINWURF_NICHT_VERKNUEPFT =
-  'Zugestimmt. Der Einwurf ließ sich aber nicht mit dem Kommentar verknüpfen und ist noch offen.';
+  'Der Einwurf ließ sich nicht mit dem vorhandenen Kommentar verknüpfen und ist noch nicht ausformuliert.';
+
+export const ERNEUT_VERKNUEPFEN = 'Erneut versuchen';
 
 /** Hinweis im Formular, wenn ?aussage= auf nichts (mehr) zeigt. */
 export const AUSSAGE_NICHT_VERFUEGBAR =
@@ -166,22 +168,27 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   }
 
   /**
-   * Dem vorhandenen Kommentar zugestimmt statt zu speichern. Aus dem Fangkorb zeigt die
-   * Verknuepfung des Einwurfs dann auf den vorhandenen Kommentar - den Beitrag,
-   * den die Person gewaehlt hat - und es geht zum naechsten Einwurf. Keine
-   * Ergebnisseite: Gespeichert wurde nichts. Ohne Einwurf bleibt das Formular.
+   * Den vorhandenen Kommentar gewaehlt (zugestimmt oder den eigenen genommen) statt
+   * zu speichern. Aus dem Fangkorb zeigt die Verknuepfung des Einwurfs dann auf den
+   * vorhandenen Kommentar - den Beitrag, den die Person gewaehlt hat - und es geht
+   * zum naechsten Einwurf. Keine Ergebnisseite: Gespeichert wurde nichts. Scheitert
+   * das Verknuepfen, laesst es sich aus der Meldung wiederholen; die Wahl selbst
+   * (etwa die Stimme) steht schon. Ohne Einwurf bleibt das Formular.
    */
-  onZugestimmt(kommentarId: string): void {
+  onVorhandenGewaehlt(kommentarId: string): void {
     if (!this.rohinputId) {
       return;
     }
     const rohinputId = this.rohinputId;
     this.uebergabe.alsVerarbeitetMarkieren(rohinputId, kommentarId, 'commentary').subscribe((markiert) => {
       if (!markiert) {
-        this.snackBar.open(EINWURF_NICHT_VERKNUEPFT, 'OK', { duration: 8000 });
+        this.snackBar
+          .open(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, { duration: 15000 })
+          .onAction()
+          .subscribe(() => this.onVorhandenGewaehlt(kommentarId));
         return;
       }
-      this.snackBar.open(EINWURF_MIT_DUBLETTE_VERKNUEPFT, 'OK', { duration: 5000 });
+      this.snackBar.open(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', { duration: 5000 });
       this.uebergabe.zumNaechsten(rohinputId, 'erledigt');
     });
   }
