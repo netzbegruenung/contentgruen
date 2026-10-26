@@ -67,9 +67,9 @@
         </section>
 
         <section *ngIf="schritt === 'typwahl'" class="typwahl">
-            <p *ngIf="entstandenerBeitrag" class="schon-entstanden" role="status">
+            <p *ngIf="verknuepfterBeitrag" class="schon-verknuepft" role="status">
                 Zu diesem Einwurf gibt es schon einen Beitrag.
-                <button *ngIf="entstandenerBeitragAnsehbar" type="button" class="text-link beitrag-ansehen"
+                <button *ngIf="verknuepfterBeitragAnsehbar" type="button" class="text-link beitrag-ansehen"
                         (click)="beitragAnsehen()">Ansehen</button>
             </p>
             <!-- Derselbe Kopf wie spaeter ueber dem Formular: Einwurf, Link, der Satz -->

@@ -6,8 +6,8 @@ import { ActivatedRouteSnapshot } from '@angular/router';
  * Woher das Formular kam, steht in der Adresse (bleibt beim Neuladen erhalten
  * und bestimmt den Zurueck-Pfeil): ?rohinput=<id> aus dem Fangkorb, ?von=suche
  * (optional mit ?suche=<Anfrage>) aus der Suche, sonst frei. Was nur der eben
- * gespeicherte Aufruf weiss - worauf geantwortet wurde und ob Verknuepfen und
- * Markieren geklappt haben -, reist als Router-State mit und fehlt nach dem
+ * gespeicherte Aufruf weiss - worauf geantwortet wurde und ob die Verknuepfung
+ * mit Aussage und Einwurf geklappt hat -, reist als Router-State mit und fehlt nach dem
  * Neuladen einfach.
  */
 export const VON_PARAM = 'von';
@@ -31,7 +31,7 @@ export interface GespeichertZustand {
   /** false: Aussage angegeben, aber nicht verknuepft. */
   verknuepft?: boolean;
   /** Nur Fangkorb: false, wenn der Einwurf nicht mit dem Beitrag verknuepft wurde. */
-  markiert?: boolean;
+  einwurfVerknuepft?: boolean;
 }
 
 export function herkunftAus(params: { get(name: string): string | null }): Herkunft {

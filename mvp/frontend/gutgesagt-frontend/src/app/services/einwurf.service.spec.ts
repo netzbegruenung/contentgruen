@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { RawInput, RawInputService, GetRawInputsResponse } from './raw-input.service';
+import { Einwurf, EinwurfService, FangkorbResponse } from './einwurf.service';
 import { LoggingService } from './logging.service';
 import { cacheService } from '../auth/cache.interceptor';
 import { environment } from '../../environments/environment';
 
-function einwurf(overrides: Partial<RawInput> = {}): RawInput {
+function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
     id: 'id-1',
     content: 'ein Satz',
@@ -20,8 +20,8 @@ function einwurf(overrides: Partial<RawInput> = {}): RawInput {
   };
 }
 
-describe('RawInputService', () => {
-  let service: RawInputService;
+describe('EinwurfService', () => {
+  let service: EinwurfService;
   let httpMock: HttpTestingController;
 
   const basis = `${environment.baseUrl}/api/v1/rawinput`;
@@ -31,10 +31,10 @@ describe('RawInputService', () => {
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [RawInputService, { provide: LoggingService, useValue: loggingSpy }],
+      providers: [EinwurfService, { provide: LoggingService, useValue: loggingSpy }],
     });
 
-    service = TestBed.inject(RawInputService);
+    service = TestBed.inject(EinwurfService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
@@ -43,7 +43,7 @@ describe('RawInputService', () => {
   });
 
   it('schickt einen Einwurf an addRawInput', () => {
-    service.addRawInput({ url: 'https://example.org/post' }).subscribe((antwort) => {
+    service.einwerfen({ url: 'https://example.org/post' }).subscribe((antwort) => {
       expect(antwort.id).toBe('abc');
     });
 
@@ -54,13 +54,13 @@ describe('RawInputService', () => {
   });
 
   it('holt den Fangkorb mit Seitenangaben', () => {
-    const antwort: GetRawInputsResponse = {
+    const antwort: FangkorbResponse = {
       results_count: 0,
       results: [],
       total_records_count: 0,
     };
 
-    service.getRawInputs(2, 50).subscribe((daten) => {
+    service.fangkorbLaden(2, 50).subscribe((daten) => {
       expect(daten).toEqual(antwort);
     });
 
@@ -75,17 +75,17 @@ describe('RawInputService', () => {
 
   describe('Destillieren', () => {
     it('holt einen einzelnen Einwurf', () => {
-      service.getRawInput('id-1').subscribe((daten) => expect(daten.id).toBe('id-1'));
+      service.einwurfLaden('id-1').subscribe((daten) => expect(daten.id).toBe('id-1'));
 
       const anfrage = httpMock.expectOne(`${basis}/id-1`);
       expect(anfrage.request.method).toBe('GET');
       anfrage.flush(einwurf());
     });
 
-    it('speichert den Entwurf per PUT und leert danach den Fangkorb-Cache', () => {
+    it('speichert den Satz per PUT und leert danach den Fangkorb-Cache', () => {
       const leeren = spyOn(cacheService, 'delete');
 
-      service.saveDraft('id-1', 'Mein Satz').subscribe();
+      service.satzSpeichern('id-1', 'Mein Satz').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/draft`);
       expect(anfrage.request.method).toBe('PUT');
@@ -95,10 +95,10 @@ describe('RawInputService', () => {
       expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
-    it('sichert den Entwurf per fetch mit keepalive', () => {
+    it('sichert den Satz per fetch mit keepalive', () => {
       const fetchSpy = spyOn(window, 'fetch').and.returnValue(Promise.resolve(new Response()));
 
-      service.saveDraftKeepalive('id-1', 'Mein Satz');
+      service.satzSpeichernKeepalive('id-1', 'Mein Satz');
 
       const [url, optionen] = fetchSpy.calls.mostRecent().args as [string, RequestInit];
       expect(url).toBe(`${basis}/id-1/draft`);
@@ -120,7 +120,7 @@ describe('RawInputService', () => {
       expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
-    it('markiert als ausformuliert mit dem entstandenen Beitrag und seinem Typ', () => {
+    it('verknuepft mit dem Beitrag und seinem Typ', () => {
       service.updateStatus('id-1', 'processed', 'beitrag-1', 'commentary').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/status`);
@@ -140,8 +140,8 @@ describe('RawInputService', () => {
       anfrage.flush(einwurf({ status: 'processed' }));
     });
 
-    it('bietet als naechstes nur offene Einwuerfe ohne eigenen Entwurf an', () => {
-      let naechster: RawInput | null | undefined;
+    it('bietet als naechstes nur offene Einwuerfe ohne eigenen Satz an', () => {
+      let naechster: Einwurf | null | undefined;
       service.naechsterOffenerEinwurf('id-aktuell').subscribe((e) => (naechster = e));
 
       httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush({
@@ -160,7 +160,7 @@ describe('RawInputService', () => {
     });
 
     it('bietet auch Destilliertes an, solange es keinen eigenen Satz gibt', () => {
-      let naechster: RawInput | null | undefined;
+      let naechster: Einwurf | null | undefined;
       service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));
 
       httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush({
@@ -183,7 +183,7 @@ describe('RawInputService', () => {
         total_records_count: 2,
         results: [einwurf({ id: 'id-a' }), einwurf({ id: 'id-b' })],
       };
-      let naechster: RawInput | null | undefined;
+      let naechster: Einwurf | null | undefined;
 
       service.zurueckstellen('id-a');
       service.naechsterOffenerEinwurf('id-a').subscribe((e) => (naechster = e));
@@ -197,7 +197,7 @@ describe('RawInputService', () => {
     });
 
     it('bietet nach neuer Runde Zurueckgestelltes wieder an', () => {
-      let naechster: RawInput | null | undefined;
+      let naechster: Einwurf | null | undefined;
       service.zurueckstellen('id-a');
 
       service.rundeBeginnen();
@@ -212,7 +212,7 @@ describe('RawInputService', () => {
     });
 
     it('meldet null, wenn nichts mehr offen ist', () => {
-      let naechster: RawInput | null | undefined;
+      let naechster: Einwurf | null | undefined;
       service.naechsterOffenerEinwurf().subscribe((e) => (naechster = e));
 
       httpMock.expectOne((req) => req.url === `${basis}/getRawInputs`).flush({

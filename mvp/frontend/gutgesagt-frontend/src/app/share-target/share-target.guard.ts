@@ -18,7 +18,7 @@ import { ersteAdresse, urlsInTextBereinigen } from '../shared/url-bereinigen';
  */
 
 /** Schluessel im sessionStorage. Bewusst mit Praefix, der Storage ist geteilt. */
-export const SHARE_EINWURF_SCHLUESSEL = 'gutgesagt.share.einwurf';
+export const SHARE_FELDER_SCHLUESSEL = 'gutgesagt.share.einwurf';
 
 /** Was das Teilen-Menue liefert -- alle drei Felder sind optional. */
 export interface ShareDaten {
@@ -27,8 +27,8 @@ export interface ShareDaten {
   url?: string | null;
 }
 
-/** Der geteilte Einwurf, schon nach den Feldern des Formulars getrennt. */
-export interface GeteilterEinwurf {
+/** Das Geteilte, schon nach den Feldern des Formulars getrennt. */
+export interface GeteilteFelder {
   /** Die Adresse aus url, sonst die erste aus text, ohne Tracking-Parameter. Wird der Link. */
   url: string | null;
   /** Der Seitentitel. Chrome schickt einen mit, Instagram nicht. Nur ein Vorschlag. */
@@ -48,7 +48,7 @@ export interface GeteilterEinwurf {
  * Titel und uebriger Text sind nichts, was die teilende Person geschrieben hat.
  * Das Formular zeigt sie deshalb nur als markierte, loeschbare Vorbelegung.
  */
-export function einwurfAusShareDaten(daten: ShareDaten): GeteilterEinwurf {
+export function felderAusShareDaten(daten: ShareDaten): GeteilteFelder {
   const text = urlsInTextBereinigen((daten.text ?? '').trim());
   const urlParameter = urlsInTextBereinigen((daten.url ?? '').trim());
   const titel = (daten.title ?? '').trim();
@@ -81,14 +81,14 @@ export class ShareTargetGuard implements CanActivate {
       return true;
     }
 
-    const einwurf = einwurfAusShareDaten({
+    const felder = felderAusShareDaten({
       title: route.queryParamMap.get('title'),
       text: route.queryParamMap.get('text'),
       url: route.queryParamMap.get('url'),
     });
 
-    if (einwurf.url || einwurf.titel || einwurf.text) {
-      this.ablegen(einwurf);
+    if (felder.url || felder.titel || felder.text) {
+      this.ablegen(felder);
     }
 
     return this.router.parseUrl('/einwerfen');
@@ -99,9 +99,9 @@ export class ShareTargetGuard implements CanActivate {
    * beschreibbar und wirft dann. Das darf den Weg ins Formular nicht abbrechen --
    * schlimmstenfalls steht dort ein leeres Formular statt eines vorbefuellten.
    */
-  private ablegen(einwurf: GeteilterEinwurf): void {
+  private ablegen(felder: GeteilteFelder): void {
     try {
-      sessionStorage.setItem(SHARE_EINWURF_SCHLUESSEL, JSON.stringify(einwurf));
+      sessionStorage.setItem(SHARE_FELDER_SCHLUESSEL, JSON.stringify(felder));
     } catch {
       // Absichtlich still: siehe oben.
     }

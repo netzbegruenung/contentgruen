@@ -67,9 +67,9 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
   beforeEach(async () => {
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', [
       'vorbefuellungLaden',
-      'alsAusformuliertMarkieren',
+      'mitBeitragVerknuepfen',
     ]);
-    uebergabe.alsAusformuliertMarkieren.and.returnValue(of(true));
+    uebergabe.mitBeitragVerknuepfen.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
       of({
         rohinputId: 'id-1',
@@ -109,15 +109,15 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
     expect(formular.showReferences).toBeTrue();
   });
 
-  it('markiert nach dem Speichern und zeigt die Ergebnisseite mit Herkunft Fangkorb', () => {
+  it('verknuepft den Einwurf nach dem Speichern und zeigt die Ergebnisseite mit Herkunft Fangkorb', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
     component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true });
 
-    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledWith('id-1', 'beitrag-1', 'generic_text');
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledWith('id-1', 'beitrag-1', 'generic_text');
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-generictext', 'gespeichert', 'beitrag-1'], {
       queryParams: { rohinput: 'id-1' },
-      state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, markiert: true },
+      state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, einwurfVerknuepft: true },
       replaceUrl: true,
     });
   });

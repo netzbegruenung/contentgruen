@@ -13,7 +13,7 @@ import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
-import { RawInput } from '../services/raw-input.service';
+import { Einwurf } from '../services/einwurf.service';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -573,7 +573,7 @@ describe('BeitragskarteComponent', () => {
         autorName: null,
         nutzung: null,
         quellen: [],
-        einwurf: {
+        einwurfAngaben: {
           einwurfId: 'e-1',
           stufe: 'destilliert',
           herkunft: 'Instagram',
@@ -614,7 +614,7 @@ describe('BeitragskarteComponent', () => {
   });
 
   describe('Verwerfen', () => {
-    function einwurf(felder: Partial<RawInput> = {}): KartenDaten {
+    function einwurfKarte(felder: Partial<Einwurf> = {}): KartenDaten {
       return ausEinwurf({
         id: 'e-1',
         content: 'Hinweis',
@@ -638,45 +638,45 @@ describe('BeitragskarteComponent', () => {
     it('erlaubt Admins das Verwerfen fremder und einwerferloser Einwuerfe', () => {
       alsNutzer({ isAdmin: true });
 
-      zeigen(einwurf(), { variante: 'einwurf' });
+      zeigen(einwurfKarte(), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeTrue();
 
-      zeigen(einwurf({ submitted_by: null }), { variante: 'einwurf' });
+      zeigen(einwurfKarte({ submitted_by: null }), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeTrue();
     });
 
     it('erlaubt Mitwirkenden ohne Adminrechte nur eigene Einwuerfe', () => {
       alsNutzer({ isAdmin: false });
 
-      zeigen(einwurf(), { variante: 'einwurf' });
+      zeigen(einwurfKarte(), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeFalse();
 
-      zeigen(einwurf({ submitted_by: 'test-user' }), { variante: 'einwurf' });
+      zeigen(einwurfKarte({ submitted_by: 'test-user' }), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeTrue();
     });
 
     it('nennt im Band die Stufe des Einwurfs, wie das Glossar sie nennt', () => {
-      zeigen(einwurf(), { variante: 'einwurf' });
+      zeigen(einwurfKarte(), { variante: 'einwurf' });
       expect(component.stufenName).toBe('Offen');
       expect(element('.karte').classList).toContain('stufe-offen');
 
       zeigen(
-        einwurf({ status: 'in_progress', drafts: [{ id: 's-1', sentence: 'Ein Satz' } as any] }),
+        einwurfKarte({ status: 'in_progress', drafts: [{ id: 's-1', sentence: 'Ein Satz' } as any] }),
         { variante: 'einwurf' },
       );
       expect(component.stufenName).toBe('Destilliert');
 
-      zeigen(einwurf({ status: 'discarded' }), { variante: 'einwurf' });
+      zeigen(einwurfKarte({ status: 'discarded' }), { variante: 'einwurf' });
       expect(component.stufenName).toBe('Verworfen');
 
       zeigen(
-        einwurf({ status: 'processed', links: [{ content_id: 'c-1', content_type: null, draft_id: null } as any] }),
+        einwurfKarte({ status: 'processed', links: [{ content_id: 'c-1', content_type: null, draft_id: null } as any] }),
         { variante: 'einwurf' },
       );
       expect(component.stufenName).toBe('Ausformuliert');
 
       zeigen(
-        einwurf({ status: 'processed', links: [{ content_id: 'c-1', content_type: 'commentary', draft_id: null } as any] }),
+        einwurfKarte({ status: 'processed', links: [{ content_id: 'c-1', content_type: 'commentary', draft_id: null } as any] }),
         { variante: 'einwurf' },
       );
       expect(component.stufenName).toBe('Ausformuliert: Kommentar');
@@ -686,7 +686,7 @@ describe('BeitragskarteComponent', () => {
     it('erlaubt auch Admins kein Verwerfen von Ausformuliertem', () => {
       alsNutzer({ isAdmin: true });
 
-      zeigen(einwurf({ status: 'processed' }), { variante: 'einwurf' });
+      zeigen(einwurfKarte({ status: 'processed' }), { variante: 'einwurf' });
 
       expect(component.darfVerwerfen).toBeFalse();
     });
