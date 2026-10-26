@@ -105,7 +105,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Anwendungszeilen und die vollen Client-IPs in den Zugriffsprotokollen des vorgelagerten
   Reverse Proxy. Für Letztere gilt eine Frist — `logrotate` auf dem Prod-Host, 14 Tage;
   alles aus dem `json-file`-Treiber ist unbegrenzt. Einzelne Zeilen daraus zu entfernen ist
-  nicht vorgesehen. Einordnung und Belege: `docs/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
+  nicht vorgesehen. Einordnung und Belege: `docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
 
 ## Kommandos
 
