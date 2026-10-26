@@ -232,7 +232,7 @@ class DataProcessor:
             )
             return None
 
-        # Dublette vor den Referenzen pruefen, wie im Router.
+        # Dublette vor den Herkunftsangaben pruefen, wie im Router.
         generic_text_service = self.orchestrator.generic_text_service
         pruefung = await generic_text_service.pruefe_dublette(text or title)
         if pruefung.vorhanden is not None:

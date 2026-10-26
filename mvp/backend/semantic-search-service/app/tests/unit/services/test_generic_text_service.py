@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 import uuid
 from datetime import datetime
+from unittest.mock import AsyncMock
 
 from domain.models.generic_text import (
     GenericText,
@@ -15,6 +16,7 @@ from domain.models.generic_text import (
     GenericTextSearchResult,
 )
 from domain.models.content_type import ContentType
+from services.content.base_content_service import Dublettenpruefung
 from tests.conftest import create_base_content_fields, create_generic_text_data
 
 
@@ -373,8 +375,6 @@ class TestHintergrundinfoDublette:
 
     @pytest.mark.asyncio
     async def test_suche_mit_passage_einbettung(self, service):
-        from unittest.mock import AsyncMock
-
         service._repository.search = AsyncMock(return_value=[])
 
         assert (
@@ -384,8 +384,6 @@ class TestHintergrundinfoDublette:
 
     @pytest.mark.asyncio
     async def test_ab_der_schwelle_ist_dublette(self, service, test_settings):
-        from unittest.mock import AsyncMock
-
         kopie = self._treffer(
             "Anderer Wortlaut", test_settings.generic_text_similarity_threshold
         )
@@ -395,8 +393,6 @@ class TestHintergrundinfoDublette:
 
     @pytest.mark.asyncio
     async def test_unter_der_schwelle_ist_keine(self, service, test_settings):
-        from unittest.mock import AsyncMock
-
         service._repository.search = AsyncMock(
             return_value=[
                 self._treffer(
@@ -410,7 +406,6 @@ class TestHintergrundinfoDublette:
 
     @pytest.mark.asyncio
     async def test_gesperrte_vektortreffer_zaehlen_nicht(self, service):
-        from unittest.mock import AsyncMock
         from domain.models.content_status import ContentStatus
 
         gesperrt = self._treffer("Wortlaut", 0.999)
@@ -421,9 +416,6 @@ class TestHintergrundinfoDublette:
 
     @pytest.mark.asyncio
     async def test_uebergebene_pruefung_sucht_nicht_noch_einmal(self, service):
-        from unittest.mock import AsyncMock
-        from services.content.base_content_service import Dublettenpruefung
-
         service._repository.search = AsyncMock(return_value=[])
         service._repository.finde_normalisiert_gleich = AsyncMock(return_value=None)
 
@@ -441,8 +433,6 @@ class TestHintergrundinfoDublette:
 
     @pytest.mark.asyncio
     async def test_aehnlichster_landet_in_most_similar(self, service):
-        from services.content.base_content_service import Dublettenpruefung
-
         aehnlichster = self._treffer("Verwandte Hintergrundinfo", 0.9)
 
         _, neu_id, _ = await service.add_generic_text(
@@ -480,9 +470,6 @@ class TestHintergrundinfoDublette:
     @pytest.mark.asyncio
     async def test_ohne_text_prueft_der_titel(self, service):
         """Ohne Text steht der Titel als Text da - und wird so auch geprueft."""
-        from unittest.mock import AsyncMock
-        from services.content.base_content_service import Dublettenpruefung
-
         service.pruefe_dublette = AsyncMock(
             return_value=Dublettenpruefung(vorhanden=None, aehnlichster=None)
         )

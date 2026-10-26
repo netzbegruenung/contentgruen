@@ -727,7 +727,7 @@ class TestSeedingKommentarDublette:
 
 @pytest.mark.unit
 class TestSeedingHintergrundinfoDublette:
-    """Seed-Hintergrundinfo, die es schon gibt: keine Referenzen, vorhandene ID zurueck."""
+    """Seed-Hintergrundinfo, die es schon gibt: keine Herkunft angelegt, vorhandene ID zurueck."""
 
     @staticmethod
     def _verarbeitung(test_settings, pruefung):
@@ -751,7 +751,7 @@ class TestSeedingHintergrundinfoDublette:
     }
 
     @pytest.mark.asyncio
-    async def test_dublette_legt_keine_referenzen_an(self, test_settings):
+    async def test_dublette_legt_keine_herkunft_an(self, test_settings):
         vorhanden = uuid.uuid4()
         orchestrator, verarbeitung = self._verarbeitung(
             test_settings,

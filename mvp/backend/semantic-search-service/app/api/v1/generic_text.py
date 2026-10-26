@@ -56,10 +56,10 @@ async def _herkunft_anlegen(
     request: AddGenericTextRequest, reference_service: ReferenceService, x_user: str
 ) -> List[GenericTextReference]:
     """
-    Die Herkunftsangaben der Anfrage als Verknuepfungen: vorhandene Referenzen
-    wiederverwenden, neue anlegen. Die Notiz gehoert an die Verknuepfung, nicht an
-    die Referenz - dieselbe Quelle kann in einem anderen Beitrag anders beschrieben
-    sein.
+    Die Herkunftsangaben der Anfrage als Verknuepfungen: eine schon gespeicherte
+    Herkunft wiederverwenden, sonst neu anlegen. Die Notiz gehoert an die
+    Verknuepfung, nicht an die Herkunft - dieselbe Herkunft kann in einem anderen
+    Beitrag anders beschrieben sein.
     """
     verknuepfungen = []
     for ref_input in request.references or []:
@@ -233,19 +233,14 @@ async def add_generic_text(
                 request.generictext.references = await _herkunft_anlegen(
                     request, reference_service, x_user
                 )
-                success, generic_text_id, _ = (
-                    await generic_text_service.add_generic_text(
-                        request.generictext,
-                        x_user,
-                        NEW_CONTENT_STATUS,
-                        ContentOrigin.MANUALLY_CREATED,
-                        dublettenpruefung=pruefung,
-                    )
+                # Ohne vorhandene in der Pruefung legt add_generic_text immer an.
+                _, generic_text_id, _ = await generic_text_service.add_generic_text(
+                    request.generictext,
+                    x_user,
+                    NEW_CONTENT_STATUS,
+                    ContentOrigin.MANUALLY_CREATED,
+                    dublettenpruefung=pruefung,
                 )
-                if not success:
-                    raise HTTPException(
-                        status_code=400, detail="Failed to add generic text"
-                    )
 
         # Nichts angelegt? Dann ist die Antwort die vorhandene Hintergrundinfo.
         # Verknuepft wird sie nur, wenn sie von derselben Person ist und sie sie mit
