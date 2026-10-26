@@ -41,7 +41,7 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
   },
 };
 
-export const NICHT_MARKIERT =
+export const EINWURF_NICHT_VERKNUEPFT =
   'Der Einwurf konnte nicht als ausformuliert markiert werden – er steht im Fangkorb weiter unter „Ausformulieren“.';
 
 /**
@@ -64,7 +64,7 @@ export const NICHT_MARKIERT =
 export class BeitragGespeichertComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
-  readonly nichtMarkiert = NICHT_MARKIERT;
+  readonly einwurfNichtVerknuepft = EINWURF_NICHT_VERKNUEPFT;
 
   typ: GespeichertTyp = 'commentary';
   herkunft: Herkunft = 'frei';
@@ -109,7 +109,7 @@ export class BeitragGespeichertComponent implements OnInit {
 
   /** Der Tab, in dem der Einwurf jetzt liegt. */
   private get fangkorbTab(): FangkorbTab {
-    return this.zustand.markiert === false ? 'ausformulieren' : 'ausformuliert';
+    return this.zustand.einwurfVerknuepft === false ? 'ausformulieren' : 'ausformuliert';
   }
 
   ngOnInit(): void {

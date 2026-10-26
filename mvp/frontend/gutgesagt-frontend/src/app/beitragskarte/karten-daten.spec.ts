@@ -1,6 +1,6 @@
 import { ausBeitrag, ausEinwurf, ausSuchergebnis } from './karten-daten';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { RawInput, RawInputDraft, RawInputLink } from '../services/raw-input.service';
+import { Einwurf, Satz, Verknuepfung } from '../services/einwurf.service';
 
 function inhalt(felder: Record<string, unknown> = {}): any {
   return {
@@ -29,7 +29,7 @@ function paket(feld: string, felder: Record<string, unknown> = {}, rest: Record<
   };
 }
 
-function einwurf(felder: Partial<RawInput> = {}): RawInput {
+function einwurf(felder: Partial<Einwurf> = {}): Einwurf {
   return {
     id: 'e-1',
     content: null,
@@ -45,11 +45,11 @@ function einwurf(felder: Partial<RawInput> = {}): RawInput {
   };
 }
 
-function satz(id: string, user_id: string, sentence: string): RawInputDraft {
+function satz(id: string, user_id: string, sentence: string): Satz {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:30:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): RawInputLink {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): Verknuepfung {
   return { content_id, content_type, draft_id, processed_by: 'carol', processed_at: '2026-09-13T13:00:00Z' };
 }
 
@@ -72,7 +72,7 @@ describe('karten-daten', () => {
       expect(daten.autorName).toBeNull();
       expect(daten.nutzung).toBe(3);
       expect(daten.quellen).toEqual([{ id: 'r-1', url: 'https://example.org', beschreibung: 'Studie' }]);
-      expect(daten.einwurf).toBeUndefined();
+      expect(daten.einwurfAngaben).toBeUndefined();
     });
 
     it('nimmt den Anzeigenamen vom Paket (Suche) oder vom Inhalt (Einzelabruf, /recent)', () => {
@@ -230,7 +230,7 @@ describe('karten-daten', () => {
       expect(karte.typ).toBeNull();
       expect(karte.titel).toBe('Gute Antwort in den Kommentaren');
       expect(karte.autor).toBe('alice');
-      expect(karte.einwurf).toEqual({
+      expect(karte.einwurfAngaben).toEqual({
         einwurfId: 'e-1',
         stufe: 'offen',
         herkunft: 'Instagram',
@@ -251,8 +251,8 @@ describe('karten-daten', () => {
       const karte = ausEinwurf(einwurf({ url: 'https://beispiel-zeitung.de/artikel/1' }));
 
       expect(karte.titel).toBeNull();
-      expect(karte.einwurf!.herkunft).toBe('beispiel-zeitung.de');
-      expect(karte.einwurf!.linkText).toBe('beispiel-zeitung.de/artikel/1');
+      expect(karte.einwurfAngaben!.herkunft).toBe('beispiel-zeitung.de');
+      expect(karte.einwurfAngaben!.linkText).toBe('beispiel-zeitung.de/artikel/1');
     });
 
     it('wiederholt den Link nicht als Titel', () => {
@@ -264,14 +264,14 @@ describe('karten-daten', () => {
         einwurf({ url: 'https://www.tagesschau.de/inland/heizung-101.html?utm_source=x#top' }),
       );
 
-      expect(karte.einwurf!.linkText).toBe('tagesschau.de/inland/heizung-101.html');
+      expect(karte.einwurfAngaben!.linkText).toBe('tagesschau.de/inland/heizung-101.html');
     });
 
     it('nimmt bei einem Bild-Einwurf die Bildadresse als Link', () => {
       const karte = ausEinwurf(einwurf({ url: null, image_url: 'https://bilder.example.org/1.jpg' }));
 
-      expect(karte.einwurf!.link).toBe('https://bilder.example.org/1.jpg');
-      expect(karte.einwurf!.linkText).toBe('bilder.example.org/1.jpg');
+      expect(karte.einwurfAngaben!.link).toBe('https://bilder.example.org/1.jpg');
+      expect(karte.einwurfAngaben!.linkText).toBe('bilder.example.org/1.jpg');
       expect(karte.titel).toBeNull();
     });
 
@@ -284,11 +284,11 @@ describe('karten-daten', () => {
         }),
       );
 
-      expect(karte.einwurf!.saetze).toEqual([
+      expect(karte.einwurfAngaben!.saetze).toEqual([
         { id: 's-1', text: 'Ohne Beitrag geblieben', beitraege: 0 },
         { id: 's-2', text: 'Zweimal genommen', beitraege: 2 },
       ]);
-      expect(karte.einwurf!.stufe).toBe('ausformuliert');
+      expect(karte.einwurfAngaben!.stufe).toBe('ausformuliert');
     });
 
     it('haelt jeden Beitrag fuer das Sheet bereit, auch ohne Satz und ohne Typ', () => {
@@ -300,7 +300,7 @@ describe('karten-daten', () => {
         }),
       );
 
-      expect(karte.einwurf!.beitraege).toEqual([
+      expect(karte.einwurfAngaben!.beitraege).toEqual([
         { contentId: 'c-1', typ: 'commentary', satz: 'Genommen' },
         { contentId: 'c-alt', typ: null, satz: null },
       ]);
@@ -333,23 +333,23 @@ describe('karten-daten', () => {
         einwurf({ status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] }),
       );
 
-      expect(karte.einwurf!.stufe).toBe('destilliert');
-      expect(karte.einwurf!.verwerfbar).toBeTrue();
+      expect(karte.einwurfAngaben!.stufe).toBe('destilliert');
+      expect(karte.einwurfAngaben!.verwerfbar).toBeTrue();
     });
 
     it('bleibt verworfen, auch wenn jemand anderes dazu einen Satz hat', () => {
       const karte = ausEinwurf(einwurf({ status: 'discarded', drafts: [satz('s-1', 'bob', 'Satz')] }));
 
-      expect(karte.einwurf!.stufe).toBe('verworfen');
-      expect(karte.einwurf!.verwerfbar).toBeFalse();
-      expect(karte.einwurf!.saetze.length).toBe(1);
+      expect(karte.einwurfAngaben!.stufe).toBe('verworfen');
+      expect(karte.einwurfAngaben!.verwerfbar).toBeFalse();
+      expect(karte.einwurfAngaben!.saetze.length).toBe(1);
     });
 
     it('laesst einen ausformulierten Einwurf nicht mehr verwerfen', () => {
       const karte = ausEinwurf(einwurf({ status: 'processed', links: [link(null, 'commentary')] }));
 
-      expect(karte.einwurf!.stufe).toBe('ausformuliert');
-      expect(karte.einwurf!.verwerfbar).toBeFalse();
+      expect(karte.einwurfAngaben!.stufe).toBe('ausformuliert');
+      expect(karte.einwurfAngaben!.verwerfbar).toBeFalse();
     });
   });
 });

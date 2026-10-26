@@ -155,8 +155,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
 
     if (this.rohinputId) {
       const rohinputId = this.rohinputId;
-      this.uebergabe.alsAusformuliertMarkieren(rohinputId, ergebnis.id, 'commentary').subscribe((markiert) =>
-        this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, markiert }),
+      this.uebergabe.mitBeitragVerknuepfen(rohinputId, ergebnis.id, 'commentary').subscribe((einwurfVerknuepft) =>
+        this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, einwurfVerknuepft }),
       );
       return;
     }
@@ -180,8 +180,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
       return;
     }
     const rohinputId = this.rohinputId;
-    this.uebergabe.alsAusformuliertMarkieren(rohinputId, kommentarId, 'commentary').subscribe((markiert) => {
-      if (!markiert) {
+    this.uebergabe.mitBeitragVerknuepfen(rohinputId, kommentarId, 'commentary').subscribe((einwurfVerknuepft) => {
+      if (!einwurfVerknuepft) {
         this.snackBar
           .open(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, { duration: 15000 })
           .onAction()

@@ -7,7 +7,7 @@ import { cacheService } from '../auth/cache.interceptor';
 import { LoggingService } from './logging.service';
 
 /** Spiegelt RawInputSource im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
-export type RawInputSource = 'web' | 'share';
+export type EinwurfKanal = 'web' | 'share';
 
 /**
  * Der Satz im Destillier-Ablauf wird der Titel des Beitrags und hat deshalb
@@ -19,19 +19,19 @@ export const SATZ_LIMIT = 120;
  * Ein Einwurf in den Fangkorb. Mindestens eines der drei Inhaltsfelder muss
  * gesetzt sein; alles Weitere ist schon Destillieren und passiert spaeter.
  */
-export interface AddRawInputRequest {
+export interface EinwerfenRequest {
   content?: string;
   url?: string;
   image_url?: string;
-  source_channel?: RawInputSource;
+  source_channel?: EinwurfKanal;
 }
 
-export interface AddRawInputResponse {
+export interface EinwerfenResponse {
   id: string;
 }
 
 /** in_progress heisst im UI "destilliert": mindestens ein Satz, noch kein Beitrag. */
-export type RawInputStatus = 'open' | 'in_progress' | 'processed' | 'discarded';
+export type EinwurfStatus = 'open' | 'in_progress' | 'processed' | 'discarded';
 
 /** Die beiden Ziele, die der Destillier-Ablauf setzen darf. */
 export type DestillierStatus = 'discarded' | 'processed';
@@ -40,7 +40,7 @@ export type DestillierStatus = 'discarded' | 'processed';
 export type BeitragsTyp = 'commentary' | 'generic_text';
 
 /** Ein Satz zu einem Einwurf. Fuer alle Angemeldeten sichtbar. */
-export interface RawInputDraft {
+export interface Satz {
   id: string;
   user_id: string;
   /** Anzeigename zu user_id ("Anna B."); null ohne gespeicherten Namen. */
@@ -49,8 +49,8 @@ export interface RawInputDraft {
   updated_at: string;
 }
 
-/** Ein Beitrag, der aus einem Einwurf entstanden ist. */
-export interface RawInputLink {
+/** Die Verknuepfung eines Einwurfs mit einem Beitrag. */
+export interface Verknuepfung {
   content_id: string;
   /** Null bei Verknuepfungen aus der Zeit vor Fangkorb v2. */
   content_type: string | null;
@@ -60,7 +60,7 @@ export interface RawInputLink {
   processed_at: string;
 }
 
-export interface RawInput {
+export interface Einwurf {
   id: string;
   content: string | null;
   url: string | null;
@@ -70,7 +70,7 @@ export interface RawInput {
   /** Anzeigename zu submitted_by; null ohne gespeicherten Namen. */
   submitted_by_name?: string | null;
   source_channel: string;
-  status: RawInputStatus;
+  status: EinwurfStatus;
   created_at: string;
   /** Wer als Erste/r einen Satz gespeichert hat. */
   destilled_by?: string | null;
@@ -81,18 +81,18 @@ export interface RawInput {
   processed_by?: string | null;
   processed_at?: string | null;
   /** Alle Saetze aller Personen, aelteste Aenderung zuerst. */
-  drafts?: RawInputDraft[];
+  drafts?: Satz[];
   /** Alle entstandenen Beitraege, aelteste zuerst. */
-  links?: RawInputLink[];
+  links?: Verknuepfung[];
 }
 
-export interface GetRawInputsResponse {
+export interface FangkorbResponse {
   results_count: number;
-  results: RawInput[];
+  results: Einwurf[];
   total_records_count: number;
 }
 
-export interface DraftResponse {
+export interface SatzResponse {
   raw_input_id: string;
   sentence: string | null;
   updated_at: string | null;
@@ -101,7 +101,7 @@ export interface DraftResponse {
 @Injectable({
   providedIn: 'root',
 })
-export class RawInputService {
+export class EinwurfService {
   private baseApiUrl = `${environment.baseUrl}/api/v1/rawinput`;
 
   /**
@@ -129,28 +129,28 @@ export class RawInputService {
     this.zurueckgestellt.clear();
   }
 
-  addRawInput(request: AddRawInputRequest): Observable<AddRawInputResponse> {
+  einwerfen(request: EinwerfenRequest): Observable<EinwerfenResponse> {
     this.logger.debug('Einwurf wird eingeworfen');
-    return this.http.post<AddRawInputResponse>(`${this.baseApiUrl}/addRawInput`, request);
+    return this.http.post<EinwerfenResponse>(`${this.baseApiUrl}/addRawInput`, request);
   }
 
   /** Der Fangkorb, eigene Einwuerfe zuerst (sortiert der Server). */
-  getRawInputs(page: number, pageSize: number): Observable<GetRawInputsResponse> {
+  fangkorbLaden(page: number, pageSize: number): Observable<FangkorbResponse> {
     const params = new HttpParams().set('page', page).set('page_size', pageSize);
-    return this.http.get<GetRawInputsResponse>(`${this.baseApiUrl}/getRawInputs`, {
+    return this.http.get<FangkorbResponse>(`${this.baseApiUrl}/getRawInputs`, {
       params,
     });
   }
 
   /** Ein Einwurf mit allen Saetzen und dem eigenen als own_draft. */
-  getRawInput(id: string): Observable<RawInput> {
-    return this.http.get<RawInput>(this.einwurfUrl(id));
+  einwurfLaden(id: string): Observable<Einwurf> {
+    return this.http.get<Einwurf>(this.einwurfUrl(id));
   }
 
   /** Den eigenen Satz speichern; ein leerer Satz loescht ihn. */
-  saveDraft(id: string, sentence: string): Observable<DraftResponse> {
+  satzSpeichern(id: string, sentence: string): Observable<SatzResponse> {
     return this.http
-      .put<DraftResponse>(`${this.einwurfUrl(id)}/draft`, { sentence })
+      .put<SatzResponse>(`${this.einwurfUrl(id)}/draft`, { sentence })
       .pipe(tap(() => this.cacheLeeren()));
   }
 
@@ -162,7 +162,7 @@ export class RawInputService {
    * HttpClient laeuft hier ohne Fetch-Backend und kann das nicht - daher direkt.
    * Fehler werden verschluckt: mehr als versuchen geht in diesem Moment nicht.
    */
-  saveDraftKeepalive(id: string, sentence: string): void {
+  satzSpeichernKeepalive(id: string, sentence: string): void {
     this.cacheLeeren();
     try {
       fetch(`${this.einwurfUrl(id)}/draft`, {
@@ -186,7 +186,7 @@ export class RawInputService {
     status: DestillierStatus,
     contentId?: string,
     contentType?: BeitragsTyp,
-  ): Observable<RawInput> {
+  ): Observable<Einwurf> {
     const body: Record<string, string> = { status };
     if (contentId) {
       body['content_id'] = contentId;
@@ -195,7 +195,7 @@ export class RawInputService {
       body['content_type'] = contentType;
     }
     return this.http
-      .patch<RawInput>(`${this.einwurfUrl(id)}/status`, body)
+      .patch<Einwurf>(`${this.einwurfUrl(id)}/status`, body)
       .pipe(tap(() => this.cacheLeeren()));
   }
 
@@ -210,8 +210,8 @@ export class RawInputService {
    * dieser Runde ohne Satz zurueckgestellt wurden (``zurueckstellen``). Die
    * Reihenfolge (eigene zuerst, dann neueste) kommt vom Server.
    */
-  naechsterOffenerEinwurf(ausser?: string | null): Observable<RawInput | null> {
-    return this.getRawInputs(1, 100).pipe(
+  naechsterOffenerEinwurf(ausser?: string | null): Observable<Einwurf | null> {
+    return this.fangkorbLaden(1, 100).pipe(
       map(
         (daten) =>
           daten.results.find(

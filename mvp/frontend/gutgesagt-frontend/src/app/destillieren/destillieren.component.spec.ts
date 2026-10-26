@@ -6,13 +6,13 @@ import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { AUTOSAVE_VERZOEGERUNG_MS, DestillierenComponent, TYPEN } from './destillieren.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { DestillierUebergabeService } from './destillier-uebergabe.service';
-import { DraftResponse, RawInput, RawInputService } from '../services/raw-input.service';
+import { SatzResponse, Einwurf, EinwurfService } from '../services/einwurf.service';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { FILTER_SCHLUESSEL, filterLaden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 
-function einwurf(overrides: Partial<RawInput> = {}): RawInput {
+function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
     id: 'id-1',
     content: 'Guter Thread',
@@ -30,7 +30,7 @@ function einwurf(overrides: Partial<RawInput> = {}): RawInput {
 describe('DestillierenComponent', () => {
   let fixture: ComponentFixture<DestillierenComponent>;
   let component: DestillierenComponent;
-  let rawInputService: jasmine.SpyObj<RawInputService>;
+  let einwurfService: jasmine.SpyObj<EinwurfService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
   let nutzer: UserInfo;
   let navigation: jasmine.SpyObj<NavigationService>;
@@ -39,7 +39,7 @@ describe('DestillierenComponent', () => {
   let params: BehaviorSubject<ParamMap>;
   let queryParams: ParamMap;
 
-  async function erstellen(id: string | null, geladen: RawInput = einwurf()) {
+  async function erstellen(id: string | null, geladen: Einwurf = einwurf()) {
     params = new BehaviorSubject(convertToParamMap(id ? { id } : {}));
     beitragAnsehen = jasmine.createSpyObj('BeitragAnsehenService', ['oeffnen', 'kannAnsehen']);
     beitragAnsehen.kannAnsehen.and.returnValue(true);
@@ -48,7 +48,7 @@ describe('DestillierenComponent', () => {
       'registerBeforeBack',
       'unregisterBeforeBack',
     ]);
-    rawInputService.getRawInput.and.returnValue(of(geladen));
+    einwurfService.einwurfLaden.and.returnValue(of(geladen));
 
     await TestBed.configureTestingModule({
       imports: [DestillierenComponent, NoopAnimationsModule],
@@ -63,7 +63,7 @@ describe('DestillierenComponent', () => {
             },
           },
         },
-        { provide: RawInputService, useValue: rawInputService },
+        { provide: EinwurfService, useValue: einwurfService },
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
         { provide: BeitragAnsehenService, useValue: beitragAnsehen },
@@ -104,19 +104,19 @@ describe('DestillierenComponent', () => {
     sessionStorage.removeItem(FILTER_SCHLUESSEL);
     nutzer = { isAuthenticated: true, userId: 'alice', userName: null, claims: null };
     queryParams = convertToParamMap({});
-    rawInputService = jasmine.createSpyObj('RawInputService', [
-      'getRawInput',
-      'saveDraft',
-      'saveDraftKeepalive',
+    einwurfService = jasmine.createSpyObj('EinwurfService', [
+      'einwurfLaden',
+      'satzSpeichern',
+      'satzSpeichernKeepalive',
       'updateStatus',
       'naechsterOffenerEinwurf',
       'zurueckstellen',
       'rundeBeginnen',
     ]);
-    rawInputService.saveDraft.and.callFake((id: string, sentence: string) =>
+    einwurfService.satzSpeichern.and.callFake((id: string, sentence: string) =>
       of({ raw_input_id: id, sentence, updated_at: null }),
     );
-    rawInputService.updateStatus.and.returnValue(of(einwurf({ status: 'discarded' })));
+    einwurfService.updateStatus.and.returnValue(of(einwurf({ status: 'discarded' })));
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
   });
 
@@ -126,7 +126,7 @@ describe('DestillierenComponent', () => {
     it('laedt den Einwurf und uebernimmt den eigenen Satz', async () => {
       await erstellen('id-1', einwurf({ own_draft: 'Mein Satz' }));
 
-      expect(rawInputService.getRawInput).toHaveBeenCalledWith('id-1');
+      expect(einwurfService.einwurfLaden).toHaveBeenCalledWith('id-1');
       expect(component.satz.value).toBe('Mein Satz');
       expect(text()).toContain('Was ist der Punkt? Ein Satz.');
       expect(text()).toContain('9 / 120');
@@ -161,10 +161,10 @@ describe('DestillierenComponent', () => {
 
       component.satz.setValue('Erster Satz');
       tick(AUTOSAVE_VERZOEGERUNG_MS - 1);
-      expect(rawInputService.saveDraft).not.toHaveBeenCalled();
+      expect(einwurfService.satzSpeichern).not.toHaveBeenCalled();
 
       tick(1);
-      expect(rawInputService.saveDraft).toHaveBeenCalledOnceWith('id-1', 'Erster Satz');
+      expect(einwurfService.satzSpeichern).toHaveBeenCalledOnceWith('id-1', 'Erster Satz');
       fixture.destroy();
     }));
 
@@ -175,7 +175,7 @@ describe('DestillierenComponent', () => {
       component.onBlur();
       component.onBlur();
 
-      expect(rawInputService.saveDraft).toHaveBeenCalledOnceWith('id-1', 'Mein Satz');
+      expect(einwurfService.satzSpeichern).toHaveBeenCalledOnceWith('id-1', 'Mein Satz');
     });
 
     it('sichert beim Wegwechseln der App per keepalive', async () => {
@@ -185,7 +185,7 @@ describe('DestillierenComponent', () => {
 
       document.dispatchEvent(new Event('visibilitychange'));
 
-      expect(rawInputService.saveDraftKeepalive).toHaveBeenCalledOnceWith('id-1', 'Mein Satz');
+      expect(einwurfService.satzSpeichernKeepalive).toHaveBeenCalledOnceWith('id-1', 'Mein Satz');
     });
 
     it('sichert beim Wegwechseln nichts, was schon gespeichert ist', async () => {
@@ -194,7 +194,7 @@ describe('DestillierenComponent', () => {
 
       document.dispatchEvent(new Event('visibilitychange'));
 
-      expect(rawInputService.saveDraftKeepalive).not.toHaveBeenCalled();
+      expect(einwurfService.satzSpeichernKeepalive).not.toHaveBeenCalled();
     });
   });
 
@@ -212,7 +212,7 @@ describe('DestillierenComponent', () => {
 
       knopf('verwerfen')!.click();
 
-      expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
+      expect(einwurfService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformuliert');
     });
 
@@ -238,7 +238,7 @@ describe('DestillierenComponent', () => {
 
       knopf('verwerfen')!.click();
 
-      expect(rawInputService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
+      expect(einwurfService.updateStatus).toHaveBeenCalledWith('id-1', 'discarded');
       // Verworfenes liegt unter "Ausformuliert" - und der Chip dafuer wird eingeschaltet,
       // sonst waere der Einwurf nach dem Verwerfen scheinbar spurlos weg.
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformuliert');
@@ -247,7 +247,7 @@ describe('DestillierenComponent', () => {
 
     it('nennt bei einer Ablehnung, wer verwerfen darf', async () => {
       await erstellen('id-1');
-      rawInputService.updateStatus.and.returnValue(throwError(() => ({ status: 403 })));
+      einwurfService.updateStatus.and.returnValue(throwError(() => ({ status: 403 })));
 
       knopf('verwerfen')!.click();
 
@@ -262,10 +262,10 @@ describe('DestillierenComponent', () => {
 
       knopf('spaeter')!.click();
 
-      expect(rawInputService.saveDraft).toHaveBeenCalledWith('id-1', 'Noch nicht ganz');
+      expect(einwurfService.satzSpeichern).toHaveBeenCalledWith('id-1', 'Noch nicht ganz');
       // Zurueckgestellt heisst: Satz steht, Beitrag fehlt - Tab "Ausformulieren".
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'ausformulieren');
-      expect(rawInputService.zurueckstellen).toHaveBeenCalledWith('id-1');
+      expect(einwurfService.zurueckstellen).toHaveBeenCalledWith('id-1');
     });
 
     it('stellt bei Spaeter ohne Satz zurueck und nennt den Tab "Destillieren"', async () => {
@@ -273,8 +273,8 @@ describe('DestillierenComponent', () => {
 
       knopf('spaeter')!.click();
 
-      expect(rawInputService.saveDraft).not.toHaveBeenCalled();
-      expect(rawInputService.zurueckstellen).toHaveBeenCalledWith('id-1');
+      expect(einwurfService.satzSpeichern).not.toHaveBeenCalled();
+      expect(einwurfService.zurueckstellen).toHaveBeenCalledWith('id-1');
       expect(uebergabe.zumNaechsten).toHaveBeenCalledWith('id-1', 'destillieren');
     });
 
@@ -294,12 +294,12 @@ describe('DestillierenComponent', () => {
 
     it('stellt bei gescheitertem Speichern nichts zurueck', async () => {
       await erstellen('id-1');
-      rawInputService.saveDraft.and.returnValue(throwError(() => ({ status: 500 })));
+      einwurfService.satzSpeichern.and.returnValue(throwError(() => ({ status: 500 })));
       component.satz.setValue('Noch nicht ganz', { emitEvent: false });
 
       knopf('spaeter')!.click();
 
-      expect(rawInputService.zurueckstellen).not.toHaveBeenCalled();
+      expect(einwurfService.zurueckstellen).not.toHaveBeenCalled();
       expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
     });
 
@@ -311,7 +311,7 @@ describe('DestillierenComponent', () => {
       knopf('weiter')!.click();
       fixture.detectChanges();
 
-      expect(rawInputService.saveDraft).toHaveBeenCalledWith(
+      expect(einwurfService.satzSpeichern).toHaveBeenCalledWith(
         'id-1',
         'Waermepumpe lohnt sich auch im Altbau',
       );
@@ -342,39 +342,39 @@ describe('DestillierenComponent', () => {
   describe('Warteschlange', () => {
     it('oeffnet ohne ID den naechsten offenen Einwurf', async () => {
       queryParams = convertToParamMap({ nach: 'id-vorher' });
-      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(einwurf({ id: 'id-9' })));
+      einwurfService.naechsterOffenerEinwurf.and.returnValue(of(einwurf({ id: 'id-9' })));
 
       await erstellen(null);
 
-      expect(rawInputService.naechsterOffenerEinwurf).toHaveBeenCalledWith('id-vorher');
+      expect(einwurfService.naechsterOffenerEinwurf).toHaveBeenCalledWith('id-vorher');
       expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'id-9'], {
         replaceUrl: true,
       });
       // Mitten im Ablauf bleibt Zurueckgestelltes zurueckgestellt.
-      expect(rawInputService.rundeBeginnen).not.toHaveBeenCalled();
+      expect(einwurfService.rundeBeginnen).not.toHaveBeenCalled();
     });
 
     it('beginnt ohne "nach" eine neue Runde, bevor es sucht', async () => {
-      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(einwurf({ id: 'id-9' })));
+      einwurfService.naechsterOffenerEinwurf.and.returnValue(of(einwurf({ id: 'id-9' })));
 
       await erstellen(null);
 
-      expect(rawInputService.rundeBeginnen).toHaveBeenCalledBefore(rawInputService.naechsterOffenerEinwurf);
+      expect(einwurfService.rundeBeginnen).toHaveBeenCalledBefore(einwurfService.naechsterOffenerEinwurf);
     });
 
     it('beginnt am Ende des Ablaufs eine neue Runde', async () => {
       queryParams = convertToParamMap({ nach: 'id-vorher', tab: 'destillieren' });
-      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
+      einwurfService.naechsterOffenerEinwurf.and.returnValue(of(null));
 
       await erstellen(null);
 
-      expect(rawInputService.rundeBeginnen).toHaveBeenCalled();
+      expect(einwurfService.rundeBeginnen).toHaveBeenCalled();
       expect(filterLaden().tab).toBe('destillieren');
       expect(router.navigate).toHaveBeenCalledWith(['/fangkorb'], { replaceUrl: true });
     });
 
     it('sagt "Alles destilliert", wenn nichts mehr offen ist', async () => {
-      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
+      einwurfService.naechsterOffenerEinwurf.and.returnValue(of(null));
 
       await erstellen(null);
       fixture.detectChanges();
@@ -386,7 +386,7 @@ describe('DestillierenComponent', () => {
 
     it('springt aus dem Ablauf in den Tab der Handlung, ohne Halt in der History', async () => {
       queryParams = convertToParamMap({ nach: 'id-vorher', tab: 'ausformulieren' });
-      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
+      einwurfService.naechsterOffenerEinwurf.and.returnValue(of(null));
 
       await erstellen(null);
 
@@ -398,7 +398,7 @@ describe('DestillierenComponent', () => {
 
     it('nimmt ohne Tab-Angabe den Tab "ausformuliert"', async () => {
       queryParams = convertToParamMap({ nach: 'id-vorher' });
-      rawInputService.naechsterOffenerEinwurf.and.returnValue(of(null));
+      einwurfService.naechsterOffenerEinwurf.and.returnValue(of(null));
 
       await erstellen(null);
 
@@ -428,7 +428,7 @@ describe('DestillierenComponent', () => {
 
       expect(router.navigate).not.toHaveBeenCalledWith(['/fangkorb'], jasmine.anything());
       expect(component.schritt).toBe('typwahl');
-      const hinweis: HTMLElement = fixture.nativeElement.querySelector('.schon-entstanden');
+      const hinweis: HTMLElement = fixture.nativeElement.querySelector('.schon-verknuepft');
       expect(hinweis.textContent).toContain('Aus diesem Einwurf ist schon ein Beitrag entstanden');
       expect(fixture.nativeElement.querySelector('.typen')).toBeTruthy();
 
@@ -436,12 +436,12 @@ describe('DestillierenComponent', () => {
       expect(beitragAnsehen.oeffnen).toHaveBeenCalledOnceWith('k-1', 'commentary');
     });
 
-    it('zeigt ohne entstandenen Beitrag keinen Hinweis', async () => {
+    it('zeigt ohne verknuepften Beitrag keinen Hinweis', async () => {
       queryParams = convertToParamMap({ schritt: 'typwahl' });
 
       await erstellen('id-1', einwurf({ own_draft: 'Waermepumpe lohnt sich' }));
 
-      expect(fixture.nativeElement.querySelector('.schon-entstanden')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.schon-verknuepft')).toBeNull();
     });
 
     it('laesst einen ausformulierten Einwurf ohne ?schritt beim Satz (Weiter destillieren)', async () => {
@@ -551,14 +551,14 @@ describe('DestillierenComponent', () => {
 
     it('ist erst fertig, wenn der Satz gespeichert ist', async () => {
       await erstellen('id-1');
-      const antwort = new Subject<DraftResponse>();
-      rawInputService.saveDraft.and.returnValue(antwort);
+      const antwort = new Subject<SatzResponse>();
+      einwurfService.satzSpeichern.and.returnValue(antwort);
       component.satz.setValue('Frisch getippt', { emitEvent: false });
 
       let fertig = false;
       const lauf = hookAusfuehren().then(() => (fertig = true));
 
-      expect(rawInputService.saveDraft).toHaveBeenCalledOnceWith('id-1', 'Frisch getippt');
+      expect(einwurfService.satzSpeichern).toHaveBeenCalledOnceWith('id-1', 'Frisch getippt');
       await Promise.resolve();
       expect(fertig).toBeFalse();
 
@@ -578,14 +578,14 @@ describe('DestillierenComponent', () => {
 
       // Nicht speicherbar heisst: nicht verlassen. Frueher lief das still als
       // "nichts zu tun" durch, und der Satz war nach dem Pfeil weg.
-      expect(rawInputService.saveDraft).not.toHaveBeenCalled();
+      expect(einwurfService.satzSpeichern).not.toHaveBeenCalled();
       expect(text()).toContain('Der Satz ist zu lang');
       expect(navigation.goBack).not.toHaveBeenCalled();
     });
 
     it('scheitert und bleibt stehen, wenn das Speichern nicht klappt', async () => {
       await erstellen('id-1');
-      rawInputService.saveDraft.and.returnValue(throwError(() => new Error('offline')));
+      einwurfService.satzSpeichern.and.returnValue(throwError(() => new Error('offline')));
       component.satz.setValue('Frisch getippt', { emitEvent: false });
 
       await expectAsync(hookAusfuehren()).toBeRejected();

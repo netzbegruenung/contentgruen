@@ -13,7 +13,7 @@ import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
-import { RawInput } from '../services/raw-input.service';
+import { Einwurf } from '../services/einwurf.service';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -573,7 +573,7 @@ describe('BeitragskarteComponent', () => {
         autorName: null,
         nutzung: null,
         quellen: [],
-        einwurf: {
+        einwurfAngaben: {
           einwurfId: 'e-1',
           stufe: 'destilliert',
           herkunft: 'Instagram',
@@ -614,7 +614,7 @@ describe('BeitragskarteComponent', () => {
   });
 
   describe('Verwerfen', () => {
-    function einwurf(felder: Partial<RawInput> = {}): KartenDaten {
+    function einwurf(felder: Partial<Einwurf> = {}): KartenDaten {
       return ausEinwurf({
         id: 'e-1',
         content: 'Hinweis',

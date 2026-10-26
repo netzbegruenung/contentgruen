@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { RawInputService, AddRawInputRequest } from '../services/raw-input.service';
+import { EinwurfService, EinwerfenRequest } from '../services/einwurf.service';
 import {
   GeteilterEinwurf,
   SHARE_EINWURF_SCHLUESSEL,
@@ -83,7 +83,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private rawInputService: RawInputService,
+    private einwurfService: EinwurfService,
     private logger: LoggingService,
     private navigationService: NavigationService,
     private router: Router,
@@ -177,7 +177,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
     // Tracking-Parameter fliegen hier raus und nicht erst im Share-Pfad: dieselbe
     // Adresse von Hand eingefuegt haette sonst dasselbe Problem -- pro Einwurf ein
     // anderer Link, und ein fremdes Token in der Datenbank.
-    const anfrage: AddRawInputRequest = {};
+    const anfrage: EinwerfenRequest = {};
     if (this.link) {
       anfrage.url = trackingParameterEntfernen(this.link);
     }
@@ -191,7 +191,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
     this.wirdGespeichert = true;
     this.fehler = null;
 
-    this.rawInputService.addRawInput(anfrage).subscribe({
+    this.einwurfService.einwerfen(anfrage).subscribe({
       next: () => {
         this.wirdGespeichert = false;
         this.eingeworfen += 1;

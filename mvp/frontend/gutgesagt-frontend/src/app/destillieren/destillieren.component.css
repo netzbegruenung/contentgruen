@@ -131,7 +131,7 @@
 }
 
 /* Typwahl eines Einwurfs, aus dem schon ein Beitrag entstanden ist */
-.schon-entstanden {
+.schon-verknuepft {
   margin: 0 0 12px;
   padding: 10px 14px;
   border-left: 4px solid var(--primary-main);

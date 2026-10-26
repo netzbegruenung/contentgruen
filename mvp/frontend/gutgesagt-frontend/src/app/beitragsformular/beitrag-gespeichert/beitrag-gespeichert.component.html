@@ -7,8 +7,8 @@
     <p *ngIf="zustand.verknuepft === false" class="gespeichert-warnung verknuepfung-fehlgeschlagen" role="alert">
         {{ verknuepfungFehlgeschlagen }}
     </p>
-    <p *ngIf="zustand.markiert === false" class="gespeichert-warnung markieren-fehlgeschlagen" role="alert">
-        {{ nichtMarkiert }}
+    <p *ngIf="zustand.einwurfVerknuepft === false" class="gespeichert-warnung verknuepfen-fehlgeschlagen" role="alert">
+        {{ einwurfNichtVerknuepft }}
     </p>
 
     <div *ngIf="aussageKopf as aussage" class="gespeichert-aussage">

@@ -27,7 +27,7 @@ import {
   KartenDaten,
   KartenVariante,
   EinwurfAktion,
-  EinwurfDaten,
+  EinwurfAngaben,
   EinwurfSatz,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
@@ -220,14 +220,14 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /** Die Einwurf-Daten: in der Variante einwurf und im Kopf, wenn er aus einem Einwurf kommt. */
-  get einwurf(): EinwurfDaten | null {
-    return this.variante === 'einwurf' || this.variante === 'kopf' ? (this.daten.einwurf ?? null) : null;
+  get einwurfAngaben(): EinwurfAngaben | null {
+    return this.variante === 'einwurf' || this.variante === 'kopf' ? (this.daten.einwurfAngaben ?? null) : null;
   }
 
   get kartenKlassen(): string[] {
     const klassen = [`karte--${this.variante}`, `typ-${this.daten.typ ?? 'ohne'}`];
-    if (this.einwurf) {
-      klassen.push(`stufe-${this.einwurf.stufe}`);
+    if (this.einwurfAngaben) {
+      klassen.push(`stufe-${this.einwurfAngaben.stufe}`);
     }
     return klassen;
   }
@@ -250,7 +250,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * auf keine Stufe der Kette weiter und traegt deshalb ein Material-Icon.
    */
   get primaerAktion(): { aktion: EinwurfAktion; wort: string; emoji?: string; icon?: string } | null {
-    switch (this.einwurf?.stufe) {
+    switch (this.einwurfAngaben?.stufe) {
       case 'offen':
         return { aktion: 'destillieren', wort: 'Destillieren', emoji: KETTEN_ICONS.destillieren };
       case 'destilliert':
@@ -268,23 +268,23 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * unfertigen Stufen tragen das Icon der Kette.
    */
   get stufenEmoji(): string {
-    if (!this.einwurf) {
+    if (!this.einwurfAngaben) {
       return '';
     }
-    if (this.einwurf.stufe === 'ausformuliert' && this.daten.typ) {
+    if (this.einwurfAngaben.stufe === 'ausformuliert' && this.daten.typ) {
       return CONTENT_TYPE_REGISTRY[this.daten.typ]?.emoji || STUFEN.ausformuliert.emoji;
     }
-    return STUFEN[this.einwurf.stufe].emoji;
+    return STUFEN[this.einwurfAngaben.stufe].emoji;
   }
 
   get stufenName(): string {
-    if (!this.einwurf) {
+    if (!this.einwurfAngaben) {
       return '';
     }
-    if (this.einwurf.stufe === 'ausformuliert' && this.daten.typ) {
+    if (this.einwurfAngaben.stufe === 'ausformuliert' && this.daten.typ) {
       return `${STUFEN.ausformuliert.name}: ${typLabel(this.daten.typ)}`;
     }
-    return STUFEN[this.einwurf.stufe].name;
+    return STUFEN[this.einwurfAngaben.stufe].name;
   }
 
   /** Den Einwerfer nennt die Karte immer; beim eigenen Einwurf als "Du" (autorAnzeige). */
@@ -293,11 +293,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   get sichtbareSaetze(): EinwurfSatz[] {
-    return (this.einwurf?.saetze ?? []).slice(0, SAETZE_SICHTBAR);
+    return (this.einwurfAngaben?.saetze ?? []).slice(0, SAETZE_SICHTBAR);
   }
 
   get weitereSaetze(): number {
-    return Math.max((this.einwurf?.saetze.length ?? 0) - SAETZE_SICHTBAR, 0);
+    return Math.max((this.einwurfAngaben?.saetze.length ?? 0) - SAETZE_SICHTBAR, 0);
   }
 
   /** Rechts am Satz: ein Haken je Beitrag daraus, sonst nichts. */
@@ -321,7 +321,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * Einwerfer mehr kuemmert (toter Link, inaktive Person, kein Einwerfer).
    */
   get darfVerwerfen(): boolean {
-    return !!this.einwurf?.verwerfbar && (this.istEigen || this.istAdmin);
+    return !!this.einwurfAngaben?.verwerfbar && (this.istEigen || this.istAdmin);
   }
 
   /**
@@ -332,18 +332,18 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * kein Fehler.
    */
   get menueEintraege(): { aktion: EinwurfAktion; wort: string; icon: string }[] {
-    const einwurf = this.einwurf;
-    if (!einwurf) {
+    const angaben = this.einwurfAngaben;
+    if (!angaben) {
       return [];
     }
     const eintraege: { aktion: EinwurfAktion; wort: string; icon: string }[] = [];
-    if (einwurf.link) {
+    if (angaben.link) {
       eintraege.push({ aktion: 'linkKopieren', wort: 'Link kopieren', icon: 'link' });
     }
-    if (einwurf.stufe === 'ausformuliert') {
+    if (angaben.stufe === 'ausformuliert') {
       eintraege.push({ aktion: 'weiterDestillieren', wort: 'Weiter destillieren', icon: 'science' });
     }
-    if (einwurf.stufe === 'verworfen') {
+    if (angaben.stufe === 'verworfen') {
       eintraege.push({ aktion: 'weiterDestillieren', wort: 'Trotzdem destillieren', icon: 'science' });
     }
     if (this.darfVerwerfen) {

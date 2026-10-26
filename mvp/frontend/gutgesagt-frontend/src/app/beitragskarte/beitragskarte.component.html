@@ -4,7 +4,7 @@
          [attr.aria-label]="antippbar ? beschriftung : null"
          (click)="antippen()" (keyup.enter)="antippen()">
 
-    <header class="karte-kopf" *ngIf="!einwurf" [class.karte-kopf--bild]="kopfBild">
+    <header class="karte-kopf" *ngIf="!einwurfAngaben" [class.karte-kopf--bild]="kopfBild">
         <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf -->
         <img *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || ''" loading="lazy">
         <span class="karte-icon" role="img"
@@ -27,7 +27,7 @@
     </header>
 
     <!-- Einwurf-Karte: dieselbe Anatomie wie die volle Karte - Band, Koerper, Aktion, Meta -->
-    <ng-container *ngIf="einwurf as einwurf">
+    <ng-container *ngIf="einwurfAngaben as angaben">
         <header class="karte-kopf einwurf-band" [class.einwurf-band--ohne-hinweis]="!daten.titel">
             <span class="karte-icon" role="img" [attr.aria-label]="stufenName"
                   [matTooltip]="stufenName" matTooltipPosition="below">{{ stufenEmoji }}</span>
@@ -35,7 +35,7 @@
             <h3 class="karte-titel einwurf-titel" *ngIf="daten.titel">{{ daten.titel }}</h3>
             <span class="einwurf-titel-platz" *ngIf="!daten.titel" aria-hidden="true"></span>
 
-            <span class="einwurf-verworfen" *ngIf="einwurf.stufe === 'verworfen'">verworfen</span>
+            <span class="einwurf-verworfen" *ngIf="angaben.stufe === 'verworfen'">verworfen</span>
         </header>
 
         <!--
@@ -43,19 +43,19 @@
             oben die Plattform, darunter die Adresse. Ohne Hinweis ist er die
             Aufschrift der Karte - dann steht die Plattform in Titelgroesse.
         -->
-        <a *ngIf="einwurf.link" class="einwurf-linkzeile" [href]="einwurf.link"
+        <a *ngIf="angaben.link" class="einwurf-linkzeile" [href]="angaben.link"
            [class.einwurf-linkzeile--titel]="!daten.titel"
            target="_blank" rel="noopener noreferrer"
-           [attr.aria-label]="'Original öffnen: ' + (einwurf.linkText || einwurf.link)">
+           [attr.aria-label]="'Original öffnen: ' + (angaben.linkText || angaben.link)">
             <span class="einwurf-linktexte">
-                <span class="einwurf-herkunft" *ngIf="einwurf.herkunft">{{ einwurf.herkunft }}</span>
-                <span class="einwurf-adresse">{{ einwurf.linkText }}</span>
+                <span class="einwurf-herkunft" *ngIf="angaben.herkunft">{{ angaben.herkunft }}</span>
+                <span class="einwurf-adresse">{{ angaben.linkText }}</span>
             </span>
             <mat-icon class="link-icon" aria-hidden="true">open_in_new</mat-icon>
         </a>
 
         <!-- Im Kopf nur der eine Satz, aus dem der Beitrag entsteht -->
-        <p class="einwurf-kopfsatz" *ngIf="istKopf && einwurf.kopfSatz">„{{ einwurf.kopfSatz }}“</p>
+        <p class="einwurf-kopfsatz" *ngIf="istKopf && angaben.kopfSatz">„{{ angaben.kopfSatz }}“</p>
 
         <!-- Koerper weiss: die Saetze am gruenen Balken, je Satz rechts der Stand -->
         <div class="einwurf-koerper" *ngIf="!istKopf && sichtbareSaetze.length">

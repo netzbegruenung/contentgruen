@@ -178,7 +178,7 @@ class RawInputRepository:
                     )
 
                 rows = query.order_by(*reihenfolge).limit(limit).offset(offset).all()
-                return self._mit_bearbeitungsstand(session, rows, current_user)
+                return self._mit_saetzen_und_verknuepfungen(session, rows, current_user)
         except Exception as e:
             logger.error(f"Fehler beim Lesen der Rohinputs: {e}", exc_info=True)
             raise
@@ -196,7 +196,9 @@ class RawInputRepository:
                 )
                 if row is None:
                     return None
-                return self._mit_bearbeitungsstand(session, [row], current_user)[0]
+                return self._mit_saetzen_und_verknuepfungen(
+                    session, [row], current_user
+                )[0]
         except Exception as e:
             logger.error(f"Fehler beim Lesen eines Rohinputs: {e}", exc_info=True)
             raise
@@ -344,7 +346,7 @@ class RawInputRepository:
                 logger.info(
                     f"Rohinput {raw_input_id}: {aktuell.value} -> {neuer_status.value}"
                 )
-                return self._mit_bearbeitungsstand(session, [row], user_id)[0]
+                return self._mit_saetzen_und_verknuepfungen(session, [row], user_id)[0]
         except (EinwurfNichtGefunden, AktionNichtErlaubt, UebergangNichtErlaubt):
             raise
         except Exception as e:
@@ -483,7 +485,7 @@ class RawInputRepository:
             .scalar()
         )
 
-    def _mit_bearbeitungsstand(
+    def _mit_saetzen_und_verknuepfungen(
         self, session, rows: Sequence[RawInput], current_user: Optional[str]
     ) -> List[Dict[str, Any]]:
         """Alle Saetze und Verknuepfungen an die Zeilen haengen."""

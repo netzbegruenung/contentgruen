@@ -31,7 +31,7 @@ export interface GespeichertZustand {
   /** false: Aussage angegeben, aber nicht verknuepft. */
   verknuepft?: boolean;
   /** Nur Fangkorb: false, wenn der Einwurf nicht als ausformuliert markiert wurde. */
-  markiert?: boolean;
+  einwurfVerknuepft?: boolean;
 }
 
 export function herkunftAus(params: { get(name: string): string | null }): Herkunft {

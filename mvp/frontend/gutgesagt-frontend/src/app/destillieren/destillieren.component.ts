@@ -7,11 +7,11 @@ import { debounceTime, map, takeUntil, tap } from 'rxjs/operators';
 
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import {
-  RawInput,
-  RawInputDraft,
-  RawInputService,
+  Einwurf,
+  Satz,
+  EinwurfService,
   SATZ_LIMIT,
-} from '../services/raw-input.service';
+} from '../services/einwurf.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { typBeschreibung, typLabel } from '../shared/content-type-registry';
@@ -68,7 +68,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     nonNullable: true,
     validators: [Validators.maxLength(SATZ_LIMIT)],
   });
-  einwurf: RawInput | null = null;
+  einwurf: Einwurf | null = null;
   schritt: 'satz' | 'typwahl' = 'satz';
   typ: Beitragstyp = 'commentary';
   laedt = true;
@@ -83,7 +83,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private rawInputService: RawInputService,
+    private einwurfService: EinwurfService,
     private authService: AuthService,
     private uebergabe: DestillierUebergabeService,
     private navigation: NavigationService,
@@ -171,15 +171,15 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       this.kopfCache = {
         einwurf,
         satz,
-        karte: karte.einwurf
+        karte: karte.einwurfAngaben
           ? {
               ...karte,
-              einwurf: {
-                ...karte.einwurf,
+              einwurfAngaben: {
+                ...karte.einwurfAngaben,
                 kopfSatz: satz || undefined,
                 // Der Einwurf ist vor dem Speichern des Satzes geladen; mit Satz ist er
                 // schon destilliert, auch wenn seine drafts das noch nicht zeigen.
-                stufe: satz && karte.einwurf.stufe === 'offen' ? 'destilliert' : karte.einwurf.stufe,
+                stufe: satz && karte.einwurfAngaben.stufe === 'offen' ? 'destilliert' : karte.einwurfAngaben.stufe,
               },
             }
           : karte,
@@ -188,24 +188,24 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     return this.kopfCache.karte;
   }
 
-  private kopfCache?: { einwurf: RawInput; satz: string; karte: KartenDaten };
+  private kopfCache?: { einwurf: Einwurf; satz: string; karte: KartenDaten };
 
   /**
    * Ein schon entstandener Beitrag aus diesem Einwurf (der erste), fuer den Hinweis
    * in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur sehen, dass
    * es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
    */
-  get entstandenerBeitrag(): { contentId: string; contentType: string | null } | null {
+  get verknuepfterBeitrag(): { contentId: string; contentType: string | null } | null {
     const link = this.einwurf?.links?.[0];
     return link ? { contentId: link.content_id, contentType: link.content_type } : null;
   }
 
-  get entstandenerBeitragAnsehbar(): boolean {
-    return this.beitragAnsehenDienst.kannAnsehen(this.entstandenerBeitrag?.contentType);
+  get verknuepfterBeitragAnsehbar(): boolean {
+    return this.beitragAnsehenDienst.kannAnsehen(this.verknuepfterBeitrag?.contentType);
   }
 
   beitragAnsehen(): void {
-    const beitrag = this.entstandenerBeitrag;
+    const beitrag = this.verknuepfterBeitrag;
     if (beitrag) {
       this.beitragAnsehenDienst.oeffnen(beitrag.contentId, beitrag.contentType);
     }
@@ -215,7 +215,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
    * Die Saetze anderer Personen zu diesem Einwurf. Solange die eigene Kennung
    * nicht bekannt ist, lieber keine als den eigenen Satz doppelt.
    */
-  get fremdeSaetze(): RawInputDraft[] {
+  get fremdeSaetze(): Satz[] {
     if (!this.eigeneKennung) {
       return [];
     }
@@ -270,7 +270,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       next: () => {
         // Nicht gleich wieder anbieten - sonst springt "Spaeter" ohne Satz
         // zwischen zwei offenen Einwuerfen endlos hin und her.
-        this.rawInputService.zurueckstellen(einwurf.id);
+        this.einwurfService.zurueckstellen(einwurf.id);
         // Ist keiner mehr offen, geht es in den Tab, in dem der Einwurf jetzt
         // liegt: mit einem Satz (eigenem oder fremdem) unter "Ausformulieren",
         // ohne unter "Destillieren".
@@ -288,7 +288,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     }
     this.arbeitet = true;
     this.fehler = null;
-    this.rawInputService.updateStatus(einwurf.id, 'discarded').subscribe({
+    this.einwurfService.updateStatus(einwurf.id, 'discarded').subscribe({
       next: () => {
         // Verworfenes liegt unter "Ausformuliert" hinter einem Chip, der normalerweise
         // aus ist - fuer diese Sitzung wird er eingeschaltet, sonst ist der
@@ -361,7 +361,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
 
     const gewuenschterSchritt = this.route.snapshot?.queryParamMap?.get(SCHRITT_PARAM) ?? null;
 
-    this.rawInputService.getRawInput(id).subscribe({
+    this.einwurfService.einwurfLaden(id).subscribe({
       next: (einwurf) => {
         this.einwurf = einwurf;
         this.zuletztGespeichert = einwurf.own_draft ?? '';
@@ -390,9 +390,9 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     const tab = tabAus(this.route.snapshot?.queryParamMap?.get(TAB_PARAM));
     // Ohne "nach" beginnt eine neue Runde: Zurueckgestelltes kommt wieder dran.
     if (!nach) {
-      this.rawInputService.rundeBeginnen();
+      this.einwurfService.rundeBeginnen();
     }
-    this.rawInputService.naechsterOffenerEinwurf(nach).subscribe({
+    this.einwurfService.naechsterOffenerEinwurf(nach).subscribe({
       next: (naechster) => {
         if (naechster) {
           this.router.navigate(['/destillieren', naechster.id], { replaceUrl: true });
@@ -408,7 +408,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // der History stehen, und das System-Zurueck liefe von hier aus wieder in
         // dieselbe Weiterleitung.
         if (nach) {
-          this.rawInputService.rundeBeginnen();
+          this.einwurfService.rundeBeginnen();
           tabMerken(tab ?? 'ausformuliert');
           this.router.navigate(['/fangkorb'], { replaceUrl: true });
           return;
@@ -435,7 +435,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     if (!this.einwurf || satz === this.zuletztGespeichert) {
       return of(undefined);
     }
-    return this.rawInputService.saveDraft(this.einwurf.id, satz).pipe(
+    return this.einwurfService.satzSpeichern(this.einwurf.id, satz).pipe(
       tap(() => (this.zuletztGespeichert = satz)),
       map(() => undefined),
     );
@@ -452,7 +452,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     if (!this.einwurf || satz === this.zuletztGespeichert || satz.length > SATZ_LIMIT) {
       return;
     }
-    this.rawInputService.saveDraftKeepalive(this.einwurf.id, satz);
+    this.einwurfService.satzSpeichernKeepalive(this.einwurf.id, satz);
     this.zuletztGespeichert = satz;
   }
 

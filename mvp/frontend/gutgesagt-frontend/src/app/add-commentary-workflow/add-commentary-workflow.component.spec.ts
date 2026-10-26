@@ -53,7 +53,7 @@ describe('AddCommentaryWorkflowComponent', () => {
 
   it('macht nach der Wahl des vorhandenen ohne Einwurf nichts weiter', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
-    const markieren = spyOn(TestBed.inject(DestillierUebergabeService), 'alsAusformuliertMarkieren');
+    const markieren = spyOn(TestBed.inject(DestillierUebergabeService), 'mitBeitragVerknuepfen');
 
     component.onVorhandenGewaehlt('k-alt');
 
@@ -82,10 +82,10 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
   beforeEach(async () => {
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', [
       'vorbefuellungLaden',
-      'alsAusformuliertMarkieren',
+      'mitBeitragVerknuepfen',
       'zumNaechsten',
     ]);
-    uebergabe.alsAusformuliertMarkieren.and.returnValue(of(true));
+    uebergabe.mitBeitragVerknuepfen.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
       of({
         rohinputId: 'id-1',
@@ -125,15 +125,15 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
     expect(formular.showReferences).toBeTrue();
   });
 
-  it('markiert nach dem Speichern und zeigt die Ergebnisseite mit Herkunft Fangkorb', () => {
+  it('verknuepft den Einwurf nach dem Speichern und zeigt die Ergebnisseite mit Herkunft Fangkorb', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
     component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true });
 
-    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary', 'gespeichert', 'beitrag-1'], {
       queryParams: { rohinput: 'id-1' },
-      state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, markiert: true },
+      state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, einwurfVerknuepft: true },
       replaceUrl: true,
     });
   });
@@ -144,7 +144,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onVorhandenGewaehlt('k-alt');
 
-    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
     expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
     expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', jasmine.anything());
     // Keine Ergebnisseite: gespeichert wurde nichts.
@@ -152,7 +152,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
   });
 
   it('bleibt nach der Wahl im Formular, wenn das Verknuepfen scheitert, und laesst es wiederholen', () => {
-    uebergabe.alsAusformuliertMarkieren.and.returnValues(of(false), of(true));
+    uebergabe.mitBeitragVerknuepfen.and.returnValues(of(false), of(true));
     const erneut = new Subject<void>();
     const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open').and.returnValue({
       onAction: () => erneut,
@@ -165,7 +165,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     erneut.next();
 
-    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledTimes(2);
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledTimes(2);
     expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
   });
 
@@ -174,7 +174,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     component.onSuccess({ id: 'k-neu', aussage: { id: '', text: '' }, verknuepft: true });
 
-    expect(uebergabe.alsAusformuliertMarkieren).toHaveBeenCalledOnceWith('id-1', 'k-neu', 'commentary');
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'k-neu', 'commentary');
   });
 });
 

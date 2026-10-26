@@ -145,8 +145,8 @@ export class AddGenerictextWorkflowComponent implements OnInit {
 
     if (this.rohinputId) {
       const rohinputId = this.rohinputId;
-      this.uebergabe.alsAusformuliertMarkieren(rohinputId, ergebnis.id, 'generic_text').subscribe((markiert) =>
-        this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, markiert }),
+      this.uebergabe.mitBeitragVerknuepfen(rohinputId, ergebnis.id, 'generic_text').subscribe((einwurfVerknuepft) =>
+        this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, einwurfVerknuepft }),
       );
       return;
     }

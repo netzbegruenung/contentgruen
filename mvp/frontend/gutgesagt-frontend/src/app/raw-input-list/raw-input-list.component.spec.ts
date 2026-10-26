@@ -13,16 +13,16 @@ import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component'
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { PLATTFORMEN } from '../shared/plattform';
 import {
-  GetRawInputsResponse,
-  RawInput,
-  RawInputDraft,
-  RawInputLink,
-  RawInputService,
-} from '../services/raw-input.service';
+  FangkorbResponse,
+  Einwurf,
+  Satz,
+  Verknuepfung,
+  EinwurfService,
+} from '../services/einwurf.service';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 
-function einwurf(overrides: Partial<RawInput> = {}): RawInput {
+function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
     id: 'id-1',
     content: null,
@@ -40,11 +40,11 @@ function einwurf(overrides: Partial<RawInput> = {}): RawInput {
   };
 }
 
-function satz(id: string, user_id: string, sentence: string): RawInputDraft {
+function satz(id: string, user_id: string, sentence: string): Satz {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:00:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = `c-${draft_id}`): RawInputLink {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = `c-${draft_id}`): Verknuepfung {
   return {
     content_id,
     content_type,
@@ -55,7 +55,7 @@ function link(draft_id: string | null, content_type: string | null = 'commentary
 }
 
 /** Ein Einwurf je Tab, damit jeder Tab etwas zu zeigen hat. */
-function jeTab(): RawInput[] {
+function jeTab(): Einwurf[] {
   return [
     einwurf({ id: 'roh' }),
     einwurf({ id: 'satz', status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] }),
@@ -69,22 +69,22 @@ function jeTab(): RawInput[] {
   ];
 }
 
-function antwort(results: RawInput[], gesamt = results.length): GetRawInputsResponse {
+function antwort(results: Einwurf[], gesamt = results.length): FangkorbResponse {
   return { results_count: results.length, results, total_records_count: gesamt };
 }
 
 describe('RawInputListComponent', () => {
   let fixture: ComponentFixture<RawInputListComponent>;
   let component: RawInputListComponent;
-  let rawInputService: jasmine.SpyObj<RawInputService>;
+  let einwurfService: jasmine.SpyObj<EinwurfService>;
   let router: Router;
   let bottomSheet: MatBottomSheet;
   let clipboard: jasmine.SpyObj<Clipboard>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
   let nutzer: UserInfo;
 
-  function erstellen(results: RawInput[], gesamt?: number): void {
-    rawInputService.getRawInputs.and.returnValue(of(antwort(results, gesamt)));
+  function erstellen(results: Einwurf[], gesamt?: number): void {
+    einwurfService.fangkorbLaden.and.returnValue(of(antwort(results, gesamt)));
     fixture = TestBed.createComponent(RawInputListComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -124,7 +124,7 @@ describe('RawInputListComponent', () => {
   beforeEach(async () => {
     sessionStorage.removeItem(FILTER_SCHLUESSEL);
     nutzer = { isAuthenticated: true, userId: 'alice', userName: null, claims: null };
-    rawInputService = jasmine.createSpyObj('RawInputService', ['getRawInputs', 'updateStatus']);
+    einwurfService = jasmine.createSpyObj('EinwurfService', ['fangkorbLaden', 'updateStatus']);
     clipboard = jasmine.createSpyObj('Clipboard', ['copy']);
     clipboard.copy.and.returnValue(true);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
@@ -133,7 +133,7 @@ describe('RawInputListComponent', () => {
       imports: [RawInputListComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
-        { provide: RawInputService, useValue: rawInputService },
+        { provide: EinwurfService, useValue: einwurfService },
         { provide: Clipboard, useValue: clipboard },
         { provide: MatSnackBar, useValue: snackBar },
         {
@@ -291,13 +291,13 @@ describe('RawInputListComponent', () => {
     it('laedt die Einwuerfe auf einmal, ohne Tabelle und ohne Paginator', () => {
       erstellen(jeTab());
 
-      expect(rawInputService.getRawInputs).toHaveBeenCalledWith(1, LADE_GROESSE);
+      expect(einwurfService.fangkorbLaden).toHaveBeenCalledWith(1, LADE_GROESSE);
       expect(fixture.nativeElement.querySelector('table')).toBeNull();
       expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
     });
 
     it('meldet einen Ladefehler statt still leer zu bleiben', () => {
-      rawInputService.getRawInputs.and.returnValue(throwError(() => new Error('kaputt')));
+      einwurfService.fangkorbLaden.and.returnValue(throwError(() => new Error('kaputt')));
       fixture = TestBed.createComponent(RawInputListComponent);
       fixture.detectChanges();
 
@@ -520,11 +520,11 @@ describe('RawInputListComponent', () => {
     it('verwirft als Admin einen fremden Einwurf', () => {
       nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
       erstellen([einwurf({ id: 'fremd', submitted_by: 'bob' })]);
-      rawInputService.updateStatus.and.returnValue(of(einwurf({ id: 'fremd', status: 'discarded' })));
+      einwurfService.updateStatus.and.returnValue(of(einwurf({ id: 'fremd', status: 'discarded' })));
 
       component.aktionAusfuehren(component.karten[0], 'verwerfen');
 
-      expect(rawInputService.updateStatus).toHaveBeenCalledWith('fremd', 'discarded');
+      expect(einwurfService.updateStatus).toHaveBeenCalledWith('fremd', 'discarded');
     });
 
     it('bietet bei Ausformuliertem und Verworfenem Weiterarbeiten statt Verwerfen', () => {
@@ -536,7 +536,7 @@ describe('RawInputListComponent', () => {
       ]);
 
       klicken(filterKnopf('verworfen'));
-      const verworfen = kartenKomponenten().find((karte) => karte.daten.einwurf!.stufe === 'verworfen')!;
+      const verworfen = kartenKomponenten().find((karte) => karte.daten.einwurfAngaben!.stufe === 'verworfen')!;
 
       expect(verworfen.menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
         'Link kopieren',
@@ -555,17 +555,17 @@ describe('RawInputListComponent', () => {
 
     it('verwirft und laedt die Liste neu', () => {
       erstellen([einwurf({ id: 'eigen' })]);
-      rawInputService.updateStatus.and.returnValue(of(einwurf({ id: 'eigen', status: 'discarded' })));
+      einwurfService.updateStatus.and.returnValue(of(einwurf({ id: 'eigen', status: 'discarded' })));
 
       component.aktionAusfuehren(component.karten[0], 'verwerfen');
 
-      expect(rawInputService.updateStatus).toHaveBeenCalledWith('eigen', 'discarded');
-      expect(rawInputService.getRawInputs).toHaveBeenCalledTimes(2);
+      expect(einwurfService.updateStatus).toHaveBeenCalledWith('eigen', 'discarded');
+      expect(einwurfService.fangkorbLaden).toHaveBeenCalledTimes(2);
     });
 
     it('sagt es, wenn das Verwerfen scheitert', () => {
       erstellen([einwurf({ id: 'eigen' })]);
-      rawInputService.updateStatus.and.returnValue(throwError(() => ({ status: 403 })));
+      einwurfService.updateStatus.and.returnValue(throwError(() => ({ status: 403 })));
 
       component.aktionAusfuehren(component.karten[0], 'verwerfen');
 
@@ -578,7 +578,7 @@ describe('RawInputListComponent', () => {
 
     it('nennt bei 409 den wahren Grund statt "versuche es erneut"', () => {
       erstellen([einwurf({ id: 'eigen' })]);
-      rawInputService.updateStatus.and.returnValue(throwError(() => ({ status: 409 })));
+      einwurfService.updateStatus.and.returnValue(throwError(() => ({ status: 409 })));
 
       component.aktionAusfuehren(component.karten[0], 'verwerfen');
 

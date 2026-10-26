@@ -149,7 +149,7 @@ class TestGetAll:
 
         with patch.object(
             RawInputRepository,
-            "_mit_bearbeitungsstand",
+            "_mit_saetzen_und_verknuepfungen",
             side_effect=lambda s, rows, user: [
                 RawInputRepository._to_dict(r) for r in rows
             ],
@@ -213,7 +213,9 @@ class TestGetAll:
         zeile = _zeile()
         self._query_kette(session, [zeile])
         with patch.object(
-            RawInputRepository, "_mit_bearbeitungsstand", return_value=[{"id": "x"}]
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            return_value=[{"id": "x"}],
         ) as stand:
             ergebnis = repository.get_all(current_user="alice")
 
@@ -346,7 +348,9 @@ class TestGetById:
         zeile = _zeile()
         self._query_kette(session, zeile)
         with patch.object(
-            RawInputRepository, "_mit_bearbeitungsstand", return_value=[{"id": "x"}]
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            return_value=[{"id": "x"}],
         ) as stand:
             ergebnis = repository.get_by_id(zeile.id, "alice")
 
@@ -483,7 +487,9 @@ class TestStatusSetzen:
     @pytest.fixture(autouse=True)
     def _ohne_bearbeitungsstand(self):
         with patch.object(
-            RawInputRepository, "_mit_bearbeitungsstand", return_value=[{"id": "x"}]
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            return_value=[{"id": "x"}],
         ):
             yield
 
