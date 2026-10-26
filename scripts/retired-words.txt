@@ -1,0 +1,9 @@
+# Retired words: names the project has replaced. New lines must not use them (code, UI, docs).
+# One per line: <regex, case-insensitive> -> <use instead>
+# Existing occurrences may stay until their own ticket renames them; the check only looks at added lines.
+(?<!netzbegruenung/)content ?gr(ü|ue|u)n -> Gut gesagt (der GitHub-Spiegel heißt weiter contentgruen)
+rohinput -> Einwurf
+rohling -> Einwurf
+duplikat -> Dublette
+grün-intern -> (entfällt: alles ist für alle sichtbar)
+entwurfssatz -> Satz
