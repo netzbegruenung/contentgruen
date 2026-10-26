@@ -1,7 +1,8 @@
 # 🚀 Deployment Guide – Gut gesagt
 
-This guide helps you deploy Gut gesagt in a test or production environment using Docker and `docker-compose`.
-Prod Server is managed by Saltstack.
+This guide helps you deploy Gut gesagt with Docker and `docker compose`.
+The test and production environments run on verdigado's internal infrastructure; how they
+are operated is documented internally, not in this repository.
 
 We aim for a **clean, reproducible setup** with minimal manual steps.
 
@@ -16,7 +17,7 @@ We aim for a **clean, reproducible setup** with minimal manual steps.
 | Semantic Search       | Python + FastAPI  | NLP-based semantic search backend                |
 | Qdrant                | Vector DB         | Vector embeddings for semantic search            |
 | PostgreSQL            | SQL Database      | Application metadata (usage tracking, etc.)      |
-| Reverse Proxy         | Nginx             | TLS termination & routing (PROD: via SaltStack)  |
+| Reverse Proxy         | Nginx             | TLS termination & routing (PROD: external proxy) |
 
 ---
 
@@ -32,7 +33,7 @@ docker compose -f docker-compose.dev.yml up -d
 
 Then access:
 
-* Frontend: [http://localhost:80](http://localhost:80)
+* Frontend: [http://localhost:8080](http://localhost:8080)
 * BFF: [http://localhost:5054](http://localhost:5054)
 * Semantic Search: [http://localhost:8000/docs](http://localhost:8000/docs)
 * PostgreSQL: `localhost:5433` (for debugging; container listens on 5432)
@@ -43,75 +44,41 @@ Then access:
 
 ## 🧪 Test System
 
-> **In transition.** The test environment is moving to SaltStack management. The manually
-> managed system described below is being **discontinued**.
-
-### Current (SaltStack-managed)
-
 - 🔗 Frontend: https://gutgesagt-test.netzbegruenung.de
-- **Management:** SaltStack, alongside production
-- **Images:** floating `:main` tag, deployed **manually**: Salt `state.apply`, then
-  `docker compose pull && docker compose up -d` on the host. A merge to `main` does not reach
-  this environment by itself. New database migrations are applied before `up -d`, see
+- **Operation:** runs on verdigado's internal infrastructure, like production. Hosts, access
+  and the deployment procedure are documented internally, not in this repository.
+- **Images:** floating `:main` tag, rolled out **manually** by the operators. A merge to `main`
+  does not reach this environment by itself, so new database migrations are applied before the
+  new image goes live, see
   [`mvp/backend/postgres-app/migrations/README.md`](../mvp/backend/postgres-app/migrations/README.md).
-  The Salt state still contains a Watchtower block, but its container is stuck in a restart
-  loop (as of 2026-10-11); the block is being removed from the Salt repo (#22)
-- **Backups:** enabled since the Salt PR `fix/contentgruen-haertung` (`enable_backup: true`,
-  mount `/opt/gutgesagt-backups:/backups`); disabled before that
 
 ---
 
 ## 🌻 Production System
 
-### 🖥 Server
+### 🌐 Public domains
 
-- **Host:** `gutgesagt.netzbegruenung.verdigado.net`
-- **Access:** SSH via Netzbegruenung SaltStack managed users
-- **Management:** Fully automated via SaltStack
+| Domain                            | Serves                  |
+| --------------------------------- | ----------------------- |
+| `gutgesagt.netzbegruenung.de`     | Angular Frontend        |
+| `bff.gutgesagt.netzbegruenung.de` | .NET API Gateway (BFF)  |
 
-### 🌐 Domains & Routing
+`contentgruen.de` redirects to `gutgesagt.netzbegruenung.de`.
 
-In production, Gut gesagt is accessed via subdomains routed by an external Nginx reverse proxy:
+### 🖥 Operation
 
-| Domain/Subdomain                                | Target Service          |
-| ----------------------------------------------- | ----------------------- |
-| `gutgesagt.netzbegruenung.de`                | Angular Frontend (:3000)|
-| `gutgesagt.netzbegruenung.verdigado.net`     | Angular Frontend (:3000)|
-| `bff.gutgesagt.netzbegruenung.de`            | .NET API Gateway (:3001)|
-
-The two frontend hostnames share one nginx server block. Port 80 is a blanket redirect to
-HTTPS.
-
-`contentgruen.de` redirects to `gutgesagt.netzbegruenung.de`. That redirect is **not** part
-of the SaltStack state — it is handled upstream (registrar/DNS level).
-
-Server and Nginx are managed via the Netzbegruenung/Verdigado SaltStack:
-> https://git.verdigado.com/verdigado-Privileged/Salt/src/branch/master/states/gutgesagt
-
-TLS is managed automatically using Let's Encrypt certificates.
-Renewal is handled via certbot by the default nginx-reverse-proxy from the SaltStack setup.
-
-### 📂 Data & Persistence
-
-The Compose project is named `gutgesagt` (working directory `/opt/gutgesagt`), so Docker
-prefixes the declared volume names with `gutgesagt_`:
-
-| Service          | Docker volume                            | Note                                    |
-| ---------------- | ---------------------------------------- | --------------------------------------- |
-| Qdrant           | `gutgesagt_qdrant_storage`            | Content and vector embeddings           |
-| PostgreSQL       | `gutgesagt_pgdata_app`                | Application data (votes, usage, reports)|
-| Semantic Search  | `gutgesagt_semantic_search_metadata`  | Index metadata                          |
-| TLS certs        | `/etc/letsencrypt/`                      | Managed outside containers              |
-
-The production database is `gutgesagt_app`, user `app_user`; the password comes from a
-Passbolt-backed Salt pillar.
+Production runs on verdigado's internal infrastructure: an external nginx reverse proxy
+terminates TLS (Let's Encrypt) and routes the public domains to the frontend and BFF
+containers. Server, reverse proxy, compose file, secrets and backup schedule are managed
+there; the details are documented internally. `mvp/docker-compose.prd.yml` in this repository
+is only a placeholder.
 
 ### 🚧 Updating Production
 
 CI runs on GitHub Actions:
 - `.github/workflows/build.yml` — builds on every push to `main` and on pull requests,
-  publishing `:main` and `:sha-<short>` tags. The SaltStack-managed test environment runs
-  `:main`, pulled manually (see above; the Watchtower block in Salt is broken and being removed, #22).
+  publishing `:main` and `:sha-<short>` tags. The test environment runs `:main`, rolled out
+  manually (see above).
 - `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
   `:latest` for all four images.
 
@@ -125,24 +92,21 @@ tagged without moving production.
 Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages
 
-**How production actually updates:** the Salt compose file pins each image by digest
-(`:latest@sha256:…`). A Renovate bot raises the digest bumps; production changes only when
-that compose file is rewritten and Salt re-runs `docker compose pull` + `down`/`up`. There is
-no Watchtower in production.
+**How production updates:** production pins `:latest` by digest. Renovate raises the digest
+bumps; production changes only once the operators roll a bump out. A release tag does not
+deploy anything by itself.
 
-> Because production pins `:latest`, the `latest=auto` flavor in `release.yml` is load-bearing.
-> Disabling it, or moving the tag rules away from `type=semver`, would stop `:latest` moving
-> and silently freeze production updates with no failing build to signal it.
+> Because production pins `:latest`, the `latest=auto` flavor in `release.yml` is
+> load-bearing. Disabling it, or moving the tag rules away from `type=semver`, would stop
+> `:latest` moving and silently freeze production updates with no failing build to signal it.
 
-**Deployment Schedule:**
-- Automatic: Weekly by the Netzbegruenung/Verdigado admin team
-- Manual: Ask in the project channel for urgent deployments
+For urgent deployments, ask in the project channel (see below).
 
 ---
 
 ## 🔧 Maintenance Tasks
 
-### Cleanup Docker Resources (Test Server)
+### Cleanup Docker Resources
 
 ```bash
 # Check disk usage
@@ -163,19 +127,20 @@ Gut gesagt uses an automated backup system that backs up both Qdrant vector data
 **First-time setup:**
 
 No setup script is required — `backup.sh` creates `/opt/gutgesagt-backups/{daily,weekly}/`
-on first run. In production the cron schedule is provisioned by SaltStack.
+(override with `BACKUP_ROOT`) on first run. Schedule it with cron; in the test and production
+environments the schedule is part of verdigado's internal infrastructure.
 
 **Create backup:**
 ```bash
-cd /opt/gutgesagt/mvp/scripts/backup
+cd mvp/scripts/backup
 ./backup.sh
 ```
 
 **Restore from backup:**
 
-Paths are resolved relative to `/opt/gutgesagt-backups/`:
+Paths are resolved relative to `BACKUP_ROOT` (default `/opt/gutgesagt-backups/`):
 ```bash
-cd /opt/gutgesagt/mvp/scripts/backup
+cd mvp/scripts/backup
 ./restore.sh daily/latest                    # Latest daily backup
 ./restore.sh weekly/latest                   # Latest weekly backup
 ./restore.sh daily/backup_YYYYMMDD_HHMMSS    # A specific backup
@@ -183,7 +148,7 @@ cd /opt/gutgesagt/mvp/scripts/backup
 
 **Test backup/restore:**
 ```bash
-cd /opt/gutgesagt/mvp/scripts/backup
+cd mvp/scripts/backup
 ./test-backup-restore.sh
 ```
 
@@ -231,28 +196,11 @@ docker compose logs -f
 docker exec gutgesagt-bff curl http://gutgesagt-semantic-search:8000/health
 ```
 
-### Nginx issues?
+### Reverse proxy or TLS issues?
 
-```bash
-# Check Nginx status
-systemctl status nginx
-
-# Test Nginx config
-nginx -t
-
-# View error logs
-tail -f /var/log/nginx/error.log
-```
-
-### TLS certificate expired?
-
-```bash
-# Manual renewal
-sudo certbot renew
-
-# Force renewal
-sudo certbot renew --force-renewal
-```
+In the test and production environments the reverse proxy and the TLS certificates are part
+of verdigado's internal infrastructure. Report problems there in the project channel (see
+below).
 
 ### PostgreSQL connection issues?
 
@@ -291,4 +239,4 @@ Thanks for helping make it more stable and useful!
 
 ---
 
-*Last updated: 2026-07-25*
+*Last updated: 2026-10-26*
