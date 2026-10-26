@@ -40,11 +40,13 @@ class CacheService {
 const cacheService = new CacheService();
 
 /**
- * POST-Anfragen, die nur lesen (Suche, Bildvorschlag, Stimmen mehrerer Beitraege).
- * Sie lassen den Cache stehen. Fehlt hier eine, kostet das nur einen Cache-Leerlauf.
+ * POST-Anfragen, die nur lesen (Aussagen- und Herkunftssuche, Bildvorschlag, Stimmen
+ * mehrerer Beitraege). Sie lassen den Cache stehen. Fehlt hier eine, wird der Cache nur
+ * unnoetig geleert. Steht hier eine, die schreibt, bleibt ein veralteter Stand stehen.
+ * Die Suche (searchByText) gehoert nicht hierher: Sie legt eine Aussage an und zaehlt
+ * Suchereignisse und Suchen ohne Treffer, die in den Kennzahlen erscheinen.
  */
 const LESENDE_POSTS = [
-  '/api/v1/search/searchByText',
   '/api/v1/statement/searchStatements',
   '/api/v1/reference/search',
   '/api/v1/image/suggestCaption',
@@ -65,15 +67,18 @@ const NIE_CACHEN = ['/api/v1/rawinput/'];
  */
 let aenderungen = 0;
 
-/** Liegt der Pfad der Anfrage unter einem der Pfade? */
-function pfadUnter(req: HttpRequest<unknown>, pfade: string[]): boolean {
+/**
+ * Enthaelt der Pfad der Anfrage einen der Pfade? Bewusst kein Praefixvergleich:
+ * environment.baseUrl kann dem Pfad ein Praefix voranstellen.
+ */
+function pfadEnthaelt(req: HttpRequest<unknown>, pfade: string[]): boolean {
   const pfad = new URL(req.url, window.location.origin).pathname;
   return pfade.some((p) => pfad.includes(p));
 }
 
 function istAenderung(req: HttpRequest<unknown>): boolean {
   if (req.method === 'POST') {
-    return !pfadUnter(req, LESENDE_POSTS);
+    return !pfadEnthaelt(req, LESENDE_POSTS);
   }
   return req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE';
 }
@@ -100,7 +105,7 @@ export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  if (pfadUnter(req, NIE_CACHEN)) {
+  if (pfadEnthaelt(req, NIE_CACHEN)) {
     return next(req);
   }
 
@@ -123,5 +128,5 @@ export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
-// Exported for the tests, which start each case with an empty cache
+// Exportiert fuer die Tests, die jeden Fall mit leerem Cache beginnen
 export { cacheService };

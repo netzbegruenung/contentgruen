@@ -87,7 +87,6 @@ describe('cacheInterceptor', () => {
     httpMock.expectOne(`${api}/content/recent`).flush({ stand: 'alt' });
 
     for (const pfad of [
-      'search/searchByText',
       'statement/searchStatements',
       'reference/search',
       'image/suggestCaption',
@@ -101,6 +100,33 @@ describe('cacheInterceptor', () => {
     httpMock.expectNone(`${api}/content/recent`);
   });
 
+  it('leert den Cache nach einer Suche, weil sie eine Aussage anlegt und Kennzahlen zaehlt', () => {
+    holen(`${api}/metrics/suchen-ohne-treffer`);
+    httpMock.expectOne(`${api}/metrics/suchen-ohne-treffer`).flush({ stand: 'alt' });
+
+    http.post(`${api}/search/searchByText`, { query_text: 'Waermepumpe' }).subscribe();
+    httpMock.expectOne(`${api}/search/searchByText`).flush({});
+
+    const danach = holen(`${api}/metrics/suchen-ohne-treffer`);
+    httpMock.expectOne(`${api}/metrics/suchen-ohne-treffer`).flush({ stand: 'neu' });
+    expect(danach).toEqual([{ stand: 'neu' }]);
+  });
+
+  it('leert den Cache auch, wenn eine laufende Aenderung abgebrochen wird', () => {
+    const aenderung = http.delete(`${api}/content/c-1`).subscribe();
+    const anfrage = httpMock.expectOne(`${api}/content/c-1`);
+    // Was waehrend der Aenderung geholt wird, landet im Cache, bis sie endet
+    holen(`${api}/content/recent`);
+    httpMock.expectOne(`${api}/content/recent`).flush({ stand: 'waehrenddessen' });
+
+    aenderung.unsubscribe();
+    expect(anfrage.cancelled).toBeTrue();
+
+    const danach = holen(`${api}/content/recent`);
+    httpMock.expectOne(`${api}/content/recent`).flush({ stand: 'neu' });
+    expect(danach).toEqual([{ stand: 'neu' }]);
+  });
+
   it('haelt den Fangkorb nie im Cache', () => {
     holen(`${api}/rawinput/getRawInputs?page=1`);
     httpMock.expectOne(`${api}/rawinput/getRawInputs?page=1`).flush({ stand: 'alt' });
@@ -109,8 +135,10 @@ describe('cacheInterceptor', () => {
     httpMock.expectOne(`${api}/rawinput/getRawInputs?page=1`).flush({ stand: 'neu' });
   });
 
-  describe('Spec: Stufenwechsel eines Einwurfs', () => {
-    it('Fangkorb und gecachte Listen liefern danach ohne Wartezeit den neuen Stand', () => {
+  describe('nach dem Stufenwechsel eines Einwurfs (#291)', () => {
+    // Die Fangkorb-Haelfte belegt die Spec, besteht aber auch ohne Leeren, weil der
+    // Fangkorb nie im Cache liegt. Dass PATCH den Cache leert, belegt die Liste.
+    it('liefern Fangkorb und gecachte Listen ohne Wartezeit den neuen Stand', () => {
       const einwuerfe = TestBed.inject(EinwurfService);
       const fangkorb = `${api}/rawinput/getRawInputs?page=1&page_size=20`;
       const stufen: string[] = [];

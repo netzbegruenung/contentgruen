@@ -159,6 +159,9 @@ export class EinwurfService {
    * XHR wird dabei abgebrochen. fetch mit keepalive darf die Seite ueberleben.
    * HttpClient laeuft hier ohne Fetch-Backend und kann das nicht - daher direkt.
    * Fehler werden verschluckt: mehr als versuchen geht in diesem Moment nicht.
+   * Am Cache-Interceptor vorbei leert dieser Weg den GET-Cache nicht. Das ist nur
+   * unschaedlich, weil der Fangkorb nie im Cache liegt (NIE_CACHEN in
+   * auth/cache.interceptor.ts); wer das aendert, muss hier selbst leeren.
    */
   satzSpeichernKeepalive(id: string, sentence: string): void {
     try {
