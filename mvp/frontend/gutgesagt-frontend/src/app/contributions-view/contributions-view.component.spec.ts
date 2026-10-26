@@ -42,7 +42,7 @@ describe('ContributionsViewComponent', () => {
         provideNoopAnimations(),
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
         { provide: ContributionsService, useValue: { getContributions } },
-        { provide: UsageTrackingService, useValue: { getOwnUsageStats: () => of(null) } },
+        { provide: UsageTrackingService, useValue: { getEigeneNutzungsstatistik: () => of(null) } },
         {
           provide: AuthService,
           // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.

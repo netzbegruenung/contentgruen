@@ -79,7 +79,7 @@ describe('UsageTrackingService', () => {
 
     it('fragt ohne Kennung im Pfad', () => {
       let ergebnis: unknown;
-      service.getOwnUsageStats().subscribe(stats => (ergebnis = stats));
+      service.getEigeneNutzungsstatistik().subscribe(stats => (ergebnis = stats));
 
       const anfrage = http.expectOne(EIGENE);
       expect(anfrage.request.method).toBe('GET');
@@ -91,7 +91,7 @@ describe('UsageTrackingService', () => {
 
     it('liefert bei einem Fehler null, damit die Seite ihre eigene Summe zeigt', () => {
       let ergebnis: unknown = 'unberuehrt';
-      service.getOwnUsageStats().subscribe(stats => (ergebnis = stats));
+      service.getEigeneNutzungsstatistik().subscribe(stats => (ergebnis = stats));
 
       http.expectOne(EIGENE).flush('kaputt', { status: 500, statusText: 'Server Error' });
 

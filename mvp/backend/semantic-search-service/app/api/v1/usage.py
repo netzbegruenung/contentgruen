@@ -244,7 +244,7 @@ async def get_content_usage(
 
 
 @router.get("/users/me/usage-stats", response_model=UserUsageStatsResponse)
-async def get_own_usage_stats(
+async def eigene_nutzungsstatistik(
     current_user: Optional[str] = Depends(get_current_user_optional),
 ):
     """

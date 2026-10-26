@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from api.v1 import usage as usage_module
 from api.v1.usage import router as usage_router
-from dependencies import get_settings
+from core.logging import log_pseudonym
 
 URL = "/api/v1/usage/users/me/usage-stats"
 
@@ -38,7 +38,6 @@ def dienst():
 def client(dienst):
     app = FastAPI()
     app.include_router(usage_router, prefix="/api/v1/usage")
-    app.dependency_overrides[get_settings] = lambda: Mock()
 
     with patch.object(usage_module, "get_usage_service", return_value=dienst):
         yield TestClient(app)
@@ -73,4 +72,5 @@ class TestEigeneNutzungsstatistik:
         antwort = client.get(URL, headers={"X-User": "kim-1"})
 
         assert antwort.status_code == 500
+        assert log_pseudonym("kim-1") in caplog.text
         assert "kim-1" not in caplog.text

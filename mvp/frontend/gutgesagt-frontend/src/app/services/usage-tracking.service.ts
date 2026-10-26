@@ -166,13 +166,13 @@ export class UsageTrackingService {
    *
    * @returns Observable mit der Statistik, bei einem Fehler null
    */
-  getOwnUsageStats(): Observable<UserUsageStats | null> {
+  getEigeneNutzungsstatistik(): Observable<UserUsageStats | null> {
     const url = `${this.apiUrl}/users/me/usage-stats`;
 
     return this.http.get<UserUsageStats>(url)
       .pipe(
         catchError(error => {
-          this.loggingService.error('Failed to get own usage stats', error);
+          this.loggingService.error('Failed to get own Nutzungsstatistik', error);
           return of(null);
         })
       );
