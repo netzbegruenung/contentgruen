@@ -1,3 +1,5 @@
+> **Historisch:** Dieses Dokument stammt aus früherer Planung und ist teils vom Code überholt; maßgeblich sind [GLOSSARY.md](../../GLOSSARY.md) und [docs/adr/](../adr/).
+
 # Datenschutz-Bestandsaufnahme (Art. 13 DSGVO)
 
 > **Zweck:** belegte Faktenbasis für die Datenschutzerklärung. Keine juristische Bewertung,
@@ -27,7 +29,7 @@
 - **KONFIGURIERT** = der Wert steht in einer Settings-/Config-Klasse.
   **WIRKSAM** = ein Codepfad liest ihn tatsächlich. Wo beides auseinanderfällt, steht es dabei.
 - **UNSICHER** markiert jede Stelle, an der ich mir nicht sicher bin, mit Begründung.
-- **NICHT IM REPO ENTSCHEIDBAR** = hängt an Deployment-Konfiguration (SaltStack-Pillar), die
+- **NICHT IM REPO ENTSCHEIDBAR** = hängt an Deployment-Konfiguration ([intern]), die
   außerhalb dieses Repos liegt. Alle diese Punkte sind in **Teil 4** gebündelt.
 - Zeilennummern beziehen sich auf den oben genannten Commit `fae44b4`.
 - **ERLEDIGT** markiert einen Befund der Erstanalyse, den der Code inzwischen behebt.
@@ -203,7 +205,7 @@ Umgebung kommen im Service an, und `ENABLE_USAGE_CLEANUP=false` verhindert den S
 
 **Folge für die Datenschutzerklärung:** Die 90 Tage sind jetzt ein Default, kein fest
 verdrahteter Wert. Ein `SEMANTIC_SEARCH_USAGE_RETENTION_DAYS` oder
-`SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=false` im Salt-Pillar wirkt ab diesem Stand. Wer
+`SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=false` [intern] wirkt ab diesem Stand. Wer
 die Frist dort ändert oder die Bereinigung abschaltet, muss die Datenschutzerklärung
 mitziehen.
 
@@ -341,6 +343,9 @@ alle vier mit `Depends(require_admin)` (`api/v1/moderation.py:191,229,267,300`).
 **und** `X-Is-Admin: true`; letzteres setzt ausschließlich das BFF
 (`IdentityHeaderTransform.cs:74-82`) und entfernt einen mitgeschickten Wert vorher
 bedingungslos (`:47`). Das ist der einzige Speicher mit funktionierender Admin-Schranke.
+Dieselbe Schranke tragen `PUT …/content/{id}/sperren`, `…/entsperren` und
+`GET …/gesperrt` (Sperren statt Löschen, #212); sie lesen und schreiben Beiträge in
+Qdrant, keine Meldungsdaten über `reviewed_by` hinaus.
 
 **Seit PR #33 gibt es zwei Wege zu diesem Header** (`BFF/Proxy/AdminPolicy.cs:56-79`),
 mit ODER verknüpft:
@@ -706,9 +711,9 @@ wertet `X-Forwarded-*` aus (`BFF/Program.cs`, `UseForwardedHeaders()`).
 Plattenverbrauch, ist aber **keine Aufbewahrungsfrist**: wie lange eine Zeile überlebt,
 hängt am Durchsatz, nicht an einem Datum.
 
-**Und es gilt nicht für Produktion.** Prod und tst werden über SaltStack ausgerollt, mit
-einer Compose-Datei aus einem anderen Repository; die Rotation aus diesem Repo greift dort
-nicht. Nach Auskunft des Maintainers ist sie in Salt **nicht** umgesetzt. Für Produktion
+**Und es gilt nicht für Produktion.** Prod und tst werden über [intern] ausgerollt, mit
+einer Compose-Datei aus [intern]; die Rotation aus diesem Repo greift dort
+nicht. Nach Auskunft des Maintainers ist sie [intern] **nicht** umgesetzt. Für Produktion
 gilt damit der Docker-Default `json-file` **ohne Begrenzung**, bzw. was der Host
 voreinstellt.
 
@@ -716,8 +721,8 @@ voreinstellt.
 nginx-`access_log` ist für die **vorgelagerte** Schicht beantwortet: Auf dem Prod-Host
 liegt der Reverse Proxy außerhalb von Docker, seine Zugriffsprotokolle werden per
 `logrotate` täglich umgebrochen und nach **14 Tagen** gelöscht (Auskunft und Prüfung des
-Maintainers am Host, 04.09.2026 — im Repo nicht belegbar, weil die Salt-Konfiguration in
-einem anderen Repository liegt). **Nur diese Schicht sieht die echte Client-IP**, und nur
+Maintainers am Host, 04.09.2026 — im Repo nicht belegbar, weil die Konfiguration
+[intern] liegt). **Nur diese Schicht sieht die echte Client-IP**, und nur
 für sie nennt die Datenschutzerklärung die 14 Tage.
 
 Für die **Container**-Schicht bleibt es bei „nicht begrenzt": Das Frontend-Image ist
@@ -938,7 +943,7 @@ Rechtstextseiten nur den Footer-Link).
 
 # Teil 4 — Was im Repo nicht entscheidbar ist
 
-Jede Frage so formuliert, dass ein Blick in den Salt-Pillar sie beantwortet: **Variable →
+Jede Frage so formuliert, dass ein Blick [intern] sie beantwortet: **Variable →
 Dienst → Konsequenz je Wert.**
 
 ### 4-A · `SEMANTIC_SEARCH_ACTOR_HASH_SECRET`
@@ -961,7 +966,7 @@ Dienst → Konsequenz je Wert.**
 
 *Achtung:* `STATUS.md:22` behauptet als Tatsache, es sei „no OpenAI key configured in
 production". Die Lückenliste lässt dieselbe Frage offen (`:127`: „Aktiv in Prod? ☐ ja ☐ nein").
-**Der Pillar entscheidet, nicht STATUS.md.**
+**[intern] entscheidet, nicht STATUS.md.**
 
 ### 4-C · `USE_KEYCLOAK`
 **Dienst:** `contentgruen-bff` · **Im Repo:** `false` in beiden Compose-Dateien
@@ -1006,18 +1011,18 @@ inklusive Löschfrist, die es im Code nicht gibt.
 ### 4-E · Logging-Konfiguration des Docker-Hosts
 **Dienst:** alle · **Im Repo:** seit PR #29 hat jeder Dienst in `docker-compose.dev.yml`
 und `docker-compose.tst.yml` einen `logging:`-Block (`json-file`, `max-size` 20 MB bzw.
-10 MB, `max-file: 3`). **Produktion und tst laufen jedoch über eine SaltStack-eigene
-Compose-Datei aus einem anderen Repository; nach Auskunft des Maintainers ist die Rotation
+10 MB, `max-file: 3`). **Produktion und tst laufen jedoch über eine
+Compose-Datei [intern]; nach Auskunft des Maintainers ist die Rotation
 dort nicht umgesetzt.**
 
 **Teilweise beantwortet (04.09.2026).** Der vorgelagerte Reverse Proxy läuft auf dem
 Prod-Host außerhalb von Docker; seine Zugriffsprotokolle — die einzigen mit der echten
 Client-IP — werden per `logrotate` täglich umgebrochen und nach **14 Tagen** gelöscht.
 Grundlage ist die Prüfung des Maintainers am Host; im Repo ist sie **nicht** belegbar, weil
-die Salt-Konfiguration in einem anderen Repository liegt. Die Datenschutzerklärung nennt
+die Konfiguration [intern] liegt. Die Datenschutzerklärung nennt
 diese 14 Tage ausdrücklich nur für diese Schicht.
 
-Offen bleiben: Welcher Log-Treiber setzt Salt für die Container? Werden Container-Logs
+Offen bleiben: Welcher Log-Treiber setzt [intern] für die Container? Werden Container-Logs
 zentral gesammelt (journald, Loki, …)? Welche Rotation, welche Aufbewahrung? Solange die
 Antwort fehlt, gilt für alles aus dem `json-file`-Treiber — Anwendungslogs **und** die
 Zugriffszeilen der Container-nginx — der Docker-Default ohne Begrenzung.
@@ -1166,7 +1171,7 @@ Stand ist hier je Befund vermerkt.
    Abhängigkeiten geprüft, die selbst nach außen telefonieren. Für das Frontend spricht
    das Fehlen jeglicher CDN-Referenz in `index.html` dagegen; belegt ist es nicht.
 
-4. **SaltStack.** Alles, was der Pillar setzt — vier `USE_KEYCLOAK`/`OPENAI`/`ACTOR_HASH`/
+4. **[intern].** Alles, was [intern] setzt — vier `USE_KEYCLOAK`/`OPENAI`/`ACTOR_HASH`/
    `ADMIN_USERS`-Fragen, Logging, Backup-Cron, Portfreigaben. Vollständig in Teil 4.
 
 5. **Der Keycloak-Realm selbst.** Welche Claims Netzbegrünung tatsächlich liefert und wie

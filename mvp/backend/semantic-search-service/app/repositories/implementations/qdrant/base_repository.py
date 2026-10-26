@@ -61,6 +61,25 @@ def _search_query_origin_conditions() -> list:
     ]
 
 
+def _gesperrt_bedingungen() -> list:
+    """
+    must_not-Bedingung, die gesperrte Beitraege ausschliesst.
+
+    Ein Admin sperrt einen Beitrag, statt ihn zu loeschen: Er verschwindet aus
+    Suche, Einzelansicht, Listen und "Meine Beitraege", bleibt aber im Speicher
+    und damit fuer die Moderation auffindbar (services/moderation_service.py
+    liest am Repository vorbei). must_not statt MatchExcept auf must, damit
+    Altbestand ohne Status-Feld sichtbar bleibt.
+    """
+    from qdrant_client.models import FieldCondition, MatchValue
+
+    return [
+        FieldCondition(
+            key="status", match=MatchValue(value=ContentStatus.BLOCKED.value)
+        )
+    ]
+
+
 class QdrantBaseRepository(
     IBaseContentRepository[TContentDbEntry, TContentSearchResult]
 ):
@@ -126,6 +145,7 @@ class QdrantBaseRepository(
         points without a status field are left unaffected (MatchExcept on must would
         drop fieldless points because the must clause is not satisfied).
         PENDING_REVIEW is excluded because images in that status await human review.
+        BLOCKED (gesperrt) is excluded because an admin took the item out of search.
         """
         from qdrant_client.models import FieldCondition, MatchValue
 
@@ -136,7 +156,7 @@ class QdrantBaseRepository(
                 ContentStatus.DESCRIPTION_FAILED,
                 ContentStatus.PENDING_REVIEW,
             )
-        ]
+        ] + _gesperrt_bedingungen()
 
     async def search(
         self, query_text: str, limit: int, praefix: str = "query"
@@ -269,6 +289,13 @@ class QdrantBaseRepository(
             logger.warning(meldung)
             raise ValueError(meldung)
 
+        # Gesperrt heisst fuer jeden Leser hier "nicht da": Einzelansicht, Stimmen,
+        # Antwortvorschlaege der Suche (SearchOrchestrator ueberspringt ValueError).
+        if result.get("status") == ContentStatus.BLOCKED.value:
+            meldung = f"Entry with id {item_id} is gesperrt (blocked)"
+            logger.warning(meldung)
+            raise ValueError(meldung)
+
         try:
             entry = self.content_db_entry_model_class.model_validate(result)
         except Exception as e:
@@ -339,9 +366,18 @@ class QdrantBaseRepository(
 
     async def count(self) -> int:
         """
-        Get the total count of items in the repository.
+        Anzahl der sichtbaren Beitraege, also ohne gesperrte: Sie speist die
+        Bestandszaehler (getMetrics) und total_records_count der Listen.
         """
-        return await self._shared_manager.count(self.content_type)
+        try:
+            result = await self._shared_manager.async_client.count(
+                collection_name=self._shared_manager.collection_name,
+                count_filter=self._sichtbar_filter(),
+            )
+            return result.count
+        except Exception as e:
+            logger.error(f"Failed to count items: {e}", exc_info=True)
+            return 0
 
     async def get_all(self, limit: int, offset: int) -> List[TContentDbEntry]:
         """Async implementation of get_all."""
@@ -360,16 +396,7 @@ class QdrantBaseRepository(
             from qdrant_client.models import Filter, FieldCondition, MatchValue
 
             # Build filter
-            search_filter = None
-            if self.content_type:
-                search_filter = Filter(
-                    must=[
-                        FieldCondition(
-                            key="content_type",
-                            match=MatchValue(value=self.content_type),
-                        )
-                    ]
-                )
+            search_filter = self._sichtbar_filter()
 
             # Scroll through results
             points_collected = 0
@@ -422,6 +449,19 @@ class QdrantBaseRepository(
             logger.error(f"Failed to get all items: {e}", exc_info=True)
             raise
 
+    def _sichtbar_filter(self):
+        """Filter fuer Listen: der Typ des Repositorys, falls es einen hat, ohne Gesperrte."""
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        must = None
+        if self.content_type:
+            must = [
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                )
+            ]
+        return Filter(must=must, must_not=_gesperrt_bedingungen())
+
     def _autoren_filter(self, user_id: str, content_types: Optional[List[str]] = None):
         """
         Filter fuer alles, was einer Person zugeordnet wird.
@@ -451,7 +491,10 @@ class QdrantBaseRepository(
                 )
             )
 
-        return Filter(must=must_conditions, must_not=_search_query_origin_conditions())
+        return Filter(
+            must=must_conditions,
+            must_not=_search_query_origin_conditions() + _gesperrt_bedingungen(),
+        )
 
     async def get_by_author(
         self,
@@ -562,7 +605,9 @@ class QdrantBaseRepository(
             True if content exists, False otherwise.
         """
         try:
-            count = await self.count()
+            # Ungefiltert: Auch ein ganz gesperrter Bestand ist ein Bestand, sonst
+            # spielte initialize_repository die Startdaten erneut ein.
+            count = await self._shared_manager.count(self.content_type)
             has_content = count > 0
             content_desc = (
                 f"all content types"
@@ -585,16 +630,7 @@ class QdrantBaseRepository(
             )
 
             # Build filter for content_type if needed
-            search_filter = None
-            if self.content_type:
-                search_filter = Filter(
-                    must=[
-                        FieldCondition(
-                            key="content_type",
-                            match=MatchValue(value=self.content_type),
-                        )
-                    ]
-                )
+            search_filter = self._sichtbar_filter()
 
             # For MVP: Fetch a reasonable batch (10x requested limit) and sort in memory
             # This is acceptable for small datasets. For production with large datasets,

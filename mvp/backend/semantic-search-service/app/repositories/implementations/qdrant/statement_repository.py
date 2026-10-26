@@ -4,7 +4,10 @@ import logging
 
 from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
-from repositories.implementations.qdrant.base_repository import QdrantBaseRepository
+from repositories.implementations.qdrant.base_repository import (
+    QdrantBaseRepository,
+    _gesperrt_bedingungen,
+)
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from domain.models.content_origin import ContentOrigin
@@ -115,7 +118,8 @@ class StatementRepository(
                             match=MatchValue(value=self.content_type),
                         )
                     ],
-                    must_not=[_unbeantwortete_suchanfrage()],
+                    # Gesperrte Aussagen fehlen in der Suche, also auch hier.
+                    must_not=[_unbeantwortete_suchanfrage(), *_gesperrt_bedingungen()],
                 ),
             )
             return result.count
@@ -176,18 +180,17 @@ class StatementRepository(
         try:
             from qdrant_client.models import Range, FieldCondition, Filter
 
-            # Build filter for replysuggestions_count using Qdrant Range
-            filter_dict = None
+            # Dieselben Status wie search() ausschliessen, also auch gesperrte
+            # Aussagen; ihr Text erschiene sonst als statement_text an den Treffern.
+            filter_dict = {"must_not": self._status_ausschluss()}
             if min_replysuggestions_count > 0:
                 # Use Qdrant's range filter for efficient server-side filtering
-                filter_dict = {
-                    "must": [
-                        FieldCondition(
-                            key="replysuggestions_count",
-                            range=Range(gte=min_replysuggestions_count),
-                        )
-                    ]
-                }
+                filter_dict["must"] = [
+                    FieldCondition(
+                        key="replysuggestions_count",
+                        range=Range(gte=min_replysuggestions_count),
+                    )
+                ]
 
             # Perform search with server-side filtering
             search_results = await self._shared_manager.search(

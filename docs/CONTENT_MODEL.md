@@ -194,7 +194,7 @@ copies of each other, every layout fix had to be made four times, and the same c
 different looks (search, "Meine Beiträge", Fangkorb) that per-type components could not express.
 
 The frontend therefore has a single `app-beitragskarte` with three variants — `voll` (search,
-teaser), `kompakt` ("Meine Beiträge"), `rohling` (Fangkorb: raw input and its sentences) — fed by
+teaser), `kompakt` ("Meine Beiträge"), `einwurf` (Fangkorb: an Einwurf and its Sätze) — fed by
 `KartenDaten`. Adapters turn the three wire shapes into that one shape; the card knows no data
 source. Types differ only in small body blocks, not in separate components. Voting, the
 401/403/429 handling, debounce, copy and report live in `app-karten-aktionen`, rendered only in
@@ -203,7 +203,7 @@ source. Types differ only in small body blocks, not in separate components. Voti
 ```
 beitragskarte/
  ├─ karten-daten.ts               ← KartenDaten + ausSuchergebnis / ausBeitrag / ausEinwurf
- ├─ beitragskarte.component       ← variante voll | kompakt | rohling; body block per type
+ ├─ beitragskarte.component       ← variante voll | kompakt | einwurf; body block per type
  │                                  (text with short/long, image, post)
  ├─ karten-aktionen/              ← voting, auth/rate-limit handling, copy, report (voll only)
  └─ kartenliste.component         ← cards on a grey ground: list (mobile) or grid (kompakt)
