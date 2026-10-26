@@ -28,9 +28,9 @@
 -- leerem Volume aus init.sql, und hat dann direkt das neue Schema. Nur bereits
 -- laufende Umgebungen migrieren.
 --
--- Anwenden:
---   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -v ON_ERROR_STOP=1 \
---     < mvp/backend/postgres-app/migrations/2026-08-25-usage-events-datensparsamkeit.sql
+-- Nur einmal anwenden: ein zweiter Lauf bricht an RENAME COLUMN ab, weil
+-- user_agent dann fehlt. Die Transaktion laesst die Datenbank dabei unveraendert.
+-- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;
 
