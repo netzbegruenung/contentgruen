@@ -233,7 +233,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
       case 'ansehen':
         this.bottomSheet.open(EinwurfBeitragSheetComponent, {
           data: { beitraege: rohling.beitraege },
-          ariaLabel: karte.titel || 'Beitrag aus diesem Einwurf',
+          ariaLabel: karte.titel || 'Beitrag zu diesem Einwurf',
         });
         break;
       case 'linkKopieren':

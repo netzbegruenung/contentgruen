@@ -43,16 +43,16 @@ export const ERSTNUTZER_SATZ =
 
 /**
  * Was beim Verwerfen schiefging, im Fangkorb und in der Destillier-Ansicht gleich:
- * 403 heisst, die Person ist weder Einwerfer noch Admin; 409 heisst, daraus ist
- * inzwischen ein Beitrag geworden - dann ist Verwerfen nicht mehr vorgesehen, und
- * "versuche es erneut" waere ein falscher Rat.
+ * 403 heisst, die Person ist weder Einwerfer noch Admin; 409 heisst, der Einwurf ist
+ * inzwischen mit einem Beitrag verknuepft (neu oder vorhanden) - dann ist Verwerfen
+ * nicht mehr vorgesehen, und "versuche es erneut" waere ein falscher Rat.
  */
 export function verwerfenFehlertext(status: number | undefined): string {
   if (status === 403) {
     return 'Verwerfen können nur der Einwerfer und Admins.';
   }
   if (status === 409) {
-    return 'Zu diesem Einwurf gibt es schon einen Beitrag; verwerfen geht nicht mehr.';
+    return 'Zu diesem Einwurf gibt es schon einen Beitrag; Verwerfen geht nicht mehr.';
   }
   return 'Verwerfen hat nicht geklappt. Bitte versuche es erneut.';
 }

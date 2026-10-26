@@ -72,7 +72,8 @@ class RawInputRepository:
             "created_at": raw_input.created_at,
             "destilled_by": raw_input.destilled_by,
             "own_draft": eigener_satz,
-            # In der Tabelle created_by/created_at, nach aussen der Bearbeitungsstand.
+            # Die erste Verknuepfung: in der Tabelle created_by/created_at, nach aussen
+            # processed_*.
             "processed_content_id": str(erste.content_id) if erste else None,
             "processed_by": erste.created_by if erste else None,
             "processed_at": erste.created_at if erste else None,

@@ -93,7 +93,7 @@ def uebergang_erlaubt(von: RawInputStatus, nach: RawInputStatus) -> bool:
     """
     Ob ein Einwurf per Statuswechsel von ``von`` nach ``nach`` wechseln darf.
 
-    discarded aus open oder in_progress (ein verarbeiteter Einwurf wird nicht
+    discarded aus open oder in_progress (ein ausformulierter Einwurf wird nicht
     nachtraeglich verworfen); processed aus open, in_progress oder discarded
     (andere duerfen Verworfenes trotzdem destillieren). open und in_progress sind
     kein Ziel eines Statuswechsels - die ergeben sich aus den Saetzen.
@@ -106,7 +106,7 @@ def status_nach_satz(aktuell: RawInputStatus) -> RawInputStatus:
     Der Status, nachdem jemand einen nicht-leeren Satz gespeichert hat.
 
     Nur ein offener Einwurf wird dadurch destilliert. Verworfenes bleibt verworfen
-    (grau, andere duerfen trotzdem destillieren), Verarbeitetes bleibt verarbeitet.
+    (grau, andere duerfen trotzdem destillieren), Ausformuliertes bleibt ausformuliert.
     """
     if aktuell == RawInputStatus.OPEN:
         return RawInputStatus.IN_PROGRESS
@@ -118,7 +118,7 @@ def status_ohne_saetze(aktuell: RawInputStatus) -> RawInputStatus:
     Der Status, nachdem der letzte Satz zu einem Einwurf geloescht wurde.
 
     Nur ein destillierter Einwurf faellt zurueck auf offen; verworfene und
-    verarbeitete behalten ihren Stand.
+    ausformulierte behalten ihren Stand.
     """
     if aktuell == RawInputStatus.IN_PROGRESS:
         return RawInputStatus.OPEN

@@ -188,8 +188,8 @@ class ContentReport(Base):
 
 class RawInput(Base):
     """
-    Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh und
-    unverarbeitet.
+    Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh, wie
+    eingeworfen.
 
     Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/archiv/ROHINPUT.md):
     Rohinput wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
@@ -243,9 +243,8 @@ class RawInputContentLink(Base):
 
     Geschrieben wird sie, wenn der Destillier-Ablauf den Einwurf mit dem Beitrag
     verknuepft (``PATCH /rawinput/{id}/status``). Sie existiert von Anfang an, weil die
-    Beziehung n:m ist: ein
-    Thread kann einen Kommentar *und* eine Hintergrundinfo hervorbringen, und ein
-    Beitrag kann aus mehreren Einwuerfen entstehen. Ein Feld
+    Beziehung n:m ist: ein Einwurf kann mit einem Kommentar *und* einer
+    Hintergrundinfo verknuepft sein, und ein Beitrag mit mehreren Einwuerfen. Ein Feld
     ``resulting_content_id`` auf ``raw_inputs`` waere billiger und genau die
     Blockade, die spaeter teuer wird (docs/archiv/ROHINPUT.md, Abschnitt 6).
 
@@ -292,7 +291,7 @@ class RawInputContentLink(Base):
         Index("idx_raw_input_links_raw_input_id", "raw_input_id"),
         Index("idx_raw_input_links_content_id", "content_id"),
         Index("idx_raw_input_links_draft_id", "draft_id"),
-        # Dieselbe Paarung nur einmal - zweimal "verarbeitet" zaehlt spaeter sonst
+        # Dieselbe Paarung nur einmal - zweimal verknuepft zaehlt spaeter sonst
         # doppelt.
         Index(
             "idx_raw_input_links_unique",

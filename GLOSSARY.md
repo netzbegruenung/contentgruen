@@ -5,7 +5,7 @@ Gut gesagt ist eine Webapp, die Nutzende dabei unterstützt, schnell gute Argume
 ## Die Kette
 
 **Kette**:
-Die drei Arbeitsschritte, über die aus einem Fundstück ein Beitrag wird: Einwerfen, Destillieren, Ausformulieren. Jeder Schritt kann von einer anderen Person erledigt werden. Destillieren und Ausformulieren sind Umwandlungen.
+Die drei Arbeitsschritte, über die aus einem Fundstück ein Beitrag wird: Einwerfen, Destillieren, Ausformulieren. Jeder Schritt kann von einer anderen Person erledigt werden. Destillieren ist eine Umwandlung, Ausformulieren ebenfalls, wenn dabei ein neuer Beitrag entsteht.
 _Avoid_: Workflow, Ablauf, Dreischritt, Pipeline
 
 **Einwurf**:
@@ -45,7 +45,7 @@ Die Person, die als Erste einen Satz zu einem Einwurf gespeichert hat.
 _Avoid_: Bearbeiter, Verarbeiter
 
 **Ausformulieren**:
-Der letzte Schritt der Kette: aus einem Satz zu einem Einwurf einen fertigen Beitrag machen (Typ wählen, Text schreiben, Herkunft angeben) und den Einwurf damit verknüpfen. Ist der neue Beitrag eine Dublette, kann die Person den Einwurf stattdessen mit dem vorhandenen verknüpfen; auch das ist Ausformulieren.
+Der letzte Schritt der Kette: aus einem Satz zu einem Einwurf einen fertigen Beitrag machen (Typ wählen, Text schreiben, Herkunft angeben) und den Einwurf damit verknüpfen. Ist der neue Beitrag eine Dublette, kann die Person den Einwurf stattdessen mit dem vorhandenen verknüpfen; auch das ist Ausformulieren, aber keine Umwandlung, weil nichts Neues entsteht.
 _Avoid_: Verfassen, Verarbeiten, Fertigstellen
 
 **Verfassen**:
@@ -53,7 +53,7 @@ Einen Beitrag direkt anlegen, ohne dass ein Einwurf dahintersteht.
 _Avoid_: Ausformulieren, Erstellen, Beitragen
 
 **Ausformulierer**:
-Die Person, die einen Einwurf mit einem Beitrag verknüpft hat, mit einem neuen oder, bei einer Dublette, mit dem vorhandenen. Wer einem vorhandenen Beitrag zustimmt oder den eigenen vorhandenen nimmt, ist Ausformulierer; Autor des vorhandenen wird man dadurch nicht, Autor bleibt, wer ihn gespeichert hat.
+Die Person, die einen Einwurf mit einem Beitrag verknüpft hat, mit einem neuen oder, bei einer Dublette, mit dem vorhandenen. Wer aus dem Fangkorb einem vorhandenen Beitrag zustimmt oder den eigenen vorhandenen nimmt, ist Ausformulierer; Autor des vorhandenen wird man dadurch nicht, Autor bleibt, wer ihn gespeichert hat.
 _Avoid_: Verarbeiter, Bearbeiter, Autor
 
 **Verwerfen**:
@@ -83,7 +83,7 @@ Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“,
 ## Umwandlungen
 
 **Umwandlung**:
-Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren, das Zuschneiden eines Kommentars auf eine Zielgruppe.
+Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren mit einem neuen Beitrag, das Zuschneiden eines Kommentars auf eine Zielgruppe.
 _Avoid_: Konvertierung, Transformation, Verarbeitung
 
 **Synthese**:
@@ -163,7 +163,7 @@ Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine
 _Avoid_: Report, Flag, Beschwerde
 
 **Dublette**:
-Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener, nimmt sie ihn, statt zuzustimmen. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.
+Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener und kommt sie aus dem Fangkorb, nimmt sie ihn, statt zuzustimmen. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.
 _Avoid_: Duplikat, Doppelung
 
 **Suchanfrage**:

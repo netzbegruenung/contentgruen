@@ -179,7 +179,7 @@ export class RawInputService {
   }
 
   /**
-   * Verwerfen oder als ausformuliert markieren - dann mit dem verknuepften Beitrag
+   * Verwerfen oder mit einem Beitrag verknuepfen - dann mit dem verknuepften Beitrag
    * und seinem Typ, nach dem sich die Fangkorb-Karte faerbt.
    */
   updateStatus(
