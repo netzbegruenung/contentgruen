@@ -10,13 +10,13 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 - **Purpose**: Active development with hot-reload
 - **Access**: http://localhost:4200 (frontend), http://localhost:5054 (BFF), http://localhost:8000 (API)
 - **Infrastructure**: Services run locally, only Qdrant and PostgreSQL in Docker (`docker-compose.local-dbs.yml`)
-- **Authentication**: Dummy auth (testuser/Liebe>Hass!)
+- **Authentication**: E-mail login against `managed-users.json` (`test.user@example.com`/`Liebe>Hass!`)
 
 ### 2. Docker Development
 - **Purpose**: Testing containerized deployment locally
 - **Access**: http://localhost (frontend via nginx proxy)
 - **Infrastructure**: All services in Docker containers
-- **Authentication**: Dummy auth (testuser/Liebe>Hass!)
+- **Authentication**: E-mail login against `managed-users.json` (`test.user@example.com`/`Liebe>Hass!`)
 
 ### 3. Test Environment
 - **Purpose**: Integration testing and demos
@@ -147,11 +147,15 @@ listens on 5432 inside the container.
 ## Authentication Flow
 
 ### Dummy Auth (Local/Docker/Test)
-1. User enters credentials in frontend
-2. Frontend POSTs to BFF `/login`
-3. BFF validates (hardcoded: testuser/Liebe>Hass!)
+1. User enters e-mail address and password in frontend ("Direktanmeldung")
+2. Frontend POSTs to BFF `/api/auth/login/managed`
+3. BFF validates against `managed-users.json` (bcrypt hashes; example users in
+   `mvp/config/managed-users.example.json`, e.g. `test.user@example.com`/`Liebe>Hass!`)
 4. BFF sets session cookie
 5. BFF returns user info
+
+With `USE_KEYCLOAK=false` the BFF also still answers the old hardcoded `POST /login`
+(`testuser`/`Liebe>Hass!`, user id `test-user-id-1`); the frontend no longer has a form for it.
 
 ### Keycloak (Production)
 1. User accesses protected resource
