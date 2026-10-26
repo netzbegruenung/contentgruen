@@ -2,13 +2,6 @@
 
 Gut gesagt ist eine Webapp, die Nutzende dabei unterstützt, schnell gute Argumente und Framings zu finden und ihre eigene Argumentation zu verbessern. Neue Beiträge entstehen entlang einer Kette: Einwerfen, Destillieren, Ausformulieren.
 
-<!--
-ENTWURF für die grill-with-docs-Session, nicht abgestimmt.
-Zeilen mit "_Offene Frage_" sind keine Glossar-Inhalte, sondern Merker für die Session:
-Sie werden dort entschieden und danach gelöscht. Belege zu jedem Begriff stehen in
-docs/PLAN_skills-einstieg.md, Abschnitt "Belege zum Glossar-Entwurf".
--->
-
 ## Die Kette
 
 **Kette**:
@@ -129,6 +122,20 @@ _Avoid_: Grafik, Image
 Ein Beitrag, der einen gelungenen Beitrag aus einem sozialen Netzwerk als Vorbild zum Teilen festhält. Er ist fertig und wird so verwendet; ein Einwurf mit demselben Link ist dagegen Material, aus dem erst ein Beitrag werden soll.
 _Avoid_: Social-Media-Post, Posting
 
+### Zustände eines Beitrags
+
+**Sichtbar**:
+Der Normalfall: Alle Nutzenden, auch Besucher, können den Beitrag finden und kopieren.
+_Avoid_: Veröffentlicht, Freigegeben, Grün-Intern
+
+**Gesperrt**:
+Ein Beitrag, den ein Admin aus Suche und Ansicht genommen hat.
+_Avoid_: Blockiert, Abgelehnt, Versteckt
+
+**Gelöscht**:
+Ein Beitrag, den sein Autor entfernt hat.
+_Avoid_: Archiviert
+
 **Titel**:
 Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema.
 _Avoid_: Überschrift, Etikett, Thema
@@ -144,21 +151,24 @@ _Avoid_: Ton, Tonalität
 ## Nutzung und Bewertung
 
 **Nutzung**:
-Ein Kopiervorgang eines Beitrags. Sie zählt, wie oft ein Beitrag tatsächlich verwendet wurde.
+Ein Kopiervorgang eines Beitrags. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft.
 _Avoid_: Usage, Aufruf, Klick
 
 **Stimme**:
-Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag.
+Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
 _Avoid_: Vote, Like, Daumen
 
 **Meldung**:
-Der Hinweis einer Person, dass ein Beitrag problematisch ist; er landet in der Moderation.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren.
 _Avoid_: Report, Flag, Beschwerde
 
+**Dublette**:
+Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert.
+_Avoid_: Duplikat, Doppelung
+
 **Suchanfrage**:
-Der Text, mit dem jemand nach passenden Beiträgen sucht.
+Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
-_Offene Frage_: Suchanfragen werden heute wie Beiträge abgelegt und nur ausgefiltert. Sind sie fachlich Aussagen im Entstehen oder nur Technik?
 
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
@@ -187,10 +197,9 @@ Die Person, die einen Beitrag ausformuliert oder verfasst hat. Einwerfer und Des
 _Avoid_: Ersteller, Owner, Urheber
 
 **Anzeigename**:
-Der Name, unter dem eine Person anderen in Gut gesagt gezeigt wird.
+Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt wird. Andere sehen nie den Klarnamen aus dem Login.
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Admin**:
-Eine Person mit Zugriff auf Moderation und Kennzahlen.
+Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion
-_Offene Frage_: Sind Admin und Moderation dieselbe Rolle?
