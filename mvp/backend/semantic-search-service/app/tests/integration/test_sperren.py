@@ -8,6 +8,7 @@ Antwortvorschlaegen und ist nach dem Entsperren wieder da. Die Meldungen
 """
 
 import datetime
+import json
 import uuid
 from unittest.mock import MagicMock
 
@@ -128,3 +129,59 @@ async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
     treffer = await post_service.search("Tempolimit Autobahn", limit=5)
     assert post_id in [t.id for t in treffer]
     assert await _antwortvorschlaege(post_service, post_id) == [post_id]
+
+
+async def test_loeschen_entfernt_verweis_aus_aussage(
+    real_embeddings_manager, moderation
+):
+    """
+    Die Kaskade schreibt nur die Antwortvorschlaege; der Vektor der Aussage bleibt.
+    Ein upsert ohne Vektor lehnt Qdrant ab.
+    """
+    from qdrant_client.models import PointStruct
+
+    beitrag_id, aussage_id, andere = (str(uuid.uuid4()) for _ in range(3))
+    vektor = [0.1] * 768
+    await real_embeddings_manager.async_client.upsert(
+        collection_name=real_embeddings_manager.collection_name,
+        points=[
+            PointStruct(
+                id=beitrag_id,
+                vector=vektor,
+                payload={"content_type": ContentType.COMMENTARY.value, "text": TEXT},
+            ),
+            PointStruct(
+                id=aussage_id,
+                vector=vektor,
+                payload={
+                    "content_type": ContentType.STATEMENT.value,
+                    "text": "Bringt ein Tempolimit etwas?",
+                    "replysuggestions": json.dumps(
+                        [{"id": beitrag_id}, {"id": andere}]
+                    ),
+                    "replysuggestions_count": 2,
+                },
+            ),
+        ],
+        wait=True,
+    )
+    [vorher] = await real_embeddings_manager.async_client.retrieve(
+        collection_name=real_embeddings_manager.collection_name,
+        ids=[aussage_id],
+        with_vectors=True,
+    )
+
+    assert await moderation.delete_content(
+        beitrag_id, ContentType.COMMENTARY.value, deleted_by="admin-1"
+    )
+
+    assert await real_embeddings_manager.get_by_id(beitrag_id) is None
+    [aussage] = await real_embeddings_manager.async_client.retrieve(
+        collection_name=real_embeddings_manager.collection_name,
+        ids=[aussage_id],
+        with_payload=True,
+        with_vectors=True,
+    )
+    assert json.loads(aussage.payload["replysuggestions"]) == [{"id": andere}]
+    assert aussage.payload["replysuggestions_count"] == 1
+    assert aussage.vector == vorher.vector
