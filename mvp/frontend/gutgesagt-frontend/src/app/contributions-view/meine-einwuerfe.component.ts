@@ -14,7 +14,7 @@ import { EinwurfAktionenService } from '../raw-input-list/einwurf-aktionen.servi
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 
 /**
- * Meine Einwuerfe: was aus den eigenen Funden geworden ist.
+ * Meine Einwuerfe: was aus den eigenen Einwuerfen geworden ist.
  *
  * Jede Stufe, auch verworfen, neueste zuerst; die Stufe steht als Wort auf der
  * Karte. Bei ausformulierten fuehrt "Ansehen" zu den verknuepften Beitraegen. Die
@@ -102,7 +102,10 @@ export class MeineEinwuerfeComponent implements OnInit, OnDestroy {
 
   /** Nach dem Verwerfen dieselbe Seite neu: Die Karte zeigt dann "Verworfen". */
   aktionAusfuehren(karte: KartenDaten, aktion: EinwurfAktion): void {
-    this.einwurfAktionen.ausfuehren(karte, aktion, () => this.laden(), this.destroy$);
+    this.einwurfAktionen
+      .ausfuehren(karte, aktion)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.laden());
   }
 
   nachKarte(_index: number, karte: KartenDaten): string {

@@ -7,7 +7,7 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
-import { Einwurf, EinwurfService, FangkorbResponse } from '../services/einwurf.service';
+import { Einwurf, EinwurfService, EinwurfSeite } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
@@ -36,7 +36,7 @@ describe('MeineEinwuerfeComponent', () => {
     };
   }
 
-  function antwort(einwuerfe: Einwurf[], gesamt = einwuerfe.length): FangkorbResponse {
+  function antwort(einwuerfe: Einwurf[], gesamt = einwuerfe.length): EinwurfSeite {
     return { results_count: einwuerfe.length, results: einwuerfe, total_records_count: gesamt };
   }
 
@@ -104,7 +104,7 @@ describe('MeineEinwuerfeComponent', () => {
   it('macht verworfene Einwuerfe erkennbar', () => {
     anzeigen();
 
-    expect(texte('.einwurf-verworfen')).toEqual(['verworfen']);
+    expect(texte('.einwurf-stufe')[1]).toBe('Verworfen');
   });
 
   it('fuehrt bei einem ausformulierten Einwurf zu seinem Beitrag', () => {

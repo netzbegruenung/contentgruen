@@ -56,11 +56,3 @@
   outline: 2px solid var(--primary-dark, #005437);
   outline-offset: 2px;
 }
-
-app-meine-einwuerfe {
-  display: block;
-}
-
-app-meine-einwuerfe[hidden] {
-  display: none;
-}

@@ -165,7 +165,7 @@ async def get_own_raw_inputs(
     """
     Meine Einwuerfe: nur, was die anfragende Person eingeworfen hat, neueste zuerst.
 
-    Die Rueckmeldung an den Einwerfer, was aus seinen Funden geworden ist - jede
+    Die Rueckmeldung an den Einwerfer, was aus seinen Einwuerfen geworden ist - jede
     Stufe, auch verworfen, mit allen verknuepften Beitraegen. Steht vor /{id}, sonst
     lese FastAPI den Pfad als Einwurf-ID.
     """

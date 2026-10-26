@@ -1,12 +1,17 @@
 <div class="component-box">
-    <div class="tabs" role="tablist" aria-label="Meine Beiträge und Einwürfe">
+    <!-- Tab-Muster nach WAI-ARIA: ein Tab-Stopp, Pfeiltasten wechseln den Tab -->
+    <div class="tabs" role="tablist" aria-label="Meine Beiträge und Einwürfe" (keydown)="tabTaste($event)">
         <button *ngFor="let eintrag of tabs" type="button" role="tab" class="tab"
+                [id]="'meine-tab-' + eintrag.wert"
+                [attr.aria-controls]="'meine-bereich-' + eintrag.wert"
                 [class.aktiv]="tab === eintrag.wert"
                 [attr.aria-selected]="tab === eintrag.wert"
+                [attr.tabindex]="tab === eintrag.wert ? 0 : -1"
                 (click)="tabWaehlen(eintrag.wert)">{{ eintrag.name }}</button>
     </div>
 
-    <div [hidden]="tab !== 'beitraege'">
+    <div id="meine-bereich-beitraege" role="tabpanel" aria-labelledby="meine-tab-beitraege"
+         [hidden]="tab !== 'beitraege'">
         <div *ngIf="isLoading">
             <p>Lade eigene Beiträge …</p>
             <div class="loading-container">
@@ -34,5 +39,8 @@
     </div>
 
     <!-- Erst beim ersten Oeffnen geladen, danach nur versteckt: Seite und Liste bleiben beim Wechseln stehen -->
-    <app-meine-einwuerfe *ngIf="einwuerfeGeoeffnet" [hidden]="tab !== 'einwuerfe'"></app-meine-einwuerfe>
+    <div id="meine-bereich-einwuerfe" role="tabpanel" aria-labelledby="meine-tab-einwuerfe"
+         [hidden]="tab !== 'einwuerfe'">
+        <app-meine-einwuerfe *ngIf="einwuerfeGeoeffnet"></app-meine-einwuerfe>
+    </div>
 </div>

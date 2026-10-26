@@ -128,6 +128,38 @@ describe('ContributionsViewComponent', () => {
 
       expect(eigeneLaden).toHaveBeenCalledTimes(1);
     });
+
+    it('verbindet jeden Tab mit seinem Bereich und hat nur einen Tab-Stopp', async () => {
+      await erstellen([beitrag()]);
+
+      for (const tab of tabs()) {
+        const bereich = fixture.nativeElement.querySelector(`#${tab.getAttribute('aria-controls')}`);
+        expect(bereich.getAttribute('role')).toBe('tabpanel');
+        expect(bereich.getAttribute('aria-labelledby')).toBe(tab.id);
+      }
+      expect(tabs().map((tab) => tab.getAttribute('tabindex'))).toEqual(['0', '-1']);
+    });
+
+    it('wechselt mit den Pfeiltasten und nimmt den Fokus mit', async () => {
+      await erstellen([beitrag()]);
+      const taste = (key: string) => {
+        tabs()[0].parentElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+        fixture.detectChanges();
+      };
+
+      taste('ArrowRight');
+      expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
+      expect(document.activeElement).toBe(tabs()[1]);
+      expect(sichtbar('app-meine-einwuerfe')).toBeTrue();
+
+      taste('ArrowRight');
+      expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
+
+      taste('End');
+      expect(tabs()[1].getAttribute('tabindex')).toBe('0');
+      taste('Home');
+      expect(tabs()[0].getAttribute('tabindex')).toBe('0');
+    });
   });
 
   it('beschriftet den Paginator auf Deutsch', async () => {

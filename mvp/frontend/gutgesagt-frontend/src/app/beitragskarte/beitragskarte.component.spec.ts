@@ -698,6 +698,13 @@ describe('BeitragskarteComponent', () => {
       expect(element('.einwurf-einwerfer')).toBeNull();
     });
 
+    it('nennt einen verworfenen Einwurf mit stufeZeigen nur einmal verworfen', () => {
+      zeigen(einwurfKarte({ status: 'discarded' }), { variante: 'einwurf', stufeZeigen: true });
+
+      expect(element('.einwurf-stufe').textContent!.trim()).toBe('Verworfen');
+      expect(element('.einwurf-verworfen')).toBeNull();
+    });
+
     it('nennt ohne stufeZeigen den Einwerfer und keine Stufe in der Meta-Zeile', () => {
       zeigen(einwurfKarte(), { variante: 'einwurf' });
 

@@ -32,7 +32,7 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
  * Herkunft; eine Suche und damit eine neue Suchaussage entsteht dabei nicht.
  *
  * Der zweite Tab ist "Meine Einwuerfe" (app-meine-einwuerfe): was aus den eigenen
- * Funden geworden ist. Er laedt erst beim ersten Oeffnen.
+ * Einwuerfen geworden ist. Er laedt erst beim ersten Oeffnen.
  */
 @Component({
   selector: 'app-contributions-view',
@@ -122,6 +122,24 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   tabWaehlen(tab: MeineTab): void {
     this.tab = tab;
     this.einwuerfeGeoeffnet ||= tab === 'einwuerfe';
+  }
+
+  /** Pfeiltasten, Pos1 und Ende waehlen den Tab und setzen den Fokus mit. */
+  tabTaste(event: KeyboardEvent): void {
+    const jetzt = this.tabs.findIndex((eintrag) => eintrag.wert === this.tab);
+    const ziel = {
+      ArrowRight: (jetzt + 1) % this.tabs.length,
+      ArrowLeft: (jetzt - 1 + this.tabs.length) % this.tabs.length,
+      Home: 0,
+      End: this.tabs.length - 1,
+    }[event.key];
+    if (ziel === undefined) {
+      return;
+    }
+    event.preventDefault();
+    this.tabWaehlen(this.tabs[ziel].wert);
+    const knoepfe = (event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="tab"]');
+    knoepfe[ziel]?.focus();
   }
 
   /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */

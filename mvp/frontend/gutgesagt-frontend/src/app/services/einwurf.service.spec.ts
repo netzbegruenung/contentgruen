@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { Einwurf, EinwurfService, FangkorbResponse } from './einwurf.service';
+import { Einwurf, EinwurfService, EinwurfSeite } from './einwurf.service';
 import { LoggingService } from './logging.service';
 import { cacheService } from '../auth/cache.interceptor';
 import { environment } from '../../environments/environment';
@@ -54,7 +54,7 @@ describe('EinwurfService', () => {
   });
 
   it('holt den Fangkorb mit Seitenangaben', () => {
-    const antwort: FangkorbResponse = {
+    const antwort: EinwurfSeite = {
       results_count: 0,
       results: [],
       total_records_count: 0,
@@ -84,7 +84,7 @@ describe('EinwurfService', () => {
   });
 
   it('laedt die eigenen Einwuerfe frisch, nicht aus dem Cache', () => {
-    // Ein gerade eingeworfener Fund soll sofort dastehen; der POST leert die Liste nicht.
+    // Ein gerade eingeworfenes Fundstueck soll sofort dastehen; der POST leert die Liste nicht.
     const leeren = spyOn(cacheService, 'delete');
 
     service.eigeneLaden(1, 24).subscribe();
