@@ -30,7 +30,7 @@ MAX_LAENGE = 100
 # braucht der Platzhalter keine Zeile, die ein Loeschlauf mit abraeumen koennte.
 # Saetze im Fangkorb tragen stattdessen je einen eigenen "ehemalige-person-<UUID>"
 # mit Zeile in users (mvp/scripts/manual/person_loeschen.sql).
-EHEMALIGE_PERSON = "ehemalige-person"
+EHEMALIGE_PERSON_KENNUNG = "ehemalige-person"
 EHEMALIGE_PERSON_NAME = "ehemalige Person"
 
 
@@ -76,7 +76,7 @@ class AnzeigenameService:
 
     def merken(self, user_id: Optional[str], roh: Optional[str]) -> None:
         """Den Namen aus dem Header ablegen, falls er neu ist. Wirft nie."""
-        if not angemeldet(user_id) or user_id == EHEMALIGE_PERSON:
+        if not angemeldet(user_id) or user_id == EHEMALIGE_PERSON_KENNUNG:
             return
         name = anzeigename_aus_header(roh)
         if name is None or self._bekannt.get(user_id) == name:
@@ -99,14 +99,14 @@ class AnzeigenameService:
         """
         user_ids = set(user_ids)
         try:
-            namen = self._repository.anzeigenamen(user_ids)
+            namen = dict(self._repository.anzeigenamen(user_ids))
         except Exception as e:
             logger.warning(
                 f"Anzeigenamen konnten nicht gelesen werden: {type(e).__name__}"
             )
             namen = {}
-        if EHEMALIGE_PERSON in user_ids:
-            namen[EHEMALIGE_PERSON] = EHEMALIGE_PERSON_NAME
+        if EHEMALIGE_PERSON_KENNUNG in user_ids:
+            namen[EHEMALIGE_PERSON_KENNUNG] = EHEMALIGE_PERSON_NAME
         return namen
 
     def mit_autor_name(self, inhalt) -> Dict[str, Any]:

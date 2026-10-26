@@ -40,12 +40,15 @@ sys.path.insert(0, os.getcwd())
 
 from qdrant_client import QdrantClient  # noqa: E402
 
-from services.wartung.beitraege_anonymisieren import anonymisieren  # noqa: E402
+from services.wartung.beitraege_anonymisieren import (  # noqa: E402
+    ALTER_PLATZHALTER,
+    anonymisieren,
+)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    parser.add_argument("kennung", help="X-User-Kennung der Person (oder geloeschter-nutzer)")
+    parser.add_argument("kennung", help=f"X-User-Kennung der Person (oder {ALTER_PLATZHALTER})")
     parser.add_argument(
         "--ausfuehren", action="store_true", help="wirklich schreiben (sonst nur zeigen)"
     )
@@ -56,10 +59,10 @@ def main() -> int:
     client = QdrantClient(url=url, timeout=60, check_compatibility=False)
 
     bericht = anonymisieren(client, collection, args.kennung, ausfuehren=args.ausfuehren)
-    for punkt in bericht.punkte:
+    for punkt in bericht.treffer:
         print(punkt.id, punkt.content_type, repr(punkt.text)[:80])
     wort = "anonymisiert" if bericht.ausgefuehrt else "zu anonymisieren"
-    print(f"{wort}: {len(bericht.punkte)}")
+    print(f"{wort}: {len(bericht.treffer)}")
     return 0
 
 

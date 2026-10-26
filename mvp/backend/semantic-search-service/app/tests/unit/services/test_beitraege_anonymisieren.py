@@ -2,21 +2,27 @@
 Beitraege einer geloeschten Person anonymisieren (Loeschkonzept Schritt 3) und die
 einmalige Umstellung des alten Platzhalters ``geloeschter-nutzer``.
 
-Laeuft gegen qdrant_client im Speicher-Modus: dieselben Filter und set_payload wie
-gegen den Server, ohne dass einer laufen muss.
+Laeuft immer gegen qdrant_client im Speicher-Modus und zusaetzlich gegen einen
+echten Qdrant, wenn unter QDRANT_URL einer antwortet (Dev-Stack: Port 6333) - der
+Speicher-Modus wertet Filter wie ``authors[].name`` selbst aus, nicht der Server.
+Dort in einer eigenen Collection, die der Test wieder abraeumt.
 """
+
+import os
+import uuid
 
 import pytest
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
-from services.anzeigename_service import EHEMALIGE_PERSON
+from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG
 from services.wartung.beitraege_anonymisieren import (
     ALTER_PLATZHALTER,
     anonymisieren,
 )
 
-COLLECTION = "content_collection"
+# Eigener Name je Lauf: Auf dem Server laufen parallel andere Tests und Dev-Daten.
+COLLECTION = f"test_anonymisieren_{uuid.uuid4().hex[:8]}"
 PERSON = "person-die-loescht"
 ANDERE = "andere-person"
 
@@ -34,9 +40,36 @@ def _payload(original_author, last_modified_by=None, authors=(), editors=()):
     }
 
 
-@pytest.fixture
-def client():
-    client = QdrantClient(":memory:")
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+
+
+def _qdrant_erreichbar() -> bool:
+    try:
+        QdrantClient(
+            url=QDRANT_URL, timeout=2, check_compatibility=False
+        ).get_collections()
+        return True
+    except Exception:
+        return False
+
+
+@pytest.fixture(
+    params=[
+        "speicher",
+        pytest.param(
+            "server",
+            marks=pytest.mark.skipif(
+                not _qdrant_erreichbar(), reason=f"kein Qdrant unter {QDRANT_URL}"
+            ),
+        ),
+    ]
+)
+def client(request):
+    if request.param == "speicher":
+        client = QdrantClient(":memory:")
+    else:
+        client = QdrantClient(url=QDRANT_URL, timeout=10, check_compatibility=False)
+        request.addfinalizer(lambda: client.delete_collection(COLLECTION))
     client.create_collection(
         COLLECTION, vectors_config=VectorParams(size=2, distance=Distance.COSINE)
     )
@@ -71,18 +104,21 @@ class TestAnonymisieren:
     def test_alle_vier_felder_bekommen_den_platzhalter(self, client):
         anonymisieren(client, COLLECTION, PERSON, ausfuehren=True)
 
-        assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON}
+        assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON_KENNUNG}
 
     def test_fremde_kennungen_am_selben_beitrag_bleiben(self, client):
         anonymisieren(client, COLLECTION, PERSON, ausfuehren=True)
 
         payload = _gelesen(client, 2)
         assert payload["original_author"] == ANDERE
-        assert payload["last_modified_by"] == EHEMALIGE_PERSON
-        assert [a["name"] for a in payload["authors"]] == [ANDERE, EHEMALIGE_PERSON]
+        assert payload["last_modified_by"] == EHEMALIGE_PERSON_KENNUNG
+        assert [a["name"] for a in payload["authors"]] == [
+            ANDERE,
+            EHEMALIGE_PERSON_KENNUNG,
+        ]
         assert [e["editor"] for e in payload["edit_history"]] == [
             ANDERE,
-            EHEMALIGE_PERSON,
+            EHEMALIGE_PERSON_KENNUNG,
         ]
         # Was neben der Kennung im Eintrag steht, bleibt.
         assert payload["authors"][1]["role"] == "author"
@@ -94,24 +130,24 @@ class TestAnonymisieren:
         bericht = anonymisieren(client, COLLECTION, PERSON, ausfuehren=True)
 
         assert _gelesen(client, 3) == vorher
-        assert sorted(p.id for p in bericht.punkte) == [1, 2]
+        assert sorted(p.id for p in bericht.treffer) == [1, 2]
 
-    def test_ohne_ausfuehren_wird_nur_gezaehlt(self, client):
+    def test_ohne_ausfuehren_wird_nur_gezeigt(self, client):
         bericht = anonymisieren(client, COLLECTION, PERSON)
 
-        assert len(bericht.punkte) == 2
+        assert len(bericht.treffer) == 2
         assert not bericht.ausgefuehrt
         assert PERSON in _kennungen(_gelesen(client, 1))
 
     def test_zweiter_lauf_findet_nichts(self, client):
         anonymisieren(client, COLLECTION, PERSON, ausfuehren=True)
 
-        assert anonymisieren(client, COLLECTION, PERSON, ausfuehren=True).punkte == []
+        assert anonymisieren(client, COLLECTION, PERSON, ausfuehren=True).treffer == []
 
     def test_bericht_nennt_typ_und_text_fuer_die_einzelfallpruefung(self, client):
         bericht = anonymisieren(client, COLLECTION, PERSON)
 
-        punkt = next(p for p in bericht.punkte if p.id == 1)
+        punkt = next(p for p in bericht.treffer if p.id == 1)
         assert punkt.content_type == "commentary"
         assert punkt.text == "Waermepumpen lohnen sich auch im Altbau"
 
@@ -126,10 +162,13 @@ class TestAnonymisieren:
 
         anonymisieren(client, COLLECTION, ALTER_PLATZHALTER, ausfuehren=True)
 
-        assert _kennungen(_gelesen(client, 3)) == {EHEMALIGE_PERSON}
-        assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON}
+        assert _kennungen(_gelesen(client, 3)) == {EHEMALIGE_PERSON_KENNUNG}
+        assert _kennungen(_gelesen(client, 1)) == {EHEMALIGE_PERSON_KENNUNG}
 
-    @pytest.mark.parametrize("kennung", ["", " ", EHEMALIGE_PERSON, "anonymous"])
+    @pytest.mark.parametrize(
+        "kennung",
+        ["", " ", " person-die-loescht", EHEMALIGE_PERSON_KENNUNG, "anonymous"],
+    )
     def test_keine_kennung_die_niemanden_bezeichnet(self, client, kennung):
         with pytest.raises(ValueError):
             anonymisieren(client, COLLECTION, kennung, ausfuehren=True)

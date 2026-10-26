@@ -30,7 +30,7 @@ from qdrant_client.models import (
     SetPayloadOperation,
 )
 
-from services.anzeigename_service import EHEMALIGE_PERSON, angemeldet
+from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG, angemeldet
 
 # Platzhalter bis #236; Karten zeigten dazu "Mitglied".
 ALTER_PLATZHALTER = "geloeschter-nutzer"
@@ -50,20 +50,22 @@ class Treffer:
 @dataclass
 class AnonymisierungBericht:
     ausgefuehrt: bool
-    punkte: List[Treffer] = field(default_factory=list)
+    treffer: List[Treffer] = field(default_factory=list)
 
 
 def _ersetzt(payload: Dict[str, Any], kennung: str) -> Dict[str, Any]:
     """Nur die Felder, in denen die Kennung vorkommt, mit dem Platzhalter."""
     neu: Dict[str, Any] = {
-        feld: EHEMALIGE_PERSON for feld in _FELDER if payload.get(feld) == kennung
+        feld: EHEMALIGE_PERSON_KENNUNG
+        for feld in _FELDER
+        if payload.get(feld) == kennung
     }
     for feld, schluessel in _LISTEN:
         eintraege = payload.get(feld) or []
         if any(e.get(schluessel) == kennung for e in eintraege):
             neu[feld] = [
                 (
-                    {**e, schluessel: EHEMALIGE_PERSON}
+                    {**e, schluessel: EHEMALIGE_PERSON_KENNUNG}
                     if e.get(schluessel) == kennung
                     else e
                 )
@@ -76,8 +78,13 @@ def anonymisieren(
     client: QdrantClient, collection: str, kennung: str, ausfuehren: bool = False
 ) -> AnonymisierungBericht:
     # Eine leere Kennung oder der Platzhalter selbst bezeichnet niemanden; ein
-    # Tippfehler im Aufruf soll nicht still alle anonymen Felder umschreiben.
-    if not angemeldet(kennung.strip()) or kennung == EHEMALIGE_PERSON:
+    # Tippfehler im Aufruf soll nicht still alle anonymen Felder umschreiben oder
+    # mit Leerzeichen am Rand nichts finden und "0" melden.
+    if (
+        not angemeldet(kennung)
+        or kennung != kennung.strip()
+        or kennung == EHEMALIGE_PERSON_KENNUNG
+    ):
         raise ValueError("keine Kennung einer Person")
 
     filt = Filter(
@@ -105,7 +112,7 @@ def anonymisieren(
             neu = _ersetzt(payload, kennung)
             if not neu:
                 continue
-            bericht.punkte.append(
+            bericht.treffer.append(
                 Treffer(punkt.id, payload.get("content_type"), payload.get("text"))
             )
             neu_je_punkt.append((punkt.id, neu))
