@@ -23,6 +23,16 @@ logger = logging.getLogger(__name__)
 ANONYM = "anonymous"
 MAX_LAENGE = 100
 
+# Platzhalter fuer die Kennung einer Person, die ihr Konto geloescht hat, an ihren
+# Beitraegen (Loeschkonzept Schritt 3, services/wartung/beitraege_anonymisieren.py).
+# Ein gemeinsamer fuer alle Geloeschten: Er verbindet nichts, was nicht schon jede
+# andere geloeschte Person teilt. Der Name kommt von hier, nicht aus users - so
+# braucht der Platzhalter keine Zeile, die ein Loeschlauf mit abraeumen koennte.
+# Saetze im Fangkorb tragen stattdessen je einen eigenen "ehemalige-person-<UUID>"
+# mit Zeile in users (mvp/scripts/manual/person_loeschen.sql).
+EHEMALIGE_PERSON = "ehemalige-person"
+EHEMALIGE_PERSON_NAME = "ehemalige Person"
+
 
 def kennungsfelder_leer() -> Dict[str, Any]:
     """
@@ -66,7 +76,7 @@ class AnzeigenameService:
 
     def merken(self, user_id: Optional[str], roh: Optional[str]) -> None:
         """Den Namen aus dem Header ablegen, falls er neu ist. Wirft nie."""
-        if not angemeldet(user_id):
+        if not angemeldet(user_id) or user_id == EHEMALIGE_PERSON:
             return
         name = anzeigename_aus_header(roh)
         if name is None or self._bekannt.get(user_id) == name:
@@ -84,15 +94,20 @@ class AnzeigenameService:
     def namen(self, user_ids: Iterable[Optional[str]]) -> Dict[str, str]:
         """
         Kennung -> Anzeigename, eine Abfrage fuer alle. Scheitert die Abfrage,
-        kommt die Antwort ohne Namen - die Karte zeigt dann "Mitglied".
+        kommt die Antwort ohne Namen - die Karte zeigt dann "Mitglied". Der
+        Platzhalter einer geloeschten Person heisst immer "ehemalige Person".
         """
+        user_ids = set(user_ids)
         try:
-            return self._repository.anzeigenamen(user_ids)
+            namen = self._repository.anzeigenamen(user_ids)
         except Exception as e:
             logger.warning(
                 f"Anzeigenamen konnten nicht gelesen werden: {type(e).__name__}"
             )
-            return {}
+            namen = {}
+        if EHEMALIGE_PERSON in user_ids:
+            namen[EHEMALIGE_PERSON] = EHEMALIGE_PERSON_NAME
+        return namen
 
     def mit_autor_name(self, inhalt) -> Dict[str, Any]:
         """Ein einzelner Beitrag als Antwort-Dict mit ``autor_name`` daneben."""

@@ -209,7 +209,7 @@ Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt w
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:
-Der Anzeigename, der im Fangkorb an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer. Die Sätze bleiben, nur der Personenbezug geht.
+Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
 **Admin**:
