@@ -44,7 +44,10 @@ export interface AddCommentaryResponse {
     statement_id?: string | null;
     /** Text der tatsaechlich verknuepften Aussage (kann eine vorhandene, aehnliche sein). */
     statement_text?: string | null;
-    /** false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem. Bei einer Dublette true nur, wenn der genommene vorhandene jetzt an der Aussage haengt. */
+    /**
+     * Ohne Dublette false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem.
+     * Bei einer Dublette true nur, wenn der genommene vorhandene jetzt an der Aussage haengt; sonst false.
+     */
     verknuepft?: boolean;
     /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. Nach vorhanden_nehmen haengt er an der Aussage (statement_*, verknuepft). */
     dublette?: boolean;

@@ -224,16 +224,16 @@ async def add_commentary(
         # zweite Kopie derselben Antwort. Die Zuordnung fremder Antworten bekommt
         # deshalb einen eigenen Weg an der Karte ("Passt auch auf ..."), der immer
         # funktioniert und die gewaehlte Aussage sichtbar macht.
-        dublette = pruefung.vorhanden
-        eigene_dublette = dublette is not None and dublette.original_author == x_user
-        vorhanden_genommen = eigene_dublette and _ist_gezeigter(
-            dublette, request.vorhanden_nehmen
+        vorhanden = pruefung.vorhanden
+        vorhanden_eigen = vorhanden is not None and vorhanden.original_author == x_user
+        vorhanden_genommen = vorhanden_eigen and _ist_gezeigter(
+            vorhanden, request.vorhanden_nehmen
         )
-        if dublette is not None:
-            commentary_id = dublette.id
+        if vorhanden is not None:
+            commentary_id = vorhanden.id
             logger.info(
                 f"Commentary is a duplicate of {commentary_id} "
-                f"({'same author' if eigene_dublette else 'other author'}, "
+                f"({'same author' if vorhanden_eigen else 'other author'}, "
                 f"{'taken' if vorhanden_genommen else 'not linked'})"
             )
 
@@ -245,11 +245,11 @@ async def add_commentary(
         statement_text = None
         # Bei einer Dublette nur True, wenn der genommene vorhandene jetzt an der
         # Aussage haengt - sonst wurde nichts verknuepft (#238).
-        verknuepft = dublette is None
+        verknuepft = vorhanden is None
         aussage_mitgeschickt = bool(
             request.statement_id or (request.statement_text or "").strip()
         )
-        if aussage_mitgeschickt and (dublette is None or vorhanden_genommen):
+        if aussage_mitgeschickt and (vorhanden is None or vorhanden_genommen):
             try:
                 statement_id, statement_text = (
                     await statement_service.beitrag_als_antwort_verknuepfen(
@@ -280,9 +280,9 @@ async def add_commentary(
             statement_id=statement_id,
             statement_text=statement_text,
             verknuepft=verknuepft,
-            dublette=dublette is not None,
-            vorhanden_titel=dublette.title if dublette is not None else None,
-            vorhanden_eigen=eigene_dublette,
+            dublette=vorhanden is not None,
+            vorhanden_titel=vorhanden.title if vorhanden is not None else None,
+            vorhanden_eigen=vorhanden_eigen,
         )
 
     except HTTPException:
