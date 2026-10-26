@@ -1,17 +1,21 @@
 """
-Die Migrationen (mvp/backend/postgres-app/migrations) gegen ein echtes PostgreSQL.
+Die Migrationen (mvp/backend/postgres-app/migrations) und das Init-Skript
+(mvp/backend/postgres-app/init.sql) gegen ein echtes PostgreSQL.
 
-Prueft die beiden README-Regeln, die der Unit-Test test_migrationskonvention.py
-ohne Datenbank nicht pruefen kann: Jedes Skript laeuft zweimal fehlerfrei auf einer
+Prueft die README-Regeln, die der Unit-Test test_migrationskonvention.py ohne
+Datenbank nicht pruefen kann: Jedes Skript laeuft zweimal fehlerfrei auf einer
 Datenbank im aktuellen Schema, und danach gleicht das Schema dem, was ``create_all``
-aus den Modellen anlegt.
+aus den Modellen anlegt. Dasselbe gilt fuer eine Datenbank, die wie Test und
+Produktion aus dem Init-Skript entstanden ist, vor und nach #285.
 
-Verglichen werden Spalten (Typ, Laenge, Nullbarkeit, Default), Indizes und Constraints
-samt Fremdschluesseln. Trigger, Funktionen und Sequenzen nicht: ``create_all`` legt
-keine Trigger oder Funktionen an, die Sequenzen folgen aus den Spalten-Defaults.
+Verglichen werden Spalten (Typ, Laenge, Nullbarkeit, Default), Indizes, Constraints
+samt Fremdschluesseln, Sequenzen (Typ), Trigger und Funktionen. ``create_all`` legt
+keine Trigger oder Funktionen an; jeder Trigger im Init-Skript oder in einer
+Migration ist deshalb eine Abweichung.
 """
 
 import re
+from pathlib import Path
 
 import pytest
 from sqlalchemy import text
@@ -32,9 +36,14 @@ SKRIPTE = postgres.migrationen()
 WIEDERHOLBAR = [s for s in SKRIPTE if s.name not in NUR_EINMAL]
 ANGELEGT = re.compile(r"CREATE TABLE IF NOT EXISTS (\w+)", re.IGNORECASE)
 
+# Das Init-Skript, aus dem Test- und Produktionsdatenbanken vor #285 entstanden sind,
+# ohne GRANTs. Es wich vom Modell ab (Indizes, Trigger, Typ von usage_events.id);
+# die Migration 2026-10-27-init-angleichen.sql gleicht das an.
+INIT_VOR_285 = Path(__file__).with_name("init_vor_285.sql")
+
 
 def _schema_der(db: Datenbank) -> dict:
-    """Tabellen, Spalten, Indizes und Constraints im Schema, ohne dessen Namen."""
+    """Spalten, Indizes, Constraints, Sequenzen, Trigger und Funktionen im Schema."""
     abfragen = {
         "spalten": """
             SELECT table_name, column_name, data_type, udt_name,
@@ -50,6 +59,21 @@ def _schema_der(db: Datenbank) -> dict:
             SELECT cl.relname, co.conname, pg_get_constraintdef(co.oid)
             FROM pg_constraint co JOIN pg_class cl ON cl.oid = co.conrelid
             WHERE co.connamespace = current_schema()::regnamespace
+        """,
+        "sequenzen": """
+            SELECT sequence_name, data_type
+            FROM information_schema.sequences
+            WHERE sequence_schema = current_schema()
+        """,
+        "trigger": """
+            SELECT event_object_table, trigger_name, action_timing,
+                   event_manipulation, action_statement
+            FROM information_schema.triggers
+            WHERE trigger_schema = current_schema()
+        """,
+        "funktionen": """
+            SELECT proname FROM pg_proc
+            WHERE pronamespace = current_schema()::regnamespace
         """,
     }
     with db.engine.connect() as c:
@@ -93,6 +117,16 @@ def modell_schema(postgres_url):
 def aktuelle_datenbank(wegwerf_schema):
     Base.metadata.create_all(wegwerf_schema.engine)
     return wegwerf_schema
+
+
+def _aus_init_skript(db: Datenbank, skript: Path) -> Datenbank:
+    """
+    Wie eine Bestandsdatenbank entstanden ist: Das Init-Skript laeuft bei leerem
+    Volume, beim ersten Start legt der Dienst mit create_all die uebrigen Tabellen an.
+    """
+    postgres.init_skript(db, skript)
+    Base.metadata.create_all(db.engine)
+    return db
 
 
 def test_es_gibt_migrationen():
@@ -151,3 +185,36 @@ def test_vergleich_sieht_einen_anderen_default(aktuelle_datenbank, modell_schema
         c.execute(text(postgres.SUCHEREIGNIS_DEFAULT_VOR_256))
 
     assert _abweichungen(_schema_der(aktuelle_datenbank), modell_schema) != {}
+
+
+def test_init_skript_legt_das_schema_des_modells_an(wegwerf_schema, modell_schema):
+    """Eine neue Datenbank hat ohne jede Migration das Schema des Modells."""
+    db = _aus_init_skript(wegwerf_schema, postgres.INIT_SKRIPT)
+
+    assert _abweichungen(_schema_der(db), modell_schema) == {}
+
+
+@pytest.mark.parametrize(
+    "init", [postgres.INIT_SKRIPT, INIT_VOR_285], ids=["init", "init_vor_285"]
+)
+def test_kette_ab_init_skript_ergibt_das_modell(init, wegwerf_schema, modell_schema):
+    """
+    Eine Bestandsdatenbank aus dem Init-Skript hat nach der Kette, je Skript
+    zweimal, das Schema des Modells, Trigger eingeschlossen.
+    """
+    db = _aus_init_skript(wegwerf_schema, init)
+
+    for skript in WIEDERHOLBAR:
+        postgres.migration(db, skript)
+        postgres.migration(db, skript)
+
+    assert _abweichungen(_schema_der(db), modell_schema) == {}
+
+
+def test_vergleich_sieht_das_init_skript_vor_285(wegwerf_schema, modell_schema):
+    """Gegenprobe: Ohne Migrationen weicht eine Datenbank von vor #285 ab, auch im Trigger."""
+    db = _aus_init_skript(wegwerf_schema, INIT_VOR_285)
+
+    abweichungen = _abweichungen(_schema_der(db), modell_schema)
+
+    assert {"indizes", "trigger", "funktionen"} <= abweichungen.keys()

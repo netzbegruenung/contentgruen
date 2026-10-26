@@ -71,8 +71,10 @@ Idempotenz und Gleichheit mit `create_all` prüft der Integrationstest
 `mvp/backend/semantic-search-service/app/tests/integration/test_migrationen.py`
 gegen ein echtes PostgreSQL: Jedes Skript läuft zweimal auf einer Datenbank im
 aktuellen Schema, und die ganze Kette läuft auf einer Datenbank ohne die Tabellen,
-die Skripte selbst anlegen; danach muss das Schema dem von `create_all` gleichen
-(Spalten, Defaults, Indizes, Constraints). Ausgenommen ist
+die Skripte selbst anlegen, sowie auf Datenbanken aus `init.sql`, dem heutigen und
+dem vor #285; danach muss das Schema dem von `create_all` gleichen (Spalten,
+Defaults, Indizes, Constraints, Sequenzen, Trigger, Funktionen). `init.sql` allein
+muss es ebenfalls ergeben. Ausgenommen ist
 `2026-08-25-usage-events-datensparsamkeit.sql`, das beim zweiten Lauf abbricht
 („Erneut anwenden“); `2026-08-19-search-events-pseudonymisieren.sql` läuft mit,
 sein `TRUNCATE` trifft im Test nur leere Tabellen. Starten:
@@ -108,7 +110,9 @@ PostgreSQL“. Den übrigen Inhalt des Kopfs prüft kein Test.
 - **Gleiches Schema wie `create_all`:** Was das Skript anlegt, muss genau dem
   entsprechen, was die SQLAlchemy-Modelle in einer neuen Datenbank erzeugen.
   Ändert sich eine Tabelle, die auch `mvp/backend/postgres-app/init.sql`
-  anlegt, dort mitziehen.
+  anlegt, dort mitziehen. Trigger und Funktionen legt `create_all` nicht an;
+  gehören sie zum Schema, dann ins Modell (etwa über ein DDL-Ereignis), nicht nur
+  in ein Skript.
 - **Angewendete Skripte nicht ändern.** Ein Fehler wird mit einem neuen Skript
   korrigiert. Ausnahme sind reine Kommentaränderungen; das SQL bleibt Zeichen
   für Zeichen gleich.

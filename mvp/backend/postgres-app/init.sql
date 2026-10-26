@@ -6,6 +6,11 @@
 -- hardcoded password would become the live credential in any environment that does
 -- not set POSTGRES_USER.
 
+-- Das Schema hier muss genau dem entsprechen, was create_all aus den Modellen
+-- (app/infrastructure/database/models.py) anlegt: Spalten, Defaults, Indizes,
+-- keine Trigger. tests/integration/test_migrationen.py prueft das. Bis #285 wich
+-- es ab; Bestandsdatenbanken gleicht migrations/2026-10-27-init-angleichen.sql an.
+
 -- Create usage tracking table
 CREATE TABLE IF NOT EXISTS usage_tracking (
     content_id UUID PRIMARY KEY,
@@ -25,7 +30,7 @@ CREATE TABLE IF NOT EXISTS usage_tracking (
 -- oder "unknown" (app/utils/device_category.py). Bestandsdatenbanken migriert
 -- migrations/2026-08-25-usage-events-datensparsamkeit.sql.
 CREATE TABLE IF NOT EXISTS usage_events (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     content_id UUID NOT NULL,
     event_type VARCHAR(50) DEFAULT 'copy' NOT NULL,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -41,25 +46,10 @@ CREATE TABLE IF NOT EXISTS usage_events (
 
 -- Create indexes for performance
 CREATE INDEX idx_usage_events_content_id ON usage_events(content_id);
-CREATE INDEX idx_usage_events_timestamp ON usage_events(timestamp DESC);
-CREATE INDEX idx_usage_events_content_timestamp ON usage_events(content_id, timestamp DESC); -- Composite index for time-based queries
-CREATE INDEX idx_usage_tracking_usage_count ON usage_tracking(usage_count DESC);
-CREATE INDEX idx_usage_tracking_last_used ON usage_tracking(last_used DESC);
+CREATE INDEX idx_usage_events_timestamp ON usage_events(timestamp);
 
--- Create function to update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Create trigger to automatically update updated_at
-CREATE TRIGGER update_usage_tracking_updated_at
-    BEFORE UPDATE ON usage_tracking
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+-- Kein Trigger fuer updated_at: Das setzt das Modell (onupdate), alle Schreibwege
+-- laufen ueber das ORM.
 
 -- Grant appropriate permissions
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_user;

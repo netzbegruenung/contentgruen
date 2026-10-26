@@ -32,6 +32,7 @@ URL_VARIABLE = "POSTGRES_TEST_DATABASE_URL"
 REPO_WURZEL = next(p for p in Path(__file__).parents if (p / "mvp").is_dir())
 POSTGRES_APP = REPO_WURZEL / "mvp" / "backend" / "postgres-app"
 MIGRATIONEN = POSTGRES_APP / "migrations"
+INIT_SKRIPT = POSTGRES_APP / "init.sql"
 
 
 # Der Default von search_events.timestamp vor #256: die volle Uhrzeit statt
@@ -208,6 +209,19 @@ def anweisungen(skript: str) -> Iterator[str]:
     for anweisung in ohne_kommentare.split(";"):
         if anweisung.strip():
             yield anweisung
+
+
+def init_skript(db: Datenbank, skript: Path = INIT_SKRIPT) -> None:
+    """
+    Ein Init-Skript in einem Aufruf anwenden, wie es das Postgres-Image bei leerem
+    Volume tut, aber ohne die GRANTs: Die gelten dem Schema public und der Rolle
+    app_user, nicht dem Wegwerf-Schema, und aendern kein Schema.
+    """
+    ohne_grants = re.sub(
+        r"^GRANT\b[^;]*;", "", skript.read_text(encoding="utf-8"), flags=re.MULTILINE
+    )
+    with db.engine.begin() as c:
+        c.exec_driver_sql(ohne_grants)
 
 
 def migration(db: Datenbank, skript: Path) -> None:
