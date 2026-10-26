@@ -115,7 +115,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
 - **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
-  am Code geprüft am 26.10.2026 (Stand `main` 0b31ec96):
+  am Code geprüft am 26.10.2026 (Stand `main` d3446548):
   - **Semantic-Service:** Kennungen von Nutzenden nur als achtstelliges Pseudonym
     (`app/core/logging.py`, `log_pseudonym()`; aufgerufen in `services/voting_service.py`,
     `middleware/rate_limiter.py`, `api/v1/usage.py`). Das Pseudonym ist ein ungesalzener
