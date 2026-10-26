@@ -52,6 +52,12 @@ export interface SperreResponse {
   message: string;
 }
 
+/** Gesperrte Beiträge, auch ohne Meldung (GET /moderation/gesperrt). */
+export interface GesperrteResponse {
+  total: number;
+  beitraege: GemeldeterBeitrag[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -119,6 +125,10 @@ export class ModerationService {
 
   entsperren(contentId: string): Observable<SperreResponse> {
     return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/entsperren`, {});
+  }
+
+  getGesperrte(): Observable<GesperrteResponse> {
+    return this.http.get<GesperrteResponse>(`${this.baseUrl}/gesperrt`);
   }
 
   dismissReport(reportId: string, notes?: string): Observable<any> {

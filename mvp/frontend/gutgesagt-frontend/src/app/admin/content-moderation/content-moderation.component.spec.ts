@@ -36,7 +36,7 @@ describe('ContentModerationComponent', () => {
   }
 
   beforeEach(() => {
-    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'sperren', 'entsperren', 'dismissReport']);
+    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'dismissReport']);
     moderation.sperren.and.returnValue(of({ success: true, message: '' }));
     moderation.entsperren.and.returnValue(of({ success: true, message: '' }));
 
@@ -82,6 +82,35 @@ describe('ContentModerationComponent', () => {
     knopf('Entsperren')!.click();
 
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-1');
+  });
+
+  it('listet gesperrte Beiträge auch ohne Meldung und entsperrt sie', () => {
+    moderation.getGesperrte.and.returnValue(of({
+      total: 1,
+      beitraege: [{ id: 'beitrag-2', content_type: 'commentary', status: 'blocked', title: 'Gesperrter Titel' }]
+    }));
+    mitMeldungen([]);
+
+    fixture.componentInstance.onStatusFilterChange('gesperrt');
+    fixture.detectChanges();
+
+    expect(moderation.getGesperrte).toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Gesperrter Titel');
+    expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+
+    knopf('Entsperren')!.click();
+
+    expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-2');
+    expect(moderation.getGesperrte).toHaveBeenCalledTimes(2);
+  });
+
+  it('zeigt die ID als Beitrags-ID, nicht als Content-ID', () => {
+    mitMeldungen([meldung()]);
+    fixture.componentInstance.toggleExpand(fixture.componentInstance.reports[0]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Beitrags-ID');
+    expect(fixture.nativeElement.textContent).not.toContain('Content-ID');
   });
 
   it('nennt die Meldungsstufen wie das Glossar', () => {

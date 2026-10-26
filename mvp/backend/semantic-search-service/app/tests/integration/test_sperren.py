@@ -109,8 +109,10 @@ async def test_gesperrter_beitrag_fehlt_ueberall(post_service, moderation):
     assert post_id not in [t.id for t in treffer]
     assert post_id not in [b.id for b in await post_service.get_all(limit=10, offset=0)]
     assert await _antwortvorschlaege(post_service, post_id) == []
-    # Fuer die Moderation bleibt er auffindbar.
+    # Fuer die Moderation bleibt er auffindbar, auch ohne Meldung.
     assert await moderation.content_exists(str(post_id)) is True
+    gesperrte = [b["id"] for b in await moderation.gesperrte_beitraege()]
+    assert str(post_id) in gesperrte
 
 
 async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
@@ -120,8 +122,8 @@ async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
 
     assert await moderation.entsperren(str(post_id), entsperrt_von="admin-1") is True
 
-    eintrag = await post_service.get(post_id)
-    assert eintrag.status == ContentStatus.APPROVED
+    beitrag = await post_service.get(post_id)
+    assert beitrag.status == ContentStatus.APPROVED
     treffer = await post_service.search("Tempolimit Autobahn", limit=5)
     assert post_id in [t.id for t in treffer]
     assert await _antwortvorschlaege(post_service, post_id) == [post_id]

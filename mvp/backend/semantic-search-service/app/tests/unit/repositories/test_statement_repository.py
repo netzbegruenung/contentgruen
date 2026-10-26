@@ -282,13 +282,29 @@ class TestCountCurated:
         await repository.count_curated()
 
         count_filter = client.count.call_args.kwargs["count_filter"]
-        assert len(count_filter.must_not) == 1
+        verbunden = [b for b in count_filter.must_not if getattr(b, "must", None)]
+        assert len(verbunden) == 1
 
         # Beide Bedingungen muessen zusammen zutreffen, damit ausgeschlossen wird.
-        ausschluss = count_filter.must_not[0]
+        ausschluss = verbunden[0]
         bedingungen = {bedingung.key: bedingung for bedingung in ausschluss.must}
         assert bedingungen["origin"].match.value == "search_query"
         assert bedingungen["replysuggestions_count"].range.lt == 1
+
+    @pytest.mark.asyncio
+    async def test_zaehlt_gesperrte_aussagen_nicht(self, repository_mit_zaehler):
+        """Gesperrte Aussagen fehlen in der Suche, also auch im Startseiten-Zaehler."""
+        repository, client = repository_mit_zaehler
+
+        await repository.count_curated()
+
+        count_filter = client.count.call_args.kwargs["count_filter"]
+        status_ausschluesse = {
+            b.match.value
+            for b in count_filter.must_not
+            if getattr(b, "key", None) == "status"
+        }
+        assert status_ausschluesse == {"blocked"}
 
     @pytest.mark.asyncio
     async def test_gibt_null_zurueck_statt_zu_scheitern(

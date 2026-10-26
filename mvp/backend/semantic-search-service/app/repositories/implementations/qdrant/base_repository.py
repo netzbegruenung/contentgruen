@@ -362,7 +362,7 @@ class QdrantBaseRepository(
 
     async def count(self) -> int:
         """
-        Anzahl der sichtbaren Eintraege, also ohne gesperrte: Sie speist die
+        Anzahl der sichtbaren Beitraege, also ohne gesperrte: Sie speist die
         Bestandszaehler (getMetrics) und total_records_count der Listen.
         """
         try:

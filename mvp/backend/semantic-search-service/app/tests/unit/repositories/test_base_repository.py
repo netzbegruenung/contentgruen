@@ -649,11 +649,11 @@ class TestGesperrteBeitraege:
         assert self._gesperrte_ausgeschlossen(zaehlung.must_not)
 
     @staticmethod
-    def _eintrag(status: str) -> dict:
+    def _beitrag(status: str) -> dict:
         return {
             **create_base_content_fields(),
             "id": str(uuid.uuid4()),
-            "text": f"Eintrag {status}",
+            "text": f"Beitrag {status}",
             "content_type": "statement",
             "status": status,
         }
@@ -664,7 +664,7 @@ class TestGesperrteBeitraege:
     ):
         test_embeddings_manager.add_test_data(
             "statement",
-            [self._eintrag("released_internal"), self._eintrag("blocked")],
+            [self._beitrag("released_internal"), self._beitrag("blocked")],
         )
 
         assert await repository.count() == 1
@@ -675,6 +675,6 @@ class TestGesperrteBeitraege:
     ):
         # Sonst saehe die Initialisierung einen leeren Bestand und spielte die
         # Startdaten erneut ein.
-        test_embeddings_manager.add_test_data("statement", [self._eintrag("blocked")])
+        test_embeddings_manager.add_test_data("statement", [self._beitrag("blocked")])
 
         assert await repository.has_content() is True

@@ -34,7 +34,8 @@ class ContentStatus(Enum):
     Gesperrt: Ein Admin hat den Beitrag aus Suche und Ansicht genommen, etwa nach
     einer Meldung. Er bleibt gespeichert und laesst sich entsperren; der Status
     von vor der Sperre steht dann im Payload-Feld status_vor_sperre
-    (services/moderation_service.py).
+    (services/moderation_service.py). Sperren und Entsperren gehen nicht ueber
+    is_valid_transition, das niemand aufruft.
     """
 
     RELEASED_INTERNAL = "released_internal"
@@ -113,23 +114,11 @@ def is_valid_transition(
         ContentStatus.APPROVED: [
             ContentStatus.RELEASED_INTERNAL,
             ContentStatus.PUBLISHED_EXTERNAL,
-            ContentStatus.BLOCKED,
         ],
         ContentStatus.REJECTED: [ContentStatus.DRAFT],
-        # Entsperren: zurueck in den Status von vor der Sperre.
-        ContentStatus.BLOCKED: [
-            ContentStatus.APPROVED,
-            ContentStatus.RELEASED_INTERNAL,
-            ContentStatus.PUBLISHED_EXTERNAL,
-        ],
-        ContentStatus.RELEASED_INTERNAL: [
-            ContentStatus.ARCHIVED,
-            ContentStatus.BLOCKED,
-        ],
-        ContentStatus.PUBLISHED_EXTERNAL: [
-            ContentStatus.ARCHIVED,
-            ContentStatus.BLOCKED,
-        ],
+        ContentStatus.BLOCKED: [],
+        ContentStatus.RELEASED_INTERNAL: [ContentStatus.ARCHIVED],
+        ContentStatus.PUBLISHED_EXTERNAL: [ContentStatus.ARCHIVED],
         ContentStatus.ARCHIVED: [],
         ContentStatus.DUPLICATE: [ContentStatus.REJECTED],
         ContentStatus.PENDING_DESCRIPTION: [

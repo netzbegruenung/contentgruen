@@ -159,6 +159,20 @@ describe('ModerationService', () => {
     });
   });
 
+  describe('getGesperrte', () => {
+    it('lädt die gesperrten Beiträge per GET', () => {
+      let anzahl = -1;
+
+      service.getGesperrte().subscribe((antwort) => (anzahl = antwort.total));
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/gesperrt`);
+      expect(req.request.method).toBe('GET');
+
+      req.flush({ total: 1, beitraege: [{ id: 'b-1', content_type: 'commentary', status: 'blocked' }] });
+      expect(anzahl).toBe(1);
+    });
+  });
+
   describe('dismissReport', () => {
     it('should send dismiss request with optional notes', () => {
       const reportId = 'report-123';

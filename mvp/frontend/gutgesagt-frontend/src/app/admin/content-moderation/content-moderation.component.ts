@@ -11,8 +11,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatBadgeModule } from '@angular/material/badge';
 import { trigger, state, style, transition, animate } from '@angular/animations';
-import { ModerationService, ContentReport, STATUS_GESPERRT } from '../../services/moderation.service';
+import { ModerationService, ContentReport, GemeldeterBeitrag, STATUS_GESPERRT } from '../../services/moderation.service';
 import { typLabel } from '../../shared/content-type-registry';
+
+type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
 
 @Component({
   selector: 'app-content-moderation',
@@ -52,9 +54,11 @@ import { typLabel } from '../../shared/content-type-registry';
 })
 export class ContentModerationComponent implements OnInit {
   reports: ContentReport[] = [];
+  // Ansicht "Gesperrt": gesperrte Beiträge, auch ohne Meldung.
+  gesperrte: GemeldeterBeitrag[] = [];
   loading = true;
   error: string | null = null;
-  selectedStatus: 'pending' | 'reviewed' | 'dismissed' | 'all' = 'pending';
+  selectedStatus: Ansicht = 'pending';
   displayedColumns: string[] = ['expand', 'content_type', 'reason', 'reporter', 'created', 'actions'];
   expandedReports = new Set<string>();
 
@@ -73,6 +77,21 @@ export class ContentModerationComponent implements OnInit {
     this.error = null;
     this.expandedReports.clear(); // Reset expanded rows on refresh
 
+    if (this.selectedStatus === 'gesperrt') {
+      this.moderationService.getGesperrte().subscribe({
+        next: (response) => {
+          this.gesperrte = [...response.beitraege];
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading blocked content:', error);
+          this.error = 'Fehler beim Laden der gesperrten Beiträge';
+          this.loading = false;
+        }
+      });
+      return;
+    }
+
     this.moderationService.getReports(this.selectedStatus).subscribe({
       next: (response) => {
         // Force new array reference for change detection
@@ -88,7 +107,7 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
-  onStatusFilterChange(status: 'pending' | 'reviewed' | 'dismissed' | 'all') {
+  onStatusFilterChange(status: Ansicht) {
     this.selectedStatus = status;
     this.loadReports();
   }
@@ -113,6 +132,10 @@ export class ContentModerationComponent implements OnInit {
     this.displayedColumns = baseColumns;
   }
 
+  beitragsTitel(beitrag: GemeldeterBeitrag): string {
+    return beitrag['title'] || beitrag['text'] || beitrag['id'];
+  }
+
   istGesperrt(report: ContentReport): boolean {
     return report.content?.status === STATUS_GESPERRT;
   }
@@ -134,8 +157,8 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
-  entsperren(report: ContentReport) {
-    this.moderationService.entsperren(report.content_id).subscribe({
+  entsperren(contentId: string) {
+    this.moderationService.entsperren(contentId).subscribe({
       next: () => {
         this.snackBar.open('Sperre aufgehoben', 'OK', { duration: 3000 });
         this.loadReports();

@@ -47,9 +47,9 @@ class TestEmbeddingsManager(IEmbeddingsManager):
             offset = kwargs.get("offset")
             with_payload = kwargs.get("with_payload", True)
 
-            # Filter: content_type (ohne Gross/klein) und text_normalisiert als
-            # must-Bedingungen; andere Bedingungen ignoriert der Mock.
-            ausgewertet = {"content_type", "text_normalisiert"}
+            # Filter: content_type (ohne Gross/klein), text_normalisiert und status
+            # als must-Bedingungen; andere Bedingungen ignoriert der Mock.
+            ausgewertet = {"content_type", "text_normalisiert", "status"}
 
             filtered_data = []
             for item_id, item_data in self._data.items():

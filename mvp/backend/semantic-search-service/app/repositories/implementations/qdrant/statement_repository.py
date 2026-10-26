@@ -4,7 +4,10 @@ import logging
 
 from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
-from repositories.implementations.qdrant.base_repository import QdrantBaseRepository
+from repositories.implementations.qdrant.base_repository import (
+    QdrantBaseRepository,
+    _gesperrt_bedingungen,
+)
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from domain.models.content_origin import ContentOrigin
@@ -115,7 +118,8 @@ class StatementRepository(
                             match=MatchValue(value=self.content_type),
                         )
                     ],
-                    must_not=[_unbeantwortete_suchanfrage()],
+                    # Gesperrte Aussagen fehlen in der Suche, also auch hier.
+                    must_not=[_unbeantwortete_suchanfrage(), *_gesperrt_bedingungen()],
                 ),
             )
             return result.count

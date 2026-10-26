@@ -78,8 +78,20 @@ class TestSperren:
         assert await service.sperren(str(uuid.uuid4()), gesperrt_von="a") is False
         service.report_repo.update_reports_by_content_id.assert_not_called()
 
-    async def test_sperren_ungueltige_kennung(self, service):
+    async def test_sperren_ungueltige_id(self, service):
         assert await service.sperren("kein-uuid", gesperrt_von="a") is False
+
+    async def test_sperren_meldet_fehler_beim_meldungs_update(self, service, speicher):
+        """Bleiben die Meldungen offen, darf Sperren keinen Erfolg melden."""
+        service.report_repo.update_reports_by_content_id.side_effect = RuntimeError(
+            "PostgreSQL weg"
+        )
+
+        with pytest.raises(RuntimeError):
+            await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+
+        # Gesperrt ist der Beitrag trotzdem; erneutes Sperren holt die Meldungen nach.
+        assert _payload(speicher)["status"] == "blocked"
 
     async def test_zweimal_sperren_behaelt_status_von_vorher(self, service, speicher):
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
@@ -102,16 +114,18 @@ class TestEntsperren:
         assert _payload(speicher)["status"] == "approved"
         assert "status_vor_sperre" not in _payload(speicher)
 
-    async def test_entsperren_ohne_status_von_vorher_macht_sichtbar(
+    async def test_entsperren_ohne_status_von_vorher_entfernt_status(
         self, service, speicher
     ):
-        # Altbestand ohne Status-Feld: nach dem Entsperren sichtbar wie neu angelegt.
+        # Altbestand ohne Status-Feld: nach dem Entsperren wieder ohne Status,
+        # also genau so sichtbar wie vor der Sperre.
         del _payload(speicher)["status"]
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
 
         await service.entsperren(CONTENT_ID, entsperrt_von="admin-1")
 
-        assert _payload(speicher)["status"] == "released_internal"
+        assert "status" not in _payload(speicher)
+        assert "status_vor_sperre" not in _payload(speicher)
 
     async def test_entsperren_nicht_gesperrt_aendert_nichts(self, service, speicher):
         assert await service.entsperren(CONTENT_ID, entsperrt_von="admin-1") is True
@@ -121,3 +135,32 @@ class TestEntsperren:
 
     async def test_entsperren_unbekannter_beitrag(self, service):
         assert await service.entsperren(str(uuid.uuid4()), entsperrt_von="a") is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestGesperrteBeitraege:
+    """Admins finden gesperrte Beitraege auch ohne Meldung, etwa nach einem Loeschantrag."""
+
+    async def test_listet_nur_gesperrte(self, service, speicher):
+        anderer = str(uuid.uuid4())
+        speicher.add_test_data(
+            "reference",
+            [
+                {
+                    **create_base_content_fields(),
+                    "id": anderer,
+                    "text": "Sichtbare Hintergrundinfo",
+                    "status": "approved",
+                }
+            ],
+        )
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+
+        gesperrte = await service.gesperrte_beitraege()
+
+        assert [beitrag["id"] for beitrag in gesperrte] == [CONTENT_ID]
+        assert gesperrte[0]["text"] == "Gemeldeter Kommentar"
+
+    async def test_leer_ohne_sperre(self, service):
+        assert await service.gesperrte_beitraege() == []

@@ -5,7 +5,7 @@ API endpoints for content moderation and reporting.
 import uuid
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
-from typing import Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 from services.moderation_service import get_moderation_service
@@ -73,6 +73,13 @@ class SperreResponse(BaseModel):
 
     success: bool
     message: str
+
+
+class GesperrteResponse(BaseModel):
+    """Response model for the list of gesperrte Beitraege."""
+
+    total: int
+    beitraege: List[Dict[str, Any]]
 
 
 class DismissReportResponse(BaseModel):
@@ -229,7 +236,7 @@ async def get_reports(
 # Admin Endpoints - Sperren / Entsperren
 @router.put("/content/{content_id}/sperren", response_model=SperreResponse)
 async def sperren(
-    content_id: str,
+    content_id: uuid.UUID,
     admin_user: str = Depends(require_admin),
 ):
     """
@@ -242,10 +249,12 @@ async def sperren(
         logger.info(f"Admin {admin_user} blocking (sperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
-        if not await moderation_service.sperren(content_id, gesperrt_von=admin_user):
-            raise HTTPException(status_code=404, detail="Content not found")
+        if not await moderation_service.sperren(
+            str(content_id), gesperrt_von=admin_user
+        ):
+            raise HTTPException(status_code=404, detail="Beitrag nicht gefunden")
 
-        return SperreResponse(success=True, message=f"Content {content_id} gesperrt")
+        return SperreResponse(success=True, message=f"Beitrag {content_id} gesperrt")
 
     except HTTPException:
         raise
@@ -256,27 +265,44 @@ async def sperren(
 
 @router.put("/content/{content_id}/entsperren", response_model=SperreResponse)
 async def entsperren(
-    content_id: str,
+    content_id: uuid.UUID,
     admin_user: str = Depends(require_admin),
 ):
     """
-    Eine Sperre aufheben (Admin only). Der Beitrag ist danach wieder sichtbar.
+    Eine Sperre aufheben (Admin only). Der Beitrag ist danach wieder so sichtbar
+    wie vor der Sperre.
     """
     try:
         logger.info(f"Admin {admin_user} unblocking (entsperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
         if not await moderation_service.entsperren(
-            content_id, entsperrt_von=admin_user
+            str(content_id), entsperrt_von=admin_user
         ):
-            raise HTTPException(status_code=404, detail="Content not found")
+            raise HTTPException(status_code=404, detail="Beitrag nicht gefunden")
 
-        return SperreResponse(success=True, message=f"Content {content_id} entsperrt")
+        return SperreResponse(success=True, message=f"Beitrag {content_id} entsperrt")
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error in entsperren endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/gesperrt", response_model=GesperrteResponse)
+async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
+    """
+    Alle gesperrten Beitraege (Admin only), auch solche ohne Meldung.
+    """
+    try:
+        logger.info(f"Admin {admin_user} fetching gesperrte Beitraege")
+
+        beitraege = await get_moderation_service().gesperrte_beitraege()
+        return GesperrteResponse(total=len(beitraege), beitraege=beitraege)
+
+    except Exception as e:
+        logger.error(f"Error in gesperrte_beitraege endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
