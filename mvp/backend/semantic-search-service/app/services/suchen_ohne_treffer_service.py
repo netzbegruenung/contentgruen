@@ -4,7 +4,8 @@ Kennzahl "Suchen ohne Treffer": welche Suchanfragen keinen Beitrag finden.
 Jede Suche legt ihren Text ohnehin als Aussage an (Herkunft SEARCH_QUERY,
 Systemautor, siehe services/search/search_query_statement.py). Findet sie keinen
 Beitrag ueber der Schwelle des SearchOrchestrators, zaehlt dieser Service das an
-der Aussage, je Kalenderwoche. Gespeichert wird nur (Aussage, Woche, Anzahl):
+der Aussage, je Kalenderwoche. Gespeichert wird nur (Aussage, Woche, Anzahl der
+Suchen, Anzahl der Personen):
 
 - kein Pseudonym, keine Sitzung, kein Bezug zur Zeile in search_events;
 - kein Zeitpunkt, nur der Montag der Woche. Ein genauer Zeitpunkt liesse sich mit
@@ -13,9 +14,19 @@ der Aussage, je Kalenderwoche. Gespeichert wird nur (Aussage, Woche, Anzahl):
 - kein zweiter Suchtext: der Text steht an der Aussage, und aehnliche
   Suchanfragen landen dort schon auf derselben Aussage.
 
-Admins sehen nur Aussagen, zu denen im Zeitraum mindestens MINDESTANZAHL Suchen
-ohne Treffer gezaehlt wurden - gezaehlt werden Suchen, nicht Personen. Die Schwelle
-haelt Einzelfaelle aus der Liste, die ja die *haeufigen* Luecken zeigen soll.
+Admins sehen nur Aussagen, zu denen im Zeitraum mindestens MINDESTANZAHL
+verschiedene Personen ohne Treffer gesucht haben. Eine Person, die dasselbe
+mehrfach sucht, bringt die Aussage nicht allein in die Liste: Die Schwelle misst
+Bedarf und schuetzt vor Rueckschluessen auf Einzelne. "Person" heisst hier
+Tagespseudonym (SearchTrackingService): dieselbe Person an zwei Tagen zaehlt
+zweimal, denn ein tagesuebergreifendes Merkmal gibt es bewusst nicht.
+
+Welche Personen eine Aussage heute schon gezaehlt haben, haelt PersonenDesTages
+nur im Speicher und nur fuer den laufenden UTC-Tag, als HMAC mit einem
+Schluessel, der taeglich neu gewuerfelt und nie gespeichert wird. In der Datenbank
+landet nur die Zahl. Nach einem Neustart am selben Tag kann eine Person deshalb
+ein zweites Mal zaehlen; das ist der Preis dafuer, dass keine Kennung je Person
+und Aussage gespeichert wird. Der Dienst laeuft mit einem uvicorn-Worker.
 Aussagen, die nicht freigegeben sind (Status BLOCKED, DUPLICATE), erscheinen nicht.
 Admins sehen den Text der Aussage, nicht die eingegebene Suchanfrage: aehnliche
 Suchanfragen landen auf derselben Aussage.
@@ -27,10 +38,13 @@ ohne Bedingung zu. Gerechnet wird in UTC wie bei search_events.
 """
 
 import asyncio
+import hashlib
+import hmac
+import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from core.logging import get_logger
 from domain.models.content_status import FREIGEGEBEN
@@ -95,31 +109,75 @@ async def loeschen_im_takt(
         await asyncio.sleep(takt_sekunden)
 
 
+class PersonenDesTages:
+    """
+    Merkt sich fuer den laufenden UTC-Tag, welche Personen zu welcher Aussage schon
+    gezaehlt sind. Gehalten wird nur ein HMAC ueber (Tagespseudonym, Aussage) mit
+    einem Tagesschluessel, der mit dem Tag verworfen wird: Auch ein Speicherabzug
+    verbindet keine Aussage mit einem Pseudonym aus search_events.
+    """
+
+    def __init__(self):
+        self._tag: Optional[date] = None
+        self._schluessel = b""
+        self._gezaehlt: Set[bytes] = set()
+
+    def neu(self, pseudonym: str, statement_id: uuid.UUID, tag: date) -> bool:
+        """True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat."""
+        if tag != self._tag:
+            self._tag = tag
+            self._schluessel = secrets.token_bytes(32)
+            self._gezaehlt = set()
+        kennung = hmac.new(
+            self._schluessel,
+            f"{pseudonym}|{statement_id}".encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+        if kennung in self._gezaehlt:
+            return False
+        self._gezaehlt.add(kennung)
+        return True
+
+
+# Prozessweit: der Service entsteht je Anfrage neu, die Merkliste muss bleiben.
+_personen_des_tages = PersonenDesTages()
+
+
 class SuchenOhneTrefferService:
     def __init__(
         self,
         repository: SuchenOhneTrefferRepository,
         statement_service: StatementService,
+        personen: Optional[PersonenDesTages] = None,
     ):
         self._repository = repository
         self._statement_service = statement_service
+        self._personen = personen or _personen_des_tages
 
     def erfassen(
         self,
         statement_id: Optional[uuid.UUID],
         treffer: int,
+        pseudonym: Optional[str],
         heute: Optional[date] = None,
     ) -> None:
         """
-        Eine Suche zaehlen, wenn sie keinen Beitrag fand.
+        Eine Suche zaehlen, wenn sie keinen Beitrag fand, und die suchende Person,
+        wenn sie die Aussage heute noch nicht gezaehlt hat.
 
+        pseudonym ist das Tagespseudonym aus SearchTrackingService. Ohne Pseudonym
+        (weder Nutzer- noch Sitzungskennung) zaehlt die Suche, aber keine Person.
         Ohne Aussage (das Rate-Limit hat das Anlegen ausgelassen) gibt es nichts,
         woran sich zaehlen liesse; die Suche faellt dann aus der Kennzahl.
         Datenbankfehler gehen an den Aufrufer.
         """
         if treffer > 0 or statement_id is None:
             return
-        self._repository.zaehlen(statement_id, wochenbeginn(heute or heute_utc()))
+        tag = heute or heute_utc()
+        neue_person = pseudonym is not None and self._personen.neu(
+            pseudonym, statement_id, tag
+        )
+        self._repository.zaehlen(statement_id, wochenbeginn(tag), neue_person)
 
     async def haeufigste(
         self,

@@ -29,7 +29,10 @@ from dependencies import (
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.voting_service import VotingService
-from services.search_tracking_service import get_search_tracking_service
+from services.search_tracking_service import (
+    get_search_tracking_service,
+    tagespseudonym,
+)
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
@@ -277,10 +280,18 @@ async def search_by_text(
             logger.warning(f"Failed to track search event: {e}")
 
         # Kennzahl "Suchen ohne Treffer": gezaehlt an der Aussage zur Suchanfrage,
-        # getrennt vom Suchereignis und ohne Pseudonym. total_results zaehlt nur,
+        # getrennt vom Suchereignis. Das Tagespseudonym dient nur dazu, Personen zu
+        # unterscheiden, gespeichert wird es dort nicht. total_results zaehlt nur,
         # was ueber der Schwelle des SearchOrchestrators lag.
         try:
-            suchen_ohne_treffer.erfassen(statement_id, total_results)
+            suchen_ohne_treffer.erfassen(
+                statement_id,
+                total_results,
+                tagespseudonym(
+                    user_id=validated_user if validated_user != "anonymous" else None,
+                    session_id=x_session_id,
+                ),
+            )
         except Exception as e:
             # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und
             # statement_id neben dem Zeitstempel der Logzeile waere genau der

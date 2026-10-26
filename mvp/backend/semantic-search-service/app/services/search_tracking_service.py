@@ -138,6 +138,15 @@ class SearchTrackingService:
         return self.repository.get_searches_per_user(days)
 
 
+def tagespseudonym(
+    user_id: Optional[str] = None, session_id: Optional[str] = None
+) -> Optional[str]:
+    """Das heutige Pseudonym der suchenden Person, wie es search_events speichert."""
+    return SearchTrackingService._derive_actor_hash(
+        user_id=user_id, session_id=session_id
+    )
+
+
 # Global service instance
 _search_tracking_service: Optional[SearchTrackingService] = None
 

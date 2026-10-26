@@ -29,6 +29,7 @@ from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
 )
+from services.search_tracking_service import tagespseudonym
 from utils.rate_limiter import RateLimiter
 
 
@@ -179,9 +180,27 @@ class TestSuchenOhneTreffer:
         service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
         app.dependency_overrides[get_search_query_statement_recorder] = _recorder
 
+        TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "klima", "limit": 10},
+            headers={"X-Session-Id": "sitzung-1"},
+        )
+
+        suchen_ohne_treffer.erfassen.assert_called_once_with(
+            aussage, 0, tagespseudonym(session_id="sitzung-1")
+        )
+
+    def test_suche_ohne_sitzung_meldet_kein_pseudonym(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        app, service = suchapp
+        aussage = uuid.uuid4()
+        service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+
         TestClient(app).post(SEARCH_URL, json={"query_text": "klima", "limit": 10})
 
-        suchen_ohne_treffer.erfassen.assert_called_once_with(aussage, 0)
+        suchen_ohne_treffer.erfassen.assert_called_once_with(aussage, 0, None)
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
         self, suchapp, suchen_ohne_treffer

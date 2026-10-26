@@ -171,8 +171,12 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben (**Mindestanzahl**). Person heißt hier Tagespseudonym: dieselbe Person an zwei Tagen zählt zweimal.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
+
+**Tagespseudonym**:
+Der Wert, unter dem die Suchen einer Person an einem Tag zusammengehören: aus ihrer Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet, nicht zurückrechenbar und jeden Tag neu. Wer an zwei Tagen sucht, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+_Avoid_: Nutzer-ID, Hash, Actor
 
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
