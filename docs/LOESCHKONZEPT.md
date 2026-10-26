@@ -14,7 +14,8 @@
 ## Ausgangspunkt
 
 Alles hängt am Wert des Headers `X-User`. Das BFF setzt ihn ausschließlich aus dem
-Claim `sub`, ersatzweise `NameIdentifier` (`Program.cs:617`, `IdentityHeaderTransform.cs:50`).
+Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:647`, `ClaimUtilities.GetUserId`,
+aufgerufen in `BFF/Proxy/IdentityHeaderTransform.cs:79`).
 Mit Keycloak ist das die Keycloak-UUID, mit `USE_KEYCLOAK=false` (dev/tst) die
 `userId` aus `managed-users.json` (`user-001`). **Vorher prüfen, welche Form die
 Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert nicht.
@@ -23,7 +24,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
    die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
-   (`api/v1/moderation.py:114`). Nur über sie sind die `usage_events` einer Person
+   (`api/v1/moderation.py:169-174`). Nur über sie sind die `usage_events` einer Person
    erreichbar.
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen (ein von der Person gemeldeter, inzwischen gesperrter
@@ -81,7 +82,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   (`services/anzeigename_service.py`). Solange das Anmelde-Cookie der Person gilt, entsteht
   die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
   ein in Keycloak gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet (bis zu
-  14 Tage, `Program.cs`, Kommentar zur Cookie-Lebensdauer). In der Zeit kann sie auch
+  14 Tage, `BFF/Program.cs:92`, `ExpireTimeSpan`). In der Zeit kann sie auch
   neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Kommando für Schritt 1 und 2
   und den Lauf für Schritt 3 deshalb nach 14 Tagen noch einmal laufen lassen, danach
   auch das `VACUUM FULL`; beide sind wiederholbar.
@@ -91,7 +92,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 ## Was nicht gelöscht wird
 
 - **`search_events`** trägt seit PR #14 nur `actor_hash`, ein täglich rotierendes
-  HMAC-SHA256 über Kennung + UTC-Datum (`services/search_tracking_service.py:33`).
+  HMAC-SHA256 über Kennung + UTC-Datum (`services/search_tracking_service.py:35`, `_derive_actor_hash`).
   Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur tageweise nachrechenbar: Löschen
   auf Antrag ist unmöglich und mangels Personenbezug auch nicht geschuldet.
   **Vorher prüfen, ob die Zielumgebung migriert ist** — auf einem Stand ohne
@@ -106,14 +107,36 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   gelöschte Daten leben dort bis zu 28 Tage weiter. Selektives Editieren von
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
-- **Logs.** Der Inhalt ist seit PR #29 kleiner, als hier früher stand: **E-Mail-Adressen
-  stehen nicht mehr im Log**, Suchtexte seit dem Nachtrag vom 08.09.2026 auch nicht mehr im
-  Fehlerzweig, und Nutzerkennungen erscheinen nur noch als achtstelliges Pseudonym
-  (`app/core/logging.py`, `log_pseudonym()`). Was bleibt: dieses Pseudonym in den
-  Anwendungszeilen und die vollen Client-IPs in den Zugriffsprotokollen des vorgelagerten
-  Reverse Proxy. Für Letztere gilt eine Frist — `logrotate` auf dem Prod-Host, 14 Tage;
-  alles aus dem `json-file`-Treiber ist unbegrenzt. Einzelne Zeilen daraus zu entfernen ist
-  nicht vorgesehen. Einordnung und Belege: `docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.
+- **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
+  am Code geprüft am 26.10.2026 (Stand `main` 82f53a7b):
+  - **Semantic-Service:** Nutzerkennungen nur als achtstelliges Pseudonym
+    (`app/core/logging.py`, `log_pseudonym()`; aufgerufen in `services/voting_service.py`,
+    `middleware/rate_limiter.py`, `api/v1/usage.py`). Der Suchtext steht weder auf dem
+    Anfragepfad (`api/v1/search.py`, nur `limit`) noch im Fehlerzweig der Suche
+    (`repositories/implementations/qdrant/statement_repository.py`). Die Zugriffszeilen von
+    uvicorn sind unterdrückt (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
+  - **BFF:** keine E-Mail-Adressen, aber die **Kennung im Klartext**: bei Managed Auth
+    die `UserId` jeder erfolgreichen Anmeldung und jedes Fehlversuchs mit falschem Passwort
+    (`BFF/Services/ManagedUserService.cs:147,153`, `BFF/Controllers/AuthController.cs:120`,
+    Level Information/Warning, also beim Standard-Level aus `appsettings.json` im Log),
+    zusätzlich auf Debug-Level bei jeder angemeldeten Anfrage
+    (`BFF/Proxy/IdentityHeaderTransform.cs:84,96`). Managed Auth ist auch in Produktion
+    aktiv: Der Schalter `ENABLE_MANAGED_AUTH` steht per Default auf `true`
+    (`ManagedUserService.cs:199`), und laut `AuthController.cs` ist Managed Auth bewusst der
+    Zugang ohne Vereinsmitgliedschaft. Über `managed-users.json` ist die `UserId` einer
+    Adresse zugeordnet.
+  - **Frontend-nginx:** setzt weder `access_log` noch `log_format` noch `real_ip`
+    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`), schreibt also das Standardformat
+    nach stdout. Hinter dem vorgelagerten Reverse Proxy steht dort dessen Adresse, nicht die
+    des Besuchers; Zeitpunkt, Pfad, Referrer und User-Agent stehen darin.
+  - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
+    (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
+    Produktionskonfiguration liegt nicht im Repo (`mvp/docker-compose.prd.yml` ist nur ein
+    Verweis). **Stand der Bestandsaufnahme vom 04.09.2026**, nach Auskunft des Maintainers
+    am Host und im Repo nicht belegbar: Die Zugriffsprotokolle des vorgelagerten Reverse
+    Proxy, die als einzige die volle Client-IP enthalten, löscht `logrotate` nach 14 Tagen;
+    alles aus dem `json-file`-Treiber ist in Produktion unbegrenzt. Vor einer Auskunft am
+    Host nachprüfen. Herkunft: `docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.4.
 
 ## Kommandos
 
@@ -157,4 +180,4 @@ Lauf ohne Treffer zeigt, dass nichts mehr umzustellen ist.
 Danach die ausgegebenen Texte durchsehen. Macht ein Text die Person erkennbar, wird
 dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{id}` gelöscht — nicht
 direkt gegen Qdrant: nur der Endpunkt räumt verwaiste Antwortvorschläge auf
-(`services/moderation_service.py:186`) und schreibt einen Moderationsvermerk.
+(`services/moderation_service.py:337`, `_remove_orphaned_reply_suggestions`) und schreibt einen Moderationsvermerk.
