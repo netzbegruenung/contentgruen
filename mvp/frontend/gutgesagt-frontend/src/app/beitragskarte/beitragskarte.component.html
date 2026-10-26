@@ -96,6 +96,10 @@
         </div>
 
         <p class="karte-meta einwurf-meta" *ngIf="!istKopf">
+            <ng-container *ngIf="stufeZeigen">
+                <span class="einwurf-stufe">{{ stufenName }}</span>
+                ·
+            </ng-container>
             <ng-container *ngIf="zeigtEinwerfer">
                 <span class="einwurf-einwerfer">Von: {{ autorAnzeige }}</span>
                 ·

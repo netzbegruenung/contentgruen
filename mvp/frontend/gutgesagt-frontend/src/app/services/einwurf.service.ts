@@ -143,6 +143,20 @@ export class EinwurfService {
     });
   }
 
+  /**
+   * Meine Einwuerfe: nur die selbst eingeworfenen, neueste zuerst.
+   *
+   * Immer frisch: Der Cache haelt GETs fuenf Minuten, und das Einwerfen leert diese
+   * Liste nicht - ein gerade eingeworfener Fund fehlte sonst in der eigenen Sicht.
+   */
+  eigeneLaden(page: number, pageSize: number): Observable<FangkorbResponse> {
+    cacheService.delete('/api/v1/rawinput/getOwnRawInputs');
+    const params = new HttpParams().set('page', page).set('page_size', pageSize);
+    return this.http.get<FangkorbResponse>(`${this.baseApiUrl}/getOwnRawInputs`, {
+      params,
+    });
+  }
+
   /** Ein Einwurf mit allen Saetzen und dem eigenen als own_draft. */
   einwurfLaden(id: string): Observable<Einwurf> {
     return this.http.get<Einwurf>(this.einwurfUrl(id));

@@ -152,6 +152,43 @@ async def get_raw_inputs(
         )
 
 
+@router.get("/getOwnRawInputs", response_model=GetRawInputsResponse)
+async def get_own_raw_inputs(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    x_user: Optional[str] = Header(default=None),
+    repository: RawInputRepository = Depends(get_raw_input_repository),
+) -> GetRawInputsResponse:
+    """
+    Meine Einwuerfe: nur, was die anfragende Person eingeworfen hat, neueste zuerst.
+
+    Die Rueckmeldung an den Einwerfer, was aus seinen Funden geworden ist - jede
+    Stufe, auch verworfen, mit allen verknuepften Beitraegen. Steht vor /{id}, sonst
+    lese FastAPI den Pfad als Einwurf-ID.
+    """
+    person = _angemeldete_person(x_user)
+    try:
+        rows = repository.get_all(
+            limit=page_size,
+            offset=(page - 1) * page_size,
+            current_user=person,
+            submitted_by=person,
+        )
+        results: List[RawInputResponse] = [
+            RawInputResponse(**row) for row in _mit_namen(rows, x_user)
+        ]
+        return GetRawInputsResponse(
+            results_count=len(results),
+            results=results,
+            total_records_count=repository.count(submitted_by=person),
+        )
+    except Exception as e:
+        logger.error(f"Fehler in /getOwnRawInputs: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Deine Einwürfe konnten nicht geladen werden."
+        )
+
+
 @router.get("/{raw_input_id}", response_model=RawInputResponse)
 async def get_raw_input(
     raw_input_id: uuid.UUID,

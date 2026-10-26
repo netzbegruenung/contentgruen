@@ -202,6 +202,10 @@ _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
 _Avoid_: Contributions, Profil
 
+**Meine Einwürfe**:
+Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Hier erfährt der Einwerfer, was aus seinen Funden geworden ist.
+_Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
+
 ## Personen
 
 **Nutzende**:

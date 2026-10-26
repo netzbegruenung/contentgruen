@@ -683,6 +683,28 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-icon').getAttribute('aria-label')).toBe('Ausformuliert: Kommentar');
     });
 
+    it('schreibt die Stufe in die Meta-Zeile, wenn die Seite das will (Meine Einwuerfe)', () => {
+      zeigen(
+        einwurfKarte({
+          submitted_by: 'test-user',
+          status: 'processed',
+          links: [{ content_id: 'c-1', content_type: 'commentary', draft_id: null } as any],
+        }),
+        { variante: 'einwurf', stufeZeigen: true },
+      );
+
+      expect(element('.einwurf-stufe').textContent!.trim()).toBe('Ausformuliert: Kommentar');
+      // Alle Einwuerfe dort sind die eigenen - "Von: Du" saehe auf jeder Karte gleich aus.
+      expect(element('.einwurf-einwerfer')).toBeNull();
+    });
+
+    it('nennt ohne stufeZeigen den Einwerfer und keine Stufe in der Meta-Zeile', () => {
+      zeigen(einwurfKarte(), { variante: 'einwurf' });
+
+      expect(element('.einwurf-einwerfer').textContent).toContain('Von:');
+      expect(element('.einwurf-stufe')).toBeNull();
+    });
+
     it('erlaubt auch Admins kein Verwerfen von Ausformuliertem', () => {
       alsNutzer({ isAdmin: true });
 

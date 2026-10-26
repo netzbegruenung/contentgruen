@@ -73,6 +73,28 @@ describe('EinwurfService', () => {
     anfrage.flush(antwort);
   });
 
+  it('holt die eigenen Einwuerfe mit Seitenangaben', () => {
+    service.eigeneLaden(2, 24).subscribe();
+
+    const anfrage = httpMock.expectOne((req) => req.url === `${basis}/getOwnRawInputs`);
+    expect(anfrage.request.method).toBe('GET');
+    expect(anfrage.request.params.get('page')).toBe('2');
+    expect(anfrage.request.params.get('page_size')).toBe('24');
+    anfrage.flush({ results_count: 0, results: [], total_records_count: 0 });
+  });
+
+  it('laedt die eigenen Einwuerfe frisch, nicht aus dem Cache', () => {
+    // Ein gerade eingeworfener Fund soll sofort dastehen; der POST leert die Liste nicht.
+    const leeren = spyOn(cacheService, 'delete');
+
+    service.eigeneLaden(1, 24).subscribe();
+
+    expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput/getOwnRawInputs');
+    httpMock
+      .expectOne((req) => req.url === `${basis}/getOwnRawInputs`)
+      .flush({ results_count: 0, results: [], total_records_count: 0 });
+  });
+
   describe('Destillieren', () => {
     it('holt einen einzelnen Einwurf', () => {
       service.einwurfLaden('id-1').subscribe((daten) => expect(daten.id).toBe('id-1'));

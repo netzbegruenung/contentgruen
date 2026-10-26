@@ -15,12 +15,24 @@ import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
+import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
+
+/** Die beiden Tabs: eigene Beitraege und "Meine Einwuerfe". */
+export type MeineTab = 'beitraege' | 'einwuerfe';
+
+const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
+  { wert: 'beitraege', name: 'Meine Beiträge' },
+  { wert: 'einwuerfe', name: 'Meine Einwürfe' },
+];
 
 /**
  * Meine Beitraege als Album: kompakte, hochkante Karten im Raster (2/3/4 Spalten, das
  * Layout regelt app-kartenliste per CSS), darueber die Statistik als eine Textzeile.
  * Ein Tipp oeffnet den Beitrag als volle Karte im Bottom Sheet, mit Aktionsleiste und
  * Herkunft; eine Suche und damit eine neue Suchaussage entsteht dabei nicht.
+ *
+ * Der zweite Tab ist "Meine Einwuerfe" (app-meine-einwuerfe): was aus den eigenen
+ * Funden geworden ist. Er laedt erst beim ersten Oeffnen.
  */
 @Component({
   selector: 'app-contributions-view',
@@ -29,7 +41,8 @@ import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
     CommonModule,
     MatPaginator,
     MatProgressSpinnerModule,
-    KartenlisteComponent
+    KartenlisteComponent,
+    MeineEinwuerfeComponent
   ],
   templateUrl: './contributions-view.component.html',
   styleUrls: ['./contributions-view.component.css'],
@@ -39,6 +52,10 @@ import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
   providers: [{ provide: MatPaginatorIntl, useClass: DeutscherPaginatorIntl }]
 })
 export class ContributionsViewComponent implements OnInit, OnDestroy {
+  readonly tabs = TABS;
+  tab: MeineTab = 'beitraege';
+  /** Ab dem ersten Oeffnen bleibt der Einwurf-Tab stehen, damit Wechseln nicht neu laedt. */
+  einwuerfeGeoeffnet = false;
   karten: KartenDaten[] = [];
   /** Bis 599 px zeigt der Paginator nur Bereich und Pfeile, ohne Seitengroesse. */
   istMobil = false;
@@ -100,6 +117,11 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
     }
+  }
+
+  tabWaehlen(tab: MeineTab): void {
+    this.tab = tab;
+    this.einwuerfeGeoeffnet ||= tab === 'einwuerfe';
   }
 
   /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */
