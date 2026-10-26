@@ -12,7 +12,7 @@ docs/PLAN_skills-einstieg.md, Abschnitt "Belege zum Glossar-Entwurf".
 ## Die Kette
 
 **Kette**:
-Die drei Arbeitsschritte, über die aus einem Fundstück ein Beitrag wird: Einwerfen, Destillieren, Ausformulieren. Jeder Schritt kann von einer anderen Person erledigt werden.
+Die drei Arbeitsschritte, über die aus einem Fundstück ein Beitrag wird: Einwerfen, Destillieren, Ausformulieren. Jeder Schritt kann von einer anderen Person erledigt werden. Destillieren und Ausformulieren sind Umwandlungen.
 _Avoid_: Workflow, Ablauf, Dreischritt, Pipeline
 
 **Einwurf**:
@@ -87,6 +87,16 @@ _Avoid_: Gelöscht, Abgelehnt
 
 Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
 
+## Umwandlungen
+
+**Umwandlung**:
+Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren, das Zuschneiden eines Kommentars auf eine Zielgruppe.
+_Avoid_: Konvertierung, Transformation, Verarbeitung
+
+**Synthese**:
+Eine Umwandlung, die mehrere Inhalte zu einem neuen zusammenführt.
+_Avoid_: Zusammenfassung, Merge, Aggregation
+
 ## Beiträge
 
 Argument und Framing sind keine eigenen Begriffe: Ein Beitrag enthält ein Argument, oft mit einem Framing.
@@ -124,7 +134,7 @@ Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung 
 _Avoid_: Überschrift, Etikett, Thema
 
 **Herkunft**:
-Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstelle mit kurzer Beschreibung.
+Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstelle mit kurzer Beschreibung, etwa eine Rede.
 _Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:

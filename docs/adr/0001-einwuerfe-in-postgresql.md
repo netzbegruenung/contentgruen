@@ -1,16 +1,16 @@
 ---
-status: proposed
+status: accepted
 ---
 
-# Einwürfe liegen in PostgreSQL, nicht als Beitragstyp im Suchindex
+# Was noch Arbeit ist, liegt in PostgreSQL, nicht im Suchindex
 
-Ein Einwurf ist Arbeit, kein Inhalt: Er wird nicht gesucht, nicht kopiert, nicht bewertet und nicht moderiert. Deshalb liegt der Fangkorb als eigene Tabelle in PostgreSQL neben den Beiträgen und nicht als weiterer Beitragstyp in Qdrant. Ausschlaggebend war, dass Zuweisung und Stufenwechsel atomar sein müssen und dass Einwürfe weder Rausch-Vektoren in den Suchindex legen noch die Zähler in „Meine Beiträge“ verwässern sollen.
+Ein Einwurf ist Arbeit, kein Inhalt: Er wird nicht gesucht, nicht kopiert, nicht bewertet und nicht moderiert. Deshalb liegt der Fangkorb als eigene Tabelle in PostgreSQL neben den Beiträgen und nicht als weiterer Beitragstyp im Suchindex. Ausschlaggebend war, dass Stufenwechsel atomar sein müssen und dass Einwürfe weder Rauschen in die Suche bringen noch die Zähler in „Meine Beiträge“ verwässern sollen.
 
 ## Considered Options
 
-- Neuer Beitragstyp in der Registry: im Backend am billigsten, aber jeder Einwurf erzeugt einen Vektor, erscheint in „Meine Beiträge“ und in den Zählern und bräuchte dort Ausnahmen.
-- Eigener Status an einem bestehenden Beitragstyp: zwingt schon beim Einwerfen zur Typwahl, also genau zu der Entscheidung, die das Einwerfen vermeiden soll.
+- Einwurf als Beitragstyp im Suchindex: eine Mechanik weniger, aber jeder Einwurf landet in Suche und Zählern, das Einwerfen erzwingt eine Typwahl, und der Suchindex kennt keine Transaktionen.
+- Allgemeines Modell, in dem alles, woran gearbeitet wird, ein Baustein mit Typ ist und Umwandlungen festhalten, woraus etwas entstanden ist: passt zur geplanten Umwandlung und Synthese, ist heute aber ein großer Umbau für eine einzige Kette. Es bleibt die Richtung; diese Entscheidung verbaut es nicht.
 
 ## Consequences
 
-Der Weg zurück ist offen: Soll der Fangkorb später durchsuchbar werden, entsteht beim Ausformulieren oder per Backfill ein Beitrag. Die Verknüpfung Einwurf → Beitrag ist n:m, und Einwürfe werden nie gelöscht, damit Einwerfer, Destillierer und Ausformulierer rekonstruierbar bleiben.
+Jede weitere Arbeitsform braucht bis zum allgemeinen Modell eigene Tabellen und Verknüpfungen. Die Verknüpfung Einwurf → Beitrag ist n:m, und Einwürfe werden nie gelöscht, damit Einwerfer, Destillierer und Ausformulierer rekonstruierbar bleiben.
