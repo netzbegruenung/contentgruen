@@ -1,6 +1,5 @@
 import { ContentOrigin } from "./content-origin-enum";
 import { ContentStatus } from "./content-status-enum";
-import { ContentVisibility } from "./content-visibility-enum";
 
 export interface AuthorEntry {
     name: string;
@@ -51,7 +50,6 @@ export interface BaseContentResult {
     report_flagged: boolean;
     rejection_reason: string;
     block_reason: string;
-    visibility: ContentVisibility;
     title: string;
     references: ContentReference[];
     references_count: number;
