@@ -167,7 +167,7 @@ Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine
 _Avoid_: Report, Flag, Beschwerde
 
 **Dublette**:
-Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener und kommt sie aus dem Fangkorb, nimmt sie ihn, statt zuzustimmen. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.
+Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener, nimmt sie ihn, statt zuzustimmen. Antwortet der Beitrag auf eine Aussage, wird erst nach dieser Entscheidung mit ihr verknüpft: beim Nehmen der vorhandene, bei „Trotzdem speichern“ nur der neue; ein fremder vorhandener nie. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.
 _Avoid_: Duplikat, Doppelung
 
 **Suchanfrage**:
