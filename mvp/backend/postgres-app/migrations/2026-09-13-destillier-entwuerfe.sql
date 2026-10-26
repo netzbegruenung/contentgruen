@@ -16,7 +16,7 @@
 -- dem ersten Start des neuen Dienstes existieren soll.
 --
 -- Anwenden:
---   docker exec -i contentgruen-app-postgres psql -U app_user -d contentgruen_app \
+--   docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 --     < mvp/backend/postgres-app/migrations/2026-09-13-destillier-entwuerfe.sql
 
 BEGIN;
