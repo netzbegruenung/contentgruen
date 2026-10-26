@@ -145,7 +145,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
     component.onVorhandenGewaehlt('k-alt');
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'k-alt', 'commentary');
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
     expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', jasmine.anything());
     // Keine Ergebnisseite: gespeichert wurde nichts.
     expect(navigieren).not.toHaveBeenCalled();
@@ -166,7 +166,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
     erneut.next();
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledTimes(2);
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
   });
 
   it('verknuepft beim Trotzdem-Speichern den Einwurf mit dem neuen Kommentar', () => {

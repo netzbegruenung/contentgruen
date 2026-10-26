@@ -16,7 +16,7 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
-import { tabTaste } from '../shared/tab-tasten';
+import { tabMitTasteWaehlen } from '../shared/tab-tasten';
 
 /** Die beiden Tabs: eigene Beitraege und "Meine Einwuerfe". */
 export type MeineTab = 'beitraege' | 'einwuerfe';
@@ -128,7 +128,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   /** Pfeiltasten, Pos1 und Ende waehlen den Tab und setzen den Fokus mit. */
   tabTaste(event: KeyboardEvent): void {
     const jetzt = this.tabs.findIndex((eintrag) => eintrag.wert === this.tab);
-    tabTaste(event, jetzt, this.tabs.length, (ziel) => this.tabWaehlen(this.tabs[ziel].wert));
+    tabMitTasteWaehlen(event, jetzt, this.tabs.length, (ziel) => this.tabWaehlen(this.tabs[ziel].wert));
   }
 
   /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */

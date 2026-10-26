@@ -99,7 +99,7 @@ describe('BeitragGespeichertComponent', () => {
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
 
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
-      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformuliert');
+      expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
 
       (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
       expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);

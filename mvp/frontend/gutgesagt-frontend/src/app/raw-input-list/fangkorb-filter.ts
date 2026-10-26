@@ -31,16 +31,20 @@ export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string
 ];
 
 /**
- * Wohin der Fangkorb nach einer Handlung im Destillier-Ablauf zurueckkehrt: der
- * Tab, in dem der Einwurf jetzt liegt, oder "ausformuliert", wenn er in keinem
- * mehr liegt.
+ * Wo der Fangkorb nach dem Ausformulieren aufgeht. Ausformuliertes liegt in keinem
+ * Tab; zurueck geht es in die Arbeitsliste, aus der der Einwurf kam.
  */
-export type Ruecksprung = FangkorbTab | 'ausformuliert';
+export const NACH_DEM_AUSFORMULIEREN: FangkorbTab = 'ausformulieren';
 
-/** Ausformuliertes liegt in keinem Tab; zurueck geht es in die Arbeitsliste, aus der es kam. */
-export function tabNach(ruecksprung: Ruecksprung): FangkorbTab {
-  return ruecksprung === 'ausformuliert' ? 'ausformulieren' : ruecksprung;
-}
+/**
+ * Die Arbeitsliste je Stufe in der Kette. Ausformuliertes hat keine Arbeit mehr
+ * und liegt in keiner.
+ */
+const ARBEITSLISTE_DER_STUFE: Record<ReturnType<typeof stufeInDerKette>, FangkorbTab | null> = {
+  offen: 'destillieren',
+  destilliert: 'ausformulieren',
+  ausformuliert: null,
+};
 
 /**
  * Fruehere Tabs: "Erledigt" bis zur Angleichung ans Glossar, danach
@@ -117,8 +121,7 @@ export function passtZumTab(
   if (einwurf.status === 'discarded' && !verworfenSichtbar) {
     return false;
   }
-  const stufe = stufeInDerKette(einwurf);
-  return (stufe === 'offen' && tab === 'destillieren') || (stufe === 'destilliert' && tab === 'ausformulieren');
+  return ARBEITSLISTE_DER_STUFE[stufeInDerKette(einwurf)] === tab;
 }
 
 /**

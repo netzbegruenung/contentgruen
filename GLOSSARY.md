@@ -90,7 +90,7 @@ _Avoid_: Verarbeitet, Erledigt, Fertig
 Ein Einwurf, den sein Einwerfer oder ein Admin als nicht verwertbar markiert hat.
 _Avoid_: Gelöscht, Abgelehnt
 
-Die Arbeitslisten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. Für Ausformuliertes gibt es keine eigene Ansicht, weil daran keine Arbeit mehr ansteht. Verworfenes blendet ein Filter ein, und zwar in der Arbeitsliste, in der es ohne Verwerfen stünde: ohne Satz unter „Destillieren“, mit Satz unter „Ausformulieren“; dort lässt es sich weiter destillieren. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
+Die Arbeitslisten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. Für Ausformuliertes gibt es keine eigene Ansicht, weil daran keine Arbeit mehr ansteht. Verworfenes blendet ein Filter ein, und zwar in der Arbeitsliste, in der es ohne Verwerfen stünde: ohne Satz unter „Destillieren“, mit Satz unter „Ausformulieren“; dort lässt es sich weiter destillieren. Verworfenes, das schon mit einem Beitrag verknüpft ist, zeigt auch der Filter nicht, weil daran keine Arbeit mehr ansteht. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
 
 ## Umwandlungen
 

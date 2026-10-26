@@ -14,7 +14,7 @@ import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
-import { Ruecksprung, tabMerken, tabNach } from '../../raw-input-list/fangkorb-filter';
+import { NACH_DEM_AUSFORMULIEREN, tabMerken } from '../../raw-input-list/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,
@@ -103,13 +103,8 @@ export class BeitragGespeichertComponent implements OnInit {
     return TEXTE[this.typ];
   }
 
-  private get rohinputId(): string | null {
+  private get einwurfId(): string | null {
     return this.route.snapshot.queryParamMap.get(ROHINPUT_ADRESSE_PARAM);
-  }
-
-  /** Wo der Einwurf jetzt liegt: verknuepft ist er ausformuliert, sonst noch destilliert. */
-  private get fangkorbTab(): Ruecksprung {
-    return this.zustand.einwurfVerknuepft === false ? 'ausformulieren' : 'ausformuliert';
   }
 
   ngOnInit(): void {
@@ -139,11 +134,11 @@ export class BeitragGespeichertComponent implements OnInit {
 
   /** Fangkorb: der naechste offene Einwurf; ist keiner offen, der Fangkorb. */
   naechsterEinwurf(): void {
-    this.uebergabe.zumNaechsten(this.rohinputId ?? '', this.fangkorbTab);
+    this.uebergabe.zumNaechsten(this.einwurfId ?? '', NACH_DEM_AUSFORMULIEREN);
   }
 
   zumFangkorb(): void {
-    tabMerken(tabNach(this.fangkorbTab));
+    tabMerken(NACH_DEM_AUSFORMULIEREN);
     this.router.navigate(['/fangkorb']);
   }
 

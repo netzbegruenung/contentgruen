@@ -7,7 +7,7 @@
  * Gedacht fuer ``(keydown)`` an der ``tablist``: ``event.currentTarget`` ist die
  * Liste, ihre ``[role="tab"]``-Knoepfe stehen in der Reihenfolge der Tabs.
  */
-export function tabTaste(
+export function tabMitTasteWaehlen(
   event: KeyboardEvent,
   jetzt: number,
   anzahl: number,

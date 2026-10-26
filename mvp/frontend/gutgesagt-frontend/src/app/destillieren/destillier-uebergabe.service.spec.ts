@@ -85,12 +85,4 @@ describe('DestillierUebergabeService', () => {
     });
   });
 
-  it('fuehrt nach dem Ausformulieren in die Arbeitsliste "Ausformulieren"', () => {
-    // Ausformuliertes liegt in keinem Tab; zurueck geht es dorthin, woher der Einwurf kam.
-    service.zumNaechsten('id-1', 'ausformuliert');
-
-    expect(router.navigate).toHaveBeenCalledOnceWith(['/destillieren'], {
-      queryParams: { nach: 'id-1', tab: 'ausformulieren' },
-    });
-  });
 });

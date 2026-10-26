@@ -23,7 +23,7 @@ import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
-import { tabTaste } from '../shared/tab-tasten';
+import { tabMitTasteWaehlen } from '../shared/tab-tasten';
 import {
   FangkorbFilter,
   FangkorbTab,
@@ -145,7 +145,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   /** Pfeiltasten, Pos1 und Ende waehlen den Tab und setzen den Fokus mit. */
   tabTaste(event: KeyboardEvent): void {
     const jetzt = TABS.findIndex((eintrag) => eintrag.wert === this.filter.tab);
-    tabTaste(event, jetzt, TABS.length, (ziel) => this.tabWaehlen(TABS[ziel].wert));
+    tabMitTasteWaehlen(event, jetzt, TABS.length, (ziel) => this.tabWaehlen(TABS[ziel].wert));
   }
 
   /** Die Zeile im leeren Tab: erst gar nichts da, dann die Chips, dann der Tab. */

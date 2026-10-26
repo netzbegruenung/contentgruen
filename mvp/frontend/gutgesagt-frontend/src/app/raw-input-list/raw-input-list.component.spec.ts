@@ -172,6 +172,7 @@ describe('RawInputListComponent', () => {
       expect(zaehler('Destillieren')).toBe('1');
       expect(zaehler('Ausformulieren')).toBe('1');
     });
+
     it('beginnt beim Destillieren und wechselt auf Tipp', () => {
       erstellen(jeTab());
 
@@ -194,6 +195,7 @@ describe('RawInputListComponent', () => {
       expect(component.filter.nurMeine).toBeTrue();
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
     });
+
     it('haelt Tab und Filter in der Sitzung', () => {
       erstellen(jeTab());
       klicken(tabKnopf('Ausformulieren'));
@@ -244,21 +246,25 @@ describe('RawInputListComponent', () => {
       fixture.detectChanges();
     }
 
-    it('verbindet den gewaehlten Tab mit dem Bereich und hat nur einen Tab-Stopp', () => {
+    it('gibt jedem Tab seinen Bereich, zeigt nur den gewaehlten und hat nur einen Tab-Stopp', () => {
       erstellen(jeTab());
+      const bereich = (tab: HTMLButtonElement): HTMLElement =>
+        fixture.nativeElement.querySelector(`#${tab.getAttribute('aria-controls')}`);
 
       for (const tab of tabs()) {
-        const bereich = fixture.nativeElement.querySelector(`#${tab.getAttribute('aria-controls')}`);
-        expect(bereich.getAttribute('role')).toBe('tabpanel');
+        expect(bereich(tab).getAttribute('role')).toBe('tabpanel');
+        expect(bereich(tab).getAttribute('aria-labelledby')).toBe(tab.id);
       }
-      const bereich = fixture.nativeElement.querySelector('[role="tabpanel"]');
-      expect(bereich.getAttribute('aria-labelledby')).toBe(tabs()[0].id);
-      expect(bereich.querySelectorAll('article.karte--einwurf').length).toBe(1);
+      expect(new Set(tabs().map(bereich)).size).toBe(2);
+      expect(tabs().map((tab) => bereich(tab).hidden)).toEqual([false, true]);
+      expect(bereich(tabs()[0]).querySelectorAll('article.karte--einwurf').length).toBe(1);
+      expect(bereich(tabs()[1]).children.length).toBe(0);
       expect(tabs().map((tab) => tab.getAttribute('tabindex'))).toEqual(['0', '-1']);
 
       klicken(tabs()[1]);
 
-      expect(bereich.getAttribute('aria-labelledby')).toBe(tabs()[1].id);
+      expect(tabs().map((tab) => bereich(tab).hidden)).toEqual([true, false]);
+      expect(bereich(tabs()[1]).querySelectorAll('article.karte--einwurf').length).toBe(1);
       expect(tabs().map((tab) => tab.getAttribute('tabindex'))).toEqual(['-1', '0']);
     });
 
@@ -347,6 +353,7 @@ describe('RawInputListComponent', () => {
         expect(component.sichtbar.map((eintrag) => eintrag.id)).not.toContain('weg-fertig');
       }
     });
+
     it('zeigt Verworfenes erst mit dem Chip, im Tab seiner naechsten Arbeit', () => {
       erstellen([
         ...jeTab(),
@@ -365,6 +372,7 @@ describe('RawInputListComponent', () => {
       expect(filterKnopf('verworfen').getAttribute('aria-pressed')).toBe('true');
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz', 'weg-satz']);
     });
+
     it('sortiert neueste zuerst, nicht eigene zuerst', () => {
       erstellen([
         einwurf({ id: 'alt', created_at: '2026-09-01T10:00:00Z' }),
@@ -517,7 +525,6 @@ describe('RawInputListComponent', () => {
       expect(karte.querySelectorAll('.einwurf-satz').length).toBe(3);
       expect(karte.querySelector('.einwurf-mehr')!.textContent!.trim()).toBe('+2 weitere');
     });
-
   });
 
   describe('Griffe', () => {
@@ -582,6 +589,7 @@ describe('RawInputListComponent', () => {
         'Trotzdem destillieren',
       ]);
     });
+
     it('kopiert den Link und sagt es', () => {
       erstellen([einwurf({ url: 'https://example.org/post' })]);
 
