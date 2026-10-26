@@ -39,11 +39,6 @@ _Avoid_: Notiz, Kommentar, Beschreibung
 Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs stammt (etwa Instagram, YouTube, TikTok oder Web).
 _Avoid_: Kanal, Quelle
 
-**Eingangskanal**:
-Der Weg, auf dem ein Einwurf hereinkam: über das Einwurf-Formular oder über das Teilen aus einer anderen App.
-_Avoid_: Kanal, Source, Plattform
-_Offene Frage_: Braucht die Domäne diesen Begriff, oder ist er reine Technik?
-
 **Destillieren**:
 Das Argument eines Einwurfs in genau einem Satz formulieren, bevor ein Beitrag entsteht. Wer das nicht kann, verwirft.
 _Avoid_: Verarbeiten, Bearbeiten, Zusammenfassen
@@ -97,41 +92,32 @@ Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“,
 Argument und Framing sind keine eigenen Begriffe: Ein Beitrag enthält ein Argument, oft mit einem Framing.
 
 **Beitrag**:
-Ein fertiger, durchsuchbarer Inhalt, den Mitwirkende finden, kopieren und bewerten können. Jeder Beitrag hat genau einen Beitragstyp.
+Ein fertiger, durchsuchbarer Inhalt, den Nutzende finden, kopieren und bewerten können. Jeder Beitrag hat genau einen Beitragstyp. Aussage und Herkunft sind keine Beiträge: Beiträge antworten auf Aussagen und stützen sich auf Herkünfte.
 _Avoid_: Content, Inhalt, Contribution, Eintrag
-_Offene Frage_: Sind Aussage und Herkunft Beiträge, oder nur Kommentar, Hintergrundinfo, Bild und Post?
 
 **Beitragstyp**:
 Die Art eines Beitrags. Sie bestimmt, welche Felder er hat und wie er angezeigt wird.
 _Avoid_: Content-Typ, Inhaltsart, Kategorie
 
 **Aussage**:
-Ein typischer Angriff oder Vorwurf gegen grüne Politik, auf den Beiträge antworten.
-_Avoid_: Statement, These, Frage
-_Offene Frage_: Ist eine Aussage ein Angriff von außen oder jede Frage, auf die geantwortet wird? Und gehört sie zur Kette oder entsteht sie nur aus Seed-Daten und Suchanfragen?
+Eine Behauptung oder Frage aus der Debatte, auf die man eine gute Antwort braucht, etwa ein Vorwurf gegen grüne Politik oder „Wie erkläre ich die Wärmepumpe?“.
+_Avoid_: Statement, These, Angriff
 
 **Kommentar**:
 Eine Antwort, die man direkt posten kann, in Kurz-, Mittel- und Langfassung und mit einem Stil.
 _Avoid_: Commentary, Fertiger Kommentar, Antwort, Reply
 
 **Hintergrundinfo**:
-Fakten und Zahlen, die eine Antwort stützen.
+Fakten und Zahlen, die eine Antwort stützen. Kein Sammelbecken für Inhalte ohne eigenen Typ.
 _Avoid_: Generic Text, generischer Text, Hintergrundinformation
-_Offene Frage_: Ist die Hintergrundinfo der Typ für Fakten zu einer Antwort, oder das Sammelbecken für alles, was in keinen anderen Typ passt?
 
 **Bild**:
 Ein Bild mit Unterschrift, das für sich spricht.
 _Avoid_: Grafik, Image
 
 **Post**:
-Ein Beitrag aus einem sozialen Netzwerk, als Fundstück mit seiner Herkunft festgehalten.
+Ein Beitrag, der einen gelungenen Beitrag aus einem sozialen Netzwerk als Vorbild zum Teilen festhält. Er ist fertig und wird so verwendet; ein Einwurf mit demselben Link ist dagegen Material, aus dem erst ein Beitrag werden soll.
 _Avoid_: Social-Media-Post, Posting
-_Offene Frage_: Wie unterscheidet sich ein Post von einem Einwurf mit Link auf denselben Post?
-
-**Destillat**:
-Das Argument oder die Formulierung eines Beitrags in eigenen Worten, im Unterschied zur Herkunft, auf die er sich stützt.
-_Avoid_: Text, Inhalt
-_Offene Frage_: Der Begriff steht bisher nur in den Nutzungsbedingungen. Übernehmen, oder dort durch „Beitrag“ ersetzen?
 
 **Titel**:
 Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema.
@@ -139,7 +125,7 @@ _Avoid_: Überschrift, Etikett, Thema
 
 **Herkunft**:
 Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstelle mit kurzer Beschreibung.
-_Avoid_: Quelle, Referenz, Reference, Beleg
+_Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:
 Die Tonlage eines Kommentars, etwa faktisch, persönlich, humorvoll oder brückenbauend.
