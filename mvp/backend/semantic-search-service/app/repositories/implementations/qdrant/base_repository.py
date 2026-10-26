@@ -188,8 +188,10 @@ class QdrantBaseRepository(
             content_desc = (
                 f"all content types" if self.content_type is None else self.content_type
             )
-            # Ohne query_text: derselbe Suchtext wie in api/v1/search.py.
-            logger.info(
+            # Ohne query_text: derselbe Suchtext wie in api/v1/search.py. Nur auf
+            # DEBUG: je Suche eine Zeile mit Uhrzeit liesse sich den
+            # Suchereignissen zuordnen (#239).
+            logger.debug(
                 f"Search in {content_desc}: found {len(search_results)} results"
             )
 
@@ -306,7 +308,8 @@ class QdrantBaseRepository(
             logger.error(f"Failed to read item {item_id}: {e}", exc_info=True)
             raise
 
-        logger.info(f"Found entry with id {item_id} in {self.repository_name}")
+        # DEBUG: Die Suche laedt so jeden Treffer nach (#239).
+        logger.debug(f"Found entry with id {item_id} in {self.repository_name}")
         return entry
 
     async def get_by_id(self, item_id: uuid.UUID) -> TContentDbEntry:
@@ -339,7 +342,8 @@ class QdrantBaseRepository(
                 upsert_content_type = self.content_type
                 data_dict["content_type"] = self.content_type
 
-            logger.info(
+            # DEBUG: Auch die Aussage aus einer Suche laeuft hier durch (#239).
+            logger.debug(
                 f"QdrantBaseRepository ({self.__class__.__name__}): Upserting item with id {item_id} "
                 f"into {self.repository_name} (using content_type: {upsert_content_type})"
             )

@@ -5,7 +5,7 @@ Gut gesagt ist eine Webapp, die Nutzende dabei unterstützt, schnell gute Argume
 ## Die Kette
 
 **Kette**:
-Die drei Arbeitsschritte, über die aus einem Fundstück ein Beitrag wird: Einwerfen, Destillieren, Ausformulieren. Jeder Schritt kann von einer anderen Person erledigt werden. Destillieren und Ausformulieren sind Umwandlungen.
+Die drei Arbeitsschritte, über die aus einem Fundstück ein Beitrag wird: Einwerfen, Destillieren, Ausformulieren. Jeder Schritt kann von einer anderen Person erledigt werden. Destillieren ist eine Umwandlung, Ausformulieren ebenfalls, wenn dabei ein neuer Beitrag entsteht.
 _Avoid_: Workflow, Ablauf, Dreischritt, Pipeline
 
 **Einwurf**:
@@ -45,7 +45,7 @@ Die Person, die als Erste einen Satz zu einem Einwurf gespeichert hat.
 _Avoid_: Bearbeiter, Verarbeiter
 
 **Ausformulieren**:
-Der letzte Schritt der Kette: aus einem Satz zu einem Einwurf einen fertigen Beitrag machen (Typ wählen, Text schreiben, Herkunft angeben).
+Der letzte Schritt der Kette: aus einem Satz zu einem Einwurf einen fertigen Beitrag machen (Typ wählen, Text schreiben, Herkunft angeben) und den Einwurf damit verknüpfen. Ist der neue Beitrag eine Dublette, kann die Person den Einwurf stattdessen mit dem vorhandenen verknüpfen; auch das ist Ausformulieren, aber keine Umwandlung, weil nichts Neues entsteht.
 _Avoid_: Verfassen, Verarbeiten, Fertigstellen
 
 **Verfassen**:
@@ -53,7 +53,7 @@ Einen Beitrag direkt anlegen, ohne dass ein Einwurf dahintersteht.
 _Avoid_: Ausformulieren, Erstellen, Beitragen
 
 **Ausformulierer**:
-Die Person, die aus einem Einwurf einen Beitrag gespeichert hat.
+Die Person, die einen Einwurf mit einem Beitrag verknüpft hat, mit einem neuen oder, bei einer Dublette, mit dem vorhandenen. Wer aus dem Fangkorb einem vorhandenen Beitrag zustimmt oder den eigenen vorhandenen nimmt, ist Ausformulierer; Autor des vorhandenen wird man dadurch nicht, Autor bleibt, wer ihn gespeichert hat.
 _Avoid_: Verarbeiter, Bearbeiter, Autor
 
 **Verwerfen**:
@@ -67,11 +67,11 @@ Ein Einwurf, zu dem noch niemand einen Satz gespeichert hat.
 _Avoid_: Neu, Zu destillieren
 
 **Destilliert**:
-Ein Einwurf mit mindestens einem Satz, aus dem noch kein Beitrag entstanden ist.
+Ein Einwurf mit mindestens einem Satz, der noch mit keinem Beitrag verknüpft ist.
 _Avoid_: In Arbeit, In Bearbeitung, Auszuformulieren
 
 **Ausformuliert**:
-Ein Einwurf, aus dem mindestens ein Beitrag entstanden ist.
+Ein Einwurf, der mit mindestens einem Beitrag verknüpft ist, gleich ob der Beitrag dabei neu entstanden ist oder schon vorhanden war.
 _Avoid_: Verarbeitet, Erledigt, Fertig
 
 **Verworfen**:
@@ -83,7 +83,7 @@ Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“,
 ## Umwandlungen
 
 **Umwandlung**:
-Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren, das Zuschneiden eines Kommentars auf eine Zielgruppe.
+Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren mit einem neuen Beitrag, das Zuschneiden eines Kommentars auf eine Zielgruppe.
 _Avoid_: Konvertierung, Transformation, Verarbeitung
 
 **Synthese**:
@@ -171,7 +171,7 @@ Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine
 _Avoid_: Report, Flag, Beschwerde
 
 **Dublette**:
-Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert.
+Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener, nimmt sie ihn, statt zuzustimmen. Antwortet der Beitrag auf eine Aussage, wird erst nach dieser Entscheidung mit ihr verknüpft: beim Nehmen der vorhandene, bei „Trotzdem speichern“ nur der neue; ein fremder vorhandener nie. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.
 _Avoid_: Duplikat, Doppelung
 
 **Suchanfrage**:
@@ -181,6 +181,14 @@ _Avoid_: Query, Suchbegriff
 **Suche ohne Treffer**:
 Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
+
+**Suchereignis**:
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat.
+_Avoid_: Search Event, Suchprotokoll, Suchlog
+
+**Tagespseudonym**:
+Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung.
+_Avoid_: Actor-Hash, Hash, anonyme ID
 
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung.
@@ -205,7 +213,7 @@ Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitrage
 _Avoid_: Gast, anonymer Nutzer
 
 **Autor**:
-Die Person, die einen Beitrag ausformuliert oder verfasst hat. Einwerfer und Destillierer eines Beitrags aus dem Fangkorb sind nicht seine Autoren, sondern wirken an der Kette mit. Wer einen von KI vorgeschlagenen Text übernimmt und speichert, ist dessen Autor.
+Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat. Wer einen Einwurf nur mit einem vorhandenen Beitrag verknüpft, wird dadurch nicht dessen Autor. Einwerfer und Destillierer eines Beitrags aus dem Fangkorb sind nicht seine Autoren, sondern wirken an der Kette mit. Wer einen von KI vorgeschlagenen Text übernimmt und speichert, ist dessen Autor.
 _Avoid_: Ersteller, Owner, Urheber
 
 **Anzeigename**:

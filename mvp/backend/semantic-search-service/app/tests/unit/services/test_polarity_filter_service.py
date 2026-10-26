@@ -2,6 +2,7 @@
 Unit tests for the polarity filter service.
 """
 
+import logging
 from unittest.mock import Mock
 import pytest
 from dataclasses import dataclass
@@ -90,6 +91,39 @@ class TestPolarityFilterService:
         assert filtered[0].score == 0.9  # No penalty applied
         assert metadata["1"].polarity_mismatch_detected is False
         assert metadata["1"].polarity_penalty_applied == 1.0
+
+    def test_analyze_and_filter_statement_results_logs_nothing_at_info(
+        self, service_enabled, caplog
+    ):
+        """Runs once per search: a line per search carries its exact time and,
+        counted per day, lines up with the search events (#239)."""
+        results = [MockSearchResult(id="1", text="Tempolimit nein", score=0.9)]
+
+        with caplog.at_level(logging.INFO, logger="services.polarity_filter_service"):
+            service_enabled.analyze_and_filter_statement_results(
+                query_text="Tempolimit sicher nicht",
+                statement_results=results,
+                get_text_fn=lambda r: r.text,
+            )
+
+        assert [r.getMessage() for r in caplog.records] == []
+
+    def test_analyze_and_filter_statement_results_never_logs_query_words(
+        self, service_enabled, caplog
+    ):
+        """The polarity explanation quotes words of the query; the search text
+        stays out of the log, at DEBUG too (api/v1/search.py)."""
+        results = [MockSearchResult(id="1", text="Tempolimit nein", score=0.9)]
+
+        with caplog.at_level(logging.DEBUG, logger="services.polarity_filter_service"):
+            service_enabled.analyze_and_filter_statement_results(
+                query_text="Tempolimit ist gut",
+                statement_results=results,
+                get_text_fn=lambda r: r.text,
+            )
+
+        assert caplog.records
+        assert not any("gut" in r.getMessage() for r in caplog.records)
 
     def test_contradictory_polarity_applies_penalty(self, service_enabled):
         """Test that contradictory polarity applies penalty."""

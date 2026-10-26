@@ -34,7 +34,6 @@ from core.config import Settings
 from domain.models.content_type import ContentType
 from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
-from domain.models.content_visibility import ContentVisibility
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
@@ -150,7 +149,6 @@ def create_base_content_fields(**overrides):
         "report_flagged": False,
         "rejection_reason": None,
         "block_reason": None,
-        "visibility": ContentVisibility.INTERNAL,
     }
     base_fields.update(overrides)
     return base_fields

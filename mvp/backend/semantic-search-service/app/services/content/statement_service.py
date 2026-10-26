@@ -160,7 +160,9 @@ class StatementService(
             )
             vorhandene, bester = pruefung.vorhanden, pruefung.aehnlichster
             if vorhandene is not None:
-                logger.info(
+                # DEBUG: Jede Suche laeuft hier durch; eine INFO-Zeile mit ID und
+                # Uhrzeit je Suche ordnete die Aussage einem Suchereignis zu (#239).
+                logger.debug(
                     f"Statement already exists with ID {vorhandene.id} "
                     f"(score {vorhandene.score:.3f}, threshold {self.settings.statement_similarity_threshold})"
                 )
@@ -185,7 +187,7 @@ class StatementService(
             )
 
             await super()._upsert(statement_input)
-            logger.info(
+            logger.debug(
                 f"Successfully created new statement with ID {statement_input.id}"
             )
             return True, statement_input.id, statement_input.text

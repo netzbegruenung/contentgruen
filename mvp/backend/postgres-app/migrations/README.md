@@ -33,8 +33,9 @@ docker exec -i "$PG_CONTAINER" psql -U app_user -d "$PG_DB" -v ON_ERROR_STOP=1 \
   Option liefe `psql` nach einem Fehler weiter und meldete am Ende Erfolg.
 - Die Skripte laufen in einer Transaktion (`BEGIN; … COMMIT;`): Schlägt eines
   fehl, bleibt die Datenbank, wie sie war. Ausnahme ist jeweils das
-  `VACUUM FULL` am Ende von `2026-08-19-search-events-pseudonymisieren.sql` und
-  `2026-08-25-usage-events-datensparsamkeit.sql`, das in PostgreSQL nicht in
+  `VACUUM FULL` am Ende von `2026-08-19-search-events-pseudonymisieren.sql`,
+  `2026-08-25-usage-events-datensparsamkeit.sql` und
+  `2026-10-26-search-events-nur-tag.sql`, das in PostgreSQL nicht in
   einer Transaktion laufen darf. Es läuft nach dem `COMMIT`; schlägt es fehl,
   ist die Migration schon festgeschrieben. Dann **nur** das `VACUUM FULL …;`
   einzeln nachholen, nicht das ganze Skript erneut starten (siehe „Erneut
@@ -58,6 +59,14 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
 
 ## Konvention für neue Migrationen
 
+Der Unit-Test
+`mvp/backend/semantic-search-service/app/tests/unit/test_migrationskonvention.py`
+prüft für jede Datei hier den Dateinamen, die letzte Kopfzeile, dass kein
+Kommentar einen Befehl zum Anwenden enthält, und die Transaktion. Den übrigen
+Inhalt des Kopfs, die Idempotenz und die Gleichheit mit `create_all` prüft er
+nicht. Er läuft mit den Unit-Tests: im Pre-commit-Hook, mit
+`make test-backend(-fast)` und in der GitHub-CI nach dem Merge.
+
 - **Dateiname:** `JJJJ-MM-TT-<thema>.sql`, Datum der Erstellung, Thema kurz,
   kleingeschrieben, mit Bindestrichen. Das Datum legt die Reihenfolge fest;
   bei gleichem Datum gilt die alphabetische Reihenfolge des Dateinamens.
@@ -68,14 +77,17 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
   3. wie vorhandene Daten nachgetragen oder verworfen werden,
   4. als letzte Zeile: `-- Anwenden: siehe README.md in diesem Verzeichnis.`
 
-  Den Befehl selbst nicht in den Kopf kopieren. Er steht nur hier, damit eine
-  Umbenennung (Container, Datenbank, Pfad) nur diese Datei ändert.
+  Den Befehl selbst nicht in den Kopf oder einen anderen Kommentar kopieren.
+  Er steht nur hier, damit eine Umbenennung (Container, Datenbank, Pfad) nur
+  diese Datei ändert.
 - **Idempotent:** `IF NOT EXISTS` / `IF EXISTS` und Nachträge, die einen zweiten
   Lauf überstehen. Ein neues Skript darf mehrfach laufen, ohne Daten zu
   verlieren. Geht das nicht, sagt der Kopf es ausdrücklich und hier steht es
   unter „Erneut anwenden“.
 - **Transaktion:** `BEGIN;` am Anfang, `COMMIT;` am Ende. Was nicht in einer
-  Transaktion laufen darf (etwa `VACUUM`), steht danach und ist im Kopf erklärt.
+  Transaktion laufen darf, steht danach und ist im Kopf erklärt. Der Test lässt
+  dort nur `VACUUM` und die `CONCURRENTLY`-Formen von `CREATE INDEX`,
+  `DROP INDEX` und `REINDEX` zu.
 - **Gleiches Schema wie `create_all`:** Was das Skript anlegt, muss genau dem
   entsprechen, was die SQLAlchemy-Modelle in einer neuen Datenbank erzeugen.
   Ändert sich eine Tabelle, die auch `mvp/backend/postgres-app/init.sql`

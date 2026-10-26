@@ -10,19 +10,20 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 - **Purpose**: Active development with hot-reload
 - **Access**: http://localhost:4200 (frontend), http://localhost:5054 (BFF), http://localhost:8000 (API)
 - **Infrastructure**: Services run locally, only Qdrant and PostgreSQL in Docker (`docker-compose.local-dbs.yml`)
-- **Authentication**: Dummy auth (testuser/Liebe>Hass!)
+- **Authentication**: E-mail login against `managed-users.json` (`test.user@example.com`/`Liebe>Hass!`)
 
 ### 2. Docker Development
 - **Purpose**: Testing containerized deployment locally
 - **Access**: http://localhost (frontend via nginx proxy)
 - **Infrastructure**: All services in Docker containers
-- **Authentication**: Dummy auth (testuser/Liebe>Hass!)
+- **Authentication**: E-mail login against `managed-users.json` (`test.user@example.com`/`Liebe>Hass!`)
 
 ### 3. Test Environment
 - **Purpose**: Integration testing and demos
 - **Access**: https://gutgesagt-test.netzbegruenung.de
 - **Infrastructure**: Docker containers on verdigado's internal infrastructure
-- **Authentication**: Dummy auth (testuser/Liebe>Hass!)
+- **Authentication**: Whatever the BFF configuration enables (`GET /api/auth/modes`): Keycloak and/or
+  Direktanmeldung; the accounts are not part of this repository
 - **Management**: Rolled out manually on verdigado's internal infrastructure; details are documented internally
 
 ### 4. Production Environment
@@ -84,7 +85,7 @@ listens on 5432 inside the container.
 ### BFF (Backend-for-Frontend)
 - **Technology**: .NET 9.0, YARP reverse proxy
 - **Purpose**:
-  - Authentication handling (Keycloak or dummy)
+  - Authentication handling (Keycloak, Direktanmeldung, or the old dummy login)
   - API gateway/proxy to semantic search service
   - User context injection via headers
 - **Configuration**:
@@ -144,12 +145,27 @@ listens on 5432 inside the container.
 
 ## Authentication Flow
 
-### Dummy Auth (Local/Docker/Test)
-1. User enters credentials in frontend
-2. Frontend POSTs to BFF `/login`
-3. BFF validates (hardcoded: testuser/Liebe>Hass!)
+### Direktanmeldung (Beta-Zugang)
+Login with e-mail address and password, for Beta-Zugang accounts. It does not depend on the
+environment: it is on whenever `ENABLE_MANAGED_AUTH` is true (the default) and the BFF finds a
+non-empty users file, so production can offer it next to Keycloak. Local and Docker development
+log in this way.
+
+1. User enters e-mail address and password in frontend ("Direktanmeldung")
+2. Frontend POSTs to BFF `/api/auth/login/managed`
+3. BFF validates against `managed-users.json` (bcrypt hashes; example users in
+   `mvp/config/managed-users.example.json`, e.g. `test.user@example.com`/`Liebe>Hass!`)
 4. BFF sets session cookie
 5. BFF returns user info
+
+`managed-users.json` is gitignored. `mvp/run-local.sh` creates it from the example file for
+the Docker dev stack; for the local mode copy it by hand (`docs/DEV-SETUP.md`). Without the
+file the Direktanmeldung is off.
+
+With `USE_KEYCLOAK=false` the BFF also still answers the old dummy `POST /login`
+(default `testuser`/`Liebe>Hass!`, overridable via `DUMMY_AUTH_USERNAME`/`DUMMY_AUTH_PASSWORD`;
+user id `test-user-id-1`, which must never be an admin, see `ADMIN_USER_IDS` below). The
+frontend no longer has a form for it.
 
 ### Keycloak (Production)
 1. User accesses protected resource
@@ -209,8 +225,8 @@ listens on 5432 inside the container.
   the application sees it. The list is parsed once at startup, so changing it only takes
   effect after the BFF container is restarted. Never put `test-user-id-1` on the list: that
   is the id handed out by the dummy login that is active whenever `USE_KEYCLOAK=false`, and
-  its password is documented in this repository (`mvp/backend/BFF/Program.cs:526-527`,
-  `:571`).
+  its password is documented in this repository (`mvp/backend/BFF/Program.cs:509-510`,
+  `:554`, `:575`).
 
   It exists because the claim route needs a Keycloak protocol mapper: `OnTokenValidated`
   copies token claims unchanged, so a flat `isAdmin`/`role` claim has to come from the realm
@@ -265,7 +281,8 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 ## Security Considerations
 
 ### Local/Test
-- Dummy authentication for testing
+- Direktanmeldung; locally with the example accounts from `managed-users.example.json`
+- The old dummy `POST /login` stays reachable while `USE_KEYCLOAK=false`
 - No TLS (HTTP only)
 - Open CORS for development
 

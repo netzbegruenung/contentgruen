@@ -41,7 +41,6 @@ from dependencies import (
 from domain.models.content_type import ContentType
 from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
-from domain.models.content_visibility import ContentVisibility
 from domain.models.statement import StatementSearchResult, StatementReplysuggestion
 from domain.models.commentary import CommentaryDbEntry
 from domain.models.generic_text import GenericTextDbEntry
@@ -75,7 +74,6 @@ def _base_fields(**overrides):
         report_count=0,
         is_archived=False,
         report_flagged=False,
-        visibility=ContentVisibility.INTERNAL,
     )
     fields.update(overrides)
     return fields
