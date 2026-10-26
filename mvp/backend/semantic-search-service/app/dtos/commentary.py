@@ -79,19 +79,19 @@ class AddCommentaryResponse(BaseModel):
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
     # False nur, wenn eine Aussage angegeben war und nicht verknuepft werden
-    # konnte. Der Kommentar ist dann trotzdem gespeichert.
+    # konnte. Der Kommentar ist dann trotzdem gespeichert. Bei einer Dublette ohne
+    # vorhanden_nehmen wurde nichts versucht: True, die Aussagefelder bleiben leer.
     verknuepft: bool = True
     # True: Es gibt schon einen sehr aehnlichen Kommentar; id ist dessen ID und nichts
-    # wurde angelegt. Stammt er von derselben Person und war eine Aussage angegeben,
-    # ist er jetzt auch mit ihr verknuepft (statement_id/statement_text, verknuepft wie
-    # oben). Bei einem fremden Kommentar bleiben die Aussagefelder leer: Fremde
+    # wurde angelegt und nichts verknuepft. Die Aussagefelder bleiben leer, bis die
+    # Person den eigenen mit vorhanden_nehmen waehlt (dann statement_*, verknuepft wie
+    # oben). Einen fremden verknuepft auch das nicht: Fremde
     # Antworten weiteren Aussagen zuzuordnen ist gewollt, greift ueber dieses Formular
     # aber nur bei wortgleichem Text - dafuer ist ein eigener Weg an der Karte
     # vorgesehen ("Passt auch auf ..."), siehe api/v1/commentary.py.
     # Das Formular zeigt den vorhandenen Kommentar und laesst die Person entscheiden:
     # zustimmen (Stimme), den eigenen mit vorhanden_nehmen nehmen oder mit
-    # trotz_dublette_von trotzdem speichern. Mit einer Aussage verknuepft ist der
-    # vorhandene nur nach vorhanden_nehmen (dann statement_*, verknuepft).
+    # trotz_dublette_von trotzdem speichern.
     duplikat: bool = False
     # Titel des vorhandenen Kommentars, damit das Formular ihn nennen kann; sonst None.
     vorhanden_titel: Optional[str] = None

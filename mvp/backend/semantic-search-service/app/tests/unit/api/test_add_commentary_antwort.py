@@ -388,6 +388,25 @@ class TestAddCommentaryAntwort:
 
         assert resp.status_code == 422
 
+    def test_vorhanden_nehmen_ohne_aussage_verknuepft_nichts(self, dienste):
+        """Ohne Aussage gibt es nichts zu verknuepfen - und der vorhandene ist noch da."""
+        _, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        commentary_service = self._dublette(vorhanden)
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(vorhanden_nehmen=str(vorhanden)),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(vorhanden)
+        assert resp.json()["duplikat"] is True
+        assert resp.json()["statement_id"] is None
+        statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
+        commentary_service.add_commentary.assert_not_awaited()
+
     def test_trotz_eigener_dublette_haengt_nur_der_neue_an_der_aussage(self, dienste):
         commentary_id, statement_service = dienste
         vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()

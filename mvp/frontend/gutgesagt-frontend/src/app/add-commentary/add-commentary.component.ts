@@ -158,15 +158,25 @@ export class AddCommentaryComponent implements OnChanges {
   showReferences = false;
   speichert = false;
   fehler: string | null = null;
-  /** Die knappe Validierungsmeldung des Backends bei 422, sonst null. */
+  /**
+   * Eine Meldung, nach der Speichern nicht dasselbe noch einmal schickt (die knappe
+   * Validierungsmeldung des Backends bei 422, VORHANDEN_WEG); sonst null.
+   */
   validierung: string | null = null;
   /** Gesetzt, sobald der Kommentar gespeichert ist. */
   responseId = '';
   /** Der eigene Kommentar ist eine Dublette dieses vorhandenen; sonst null. */
   vorhanden: Vorhanden | null = null;
   stimmtZu = false;
+  /** Nehmen verknuepft gerade den vorhandenen mit der Aussage. */
+  nimmt = false;
   /** Fehler beim Zustimmen oder Nehmen; die Entscheidung bleibt offen. */
   entscheidungsFehler: string | null = null;
+
+  /** Ein Aufruf laeuft: Speichern, Zustimmen oder Nehmen. */
+  get beschaeftigt(): boolean {
+    return this.speichert || this.stimmtZu || this.nimmt;
+  }
 
   /** Zu entscheiden ist, solange es einen vorhandenen gibt und noch nichts gewaehlt ist. */
   get offeneEntscheidung(): boolean {
@@ -222,7 +232,7 @@ export class AddCommentaryComponent implements OnChanges {
       .get('text')!
       .valueChanges.pipe(takeUntilDestroyed())
       .subscribe(() => {
-        if (this.vorhanden && !this.speichert) {
+        if (this.vorhanden && !this.speichert && !this.nimmt) {
           this.vorhandenVergessen();
         }
       });
@@ -344,7 +354,7 @@ export class AddCommentaryComponent implements OnChanges {
       this.commentaryForm.markAllAsTouched();
       return;
     }
-    if (this.speichert || this.stimmtZu) {
+    if (this.beschaeftigt) {
       return;
     }
 
@@ -382,8 +392,12 @@ export class AddCommentaryComponent implements OnChanges {
         this.logger.error('Error saving commentary', error);
         this.speichert = false;
         // Bei 422 sagt das Backend, was nicht passt - das ist hilfreicher als "nicht geklappt".
-        this.validierung = validierungsMeldung(error);
-        this.fehler = this.validierung ?? SPEICHERN_FEHLGESCHLAGEN;
+        const meldung = validierungsMeldung(error);
+        if (meldung) {
+          this.meldungZeigen(meldung);
+        } else {
+          this.fehler = SPEICHERN_FEHLGESCHLAGEN;
+        }
       },
     });
   }
@@ -428,7 +442,7 @@ export class AddCommentaryComponent implements OnChanges {
   /** Dem vorhandenen, fremden Kommentar eine Stimme geben statt den eigenen zu speichern. */
   zustimmen(): void {
     const vorhanden = this.vorhanden;
-    if (!vorhanden || !this.kannZustimmen || this.stimmtZu) {
+    if (!vorhanden || !this.kannZustimmen || this.beschaeftigt) {
       return;
     }
     this.stimmtZu = true;
@@ -448,12 +462,15 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   private vorhandenZeigen(anfrage: AddCommentaryRequest, antwort: AddCommentaryResponse): void {
+    // Ueber diesen vorhandenen hat die Person noch nicht entschieden: Gemerkt wird die
+    // Anfrage ohne die Entscheidung, die sie hierher gebracht hat.
+    const { trotz_dublette_von, vorhanden_nehmen, ...ohneEntscheidung } = anfrage;
     this.vorhanden = {
       id: antwort.id,
       titel: antwort.vorhanden_titel ?? null,
       eigen: antwort.vorhanden_eigen === true,
       aussage: null,
-      anfrage,
+      anfrage: ohneEntscheidung,
       gewaehlt: null,
     };
   }
@@ -465,7 +482,7 @@ export class AddCommentaryComponent implements OnChanges {
    */
   nehmen(): void {
     const vorhanden = this.vorhanden;
-    if (!vorhanden || !this.kannNehmen || this.speichert) {
+    if (!vorhanden || !this.kannNehmen || this.beschaeftigt) {
       return;
     }
     if (!this.mitAussage) {
@@ -473,7 +490,10 @@ export class AddCommentaryComponent implements OnChanges {
       this.vorhandenGewaehlt.emit(vorhanden.id);
       return;
     }
-    this.speichert = true;
+    if (this.aussageZuKurz) {
+      return;
+    }
+    this.nimmt = true;
     this.entscheidungsFehler = null;
     // Die Aussage, die jetzt im Antwort-auf-Block steht - die Person kann sie seit dem
     // ersten Versuch geaendert haben. Der Text kann es nicht: Dann waere der Hinweis weg.
@@ -481,7 +501,7 @@ export class AddCommentaryComponent implements OnChanges {
     const nehmen: AddCommentaryRequest = { ...anfrage, ...this.aussageFuerAnfrage(), vorhanden_nehmen: vorhanden.id };
     this.commentaryService.addCommentary(nehmen).subscribe({
       next: (antwort) => {
-        this.speichert = false;
+        this.nimmt = false;
         if (antwort.duplikat && antwort.id !== vorhanden.id) {
           // Inzwischen ist ein anderer vorhanden: Die Person sieht erst ihn.
           this.vorhandenZeigen(nehmen, antwort);
@@ -497,14 +517,11 @@ export class AddCommentaryComponent implements OnChanges {
       },
       error: (error: Error) => {
         this.logger.error('Error taking the existing commentary', error);
-        this.speichert = false;
+        this.nimmt = false;
         if (error instanceof HttpErrorResponse && error.status === 409) {
           // Der vorhandene ist weg; die Eingaben bleiben, Speichern legt neu an.
           this.vorhandenVergessen();
-          // Wie eine Validierungsmeldung: in der Leiste steht der Text, der Knopf
-          // heisst "Kommentar speichern", nicht "Erneut versuchen".
-          this.fehler = VORHANDEN_WEG;
-          this.validierung = VORHANDEN_WEG;
+          this.meldungZeigen(VORHANDEN_WEG);
           return;
         }
         // Bei 422 sagt das Backend, was nicht passt (etwa eine zu kurze Aussage).
@@ -538,6 +555,15 @@ export class AddCommentaryComponent implements OnChanges {
     this.showReferences = false;
     this.fehler = null;
     this.vorhandenVergessen();
+  }
+
+  /**
+   * Eine Meldung, nach der Speichern nicht dasselbe noch einmal schickt: Die Leiste
+   * zeigt sie, und der Knopf heisst "Kommentar speichern" statt "Erneut versuchen".
+   */
+  private meldungZeigen(meldung: string): void {
+    this.validierung = meldung;
+    this.fehler = meldung;
   }
 
   private vorhandenVergessen(): void {

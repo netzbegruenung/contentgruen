@@ -5,7 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import {
   AddCommentaryComponent,
@@ -592,6 +592,120 @@ describe('AddCommentaryComponent', () => {
       expect(component.vorhanden).toBeNull();
       expect(component.fehler).toBe(VORHANDEN_WEG);
       expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
+      expect(seite().querySelector('app-formular-leiste .submit-btn')!.textContent).toContain('Kommentar speichern');
+    }));
+
+    it('Nehmen findet inzwischen einen anderen vorhandenen: zeigt erst ihn, ohne Entscheidung', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-anderer', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({
+          id: 'k-anderer',
+          duplikat: true,
+          vorhanden_eigen: true,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddCommentaryResponse),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(gewaehlt).not.toHaveBeenCalled();
+      expect(component.vorhanden!.id).toBe('k-anderer');
+      expect(component.offeneEntscheidung).toBeTrue();
+      expect(component.vorhanden!.anfrage.vorhanden_nehmen).toBeUndefined();
+
+      component.nehmen();
+      flush();
+
+      expect((speichern.calls.mostRecent().args[0] as AddCommentaryRequest).vorhanden_nehmen).toBe('k-anderer');
+      expect(gewaehlt).toHaveBeenCalledOnceWith('k-anderer');
+    }));
+
+    it('nach Trotzdem speichern ein anderer eigener vorhandener: Nehmen schickt nur vorhanden_nehmen', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({ id: 'k-anderer', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        of({
+          id: 'k-anderer',
+          duplikat: true,
+          vorhanden_eigen: true,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddCommentaryResponse),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      component.trotzdemSpeichern();
+      flush();
+
+      component.nehmen();
+      flush();
+
+      const nehmen = speichern.calls.mostRecent().args[0] as AddCommentaryRequest;
+      // Beides zusammen lehnt das Backend mit 422 ab.
+      expect(nehmen.trotz_dublette_von).toBeUndefined();
+      expect(nehmen.vorhanden_nehmen).toBe('k-anderer');
+      expect(component.vorhanden!.gewaehlt).toBe('genommen');
+    }));
+
+    it('waehrend Nehmen: Knoepfe gesperrt, Speichern dreht sich nicht', fakeAsync(() => {
+      const verknuepfen = new Subject<AddCommentaryResponse>();
+      spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true, vorhanden_eigen: true } as AddCommentaryResponse),
+        verknuepfen,
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      fixture.detectChanges();
+
+      expect(component.speichert).toBeFalse();
+      expect(seite().querySelector('app-formular-leiste mat-spinner')).toBeNull();
+      expect(seite().querySelector('.dublette-nehmen mat-spinner')).toBeTruthy();
+      expect((seite().querySelector('.dublette-nehmen') as HTMLButtonElement).disabled).toBeTrue();
+      expect((seite().querySelector('.dublette-trotzdem') as HTMLButtonElement).disabled).toBeTrue();
+      expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeTrue();
+
+      verknuepfen.next({ id: 'k-alt', duplikat: true, vorhanden_eigen: true, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+      verknuepfen.complete();
+      flush();
+      expect(component.nimmt).toBeFalse();
+      expect(component.vorhanden!.gewaehlt).toBe('genommen');
+    }));
+
+    it('Nehmen mit zu kurzer Aussage: gesperrt, keine Anfrage', fakeAsync(() => {
+      const speichern = speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const feld: HTMLTextAreaElement = seite().querySelector('.antwort-eingabe')!;
+      feld.value = 'Windrad';
+      feld.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(component.aussageZuKurz).toBeTrue();
+      expect((seite().querySelector('.dublette-nehmen') as HTMLButtonElement).disabled).toBeTrue();
+      component.nehmen();
+      flush();
+      expect(speichern).toHaveBeenCalledTimes(1);
+      expect(component.vorhanden!.gewaehlt).toBeNull();
     }));
 
     it('nennt den Titel des vorhandenen Kommentars und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {

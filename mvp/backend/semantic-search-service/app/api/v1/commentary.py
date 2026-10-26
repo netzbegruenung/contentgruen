@@ -16,6 +16,7 @@ from dtos.commentary import (
     CommentarySearchResponse,
     SearchCommentaryByTextRequest,
 )
+from domain.models.base_content import BaseContentSearchResult
 from services.content.base_content_service import Dublettenpruefung
 from services.content.commentary_service import CommentaryService
 from services.anzeigename_service import angemeldet, get_anzeigename_service
@@ -36,7 +37,9 @@ logger = logging.getLogger(__name__)
 KOMMENTAR_RELEVANZ = 1.0
 
 
-def _ist_gezeigter(vorhanden, angefragt: Optional[UUID]) -> bool:
+def _ist_gezeigter(
+    vorhanden: Optional[BaseContentSearchResult], angefragt: Optional[UUID]
+) -> bool:
     """Die Entscheidung der Person gilt genau dem vorhandenen, den sie gesehen hat."""
     return (
         vorhanden is not None
