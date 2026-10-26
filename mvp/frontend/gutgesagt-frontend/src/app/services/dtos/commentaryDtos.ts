@@ -20,6 +20,8 @@ export interface AddCommentaryRequest {
     statement_text?: string;
     /** Die Person hat diesen vorhandenen Kommentar (ID) gesehen und speichert trotzdem. */
     trotz_dublette_von?: string;
+    /** Die Person nimmt diesen eigenen vorhandenen Kommentar (ID): er haengt dann an der Aussage. */
+    vorhanden_nehmen?: string;
 }
 
 export interface Commentary {
@@ -44,7 +46,7 @@ export interface AddCommentaryResponse {
     statement_text?: string | null;
     /** false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem. */
     verknuepft?: boolean;
-    /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. War eine Aussage dabei, haengt er jetzt an ihr (statement_*, verknuepft). */
+    /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. Nach vorhanden_nehmen haengt er an der Aussage (statement_*, verknuepft). */
     duplikat?: boolean;
     /** Titel des vorhandenen Kommentars, wenn duplikat. */
     vorhanden_titel?: string | null;
