@@ -24,7 +24,7 @@ from domain.models.commentary import Commentary, CommentaryReference
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement, StatementReplysuggestion
 from domain.models.reference import Reference
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 
 logger = get_logger(__name__)
@@ -87,7 +87,7 @@ class DataProcessor:
         reference_id, _, _ = await self.orchestrator.reference_service.add_reference(
             reference,
             self.orchestrator.initial_data_author,
-            status=ContentStatus.RELEASED_INTERNAL,
+            status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.INITIAL_DATA,
         )
         return reference_id
@@ -190,7 +190,7 @@ class DataProcessor:
         result = await commentary_service.add_commentary(
             commentary,
             self.orchestrator.initial_data_author,
-            status=ContentStatus.RELEASED_INTERNAL,
+            status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.INITIAL_DATA,
             created_at=created_at,
             dublettenpruefung=pruefung,
@@ -262,7 +262,7 @@ class DataProcessor:
         result = await self.orchestrator.generic_text_service.add_generic_text(
             generictext,
             self.orchestrator.initial_data_author,
-            status=ContentStatus.RELEASED_INTERNAL,
+            status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.INITIAL_DATA,
             created_at=created_at,
         )
@@ -324,7 +324,7 @@ class DataProcessor:
         result = await self.orchestrator.statement_service.add_statement(
             statement,
             self.orchestrator.initial_data_author,
-            status=ContentStatus.RELEASED_INTERNAL,
+            status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.INITIAL_DATA,
             created_at=created_at,
         )

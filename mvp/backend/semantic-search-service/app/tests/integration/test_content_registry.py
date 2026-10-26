@@ -51,7 +51,7 @@ async def test_commentary_roundtrip_parity(
     ok, returned_id, _ = await concrete.add_commentary(
         Commentary(text="Klimaschutz ist sozial gerecht", title="Klima", references=[]),
         author="tester",
-        status=ContentStatus.APPROVED,
+        status=ContentStatus.VISIBLE,
         origin=ContentOrigin.MANUALLY_CREATED,
         id=item_id,
     )
@@ -81,7 +81,7 @@ async def test_generic_text_roundtrip_parity(
     ok, returned_id, _ = await concrete.add_generic_text(
         GenericText(text="Verkehrswende jetzt", title="Verkehr", references=[]),
         author="tester",
-        status=ContentStatus.APPROVED,
+        status=ContentStatus.VISIBLE,
         origin=ContentOrigin.MANUALLY_CREATED,
         id=item_id,
     )

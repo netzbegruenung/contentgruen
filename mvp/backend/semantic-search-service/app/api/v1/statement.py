@@ -27,7 +27,7 @@ from domain.models.statement import Statement
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 
 logger = get_logger(__name__)
@@ -160,12 +160,12 @@ async def add_statement(
             else x_user
         )
 
-        # Add statement to the statement index - statements don't require review and are released directly
+        # Aussagen sind sofort sichtbar.
         statement_was_new, statement_id, statement_text = (
             await statement_service.add_statement(
                 statement,
                 author,
-                ContentStatus.RELEASED_INTERNAL,  # TODO add moderation system
+                NEW_CONTENT_STATUS,
                 request.source.to_content_origin(),
             )
         )

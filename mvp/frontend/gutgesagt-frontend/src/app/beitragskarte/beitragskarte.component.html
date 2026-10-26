@@ -35,7 +35,8 @@
             <h3 class="karte-titel einwurf-titel" *ngIf="daten.titel">{{ daten.titel }}</h3>
             <span class="einwurf-titel-platz" *ngIf="!daten.titel" aria-hidden="true"></span>
 
-            <span class="einwurf-verworfen" *ngIf="angaben.stufe === 'verworfen'">verworfen</span>
+            <!-- Mit stufeZeigen steht "Verworfen" schon in der Meta-Zeile -->
+            <span class="einwurf-verworfen" *ngIf="angaben.stufe === 'verworfen' && !stufeZeigen">verworfen</span>
         </header>
 
         <!--
@@ -96,6 +97,10 @@
         </div>
 
         <p class="karte-meta einwurf-meta" *ngIf="!istKopf">
+            <ng-container *ngIf="stufeZeigen">
+                <span class="einwurf-stufe">{{ stufenName }}</span>
+                ·
+            </ng-container>
             <ng-container *ngIf="zeigtEinwerfer">
                 <span class="einwurf-einwerfer">Von: {{ autorAnzeige }}</span>
                 ·

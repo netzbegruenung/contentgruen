@@ -9,6 +9,8 @@ for the content-registry work (registry refactor + Post/Image types); see
 
 The whole module self-skips when Qdrant is not reachable, so a Docker-less CI/unit
 run stays green. Point at a different instance with ``QDRANT_URL``.
+
+PostgreSQL: ``postgres_url`` and ``wegwerf_schema`` below, helpers in ``postgres.py``.
 """
 
 import os
@@ -19,6 +21,7 @@ import pytest_asyncio
 import requests
 
 from core.config import Settings
+from tests.integration import postgres
 from services.embeddings.qdrant_embeddings_manager import QdrantEmbeddingsManager
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
@@ -94,3 +97,33 @@ async def real_embeddings_manager(integration_settings):
 def real_repository_factory(real_embeddings_manager):
     """Repository factory wired to the real embeddings manager (real Qdrant)."""
     return QdrantRepositoryFactory(embeddings_manager=real_embeddings_manager)
+
+
+@pytest.fixture(scope="session")
+def postgres_url():
+    """URL eines echten PostgreSQL fuer den ganzen Lauf, siehe ``postgres.py``.
+
+    Ist ``POSTGRES_TEST_DATABASE_URL`` gesetzt, muss die Datenbank erreichbar sein;
+    sonst ein Wegwerf-Container; ohne Docker werden die Tests uebersprungen,
+    in der CI schlagen sie fehl.
+    """
+    url = os.environ.get(postgres.URL_VARIABLE)
+    if url:
+        assert postgres.erreichbar(url), f"{postgres.URL_VARIABLE} nicht erreichbar"
+        yield url
+        return
+    if not postgres.docker_verfuegbar():
+        grund = f"Weder {postgres.URL_VARIABLE} gesetzt noch Docker verfuegbar"
+        # In der CI waere Ueberspringen ein falsches Gruen.
+        if os.environ.get("CI"):
+            pytest.fail(grund)
+        pytest.skip(grund)
+    with postgres.wegwerf_container() as url:
+        yield url
+
+
+@pytest.fixture
+def wegwerf_schema(postgres_url):
+    """Ein leeres Schema je Test; wird danach mit allem Inhalt geloescht."""
+    with postgres.schema(postgres_url) as db:
+        yield db

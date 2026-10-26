@@ -82,7 +82,7 @@ def _service(repo, aussagen=None, personen=None):
     )
 
 
-FREI = ContentStatus.RELEASED_INTERNAL
+SICHTBAR = ContentStatus.VISIBLE
 
 
 class TestErfassen:
@@ -292,8 +292,8 @@ class TestHaeufigste:
         service = _service(
             repo,
             {
-                AUSSAGE: ("Windräder töten Vögel", FREI),
-                ANDERE: ("Wärmepumpe im Altbau", FREI),
+                AUSSAGE: ("Windräder töten Vögel", SICHTBAR),
+                ANDERE: ("Wärmepumpe im Altbau", SICHTBAR),
             },
         )
 
@@ -315,21 +315,28 @@ class TestHaeufigste:
     @pytest.mark.asyncio
     async def test_haeufigste_laesst_nicht_mehr_vorhandene_aussagen_weg(self):
         repo = FakeRepository(haeufigste=[(GELOESCHT, 9), (AUSSAGE, 4)])
-        service = _service(repo, {AUSSAGE: ("Windräder töten Vögel", FREI)})
+        service = _service(repo, {AUSSAGE: ("Windräder töten Vögel", SICHTBAR)})
 
         ergebnis = await service.haeufigste(wochen=4, heute=MITTWOCH)
 
         assert [e.statement_id for e in ergebnis] == [AUSSAGE]
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("status", [ContentStatus.BLOCKED, ContentStatus.DUPLICATE])
-    async def test_haeufigste_zeigt_keine_gesperrten_oder_dubletten(self, status):
+    @pytest.mark.parametrize(
+        "status",
+        [
+            ContentStatus.BLOCKED,
+            ContentStatus.DELETED,
+            ContentStatus.PENDING_DESCRIPTION,
+        ],
+    )
+    async def test_haeufigste_zeigt_nur_sichtbare(self, status):
         repo = FakeRepository(haeufigste=[(GESPERRT, 9), (AUSSAGE, 4)])
         service = _service(
             repo,
             {
                 GESPERRT: ("enthält einen Namen", status),
-                AUSSAGE: ("Windräder töten Vögel", FREI),
+                AUSSAGE: ("Windräder töten Vögel", SICHTBAR),
             },
         )
 
@@ -343,8 +350,8 @@ class TestHaeufigste:
         gesperrte = [(uuid.uuid4(), 9) for _ in range(2)]
         repo = FakeRepository(haeufigste=gesperrte + [(AUSSAGE, 4), (ANDERE, 3)])
         aussagen = {sid: ("gesperrt", ContentStatus.BLOCKED) for sid, _ in gesperrte}
-        aussagen[AUSSAGE] = ("Windräder töten Vögel", FREI)
-        aussagen[ANDERE] = ("Wärmepumpe im Altbau", FREI)
+        aussagen[AUSSAGE] = ("Windräder töten Vögel", SICHTBAR)
+        aussagen[ANDERE] = ("Wärmepumpe im Altbau", SICHTBAR)
 
         ergebnis = await _service(repo, aussagen).haeufigste(
             wochen=4, limit=2, heute=MITTWOCH

@@ -3,7 +3,8 @@ Konvention fuer die SQL-Migrationen in mvp/backend/postgres-app/migrations/.
 
 Die Regeln stehen in der README.md dort ("Konvention fuer neue Migrationen"):
 
-- Dateiname ``JJJJ-MM-TT-<thema>.sql`` mit gueltigem Datum.
+- Dateiname ``JJJJ-MM-TT-<thema>.sql`` mit gueltigem Datum. Nach dem Namen mit
+  und ohne ``.sql`` geordnet ergibt sich dieselbe Reihenfolge.
 - Der Kopf (fuehrender SQL-Kommentar bis zur ersten Leerzeile) endet mit dem
   Verweis auf die README. Kein Kommentar der Datei, auch keiner am
   Zeilenende, enthaelt einen eigenen Befehl zum Anwenden: Der Befehl steht nur
@@ -164,6 +165,24 @@ class TestMigrationsdateien:
             "keine Migrationen gefunden: Test muss im Repo-Checkout laufen "
             "(mvp/backend/postgres-app/migrations/)"
         )
+
+    def test_migrationsdateien_reihenfolge_mit_und_ohne_endung_gleich(self):
+        """
+        Die README ordnet nach dem Namen ohne ``.sql``; ``ls`` und ``*.sql``
+        ordnen mit Endung. Beides muss dieselbe Reihenfolge ergeben, bis auf das
+        Paar, das in der README steht: Es ist gemergt, und gemergte Skripte
+        werden nicht umbenannt, weil Betreiber angewendete Skripte am Namen
+        erkennen.
+        """
+        bekannt = {
+            "2026-10-26-suchen-ohne-treffer.sql",
+            "2026-10-26-suchen-ohne-treffer-personen.sql",
+        }
+        dateien = [p for p in _migrationsdateien() if p.name not in bekannt]
+
+        assert [p.name for p in sorted(dateien, key=lambda p: p.stem)] == [
+            p.name for p in sorted(dateien)
+        ]
 
     @pytest.mark.parametrize("datei", _migrationsdateien(), ids=lambda p: p.name)
     def test_migrationsdateien_folgen_konvention(self, datei: Path):

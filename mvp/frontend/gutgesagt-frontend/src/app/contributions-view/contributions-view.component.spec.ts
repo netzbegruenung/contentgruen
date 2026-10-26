@@ -11,11 +11,13 @@ import { ContributionsService } from '../services/contributions.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
 import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
+import { EinwurfService } from '../services/einwurf.service';
 
 describe('ContributionsViewComponent', () => {
   let fixture: ComponentFixture<ContributionsViewComponent>;
   let router: Router;
   let bottomSheet: MatBottomSheet;
+  let eigeneLaden: jasmine.Spy;
 
   function beitrag(felder: Record<string, unknown> = {}): any {
     return {
@@ -35,6 +37,9 @@ describe('ContributionsViewComponent', () => {
   }
 
   function konfigurieren(getContributions: (seite: number, groesse: number) => Observable<any>, mobil = false): void {
+    eigeneLaden = jasmine
+      .createSpy('eigeneLaden')
+      .and.returnValue(of({ results_count: 0, results: [], total_records_count: 0 }));
     TestBed.configureTestingModule({
       imports: [ContributionsViewComponent],
       providers: [
@@ -43,6 +48,7 @@ describe('ContributionsViewComponent', () => {
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
         { provide: ContributionsService, useValue: { getContributions } },
         { provide: UsageTrackingService, useValue: { getUserUsageStats: () => of(null) } },
+        { provide: EinwurfService, useValue: { eigeneLaden } },
         {
           provide: AuthService,
           // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.
@@ -76,6 +82,85 @@ describe('ContributionsViewComponent', () => {
   function karten(): HTMLElement[] {
     return Array.from(fixture.nativeElement.querySelectorAll('app-beitragskarte article'));
   }
+
+  describe('Tabs', () => {
+    function tabs(): HTMLButtonElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('[role="tab"]'));
+    }
+
+    function tabWaehlen(name: string): void {
+      tabs().find((tab) => tab.textContent!.trim() === name)!.click();
+      fixture.detectChanges();
+    }
+
+    function sichtbar(selektor: string): boolean {
+      const element = fixture.nativeElement.querySelector(selektor) as HTMLElement | null;
+      return !!element && !element.closest('[hidden]');
+    }
+
+    it('zeigt zuerst die eigenen Beitraege und laedt Einwuerfe noch nicht', async () => {
+      await erstellen([beitrag()]);
+
+      expect(tabs().map((tab) => tab.textContent!.trim())).toEqual(['Meine Beiträge', 'Meine Einwürfe']);
+      expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
+      expect(sichtbar('app-kartenliste')).toBeTrue();
+      expect(fixture.nativeElement.querySelector('app-meine-einwuerfe')).toBeNull();
+      expect(eigeneLaden).not.toHaveBeenCalled();
+    });
+
+    it('zeigt unter "Meine Einwürfe" die eigenen Einwuerfe statt der Beitraege', async () => {
+      await erstellen([beitrag()]);
+
+      tabWaehlen('Meine Einwürfe');
+
+      expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
+      expect(sichtbar('app-meine-einwuerfe')).toBeTrue();
+      expect(sichtbar('app-kartenliste')).toBeFalse();
+      expect(eigeneLaden).toHaveBeenCalledTimes(1);
+    });
+
+    it('laedt beim Hin- und Herwechseln nichts neu', async () => {
+      await erstellen([beitrag()]);
+
+      tabWaehlen('Meine Einwürfe');
+      tabWaehlen('Meine Beiträge');
+      tabWaehlen('Meine Einwürfe');
+
+      expect(eigeneLaden).toHaveBeenCalledTimes(1);
+    });
+
+    it('verbindet jeden Tab mit seinem Bereich und hat nur einen Tab-Stopp', async () => {
+      await erstellen([beitrag()]);
+
+      for (const tab of tabs()) {
+        const bereich = fixture.nativeElement.querySelector(`#${tab.getAttribute('aria-controls')}`);
+        expect(bereich.getAttribute('role')).toBe('tabpanel');
+        expect(bereich.getAttribute('aria-labelledby')).toBe(tab.id);
+      }
+      expect(tabs().map((tab) => tab.getAttribute('tabindex'))).toEqual(['0', '-1']);
+    });
+
+    it('wechselt mit den Pfeiltasten und nimmt den Fokus mit', async () => {
+      await erstellen([beitrag()]);
+      const taste = (key: string) => {
+        tabs()[0].parentElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+        fixture.detectChanges();
+      };
+
+      taste('ArrowRight');
+      expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
+      expect(document.activeElement).toBe(tabs()[1]);
+      expect(sichtbar('app-meine-einwuerfe')).toBeTrue();
+
+      taste('ArrowRight');
+      expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
+
+      taste('End');
+      expect(tabs()[1].getAttribute('tabindex')).toBe('0');
+      taste('Home');
+      expect(tabs()[0].getAttribute('tabindex')).toBe('0');
+    });
+  });
 
   it('beschriftet den Paginator auf Deutsch', async () => {
     await erstellen(Array.from({ length: 25 }, (_, i) => beitrag({ id: `b${i}` })));

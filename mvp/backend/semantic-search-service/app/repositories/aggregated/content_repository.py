@@ -17,7 +17,7 @@ from domain.models.content import (
 )
 from utils.data_utils import DataLoader, DataSource
 from domain.models.author_entry import AuthorEntry
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 
 logger = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ class ContentRepository(
                 authors=[AuthorEntry(name=self.initial_data_author)],
                 edit_history=[],
                 content_type=content.content_type,
-                status=ContentStatus.RELEASED_INTERNAL,
+                status=NEW_CONTENT_STATUS,
                 origin=ContentOrigin.INITIAL_DATA,
             )
             for content in initial_content

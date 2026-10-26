@@ -80,6 +80,7 @@ test('Antwort auf: Vorschlag, neue Aussage, Ergebnisseite, Suche', async ({ page
   });
 
   await test.step('Kommentar erscheint unter der neuen Aussage in der Suche', async () => {
+    // Ein neuer Beitrag ist sofort sichtbar (GLOSSARY.md, "Zustaende eines Beitrags"): Die Suche findet ihn.
     await page.goto(`/result?searchQuery=${encodeURIComponent(neueAussage)}`);
     await expect.soft(page.getByText(titel)).toBeVisible({ timeout: 20_000 });
     await bild('27-suche-neue-aussage', true);

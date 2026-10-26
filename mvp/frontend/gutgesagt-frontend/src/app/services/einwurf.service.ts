@@ -87,7 +87,8 @@ export interface Einwurf {
   links?: Verknuepfung[];
 }
 
-export interface FangkorbResponse {
+/** Eine Seite Einwuerfe, wie Fangkorb und Meine Einwuerfe sie bekommen. */
+export interface EinwurfSeite {
   results_count: number;
   results: Einwurf[];
   total_records_count: number;
@@ -136,9 +137,23 @@ export class EinwurfService {
   }
 
   /** Der Fangkorb, eigene Einwuerfe zuerst (sortiert der Server). */
-  fangkorbLaden(page: number, pageSize: number): Observable<FangkorbResponse> {
+  fangkorbLaden(page: number, pageSize: number): Observable<EinwurfSeite> {
     const params = new HttpParams().set('page', page).set('page_size', pageSize);
-    return this.http.get<FangkorbResponse>(`${this.baseApiUrl}/getRawInputs`, {
+    return this.http.get<EinwurfSeite>(`${this.baseApiUrl}/getRawInputs`, {
+      params,
+    });
+  }
+
+  /**
+   * Meine Einwuerfe: nur die selbst eingeworfenen, neueste zuerst.
+   *
+   * Immer frisch: Der Cache haelt GETs fuenf Minuten, und das Einwerfen leert diese
+   * Liste nicht - ein gerade eingeworfenes Fundstueck fehlte sonst in der eigenen Sicht.
+   */
+  eigeneLaden(page: number, pageSize: number): Observable<EinwurfSeite> {
+    cacheService.delete('/api/v1/rawinput/getOwnRawInputs');
+    const params = new HttpParams().set('page', page).set('page_size', pageSize);
+    return this.http.get<EinwurfSeite>(`${this.baseApiUrl}/getOwnRawInputs`, {
       params,
     });
   }

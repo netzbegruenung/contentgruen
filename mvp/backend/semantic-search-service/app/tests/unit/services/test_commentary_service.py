@@ -135,7 +135,7 @@ class TestCommentaryService:
         success, result_id, message = await service.add_commentary(
             new_commentary,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
 
@@ -183,7 +183,7 @@ class TestCommentaryService:
         success, result_id, message = await service.add_commentary(
             updated_commentary,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
             id=test_id,
         )
@@ -327,7 +327,7 @@ class TestCommentaryService:
         success, id1, message = await service1.add_commentary(
             commentary1,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
 
@@ -367,7 +367,7 @@ class TestCommentaryService:
         success, id1, message = await service1.add_commentary(
             commentary,
             author="test_user",
-            status=ContentStatus.APPROVED,
+            status=ContentStatus.VISIBLE,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
 
@@ -491,7 +491,7 @@ class TestKommentarDublette:
 def _status():
     from domain.models.content_status import ContentStatus
 
-    return ContentStatus.RELEASED_INTERNAL
+    return ContentStatus.VISIBLE
 
 
 def _herkunft():

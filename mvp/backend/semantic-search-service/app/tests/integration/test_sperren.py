@@ -50,7 +50,7 @@ def _post(item_id: uuid.UUID) -> PostDbEntry:
         author="@gruen",
         url="https://social.example/posts/2",
         engagement=1,
-        status=ContentStatus.APPROVED,
+        status=ContentStatus.VISIBLE,
         origin=ContentOrigin.MANUALLY_CREATED,
     )
 
@@ -125,7 +125,7 @@ async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
     assert await moderation.entsperren(str(post_id)) is True
 
     beitrag = await post_service.get(post_id)
-    assert beitrag.status == ContentStatus.APPROVED
+    assert beitrag.status == ContentStatus.VISIBLE
     treffer = await post_service.search("Tempolimit Autobahn", limit=5)
     assert post_id in [t.id for t in treffer]
     assert await _antwortvorschlaege(post_service, post_id) == [post_id]

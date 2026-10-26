@@ -103,7 +103,7 @@ class TestContentRepository(QdrantBaseRepository):
                 authors=[AuthorEntry(name=self.initial_data_author)],
                 edit_history=[],
                 content_type=content.content_type,
-                status=ContentStatus.RELEASED_INTERNAL,
+                status=ContentStatus.VISIBLE,
                 origin=ContentOrigin.INITIAL_DATA,
             )
             for content in initial_test_content

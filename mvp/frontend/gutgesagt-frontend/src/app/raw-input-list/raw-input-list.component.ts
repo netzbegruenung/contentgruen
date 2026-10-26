@@ -7,23 +7,19 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Clipboard } from '@angular/cdk/clipboard';
-import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
-import { SCHRITT_PARAM } from '../destillieren/destillier-uebergabe.service';
+import { EinwurfAktionenService } from './einwurf-aktionen.service';
 
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { Plattform, PLATTFORMEN } from '../shared/plattform';
-import { FANGKORB_BESCHREIBUNG, verwerfenFehlertext } from '../shared/fangkorb-texte';
+import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
@@ -97,9 +93,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
-    private bottomSheet: MatBottomSheet,
-    private clipboard: Clipboard,
-    private snackBar: MatSnackBar,
+    private einwurfAktionen: EinwurfAktionenService,
   ) {}
 
   ngOnInit(): void {
@@ -207,73 +201,15 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   // Karten
 
   /**
-   * Was der Griff auf einer Karte ausloest.
-   *
-   * Destillieren und Ausformulieren fuehren beide in die Destillier-Ansicht: Dort
-   * steht der eigene Satz schon im Feld, und "Weiter" fuehrt zur Typwahl. Ein
-   * eigenes Formular mit fremdem Satz gibt es nicht.
+   * Was der Griff auf einer Karte ausloest (``EinwurfAktionenService``). Nach dem
+   * Verwerfen laedt die Liste neu: Der Einwurf wechselt den Tab, und der Zaehler
+   * oben muss das mitbekommen.
    */
   aktionAusfuehren(karte: KartenDaten, aktion: EinwurfAktion): void {
-    const angaben = karte.einwurfAngaben;
-    if (!angaben) {
-      return;
-    }
-    switch (aktion) {
-      case 'ausformulieren':
-        // Der Satz steht schon - dann beginnt das Ausformulieren bei der Typwahl,
-        // nicht wieder im Satzfeld. Ohne eigenen Satz faellt die Ansicht selbst
-        // auf das Satzfeld zurueck.
-        this.router.navigate(['/destillieren', angaben.einwurfId], {
-          queryParams: { [SCHRITT_PARAM]: 'typwahl' },
-        });
-        break;
-      case 'destillieren':
-      case 'weiterDestillieren':
-        this.router.navigate(['/destillieren', angaben.einwurfId]);
-        break;
-      case 'ansehen':
-        this.bottomSheet.open(EinwurfBeitragSheetComponent, {
-          data: { beitraege: angaben.beitraege },
-          ariaLabel: karte.titel || 'Beitrag zu diesem Einwurf',
-        });
-        break;
-      case 'linkKopieren':
-        this.linkKopieren(angaben.link);
-        break;
-      case 'verwerfen':
-        this.verwerfen(angaben.einwurfId);
-        break;
-    }
-  }
-
-  private linkKopieren(link: string | null): void {
-    if (!link) {
-      return;
-    }
-    const kopiert = this.clipboard.copy(link);
-    this.snackBar.open(kopiert ? 'Link kopiert.' : 'Kopieren hat nicht geklappt.', undefined, {
-      duration: 3000,
-    });
-  }
-
-  /**
-   * Verwerfen und die Liste neu laden: Der Einwurf wechselt damit den Tab, und der
-   * Zaehler oben muss das mitbekommen.
-   */
-  private verwerfen(einwurfId: string): void {
-    this.einwurfService
-      .updateStatus(einwurfId, 'discarded')
+    this.einwurfAktionen
+      .ausfuehren(karte, aktion)
       .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.snackBar.open('Verworfen.', undefined, { duration: 3000 });
-          this.laden();
-        },
-        error: (error) => {
-          this.logger.error('Einwurf konnte nicht verworfen werden', error);
-          this.snackBar.open(verwerfenFehlertext(error?.status), 'OK', { duration: 6000 });
-        },
-      });
+      .subscribe(() => this.laden());
   }
 
   nachKarte(_index: number, karte: KartenDaten): string {

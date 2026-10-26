@@ -51,6 +51,8 @@ Then access:
   does not reach this environment by itself, so new database migrations are applied before the
   new image goes live, see
   [`mvp/backend/postgres-app/migrations/README.md`](../mvp/backend/postgres-app/migrations/README.md).
+  Changes to existing data in Qdrant ship as scripts in `mvp/scripts/manual/` and usually run
+  right after the new image goes live; each script's README section gives the order.
 
 ---
 

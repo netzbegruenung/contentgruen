@@ -40,7 +40,9 @@ test('Fehlerfall: offline speichern, online erneut versuchen', async ({ page, co
 
   // Nicht doppelt gespeichert: in "Meine Beitraege" genau einmal.
   const beitraege = await (await page.request.get('/api/v1/contribution/getContributionsOfUser?page=1&page_size=100')).json().catch(() => null);
-  const treffer = beitraege?.results?.filter((b: any) => b.title === titel).length ?? null;
-  test.info().annotations.push({ type: 'Treffer mit diesem Titel', description: String(treffer) });
-  expect.soft(treffer).toBe(1);
+  const gespeichert = beitraege?.results?.filter((b: any) => b.title === titel) ?? null;
+  test.info().annotations.push({ type: 'Treffer mit diesem Titel', description: String(gespeichert?.length ?? null) });
+  expect.soft(gespeichert?.length ?? null).toBe(1);
+  // Neue Beitraege sind sofort sichtbar (GLOSSARY.md, "Zustaende eines Beitrags").
+  expect.soft(gespeichert?.[0]?.status, 'Zustand des neuen Beitrags').toBe('visible');
 });
