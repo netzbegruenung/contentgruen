@@ -2,15 +2,16 @@
 
 Handgeschriebene SQL-Skripte für **bestehende** Datenbanken. Es gibt kein
 Migrationswerkzeug und keine Tabelle, die festhält, was schon gelaufen ist: Wer
-deployt, wendet die neuen Skripte selbst an, in der Reihenfolge ihres Datums.
+deployt, wendet die neuen Skripte selbst an, in der Reihenfolge ihrer
+Dateinamen.
 
 ## Wann eine Migration nötig ist
 
 Beim Start legt der Semantic-Service fehlende Tabellen selbst an
 (`Base.metadata.create_all` in
 `mvp/backend/semantic-search-service/app/infrastructure/database/connection.py`),
-bei einem leeren Volume zusätzlich `mvp/backend/postgres-app/init.sql`. Neue Datenbanken haben dadurch sofort das
-aktuelle Schema.
+bei einem leeren Volume zusätzlich `mvp/backend/postgres-app/init.sql`. Neue
+Datenbanken haben dadurch sofort das aktuelle Schema.
 
 `create_all` legt aber nur **fehlende Tabellen** an. Es ergänzt keine Spalten,
 ändert keine Typen, Indizes oder Constraints und löscht nichts. Für alles davon
@@ -34,9 +35,13 @@ docker exec -i "$PG_CONTAINER" psql -U app_user -d gutgesagt_app -v ON_ERROR_STO
   fehl, bleibt die Datenbank, wie sie war. Ausnahme ist jeweils das
   `VACUUM FULL` am Ende von `2026-08-19-search-events-pseudonymisieren.sql` und
   `2026-08-25-usage-events-datensparsamkeit.sql`, das in PostgreSQL nicht in
-  einer Transaktion laufen darf.
+  einer Transaktion laufen darf. Es läuft nach dem `COMMIT`; schlägt es fehl,
+  ist die Migration schon festgeschrieben. Dann **nur** das `VACUUM FULL …;`
+  einzeln nachholen, nicht das ganze Skript erneut starten (siehe „Erneut
+  anwenden“).
 - `PG_CONTAINER` ist der Name des PostgreSQL-Containers der Umgebung. Wo der
-  Container noch einen älteren Namen trägt, diesen einsetzen.
+  Container noch den alten Namen `contentgruen-app-postgres` trägt (vor der
+  Umbenennung aus #206), diesen einsetzen.
 - Ob eine Umgebung ein Skript braucht und ob es vor dem Start des neuen
   Dienstes laufen muss, steht im Kopf des Skripts.
 
@@ -54,7 +59,8 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
 ## Konvention für neue Migrationen
 
 - **Dateiname:** `JJJJ-MM-TT-<thema>.sql`, Datum der Erstellung, Thema kurz,
-  kleingeschrieben, mit Bindestrichen. Das Datum legt die Reihenfolge fest.
+  kleingeschrieben, mit Bindestrichen. Das Datum legt die Reihenfolge fest;
+  bei gleichem Datum gilt die alphabetische Reihenfolge des Dateinamens.
 - **Kopf:** ein SQL-Kommentar, der sagt
   1. was sich ändert und warum,
   2. ob neue Datenbanken das Skript brauchen (meist nicht, siehe oben) und ob es
@@ -72,7 +78,8 @@ Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht:
   Transaktion laufen darf (etwa `VACUUM`), steht danach und ist im Kopf erklärt.
 - **Gleiches Schema wie `create_all`:** Was das Skript anlegt, muss genau dem
   entsprechen, was die SQLAlchemy-Modelle in einer neuen Datenbank erzeugen.
-  Ändert sich eine Tabelle, die auch `mvp/backend/postgres-app/init.sql` anlegt, dort mitziehen.
+  Ändert sich eine Tabelle, die auch `mvp/backend/postgres-app/init.sql`
+  anlegt, dort mitziehen.
 - **Angewendete Skripte nicht ändern.** Ein Fehler wird mit einem neuen Skript
   korrigiert. Ausnahme sind reine Kommentaränderungen; das SQL bleibt Zeichen
   für Zeichen gleich.
