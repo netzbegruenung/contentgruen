@@ -11,6 +11,7 @@ from sqlalchemy import (
     Column,
     String,
     Integer,
+    Date,
     DateTime,
     ForeignKey,
     BigInteger,
@@ -131,6 +132,24 @@ class SearchEvent(Base):
         Index("idx_search_events_actor_hash", "actor_hash"),
         Index("idx_search_events_timestamp", "timestamp"),
     )
+
+
+class SucheOhneTrefferZeile(Base):
+    """Suchen ohne Treffer, gezaehlt je Aussage und Kalenderwoche.
+
+    Traegt bewusst weder Pseudonym noch Zeitpunkt: woche ist der Montag der Woche,
+    damit sich eine Zeile nicht ueber den Zeitpunkt mit search_events (und dessen
+    actor_hash) verbinden laesst. Der Suchtext steht an der Aussage in Qdrant,
+    hier nur deren ID. Siehe services/suchen_ohne_treffer_service.py.
+    """
+
+    __tablename__ = "suchen_ohne_treffer"
+
+    statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    woche = Column(Date, primary_key=True)
+    anzahl = Column(Integer, nullable=False)
+
+    __table_args__ = (Index("idx_suchen_ohne_treffer_woche", "woche"),)
 
 
 class ContentReport(Base):

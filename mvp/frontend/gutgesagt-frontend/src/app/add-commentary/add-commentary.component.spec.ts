@@ -7,7 +7,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
-import { AddCommentaryComponent, SPEICHERN_FEHLGESCHLAGEN } from './add-commentary.component';
+import {
+  AddCommentaryComponent,
+  GENOMMEN_HINWEIS,
+  SPEICHERN_FEHLGESCHLAGEN,
+  ZUGESTIMMT_HINWEIS,
+  ZUSTIMMEN_FEHLGESCHLAGEN,
+} from './add-commentary.component';
+import { VotingService } from '../services/voting.service';
 import { CommentaryService } from '../services/commentary.service';
 import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -425,7 +432,7 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('sehr ähnlichen Kommentar');
       expect(component.commentaryForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
 
-      expect(component.dubletteAussage).toBeNull();
+      expect(component.vorhanden!.aussage).toBeNull();
       (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
       expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
     }));
@@ -445,7 +452,7 @@ describe('AddCommentaryComponent', () => {
       const hinweis = seite().querySelector('.dubletten-hinweis')!.textContent!;
       expect(hinweis).toContain('Es gibt schon einen sehr ähnlichen Kommentar von jemand anderem.');
       expect(hinweis).toContain('Du kannst ihn dieser Aussage später über die Karte zuordnen.');
-      expect(component.dubletteAussage).toBeNull();
+      expect(component.vorhanden!.aussage).toBeNull();
 
       (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
       expect(ansehen).toHaveBeenCalledOnceWith('k-alt', 'commentary');
@@ -488,6 +495,177 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar.');
     }));
 
+    it('nennt den Titel des vorhandenen Kommentars und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, vorhanden_titel: 'Wärmepumpen rechnen sich auch im Altbau' });
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.vorhanden-titel')!.textContent).toContain('Wärmepumpen rechnen sich auch im Altbau');
+      expect(seite().querySelector('.dublette-zustimmen')!.textContent).toContain('Zustimmen');
+      expect(seite().querySelector('.dublette-trotzdem')!.textContent).toContain('Trotzdem speichern');
+    }));
+
+    it('Zustimmen: gibt dem vorhandenen Kommentar eine Stimme, meldet sie und keinen Erfolg', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      const stimme = spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
+        of({ content_id: 'k-alt', vote_type: 'like', message: 'ok' }),
+      );
+      const erfolg = spyOn(component.success, 'emit');
+      const zugestimmt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      (seite().querySelector('.dublette-zustimmen') as HTMLButtonElement).click();
+      flush();
+      fixture.detectChanges();
+
+      expect(stimme).toHaveBeenCalledOnceWith('k-alt');
+      expect(zugestimmt).toHaveBeenCalledOnceWith('k-alt');
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(component.responseId).toBe('');
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(ZUGESTIMMT_HINWEIS);
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeNull();
+      expect(seite().querySelector('.dublette-ansehen')).toBeTruthy();
+    }));
+
+    it('Zustimmen scheitert: sagt es, das Formular bleibt, nichts wird gemeldet', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
+        throwError(() => new HttpErrorResponse({ status: 503 })),
+      );
+      const zugestimmt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.zustimmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(zugestimmt).not.toHaveBeenCalled();
+      expect(seite().querySelector('.zustimm-fehler')!.textContent).toContain(ZUSTIMMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.dublette-zustimmen')).toBeTruthy();
+    }));
+
+    it('Trotzdem speichern: schickt dasselbe mit trotz_dublette_von und meldet den neuen Kommentar', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(CommentaryService), 'addCommentary').and.returnValues(
+        of({ id: 'k-alt', duplikat: true } as AddCommentaryResponse),
+        of({ id: 'k-neu', duplikat: false, verknuepft: true } as AddCommentaryResponse),
+      );
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      (seite().querySelector('.dublette-trotzdem') as HTMLButtonElement).click();
+      flush();
+      fixture.detectChanges();
+
+      const [erste, zweite] = speichern.calls.allArgs().map(([anfrage]) => anfrage as AddCommentaryRequest);
+      expect(erste.trotz_dublette_von).toBeUndefined();
+      expect(zweite).toEqual({ ...erste, trotz_dublette_von: 'k-alt' });
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ id: 'k-neu' }));
+      expect(component.vorhanden).toBeNull();
+    }));
+
+    it('verschwindet, sobald der Text geaendert wird: der Hinweis galt dem alten Text', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.commentaryForm.patchValue({ text: 'Ein ganz anderer, eigener Text.' });
+      fixture.detectChanges();
+
+      expect(component.vorhanden).toBeNull();
+      expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+    }));
+
+    it('eigene, schon verknuepfte Dublette: kein Zustimmen, aber Trotzdem speichern', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('eigene Dublette ohne Aussage: kein Zustimmen, ausserhalb des Fangkorbs auch kein Nehmen', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-nehmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('eigene Dublette aus dem Fangkorb: Nehmen meldet den vorhandenen ohne Stimme', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true, vorhanden_eigen: true });
+      const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      const erfolg = spyOn(component.success, 'emit');
+      component.vorbefuellung = { rohinputId: 'id-1', titel: 'Wärmepumpe lohnt sich im Altbau', url: null, kopf: {} as any };
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      (seite().querySelector('.dublette-nehmen') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(gewaehlt).toHaveBeenCalledOnceWith('k-alt');
+      expect(stimme).not.toHaveBeenCalled();
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(GENOMMEN_HINWEIS);
+      expect(seite().querySelector('.dublette-nehmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeNull();
+    }));
+
+    it('liest nur den Hinweis als Statusmeldung vor, nicht die Knoepfe', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const status = seite().querySelector('.dubletten-hinweis [role="status"]')!;
+      expect(status.textContent).toContain('Es gibt schon einen sehr ähnlichen Kommentar.');
+      expect(status.querySelector('.dublette-zustimmen, .dublette-trotzdem')).toBeNull();
+    }));
+
+    it('nach dem Zustimmen steht in der Leiste kein Fehler', fakeAsync(() => {
+      speichernMit({ id: 'k-alt', duplikat: true });
+      spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
+        of({ content_id: 'k-alt', vote_type: 'like', message: 'ok' }),
+      );
+      ausfuellen();
+      component.speichern();
+      flush();
+      component.zustimmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
+    }));
+
     it('verschwindet mit Zuruecksetzen, auch der Link in der Leiste', fakeAsync(() => {
       speichernMit({ id: 'k-alt', duplikat: true });
       ausfuellen();
@@ -500,9 +678,7 @@ describe('AddCommentaryComponent', () => {
       component.zuruecksetzen();
       fixture.detectChanges();
 
-      expect(component.dublette).toBeNull();
-      expect(component.dubletteAussage).toBeNull();
-      expect(component.dubletteFremdMitAussage).toBeFalse();
+      expect(component.vorhanden).toBeNull();
       expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();

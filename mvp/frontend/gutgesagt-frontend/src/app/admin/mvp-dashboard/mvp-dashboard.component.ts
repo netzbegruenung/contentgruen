@@ -5,6 +5,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MetricsService, MVPMetrics } from '../../services/metrics.service';
+import { SuchenOhneTrefferComponent } from '../suchen-ohne-treffer/suchen-ohne-treffer.component';
 import { interval, Subscription } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 
@@ -16,7 +17,8 @@ import { startWith, switchMap } from 'rxjs/operators';
     MatCardModule,
     MatProgressBarModule,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    SuchenOhneTrefferComponent
   ],
   templateUrl: './mvp-dashboard.component.html',
   styleUrls: ['./mvp-dashboard.component.css']
