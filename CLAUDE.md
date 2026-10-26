@@ -446,3 +446,17 @@ The project uses pre-commit hooks that auto-format Python code (Black) and run t
 They may reformat files and fail on the first commit attempt, then pass on the second — this is
 intentional. Don't bypass with `--no-verify` except in emergencies. The `safe-commit.sh`/`.bat`
 helpers automate the retry.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live on Forgejo (`origin`), accessed through the REST API with curl; GitHub is a read-only mirror. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default triage vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` at the root, decisions in `docs/adr/`, both in German and changed only through pull requests. See `docs/agents/domain.md`.
