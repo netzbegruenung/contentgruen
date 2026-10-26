@@ -113,8 +113,8 @@ def anzeigenamen_ohne_datenbank(monkeypatch):
 @pytest.fixture(autouse=True)
 def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
     """
-    Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer", und der
-    taegliche Aufraeumlauf loescht alte Wochen. Ohne diesen Ersatz baute der erste
+    Jede Suche meldet sich bei der Kennzahl "Suchen ohne Treffer", und ein
+    Hintergrund-Task loescht alte Wochen. Ohne diesen Ersatz baute der erste
     Aufruf das echte Repository und verbaende sich mit dem PostgreSQL aus den
     Settings (siehe anzeigenamen_ohne_datenbank).
     """

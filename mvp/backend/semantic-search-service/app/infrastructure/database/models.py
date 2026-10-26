@@ -147,7 +147,7 @@ class SucheOhneTrefferZeile(Base):
 
     statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
     woche = Column(Date, primary_key=True)
-    anzahl = Column(Integer, nullable=False, default=1)
+    anzahl = Column(Integer, nullable=False)
 
     __table_args__ = (Index("idx_suchen_ohne_treffer_woche", "woche"),)
 

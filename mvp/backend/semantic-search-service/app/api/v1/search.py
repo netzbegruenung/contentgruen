@@ -23,16 +23,14 @@ from dependencies import (
     get_post_service,
     get_statement_service,
     get_reference_service,
+    get_suchen_ohne_treffer_service,
     get_voting_service,
 )
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet, get_anzeigename_service
 from services.voting_service import VotingService
 from services.search_tracking_service import get_search_tracking_service
-from services.suchen_ohne_treffer_service import (
-    SuchenOhneTrefferService,
-    get_suchen_ohne_treffer_service,
-)
+from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
@@ -284,7 +282,10 @@ async def search_by_text(
         try:
             suchen_ohne_treffer.erfassen(statement_id, total_results)
         except Exception as e:
-            logger.warning(f"Failed to count search without hits: {e}")
+            # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und
+            # statement_id neben dem Zeitstempel der Logzeile waere genau der
+            # Zeitpunkt, den die Tabelle nicht speichert.
+            logger.warning(f"Failed to count search without hits: {type(e).__name__}")
 
         return response
 

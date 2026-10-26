@@ -103,3 +103,12 @@ class TestHaeufigste:
         assert 2 in params.values()
         assert 20 in params.values()
         assert zeilen == [(AUSSAGE, 5)]
+
+    def test_haeufigste_blaettert_mit_offset(self, repository, session):
+        session.execute.return_value.all.return_value = []
+
+        repository.haeufigste(date(2026, 10, 5), 2, 20, offset=40)
+
+        abfrage = session.execute.call_args.args[0]
+        assert "OFFSET" in _sql(abfrage)
+        assert 40 in _params(abfrage).values()

@@ -6,17 +6,22 @@ gemockten StatementService. Geprueft wird, wann eine Suche zaehlt, in welche Woc
 sie faellt und was Admins am Ende sehen.
 """
 
+import asyncio
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
+import services.suchen_ohne_treffer_service as modul
 from domain.models.content_status import ContentStatus
 from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
+    alte_wochen_loeschen,
     aufbewahrungsgrenze,
+    heute_utc,
+    loeschen_im_takt,
 )
 
 pytestmark = pytest.mark.unit
@@ -35,14 +40,19 @@ class FakeRepository:
     def __init__(self, haeufigste=None):
         self.gezaehlt = []
         self.abfragen = []
+        self.geloescht_vor = []
         self._haeufigste = haeufigste or []
 
     def zaehlen(self, statement_id, woche):
         self.gezaehlt.append((statement_id, woche))
 
-    def haeufigste(self, seit_woche, mindestanzahl, limit):
-        self.abfragen.append((seit_woche, mindestanzahl, limit))
-        return self._haeufigste
+    def haeufigste(self, seit_woche, mindestanzahl, limit, offset=0):
+        self.abfragen.append((seit_woche, mindestanzahl, limit, offset))
+        return self._haeufigste[offset : offset + limit]
+
+    def loeschen_vor(self, woche):
+        self.geloescht_vor.append(woche)
+        return 3
 
 
 def _statement_service(aussagen):
@@ -96,6 +106,34 @@ class TestAufbewahrung:
         # 14.09. und 07.09.
         assert aufbewahrungsgrenze(MITTWOCH) == date(2026, 9, 7)
 
+    def test_alte_wochen_loeschen_loescht_vor_der_aufbewahrungsgrenze(self):
+        repo = FakeRepository()
+
+        assert alte_wochen_loeschen(repo, heute=MITTWOCH) == 3
+        assert repo.geloescht_vor == [date(2026, 9, 7)]
+
+    @pytest.mark.asyncio
+    async def test_loeschen_im_takt_loescht_sofort_und_laeuft_nach_fehler_weiter(self):
+        repo = FakeRepository()
+        repo.loeschen_vor = Mock(side_effect=[RuntimeError("weg"), 0, 0])
+
+        task = asyncio.create_task(loeschen_im_takt(repo, takt_sekunden=0))
+        while repo.loeschen_vor.call_count < 2:
+            await asyncio.sleep(0.01)
+        task.cancel()
+
+        assert repo.loeschen_vor.call_count >= 2
+
+
+class TestHeuteUtc:
+    def test_heute_utc_nimmt_das_utc_datum_nicht_die_ortszeit(self):
+        # 23:30 UTC am Sonntag ist in Berlin schon Montag; gezaehlt wird in UTC.
+        spaet = datetime(2026, 11, 1, 23, 30, tzinfo=timezone.utc)
+        with patch.object(modul, "datetime", wraps=datetime) as uhr:
+            uhr.now.return_value = spaet
+            assert heute_utc() == date(2026, 11, 1)
+        uhr.now.assert_called_once_with(timezone.utc)
+
 
 class TestHaeufigste:
     @pytest.mark.asyncio
@@ -122,10 +160,7 @@ class TestHaeufigste:
 
         await _service(repo).haeufigste(wochen=4, heute=MITTWOCH)
 
-        seit_woche, mindestanzahl, limit = repo.abfragen[0]
-        assert seit_woche == date(2026, 10, 5)
-        assert mindestanzahl == 2
-        assert limit == 20
+        assert repo.abfragen == [(date(2026, 10, 5), 2, 20, 0)]
 
     @pytest.mark.asyncio
     async def test_haeufigste_laesst_nicht_mehr_vorhandene_aussagen_weg(self):
@@ -151,3 +186,19 @@ class TestHaeufigste:
         ergebnis = await service.haeufigste(wochen=4, heute=MITTWOCH)
 
         assert [e.statement_id for e in ergebnis] == [AUSSAGE]
+
+    @pytest.mark.asyncio
+    async def test_haeufigste_laedt_nach_wenn_aussagen_herausfallen(self):
+        """Gesperrte Aussagen belegen keine Plaetze: es wird nachgeladen."""
+        gesperrte = [(uuid.uuid4(), 9) for _ in range(2)]
+        repo = FakeRepository(haeufigste=gesperrte + [(AUSSAGE, 4), (ANDERE, 3)])
+        aussagen = {sid: ("gesperrt", ContentStatus.BLOCKED) for sid, _ in gesperrte}
+        aussagen[AUSSAGE] = ("Windräder töten Vögel", FREI)
+        aussagen[ANDERE] = ("Wärmepumpe im Altbau", FREI)
+
+        ergebnis = await _service(repo, aussagen).haeufigste(
+            wochen=4, limit=2, heute=MITTWOCH
+        )
+
+        assert [e.statement_id for e in ergebnis] == [AUSSAGE, ANDERE]
+        assert [offset for *_, offset in repo.abfragen] == [0, 2]

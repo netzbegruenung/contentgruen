@@ -65,23 +65,3 @@ class TestUsageCleanupServiceSettings:
 
         start.assert_not_called()
         assert usage_cleanup_service._cleanup_service is None
-
-
-class TestSuchenOhneTrefferAufraeumen:
-    """Der taegliche Lauf loescht auch alte Wochen der Suchen ohne Treffer."""
-
-    def test_taeglicher_lauf_loescht_wochen_vor_der_aufbewahrungsgrenze(
-        self, suchen_ohne_treffer_ohne_datenbank
-    ):
-        with patch.object(
-            usage_cleanup_service, "get_usage_service", return_value=Mock()
-        ), patch.object(
-            usage_cleanup_service,
-            "aufbewahrungsgrenze",
-            return_value="grenze",
-        ):
-            usage_cleanup_service.UsageCleanupService().cleanup_old_data()
-
-        suchen_ohne_treffer_ohne_datenbank.loeschen_vor.assert_called_once_with(
-            "grenze"
-        )

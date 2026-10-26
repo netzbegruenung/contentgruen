@@ -171,7 +171,7 @@ Der Text, mit dem jemand nach passenden Beitr채gen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gez채hlt wird sie an der Aussage zur Suchanfrage, je Woche und ohne Bezug zur suchenden Person; Admins sehen die h채ufigsten als Kennzahl.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gez채hlt wird sie an der Aussage, auf der die Suchanfrage landet (채hnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Meine Beitr채ge**:

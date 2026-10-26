@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { SuchenOhneTrefferComponent } from './suchen-ohne-treffer.component';
 import { environment } from '../../../environments/environment';
 
@@ -11,7 +12,8 @@ describe('SuchenOhneTrefferComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SuchenOhneTrefferComponent, HttpClientTestingModule],
+      imports: [SuchenOhneTrefferComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SuchenOhneTrefferComponent);
@@ -25,13 +27,13 @@ describe('SuchenOhneTrefferComponent', () => {
     return (fixture.nativeElement as HTMLElement).textContent ?? '';
   }
 
-  it('zeigt die Suchanfragen mit Anzahl, absteigend wie geliefert', () => {
-    http.expectOne(`${URL}?wochen=4`).flush({
+  it('zeigt die Aussagen mit Anzahl, absteigend wie geliefert', () => {
+    http.expectOne(URL).flush({
       wochen: 4,
       mindestanzahl: 2,
       suchanfragen: [
-        { statement_id: 'a', text: 'Windräder töten Vögel', anzahl: 7 },
-        { statement_id: 'b', text: 'Wärmepumpe im Altbau', anzahl: 3 },
+        { text: 'Windräder töten Vögel', anzahl: 7 },
+        { text: 'Wärmepumpe im Altbau', anzahl: 3 },
       ],
     });
     fixture.detectChanges();
@@ -45,17 +47,18 @@ describe('SuchenOhneTrefferComponent', () => {
       ['Wärmepumpe im Altbau', '3'],
     ]);
     expect(text()).toContain('letzten 4 Wochen');
+    expect(text()).toContain('Aussage');
   });
 
   it('sagt, wenn es keine Suchanfrage ohne Treffer gibt', () => {
-    http.expectOne(`${URL}?wochen=4`).flush({ wochen: 4, mindestanzahl: 2, suchanfragen: [] });
+    http.expectOne(URL).flush({ wochen: 4, mindestanzahl: 2, suchanfragen: [] });
     fixture.detectChanges();
 
     expect(text()).toContain('Keine Suchanfrage ohne Treffer');
   });
 
   it('meldet einen Ladefehler', () => {
-    http.expectOne(`${URL}?wochen=4`).flush('kaputt', { status: 500, statusText: 'Server Error' });
+    http.expectOne(URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
     expect(text()).toContain('konnten nicht geladen werden');

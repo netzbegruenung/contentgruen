@@ -46,9 +46,9 @@ class SuchenOhneTrefferRepository:
             return ergebnis.rowcount
 
     def haeufigste(
-        self, seit_woche: date, mindestanzahl: int, limit: int
+        self, seit_woche: date, mindestanzahl: int, limit: int, offset: int = 0
     ) -> List[Tuple[uuid.UUID, int]]:
-        """(Aussage-ID, Anzahl) ab seit_woche, absteigend nach Anzahl."""
+        """(Aussage-ID, Anzahl) ab seit_woche, absteigend nach Anzahl, seitenweise."""
         summe = func.sum(SucheOhneTrefferZeile.anzahl)
         abfrage = (
             select(SucheOhneTrefferZeile.statement_id, summe.label("anzahl"))
@@ -57,6 +57,7 @@ class SuchenOhneTrefferRepository:
             .having(summe >= mindestanzahl)
             .order_by(desc("anzahl"), SucheOhneTrefferZeile.statement_id)
             .limit(limit)
+            .offset(offset)
         )
         with self.db.get_session() as session:
             return [

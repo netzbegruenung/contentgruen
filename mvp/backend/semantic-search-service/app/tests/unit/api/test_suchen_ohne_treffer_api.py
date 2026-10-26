@@ -1,8 +1,8 @@
 """
 Admin-Endpunkt /api/v1/metrics/suchen-ohne-treffer.
 
-Nur Admins sehen die Liste; sie enthaelt je Suchanfrage den Text der Aussage und
-die Anzahl, aber nichts ueber die Suchenden.
+Nur Admins sehen die Liste; sie enthaelt je Aussage den Text und die Anzahl,
+aber nichts ueber die Suchenden und keine ID.
 """
 
 import uuid
@@ -13,10 +13,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1.metrics import router as metrics_router
-from services.suchen_ohne_treffer_service import (
-    SucheOhneTreffer,
-    get_suchen_ohne_treffer_service,
-)
+from dependencies import get_suchen_ohne_treffer_service
+from services.suchen_ohne_treffer_service import SucheOhneTreffer
 
 pytestmark = [pytest.mark.unit, pytest.mark.api]
 
@@ -57,13 +55,9 @@ def test_admin_sieht_suchanfragen_mit_anzahl_ohne_personenbezug(client):
     body = response.json()
     assert body["wochen"] == 4
     assert body["mindestanzahl"] == 2
-    assert body["suchanfragen"] == [
-        {
-            "statement_id": str(AUSSAGE),
-            "text": "Windräder töten Vögel",
-            "anzahl": 5,
-        }
-    ]
+    # Ohne ID der Aussage: ueber deren created-Zeitpunkt liesse sich die Zeile
+    # mit search_events verbinden.
+    assert body["suchanfragen"] == [{"text": "Windräder töten Vögel", "anzahl": 5}]
 
 
 def test_admin_waehlt_zeitraum_in_wochen(client, service):

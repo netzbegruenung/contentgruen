@@ -5,8 +5,9 @@
       Suchen ohne Treffer
     </mat-card-title>
     <mat-card-subtitle>
-      Häufigste Suchanfragen der letzten {{ daten?.wochen ?? wochen }} Wochen, zu denen kein Beitrag passte.
-      Diese Aussagen brauchen noch Antworten.
+      Aussagen, zu denen Suchanfragen
+      <ng-container *ngIf="daten">der letzten {{ daten.wochen }} Wochen</ng-container>
+      am häufigsten keinen passenden Beitrag fanden. Sie brauchen noch Antworten.
     </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
@@ -16,7 +17,7 @@
       <table *ngIf="daten.suchanfragen.length > 0; else leer">
         <thead>
           <tr>
-            <th scope="col">Suchanfrage</th>
+            <th scope="col">Aussage</th>
             <th scope="col" class="anzahl">Anzahl</th>
           </tr>
         </thead>
@@ -31,8 +32,8 @@
         <p class="hinweis">Keine Suchanfrage ohne Treffer im Zeitraum.</p>
       </ng-template>
       <p class="fussnote">
-        Gezählt je Aussage und Woche, ohne Bezug zu den Suchenden. Erscheint erst ab
-        {{ daten.mindestanzahl }} Suchen.
+        Ähnliche Suchanfragen landen auf derselben Aussage. Gezählt je Aussage und Woche,
+        ohne Bezug zu den Suchenden. Erscheint erst ab {{ daten.mindestanzahl }} Suchen.
       </p>
     </ng-container>
   </mat-card-content>

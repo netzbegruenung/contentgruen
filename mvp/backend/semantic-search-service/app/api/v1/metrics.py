@@ -1,6 +1,5 @@
 import asyncio
 import time
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
@@ -13,6 +12,7 @@ from dependencies import (
     get_reference_service,
     get_statement_service,
     get_settings,
+    get_suchen_ohne_treffer_service,
     require_admin,
 )
 from services.content.commentary_service import CommentaryService
@@ -27,7 +27,6 @@ from services.suchen_ohne_treffer_service import (
     WOCHEN_MAX,
     WOCHEN_STANDARD,
     SuchenOhneTrefferService,
-    get_suchen_ohne_treffer_service,
 )
 from core.config import Settings
 from core.logging import get_logger
@@ -126,9 +125,12 @@ class HelpfulRateResponse(BaseModel):
 
 
 class SucheOhneTrefferEintrag(BaseModel):
-    """Eine Suchanfrage ohne Treffer: Text der Aussage und Anzahl, sonst nichts."""
+    """Eine Suchanfrage ohne Treffer: Text der Aussage und Anzahl, sonst nichts.
 
-    statement_id: uuid.UUID
+    Bewusst ohne ID der Aussage: Ueber ihren created-Zeitpunkt liesse sich die
+    Zeile mit search_events (und dessen Tagespseudonym) verbinden.
+    """
+
     text: str
     anzahl: int
 
@@ -409,10 +411,7 @@ async def get_suchen_ohne_treffer(
             wochen=wochen,
             mindestanzahl=MINDESTANZAHL,
             suchanfragen=[
-                SucheOhneTrefferEintrag(
-                    statement_id=e.statement_id, text=e.text, anzahl=e.anzahl
-                )
-                for e in eintraege
+                SucheOhneTrefferEintrag(text=e.text, anzahl=e.anzahl) for e in eintraege
             ],
         )
     except Exception as e:

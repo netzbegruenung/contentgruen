@@ -88,6 +88,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `actor_hash` stehen dort Klartext-Suchtext, Kennung und IP-Hash, und dann ist
   `DELETE FROM search_events WHERE user_id = …` sehr wohl nötig
   (`mvp/backend/postgres-app/migrations/2026-08-19-search-events-pseudonymisieren.sql`).
+- **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche und Anzahl, weder
+  Kennung noch Pseudonym: nichts, was sich einer Person zuordnen ließe. Wochen älter als
+  acht löscht ein täglicher Task von selbst (`services/suchen_ohne_treffer_service.py`,
+  `loeschen_im_takt`).
 - **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände,
   gelöschte Daten leben dort bis zu 28 Tage weiter. Selektives Editieren von
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem

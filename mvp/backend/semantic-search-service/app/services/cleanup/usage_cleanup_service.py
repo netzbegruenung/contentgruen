@@ -11,10 +11,6 @@ import schedule
 import threading
 import time
 
-from repositories.suchen_ohne_treffer_repository import (
-    get_suchen_ohne_treffer_repository,
-)
-from services.suchen_ohne_treffer_service import aufbewahrungsgrenze
 from services.usage_tracking_service import get_usage_service
 from core.config import settings
 
@@ -47,8 +43,6 @@ class UsageCleanupService:
         Returns:
             Number of records deleted
         """
-        self.cleanup_suchen_ohne_treffer()
-
         logger.info(
             f"Starting usage data cleanup (retention: {self.retention_days} days)"
         )
@@ -72,25 +66,6 @@ class UsageCleanupService:
 
         except Exception as e:
             logger.error(f"Error during usage data cleanup: {e}", exc_info=True)
-            return 0
-
-    def cleanup_suchen_ohne_treffer(self) -> int:
-        """
-        Wochen der Kennzahl "Suchen ohne Treffer" vor der Aufbewahrungsgrenze
-        loeschen (services/suchen_ohne_treffer_service.py). Laeuft im selben
-        taeglichen Lauf, weil die Datenschutzerklaerung die Loeschung nach acht
-        Wochen zusagt, auch wenn niemand mehr ohne Treffer sucht.
-        """
-        try:
-            deleted_count = get_suchen_ohne_treffer_repository().loeschen_vor(
-                aufbewahrungsgrenze()
-            )
-            logger.info(f"Deleted {deleted_count} old searches-without-hits weeks")
-            return deleted_count
-        except Exception as e:
-            logger.error(
-                f"Error during searches-without-hits cleanup: {e}", exc_info=True
-            )
             return 0
 
     def _run_scheduled_jobs(self):

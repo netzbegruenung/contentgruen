@@ -21,6 +21,7 @@ from dependencies import (
     get_post_service,
     get_reference_service,
     get_statement_service,
+    get_suchen_ohne_treffer_service,
     get_voting_service,
 )
 from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
@@ -28,7 +29,6 @@ from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
 )
-from services.suchen_ohne_treffer_service import get_suchen_ohne_treffer_service
 from utils.rate_limiter import RateLimiter
 
 
@@ -83,7 +83,12 @@ SEARCH_URL = "/api/v1/search/searchByText"
 
 
 @pytest.fixture
-def suchapp():
+def suchen_ohne_treffer():
+    return MagicMock()
+
+
+@pytest.fixture
+def suchapp(suchen_ohne_treffer):
     app = FastAPI()
     app.include_router(search_router, prefix="/api/v1/search")
 
@@ -104,11 +109,9 @@ def suchapp():
     app.dependency_overrides[get_voting_service] = lambda: MagicMock(
         get_user_votes_for_contents=MagicMock(return_value={})
     )
-    suchen_ohne_treffer = MagicMock()
     app.dependency_overrides[get_suchen_ohne_treffer_service] = lambda: (
         suchen_ohne_treffer
     )
-    app.state.suchen_ohne_treffer = suchen_ohne_treffer
 
     patches = [
         patch("api.v1.search.get_polarity_filter_service"),
@@ -168,7 +171,9 @@ class TestSuchpfad:
 class TestSuchenOhneTreffer:
     """Der Suchpfad meldet jede Suche mit Aussage und Trefferzahl zur Kennzahl."""
 
-    def test_suche_ohne_treffer_meldet_aussage_und_null_treffer(self, suchapp):
+    def test_suche_ohne_treffer_meldet_aussage_und_null_treffer(
+        self, suchapp, suchen_ohne_treffer
+    ):
         app, service = suchapp
         aussage = uuid.uuid4()
         service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
@@ -176,12 +181,14 @@ class TestSuchenOhneTreffer:
 
         TestClient(app).post(SEARCH_URL, json={"query_text": "klima", "limit": 10})
 
-        app.state.suchen_ohne_treffer.erfassen.assert_called_once_with(aussage, 0)
+        suchen_ohne_treffer.erfassen.assert_called_once_with(aussage, 0)
 
-    def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(self, suchapp):
+    def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
+        self, suchapp, suchen_ohne_treffer
+    ):
         app, _ = suchapp
         app.dependency_overrides[get_search_query_statement_recorder] = _recorder
-        app.state.suchen_ohne_treffer.erfassen.side_effect = RuntimeError("weg")
+        suchen_ohne_treffer.erfassen.side_effect = RuntimeError("weg")
 
         resp = TestClient(app).post(
             SEARCH_URL, json={"query_text": "klima", "limit": 10}
