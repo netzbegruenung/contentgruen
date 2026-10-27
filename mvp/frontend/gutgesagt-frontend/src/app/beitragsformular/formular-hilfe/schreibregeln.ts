@@ -8,7 +8,7 @@
 
 /** Die sechs Schreibregeln, in der Reihenfolge der Vision. */
 export const SCHREIBREGELN: readonly string[] = [
-  'Schreib für die Unentschiedenen, die mitlesen – nicht für die Person, von der die Aussage stammt.',
+  'Schreib für die Unentschiedenen, die mitlesen.',
   'Wiederhole den Vorwurf nicht, auch nicht, um ihn zu widerlegen.',
   'Fang mit dem an, was ihr gemeinsam habt.',
   'Sag, wofür du bist, nicht nur, wogegen.',
@@ -23,8 +23,8 @@ export interface Schreibhilfe {
 
 export const SCHREIBHILFEN: readonly Schreibhilfe[] = [
   { name: 'Küchenzuruf', text: 'Was würdest du in einem Satz durch die Küche rufen? Das ist deine Kurzfassung.' },
-  { name: 'Aufhänger vor Beleg', text: 'Erst was Lesende packt, dann der Beleg.' },
-  { name: 'Lesende als Hauptfigur', text: 'Sprich sie mit „du“ an: Es geht um ihren Alltag, nicht um dich.' },
+  { name: 'Aufhänger vor Beleg', text: 'Erst das, was Lesende packt, dann der Beleg.' },
+  { name: 'Lesende als Hauptfigur', text: 'Sprich die Lesenden mit „du“ an und erzähl von ihrem Alltag.' },
   { name: 'Zahlen in den Alltag', text: '„Jede dritte Wohnung“ statt „33 Prozent“.' },
 ];
 
@@ -34,8 +34,9 @@ export interface SchwacherTitel {
 }
 
 /**
- * Titel eines Kommentars: ein Satz, eine Behauptung mit Haltung (GLOSSARY.md,
- * Titel). Post-Titel folgen der Regel nicht und bekommen keine Beispiele.
+ * Titel: ein Satz, eine Behauptung mit Haltung (GLOSSARY.md, Titel). Gezeigt
+ * beim Kommentar; die Hintergrundinfo liegt ausserhalb von #344, Post-Titel
+ * folgen der Regel nicht.
  */
 export const TITEL_BEISPIELE: { gut: readonly string[]; schwach: readonly SchwacherTitel[] } = {
   gut: [
@@ -50,12 +51,16 @@ export const TITEL_BEISPIELE: { gut: readonly string[]; schwach: readonly Schwac
 };
 
 export const NICHT_JEDE_AUSSAGE =
-  'Nicht jede Aussage braucht eine Antwort. Eine Antwort macht sie sichtbarer; kommt sie von einem kleinen Account, melde sie lieber bei der Plattform.';
+  'Nicht jede Aussage braucht eine Antwort. Jede Antwort macht sie sichtbarer. Bei kleinen Accounts lieber nicht antworten, sondern die Aussage dem Netzwerk melden, in dem sie steht.';
 
+/** Der Meldedialog hat (noch) keinen eigenen Grund dafuer, daher der Weg ueber „Andere“. */
 export const ERFUNDENES_MELDEN =
-  'Erfundene Erlebnisse oder Zahlen sind ein Grund zu melden: Melde den Beitrag und schreib dazu, was nicht stimmt.';
+  'Erfundene Erlebnisse oder Zahlen in einem Beitrag? Melde ihn unter „Andere“ und schreib dazu, was nicht stimmt.';
 
-/** Beitragstypen, deren Formularhilfe die Schreibregeln zeigt. */
+/**
+ * Beitragstypen, deren Formularhilfe die Schreibregeln zeigt. Strings statt
+ * FormularTyp, weil 'post' dort erst mit dem Post-Formular (#297) dazukommt.
+ */
 export const TYPEN_MIT_SCHREIBREGELN: readonly string[] = ['commentary', 'post'];
 
 /** Beitragstypen, deren Formularhilfe Titelbeispiele zeigt. */

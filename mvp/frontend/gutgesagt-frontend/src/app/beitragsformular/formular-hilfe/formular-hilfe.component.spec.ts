@@ -81,7 +81,7 @@ describe('FormularHilfeComponent', () => {
       const panel = seite().querySelector('.hilfe-panel')!.textContent!;
       expect(panel).toContain('Nicht jede Aussage braucht eine Antwort');
       expect(panel).toContain('Erfundene Erlebnisse oder Zahlen');
-      expect(panel).toContain('melde');
+      expect(panel).toContain('„Andere“');
     });
 
     it('behält die Beschreibung des Typs über den Schreibregeln', () => {
@@ -92,7 +92,7 @@ describe('FormularHilfeComponent', () => {
   });
 
   describe('Post', () => {
-    // Das Post-Formular bringt #297 mit seinem eigenen Hilfetext; bis dahin gibt es kein Panel.
+    // Das Post-Formular bringt #297 mit seiner eigenen Formularhilfe; bis dahin gibt es kein Panel.
     beforeEach(() => mitTyp('post'));
 
     it('gilt als Typ mit Schreibregeln, aber ohne Titelbeispiele', () => {
