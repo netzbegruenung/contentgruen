@@ -8,6 +8,10 @@ Judgement rules the reviewer checks on every pull request. Each rule says why it
 - **New term, same PR.** A pull request that introduces a domain concept adds it to `GLOSSARY.md`. Why: the glossary changes only through pull requests (`docs/agents/domain.md`), and a term that lands without it drifts.
 - **Decisions follow the ADRs.** A change that contradicts an ADR in `docs/adr/` says so in the PR and why. Why: ADRs record hard-to-reverse trade-offs; silently overriding one loses the reasoning.
 
+## Scope
+
+- **Behaviour beyond the ticket is a Fachfrage.** A PR that changes what a person sees or can do, where the ticket's acceptance criteria don't cover it, gets a "must" finding. The PR description lists it under the heading `## Fachfrage`, one item per change: open as `- [ ] <the change, the question for the maintainer>`, decided as `- [x] <the decision> (<link to the comment or ticket>)`. A PR with an open item is not ready to merge. Why: with #316, authors stopped seeing older images without an Unterschrift; that stood only under "Merge Danger", nobody had decided it, and the review didn't raise it. A fixed heading and checkbox make the question visible and checkable before merge.
+
 ## Public repository
 
 - **Operations stay internal.** No internal host names, configuration-management details, secret stores or credentials in code, docs, comments, commit messages or PR texts; public domains are fine. Why: the repository is mirrored publicly to GitHub, and commit messages travel with it.
