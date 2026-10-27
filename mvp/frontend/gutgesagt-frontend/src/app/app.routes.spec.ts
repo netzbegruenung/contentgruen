@@ -42,8 +42,8 @@ describe('Routentabelle', () => {
     expect(eltern(snapshotMit({ von: 'suche' }))).toBe('/contribute');
   });
 
-  it('nutzt dieselbe Funktion fuer alle drei Beitragsformulare', () => {
-    for (const pfad of ['workflow/add-commentary', 'workflow/add-generictext', 'workflow/add-image']) {
+  it('nutzt dieselbe Funktion fuer alle Beitragsformulare', () => {
+    for (const pfad of ['workflow/add-commentary', 'workflow/add-generictext', 'workflow/add-image', 'workflow/add-post']) {
       const eltern = elternFunktion(pfad);
 
       expect(eltern(snapshotMit({ [ROHINPUT_PARAM]: 'e-1' })))

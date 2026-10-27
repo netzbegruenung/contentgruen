@@ -10,6 +10,7 @@ import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.compon
 import { KartenDaten, ausAussage, ausSuchergebnis } from '../../beitragskarte/karten-daten';
 import { CommentaryService } from '../../services/commentary.service';
 import { GenericTextService } from '../../services/generic-text.service';
+import { PostService } from '../../services/post.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
@@ -25,9 +26,9 @@ import {
 } from './gespeichert-adresse';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
-export type GespeichertTyp = Extract<FormularTyp, 'commentary' | 'generictext'>;
+export type GespeichertTyp = Extract<FormularTyp, 'commentary' | 'generictext' | 'post'>;
 
-/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo. */
+/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo, der Post. */
 const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; nichtLadbar: string }> = {
   commentary: {
     gespeichert: 'Dein Kommentar ist gespeichert.',
@@ -38,6 +39,11 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
     gespeichert: 'Deine Hintergrundinfo ist gespeichert.',
     nochEiner: 'Noch eine Hintergrundinfo',
     nichtLadbar: 'Sie lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du sie.',
+  },
+  post: {
+    gespeichert: 'Dein Post ist gespeichert.',
+    nochEiner: 'Noch einen Post',
+    nichtLadbar: 'Er lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du ihn.',
   },
 };
 
@@ -79,6 +85,7 @@ export class BeitragGespeichertComponent implements OnInit {
     private router: Router,
     private commentaryService: CommentaryService,
     private genericTextService: GenericTextService,
+    private postService: PostService,
     private navigationService: NavigationService,
     private uebergabe: DestillierUebergabeService,
     private logger: LoggingService,
@@ -156,6 +163,11 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   private laden(id: string): Observable<KartenDaten> {
+    if (this.typ === 'post') {
+      return this.postService
+        .getPostById(id)
+        .pipe(map((inhalt) => ausSuchergebnis({ post_result: inhalt, score: 1 } as any)));
+    }
     if (this.typ === 'generictext') {
       return this.genericTextService
         .getGenericTextById(id)

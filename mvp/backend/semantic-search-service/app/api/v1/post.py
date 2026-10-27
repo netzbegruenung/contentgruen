@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header, Query
 import datetime
@@ -19,6 +19,7 @@ from domain.models.post import PostDbEntry
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
+from services.anzeigename_service import angemeldet, get_anzeigename_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -35,11 +36,16 @@ async def read_test():
 async def get_by_id(
     post_id: UUID = Query(..., description="The UUID of the post to retrieve"),
     post_service: BaseContentService = Depends(get_post_service),
+    x_user: Optional[str] = Header(default=None),
 ):
     try:
         # The repository contract is raise-on-missing (ValueError), not return-None,
         # so a missing id must be mapped to 404 here rather than relying on `post is None`.
         post = await post_service.get(post_id)
+        # Wie bei Kommentar und Hintergrundinfo: Angemeldete sehen den Anzeigenamen
+        # des Autors (Ergebnisseite nach dem Speichern).
+        if angemeldet(x_user):
+            return get_anzeigename_service().mit_autor_name(post)
         return post
     except HTTPException:
         raise

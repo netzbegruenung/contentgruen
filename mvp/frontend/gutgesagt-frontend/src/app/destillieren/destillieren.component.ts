@@ -32,12 +32,13 @@ import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
 
-type Beitragstyp = 'commentary' | 'generictext';
+type Beitragstyp = 'commentary' | 'generictext' | 'post';
 
 /** Die Typwahl, mit denselben Saetzen wie auf der Beitragen-Seite (aus der Registry). */
 export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterung: string }> = [
   { wert: 'commentary', name: typLabel('commentary'), erlaeuterung: typBeschreibung('commentary') },
   { wert: 'generictext', name: typLabel('generictext'), erlaeuterung: typBeschreibung('generictext') },
+  { wert: 'post', name: typLabel('post'), erlaeuterung: typBeschreibung('post') },
 ];
 
 /**

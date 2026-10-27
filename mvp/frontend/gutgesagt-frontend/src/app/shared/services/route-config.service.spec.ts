@@ -30,12 +30,14 @@ describe('RouteConfigService', () => {
     expect(service.getRouteConfig('/workflow/add-commentary?aussage=a-1').pageTitle).toBe('Kommentar verfassen');
     expect(service.getRouteConfig('/workflow/add-generictext?rohinput=e-1').pageTitle).toBe('Hintergrundinfo verfassen');
     expect(service.getRouteConfig('/workflow/add-image').pageTitle).toBe('Bild hinzufügen');
+    expect(service.getRouteConfig('/workflow/add-post').pageTitle).toBe('Post hinzufügen');
   });
 
   it('nennt die Formularseiten mobil nur nach dem Typ', () => {
     expect(service.getRouteConfig('/workflow/add-commentary?aussage=a-1').mobilePageTitle).toBe('Kommentar');
     expect(service.getRouteConfig('/workflow/add-generictext').mobilePageTitle).toBe('Hintergrundinfo');
     expect(service.getRouteConfig('/workflow/add-image').mobilePageTitle).toBe('Bild');
+    expect(service.getRouteConfig('/workflow/add-post').mobilePageTitle).toBe('Post');
     expect(service.getRouteConfig('/fangkorb').mobilePageTitle).toBeUndefined();
   });
 
@@ -49,6 +51,7 @@ describe('RouteConfigService', () => {
 
   it('nennt die Ergebnisseite nach dem Speichern "Gespeichert"', () => {
     expect(service.getRouteConfig('/workflow/add-generictext/gespeichert/h-1').pageTitle).toBe('Gespeichert');
+    expect(service.getRouteConfig('/workflow/add-post/gespeichert/p-1').pageTitle).toBe('Gespeichert');
     const config = service.getRouteConfig('/workflow/add-commentary/gespeichert/k-1');
     expect(config.pageTitle).toBe('Gespeichert');
     expect(config.mobilePageTitle).toBe('Gespeichert');

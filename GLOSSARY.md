@@ -33,7 +33,7 @@ Der optionale Freitext an einem Einwurf, mit dem der Einwerfer anderen sagt, was
 _Avoid_: Notiz, Kommentar, Beschreibung
 
 **Plattform**:
-Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs stammt (etwa Instagram, YouTube, TikTok oder Web).
+Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web).
 _Avoid_: Kanal, Quelle
 
 **Weg**:

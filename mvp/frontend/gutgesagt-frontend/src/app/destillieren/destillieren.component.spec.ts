@@ -346,6 +346,12 @@ describe('DestillierenComponent', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-generictext'], {
         queryParams: { rohinput: 'id-1' },
       });
+
+      component.typ = 'post';
+      component.formularOeffnen();
+      expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-post'], {
+        queryParams: { rohinput: 'id-1' }, // retired-ok: Parametername bis #262
+      });
     });
   });
 
@@ -480,6 +486,7 @@ describe('DestillierenComponent', () => {
       expect(TYPEN.map((t) => t.erlaeuterung)).toEqual([
         'Eine Antwort, die du direkt posten kannst.',
         'Fakten und Zahlen, die eine Antwort stützen.',
+        'Ein gelungener Beitrag aus einem sozialen Netzwerk, zum Teilen.',
       ]);
     });
 
