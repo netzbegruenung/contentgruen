@@ -1,6 +1,6 @@
 /**
- * Der Hinweis ueber dem Absenden-Knopf, gleich in allen vier Formularen
- * (Einwurf, Kommentar, Hintergrundinfo, Bild). In drei Teilen, weil der Link auf
+ * Der Hinweis ueber dem Absenden-Knopf, gleich in allen Formularen
+ * (Einwurf, Kommentar, Hintergrundinfo, Bild, Post). In drei Teilen, weil der Link auf
  * die Nutzungsbedingungen im Template als routerLink steht.
  */
 export const CONSENT_HINWEIS = {

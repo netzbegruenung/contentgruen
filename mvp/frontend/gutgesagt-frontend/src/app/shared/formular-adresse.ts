@@ -4,12 +4,13 @@ import { Params } from '@angular/router';
  * Die Beitragsformulare: je Typ eine eigene Seite, auf Desktop und Handy gleich.
  * /contribute ist nur die Uebersicht davor und bettet kein Formular ein.
  */
-export type FormularTyp = 'commentary' | 'generictext' | 'image';
+export type FormularTyp = 'commentary' | 'generictext' | 'image' | 'post';
 
 export const FORMULAR_PFAD: Record<FormularTyp, string> = {
   commentary: '/workflow/add-commentary',
   generictext: '/workflow/add-generictext',
   image: '/workflow/add-image',
+  post: '/workflow/add-post',
 };
 
 /** Die Ergebnisseite nach dem Speichern: <Formularpfad>/gespeichert/<id>. */

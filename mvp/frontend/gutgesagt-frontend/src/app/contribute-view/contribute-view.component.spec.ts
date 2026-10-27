@@ -47,9 +47,9 @@ describe('ContributeViewComponent', () => {
   describe('Kette', () => {
     beforeEach(() => erstellen());
 
-    it('zeigt Einwerfen, Fangkorb und die drei Typen als Zeilen', () => {
+    it('zeigt Einwerfen, Fangkorb und die vier Typen als Zeilen', () => {
       expect(zeilen().map((zeile) => zeile.querySelector('.typ-titel')!.textContent!.trim()))
-        .toEqual(['Schnell einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild']);
+        .toEqual(['Schnell einwerfen', 'Fangkorb', 'Meine Beiträge', 'Kommentar', 'Hintergrundinfo', 'Bild', 'Post']);
       expect(fixture.nativeElement.querySelector('.einleitung .erstnutzer-satz').textContent)
         .toContain('Gut gesagt ist neu.');
     });
@@ -72,7 +72,7 @@ describe('ContributeViewComponent', () => {
       expect(weiterarbeiten.nextElementSibling!.classList).toContain('fangkorb-block');
       expect(weiterarbeiten.nextElementSibling!.nextElementSibling!.classList).toContain('beitraege-block');
       expect(verfassen.nextElementSibling!.matches('nav.typ-liste')).toBeTrue();
-      expect(verfassen.nextElementSibling!.querySelectorAll('button.typ-zeile').length).toBe(3);
+      expect(verfassen.nextElementSibling!.querySelectorAll('button.typ-zeile').length).toBe(4);
     });
 
     it('fuehrt mit der Einwerfen-Zeile zum Formular, mit der Fangkorb-Zeile zur Liste', () => {
@@ -87,7 +87,7 @@ describe('ContributeViewComponent', () => {
     });
 
     it('oeffnet mit einer Typ-Zeile die Formularseite des Typs', () => {
-      const [, , , kommentar, hintergrund, bild] = zeilen();
+      const [, , , kommentar, hintergrund, bild, post] = zeilen();
 
       kommentar.click();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-commentary']);
@@ -95,6 +95,8 @@ describe('ContributeViewComponent', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-generictext']);
       bild.click();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-image']);
+      post.click();
+      expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-post']);
     });
 
     it('leitet ohne alte Parameter nirgendwohin weiter', () => {

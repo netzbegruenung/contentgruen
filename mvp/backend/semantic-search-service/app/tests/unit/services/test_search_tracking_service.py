@@ -170,7 +170,7 @@ class TestTrackSearch:
 
     def test_track_search_logs_nothing_at_info(self, service, mock_repository, caplog):
         """A log line per search carries its exact time; counted per day it lines
-        up with the search events by order and undoes the coarsening."""
+        up with the statements the searches created and undoes the coarsening."""
         with caplog.at_level(logging.INFO):
             service.track_search(results_count=0, user_id="alice")
 

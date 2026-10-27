@@ -143,3 +143,7 @@
 .image-card {
     background: linear-gradient(135deg, var(--image-bg) 0%, rgb(225, 215, 240) 100%);
 }
+
+.post-card {
+    background: linear-gradient(135deg, var(--post-bg) 0%, rgb(250, 214, 188) 100%);
+}

@@ -60,6 +60,8 @@ export const CONTENT_TYPE_REGISTRY: Record<string, ContentTypeConfig> = {
     label: 'Post',
     resultField: 'post_result',
     emoji: '📣',
+    beschreibung: 'Ein gelungener Beitrag aus einem sozialen Netzwerk, zum Teilen.',
+    farbe: 'var(--post-bg)',
   },
   image: {
     key: 'image',

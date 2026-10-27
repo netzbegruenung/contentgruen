@@ -27,6 +27,9 @@ COPY backend/semantic-search-service/app /app
 COPY scripts/backup /scripts/backup
 RUN chmod +x /scripts/backup/*.sh
 
+# SQL-Migrationen, die der Dienst beim Start einspielt (infrastructure/database/migrationen.py)
+COPY backend/postgres-app/migrations /migrations
+
 # Copy seed data into the image
 COPY data /data
 

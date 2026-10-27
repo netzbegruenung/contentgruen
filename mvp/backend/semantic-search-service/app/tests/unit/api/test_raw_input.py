@@ -18,7 +18,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from pydantic import BaseModel, ValidationError
 
 from api.v1.raw_input import router as raw_input_router
-from dependencies import get_commentary_service, get_generic_text_service
+from dependencies import (
+    get_commentary_service,
+    get_generic_text_service,
+    get_post_service,
+)
 from domain.models.raw_input import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
@@ -74,16 +78,18 @@ def repository():
 @pytest.fixture(autouse=True)
 def beitraege():
     """
-    Kommentar- und Hintergrundinfo-Dienst fuer die Beitragspruefung bei processed.
+    Kommentar-, Hintergrundinfo- und Post-Dienst fuer die Beitragspruefung bei processed.
     Standard: den Beitrag gibt es. Nicht gefunden meldet der echte Dienst als
     ValueError - so auch hier.
     """
     dienste = {
         "commentary": MagicMock(get=AsyncMock(return_value=MagicMock())),
         "generic_text": MagicMock(get=AsyncMock(return_value=MagicMock())),
+        "post": MagicMock(get=AsyncMock(return_value=MagicMock())),
     }
     app.dependency_overrides[get_commentary_service] = lambda: dienste["commentary"]
     app.dependency_overrides[get_generic_text_service] = lambda: dienste["generic_text"]
+    app.dependency_overrides[get_post_service] = lambda: dienste["post"]
     yield dienste
 
 
@@ -670,6 +676,35 @@ class TestStatuswechsel:
             "alice",
             inhalt_id,
             "commentary",
+            ist_admin=False,
+        )
+
+    def test_ausformuliert_mit_post(self, client, repository, beitraege):
+        """Beim Ausformulieren ist auch ein Post waehlbar (#297)."""
+        inhalt_id = uuid.uuid4()
+        repository.set_status.return_value = _gespeicherter_einwurf(
+            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+        )
+
+        antwort = client.patch(
+            STATUS_URL,
+            json={
+                "status": "processed",
+                "content_id": str(inhalt_id),
+                "content_type": "post",
+            },
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        beitraege["post"].get.assert_awaited_once_with(inhalt_id)
+        beitraege["commentary"].get.assert_not_called()
+        repository.set_status.assert_called_once_with(
+            EINWURF_ID,
+            RawInputStatus.PROCESSED,
+            "alice",
+            inhalt_id,
+            "post",
             ist_admin=False,
         )
 

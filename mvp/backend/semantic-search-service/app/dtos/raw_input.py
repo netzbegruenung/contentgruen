@@ -21,7 +21,11 @@ from utils.url_validator import validate_url_security
 SATZ_LIMIT = 120
 
 # Die Beitragstypen, die aus dem Destillier-Ablauf entstehen koennen.
-DESTILLIERBARE_TYPEN = (ContentType.COMMENTARY, ContentType.GENERIC_TEXT)
+DESTILLIERBARE_TYPEN = (
+    ContentType.COMMENTARY,
+    ContentType.GENERIC_TEXT,
+    ContentType.POST,
+)
 
 
 def _normalisieren(wert: Optional[str]) -> Optional[str]:
@@ -143,7 +147,7 @@ class UpdateRawInputStatusRequest(BaseModel):
     )
     content_type: Optional[ContentType] = Field(
         default=None,
-        description="Typ des verknuepften Beitrags (commentary oder generic_text)",
+        description="Typ des verknuepften Beitrags (commentary, generic_text oder post)",
     )
 
     @model_validator(mode="after")
@@ -162,7 +166,8 @@ class UpdateRawInputStatusRequest(BaseModel):
             self.content_type is not None
             and self.content_type not in DESTILLIERBARE_TYPEN
         ):
-            raise ValueError("content_type muss commentary oder generic_text sein")
+            erlaubt = ", ".join(typ.value for typ in DESTILLIERBARE_TYPEN)
+            raise ValueError(f"content_type muss einer von {erlaubt} sein")
         return self
 
 
