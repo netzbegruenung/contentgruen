@@ -3,6 +3,7 @@ from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from uuid import UUID
 
+from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.image import (
     Image,
@@ -34,8 +35,9 @@ class BildResponse(BaseModel):
 
     Bewusst eine Auswahl aus ImageDbEntry: der Anzeigename statt der Kennung, keine
     Bearbeitungshistorie (last_modified*, authors, edit_history) und keine Felder der
-    Moderation und Dublettenpruefung. Wer hier ein Feld ergaenzt, entscheidet, dass
-    es nach aussen geht.
+    Moderation und Dublettenpruefung. Der Zustand bleibt, weil getById und getAll
+    auch gesperrte und geloeschte Bilder liefern. Wer hier ein Feld ergaenzt,
+    entscheidet, dass es nach aussen geht.
     """
 
     id: UUID
@@ -45,19 +47,15 @@ class BildResponse(BaseModel):
     # Unterschrift; None nur bei Bildern von vor #281.
     text: Optional[str] = None
     created: datetime.datetime
+    status: ContentStatus
     # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
     autor_name: Optional[str] = None
 
     @classmethod
     def aus_bild(cls, bild: ImageDbEntry, autor_name: Optional[str]) -> "BildResponse":
-        return cls(
-            id=bild.id,
-            content_type=bild.content_type,
-            title=bild.title,
-            image_url=bild.image_url,
-            text=bild.text,
-            created=bild.created,
-            autor_name=autor_name,
+        # Uebernimmt genau die Felder dieser Klasse, alles andere bleibt zurueck.
+        return cls.model_validate(bild, from_attributes=True).model_copy(
+            update={"autor_name": autor_name}
         )
 
 

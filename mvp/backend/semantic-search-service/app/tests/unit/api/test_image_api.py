@@ -3,8 +3,8 @@ Antwortformat der Bild-Endpunkte.
 
 Jede Route in api/v1/image.py beschreibt ihre Antwort mit einem response_model.
 getById und getAll liefern ein Bild als BildResponse: eine feste Feldauswahl mit
-dem Anzeigenamen statt der Kennung, ohne Bearbeitungshistorie und Moderationsfelder
-(#311). addImage gibt 201 mit der ID. Ein Bild ohne Unterschrift lehnt addImage ab
+dem Anzeigenamen statt der Kennung und dem Zustand, ohne Bearbeitungshistorie und
+Moderationsfelder (#311). addImage gibt 201 mit der ID. Ein Bild ohne Unterschrift lehnt addImage ab
 (422, test_add_image.py).
 """
 
@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 from api.v1.image import router as image_router
 from dependencies import get_image_service
 from domain.models.author_entry import AuthorEntry
+from domain.models.content_status import ContentStatus
 from domain.models.edit_entry import EditEntry
 from domain.models.image import ImageDbEntry
 from services.anzeigename_service import (
@@ -45,6 +46,7 @@ BILD_FELDER = {
     "image_url",
     "text",
     "created",
+    "status",
     "autor_name",
 }
 
@@ -152,6 +154,15 @@ def test_get_by_id_liefert_das_bild(client, image_service):
     assert body["title"] == TITEL
     assert body["image_url"] == BILD_URL
     assert body["text"] == UNTERSCHRIFT
+    assert body["status"] == "visible"
+
+
+def test_get_by_id_gesperrtes_bild_bleibt_erkennbar(client, image_service):
+    image_service.get.return_value = _bild(status=ContentStatus.BLOCKED)
+
+    response = _get_by_id(client)
+
+    assert response.json()["status"] == "blocked"
 
 
 def test_get_by_id_liefert_nur_die_bildfelder(client, image_service):
