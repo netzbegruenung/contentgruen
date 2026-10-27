@@ -179,7 +179,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
           this.pageIndex--;
         }
         this.fetchData(this.pageIndex + 1, this.pageSize);
-        this.loadUserStats();
+        this.nutzungsstatistikLaden();
       });
   }
 
