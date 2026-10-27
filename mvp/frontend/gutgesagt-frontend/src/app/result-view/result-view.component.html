@@ -145,9 +145,9 @@
     <!-- Show individual sections only when at least one has results -->
     <ng-container *ngIf="searchResponse.commentary_search_results_count > 0 || searchResponse.generictext_search_results_count > 0">
 
-        <section class="content-section">
+        <div class="content-section">
             <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
-        </section>
+        </div>
 
         <!-- Commentary Search Results Header/Info -->
         <section class="content-section">

@@ -165,9 +165,3 @@
     padding: 1.5rem;
     border-radius: var(--border-radius-medium);
 }
-
-/* Was der Beitragstyp ist, eine Zeile direkt unter der Ueberschrift */
-.typ-erklaerung {
-    margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-sm);
-    color: var(--text-secondary);
-}

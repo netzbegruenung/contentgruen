@@ -260,6 +260,7 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     const ersterAbschnitt = seite.querySelector('app-commentary-search-results')!;
     expect(rat.compareDocumentPosition(ersterAbschnitt) & Node.DOCUMENT_POSITION_FOLLOWING)
       .withContext('Rat steht vor den Treffern').toBeTruthy();
+    expect(rat.closest('section')).withContext('kein eigener Abschnitt ohne Ueberschrift').toBeNull();
   });
 
   it('erklaert am Handy den Beitragstyp des offenen Tabs', () => {

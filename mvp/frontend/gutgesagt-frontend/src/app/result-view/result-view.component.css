@@ -577,8 +577,8 @@ mat-sidenav-content {
   padding: var(--spacing-xs) var(--page-margin);
 }
 
-/* Mobil: was der Beitragstyp des offenen Tabs ist */
-.typ-erklaerung {
+/* Mobil: was der Beitragstyp des offenen Tabs ist; Grundregel in styles.css */
+.mobile-section .typ-erklaerung {
   margin: 0;
   padding: var(--spacing-sm) var(--spacing-md) 0;
   color: var(--text-secondary);
