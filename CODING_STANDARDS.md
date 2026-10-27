@@ -14,6 +14,11 @@ Judgement rules the reviewer checks on every pull request. Each rule says why it
 
   Format, read by tooling: the PR description contains the heading `## Fachfrage` once, followed by one item per change up to the next `## ` heading. Heading and items start at the beginning of the line, not indented and not inside a code block or quote. Open: `- [ ] <the change, the question for the maintainer>`. Decided: `- [x] <the decision> (<link to the comment or ticket>)`. Without such a change the heading is left out.
 
+## Product principles
+
+- **Visible numbers are real.** Counters, badges, points and statistics shown to people come from real events; no pre-filled or estimated values, also not in seeds that could reach test or production. Why: the product asks people to trust usage as a quality signal (`docs/VISION.md`, ADR 0004).
+- **Organisation-neutral where it costs nothing.** New code takes texts, names and links specific to Netzbegrünung or the Greens from one place (configuration or a single constant) rather than scattering them; existing code stays until it is touched for another reason. Why: later instances for other organisations are planned (`docs/VISION.md`, Ausbaustufen), and scattered literals make that expensive.
+
 ## Public repository
 
 - **Operations stay internal.** No internal host names, configuration-management details, secret stores or credentials in code, docs, comments, commit messages or PR texts; public domains are fine. Why: the repository is mirrored publicly to GitHub, and commit messages travel with it.
