@@ -4,10 +4,6 @@ import { expect, test } from './fixtures';
 
 for (const breite of [320, 360]) {
   test(`Tabs bei ${breite}`, async ({ page, bild }) => {
-    // Bekannter Befund: Seit die Tabs "Ausformulieren" und "Ausformuliert" heissen,
-    // passen sie bei 320 px nicht mehr. Meldet sich als unerwartet bestanden, sobald
-    // das behoben ist - dann diese Zeile entfernen.
-    test.fail(breite === 320, 'Tab-Namen bei 320 px gekuerzt');
     await page.setViewportSize({ width: breite, height: 740 });
     await page.goto('/fangkorb');
     await page.locator('button.tab').first().waitFor();

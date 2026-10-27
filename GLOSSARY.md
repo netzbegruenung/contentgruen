@@ -17,8 +17,12 @@ Einen Einwurf in den Fangkorb legen, ohne dabei schon über Typ, Titel oder Argu
 _Avoid_: Einreichen, Ablegen, Erfassen
 
 **Fangkorb**:
-Der gemeinsame Vorrat aller Einwürfe, den alle angemeldeten Mitwirkenden sehen und bearbeiten dürfen.
+Der gemeinsame Vorrat aller Einwürfe, den alle angemeldeten Mitwirkenden sehen und bearbeiten dürfen. Er zeigt seine Einwürfe in zwei Arbeitslisten.
 _Avoid_: Warteschlange, Queue, Rohliste, Arbeitsvorrat
+
+**Arbeitsliste**:
+Eine der beiden Ansichten im Fangkorb, benannt nach der Arbeit, die an ihren Einwürfen als Nächstes ansteht: „Destillieren“ mit den offenen, „Ausformulieren“ mit den destillierten. Ausformulierte Einwürfe stehen in keiner Arbeitsliste, sondern in „Meine Einwürfe“ und als Herkunft am Beitrag.
+_Avoid_: Spalte, Stapel, Aufgabenliste
 
 **Einwerfer**:
 Die Person, die einen Einwurf angelegt hat. Verwerfen dürfen nur sie und Admins.
@@ -90,7 +94,7 @@ _Avoid_: Verarbeitet, Erledigt, Fertig
 Ein Einwurf, den sein Einwerfer oder ein Admin als nicht verwertbar markiert hat.
 _Avoid_: Gelöscht, Abgelehnt
 
-Die Ansichten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. Nur die dritte Ansicht heißt nach ihrer Stufe („Ausformuliert“), weil dort keine Arbeit mehr ansteht; Verworfenes liegt ebenfalls dort, hinter einem Schalter. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
+Die Arbeitslisten im Fangkorb heißen nach der nächsten Arbeit („Destillieren“, „Ausformulieren“), nicht nach der Stufe. Für Ausformuliertes gibt es keine eigene Ansicht, weil daran keine Arbeit mehr ansteht. Verworfenes blendet ein Filter ein, und zwar in der Arbeitsliste, in der es ohne Verwerfen stünde: ohne Satz unter „Destillieren“, mit Satz unter „Ausformulieren“; dort lässt es sich weiter destillieren. Verworfenes, das schon mit einem Beitrag verknüpft ist, zeigt auch der Filter nicht, weil daran keine Arbeit mehr ansteht. „In Arbeit“, „Verarbeitet“ und „Erledigt“ sind keine Stufen.
 
 ## Umwandlungen
 

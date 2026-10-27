@@ -86,7 +86,8 @@ export class DestillierUebergabeService {
    * ``tab`` sagt, wo der Fangkorb aufgehen soll, falls keiner mehr offen ist -
    * der Tab, in dem das Ergebnis der gerade beendeten Handlung liegt. Er wird
    * durchgereicht statt geraten: Nur die Handlung selbst weiss, was sie bewirkt
-   * hat.
+   * hat. Ausformuliertes liegt in keinem Tab; nach dem Ausformulieren ist es die
+   * Arbeitsliste, aus der der Einwurf kam: "ausformulieren".
    */
   zumNaechsten(nach: string, tab: FangkorbTab): void {
     this.router.navigate(['/destillieren'], { queryParams: { nach, [TAB_PARAM]: tab } });

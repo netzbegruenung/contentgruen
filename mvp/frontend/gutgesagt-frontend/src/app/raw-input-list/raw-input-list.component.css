@@ -4,7 +4,7 @@
   stroke: rgb(0, 84, 55) !important;
 }
 
-/* Kopf: die drei Stufen als Tabs, Langfassung hinter dem Hilfe-Icon */
+/* Kopf: die beiden Arbeitslisten als Tabs, Langfassung hinter dem Hilfe-Icon */
 .fangkorb-kopf {
   display: flex;
   align-items: center;
@@ -12,16 +12,15 @@
 }
 
 /*
- * Drei gleich breite Segmente auf einer grauen Schiene; der aktive ist eine gefuellte
+ * Zwei gleich breite Segmente auf einer grauen Schiene; der aktive ist eine gefuellte
  * Pille in der Primaerfarbe. So heben sich die Tabs klar von den Filter-Chips darunter
  * ab (die sind umrandet und hell gefuellt).
  */
 .tabs {
   flex: 1;
   display: grid;
-  /* Breite nach Inhalt: "Ausformulieren" ist laenger als die anderen und soll auch
-     bei 320 px ungekuerzt bleiben. */
-  grid-template-columns: repeat(3, auto);
+  /* Halb und halb: "Ausformulieren" passt auch bei 320 px ungekuerzt hinein. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: 2px;
   min-width: 0;
@@ -70,13 +69,6 @@
 
 .tab:not(.aktiv):hover {
   background: rgba(0, 0, 0, 0.05);
-}
-
-/* Sehr schmal: etwas kleinere Schrift, damit alle drei Namen ganz dastehen */
-@media (max-width: 359px) {
-  .tab {
-    font-size: 13px;
-  }
 }
 
 .tab:focus-visible {

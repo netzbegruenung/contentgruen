@@ -76,4 +76,13 @@ describe('DestillierUebergabeService', () => {
     expect(ergebnis).toEqual(jasmine.objectContaining({ rohinputId: 'id-1', titel: '', url: null }));
     expect(ergebnis!.kopf!.einwurfAngaben!.kopfSatz).toBeUndefined();
   });
+
+  it('reicht den Tab der Handlung an die Destillier-Ansicht weiter', () => {
+    service.zumNaechsten('id-1', 'destillieren');
+
+    expect(router.navigate).toHaveBeenCalledOnceWith(['/destillieren'], {
+      queryParams: { nach: 'id-1', tab: 'destillieren' },
+    });
+  });
+
 });

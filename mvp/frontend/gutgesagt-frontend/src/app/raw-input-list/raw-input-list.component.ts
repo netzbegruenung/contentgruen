@@ -23,6 +23,7 @@ import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, EinwurfAktion, ausEinwurf } from '../beitragskarte/karten-daten';
 import { HilfeUmschalterComponent } from '../shared/components/hilfe-umschalter/hilfe-umschalter.component';
+import { tabMitTasteWaehlen } from '../shared/tab-tasten';
 import {
   FangkorbFilter,
   FangkorbTab,
@@ -41,15 +42,15 @@ import {
 export const LADE_GROESSE = 100;
 
 /**
- * Der Fangkorb: drei Tabs, benannt nach der naechsten Arbeit, in jedem die
- * Einwuerfe, an denen dort etwas zu tun ist.
+ * Der Fangkorb: zwei Tabs, die Arbeitslisten, benannt nach der naechsten Arbeit,
+ * in jedem die Einwuerfe, an denen dort etwas zu tun ist.
  *
  * Destillieren = offen (noch kein Satz), Ausformulieren = destilliert (Saetze ohne
- * Beitrag), Ausformuliert = mit mindestens einem Beitrag verknuepft (neu oder
- * vorhanden). Verworfenes liegt unter Ausformuliert hinter einem Chip. Welche
- * Stufe gilt, entscheidet ``stufeVonEinwurf``, welcher Tab dazu gehoert
- * ``passtZumTab``; die Chips (Plattform, "nur meine") wirken quer dazu und gelten
- * auch fuer die Zaehler.
+ * Beitrag). Ausformuliertes (mit mindestens einem Beitrag verknuepft) hat keine
+ * Arbeit mehr und steht nicht hier, sondern unter "Meine Einwuerfe". Verworfenes
+ * liegt hinter einem Chip im Tab seiner naechsten Arbeit. Welcher Tab gilt,
+ * entscheidet ``passtZumTab``; die Chips (Plattform, "nur meine", "verworfen")
+ * wirken quer dazu und gelten auch fuer die Zaehler.
  *
  * Bewusst alle Einwuerfe und nicht nur die eigenen - der Vorrat ist gemeinsam.
  * Sortiert wird hier neueste zuerst, nicht in der Reihenfolge des Servers
@@ -76,7 +77,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   sichtbar: Einwurf[] = [];
   /** Die sichtbaren Einwuerfe als Karten, einmal je Filterlauf berechnet. */
   karten: KartenDaten[] = [];
-  zaehler: Record<FangkorbTab, number> = { destillieren: 0, ausformulieren: 0, ausformuliert: 0 };
+  zaehler: Record<FangkorbTab, number> = { destillieren: 0, ausformulieren: 0 };
   gesamt = 0;
   filter: FangkorbFilter = filterLaden();
   isLoading = true;
@@ -141,6 +142,12 @@ export class RawInputListComponent implements OnInit, OnDestroy {
     this.filterSetzen({ ...this.filter, tab });
   }
 
+  /** Pfeiltasten, Pos1 und Ende waehlen den Tab und setzen den Fokus mit. */
+  tabTaste(event: KeyboardEvent): void {
+    const jetzt = TABS.findIndex((eintrag) => eintrag.wert === this.filter.tab);
+    tabMitTasteWaehlen(event, jetzt, TABS.length, (ziel) => this.tabWaehlen(TABS[ziel].wert));
+  }
+
   /** Die Zeile im leeren Tab: erst gar nichts da, dann die Chips, dann der Tab. */
   get leerText(): string {
     if (this.gesamt === 0) {
@@ -202,8 +209,8 @@ export class RawInputListComponent implements OnInit, OnDestroy {
 
   /**
    * Was der Griff auf einer Karte ausloest (``EinwurfAktionenService``). Nach dem
-   * Verwerfen laedt die Liste neu: Der Einwurf wechselt den Tab, und der Zaehler
-   * oben muss das mitbekommen.
+   * Verwerfen laedt die Liste neu: Der Einwurf verschwindet hinter dem Chip, und der
+   * Zaehler oben muss das mitbekommen.
    */
   aktionAusfuehren(karte: KartenDaten, aktion: EinwurfAktion): void {
     this.einwurfAktionen

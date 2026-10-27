@@ -145,7 +145,7 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
     component.onVorhandenGewaehlt('h-alt');
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'h-alt', 'generic_text');
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
     expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENER_VERKNUEPFT, 'OK', jasmine.anything());
     // Keine Ergebnisseite: gespeichert wurde nichts.
     expect(navigieren).not.toHaveBeenCalled();
@@ -166,7 +166,7 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
     erneut.next();
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledTimes(2);
-    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformulieren');
   });
 
   it('reicht die Wahl im Formular an den Workflow weiter', () => {

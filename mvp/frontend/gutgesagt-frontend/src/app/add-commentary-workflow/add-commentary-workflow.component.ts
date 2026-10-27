@@ -26,6 +26,7 @@ import {
   ROHINPUT_PARAM,
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
+import { NACH_DEM_AUSFORMULIEREN } from '../raw-input-list/fangkorb-filter';
 
 /** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
 export const EINWURF_MIT_VORHANDENEM_VERKNUEPFT = 'Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';
@@ -189,7 +190,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
         return;
       }
       this.snackBar.open(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', { duration: 5000 });
-      this.uebergabe.zumNaechsten(rohinputId, 'ausformuliert');
+      this.uebergabe.zumNaechsten(rohinputId, NACH_DEM_AUSFORMULIEREN); // retired-ok bis #262
     });
   }
 

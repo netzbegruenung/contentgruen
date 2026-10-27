@@ -16,6 +16,7 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { BeitragSheetComponent, BeitragSheetDaten, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
+import { tabMitTasteWaehlen } from '../shared/tab-tasten';
 
 /** Die beiden Tabs: eigene Beitraege und "Meine Einwuerfe". */
 export type MeineTab = 'beitraege' | 'einwuerfe';
@@ -126,19 +127,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   /** Pfeiltasten, Pos1 und Ende waehlen den Tab und setzen den Fokus mit. */
   tabTaste(event: KeyboardEvent): void {
     const jetzt = this.tabs.findIndex((eintrag) => eintrag.wert === this.tab);
-    const ziel = {
-      ArrowRight: (jetzt + 1) % this.tabs.length,
-      ArrowLeft: (jetzt - 1 + this.tabs.length) % this.tabs.length,
-      Home: 0,
-      End: this.tabs.length - 1,
-    }[event.key];
-    if (ziel === undefined) {
-      return;
-    }
-    event.preventDefault();
-    this.tabWaehlen(this.tabs[ziel].wert);
-    const knoepfe = (event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="tab"]');
-    knoepfe[ziel]?.focus();
+    tabMitTasteWaehlen(event, jetzt, this.tabs.length, (ziel) => this.tabWaehlen(this.tabs[ziel].wert));
   }
 
   /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */

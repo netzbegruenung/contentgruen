@@ -21,7 +21,7 @@ import {
   SCHRITT_PARAM,
   TAB_PARAM,
 } from './destillier-uebergabe.service';
-import { tabAus, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
+import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -271,11 +271,8 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // Nicht gleich wieder anbieten - sonst springt "Spaeter" ohne Satz
         // zwischen zwei offenen Einwuerfen endlos hin und her.
         this.einwurfService.zurueckstellen(einwurf.id);
-        // Ist keiner mehr offen, geht es in den Tab, in dem der Einwurf jetzt
-        // liegt: mit einem Satz (eigenem oder fremdem) unter "Ausformulieren",
-        // ohne unter "Destillieren".
-        const mitSatz = !!this.zuletztGespeichert.trim() || this.fremdeSaetze.length > 0;
-        this.uebergabe.zumNaechsten(einwurf.id, mitSatz ? 'ausformulieren' : 'destillieren');
+        // Ist keiner mehr offen, geht es in den Tab, in dem der Einwurf jetzt liegt.
+        this.uebergabe.zumNaechsten(einwurf.id, this.tabDesEinwurfs);
       },
       error: (error) => this.speicherfehler(error),
     });
@@ -290,11 +287,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     this.fehler = null;
     this.einwurfService.updateStatus(einwurf.id, 'discarded').subscribe({
       next: () => {
-        // Verworfenes liegt unter "Ausformuliert" hinter einem Chip, der normalerweise
+        // Verworfenes bleibt in seinem Tab, aber hinter einem Chip, der normalerweise
         // aus ist - fuer diese Sitzung wird er eingeschaltet, sonst ist der
         // Einwurf nach dem Verwerfen scheinbar spurlos weg.
         verworfenEinblenden();
-        this.uebergabe.zumNaechsten(einwurf.id, 'ausformuliert');
+        this.uebergabe.zumNaechsten(einwurf.id, this.tabDesEinwurfs);
       },
       error: (error) => {
         this.logger.error('Verwerfen fehlgeschlagen', error);
@@ -409,7 +406,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         // dieselbe Weiterleitung.
         if (nach) {
           this.einwurfService.rundeBeginnen();
-          tabMerken(tab ?? 'ausformuliert');
+          tabMerken(tab ?? 'ausformulieren');
           this.router.navigate(['/fangkorb'], { replaceUrl: true });
           return;
         }
@@ -422,6 +419,15 @@ export class DestillierenComponent implements OnInit, OnDestroy {
         this.fehler = 'Der Fangkorb konnte nicht geladen werden.';
       },
     });
+  }
+
+  /**
+   * Der Fangkorb-Tab, in dem dieser Einwurf liegt: mit einem gespeicherten Satz
+   * (eigenem oder fremdem) unter "Ausformulieren", ohne unter "Destillieren".
+   */
+  private get tabDesEinwurfs(): FangkorbTab {
+    const mitSatz = !!this.zuletztGespeichert.trim() || this.fremdeSaetze.length > 0;
+    return mitSatz ? 'ausformulieren' : 'destillieren';
   }
 
   /** Speichert nur, wenn sich der Satz seit dem letzten Speichern geaendert hat. */

@@ -14,6 +14,7 @@ import { StatementService } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { AUSSAGE_PARAM, SUCHTEXT_PARAM, gespeichertPfad } from '../shared/formular-adresse';
+import { NACH_DEM_AUSFORMULIEREN } from '../raw-input-list/fangkorb-filter';
 import { StateManagementService } from '../services/state-management.service';
 import {
   BeitragGespeichert,
@@ -188,7 +189,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
         return;
       }
       this.snackBar.open(EINWURF_MIT_VORHANDENER_VERKNUEPFT, 'OK', { duration: 5000 });
-      this.uebergabe.zumNaechsten(einwurfId, 'ausformuliert');
+      this.uebergabe.zumNaechsten(einwurfId, NACH_DEM_AUSFORMULIEREN);
     });
   }
 

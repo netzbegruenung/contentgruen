@@ -135,6 +135,19 @@ describe('cacheInterceptor', () => {
     httpMock.expectOne(`${api}/rawinput/getRawInputs?page=1`).flush({ stand: 'neu' });
   });
 
+  it('laedt Meine Einwuerfe jedes Mal frisch', () => {
+    // Ein gerade eingeworfenes Fundstueck soll sofort dastehen.
+    const einwuerfe = TestBed.inject(EinwurfService);
+    const eigene = `${api}/rawinput/getOwnRawInputs?page=1&page_size=24`;
+    const leer = { results_count: 0, results: [], total_records_count: 0 };
+
+    einwuerfe.eigeneLaden(1, 24).subscribe();
+    httpMock.expectOne(eigene).flush(leer);
+
+    einwuerfe.eigeneLaden(1, 24).subscribe();
+    httpMock.expectOne(eigene).flush(leer);
+  });
+
   describe('nach dem Stufenwechsel eines Einwurfs (#291)', () => {
     // Die Fangkorb-Haelfte belegt die Spec, besteht aber auch ohne Leeren, weil der
     // Fangkorb nie im Cache liegt. Dass PATCH den Cache leert, belegt die Liste.

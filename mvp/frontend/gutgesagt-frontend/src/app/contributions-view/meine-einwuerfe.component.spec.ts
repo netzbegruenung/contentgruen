@@ -4,9 +4,11 @@ import { provideRouter, Router } from '@angular/router';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Clipboard } from '@angular/cdk/clipboard';
+import { By } from '@angular/platform-browser';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
+import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { Einwurf, EinwurfService, EinwurfSeite } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
 import { AuthService, UserInfo } from '../auth/auth.service';
@@ -164,5 +166,49 @@ describe('MeineEinwuerfeComponent', () => {
     einwurfService.eigeneLaden.and.returnValue(of(antwort([offen], 30)));
     anzeigen();
     expect(fixture.nativeElement.querySelector('mat-paginator')).not.toBeNull();
+  });
+
+  // Ausformuliertes steht seit #265 nicht mehr im Fangkorb, sondern hier.
+  describe('ausformulierte Einwuerfe', () => {
+    it('zeigt je Satz den Stand, mehrere Beitraege als Zahl, einen als Haken, ohne Beitrag nichts', () => {
+      einwurfService.eigeneLaden.and.returnValue(
+        of(
+          antwort([
+            einwurf({
+              status: 'processed',
+              drafts: [
+                { id: 's-1', user_id: 'bob', sentence: 'Ohne Beitrag geblieben', updated_at: '2026-10-21T12:00:00Z' },
+                { id: 's-2', user_id: 'bob', sentence: 'Zweimal genommen', updated_at: '2026-10-21T12:00:00Z' },
+                { id: 's-3', user_id: 'eve', sentence: 'Einmal genommen', updated_at: '2026-10-21T12:00:00Z' },
+              ],
+              links: [
+                { content_id: 'c-1', content_type: 'commentary', draft_id: 's-2', processed_by: 'bob', processed_at: '2026-10-22T12:00:00Z' },
+                { content_id: 'c-2', content_type: 'generic_text', draft_id: 's-2', processed_by: 'bob', processed_at: '2026-10-22T12:00:00Z' },
+                { content_id: 'c-3', content_type: 'commentary', draft_id: 's-3', processed_by: 'eve', processed_at: '2026-10-22T12:00:00Z' },
+              ],
+            }),
+          ]),
+        ),
+      );
+      anzeigen();
+      const status = Array.from(fixture.nativeElement.querySelectorAll('.einwurf-satz .satz-status') as NodeListOf<HTMLElement>);
+
+      expect(texte('.einwurf-satz .satz-text')).toEqual(['Ohne Beitrag geblieben', 'Zweimal genommen', 'Einmal genommen']);
+      expect(status.map((el) => el.textContent!.trim())).toEqual(['', '✓ 2', '✓']);
+      expect(status[0].getAttribute('aria-label')).toBe('noch kein Beitrag');
+    });
+
+    it('bietet Weiter destillieren statt Verwerfen und fuehrt an den Anfang, nicht in die Typwahl', () => {
+      einwurfService.eigeneLaden.and.returnValue(of(antwort([ausformuliert])));
+      anzeigen();
+      const komponente = fixture.componentInstance;
+      const karte = fixture.debugElement.query(By.directive(BeitragskarteComponent)).componentInstance as BeitragskarteComponent;
+
+      expect(karte.menueEintraege.map((eintrag) => eintrag.wort)).toEqual(['Link kopieren', 'Weiter destillieren']);
+
+      komponente.aktionAusfuehren(komponente.karten[0], 'weiterDestillieren');
+
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'e-aus']);
+    });
   });
 });

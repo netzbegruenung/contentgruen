@@ -131,7 +131,7 @@ ML output can be trusted — the eval set is the gate, not the code. Do not star
 
 Einzelne Funktionen, die feststehen, aber noch nicht gebaut sind.
 
-- **Detailansicht Beitrag**, Route `/beitrag/:id`, Einstiege Fangkorb-Karte und Suchergebnis;
-  Backend `commentary/getById` und `generictext/getById` existieren. Bis dahin führt der Knopf
-  „In der Suche anzeigen“ auf der ausformulierten Fangkorb-Karte als Übergangslösung auf
-  `/result?searchQuery=<Satz>` (`raw-input-list.component.html`).
+- **Detailansicht Beitrag**, Route `/beitrag/:id`, Einstiege Einwurf-Karte und Suchergebnis;
+  Backend `commentary/getById` und `generictext/getById` existieren. Bis dahin öffnet „Ansehen“
+  auf der ausformulierten Einwurf-Karte (in „Meine Einwürfe“) als Übergangslösung ein Sheet
+  mit den verknüpften Beiträgen (`einwurf-aktionen.service.ts`).

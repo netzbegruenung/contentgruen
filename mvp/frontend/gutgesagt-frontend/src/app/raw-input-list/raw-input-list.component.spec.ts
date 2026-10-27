@@ -161,17 +161,16 @@ describe('RawInputListComponent', () => {
   afterEach(() => sessionStorage.removeItem(FILTER_SCHLUESSEL));
 
   describe('Kopf', () => {
-    it('zeigt die drei Stufen als Tabs mit Zaehlern, ohne Einwerfen', () => {
+    it('zeigt die beiden Arbeitslisten als Tabs mit Zaehlern, ohne Einwerfen', () => {
       erstellen(jeTab());
       const woerter = Array.from(fixture.nativeElement.querySelectorAll('.tab-wort') as NodeListOf<HTMLElement>).map(
         (wort) => wort.textContent!.trim(),
       );
 
-      expect(woerter).toEqual(['Destillieren', 'Ausformulieren', 'Ausformuliert']);
+      expect(woerter).toEqual(['Destillieren', 'Ausformulieren']);
       expect(fixture.nativeElement.textContent).not.toContain('Einwerfen →');
       expect(zaehler('Destillieren')).toBe('1');
       expect(zaehler('Ausformulieren')).toBe('1');
-      expect(zaehler('Ausformuliert')).toBe('1');
     });
 
     it('beginnt beim Destillieren und wechselt auf Tipp', () => {
@@ -180,10 +179,21 @@ describe('RawInputListComponent', () => {
       expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
 
-      klicken(tabKnopf('Ausformuliert'));
+      klicken(tabKnopf('Ausformulieren'));
 
-      expect(tabKnopf('Ausformuliert').getAttribute('aria-selected')).toBe('true');
-      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig']);
+      expect(tabKnopf('Ausformulieren').getAttribute('aria-selected')).toBe('true');
+      expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('false');
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz']);
+    });
+
+    it('oeffnet einen in der Sitzung gemerkten frueheren Tab "Ausformuliert" beim Destillieren', () => {
+      sessionStorage.setItem(FILTER_SCHLUESSEL, JSON.stringify({ tab: 'ausformuliert', nurMeine: true }));
+
+      erstellen(jeTab());
+
+      expect(tabKnopf('Destillieren').getAttribute('aria-selected')).toBe('true');
+      expect(component.filter.nurMeine).toBeTrue();
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
     });
 
     it('haelt Tab und Filter in der Sitzung', () => {
@@ -213,13 +223,99 @@ describe('RawInputListComponent', () => {
       });
     });
 
-    it('zeigt "nur meine" und die Plattformen, "nur offene" nicht mehr', () => {
+    it('zeigt in beiden Tabs "nur meine", "verworfen" und die Plattformen, "nur offene" nicht mehr', () => {
       erstellen([]);
-      const chips = Array.from(fixture.nativeElement.querySelectorAll('.filter-chip') as NodeListOf<HTMLElement>).map(
-        (chip) => chip.textContent!.trim(),
-      );
+      for (const tab of ['Destillieren', 'Ausformulieren']) {
+        klicken(tabKnopf(tab));
+        const chips = Array.from(fixture.nativeElement.querySelectorAll('.filter-chip') as NodeListOf<HTMLElement>).map(
+          (chip) => chip.textContent!.trim(),
+        );
 
-      expect(chips).toEqual(['nur meine', ...PLATTFORMEN.map((eintrag) => eintrag.name)]);
+        expect(chips).toEqual(['nur meine', 'verworfen', ...PLATTFORMEN.map((eintrag) => eintrag.name)]);
+      }
+    });
+  });
+
+  describe('Tab-Muster', () => {
+    function tabs(): HTMLButtonElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('[role="tab"]'));
+    }
+
+    function taste(key: string): void {
+      tabs()[0].parentElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      fixture.detectChanges();
+    }
+
+    it('gibt jedem Tab seinen Bereich, zeigt nur den gewaehlten und hat nur einen Tab-Stopp', () => {
+      erstellen(jeTab());
+      const bereich = (tab: HTMLButtonElement): HTMLElement =>
+        fixture.nativeElement.querySelector(`#${tab.getAttribute('aria-controls')}`);
+
+      for (const tab of tabs()) {
+        expect(bereich(tab).getAttribute('role')).toBe('tabpanel');
+        expect(bereich(tab).getAttribute('aria-labelledby')).toBe(tab.id);
+      }
+      expect(new Set(tabs().map(bereich)).size).toBe(2);
+      expect(tabs().map((tab) => bereich(tab).hidden)).toEqual([false, true]);
+      expect(bereich(tabs()[0]).querySelectorAll('article.karte--einwurf').length).toBe(1);
+      expect(bereich(tabs()[1]).children.length).toBe(0);
+      expect(tabs().map((tab) => tab.getAttribute('tabindex'))).toEqual(['0', '-1']);
+
+      klicken(tabs()[1]);
+
+      expect(tabs().map((tab) => bereich(tab).hidden)).toEqual([true, false]);
+      expect(bereich(tabs()[1]).querySelectorAll('article.karte--einwurf').length).toBe(1);
+      expect(tabs().map((tab) => tab.getAttribute('tabindex'))).toEqual(['-1', '0']);
+    });
+
+    it('wechselt mit Pfeiltasten, Pos1 und Ende und nimmt den Fokus mit', () => {
+      erstellen(jeTab());
+
+      taste('ArrowRight');
+      expect(component.filter.tab).toBe('ausformulieren');
+      expect(document.activeElement).toBe(tabs()[1]);
+
+      taste('ArrowRight');
+      expect(component.filter.tab).toBe('destillieren');
+      expect(document.activeElement).toBe(tabs()[0]);
+
+      taste('ArrowLeft');
+      expect(component.filter.tab).toBe('ausformulieren');
+
+      taste('Home');
+      expect(component.filter.tab).toBe('destillieren');
+
+      taste('End');
+      expect(component.filter.tab).toBe('ausformulieren');
+      expect(document.activeElement).toBe(tabs()[1]);
+    });
+
+    it('laesst andere Tasten durch', () => {
+      erstellen(jeTab());
+      const ereignis = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true });
+
+      tabs()[0].parentElement!.dispatchEvent(ereignis);
+
+      expect(ereignis.defaultPrevented).toBeFalse();
+      expect(component.filter.tab).toBe('destillieren');
+    });
+
+    it('kuerzt bei 320 px keinen Tab-Namen', async () => {
+      erstellen(jeTab());
+      // TestBed haengt die Komponente ins Dokument; gemessen wird mit ihrem CSS, den
+      // globalen Stilen (Seitenrand) und der Hausschrift, sobald sie geladen ist.
+      const host: HTMLElement = fixture.nativeElement;
+      host.style.display = 'block';
+      host.style.width = '320px';
+      await document.fonts.ready;
+      const woerter = Array.from(host.querySelectorAll('.tab-wort') as NodeListOf<HTMLElement>);
+
+      expect(host.isConnected).toBeTrue();
+      expect(woerter.length).toBe(2);
+      for (const wort of woerter) {
+        expect(wort.clientWidth).withContext(wort.textContent!).toBeGreaterThan(0);
+        expect(wort.scrollWidth).withContext(wort.textContent!).toBeLessThanOrEqual(wort.clientWidth);
+      }
     });
   });
 
@@ -239,28 +335,42 @@ describe('RawInputListComponent', () => {
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz']);
     });
 
-    it('legt alles mit Beitrag unter Ausformuliert, auch ohne Satz', () => {
+    it('zeigt Ausformuliertes in keinem Tab, auch ohne Satz und mit Chip "verworfen"', () => {
       erstellen([
         ...jeTab(),
         einwurf({ id: 'alt', status: 'processed', created_at: '2026-09-01T10:00:00Z', links: [link(null, null)] }),
+        einwurf({ id: 'weg-fertig', status: 'discarded', drafts: [satz('s-9', 'bob', 'X')], links: [link('s-9')] }),
       ]);
 
-      klicken(tabKnopf('Ausformuliert'));
-
-      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig', 'alt']);
+      for (const tab of ['Destillieren', 'Ausformulieren']) {
+        klicken(tabKnopf(tab));
+        expect(component.sichtbar.map((eintrag) => eintrag.id)).not.toContain('fertig');
+        expect(component.sichtbar.map((eintrag) => eintrag.id)).not.toContain('alt');
+      }
+      klicken(filterKnopf('verworfen'));
+      for (const tab of ['Destillieren', 'Ausformulieren']) {
+        klicken(tabKnopf(tab));
+        expect(component.sichtbar.map((eintrag) => eintrag.id)).not.toContain('weg-fertig');
+      }
     });
 
-    it('zeigt Verworfenes erst mit dem Chip, und den nur unter Ausformuliert', () => {
-      erstellen(jeTab());
-      expect(filterKnopf('verworfen')).toBeUndefined();
-
-      klicken(tabKnopf('Ausformuliert'));
-      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig']);
+    it('zeigt Verworfenes erst mit dem Chip, im Tab seiner naechsten Arbeit', () => {
+      erstellen([
+        ...jeTab(),
+        einwurf({ id: 'weg-satz', status: 'discarded', drafts: [satz('s-3', 'bob', 'Doch ein Satz')] }),
+      ]);
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh']);
 
       klicken(filterKnopf('verworfen'));
 
-      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['fertig', 'weg']);
-      expect(zaehler('Ausformuliert')).toBe('2');
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['roh', 'weg']);
+      expect(zaehler('Destillieren')).toBe('2');
+      expect(zaehler('Ausformulieren')).toBe('2');
+
+      klicken(tabKnopf('Ausformulieren'));
+
+      expect(filterKnopf('verworfen').getAttribute('aria-pressed')).toBe('true');
+      expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['satz', 'weg-satz']);
     });
 
     it('sortiert neueste zuerst, nicht eigene zuerst', () => {
@@ -273,16 +383,20 @@ describe('RawInputListComponent', () => {
       expect(component.sichtbar.map((eintrag) => eintrag.id)).toEqual(['neu', 'mittel', 'alt']);
     });
 
-    it('sagt in jedem leeren Tab in einer Zeile, dass dort nichts liegt', () => {
+    it('sagt im leeren Tab "Ausformulieren" in einer Zeile, dass dort nichts liegt', () => {
       erstellen([einwurf({ id: 'roh' })]);
       klicken(tabKnopf('Ausformulieren'));
+
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
         'Nichts auszuformulieren.',
       );
+    });
 
-      klicken(tabKnopf('Ausformuliert'));
+    it('sagt im leeren Tab "Destillieren" in einer Zeile, dass dort nichts liegt', () => {
+      erstellen([einwurf({ id: 'satz', status: 'in_progress', drafts: [satz('s-1', 'bob', 'Ein Satz')] })]);
+
       expect(fixture.nativeElement.querySelector('.fangkorb-leer').textContent!.trim()).toBe(
-        'Noch nichts ausformuliert.',
+        'Nichts zu destillieren.',
       );
     });
   });
@@ -389,9 +503,7 @@ describe('RawInputListComponent', () => {
       klicken(tabKnopf('Ausformulieren'));
       expect(karten()[0].querySelector('.einwurf-primaer .knopf-wort')!.textContent!.trim()).toBe('Ausformulieren');
 
-      klicken(tabKnopf('Ausformuliert'));
-      expect(karten()[0].querySelector('.einwurf-primaer .knopf-wort')!.textContent!.trim()).toBe('Ansehen');
-
+      klicken(tabKnopf('Destillieren'));
       klicken(filterKnopf('verworfen'));
       const verworfen = karten().find((karte) => karte.classList.contains('stufe-verworfen'))!;
       expect(verworfen.querySelector('.einwurf-primaer')).toBeNull();
@@ -400,24 +512,6 @@ describe('RawInputListComponent', () => {
   });
 
   describe('Saetze in der Karte', () => {
-    it('zeigt je Satz den Stand, mehrere Beitraege als Zahl, ohne Beitrag nichts', () => {
-      erstellen([
-        einwurf({
-          status: 'processed',
-          drafts: [satz('s-1', 'bob', 'Ohne Beitrag geblieben'), satz('s-2', 'bob', 'Zweimal genommen')],
-          links: [link('s-2', 'commentary', 'c-1'), link('s-2', 'generic_text', 'c-2')],
-        }),
-      ]);
-      klicken(tabKnopf('Ausformuliert'));
-      const zeilen = Array.from(karten()[0].querySelectorAll('.einwurf-satz') as NodeListOf<HTMLElement>);
-
-      expect(zeilen.length).toBe(2);
-      expect(zeilen[0].querySelector('.satz-text')!.textContent!.trim()).toBe('Ohne Beitrag geblieben');
-      expect(zeilen[0].querySelector('.satz-status')!.textContent!.trim()).toBe('');
-      expect(zeilen[0].querySelector('.satz-status')!.getAttribute('aria-label')).toBe('noch kein Beitrag');
-      expect(zeilen[1].querySelector('.satz-status')!.textContent!.trim()).toBe('✓ 2');
-    });
-
     it('zeigt hoechstens drei Saetze und zaehlt den Rest', () => {
       erstellen([
         einwurf({
@@ -430,15 +524,6 @@ describe('RawInputListComponent', () => {
 
       expect(karte.querySelectorAll('.einwurf-satz').length).toBe(3);
       expect(karte.querySelector('.einwurf-mehr')!.textContent!.trim()).toBe('+2 weitere');
-    });
-
-    it('zeigt einen einzelnen Beitrag als Haken', () => {
-      erstellen([
-        einwurf({ status: 'processed', drafts: [satz('s-1', 'bob', 'Genommen')], links: [link('s-1')] }),
-      ]);
-      klicken(tabKnopf('Ausformuliert'));
-
-      expect(karten()[0].querySelector('.satz-status')!.textContent!.trim()).toBe('✓');
     });
   });
 
@@ -463,29 +548,6 @@ describe('RawInputListComponent', () => {
       });
     });
 
-    it('fuehrt Weiterdestillieren an den Anfang, nicht in die Typwahl', () => {
-      erstellen(jeTab());
-      klicken(tabKnopf('Ausformuliert'));
-
-      component.aktionAusfuehren(component.karten[0], 'weiterDestillieren');
-
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'fertig']);
-    });
-
-    it('oeffnet mit "Ansehen" das Sheet statt einer Suche', () => {
-      erstellen(jeTab());
-      klicken(tabKnopf('Ausformuliert'));
-
-      klicken(karten()[0].querySelector<HTMLButtonElement>('.einwurf-primaer')!);
-
-      const [komponente, optionen] = (bottomSheet.open as jasmine.Spy).calls.mostRecent().args;
-      expect(komponente).toBe(EinwurfBeitragSheetComponent);
-      expect(optionen.data.beitraege).toEqual([
-        { contentId: 'c-s-2', typ: 'commentary', satz: 'Genommen' },
-      ]);
-      expect(router.navigate).not.toHaveBeenCalledWith(['/result'], jasmine.anything());
-    });
-
     it('bietet Mitwirkenden ohne Adminrechte Verwerfen nur am eigenen Einwurf', () => {
       erstellen([einwurf({ id: 'eigen', submitted_by: 'alice' }), einwurf({ id: 'fremd', submitted_by: 'bob' })]);
       const [eigen, fremd] = kartenKomponenten();
@@ -506,17 +568,6 @@ describe('RawInputListComponent', () => {
       }
     });
 
-    it('bietet Admins bei Ausformuliertem kein Verwerfen', () => {
-      nutzer = { ...nutzer, isAdmin: true };
-      erstellen(jeTab());
-      klicken(tabKnopf('Ausformuliert'));
-
-      expect(kartenKomponenten()[0].menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
-        'Link kopieren',
-        'Weiter destillieren',
-      ]);
-    });
-
     it('verwirft als Admin einen fremden Einwurf', () => {
       nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
       erstellen([einwurf({ id: 'fremd', submitted_by: 'bob' })]);
@@ -527,13 +578,8 @@ describe('RawInputListComponent', () => {
       expect(einwurfService.updateStatus).toHaveBeenCalledWith('fremd', 'discarded');
     });
 
-    it('bietet bei Ausformuliertem und Verworfenem Weiterarbeiten statt Verwerfen', () => {
+    it('bietet bei Verworfenem Weiterarbeiten statt Verwerfen', () => {
       erstellen(jeTab());
-      klicken(tabKnopf('Ausformuliert'));
-      expect(kartenKomponenten()[0].menueEintraege.map((eintrag) => eintrag.wort)).toEqual([
-        'Link kopieren',
-        'Weiter destillieren',
-      ]);
 
       klicken(filterKnopf('verworfen'));
       const verworfen = kartenKomponenten().find((karte) => karte.daten.einwurfAngaben!.stufe === 'verworfen')!;
@@ -589,13 +635,14 @@ describe('RawInputListComponent', () => {
       );
     });
 
-    it('fuehrt Weiterdestillieren in die Destillier-Ansicht', () => {
+    it('laesst Verworfenes ueber den Chip weiter destillieren', () => {
       erstellen(jeTab());
-      klicken(tabKnopf('Ausformuliert'));
+      klicken(filterKnopf('verworfen'));
 
-      component.aktionAusfuehren(component.karten[0], 'weiterDestillieren');
+      const verworfen = component.karten.find((karte) => karte.id === 'weg')!;
+      component.aktionAusfuehren(verworfen, 'weiterDestillieren');
 
-      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'fertig']);
+      expect(router.navigate).toHaveBeenCalledWith(['/destillieren', 'weg']);
     });
   });
 });
