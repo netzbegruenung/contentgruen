@@ -4,6 +4,7 @@ import { AdminGuard } from './auth/admin.guard';
 import { PublicGuard } from './auth/public.guard';
 import { ShareTargetGuard } from './share-target/share-target.guard';
 import { gespeichertEltern } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
 /**
  * Das Ziel des Zurueck-Pfeils: eine Ebene hoeher in der Hierarchie, nicht der
@@ -29,15 +30,10 @@ export type SchliesstParameter = string[];
 /**
  * Beitragsformulare: Aus dem Destillier-Ablauf heraus fuehrt der Pfeil zurueck zum
  * Einwurf, sonst auf die Beitragen-Seite.
- *
- * Der Parametername steht hier als Literal statt als Import aus dem
- * Destillier-Dienst - die Routentabelle wird beim Start geladen und soll den
- * Dienst nicht ins erste Buendel ziehen. Beide Stellen tragen denselben Namen:
- * ROHINPUT_PARAM in destillier-uebergabe.service.ts.
  */
 function formularEltern(snapshot: ActivatedRouteSnapshot): string | unknown[] {
-  const rohinput = snapshot.queryParamMap.get('rohinput');
-  return rohinput ? ['/destillieren', rohinput] : '/contribute';
+  const einwurfId = snapshot.queryParamMap.get(EINWURF_PARAM);
+  return einwurfId ? ['/destillieren', einwurfId] : '/contribute';
 }
 
 /**
@@ -105,35 +101,38 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
         data: { parent: '/search' }
     },
+    // Diese Routen lesen ?einwurf= (Formular, Ergebnisseite, beim Bild-Formular nur der
+    // Pfeil); alteEinwurfAdresseUmleiten schreibt aeltere Adressen vorher um
+    // (destillieren/einwurf-adresse.ts).
     {
         path: 'workflow/add-commentary',
         loadComponent: () => import('./add-commentary-workflow/add-commentary-workflow.component').then(m => m.AddCommentaryWorkflowComponent),
-        canActivate: [AuthGuard],
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
         data: { parent: formularEltern }
     },
     {
         // Nach dem Speichern; der Pfeil fuehrt dorthin, woher das Formular kam, nicht zurueck hinein.
         path: 'workflow/add-commentary/gespeichert/:id',
         loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
-        canActivate: [AuthGuard],
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
         data: { parent: gespeichertEltern, typ: 'commentary' }
     },
     {
         path: 'workflow/add-generictext/gespeichert/:id',
         loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
-        canActivate: [AuthGuard],
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
         data: { parent: gespeichertEltern, typ: 'generictext' }
     },
     {
         path: 'workflow/add-generictext',
         loadComponent: () => import('./add-generictext-workflow/add-generictext-workflow.component').then(m => m.AddGenerictextWorkflowComponent),
-        canActivate: [AuthGuard],
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
         data: { parent: formularEltern }
     },
     {
         path: 'workflow/add-image',
         loadComponent: () => import('./add-image-workflow/add-image-workflow.component').then(m => m.AddImageWorkflowComponent),
-        canActivate: [AuthGuard],
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
         data: { parent: formularEltern }
     },
     {
