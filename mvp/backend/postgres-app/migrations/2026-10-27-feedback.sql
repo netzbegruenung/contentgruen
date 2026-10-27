@@ -8,10 +8,9 @@
 --
 -- Neue Datenbanken brauchen dieses Skript nicht: die Tabelle wird beim Start
 -- von SQLAlchemy angelegt (infrastructure/database/connection.py), und
--- create_all legt fehlende Tabellen auch in bestehenden Datenbanken an. Das
--- Skript dokumentiert das Schema und dient Umgebungen, in denen die Tabelle vor
--- dem ersten Start des neuen Dienstes existieren soll. Vorhandene Daten gibt es
--- keine.
+-- create_all legt fehlende Tabellen auch in bestehenden Datenbanken an, vor dem
+-- Einspielen der Migrationen beim Start. Das Skript dokumentiert das Schema und
+-- laeuft dann ohne Wirkung durch. Vorhandene Daten gibt es keine.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
