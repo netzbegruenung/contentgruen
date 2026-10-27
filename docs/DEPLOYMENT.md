@@ -118,18 +118,23 @@ What this means for a rollout:
 - **Nothing to apply by hand.** Rolling out a new image is enough, in test and production alike.
   The service starts serving only after its migrations are in.
 - **A failing migration stops the start.** It is rolled back and recorded as `fehlgeschlagen`;
-  later migrations do not run. The container exits and Docker restarts it
-  (`restart: unless-stopped`), which retries the migration. A migration that waits for a lock
+  later migrations do not run. The container exits; with a restart policy (the dev stack uses
+  `restart: unless-stopped`) Docker starts it again, which retries the migration. Without one,
+  start it again by hand. A migration that waits for a lock
   (for example `2026-10-26-init-angleichen.sql`, 5 s) succeeds on a later attempt once the lock
   is free. If it keeps failing, the service log names the migration and the first line of the
   error; the previous image keeps working against the unchanged database.
-- **`VACUUM FULL` after the `COMMIT`** of three older migrations runs separately. If it fails,
+- **`VACUUM FULL` after the `COMMIT`** of three older migrations runs separately and waits at
+  most 30 s for its lock. If it fails,
   the migration stays committed (`nachlauf_offen`), the service starts anyway and retries only
   the `VACUUM FULL` on its next start.
 - **First start with this mechanism on an existing database:** migrations applied by hand
   before are not in the table yet. The repeatable ones run once more (seconds, brief table
   locks), the two non-repeatable ones are recognised by their effect and recorded as `erkannt`
   without running.
+- **A new migration needs a new semantic search image.** The files are baked into it. A
+  migration merged without other changes to the service only reaches `:main` once that image
+  is rebuilt (see the path filter in `.github/workflows/build.yml`); release tags build all images.
 - **After restoring a backup** the table holds the state of the backup. Restart the semantic
   search service so it applies migrations added since.
 

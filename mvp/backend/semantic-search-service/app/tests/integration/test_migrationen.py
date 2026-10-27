@@ -16,6 +16,7 @@ Migration ist deshalb eine Abweichung.
 """
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -460,3 +461,27 @@ def test_einspielen_rollt_fehlgeschlagene_migration_ganz_zurueck(
     assert migrationen.protokoll(aktuelle_datenbank.engine) == {
         name: migrationen.FEHLGESCHLAGEN
     }
+
+
+def test_einspielen_zwei_gleichzeitige_starts_spielen_einmal_ein(
+    aktuelle_datenbank, tmp_path
+):
+    """Die Advisory-Sperre laesst den zweiten Start warten; er findet das Skript fertig."""
+    name = "2026-10-27-langsam.sql"
+    (tmp_path / name).write_text(
+        _skript(
+            "CREATE TABLE IF NOT EXISTS itest_zaehler (n INT);\n"
+            "INSERT INTO itest_zaehler VALUES (1);\nSELECT pg_sleep(1);"
+        )
+    )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        laeufe = [
+            pool.submit(migrationen.einspielen, aktuelle_datenbank.engine, tmp_path)
+            for _ in range(2)
+        ]
+        ergebnisse = sorted(lauf.result() for lauf in laeufe)
+
+    assert ergebnisse == [[], [name]]
+    with aktuelle_datenbank.engine.begin() as c:
+        assert c.execute(text("SELECT count(*) FROM itest_zaehler")).scalar_one() == 1

@@ -35,14 +35,15 @@ Image enthält sie.
 - **Fehler:** Schlägt ein Skript fehl, etwa weil es eine Sperre nicht bekommt
   (`2026-10-26-init-angleichen.sql` wartet 5 s), rollt es zurück und steht als
   `fehlgeschlagen` im Protokoll, mit der ersten Zeile der Fehlermeldung. Der
-  Dienst startet dann nicht, spätere Skripte laufen nicht. Docker startet den
-  Dienst neu (`restart: unless-stopped`), und der nächste Start versucht das
-  Skript erneut. Was schiefging, steht im Log des Dienstes.
+  Dienst startet dann nicht, spätere Skripte laufen nicht. Mit einer
+  Restart-Policy (im Dev-Stack `restart: unless-stopped`) startet Docker den
+  Dienst neu, und der nächste Start versucht das Skript erneut. Was schiefging, steht im Log des Dienstes.
 - **Nach dem `COMMIT`:** Das `VACUUM FULL` am Ende von
   `2026-08-19-search-events-pseudonymisieren.sql`,
   `2026-08-25-usage-events-datensparsamkeit.sql` und
   `2026-10-26-search-events-nur-tag.sql` darf in PostgreSQL nicht in einer
-  Transaktion laufen und läuft danach einzeln. Scheitert es, ist die Migration
+  Transaktion laufen und läuft danach einzeln, mit höchstens 30 s Warten auf
+  die Sperre. Scheitert es, ist die Migration
   schon festgeschrieben und steht als `nachlauf_offen` im Protokoll; der Dienst
   startet trotzdem, denn das Schema stimmt. Der nächste Start holt nur das
   `VACUUM FULL` nach, nicht das ganze Skript.
@@ -53,7 +54,11 @@ Image enthält sie.
   Bestandsdatenbank laufen deshalb alle übrigen Skripte einmal erneut; das
   dauert Sekunden und sperrt kurz die Tabellen, die sie ändern.
 - **Gleichzeitige Starts:** Eine Advisory-Sperre lässt einen zweiten Dienst
-  warten, bis der erste fertig ist.
+  warten, bis der erste fertig ist, höchstens 10 Minuten.
+- **Image:** Die Skripte stecken im Image des Semantic-Service. Ein neues
+  Skript kommt erst mit einem neu gebauten Image an; ändert ein PR sonst nichts
+  am Dienst, baut die CI nach dem Merge kein neues `:main`-Image (Pfadfilter in
+  `.github/workflows/build.yml`).
 
 Den Stand zeigt das Protokoll:
 

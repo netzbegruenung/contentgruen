@@ -81,7 +81,7 @@ async def lifespan(app: FastAPI):
         # Nach create_all und vor der ersten Anfrage, wie in den Kettentests.
         # Scheitert eine Migration, startet der Dienst nicht.
         eingespielt = migrationen.einspielen(app_db.engine, settings.migrations_path)
-        logger.info(f"✅ Application database initialized, migrations: {eingespielt}")
+        logger.info("✅ Application database initialized, migrations: %s", eingespielt)
 
         # Initialize seeding service with metadata path
         seeding_service = get_seeding_service(

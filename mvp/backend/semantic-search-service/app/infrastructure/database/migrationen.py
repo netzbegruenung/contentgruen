@@ -21,7 +21,8 @@ holt nur diesen Teil nach, nicht das ganze Skript.
 
 Scheitert die Transaktion (etwa an einer belegten Sperre), rollt sie zurueck, der
 Fehler wird als ``fehlgeschlagen`` vermerkt und ``MigrationFehlgeschlagen``
-geworfen: Der Dienst startet nicht, Docker startet ihn neu, und der naechste Lauf
+geworfen. Andere Fehler (ein Skript, das sich nicht zerlegen laesst, eine
+verlorene Verbindung) werfen ohne Eintrag, mit derselben Folge: Der Dienst startet nicht, Docker startet ihn neu, und der naechste Lauf
 versucht das Skript wieder. Spaetere Skripte laufen bis dahin nicht, sie koennen auf
 dem gescheiterten aufbauen.
 
@@ -32,7 +33,7 @@ PostgreSQL ``VACUUM`` in einem Aufruf mit mehreren Anweisungen ablehnt.
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from sqlalchemy.engine import Engine
 
@@ -48,6 +49,12 @@ NACHLAUF_OFFEN = "nachlauf_offen"
 # Schluessel der Advisory-Sperre: Zwei gleichzeitig startende Dienste spielen nicht
 # beide dasselbe Skript ein, der zweite wartet und findet es dann im Protokoll.
 SPERRE = 293_208_001
+# Wie lange ein Start auf einen anderen wartet, der gerade einspielt; danach bricht
+# er ab und Docker startet ihn neu.
+WARTEN_AUF_ANDEREN_START = "10min"
+# Wie lange das VACUUM FULL nach dem COMMIT auf seine Sperre wartet. Es sperrt die
+# Tabelle exklusiv; ohne Grenze stuende der Start, solange jemand sie liest.
+WARTEN_IM_NACHLAUF = "30s"
 
 _SPALTE_VORHANDEN = """
     SELECT EXISTS (
@@ -114,7 +121,7 @@ def zerlegen(skript: str) -> tuple[list[str], list[str]]:
 
 def protokoll(engine: Engine) -> dict[str, str]:
     """Status je eingespielter Datei, leer ohne Protokolltabelle."""
-    roh = engine.raw_connection()
+    roh = _eigene_verbindung(engine)
     try:
         with roh.cursor() as cur:
             cur.execute("SELECT to_regclass('migrationsprotokoll') IS NOT NULL")
@@ -126,7 +133,7 @@ def protokoll(engine: Engine) -> dict[str, str]:
         roh.close()
 
 
-def einspielen(engine: Engine, verzeichnis: Path) -> list[str]:
+def einspielen(engine: Engine, verzeichnis: Union[Path, str]) -> list[str]:
     """
     Alle noch nicht eingespielten Migrationen aus ``verzeichnis`` anwenden.
 
@@ -138,13 +145,14 @@ def einspielen(engine: Engine, verzeichnis: Path) -> list[str]:
         raise FileNotFoundError(f"Keine Migrationen in {verzeichnis}")
     MigrationsprotokollZeile.__table__.create(engine, checkfirst=True)
 
-    roh = engine.raw_connection()
-    verbindung = roh.driver_connection
-    verbindung.autocommit = True
+    roh = _eigene_verbindung(engine)
+    roh.dbapi_connection.autocommit = True
     eingespielt = []
     try:
-        with verbindung.cursor() as cur:
+        with roh.dbapi_connection.cursor() as cur:
+            cur.execute(f"SET lock_timeout = '{WARTEN_AUF_ANDEREN_START}'")
             cur.execute("SELECT pg_advisory_lock(%s)", (SPERRE,))
+            cur.execute("RESET lock_timeout")
             # Erst unter der Sperre lesen: Ein anderer Dienst kann gerade fertig sein.
             cur.execute("SELECT name, status FROM migrationsprotokoll")
             stand = dict(cur.fetchall())
@@ -162,10 +170,21 @@ def einspielen(engine: Engine, verzeichnis: Path) -> list[str]:
                     eingespielt.append(skript.name)
                 if nachlauf:
                     _nachlauf(cur, skript.name, nachlauf)
-            cur.execute("SELECT pg_advisory_unlock(%s)", (SPERRE,))
     finally:
+        # Schliesst die Verbindung wirklich und gibt damit auch die Sperre frei.
         roh.close()
     return eingespielt
+
+
+def _eigene_verbindung(engine: Engine):
+    """
+    Eine Verbindung, die beim Schliessen nicht in einen Pool zurueckgeht: Sie
+    traegt Autocommit und die Advisory-Sperre, beides soll keine spaetere Sitzung
+    erben.
+    """
+    roh = engine.raw_connection()
+    roh.detach()
+    return roh
 
 
 def _wirkung_vorhanden(cur, name: str) -> bool:
@@ -187,9 +206,8 @@ def _transaktion(cur, name: str, anweisungen: list[str], mit_nachlauf: bool) -> 
         )
         cur.execute("COMMIT")
     except Exception as fehler:
-        cur.execute("ROLLBACK")
-        cur.execute(_VERMERKEN, (name, FEHLGESCHLAGEN, _erste_zeile(fehler)))
         logger.error("Migration %s fehlgeschlagen: %s", name, _erste_zeile(fehler))
+        _vermerken_trotz_fehler(cur, name, FEHLGESCHLAGEN, fehler, "ROLLBACK")
         raise MigrationFehlgeschlagen(
             f"Migration {name} fehlgeschlagen, zurueckgerollt: {_erste_zeile(fehler)}"
         ) from fehler
@@ -203,17 +221,35 @@ def _nachlauf(cur, name: str, anweisungen: list[str]) -> None:
     versucht es erneut.
     """
     try:
+        cur.execute(f"SET lock_timeout = '{WARTEN_IM_NACHLAUF}'")
         for anweisung in anweisungen:
             cur.execute(anweisung)
+        cur.execute("RESET lock_timeout")
     except Exception as fehler:
-        cur.execute(_VERMERKEN, (name, NACHLAUF_OFFEN, _erste_zeile(fehler)))
         logger.error(
             "Nachlauf von Migration %s fehlgeschlagen, folgt beim naechsten Start: %s",
             name,
             _erste_zeile(fehler),
         )
+        _vermerken_trotz_fehler(cur, name, NACHLAUF_OFFEN, fehler, "RESET lock_timeout")
         return
     cur.execute(_VERMERKEN, (name, ANGEWENDET, None))
+
+
+def _vermerken_trotz_fehler(
+    cur, name: str, status: str, fehler: Exception, aufraeumen: str
+) -> None:
+    """
+    Nach einem Fehler aufraeumen und ihn vermerken. Geht auch das schief (etwa
+    weil die Verbindung weg ist), bleibt der urspruengliche Fehler der, den das
+    Log und der Aufrufer sehen; der Eintrag fehlt dann, das Skript laeuft beim
+    naechsten Start trotzdem wieder.
+    """
+    try:
+        cur.execute(aufraeumen)
+        cur.execute(_VERMERKEN, (name, status, _erste_zeile(fehler)))
+    except Exception:
+        logger.exception("Migration %s: Fehler nicht im Protokoll vermerkt", name)
 
 
 def _erste_zeile(fehler: Exception) -> Optional[str]:
