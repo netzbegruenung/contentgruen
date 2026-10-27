@@ -20,6 +20,7 @@ import { ContentResult } from '../services/dtos/contributionDtos';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { LoggingService } from '../services/logging.service';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 
 /** Was das Sheet braucht: die Beitraege eines Einwurfs, aelteste zuerst. */
 export interface EinwurfBeitragSheetDaten {
@@ -158,6 +159,7 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
     @Inject(MAT_BOTTOM_SHEET_DATA) readonly daten: EinwurfBeitragSheetDaten,
     private commentaryService: CommentaryService,
     private genericTextService: GenericTextService,
+    private beitragAnsehen: BeitragAnsehenService,
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
   ) {}
@@ -202,12 +204,12 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
   }
 
   private laden(beitrag: EinwurfBeitrag): Observable<Geladen> {
-    const quelle = this.quelle(beitrag);
-    if (!quelle) {
+    const karte$ = this.karteLaden(beitrag);
+    if (!karte$) {
       return of({ karte: null, fehler: true });
     }
-    return quelle.pipe(
-      map((inhalt) => ({ karte: ausBeitrag(inhalt), fehler: false })),
+    return karte$.pipe(
+      map((karte) => ({ karte, fehler: false })),
       catchError((error) => {
         this.logger.error('Beitrag aus dem Fangkorb konnte nicht geladen werden', error);
         return of({ karte: null, fehler: true });
@@ -216,15 +218,24 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Beide Endpunkte liefern den Beitrag flach - dieselbe Form, die das Album aus
-   * /getContributionsOfUser bekommt. Ohne bekannten Typ gibt es keinen Endpunkt.
+   * Kommentar und Hintergrundinfo liefern den Beitrag flach - dieselbe Form, die das
+   * Album aus /getContributionsOfUser bekommt. Ein Post hat Plattform, Konto und Link,
+   * die `ausBeitrag` nicht kennt; ihn laedt `BeitragAnsehenService` wie die
+   * Ergebnisseite. Ohne bekannten Typ gibt es keinen Endpunkt.
    */
-  private quelle(beitrag: EinwurfBeitrag): Observable<ContentResult> | null {
+  private karteLaden(beitrag: EinwurfBeitrag): Observable<KartenDaten> | null {
     if (beitrag.typ === 'commentary') {
-      return this.commentaryService.getCommentaryById(beitrag.contentId) as unknown as Observable<ContentResult>;
+      return (this.commentaryService.getCommentaryById(beitrag.contentId) as unknown as Observable<ContentResult>).pipe(
+        map(ausBeitrag),
+      );
     }
     if (beitrag.typ === 'generictext') {
-      return this.genericTextService.getGenericTextById(beitrag.contentId) as unknown as Observable<ContentResult>;
+      return (
+        this.genericTextService.getGenericTextById(beitrag.contentId) as unknown as Observable<ContentResult>
+      ).pipe(map(ausBeitrag));
+    }
+    if (beitrag.typ === 'post') {
+      return this.beitragAnsehen.karteLaden(beitrag.contentId, 'post');
     }
     return null;
   }

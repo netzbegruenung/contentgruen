@@ -33,7 +33,7 @@ Der optionale Freitext an einem Einwurf, mit dem der Einwerfer anderen sagt, was
 _Avoid_: Notiz, Kommentar, Beschreibung
 
 **Plattform**:
-Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs stammt (etwa Instagram, YouTube, TikTok oder Web).
+Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web).
 _Avoid_: Kanal, Quelle
 
 **Weg**:
@@ -161,7 +161,7 @@ Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleib
 _Avoid_: Archiviert
 
 **Titel**:
-Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema.
+Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema. Bild und Post haben auch einen Titel; er beschreibt den Inhalt und folgt dieser Regel nicht.
 _Avoid_: Überschrift, Etikett, Thema
 
 **Herkunft**:

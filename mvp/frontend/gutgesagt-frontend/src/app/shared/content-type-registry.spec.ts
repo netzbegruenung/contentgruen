@@ -35,10 +35,11 @@ describe('content-type-registry', () => {
     }
   });
 
-  it('beschreibt die drei Beitragstypen in einem Satz, mit Abgrenzung', () => {
+  it('beschreibt die vier Beitragstypen in einem Satz, mit Abgrenzung', () => {
     expect(typBeschreibung('commentary')).toBe('Eine Antwort, die du direkt posten kannst.');
     expect(typBeschreibung('generic_text')).toBe('Fakten und Zahlen, die eine Antwort stützen.');
     expect(typBeschreibung('image')).toBe('Ein Bild mit Unterschrift, das für sich spricht.');
+    expect(typBeschreibung('post')).toBe('Ein gelungener Beitrag aus einem sozialen Netzwerk, zum Teilen.');
     expect(typBeschreibung('statement')).toBe('');
   });
 });

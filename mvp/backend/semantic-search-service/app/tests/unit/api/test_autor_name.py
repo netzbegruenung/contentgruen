@@ -19,15 +19,20 @@ from fastapi.testclient import TestClient
 from api.v1.commentary import router as commentary_router
 from api.v1.content import router as content_router
 from api.v1.generic_text import router as generic_text_router
+from api.v1.post import router as post_router
 from api.v1.raw_input import router as raw_input_router
 from dependencies import (
     get_commentary_service,
     get_generic_text_service,
+    get_post_service,
     get_reference_service,
     get_settings,
 )
 from domain.models.base_content import BaseContentDbEntry
 from domain.models.content_type import ContentType
+from domain.models.content_origin import ContentOrigin
+from domain.models.content_status import NEW_CONTENT_STATUS
+from domain.models.post import PostDbEntry
 from domain.models.raw_input import RawInputSource, RawInputStatus
 from dtos.search import CommentarySearchResult
 from repositories.raw_input_repository import get_raw_input_repository
@@ -50,8 +55,27 @@ NAMEN = {"test": "Anna B.", "einwerferin": "Kim", "satz-person": "Jürgen Ö."}
 app = FastAPI()
 app.include_router(commentary_router, prefix="/api/v1/commentary")
 app.include_router(generic_text_router, prefix="/api/v1/generic_text")
+app.include_router(post_router, prefix="/api/v1/post")
 app.include_router(content_router, prefix="/api/v1/content")
 app.include_router(raw_input_router, prefix="/api/v1/rawinput")
+
+
+def _post(post_id):
+    jetzt = datetime(2026, 10, 27, tzinfo=timezone.utc)
+    return PostDbEntry(
+        id=post_id,
+        title="Ein gelungener Post",
+        text="Worum es im Post geht",
+        platform="Instagram",
+        author="@konto",
+        url="https://www.instagram.com/p/abc/",
+        created=jetzt,
+        last_modified=jetzt,
+        original_author="test",
+        last_modified_by="test",
+        status=NEW_CONTENT_STATUS,
+        origin=ContentOrigin.MANUALLY_CREATED,
+    )
 
 
 @pytest.fixture
@@ -171,14 +195,17 @@ class TestGetById:
     def dienste(self):
         commentary = MagicMock(get=AsyncMock(side_effect=_commentary))
         generic_text = MagicMock(get=AsyncMock(side_effect=_generictext))
+        post = MagicMock(get=AsyncMock(side_effect=_post))
         app.dependency_overrides[get_commentary_service] = lambda: commentary
         app.dependency_overrides[get_generic_text_service] = lambda: generic_text
+        app.dependency_overrides[get_post_service] = lambda: post
 
     @pytest.mark.parametrize(
         "url",
         [
             "/api/v1/commentary/getById?commentary_id={id}",
             "/api/v1/generic_text/getById?generic_text_id={id}",
+            "/api/v1/post/getById?post_id={id}",
         ],
     )
     def test_angemeldet_mit_namen(self, client, namen, url):
@@ -193,6 +220,7 @@ class TestGetById:
         [
             "/api/v1/commentary/getById?commentary_id={id}",
             "/api/v1/generic_text/getById?generic_text_id={id}",
+            "/api/v1/post/getById?post_id={id}",
         ],
     )
     def test_ohne_anmeldung_ohne_namen(self, client, namen, url):
