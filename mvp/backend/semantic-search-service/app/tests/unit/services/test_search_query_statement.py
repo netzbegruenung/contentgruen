@@ -32,6 +32,7 @@ from services.search.search_query_statement import (
     get_search_query_statement_recorder,
 )
 from services.search_tracking_service import tagespseudonym
+from tests.fixtures.direktsuche import direktsuche_ueber_dienste
 from utils.rate_limiter import RateLimiter
 
 
@@ -138,6 +139,7 @@ def suchapp(suchen_ohne_treffer):
         patch("api.v1.search.get_keyword_overlap_service"),
         patch("api.v1.search.get_usage_service"),
         patch("api.v1.search.get_search_tracking_service"),
+        direktsuche_ueber_dienste(),
     ]
     gestartet = [p.start() for p in patches]
     gestartet[0].return_value.analyze_and_filter_statement_results.return_value = (

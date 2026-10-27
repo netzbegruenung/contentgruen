@@ -6,6 +6,8 @@ yarn-error.log*
 
 # Testing
 coverage/
+# Playwright-E2E: eigenes Paket mit eigenen node_modules, gehoert nicht ins Image
+e2e/
 *.spec.ts
 karma.conf.js
 

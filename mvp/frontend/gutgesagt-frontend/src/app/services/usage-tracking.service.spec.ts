@@ -71,4 +71,31 @@ describe('UsageTrackingService', () => {
     expect(zweite.request.method).toBe('POST');
     zweite.flush({ success: true, message: 'ok', usage_count: 2 });
   });
+
+  describe('eigene Nutzungsstatistik', () => {
+    // Die Kennung steht nicht im Pfad, sonst landete sie in den Zugriffslogs der
+    // Webserver davor; das BFF reicht die Person aus der Anmeldung weiter (#284).
+    const EIGENE = `${environment.baseUrl}/api/v1/usage/users/me/usage-stats`;
+
+    it('fragt ohne Kennung im Pfad', () => {
+      let ergebnis: unknown;
+      service.getEigeneNutzungsstatistik().subscribe(stats => (ergebnis = stats));
+
+      const anfrage = http.expectOne(EIGENE);
+      expect(anfrage.request.method).toBe('GET');
+      const stats = { user_id: 'kim-1', unique_contents_contributed: 2, total_usage_count: 7, top_content: [] };
+      anfrage.flush(stats);
+
+      expect(ergebnis).toEqual(stats);
+    });
+
+    it('liefert bei einem Fehler null, damit die Seite ihre eigene Summe zeigt', () => {
+      let ergebnis: unknown = 'unberuehrt';
+      service.getEigeneNutzungsstatistik().subscribe(stats => (ergebnis = stats));
+
+      http.expectOne(EIGENE).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toBeNull();
+    });
+  });
 });

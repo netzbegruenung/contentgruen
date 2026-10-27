@@ -45,6 +45,7 @@ from domain.models.statement import StatementSearchResult, StatementReplysuggest
 from domain.models.commentary import CommentaryDbEntry
 from domain.models.generic_text import GenericTextDbEntry
 from domain.models.post import PostDbEntry
+from tests.fixtures.direktsuche import direktsuche_ueber_dienste
 
 SEARCH_URL = "/api/v1/search/searchByText"
 
@@ -167,6 +168,7 @@ def search_client():
             "api.v1.search.get_search_tracking_service",
             return_value=MagicMock(),
         ),
+        direktsuche_ueber_dienste(),
     ]
     for p in patches:
         p.start()

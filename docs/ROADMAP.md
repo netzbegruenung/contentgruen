@@ -135,6 +135,3 @@ Einzelne Funktionen, die feststehen, aber noch nicht gebaut sind.
   Backend `commentary/getById` und `generictext/getById` existieren. Bis dahin öffnet „Ansehen“
   auf der ausformulierten Einwurf-Karte (in „Meine Einwürfe“) als Übergangslösung ein Sheet
   mit den verknüpften Beiträgen (`einwurf-aktionen.service.ts`).
-- **GET-Cache 5 min für rawinput-Pfade beobachten.** Der Fangkorb ist eine Mehrpersonen-Ansicht:
-  Sätze und Standwechsel anderer erscheinen bis zu 5 Minuten verzögert
-  (`auth/cache.interceptor.ts`). Bei spürbarer Reibung die rawinput-Pfade vom Cache ausnehmen.

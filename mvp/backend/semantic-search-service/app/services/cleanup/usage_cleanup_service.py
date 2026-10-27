@@ -1,6 +1,9 @@
 """
 Background service for cleaning up old usage tracking data.
 Implements data retention policy for privacy compliance.
+
+Derselbe taegliche Job verdichtet Suchereignisse nach ihrer eigenen Frist zu
+Tageszaehlern der Suchen ohne Tagespseudonym (#289, siehe SearchTrackingRepository).
 """
 
 import logging
@@ -11,6 +14,7 @@ import schedule
 import threading
 import time
 
+from repositories.search_tracking_repository import get_search_tracking_repository
 from services.usage_tracking_service import get_usage_service
 from core.config import settings
 
@@ -22,15 +26,19 @@ class UsageCleanupService:
     Service for managing automated cleanup of old usage data.
     """
 
-    def __init__(self, retention_days: int = 90):
+    def __init__(self, retention_days: int = 90, search_event_retention_days: int = 90):
         """
         Initialize cleanup service.
 
         Args:
-            retention_days: Number of days of data to retain (default 90)
+            retention_days: Number of days of usage data to retain (default 90)
+            search_event_retention_days: Number of days of search events to keep as
+                single rows before they become day counters (default 90)
         """
         self.retention_days = retention_days
+        self.search_event_retention_days = search_event_retention_days
         self.usage_service = get_usage_service()
+        self.search_repository = get_search_tracking_repository()
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self.last_cleanup: Optional[datetime] = None
@@ -38,11 +46,13 @@ class UsageCleanupService:
 
     def cleanup_old_data(self) -> int:
         """
-        Perform cleanup of old usage events.
+        Perform cleanup of old usage events and compact old search events.
 
         Returns:
-            Number of records deleted
+            Number of usage event records deleted
         """
+        self._verdichte_suchereignisse()
+
         logger.info(
             f"Starting usage data cleanup (retention: {self.retention_days} days)"
         )
@@ -67,6 +77,18 @@ class UsageCleanupService:
         except Exception as e:
             logger.error(f"Error during usage data cleanup: {e}", exc_info=True)
             return 0
+
+    def _verdichte_suchereignisse(self) -> None:
+        """Suchereignisse vor der Frist zu Tageszaehlern verdichten.
+
+        Ein Fehler hier haelt die Bereinigung der Nutzungsereignisse nicht auf.
+        """
+        try:
+            self.search_repository.verdichte_alte_suchereignisse(
+                self.search_event_retention_days
+            )
+        except Exception as e:
+            logger.error(f"Error compacting old search events: {e}", exc_info=True)
 
     def _run_scheduled_jobs(self):
         """
@@ -129,6 +151,7 @@ class UsageCleanupService:
         return {
             "running": self._running,
             "retention_days": self.retention_days,
+            "search_event_retention_days": self.search_event_retention_days,
             "last_cleanup": (
                 self.last_cleanup.isoformat() if self.last_cleanup else None
             ),
@@ -170,7 +193,10 @@ def get_cleanup_service(retention_days: Optional[int] = None) -> UsageCleanupSer
 
     if _cleanup_service is None:
         days = retention_days or settings.usage_retention_days
-        _cleanup_service = UsageCleanupService(retention_days=days)
+        _cleanup_service = UsageCleanupService(
+            retention_days=days,
+            search_event_retention_days=settings.search_event_retention_days,
+        )
 
     return _cleanup_service
 

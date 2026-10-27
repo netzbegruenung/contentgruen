@@ -9,6 +9,7 @@ sind fuer alle Angemeldeten sichtbar.
 """
 
 import logging
+import re
 import uuid
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence
@@ -16,6 +17,7 @@ from typing import Any, Dict, List, Optional, Sequence
 from sqlalchemy import case, desc, func
 from sqlalchemy.dialects.postgresql import insert
 
+from domain.link_vergleich import gleicher_link, vorfilter_teile
 from domain.models.raw_input import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
@@ -30,6 +32,13 @@ from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import RawInput, RawInputContentLink, RawInputDraft
 
 logger = logging.getLogger(__name__)
+
+# Hoechstens so viele Einwuerfe mit gleichem Link zeigt das Einwurf-Formular.
+GLEICHER_LINK_TREFFER = 5
+# So viele Kandidaten aus dem groben Vorfilter je Abfrage, neueste zuerst. Mehr
+# als die echten Treffer kommen fast nur bei einem nackten Host
+# ("https://example.org").
+GLEICHER_LINK_SEITE = 200
 
 
 class RawInputRepository:
@@ -206,6 +215,55 @@ class RawInputRepository:
                 )[0]
         except Exception as e:
             logger.error(f"Fehler beim Lesen eines Rohinputs: {e}", exc_info=True)
+            raise
+
+    def mit_gleichem_link(
+        self, url: str, current_user: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Einwuerfe, deren Link als gleich gilt (``domain.link_vergleich``), neueste
+        zuerst, hoechstens ``GLEICHER_LINK_TREFFER``.
+
+        Die Datenbank filtert grob nach den ``vorfilter_teile`` vor; ob ein Link
+        wirklich gleich ist, entscheidet danach ``gleicher_link``. Die Kandidaten
+        kommen seitenweise, bis genug Treffer da sind - ohne feste Grenze, damit
+        auch ein alter Einwurf gefunden wird, wenn viele andere den Vorfilter
+        passieren (nackter Host). Eine eigene Spalte fuer die Vergleichsform
+        braeuchte eine Migration samt Nachtrag fuer alle vorhandenen Einwuerfe.
+        """
+        teile = vorfilter_teile(url)
+        if teile is None:
+            return []
+        vorfilter = [
+            RawInput.url.ilike(
+                "%" + re.sub(r"([\\%_])", r"\\\1", teil) + "%", escape="\\"
+            )
+            for teil in teile
+        ]
+        try:
+            with self.db.get_session() as session:
+                query = (
+                    session.query(RawInput)
+                    .filter(*vorfilter)
+                    .order_by(desc(RawInput.created_at), desc(RawInput.id))
+                )
+                treffer: List[RawInput] = []
+                seite = 0
+                while len(treffer) < GLEICHER_LINK_TREFFER:
+                    kandidaten = (
+                        query.offset(seite * GLEICHER_LINK_SEITE)
+                        .limit(GLEICHER_LINK_SEITE)
+                        .all()
+                    )
+                    treffer += [r for r in kandidaten if gleicher_link(url, r.url)]
+                    if len(kandidaten) < GLEICHER_LINK_SEITE:
+                        break
+                    seite += 1
+                return self._mit_saetzen_und_verknuepfungen(
+                    session, treffer[:GLEICHER_LINK_TREFFER], current_user
+                )
+        except Exception as e:
+            logger.error(f"Fehler bei der Suche nach gleichem Link: {e}", exc_info=True)
             raise
 
     def count(

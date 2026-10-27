@@ -8,7 +8,7 @@ import { delay } from 'rxjs/operators';
 
 import { ContributionsViewComponent } from './contributions-view.component';
 import { ContributionsService } from '../services/contributions.service';
-import { UsageTrackingService } from '../services/usage-tracking.service';
+import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
 import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
 import { EinwurfService } from '../services/einwurf.service';
@@ -18,6 +18,13 @@ describe('ContributionsViewComponent', () => {
   let router: Router;
   let bottomSheet: MatBottomSheet;
   let eigeneLaden: jasmine.Spy;
+  let kennung: string | null;
+  let nutzungsstatistik: UserUsageStats | null;
+
+  beforeEach(() => {
+    kennung = null;
+    nutzungsstatistik = null;
+  });
 
   function beitrag(felder: Record<string, unknown> = {}): any {
     return {
@@ -47,12 +54,12 @@ describe('ContributionsViewComponent', () => {
         provideNoopAnimations(),
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
         { provide: ContributionsService, useValue: { getContributions } },
-        { provide: UsageTrackingService, useValue: { getUserUsageStats: () => of(null) } },
+        { provide: UsageTrackingService, useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik) } },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         {
           provide: AuthService,
           // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.
-          useValue: { getCurrentUserId: () => null, getUserInfo: () => null, userInfo$: of(null) },
+          useValue: { getCurrentUserId: () => kennung, getUserInfo: () => null, userInfo$: of(null) },
         },
       ],
     });
@@ -240,7 +247,7 @@ describe('ContributionsViewComponent', () => {
 
     expect(text('.album-statistik')).toBe('1 Beitrag · 12× genutzt');
 
-    fixture.componentInstance.userStats = {
+    fixture.componentInstance.nutzungsstatistik = {
       user_id: 'person-1',
       unique_contents_contributed: 1,
       total_usage_count: 40,
@@ -248,6 +255,27 @@ describe('ContributionsViewComponent', () => {
     };
     fixture.componentInstance.totalRecords = 25;
     expect(fixture.componentInstance.statistik).toBe('25 Beiträge · 40× genutzt');
+  });
+
+  describe('Nutzungsstatistik', () => {
+    // Die Nutzung ueber alle Seiten kommt vom Suchdienst; die Person ergibt sich aus der
+    // Anmeldung, nicht aus der Adresse (#284).
+    it('zeigt angemeldet die Nutzung aus der Nutzungsstatistik', async () => {
+      kennung = 'person-1';
+      nutzungsstatistik = { user_id: 'person-1', unique_contents_contributed: 1, total_usage_count: 40, top_content: [] };
+
+      await erstellen([beitrag()]);
+
+      expect(text('.album-statistik')).toBe('1 Beitrag · 40× genutzt');
+    });
+
+    it('faellt ohne Nutzungsstatistik auf die Summe der Seite zurueck', async () => {
+      kennung = 'person-1';
+
+      await erstellen([beitrag()]);
+
+      expect(text('.album-statistik')).toBe('1 Beitrag · 12× genutzt');
+    });
   });
 
   it('zeigt 24 Beitraege pro Seite', async () => {

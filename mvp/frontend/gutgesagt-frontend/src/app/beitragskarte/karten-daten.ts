@@ -3,6 +3,7 @@ import { ContentResult } from '../services/dtos/contributionDtos';
 import { Einwurf } from '../services/einwurf.service';
 import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-type-registry';
 import { plattformAusUrl, plattformName } from '../shared/plattform';
+import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 
 /**
  * Was eine Beitragskarte anzeigt, unabhaengig davon, woher die Daten kommen.
@@ -254,6 +255,26 @@ function domainAus(adresse: string | null | undefined): string | null {
  */
 export type EinwurfStufe = 'offen' | 'destilliert' | 'ausformuliert' | 'verworfen';
 
+/** Wie eine Stufe angezeigt wird: Icon und Name. */
+export interface StufenAnzeige {
+  emoji: string;
+  name: string;
+}
+
+/**
+ * Die Stufe, an der der Einwurf gerade steht - dasselbe Icon wie ueberall entlang
+ * der Kette. Das Band zeigt damit die Stufe: Ein offener Einwurf traegt das
+ * Einwurf-Icon, ein destillierter das der Destille. Der Primaerknopf zeigt
+ * dagegen die naechste Stufe (siehe primaerAktion). Verworfenes behaelt das Icon
+ * des Einwurfs.
+ */
+export const STUFEN: Record<EinwurfStufe, StufenAnzeige> = {
+  offen: { emoji: KETTEN_ICONS.einwerfen, name: 'Offen' },
+  destilliert: { emoji: KETTEN_ICONS.destillieren, name: 'Destilliert' },
+  ausformuliert: { emoji: KETTEN_ICONS.verfassen, name: 'Ausformuliert' },
+  verworfen: { emoji: KETTEN_ICONS.einwerfen, name: 'Verworfen' },
+};
+
 /**
  * Die Stufe eines Einwurfs bestimmen.
  *
@@ -280,6 +301,16 @@ export function stufeInDerKette(einwurf: Einwurf): Exclude<EinwurfStufe, 'verwor
     return 'ausformuliert';
   }
   return (einwurf.drafts ?? []).length > 0 ? 'destilliert' : 'offen';
+}
+
+/** Die mit einem Einwurf verknuepften Beitraege, aelteste zuerst, samt ausformuliertem Satz. */
+export function beitraegeVonEinwurf(einwurf: Einwurf): EinwurfBeitrag[] {
+  const saetze = einwurf.drafts ?? [];
+  return (einwurf.links ?? []).map((link) => ({
+    contentId: link.content_id,
+    typ: resolveContentType(link.content_type) ?? null,
+    satz: saetze.find((satz) => satz.id === link.draft_id)?.sentence ?? null,
+  }));
 }
 
 /**
@@ -332,11 +363,7 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
       link: adresse,
       linkText: adresseKurz(adresse),
       saetze,
-      beitraege: links.map((link) => ({
-        contentId: link.content_id,
-        typ: resolveContentType(link.content_type) ?? null,
-        satz: saetze.find((satz) => satz.id === link.draft_id)?.text ?? null,
-      })),
+      beitraege: beitraegeVonEinwurf(einwurf),
       verwerfbar: istVerwerfbar(einwurf),
     },
   };

@@ -69,7 +69,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   pageIndex = 0;
   isLoading = true;
   totalUsageCount = 0;
-  userStats: UserUsageStats | null = null;
+  nutzungsstatistik: UserUsageStats | null = null;
 
   constructor(
     private contributionsService: ContributionsService,
@@ -91,7 +91,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
       });
 
     this.fetchData(1, this.pageSize);
-    this.loadUserStats();
+    this.nutzungsstatistikLaden();
   }
 
   ngOnDestroy(): void {
@@ -110,11 +110,10 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadUserStats() {
-    const userId = this.authService.getCurrentUserId();
-    if (userId) {
-      this.usageTrackingService.getUserUsageStats(userId).subscribe(stats => {
-        this.userStats = stats;
+  nutzungsstatistikLaden() {
+    if (this.authService.getCurrentUserId()) {
+      this.usageTrackingService.getEigeneNutzungsstatistik().subscribe(stats => {
+        this.nutzungsstatistik = stats;
         this.cdr.markForCheck();
       });
     }
@@ -134,7 +133,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   /** "2 Beiträge · 3× genutzt": Nutzung ueber alle Seiten, sonst die Summe dieser Seite. */
   get statistik(): string {
     const beitraege = this.totalRecords === 1 ? 'Beitrag' : 'Beiträge';
-    const nutzung = this.userStats?.total_usage_count ?? this.totalUsageCount;
+    const nutzung = this.nutzungsstatistik?.total_usage_count ?? this.totalUsageCount;
     return `${this.totalRecords} ${beitraege} · ${nutzung}× genutzt`;
   }
 

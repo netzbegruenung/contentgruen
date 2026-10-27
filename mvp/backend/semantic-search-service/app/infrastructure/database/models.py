@@ -34,7 +34,11 @@ class UsageTracking(Base):
     __tablename__ = "usage_tracking"
 
     content_id = Column(SQLUUID(as_uuid=True), primary_key=True)
-    usage_count = Column(Integer, default=0, nullable=False)
+    # server_default hier und bei UsageEvent.event_type wie in postgres-app/init.sql,
+    # das beide Tabellen auch anlegt und genau diesem Modell entsprechen muss
+    # (tests/integration/test_migrationen.py). default bleibt, damit das ORM den Wert
+    # nach dem Flush kennt, ohne die Zeile neu zu laden.
+    usage_count = Column(Integer, default=0, server_default="0", nullable=False)
     last_used = Column(DateTime(timezone=True), nullable=True)
     first_used = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
@@ -89,7 +93,9 @@ class UsageEvent(Base):
         ForeignKey("usage_tracking.content_id", ondelete="CASCADE"),
         nullable=False,
     )
-    event_type = Column(String(50), default="copy", nullable=False)
+    event_type = Column(
+        String(50), default="copy", server_default="copy", nullable=False
+    )
     timestamp = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -140,6 +146,23 @@ class SearchEvent(Base):
         Index("idx_search_events_actor_hash", "actor_hash"),
         Index("idx_search_events_timestamp", "timestamp"),
     )
+
+
+class SuchenJeTagZeile(Base):
+    """Tageszaehler der Suchen: was von Suchereignissen nach ihrer Frist bleibt.
+
+    Der Bereinigungsjob verdichtet Suchereignisse, die aelter als
+    search_event_retention_days sind, zu einer Zeile je UTC-Tag und loescht die
+    Einzelzeilen (#289). suchen zaehlt die Suchereignisse des Tages, personen die
+    verschiedenen Tagespseudonyme; die Pseudonyme selbst stehen nicht hier. Siehe
+    SearchTrackingRepository.verdichte_alte_suchereignisse.
+    """
+
+    __tablename__ = "suchen_je_tag"
+
+    tag = Column(Date, primary_key=True)
+    suchen = Column(Integer, nullable=False)
+    personen = Column(Integer, nullable=False)
 
 
 class SucheOhneTrefferZeile(Base):

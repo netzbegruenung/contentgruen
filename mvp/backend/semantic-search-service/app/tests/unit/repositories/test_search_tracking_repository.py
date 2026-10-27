@@ -7,13 +7,16 @@ UTC), keine Uhrzeit.
 """
 
 import logging
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from infrastructure.database.models import SearchEvent
-from repositories.search_tracking_repository import SearchTrackingRepository
+from repositories.search_tracking_repository import (
+    SearchTrackingRepository,
+    _tage_im_zeitraum,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -81,3 +84,27 @@ class TestTrackSearch:
             repository.track_search(results_count=0, day=date(2026, 10, 26))
 
         assert caplog.records == []
+
+
+class TestTageImZeitraum:
+    """Welche Tageszaehler ein Zeitraum mitzaehlt (#289)."""
+
+    def test_tage_im_zeitraum_naiv_gilt_als_utc(self):
+        assert _tage_im_zeitraum(
+            datetime(2026, 7, 1), datetime(2026, 7, 31, 23, 59)
+        ) == (date(2026, 7, 1), date(2026, 7, 31))
+
+    def test_tage_im_zeitraum_start_nach_mitternacht_ab_folgetag(self):
+        assert _tage_im_zeitraum(datetime(2026, 7, 1, 12), datetime(2026, 7, 31)) == (
+            date(2026, 7, 2),
+            date(2026, 7, 31),
+        )
+
+    def test_tage_im_zeitraum_andere_zeitzone_in_utc_umgerechnet(self):
+        berlin = timezone(timedelta(hours=2))
+        # 02:00 in Berlin ist Mitternacht UTC desselben Tages; 01:00 am 01.08.
+        # in Berlin ist noch der 31.07. in UTC.
+        assert _tage_im_zeitraum(
+            datetime(2026, 7, 1, 2, tzinfo=berlin),
+            datetime(2026, 8, 1, 1, tzinfo=berlin),
+        ) == (date(2026, 7, 1), date(2026, 7, 31))

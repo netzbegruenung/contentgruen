@@ -17,9 +17,10 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information, ASP.NET Core jede Anfrage
-// samt Pfad ("Request starting ..."), und manche Pfade tragen die Kennung
-// (/api/v1/usage/users/{id}/...). Wie uvicorn.access im Suchdienst erst ab Warning. Im Code
-// statt nur in appsettings.json, damit es auch ohne die Datei gilt (#277).
+// samt Pfad ("Request starting ..."). Seit #284 traegt kein Pfad des Frontends mehr eine
+// Kennung; der Filter bleibt, damit nicht jede Anfrage samt Pfad und Query im Log steht und
+// ein kuenftiger Pfad mit Kennung nicht dort landet. Wie uvicorn.access im Suchdienst erst
+// ab Warning. Im Code statt nur in appsettings.json, damit es auch ohne die Datei gilt (#277).
 builder.Logging.AddFilter("Yarp", LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 
@@ -255,7 +256,7 @@ builder.Services.AddReverseProxy()
                     var httpContext = transformContext.HttpContext;
                     var logger = httpContext.RequestServices.GetRequiredService<ILogger<Program>>();
 
-                    logger.LogTrace("Processing request transform for path: {Path}", LogPseudonym.InPath(httpContext.Request.Path.Value));
+                    logger.LogTrace("Processing request transform for path: {Path}", httpContext.Request.Path.Value);
 
                     IdentityHeaderTransform.Apply(
                         transformContext.ProxyRequest,
@@ -268,7 +269,7 @@ builder.Services.AddReverseProxy()
                 catch (Exception ex)
                 {
                     var logger = transformContext.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "Request transform error for path: {Path}", LogPseudonym.InPath(transformContext.HttpContext.Request.Path.Value));
+                    logger.LogError(ex, "Request transform error for path: {Path}", transformContext.HttpContext.Request.Path.Value);
                     throw;
                 }
 
@@ -381,7 +382,7 @@ app.Use(async (context, next) =>
     catch (UriFormatException ex)
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "UriFormatException caught for {Method} {Path}", context.Request.Method, LogPseudonym.InPath(context.Request.Path.Value));
+        logger.LogError(ex, "UriFormatException caught for {Method} {Path}", context.Request.Method, context.Request.Path.Value);
 
         context.Response.StatusCode = 502;
         await context.Response.WriteAsync($"Proxy configuration error: {ex.Message}");
@@ -404,7 +405,7 @@ app.Use(async (context, next) =>
     if (EndpointPolicy.IsBlocked(context.Request.Path.Value))
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning("Blocked request to internal endpoint: {Path}", LogPseudonym.InPath(context.Request.Path.Value));
+        logger.LogWarning("Blocked request to internal endpoint: {Path}", context.Request.Path.Value);
 
         context.Response.StatusCode = 404;
         return;

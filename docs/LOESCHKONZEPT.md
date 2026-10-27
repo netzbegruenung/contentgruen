@@ -119,6 +119,18 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   polarity …“ mit Wörtern aus dem Suchtext), die der Dienst auf INFO nicht mehr schreibt.
   **Offen:** Die fortlaufende `id` verrät weiter die Reihenfolge der Suchen eines Tages.
   An ruhigen Tagen lässt sie sich mit der Reihenfolge der Aussagen aus Suchen abgleichen.
+  **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
+  (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
+  `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
+  verdichtet der tägliche Bereinigungsjob (`services/cleanup/usage_cleanup_service.py`,
+  derselbe wie für die Nutzungsereignisse) zu einem Tageszähler und löscht die
+  Einzelzeilen samt Pseudonym und `id` (#289). Der Job läuft nur mit
+  `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=true` (Standard); abgeschaltet gilt auch diese
+  Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
+  Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
+- **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen
+  und die Zahl der Personen (verschiedene Tagespseudonyme), kein Pseudonym: nichts, was
+  sich einer Person zuordnen ließe. Keine Frist.
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche, Anzahl der Suchen
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
   zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events`) eine Aussage
@@ -131,7 +143,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   `pg_dump`-Archiven und Qdrant-Snapshots ist nicht praktikabel: nach jedem
   `restore.sh` ist der Löschlauf zu wiederholen.
 - **Logs.** Einzelne Zeilen zu entfernen ist nicht vorgesehen. Was darin stehen kann,
-  am Code geprüft am 26.10.2026 (Stand nach #277):
+  am Code geprüft am 26.10.2026 (Stand nach #284):
   - **Kennungen:** Ab INFO steht in BFF und Semantic-Service keine Kennung im Klartext,
     nur ihr achtstelliges Pseudonym. Beide Dienste rechnen dasselbe (erste acht
     Hex-Zeichen von SHA-256): `log_pseudonym()` in `app/core/logging.py` und
@@ -148,11 +160,12 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs`). Wo eine Warn- oder Fehlerzeile den Pfad
-    nennt, steht die Kennung darin ebenfalls nur als Pseudonym (`LogPseudonym.InPath()`).
-    Manche Pfade tragen die Kennung (`/api/v1/usage/users/{id}/usage-stats`). Deshalb sind
-    die Zeilen unterdrückt, in denen YARP jede Weiterleitung mit Ziel-URL und ASP.NET Core
-    jede Anfrage mit Pfad („Request starting“) protokolliert: Die Kategorien `Yarp` und
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warn- und Fehlerzeilen nennen den Pfad
+    unverändert; seit #284 trägt kein Pfad, den das Frontend aufruft, eine Kennung (die
+    Nutzungsstatistik unter „Meine Beiträge“ heißt `/api/v1/usage/users/me/usage-stats`,
+    die Person kommt aus der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
+    denen YARP jede Weiterleitung mit Ziel-URL und ASP.NET Core jede Anfrage mit Pfad
+    („Request starting“) protokolliert: Die Kategorien `Yarp` und
     `Microsoft.AspNetCore` stehen im Code auf `Warning` (`BFF/Program.cs`), unabhängig von
     `BFF/appsettings.json`. Ein Log-Level von außen für genau diese Kategorien ändert daran
     nichts. Eines für eine Unterkategorie (etwa `Logging__LogLevel__Yarp.ReverseProxy` oder
@@ -183,10 +196,18 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     des Basis-Images `nginx:alpine` nach stdout
     (`mvp/frontend/gutgesagt-frontend/Dockerfile:31`). Hinter dem vorgelagerten Reverse
     Proxy steht dort dessen Adresse, nicht die des Besuchers; Zeitpunkt, Pfad, Referrer
-    und User-Agent stehen darin. Der Pfad trägt bei der Nutzungsstatistik unter „Meine
-    Beiträge“ die **Kennung im Klartext** (`/api/v1/usage/users/{id}/usage-stats`,
-    aufgerufen in `usage-tracking.service.ts`), hier wie im Zugriffsprotokoll des
-    vorgelagerten Reverse Proxy; die Regeln im BFF erreichen diese Zeilen nicht.
+    und User-Agent stehen darin. Eine Kennung steht im Pfad nicht: Die Nutzungsstatistik
+    unter „Meine Beiträge“ fragt `/api/v1/usage/users/me/usage-stats`
+    (`usage-tracking.service.ts`), und der Suchdienst nimmt die Person aus `X-User`
+    (`api/v1/usage.py`). Das gilt ebenso für das Zugriffsprotokoll des vorgelagerten
+    Reverse Proxy. **Altbestand:** Bis #284 stand die Kennung in beiden Protokollen im
+    Klartext. Beim vorgelagerten Reverse Proxy verschwinden diese Zeilen mit dessen Frist.
+    Das Frontend-nginx schreibt dagegen in den `json-file`-Strom, für den in Produktion
+    keine Frist gilt (siehe Fristen unten); dort bleiben die alten Zeilen mit Kennung
+    stehen, bis jemand den Strom am Host rotiert oder leert. Bei einer Auskunft oder
+    Löschung also am Host nach der Kennung im Pfad `/api/v1/usage/users/` suchen; das
+    gilt auch für Aufrufe aus einem noch zwischengespeicherten alten Frontend, die die
+    alte Adresse weiter anfragen (Antwort 404).
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
     Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als

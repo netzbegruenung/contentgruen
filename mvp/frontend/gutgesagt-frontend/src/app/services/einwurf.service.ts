@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { cacheService } from '../auth/cache.interceptor';
 import { LoggingService } from './logging.service';
 
 /** Spiegelt RawInputSource im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
@@ -94,6 +93,10 @@ export interface EinwurfSeite {
   total_records_count: number;
 }
 
+export interface GleicherLinkResponse {
+  results: Einwurf[];
+}
+
 export interface SatzResponse {
   raw_input_id: string;
   sentence: string | null;
@@ -136,6 +139,20 @@ export class EinwurfService {
     return this.http.post<EinwerfenResponse>(`${this.baseApiUrl}/addRawInput`, request);
   }
 
+  /**
+   * Einwuerfe mit gleichem Link (Glossar), neueste zuerst (#263). Was gleich ist,
+   * entscheidet der Server.
+   *
+   * POST, damit der Link nicht in Adresse und Protokollen steht. Nebenbei greift
+   * so der GET-Cache nicht, der sonst nach dem Einwerfen fuenf Minuten lang
+   * "kein gleicher Link" festhielte.
+   */
+  mitGleichemLink(url: string): Observable<Einwurf[]> {
+    return this.http
+      .post<GleicherLinkResponse>(`${this.baseApiUrl}/gleicherLink`, { url })
+      .pipe(map((antwort) => antwort.results));
+  }
+
   /** Der Fangkorb, eigene Einwuerfe zuerst (sortiert der Server). */
   fangkorbLaden(page: number, pageSize: number): Observable<EinwurfSeite> {
     const params = new HttpParams().set('page', page).set('page_size', pageSize);
@@ -147,11 +164,10 @@ export class EinwurfService {
   /**
    * Meine Einwuerfe: nur die selbst eingeworfenen, neueste zuerst.
    *
-   * Immer frisch: Der Cache haelt GETs fuenf Minuten, und das Einwerfen leert diese
-   * Liste nicht - ein gerade eingeworfenes Fundstueck fehlte sonst in der eigenen Sicht.
+   * Immer frisch, weil der Fangkorb nie im Cache liegt (NIE_CACHEN in
+   * auth/cache.interceptor.ts): Ein gerade eingeworfenes Fundstueck steht sofort da.
    */
   eigeneLaden(page: number, pageSize: number): Observable<EinwurfSeite> {
-    cacheService.delete('/api/v1/rawinput/getOwnRawInputs');
     const params = new HttpParams().set('page', page).set('page_size', pageSize);
     return this.http.get<EinwurfSeite>(`${this.baseApiUrl}/getOwnRawInputs`, {
       params,
@@ -165,9 +181,7 @@ export class EinwurfService {
 
   /** Den eigenen Satz speichern; ein leerer Satz loescht ihn. */
   satzSpeichern(id: string, sentence: string): Observable<SatzResponse> {
-    return this.http
-      .put<SatzResponse>(`${this.einwurfUrl(id)}/draft`, { sentence })
-      .pipe(tap(() => this.cacheLeeren()));
+    return this.http.put<SatzResponse>(`${this.einwurfUrl(id)}/draft`, { sentence });
   }
 
   /**
@@ -177,9 +191,11 @@ export class EinwurfService {
    * XHR wird dabei abgebrochen. fetch mit keepalive darf die Seite ueberleben.
    * HttpClient laeuft hier ohne Fetch-Backend und kann das nicht - daher direkt.
    * Fehler werden verschluckt: mehr als versuchen geht in diesem Moment nicht.
+   * Am Cache-Interceptor vorbei leert dieser Weg den GET-Cache nicht. Das ist nur
+   * unschaedlich, weil der Fangkorb nie im Cache liegt (NIE_CACHEN in
+   * auth/cache.interceptor.ts); wer das aendert, muss hier selbst leeren.
    */
   satzSpeichernKeepalive(id: string, sentence: string): void {
-    this.cacheLeeren();
     try {
       fetch(`${this.einwurfUrl(id)}/draft`, {
         method: 'PUT',
@@ -210,9 +226,7 @@ export class EinwurfService {
     if (contentType) {
       body['content_type'] = contentType;
     }
-    return this.http
-      .patch<Einwurf>(`${this.einwurfUrl(id)}/status`, body)
-      .pipe(tap(() => this.cacheLeeren()));
+    return this.http.patch<Einwurf>(`${this.einwurfUrl(id)}/status`, body);
   }
 
   /**
@@ -243,14 +257,5 @@ export class EinwurfService {
 
   private einwurfUrl(id: string): string {
     return `${this.baseApiUrl}/${encodeURIComponent(id)}`;
-  }
-
-  /**
-   * Der Cache-Interceptor haelt GETs fuenf Minuten und kennt PATCH nicht. Ohne
-   * das hier zeigte die Liste nach einem Statuswechsel den alten Stand, und das
-   * Weiterspringen boete den Einwurf, an dem man gerade war, erneut an.
-   */
-  private cacheLeeren(): void {
-    cacheService.delete('/api/v1/rawinput');
   }
 }

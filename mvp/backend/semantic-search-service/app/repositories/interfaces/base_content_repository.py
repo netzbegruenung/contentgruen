@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, TypeVar, Generic, Optional, Type
+from typing import Any, Dict, List, Sequence, TypeVar, Generic, Optional, Type
 import uuid
 
 from domain.models.base_content import (
@@ -28,6 +28,20 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
 
         Returns:
             DataSource: Indicates whether data was loaded from storage or JSON files
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    async def search_batch(
+        cls,
+        repositories: Sequence["IBaseContentRepository"],
+        query_text: str,
+        limit: int,
+    ) -> List[List[BaseContentSearchResult]]:
+        """
+        search(query_text, limit) for several repositories of this implementation
+        in one request; per repository its results, in the order of ``repositories``.
         """
         pass
 

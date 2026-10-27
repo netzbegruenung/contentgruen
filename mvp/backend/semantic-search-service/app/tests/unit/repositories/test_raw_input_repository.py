@@ -21,7 +21,7 @@ from domain.models.raw_input import (
     RawInputStatus,
     UebergangNichtErlaubt,
 )
-from repositories.raw_input_repository import RawInputRepository
+from repositories.raw_input_repository import GLEICHER_LINK_SEITE, RawInputRepository
 
 AM = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
 
@@ -723,3 +723,102 @@ class TestStatuswechselVorpruefen:
         query.with_for_update.assert_not_called()
         session.execute.assert_not_called()
         session.commit.assert_not_called()
+
+
+@pytest.mark.unit
+class TestMitGleichemLink:
+    """Einwuerfe, deren Link nach der Bereinigung gleich ist (#263)."""
+
+    def _kandidaten(self, session, *seiten):
+        query = MagicMock()
+        session.query.return_value = query
+        query.filter.return_value = query
+        query.order_by.return_value = query
+        query.offset.return_value = query
+        query.limit.return_value = query
+        query.all.side_effect = list(seiten) or [[]]
+        return query
+
+    @pytest.fixture(autouse=True)
+    def _ohne_saetze(self):
+        with patch.object(
+            RawInputRepository,
+            "_mit_saetzen_und_verknuepfungen",
+            side_effect=lambda s, rows, user: [
+                RawInputRepository._to_dict(r) for r in rows
+            ],
+        ):
+            yield
+
+    def test_mit_gleichem_link_findet_bereinigt_gleiche(self, repository, session):
+        self._kandidaten(
+            session,
+            [
+                _zeile(content="gleich", url="http://www.example.org/a/?utm_source=x"),
+                _zeile(content="anderer Pfad", url="https://example.org/a/b"),
+                _zeile(content="auch gleich", url="https://example.org/a"),
+            ],
+        )
+
+        treffer = repository.mit_gleichem_link("https://example.org/a/")
+
+        assert [t["content"] for t in treffer] == ["gleich", "auch gleich"]
+
+    def test_mit_gleichem_link_sucht_vor_nach_host_und_pfad(self, repository, session):
+        """Die Datenbank filtert grob vor, ohne Schema, www und Parameter."""
+        query = self._kandidaten(session, [])
+
+        repository.mit_gleichem_link("https://www.example.org/a_b%/?fbclid=1")
+
+        (vorfilter,) = query.filter.call_args.args
+        sql = _sql(vorfilter)
+        assert "raw_inputs.url" in sql and "ILIKE" in sql.upper()
+        # LIKE-Platzhalter aus dem Link gelten als Zeichen, nicht als Muster.
+        assert vorfilter.right.value == r"%example.org/a\_b\%%"
+
+    def test_mit_gleichem_link_filtert_auch_nach_parametern(self, repository, session):
+        """Sonst passt auf youtube.com/watch jedes Video (#307, Befund 1)."""
+        query = self._kandidaten(session, [])
+
+        repository.mit_gleichem_link("https://www.youtube.com/watch?v=abc&si=x")
+
+        werte = [b.right.value for b in query.filter.call_args.args]
+        assert werte == ["%youtube.com/watch%", "%v=abc%"]
+
+    def test_mit_gleichem_link_blaettert_bis_genug_treffer(self, repository, session):
+        """Ein alter gleicher Einwurf fehlt nicht, nur weil viele den Vorfilter passieren."""
+        andere = [
+            _zeile(content="anderer", url=f"https://example.org/?p={i}")
+            for i in range(GLEICHER_LINK_SEITE)
+        ]
+        alt = _zeile(content="alt", url="http://example.org/")
+        query = self._kandidaten(session, andere, [alt])
+
+        treffer = repository.mit_gleichem_link("https://example.org")
+
+        assert [t["content"] for t in treffer] == ["alt"]
+        assert [c.args for c in query.offset.call_args_list] == [
+            (0,),
+            (GLEICHER_LINK_SEITE,),
+        ]
+
+    def test_mit_gleichem_link_hoechstens_fuenf(self, repository, session):
+        gleiche = [
+            _zeile(content=str(i), url="https://example.org/a") for i in range(7)
+        ]
+        self._kandidaten(session, gleiche)
+
+        treffer = repository.mit_gleichem_link("https://example.org/a")
+
+        assert [t["content"] for t in treffer] == ["0", "1", "2", "3", "4"]
+
+    def test_mit_gleichem_link_ohne_link_fragt_nicht(self, repository, session):
+        assert repository.mit_gleichem_link("kein Link") == []
+        session.query.assert_not_called()
+
+    def test_mit_gleichem_link_begrenzt_treffer(self, repository, session):
+        self._kandidaten(
+            session, [_zeile(url="https://example.org/a") for _ in range(12)]
+        )
+
+        assert len(repository.mit_gleichem_link("https://example.org/a")) == 5

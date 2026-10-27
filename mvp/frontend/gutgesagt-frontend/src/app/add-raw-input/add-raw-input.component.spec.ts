@@ -1,14 +1,18 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
+
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
 
 import {
   AddRawInputComponent,
+  LINK_PRUEFEN_NACH_MS,
   SEITENTITEL_PRAEFIX,
   hinweisVorschlag,
 } from './add-raw-input.component';
-import { EinwurfService } from '../services/einwurf.service';
+import { Einwurf, EinwurfService } from '../services/einwurf.service';
+import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
 import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
@@ -48,8 +52,9 @@ describe('AddRawInputComponent', () => {
       sessionStorage.setItem(SHARE_FELDER_SCHLUESSEL, ablage);
     }
 
-    const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen']);
+    const serviceSpy = jasmine.createSpyObj('EinwurfService', ['einwerfen', 'mitGleichemLink']);
     serviceSpy.einwerfen.and.returnValue(of({ id: 'neue-id' }));
+    serviceSpy.mitGleichemLink.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
       imports: [AddRawInputComponent, NoopAnimationsModule],
@@ -324,5 +329,182 @@ describe('AddRawInputComponent', () => {
         hinweis: 'Ein Seitentitel',
       });
     });
+  });
+  describe('Anzeige bei gleichem Link (#263)', () => {
+    function vorhandenerEinwurf(overrides: Partial<Einwurf> = {}): Einwurf {
+      return {
+        id: 'vorhanden',
+        content: null,
+        url: 'https://example.org/a',
+        image_url: null,
+        submitted_by: 'jemand',
+        source_channel: 'web',
+        status: 'open',
+        created_at: '2026-10-01T12:00:00Z',
+        drafts: [],
+        links: [],
+        ...overrides,
+      };
+    }
+
+    const ausformuliert = vorhandenerEinwurf({
+      status: 'processed',
+      drafts: [
+        { id: 's1', user_id: 'jemand', sentence: 'Der Satz', updated_at: '2026-10-02T12:00:00Z' },
+      ],
+      links: [
+        {
+          content_id: 'beitrag-1',
+          content_type: 'commentary',
+          draft_id: 's1',
+          processed_by: 'jemand',
+          processed_at: '2026-10-03T12:00:00Z',
+        },
+      ],
+    });
+
+    /** Link tippen und die Wartezeit bis zur Pruefung verstreichen lassen. */
+    function linkTippen(link: string): void {
+      eingeben(link, '');
+      tick(LINK_PRUEFEN_NACH_MS);
+      fixture.detectChanges();
+    }
+
+    function gleicherLinkBox(): HTMLElement | null {
+      return fixture.nativeElement.querySelector('.gleicher-link');
+    }
+
+    it('fragt nach kurzer Pause mit dem bereinigten Link', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+
+      linkTippen('https://example.org/a?utm_source=x');
+
+      expect(einwurfService.mitGleichemLink).toHaveBeenCalledOnceWith('https://example.org/a');
+    }));
+
+    it('zeigt die Stufe des vorhandenen Einwurfs', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      einwurfService.mitGleichemLink.and.returnValue(
+        of([vorhandenerEinwurf({ drafts: [{ id: 's', user_id: 'x', sentence: 'S', updated_at: '' }] })]),
+      );
+
+      linkTippen('https://example.org/a');
+
+      expect(gleicherLinkBox()?.textContent).toContain('Diesen Link gibt es schon im Fangkorb');
+      expect(gleicherLinkBox()?.textContent).toContain('Destilliert');
+      expect(gleicherLinkBox()?.querySelector('button.beitrag-ansehen')).toBeNull();
+    }));
+
+    it('oeffnet bei ausformuliertem Einwurf den Beitrag', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      const sheet = spyOn(TestBed.inject(MatBottomSheet), 'open');
+      einwurfService.mitGleichemLink.and.returnValue(of([ausformuliert]));
+
+      linkTippen('https://example.org/a');
+      expect(gleicherLinkBox()?.textContent).toContain('Ausformuliert');
+      (gleicherLinkBox()!.querySelector('button.beitrag-ansehen') as HTMLButtonElement).click();
+
+      expect(sheet).toHaveBeenCalledTimes(1);
+      const [komponente, konfiguration] = (sheet as jasmine.Spy).calls.mostRecent().args;
+      expect(komponente).toBe(EinwurfBeitragSheetComponent);
+      expect(konfiguration?.data).toEqual({
+        beitraege: [{ contentId: 'beitrag-1', typ: 'commentary', satz: 'Der Satz' }],
+      });
+    }));
+
+    it('kuendigt die Anzeige in einer Live-Region an, die schon vorher dasteht', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      const region = fixture.nativeElement.querySelector('.gleicher-link-region');
+      expect(region?.getAttribute('role')).toBe('status');
+      expect(region?.textContent?.trim()).toBe('');
+      einwurfService.mitGleichemLink.and.returnValue(of([ausformuliert]));
+
+      linkTippen('https://example.org/a');
+
+      expect(fixture.nativeElement.querySelector('.gleicher-link-region')).toBe(region);
+      expect(region.textContent).toContain('Diesen Link gibt es schon im Fangkorb');
+    }));
+
+    it('unterscheidet die Beitrag-Knoepfe bei mehreren Einwuerfen', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      einwurfService.mitGleichemLink.and.returnValue(
+        of([ausformuliert, { ...ausformuliert, id: 'zweiter', status: 'discarded' }]),
+      );
+
+      linkTippen('https://example.org/a');
+
+      const knoepfe = gleicherLinkBox()!.querySelectorAll('button.beitrag-ansehen');
+      expect(Array.from(knoepfe).map((knopf) => knopf.getAttribute('aria-label'))).toEqual([
+        'Beitrag ansehen, Einwurf 1 von 2, Ausformuliert',
+        'Beitrag ansehen, Einwurf 2 von 2, Verworfen',
+      ]);
+    }));
+
+    it('laesst trotzdem einwerfen', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      einwurfService.mitGleichemLink.and.returnValue(of([ausformuliert]));
+
+      linkTippen('https://example.org/a');
+      expect(gleicherLinkBox()?.textContent).toContain('Du kannst ihn trotzdem einwerfen');
+      expect(component.kannEinwerfen).toBeTrue();
+      component.einwerfen();
+      tick(LINK_PRUEFEN_NACH_MS);
+      fixture.detectChanges();
+
+      expect(einwurfService.einwerfen).toHaveBeenCalledWith({ url: 'https://example.org/a' });
+      // Das Formular ist danach leer, die Anzeige gehoert zum alten Link.
+      expect(gleicherLinkBox()).toBeNull();
+    }));
+
+    it('zeigt keine spaete Antwort zu einem Link, der nicht mehr dasteht', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      const antwort = new Subject<Einwurf[]>();
+      einwurfService.mitGleichemLink.and.returnValue(antwort);
+
+      linkTippen('https://example.org/a');
+      component.einwerfen();
+      antwort.next([ausformuliert]);
+      tick(LINK_PRUEFEN_NACH_MS);
+      fixture.detectChanges();
+
+      expect(gleicherLinkBox()).toBeNull();
+    }));
+
+    it('fragt nicht, solange kein Link dasteht', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+
+      linkTippen('example.org/a');
+      linkTippen('');
+
+      expect(einwurfService.mitGleichemLink).not.toHaveBeenCalled();
+      expect(gleicherLinkBox()).toBeNull();
+    }));
+
+    it('zeigt nichts, wenn die Pruefung scheitert', fakeAsync(() => {
+      erstellen();
+      flushMicrotasks();
+      einwurfService.mitGleichemLink.and.returnValue(throwError(() => ({ status: 500 })));
+
+      linkTippen('https://example.org/a');
+
+      expect(gleicherLinkBox()).toBeNull();
+      expect(component.fehler).toBeNull();
+    }));
+
+    it('prueft auch den Link aus dem Teilen-Menue', fakeAsync(() => {
+      erstellen(JSON.stringify({ url: 'https://example.org/a', titel: null, text: null }));
+      flushMicrotasks();
+      tick(LINK_PRUEFEN_NACH_MS);
+
+      expect(einwurfService.mitGleichemLink).toHaveBeenCalledOnceWith('https://example.org/a');
+    }));
   });
 });

@@ -3,8 +3,8 @@ Zugriffsschutz und Caching der Metrics-Endpunkte.
 
 Die sechs MVP-Endpunkte liefern Betriebskennzahlen (taegliche aktive Nutzer,
 Suchvolumen, Vote-Verhaeltnisse) und waren ohne jede Auth-Dependency erreichbar.
-/getMetrics bleibt bewusst oeffentlich -- es liefert nur Bestandszaehler und wird
-von der anonym erreichbaren Startseite aufgerufen -- bekommt dafuer aber einen
+/getMetrics bleibt bewusst oeffentlich -- es liefert nur Bestandszaehler und das
+BFF fuehrt es als anonym erlaubt -- bekommt dafuer aber einen
 TTL-Cache, weil es sonst unbegrenzt oft vier Qdrant-Counts ausloesen kann.
 """
 
@@ -87,8 +87,8 @@ class TestAdminOnlyEndpoints:
 
 class TestGetMetricsStaysPublic:
     """
-    /getMetrics muss ohne Anmeldung erreichbar bleiben: die Startseite ruft es
-    ueber den PublicGuard auch fuer anonyme Besucher auf.
+    /getMetrics muss ohne Anmeldung erreichbar bleiben: das BFF fuehrt es als
+    anonym erlaubt (EndpointPolicy).
     """
 
     def test_anonymous_access_succeeds(self, client):
@@ -105,6 +105,26 @@ class TestGetMetricsStaysPublic:
         assert body["statement_count"] == 11
         assert body["commentary_count"] == 22
         assert body["reference_count"] == 33
+
+    def test_response_contains_only_computed_counts(self, client):
+        """
+        Kein Feld ist eine Konstante: die frueheren *_last_week-Felder,
+        requested_commentary_count und active_users_count standen fest auf 0
+        und sind entfallen.
+        """
+        with patch.object(metrics_module, "QdrantRepositoryFactory") as factory:
+            repository = Mock()
+            repository.count = AsyncMock(return_value=44)
+            factory.return_value.create_content_repository.return_value = repository
+
+            body = client.get("/api/v1/metrics/getMetrics").json()
+
+        assert set(body) == {
+            "content_count",
+            "statement_count",
+            "commentary_count",
+            "reference_count",
+        }
 
 
 class TestGetMetricsCache:

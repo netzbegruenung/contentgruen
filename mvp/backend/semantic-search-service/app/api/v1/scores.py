@@ -1,3 +1,0 @@
-# getScoreOfUser()
-
-# getLeaderboard()

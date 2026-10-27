@@ -1,5 +1,6 @@
 """
-Fangkorb-Endpunkte: einwerfen, auflisten, einzeln lesen und destillieren.
+Fangkorb-Endpunkte: einwerfen, auflisten, nach gleichem Link suchen, einzeln
+lesen und destillieren.
 
 Drei Stufen: Einwerfen, Destillieren (einen Satz formulieren, je Person),
 Ausformulieren (den Einwurf mit einem Beitrag verknuepfen, einem neuen oder einem
@@ -33,6 +34,8 @@ from dtos.raw_input import (
     AddRawInputResponse,
     DraftResponse,
     GetRawInputsResponse,
+    GleicherLinkRequest,
+    GleicherLinkResponse,
     RawInputResponse,
     SaveDraftRequest,
     UpdateRawInputStatusRequest,
@@ -152,6 +155,35 @@ async def get_raw_inputs(
         logger.error(f"Fehler in /getRawInputs: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail="Der Fangkorb konnte nicht geladen werden."
+        )
+
+
+@router.post("/gleicherLink", response_model=GleicherLinkResponse)
+async def einwuerfe_mit_gleichem_link(
+    request: GleicherLinkRequest,
+    x_user: Optional[str] = Header(default=None),
+    repository: RawInputRepository = Depends(get_raw_input_repository),
+) -> GleicherLinkResponse:
+    """
+    Einwuerfe mit gleichem Link, fuer die Anzeige beim Einwerfen (#263).
+
+    Was als gleicher Link gilt, steht in ``domain.link_vergleich``. Die Anzeige
+    haelt niemanden auf - eingeworfen werden darf trotzdem. Kein Link ergibt eine
+    leere Liste, keinen Fehler: Das Formular fragt schon beim Tippen.
+
+    POST statt GET, obwohl nur gelesen wird: Der Link steht so im Body und nicht
+    in der Adresse, die Webserver und Proxy protokollieren. Links fuehren oft auf
+    Profile Dritter. Anzeigenamen loest der Endpunkt nicht auf: Das Formular
+    zeigt nur Stufe und Beitrag.
+    """
+    person = _angemeldete_person(x_user)
+    try:
+        rows = repository.mit_gleichem_link(request.url, person)
+        return GleicherLinkResponse(results=[RawInputResponse(**row) for row in rows])
+    except Exception as e:
+        logger.error(f"Fehler in /gleicherLink: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Der Fangkorb konnte nicht geprüft werden."
         )
 
 

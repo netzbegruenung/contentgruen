@@ -2,7 +2,16 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { TextFieldModule } from '@angular/cdk/text-field';
-import { EinwurfService, EinwerfenRequest } from '../services/einwurf.service';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
+import { Einwurf, EinwurfService, EinwerfenRequest } from '../services/einwurf.service';
+import {
+  EinwurfBeitrag,
+  STUFEN,
+  StufenAnzeige,
+  beitraegeVonEinwurf,
+  stufeVonEinwurf,
+} from '../beitragskarte/karten-daten';
+import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
 import {
   GeteilteFelder,
   SHARE_FELDER_SCHLUESSEL,
@@ -15,9 +24,32 @@ import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
 import { Router, RouterLink } from '@angular/router';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
-import { Subject } from 'rxjs';
+import { Subject, of, timer } from 'rxjs';
+import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 export const HINWEIS_LIMIT = 5000;
+
+/** So lange nach dem letzten Tastendruck wird gefragt, ob es den Link schon gibt. */
+export const LINK_PRUEFEN_NACH_MS = 400;
+
+/** Ein vorhandener Einwurf mit gleichem Link, wie das Formular ihn zeigt. */
+export interface GleicherEinwurf {
+  stufe: StufenAnzeige;
+  /**
+   * Die verknuepften Beitraege; leer, solange er nicht ausformuliert ist. Auch ein
+   * verworfener Einwurf kann welche haben, wenn ihn jemand vorher ausformuliert
+   * hat - dann zeigt das Formular die Stufe "Verworfen" und trotzdem den Beitrag,
+   * denn den gibt es ja.
+   */
+  beitraege: EinwurfBeitrag[];
+}
+
+function alsGleicherEinwurf(einwurf: Einwurf): GleicherEinwurf {
+  return {
+    stufe: STUFEN[stufeVonEinwurf(einwurf)],
+    beitraege: beitraegeVonEinwurf(einwurf),
+  };
+}
 
 /**
  * Womit ein Seitentitel im Hinweis-Feld als Vorbelegung erkennbar bleibt -- im
@@ -49,6 +81,10 @@ export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
  * Destillieren. Kommt der Einwurf aus dem Teilen-Menue, steht der Link im
  * Link-Feld; Seitentitel und uebriger Text stehen als markierte Vorbelegung im
  * Hinweis-Feld und werden nur gespeichert, wenn die Person sie stehen laesst.
+ *
+ * Liegt derselbe Link schon im Fangkorb, steht unter dem Link-Feld eine Anzeige mit
+ * der Stufe des vorhandenen Einwurfs und, falls ausformuliert, seinem Beitrag
+ * (#263). Sie haelt nicht auf: Einwerfen geht trotzdem.
  */
 @Component({
   selector: 'app-add-raw-input',
@@ -80,6 +116,8 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   ausShare = false;
   /** Der Text, mit dem das Hinweis-Feld aus dem Teilen vorbelegt wurde. */
   vorbelegung: string | null = null;
+  /** Einwuerfe mit gleichem Link wie im Link-Feld, neueste zuerst. */
+  gleicheEinwuerfe: GleicherEinwurf[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -87,6 +125,7 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private navigationService: NavigationService,
     private router: Router,
+    private bottomSheet: MatBottomSheet,
   ) {
     this.einwurfForm = this.fb.group({
       link: ['', nurEinLink],
@@ -95,6 +134,8 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Vor der Vorbelegung: Auch ein geteilter Link wird geprueft.
+    this.gleichenLinkPruefen();
     const geteilt = this.geteilteFelderHolen();
     if (geteilt) {
       this.vorbelegung = hinweisVorschlag(geteilt);
@@ -139,6 +180,59 @@ export class AddRawInputComponent implements OnInit, OnDestroy {
       // Kein JSON: Klartext einer aelteren Version, siehe unten.
     }
     return felderAusShareDaten({ text: wert });
+  }
+
+  /**
+   * Fragt nach einer Tipppause, ob ein gleicher Link schon im Fangkorb liegt.
+   *
+   * Gefragt wird mit dem Link, wie er gespeichert wuerde (ohne Tracking-Parameter);
+   * was als gleich gilt, entscheidet der Server. Jede Aenderung am Feld leert die
+   * Anzeige und bricht Wartezeit und laufende Frage ab (switchMap vor dem Timer):
+   * Eine spaete Antwort zu einem Link, der nicht mehr dasteht, kommt so nie an,
+   * auch nicht nach dem Einwerfen, wenn das Feld leer ist. Scheitert die Frage,
+   * gibt es eben keine Anzeige - am Einwerfen aendert sie nichts.
+   */
+  private gleichenLinkPruefen(): void {
+    this.einwurfForm
+      .get('link')!
+      .valueChanges.pipe(
+        map((wert: string | null) => (wert ?? '').trim()),
+        map((link) => (NUR_EIN_LINK.test(link) ? trackingParameterEntfernen(link) : '')),
+        tap(() => (this.gleicheEinwuerfe = [])),
+        switchMap((link) =>
+          link
+            ? timer(LINK_PRUEFEN_NACH_MS).pipe(
+                switchMap(() => this.einwurfService.mitGleichemLink(link)),
+                catchError((error) => {
+                  this.logger.warn('Pruefung auf gleichen Link fehlgeschlagen', error);
+                  return of([]);
+                }),
+              )
+            : of([]),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((einwuerfe) => (this.gleicheEinwuerfe = einwuerfe.map(alsGleicherEinwurf)));
+  }
+
+  /**
+   * Zugaenglicher Name des Knopfs: Bei mehreren Einwuerfen hiesse sonst jeder
+   * Knopf gleich. Die Stufe allein reicht nicht, zwei koennen dieselbe haben.
+   */
+  beitragAnsehenLabel(einwurf: GleicherEinwurf, index: number): string {
+    const was = einwurf.beitraege.length === 1 ? 'Beitrag' : 'Beiträge';
+    if (this.gleicheEinwuerfe.length === 1) {
+      return `${was} ansehen`;
+    }
+    return `${was} ansehen, Einwurf ${index + 1} von ${this.gleicheEinwuerfe.length}, ${einwurf.stufe.name}`;
+  }
+
+  /** Die Beitraege eines vorhandenen Einwurfs, im selben Sheet wie im Fangkorb. */
+  beitragAnsehen(einwurf: GleicherEinwurf): void {
+    this.bottomSheet.open(EinwurfBeitragSheetComponent, {
+      data: { beitraege: einwurf.beitraege },
+      ariaLabel: 'Beitrag zu diesem Einwurf',
+    });
   }
 
   get link(): string {

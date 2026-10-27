@@ -112,6 +112,10 @@ class Settings(BaseSettings):
     # trivial abweichende Kopien ab 0,984, andere Kommentare zur selben Aussage
     # hoechstens 0,903.
     commentary_similarity_threshold: float = 0.975
+    # Hintergrundinfo-Dublette: dieselbe Einbettung und Schwelle wie beim Kommentar.
+    # Noch nicht an eigenen Paaren gemessen; die Integrationstests pruefen
+    # wortgleich, Kopie mit Zusatz und eine andere Hintergrundinfo zum selben Thema.
+    generic_text_similarity_threshold: float = 0.975
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
     statement_search_limit: int = 5
@@ -165,6 +169,13 @@ class Settings(BaseSettings):
     # Usage tracking and cleanup configuration
     enable_usage_cleanup: bool = True
     usage_retention_days: int = 90
+    # Frist der Suchereignisse (#289). Aeltere Tage verdichtet der Bereinigungsjob
+    # zu Tageszaehlern ohne Pseudonym. 90 wie bei den Nutzungsereignissen: deckt die
+    # laengste Auswertung ueber Einzelzeilen (searches-per-user, hoechstens 90 Tage).
+    # Darum auch die Untergrenze: Kuerzer zaehlte searches-per-user still zu wenig,
+    # und ein negativer Wert verdichtete den laufenden Tag (Personen doppelt).
+    # Laeuft im selben Job: enable_usage_cleanup=false schaltet auch diese Frist ab.
+    search_event_retention_days: int = Field(default=90, ge=90)
     cleanup_hour: int = 2  # 2 AM
     cleanup_minute: int = 0
 
