@@ -5,6 +5,7 @@ Loeschen setzt nur den Zustand "geloescht": Der Beitrag bleibt gespeichert, die
 Repositories blenden ihn aus. Andere als der Autor duerfen nicht loeschen.
 """
 
+import json
 import uuid
 from unittest.mock import AsyncMock
 
@@ -13,6 +14,9 @@ from pydantic import BaseModel, ValidationError
 
 from domain.models.content_status import ContentStatus
 from repositories.aggregated.content_repository import ContentRepository
+from repositories.implementations.qdrant.moderation_repository import (
+    QdrantModerationRepository,
+)
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
@@ -45,12 +49,34 @@ def repository(test_settings, speicher):
 
 
 @pytest.fixture
-def service(repository):
-    return BeitragLoeschenService(repository)
+def aussagen(speicher):
+    return QdrantModerationRepository(embeddings_manager=speicher)
+
+
+@pytest.fixture
+def service(repository, aussagen):
+    return BeitragLoeschenService(repository, aussagen)
 
 
 def _status(speicher) -> str:
     return speicher.get_data()[BEITRAG_ID]["status"]
+
+
+def _aussage_mit_verweis(speicher) -> str:
+    """Eine Aussage, deren einziger Antwortvorschlag der Beitrag ist."""
+    aussage_id = str(uuid.uuid4())
+    speicher.add_test_data(
+        "statement",
+        [
+            {
+                **create_base_content_fields(),
+                "id": aussage_id,
+                "replysuggestions": json.dumps([{"id": BEITRAG_ID}]),
+                "replysuggestions_count": 1,
+            }
+        ],
+    )
+    return aussage_id
 
 
 @pytest.mark.unit
@@ -144,3 +170,46 @@ class TestBeitragLoeschen:
 
         with pytest.raises(ValidationError):
             await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestVerweiseAnAussagen:
+    """
+    Eine Aussage verweist nach dem Loeschen nicht mehr auf den Beitrag; war er ihr
+    einziger, zaehlt sie nicht mehr als beantwortet (#294).
+    """
+
+    async def test_loeschen_entfernt_verweis_aus_aussage(self, service, speicher):
+        speicher.add_test_data("generic_text", [_beitrag("generic_text")])
+        aussage_id = _aussage_mit_verweis(speicher)
+
+        await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
+
+        aussage = speicher.get_data()[aussage_id]
+        assert json.loads(aussage["replysuggestions"]) == []
+        assert aussage["replysuggestions_count"] == 0
+
+    async def test_loeschen_andere_person_laesst_verweis_stehen(
+        self, service, speicher
+    ):
+        speicher.add_test_data("commentary", [_beitrag()])
+        aussage_id = _aussage_mit_verweis(speicher)
+
+        await service.loeschen(uuid.UUID(BEITRAG_ID), "andere-person")
+
+        assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 1
+
+    async def test_loeschen_verweise_scheitern_beitrag_bleibt_sichtbar(
+        self, service, speicher, aussagen
+    ):
+        """Erst die Verweise, dann der Zustand: Der Autor kann es erneut versuchen."""
+        speicher.add_test_data("commentary", [_beitrag()])
+        aussagen.aus_aussagen_entfernen = AsyncMock(
+            side_effect=RuntimeError("Qdrant nicht erreichbar")
+        )
+
+        with pytest.raises(RuntimeError):
+            await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
+
+        assert _status(speicher) == ContentStatus.VISIBLE.value

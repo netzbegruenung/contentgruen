@@ -13,7 +13,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from domain.content_registry import REGISTRY, create_content_service
+from domain.content_registry import (
+    BEITRAGSTYPEN_WERTE,
+    REGISTRY,
+    create_content_service,
+)
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from repositories.implementations.qdrant.moderation_repository import (
@@ -78,10 +82,12 @@ async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
     assert await antwortvorschlaege(post_service, post_id) == [post_id]
 
 
+@pytest.mark.parametrize("typ", BEITRAGSTYPEN_WERTE)
 async def test_loeschen_entfernt_verweis_aus_aussage(
-    real_embeddings_manager, moderation
+    real_embeddings_manager, moderation, typ
 ):
     """
+    Fuer jeden Beitragstyp, etwa eine Hintergrundinfo, nicht nur fuer Kommentare (#294).
     Die Kaskade schreibt nur die Antwortvorschlaege; der Vektor der Aussage bleibt.
     Ein upsert ohne Vektor lehnt Qdrant ab.
     """
@@ -98,7 +104,7 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
             PointStruct(
                 id=beitrag_id,
                 vector=vektor,
-                payload={"content_type": ContentType.COMMENTARY.value, "text": TEXT},
+                payload={"content_type": typ, "text": TEXT},
             ),
             PointStruct(
                 id=aussage_id,
@@ -121,9 +127,7 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
         with_vectors=True,
     )
 
-    assert await moderation.delete_content(
-        beitrag_id, ContentType.COMMENTARY.value, deleted_by="admin-1"
-    )
+    assert await moderation.delete_content(beitrag_id, typ, deleted_by="admin-1")
 
     assert await real_embeddings_manager.get_by_id(beitrag_id) is None
     [aussage] = await real_embeddings_manager.async_client.retrieve(
