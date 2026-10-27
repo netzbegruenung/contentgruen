@@ -237,7 +237,7 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     const rat = raete[0];
     expect(rat.open).withContext('standardmaessig zugeklappt').toBeFalse();
     expect(rat.querySelector('summary')?.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
-    expect(rat.textContent).toContain('melden');
+    expect(rat.textContent).withContext('Melden auf der Plattform, nicht hier').toContain('auf der Plattform melden');
 
     rat.querySelector('summary')!.click();
     expect(rat.open).withContext('laesst sich aufklappen').toBeTrue();
@@ -254,6 +254,8 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
   it('zeigt am Desktop ueber den Treffern den zugeklappten Rat', () => {
     const seite = oeffnen(false, 2, 0);
     pruefeRat(seite);
+    // Auch der Abschnitt ohne Treffer erklaert seinen Typ.
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ, HINTERGRUND_SATZ]);
     const rat = seite.querySelector('details.keine-antwort-noetig')!;
     const ersterAbschnitt = seite.querySelector('app-commentary-search-results')!;
     expect(rat.compareDocumentPosition(ersterAbschnitt) & Node.DOCUMENT_POSITION_FOLLOWING)

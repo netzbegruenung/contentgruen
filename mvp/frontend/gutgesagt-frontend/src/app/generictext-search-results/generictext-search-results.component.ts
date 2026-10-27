@@ -24,6 +24,7 @@ export class GenerictextSearchResultsComponent {
 
   // Was dieser Beitragstyp ist, derselbe Satz wie auf der Beitragen-Seite
   readonly erklaerung = typBeschreibung('generictext');
+
   showAddGenerictext = false;               // Tracks whether the add generictext section is visible
 
   // Popular topics for empty state suggestions

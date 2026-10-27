@@ -167,7 +167,6 @@
 
 /* Was der Beitragstyp ist, eine Zeile direkt unter der Ueberschrift */
 .typ-erklaerung {
-    margin: -8px 0 12px;
+    margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-sm);
     color: var(--text-secondary);
-    font-size: 15px;
 }
