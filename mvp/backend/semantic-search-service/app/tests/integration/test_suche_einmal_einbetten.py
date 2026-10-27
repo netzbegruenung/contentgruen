@@ -264,18 +264,22 @@ async def test_search_by_text_vorhandene_suchanfrage_einmal_eingebettet(suche):
     assert sorted(anfragen) == sorted(["scroll", "search", "retrieve", "search_batch"])
 
 
-async def test_search_by_text_suchanfrage_mit_apostroph_zweimal_eingebettet(suche):
-    """Die Suche ersetzt ' und ; vor dem Einbetten, die Aussage behaelt den Text.
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Wärmepumpen lohnen sich im Altbau, sagt's die Studie",
+        "Wärmepumpen lohnen sich im Altbau; sagt die Studie",
+    ],
+)
+async def test_search_by_text_suchanfrage_mit_apostroph_einmal_eingebettet(suche, text):
+    """Suche, Aussage und Dublettenpruefung betten denselben Text ein (#321).
 
-    Zwei verschiedene Texte, also zwei Einbettungen - bewusst so gelassen, damit
-    sich Treffer nicht aendern (siehe PR zu #304, Offene Punkte).
+    Vor #321 ersetzte die Suche ' und ; vor dem Einbetten: zwei Einbettungen.
     """
-    text = "Wärmepumpen lohnen sich im Altbau, sagt's die Studie"
-    _, einbettungen, _ = await suche(text)
+    antwort, einbettungen, _ = await suche(text)
 
-    assert sorted(einbettungen) == sorted(
-        [f"query: {text}", f"query: {text.replace(chr(39), chr(34))}"]
-    )
+    assert antwort["query_was_newly_added_as_statement"] is True
+    assert einbettungen == [f"query: {text}"]
 
 
 @pytest.mark.parametrize("limit", [10, 1])
