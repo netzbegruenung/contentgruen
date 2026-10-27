@@ -326,7 +326,9 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - Hot-reload development
 
 ### Test/Production
-- GitHub Actions for automated builds (`.github/workflows/build.yml` on `main` and pull requests,
+- Woodpecker checks every pull request on Forgejo (`.woodpecker/ci.yaml`, required status
+  for `main`, see `docs/CI.md`)
+- GitHub Actions on the mirror for automated builds (`.github/workflows/build.yml` on `main`,
   `.github/workflows/release.yml` on `v*` tags)
 - Container registry at git.verdigado.com (`netzbegruenung-images`)
 - Test: runs the floating `:main` tag, rolled out manually by the operators

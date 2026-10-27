@@ -12,7 +12,7 @@ merge and build the images.
 
 | Step | Image | Runs |
 |---|---|---|
-| `retired-words` | `node:22` (frontend Dockerfile; has git and python3) | `check.sh --schritt retired-words`, lines added since the branch left the target branch; pull requests only |
+| `retired-words` | `node:22` (frontend Dockerfile; has git and python3) | `check.sh --schritt retired-words`, lines added since the branch left the target branch; pull requests only (push, tag and manual runs have no target branch) |
 | `python-installieren` | `python:3.13-slim` (semantic-search Dockerfile) | venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` |
 | `lint` | same | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `unit` | same | `check.sh --schritt unit`: Python unit tests and `scripts/tests/` |
@@ -24,7 +24,8 @@ merge and build the images.
 Services: `qdrant` (version of `mvp/docker-compose.dev.yml`, `entrypoint: /qdrant/qdrant`;
 without the absolute path the service does not start) and `postgres` (base image of
 `mvp/backend/postgres-app`). The integration step reaches them through `QDRANT_URL` and
-`POSTGRES_TEST_DATABASE_URL`; the throwaway container of the suite is not used, the runner
+`POSTGRES_TEST_DATABASE_URL`, after `scripts/ci_dienste_warten.py` has waited (up to two
+minutes) until both accept connections; the throwaway container of the suite is not used, the runner
 has no Docker socket.
 
 Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part of
@@ -33,7 +34,8 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 - **One source for versions.** Woodpecker cannot read a Dockerfile, so the images appear a
   second time in `ci.yaml`. The test fails if they differ from the Dockerfiles and the
   compose file. When raising a version, change both.
-- **One source for commands.** Each step calls `check.sh --schritt <name>`. `CHECK_VOLL=1`
+- **One source for commands.** Each step calls `check.sh --schritt <name>`, one pipeline step
+  per step of `check.sh` (the test compares the names). `CHECK_VOLL=1`
   makes `check.sh` print the full output instead of its summary lines.
 - **No path filter on the workflow.** A skipped workflow reports no status, and the
   required status then blocks the pull request. Filters only per step, and only so that
@@ -72,7 +74,7 @@ enabled, and the pull request that adds the pipeline already needs it):
 
 1. **Enable the repository in Woodpecker:** visibility internal, pull requests allowed, not
    trusted, approval required for forks (the default). Pull requests from forks are released
-   by a person with Woodpecker access; check the diff for changes to `.woodpecker/` and
+   by any person with Woodpecker access (staff and authorised members of Netzbegrünung); check the diff for changes to `.woodpecker/` and
    `scripts/` first (see the known limit above).
 2. **Secret, right after enabling and before the first pull-request run.** Create a token
    `woodpecker-ci-bericht-gutgesagt` for the bot account: this repository only, scopes
@@ -84,7 +86,8 @@ enabled, and the pull request that adds the pipeline already needs it):
 3. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
    required status check in the branch protection of `main`, and switch on "pull request
    must be up to date", so combinations of two pull requests run before the merge. A branch
-   is brought up to date by merge ("Update branch"), not by rebase.
+   is brought up to date by merge ("Update branch"), not by rebase. Whoever wants a linear
+   `main` sets the merge style to squash.
 
 Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` shows
 `enable_status_check` and `status_check_contexts`.

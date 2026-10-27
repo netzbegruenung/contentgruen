@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from typing import Optional, Sequence
 
 ZEILEN_JE_SCHRITT = 80
+# Laengere Zeilen werden gekuerzt, damit auch viele rote Schritte unter MAX_ZEICHEN passen
+ZEICHEN_JE_ZEILE = 1000
 # Forgejo nimmt deutlich mehr an; so bleibt der Kommentar lesbar.
 MAX_ZEICHEN = 60_000
 ZEITLIMIT_S = 30
@@ -35,7 +37,9 @@ _ANSI = re.compile(
 )
 # Steuerzeichen ausser Tab und Zeilenumbruch, C1, Null-Breite- und Bidi-Zeichen
 # ("Trojan Source"), die die Anzeige verdrehen koennen
-_STEUERZEICHEN = re.compile("[\x00-\x08\x0b-\x1f\x7f-\x9f​-‏‪-‮⁦-⁩]")
+_STEUERZEICHEN = re.compile(
+    r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u200b-\u200f\u202a-\u202e\u2066-\u2069]"
+)
 
 
 @dataclass
@@ -44,6 +48,15 @@ class Schritt:
     # None: nicht gelaufen (keine Ausgabe) oder abgebrochen (Ausgabe ohne Exit-Code)
     exit_code: Optional[int]
     ausgabe: Optional[str]
+
+    @property
+    def gelaufen(self) -> bool:
+        return self.ausgabe is not None
+
+    @property
+    def rot(self) -> bool:
+        """Gelaufen und nicht gruen: Exit-Code ungleich 0 oder abgebrochen."""
+        return self.gelaufen and self.exit_code != 0
 
 
 def ausgabe_bereinigen(text: str, geheimnisse: Sequence[str]) -> str:
@@ -65,8 +78,14 @@ def _codeblock(text: str) -> str:
 
 
 def _ende(text: str, zeilen: int) -> tuple[str, int]:
+    """Die letzten ``zeilen`` Zeilen (jede hoechstens ZEICHEN_JE_ZEILE lang) und wie
+    viele Zeilen davor ausgelassen sind."""
     alle = text.rstrip("\n").split("\n")
-    return "\n".join(alle[-zeilen:]), max(0, len(alle) - zeilen)
+    ende = [
+        z if len(z) <= ZEICHEN_JE_ZEILE else z[:ZEICHEN_JE_ZEILE] + "…"
+        for z in alle[-zeilen:]
+    ]
+    return "\n".join(ende), max(0, len(alle) - zeilen)
 
 
 def bericht_erstellen(
@@ -82,8 +101,8 @@ def bericht_erstellen(
         f"*Automatischer CI-Bericht (Woodpecker, Pipeline `#{pipeline}`), kein Agent*\n\n"
         f"Commit `{commit}` ist rot: {pipeline_url}"
     )
-    rot = [s for s in schritte if s.ausgabe is not None and s.exit_code != 0]
-    nicht_gelaufen = [s.name for s in schritte if s.ausgabe is None]
+    rot = [s for s in schritte if s.rot]
+    nicht_gelaufen = [s.name for s in schritte if not s.gelaufen]
 
     zeilen = ZEILEN_JE_SCHRITT
     while True:
@@ -92,9 +111,13 @@ def bericht_erstellen(
             zustand = (
                 "abgebrochen" if s.exit_code is None else f"Exit-Code {s.exit_code}"
             )
-            ende, weg = _ende(ausgabe_bereinigen(s.ausgabe, geheimnisse), zeilen)
+            ende, ausgelassen = _ende(
+                ausgabe_bereinigen(s.ausgabe, geheimnisse), zeilen
+            )
             hinweis = (
-                f" (letzte {zeilen} Zeilen, {weg} davor ausgelassen)" if weg else ""
+                f" (letzte {zeilen} Zeilen, {ausgelassen} davor ausgelassen)"
+                if ausgelassen
+                else ""
             )
             teile.append(f"### `{s.name}`: {zustand}{hinweis}\n\n{_codeblock(ende)}")
         if nicht_gelaufen:
@@ -102,8 +125,9 @@ def bericht_erstellen(
                 "Nicht gelaufen: " + ", ".join(f"`{n}`" for n in nicht_gelaufen)
             )
         text = "\n\n".join(teile) + "\n"
+        # Bei einer Zeile je Schritt passt es dank ZEICHEN_JE_ZEILE immer
         if len(text) <= MAX_ZEICHEN or zeilen <= 1:
-            return text[:MAX_ZEICHEN]
+            return text
         zeilen //= 2
 
 
@@ -114,7 +138,7 @@ def _lesen(pfad: pathlib.Path) -> Optional[str]:
         return None
 
 
-def schritte_lesen(namen: Sequence[str], verzeichnis: pathlib.Path) -> list:
+def schritte_lesen(namen: Sequence[str], verzeichnis: pathlib.Path) -> list[Schritt]:
     schritte = []
     for name in namen:
         status = (_lesen(verzeichnis / f"{name}.status") or "").strip()

@@ -118,3 +118,15 @@ def test_ci_bericht_nur_bei_rotem_pull_request_mit_dem_secret():
     assert bericht["environment"]["FORGEJO_TOKEN"] == {
         "from_secret": "forgejo_ci_bericht_token"
     }
+
+
+def test_schritte_rufen_check_sh_mit_ihrem_namen_auf():
+    # Die Schritte von check.sh (SCHRITTE=...) laufen in der Pipeline je als eigener Schritt.
+    check = (WURZEL / "scripts" / "check.sh").read_text()
+    in_check = re.search(r'^SCHRITTE="([^"]+)"', check, re.MULTILINE).group(1).split()
+    aufrufe = {
+        name: re.findall(r"check\.sh --schritt (\S+)", " ".join(s["commands"]))
+        for name, s in SCHRITTE.items()
+    }
+
+    assert {n: a for n, a in aufrufe.items() if a} == {n: [n] for n in in_check}

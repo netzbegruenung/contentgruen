@@ -22,7 +22,6 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-[ "$SCHRITT" = integration ] && INTEGRATION=1
 # Whether step $1 runs: all steps without --schritt (integration only with --integration), else the one asked for
 laeuft() { if [ -n "$SCHRITT" ]; then [ "$SCHRITT" = "$1" ]; else [ "$1" != integration ] || [ -n "$INTEGRATION" ]; fi; }
 # Summary lines of a test run (grep pattern $1, last $2 lines), or everything with CHECK_VOLL=1

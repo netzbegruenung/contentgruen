@@ -74,6 +74,7 @@ steps:
       QDRANT_URL: http://qdrant:6333
       POSTGRES_TEST_DATABASE_URL: postgresql+psycopg2://app_user:ci@postgres:5432/gutgesagt_app
     commands:
+      - sh scripts/ci-protokoll.sh integration python3 scripts/ci_dienste_warten.py qdrant:6333 postgres:5432
       - sh scripts/ci-protokoll.sh integration bash scripts/check.sh --schritt integration
 
   - name: frontend

@@ -1,4 +1,11 @@
+import json
+
+import pytest
+
 import ci_bericht
+
+# Als chr(), nicht als Zeichen im Quelltext: Bidi-Steuerzeichen gehoeren nicht in den Code
+RTL_OVERRIDE = chr(0x202E)
 
 
 def schritt(name, exit_code, ausgabe):
@@ -35,13 +42,19 @@ def test_bericht_erstellen_nennt_rote_schritte_mit_ausgabe():
 
 def test_bericht_erstellen_entfernt_secret_ansi_und_steuerzeichen():
     text = bericht(
-        [schritt("unit", 1, "\x1b[31mtoken=geheim123\x1b[0m\nweiter‮verdreht\n")],
+        [
+            schritt(
+                "unit",
+                1,
+                "\x1b[31mtoken=geheim123\x1b[0m\nweiter" + RTL_OVERRIDE + "verdreht\n",
+            )
+        ],
         geheimnisse=["geheim123"],
     )
 
     assert "geheim123" not in text
     assert "token=[Secret entfernt]" in text
-    assert "\x1b" not in text and "‮" not in text
+    assert "\x1b" not in text and RTL_OVERRIDE not in text
 
 
 def test_bericht_erstellen_fortschrittszeile_zeigt_letzten_stand():
@@ -78,6 +91,17 @@ def test_bericht_erstellen_zeigt_nur_die_letzten_80_zeilen():
     assert "zeile 200" in text and "zeile 121\n" in text
     assert "zeile 120\n" not in text
     assert "120 davor ausgelassen" in text
+
+
+def test_bericht_erstellen_kuerzt_ueberlange_zeilen_und_schliesst_jeden_block():
+    schritte = [schritt(f"s{i}", 1, "y" * 50_000 + "\nENDE\n") for i in range(7)]
+
+    text = bericht(schritte)
+
+    assert len(text) <= ci_bericht.MAX_ZEICHEN
+    assert text.count("```text\n") == 7
+    assert text.count("\n```\n") == 7
+    assert text.count("ENDE") == 7
 
 
 def test_bericht_erstellen_bleibt_unter_der_grenze():
@@ -132,22 +156,32 @@ class _Forgejo:
         }
 
 
+@pytest.fixture
+def forgejo_mit_status():
+    """Startet je Aufruf einen lokalen Stand-in mit dem Antwortstatus; raeumt danach ab."""
+    gestartet = []
+
+    def starten(status):
+        gestartet.append(_Forgejo(status))
+        return gestartet[-1]
+
+    yield starten
+    for forgejo in gestartet:
+        forgejo.server.shutdown()
+
+
 def _protokoll(tmp_path, name, status, log):
     (tmp_path / f"{name}.log").write_text(log)
     if status is not None:
         (tmp_path / f"{name}.status").write_text(f"{status}\n")
 
 
-def test_main_kommentiert_rote_schritte_in_den_pr(tmp_path, capsys):
-    import json
-
+def test_main_kommentiert_rote_schritte_in_den_pr(tmp_path, capsys, forgejo_mit_status):
     _protokoll(tmp_path, "lint", 0, "ok\n")
     _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
-    forgejo = _Forgejo(201)
-    try:
-        code = ci_bericht.main(["lint", "unit", "bff"], forgejo.env(), tmp_path)
-    finally:
-        forgejo.server.shutdown()
+    forgejo = forgejo_mit_status(201)
+
+    code = ci_bericht.main(["lint", "unit", "bff"], forgejo.env(), tmp_path)
 
     assert code == 0
     ((pfad, auth, body),) = forgejo.anfragen
@@ -158,13 +192,13 @@ def test_main_kommentiert_rote_schritte_in_den_pr(tmp_path, capsys):
     assert "HTTP 201" in capsys.readouterr().out
 
 
-def test_main_meldet_bei_abgelehnter_anfrage_nur_den_status(tmp_path, capsys):
+def test_main_meldet_bei_abgelehnter_anfrage_nur_den_status(
+    tmp_path, capsys, forgejo_mit_status
+):
     _protokoll(tmp_path, "unit", 1, "FAILED\n")
-    forgejo = _Forgejo(401)
-    try:
-        code = ci_bericht.main(["unit"], forgejo.env(), tmp_path)
-    finally:
-        forgejo.server.shutdown()
+    forgejo = forgejo_mit_status(401)
+
+    code = ci_bericht.main(["unit"], forgejo.env(), tmp_path)
 
     ausgabe = capsys.readouterr()
     assert code == 1
@@ -172,13 +206,11 @@ def test_main_meldet_bei_abgelehnter_anfrage_nur_den_status(tmp_path, capsys):
     assert "geheim123" not in ausgabe.err + ausgabe.out
 
 
-def test_main_ohne_token_sendet_nichts(tmp_path, capsys):
+def test_main_ohne_token_sendet_nichts(tmp_path, capsys, forgejo_mit_status):
     _protokoll(tmp_path, "unit", 1, "FAILED\n")
-    forgejo = _Forgejo(201)
-    try:
-        code = ci_bericht.main(["unit"], forgejo.env(token=""), tmp_path)
-    finally:
-        forgejo.server.shutdown()
+    forgejo = forgejo_mit_status(201)
+
+    code = ci_bericht.main(["unit"], forgejo.env(token=""), tmp_path)
 
     assert code == 0
     assert forgejo.anfragen == []
