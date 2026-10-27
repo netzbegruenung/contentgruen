@@ -57,6 +57,8 @@ export class RouteConfigService {
         return this.getFormularConfig(PAGE_TITLES.GENERIC_TEXT_FORM, typLabel('generic_text'));
       case FORMULAR_PFAD.image:
         return this.getFormularConfig(PAGE_TITLES.IMAGE_FORM, typLabel('image'));
+      case FORMULAR_PFAD.post:
+        return this.getFormularConfig(PAGE_TITLES.POST_FORM, typLabel('post'));
 
       case ROUTES.CONTRIBUTIONS:
         return {
@@ -136,7 +138,8 @@ export class RouteConfigService {
     // Ergebnisseite nach dem Speichern: <Formularpfad>/gespeichert/<id>
     if (
       route.startsWith(`${FORMULAR_PFAD.commentary}/${GESPEICHERT_SEGMENT}/`) ||
-      route.startsWith(`${FORMULAR_PFAD.generictext}/${GESPEICHERT_SEGMENT}/`)
+      route.startsWith(`${FORMULAR_PFAD.generictext}/${GESPEICHERT_SEGMENT}/`) ||
+      route.startsWith(`${FORMULAR_PFAD.post}/${GESPEICHERT_SEGMENT}/`)
     ) {
       return this.getFormularConfig(PAGE_TITLES.GESPEICHERT, PAGE_TITLES.GESPEICHERT);
     }

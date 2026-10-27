@@ -22,7 +22,7 @@ import { CONTENT_TYPE_REGISTRY } from '../shared/content-type-registry';
   styleUrls: ['./help-dialog.component.css']
 })
 export class HelpDialogComponent {
-  readonly typen = (['commentary', 'generictext', 'image'] as const).map((key) => ({
+  readonly typen = (['commentary', 'generictext', 'image', 'post'] as const).map((key) => ({
     ...CONTENT_TYPE_REGISTRY[key],
     artikel: key === 'generictext' ? 'eine' : 'ein',
   }));
