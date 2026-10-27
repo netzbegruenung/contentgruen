@@ -19,6 +19,7 @@ from services.search.search_orchestrator import (
 
 from auth.authorization import require_auth
 from dependencies import (
+    get_aufrufer,
     get_commentary_service,
     get_generic_text_service,
     get_image_service,
@@ -29,7 +30,8 @@ from dependencies import (
     get_voting_service,
 )
 from services.usage_tracking_service import get_usage_service
-from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services.anzeigename_service import angemeldet
+from services.beitrag_antwort import Aufrufer
 from services.voting_service import VotingService
 from services.search_tracking_service import (
     get_search_tracking_service,
@@ -94,6 +96,7 @@ async def search_by_text(
         get_suchen_ohne_treffer_service
     ),
     x_user: Optional[str] = Header(None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
     try:
@@ -231,10 +234,7 @@ async def search_by_text(
         orchestrator.enrich_with_usage()
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
-        if angemeldet(validated_user):
-            orchestrator.apply_author_names(get_anzeigename_service())
-        else:
-            orchestrator.strip_author_ids()
+        orchestrator.fuer_aufrufer(aufrufer)
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

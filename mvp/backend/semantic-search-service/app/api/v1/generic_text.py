@@ -6,6 +6,7 @@ import logging
 from uuid import UUID
 
 from dependencies import (
+    get_aufrufer,
     get_generic_text_service,
     get_reference_service,
     get_statement_service,
@@ -23,7 +24,8 @@ from services.content.generic_text_service import (
     GenericTextService,
     zu_pruefender_text,
 )
-from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services.beitrag_antwort import Aufrufer, als_antworten
+from dtos.beitrag import HintergrundinfoAntwort, HintergrundinfoTreffer
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from domain.models.content_type import ContentType
@@ -107,14 +109,14 @@ from fastapi import Query
 
 
 # Endpoint to search generic text by UUID
-@router.get("/getById")
+@router.get("/getById", response_model=HintergrundinfoAntwort)
 async def get_by_id(
     generic_text_id: UUID = Query(
         ..., description="The UUID of the generic text to retrieve"
     ),
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
-    x_user: Optional[str] = Header(default=None),
-):
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> HintergrundinfoAntwort:
     try:
         # Retrieve generic text by ID
         generic_text = await generic_text_service.get(generic_text_id)
@@ -126,9 +128,7 @@ async def get_by_id(
                 detail=f"GenericText with id {generic_text_id} not found",
             )
 
-        if angemeldet(x_user):
-            return get_anzeigename_service().mit_autor_name(generic_text)
-        return generic_text
+        return als_antworten(HintergrundinfoAntwort, [generic_text], aufrufer)[0]
 
     except Exception as e:
         logger.error(
@@ -143,6 +143,7 @@ async def get_all(
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> GenericTextGetAllResponse:
     try:
         logger.debug("/getAll was called")
@@ -155,7 +156,9 @@ async def get_all(
 
         response: GenericTextGetAllResponse = GenericTextGetAllResponse(
             results_count=len(generic_text_index_results),
-            results=generic_text_index_results,
+            results=als_antworten(
+                HintergrundinfoAntwort, generic_text_index_results, aufrufer
+            ),
             total_records_count=await generic_text_service.count(),
         )
 
@@ -170,6 +173,7 @@ async def get_all(
 async def search_generic_text(
     request: SearchGenericTextByTextRequest,
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> GenericTextSearchResponse:
     try:
         logger.debug("/searchGenericText was called")
@@ -182,7 +186,9 @@ async def search_generic_text(
         )
 
         response: GenericTextSearchResponse = GenericTextSearchResponse(
-            results=generic_text_index_results
+            results=als_antworten(
+                HintergrundinfoTreffer, generic_text_index_results, aufrufer
+            )
         )
 
         return response

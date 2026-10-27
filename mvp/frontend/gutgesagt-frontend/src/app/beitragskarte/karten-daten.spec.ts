@@ -75,9 +75,16 @@ describe('karten-daten', () => {
       expect(daten.einwurfAngaben).toBeUndefined();
     });
 
-    it('nimmt den Anzeigenamen vom Paket (Suche) oder vom Inhalt (Einzelabruf, /recent)', () => {
-      expect(ausSuchergebnis(paket('commentary_result', {}, { autor_name: 'Anna B.' })).autorName).toBe('Anna B.');
+    it('nimmt den Anzeigenamen vom Inhalt', () => {
       expect(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim' })).autorName).toBe('Kim');
+    });
+
+    it('uebernimmt das Kennzeichen eigener Beitrag vom Server (#333)', () => {
+      const ohneKennung = { original_author: undefined };
+      expect(ausSuchergebnis(paket('commentary_result', { ...ohneKennung, ist_eigener_beitrag: true })).eigen).toBeTrue();
+      expect(ausSuchergebnis(paket('commentary_result', { ...ohneKennung, ist_eigener_beitrag: false })).eigen).toBeFalse();
+      expect(ausSuchergebnis(paket('commentary_result', { ...ohneKennung, ist_eigener_beitrag: null })).eigen).toBeNull();
+      expect(ausSuchergebnis(paket('commentary_result', ohneKennung)).autor).toBeNull();
     });
 
     it('macht aus der leeren Kennung einer anonymen Antwort null', () => {

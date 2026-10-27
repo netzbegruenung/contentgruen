@@ -1,11 +1,15 @@
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Header, Query
 import datetime
 import logging
 import uuid
 from uuid import UUID
 
-from dependencies import get_image_service, get_caption_suggestion_service
+from dependencies import (
+    get_aufrufer,
+    get_caption_suggestion_service,
+    get_image_service,
+)
 from dtos.image import (
     AddImageRequest,
     AddImageResponse,
@@ -14,7 +18,7 @@ from dtos.image import (
     SuggestCaptionRequest,
     SuggestCaptionResponse,
 )
-from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services.beitrag_antwort import Aufrufer, als_antworten
 from services.content.base_content_service import BaseContentService
 from services.vision.caption_suggestion_service import CaptionSuggestionService
 from domain.models.image import ImageDbEntry
@@ -26,32 +30,15 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def _als_antwort(
-    bilder: List[ImageDbEntry], x_user: Optional[str]
-) -> List[BildResponse]:
-    """
-    Die Bilder als BildResponse, ohne Kennung. Den Anzeigenamen bekommen nur
-    angemeldete Aufrufer, eine Abfrage fuer alle Bilder.
-    """
-    namen = (
-        get_anzeigename_service().namen(bild.original_author for bild in bilder)
-        if angemeldet(x_user)
-        else {}
-    )
-    return [
-        BildResponse.aus_bild(bild, namen.get(bild.original_author)) for bild in bilder
-    ]
-
-
 @router.get("/getById", response_model=BildResponse)
 async def get_by_id(
     image_id: UUID = Query(..., description="The UUID of the image to retrieve"),
     image_service: BaseContentService = Depends(get_image_service),
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> BildResponse:
     try:
         image = await image_service.get(image_id)
-        return _als_antwort([image], x_user)[0]
+        return als_antworten(BildResponse, [image], aufrufer)[0]
     except HTTPException:
         raise
     except ValueError as e:
@@ -69,7 +56,7 @@ async def get_all(
     image_service: BaseContentService = Depends(get_image_service),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> ImageGetAllResponse:
     try:
         offset = (page - 1) * page_size
@@ -78,7 +65,7 @@ async def get_all(
         )
         return ImageGetAllResponse(
             results_count=len(results),
-            results=_als_antwort(results, x_user),
+            results=als_antworten(BildResponse, results, aufrufer),
             total_records_count=await image_service.count(),
         )
     except Exception as e:

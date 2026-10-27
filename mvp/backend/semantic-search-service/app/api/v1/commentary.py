@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
 from dependencies import (
+    get_aufrufer,
     get_commentary_service,
     get_reference_service,
     get_statement_service,
@@ -19,7 +20,8 @@ from dtos.commentary import (
 from domain.models.base_content import BaseContentSearchResult
 from services.content.base_content_service import Dublettenpruefung
 from services.content.commentary_service import CommentaryService
-from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services.beitrag_antwort import Aufrufer, als_antworten
+from dtos.beitrag import KommentarAntwort, KommentarTreffer
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from domain.models.commentary import CommentaryReference
 from services.content.reference_service import ReferenceService
@@ -58,14 +60,14 @@ from fastapi import Query
 
 
 # Endpoint to search commentary by UUID
-@router.get("/getById")
+@router.get("/getById", response_model=KommentarAntwort)
 async def get_by_id(
     commentary_id: UUID = Query(
         ..., description="The UUID of the commentary to retrieve"
     ),
     commentary_service: CommentaryService = Depends(get_commentary_service),
-    x_user: Optional[str] = Header(default=None),
-):
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> KommentarAntwort:
     try:
         # Retrieve commentary by ID
         commentary = await commentary_service.get(commentary_id)
@@ -76,9 +78,7 @@ async def get_by_id(
                 status_code=404, detail=f"Commentary with id {commentary_id} not found"
             )
 
-        if angemeldet(x_user):
-            return get_anzeigename_service().mit_autor_name(commentary)
-        return commentary
+        return als_antworten(KommentarAntwort, [commentary], aufrufer)[0]
 
     except Exception as e:
         logger.error(
@@ -92,6 +92,7 @@ async def get_by_id(
 async def search_commentaries(
     request: SearchCommentaryByTextRequest,
     commentary_service: CommentaryService = Depends(get_commentary_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> CommentarySearchResponse:
     try:
         logger.debug("/searchCommentaries was called")
@@ -102,7 +103,7 @@ async def search_commentaries(
         logger.debug(f"/searchCommentaries got {len(commentary_index_results)} results")
 
         response: CommentarySearchResponse = CommentarySearchResponse(
-            results=commentary_index_results
+            results=als_antworten(KommentarTreffer, commentary_index_results, aufrufer)
         )
 
         return response

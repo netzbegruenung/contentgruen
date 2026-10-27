@@ -1,10 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-from domain.models.commentary import CommentaryDbEntry
-from domain.models.generic_text import GenericTextDbEntry
-from domain.models.post import PostDbEntry
-from domain.models.image import ImageDbEntry
+from dtos.beitrag import HintergrundinfoAntwort, KommentarAntwort, PostAntwort
+from dtos.image import BildResponse
 
 # TODO: Evaluate usage of camelize
 
@@ -37,15 +35,16 @@ class SearchByTextRequest(BaseModel):
 
 ###   Entities   ###
 
+# Je Treffer der Beitrag als Antwort-DTO (dtos/beitrag.py): Ein DbEntry wird beim
+# Anlegen des Treffers umgewandelt, Anzeigename und ist_eigener_beitrag stehen dort.
+
 
 class CommentarySearchResult(BaseModel):
     score: float
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
-    commentary_result: CommentaryDbEntry
-    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
-    autor_name: Optional[str] = None
+    commentary_result: KommentarAntwort
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -57,9 +56,7 @@ class GenericTextSearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
-    generictext_result: GenericTextDbEntry
-    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
-    autor_name: Optional[str] = None
+    generictext_result: HintergrundinfoAntwort
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -71,9 +68,7 @@ class PostSearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
-    post_result: PostDbEntry
-    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
-    autor_name: Optional[str] = None
+    post_result: PostAntwort
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -85,9 +80,7 @@ class ImageSearchResult(BaseModel):
     statement_text: Optional[str] = None
     statement_similarity_score: Optional[float] = None
     reply_relevance: Optional[float] = None
-    image_result: ImageDbEntry
-    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
-    autor_name: Optional[str] = None
+    image_result: BildResponse
     user_vote: Optional[str] = None
     polarity_mismatch_detected: Optional[bool] = None
     original_score: Optional[float] = None

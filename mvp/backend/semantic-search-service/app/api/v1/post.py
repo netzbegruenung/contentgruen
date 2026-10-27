@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header, Query
 import datetime
@@ -6,7 +6,7 @@ import logging
 import uuid
 from uuid import UUID
 
-from dependencies import get_post_service
+from dependencies import get_aufrufer, get_post_service
 from dtos.post import (
     AddPostRequest,
     AddPostResponse,
@@ -19,7 +19,8 @@ from domain.models.post import PostDbEntry
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
-from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services.beitrag_antwort import Aufrufer, als_antworten
+from dtos.beitrag import PostAntwort, PostTreffer
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -32,21 +33,17 @@ async def read_test():
 
 
 # Retrieve a single post by its UUID
-@router.get("/getById")
+@router.get("/getById", response_model=PostAntwort)
 async def get_by_id(
     post_id: UUID = Query(..., description="The UUID of the post to retrieve"),
     post_service: BaseContentService = Depends(get_post_service),
-    x_user: Optional[str] = Header(default=None),
-):
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> PostAntwort:
     try:
         # The repository contract is raise-on-missing (ValueError), not return-None,
         # so a missing id must be mapped to 404 here rather than relying on `post is None`.
         post = await post_service.get(post_id)
-        # Wie bei Kommentar und Hintergrundinfo: Angemeldete sehen den Anzeigenamen
-        # des Autors (Ergebnisseite nach dem Speichern).
-        if angemeldet(x_user):
-            return get_anzeigename_service().mit_autor_name(post)
-        return post
+        return als_antworten(PostAntwort, [post], aufrufer)[0]
     except HTTPException:
         raise
     except ValueError as e:
@@ -63,6 +60,7 @@ async def get_all(
     post_service: BaseContentService = Depends(get_post_service),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> PostGetAllResponse:
     try:
         offset = (page - 1) * page_size
@@ -71,7 +69,7 @@ async def get_all(
         )
         return PostGetAllResponse(
             results_count=len(results),
-            results=results,
+            results=als_antworten(PostAntwort, results, aufrufer),
             total_records_count=await post_service.count(),
         )
     except Exception as e:
@@ -84,10 +82,11 @@ async def get_all(
 async def search_post(
     request: SearchPostByTextRequest,
     post_service: BaseContentService = Depends(get_post_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> PostSearchResponse:
     try:
         results = await post_service.search(request.query_text, request.limit)
-        return PostSearchResponse(results=results)
+        return PostSearchResponse(results=als_antworten(PostTreffer, results, aufrufer))
     except Exception as e:
         logger.error(f"Error in search_post: {e}")
         raise HTTPException(status_code=500, detail=str(e))

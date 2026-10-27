@@ -2,11 +2,8 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
-from domain.models.generic_text import (
-    GenericText,
-    GenericTextDbEntry,
-    GenericTextSearchResult,
-)
+from domain.models.generic_text import GenericText
+from dtos.beitrag import HintergrundinfoAntwort, HintergrundinfoTreffer
 
 
 ### AddGenericText ###
@@ -100,7 +97,7 @@ class AddGenericTextResponse(BaseModel):
 
 class GenericTextGetAllResponse(BaseModel):
     results_count: int
-    results: List[GenericTextDbEntry]
+    results: List[HintergrundinfoAntwort]
     total_records_count: int
 
 
@@ -115,4 +112,4 @@ class SearchGenericTextByTextRequest(BaseModel):
 
 
 class GenericTextSearchResponse(BaseModel):
-    results: List[GenericTextSearchResult]
+    results: List[HintergrundinfoTreffer]
