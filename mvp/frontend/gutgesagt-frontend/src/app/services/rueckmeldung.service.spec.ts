@@ -87,7 +87,9 @@ describe('RueckmeldungService', () => {
     anmeldung.next(angemeldet('kim-1'));
     anmeldung.next({ ...angemeldet('kim-1'), claims: { name: 'Kim' } });
 
-    http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 0 });
+    const anfragen = http.match(ADRESSE);
+    anfragen.forEach((a) => a.flush({ nutzung_seit_letztem_besuch: 0 }));
+    expect(anfragen.length).toBe(1);
   });
 
   it('fragt nach einem Wechsel der Person erneut', () => {
@@ -98,7 +100,9 @@ describe('RueckmeldungService', () => {
     anmeldung.next({ isAuthenticated: false, userId: null, userName: null, claims: null });
     anmeldung.next(angemeldet('bo-2'));
 
-    http.expectOne(ADRESSE).flush({ nutzung_seit_letztem_besuch: 0 });
+    const anfragen = http.match(ADRESSE);
+    anfragen.forEach((a) => a.flush({ nutzung_seit_letztem_besuch: 0 }));
+    expect(anfragen.length).toBe(1);
   });
 
   it('zeigt bei einem Fehler nichts', () => {
