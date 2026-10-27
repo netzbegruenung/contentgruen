@@ -44,6 +44,8 @@ describe('Routentabelle', () => {
         'workflow/add-generictext',
         'workflow/add-commentary/gespeichert/:id',
         'workflow/add-generictext/gespeichert/:id',
+        'workflow/add-post',
+        'workflow/add-post/gespeichert/:id',
         'workflow/add-image',
       ]),
     );
