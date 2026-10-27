@@ -58,7 +58,7 @@ describe('AddPostComponent', () => {
   });
 
   it('uebernimmt aus dem Fangkorb Satz als Titel, Link und Plattform', () => {
-    component.vorbefuellung = { rohinputId: 'e-1', titel: 'Der Satz zum Einwurf', url: WERTE.url }; // retired-ok: Feldname der Vorbefuellung bis #262
+    component.vorbefuellung = { einwurfId: 'e-1', titel: 'Der Satz zum Einwurf', url: WERTE.url };
     component.ngOnChanges({ vorbefuellung: {} as any });
 
     expect(component.postForm.value.title).toBe('Der Satz zum Einwurf');
