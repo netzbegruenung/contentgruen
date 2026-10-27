@@ -278,7 +278,7 @@ def test_einspielen_auf_neuer_datenbank_ergibt_das_modell(
     """
     Wie bei run-local.sh wipe: init.sql und create_all haben das Schema schon
     angelegt. Die wiederholbaren Skripte laufen trotzdem und landen im Protokoll,
-    die zwei nicht wiederholbaren erkennt der Lauf an ihrer Wirkung.
+    die drei nicht wiederholbaren erkennt der Lauf an ihrer Wirkung.
     """
     eingespielt = migrationen.einspielen(
         aktuelle_datenbank.engine, postgres.MIGRATIONEN
@@ -291,7 +291,7 @@ def test_einspielen_auf_neuer_datenbank_ergibt_das_modell(
         s.name: (
             migrationen.ERKANNT
             if s.name in migrationen.NICHT_WIEDERHOLBAR
-            else migrationen.ANGEWENDET
+            else migrationen.EINGESPIELT
         )
         for s in SKRIPTE
     }
@@ -341,7 +341,7 @@ def test_einspielen_spielt_datensparsamkeit_nur_auf_altem_stand_ein(wegwerf_sche
     assert "2026-08-25-usage-events-datensparsamkeit.sql" in eingespielt
     assert (
         migrationen.protokoll(db.engine)["2026-08-25-usage-events-datensparsamkeit.sql"]
-        == migrationen.ANGEWENDET
+        == migrationen.EINGESPIELT
     )
 
 
@@ -361,6 +361,73 @@ def test_einspielen_leert_eingespielte_suchereignisse_nicht(aktuelle_datenbank):
 
     with aktuelle_datenbank.engine.begin() as c:
         assert c.execute(text("SELECT count(*) FROM search_events")).scalar_one() == 1
+
+
+def test_einspielen_pseudonymisiert_alte_suchereignisse(aktuelle_datenbank):
+    """Gegenstueck: Ohne actor_hash (Stand vor dem 19.08.) laeuft das Skript."""
+    with aktuelle_datenbank.engine.begin() as c:
+        c.execute(text("ALTER TABLE search_events DROP COLUMN actor_hash"))
+        c.execute(text("ALTER TABLE search_events ADD COLUMN query_text TEXT"))
+        c.execute(
+            text(
+                "INSERT INTO search_events (query_text, results_count) "
+                "VALUES ('Waermepumpe', 0)"
+            )
+        )
+
+    eingespielt = migrationen.einspielen(
+        aktuelle_datenbank.engine, postgres.MIGRATIONEN
+    )
+
+    assert "2026-08-19-search-events-pseudonymisieren.sql" in eingespielt
+    with aktuelle_datenbank.engine.begin() as c:
+        assert c.execute(text("SELECT count(*) FROM search_events")).scalar_one() == 0
+        spalten = c.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = current_schema() AND table_name = 'search_events'"
+            )
+        ).scalars()
+        assert "actor_hash" in set(spalten)
+
+
+def test_einspielen_verknuepft_beitraege_nicht_neu(aktuelle_datenbank):
+    """
+    Von Hand eingespielt: Der Nachtrag in fangkorb-v2 haengte einen Beitrag ohne
+    Satz an einen spaeter geschriebenen Satz derselben Person.
+    """
+    with aktuelle_datenbank.engine.begin() as c:
+        einwurf = c.execute(
+            text("INSERT INTO raw_inputs (content) VALUES ('Einwurf') RETURNING id")
+        ).scalar_one()
+        parameter = {"einwurf": einwurf, "beitrag": INHALT["id"], "person": "u-1"}
+        c.execute(
+            text(
+                "INSERT INTO raw_input_content_links "
+                "(raw_input_id, content_id, created_by) "
+                "VALUES (:einwurf, :beitrag, :person)"
+            ),
+            parameter,
+        )
+        c.execute(
+            text(
+                "INSERT INTO raw_input_drafts (raw_input_id, user_id, sentence) "
+                "VALUES (:einwurf, :person, 'Spaeter geschriebener Satz')"
+            ),
+            parameter,
+        )
+
+    migrationen.einspielen(aktuelle_datenbank.engine, postgres.MIGRATIONEN)
+
+    assert (
+        migrationen.protokoll(aktuelle_datenbank.engine)["2026-09-13-fangkorb-v2.sql"]
+        == migrationen.ERKANNT
+    )
+    with aktuelle_datenbank.engine.begin() as c:
+        assert (
+            c.execute(text("SELECT draft_id FROM raw_input_content_links")).scalar_one()
+            is None
+        )
 
 
 def test_einspielen_bei_belegter_sperre_fehlgeschlagen_und_spaeter_wiederholt(
@@ -386,13 +453,57 @@ def test_einspielen_bei_belegter_sperre_fehlgeschlagen_und_spaeter_wiederholt(
 
     assert eingespielt[0] == skript
     assert set(migrationen.protokoll(aktuelle_datenbank.engine).values()) <= {
-        migrationen.ANGEWENDET,
+        migrationen.EINGESPIELT,
         migrationen.ERKANNT,
     }
 
 
 def _skript(sql: str, nachlauf: str = "") -> str:
     return f"-- Test\n-- Anwenden: siehe README.md in diesem Verzeichnis.\n\nBEGIN;\n{sql}\nCOMMIT;\n{nachlauf}\n"
+
+
+def test_einspielen_skript_ohne_eigene_grenze_wartet_nicht_endlos(
+    aktuelle_datenbank, tmp_path, monkeypatch
+):
+    """
+    Ein Skript ohne SET LOCAL lock_timeout (wie das aus #275) bricht an einer
+    belegten Sperre nach WARTEN_AUF_SPERRE ab, statt den Start anzuhalten.
+    """
+    monkeypatch.setattr(migrationen, "WARTEN_AUF_SPERRE", "1s")
+    name = "2026-10-27-ohne-grenze.sql"
+    (tmp_path / name).write_text(
+        _skript("ALTER TABLE search_events ADD COLUMN IF NOT EXISTS itest INT;")
+    )
+    with aktuelle_datenbank.engine.connect() as sperre:
+        sperre.execute(text("LOCK TABLE search_events IN ACCESS SHARE MODE"))
+        with pytest.raises(migrationen.MigrationFehlgeschlagen, match="lock timeout"):
+            migrationen.einspielen(aktuelle_datenbank.engine, tmp_path)
+        sperre.rollback()
+
+    assert migrationen.protokoll(aktuelle_datenbank.engine) == {
+        name: migrationen.FEHLGESCHLAGEN
+    }
+    assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == [name]
+
+
+def test_einspielen_vacuum_bei_belegter_sperre_holt_der_naechste_start_nach(
+    aktuelle_datenbank, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(migrationen, "WARTEN_AUF_SPERRE", "1s")
+    name = "2026-10-27-vacuum-gesperrt.sql"
+    (tmp_path / name).write_text(_skript("SELECT 1;", "VACUUM FULL search_events;"))
+    with aktuelle_datenbank.engine.connect() as sperre:
+        sperre.execute(text("LOCK TABLE search_events IN ACCESS SHARE MODE"))
+        assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == [name]
+        sperre.rollback()
+    assert migrationen.protokoll(aktuelle_datenbank.engine)[name] == (
+        migrationen.NACHLAUF_OFFEN
+    )
+
+    assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == []
+    assert migrationen.protokoll(aktuelle_datenbank.engine)[name] == (
+        migrationen.EINGESPIELT
+    )
 
 
 def test_einspielen_nimmt_neue_datei_ohne_codeaenderung_mit(
@@ -439,7 +550,7 @@ def test_einspielen_holt_nur_den_gescheiterten_nachlauf_nach(
     assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == []
 
     assert migrationen.protokoll(aktuelle_datenbank.engine)[name] == (
-        migrationen.ANGEWENDET
+        migrationen.EINGESPIELT
     )
     with aktuelle_datenbank.engine.begin() as c:
         assert c.execute(text("SELECT count(*) FROM itest_zaehler")).scalar_one() == 1

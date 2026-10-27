@@ -410,7 +410,7 @@ class MigrationsprotokollZeile(Base):
     Welche Migration aus postgres-app/migrations eingespielt ist, eine Zeile je Datei.
 
     Schreibt nur infrastructure/database/migrationen.py beim Start des Dienstes.
-    status ist "angewendet", "erkannt" (Wirkung schon vorhanden, von Hand
+    status ist "eingespielt", "erkannt" (Wirkung schon vorhanden, von Hand
     eingespielt), "fehlgeschlagen" (laeuft beim naechsten Start erneut) oder
     "nachlauf_offen" (festgeschrieben, nur das VACUUM danach fehlt noch). fehler
     haelt nur die erste Zeile der Fehlermeldung, ohne die DETAIL-Zeile mit Werten.

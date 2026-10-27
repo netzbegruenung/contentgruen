@@ -8,7 +8,7 @@ dann die Skripte nach dem Namen ohne ``.sql``.
 
 Jede Datei laeuft genau einmal; was gelaufen ist, steht in ``migrationsprotokoll``
 (Modell MigrationsprotokollZeile). Neue Dateien laufen ohne Codeaenderung mit, denn
-die Konvention verlangt, dass sie wiederholbar sind (README dort). Fuer die zwei
+die Konvention verlangt, dass sie wiederholbar sind (README dort). Fuer die drei
 alten, die das nicht sind, steht unten in NICHT_WIEDERHOLBAR, woran man ihre Wirkung
 erkennt: Sind sie schon (von Hand) eingespielt, vermerkt der Lauf sie als ``erkannt``
 und startet sie nicht.
@@ -19,7 +19,8 @@ dessen ``COMMIT``: Skript und Eintrag gelten zusammen oder gar nicht. Was nach d
 Migration festgeschrieben und als ``nachlauf_offen`` vermerkt; der naechste Start
 holt nur diesen Teil nach, nicht das ganze Skript.
 
-Scheitert die Transaktion (etwa an einer belegten Sperre), rollt sie zurueck, der
+Auf eine Sperre wartet jedes Skript hoechstens WARTEN_AUF_SPERRE. Scheitert die
+Transaktion (etwa an einer belegten Sperre), rollt sie zurueck, der
 Fehler wird als ``fehlgeschlagen`` vermerkt und ``MigrationFehlgeschlagen``
 geworfen. Andere Fehler (ein Skript, das sich nicht zerlegen laesst, eine
 verlorene Verbindung) werfen ohne Eintrag, mit derselben Folge: Der Dienst startet nicht, Docker startet ihn neu, und der naechste Lauf
@@ -41,7 +42,7 @@ from infrastructure.database.models import MigrationsprotokollZeile
 
 logger = logging.getLogger(__name__)
 
-ANGEWENDET = "angewendet"
+EINGESPIELT = "eingespielt"
 ERKANNT = "erkannt"
 FEHLGESCHLAGEN = "fehlgeschlagen"
 NACHLAUF_OFFEN = "nachlauf_offen"
@@ -52,9 +53,11 @@ SPERRE = 293_208_001
 # Wie lange ein Start auf einen anderen wartet, der gerade einspielt; danach bricht
 # er ab und Docker startet ihn neu.
 WARTEN_AUF_ANDEREN_START = "10min"
-# Wie lange das VACUUM FULL nach dem COMMIT auf seine Sperre wartet. Es sperrt die
-# Tabelle exklusiv; ohne Grenze stuende der Start, solange jemand sie liest.
-WARTEN_IM_NACHLAUF = "30s"
+# Wie lange ein Skript und das VACUUM FULL nach seinem COMMIT auf eine Sperre
+# warten. Ohne Grenze stuende der Start, solange jemand die Tabelle liest (etwa
+# eine laufende Sicherung), und haengte keinen Eintrag ins Protokoll. Ein Skript
+# kann kuerzer warten (SET LOCAL lock_timeout, wie init-angleichen).
+WARTEN_AUF_SPERRE = "30s"
 
 _SPALTE_VORHANDEN = """
     SELECT EXISTS (
@@ -64,7 +67,7 @@ _SPALTE_VORHANDEN = """
     )
 """
 
-# Die zwei Skripte, die nicht erneut laufen duerfen (README, "Erneut anwenden"), und
+# Die drei Skripte, die nicht erneut laufen duerfen (README, "Erneut anwenden"), und
 # je eine Abfrage, die wahr ist, wenn ihre Wirkung schon in der Datenbank steckt. Auf
 # einer neuen Datenbank (init.sql, create_all) ist sie das immer.
 NICHT_WIEDERHOLBAR = {
@@ -76,6 +79,12 @@ NICHT_WIEDERHOLBAR = {
     "2026-08-25-usage-events-datensparsamkeit.sql": "SELECT NOT ("
     + _SPALTE_VORHANDEN.format(tabelle="usage_events", spalte="user_agent")
     + ")",
+    # Schema-seitig wiederholbar, aber der Nachtrag am Ende verknuepft alte Beitraege
+    # ohne Satz (draft_id NULL) mit einem spaeter geschriebenen Satz derselben
+    # Person. draft_id legt erst dieses Skript an.
+    "2026-09-13-fangkorb-v2.sql": _SPALTE_VORHANDEN.format(
+        tabelle="raw_input_content_links", spalte="draft_id"
+    ),
 }
 
 _VERMERKEN = """
@@ -152,13 +161,13 @@ def einspielen(engine: Engine, verzeichnis: Union[Path, str]) -> list[str]:
         with roh.dbapi_connection.cursor() as cur:
             cur.execute(f"SET lock_timeout = '{WARTEN_AUF_ANDEREN_START}'")
             cur.execute("SELECT pg_advisory_lock(%s)", (SPERRE,))
-            cur.execute("RESET lock_timeout")
+            cur.execute(f"SET lock_timeout = '{WARTEN_AUF_SPERRE}'")
             # Erst unter der Sperre lesen: Ein anderer Dienst kann gerade fertig sein.
             cur.execute("SELECT name, status FROM migrationsprotokoll")
             stand = dict(cur.fetchall())
             for skript in skripte:
                 status = stand.get(skript.name)
-                if status in (ANGEWENDET, ERKANNT):
+                if status in (EINGESPIELT, ERKANNT):
                     continue
                 transaktion, nachlauf = zerlegen(skript.read_text(encoding="utf-8"))
                 if status != NACHLAUF_OFFEN:
@@ -202,7 +211,7 @@ def _transaktion(cur, name: str, anweisungen: list[str], mit_nachlauf: bool) -> 
         for anweisung in anweisungen:
             cur.execute(anweisung)
         cur.execute(
-            _VERMERKEN, (name, NACHLAUF_OFFEN if mit_nachlauf else ANGEWENDET, None)
+            _VERMERKEN, (name, NACHLAUF_OFFEN if mit_nachlauf else EINGESPIELT, None)
         )
         cur.execute("COMMIT")
     except Exception as fehler:
@@ -221,23 +230,21 @@ def _nachlauf(cur, name: str, anweisungen: list[str]) -> None:
     versucht es erneut.
     """
     try:
-        cur.execute(f"SET lock_timeout = '{WARTEN_IM_NACHLAUF}'")
         for anweisung in anweisungen:
             cur.execute(anweisung)
-        cur.execute("RESET lock_timeout")
     except Exception as fehler:
         logger.error(
             "Nachlauf von Migration %s fehlgeschlagen, folgt beim naechsten Start: %s",
             name,
             _erste_zeile(fehler),
         )
-        _vermerken_trotz_fehler(cur, name, NACHLAUF_OFFEN, fehler, "RESET lock_timeout")
+        _vermerken_trotz_fehler(cur, name, NACHLAUF_OFFEN, fehler)
         return
-    cur.execute(_VERMERKEN, (name, ANGEWENDET, None))
+    cur.execute(_VERMERKEN, (name, EINGESPIELT, None))
 
 
 def _vermerken_trotz_fehler(
-    cur, name: str, status: str, fehler: Exception, aufraeumen: str
+    cur, name: str, status: str, fehler: Exception, aufraeumen: Optional[str] = None
 ) -> None:
     """
     Nach einem Fehler aufraeumen und ihn vermerken. Geht auch das schief (etwa
@@ -246,7 +253,8 @@ def _vermerken_trotz_fehler(
     naechsten Start trotzdem wieder.
     """
     try:
-        cur.execute(aufraeumen)
+        if aufraeumen:
+            cur.execute(aufraeumen)
         cur.execute(_VERMERKEN, (name, status, _erste_zeile(fehler)))
     except Exception:
         logger.exception("Migration %s: Fehler nicht im Protokoll vermerkt", name)

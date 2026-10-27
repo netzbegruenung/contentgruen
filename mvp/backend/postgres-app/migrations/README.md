@@ -32,23 +32,26 @@ Image enthält sie.
 - **Transaktion:** Jedes Skript läuft bis zu seinem `COMMIT` in einer
   Transaktion, der Eintrag im Protokoll wird in derselben Transaktion
   geschrieben. Skript und Eintrag gelten zusammen oder gar nicht.
-- **Fehler:** Schlägt ein Skript fehl, etwa weil es eine Sperre nicht bekommt
-  (`2026-10-26-init-angleichen.sql` wartet 5 s), rollt es zurück und steht als
+- **Sperren:** Jedes Skript wartet höchstens 30 s auf eine Sperre, ein Skript
+  mit eigenem `SET LOCAL lock_timeout` so lange, wie es dort steht
+  (`2026-10-26-init-angleichen.sql`: 5 s).
+- **Fehler:** Schlägt ein Skript fehl, etwa weil es eine Sperre nicht bekommt,
+  rollt es zurück und steht als
   `fehlgeschlagen` im Protokoll, mit der ersten Zeile der Fehlermeldung. Der
   Dienst startet dann nicht, spätere Skripte laufen nicht. Mit einer
   Restart-Policy (im Dev-Stack `restart: unless-stopped`) startet Docker den
-  Dienst neu, und der nächste Start versucht das Skript erneut. Was schiefging, steht im Log des Dienstes.
+  Dienst neu, und der nächste Start versucht das Skript erneut. Was
+  schiefging, steht im Log des Dienstes.
 - **Nach dem `COMMIT`:** Das `VACUUM FULL` am Ende von
   `2026-08-19-search-events-pseudonymisieren.sql`,
   `2026-08-25-usage-events-datensparsamkeit.sql` und
   `2026-10-26-search-events-nur-tag.sql` darf in PostgreSQL nicht in einer
-  Transaktion laufen und läuft danach einzeln, mit höchstens 30 s Warten auf
-  die Sperre. Scheitert es, ist die Migration
-  schon festgeschrieben und steht als `nachlauf_offen` im Protokoll; der Dienst
+  Transaktion laufen und läuft danach einzeln, ebenfalls mit höchstens 30 s
+  Warten auf die Sperre. Scheitert es, ist die Migration schon festgeschrieben und steht als `nachlauf_offen` im Protokoll; der Dienst
   startet trotzdem, denn das Schema stimmt. Der nächste Start holt nur das
   `VACUUM FULL` nach, nicht das ganze Skript.
 - **Von Hand eingespielt:** Die wiederholbaren Skripte laufen einfach noch
-  einmal und landen dann im Protokoll. Die zwei nicht wiederholbaren (siehe
+  einmal und landen dann im Protokoll. Die drei nicht wiederholbaren (siehe
   „Erneut anwenden“) erkennt der Dienst an ihrer Wirkung und vermerkt sie als
   `erkannt`, ohne sie zu starten. Beim ersten Start mit diesem Ablauf auf einer
   Bestandsdatenbank laufen deshalb alle übrigen Skripte einmal erneut; das
@@ -67,8 +70,9 @@ SELECT name, status, zeitpunkt, fehler FROM migrationsprotokoll ORDER BY name;
 ```
 
 Nach dem Einspielen einer Sicherung (`mvp/scripts/backup/restore.sh`) steht im
-Protokoll der Stand der Sicherung. Den Semantic-Service danach neu starten,
-damit er die seither hinzugekommenen Skripte einspielt.
+Protokoll der Stand der Sicherung. `restore.sh` startet den Semantic-Service
+danach neu, und er spielt die seither hinzugekommenen Skripte ein. Wer anders
+zurückspielt, startet den Dienst selbst neu.
 
 ### Von Hand einspielen
 
@@ -89,23 +93,27 @@ docker exec -i "$PG_CONTAINER" psql -U app_user -d "$PG_DB" -v ON_ERROR_STOP=1 \
   Umbenennung aus #206 noch nicht ausgerollt ist, gelten die alten Namen
   `contentgruen-app-postgres` und `contentgruen_app`.
 - Ins Protokoll schreibt `psql` nichts. Beim nächsten Start läuft das Skript
-  deshalb noch einmal, außer es ist eines der zwei nicht wiederholbaren.
+  deshalb noch einmal, außer es ist eines der drei nicht wiederholbaren.
 
 ### Erneut anwenden
 
-Die meisten Skripte dürfen mehrfach laufen. Zwei ältere nicht; für sie steht in
+Die meisten Skripte dürfen mehrfach laufen. Drei ältere nicht; für sie steht in
 `NICHT_WIEDERHOLBAR` (`migrationen.py`), woran der Dienst erkennt, dass sie
 schon eingespielt sind:
 
 - `2026-08-19-search-events-pseudonymisieren.sql` leert `search_events` bei
   **jedem** Lauf (`TRUNCATE`). Ein zweiter Lauf löscht alle seither erfassten
-  Suchereignisse.
+  Suchereignisse. Eingespielt ist es, wenn `search_events` die Spalte
+  `actor_hash` hat.
 - `2026-08-25-usage-events-datensparsamkeit.sql` bricht beim zweiten Lauf ab,
   weil die umbenannte Spalte `user_agent` fehlt. Dank Transaktion bleibt die
   Datenbank dabei unverändert. Eingespielt ist es, wenn `usage_events` keine
   Spalte `user_agent` mehr hat.
-
-Für die Pseudonymisierung ist es die Spalte `actor_hash` in `search_events`.
+- `2026-09-13-fangkorb-v2.sql` übersteht einen zweiten Lauf ohne Fehler, sein
+  Nachtrag am Ende ändert dann aber Daten: Ein Beitrag, der ohne Satz
+  ausformuliert wurde (`draft_id` leer), hinge danach an einem später
+  geschriebenen Satz derselben Person. Eingespielt ist es, wenn
+  `raw_input_content_links` die Spalte `draft_id` hat.
 
 ## Konvention für neue Migrationen
 
@@ -145,8 +153,7 @@ PostgreSQL“. Den übrigen Inhalt des Kopfs prüft kein Test.
   Thema eines anderen Skripts vom selben Tag beginnt; der Unit-Test weist das ab.
 - **Kopf:** ein SQL-Kommentar, der sagt
   1. was sich ändert und warum,
-  2. ob neue Datenbanken das Skript brauchen (meist nicht, siehe oben) und ob es
-     vor dem Start des neuen Dienstes laufen muss,
+  2. ob neue Datenbanken das Skript brauchen (meist nicht, siehe oben),
   3. wie vorhandene Daten nachgetragen oder verworfen werden,
   4. als letzte Zeile: `-- Anwenden: siehe README.md in diesem Verzeichnis.`
 
@@ -174,5 +181,5 @@ PostgreSQL“. Den übrigen Inhalt des Kopfs prüft kein Test.
   das SQL bleibt Zeichen für Zeichen gleich. Der Dateiname ist der Schlüssel im
   Protokoll; ein umbenanntes Skript liefe noch einmal.
 - **Sperren:** Muss ein Skript eine viel genutzte Tabelle sperren, mit
-  `SET LOCAL lock_timeout` begrenzen wie `2026-10-26-init-angleichen.sql`. Sonst
-  wartet der Start des Dienstes, bis die Sperre frei ist.
+  `SET LOCAL lock_timeout` kürzer begrenzen wie `2026-10-26-init-angleichen.sql`.
+  Sonst wartet der Start des Dienstes bis zu 30 s auf die Sperre.
