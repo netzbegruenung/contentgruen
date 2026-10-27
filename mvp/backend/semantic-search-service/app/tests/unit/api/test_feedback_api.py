@@ -62,9 +62,11 @@ class TestSenden:
         service.senden.assert_called_once_with("Gefällt mir.", None)
 
     def test_kontakt_wird_mitgespeichert(self, client, service):
-        client.post(SENDEN, json={"text": "Bitte melden", "kontakt": " anna@x.org "})
+        client.post(
+            SENDEN, json={"text": "Bitte melden", "kontakt": " anna@example.org "}
+        )
 
-        service.senden.assert_called_once_with("Bitte melden", "anna@x.org")
+        service.senden.assert_called_once_with("Bitte melden", "anna@example.org")
 
     def test_leerer_kontakt_gilt_als_keiner(self, client, service):
         client.post(SENDEN, json={"text": "Hallo", "kontakt": "   "})

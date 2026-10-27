@@ -5,7 +5,7 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { FeedbackService } from './feedback.service';
+import { FEEDBACK_AUFBEWAHRUNG_TAGE, FeedbackService } from './feedback.service';
 
 // Grenzen wie im Backend (services/feedback_service.py).
 export const FEEDBACK_TEXT_MAX = 2000;
@@ -25,6 +25,7 @@ export const FEEDBACK_KONTAKT_MAX = 200;
 export class FeedbackDialogComponent {
   readonly textMax = FEEDBACK_TEXT_MAX;
   readonly kontaktMax = FEEDBACK_KONTAKT_MAX;
+  readonly aufbewahrungTage = FEEDBACK_AUFBEWAHRUNG_TAGE;
 
   text = '';
   kontakt = '';
@@ -56,7 +57,7 @@ export class FeedbackDialogComponent {
         this.sendet = false;
         this.fehler =
           error?.status === 429
-            ? 'Gerade kam viel Feedback von dir an. Bitte versuch es in ein paar Minuten noch einmal.'
+            ? 'Gerade kam sehr viel Feedback an. Bitte versuch es in ein paar Minuten noch einmal.'
             : 'Dein Feedback wurde nicht gesendet. Bitte versuch es noch einmal.';
       },
     });

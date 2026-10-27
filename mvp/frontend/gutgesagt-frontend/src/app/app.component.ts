@@ -15,7 +15,7 @@ import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
-import { oeffneFeedback } from './shared/feedback/feedback-oeffnen';
+import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
@@ -173,7 +173,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openFeedbackDialog(): void {
-    oeffneFeedback(this.dialog);
+    this.dialog.open(FeedbackDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+    });
   }
 
   /** Nur angemeldet ein Ziel: "Meine Beitraege". Ohne Anmeldung ist der Avatar ein Bild. */
@@ -263,7 +266,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.logger.debug('Using stored profile picture:', this.selectedProfilePictureUrl);
     } else {
       this.logger.debug('No stored profile picture, generating new one');
-      this.regenerateProfilePicture();
+      this.profilbildAuslosen();
     }
   }
 
@@ -271,7 +274,7 @@ export class AppComponent implements OnInit, OnDestroy {
    * Einmal je Sitzung ein Bild auslosen. Neu gewuerfelt wird nicht mehr: Der Klick
    * auf den Avatar fuehrt zu "Meine Beitraege" (#343).
    */
-  private regenerateProfilePicture(): void {
+  private profilbildAuslosen(): void {
     const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
     this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
     this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);

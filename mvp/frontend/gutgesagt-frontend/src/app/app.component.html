@@ -80,7 +80,7 @@
                         [attr.aria-label]="userInfo?.isAuthenticated ? 'Meine Beiträge anzeigen' : null"
                         (click)="avatarGewaehlt()"
                         (keydown.enter)="avatarGewaehlt()"
-                        (keydown.space)="avatarGewaehlt()">
+                        (keydown.space)="$event.preventDefault(); avatarGewaehlt()">
                         <img *ngIf="userInfo?.isAuthenticated"
                             [src]="selectedProfilePictureUrl"
                             alt="profile picture"

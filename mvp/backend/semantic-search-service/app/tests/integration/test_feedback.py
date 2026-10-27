@@ -48,7 +48,9 @@ def _service(db: Datenbank) -> FeedbackService:
 
 
 def test_senden_speichert_nur_text_kontakt_und_tag(neue_datenbank):
-    _service(neue_datenbank).senden("Suche findet nichts", "anna@x.org", heute=HEUTE)
+    _service(neue_datenbank).senden(
+        "Suche findet nichts", "anna@example.org", heute=HEUTE
+    )
 
     spalten = {
         s["name"]
@@ -61,7 +63,7 @@ def test_senden_speichert_nur_text_kontakt_und_tag(neue_datenbank):
         zeilen = c.execute(
             text("SELECT text, kontakt, eingegangen_am FROM feedback")
         ).all()
-    assert zeilen == [("Suche findet nichts", "anna@x.org", HEUTE)]
+    assert zeilen == [("Suche findet nichts", "anna@example.org", HEUTE)]
 
 
 def test_neueste_zuerst(neue_datenbank):
@@ -75,7 +77,7 @@ def test_neueste_zuerst(neue_datenbank):
 
 def test_frist_loescht_nach_180_tagen(neue_datenbank):
     service = _service(neue_datenbank)
-    service.senden("zu alt", "anna@x.org", heute=ZU_ALT)
+    service.senden("zu alt", "anna@example.org", heute=ZU_ALT)
     service.senden("gerade noch", None, heute=LETZTER_TAG)
     service.senden("frisch", None, heute=HEUTE)
 

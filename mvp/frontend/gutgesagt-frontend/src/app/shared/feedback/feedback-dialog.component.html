@@ -28,7 +28,7 @@
 
     <p class="hinweis">
       Gespeichert werden nur dein Text, der Kontakt, falls du einen angibst, und der Tag,
-      ohne Bezug zu deinem Konto. Nur Admins lesen es. Nach 180 Tagen wird alles gelöscht.
+      ohne Bezug zu deinem Konto. Nur Admins lesen es. Nach {{ aufbewahrungTage }} Tagen wird alles gelöscht.
     </p>
 
     <p *ngIf="fehler" class="fehler" role="alert">{{ fehler }}</p>
