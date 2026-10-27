@@ -34,7 +34,11 @@ class UsageTracking(Base):
     __tablename__ = "usage_tracking"
 
     content_id = Column(SQLUUID(as_uuid=True), primary_key=True)
-    usage_count = Column(Integer, default=0, nullable=False)
+    # server_default hier und bei UsageEvent.event_type wie in postgres-app/init.sql,
+    # das beide Tabellen auch anlegt und genau diesem Modell entsprechen muss
+    # (tests/integration/test_migrationen.py). default bleibt, damit das ORM den Wert
+    # nach dem Flush kennt, ohne die Zeile neu zu laden.
+    usage_count = Column(Integer, default=0, server_default="0", nullable=False)
     last_used = Column(DateTime(timezone=True), nullable=True)
     first_used = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
@@ -89,7 +93,9 @@ class UsageEvent(Base):
         ForeignKey("usage_tracking.content_id", ondelete="CASCADE"),
         nullable=False,
     )
-    event_type = Column(String(50), default="copy", nullable=False)
+    event_type = Column(
+        String(50), default="copy", server_default="copy", nullable=False
+    )
     timestamp = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
