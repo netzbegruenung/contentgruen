@@ -246,4 +246,18 @@ describe('EinwurfService', () => {
       expect(naechster).toBeNull();
     });
   });
+
+  describe('gleicher Link (#263)', () => {
+    it('fragt den Fangkorb nach Einwuerfen mit gleichem Link', () => {
+      let gefunden: Einwurf[] | undefined;
+      service.mitGleichemLink('https://example.org/a?x=1&y=2').subscribe((e) => (gefunden = e));
+
+      const anfrage = httpMock.expectOne(`${basis}/gleicherLink`);
+      expect(anfrage.request.method).toBe('POST');
+      expect(anfrage.request.body).toEqual({ url: 'https://example.org/a?x=1&y=2' });
+      anfrage.flush({ results: [einwurf({ status: 'processed' })] });
+
+      expect(gefunden?.map((e) => e.status)).toEqual(['processed']);
+    });
+  });
 });

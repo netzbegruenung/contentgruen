@@ -36,6 +36,10 @@ _Avoid_: Kanal, Quelle
 Wie ein Einwurf in den Fangkorb kam: über das Formular oder über das Teilen-Menü des Geräts. Nicht zu verwechseln mit der Plattform, aus der sein Link stammt.
 _Avoid_: Kanal, Quelle, Herkunft
 
+**Gleicher Link**:
+Zwei Links, die übereinstimmen, sobald Tracking-Parameter, „www.“, der Schrägstrich am Ende und der Unterschied zwischen http und https weggelassen sind. Liegt beim Einwerfen schon ein Einwurf mit gleichem Link im Fangkorb, sieht die Person dessen Stufe und, wenn er ausformuliert ist, seinen Beitrag; einwerfen kann sie trotzdem.
+_Avoid_: Dublette (gibt es nur bei Beiträgen), Duplikat, doppelter Link
+
 **Destillieren**:
 Das Argument eines Einwurfs in genau einem Satz formulieren, bevor ein Beitrag entsteht. Wer das nicht kann, verwirft.
 _Avoid_: Verarbeiten, Bearbeiten, Zusammenfassen

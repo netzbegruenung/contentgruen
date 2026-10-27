@@ -94,6 +94,10 @@ export interface EinwurfSeite {
   total_records_count: number;
 }
 
+export interface GleicherLinkResponse {
+  results: Einwurf[];
+}
+
 export interface SatzResponse {
   raw_input_id: string;
   sentence: string | null;
@@ -134,6 +138,20 @@ export class EinwurfService {
   einwerfen(request: EinwerfenRequest): Observable<EinwerfenResponse> {
     this.logger.debug('Einwurf wird eingeworfen');
     return this.http.post<EinwerfenResponse>(`${this.baseApiUrl}/addRawInput`, request);
+  }
+
+  /**
+   * Einwuerfe mit gleichem Link (Glossar), neueste zuerst (#263). Was gleich ist,
+   * entscheidet der Server.
+   *
+   * POST, damit der Link nicht in Adresse und Protokollen steht. Nebenbei greift
+   * so der GET-Cache nicht, der sonst nach dem Einwerfen fuenf Minuten lang
+   * "kein gleicher Link" festhielte.
+   */
+  mitGleichemLink(url: string): Observable<Einwurf[]> {
+    return this.http
+      .post<GleicherLinkResponse>(`${this.baseApiUrl}/gleicherLink`, { url })
+      .pipe(map((antwort) => antwort.results));
   }
 
   /** Der Fangkorb, eigene Einwuerfe zuerst (sortiert der Server). */
