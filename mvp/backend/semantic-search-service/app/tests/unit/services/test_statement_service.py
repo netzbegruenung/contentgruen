@@ -491,6 +491,63 @@ class TestSearchFiltered:
         assert ergebnis == [stark, grenze]
 
 
+@pytest.mark.unit
+class TestSuchtextUnveraendert:
+    """Die Suche bettet den Text ein wie Aussage und Dublettenpruefung (#321).
+
+    Frueher ersetzten die Suchwege ' und ; vor dem Einbetten; die gespeicherte
+    Aussage behielt sie. Dann wurde eine Suchanfrage mit diesen Zeichen zweimal
+    eingebettet, und die Suche verglich mit einem anderen Text als dem gespeicherten.
+    """
+
+    TEXT = "Das geht's so nicht; sagt die Studie"
+
+    @pytest.fixture
+    def service(self, test_settings, repository_factory):
+        from unittest.mock import AsyncMock
+
+        service = StatementService(test_settings, repository_factory=repository_factory)
+        service._repository.search = AsyncMock(return_value=[])
+        service._repository.search_curated = AsyncMock(return_value=[])
+        service._repository.search_statements_with_replies = AsyncMock(return_value=[])
+        return service
+
+    @pytest.mark.asyncio
+    async def test_search_statements_text_unveraendert(self, service):
+        await service.search_statements(self.TEXT, limit=5)
+
+        repo = service._repository.search_statements_with_replies
+        assert repo.call_args.args[0] == self.TEXT
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "nur_kuratiert, methode", [(False, "search"), (True, "search_curated")]
+    )
+    async def test_search_filtered_text_unveraendert(
+        self, service, nur_kuratiert, methode
+    ):
+        await service.search_filtered(self.TEXT, 5, nur_kuratiert=nur_kuratiert)
+
+        assert getattr(service._repository, methode).call_args.args[0] == self.TEXT
+
+    @pytest.mark.asyncio
+    async def test_search_text_unveraendert(self, service):
+        await service.search(self.TEXT, 5)
+
+        assert service._repository.search.call_args.args[0] == self.TEXT
+
+    @pytest.mark.asyncio
+    async def test_search_batch_text_unveraendert(self, service):
+        from unittest.mock import AsyncMock, patch
+
+        with patch.object(
+            type(service._repository), "search_batch", AsyncMock(return_value=[[]])
+        ) as search_batch:
+            await StatementService.search_batch([service], self.TEXT, 5)
+
+        assert search_batch.call_args.args[1] == self.TEXT
+
+
 _LOGGER_DES_SUCHPFADS = (
     "services.content.statement_service",
     "services.content.base_content_service",

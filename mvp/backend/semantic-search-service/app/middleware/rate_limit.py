@@ -36,6 +36,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 "/addCommentary",
                 "/addStatement",
                 "/addReference",
+                "/addPost",
                 "/suggestCaption",
                 # Der Fangkorb ist per Konstruktion schnell zu bedienen und
                 # damit auch schnell zu fluten.
