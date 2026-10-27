@@ -36,6 +36,7 @@ from services.search_tracking_service import (
     tagespseudonym,
 )
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
+from services.embeddings.qdrant_embeddings_manager import einbettungen_geteilt
 from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
@@ -73,6 +74,9 @@ async def read_test():
 # later to probably be split up in specific seach operations
 # returns analysis of input content (=identified statement), topics (TBD), commentaries & generictext snippets
 @router.post("/searchByText", response_model=SearchResponse)
+# Die Suchanfrage wird hier mehrfach gebraucht: Dublettenpruefung und Speichern der
+# Aussage, Aussagensuche, Direktsuche. Eingebettet wird sie nur einmal (#304).
+@einbettungen_geteilt
 async def search_by_text(
     request: SearchByTextRequest,
     http_request: Request,
