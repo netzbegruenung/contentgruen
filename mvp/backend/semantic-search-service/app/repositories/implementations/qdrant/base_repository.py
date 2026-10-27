@@ -1,7 +1,17 @@
 from abc import abstractmethod
 import datetime
 import json
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Generic
+from typing import (
+    AbstractSet,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Generic,
+)
 import os
 import uuid
 import logging
@@ -859,33 +869,44 @@ class QdrantBaseRepository(
         item_id: uuid.UUID,
         new_status: ContentStatus,
         nur_aus: Optional[ContentStatus] = None,
+        nicht_aus: Optional[AbstractSet[ContentStatus]] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
 
         Mit nur_aus wechselt der Status nur, wenn der Beitrag gerade in diesem
-        Status steht. Qdrant prueft das per Filter im selben Schreibvorgang; ein
-        inzwischen gesperrter Beitrag bleibt so gesperrt (Hintergrunddienst fuer
-        Bildbeschreibungen, #251).
+        Status steht; mit nicht_aus nur, wenn er in keinem dieser Zustaende steht.
+        Qdrant prueft das per Filter im selben Schreibvorgang; ein inzwischen
+        gesperrter Beitrag bleibt so gesperrt (Hintergrunddienst fuer
+        Bildbeschreibungen, #251; Autor loescht, #250).
         """
         try:
             from qdrant_client.models import (
                 FieldCondition,
                 Filter,
                 HasIdCondition,
+                MatchAny,
                 MatchValue,
             )
 
             auswahl = [str(item_id)]
-            if nur_aus is not None:
-                auswahl = Filter(
-                    must=[
-                        HasIdCondition(has_id=[str(item_id)]),
+            if nur_aus is not None or nicht_aus:
+                must = [HasIdCondition(has_id=[str(item_id)])]
+                if nur_aus is not None:
+                    must.append(
                         FieldCondition(
                             key="status", match=MatchValue(value=nur_aus.value)
-                        ),
-                    ]
-                )
+                        )
+                    )
+                must_not = []
+                if nicht_aus:
+                    must_not.append(
+                        FieldCondition(
+                            key="status",
+                            match=MatchAny(any=sorted(s.value for s in nicht_aus)),
+                        )
+                    )
+                auswahl = Filter(must=must, must_not=must_not or None)
             await self._shared_manager.async_client.set_payload(
                 collection_name=self._shared_manager.collection_name,
                 payload={"status": new_status.value},

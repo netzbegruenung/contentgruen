@@ -82,18 +82,6 @@ describe('EinwurfService', () => {
     anfrage.flush({ results_count: 0, results: [], total_records_count: 0 });
   });
 
-  it('laedt die eigenen Einwuerfe frisch, nicht aus dem Cache', () => {
-    // Ein gerade eingeworfenes Fundstueck soll sofort dastehen; der POST leert die Liste nicht.
-    const leeren = spyOn(cacheService, 'delete');
-
-    service.eigeneLaden(1, 24).subscribe();
-
-    expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput/getOwnRawInputs');
-    httpMock
-      .expectOne((req) => req.url === `${basis}/getOwnRawInputs`)
-      .flush({ results_count: 0, results: [], total_records_count: 0 });
-  });
-
   describe('Destillieren', () => {
     it('holt einen einzelnen Einwurf', () => {
       service.einwurfLaden('id-1').subscribe((daten) => expect(daten.id).toBe('id-1'));

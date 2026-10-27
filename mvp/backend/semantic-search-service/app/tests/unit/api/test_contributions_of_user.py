@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1 import contribution as contribution_module
-from api.v1.contribution import AUSFORMULIERTE_TYPEN
+from domain.content_registry import BEITRAGSTYPEN_WERTE
 from api.v1.contribution import router as contribution_router
 from dependencies import get_reference_service, get_settings
 from dtos.contribution import ContributionEntry
@@ -93,8 +93,8 @@ def test_liste_und_zaehlung_nur_fuer_ausformulierte_typen(client, repository):
 
 
 def test_aussage_und_herkunft_sind_nicht_dabei():
-    assert "statement" not in AUSFORMULIERTE_TYPEN
-    assert "reference" not in AUSFORMULIERTE_TYPEN
+    assert "statement" not in BEITRAGSTYPEN_WERTE
+    assert "reference" not in BEITRAGSTYPEN_WERTE
 
 
 def test_liest_mit_dem_modell_der_beitragskarte(client, repository):

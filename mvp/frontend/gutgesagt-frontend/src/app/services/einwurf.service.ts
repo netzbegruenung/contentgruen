@@ -162,13 +162,10 @@ export class EinwurfService {
   }
 
   /**
-   * Meine Einwuerfe: nur die selbst eingeworfenen, neueste zuerst.
-   *
-   * Immer frisch: Der Cache haelt GETs fuenf Minuten, und das Einwerfen leert diese
-   * Liste nicht - ein gerade eingeworfenes Fundstueck fehlte sonst in der eigenen Sicht.
+   * Meine Einwuerfe: nur die selbst eingeworfenen, neueste zuerst. Immer frisch,
+   * denn der Cache laesst den Fangkorb aus (NIE_CACHEN in auth/cache.interceptor.ts).
    */
   eigeneLaden(page: number, pageSize: number): Observable<EinwurfSeite> {
-    cacheService.delete('/api/v1/rawinput/getOwnRawInputs');
     const params = new HttpParams().set('page', page).set('page_size', pageSize);
     return this.http.get<EinwurfSeite>(`${this.baseApiUrl}/getOwnRawInputs`, {
       params,
