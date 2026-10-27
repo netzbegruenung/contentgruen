@@ -3,10 +3,11 @@ Das Importskript (#341) gegen den laufenden Dev-Stack: angemeldet am echten BFF,
 ueber dieselben Endpunkte wie das Einwurf-Formular.
 
 Braucht BFF, semantic-search und PostgreSQL des Dev-Stacks (``mvp/run-local.sh up``)
-und das Testkonto aus ``mvp/config/managed-users.example.json``. Ohne BFF
-ueberspringt sich das Modul, auch im Pflichtmodus: Der prueft nur Qdrant und
-PostgreSQL. Die Links sind je Lauf neu, damit wiederholte Laeufe im selben Stack
-nicht aneinander haengen bleiben.
+und das Testkonto aus ``mvp/config/managed-users.example.json``. Liegt deshalb unter
+``api/``, das die GitHub-CI auslaesst. Ohne BFF ueberspringt sich das Modul; im
+Pflichtmodus (``scripts/check.sh --integration``) scheitert es stattdessen. Die
+Links sind je Lauf neu, damit wiederholte Laeufe im selben Stack nicht aneinander
+haengen bleiben.
 """
 
 import importlib.util
@@ -16,6 +17,8 @@ from pathlib import Path
 
 import pytest
 import requests
+
+from tests.integration import stack
 
 BFF_URL = os.environ.get("GUTGESAGT_BFF_URL", "http://localhost:5054")
 EMAIL = "test.user@example.com"
@@ -32,13 +35,19 @@ def _bff_erreichbar() -> bool:
         return False
 
 
+BFF_FEHLT = f"BFF nicht erreichbar unter {BFF_URL} (mvp/run-local.sh up)"
+
 pytestmark = [
     pytest.mark.integration,
-    pytest.mark.skipif(
-        not _bff_erreichbar(),
-        reason=f"BFF nicht erreichbar unter {BFF_URL} (mvp/run-local.sh up)",
-    ),
+    pytest.mark.skipif(not stack.pflicht() and not _bff_erreichbar(), reason=BFF_FEHLT),
 ]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def bff():
+    """Im Pflichtmodus ist ein fehlendes BFF ein Fehler, kein Skip."""
+    if not _bff_erreichbar():
+        pytest.fail(BFF_FEHLT)
 
 
 @pytest.fixture(scope="module")

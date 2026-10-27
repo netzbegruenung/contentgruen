@@ -201,7 +201,8 @@ Startbestand ist das ein Startkonto (`docs/VISION.md`).
   Semikolon oder Tab; UTF-8.
 - **Markdown** (Endung `.md`): Jeder Listenpunkt (`-`, `*`, `+`, `1.`) ist ein Einwurf.
   Der erste Link im Punkt ist der Link (nackt, `<…>` oder `[Text](…)`), der übrige Text
-  der Hinweis. Überschriften und Fließtext werden ignoriert.
+  der Hinweis. Satzzeichen direkt nach einem nackten Link gehören nicht zum Link.
+  Überschriften und Fließtext werden ignoriert.
 
 Echte Listen gehören nicht ins Repo, auch nicht als Testdaten.
 
@@ -216,8 +217,8 @@ python3 scripts/manual/einwuerfe_importieren.py liste.csv --email konto@example.
 
 `--adresse` ist die Adresse des Frontends (es leitet `/api` ans BFF weiter) oder des
 BFF selbst; Standard ist das lokale BFF `http://localhost:5054`. Getestet in
-`tests/unit/services/test_einwuerfe_importieren.py` (Lesen, Ablauf) und
-`tests/integration/test_einwuerfe_importieren.py` (gegen den Dev-Stack).
+`tests/unit/services/test_einwuerfe_importieren.py` (Lesen, Import) und
+`tests/integration/api/test_einwuerfe_importieren_bff.py` (gegen den Dev-Stack).
 
 ## Utility Scripts (`scripts/utils/`)
 

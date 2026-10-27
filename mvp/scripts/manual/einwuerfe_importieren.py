@@ -15,6 +15,7 @@ import argparse
 import csv
 import getpass
 import http.cookiejar
+import io
 import json
 import os
 import re
@@ -68,7 +69,7 @@ def _csv_lesen(text: str) -> List["Zeile | Fehler"]:
         dialekt = csv.Sniffer().sniff(text.splitlines()[0], delimiters=",;\t")
     except (csv.Error, IndexError):
         dialekt = csv.excel
-    leser = csv.reader(text.splitlines(), dialekt)
+    leser = csv.reader(io.StringIO(text), dialekt)
     kopf = [spalte.strip().lower() for spalte in next(leser, [])]
     if "link" not in kopf:
         raise ListeUnlesbar("Die CSV-Datei braucht eine Kopfzeile mit der Spalte link.")
@@ -76,8 +77,12 @@ def _csv_lesen(text: str) -> List["Zeile | Fehler"]:
     hinweis_spalte = kopf.index("hinweis") if "hinweis" in kopf else None
 
     ergebnis = []
-    for felder in leser:
-        nummer = leser.line_num
+    while True:
+        # Die erste Zeile des Datensatzes; ein Hinweis darf ueber mehrere gehen.
+        nummer = leser.line_num + 1
+        felder = next(leser, None)
+        if felder is None:
+            break
         if not any(feld.strip() for feld in felder):
             continue
         link = felder[link_spalte] if link_spalte < len(felder) else ""
@@ -92,22 +97,53 @@ def _csv_lesen(text: str) -> List["Zeile | Fehler"]:
 
 # Ein Listenpunkt: "- ", "* ", "+ " oder "1. " am Zeilenanfang (eingerueckt auch).
 _LISTENPUNKT = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(?P<rest>.*)$")
-_MD_LINK = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<link>[^)\s]+)\)")
+# Klammern im Link nur paarweise, eine Ebene tief (".../Foo_(Bar)").
+_MD_LINK = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<link>(?:[^()\s]|\([^()\s]*\))+)\)")
 _SPITZ_LINK = re.compile(r"<(?P<link>https?://[^>\s]+)>")
 _NACKTER_LINK = re.compile(r"https?://\S+")
 # Was zwischen Link und Hinweis stehen darf und nicht zum Hinweis gehoert.
 _TRENNER = " \t-–—:|"
 
 
+# Satzzeichen am Ende eines nackten Links gehoeren zum Satz, nicht zum Link.
+_SATZZEICHEN = ".,;:!?'\""
+
+
+def _nackter_link(rest: str, treffer: "re.Match") -> Tuple[str, int, int]:
+    """
+    Der nackte Link ohne Satzzeichen und ohne schliessende Klammer, die nicht
+    zu ihm gehoert, und die Spanne, die aus dem Hinweis faellt: der Link samt
+    diesem Rest, und steht er in Klammern, auch die oeffnende.
+    """
+    link = treffer.group(0)
+    while link and (
+        link[-1] in _SATZZEICHEN
+        or (link[-1] == ")" and link.count(")") > link.count("("))
+    ):
+        link = link[:-1]
+    anfang = treffer.start()
+    abgeschnitten = treffer.group(0)[len(link) :]
+    if ")" in abgeschnitten and rest[anfang - 1 : anfang] == "(":
+        anfang -= 1
+    return link, anfang, treffer.end()
+
+
 def _markdown_zeile(nummer: int, rest: str) -> "Zeile | Fehler":
     """Link und Hinweis aus einem Listenpunkt; der erste Link zaehlt."""
-    for muster in (_MD_LINK, _SPITZ_LINK, _NACKTER_LINK):
+    for muster in (_MD_LINK, _SPITZ_LINK):
         treffer = muster.search(rest)
         if treffer:
-            link = treffer.groupdict().get("link") or treffer.group(0)
-            ersatz = treffer.groupdict().get("text") or ""
-            hinweis = rest[: treffer.start()] + ersatz + rest[treffer.end() :]
-            return _zeile(nummer, link, hinweis.strip(_TRENNER))
+            hinweis = (
+                rest[: treffer.start()]
+                + (treffer.groupdict().get("text") or "")
+                + rest[treffer.end() :]
+            )
+            return _zeile(nummer, treffer.group("link"), hinweis.strip(_TRENNER))
+    treffer = _NACKTER_LINK.search(rest)
+    if treffer:
+        link, anfang, ende = _nackter_link(rest, treffer)
+        hinweis = rest[:anfang] + rest[ende:]
+        return _zeile(nummer, link, hinweis.strip(_TRENNER))
     return _zeile(nummer, "", None)
 
 
@@ -156,7 +192,7 @@ class ApiFehler(RuntimeError):
 
 
 class Fangkorb(Protocol):
-    """Was der Ablauf vom Fangkorb braucht; das BFF oder im Test ein Speicher."""
+    """Was der Import vom Fangkorb braucht; das BFF oder im Test ein Speicher."""
 
     def gleiche_einwuerfe(self, link: str) -> List[Dict]: ...
 
@@ -256,19 +292,31 @@ class BffFangkorb:
             raise ApiFehler(
                 None, f"{self.adresse} nicht erreichbar: {fehler}"
             ) from None
-        return json.loads(text) if text else {}
+        try:
+            return json.loads(text) if text else {}
+        except ValueError:
+            raise ApiFehler(
+                None, f"Antwort von {pfad} ist kein JSON (stimmt --adresse?)"
+            ) from None
+
+    def _feld(self, antwort: Dict, name: str, pfad: str):
+        if not isinstance(antwort, dict) or name not in antwort:
+            raise ApiFehler(None, f"Antwort von {pfad} ohne {name} (stimmt --adresse?)")
+        return antwort[name]
 
     def anmelden(self, email: str, passwort: str) -> None:
         self._post("/api/auth/login/managed", {"email": email, "password": passwort})
 
     def gleiche_einwuerfe(self, link: str) -> List[Dict]:
-        return self._post("/api/v1/rawinput/gleicherLink", {"url": link})["results"]
+        pfad = "/api/v1/rawinput/gleicherLink"
+        return self._feld(self._post(pfad, {"url": link}), "results", pfad)
 
     def einwerfen(self, link: str, hinweis: Optional[str]) -> str:
         daten = {"url": link}
         if hinweis:
             daten["content"] = hinweis
-        return self._post("/api/v1/rawinput/addRawInput", daten)["id"]
+        pfad = "/api/v1/rawinput/addRawInput"
+        return self._feld(self._post(pfad, daten), "id", pfad)
 
 
 def _fehlertext(fehler: "urllib.error.HTTPError") -> str:

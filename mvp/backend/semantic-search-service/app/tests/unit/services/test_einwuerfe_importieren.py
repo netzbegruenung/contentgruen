@@ -1,7 +1,7 @@
 """
 Das Importskript mvp/scripts/manual/einwuerfe_importieren.py (#341): Liste lesen
 und je Zeile einwerfen. Statt des BFF steht hier ein Client im Speicher; den Weg
-ueber das echte BFF prueft tests/integration/test_einwuerfe_importieren.py.
+ueber das echte BFF prueft tests/integration/api/test_einwuerfe_importieren_bff.py.
 """
 
 import importlib.util
@@ -73,6 +73,18 @@ class TestCsvLesen:
         assert [z.link for z in zeilen] == ["https://example.org/a"]
         assert [f.nummer for f in fehler] == [2, 4]
 
+    def test_mehrzeiliger_hinweis_zaehlt_ab_seiner_ersten_zeile(self, skript, tmp_path):
+        pfad = _datei(
+            tmp_path,
+            "liste.csv",
+            'link,hinweis\nhttps://example.org/a,"erste\nzweite"\nkein-link,\n',
+        )
+
+        zeilen, fehler = skript.liste_lesen(pfad)
+
+        assert [(z.nummer, z.hinweis) for z in zeilen] == [(2, "erste\nzweite")]
+        assert [f.nummer for f in fehler] == [4]
+
     def test_ohne_spalte_link_bricht_ab(self, skript, tmp_path):
         pfad = _datei(tmp_path, "liste.csv", "url,text\nhttps://example.org/a,x\n")
 
@@ -102,6 +114,27 @@ class TestMarkdownLesen:
             (5, "https://example.org/b", "Gute Zahl zur Wärmepumpe"),
             (6, "https://example.org/c", "Studie zum Altbau: Seite 3"),
             (7, "https://example.org/d", None),
+        ]
+
+    def test_satzzeichen_und_klammern_gehoeren_nicht_zum_link(self, skript, tmp_path):
+        pfad = _datei(
+            tmp_path,
+            "liste.md",
+            "- siehe https://example.org/a.\n"
+            "- https://example.org/b, Zitat\n"
+            "- (https://example.org/c)\n"
+            "- https://example.org/wiki/Foo_(Bar)\n"
+            "- [Artikel](https://example.org/wiki/Baz_(Qux))\n",
+        )
+
+        zeilen, _ = skript.liste_lesen(pfad)
+
+        assert [(z.link, z.hinweis) for z in zeilen] == [
+            ("https://example.org/a", "siehe"),
+            ("https://example.org/b", "Zitat"),
+            ("https://example.org/c", None),
+            ("https://example.org/wiki/Foo_(Bar)", None),
+            ("https://example.org/wiki/Baz_(Qux)", "Artikel"),
         ]
 
     def test_listenpunkt_ohne_link_ist_fehler(self, skript, tmp_path):
@@ -229,3 +262,39 @@ class TestImportieren:
 
         assert [z.nummer for z, _ in bericht.fehlgeschlagen] == [2]
         assert [z.nummer for z, _ in bericht.angelegt] == [3]
+
+
+def test_antwort_ohne_json_bricht_mit_exit_2_ab(skript, tmp_path, monkeypatch, capsys):
+    """Etwa --adresse auf eine Seite, die statt der API HTML liefert."""
+    import http.server
+    import threading
+
+    class HtmlSeite(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.end_headers()
+            self.wfile.write(b"<html>Gut gesagt</html>")
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), HtmlSeite)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    liste = _datei(tmp_path, "liste.csv", "link\nhttps://example.org/a\n")
+    monkeypatch.setenv("GUTGESAGT_PASSWORT", "egal")
+    try:
+        ergebnis = skript.main(
+            [
+                str(liste),
+                "--email",
+                "konto@example.org",
+                "--adresse",
+                f"http://127.0.0.1:{server.server_port}",
+            ]
+        )
+    finally:
+        server.shutdown()
+
+    assert ergebnis == 2
+    assert "Abgebrochen" in capsys.readouterr().err
