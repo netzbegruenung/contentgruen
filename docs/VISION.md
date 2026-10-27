@@ -27,6 +27,9 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 - Der Code steht unter der AGPL; Urheber des heutigen Codes ist der Maintainer. Die Netzbegrünung ist Diensteanbieterin der Instanz.
 - Beiträge Dritter zum Code laufen über das Developer Certificate of Origin (DCO) in `CONTRIBUTING.md`.
 - Geld kommt, wenn überhaupt, später über Dienstleistungen: Betrieb, Anpassung, Schnittstellen, Support. Premium-Funktionen werden getrennt gebaut und sind tendenziell ebenfalls Open Source.
+- Heute betreibt die Netzbegrünung die Instanz ehrenamtlich. Wer einen professionellen Betrieb mit Support übernimmt, etwa verdigado oder eine eigene Ausgründung, bleibt offen; für parteiferne Organisationen kann ein neutrales Dach nötig werden. Ein Betreiber verarbeitet Daten im Auftrag (AVV).
+- **Kein Geld und keine Sachleistung für Posts, Teilen oder Nutzung**, auch nicht als Preis für Quests oder Ranglisten: Das wäre politische Werbung (TTPA, Medienstaatsvertrag, Plattformregeln) und für eine Partei womöglich eine Sachspende. Erlaubt sind Honorare für die Herstellung von Beiträgen für den Bestand, Kostenerstattung und Stipendien ohne Pflicht zu posten, mit öffentlich genannten Geldgebern. Abweichen nur nach Rechtsgutachten und öffentlich begründet.
+- Was Gut gesagt koordiniert oder finanziert, ist so offen, dass eine Recherche darüber nichts Neues fände.
 
 ## Inhalt und Moderation
 
@@ -52,6 +55,8 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 | Umwandeln und Synthese (#226) | Messenger-Bot | Hass- und Strafanzeigen (Verweis auf Beratungsstellen) |
 | Inhalte gemeinsam herstellen: Videoschnipsel teilen, Beiträge anderer remixen und verbessern (langfristig) | | Kanalbetreuung |
 | Trends und eine Social Wall | | Inhalte, die KI herstellt (höchstens Verweis auf Grünerator) |
+
+Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier fehlt eine Antwort“, Einwürfe, eingereichte Links und Zulieferer für Einwürfe (siehe Bestand). Monitoring heißt, fremde Plattformen von sich aus zu beobachten (Kommentarspalten, Accounts, Hashtags, Frühwarnung); das verarbeitet Personendaten Dritter und bleibt Sache von Social-Listening-Werkzeugen außerhalb von Gut gesagt.
 
 ## Bestand
 
@@ -89,8 +94,9 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 - **Rückmeldung**: „Meine Beiträge“ zeigt die Nutzung je Beitrag und Fassung mit dem Zuwachs der letzten Woche; beim Anmelden ein Hinweis „Seit deinem letzten Besuch wurden deine Beiträge 12-mal genutzt“, nur in der App.
 - **Meilensteine**: erste Nutzung durch andere, 10, 50, 100 Nutzungen, erste Stimme; ein kleines Abzeichen am Anzeigenamen.
 - **Punkte** kommen aus der Wirkung bei anderen, nicht aus Menge ([ADR 0004](./adr/0004-punkte-aus-wirkung-bei-anderen.md)): Nutzung durch andere (Hauptanteil), Zustimmung, abgeschlossene Quests. Ein Beitrag ohne Nutzung bringt nichts.
-- **Ranglisten** für Einzelne, je Woche und je Monat, nur für Angemeldete: die ersten 10 und der eigene Platz. Wer nicht erscheinen will, schaltet das ab.
+- **Ranglisten** für Einzelne, je Woche und je Monat, nur für Angemeldete: die ersten 10 und der eigene Platz. Nur wer zugestimmt hat, erscheint dort: Beim ersten Punkt fragt die App einmal mit zwei gleichwertigen Knöpfen, nichts ist vorbelegt, die Antwort lässt sich jederzeit ändern. Schon die Teilnahme verrät eine politische Haltung (DSGVO Art. 9).
 - **Quests**: zwei Tagesaufgaben am Tag und ein gemeinsames Wochenziel. Zum Start: eine unbeantwortete Aussage beantworten, eine Fassung ergänzen, eine Variante anlegen, einen Einwurf ausformulieren, einen Einwurf einreichen, drei Beiträge bewerten. Später ein wählbarer Schwerpunkt (Sammeln oder Formulieren), langfristig vielleicht Fähigkeiten, die realen Tätigkeiten entsprechen. Kein kriegerisches Setting.
+- **Wochenthema** (nach Quests, Ranglisten und Themen): Platz 1 der Wochen-Rangliste wählt aus den drei Themen mit dem meisten Bedarf das Thema der nächsten Woche; Punkte dazu zählen doppelt, das Wochenziel bezieht sich darauf. Ohne Wahl nach zwei Tagen gilt das Thema mit dem meisten Bedarf. Anerkennung heißt Mitbestimmung und Sichtbarkeit, nie Sachwert.
 - **Bedarf sichtbar**: Eine Seite „Hier fehlt eine Antwort“ zeigt Angemeldeten unbeantwortete Aussagen; dort lassen sich Aussagen auch vorab anlegen.
 - **Varianten**: „Als Vorlage nehmen“ legt einen neuen Beitrag mit eigenem Autor an, der auf dem Original beruht. Vorschläge an fremde Beiträge kommen später.
 - **Trends**: „Diese Woche oft genutzt“ auf der Startseite; die Social Wall (Vollbild für Treffen) mit Ausbaustufe 2; öffentliche Gesamtzahlen erst, wenn sie etwas hergeben.
@@ -114,3 +120,22 @@ Drei Kennzahlen, deren Zielwerte der Maintainer vor dem Launch festlegt: Persone
 4. Was den Launch blockiert, beheben.
 5. Launch in der Netzbegrünung.
 6. Eine Woche später ein Schreibsprint in der Netzbegrünung, mit „Hier fehlt eine Antwort“ und Rückmeldung zur Nutzung.
+
+## Langfristig
+
+Gut gesagt soll mehr werden als ein Werkzeug für Gegenrede: eine **Werkstatt**, in der Mitglieder Schritt für Schritt lernen, für andere zu formulieren, zu schneiden und zu sprechen, und eine **Lagekarte**, die zeigt, wo Antworten fehlen. Gesteuert wird Aufmerksamkeit, nicht Menschen; kein Kommando-Vokabular.
+
+- **Vom Mitglied zur Stimme.** Skill-Pfade entlang realer Tätigkeiten: Teilen, Formulieren, Varianten, Skripte, Schnitt, Sprechen. Den Aufstieg belegt die Wirkung bei anderen (ADR 0004), nicht Follower. Ein eigener Kanal unter eigenem Namen ist Sache der Person; Gut gesagt gibt keine Aufträge und betreut keine Kanäle.
+- **Wirkung belegen.** Ob Antworten Mitlesende erreichen und wie viele Mitglieder zu Stimmen werden, misst Gut gesagt in anonymen Aggregaten und veröffentlicht es; ab Ausbaustufe 2 mit einer Forschungskooperation.
+- **Recht vor Ausbaustufe 2.** Zu klären: ob die Netzbegrünung eine Organisation im Sinne von DSGVO Art. 9 Abs. 2 lit. d ist, ob Inhalte im Grünen Netz als interne Tätigkeit unter die TTPA fallen, ob kostenloser Betrieb für die Partei eine Sachspende ist. Eine Datenschutz-Folgenabschätzung kommt vor den Ranglisten.
+- **Erstes Testfenster 2027.** Im Frühjahr Lagekarte und Wochenmissionen um die Landtagswahlen, im Herbst vor der Wahl in Niedersachsen eine erste unbezahlte Gruppe auf dem Weg zur eigenen Stimme, mit Training und Briefings, gemessen von Stufe zu Stufe.
+
+Die Folge, jede Stufe mit Tor:
+
+1. Wirkung sichtbar machen (Motivation oben). Tor: Rechtsgrundlage und Folgenabschätzung, Acht-Wochen-Bilanz.
+2. Lagekarte aus eigenen Signalen, Wochenmissionen. Tor: Testset der Suche, Rechtsklärung.
+3. Die Crowd stellt Inhalte her: Skripte, Schnipsel, Remix. Tor: Quellen (Roadmap-Stufe 4), Bildrechte geklärt.
+4. Freiwillige werden Stimmen. Tor: Konversion über mindestens zwei Anlässe gemessen.
+5. Netz eigener Instanzen (Ausbaustufe 3 und 4). Danach optional, in dieser Reihenfolge: Betrieb für andere Organisationen, Training als Bildungsangebot, eine Agentur zu Marktpreisen, eine Medienmarke.
+
+Eine Ausgründung ist eine Option, kein Ziel. Agentur, Bildungsangebot oder Medienmarke wären eigene Unternehmen ohne Zugriff auf Daten der Instanz; sie nutzen den CC0-Bestand wie alle anderen und anonyme Aggregate. Eine Medienmarke hieße nicht „Gut gesagt“ und hätte ein eigenes Redaktionsstatut.
