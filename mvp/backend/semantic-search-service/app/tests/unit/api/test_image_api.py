@@ -37,6 +37,7 @@ UNTERSCHRIFT = "Ein Solardach auf einer Grundschule"
 KENNUNG = "kennung-der-autorin"
 ANDERE_KENNUNG = "kennung-des-bearbeiters"
 ANZEIGENAME = "Anna B."
+ZEITPUNKT = datetime.datetime(2026, 10, 1, 12, 0)
 
 # Was ein Bild nach aussen zeigt. Alles andere am ImageDbEntry ist intern.
 BILD_FELDER = {
@@ -80,7 +81,7 @@ def _bild(**overrides) -> ImageDbEntry:
             edit_history=[
                 EditEntry(
                     editor=ANDERE_KENNUNG,
-                    timestamp=datetime.datetime.now(),
+                    timestamp=ZEITPUNKT,
                     action="edit",
                 )
             ],
@@ -157,6 +158,9 @@ def test_get_by_id_liefert_das_bild(client, image_service):
     assert body["status"] == "visible"
 
 
+# Haelt den Ist-Stand fest: getById filtert nicht nach Zustand. Laut Glossar ist ein
+# gesperrtes Bild fuer Nicht-Admins nicht abrufbar; das baut #300, dann aendert sich
+# dieser Test.
 def test_get_by_id_gesperrtes_bild_bleibt_erkennbar(client, image_service):
     image_service.get.return_value = _bild(status=ContentStatus.BLOCKED)
 

@@ -35,9 +35,13 @@ class BildResponse(BaseModel):
 
     Bewusst eine Auswahl aus ImageDbEntry: der Anzeigename statt der Kennung, keine
     Bearbeitungshistorie (last_modified*, authors, edit_history) und keine Felder der
-    Moderation und Dublettenpruefung. Der Zustand bleibt, weil getById und getAll
-    auch gesperrte und geloeschte Bilder liefern. Wer hier ein Feld ergaenzt,
-    entscheidet, dass es nach aussen geht.
+    Moderation und Dublettenpruefung. Wer hier ein Feld ergaenzt, entscheidet, dass
+    es nach aussen geht.
+
+    Der Zustand bleibt, weil getById und getAll bisher nicht nach ihm filtern und
+    gesperrte oder geloeschte Bilder sonst nicht von sichtbaren zu unterscheiden
+    waeren. Das ist eine bekannte Luecke: Laut Glossar findet ein gesperrtes Bild
+    nur ein Admin, ein geloeschtes niemand. Das Filtern gehoert zu #300.
     """
 
     id: UUID
