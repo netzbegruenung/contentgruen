@@ -31,6 +31,7 @@ import {
   STUFEN,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
+import { herkunftText, tragtHerkunftsangaben } from './herkunft-text';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
@@ -375,9 +376,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return !!(this.daten.extra?.kurz || this.daten.extra?.lang);
   }
 
-  /** Nur Kommentar und Hintergrundinfo tragen Herkunftsangaben. */
   get zeigtQuellen(): boolean {
-    return this.daten.typ === 'commentary' || this.daten.typ === 'generictext';
+    return tragtHerkunftsangaben(this.daten.typ);
   }
 
   get angezeigterText(): string {
@@ -393,6 +393,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get kopierText(): string {
     return this.angezeigterText;
+  }
+
+  /** Die angezeigte Fassung samt Herkunft; leer ohne Herkunft, dann bietet die Leiste keine Wahl an. */
+  get kopierTextMitHerkunft(): string {
+    const herkunft = herkunftText(this.daten);
+    return herkunft && this.kopierText ? `${this.kopierText}\n\n${herkunft}` : '';
   }
 
   get kopierBeschriftung(): string {
