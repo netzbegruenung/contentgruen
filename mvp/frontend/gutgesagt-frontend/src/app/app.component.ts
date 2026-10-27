@@ -15,6 +15,7 @@ import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
+import { oeffneFeedback } from './shared/feedback/feedback-oeffnen';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
@@ -171,6 +172,17 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  openFeedbackDialog(): void {
+    oeffneFeedback(this.dialog);
+  }
+
+  /** Nur angemeldet ein Ziel: "Meine Beitraege". Ohne Anmeldung ist der Avatar ein Bild. */
+  avatarGewaehlt(): void {
+    if (this.userInfo?.isAuthenticated) {
+      this.navigateToContributionsView();
+    }
+  }
+
   navigateToContributeView(): void {
     this.navigationService.navigateToContribute();
   }
@@ -255,19 +267,15 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  regenerateProfilePicture(): void {
-    if (this.userInfo?.isAuthenticated) {
-      // For logged-in users, randomly select from profile pictures
-      const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
-      this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
-      this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);
-      sessionStorage.setItem('profilePicture', this.selectedProfilePictureUrl);
-    } else {
-      // For anonymous users, toggle between male/female anonymous avatars
-      this.currentAnonymousIndex = (this.currentAnonymousIndex + 1) % this.anonymousAvatars.length;
-      this.selectedProfilePictureUrl = this.anonymousAvatars[this.currentAnonymousIndex];
-      sessionStorage.setItem('anonymousAvatar', this.selectedProfilePictureUrl);
-    }
+  /**
+   * Einmal je Sitzung ein Bild auslosen. Neu gewuerfelt wird nicht mehr: Der Klick
+   * auf den Avatar fuehrt zu "Meine Beitraege" (#343).
+   */
+  private regenerateProfilePicture(): void {
+    const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
+    this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
+    this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);
+    sessionStorage.setItem('profilePicture', this.selectedProfilePictureUrl);
   }
 
   private updateAvatarForAuthStatus(): void {

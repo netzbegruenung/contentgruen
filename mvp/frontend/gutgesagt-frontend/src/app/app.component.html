@@ -13,7 +13,8 @@
                 (login)="login()"
                 (loginToContribute)="loginWithReturnUrl('/contribute')"
                 (logout)="logout()"
-                (help)="openHelpDialog()">
+                (help)="openHelpDialog()"
+                (feedback)="openFeedbackDialog()">
             </app-mobile-menu>
         </mat-sidenav>
 
@@ -66,14 +67,20 @@
                         </span>
                     </ng-template>
 
-                    <!-- Avatar - now on the right side, leftmost element -->
+                    <!--
+                        Angemeldet fuehrt der Avatar zu "Meine Beitraege"; frueher
+                        wuerfelte ein Klick ein neues Bild. Ohne Anmeldung ist er nur
+                        ein Bild: Der Weg zum Anmelden ist der Knopf daneben, nicht
+                        ein zweiter ueber den Avatar (#343).
+                    -->
                     <div class="avatar-container"
-                        role="button"
-                        tabindex="0"
-                        [attr.aria-label]="userInfo?.isAuthenticated ? 'Profilbild ändern' : 'Anmelden'"
-                        (click)="userInfo?.isAuthenticated ? regenerateProfilePicture() : login()"
-                        (keydown.enter)="userInfo?.isAuthenticated ? regenerateProfilePicture() : login()"
-                        (keydown.space)="userInfo?.isAuthenticated ? regenerateProfilePicture() : login()">
+                        [class.avatar-klickbar]="userInfo?.isAuthenticated"
+                        [attr.role]="userInfo?.isAuthenticated ? 'button' : null"
+                        [attr.tabindex]="userInfo?.isAuthenticated ? 0 : null"
+                        [attr.aria-label]="userInfo?.isAuthenticated ? 'Meine Beiträge anzeigen' : null"
+                        (click)="avatarGewaehlt()"
+                        (keydown.enter)="avatarGewaehlt()"
+                        (keydown.space)="avatarGewaehlt()">
                         <img *ngIf="userInfo?.isAuthenticated"
                             [src]="selectedProfilePictureUrl"
                             alt="profile picture"
@@ -133,6 +140,11 @@
                         class="mat-elevation-z1"
                         aria-label="Schnell einwerfen">
                         <span class="header-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
+                    </button>
+
+                    <button mat-button (click)="openFeedbackDialog()" class="feedback-button"
+                        data-testid="feedback-knopf">
+                        <mat-icon>feedback</mat-icon> Feedback
                     </button>
 
                     <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button"

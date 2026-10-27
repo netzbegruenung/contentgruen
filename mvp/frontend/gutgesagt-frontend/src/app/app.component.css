@@ -102,6 +102,10 @@ main * {
 
 .avatar-container {
     display: inline-block;
+}
+
+/* Nur angemeldet ein Knopf (zu "Meine Beitraege"), ohne Anmeldung ein Bild. */
+.avatar-container.avatar-klickbar {
     cursor: pointer;
 }
 
@@ -111,7 +115,6 @@ main * {
     box-shadow: var(--elevation-4);
     border-radius: 50%;
     background-color: white;
-    cursor: pointer;
     transition: transform var(--transition-standard), opacity var(--transition-standard);
     flex-shrink: 0;
 }
@@ -122,7 +125,7 @@ main * {
     object-fit: contain;
 }
 
-.profile-avatar:hover {
+.avatar-klickbar .profile-avatar:hover {
     transform: scale(1.05);
 }
 

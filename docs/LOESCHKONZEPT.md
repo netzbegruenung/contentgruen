@@ -87,6 +87,23 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
    (`BFF/Services/ManagedUserService.cs:110`).
 
+## Feedback
+
+Die Tabelle `feedback` (Knopf „Feedback“ im Kopf der App, #343) trägt nur den Freitext,
+eine **optionale Kontaktangabe** und den UTC-Tag, keine Kennung und keine Sitzung, auch
+bei angemeldeten Personen. Über die Kennung aus „Ausgangspunkt“ ist Feedback deshalb
+nicht zu finden, und der Ablauf oben erfasst es nicht.
+
+- **Frist:** Nach 180 Tagen löscht ein täglicher Task die ganze Zeile samt Kontakt
+  (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
+  nicht am abschaltbaren Usage-Cleanup.
+- **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
+  Admin löscht die Zeilen mit genau dieser Angabe
+  (`DELETE FROM feedback WHERE kontakt = '<angabe>';`, vorher mit `SELECT` prüfen).
+  Ohne Kontaktangabe ist Feedback keiner Person zuzuordnen. Nennt der Freitext selbst
+  die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
+- Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.
+
 ## Vier Fallen
 
 - **Sitzungskennung vor `content_reports`.** Wird Schritt 2 vor Schritt 1 ausgeführt,
