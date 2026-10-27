@@ -31,7 +31,7 @@ import {
   STUFEN,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
-import { herkunftText } from './herkunft-text';
+import { herkunftText, tragtHerkunftsangaben } from './herkunft-text';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
@@ -376,9 +376,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return !!(this.daten.extra?.kurz || this.daten.extra?.lang);
   }
 
-  /** Nur Kommentar und Hintergrundinfo tragen Herkunftsangaben. */
   get zeigtQuellen(): boolean {
-    return this.daten.typ === 'commentary' || this.daten.typ === 'generictext';
+    return tragtHerkunftsangaben(this.daten.typ);
   }
 
   get angezeigterText(): string {

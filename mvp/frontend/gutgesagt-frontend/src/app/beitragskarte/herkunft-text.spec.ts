@@ -47,6 +47,26 @@ describe('herkunftText', () => {
     expect(herkunftText(daten({ quellen: [{ id: '123e4567-e89b-12d3-a456-426614174000' }] }))).toBe('');
   });
 
+  it('schneidet Leerzeichen ab und laesst Angaben aus lauter Leerzeichen weg', () => {
+    const text = herkunftText(
+      daten({
+        quellen: [
+          { id: 'r-1', url: ' https://example.org/a ', beschreibung: '   ' },
+          { id: 'r-2', url: '  ', beschreibung: ' ' },
+        ],
+      }),
+    );
+
+    expect(text).toBe('Herkunft: https://example.org/a');
+  });
+
+  it('nimmt Herkunftsangaben nur bei Kommentar und Hintergrundinfo', () => {
+    const quellen = [{ id: 'r-1', url: 'https://example.org/a' }];
+
+    expect(herkunftText(daten({ typ: 'statement', quellen }))).toBe('');
+    expect(herkunftText(daten({ typ: 'image', quellen }))).toBe('');
+  });
+
   it('nimmt beim Post den Link als Herkunft', () => {
     const text = herkunftText(daten({ typ: 'post', extra: { postUrl: 'https://social.example/posts/1' } }));
 
