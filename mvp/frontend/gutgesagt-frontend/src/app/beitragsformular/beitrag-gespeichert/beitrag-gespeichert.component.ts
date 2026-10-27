@@ -18,10 +18,10 @@ import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,
   Herkunft,
-  ROHINPUT_ADRESSE_PARAM,
   SUCHE_PARAM,
   herkunftAus,
 } from './gespeichert-adresse';
+import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
 export type GespeichertTyp = Extract<FormularTyp, 'commentary' | 'generictext' | 'post'>;
@@ -107,7 +107,7 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   private get einwurfId(): string | null {
-    return this.route.snapshot.queryParamMap.get(ROHINPUT_ADRESSE_PARAM);
+    return this.route.snapshot.queryParamMap.get(EINWURF_PARAM);
   }
 
   ngOnInit(): void {

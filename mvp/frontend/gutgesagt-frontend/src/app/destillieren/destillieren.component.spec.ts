@@ -338,13 +338,13 @@ describe('DestillierenComponent', () => {
 
       component.formularOeffnen();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-commentary'], {
-        queryParams: { rohinput: 'id-1' },
+        queryParams: { einwurf: 'id-1' },
       });
 
       component.typ = 'generictext';
       component.formularOeffnen();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-generictext'], {
-        queryParams: { rohinput: 'id-1' },
+        queryParams: { einwurf: 'id-1' },
       });
 
       component.typ = 'post';

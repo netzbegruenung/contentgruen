@@ -39,11 +39,6 @@ class Dublettenpruefung:
     aehnlichster: Optional[BaseContentSearchResult]
 
 
-def _bereinigt(query_text: str) -> str:
-    """Der Suchtext, wie search() ihn einbettet."""
-    return query_text.replace(";", ",").replace("'", '"')
-
-
 TRepository = TypeVar("TRepository", bound=IBaseContentRepository)
 TContentDbEntry = TypeVar("TContentDbEntry", bound=BaseContentDbEntry)
 TContentSearchResult = TypeVar("TContentSearchResult", bound=BaseContentSearchResult)
@@ -102,7 +97,7 @@ class BaseContentService(
         logger.debug(
             f"BaseContentService ({self._repository_class.__name__}): searching"
         )
-        return await self._repository.search(_bereinigt(query_text), limit)
+        return await self._repository.search(query_text, limit)
 
     @staticmethod
     async def search_batch(
@@ -116,9 +111,7 @@ class BaseContentService(
         if not services:
             return []
         repositories = [service._repository for service in services]
-        return await type(repositories[0]).search_batch(
-            repositories, _bereinigt(query_text), limit
-        )
+        return await type(repositories[0]).search_batch(repositories, query_text, limit)
 
     async def _vorhandenen_finden(
         self, text: str, schwelle: float, praefix: str
@@ -129,8 +122,7 @@ class BaseContentService(
         Normalisiert gleicher Text zaehlt immer (erst per Keyword-Index, dann unter
         den Vektortreffern fuer Altbestand ohne Feld), sonst der beste Vektortreffer
         ab `schwelle`. Wie in der Suche zaehlen nur sichtbare Eintraege. Der Text geht
-        unveraendert in die Einbettung - anders als search() ersetzt das keine
-        Anfuehrungszeichen, sonst sinkt der Score gleicher Texte.
+        wie in der Suche unveraendert in die Einbettung (#321).
         """
         normalform = text_normalisiert(text)
         if normalform:

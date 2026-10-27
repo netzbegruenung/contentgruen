@@ -826,7 +826,7 @@ describe('AddGenerictextComponent', () => {
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       const erfolg = spyOn(component.success, 'emit');
       const einwurf = { titel: 'Wärmepumpe lohnt sich im Altbau', url: null, kopf: {} as any };
-      component.vorbefuellung = { ...einwurf, rohinputId: 'id-1' }; // retired-ok: Feldname von Vorbefuellung
+      component.vorbefuellung = { ...einwurf, einwurfId: 'id-1' };
       ausfuellen();
       component.speichern();
       flush();
@@ -941,7 +941,7 @@ describe('AddGenerictextComponent', () => {
 
   describe('Vorbefuellung aus dem Destillier-Ablauf', () => {
     function vorbefuellen(url: string | null): void {
-      component.vorbefuellung = { rohinputId: 'id-1', titel: 'Wärmepumpe lohnt sich auch im Altbau', url, kopf: {} as any };
+      component.vorbefuellung = { einwurfId: 'id-1', titel: 'Wärmepumpe lohnt sich auch im Altbau', url, kopf: {} as any };
       component.ngOnChanges({ vorbefuellung: new SimpleChange(null, component.vorbefuellung, true) });
     }
 
@@ -966,7 +966,7 @@ describe('AddGenerictextComponent', () => {
 
     it('zeigt den Einwurf als Kopf ueber dem Formular', () => {
       component.vorbefuellung = {
-        rohinputId: 'id-1',
+        einwurfId: 'id-1',
         titel: 'Satz',
         url: null,
         kopf: { id: 'id-1', typ: null, titel: 'Notiz', text: null, erstellt: '', autor: null, autorName: null, nutzung: null, quellen: [] },

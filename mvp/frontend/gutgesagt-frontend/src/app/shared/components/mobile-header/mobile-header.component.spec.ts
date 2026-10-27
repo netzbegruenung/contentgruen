@@ -184,7 +184,7 @@ describe('MobileHeaderComponent – Pfeil an der echten Routentabelle', () => {
   }));
 
   it('fuehrt aus dem Formular im Destillier-Ablauf zurueck zum Einwurf', fakeAsync(() => {
-    expect(pfeilVon('/workflow/add-commentary?rohinput=e-9')).toBe('/destillieren/e-9');
+    expect(pfeilVon('/workflow/add-commentary?einwurf=e-9')).toBe('/destillieren/e-9');
   }));
 
   it('fuehrt aus dem Einwerfen auf die Beitragen-Seite, aus dem Fangkorb heraus zurueck', fakeAsync(() => {

@@ -28,7 +28,7 @@ describe('RouteConfigService', () => {
   it('benennt die Formularseiten nach ihrem Typ, auch mit Parametern', () => {
     expect(service.getRouteConfig('/workflow/add-commentary').pageTitle).toBe('Kommentar verfassen');
     expect(service.getRouteConfig('/workflow/add-commentary?aussage=a-1').pageTitle).toBe('Kommentar verfassen');
-    expect(service.getRouteConfig('/workflow/add-generictext?rohinput=e-1').pageTitle).toBe('Hintergrundinfo verfassen');
+    expect(service.getRouteConfig('/workflow/add-generictext?einwurf=e-1').pageTitle).toBe('Hintergrundinfo verfassen');
     expect(service.getRouteConfig('/workflow/add-image').pageTitle).toBe('Bild hinzufügen');
     expect(service.getRouteConfig('/workflow/add-post').pageTitle).toBe('Post verfassen');
   });

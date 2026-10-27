@@ -176,7 +176,7 @@ class SearchTrackingRepository:
                 actor_searches = (
                     session.query(
                         SearchEvent.actor_hash,
-                        func.count(SearchEvent.id).label("search_count"),
+                        func.count().label("search_count"),
                     )
                     .filter(
                         and_(
@@ -232,7 +232,7 @@ class SearchTrackingRepository:
 
         try:
             einzelzeilen = (
-                select(func.count(SearchEvent.id))
+                select(func.count())
                 .where(
                     and_(
                         SearchEvent.timestamp >= start_date,
