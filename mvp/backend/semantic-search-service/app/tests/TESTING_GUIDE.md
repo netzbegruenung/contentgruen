@@ -7,8 +7,8 @@ tests/
 ├── unit/                          # Unit tests
 │   ├── repositories/              # Repository layer tests
 │   └── services/                  # Service layer tests
-├── integration/                   # Integration tests
-│   └── api/v1/                    # API endpoint tests
+├── unit/api/                      # API endpoint tests (TestClient, mocked services)
+├── integration/                   # Integration tests against real Qdrant and PostgreSQL
 ├── fixtures/                      # Test utilities
 │   └── embeddings_manager.py      # In-memory test backend
 └── conftest.py                    # Shared fixtures
@@ -37,6 +37,26 @@ pytest tests/unit/path/to/test_x.py     # Specific test file
 pytest -k "pattern"                     # Pattern matching
 pytest tests/integration/               # Integration tests (Qdrant on :6333, PostgreSQL see below)
 ```
+
+### Integration Tests as a Gate
+
+One command runs the full check plus the integration suite, from the repository root:
+
+```bash
+bash scripts/check.sh --integration
+```
+
+It needs Qdrant (`QDRANT_URL`, default `http://localhost:6333`; `mvp/run-local.sh up`
+starts it) and PostgreSQL (`POSTGRES_TEST_DATABASE_URL` or Docker for a throwaway
+container, see below). If either is missing, the run aborts before the first test and
+names what is missing, instead of skipping silently. The switch behind it is
+`INTEGRATION_STACK_PFLICHT=1` (`tests/integration/stack.py`); a plain
+`pytest tests/integration/` without it still skips when the stack is absent.
+
+`tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL.
+A test that mocks the services (`TestClient` with `dependency_overrides`) belongs in
+`tests/unit/api/`. With a running stack no integration test is skipped; a new skip
+needs a reason that names what is missing.
 
 ### Integration Tests Against PostgreSQL
 

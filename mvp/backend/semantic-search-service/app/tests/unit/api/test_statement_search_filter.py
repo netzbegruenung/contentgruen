@@ -65,6 +65,50 @@ class TestSearchStatementsFilter:
 
 
 @pytest.mark.api
+class TestSearchStatementsAnfrage:
+    """Aus tests/integration/api/v1/test_statement_api.py: Grenzen der Anfrage."""
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            {"limit": 5},
+            {"query_text": ""},
+            {"query_text": "klima " * 200},
+            {"query_text": "klima", "limit": 0},
+            {"query_text": "klima", "limit": 101},
+        ],
+        ids=["ohne_text", "leer", "ueber_1000_zeichen", "limit_0", "limit_101"],
+    )
+    def test_ungueltige_anfrage_gibt_422(self, statement_service, body):
+        resp = TestClient(app).post(SEARCH_URL, json=body)
+
+        assert resp.status_code == 422
+        statement_service.search.assert_not_awaited()
+
+    def test_kein_json_gibt_422(self, statement_service):
+        resp = TestClient(app).post(
+            SEARCH_URL,
+            content="kein json",
+            headers={"Content-Type": "application/json"},
+        )
+
+        assert resp.status_code == 422
+
+    def test_ohne_treffer_leere_liste(self, statement_service):
+        resp = TestClient(app).post(SEARCH_URL, json={"query_text": "klima"})
+
+        assert resp.status_code == 200
+        assert resp.json()["results"] == []
+
+    def test_fehler_im_service_gibt_500(self, statement_service):
+        statement_service.search = AsyncMock(side_effect=RuntimeError("weg"))
+
+        resp = TestClient(app).post(SEARCH_URL, json={"query_text": "klima"})
+
+        assert resp.status_code == 500
+
+
+@pytest.mark.api
 class TestAddReplysuggestionUnbekannteAussage:
     def test_unbekannte_aussage_gibt_404(self, statement_service):
         import uuid

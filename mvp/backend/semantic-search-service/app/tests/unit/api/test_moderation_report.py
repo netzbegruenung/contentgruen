@@ -129,6 +129,15 @@ class TestAuthenticatedReportersAreLimitedByUser:
         assert service.report_content.await_args.kwargs["user_id"] is None
 
 
+class TestReporterIdentity:
+    """Aus tests/integration/api/v1/test_moderation_api.py: wer als Melder gespeichert wird."""
+
+    def test_angemeldete_person_wird_als_melder_gespeichert(self, client, service):
+        client.post(REPORT_URL, json=_payload(), headers={"X-User": "user-1"})
+
+        assert service.report_content.await_args.kwargs["user_id"] == "user-1"
+
+
 class TestContentMustExist:
     """Eine nie existierende UUID darf keinen Eintrag im Posteingang erzeugen."""
 
@@ -164,6 +173,14 @@ class TestRequestValidation:
         response = client.post(REPORT_URL, json=_payload(reason="weil-ich-kann"))
 
         assert response.status_code == 422
+
+    @pytest.mark.parametrize("fehlt", ["content_id", "content_type", "reason"])
+    def test_missing_required_field_is_rejected(self, client, service, fehlt):
+        body = _payload()
+        del body[fehlt]
+
+        assert client.post(REPORT_URL, json=body).status_code == 422
+        service.report_content.assert_not_awaited()
 
     @pytest.mark.parametrize("reason", ["spam", "inappropriate", "duplicate", "other"])
     def test_documented_reasons_are_accepted(self, client, reason):
