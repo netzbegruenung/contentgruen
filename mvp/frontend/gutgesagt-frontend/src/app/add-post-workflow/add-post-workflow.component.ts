@@ -7,11 +7,8 @@ import { LoggingService } from '../services/logging.service';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { gespeichertPfad } from '../shared/formular-adresse';
 import { BeitragGespeichert, GespeichertZustand } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
-import {
-  DestillierUebergabeService,
-  ROHINPUT_PARAM, // retired-ok: Parametername, Umbenennung in #262
-  Vorbefuellung,
-} from '../destillieren/destillier-uebergabe.service';
+import { DestillierUebergabeService, Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
+import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
 
 /**
  * Die Seite unter /workflow/add-post: verfassen oder, mit der ID eines Einwurfs
@@ -44,7 +41,7 @@ export class AddPostWorkflowComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((params) => this.einwurfUebernehmen(params.get(ROHINPUT_PARAM))); // retired-ok: #262
+      .subscribe((params) => this.einwurfUebernehmen(params.get(EINWURF_PARAM)));
   }
 
   private einwurfUebernehmen(einwurfId: string | null): void {
@@ -69,7 +66,7 @@ export class AddPostWorkflowComponent implements OnInit {
       this.uebergabe
         .mitBeitragVerknuepfen(einwurfId, ergebnis.id, 'post')
         .subscribe((einwurfVerknuepft) =>
-          this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: einwurfId }, { einwurfVerknuepft }), // retired-ok: #262
+          this.zurErgebnisseite(ergebnis.id, { [EINWURF_PARAM]: einwurfId }, { einwurfVerknuepft }),
         );
       return;
     }
