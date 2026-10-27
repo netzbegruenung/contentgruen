@@ -21,7 +21,10 @@ def erreichbar(adresse: str) -> bool:
         return False
 
 
-def main(adressen) -> int:
+def main(adressen: list[str]) -> int:
+    if not adressen:
+        print("Aufruf: python3 scripts/ci_dienste_warten.py <host:port> ...")
+        return 2
     ende = time.monotonic() + WARTEN_S
     offen = list(adressen)
     while offen:

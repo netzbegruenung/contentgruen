@@ -21,8 +21,8 @@ merge and build the images.
 | `bff` | `mcr.microsoft.com/dotnet/sdk:9.0` (BFF Dockerfile) | `check.sh --schritt bff` with `CHECK_OHNE_DOCKER=1` |
 | `ci-bericht` | `python:3.13-slim` | red pull-request runs only, see below |
 
-Services: `qdrant` (version of `mvp/docker-compose.dev.yml`, `entrypoint: /qdrant/qdrant`;
-without the absolute path the service does not start) and `postgres` (base image of
+Services: `qdrant` (same version as the compose files and `.github/workflows/tests-backend.yml`,
+`entrypoint: /qdrant/qdrant`; without the absolute path the service does not start) and `postgres` (base image of
 `mvp/backend/postgres-app`). The integration step reaches them through `QDRANT_URL` and
 `POSTGRES_TEST_DATABASE_URL`, after `scripts/ci_dienste_warten.py` has waited (up to two
 minutes) until both accept connections; the throwaway container of the suite is not used, the runner
@@ -32,10 +32,13 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 `check.sh`):
 
 - **One source for versions.** Woodpecker cannot read a Dockerfile, so the images appear a
-  second time in `ci.yaml`. The test fails if they differ from the Dockerfiles and the
-  compose file. When raising a version, change both.
+  second time in `ci.yaml`. The test fails if they differ from the Dockerfiles, the
+  compose files, the Qdrant service of the GitHub CI or the SDK image `check.sh` uses for
+  the BFF. When raising a version, change all of them.
 - **One source for commands.** Each step calls `check.sh --schritt <name>`, one pipeline step
-  per step of `check.sh` (the test compares the names). `CHECK_VOLL=1`
+  per step of `check.sh` (the test compares the names). Only the preparation a working tree
+  already has locally stays in `ci.yaml`: the venv (`python-installieren`), `npm ci` and
+  Chromium for the frontend. `CHECK_VOLL=1`
   makes `check.sh` print the full output instead of its summary lines.
 - **No path filter on the workflow.** A skipped workflow reports no status, and the
   required status then blocks the pull request. Filters only per step, and only so that

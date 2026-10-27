@@ -31,7 +31,15 @@ NODE = from_zeile("mvp/frontend/gutgesagt-frontend/Dockerfile", "build")
 
 
 def compose_image(datei, dienst):
-    return yaml.safe_load((WURZEL / datei).read_text())["services"][dienst]["image"]
+    """Image des Dienstes ``dienst`` in einer Compose-Datei oder einem GitHub-Workflow."""
+    inhalt = yaml.safe_load((WURZEL / datei).read_text())
+    if "jobs" in inhalt:
+        dienste = {}
+        for job in inhalt["jobs"].values():
+            dienste.update(job.get("services", {}))
+    else:
+        dienste = inhalt["services"]
+    return dienste[dienst]["image"]
 
 
 def test_ci_laeuft_bei_pull_request_push_auf_main_tag_und_manuell():
@@ -71,10 +79,21 @@ def test_schritt_nutzt_das_image_aus_dem_dockerfile(schritt, quelle):
     assert SCHRITTE[schritt]["image"] == quelle
 
 
+@pytest.mark.parametrize(
+    "quelle",
+    [
+        ("mvp/docker-compose.dev.yml", "qdrant"),
+        ("mvp/docker-compose.local-dbs.yml", "qdrant"),
+        # Der Qdrant-Dienst der GitHub-CI auf dem Spiegel
+        (".github/workflows/tests-backend.yml", "qdrant"),
+    ],
+)
+def test_qdrant_dienst_hat_ueberall_dieselbe_version(quelle):
+    datei, dienst = quelle
+    assert DIENSTE["qdrant"]["image"] == compose_image(datei, dienst)
+
+
 def test_dienste_nutzen_die_versionen_aus_compose_und_postgres_app():
-    assert DIENSTE["qdrant"]["image"] == compose_image(
-        "mvp/docker-compose.dev.yml", "qdrant"
-    )
     assert DIENSTE["postgres"]["image"] == from_zeile(
         "mvp/backend/postgres-app/Dockerfile"
     )
@@ -130,3 +149,11 @@ def test_schritte_rufen_check_sh_mit_ihrem_namen_auf():
     }
 
     assert {n: a for n, a in aufrufe.items() if a} == {n: [n] for n in in_check}
+
+
+def test_check_sh_nutzt_lokal_dasselbe_bff_image():
+    # Ohne CHECK_OHNE_DOCKER laeuft der BFF-Schritt im SDK-Container (scripts/check.sh)
+    check = (WURZEL / "scripts" / "check.sh").read_text()
+    assert re.findall(r"mcr\.microsoft\.com/dotnet/sdk\S*", check) == [
+        SCHRITTE["bff"]["image"]
+    ]

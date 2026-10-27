@@ -1,6 +1,7 @@
 #!/bin/bash
-# Full check for a working tree: Python lint + format + unit tests, frontend tests, BFF tests.
-# The same command for people, agents and CI. Run from the repository root.
+# Full check for a working tree: retired words, Python lint + format + unit tests (and scripts/tests/),
+# frontend tests, BFF tests. The same command for people, agents and CI. Runs from any directory.
+# Images: the BFF SDK image is the one of mvp/backend/BFF/Dockerfile (scripts/tests/test_woodpecker_ci.py).
 # Frontend tests need a Chrome/Chromium: set CHROME_BIN, otherwise the Playwright Chromium is used if present.
 # --integration: also run app/tests/integration against Qdrant (QDRANT_URL, default localhost:6333) and
 # PostgreSQL (POSTGRES_TEST_DATABASE_URL or a throwaway container); aborts if either is missing.
@@ -68,7 +69,8 @@ if laeuft bff; then
   else
     docker run --rm -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e NUGET_PACKAGES=/tmp/nuget \
       -v "$PWD":/src -v "${NUGET_CACHE:-$HOME/.cache/gutgesagt-nuget}":/tmp/nuget -w /src \
-      mcr.microsoft.com/dotnet/sdk:9.0 dotnet test GutGesagt.sln --nologo -v q 2>&1 | kurz 'Passed!|Failed!|error' 3
+      mcr.microsoft.com/dotnet/sdk:9.0@sha256:840f3b62b9742dde4461a3c31e38ffd34d41d7d33afd39c378cfcfd5dcb82bd5 \
+      dotnet test GutGesagt.sln --nologo -v q 2>&1 | kurz 'Passed!|Failed!|error' 3
   fi
   test "${PIPESTATUS[0]}" -eq 0
 fi
