@@ -58,6 +58,9 @@ test('Post verfassen: Formular, Ergebnisseite, in der Suche als Post-Karte', asy
     const karte = page.locator('.mobile-section .karte.typ-post', { hasText: titel });
     await expect(karte).toBeVisible();
     await expect.soft(karte).toContainText('@e2e-klimaverein · Instagram');
+    // Drei Tabs (Kommentare, Hintergrund, Posts) passen in 360 px.
+    const ueberlauf = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+    expect.soft(ueberlauf, 'kein seitlicher Ueberlauf mit dem Post-Tab').toBe(false);
     await karte.scrollIntoViewIfNeeded();
     await bild('103-post-in-der-suche');
   });
