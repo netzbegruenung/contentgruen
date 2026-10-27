@@ -1,6 +1,6 @@
 """
 Die Admin-Endpunkte der Moderation ohne eigene Testdatei: Meldungen lesen,
-Statistik, Beitrag loeschen, Meldung abweisen. Sperren, Entsperren und die Liste
+Statistik, Beitrag endgueltig entfernen, Meldung abweisen. Sperren, Entsperren und die Liste
 der gesperrten Beitraege prueft test_moderation_sperren.py.
 
 Aus tests/integration/api/v1/test_moderation_api.py, dort ohne die Fixture
@@ -42,7 +42,7 @@ def client(service):
         yield TestClient(app)
 
 
-@pytest.mark.unit
+@pytest.mark.api
 @pytest.mark.parametrize("methode, pfad", ENDPUNKTE)
 class TestNurAdmin:
     def test_mitwirkende_duerfen_nicht(self, client, service, methode, pfad):

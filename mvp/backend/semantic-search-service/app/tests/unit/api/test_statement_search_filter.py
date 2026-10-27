@@ -93,6 +93,7 @@ class TestSearchStatementsAnfrage:
         )
 
         assert resp.status_code == 422
+        statement_service.search.assert_not_awaited()
 
     def test_ohne_treffer_leere_liste(self, statement_service):
         resp = TestClient(app).post(SEARCH_URL, json={"query_text": "klima"})

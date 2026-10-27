@@ -120,8 +120,10 @@ class TestSuchen:
     def test_ohne_genauen_treffer(self, client, service):
         service.search.return_value = [_herkunft()]
 
-        daten = client.post(f"{PREFIX}/search", json={"query_text": "rede"}).json()
+        antwort = client.post(f"{PREFIX}/search", json={"query_text": "rede"})
 
+        assert antwort.status_code == 200
+        daten = antwort.json()
         assert daten["has_exact_match"] is False
         assert daten["exact_match_id"] is None
 

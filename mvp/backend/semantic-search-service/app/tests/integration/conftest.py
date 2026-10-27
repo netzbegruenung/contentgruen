@@ -111,16 +111,15 @@ def postgres_url():
     in der CI und im Pflichtmodus (``stack.py``) schlagen sie fehl.
     """
     url = os.environ.get(postgres.URL_VARIABLE)
-    if url:
-        assert postgres.erreichbar(url), f"{postgres.URL_VARIABLE} nicht erreichbar"
-        yield url
-        return
-    if not postgres.docker_verfuegbar():
-        grund = f"Weder {postgres.URL_VARIABLE} gesetzt noch Docker verfuegbar"
-        # In der CI waere Ueberspringen ein falsches Gruen.
-        if os.environ.get("CI") or stack.pflicht():
+    grund = stack.postgres_fehlt()
+    if grund:
+        # Eine gesetzte URL muss gehen; in der CI waere Ueberspringen ein falsches Gruen.
+        if url or os.environ.get("CI") or stack.pflicht():
             pytest.fail(grund)
         pytest.skip(grund)
+    if url:
+        yield url
+        return
     with postgres.wegwerf_container() as url:
         yield url
 

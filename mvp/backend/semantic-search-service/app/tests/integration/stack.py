@@ -32,24 +32,37 @@ def qdrant_erreichbar(url: str = QDRANT_URL) -> bool:
         return False
 
 
+def postgres_fehlt(env: Optional[Mapping[str, str]] = None) -> Optional[str]:
+    """Warum es kein PostgreSQL gibt, oder None.
+
+    Die eine Regel fuer Vorabpruefung und Fixture ``postgres_url``: Ist
+    ``POSTGRES_TEST_DATABASE_URL`` gesetzt, muss die Datenbank erreichbar sein,
+    sonst braucht es Docker fuer einen Wegwerf-Container.
+    """
+    env = os.environ if env is None else env
+    url = env.get(postgres.URL_VARIABLE)
+    if url:
+        if not postgres.erreichbar(url):
+            return f"PostgreSQL aus {postgres.URL_VARIABLE} nicht erreichbar"
+    elif not postgres.docker_verfuegbar():
+        return (
+            f"PostgreSQL: weder {postgres.URL_VARIABLE} gesetzt noch Docker "
+            "fuer einen Wegwerf-Container verfuegbar"
+        )
+    return None
+
+
 def fehlende_dienste(
     qdrant_url: str = QDRANT_URL, env: Optional[Mapping[str, str]] = None
 ) -> list[str]:
     """Je fehlendem Dienst eine Meldung; leer, wenn der Stack da ist."""
-    env = os.environ if env is None else env
     fehlend = []
     if not qdrant_erreichbar(qdrant_url):
         fehlend.append(
             f"Qdrant nicht erreichbar unter {qdrant_url} "
             "(mvp/run-local.sh up, oder QDRANT_URL setzen)"
         )
-    url = env.get(postgres.URL_VARIABLE)
-    if url:
-        if not postgres.erreichbar(url):
-            fehlend.append(f"PostgreSQL aus {postgres.URL_VARIABLE} nicht erreichbar")
-    elif not postgres.docker_verfuegbar():
-        fehlend.append(
-            f"PostgreSQL: weder {postgres.URL_VARIABLE} gesetzt noch Docker "
-            "fuer einen Wegwerf-Container verfuegbar"
-        )
+    grund = postgres_fehlt(env)
+    if grund:
+        fehlend.append(grund)
     return fehlend
