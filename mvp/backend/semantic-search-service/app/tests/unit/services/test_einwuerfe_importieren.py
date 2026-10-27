@@ -1,6 +1,6 @@
 """
 Das Importskript mvp/scripts/manual/einwuerfe_importieren.py (#341): Liste lesen
-und je Zeile einwerfen. Statt des BFF steht hier ein Client im Speicher; den Weg
+und je Zeile einwerfen. Statt des BFF steht hier ein Client im Speicher; den Aufruf
 ueber das echte BFF prueft tests/integration/api/test_einwuerfe_importieren_bff.py.
 """
 
