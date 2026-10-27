@@ -28,6 +28,8 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
+from infrastructure.database.migrationen import dateien
+
 URL_VARIABLE = "POSTGRES_TEST_DATABASE_URL"
 REPO_WURZEL = next(p for p in Path(__file__).parents if (p / "mvp").is_dir())
 POSTGRES_APP = REPO_WURZEL / "mvp" / "backend" / "postgres-app"
@@ -43,12 +45,8 @@ SUCHEREIGNIS_DEFAULT_VOR_256 = (
 
 
 def migrationen() -> list:
-    """
-    Die Migrationen in der Reihenfolge der README: nach dem Namen ohne Endung,
-    damit "...-suchen-ohne-treffer" vor "...-suchen-ohne-treffer-personen" laeuft.
-    Mit Endung (sorted, ls) kaeme "-personen.sql" zuerst, vor der Tabelle.
-    """
-    return sorted(MIGRATIONEN.glob("*.sql"), key=lambda s: s.stem)
+    """Die Migrationen in der Reihenfolge, in der der Dienst sie einspielt."""
+    return dateien(MIGRATIONEN)
 
 
 # Benutzer und Datenbank wie in docker-compose.dev.yml, das Passwort nur fuer diesen Lauf.

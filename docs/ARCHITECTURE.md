@@ -123,7 +123,9 @@ listens on 5432 inside the container.
 > exactly (checked by `tests/integration/test_migrationen.py`). It is baked into the
 > `gutgesagt-postgres-app` image used by test and production, and bind-mounted by the
 > local compose files. Existing databases get schema changes from
-> `mvp/backend/postgres-app/migrations/`.
+> `mvp/backend/postgres-app/migrations/`: the semantic service applies them on start,
+> after `create_all`, and records each in the table `migrationsprotokoll`
+> (`app/infrastructure/database/migrationen.py`).
 
 ## Nginx Configuration
 
@@ -346,4 +348,4 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 ### Production
 - PostgreSQL with persistent volumes
 - Backup & restore with rotation (`mvp/scripts/backup/`), scheduled on verdigado's internal infrastructure
-- Migration tooling (planned)
+- Migrations applied by the semantic service on start (`mvp/backend/postgres-app/migrations/README.md`)

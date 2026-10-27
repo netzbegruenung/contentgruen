@@ -411,3 +411,27 @@ class User(Base):
     aktualisiert_am = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class MigrationsprotokollZeile(Base):
+    """
+    Welche Migration aus postgres-app/migrations eingespielt ist, eine Zeile je Datei.
+
+    Schreibt nur infrastructure/database/migrationen.py beim Start des Dienstes.
+    status ist "eingespielt", "erkannt" (Wirkung schon vorhanden, von Hand
+    eingespielt), "fehlgeschlagen" (laeuft beim naechsten Start erneut) oder
+    "nachlauf_offen" (festgeschrieben, nur das VACUUM danach fehlt noch). fehler
+    haelt nur die erste Zeile der Fehlermeldung, ohne die DETAIL-Zeile mit Werten.
+
+    Kein Skript in migrations/: Die Tabelle muss vor dem ersten Skript da sein,
+    eine eigene Datei liefe erst nach allen aelteren. create_all legt sie an.
+    """
+
+    __tablename__ = "migrationsprotokoll"
+
+    name = Column(String(200), primary_key=True)
+    status = Column(String(20), nullable=False)
+    zeitpunkt = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fehler = Column(Text, nullable=True)
