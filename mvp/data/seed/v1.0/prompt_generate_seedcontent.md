@@ -38,8 +38,9 @@ Hintergrundinfos in `statements_with_generictexts/*.json` mit `generic_texts` st
 
 1. **Für Unentschiedene schreiben.** Wer die Aussage geschrieben hat, wird selten
    überzeugt. Die Antwort richtet sich an die, die mitlesen.
-2. **Den Vorwurf nicht wiederholen.** Das Schlagwort der Aussage kommt in der Antwort
-   nicht vor.
+2. **Den Vorwurf nicht wiederholen.** Der Vorwurf der Aussage („töten“, „Verbotspartei“,
+   „killt“) kommt in der Antwort nicht vor. Das Thema („Windräder“, „Tempolimit“) darf
+   genannt werden.
 3. **Erst die Gemeinsamkeit.** Der erste Satz nennt, was alle wollen (sichere Versorgung,
    bezahlbares Leben, gesunde Natur).
 4. **Wofür statt wogegen.** Die Antwort zeigt, was besser wird.
@@ -54,7 +55,7 @@ Hintergrundinfos in `statements_with_generictexts/*.json` mit `generic_texts` st
 
 - Keine echten Personen, weder in Aussagen noch in Beiträgen, und keine erfundenen
   Zitate. Presse, Videos und Blogs nur als Link in der Herkunft, nie als Text.
-- Herkunft bevorzugt aus Primärquellen: Behörden, Forschungsinstitute, Gesetzestexte.
+- Herkunft bevorzugt direkt von Behörden, Forschungsinstituten oder aus Gesetzestexten.
 - Zahlen in den Alltag übersetzen („aus einer Kilowattstunde Strom werden 3,3
   Kilowattstunden Wärme“).
 - Die Lesenden als Hauptfigur, Ansprache mit „du“, Alltagssprache, kurze Sätze.
@@ -87,5 +88,5 @@ Aussage: „Windräder töten die Vögel!“
 }
 ```
 
-Gemeinsamkeit zuerst, das Schlagwort der Aussage fehlt, die Zahl hat eine Herkunft,
+Gemeinsamkeit zuerst, der Vorwurf („töten“) fehlt, die Zahl hat eine Herkunft,
 der Schluss zeigt, was man tun kann.

@@ -12,7 +12,12 @@ der Startbestand: Fertige Beiträge im Bestand schreiben Menschen (`docs/VISION.
 | `add_metadata.py` | ergänzt `metadata`: Nutzung 0, `created_at` fest aus der Position |
 | `v0.1/` | alter Stand, wird nicht geladen |
 
-Geladen wird nur das Verzeichnis aus `SEMANTIC_SEARCH_DATA_PATH` (Dev: `/data/seed/v1.0`).
+Geladen wird das Verzeichnis aus `SEMANTIC_SEARCH_DATA_PATH` (Dev: `/data/seed/v1.0`), und
+zwar nur auf Anstoß über `/api/v1/seeding/start`; von selbst lädt der Dienst nichts. Der Seed
+liegt trotzdem in jedem Image des Semantic-Search-Service (`COPY data /data` im
+`Dockerfile`), und ohne gesetzte Variable zeigt der Pfad im Container auf `/data/seed/v1.0`.
+In Test und Produktion schützt also nur, dass das BFF `/api/v1/seeding` sperrt: Dort nie
+Seeding direkt am Dienst anstoßen.
 
 ## Regeln
 
@@ -30,6 +35,8 @@ Der Seed folgt denselben Regeln wie der Bestand (`docs/VISION.md`, „Ton und Sc
 Dazu: keine echten Personen und keine Zitate aus der Presse; Presse höchstens als Link
 in der Herkunft. Titel sind ein Satz mit Haltung, 3 bis 120 Zeichen, keine Frage.
 Die Nutzung ist überall 0: Kein Zähler wird vorbelegt (`GLOSSARY.md`, „Nutzung“).
+`metadata.usage_count` steht nur in den Dateien, damit sich das prüfen lässt; beim Laden
+wird es ignoriert.
 
 Agenten dürfen den Seed nach diesen Regeln neu erzeugen. Danach `add_metadata.py`
 ausführen; `tests/unit/test_seed_regeln.py` im Semantic-Search-Service prüft die

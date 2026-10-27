@@ -432,7 +432,9 @@ class TestContentRepository:
             # Expected with test embeddings manager
             pass
 
-    def test_initial_data_belegt_keine_nutzung_vor(self, repository, monkeypatch):
+    def test_initialize_with_initial_data_legt_keine_nutzung_an(
+        self, repository, monkeypatch
+    ):
         """Seed-Inhalte beginnen bei Nutzung 0 (#340): kein Zaehler wird vorbelegt."""
         from unittest.mock import MagicMock
         from repositories.aggregated import content_repository as modul
@@ -445,8 +447,8 @@ class TestContentRepository:
         )
         monkeypatch.setattr(repository, "upsert", lambda *_: None)
         usage_service = MagicMock()
-        monkeypatch.setattr(usage_modul, "get_usage_service", lambda: usage_service)
+        monkeypatch.setattr(usage_modul, "get_usage_service", lambda *_: usage_service)
 
         repository.initialize_with_initial_data()
 
-        usage_service.initialize_content_usage.assert_not_called()
+        assert usage_service.method_calls == []

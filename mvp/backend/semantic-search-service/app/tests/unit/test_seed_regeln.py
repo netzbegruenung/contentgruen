@@ -141,33 +141,33 @@ class TestVerstoesseErkannt:
             "commentaries": [{"title": "Windräder sind besser als ihr Ruf", **beitrag}],
         }
 
-    def test_saubere_aussage_ohne_verstoss(self):
+    def test_verstoesse_aussage_mit_platzhalter_meldet_nichts(self):
         aussage = self._aussage(
             text="Glasscheiben sind für Vögel gefährlicher. "
             "[Hier ein eigenes Erlebnis: mein Nachbar und sein Windrad]"
         )
         assert verstoesse_aussage(aussage) == []
 
-    def test_erfundenes_erlebnis(self):
+    def test_verstoesse_aussage_mit_eigenem_nachbarn_meldet_erlebnis(self):
         aussage = self._aussage(text="Mein Nachbar spart 200 Euro im Jahr.")
         assert any("Erlebnis" in f for f in verstoesse_aussage(aussage))
 
-    def test_nachbarschaft(self):
+    def test_verstoesse_aussage_mit_dorfgeschichte_meldet_erlebnis(self):
         aussage = self._aussage(long_text="Bei uns im Dorf sind alle überzeugt.")
         assert any("Erlebnis" in f for f in verstoesse_aussage(aussage))
 
-    def test_sarkasmus(self):
+    def test_verstoesse_aussage_mit_stil_sarkastisch_meldet_stil(self):
         aussage = self._aussage(text="Ein Text", style="sarkastisch")
         assert any("Stil" in f for f in verstoesse_aussage(aussage))
 
-    def test_nutzung_vorbelegt(self):
+    def test_verstoesse_aussage_mit_vorbelegter_nutzung_meldet_nutzung(self):
         aussage = self._aussage(text="Ein Text", metadata={"usage_count": 3})
         assert any("Nutzung" in f for f in verstoesse_aussage(aussage))
 
-    def test_echte_person(self):
+    def test_verstoesse_aussage_mit_echter_person_meldet_person(self):
         aussage = self._aussage(text="Söder wollte das auch.")
         assert any("Person" in f for f in verstoesse_aussage(aussage))
 
-    def test_titel_als_frage(self):
+    def test_verstoesse_aussage_mit_frage_als_titel_meldet_frage(self):
         aussage = self._aussage(text="Ein Text", title="Lohnt sich das?")
         assert any("Frage" in f for f in verstoesse_aussage(aussage))

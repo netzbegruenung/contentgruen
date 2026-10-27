@@ -795,15 +795,26 @@ class TestSeedBelegtKeineNutzungVor:
     """Auch ein Seed mit usage_count > 0 legt keine Nutzung an (#340, GLOSSARY "Nutzung")."""
 
     @pytest.mark.asyncio
-    async def test_aussage_mit_usage_count_ohne_nutzung(self):
+    async def test_create_statement_with_replies_usage_count_legt_keine_nutzung_an(
+        self, monkeypatch
+    ):
+        import repositories.usage_tracking_repository as usage_modul
+        import services.orchestration.content_orchestrator as orchestrator_modul
+
+        # Frueher holte sich der DataProcessor das Repository ueber diese Fabrik.
         usage_repository = MagicMock()
+        for modul in (usage_modul, orchestrator_modul):
+            monkeypatch.setattr(
+                modul,
+                "get_usage_repository",
+                lambda *_: usage_repository,
+                raising=False,
+            )
         orchestrator = MagicMock()
         orchestrator.statement_service.add_statement = AsyncMock(
             return_value=(True, uuid.uuid4(), None)
         )
         processor = DataProcessor(orchestrator)
-        # So hing frueher das Usage-Repository am Seed; es darf nicht mehr benutzt werden.
-        processor.usage_repository = usage_repository
 
         await processor.create_statement_with_replies(
             "Windräder töten die Vögel!",
@@ -812,4 +823,4 @@ class TestSeedBelegtKeineNutzungVor:
             metadata={"usage_count": 5},
         )
 
-        usage_repository.initialize_usage_data.assert_not_called()
+        assert usage_repository.method_calls == []
