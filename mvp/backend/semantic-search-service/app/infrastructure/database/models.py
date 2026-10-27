@@ -126,11 +126,19 @@ class SearchEvent(Base):
     timestamp holds only the UTC day (midnight UTC), never the time of day: an
     exact time could be matched against the creation time of the statement the
     same search created, and so tie the statement to the daily pseudonym.
+
+    id is a random UUID, not a sequence: a running number would give the order of
+    the searches of a day, which lines up with the order of the statements they
+    created (#275).
     """
 
     __tablename__ = "search_events"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(
+        SQLUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
     actor_hash = Column(String(64), nullable=True)
     results_count = Column(Integer, default=0, nullable=False)
     timestamp = Column(

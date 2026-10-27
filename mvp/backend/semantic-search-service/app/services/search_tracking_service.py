@@ -113,7 +113,7 @@ class SearchTrackingService:
         )
 
         # No log line per search: it would carry the exact time again, and
-        # counted per day it lines up with the search events by order.
+        # counted per day it lines up with the statements the searches created.
 
         return self.repository.track_search(
             results_count=results_count,

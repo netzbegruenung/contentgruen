@@ -35,6 +35,9 @@ ARG NGINX_CONF=nginx.conf
 
 # Copy the appropriate Nginx configuration file
 COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
+# Protokollformat fuer beide Konfigurationen; "00-", damit es vor default.conf
+# eingebunden wird (#275).
+COPY nginx.protokoll.conf /etc/nginx/conf.d/00-protokoll.conf
 
 # Note that due to Angular Universal the path since a while needs to be set to the browser subfolder
 COPY --from=build /app/dist/gutgesagt-frontend/browser /usr/share/nginx/html
