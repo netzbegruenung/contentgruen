@@ -13,6 +13,7 @@ im Batch der Sichtbarkeitsfilter oder das Limit je Typ verloren, fiele es auf.
 """
 
 import datetime
+import inspect
 import uuid
 from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
@@ -224,16 +225,15 @@ async def suche(integration_settings, real_repository_factory, real_embeddings_m
             yield suchen
 
 
+def _beitrag_id(eintrag):
+    """ID des Beitrags in einem Suchtreffer."""
+    return next(v for k, v in eintrag.items() if k.endswith("_result"))["id"]
+
+
 def _treffer(antwort):
     """Was die Nutzenden sehen: je Beitragstyp IDs, Scores und Reihenfolge."""
     return {
-        feld: [
-            (
-                next(v for k, v in eintrag.items() if k.endswith("_result"))["id"],
-                eintrag["score"],
-            )
-            for eintrag in antwort[feld]
-        ]
+        feld: [(_beitrag_id(eintrag), eintrag["score"]) for eintrag in antwort[feld]]
         for feld in (
             "commentary_search_results",
             "generictext_search_results",
@@ -292,13 +292,21 @@ async def test_search_by_text_suchanfrage_mit_apostroph_oder_semikolon_einmal_ei
     assert einbettungen == [f"query: {text}"]
 
 
-def _wie_vor_321(methode, text_index):
-    """Repository-Methode, die den Suchtext ersetzt wie die Suche vor #321."""
+def _ersetzt_wie_vor_321(text):
+    """Der Suchtext, wie die Suche vor #321 ihn einbettete."""
+    return text.replace(";", ",").replace("'", '"')
+
+
+def _wie_vor_321(methode):
+    """Repository-Methode, die `query_text` ersetzt wie die Suche vor #321."""
+    signatur = inspect.signature(methode)
 
     async def ersetzt(*args, **kwargs):
-        args = list(args)
-        args[text_index] = args[text_index].replace(";", ",").replace("'", '"')
-        return await methode(*args, **kwargs)
+        argumente = signatur.bind(*args, **kwargs)
+        argumente.arguments["query_text"] = _ersetzt_wie_vor_321(
+            argumente.arguments["query_text"]
+        )
+        return await methode(*argumente.args, **argumente.kwargs)
 
     return ersetzt
 
@@ -309,8 +317,9 @@ async def test_search_by_text_aussage_mit_apostroph_wie_gespeichert_verglichen(
     """Charakterisierung (#321): Wortgleich gesucht, liegt die Aussage naeher als vorher.
 
     Vor #321 bettete die Suche den Text mit " und , ein, die Aussage mit ' und ;.
-    Die Antwort auf die Aussage kam mit geringerer Aehnlichkeit zurueck. Nur
-    Suchanfragen mit diesen Zeichen sind betroffen.
+    Die Antwort auf die Aussage kam mit geringerer Aehnlichkeit zurueck. Dass
+    Suchanfragen ohne diese Zeichen gleich bleiben, belegt der Paritaetstest
+    test_search_by_text_treffer_wie_mit_einbettung_je_abfrage.
     """
     await suche()  # Lage wie im Paritaetstest
     neu, einbettungen, _ = await suche(AUSSAGE_MIT_ZEICHEN)
@@ -319,12 +328,12 @@ async def test_search_by_text_aussage_mit_apostroph_wie_gespeichert_verglichen(
         patch.object(
             StatementRepository,
             "search_statements_with_replies",
-            _wie_vor_321(StatementRepository.search_statements_with_replies, 1),
+            _wie_vor_321(StatementRepository.search_statements_with_replies),
         ),
         patch.object(
             QdrantBaseRepository,
             "search_batch",
-            classmethod(_wie_vor_321(QdrantBaseRepository.search_batch.__func__, 2)),
+            classmethod(_wie_vor_321(QdrantBaseRepository.search_batch.__func__)),
         ),
     ):
         alt, einbettungen_alt, _ = await suche(AUSSAGE_MIT_ZEICHEN)
@@ -332,10 +341,10 @@ async def test_search_by_text_aussage_mit_apostroph_wie_gespeichert_verglichen(
     assert neu["query_was_newly_added_as_statement"] is False
     assert einbettungen == [f"query: {AUSSAGE_MIT_ZEICHEN}"]
     # wirklich der alte Weg: eingebettet wird nur der ersetzte Text
-    ersetzt = AUSSAGE_MIT_ZEICHEN.replace(";", ",").replace("'", '"')
-    assert einbettungen_alt == [f"query: {ersetzt}"]
+    assert einbettungen_alt == [f"query: {_ersetzt_wie_vor_321(AUSSAGE_MIT_ZEICHEN)}"]
     erster_neu = neu["commentary_search_results"][0]
     erster_alt = alt["commentary_search_results"][0]
+    assert _beitrag_id(erster_neu) == _beitrag_id(erster_alt)
     assert erster_neu["statement_text"] == erster_alt["statement_text"]
     assert erster_neu["statement_text"] == AUSSAGE_MIT_ZEICHEN
     assert (
