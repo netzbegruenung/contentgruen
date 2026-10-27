@@ -2,15 +2,13 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { SHARED_IMPORTS } from '../../shared/shared-imports';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
-import { KartenDaten, ausAussage, ausSuchergebnis } from '../../beitragskarte/karten-daten';
-import { CommentaryService } from '../../services/commentary.service';
-import { GenericTextService } from '../../services/generic-text.service';
-import { PostService } from '../../services/post.service';
+import { KartenDaten, ausAussage } from '../../beitragskarte/karten-daten';
+import { BeitragAnsehenService } from '../beitrag-ansehen.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
@@ -83,9 +81,7 @@ export class BeitragGespeichertComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private commentaryService: CommentaryService,
-    private genericTextService: GenericTextService,
-    private postService: PostService,
+    private beitragAnsehen: BeitragAnsehenService,
     private navigationService: NavigationService,
     private uebergabe: DestillierUebergabeService,
     private logger: LoggingService,
@@ -163,18 +159,6 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   private laden(id: string): Observable<KartenDaten> {
-    if (this.typ === 'post') {
-      return this.postService
-        .getPostById(id)
-        .pipe(map((inhalt) => ausSuchergebnis({ post_result: inhalt, score: 1 } as any)));
-    }
-    if (this.typ === 'generictext') {
-      return this.genericTextService
-        .getGenericTextById(id)
-        .pipe(map((inhalt) => ausSuchergebnis({ generictext_result: inhalt, score: 1 } as any)));
-    }
-    return this.commentaryService
-      .getCommentaryById(id)
-      .pipe(map((inhalt) => ausSuchergebnis({ commentary_result: inhalt, score: 1 } as any)));
+    return this.beitragAnsehen.karteLaden(id, this.typ) ?? throwError(() => new Error(`Typ ${this.typ} nicht ladbar`));
   }
 }

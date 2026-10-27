@@ -166,9 +166,8 @@ class UpdateRawInputStatusRequest(BaseModel):
             self.content_type is not None
             and self.content_type not in DESTILLIERBARE_TYPEN
         ):
-            raise ValueError(
-                "content_type muss commentary, generic_text oder post sein"
-            )
+            erlaubt = ", ".join(typ.value for typ in DESTILLIERBARE_TYPEN)
+            raise ValueError(f"content_type muss einer von {erlaubt} sein")
         return self
 
 

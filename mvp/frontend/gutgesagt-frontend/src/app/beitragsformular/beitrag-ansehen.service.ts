@@ -35,7 +35,7 @@ export class BeitragAnsehenService {
   }
 
   oeffnen(id: string, contentType: string | null | undefined): void {
-    const karte$ = this.laden(id, resolveContentType(contentType));
+    const karte$ = this.karteLaden(id, contentType);
     if (!karte$) {
       return;
     }
@@ -49,7 +49,12 @@ export class BeitragAnsehenService {
     });
   }
 
-  private laden(id: string, typ: string | undefined): Observable<KartenDaten> | null {
+  /**
+   * Einen gespeicherten Beitrag als KartenDaten laden; null fuer Typen, die sich
+   * hier nicht zeigen lassen. Auch die Ergebnisseite nach dem Speichern laedt so.
+   */
+  karteLaden(id: string, contentType: string | null | undefined): Observable<KartenDaten> | null {
+    const typ = resolveContentType(contentType);
     if (typ === 'commentary') {
       return this.commentaryService
         .getCommentaryById(id)

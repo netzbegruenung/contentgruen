@@ -23,8 +23,8 @@ import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert
 
 /**
  * Wie beim Bild: Der Post-Titel beschreibt, er folgt der Behauptungsregel fuer
- * Kommentar und Hintergrundinfo nicht. Das Backend erlaubt mehr (500), die Karte
- * ist auf diese Laenge ausgemessen.
+ * Kommentar und Hintergrundinfo nicht (CLAUDE.md). Das Backend erlaubt 500; die
+ * Titelbox der Karte kuerzt Laengeres ohnehin nach drei Zeilen.
  */
 export const TITEL_MAX = 200;
 export const TEXT_MAX = 2000;
@@ -38,8 +38,8 @@ export const SPEICHERN_FEHLGESCHLAGEN =
  * Das Post-Formular: Link, Plattform, wer ihn gepostet hat, Titel und in eigenen
  * Worten, worum es geht - daneben (am Handy darunter) die Vorschau.
  *
- * Der Link ist die Herkunft des Posts; die Plattform folgt ihm, bis die Person
- * sie selbst waehlt. Posts antworten auf keine Aussage und kennen keine
+ * Der Link fuehrt zum Post selbst; die Plattform folgt ihm, bis die Person sie
+ * selbst waehlt. Eine Herkunft (worauf sich ein Beitrag stuetzt) hat ein Post nicht. Posts antworten auf keine Aussage und kennen keine
  * Dublettenpruefung. Nach dem Speichern meldet `success` die ID; wohin es
  * weitergeht, entscheidet der Workflow.
  */
