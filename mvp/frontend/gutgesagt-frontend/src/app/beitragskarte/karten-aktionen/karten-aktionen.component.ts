@@ -129,9 +129,17 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.umschalten(this.isDisliked ? null : 'dislike');
   }
 
-  /** Standard ist der Text allein; beide Wege zaehlen als Nutzung. */
-  kopieren(mitHerkunft = false): void {
-    const text = mitHerkunft ? this.kopierTextMitHerkunft : this.kopierText;
+  /** Der Standard: der Text allein. */
+  kopieren(): void {
+    this.inZwischenablage(this.kopierText);
+  }
+
+  /** Die Wahl "Text + Herkunft"; zaehlt wie Kopieren als Nutzung. */
+  kopierenMitHerkunft(): void {
+    this.inZwischenablage(this.kopierTextMitHerkunft);
+  }
+
+  private inZwischenablage(text: string): void {
     if (this.vorschau || !text) {
       return;
     }

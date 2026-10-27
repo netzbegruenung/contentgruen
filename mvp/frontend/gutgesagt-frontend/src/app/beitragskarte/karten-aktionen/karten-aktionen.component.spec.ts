@@ -450,7 +450,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.kopiert.subscribe(kopiert);
       component.kopierTextMitHerkunft = 'Test text\n\nHerkunft: https://example.org';
 
-      component.kopieren(true);
+      component.kopierenMitHerkunft();
 
       expect(clipboard.copy).toHaveBeenCalledWith('Test text\n\nHerkunft: https://example.org');
       expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID);
@@ -513,6 +513,21 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         expect(knopf.getAttribute('tabindex')).toBe('-1');
         expect(knopf.disabled).toBeFalse();
       });
+    });
+
+    it('kopiert auch mit Herkunft nicht und zaehlt keine Nutzung', () => {
+      const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      fixture.componentRef.setInput('kopierTextMitHerkunft', 'Test text\n\nHerkunft: https://example.org');
+      fixture.detectChanges();
+
+      const wahl: HTMLButtonElement = fixture.nativeElement.querySelector('.kopier-wahl-knopf');
+      component.kopierenMitHerkunft();
+
+      expect(wahl.getAttribute('aria-disabled')).toBe('true');
+      expect(wahl.getAttribute('tabindex')).toBe('-1');
+      expect(clipboard.copy).not.toHaveBeenCalled();
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
     });
 
     it('stimmt nicht ab, kopiert nicht und meldet nicht', fakeAsync(() => {

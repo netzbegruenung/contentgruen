@@ -280,7 +280,7 @@ describe('BeitragskarteComponent', () => {
         ),
       );
 
-      aktionen().kopieren(true);
+      aktionen().kopierenMitHerkunft();
       fixture.detectChanges();
 
       expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');

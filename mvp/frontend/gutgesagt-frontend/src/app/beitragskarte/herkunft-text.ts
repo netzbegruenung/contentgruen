@@ -12,7 +12,7 @@ export function herkunftText(daten: KartenDaten): string {
     daten.typ === 'post'
       ? [daten.extra?.postUrl].filter((url): url is string => !!url)
       : daten.quellen
-          .map((quelle) => [quelle.beschreibung, quelle.url].filter(Boolean).join(': '))
+          .map((angabe) => [angabe.beschreibung, angabe.url].filter(Boolean).join(': '))
           .filter(Boolean);
 
   if (zeilen.length === 0) {
