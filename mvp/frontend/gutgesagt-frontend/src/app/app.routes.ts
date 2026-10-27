@@ -131,7 +131,7 @@ export const routes: Routes = [
     {
         path: 'workflow/add-image',
         loadComponent: () => import('./add-image-workflow/add-image-workflow.component').then(m => m.AddImageWorkflowComponent),
-        canActivate: [AuthGuard],
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
         data: { parent: formularEltern }
     },
     {

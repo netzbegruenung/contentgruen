@@ -36,6 +36,7 @@ describe('Routentabelle', () => {
       'workflow/add-generictext',
       'workflow/add-commentary/gespeichert/:id',
       'workflow/add-generictext/gespeichert/:id',
+      'workflow/add-image',
     ]) {
       const eintrag = routes.find((route) => route.path === pfad);
 
