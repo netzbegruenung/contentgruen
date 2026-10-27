@@ -424,7 +424,7 @@ async def test_hintergrundinfo_dublette_mit_passage_einbettung(
     neu, jaz, _ = await generic_text_service.add_generic_text(
         _hintergrundinfo(JAZ),
         "person-1",
-        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
     )
     assert neu
@@ -447,7 +447,7 @@ async def test_kommentar_ist_keine_dublette_einer_hintergrundinfo(
     await commentary_service.add_commentary(
         _kommentar(JAZ),
         "person-1",
-        ContentStatus.RELEASED_INTERNAL,
+        ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
     )
 

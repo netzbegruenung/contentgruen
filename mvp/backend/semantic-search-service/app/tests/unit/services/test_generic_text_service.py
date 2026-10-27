@@ -487,7 +487,7 @@ class TestHintergrundinfoDublette:
 def _status():
     from domain.models.content_status import ContentStatus
 
-    return ContentStatus.RELEASED_INTERNAL
+    return ContentStatus.VISIBLE
 
 
 def _herkunft():
