@@ -148,10 +148,10 @@ class SuchenOhneTrefferResponse(BaseModel):
 
 
 # Bewusst oeffentlich: /getMetrics liefert nur aggregierte Bestandszaehler
-# (content_count, statement_count, commentary_count, reference_count -- die
-# uebrigen Felder sind im Code hart 0) und wird von der Startseite aufgerufen,
-# die ueber den PublicGuard auch anonym erreichbar ist. Die Betriebskennzahlen
-# stehen in den Endpunkten darunter, die admin-only sind.
+# (content_count, statement_count, commentary_count, reference_count); das BFF
+# fuehrt es als anonym erlaubt (EndpointPolicy). Die Startseite zeigt die Zahlen
+# seit dem Umbau auf zwei Kacheln nicht mehr an. Die Betriebskennzahlen stehen in
+# den Endpunkten darunter, die admin-only sind.
 @router.get("/getMetrics", response_model=GetMetricsResponse)
 async def get_metrics(
     statement_service: StatementService = Depends(get_statement_service),
@@ -190,15 +190,9 @@ async def get_metrics(
 
             metrics = GetMetricsResponse(
                 content_count=content_count,
-                content_count_last_week=0,
                 statement_count=await statement_service.count_curated(),
-                statement_count_last_week=0,
                 commentary_count=await commentary_service.count(),
-                commentary_count_last_week=0,
                 reference_count=await reference_service.count(),
-                reference_count_last_week=0,
-                requested_commentary_count=0,
-                active_users_count=0,
             )
 
             _metrics_cache = (time.monotonic(), metrics)

@@ -98,6 +98,12 @@ class AddRawInputRequest(BaseModel):
         return self
 
 
+class GleicherLinkRequest(BaseModel):
+    """Der Link aus dem Einwurf-Formular, bevor er eingeworfen ist."""
+
+    url: str = Field(min_length=1, max_length=2000)
+
+
 class SaveDraftRequest(BaseModel):
     """
     Der Entwurfssatz: "Was ist der Punkt? Ein Satz."
@@ -228,6 +234,15 @@ class GetRawInputsResponse(BaseModel):
     results_count: int
     results: List[RawInputResponse]
     total_records_count: int
+
+
+class GleicherLinkResponse(BaseModel):
+    """
+    Einwuerfe, deren Link als gleich gilt, neueste zuerst. Daraus zeigt das
+    Einwurf-Formular die Stufe und, falls ausformuliert, die Beitraege.
+    """
+
+    results: List[RawInputResponse]
 
 
 class DraftResponse(BaseModel):

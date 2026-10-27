@@ -5,14 +5,25 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialog } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
-import { AddGenerictextComponent, SPEICHERN_FEHLGESCHLAGEN } from './add-generictext.component';
+import {
+  AddGenerictextComponent,
+  DUBLETTE_HINWEIS,
+  GENOMMEN_HINWEIS,
+  NEHMEN_FEHLGESCHLAGEN,
+  SPEICHERN_FEHLGESCHLAGEN,
+  VORHANDEN_WEG,
+  ZUGESTIMMT_HINWEIS,
+  ZUSTIMMEN_FEHLGESCHLAGEN,
+} from './add-generictext.component';
+import { VotingService } from '../services/voting.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { AddGenericTextRequest, AddGenericTextResponse } from '../services/dtos/generictextDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 
 /** Gleich gebaut wie das Kommentarformular; hier die Unterschiede und die geteilten Wege. */
 describe('AddGenerictextComponent', () => {
@@ -396,6 +407,489 @@ describe('AddGenerictextComponent', () => {
       flush();
 
       expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ verknuepft: true }));
+    }));
+  });
+
+  describe('Dublette', () => {
+    it('Dublette ohne Aussage: bleibt im Formular, zeigt den Hinweis mit Link, meldet keinen Erfolg', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      const erfolg = spyOn(component.success, 'emit');
+      const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(component.responseId).toBe('');
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo.');
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')!.textContent).toContain('sehr ähnliche Hintergrundinfo');
+      expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
+
+      expect(component.vorhanden!.aussage).toBeNull();
+      (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
+      expect(ansehen).toHaveBeenCalledOnceWith('h-alt', 'generictext');
+    }));
+
+    it('fremde Dublette mit Aussage: nennt den anderen Autor und den Weg über die Karte', fakeAsync(() => {
+      // Keine Aussage in der Antwort, obwohl eine mitgeschickt wurde: die vorhandene
+      // Hintergrundinfo ist von jemand anderem und wurde nicht verknuepft (verknuepft: false).
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const hinweis = seite().querySelector('.dubletten-hinweis')!.textContent!;
+      expect(hinweis).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo von jemand anderem.');
+      expect(hinweis).toContain('Du kannst sie dieser Aussage später über die Karte zuordnen.');
+      expect(component.vorhanden!.aussage).toBeNull();
+
+      (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
+      expect(ansehen).toHaveBeenCalledOnceWith('h-alt', 'generictext');
+    }));
+
+    it('eigene Dublette mit Aussage: verknuepft noch nichts, bietet Nehmen und Trotzdem speichern an', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, vorhanden_eigen: true, verknuepft: false });
+      const erfolg = spyOn(component.success, 'emit');
+      const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(component.responseId).toBe('');
+      expect(component.vorhanden!.aussage).toBeNull();
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(DUBLETTE_HINWEIS);
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).not.toContain('verknüpft');
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+
+      (seite().querySelector('.dublette-ansehen') as HTMLButtonElement).click();
+      expect(ansehen).toHaveBeenCalledOnceWith('h-alt', 'generictext');
+    }));
+
+    it('Nehmen mit Aussage: schickt vorhanden_nehmen und meldet die vorhandene, jetzt verknuepft', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({
+          id: 'h-alt',
+          dublette: true,
+          vorhanden_eigen: true,
+          statement_id: ID,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddGenericTextResponse),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      const erfolg = spyOn(component.success, 'emit');
+      const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      (seite().querySelector('.dublette-nehmen') as HTMLButtonElement).click();
+      flush();
+      fixture.detectChanges();
+
+      const [erste, zweite] = speichern.calls.allArgs().map(([anfrage]) => anfrage as AddGenericTextRequest);
+      expect(erste.vorhanden_nehmen).toBeUndefined();
+      expect(zweite).toEqual({ ...erste, vorhanden_nehmen: 'h-alt' });
+      expect(gewaehlt).toHaveBeenCalledOnceWith('h-alt');
+      expect(stimme).not.toHaveBeenCalled();
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(
+        'Diese Hintergrundinfo gibt es schon – sie ist jetzt auch mit „Wärmepumpen sind zu teuer“ verknüpft.',
+      );
+      expect(seite().querySelector('.dublette-nehmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeNull();
+    }));
+
+    it('Nehmen scheitert beim Verknuepfen: sagt es, die Entscheidung bleibt offen', fakeAsync(() => {
+      spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', dublette: true, vorhanden_eigen: true, statement_text: null, verknuepft: false } as AddGenericTextResponse),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(gewaehlt).not.toHaveBeenCalled();
+      expect(seite().querySelector('.entscheidungs-fehler')!.textContent).toContain(NEHMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('Nehmen scheitert mit 422: zeigt die Meldung des Backends', fakeAsync(() => {
+      spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 422,
+              error: { detail: [{ msg: 'Value error, Die Aussage braucht mindestens 10 Zeichen' }] },
+            }),
+        ),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      const fehler = seite().querySelector('.entscheidungs-fehler')!.textContent!;
+      expect(fehler).toContain('Die Aussage braucht mindestens 10 Zeichen');
+      expect(fehler).not.toContain(NEHMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.dublette-nehmen')).toBeTruthy();
+    }));
+
+    it('Nehmen, aber die vorhandene ist weg: sagt es und laesst neu speichern', fakeAsync(() => {
+      spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        throwError(() => new HttpErrorResponse({ status: 409 })),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(gewaehlt).not.toHaveBeenCalled();
+      expect(component.vorhanden).toBeNull();
+      expect(component.fehler).toBe(VORHANDEN_WEG);
+      expect(component.generictextForm.value.title).toBe('Wärmepumpe lohnt sich im Altbau');
+      expect(seite().querySelector('app-formular-leiste .submit-btn')!.textContent).toContain('Hintergrundinfo speichern');
+    }));
+
+    it('Nehmen findet inzwischen eine andere vorhandene: zeigt erst sie, ohne Entscheidung', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-anderer', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({
+          id: 'h-anderer',
+          dublette: true,
+          vorhanden_eigen: true,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddGenericTextResponse),
+      );
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+
+      component.nehmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(gewaehlt).not.toHaveBeenCalled();
+      expect(component.vorhanden!.id).toBe('h-anderer');
+      expect(component.offeneEntscheidung).toBeTrue();
+      expect(component.vorhanden!.anfrage.vorhanden_nehmen).toBeUndefined();
+
+      component.nehmen();
+      flush();
+
+      expect((speichern.calls.mostRecent().args[0] as AddGenericTextRequest).vorhanden_nehmen).toBe('h-anderer');
+      expect(gewaehlt).toHaveBeenCalledOnceWith('h-anderer');
+    }));
+
+    it('nach Trotzdem speichern eine andere eigene vorhandene: Nehmen schickt nur vorhanden_nehmen', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-anderer', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({
+          id: 'h-anderer',
+          dublette: true,
+          vorhanden_eigen: true,
+          statement_text: 'Wärmepumpen sind zu teuer',
+          verknuepft: true,
+        } as AddGenericTextResponse),
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      component.trotzdemSpeichern();
+      flush();
+
+      component.nehmen();
+      flush();
+
+      const nehmen = speichern.calls.mostRecent().args[0] as AddGenericTextRequest;
+      // Beides zusammen lehnt das Backend mit 422 ab.
+      expect(nehmen.trotz_dublette_von).toBeUndefined();
+      expect(nehmen.vorhanden_nehmen).toBe('h-anderer');
+      expect(component.vorhanden!.gewaehlt).toBe('genommen');
+    }));
+
+    it('waehrend Nehmen: Knoepfe gesperrt, Speichern dreht sich nicht', fakeAsync(() => {
+      const verknuepfen = new Subject<AddGenericTextResponse>();
+      spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        verknuepfen,
+      );
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.nehmen();
+      fixture.detectChanges();
+
+      expect(component.speichert).toBeFalse();
+      expect(seite().querySelector('app-formular-leiste mat-spinner')).toBeNull();
+      expect(seite().querySelector('.dublette-nehmen mat-spinner')).toBeTruthy();
+      expect((seite().querySelector('.dublette-nehmen') as HTMLButtonElement).disabled).toBeTrue();
+      expect((seite().querySelector('.dublette-trotzdem') as HTMLButtonElement).disabled).toBeTrue();
+      expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeTrue();
+
+      verknuepfen.next({ id: 'h-alt', dublette: true, vorhanden_eigen: true, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+      verknuepfen.complete();
+      flush();
+      expect(component.nimmt).toBeFalse();
+      expect(component.vorhanden!.gewaehlt).toBe('genommen');
+    }));
+
+    it('Nehmen mit zu kurzer Aussage: gesperrt, keine Anfrage', fakeAsync(() => {
+      const speichern = speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const feld: HTMLTextAreaElement = seite().querySelector('.antwort-eingabe')!;
+      feld.value = 'Windrad';
+      feld.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect(component.aussageZuKurz).toBeTrue();
+      expect((seite().querySelector('.dublette-nehmen') as HTMLButtonElement).disabled).toBeTrue();
+      component.nehmen();
+      flush();
+      expect(speichern).toHaveBeenCalledTimes(1);
+      expect(component.vorhanden!.gewaehlt).toBeNull();
+    }));
+
+    it('nennt den Titel der vorhandenen Hintergrundinfo und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_titel: 'Wärmepumpen rechnen sich auch im Altbau' });
+      ausfuellen();
+
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.vorhanden-titel')!.textContent).toContain('Wärmepumpen rechnen sich auch im Altbau');
+      expect(seite().querySelector('.dublette-zustimmen')!.textContent).toContain('Zustimmen');
+      expect(seite().querySelector('.dublette-trotzdem')!.textContent).toContain('Trotzdem speichern');
+    }));
+
+    it('Zustimmen: gibt der vorhandenen Hintergrundinfo eine Stimme, meldet sie und keinen Erfolg', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      const stimme = spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
+        of({ content_id: 'h-alt', vote_type: 'like', message: 'ok' }),
+      );
+      const erfolg = spyOn(component.success, 'emit');
+      const zugestimmt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      (seite().querySelector('.dublette-zustimmen') as HTMLButtonElement).click();
+      flush();
+      fixture.detectChanges();
+
+      expect(stimme).toHaveBeenCalledOnceWith('h-alt');
+      expect(zugestimmt).toHaveBeenCalledOnceWith('h-alt');
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(component.responseId).toBe('');
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(ZUGESTIMMT_HINWEIS);
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeNull();
+      expect(seite().querySelector('.dublette-ansehen')).toBeTruthy();
+    }));
+
+    it('Zustimmen scheitert: sagt es, das Formular bleibt, nichts wird gemeldet', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
+        throwError(() => new HttpErrorResponse({ status: 503 })),
+      );
+      const zugestimmt = spyOn(component.vorhandenGewaehlt, 'emit');
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.zustimmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(zugestimmt).not.toHaveBeenCalled();
+      expect(seite().querySelector('.entscheidungs-fehler')!.textContent).toContain(ZUSTIMMEN_FEHLGESCHLAGEN);
+      expect(seite().querySelector('.dublette-zustimmen')).toBeTruthy();
+    }));
+
+    it('Trotzdem speichern: schickt dasselbe mit trotz_dublette_von und meldet die neue Hintergrundinfo', fakeAsync(() => {
+      const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
+        of({ id: 'h-alt', dublette: true, verknuepft: false } as AddGenericTextResponse),
+        of({ id: 'h-neu', dublette: false, verknuepft: true } as AddGenericTextResponse),
+      );
+      const erfolg = spyOn(component.success, 'emit');
+      ausfuellen();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      (seite().querySelector('.dublette-trotzdem') as HTMLButtonElement).click();
+      flush();
+      fixture.detectChanges();
+
+      const [erste, zweite] = speichern.calls.allArgs().map(([anfrage]) => anfrage as AddGenericTextRequest);
+      expect(erste.trotz_dublette_von).toBeUndefined();
+      expect(zweite).toEqual({ ...erste, trotz_dublette_von: 'h-alt' });
+      expect(erfolg).toHaveBeenCalledOnceWith(jasmine.objectContaining({ id: 'h-neu' }));
+      expect(component.vorhanden).toBeNull();
+    }));
+
+    it('verschwindet, sobald der Text geaendert wird: der Hinweis galt dem alten Text', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      component.generictextForm.patchValue({ text: 'Ein ganz anderer, eigener Text.' });
+      fixture.detectChanges();
+
+      expect(component.vorhanden).toBeNull();
+      expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+    }));
+
+    it('eigene Dublette: kein Zustimmen, aber Trotzdem speichern', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('eigene Dublette ohne Aussage: kein Zustimmen, ausserhalb des Fangkorbs auch kein Nehmen', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      expect(seite().querySelector('.dublette-nehmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeTruthy();
+    }));
+
+    it('eigene Dublette aus dem Fangkorb ohne Aussage: Nehmen meldet die vorhandene ohne Stimme', fakeAsync(() => {
+      const speichern = speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
+      const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
+      const erfolg = spyOn(component.success, 'emit');
+      const einwurf = { titel: 'Wärmepumpe lohnt sich im Altbau', url: null, kopf: {} as any };
+      component.vorbefuellung = { ...einwurf, rohinputId: 'id-1' }; // retired-ok: Feldname von Vorbefuellung
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('.dublette-zustimmen')).toBeNull();
+      (seite().querySelector('.dublette-nehmen') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(gewaehlt).toHaveBeenCalledOnceWith('h-alt');
+      // Ohne Aussage gibt es nichts zu verknuepfen: kein zweiter Aufruf.
+      expect(speichern).toHaveBeenCalledTimes(1);
+      expect(stimme).not.toHaveBeenCalled();
+      expect(erfolg).not.toHaveBeenCalled();
+      expect(seite().querySelector('.dubletten-hinweis')!.textContent).toContain(GENOMMEN_HINWEIS);
+      expect(seite().querySelector('.dublette-nehmen')).toBeNull();
+      expect(seite().querySelector('.dublette-trotzdem')).toBeNull();
+    }));
+
+    it('liest nur den Hinweis als Statusmeldung vor, nicht die Knoepfe', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+
+      const status = seite().querySelector('.dubletten-hinweis [role="status"]')!;
+      expect(status.textContent).toContain('Es gibt schon eine sehr ähnliche Hintergrundinfo.');
+      expect(status.querySelector('.dublette-zustimmen, .dublette-trotzdem')).toBeNull();
+    }));
+
+    it('nach dem Zustimmen steht in der Leiste kein Fehler', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
+        of({ content_id: 'h-alt', vote_type: 'like', message: 'ok' }),
+      );
+      ausfuellen();
+      component.speichern();
+      flush();
+      component.zustimmen();
+      flush();
+      fixture.detectChanges();
+
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
+    }));
+
+    it('verschwindet mit Zuruecksetzen, auch der Link in der Leiste', fakeAsync(() => {
+      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      ausfuellen();
+      component.speichern();
+      flush();
+      fixture.detectChanges();
+      expect(seite().querySelector('.dubletten-hinweis')).toBeTruthy();
+
+      dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+      component.zuruecksetzen();
+      fixture.detectChanges();
+
+      expect(component.vorhanden).toBeNull();
+      expect(seite().querySelector('.dubletten-hinweis')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
+      expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
   });
 

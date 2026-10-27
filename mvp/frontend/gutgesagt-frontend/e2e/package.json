@@ -1,0 +1,12 @@
+{
+  "name": "gutgesagt-e2e",
+  "private": true,
+  "description": "End-to-End-Checks der Kernszenarien gegen den lokalen Dev-Stack (nicht in CI, Anleitung in README.md)",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

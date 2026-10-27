@@ -22,12 +22,6 @@ class TestAPIImports:
 
         assert search.router is not None
 
-    def test_import_candidate_api(self):
-        """Test that candidate API module imports without errors."""
-        from api.v1 import candidate
-
-        assert candidate.router is not None
-
     def test_import_commentary_api(self):
         """Test that commentary API module imports without errors."""
         from api.v1 import commentary

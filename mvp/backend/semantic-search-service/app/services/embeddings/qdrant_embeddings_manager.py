@@ -1,7 +1,9 @@
 from typing import Optional, Dict, Any, List, Tuple, Literal
+import functools
 import threading
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
+from contextvars import ContextVar
 from datetime import datetime
 import uuid
 
@@ -29,10 +31,46 @@ from fastapi import FastAPI
 
 from core.config import EMBEDDING_MODELL, Settings
 from core.logging import get_logger
-from domain.interfaces.embeddings_manager import IEmbeddingsManager
+from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
 from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 
 logger = get_logger(__name__)
+
+
+# Einbettungen, die innerhalb von einbettungen_teilen() schon berechnet wurden,
+# je vorangestelltem Text. None ausserhalb davon: dann bettet jeder Aufruf neu ein.
+_geteilte_einbettungen: ContextVar[Optional[Dict[str, List[float]]]] = ContextVar(
+    "geteilte_einbettungen", default=None
+)
+
+
+@contextmanager
+def einbettungen_teilen():
+    """
+    Gleicher Text wird innerhalb des Blocks nur einmal eingebettet.
+
+    Fuer eine Anfrage gedacht, die denselben Text mehrfach braucht: /searchByText
+    prueft die Suchanfrage auf eine vorhandene Aussage, speichert sie als Aussage
+    und sucht mit ihr Aussagen und Beitraege (#304). Die Einbettungen leben nur bis
+    zum Ende des Blocks - kein prozessweiter Cache, der Suchtexte im Speicher hielte.
+    Gilt je asyncio-Task, gleichzeitige Anfragen teilen nichts.
+    """
+    token = _geteilte_einbettungen.set({})
+    try:
+        yield
+    finally:
+        _geteilte_einbettungen.reset(token)
+
+
+def einbettungen_geteilt(endpunkt):
+    """Dekorator: der ganze Endpunkt laeuft in einbettungen_teilen()."""
+
+    @functools.wraps(endpunkt)
+    async def geteilt(*args, **kwargs):
+        with einbettungen_teilen():
+            return await endpunkt(*args, **kwargs)
+
+    return geteilt
 
 
 def encoding_fuer(content_type: Optional[str]) -> Literal["statement", "passage"]:
@@ -306,8 +344,17 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         prefix = "query" if content_type == "statement" else "passage"
         prefixed_text = f"{prefix}: {text}"
 
+        geteilt = _geteilte_einbettungen.get()
+        if geteilt is not None and prefixed_text in geteilt:
+            return list(geteilt[prefixed_text])
+
         embedding = self._model.encode(prefixed_text, normalize_embeddings=True)
-        return embedding.tolist()
+        vector = embedding.tolist()
+        if geteilt is None:
+            return vector
+        # Kopie zurueckgeben, damit kein Aufrufer den geteilten Vektor veraendert.
+        geteilt[prefixed_text] = vector
+        return list(vector)
 
     def encode_query(self, query: str) -> List[float]:
         """
@@ -423,61 +470,19 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             raise RuntimeError("QdrantEmbeddingsManager not started.")
 
         try:
-            # Encode query
-            query_vector = self.encode_text(
-                query, content_type="statement" if praefix == "query" else "passage"
-            )
-
-            # Build filter
-            must_conditions = []
-            if content_type:
-                must_conditions.append(
-                    FieldCondition(
-                        key="content_type", match=MatchValue(value=content_type)
-                    )
-                )
-
-            must_not_conditions = []
-            if filter_dict:
-                # Support structured filters with 'must' / 'must_not' keys.
-                if "must" in filter_dict or "must_not" in filter_dict:
-                    must_conditions.extend(filter_dict.get("must", []))
-                    must_not_conditions.extend(filter_dict.get("must_not", []))
-                else:
-                    # Legacy support: simple key-value match filters
-                    for key, value in filter_dict.items():
-                        must_conditions.append(
-                            FieldCondition(key=key, match=MatchValue(value=value))
-                        )
-
-            search_filter = (
-                Filter(
-                    must=must_conditions or None,
-                    must_not=must_not_conditions or None,
-                )
-                if (must_conditions or must_not_conditions)
-                else None
-            )
+            query_vector = self._suchvektor(query, praefix)
 
             # Perform search
             results = await self._async_client.search(
                 collection_name=self.collection_name,
                 query_vector=query_vector,
                 limit=limit,
-                query_filter=search_filter,
+                query_filter=self._suchfilter(content_type, filter_dict),
                 with_payload=True,
                 with_vectors=False,
             )
 
-            # Format results
-            formatted_results = []
-            for result in results:
-                payload = result.payload or {}
-                payload["score"] = result.score
-                payload["id"] = str(result.id)
-                formatted_results.append(payload)
-
-            return formatted_results
+            return self._treffer(results)
 
         except (UnexpectedResponse, ResponseHandlingException) as e:
             logger.error(f"❌ Qdrant client error during search: {e}", exc_info=True)
@@ -485,6 +490,107 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         except Exception as e:
             logger.error(f"❌ Unexpected error during search: {e}", exc_info=True)
             raise
+
+    async def search_batch(
+        self,
+        query: str,
+        suchen: List[Suchparameter],
+        praefix: Literal["query", "passage"] = "query",
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Mehrere Suchen mit demselben Suchtext: eine Einbettung, eine Anfrage an Qdrant.
+
+        Args:
+            query: Search query text
+            suchen: Je Suche Typ (content_type), Filter und Limit, wie bei search()
+            praefix: wie bei search()
+
+        Returns:
+            Je Suche die Treffer, in der Reihenfolge von ``suchen`` und in derselben
+            Form wie search() - als liefe search() einmal je Eintrag.
+        """
+        if not self._is_started:
+            raise RuntimeError("QdrantEmbeddingsManager not started.")
+        if not suchen:
+            return []
+
+        try:
+            query_vector = self._suchvektor(query, praefix)
+
+            results = await self._async_client.search_batch(
+                collection_name=self.collection_name,
+                requests=[
+                    SearchRequest(
+                        vector=query_vector,
+                        filter=self._suchfilter(suche.content_type, suche.filter_dict),
+                        limit=suche.limit,
+                        with_payload=True,
+                        with_vector=False,
+                    )
+                    for suche in suchen
+                ],
+            )
+
+            return [self._treffer(treffer) for treffer in results]
+
+        except (UnexpectedResponse, ResponseHandlingException) as e:
+            logger.error(
+                f"❌ Qdrant client error during batch search: {e}", exc_info=True
+            )
+            raise RuntimeError(f"Vector database search failed: {e}") from e
+        except Exception as e:
+            logger.error(f"❌ Unexpected error during batch search: {e}", exc_info=True)
+            raise
+
+    def _suchvektor(
+        self, query: str, praefix: Literal["query", "passage"]
+    ) -> List[float]:
+        """Der Suchtext eingebettet wie bei search(): "query: …" oder "passage: …"."""
+        return self.encode_text(
+            query, content_type="statement" if praefix == "query" else "passage"
+        )
+
+    @staticmethod
+    def _suchfilter(
+        content_type: Optional[str], filter_dict: Optional[Dict[str, Any]]
+    ) -> Optional[Filter]:
+        """Der Qdrant-Filter einer Suche: Typ (content_type) plus 'must'/'must_not'-Listen."""
+        must_conditions = []
+        if content_type:
+            must_conditions.append(
+                FieldCondition(key="content_type", match=MatchValue(value=content_type))
+            )
+
+        must_not_conditions = []
+        if filter_dict:
+            # Support structured filters with 'must' / 'must_not' keys.
+            if "must" in filter_dict or "must_not" in filter_dict:
+                must_conditions.extend(filter_dict.get("must", []))
+                must_not_conditions.extend(filter_dict.get("must_not", []))
+            else:
+                # Legacy support: simple key-value match filters
+                for key, value in filter_dict.items():
+                    must_conditions.append(
+                        FieldCondition(key=key, match=MatchValue(value=value))
+                    )
+
+        if not (must_conditions or must_not_conditions):
+            return None
+        return Filter(
+            must=must_conditions or None,
+            must_not=must_not_conditions or None,
+        )
+
+    @staticmethod
+    def _treffer(results) -> List[Dict[str, Any]]:
+        """Qdrant-Treffer als Payload-Dicts mit score und id."""
+        formatted_results = []
+        for result in results:
+            payload = result.payload or {}
+            payload["score"] = result.score
+            payload["id"] = str(result.id)
+            formatted_results.append(payload)
+        return formatted_results
 
     async def get_by_id(self, point_id: str) -> Optional[Dict[str, Any]]:
         """Get a point by its ID."""

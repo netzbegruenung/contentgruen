@@ -82,6 +82,9 @@ cd mvp/frontend/gutgesagt-frontend && ng test
 cd mvp/backend && dotnet test
 ```
 
+End-to-end tests (Playwright) run against the dev stack, not in CI: see
+[mvp/frontend/gutgesagt-frontend/e2e/README.md](mvp/frontend/gutgesagt-frontend/e2e/README.md).
+
 ## Contribution Flow
 
 1. Open an issue or comment on an existing one to coordinate

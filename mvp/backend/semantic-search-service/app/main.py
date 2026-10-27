@@ -21,14 +21,12 @@ from services.embeddings.qdrant_embeddings_manager import (
 )
 from services.seeding.seeding_service import get_seeding_service
 from infrastructure.database.connection import get_app_database, close_app_database
-from api.v1.candidate import router as candidates_router
 from api.v1.commentary import router as commentary_router
 from api.v1.content import router as content_router
 from api.v1.contribution import router as contribution_router
 from api.v1.metrics import router as metrics_router
 from api.v1.reference import router as reference_router
 
-# from api.v1.scores import router as scores_router
 from api.v1.search import router as search_router
 from api.v1.statement import router as statement_router
 
@@ -207,7 +205,6 @@ app.add_middleware(
     requests_per_hour=100,  # Max 100 requests per hour per user
 )
 
-app.include_router(candidates_router, prefix="/api/v1/candidates", tags=["candidates"])
 app.include_router(commentary_router, prefix="/api/v1/commentary", tags=["commentary"])
 app.include_router(content_router, prefix="/api/v1/content", tags=["content"])
 app.include_router(
@@ -215,7 +212,6 @@ app.include_router(
 )
 app.include_router(metrics_router, prefix="/api/v1/metrics", tags=["metrics"])
 app.include_router(reference_router, prefix="/api/v1/reference", tags=["reference"])
-# app.include_router(scores_router, prefix="/api/v1/scores", tags=["scores"])
 app.include_router(search_router, prefix="/api/v1/search", tags=["search"])
 app.include_router(statement_router, prefix="/api/v1/statement", tags=["statement"])
 app.include_router(

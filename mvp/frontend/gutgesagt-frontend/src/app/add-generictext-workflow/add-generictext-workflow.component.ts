@@ -7,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AddGenerictextComponent } from '../add-generictext/add-generictext.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { StatementService } from '../services/statement.service';
@@ -29,6 +30,14 @@ import {
 /** Hinweis im Formular, wenn ?aussage= auf nichts (mehr) zeigt. */
 export const AUSSAGE_NICHT_VERFUEGBAR =
   'Die Aussage ist nicht mehr verfügbar — du kannst eine andere eintragen oder ohne speichern.';
+
+/** Die vorhandene Hintergrundinfo aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
+export const EINWURF_MIT_VORHANDENER_VERKNUEPFT = 'Der Einwurf ist jetzt mit der vorhandenen Hintergrundinfo verknüpft.';
+
+export const EINWURF_NICHT_VERKNUEPFT =
+  'Der Einwurf ließ sich nicht mit der vorhandenen Hintergrundinfo verknüpfen und ist noch nicht ausformuliert.';
+
+export const ERNEUT_VERKNUEPFEN = 'Erneut versuchen';
 
 @Component({
   standalone: true,
@@ -65,6 +74,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
     private contentRefreshService: ContentRefreshService,
     private uebergabe: DestillierUebergabeService,
     private stateService: StateManagementService,
+    private snackBar: MatSnackBar,
   ) { }
 
   ngOnInit(): void {
@@ -155,6 +165,31 @@ export class AddGenerictextWorkflowComponent implements OnInit {
       ? { [VON_PARAM]: 'suche', ...(this.ausSuche.anfrage ? { [SUCHE_PARAM]: this.ausSuche.anfrage } : {}) }
       : {};
     this.zurErgebnisseite(ergebnis.id, queryParams, zustand);
+  }
+
+  /**
+   * Die vorhandene Hintergrundinfo gewaehlt (zugestimmt oder die eigene genommen)
+   * statt zu speichern. Aus dem Fangkorb wird der Einwurf dann mit ihr verknuepft -
+   * er ist damit ausformuliert - und es geht zum naechsten Einwurf. Keine
+   * Ergebnisseite: Gespeichert wurde nichts. Scheitert das Verknuepfen, laesst es
+   * sich aus der Meldung wiederholen. Ohne Einwurf bleibt das Formular.
+   */
+  onVorhandenGewaehlt(hintergrundinfoId: string): void {
+    const einwurfId = this.rohinputId; // retired-ok: vorhandener Feldname, Umbenennung eigenes Ticket
+    if (!einwurfId) {
+      return;
+    }
+    this.uebergabe.mitBeitragVerknuepfen(einwurfId, hintergrundinfoId, 'generic_text').subscribe((einwurfVerknuepft) => {
+      if (!einwurfVerknuepft) {
+        this.snackBar
+          .open(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, { duration: 15000 })
+          .onAction()
+          .subscribe(() => this.onVorhandenGewaehlt(hintergrundinfoId));
+        return;
+      }
+      this.snackBar.open(EINWURF_MIT_VORHANDENER_VERKNUEPFT, 'OK', { duration: 5000 });
+      this.uebergabe.zumNaechsten(einwurfId, 'ausformuliert');
+    });
   }
 
   private zurErgebnisseite(id: string, queryParams: Record<string, string>, state: GespeichertZustand): void {
