@@ -13,6 +13,7 @@ im Batch der Sichtbarkeitsfilter oder das Limit je Typ verloren, fiele es auf.
 """
 
 import datetime
+import inspect
 import uuid
 from contextlib import nullcontext
 from unittest.mock import MagicMock, patch
@@ -44,6 +45,10 @@ from services.content.commentary_service import CommentaryService
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
+from repositories.implementations.qdrant.base_repository import QdrantBaseRepository
+from repositories.implementations.qdrant.statement_repository import (
+    StatementRepository,
+)
 
 from tests.fixtures.direktsuche import direktsuche_ueber_dienste
 from tests.integration.conftest import requires_qdrant
@@ -52,6 +57,10 @@ pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
 
 SEARCH_URL = "/api/v1/search/searchByText"
 SUCHANFRAGE = "Lohnen sich Wärmepumpen im Altbau?"
+# Gespeicherte Aussage mit ' und ; - die Suche muss sie wie gespeichert einbetten.
+AUSSAGE_MIT_ZEICHEN = (
+    "Wärmepumpen lohnen sich nicht im Altbau; das rechnet sich's nicht"
+)
 
 
 class _ZaehlenderClient:
@@ -159,7 +168,7 @@ async def suche(integration_settings, real_repository_factory, real_embeddings_m
         )
     )
     _, aussage_id, _ = await statements.add_statement(
-        Statement(text="Wärmepumpen lohnen sich nicht im Altbau", replysuggestions=[]),
+        Statement(text=AUSSAGE_MIT_ZEICHEN, replysuggestions=[]),
         "tester",
         ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
@@ -216,16 +225,15 @@ async def suche(integration_settings, real_repository_factory, real_embeddings_m
             yield suchen
 
 
+def _beitrag_id(eintrag):
+    """ID des Beitrags in einem Suchtreffer."""
+    return next(v for k, v in eintrag.items() if k.endswith("_result"))["id"]
+
+
 def _treffer(antwort):
     """Was die Nutzenden sehen: je Beitragstyp IDs, Scores und Reihenfolge."""
     return {
-        feld: [
-            (
-                next(v for k, v in eintrag.items() if k.endswith("_result"))["id"],
-                eintrag["score"],
-            )
-            for eintrag in antwort[feld]
-        ]
+        feld: [(_beitrag_id(eintrag), eintrag["score"]) for eintrag in antwort[feld]]
         for feld in (
             "commentary_search_results",
             "generictext_search_results",
@@ -264,18 +272,89 @@ async def test_search_by_text_vorhandene_suchanfrage_einmal_eingebettet(suche):
     assert sorted(anfragen) == sorted(["scroll", "search", "retrieve", "search_batch"])
 
 
-async def test_search_by_text_suchanfrage_mit_apostroph_zweimal_eingebettet(suche):
-    """Die Suche ersetzt ' und ; vor dem Einbetten, die Aussage behaelt den Text.
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Wärmepumpen lohnen sich im Altbau, sagt's die Studie",
+        "Wärmepumpen lohnen sich im Altbau; sagt die Studie",
+    ],
+)
+async def test_search_by_text_suchanfrage_mit_apostroph_oder_semikolon_einmal_eingebettet(
+    suche, text
+):
+    """Suche, Aussage und Dublettenpruefung betten denselben Text ein (#321).
 
-    Zwei verschiedene Texte, also zwei Einbettungen - bewusst so gelassen, damit
-    sich Treffer nicht aendern (siehe PR zu #304, Offene Punkte).
+    Vor #321 ersetzte die Suche ' und ; vor dem Einbetten: zwei Einbettungen.
     """
-    text = "Wärmepumpen lohnen sich im Altbau, sagt's die Studie"
-    _, einbettungen, _ = await suche(text)
+    antwort, einbettungen, _ = await suche(text)
 
-    assert sorted(einbettungen) == sorted(
-        [f"query: {text}", f"query: {text.replace(chr(39), chr(34))}"]
+    assert antwort["query_was_newly_added_as_statement"] is True
+    assert einbettungen == [f"query: {text}"]
+
+
+def _ersetzt_wie_vor_321(text):
+    """Der Suchtext, wie die Suche vor #321 ihn einbettete."""
+    return text.replace(";", ",").replace("'", '"')
+
+
+def _wie_vor_321(methode):
+    """Repository-Methode, die `query_text` ersetzt wie die Suche vor #321."""
+    signatur = inspect.signature(methode)
+
+    async def ersetzt(*args, **kwargs):
+        argumente = signatur.bind(*args, **kwargs)
+        argumente.arguments["query_text"] = _ersetzt_wie_vor_321(
+            argumente.arguments["query_text"]
+        )
+        return await methode(*argumente.args, **argumente.kwargs)
+
+    return ersetzt
+
+
+async def test_search_by_text_aussage_mit_apostroph_wie_gespeichert_verglichen(
+    suche,
+):
+    """Charakterisierung (#321): Wortgleich gesucht, liegt die Aussage naeher als vorher.
+
+    Vor #321 bettete die Suche den Text mit " und , ein, die Aussage mit ' und ;.
+    Die Antwort auf die Aussage kam mit geringerer Aehnlichkeit zurueck. Dass
+    Suchanfragen ohne diese Zeichen gleich bleiben, belegt der Paritaetstest
+    test_search_by_text_treffer_wie_mit_einbettung_je_abfrage.
+    """
+    await suche()  # Lage wie im Paritaetstest
+    neu, einbettungen, _ = await suche(AUSSAGE_MIT_ZEICHEN)
+
+    with (
+        patch.object(
+            StatementRepository,
+            "search_statements_with_replies",
+            _wie_vor_321(StatementRepository.search_statements_with_replies),
+        ),
+        patch.object(
+            QdrantBaseRepository,
+            "search_batch",
+            classmethod(_wie_vor_321(QdrantBaseRepository.search_batch.__func__)),
+        ),
+    ):
+        alt, einbettungen_alt, _ = await suche(AUSSAGE_MIT_ZEICHEN)
+
+    assert neu["query_was_newly_added_as_statement"] is False
+    assert einbettungen == [f"query: {AUSSAGE_MIT_ZEICHEN}"]
+    # wirklich der alte Weg: eingebettet wird nur der ersetzte Text
+    assert einbettungen_alt == [f"query: {_ersetzt_wie_vor_321(AUSSAGE_MIT_ZEICHEN)}"]
+    erster_neu = neu["commentary_search_results"][0]
+    erster_alt = alt["commentary_search_results"][0]
+    assert _beitrag_id(erster_neu) == _beitrag_id(erster_alt)
+    assert erster_neu["statement_text"] == erster_alt["statement_text"]
+    assert erster_neu["statement_text"] == AUSSAGE_MIT_ZEICHEN
+    assert (
+        erster_neu["statement_similarity_score"]
+        > erster_alt["statement_similarity_score"]
+    ), (
+        erster_neu["statement_similarity_score"],
+        erster_alt["statement_similarity_score"],
     )
+    assert erster_neu["score"] > erster_alt["score"]
 
 
 @pytest.mark.parametrize("limit", [10, 1])
