@@ -141,7 +141,12 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   **Offen:** Die physische Reihenfolge der Zeilen folgt weiter dem Einfügen. Wer die
   Datenbank liest (`SELECT` ohne `ORDER BY`, `ctid`) oder einen Dump hat (`pg_dump`
   schreibt die Zeilen in dieser Reihenfolge), sieht die Reihenfolge der Suchen eines
-  Tages noch, solange die Einzelzeilen leben.
+  Tages noch, solange die Einzelzeilen leben. Ebenso die Systemspalte `xmin`: Jede Suche
+  schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
+  steigt (`ORDER BY xmin::text::bigint`). Für Zeilen vor der Migration gilt das nicht mehr,
+  sie tragen alle die Transaktion der Migration. Abhilfe für beides: die Suchereignisse
+  eines abgeschlossenen Tages in zufälliger Reihenfolge und in einer Transaktion neu
+  schreiben.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
@@ -215,13 +220,20 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
     eine Validierungsmeldung, stehen diese mit darin.
   - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
-    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`) nach stdout: Absenderadresse, Zeitpunkt,
+    (`mvp/frontend/gutgesagt-frontend/nginx.protokoll.conf`, für `nginx.conf` und
+    `nginx.docker.conf` gemeinsam) nach stdout: Absenderadresse, Zeitpunkt,
     Methode, Pfad ohne Adresszusatz, Status, Größe und User-Agent, aber keinen Adresszusatz und keinen
     Referrer. Beide trugen den Suchtext: die Adresse bei jedem direkten Aufruf von
     `/result?searchQuery=…`, der Referrer bei jeder Anfrage, die diese Seite auslöst. Für
     die Suche selbst (`/api/v1/search/searchByText`, nur im Dev-Stack über dieses nginx)
+    und für jeden direkten Aufruf der Ergebnisseite (`/result`, löst eine Suche aus)
     schreibt es keine Zeile: Ihre genaue Uhrzeit ließe sich, je Tag durchgezählt, mit dem
-    Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Belegt mit
+    Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Ins Fehlerprotokoll
+    (stderr, im selben `json-file`-Strom) schreibt es für fehlende Dateien keine Zeile
+    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. **Nicht
+    abgedeckt:** Andere Fehlerzeilen tragen Adresse und Referrer weiter, etwa im Dev-Stack
+    `connect() failed … request: "POST /api/v1/search/searchByText …"`, wenn das BFF
+    nicht antwortet. Belegt mit
     `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
     `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
     Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem

@@ -127,6 +127,11 @@ listens on 5432 inside the container.
 
 ## Nginx Configuration
 
+Both frontend configurations (`nginx.conf`, `nginx.docker.conf`) share
+`nginx.protokoll.conf`: the access log carries the path without query string and no
+referrer, and no line for searches or the results page (#275, see
+`docs/LOESCHKONZEPT.md`).
+
 ### Local Development
 - **No nginx** - Direct access to services
 

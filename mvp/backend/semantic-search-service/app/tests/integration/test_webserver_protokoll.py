@@ -6,12 +6,15 @@ Anlagezeitpunkt der Aussage verbinden, die dieselbe Suche angelegt hat, und uebe
 die IP-Adresse mit einer Person. Schlimmer noch stand der Suchtext selbst im
 Protokoll: in der Adresse (``/result?searchQuery=...``) bei jedem direkten Aufruf
 der Ergebnisseite und als verweisende Seite bei jeder Anfrage, die diese Seite
-ausloest. Der Webserver schreibt deshalb keine Zeile fuer die Suche und von jeder
-anderen Anfrage nur den Pfad, ohne Adresszusatz und ohne verweisende Seite.
+ausloest. Der Webserver schreibt deshalb keine Zeile fuer die Suche und fuer die
+Ergebnisseite, von jeder anderen Anfrage nur den Pfad, ohne Adresszusatz und ohne
+verweisende Seite, und ins Fehlerprotokoll keine Zeile fuer fehlende Dateien (sie
+truege Adresse und verweisende Seite).
 
 Startet nginx aus dem Image des Frontend-Dockerfiles mit beiden Konfigurationen
 (``nginx.conf`` fuer Test und Produktion, ``nginx.docker.conf`` fuer den Dev-Stack)
-und liest das Protokoll aus ``docker logs``. Ohne Docker uebersprungen, in der CI
+samt ``nginx.protokoll.conf`` und liest Zugriffs- und Fehlerprotokoll aus
+``docker logs`` (stdout und stderr). Ohne Docker uebersprungen, in der CI
 und im Pflichtmodus (``stack.py``) ein Fehler.
 """
 
@@ -51,8 +54,8 @@ def _docker(*argumente: str, timeout: int = 60) -> str:
     ).stdout.strip()
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _docker_noetig():
+@pytest.fixture(scope="module")
+def docker_noetig():
     if postgres.docker_verfuegbar():
         return
     grund = "Docker fehlt: nginx laesst sich nicht starten"
@@ -81,6 +84,8 @@ def _nginx(konfiguration: str) -> Iterator[tuple[str, str]]:
             "gutgesagt-bff:127.0.0.1",
             "--volume",
             f"{FRONTEND / konfiguration}:/etc/nginx/conf.d/default.conf:ro",
+            "--volume",
+            f"{FRONTEND / 'nginx.protokoll.conf'}:/etc/nginx/conf.d/00-protokoll.conf:ro",
             "--publish",
             "127.0.0.1::80",
             _image(),
@@ -91,7 +96,7 @@ def _nginx(konfiguration: str) -> Iterator[tuple[str, str]]:
         frist = time.monotonic() + 30
         while True:
             try:
-                urllib.request.urlopen(f"{basis}/", timeout=1)
+                urllib.request.urlopen(f"{basis}/", timeout=1).close()
                 break
             except urllib.error.HTTPError:
                 break
@@ -111,41 +116,67 @@ def _anfrage(adresse: str, methode: str = "GET", referer: str = "") -> None:
     if referer:
         anfrage.add_header("Referer", referer)
     try:
-        urllib.request.urlopen(anfrage, timeout=5)
-    except urllib.error.HTTPError:
-        pass  # 404/405/502 sind hier egal, es zaehlt nur die Logzeile.
+        urllib.request.urlopen(anfrage, timeout=5).close()
+    except urllib.error.HTTPError as fehler:
+        fehler.close()  # 404/405/502 sind hier egal, es zaehlt nur die Logzeile.
 
 
 def _zugriffe(name: str) -> list[str]:
-    """Die Ausgabe des Containers auf stdout: Zugriffsprotokoll und Startmeldungen."""
-    return subprocess.run(
+    """Die ganze Ausgabe des Containers: Zugriffsprotokoll (stdout),
+    Fehlerprotokoll (stderr) und Startmeldungen. Beide Stroeme landen im
+    ``json-file``-Protokoll von Docker."""
+    ausgabe = subprocess.run(
         ["docker", "logs", name], capture_output=True, text=True, timeout=30
-    ).stdout.splitlines()
+    )
+    return (ausgabe.stdout + ausgabe.stderr).splitlines()
 
 
+@pytest.mark.usefixtures("docker_noetig")
 @pytest.mark.parametrize("konfiguration", ["nginx.conf", "nginx.docker.conf"])
 def test_protokoll_ohne_suchtext(konfiguration):
     ergebnisseite = f"/result?searchQuery={SUCHTEXT}"
     with _nginx(konfiguration) as (basis, name):
-        _anfrage(f"{basis}{ergebnisseite}")
+        _anfrage(f"{basis}/hilfe?von={SUCHTEXT}")
+        # favicon.ico gibt es nicht: 404, frueher mit Zeile im Fehlerprotokoll.
         _anfrage(f"{basis}/favicon.ico", referer=f"{basis}{ergebnisseite}")
 
         zugriffe = _zugriffe(name)
 
-    assert any("/result" in zeile for zeile in zugriffe), zugriffe
+    assert any("/hilfe" in zeile for zeile in zugriffe), zugriffe
     assert any("/favicon.ico" in zeile for zeile in zugriffe), zugriffe
     assert not [zeile for zeile in zugriffe if SUCHTEXT in zeile]
 
 
+@pytest.mark.usefixtures("docker_noetig")
+@pytest.mark.parametrize("konfiguration", ["nginx.conf", "nginx.docker.conf"])
+def test_keine_zeile_je_aufruf_der_ergebnisseite(konfiguration):
+    """Ein direkter Aufruf von /result loest eine Suche aus; seine Zeile trueg
+    deren genaue Uhrzeit."""
+    with _nginx(konfiguration) as (basis, name):
+        _anfrage(f"{basis}/result?searchQuery={SUCHTEXT}")
+        _anfrage(f"{basis}/Result/")
+        _anfrage(f"{basis}/hilfe")
+
+        zugriffe = _zugriffe(name)
+
+    assert any("/hilfe" in zeile for zeile in zugriffe), zugriffe
+    assert not [zeile for zeile in zugriffe if "/result" in zeile.lower()]
+
+
+@pytest.mark.usefixtures("docker_noetig")
 def test_keine_zeile_je_suche():
     with _nginx("nginx.docker.conf") as (basis, name):
         _anfrage(f"{basis}{SUCHE}", methode="POST")
+        _anfrage(f"{basis}{SUCHE.lower()}/", methode="POST")
         _anfrage(f"{basis}/api/v1/metrics/getMetrics")
 
         zugriffe = _zugriffe(name)
 
     assert any("/api/v1/metrics/getMetrics" in zeile for zeile in zugriffe), zugriffe
-    assert not [zeile for zeile in zugriffe if "searchByText" in zeile]
+    # Fehlerprotokoll ausgenommen: Antwortet das BFF nicht, schreibt nginx dort die
+    # Anfrage (nur Dev-Stack, nur im Fehlerfall; docs/LOESCHKONZEPT.md).
+    zugriffe = [zeile for zeile in zugriffe if "[error]" not in zeile]
+    assert not [zeile for zeile in zugriffe if "searchbytext" in zeile.lower()]
 
 
 def test_browser_schickt_den_suchtext_nicht_als_verweisende_seite():

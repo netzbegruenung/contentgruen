@@ -111,6 +111,21 @@ def test_gegenprobe_vor_275_ergibt_die_reihenfolge(datenbank_vor_275):
     assert _sequenzen(datenbank_vor_275) == ["search_events_id_seq"]
 
 
+def _tabellendatei(db) -> int:
+    with db.engine.connect() as c:
+        return c.execute(text("SELECT pg_relation_filenode('search_events')")).scalar()
+
+
+def test_migration_schreibt_die_tabelle_neu(datenbank_vor_275):
+    """Nur eine neu geschriebene Tabellendatei ist die alten Nummern los; ein
+    blosses DROP COLUMN liesse sie in den Zeilen stehen."""
+    vorher = _tabellendatei(datenbank_vor_275)
+
+    postgres.migration(datenbank_vor_275, REIHENFOLGE)
+
+    assert _tabellendatei(datenbank_vor_275) != vorher
+
+
 def test_migration_ersetzt_die_fortlaufende_id(datenbank_vor_275):
     postgres.migration(datenbank_vor_275, REIHENFOLGE)
     postgres.migration(datenbank_vor_275, REIHENFOLGE)

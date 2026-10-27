@@ -17,7 +17,8 @@
 -- id; die alten Nummern verwirft das Skript. Das Hinzufuegen der Spalte mit
 -- zufaelligem Default schreibt die Tabelle neu, und dabei setzt PostgreSQL die
 -- eben geloeschte Spalte auf NULL: Die alten Nummern stehen danach nicht mehr in
--- der Tabellendatei, ein VACUUM FULL ist nicht noetig.
+-- der Tabellendatei, ein VACUUM FULL ist nicht noetig. Braucht PostgreSQL 13
+-- oder neuer (gen_random_uuid() ohne die Erweiterung pgcrypto).
 --
 -- Wiederholbar: Ein zweiter Lauf wuerfelt die ids neu, sonst aendert sich
 -- nichts. Kein Schreiber oder Leser haengt an ihnen.
