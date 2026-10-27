@@ -239,12 +239,24 @@ Was eine Person durch die Wirkung ihrer Beiträge bei anderen sammelt: Nutzung d
 _Avoid_: XP, Score, Karma
 
 **Rangliste**:
-Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und wer nicht erscheinen will, schaltet das ab.
+Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und dort erscheint nur, wer ausdrücklich zugestimmt hat.
 _Avoid_: Leaderboard, Highscore
 
 **Quest**:
 Eine Aufgabe mit prüfbarem Ergebnis, die Punkte bringt, etwa eine unbeantwortete Aussage beantworten. Tagesaufgaben sind Quests für einen Tag, das Wochenziel ist eine gemeinsame Quest aller.
 _Avoid_: Mission, Challenge, Auftrag
+
+**Wochenthema**:
+Das Thema, auf das sich eine Woche lang das Wochenziel richtet und für das Punkte doppelt zählen. Platz 1 der Wochen-Rangliste wählt es aus den Themen mit dem meisten Bedarf.
+_Avoid_: Schwerpunkt der Woche, Fokus-Thema
+
+**Lagekarte**:
+Die Übersicht, wo Antworten fehlen, gebildet nur aus eigenen Signalen von Gut gesagt: Suchen ohne Treffer, unbeantwortete Aussagen, Einwürfe. Sie lenkt Aufmerksamkeit; fremde Plattformen beobachtet sie nicht.
+_Avoid_: Kommandozentrale, Monitoring, Radar
+
+**Werkstatt**:
+Gut gesagt als Ort, an dem Mitwirkende Beiträge gemeinsam herstellen und dabei Fähigkeiten entlang realer Tätigkeiten aufbauen, bis hin zur eigenen Stimme. Die Werkstatt gibt keine Aufträge und betreut keine Kanäle.
+_Avoid_: Kommandozentrale, Armee, Agentur
 
 **Meilenstein**:
 Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; am Anzeigenamen steht dafür ein Abzeichen.
