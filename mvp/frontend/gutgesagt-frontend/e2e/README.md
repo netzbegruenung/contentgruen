@@ -47,7 +47,5 @@ Einzelne Specs: `npx playwright test tests/04-fangkorb.spec.ts`, ein Projekt:
 - **Nächster Einwurf:** Die Reihenfolge kommt vom Server (eigene zuerst, dann die neuesten).
   Liegen im Fangkorb andere offene Einwürfe, stellt `04-fangkorb` sie mit „Später“ (ohne Satz,
   also ohne sie zu ändern) für die Runde zurück, bis die Runde im Fangkorb endet.
-- **Bekannter Fehler:** `09-fangkorb-tabs` bei 320 px ist mit `test.fail` markiert (Tab-Namen
-  gekürzt). Wird er behoben, meldet Playwright den Test als unerwartet bestanden.
 - **Browser:** Playwright sucht Chromium unter `~/.cache/ms-playwright`; die Version in
   `package.json` muss zum installierten Browser passen.
