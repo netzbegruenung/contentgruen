@@ -97,8 +97,11 @@ if (useKeycloak)
         //
         // Trade-off: a user disabled in Keycloak stays signed in here until the cookie expires.
         // Closing that gap needs a silent refresh against Keycloak, which is deliberately not built.
+        // A deleted account is the exception: its Kennung goes on the list of deleted accounts
+        // (docs/LOESCHKONZEPT.md), and KontoPruefung rejects the cookie on the next request (#278).
         options.ExpireTimeSpan = TimeSpan.FromDays(14);
         options.SlidingExpiration = true;
+        options.Events.OnValidatePrincipal = KontoPruefung.ValidatePrincipalAsync;
     }
     ) // Cookie for session handling
     .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
@@ -156,6 +159,7 @@ else
                        // Same lifetime as the Keycloak branch, see the comment there.
                        options.ExpireTimeSpan = TimeSpan.FromDays(14);
                        options.SlidingExpiration = true;
+                       options.Events.OnValidatePrincipal = KontoPruefung.ValidatePrincipalAsync;
                    });
 
     // Keep the dummy auth for backward compatibility if managed users are not configured
@@ -209,6 +213,8 @@ builder.Services.AddHttpClient();
 
 // Register ManagedUserService
 builder.Services.AddSingleton<ManagedUserService>();
+// Read by KontoPruefung on every request with an auth cookie, in both modes
+builder.Services.AddSingleton<GeloeschteKontenService>();
 
 // Validate backend URL can be parsed
 try
