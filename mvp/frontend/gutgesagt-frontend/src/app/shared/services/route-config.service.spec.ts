@@ -30,7 +30,7 @@ describe('RouteConfigService', () => {
     expect(service.getRouteConfig('/workflow/add-commentary?aussage=a-1').pageTitle).toBe('Kommentar verfassen');
     expect(service.getRouteConfig('/workflow/add-generictext?rohinput=e-1').pageTitle).toBe('Hintergrundinfo verfassen');
     expect(service.getRouteConfig('/workflow/add-image').pageTitle).toBe('Bild hinzufügen');
-    expect(service.getRouteConfig('/workflow/add-post').pageTitle).toBe('Post hinzufügen');
+    expect(service.getRouteConfig('/workflow/add-post').pageTitle).toBe('Post verfassen');
   });
 
   it('nennt die Formularseiten mobil nur nach dem Typ', () => {

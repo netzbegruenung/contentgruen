@@ -39,8 +39,9 @@ export const SPEICHERN_FEHLGESCHLAGEN =
  * Worten, worum es geht - daneben (am Handy darunter) die Vorschau.
  *
  * Der Link fuehrt zum Post selbst; die Plattform folgt ihm, bis die Person sie
- * selbst waehlt. Eine Herkunft (worauf sich ein Beitrag stuetzt) hat ein Post nicht. Posts antworten auf keine Aussage und kennen keine
- * Dublettenpruefung. Nach dem Speichern meldet `success` die ID; wohin es
+ * selbst waehlt. Ein eigenes Herkunft-Feld hat das Formular nicht: Der Link ist
+ * der Post selbst (Fachfrage in #338). Posts antworten auf keine Aussage und
+ * kennen keine Dublettenpruefung. Nach dem Speichern meldet `success` die ID; wohin es
  * weitergeht, entscheidet der Workflow.
  */
 @Component({

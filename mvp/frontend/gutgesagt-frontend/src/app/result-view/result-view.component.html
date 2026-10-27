@@ -79,7 +79,8 @@
             <app-kartenliste [daten]="postKarten"></app-kartenliste>
         </div>
 
-        <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab -->
+        <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab; ein Post antwortet auf
+             keine Aussage, im Post-Tab bleibt es beim Kommentar (Fachfrage im PR) -->
         <div *ngIf="hatTreffer" class="mobile-ergaenzen">
             <p class="mobile-ergaenzen-frage">Nichts Passendes dabei?</p>
             <button *ngIf="currentSection !== 'generictext'" mat-raised-button class="gutgesagt-primary-dark"
