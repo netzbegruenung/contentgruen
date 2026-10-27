@@ -126,10 +126,10 @@ class TestUsageCleanupServiceSuchereignisse:
 
         service.cleanup_old_data()
 
-        assert [name for name, _, _ in repository.method_calls] == [
-            "verdichte_alte_suchereignisse",
-            "mische_abgeschlossene_tage",
-        ]
+        aufrufe = [name for name, _, _ in repository.method_calls]
+        assert aufrufe.index("verdichte_alte_suchereignisse") < aufrufe.index(
+            "mische_abgeschlossene_tage"
+        )
 
     def test_cleanup_old_data_mischt_auch_bei_fehler_des_verdichtens(
         self, settings_from_env

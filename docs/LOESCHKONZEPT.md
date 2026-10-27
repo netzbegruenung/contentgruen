@@ -164,13 +164,14 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
   schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
   steigt. Seit #337 schreibt der tägliche Bereinigungsjob deshalb jeden abgeschlossenen
   Tag in zufälliger Reihenfolge und in einer Transaktion neu
-  (`SearchTrackingRepository.mische_abgeschlossene_tage`); den Bestand mischt
-  `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-mischen.sql` einmal.
-  Danach ergeben `xmin` und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr.
-  **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf ungemischt. Die alten
-  Zeilenversionen stehen physisch in der Tabellendatei, bis ein `VACUUM` ihren Platz
-  freigibt (nur mit Werkzeugen lesbar, die Seiten roh auslesen); in Backups und im WAL,
-  bis diese herausrotiert sind.
+  (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
+  abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
+  und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr, auch nicht nach dem
+  Einspielen eines älteren Dumps. Mit `ENABLE_USAGE_CLEANUP=false` entfällt das Mischen
+  mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf ungemischt. Die
+  alten Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in
+  der Datei, bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten
+  roh auslesen); in Backups und im WAL, bis diese herausrotiert sind.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage

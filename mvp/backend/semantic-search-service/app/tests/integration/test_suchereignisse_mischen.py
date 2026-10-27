@@ -18,15 +18,15 @@ from sqlalchemy import text
 
 from infrastructure.database.models import Base, SearchEvent
 from repositories.search_tracking_repository import SearchTrackingRepository
-from tests.integration import postgres
 
 pytestmark = pytest.mark.integration
 
-MISCHEN = postgres.MIGRATIONEN / "2026-10-27-suchereignisse-mischen.sql"
 HEUTE = date(2026, 10, 27)
 GESTERN = date(2026, 10, 26)
 VORGESTERN = date(2026, 10, 25)
 ANZAHL = 40
+# Rund 80 Suchereignisse passen auf eine Seite (8 kB) der Tabellendatei.
+VIELE = 500
 
 
 def _repository(db) -> SearchTrackingRepository:
@@ -93,6 +93,13 @@ def _transaktionen(db, tag: date) -> int:
         ).scalar()
 
 
+def _seiten(db) -> int:
+    with db.engine.connect() as c:
+        return c.execute(
+            text("SELECT count(DISTINCT (ctid::text::point)[0]) FROM search_events")
+        ).scalar()
+
+
 def _zeilen(db) -> list:
     with db.engine.connect() as c:
         return sorted(
@@ -155,33 +162,43 @@ def test_mische_abgeschlossene_tage_laesst_den_laufenden_tag(db):
     assert _transaktionen(db, HEUTE) == ANZAHL
 
 
-def test_mische_abgeschlossene_tage_zweiter_lauf_aendert_nichts(db):
-    _suchen(db, VORGESTERN)
-    _suchen(db, GESTERN)
-    repository = _repository(db)
+def test_mische_abgeschlossene_tage_ueber_mehrere_seiten(db):
+    """Mehr Zeilen, als auf eine Seite der Tabellendatei passen."""
+    gesucht = _suchen(db, GESTERN, anzahl=VIELE)
+    assert _seiten(db) > 1
 
-    assert repository.mische_abgeschlossene_tage(heute=HEUTE) == 2 * ANZAHL
-    nach_erstem_lauf = _nach_ctid(db, GESTERN)
+    _repository(db).mische_abgeschlossene_tage(heute=HEUTE)
 
-    assert repository.mische_abgeschlossene_tage(heute=HEUTE) == 0
-    assert _nach_ctid(db, GESTERN) == nach_erstem_lauf
+    assert _transaktionen(db, GESTERN) == 1
+    assert _ohne_reihenfolge(_nach_ctid(db, GESTERN), gesucht)
 
 
-def test_migration_mischt_bestand_in_einer_transaktion(db):
-    """Bestandszeilen tragen nach der Migration vom 27.10. (#275) alle dieselbe
-    Transaktion, liegen aber weiter in der Reihenfolge ihres Einfuegens. Ein
-    Lauf des Jobs erkennte sie nicht; die Migration mischt sie einmal."""
+def test_mische_abgeschlossene_tage_auch_mit_einer_transaktion(db):
+    """Ein Tag, dessen Zeilen schon eine Transaktion tragen, aber in der
+    Reihenfolge ihres Einfuegens liegen: nach dem Neuschreiben der Tabelle in
+    2026-10-27-suchereignisse-reihenfolge.sql oder nach dem Einspielen eines
+    Dumps, den pg_dump vor dem Mischen geschrieben hat."""
     gesucht = _suchen(db, GESTERN)
     with db.engine.begin() as c:
-        # Wie das Neuschreiben der Tabelle in 2026-10-27-suchereignisse-reihenfolge.sql
         c.execute(text("UPDATE search_events SET results_count = results_count"))
     assert _transaktionen(db, GESTERN) == 1
     assert _nach_ctid(db, GESTERN) == gesucht
     vorher = _zeilen(db)
 
-    postgres.migration(db, MISCHEN)
-    postgres.migration(db, MISCHEN)
+    _repository(db).mische_abgeschlossene_tage(heute=HEUTE)
+
+    assert _zeilen(db) == vorher
+    assert _ohne_reihenfolge(_nach_ctid(db, GESTERN), gesucht)
+
+
+def test_mische_abgeschlossene_tage_zweiter_lauf_behaelt_die_zeilen(db):
+    _suchen(db, VORGESTERN)
+    _suchen(db, GESTERN)
+    vorher = _zeilen(db)
+    repository = _repository(db)
+
+    assert repository.mische_abgeschlossene_tage(heute=HEUTE) == 2 * ANZAHL
+    assert repository.mische_abgeschlossene_tage(heute=HEUTE) == 2 * ANZAHL
 
     assert _zeilen(db) == vorher
     assert _transaktionen(db, GESTERN) == 1
-    assert _ohne_reihenfolge(_nach_ctid(db, GESTERN), gesucht)

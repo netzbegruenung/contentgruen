@@ -10,8 +10,8 @@ unten addieren diese Tageszaehler und stimmen so auch ueber die Frist hinaus.
 Jede Suche schreibt ihr Suchereignis in einer eigenen Transaktion. Damit ergaeben
 die Systemspalte xmin und die physische Lage der Zeilen (ctid, pg_dump) die
 Reihenfolge der Suchen eines Tages. Derselbe Job schreibt deshalb jeden
-abgeschlossenen Tag einmal in zufaelliger Reihenfolge und in einer Transaktion
-neu (#337).
+abgeschlossenen Tag in zufaelliger Reihenfolge und in einer Transaktion neu
+(#337).
 """
 
 import logging
@@ -56,21 +56,16 @@ _VERDICHTEN = text(
 
 # Mischt in einer Anweisung, also einer Transaktion: Alle neu geschriebenen Zeilen
 # tragen dasselbe xmin, und eingefuegt wird in zufaelliger Reihenfolge, die damit
-# auch die physische Lage bestimmt. Ein Tag mit mehr als einem xmin ist noch nicht
-# gemischt; ein gemischter bekommt keine neuen Zeilen mehr (neue tragen immer den
-# laufenden Tag) und wird deshalb nur einmal neu geschrieben. Den Bestand vor
-# #337 mischt 2026-10-27-suchereignisse-mischen.sql einmal.
+# auch die physische Lage bestimmt. Gemischt werden bei jedem Lauf alle
+# abgeschlossenen Tage, nicht nur die noch ungemischten: Woran man einen
+# gemischten Tag erkennen koennte, traegt auch ein ungemischter (ein xmin hat ein
+# Tag auch nach dem Neuschreiben der Tabelle in #275 oder nach dem Einspielen
+# eines Dumps). So mischt der Lauf beim Start des Dienstes auch diese Tage.
 _MISCHEN = text(
     """
-    WITH tage AS (
-        SELECT timestamp
-        FROM search_events
-        WHERE timestamp < :heute
-        GROUP BY timestamp
-        HAVING count(DISTINCT xmin::text) > 1
-    ), weg AS (
+    WITH weg AS (
         DELETE FROM search_events
-        WHERE timestamp IN (SELECT timestamp FROM tage)
+        WHERE timestamp < :heute
         RETURNING id, actor_hash, results_count, timestamp
     ), neu AS (
         INSERT INTO search_events (id, actor_hash, results_count, timestamp)
@@ -354,7 +349,9 @@ class SearchTrackingRepository:
 
         Danach tragen die Zeilen eines Tages alle dieselbe Transaktion (xmin) und
         liegen in zufaelliger Reihenfolge (ctid, pg_dump). Der laufende Tag bleibt,
-        wie er ist; gemischte Tage schreibt ein weiterer Lauf nicht noch einmal.
+        wie er ist. Jeder Lauf mischt alle abgeschlossenen Tage neu, auch schon
+        gemischte; das sind hoechstens die Tage der Frist, aeltere verdichtet
+        verdichte_alte_suchereignisse vorher.
 
         Args:
             heute: Bezugstag, Standard heute in UTC; Tage davor sind abgeschlossen
