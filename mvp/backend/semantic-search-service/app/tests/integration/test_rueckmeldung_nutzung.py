@@ -10,9 +10,14 @@ Fixture ``datenbank`` von ``test_loeschkommando.py``.
 import uuid
 from datetime import datetime, timedelta, timezone
 
-import pytest
+import time
+from concurrent.futures import ThreadPoolExecutor
 
-from infrastructure.database.models import UsageEvent, UsageTracking
+import pytest
+from sqlalchemy import text, update
+from sqlalchemy.dialects.postgresql import insert
+
+from infrastructure.database.models import GeseheneNutzung, UsageEvent, UsageTracking
 from repositories.gesehene_nutzung_repository import GeseheneNutzungRepository
 from repositories.usage_tracking_repository import UsageTrackingRepository
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
@@ -33,34 +38,51 @@ def _nutzungen(datenbank, beitrag: uuid.UUID, vor_tagen: list) -> None:  # noqa:
             )
 
 
+def _warten_bis_blockiert(datenbank, sekunden: float = 10) -> None:  # noqa: F811
+    """Bis eine andere Verbindung auf eine Sperre wartet."""
+    ende = time.monotonic() + sekunden
+    while time.monotonic() < ende:
+        with datenbank.engine.connect() as c:
+            wartend = c.execute(
+                text(
+                    "SELECT count(*) FROM pg_stat_activity"
+                    " WHERE wait_event_type = 'Lock' AND datname = current_database()"
+                )
+            ).scalar()
+        if wartend:
+            return
+        time.sleep(0.05)
+    raise AssertionError("Der zweite Besuch wartet nicht auf den ersten")
+
+
 class TestZuwachsLetzte7Tage:
-    def test_get_recent_usage_counts_batch_nur_die_letzten_7_tage(
+    def test_get_nutzung_letzte_7_tage_batch_nur_die_letzten_7_tage(
         self, datenbank
     ):  # noqa: F811
         beitrag = uuid.uuid4()
         _nutzungen(datenbank, beitrag, [0, 3, 6.9, 7.1, 30])
 
-        zuwachs = UsageTrackingRepository(datenbank).get_recent_usage_counts_batch(
+        zuwachs = UsageTrackingRepository(datenbank).get_nutzung_letzte_7_tage_batch(
             [beitrag]
         )
 
         assert zuwachs == {str(beitrag): 3}
 
-    def test_get_recent_usage_counts_batch_ohne_nutzung_null(
+    def test_get_nutzung_letzte_7_tage_batch_ohne_nutzung_null(
         self, datenbank
     ):  # noqa: F811
         alt, ungenutzt = uuid.uuid4(), uuid.uuid4()
         _nutzungen(datenbank, alt, [10])
 
-        zuwachs = UsageTrackingRepository(datenbank).get_recent_usage_counts_batch(
+        zuwachs = UsageTrackingRepository(datenbank).get_nutzung_letzte_7_tage_batch(
             [alt, ungenutzt]
         )
 
         assert zuwachs == {str(alt): 0, str(ungenutzt): 0}
 
-    def test_get_recent_usage_counts_batch_leere_liste(self, datenbank):  # noqa: F811
+    def test_get_nutzung_letzte_7_tage_batch_leere_liste(self, datenbank):  # noqa: F811
         assert (
-            UsageTrackingRepository(datenbank).get_recent_usage_counts_batch([]) == {}
+            UsageTrackingRepository(datenbank).get_nutzung_letzte_7_tage_batch([]) == {}
         )
 
 
@@ -81,15 +103,45 @@ class TestSeitLetztemBesuch:
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=8) == 3
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=8) == 0
 
-    def test_neu_seit_letztem_besuch_weniger_als_gesehen_ist_null(
-        self, datenbank
-    ):  # noqa: F811
-        """Ein geloeschter Beitrag nimmt seine Nutzung aus der Summe mit."""
+    def test_neu_seit_letztem_besuch_stand_sinkt_nie(self, datenbank):  # noqa: F811
+        """
+        Ein gesperrter Beitrag faellt aus der Summe und kommt beim Entsperren
+        zurueck: Seine alte Nutzung ist dann nicht neu.
+        """
         repo = GeseheneNutzungRepository(datenbank)
         repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=8)
 
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=6) == 0
-        assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=7) == 1
+        assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=8) == 0
+        assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=9) == 1
+
+    def test_neu_seit_letztem_besuch_gleichzeitig_beim_ersten_besuch_einmal(
+        self, datenbank
+    ):  # noqa: F811
+        """
+        Zwei Tabs oeffnen die App zugleich, bevor es eine Zeile gibt: Nur einer
+        meldet die Nutzung. Der erste haelt seine Transaktion offen, bis der zweite
+        nachweislich auf ihn wartet.
+        """
+        repo = GeseheneNutzungRepository(datenbank)
+        with datenbank.get_session() as erster:
+            erster.execute(
+                insert(GeseheneNutzung)
+                .values(user_id=AUTORIN, nutzung=0)
+                .on_conflict_do_nothing(index_elements=[GeseheneNutzung.user_id])
+            )
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                zweiter = pool.submit(
+                    repo.neu_seit_letztem_besuch, AUTORIN, nutzung_jetzt=5
+                )
+                _warten_bis_blockiert(datenbank)
+                erster.execute(
+                    update(GeseheneNutzung)
+                    .where(GeseheneNutzung.user_id == AUTORIN)
+                    .values(nutzung=5)
+                )
+                erster.commit()
+                assert zweiter.result(timeout=10) == 0
 
     def test_neu_seit_letztem_besuch_je_person_getrennt(self, datenbank):  # noqa: F811
         repo = GeseheneNutzungRepository(datenbank)

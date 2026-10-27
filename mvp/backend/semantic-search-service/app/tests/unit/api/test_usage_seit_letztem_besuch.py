@@ -67,27 +67,3 @@ class TestSeitLetztemBesuch:
         assert antwort.status_code == 500
         assert log_pseudonym("kim-1") in caplog.text
         assert "kim-1" not in caplog.text
-
-
-class TestDienst:
-    """Der Dienst nimmt die Gesamtnutzung aus der Nutzungsstatistik."""
-
-    @pytest.mark.asyncio
-    async def test_dienst_vergleicht_die_gesamtnutzung(self):
-        from services.usage_tracking_service import UsageTrackingService
-
-        with patch(
-            "services.usage_tracking_service.get_usage_repository"
-        ) as nutzung, patch("services.usage_tracking_service.get_trending_cache"):
-            nutzung.return_value.get_user_statistics = AsyncMock(
-                return_value={"total_usage_count": 9}
-            )
-            gesehen = Mock()
-            gesehen.neu_seit_letztem_besuch.return_value = 2
-            dienst = UsageTrackingService(gesehene_nutzung=gesehen)
-
-            assert await dienst.nutzung_seit_letztem_besuch("kim-1") == 2
-
-        gesehen.neu_seit_letztem_besuch.assert_called_once_with(
-            "kim-1", nutzung_jetzt=9
-        )

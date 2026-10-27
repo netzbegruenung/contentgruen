@@ -173,7 +173,7 @@ describe('karten-daten', () => {
     });
 
     it('uebernimmt Nutzung und Zuwachs der letzten 7 Tage', () => {
-      const daten = ausBeitrag(eintrag({ usage_last_7_days: 4 }));
+      const daten = ausBeitrag(eintrag({ nutzung_letzte_7_tage: 4 }));
 
       expect([daten.nutzung, daten.nutzungLetzte7Tage]).toEqual([12, 4]);
       expect(ausBeitrag(eintrag()).nutzungLetzte7Tage).toBe(0);

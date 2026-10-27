@@ -129,7 +129,7 @@ class UsageTrackingRepository:
 
             return result
 
-    def get_recent_usage_counts_batch(
+    def get_nutzung_letzte_7_tage_batch(
         self, content_ids: List[uuid.UUID]
     ) -> Dict[str, int]:
         """
@@ -160,7 +160,9 @@ class UsageTrackingRepository:
                 result[str(content_id)] = anzahl
         return result
 
-    async def get_user_statistics(self, user_id: str) -> Dict[str, Any]:
+    async def get_user_statistics(
+        self, user_id: str, content_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """
         Get usage statistics for a specific user's contributed content.
 
@@ -170,6 +172,8 @@ class UsageTrackingRepository:
 
         Args:
             user_id: User identifier
+            content_types: nur diese Typen zaehlen; ohne Angabe alles, was der Person
+                zugeordnet ist (auch Aussagen und Herkunftsangaben)
 
         Returns:
             Dict containing user statistics
@@ -181,7 +185,9 @@ class UsageTrackingRepository:
         content_repo = ContentRepository(settings)
 
         # Get all content by this author (using scroll/pagination)
-        user_content = await content_repo.get_by_author(user_id, limit=10000, offset=0)
+        user_content = await content_repo.get_by_author(
+            user_id, limit=10000, offset=0, content_types=content_types
+        )
 
         if not user_content:
             return {

@@ -215,7 +215,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     autor: eintrag.original_author || null,
     autorName: eintrag.autor_name ?? null,
     nutzung: eintrag.usage_count ?? 0,
-    nutzungLetzte7Tage: eintrag.usage_last_7_days ?? 0,
+    nutzungLetzte7Tage: eintrag.nutzung_letzte_7_tage ?? 0,
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
   };

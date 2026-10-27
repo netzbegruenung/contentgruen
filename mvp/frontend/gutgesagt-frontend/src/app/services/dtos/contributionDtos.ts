@@ -37,7 +37,7 @@ export interface ContentResult {
     /** Aus PostgreSQL nachgetragen, 0 ohne Nutzung. */
     usage_count: number;
     /** Davon in den letzten 7 Tagen (#349); fehlt bei aelteren Antworten. */
-    usage_last_7_days?: number;
+    nutzung_letzte_7_tage?: number;
     /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */
     references?: ContentReference[];
 }

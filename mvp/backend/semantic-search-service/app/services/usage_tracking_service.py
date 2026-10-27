@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 import uuid
 import hashlib
 
+from domain.content_registry import BEITRAGSTYPEN_WERTE
 from repositories.gesehene_nutzung_repository import (
     GeseheneNutzungRepository,
     get_gesehene_nutzung_repository,
@@ -169,11 +170,11 @@ class UsageTrackingService:
 
         return content_items
 
-    def enrich_content_with_recent_usage(
+    def nutzung_letzte_7_tage_nachtragen(
         self, content_items: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        Traegt ``usage_last_7_days`` nach: wie oft jeder Inhalt in den letzten
+        Traegt ``nutzung_letzte_7_tage`` nach: wie oft jeder Inhalt in den letzten
         7 Tagen genutzt wurde, fuer "Meine Beitraege" (#349).
         """
         content_ids = []
@@ -182,9 +183,9 @@ class UsageTrackingService:
                 content_ids.append(uuid.UUID(str(item["id"])))
             except (KeyError, ValueError, TypeError):
                 continue
-        zuwachs = self.repository.get_recent_usage_counts_batch(content_ids)
+        zuwachs = self.repository.get_nutzung_letzte_7_tage_batch(content_ids)
         for item in content_items:
-            item["usage_last_7_days"] = zuwachs.get(str(item.get("id")), 0)
+            item["nutzung_letzte_7_tage"] = zuwachs.get(str(item.get("id")), 0)
         return content_items
 
     async def get_user_usage_stats(self, user_id: str) -> Dict[str, Any]:
@@ -205,10 +206,13 @@ class UsageTrackingService:
         fuer die Rueckmeldung beim Anmelden (#349). Der Aufruf zaehlt als Besuch: Danach
         gilt die heutige Nutzung als gesehen.
 
-        Verglichen wird die Gesamtnutzung aus der Nutzungsstatistik, also dieselbe
-        Zahl, die "Meine Beitraege" zeigt; eigene Kopien sind darin nicht enthalten.
+        Verglichen wird die Gesamtnutzung der Beitraege wie in "Meine Beitraege":
+        ohne Aussagen und Herkunftsangaben, die keine Beitraege sind, und ohne eigene
+        Kopien, die gar nicht erst gezaehlt werden.
         """
-        stats = await self.get_user_usage_stats(user_id)
+        stats = await self.repository.get_user_statistics(
+            user_id, content_types=BEITRAGSTYPEN_WERTE
+        )
         if self._gesehene_nutzung is None:
             self._gesehene_nutzung = get_gesehene_nutzung_repository()
         return self._gesehene_nutzung.neu_seit_letztem_besuch(

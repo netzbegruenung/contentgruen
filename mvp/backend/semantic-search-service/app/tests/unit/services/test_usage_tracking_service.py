@@ -3,9 +3,11 @@ Unit tests for the usage tracking service.
 """
 
 import uuid
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
+from domain.content_registry import BEITRAGSTYPEN_WERTE
+from repositories.gesehene_nutzung_repository import GeseheneNutzungRepository
 from services.usage_tracking_service import UsageTrackingService
 
 
@@ -214,3 +216,31 @@ class TestUsageTrackingService:
         call_args = mock_repository.initialize_usage_data.call_args[0]
         assert str(call_args[0]) == content_id
         assert call_args[1] == initial_count
+
+
+class TestNutzungSeitLetztemBesuch:
+    """Die Rueckmeldung beim Anmelden (#349) vergleicht die Nutzung der Beitraege."""
+
+    @pytest.mark.asyncio
+    async def test_nutzung_seit_letztem_besuch_vergleicht_die_nutzung_der_beitraege(
+        self,
+    ):
+        repository = Mock()
+        repository.get_user_statistics = AsyncMock(
+            return_value={"total_usage_count": 9}
+        )
+        gesehen = Mock(spec=GeseheneNutzungRepository)
+        gesehen.neu_seit_letztem_besuch.return_value = 2
+        with patch(
+            "services.usage_tracking_service.get_usage_repository",
+            return_value=repository,
+        ):
+            service = UsageTrackingService(gesehene_nutzung=gesehen)
+
+        assert await service.nutzung_seit_letztem_besuch("kim-1") == 2
+        repository.get_user_statistics.assert_awaited_once_with(
+            "kim-1", content_types=BEITRAGSTYPEN_WERTE
+        )
+        gesehen.neu_seit_letztem_besuch.assert_called_once_with(
+            "kim-1", nutzung_jetzt=9
+        )

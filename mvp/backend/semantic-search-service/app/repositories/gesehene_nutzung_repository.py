@@ -5,7 +5,7 @@ Anmelden (#349).
 
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import AppDatabase, get_app_database
@@ -25,28 +25,36 @@ class GeseheneNutzungRepository:
         danach gilt ``nutzung_jetzt`` als gezeigt.
 
         Ohne Zeile ist der Stand 0: Alles bisher war noch nie Thema einer Rueckmeldung.
-        Liegt die Nutzung unter dem Stand (ein Beitrag wurde geloescht), ist der
-        Zuwachs 0 und der niedrigere Stand gilt.
 
-        ``FOR UPDATE`` haelt zwei gleichzeitige Besuche auseinander: Der zweite
-        sieht den Stand des ersten und meldet nichts doppelt.
+        Der Stand sinkt nie. Liegt die Nutzung darunter (ein Beitrag ist gesperrt oder
+        geloescht, oder ein langsamerer Aufruf bringt eine aeltere Zahl), ist der
+        Zuwachs 0 und der hoehere Stand bleibt. Sonst meldete der naechste Besuch nach
+        dem Entsperren alte Nutzung als neu; dafuer bleiben nach einer Loeschung bis zu
+        deren Menge neue Nutzungen unerwaehnt.
+
+        Erst die Zeile anlegen, dann sperren: ``FOR UPDATE`` sperrt nur eine Zeile, die
+        es gibt. So wartet auch beim ersten Besuch ein zweiter, gleichzeitiger auf den
+        ersten, sieht dessen Stand und meldet nichts doppelt.
         """
         with self.db.get_session() as session:
+            session.execute(
+                insert(GeseheneNutzung)
+                .values(user_id=user_id, nutzung=0)
+                .on_conflict_do_nothing(index_elements=[GeseheneNutzung.user_id])
+            )
             gesehen = session.execute(
                 select(GeseheneNutzung.nutzung)
                 .where(GeseheneNutzung.user_id == user_id)
                 .with_for_update()
-            ).scalar()
-            stmt = insert(GeseheneNutzung).values(
-                user_id=user_id, nutzung=nutzung_jetzt
-            )
+            ).scalar_one()
+            if nutzung_jetzt <= gesehen:
+                return 0
             session.execute(
-                stmt.on_conflict_do_update(
-                    index_elements=[GeseheneNutzung.user_id],
-                    set_={"nutzung": stmt.excluded.nutzung},
-                )
+                update(GeseheneNutzung)
+                .where(GeseheneNutzung.user_id == user_id)
+                .values(nutzung=nutzung_jetzt)
             )
-            return max(0, nutzung_jetzt - (gesehen or 0))
+            return nutzung_jetzt - gesehen
 
 
 _repository: Optional[GeseheneNutzungRepository] = None

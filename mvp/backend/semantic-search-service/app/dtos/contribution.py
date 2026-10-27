@@ -31,7 +31,7 @@ class ContributionEntry(ContentDbEntry):
     usage_count: int = 0
     # Zuwachs der letzten 7 Tage (#349); steht nicht im Payload, kommt wie
     # usage_count aus PostgreSQL.
-    usage_last_7_days: int = 0
+    nutzung_letzte_7_tage: int = 0
     references: List[CommentaryReference] = []
 
     @field_validator("usage_count", mode="before")
