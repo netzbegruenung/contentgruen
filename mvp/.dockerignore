@@ -6,8 +6,9 @@ frontend/
 # BFF - not needed for semantic search build
 backend/BFF/
 
-# Other backend services
+# Other backend services, except the migrations the service applies at startup
 backend/postgres-app/
+!backend/postgres-app/migrations/
 
 # Docker compose files
 docker-compose*.yml

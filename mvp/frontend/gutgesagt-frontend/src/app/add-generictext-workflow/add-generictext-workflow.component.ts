@@ -24,9 +24,9 @@ import {
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import {
   DestillierUebergabeService,
-  ROHINPUT_PARAM,
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
+import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
 
 /** Hinweis im Formular, wenn ?aussage= auf nichts (mehr) zeigt. */
 export const AUSSAGE_NICHT_VERFUEGBAR =
@@ -62,7 +62,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
   /** Gesetzt, wenn die Aussage aus der Adresse nicht ladbar war; das Formular bleibt nutzbar. */
   aussageHinweis: string | null = null;
   /** Gesetzt, wenn das Formular aus dem Destillier-Ablauf geoeffnet wurde. */
-  rohinputId: string | null = null;
+  einwurfId: string | null = null;
   vorbefuellung: Vorbefuellung | null = null;
   /** Aus der Suche geoeffnet (?aussage= oder ?searchQuery=); dann mit der Anfrage, soweit bekannt. */
   private ausSuche: { anfrage: string | null } | null = null;
@@ -86,7 +86,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
     this.route.queryParamMap
       .pipe(
         switchMap((params) => {
-          this.einwurfUebernehmen(params.get(ROHINPUT_PARAM));
+          this.einwurfUebernehmen(params.get(EINWURF_PARAM));
           this.herkunftMerken(params);
           return this.aussageLaden(params);
         }),
@@ -116,14 +116,14 @@ export class AddGenerictextWorkflowComponent implements OnInit {
     );
   }
 
-  private einwurfUebernehmen(rohinputId: string | null): void {
-    if (rohinputId === this.rohinputId) {
+  private einwurfUebernehmen(einwurfId: string | null): void {
+    if (einwurfId === this.einwurfId) {
       return;
     }
-    this.rohinputId = rohinputId;
+    this.einwurfId = einwurfId;
     this.vorbefuellung = null;
-    if (rohinputId) {
-      this.uebergabe.vorbefuellungLaden(rohinputId).subscribe({
+    if (einwurfId) {
+      this.uebergabe.vorbefuellungLaden(einwurfId).subscribe({
         next: (vorbefuellung) => (this.vorbefuellung = vorbefuellung),
         error: (error) => this.logger.error('Einwurf fuer die Vorbefuellung nicht ladbar', error),
       });
@@ -154,10 +154,10 @@ export class AddGenerictextWorkflowComponent implements OnInit {
       verknuepft: ergebnis.verknuepft,
     };
 
-    if (this.rohinputId) {
-      const rohinputId = this.rohinputId;
-      this.uebergabe.mitBeitragVerknuepfen(rohinputId, ergebnis.id, 'generic_text').subscribe((einwurfVerknuepft) =>
-        this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, einwurfVerknuepft }),
+    if (this.einwurfId) {
+      const einwurfId = this.einwurfId;
+      this.uebergabe.mitBeitragVerknuepfen(einwurfId, ergebnis.id, 'generic_text').subscribe((einwurfVerknuepft) =>
+        this.zurErgebnisseite(ergebnis.id, { [EINWURF_PARAM]: einwurfId }, { ...zustand, einwurfVerknuepft }),
       );
       return;
     }
@@ -176,7 +176,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
    * sich aus der Meldung wiederholen. Ohne Einwurf bleibt das Formular.
    */
   onVorhandenGewaehlt(hintergrundinfoId: string): void {
-    const einwurfId = this.rohinputId; // retired-ok: vorhandener Feldname, Umbenennung eigenes Ticket
+    const einwurfId = this.einwurfId;
     if (!einwurfId) {
       return;
     }

@@ -43,7 +43,7 @@ describe('DestillierUebergabeService', () => {
     service.vorbefuellungLaden('id-1').subscribe((v) => (ergebnis = v));
 
     expect(ergebnis).toEqual(jasmine.objectContaining({
-      rohinputId: 'id-1',
+      einwurfId: 'id-1',
       titel: 'Waermepumpe lohnt sich auch im Altbau',
       url: 'https://www.instagram.com/reel/ABC/',
     }));
@@ -73,7 +73,7 @@ describe('DestillierUebergabeService', () => {
 
     service.vorbefuellungLaden('id-1').subscribe((v) => (ergebnis = v));
 
-    expect(ergebnis).toEqual(jasmine.objectContaining({ rohinputId: 'id-1', titel: '', url: null }));
+    expect(ergebnis).toEqual(jasmine.objectContaining({ einwurfId: 'id-1', titel: '', url: null }));
     expect(ergebnis!.kopf!.einwurfAngaben!.kopfSatz).toBeUndefined();
   });
 

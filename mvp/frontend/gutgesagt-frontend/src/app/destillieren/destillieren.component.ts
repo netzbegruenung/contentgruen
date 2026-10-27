@@ -17,10 +17,10 @@ import { LoggingService } from '../services/logging.service';
 import { typBeschreibung, typLabel } from '../shared/content-type-registry';
 import {
   DestillierUebergabeService,
-  ROHINPUT_PARAM,
   SCHRITT_PARAM,
   TAB_PARAM,
 } from './destillier-uebergabe.service';
+import { EINWURF_PARAM } from './einwurf-adresse';
 import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
@@ -306,7 +306,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate([FORMULAR_PFAD[this.typ]], {
-      queryParams: { [ROHINPUT_PARAM]: this.einwurf.id },
+      queryParams: { [EINWURF_PARAM]: this.einwurf.id },
     });
   }
 

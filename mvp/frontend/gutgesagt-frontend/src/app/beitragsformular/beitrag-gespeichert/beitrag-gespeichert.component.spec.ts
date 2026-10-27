@@ -93,7 +93,7 @@ describe('BeitragGespeichertComponent', () => {
     });
 
     it('Fangkorb: naechster Einwurf und zum Fangkorb', async () => {
-      await oeffnen({ rohinput: 'e-1' }, { einwurfVerknuepft: true });
+      await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: true });
       const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
@@ -109,7 +109,7 @@ describe('BeitragGespeichertComponent', () => {
     });
 
     it('Fangkorb: nicht verknuepft fuehrt nach Ausformulieren und sagt es', async () => {
-      await oeffnen({ rohinput: 'e-1' }, { einwurfVerknuepft: false });
+      await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: false });
 
       expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
@@ -157,7 +157,7 @@ describe('BeitragGespeichertComponent', () => {
     });
 
     it('kommt nach dem Neuladen ohne State ohne Antwort-auf aus', async () => {
-      await oeffnen({ rohinput: 'e-1' });
+      await oeffnen({ einwurf: 'e-1' });
 
       expect(seite().querySelector('.gespeichert-aussage')).toBeNull();
       expect(seite().querySelector('.gespeichert-warnung')).toBeNull();
@@ -177,7 +177,7 @@ describe('BeitragGespeichertComponent', () => {
   it('fuehrt mit dem Pfeil dorthin, woher das Formular kam', () => {
     const snapshot = (params: Record<string, string>) => ({ queryParamMap: convertToParamMap(params) }) as any;
 
-    expect(gespeichertEltern(snapshot({ rohinput: 'e-1' }))).toBe('/fangkorb');
+    expect(gespeichertEltern(snapshot({ einwurf: 'e-1' }))).toBe('/fangkorb');
     expect(gespeichertEltern(snapshot({ von: 'suche', suche: 'a b' }))).toBe('/result?searchQuery=a%20b');
     expect(gespeichertEltern(snapshot({ von: 'suche' }))).toBe('/search');
     expect(gespeichertEltern(snapshot({}))).toBe('/contribute');

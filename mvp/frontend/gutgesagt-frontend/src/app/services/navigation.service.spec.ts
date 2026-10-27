@@ -154,8 +154,8 @@ describe('NavigationService.goBack', () => {
   }
 
   it('fuehrt aus einem Formular im Destillier-Ablauf zurueck zum Einwurf', fakeAsync(() => {
-    expect(zurueckVon('/workflow/add-commentary?rohinput=e-42')).toBe('/destillieren/e-42');
-    expect(zurueckVon('/workflow/add-generictext?rohinput=e-7')).toBe('/destillieren/e-7');
+    expect(zurueckVon('/workflow/add-commentary?einwurf=e-42')).toBe('/destillieren/e-42');
+    expect(zurueckVon('/workflow/add-generictext?einwurf=e-7')).toBe('/destillieren/e-7');
   }));
 
   it('fuehrt ohne Elternziel auf die Startseite', fakeAsync(() => {

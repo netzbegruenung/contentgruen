@@ -23,9 +23,9 @@ import {
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import {
   DestillierUebergabeService,
-  ROHINPUT_PARAM,
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
+import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
 import { NACH_DEM_AUSFORMULIEREN } from '../raw-input-list/fangkorb-filter';
 
 /** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
@@ -62,7 +62,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   /** Gesetzt, wenn die Aussage aus der Adresse nicht ladbar war; das Formular bleibt nutzbar. */
   aussageHinweis: string | null = null;
   /** Gesetzt, wenn das Formular aus dem Destillier-Ablauf geoeffnet wurde. */
-  rohinputId: string | null = null;
+  einwurfId: string | null = null;
   vorbefuellung: Vorbefuellung | null = null;
   /** Aus der Suche geoeffnet (?aussage= oder ?searchQuery=); dann mit der Anfrage, soweit bekannt. */
   private ausSuche: { anfrage: string | null } | null = null;
@@ -86,7 +86,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     this.route.queryParamMap
       .pipe(
         switchMap((params) => {
-          this.einwurfUebernehmen(params.get(ROHINPUT_PARAM));
+          this.einwurfUebernehmen(params.get(EINWURF_PARAM));
           this.herkunftMerken(params);
           return this.aussageLaden(params);
         }),
@@ -116,14 +116,14 @@ export class AddCommentaryWorkflowComponent implements OnInit {
     );
   }
 
-  private einwurfUebernehmen(rohinputId: string | null): void {
-    if (rohinputId === this.rohinputId) {
+  private einwurfUebernehmen(einwurfId: string | null): void {
+    if (einwurfId === this.einwurfId) {
       return;
     }
-    this.rohinputId = rohinputId;
+    this.einwurfId = einwurfId;
     this.vorbefuellung = null;
-    if (rohinputId) {
-      this.uebergabe.vorbefuellungLaden(rohinputId).subscribe({
+    if (einwurfId) {
+      this.uebergabe.vorbefuellungLaden(einwurfId).subscribe({
         next: (vorbefuellung) => (this.vorbefuellung = vorbefuellung),
         error: (error) => this.logger.error('Einwurf fuer die Vorbefuellung nicht ladbar', error),
       });
@@ -154,10 +154,10 @@ export class AddCommentaryWorkflowComponent implements OnInit {
       verknuepft: ergebnis.verknuepft,
     };
 
-    if (this.rohinputId) {
-      const rohinputId = this.rohinputId;
-      this.uebergabe.mitBeitragVerknuepfen(rohinputId, ergebnis.id, 'commentary').subscribe((einwurfVerknuepft) =>
-        this.zurErgebnisseite(ergebnis.id, { [ROHINPUT_PARAM]: rohinputId }, { ...zustand, einwurfVerknuepft }),
+    if (this.einwurfId) {
+      const einwurfId = this.einwurfId;
+      this.uebergabe.mitBeitragVerknuepfen(einwurfId, ergebnis.id, 'commentary').subscribe((einwurfVerknuepft) =>
+        this.zurErgebnisseite(ergebnis.id, { [EINWURF_PARAM]: einwurfId }, { ...zustand, einwurfVerknuepft }),
       );
       return;
     }
@@ -177,11 +177,11 @@ export class AddCommentaryWorkflowComponent implements OnInit {
    * (etwa die Stimme) steht schon. Ohne Einwurf bleibt das Formular.
    */
   onVorhandenGewaehlt(kommentarId: string): void {
-    if (!this.rohinputId) {
+    if (!this.einwurfId) {
       return;
     }
-    const rohinputId = this.rohinputId;
-    this.uebergabe.mitBeitragVerknuepfen(rohinputId, kommentarId, 'commentary').subscribe((einwurfVerknuepft) => {
+    const einwurfId = this.einwurfId;
+    this.uebergabe.mitBeitragVerknuepfen(einwurfId, kommentarId, 'commentary').subscribe((einwurfVerknuepft) => {
       if (!einwurfVerknuepft) {
         this.snackBar
           .open(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, { duration: 15000 })
@@ -190,7 +190,7 @@ export class AddCommentaryWorkflowComponent implements OnInit {
         return;
       }
       this.snackBar.open(EINWURF_MIT_VORHANDENEM_VERKNUEPFT, 'OK', { duration: 5000 });
-      this.uebergabe.zumNaechsten(rohinputId, NACH_DEM_AUSFORMULIEREN); // retired-ok bis #262
+      this.uebergabe.zumNaechsten(einwurfId, NACH_DEM_AUSFORMULIEREN);
     });
   }
 
