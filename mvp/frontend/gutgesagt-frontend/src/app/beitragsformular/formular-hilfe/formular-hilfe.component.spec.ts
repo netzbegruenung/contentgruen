@@ -1,15 +1,15 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FormularHilfeComponent } from './formular-hilfe.component';
+import { FormularTyp } from '../../shared/formular-adresse';
 import { SCHREIBHILFEN, SCHREIBREGELN, TITEL_BEISPIELE } from '../../shared/schreibregeln';
 
 describe('FormularHilfeComponent', () => {
   let fixture: ComponentFixture<FormularHilfeComponent>;
 
-  async function mitTyp(typ: string): Promise<void> {
+  async function mitTyp(typ: FormularTyp): Promise<void> {
     await TestBed.configureTestingModule({ imports: [FormularHilfeComponent] }).compileComponents();
     fixture = TestBed.createComponent(FormularHilfeComponent);
-    // 'post' kennt FormularTyp erst mit dem Post-Formular (#297)
     fixture.componentRef.setInput('typ', typ);
     fixture.detectChanges();
   }
@@ -92,13 +92,16 @@ describe('FormularHilfeComponent', () => {
   });
 
   describe('Post', () => {
-    // Das Post-Formular bringt #297 mit seiner eigenen Formularhilfe; bis dahin gibt es kein Panel.
     beforeEach(() => mitTyp('post'));
 
-    it('gilt als Typ mit Schreibregeln, aber ohne Titelbeispiele', () => {
-      const komponente = fixture.componentInstance;
-      expect(komponente.mitSchreibregeln).toBeTrue();
-      expect(komponente.mitTitelbeispielen).toBeFalse();
+    it('zeigt Schreibregeln, Schreibhilfen und Hinweise, aber keine Titelbeispiele', () => {
+      aufklappen();
+
+      expect(texte('.schreibregeln li').length).toBe(6);
+      expect(texte('.schreibhilfen li').length).toBe(SCHREIBHILFEN.length);
+      expect(seite().querySelector('.hilfe-panel')!.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
+      // Post-Titel folgen der Behauptungsregel nicht (CLAUDE.md, "Titel von Beitraegen")
+      expect(seite().querySelector('.titel-beispiele')).toBeNull();
     });
   });
 

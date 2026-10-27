@@ -11,8 +11,6 @@ import {
   SCHREIBHILFEN,
   SCHREIBREGELN,
   TITEL_BEISPIELE,
-  TYPEN_MIT_SCHREIBREGELN,
-  TYPEN_MIT_TITELBEISPIELEN,
 } from '../../shared/schreibregeln';
 
 /**
@@ -45,14 +43,6 @@ export class FormularHilfeComponent {
   /** Das Symbol des Typs wie im Kartenkopf - der Bezug zur Karte, die hier entsteht. */
   get emoji(): string {
     return typEmoji(this.typ);
-  }
-
-  get mitSchreibregeln(): boolean {
-    return TYPEN_MIT_SCHREIBREGELN.includes(this.typ);
-  }
-
-  get mitTitelbeispielen(): boolean {
-    return TYPEN_MIT_TITELBEISPIELEN.includes(this.typ);
   }
 
   get panelId(): string {

@@ -87,6 +87,15 @@ describe('AddPostComponent', () => {
     expect(gemeldet?.verknuepft).toBeTrue();
   });
 
+  it('zeigt hinter dem ? die Schreibregeln, die das Speichern nicht sperren', () => {
+    (fixture.nativeElement.querySelector('.erklaerung-umschalter') as HTMLButtonElement).click();
+    component.postForm.patchValue(WERTE);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('.schreibregeln li').length).toBe(6);
+    expect((fixture.nativeElement.querySelector('.submit-btn') as HTMLButtonElement).disabled).toBeFalse();
+  });
+
   it('schickt nichts, solange ein Pflichtfeld fehlt', () => {
     const senden = spyOn(TestBed.inject(PostService), 'addPost');
     component.postForm.patchValue({ ...WERTE, author: '' });

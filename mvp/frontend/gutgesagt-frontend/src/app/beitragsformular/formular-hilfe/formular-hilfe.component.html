@@ -23,7 +23,7 @@
             <strong>Beispiel:</strong> Auf „{{ beispiel.aussage }}“ → „{{ beispiel.antwort }}“
         </p>
 
-        <ng-container *ngIf="mitSchreibregeln">
+        <ng-container *ngIf="hilfe.schreibregeln">
             <h3 class="hilfe-abschnitt" [id]="panelId + '-regeln'">Schreibregeln</h3>
             <ol class="schreibregeln" [attr.aria-labelledby]="panelId + '-regeln'">
                 <li *ngFor="let regel of schreibregeln">{{ regel }}</li>
@@ -34,7 +34,7 @@
                 <li *ngFor="let schreibhilfe of schreibhilfen"><strong>{{ schreibhilfe.name }}:</strong> {{ schreibhilfe.text }}</li>
             </ul>
 
-            <ng-container *ngIf="mitTitelbeispielen">
+            <ng-container *ngIf="hilfe.titelbeispiele">
                 <h3 class="hilfe-abschnitt" [id]="panelId + '-titel'">Titel: eine Behauptung in einem Satz</h3>
                 <ul class="hilfe-regeln titel-beispiele" [attr.aria-labelledby]="panelId + '-titel'">
                     <li *ngFor="let titel of titelBeispiele.gut" class="regel regel-ist titel-gut">

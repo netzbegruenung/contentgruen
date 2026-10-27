@@ -6,8 +6,6 @@
  * Hier gepflegt, damit Formularhilfe und Hilfe-Dialog dieselben Saetze zeigen.
  */
 
-import { FormularTyp } from './formular-adresse';
-
 /** Die sechs Schreibregeln, in der Reihenfolge der Vision. */
 export const SCHREIBREGELN: readonly string[] = [
   'Schreib für die Unentschiedenen, die mitlesen.',
@@ -58,15 +56,3 @@ export const NICHT_JEDE_AUSSAGE =
 /** Der Meldedialog hat (noch) keinen eigenen Grund dafuer, daher der Weg ueber „Andere“. */
 export const ERFUNDENES_MELDEN =
   'Erfundene Erlebnisse oder Zahlen in einem Beitrag? Melde ihn hier bei Gut gesagt unter „Andere“ und schreib dazu, was nicht stimmt.';
-
-/**
- * 'post' kennt FormularTyp erst mit dem Post-Formular (#297); bis dahin steht
- * er hier zusaetzlich, danach reicht FormularTyp.
- */
-type TypMitHilfe = FormularTyp | 'post';
-
-/** Beitragstypen, deren Formularhilfe die Schreibregeln zeigt. */
-export const TYPEN_MIT_SCHREIBREGELN: readonly TypMitHilfe[] = ['commentary', 'post'];
-
-/** Beitragstypen, deren Formularhilfe Titelbeispiele zeigt. */
-export const TYPEN_MIT_TITELBEISPIELEN: readonly TypMitHilfe[] = ['commentary'];
