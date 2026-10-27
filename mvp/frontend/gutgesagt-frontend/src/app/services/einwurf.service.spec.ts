@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Einwurf, EinwurfService, EinwurfSeite } from './einwurf.service';
 import { LoggingService } from './logging.service';
-import { cacheService } from '../auth/cache.interceptor';
 import { environment } from '../../environments/environment';
 
 function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
@@ -104,17 +103,13 @@ describe('EinwurfService', () => {
       anfrage.flush(einwurf());
     });
 
-    it('speichert den Satz per PUT und leert danach den Fangkorb-Cache', () => {
-      const leeren = spyOn(cacheService, 'delete');
-
+    it('speichert den Satz per PUT', () => {
       service.satzSpeichern('id-1', 'Mein Satz').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/draft`);
       expect(anfrage.request.method).toBe('PUT');
       expect(anfrage.request.body).toEqual({ sentence: 'Mein Satz' });
-      expect(leeren).not.toHaveBeenCalled();
       anfrage.flush({ raw_input_id: 'id-1', sentence: 'Mein Satz', updated_at: null });
-      expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
     it('sichert den Satz per fetch mit keepalive', () => {
@@ -131,15 +126,12 @@ describe('EinwurfService', () => {
     });
 
     it('verwirft per PATCH ohne content_id', () => {
-      const leeren = spyOn(cacheService, 'delete');
-
       service.updateStatus('id-1', 'discarded').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/status`);
       expect(anfrage.request.method).toBe('PATCH');
       expect(anfrage.request.body).toEqual({ status: 'discarded' });
       anfrage.flush(einwurf({ status: 'discarded' }));
-      expect(leeren).toHaveBeenCalledWith('/api/v1/rawinput');
     });
 
     it('verknuepft mit dem Beitrag und seinem Typ', () => {

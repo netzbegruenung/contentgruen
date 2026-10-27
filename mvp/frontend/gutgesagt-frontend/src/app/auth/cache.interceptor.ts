@@ -1,6 +1,6 @@
 import { HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { of, tap } from 'rxjs';
+import { finalize, of, tap } from 'rxjs';
 
 interface CacheEntry {
   response: HttpResponse<unknown>;
@@ -34,34 +34,78 @@ class CacheService {
   clear(): void {
     this.cache.clear();
   }
-
-  delete(pattern: string): void {
-    const keysToDelete: string[] = [];
-    this.cache.forEach((_, key) => {
-      if (key.includes(pattern)) {
-        keysToDelete.push(key);
-      }
-    });
-    keysToDelete.forEach(key => this.cache.delete(key));
-  }
 }
 
 // Single instance of cache service
 const cacheService = new CacheService();
 
+/**
+ * POST-Anfragen, die nur lesen (Aussagen- und Herkunftssuche, Bildvorschlag, Stimmen
+ * mehrerer Beitraege). Sie lassen den Cache stehen. Fehlt hier eine, wird der Cache nur
+ * unnoetig geleert. Steht hier eine, die schreibt, bleibt ein veralteter Stand stehen.
+ * Die Suche (searchByText) gehoert nicht hierher: Sie legt eine Aussage an und zaehlt
+ * Suchereignisse und Suchen ohne Treffer, die in den Kennzahlen erscheinen.
+ */
+const LESENDE_POSTS = [
+  '/api/v1/statement/searchStatements',
+  '/api/v1/reference/search',
+  '/api/v1/image/suggestCaption',
+  '/api/v1/voting/votes/batch',
+];
+
+/**
+ * Der Fangkorb ist der gemeinsame Vorrat aller Einwuerfe: Andere Mitwirkende aendern ihn
+ * laufend, und was jemand als naechstes destilliert, haengt an der aktuellen Stufe.
+ * Ein Stand von vor fuenf Minuten fuehrte zu doppelter Arbeit, daher kein Cache.
+ */
+const NIE_CACHEN = ['/api/v1/rawinput/'];
+
+/**
+ * Zaehlt Aenderungen. Eine GET-Antwort kommt nur in den Cache, wenn seit ihrer
+ * Anfrage keine Aenderung losging oder fertig wurde - sonst koennte sie den Stand
+ * von vor der Aenderung wieder hineinschreiben.
+ */
+let aenderungen = 0;
+
+/**
+ * Enthaelt der Pfad der Anfrage einen der Pfade? Bewusst kein Praefixvergleich:
+ * environment.baseUrl kann dem Pfad ein Praefix voranstellen.
+ */
+function pfadEnthaelt(req: HttpRequest<unknown>, pfade: string[]): boolean {
+  const pfad = new URL(req.url, window.location.origin).pathname;
+  return pfade.some((p) => pfad.includes(p));
+}
+
+function istAenderung(req: HttpRequest<unknown>): boolean {
+  if (req.method === 'POST') {
+    return !pfadEnthaelt(req, LESENDE_POSTS);
+  }
+  return req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE';
+}
+
+function cacheVerwerfen(): void {
+  aenderungen++;
+  cacheService.clear();
+}
+
 export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
-  // Only cache GET requests
   if (req.method !== 'GET') {
-    // Clear related cache on mutations
-    if (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE') {
-      const urlPath = new URL(req.url, window.location.origin).pathname;
-      cacheService.delete(urlPath);
+    if (!istAenderung(req)) {
+      return next(req);
     }
-    return next(req);
+    // Eine Aenderung kann jede Liste, Suche und Zaehlung betreffen, nicht nur ihren
+    // eigenen Pfad. Vorher und nachher leeren: Was waehrenddessen geholt wurde, kann
+    // schon wieder alt sein.
+    cacheVerwerfen();
+    return next(req).pipe(finalize(cacheVerwerfen));
   }
 
   // Skip caching for auth endpoints
   if (req.url.includes('/auth/') || req.url.includes('/login')) {
+    return next(req);
+  }
+
+  if (pfadEnthaelt(req, NIE_CACHEN)) {
     return next(req);
   }
 
@@ -74,14 +118,15 @@ export const cacheInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // Forward request and cache the response
+  const aenderungenBeiAnfrage = aenderungen;
   return next(req).pipe(
     tap(event => {
-      if (event instanceof HttpResponse) {
+      if (event instanceof HttpResponse && aenderungenBeiAnfrage === aenderungen) {
         cacheService.set(cacheKey, event);
       }
     })
   );
 };
 
-// Export cache service for manual cache management
+// Exportiert fuer die Tests, die jeden Fall mit leerem Cache beginnen
 export { cacheService };

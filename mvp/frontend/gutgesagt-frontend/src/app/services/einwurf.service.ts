@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { cacheService } from '../auth/cache.interceptor';
 import { LoggingService } from './logging.service';
 
 /** Spiegelt RawInputSource im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
@@ -183,9 +182,7 @@ export class EinwurfService {
 
   /** Den eigenen Satz speichern; ein leerer Satz loescht ihn. */
   satzSpeichern(id: string, sentence: string): Observable<SatzResponse> {
-    return this.http
-      .put<SatzResponse>(`${this.einwurfUrl(id)}/draft`, { sentence })
-      .pipe(tap(() => this.cacheLeeren()));
+    return this.http.put<SatzResponse>(`${this.einwurfUrl(id)}/draft`, { sentence });
   }
 
   /**
@@ -195,9 +192,11 @@ export class EinwurfService {
    * XHR wird dabei abgebrochen. fetch mit keepalive darf die Seite ueberleben.
    * HttpClient laeuft hier ohne Fetch-Backend und kann das nicht - daher direkt.
    * Fehler werden verschluckt: mehr als versuchen geht in diesem Moment nicht.
+   * Am Cache-Interceptor vorbei leert dieser Weg den GET-Cache nicht. Das ist nur
+   * unschaedlich, weil der Fangkorb nie im Cache liegt (NIE_CACHEN in
+   * auth/cache.interceptor.ts); wer das aendert, muss hier selbst leeren.
    */
   satzSpeichernKeepalive(id: string, sentence: string): void {
-    this.cacheLeeren();
     try {
       fetch(`${this.einwurfUrl(id)}/draft`, {
         method: 'PUT',
@@ -228,9 +227,7 @@ export class EinwurfService {
     if (contentType) {
       body['content_type'] = contentType;
     }
-    return this.http
-      .patch<Einwurf>(`${this.einwurfUrl(id)}/status`, body)
-      .pipe(tap(() => this.cacheLeeren()));
+    return this.http.patch<Einwurf>(`${this.einwurfUrl(id)}/status`, body);
   }
 
   /**
@@ -261,14 +258,5 @@ export class EinwurfService {
 
   private einwurfUrl(id: string): string {
     return `${this.baseApiUrl}/${encodeURIComponent(id)}`;
-  }
-
-  /**
-   * Der Cache-Interceptor haelt GETs fuenf Minuten und kennt PATCH nicht. Ohne
-   * das hier zeigte die Liste nach einem Statuswechsel den alten Stand, und das
-   * Weiterspringen boete den Einwurf, an dem man gerade war, erneut an.
-   */
-  private cacheLeeren(): void {
-    cacheService.delete('/api/v1/rawinput');
   }
 }
