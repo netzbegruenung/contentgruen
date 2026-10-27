@@ -36,6 +36,9 @@ const HELP_DIALOG_CONFIG = {
   panelClass: 'help-dialog'
 };
 
+/** Die Abschnitte der Ergebnisseite: am Handy je ein Tab. */
+type Ergebnisabschnitt = 'commentary' | 'generictext' | 'post';
+
 @Component({
   selector: 'app-result-view',
   standalone: true,
@@ -79,13 +82,15 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   // Change Detection setzten die Karten zurueck (aufgeklappte Aussage, Kurz/Lang).
   kommentarKarten: KartenDaten[] = [];
   hintergrundKarten: KartenDaten[] = [];
+  postKarten: KartenDaten[] = [];
 
   // Mobile navigation
   isMobile: boolean = false;
   isTablet: boolean = false;
-  currentSection: 'commentary' | 'generictext' = 'commentary';
+  currentSection: Ergebnisabschnitt = 'commentary';
   hasCommentaryResults: boolean = false;
   hasGenerictextResults: boolean = false;
+  hasPostResults: boolean = false;
 
   // User authentication
   userInfo: UserInfo | null = null;
@@ -172,12 +177,16 @@ export class ResultViewComponent implements OnInit, OnDestroy {
           this.hasGenerictextResults = response.generictext_search_results_count > 0;
           this.kommentarKarten = (response.commentary_search_results ?? []).map((paket) => ausSuchergebnis(paket));
           this.hintergrundKarten = (response.generictext_search_results ?? []).map((paket) => ausSuchergebnis(paket));
+          this.hasPostResults = (response.post_search_results_count ?? 0) > 0;
+          this.postKarten = (response.post_search_results ?? []).map((paket) => ausSuchergebnis(paket));
 
-          // Default to commentary if available, otherwise generictext
+          // Der erste Abschnitt mit Treffern: Kommentar, dann Hintergrundinfo, dann Post
           if (this.hasCommentaryResults) {
             this.currentSection = 'commentary';
           } else if (this.hasGenerictextResults) {
             this.currentSection = 'generictext';
+          } else if (this.hasPostResults) {
+            this.currentSection = 'post';
           }
 
           this.cdr.markForCheck();
@@ -200,7 +209,12 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   }
 
   // Switch sections (for tab navigation)
-  switchToSection(section: 'commentary' | 'generictext'): void {
+  /** Irgendein Treffer, gleich welchen Typs. */
+  get hatTreffer(): boolean {
+    return this.hasCommentaryResults || this.hasGenerictextResults || this.hasPostResults;
+  }
+
+  switchToSection(section: Ergebnisabschnitt): void {
     this.currentSection = section;
     this.cdr.markForCheck();
   }

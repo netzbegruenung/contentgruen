@@ -7,9 +7,7 @@
 --
 -- Neue Datenbanken brauchen dieses Skript nicht: create_all legt die Tabelle
 -- beim Start an, auch in bestehenden Datenbanken. Das Skript dokumentiert das
--- Schema und dient Umgebungen, in denen die Tabelle vor dem ersten Start des
--- neuen Dienstes existieren soll, etwa fuer das Loeschkommando
--- (mvp/scripts/manual/person_loeschen.sql), das sie leert.
+-- Schema; der Dienst spielt es beim Start mit ein.
 --
 -- Nachtragen: nichts. Ohne Zeile gilt der Stand 0; die erste Rueckmeldung nennt die
 -- ganze bisherige Nutzung.

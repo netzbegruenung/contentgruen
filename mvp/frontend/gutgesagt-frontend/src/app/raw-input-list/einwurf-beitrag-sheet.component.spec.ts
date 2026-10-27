@@ -10,6 +10,7 @@ import { EinwurfBeitrag } from '../beitragskarte/karten-daten';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { LoggingService } from '../services/logging.service';
+import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 
 function beitrag(overrides: Partial<EinwurfBeitrag> = {}): EinwurfBeitrag {
   return { contentId: 'c-1', typ: 'commentary', satz: 'Ein Satz', ...overrides };
@@ -33,6 +34,7 @@ function inhalt(id: string, title: string): any {
 describe('EinwurfBeitragSheetComponent', () => {
   let commentary: jasmine.SpyObj<CommentaryService>;
   let genericText: jasmine.SpyObj<GenericTextService>;
+  let beitragAnsehen: jasmine.SpyObj<BeitragAnsehenService>;
 
   async function erstellen(
     beitraege: EinwurfBeitrag[],
@@ -47,6 +49,7 @@ describe('EinwurfBeitragSheetComponent', () => {
         { provide: MAT_BOTTOM_SHEET_DATA, useValue: { beitraege } },
         { provide: CommentaryService, useValue: commentary },
         { provide: GenericTextService, useValue: genericText },
+        { provide: BeitragAnsehenService, useValue: beitragAnsehen },
         {
           provide: LoggingService,
           useValue: jasmine.createSpyObj('LoggingService', ['debug', 'error', 'warn', 'info']),
@@ -62,6 +65,7 @@ describe('EinwurfBeitragSheetComponent', () => {
   beforeEach(() => {
     commentary = jasmine.createSpyObj('CommentaryService', ['getCommentaryById']);
     genericText = jasmine.createSpyObj('GenericTextService', ['getGenericTextById']);
+    beitragAnsehen = jasmine.createSpyObj('BeitragAnsehenService', ['karteLaden']);
   });
 
   it('laedt bei genau einem Beitrag sofort', async () => {
@@ -106,6 +110,18 @@ describe('EinwurfBeitragSheetComponent', () => {
     expect(fixture.nativeElement.querySelector('.sheet-fehler').textContent).toContain(
       'nicht mehr verfügbar',
     );
+  });
+
+  it('zeigt einen Post, zu dem ein Einwurf ausformuliert wurde, als Karte', async () => {
+    beitragAnsehen.karteLaden.and.returnValue(
+      of({ id: 'p-1', typ: 'post', titel: 'Der Post', text: 'Worum es geht' } as any),
+    );
+    const fixture = await erstellen([beitrag({ contentId: 'p-1', typ: 'post' })]);
+
+    expect(beitragAnsehen.karteLaden).toHaveBeenCalledOnceWith('p-1', 'post');
+    expect(commentary.getCommentaryById).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.fehler).toBeFalse();
+    expect(fixture.componentInstance.karte!.titel).toBe('Der Post');
   });
 
   it('zeigt ohne bekannten Typ dieselbe Zeile und fragt keinen Endpunkt', async () => {

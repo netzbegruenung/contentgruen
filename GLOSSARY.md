@@ -33,7 +33,7 @@ Der optionale Freitext an einem Einwurf, mit dem der Einwerfer anderen sagt, was
 _Avoid_: Notiz, Kommentar, Beschreibung
 
 **Plattform**:
-Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs stammt (etwa Instagram, YouTube, TikTok oder Web).
+Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web).
 _Avoid_: Kanal, Quelle
 
 **Weg**:
@@ -157,11 +157,11 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
 **Titel**:
-Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema.
+Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema. Bild und Post haben auch einen Titel; er beschreibt den Inhalt und folgt dieser Regel nicht.
 _Avoid_: Überschrift, Etikett, Thema
 
 **Herkunft**:
@@ -219,7 +219,7 @@ Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Auss
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat. Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen noch). Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:
@@ -243,12 +243,24 @@ Was eine Person durch die Wirkung ihrer Beiträge bei anderen sammelt: Nutzung d
 _Avoid_: XP, Score, Karma
 
 **Rangliste**:
-Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und wer nicht erscheinen will, schaltet das ab.
+Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und dort erscheint nur, wer ausdrücklich zugestimmt hat.
 _Avoid_: Leaderboard, Highscore
 
 **Quest**:
 Eine Aufgabe mit prüfbarem Ergebnis, die Punkte bringt, etwa eine unbeantwortete Aussage beantworten. Tagesaufgaben sind Quests für einen Tag, das Wochenziel ist eine gemeinsame Quest aller.
 _Avoid_: Mission, Challenge, Auftrag
+
+**Wochenthema**:
+Das Thema, auf das sich eine Woche lang das Wochenziel richtet und für das Punkte doppelt zählen. Platz 1 der Wochen-Rangliste wählt es aus den Themen mit dem meisten Bedarf.
+_Avoid_: Schwerpunkt der Woche, Fokus-Thema
+
+**Lagekarte**:
+Die Übersicht, wo Antworten fehlen, gebildet nur aus eigenen Signalen von Gut gesagt: Suchen ohne Treffer, unbeantwortete Aussagen, Einwürfe. Sie lenkt Aufmerksamkeit; fremde Plattformen beobachtet sie nicht.
+_Avoid_: Kommandozentrale, Monitoring, Radar
+
+**Werkstatt**:
+Gut gesagt als Ort, an dem Mitwirkende Beiträge gemeinsam herstellen und dabei Fähigkeiten entlang realer Tätigkeiten aufbauen, bis hin zur eigenen Stimme. Die Werkstatt gibt keine Aufträge und betreut keine Kanäle.
+_Avoid_: Kommandozentrale, Armee, Agentur
 
 **Meilenstein**:
 Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; am Anzeigenamen steht dafür ein Abzeichen.
@@ -275,6 +287,10 @@ _Avoid_: User, Mitglieder
 **Beta-Zugang**:
 Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
 _Avoid_: Beta-Account, manueller User, Managed User
+
+**Netzbegrünung-Login**:
+Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung; die andere Kontoart ist der Beta-Zugang. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
+_Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
 
 **Startkonto**:
 Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.

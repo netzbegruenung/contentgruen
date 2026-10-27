@@ -14,7 +14,7 @@
 ## Ausgangspunkt
 
 Alles hängt am Wert des Headers `X-User`. Das BFF setzt ihn ausschließlich aus dem
-Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:647`, `ClaimUtilities.GetUserId`,
+Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:659`, `ClaimUtilities.GetUserId`,
 aufgerufen in `BFF/Proxy/IdentityHeaderTransform.cs:79`).
 Mit Keycloak ist das die Keycloak-UUID, mit `USE_KEYCLOAK=false` (dev/tst) die
 `userId` aus `managed-users.json` (`user-001`). **Vorher prüfen, welche Form die
@@ -36,6 +36,31 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   und sonst für nichts: Gemeldete Beiträge sperrt ein Admin, statt sie zu entfernen.
 
 ## Ablauf
+
+**Vorab: Sitzung beenden.** Vor allem anderen, damit die Person zwischen den Schritten
+nichts Neues anlegt. Das BFF prüft bei jeder Anfrage mit Anmelde-Cookie, ob das Konto noch
+besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und löscht es:
+
+- **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
+  den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
+- **Netzbegrünung-Login:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
+  Konfigurationsverzeichnis des BFF eintragen (`GELOESCHTE_KONTEN_PATH`, Standard
+  `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
+  `#` und Leerzeilen zählen nicht. Das Cookie trägt keine Tokens, deshalb kann das BFF
+  Keycloak nicht selbst fragen; das Löschen in Keycloak (Schritt 4) allein beendet die
+  Sitzung nicht.
+
+Beide Dateien liest das BFF spätestens nach fünf Minuten neu
+(`BFF/Services/ManagedUserService.cs:16`, `BFF/Services/GeloeschteKontenService.cs`), nach
+einem Neustart sofort; also danach das BFF neu starten. Ob es die Liste liest, zeigt die
+Zeile „Loaded N deleted accounts from …“ im BFF-Log, eine abgewiesene Sitzung die Zeile
+„Session of user … ended“ mit dem Pseudonym der Kennung. Der Eintrag in
+`geloeschte-konten.txt` wird überflüssig, sobald zweierlei 14 Tage zurückliegt: der
+Neustart, nach dem das BFF ihn gelesen hat, und das Löschen des Keycloak-Kontos
+(Schritt 4). Ab dann kann kein Cookie mehr gelten, denn ohne Anfrage läuft es nach 14
+Tagen ab, und jede Anfrage seit dem Neustart wurde abgewiesen. Dann wieder entfernen.
+Solange das Keycloak-Konto besteht, kann sich die Person neu anmelden; die Liste weist
+dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
    die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
@@ -79,14 +104,14 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    wo der Text selbst die Person erkennbar macht** — das ist eine Einzelfallprüfung,
    kein Filterlauf.
 4. **Konto.** Keycloak-Konto im Realm löschen, bzw. Eintrag aus
-   `mvp/config/managed-users.json` entfernen und das BFF neu starten (Cache 5 min,
-   `BFF/Services/ManagedUserService.cs:14`). Die Datei ist **nicht mehr eingecheckt**
-   (`.gitignore:19`); getrackt ist nur `managed-users.example.json`. Was bis zur Umbenennung
-   in `b993b0c4` darin stand, bleibt in der Git-Historie
+   `mvp/config/managed-users.json` entfernen, falls nicht schon vorab geschehen, und das
+   BFF neu starten (Cache 5 min, `BFF/Services/ManagedUserService.cs:16`). Die Datei ist
+   **nicht mehr eingecheckt** (`.gitignore:19`); getrackt ist nur
+   `managed-users.example.json`. Was bis zur Umbenennung in `b993b0c4` darin stand, bleibt in der Git-Historie
    (`git log --follow -- mvp/config/managed-users.example.json`).
    Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
-   (`BFF/Services/ManagedUserService.cs:110`).
+   (`BFF/Services/ManagedUserService.cs:128`).
 
 ## Vier Fallen
 
@@ -97,19 +122,15 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 - **Anonymisieren vor Löschen.** Erst der Payload-Lauf über alle vier Felder, dann
   die Einzelfall-Löschungen. Andersherum fehlen die gelöschten Punkte im
   Anonymisierungslauf, und ein Punkt mit fremden Mitautoren wäre schon weg.
-- **Der Anzeigename kommt mit der nächsten Anfrage zurück.** Der Semantic-Service legt
-  ihn aus dem Header `X-User-Display-Name` an, sobald er ihn nicht im Prozess-Cache hat
-  (`services/anzeigename_service.py`). Solange das Anmelde-Cookie der Person gilt, entsteht
-  die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
-  ein gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet. Das Cookie läuft
-  **gleitend**: 14 Tage ab der letzten Nutzung (`BFF/Program.cs:92-93`, `ExpireTimeSpan`
-  und `SlidingExpiration`, für den Beta-Zugang `:149-150`), und das BFF prüft das Konto bei
-  späteren Anfragen nicht mehr. Wer weiter Gut gesagt benutzt, bleibt also ohne Ende
-  angemeldet und kann neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Kommando für
-  Schritt 1 und 2 und den Lauf für Schritt 3 deshalb nach 14 Tagen noch einmal laufen
-  lassen, danach auch das `VACUUM FULL`; beide sind wiederholbar. Findet der zweite Lauf
-  noch Zeilen, war die Person in der Zwischenzeit aktiv: nach weiteren 14 Tagen
-  wiederholen, bis ein Lauf leer bleibt.
+- **Erst die Sitzung, dann die Daten.** Der Semantic-Service legt den Anzeigenamen aus
+  dem Header `X-User-Display-Name` neu an, sobald er ihn nicht im Prozess-Cache hat
+  (`services/anzeigename_service.py`), und solange das Anmelde-Cookie gilt, kann die Person
+  neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Cookie läuft **gleitend**: 14 Tage
+  ab der letzten Nutzung (`BFF/Program.cs`, `ExpireTimeSpan` und `SlidingExpiration`, in
+  beiden Zweigen). Deshalb steht „Sitzung beenden“ vor Schritt 1: Ist das Cookie
+  abgewiesen, kommt nichts mehr nach, und ein Lauf genügt. Wer die Reihenfolge vertauscht
+  oder die Prüfung im BFF-Log nicht sieht, lässt Schritt 1 bis 3 nach dem Beenden der
+  Sitzung noch einmal laufen; alle drei sind wiederholbar.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
@@ -133,8 +154,21 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Suche („Tracking search“, „Search request“, „Statement already exists with ID …“,
   „Successfully created new statement with ID …“, „Found entry with id …“, „Query
   polarity …“ mit Wörtern aus dem Suchtext), die der Dienst auf INFO nicht mehr schreibt.
-  **Offen:** Die fortlaufende `id` verrät weiter die Reihenfolge der Suchen eines Tages.
-  An ruhigen Tagen lässt sie sich mit der Reihenfolge der Aussagen aus Suchen abgleichen.
+  Die Spalte `id` ist seit #275 eine zufällige UUID, keine fortlaufende Nummer: Eine
+  Nummer ergab die Reihenfolge der Suchen eines Tages, und die ließ sich an ruhigen
+  Tagen mit der Reihenfolge der Aussagen aus Suchen abgleichen. Bestandsumgebungen
+  stellen mit `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-reihenfolge.sql`
+  um; dabei wird die Tabelle neu geschrieben, die alten Nummern stehen danach nicht mehr
+  in ihr. In Backups und im WAL stehen sie, bis diese herausrotiert sind.
+  **Offen:** Die physische Reihenfolge der Zeilen folgt weiter dem Einfügen. Wer die
+  Datenbank liest (`SELECT` ohne `ORDER BY`, `ctid`) oder einen Dump hat (`pg_dump`
+  schreibt die Zeilen in dieser Reihenfolge), sieht die Reihenfolge der Suchen eines
+  Tages noch, solange die Einzelzeilen leben. Ebenso die Systemspalte `xmin`: Jede Suche
+  schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
+  steigt (`ORDER BY xmin::text::bigint`). Für Zeilen vor der Migration gilt das nicht mehr,
+  sie tragen alle die Transaktion der Migration. Abhilfe für beides: die Suchereignisse
+  eines abgeschlossenen Tages in zufälliger Reihenfolge und in einer Transaktion neu
+  schreiben.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
@@ -207,12 +241,26 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
     (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
     eine Validierungsmeldung, stehen diese mit darin.
-  - **Frontend-nginx:** setzt weder `access_log` noch `log_format` noch `real_ip`
-    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`), schreibt also das Standardformat
-    des Basis-Images `nginx:alpine` nach stdout
-    (`mvp/frontend/gutgesagt-frontend/Dockerfile:31`). Hinter dem vorgelagerten Reverse
-    Proxy steht dort dessen Adresse, nicht die des Besuchers; Zeitpunkt, Pfad, Referrer
-    und User-Agent stehen darin. Eine Kennung steht im Pfad nicht: Die Nutzungsstatistik
+  - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
+    (`mvp/frontend/gutgesagt-frontend/nginx.protokoll.conf`, für `nginx.conf` und
+    `nginx.docker.conf` gemeinsam) nach stdout: Absenderadresse, Zeitpunkt,
+    Methode, Pfad ohne Adresszusatz, Status, Größe und User-Agent, aber keinen Adresszusatz und keinen
+    Referrer. Beide trugen den Suchtext: die Adresse bei jedem direkten Aufruf von
+    `/result?searchQuery=…`, der Referrer bei jeder Anfrage, die diese Seite auslöst. Für
+    die Suche selbst (`/api/v1/search/searchByText`, nur im Dev-Stack über dieses nginx)
+    und für jeden direkten Aufruf der Ergebnisseite (`/result`, löst eine Suche aus)
+    schreibt es keine Zeile: Ihre genaue Uhrzeit ließe sich, je Tag durchgezählt, mit dem
+    Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Ins Fehlerprotokoll
+    (stderr, im selben `json-file`-Strom) schreibt es für fehlende Dateien keine Zeile
+    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. **Nicht
+    abgedeckt:** Andere Fehlerzeilen tragen Adresse und Referrer weiter, etwa im Dev-Stack
+    `connect() failed … request: "POST /api/v1/search/searchByText …"`, wenn das BFF
+    nicht antwortet. Belegt mit
+    `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
+    `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
+    Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem
+    vorgelagerten Reverse Proxy steht dort dessen Adresse, nicht die des Besuchers. Eine
+    Kennung steht im Pfad nicht: Die Nutzungsstatistik
     unter „Meine Beiträge“ fragt `/api/v1/usage/users/me/usage-stats`
     (`usage-tracking.service.ts`), und der Suchdienst nimmt die Person aus `X-User`
     (`api/v1/usage.py`). Das gilt ebenso für das Zugriffsprotokoll des vorgelagerten
@@ -224,6 +272,15 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     Löschung also am Host nach der Kennung im Pfad `/api/v1/usage/users/` suchen; das
     gilt auch für Aufrufe aus einem noch zwischengespeicherten alten Frontend, die die
     alte Adresse weiter anfragen (Antwort 404).
+  - **Vorgelagerter Reverse Proxy:** Sein Format steht nicht im Repo. Seit #275 schicken
+    Browser als Referrer nur noch den Ursprung (`<meta name="referrer"
+    content="strict-origin">` in `src/index.html`), der Suchtext kommt also nicht mehr
+    über den Referrer hinein. **Offen:** Direkte Aufrufe von `/result?searchQuery=…`
+    stehen dort weiter mit Suchtext, und je Suche steht eine Zeile
+    `POST /api/v1/search/searchByText` mit voller IP und genauer Uhrzeit, die sich mit
+    dem Anlagezeitpunkt der Aussage aus derselben Suche verbinden lässt. Abhilfe am Host:
+    für diesen Pfad kein Zugriffsprotokoll, sonst ein Format ohne Adresszusatz und
+    Referrer, wie im Frontend-nginx.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
     Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als

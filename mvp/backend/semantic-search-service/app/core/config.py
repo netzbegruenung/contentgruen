@@ -54,6 +54,8 @@ class Settings(BaseSettings):
                 self.metadata_path = os.getenv(
                     "SEMANTIC_SEARCH_METADATA_PATH", "/metadata"
                 )
+            if not self.migrations_path:
+                self.migrations_path = "/migrations"
         else:
             # Running locally - use relative paths from project root
             project_root = self._get_project_root()
@@ -61,6 +63,10 @@ class Settings(BaseSettings):
                 self.data_path = os.path.join(project_root, "data", "seed", "v1.0")
             if not self.metadata_path:
                 self.metadata_path = os.path.join(project_root, "temp_data", "metadata")
+            if not self.migrations_path:
+                self.migrations_path = os.path.join(
+                    project_root, "backend", "postgres-app", "migrations"
+                )
 
         # Legacy compatibility - will be removed in future version
         self.initial_data_path = self.data_path
@@ -193,6 +199,9 @@ class Settings(BaseSettings):
     # Override with SEMANTIC_SEARCH_DATA_PATH and SEMANTIC_SEARCH_METADATA_PATH env vars
     data_path: str = ""  # Path to seed data (e.g., /data/seed/v1.0)
     metadata_path: str = ""  # Path to persistent metadata storage
+    # SQL-Migrationen, die der Dienst beim Start einspielt
+    # (infrastructure/database/migrationen.py). Im Image /migrations.
+    migrations_path: str = ""
 
     # Legacy fields - deprecated, use data_path instead
     initial_data_path: str = ""  # Deprecated: use data_path

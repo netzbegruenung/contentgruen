@@ -8,19 +8,21 @@ import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component'
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
+import { PostService } from '../services/post.service';
 import { LoggingService } from '../services/logging.service';
 import { resolveContentType } from '../shared/content-type-registry';
 
 /**
  * Einen gespeicherten Beitrag als volle Karte im Bottom Sheet zeigen - fuer Hinweise
  * wie "Es gibt schon einen sehr aehnlichen Kommentar" oder "Zu diesem Einwurf gibt
- * es schon einen Beitrag". Kommentar und Hintergrundinfo; andere Typen nicht.
+ * es schon einen Beitrag". Kommentar, Hintergrundinfo und Post; Bild nicht.
  */
 @Injectable({ providedIn: 'root' })
 export class BeitragAnsehenService {
   constructor(
     private commentaryService: CommentaryService,
     private genericTextService: GenericTextService,
+    private postService: PostService,
     private bottomSheet: MatBottomSheet,
     private snackBar: MatSnackBar,
     private logger: LoggingService,
@@ -29,11 +31,11 @@ export class BeitragAnsehenService {
   /** Laesst sich ein Beitrag dieses Typs hier zeigen? Beide Schreibweisen (generic_text, generictext). */
   kannAnsehen(contentType: string | null | undefined): boolean {
     const typ = resolveContentType(contentType);
-    return typ === 'commentary' || typ === 'generictext';
+    return typ === 'commentary' || typ === 'generictext' || typ === 'post';
   }
 
   oeffnen(id: string, contentType: string | null | undefined): void {
-    const karte$ = this.laden(id, resolveContentType(contentType));
+    const karte$ = this.karteLaden(id, contentType);
     if (!karte$) {
       return;
     }
@@ -47,7 +49,12 @@ export class BeitragAnsehenService {
     });
   }
 
-  private laden(id: string, typ: string | undefined): Observable<KartenDaten> | null {
+  /**
+   * Einen gespeicherten Beitrag als KartenDaten laden; null fuer Typen, die sich
+   * hier nicht zeigen lassen. Auch die Ergebnisseite nach dem Speichern laedt so.
+   */
+  karteLaden(id: string, contentType: string | null | undefined): Observable<KartenDaten> | null {
+    const typ = resolveContentType(contentType);
     if (typ === 'commentary') {
       return this.commentaryService
         .getCommentaryById(id)
@@ -57,6 +64,11 @@ export class BeitragAnsehenService {
       return this.genericTextService
         .getGenericTextById(id)
         .pipe(map((inhalt) => ausSuchergebnis({ generictext_result: inhalt, score: 1 } as any)));
+    }
+    if (typ === 'post') {
+      return this.postService
+        .getPostById(id)
+        .pipe(map((inhalt) => ausSuchergebnis({ post_result: inhalt, score: 1 } as any)));
     }
     return null;
   }

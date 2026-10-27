@@ -36,7 +36,7 @@ export type EinwurfStatus = 'open' | 'in_progress' | 'processed' | 'discarded';
 export type DestillierStatus = 'discarded' | 'processed';
 
 /** Die Beitragstypen, die aus dem Destillier-Ablauf entstehen (ContentType im Backend). */
-export type BeitragsTyp = 'commentary' | 'generic_text';
+export type BeitragsTyp = 'commentary' | 'generic_text' | 'post';
 
 /** Ein Satz zu einem Einwurf. Fuer alle Angemeldeten sichtbar. */
 export interface Satz {
