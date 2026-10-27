@@ -31,7 +31,7 @@
                 }
             },
             {
-                "title": "Ein Windpark vor Ort lässt sich am besten mit eigenen Erfahrungen erklären",
+                "title": "Vögel und Klima lassen sich zusammen schützen",
                 "text": "Die Sorge um die Vögel teile ich. [Hier ein eigenes Erlebnis: was du über einen Windpark in deiner Gegend weißt] Mir ist wichtig, dass wir Vögel und Klima zusammen schützen.",
                 "style": "persönlich",
                 "references": [],
@@ -94,7 +94,7 @@
                 "title": "Strom aus Wind und Sonne ist heute die günstigste Wahl für neue Kraftwerke",
                 "text": "Bezahlbarer Strom ist das Ziel, da sind wir uns einig. Neue Solarparks und Windräder an Land erzeugen Strom für 4,1 bis 9,2 Cent pro Kilowattstunde. Und sie sind in wenigen Jahren gebaut.",
                 "short_text": "Neue Solarparks und Windräder an Land liefern Strom für 4,1 bis 9,2 Cent pro Kilowattstunde und sind schnell gebaut.",
-                "long_text": "Bezahlbarer und sicherer Strom ist das Ziel, da sind wir uns einig. Das Fraunhofer ISE hat 2024 die Kosten neuer Kraftwerke verglichen: Freiflächen-Solaranlagen und Windräder an Land erzeugen Strom für 4,1 bis 9,2 Cent pro Kilowattstunde. Selbst Solaranlagen mit Batteriespeicher sind danach günstiger als neue konventionelle Kraftwerke. Neue Reaktoren in Europa haben zuletzt viele Jahre länger gebraucht als geplant. Jeder Euro für Wind, Sonne, Speicher und Netze wirkt schneller.",
+                "long_text": "Bezahlbarer und sicherer Strom ist das Ziel, da sind wir uns einig. Das Fraunhofer ISE hat 2024 die Kosten neuer Kraftwerke verglichen: Freiflächen-Solaranlagen und Windräder an Land erzeugen Strom für 4,1 bis 9,2 Cent pro Kilowattstunde. Selbst Solaranlagen mit Batteriespeicher sind danach günstiger als neue konventionelle Kraftwerke. Jeder Euro für Wind, Sonne, Speicher und Netze wirkt schneller.",
                 "style": "faktisch",
                 "references": [
                     {
@@ -109,8 +109,8 @@
             },
             {
                 "title": "Strom vom eigenen Dach macht unabhängiger als jedes Großkraftwerk",
-                "text": "Unabhängigkeit bei der Energie ist uns allen wichtig. Uran muss Deutschland importieren, die Sonne auf dem eigenen Dach nicht. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
-                "short_text": "Uran muss Deutschland importieren, die Sonne auf dem eigenen Dach nicht. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
+                "text": "Unabhängigkeit bei der Energie ist uns allen wichtig. Strom vom eigenen Dach oder aus dem Windpark nebenan muss niemand importieren. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
+                "short_text": "Strom vom eigenen Dach oder aus dem Windpark nebenan muss niemand importieren. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
                 "style": "brückenbauend",
                 "references": [],
                 "metadata": {
@@ -128,10 +128,10 @@
         "statement": "Die Grünen wollen mir meine Heizung verbieten!",
         "commentaries": [
             {
-                "title": "Wer eine funktionierende Heizung hat, darf sie weiter nutzen und reparieren",
-                "text": "Niemand soll im Winter frieren oder sich verschulden. Eine funktionierende Heizung darf weiterlaufen, und wenn sie kaputtgeht, darf sie repariert werden. Die Regeln gelten für neu eingebaute Heizungen.",
-                "short_text": "Eine funktionierende Heizung darf weiterlaufen und repariert werden. Die Regeln gelten für neu eingebaute Heizungen.",
-                "long_text": "Niemand soll im Winter frieren oder sich verschulden, da sind wir uns einig. Nach dem Gebäudeenergiegesetz müssen bestehende Heizungen nicht ausgebaut werden: Eine funktionierende Heizung darf weiterlaufen, und eine kaputte darf repariert werden. Die Anforderungen an erneuerbare Wärme betreffen neu eingebaute Heizungen. Wer ohnehin tauschen muss, kann sich vorher beraten lassen und Förderung beantragen.",
+                "title": "Eine kaputte Heizung darf repariert werden, die neuen Regeln betreffen neue Heizungen",
+                "text": "Niemand soll im Winter frieren oder sich verschulden. Wenn eine Heizung kaputtgeht, darf sie repariert werden. Die Vorgaben für erneuerbare Wärme gelten für neu eingebaute Heizungen.",
+                "short_text": "Eine kaputte Heizung darf repariert werden. Die Vorgaben für erneuerbare Wärme gelten für neu eingebaute Heizungen.",
+                "long_text": "Niemand soll im Winter frieren oder sich verschulden, da sind wir uns einig. Nach dem Gebäudeenergiegesetz darf eine kaputte Heizung repariert werden, und die Vorgaben für erneuerbare Wärme gelten für neu eingebaute Heizungen. Eine Pflicht zum Austausch gibt es nur für sehr alte Heizkessel, und die gilt schon seit Jahren. Wer ohnehin tauschen muss, kann sich vorher beraten lassen und Förderung beantragen.",
                 "style": "faktisch",
                 "references": [
                     {
@@ -182,7 +182,7 @@
                 }
             },
             {
-                "title": "Ob eine Wärmepumpe passt, zeigt ein Blick auf das eigene Haus",
+                "title": "Viele ältere Häuser lassen sich gut mit einer Wärmepumpe heizen",
                 "text": "Jedes Haus ist anders, das stimmt. [Hier ein eigenes Erlebnis: was du über eine Wärmepumpe in einem älteren Haus weißt] Eine Energieberatung klärt, ob es bei dir passt.",
                 "style": "persönlich",
                 "references": [],

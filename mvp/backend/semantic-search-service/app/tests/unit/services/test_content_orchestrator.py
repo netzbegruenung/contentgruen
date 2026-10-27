@@ -789,3 +789,27 @@ class TestSeedingHintergrundinfoDublette:
         orchestrator.generic_text_service.pruefe_dublette.assert_awaited_once_with(
             "Titel"
         )
+
+
+class TestSeedBelegtKeineNutzungVor:
+    """Auch ein Seed mit usage_count > 0 legt keine Nutzung an (#340, GLOSSARY "Nutzung")."""
+
+    @pytest.mark.asyncio
+    async def test_aussage_mit_usage_count_ohne_nutzung(self):
+        usage_repository = MagicMock()
+        orchestrator = MagicMock()
+        orchestrator.statement_service.add_statement = AsyncMock(
+            return_value=(True, uuid.uuid4(), None)
+        )
+        processor = DataProcessor(orchestrator)
+        # So hing frueher das Usage-Repository am Seed; es darf nicht mehr benutzt werden.
+        processor.usage_repository = usage_repository
+
+        await processor.create_statement_with_replies(
+            "Windräder töten die Vögel!",
+            [],
+            ContentType.COMMENTARY,
+            metadata={"usage_count": 5},
+        )
+
+        usage_repository.initialize_usage_data.assert_not_called()

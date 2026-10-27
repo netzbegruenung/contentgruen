@@ -64,7 +64,7 @@
         }
     },
     {
-        "statement": "Wärmepumpen funktionieren nicht im Altbau!",
+        "statement": "Wärmepumpen funktionieren nur im Neubau!",
         "generic_texts": [
             {
                 "title": "Luft-Wärmepumpen im Altbau erreichen im Feldtest eine Jahresarbeitszahl von 3,3",

@@ -14,7 +14,7 @@ from pathlib import Path
 BEGINN = datetime(2025, 9, 1, 9, 0, 0)
 
 
-def _metadaten(metadata: dict | None, position: int) -> dict:
+def _metadaten_ohne_nutzung(metadata: dict | None, position: int) -> dict:
     metadata = dict(metadata or {})
     metadata["usage_count"] = 0
     metadata.setdefault("created_at", (BEGINN + timedelta(hours=position)).isoformat())
@@ -25,11 +25,13 @@ def metadaten_ergaenzen(daten: list[dict]) -> None:
     """Setzt bei jeder Aussage und jedem Beitrag die Nutzung auf 0 und ergaenzt created_at."""
     position = 0
     for aussage in daten:
-        aussage["metadata"] = _metadaten(aussage.get("metadata"), position)
+        aussage["metadata"] = _metadaten_ohne_nutzung(aussage.get("metadata"), position)
         position += 1
         for feld in ("commentaries", "generic_texts"):
             for beitrag in aussage.get(feld, []):
-                beitrag["metadata"] = _metadaten(beitrag.get("metadata"), position)
+                beitrag["metadata"] = _metadaten_ohne_nutzung(
+                    beitrag.get("metadata"), position
+                )
                 position += 1
 
 

@@ -110,10 +110,6 @@ class TestSeedRegeln:
         assert "Nur für die Entwicklung" in readme
         assert "nie in Test oder Produktion" in readme
 
-    def test_add_metadata_ohne_zufall(self):
-        quelltext = (SEED / "add_metadata.py").read_text(encoding="utf-8")
-        assert "random" not in quelltext
-
     def test_add_metadata_setzt_nutzung_null_und_ist_wiederholbar(self):
         modul = _add_metadata()
 

@@ -25,7 +25,7 @@
                 }
             },
             {
-                "title": "Am meisten überzeugt, was Menschen selbst erlebt haben",
+                "title": "Gute Politik macht das Richtige einfach, statt es vorzuschreiben",
                 "text": "Bevormundet werden will niemand. [Hier ein eigenes Erlebnis: eine Regel, die dir im Alltag geholfen hat] Gute Politik macht das Richtige einfach, statt es vorzuschreiben.",
                 "style": "persönlich",
                 "references": [],
@@ -58,7 +58,7 @@
                 "title": "Gutes Fleisch vom Hof in der Region verdient einen fairen Preis",
                 "text": "Wer Fleisch isst, will wissen, woher es kommt. Höfe in der Region mit guter Tierhaltung brauchen dafür faire Preise und eine klare Kennzeichnung. Das stärkt die Landwirtschaft vor Ort.",
                 "short_text": "Wer Fleisch isst, will wissen, woher es kommt. Höfe in der Region brauchen faire Preise und eine klare Kennzeichnung.",
-                "style": "faktisch",
+                "style": "brückenbauend",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,
@@ -78,7 +78,7 @@
                 "title": "Wind, Sonne und Biogas bringen Geld in ländliche Gemeinden",
                 "text": "Das Leben auf dem Land muss gut bleiben, mit Arzt, Bus und Arbeit vor Ort. Windräder, Solarparks und Biogasanlagen stehen meist auf dem Land. Wenn Gemeinden und Bürger daran beteiligt sind, bleibt das Geld in der Region.",
                 "short_text": "Windräder und Solarparks stehen meist auf dem Land. Wenn Gemeinden und Bürger beteiligt sind, bleibt das Geld in der Region.",
-                "style": "faktisch",
+                "style": "brückenbauend",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,
