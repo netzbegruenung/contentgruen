@@ -19,10 +19,6 @@ public static class LogPseudonym
 {
     public const string Anonymous = "anonymous";
 
-    // Der einzige Pfad mit Kennung, den das Frontend aufruft (api/v1/usage.py, Nutzungsstatistik
-    // unter "Meine Beitraege"). Kommt ein zweiter dazu, gehoert er hierher.
-    private const string UsersPrefix = "/api/v1/usage/users/";
-
     public static string Of(string? userId)
     {
         if (string.IsNullOrEmpty(userId) || userId == Anonymous)
@@ -32,26 +28,5 @@ public static class LogPseudonym
 
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(userId));
         return Convert.ToHexString(hash, 0, 4).ToLowerInvariant();
-    }
-
-    /// <summary>
-    /// Der Pfad fuer eine Logzeile: das Kennungs-Segment durch sein Pseudonym ersetzt,
-    /// alles andere unveraendert.
-    /// </summary>
-    public static string InPath(string? path)
-    {
-        // Das Routing von ASP.NET Core und YARP ignoriert Gross- und Kleinschreibung, also
-        // auch dieser Vergleich; sonst stuende /API/v1/usage/users/{id} im Klartext im Log.
-        if (string.IsNullOrEmpty(path) || !path.StartsWith(UsersPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return path ?? "";
-        }
-
-        var prefix = path[..UsersPrefix.Length];
-        var rest = path[UsersPrefix.Length..];
-        var end = rest.IndexOf('/');
-        var userId = end < 0 ? rest : rest[..end];
-        var tail = end < 0 ? "" : rest[end..];
-        return prefix + Of(userId) + tail;
     }
 }

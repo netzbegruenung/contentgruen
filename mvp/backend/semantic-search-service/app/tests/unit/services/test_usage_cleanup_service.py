@@ -9,7 +9,9 @@ Defaults zurueck.
 
 from unittest.mock import Mock, patch
 import pytest
+from pydantic import ValidationError
 
+from api.v1.usage import CleanupStatusResponse
 from core.config import Settings
 from services.cleanup import usage_cleanup_service
 
@@ -24,7 +26,11 @@ def settings_from_env(monkeypatch):
         monkeypatch.setattr(usage_cleanup_service, "settings", Settings())
 
     monkeypatch.setattr(usage_cleanup_service, "_cleanup_service", None)
-    with patch.object(usage_cleanup_service, "get_usage_service", return_value=Mock()):
+    with patch.object(
+        usage_cleanup_service, "get_usage_service", return_value=Mock()
+    ), patch.object(
+        usage_cleanup_service, "get_search_tracking_repository", return_value=Mock()
+    ):
         yield build
 
 
@@ -44,6 +50,34 @@ class TestUsageCleanupServiceSettings:
         service = usage_cleanup_service.get_cleanup_service(retention_days=7)
 
         assert service.retention_days == 7
+
+    def test_get_cleanup_service_search_retention_from_env(self, settings_from_env):
+        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
+
+        service = usage_cleanup_service.get_cleanup_service()
+
+        assert service.search_event_retention_days == 120
+
+    def test_search_retention_default_is_90_days(self, settings_from_env):
+        settings_from_env()
+
+        service = usage_cleanup_service.get_cleanup_service()
+
+        assert service.search_event_retention_days == 90
+
+    @pytest.mark.parametrize("tage", ["89", "0", "-1"])
+    def test_search_retention_unter_90_tagen_abgelehnt(self, settings_from_env, tage):
+        with pytest.raises(ValidationError):
+            settings_from_env(SEARCH_EVENT_RETENTION_DAYS=tage)
+
+    def test_get_status_nennt_frist_der_suchereignisse(self, settings_from_env):
+        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
+
+        status = usage_cleanup_service.get_cleanup_service().get_status()
+
+        # Ueber das Antwortmodell von GET /usage/cleanup/status, das unbekannte
+        # Felder verwerfen wuerde.
+        assert CleanupStatusResponse(**status).search_event_retention_days == 120
 
     def test_start_cleanup_scheduler_uses_configured_time(self, settings_from_env):
         settings_from_env(CLEANUP_HOUR="4", CLEANUP_MINUTE="15")
@@ -65,3 +99,32 @@ class TestUsageCleanupServiceSettings:
 
         start.assert_not_called()
         assert usage_cleanup_service._cleanup_service is None
+
+
+class TestUsageCleanupServiceSuchereignisse:
+    """Der Bereinigungsjob verdichtet alte Suchereignisse zu Tageszaehlern (#289)."""
+
+    def test_cleanup_old_data_verdichtet_suchereignisse_mit_frist(
+        self, settings_from_env
+    ):
+        settings_from_env(SEARCH_EVENT_RETENTION_DAYS="120")
+        service = usage_cleanup_service.get_cleanup_service()
+
+        service.cleanup_old_data()
+
+        service.search_repository.verdichte_alte_suchereignisse.assert_called_once_with(
+            120
+        )
+
+    def test_cleanup_old_data_nutzung_bleibt_bei_fehler_der_suchereignisse(
+        self, settings_from_env
+    ):
+        settings_from_env(USAGE_RETENTION_DAYS="60")
+        service = usage_cleanup_service.get_cleanup_service()
+        service.search_repository.verdichte_alte_suchereignisse.side_effect = (
+            RuntimeError("db weg")
+        )
+        service.usage_service.cleanup_old_events.return_value = 4
+
+        assert service.cleanup_old_data() == 4
+        service.usage_service.cleanup_old_events.assert_called_once_with(60)

@@ -37,6 +37,7 @@ public class AuthGateTests
     [InlineData("/api/v1/voting/like")]
     [InlineData("/api/v1/moderation/reports")]
     [InlineData("/api/v1/usage/cleanup/run")]
+    [InlineData("/api/v1/usage/users/me/usage-stats")]
     [InlineData("/api/v1/metrics/mvp-dashboard")]
     [InlineData("/api/v1/metrics/helpful-rate")]
     public void ProtectedPath_IsNotAnonymousAllowed(string path)

@@ -17,8 +17,10 @@ from domain.models.commentary import Commentary
 from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
+from domain.models.generic_text import GenericText
 from domain.models.statement import Statement
 from services.content.commentary_service import CommentaryService
+from services.content.generic_text_service import GenericTextService
 from services.content.statement_service import StatementService
 from services.orchestration.content_orchestrator import DataProcessor
 from services.wartung.text_normalisiert_nachtrag import nachtragen
@@ -41,6 +43,34 @@ def statement_service(integration_settings, real_repository_factory):
 def commentary_service(integration_settings, real_repository_factory):
     return CommentaryService(
         integration_settings, repository_factory=real_repository_factory
+    )
+
+
+@pytest.fixture
+def generic_text_service(integration_settings, real_repository_factory):
+    return GenericTextService(
+        integration_settings, repository_factory=real_repository_factory
+    )
+
+
+# Hintergrundinfos zum selben Thema (Waermepumpe im Bestand): JAZ ist die
+# vorhandene, FOERDERUNG eine andere Hintergrundinfo dazu - keine Dublette.
+JAZ = (
+    "Laut Feldtest des Fraunhofer ISE erreichen Wärmepumpen in Bestandsgebäuden im "
+    "Mittel eine Jahresarbeitszahl von 3,4. Aus einer Kilowattstunde Strom werden "
+    "so mehr als drei Kilowattstunden Wärme."
+)
+FOERDERUNG = (
+    "Der Bund fördert den Einbau einer Wärmepumpe mit bis zu 70 Prozent der "
+    "Kosten, gedeckelt bei 30.000 Euro je Wohneinheit."
+)
+
+
+def _hintergrundinfo(text):
+    return GenericText(
+        text=text,
+        title="Wärmepumpen arbeiten auch im Altbau effizient",
+        references=[],
     )
 
 
@@ -386,3 +416,127 @@ async def test_dublette_mit_anderer_aussage_wird_dort_verknuepft(
     )
     aussage = await statement_service.get(statement_id)
     assert [r.id for r in aussage.replysuggestions] == [kommentar]
+
+
+async def test_hintergrundinfo_dublette_mit_passage_einbettung(
+    generic_text_service,
+):
+    neu, jaz, _ = await generic_text_service.add_generic_text(
+        _hintergrundinfo(JAZ),
+        "person-1",
+        ContentStatus.VISIBLE,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+    assert neu
+
+    async def dublette(text):
+        return (await generic_text_service.pruefe_dublette(text)).vorhanden
+
+    # wortgleich, nur klein geschrieben, Kopie mit Herkunftszusatz
+    assert (await dublette(JAZ)).id == jaz
+    assert (await dublette(JAZ.lower())).id == jaz
+    assert (await dublette(JAZ + " Quelle: Fraunhofer ISE.")).id == jaz
+    # andere Hintergrundinfo zum selben Thema
+    assert await dublette(FOERDERUNG) is None
+
+
+async def test_kommentar_ist_keine_dublette_einer_hintergrundinfo(
+    generic_text_service, commentary_service
+):
+    """Die Pruefung bleibt im eigenen Beitragstyp."""
+    await commentary_service.add_commentary(
+        _kommentar(JAZ),
+        "person-1",
+        ContentStatus.VISIBLE,
+        ContentOrigin.MANUALLY_CREATED,
+    )
+
+    assert (await generic_text_service.pruefe_dublette(JAZ)).vorhanden is None
+
+
+async def test_hintergrundinfo_ueber_den_router(
+    integration_settings,
+    real_repository_factory,
+    statement_service,
+    generic_text_service,
+):
+    """Zwei gleichzeitige gleiche Hintergrundinfos: eine angelegt, eine Dublette;
+    eine andere zum selben Thema wird angelegt (#301)."""
+    import httpx
+    from fastapi import FastAPI
+    from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+    from api.v1.generic_text import router
+    from dependencies import (
+        get_generic_text_service,
+        get_reference_service,
+        get_statement_service,
+    )
+
+    reference_service = ReferenceService(
+        integration_settings, repository_factory=real_repository_factory
+    )
+    app = FastAPI()
+    app.include_router(router, prefix="/api/v1/generic_text")
+    app.dependency_overrides[get_generic_text_service] = lambda: generic_text_service
+    app.dependency_overrides[get_reference_service] = lambda: reference_service
+    app.dependency_overrides[get_statement_service] = lambda: statement_service
+
+    def anfrage(text):
+        return {
+            "generictext": {
+                "title": "Wärmepumpen arbeiten auch im Altbau effizient",
+                "text": text,
+            },
+            "references": [
+                {
+                    "reference_string": "https://www.ise.fraunhofer.de/waermepumpen",
+                    "description": "Feldtest Fraunhofer ISE",
+                }
+            ],
+            "statement_text": "Wärmepumpen funktionieren im Altbau nicht",
+        }
+
+    url = "/api/v1/generic_text/addGenericText"
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        antworten = await asyncio.gather(
+            *(
+                client.post(url, json=anfrage(JAZ), headers={"X-User": person})
+                for person in ("person-1", "person-2")
+            )
+        )
+        andere = await client.post(
+            url, json=anfrage(FOERDERUNG), headers={"X-User": "person-2"}
+        )
+
+    daten = [a.json() for a in antworten]
+    assert all(a.status_code == 200 for a in antworten), daten
+    assert sorted(d["dublette"] for d in daten) == [False, True]
+    assert daten[0]["id"] == daten[1]["id"]
+    angelegt = next(d for d in daten if not d["dublette"])
+    dublette = next(d for d in daten if d["dublette"])
+    # Die fremde vorhandene wird nicht an die Aussage der zweiten Person gehaengt.
+    assert angelegt["statement_id"] is not None
+    assert dublette["statement_id"] is None
+    assert dublette["verknuepft"] is False
+    assert dublette["vorhanden_eigen"] is False
+
+    assert andere.status_code == 200
+    assert andere.json()["dublette"] is False
+    assert andere.json()["id"] != angelegt["id"]
+
+    manager = generic_text_service._repository._shared_manager
+
+    def anzahl(typ):
+        return manager.client.count(
+            manager.collection_name,
+            count_filter=Filter(
+                must=[FieldCondition(key="content_type", match=MatchValue(value=typ))]
+            ),
+        ).count
+
+    assert anzahl("generic_text") == 2
+    assert anzahl("reference") == 1
+    gespeichert = _payload(manager, angelegt["id"])
+    assert gespeichert[FELD_TEXT_NORMALISIERT] == JAZ.casefold().rstrip(".")

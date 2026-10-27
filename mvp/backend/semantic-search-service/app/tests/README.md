@@ -55,7 +55,7 @@ make help               # All commands
 ## Status
 
 - ✅ **379 unit tests collected** — CI runs 366 of them (the seeding implementation suite is excluded); 355 pass, 11 skip
-- ✅ **161 integration tests** — CI runs the 84 outside `tests/integration/api/`
+- ✅ **182 integration tests** — CI runs the 105 outside `tests/integration/api/`
   (Qdrant as a service, PostgreSQL in a throwaway container); the 77 under
   `tests/integration/api/` need a full stack (BFF + auth) and are skipped there
 - ✅ **Dependency injection architecture**

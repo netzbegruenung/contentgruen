@@ -1,5 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import List, TypeVar, Generic, Optional, Type
+from typing import (
+    AbstractSet,
+    Any,
+    Dict,
+    List,
+    Sequence,
+    TypeVar,
+    Generic,
+    Optional,
+    Type,
+)
 import uuid
 
 from domain.models.base_content import (
@@ -28,6 +38,20 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
 
         Returns:
             DataSource: Indicates whether data was loaded from storage or JSON files
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    async def search_batch(
+        cls,
+        repositories: Sequence["IBaseContentRepository"],
+        query_text: str,
+        limit: int,
+    ) -> List[List[BaseContentSearchResult]]:
+        """
+        search(query_text, limit) for several repositories of this implementation
+        in one request; per repository its results, in the order of ``repositories``.
         """
         pass
 
@@ -231,9 +255,11 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
+        nicht_aus: Optional[AbstractSet[ContentStatus]] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
+        With nicht_aus, the status only changes while the item is in none of these.
         Default implementation is a no-op.
         Override in repositories that support status updates.
         """

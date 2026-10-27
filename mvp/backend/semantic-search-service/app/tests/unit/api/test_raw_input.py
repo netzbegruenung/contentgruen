@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pydantic import BaseModel, ValidationError
 
@@ -30,6 +30,7 @@ from repositories.raw_input_repository import get_raw_input_repository
 
 ADD_URL = "/api/v1/rawinput/addRawInput"
 LIST_URL = "/api/v1/rawinput/getRawInputs"
+GLEICHER_LINK_URL = "/api/v1/rawinput/gleicherLink"
 EIGENE_URL = "/api/v1/rawinput/getOwnRawInputs"
 EINWURF_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
 EINZEL_URL = f"/api/v1/rawinput/{EINWURF_ID}"
@@ -64,6 +65,7 @@ def repository():
     # Ohne das waere der Rueckgabewert ein MagicMock und damit wahr - jede
     # Beitragspruefung wuerde als Wiederholung uebersprungen.
     repo.statuswechsel_vorpruefen.return_value = False
+    repo.mit_gleichem_link.return_value = []
     app.dependency_overrides[get_raw_input_repository] = lambda: repo
     yield repo
     app.dependency_overrides.clear()
@@ -961,3 +963,84 @@ class TestStatuswechsel:
         )
 
         assert antwort.status_code == code
+
+
+@pytest.mark.unit
+@pytest.mark.api
+class TestGleicherLink:
+    """Beim Einwerfen: gibt es den Link schon im Fangkorb? (#263)"""
+
+    def test_gleicher_link_liefert_einwuerfe_mit_stufe_und_beitrag(
+        self, client, repository
+    ):
+        beitrag = uuid.uuid4()
+        repository.mit_gleichem_link.return_value = [
+            _gespeicherter_einwurf(
+                url="https://example.org/a",
+                status=RawInputStatus.PROCESSED.value,
+                links=[
+                    {
+                        "content_id": str(beitrag),
+                        "content_type": "commentary",
+                        "processed_at": datetime(2026, 10, 1, tzinfo=timezone.utc),
+                    }
+                ],
+            )
+        ]
+
+        antwort = client.post(
+            GLEICHER_LINK_URL,
+            json={"url": "http://www.example.org/a/"},
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        (einwurf,) = antwort.json()["results"]
+        assert einwurf["status"] == "processed"
+        assert einwurf["links"][0]["content_id"] == str(beitrag)
+        repository.mit_gleichem_link.assert_called_once_with(
+            "http://www.example.org/a/", "alice"
+        )
+
+    def test_gleicher_link_ohne_anzeigenamen(self, client, repository):
+        """Das Formular zeigt nur Stufe und Beitrag; Namen fragt es nicht ab."""
+        repository.mit_gleichem_link.return_value = [
+            _gespeicherter_einwurf(url="https://example.org/a")
+        ]
+
+        with patch("api.v1.raw_input.get_anzeigename_service") as namen:
+            antwort = client.post(
+                GLEICHER_LINK_URL,
+                json={"url": "https://example.org/a"},
+                headers={"X-User": "alice"},
+            )
+
+        assert antwort.status_code == 200
+        assert antwort.json()["results"][0]["submitted_by_name"] is None
+        namen.assert_not_called()
+
+    def test_gleicher_link_ohne_treffer_ist_leer(self, client, repository):
+        antwort = client.post(
+            GLEICHER_LINK_URL,
+            json={"url": "https://example.org/neu"},
+            headers={"X-User": "alice"},
+        )
+
+        assert antwort.status_code == 200
+        assert antwort.json() == {"results": []}
+
+    @pytest.mark.parametrize("person", [None, "anonymous"])
+    def test_gleicher_link_nur_fuer_angemeldete(self, client, repository, person):
+        headers = {"X-User": person} if person else {}
+
+        antwort = client.post(
+            GLEICHER_LINK_URL, json={"url": "https://example.org/a"}, headers=headers
+        )
+
+        assert antwort.status_code == 401
+        repository.mit_gleichem_link.assert_not_called()
+
+    def test_gleicher_link_ohne_url_ist_422(self, client, repository):
+        antwort = client.post(GLEICHER_LINK_URL, json={}, headers={"X-User": "alice"})
+
+        assert antwort.status_code == 422

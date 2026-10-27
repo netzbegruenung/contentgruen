@@ -36,6 +36,10 @@ _Avoid_: Kanal, Quelle
 Wie ein Einwurf in den Fangkorb kam: über das Formular oder über das Teilen-Menü des Geräts. Nicht zu verwechseln mit der Plattform, aus der sein Link stammt.
 _Avoid_: Kanal, Quelle, Herkunft
 
+**Gleicher Link**:
+Zwei Links, die übereinstimmen, sobald Tracking-Parameter, „www.“, der Schrägstrich am Ende und der Unterschied zwischen http und https weggelassen sind. Liegt beim Einwerfen schon ein Einwurf mit gleichem Link im Fangkorb, sieht die Person dessen Stufe und, wenn er ausformuliert ist, seinen Beitrag; einwerfen kann sie trotzdem.
+_Avoid_: Dublette (gibt es nur bei Beiträgen), Duplikat, doppelter Link
+
 **Destillieren**:
 Das Argument eines Einwurfs in genau einem Satz formulieren, bevor ein Beitrag entsteht. Wer das nicht kann, verwirft.
 _Avoid_: Verarbeiten, Bearbeiten, Zusammenfassen
@@ -149,7 +153,7 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin.
 _Avoid_: Archiviert
 
 **Titel**:
@@ -191,8 +195,12 @@ Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Auss
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat. Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
 _Avoid_: Search Event, Suchprotokoll, Suchlog
+
+**Tageszähler der Suchen**:
+Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen und die Zahl der Personen, aber kein Tagespseudonym. Kennzahlen über längere Zeiträume zählen ihn mit.
+_Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
 Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
@@ -205,6 +213,10 @@ _Avoid_: Contributions, Profil
 **Meine Einwürfe**:
 Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Hier erfährt der Einwerfer, was aus seinen Fundstücken geworden ist. Die Karten bieten dieselben Griffe wie im Fangkorb; ein offener Einwurf lässt sich von hier aus gleich destillieren.
 _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
+
+**Nutzungsstatistik**:
+Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
+_Avoid_: Usage Stats, Nutzerstatistik
 
 ## Personen
 
@@ -228,6 +240,10 @@ _Avoid_: Gast, anonymer Nutzer
 Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat. Wer einen Einwurf nur mit einem vorhandenen Beitrag verknüpft, wird dadurch nicht dessen Autor. Einwerfer und Destillierer eines Beitrags aus dem Fangkorb sind nicht seine Autoren, sondern wirken an der Kette mit. Wer einen von KI vorgeschlagenen Text übernimmt und speichert, ist dessen Autor.
 _Avoid_: Ersteller, Owner, Urheber
 
+**Kennung**:
+Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Adressen steht er nicht, in Logs nur als gekürzter Hash. Dieser Hash ist ungesalzen und bei bekannten Kennungen zurückrechenbar, also kein Tagespseudonym.
+_Avoid_: User-ID, Nutzer-ID
+
 **Anzeigename**:
 Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt wird. Andere sehen nie den Klarnamen aus dem Login.
 _Avoid_: Benutzername, Klarname, Kennung
@@ -237,5 +253,5 @@ Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht h
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
 **Admin**:
-Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Moderation ist keine eigene Rolle.
+Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Nur ein Admin entfernt einen Beitrag endgültig, und nur nach dem Löschkonzept. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion

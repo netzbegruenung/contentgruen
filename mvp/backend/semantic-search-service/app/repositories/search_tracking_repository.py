@@ -1,18 +1,71 @@
 """
 Repository for search event tracking.
 Handles database operations for search analytics.
+
+Suchereignisse bleiben search_event_retention_days Tage als Einzelzeilen. Aeltere
+Tage werden zu Tageszaehlern der Suchen verdichtet (suchen_je_tag: Tag, Zahl der
+Suchen, Zahl der Personen), ohne Tagespseudonym (#289). Die Zaehlungen je Zeitraum
+unten addieren diese Tageszaehler und stimmen so auch ueber die Frist hinaus.
 """
 
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional, Dict, Any, List
-from sqlalchemy import func, distinct, and_
-from sqlalchemy.orm import Session
+from sqlalchemy import func, distinct, and_, select, text
+from sqlalchemy.orm import InstrumentedAttribute, Session
+from sqlalchemy.sql.selectable import ScalarSelect
 
 from infrastructure.database.connection import get_app_database
-from infrastructure.database.models import SearchEvent
+from infrastructure.database.models import SearchEvent, SuchenJeTagZeile
 
 logger = logging.getLogger(__name__)
+
+
+# Verdichtet in einer Anweisung: Was DELETE entfernt, landet im selben Schritt im
+# Tageszaehler. grenze ist Mitternacht UTC und Suchereignisse tragen nur den Tag,
+# also wird ein Tag immer ganz verdichtet. Einen Konflikt gibt es nur, wenn ein
+# schon verdichteter Tag spaeter noch Suchereignisse bekommt; neue tragen aber
+# immer den laufenden Tag. Fuer diesen Fall addiert ON CONFLICT, statt Zeilen zu
+# verlieren; personen kann dann eine Person doppelt zaehlen.
+_VERDICHTEN = text(
+    """
+    WITH weg AS (
+        DELETE FROM search_events
+        WHERE timestamp < :grenze
+        RETURNING timestamp, actor_hash
+    ), tage AS (
+        INSERT INTO suchen_je_tag (tag, suchen, personen)
+        SELECT (timestamp AT TIME ZONE 'UTC')::date, count(*),
+               count(DISTINCT actor_hash)
+        FROM weg
+        GROUP BY 1
+        ON CONFLICT (tag) DO UPDATE
+        SET suchen = suchen_je_tag.suchen + EXCLUDED.suchen,
+            personen = suchen_je_tag.personen + EXCLUDED.personen
+    )
+    SELECT count(*) FROM weg
+    """
+)
+
+
+def _in_utc(zeitpunkt: datetime) -> datetime:
+    """Naive Zeitpunkte gelten als UTC (wie bei den Aufrufern), andere werden umgerechnet."""
+    if zeitpunkt.tzinfo is None:
+        return zeitpunkt
+    return zeitpunkt.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _tage_im_zeitraum(start_date: datetime, end_date: datetime) -> tuple[date, date]:
+    """Erster und letzter UTC-Tag, dessen Mitternacht im Zeitraum liegt.
+
+    So zaehlt ein Tageszaehler genau dann mit, wenn seine Suchereignisse (die nur
+    Mitternacht UTC tragen) mitgezaehlt worden waeren.
+    """
+    start_date, end_date = _in_utc(start_date), _in_utc(end_date)
+    erster = start_date.date()
+    if start_date.time() != time.min:
+        erster += timedelta(days=1)
+    return erster, end_date.date()
 
 
 class SearchTrackingRepository:
@@ -76,18 +129,25 @@ class SearchTrackingRepository:
             end_date = datetime.utcnow()
 
         try:
-            with self.db.get_session() as session:
-                total = (
-                    session.query(func.count(distinct(SearchEvent.actor_hash)))
-                    .filter(
-                        and_(
-                            SearchEvent.timestamp >= start_date,
-                            SearchEvent.timestamp <= end_date,
-                            SearchEvent.actor_hash.isnot(None),
-                        )
+            einzelzeilen = (
+                select(func.count(distinct(SearchEvent.actor_hash)))
+                .where(
+                    and_(
+                        SearchEvent.timestamp >= start_date,
+                        SearchEvent.timestamp <= end_date,
+                        SearchEvent.actor_hash.isnot(None),
                     )
-                    .scalar()
-                    or 0
+                )
+                .scalar_subquery()
+            )
+            with self.db.get_session() as session:
+                # Additiv, weil das Tagespseudonym an jedem Tag ein anderes ist.
+                total = self._mit_tageszaehlern(
+                    session,
+                    einzelzeilen,
+                    SuchenJeTagZeile.personen,
+                    start_date,
+                    end_date,
                 )
 
                 logger.debug(f"Active actors {start_date} to {end_date}: {total}")
@@ -171,48 +231,84 @@ class SearchTrackingRepository:
             end_date = datetime.utcnow()
 
         try:
-            with self.db.get_session() as session:
-                count = (
-                    session.query(func.count(SearchEvent.id))
-                    .filter(
-                        and_(
-                            SearchEvent.timestamp >= start_date,
-                            SearchEvent.timestamp <= end_date,
-                        )
+            einzelzeilen = (
+                select(func.count(SearchEvent.id))
+                .where(
+                    and_(
+                        SearchEvent.timestamp >= start_date,
+                        SearchEvent.timestamp <= end_date,
                     )
-                    .scalar()
-                    or 0
                 )
-                return count
+                .scalar_subquery()
+            )
+            with self.db.get_session() as session:
+                return self._mit_tageszaehlern(
+                    session,
+                    einzelzeilen,
+                    SuchenJeTagZeile.suchen,
+                    start_date,
+                    end_date,
+                )
         except Exception as e:
             logger.error(f"Error getting search count: {e}", exc_info=True)
             return 0
 
-    def cleanup_old_events(self, days_to_keep: int = 90) -> int:
+    @staticmethod
+    def _mit_tageszaehlern(
+        session: Session,
+        einzelzeilen: ScalarSelect,
+        spalte: InstrumentedAttribute,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> int:
+        """Zaehlung ueber Einzelzeilen plus Summe einer Spalte der Tageszaehler.
+
+        Eine Anweisung, also ein Snapshot: Ein Verdichten zwischen zwei Abfragen
+        zaehlte einen Tag sonst doppelt.
         """
-        Clean up old search events.
+        erster, letzter = _tage_im_zeitraum(start_date, end_date)
+        tageszaehler = (
+            select(func.coalesce(func.sum(spalte), 0))
+            .where(
+                and_(
+                    SuchenJeTagZeile.tag >= erster,
+                    SuchenJeTagZeile.tag <= letzter,
+                )
+            )
+            .scalar_subquery()
+        )
+        return session.execute(select(einzelzeilen + tageszaehler)).scalar() or 0
+
+    def verdichte_alte_suchereignisse(
+        self, days_to_keep: int, heute: Optional[date] = None
+    ) -> int:
+        """
+        Suchereignisse vor der Frist zu Tageszaehlern verdichten.
+
+        Wirft bei Datenbankfehlern, anders als die Lesemethoden hier: Der
+        Bereinigungsjob soll einen gescheiterten Lauf als Fehler loggen, nicht als
+        "nichts zu tun".
+
+        Tage, die mehr als days_to_keep Tage vor heute (UTC) liegen, werden je Tag
+        zu Zahl der Suchen und Zahl der Personen (verschiedene Tagespseudonyme)
+        zusammengefasst; die Einzelzeilen samt Pseudonym werden geloescht.
 
         Args:
-            days_to_keep: Number of days of data to retain
+            days_to_keep: Tage, die als Einzelzeilen bleiben (vor heute)
+            heute: Bezugstag, Standard heute in UTC
 
         Returns:
-            int: Number of records deleted
+            int: Zahl der geloeschten Suchereignisse
         """
-        try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
-
-            with self.db.get_session() as session:
-                deleted_count = (
-                    session.query(SearchEvent)
-                    .filter(SearchEvent.timestamp < cutoff_date)
-                    .delete()
-                )
-                session.commit()
-                logger.info(f"Cleaned up {deleted_count} old search events")
-                return deleted_count
-        except Exception as e:
-            logger.error(f"Error cleaning up old search events: {e}", exc_info=True)
-            return 0
+        heute = heute or datetime.now(timezone.utc).date()
+        grenze = datetime.combine(
+            heute - timedelta(days=days_to_keep), time.min, tzinfo=timezone.utc
+        )
+        with self.db.get_session() as session:
+            geloescht = session.execute(_VERDICHTEN, {"grenze": grenze}).scalar() or 0
+            session.commit()
+        logger.info(f"Compacted {geloescht} old search events into day counters")
+        return geloescht
 
 
 # Global repository instance

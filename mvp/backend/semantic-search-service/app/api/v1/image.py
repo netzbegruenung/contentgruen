@@ -1,6 +1,5 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Header, Query
-from fastapi.responses import JSONResponse
 import datetime
 import logging
 import uuid
@@ -9,6 +8,7 @@ from uuid import UUID
 from dependencies import get_image_service, get_caption_suggestion_service
 from dtos.image import (
     AddImageRequest,
+    AddImageResponse,
     ImageGetAllResponse,
     SuggestCaptionRequest,
     SuggestCaptionResponse,
@@ -24,16 +24,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
-
-
-@router.get("/getById")
+@router.get("/getById", response_model=ImageDbEntry)
 async def get_by_id(
     image_id: UUID = Query(..., description="The UUID of the image to retrieve"),
     image_service: BaseContentService = Depends(get_image_service),
-):
+) -> ImageDbEntry:
     try:
         image = await image_service.get(image_id)
         return image
@@ -49,7 +44,7 @@ async def get_by_id(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/getAll")
+@router.get("/getAll", response_model=ImageGetAllResponse)
 async def get_all(
     image_service: BaseContentService = Depends(get_image_service),
     page: int = Query(default=1, ge=1),
@@ -70,12 +65,16 @@ async def get_all(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/addImage")
+@router.post(
+    "/addImage",
+    response_model=AddImageResponse,
+    status_code=201,
+)
 async def add_image(
     request: AddImageRequest,
     image_service: BaseContentService = Depends(get_image_service),
     x_user: str = Header(...),
-):
+) -> AddImageResponse:
     """
     Ein Bild mit Unterschrift speichern; es ist sofort sichtbar. Returns 201.
 
@@ -98,7 +97,7 @@ async def add_image(
         )
 
         image_id = await image_service.add(entry)
-        return JSONResponse(status_code=201, content={"id": str(image_id)})
+        return AddImageResponse(id=image_id)
 
     except HTTPException:
         raise

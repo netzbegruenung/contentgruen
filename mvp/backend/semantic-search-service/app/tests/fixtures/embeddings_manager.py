@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, AsyncMock
 import uuid
 from datetime import datetime
 
-from domain.interfaces.embeddings_manager import IEmbeddingsManager
+from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
 
 
 class TestEmbeddingsManager(IEmbeddingsManager):
@@ -106,11 +106,32 @@ class TestEmbeddingsManager(IEmbeddingsManager):
 
         self._async_client.count = mock_count
 
+        def _passt(bedingung, item_data) -> bool:
+            match = bedingung.match
+            werte = getattr(match, "any", None) or [getattr(match, "value", None)]
+            return item_data.get(bedingung.key) in werte
+
         async def mock_set_payload(collection_name, payload, points, **kwargs):
-            """Mock set_payload: merges the fields into the stored points."""
-            for point_id in points:
-                if str(point_id) in self._data:
-                    self._data[str(point_id)].update(payload)
+            """
+            Mock set_payload: merges the fields into the stored points. points is a
+            list of IDs or a Filter with has_id plus status conditions in must and
+            must_not (update_status mit nicht_aus).
+            """
+            if isinstance(points, list):
+                ids, must, must_not = points, [], []
+            else:
+                must = [b for b in points.must or [] if hasattr(b, "key")]
+                must_not = list(points.must_not or [])
+                ids = [i for b in points.must if hasattr(b, "has_id") for i in b.has_id]
+            for point_id in ids:
+                item_data = self._data.get(str(point_id))
+                if item_data is None:
+                    continue
+                if not all(_passt(b, item_data) for b in must):
+                    continue
+                if any(_passt(b, item_data) for b in must_not):
+                    continue
+                item_data.update(payload)
 
         async def mock_delete_payload(collection_name, keys, points, **kwargs):
             """Mock delete_payload: removes the fields from the stored points."""
@@ -406,6 +427,20 @@ class TestEmbeddingsManager(IEmbeddingsManager):
                 if len(results) >= limit:
                     break
         return results
+
+    async def search_batch(
+        self,
+        query: str,
+        suchen: List[Suchparameter],
+        praefix: str = "query",
+    ) -> List[List[Dict[str, Any]]]:
+        """Batch search: one search() per Suchparameter."""
+        return [
+            await self.search(
+                query, suche.content_type, suche.limit, suche.filter_dict, praefix
+            )
+            for suche in suchen
+        ]
 
     async def upsert_batch(self, points: List[tuple], content_type: str) -> None:
         """

@@ -1,7 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject, of } from 'rxjs';
-import { AddGenerictextWorkflowComponent } from './add-generictext-workflow.component';
+import { BehaviorSubject, Subject, of } from 'rxjs';
+import {
+  AddGenerictextWorkflowComponent,
+  EINWURF_MIT_VORHANDENER_VERKNUEPFT,
+  EINWURF_NICHT_VERKNUEPFT,
+  ERNEUT_VERKNUEPFEN,
+} from './add-generictext-workflow.component';
 import { AddGenerictextComponent } from '../add-generictext/add-generictext.component';
 import { DestillierUebergabeService } from '../destillieren/destillier-uebergabe.service';
 import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter, Router } from '@angular/router';
@@ -9,7 +14,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { environment } from '../../environments/environment';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 describe('AddGenerictextWorkflowComponent', () => {
   let component: AddGenerictextWorkflowComponent;
@@ -46,6 +51,16 @@ describe('AddGenerictextWorkflowComponent', () => {
     expect(component.vorbefuellung).toBeNull();
   });
 
+  it('macht nach der Wahl der vorhandenen ohne Einwurf nichts weiter', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate');
+    const verknuepfen = spyOn(TestBed.inject(DestillierUebergabeService), 'mitBeitragVerknuepfen');
+
+    component.onVorhandenGewaehlt('h-alt');
+
+    expect(verknuepfen).not.toHaveBeenCalled();
+    expect(navigieren).not.toHaveBeenCalled();
+  });
+
   it('oeffnet nach dem Speichern die Ergebnisseite und ersetzt das Formular im Verlauf', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
@@ -68,6 +83,7 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', [
       'vorbefuellungLaden',
       'mitBeitragVerknuepfen',
+      'zumNaechsten',
     ]);
     uebergabe.mitBeitragVerknuepfen.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
@@ -120,6 +136,47 @@ describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
       state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, einwurfVerknuepft: true },
       replaceUrl: true,
     });
+  });
+
+  it('verknuepft nach der Wahl den Einwurf mit der vorhandenen Hintergrundinfo und geht zum naechsten', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate');
+    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+
+    component.onVorhandenGewaehlt('h-alt');
+
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'h-alt', 'generic_text');
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
+    expect(meldung).toHaveBeenCalledWith(EINWURF_MIT_VORHANDENER_VERKNUEPFT, 'OK', jasmine.anything());
+    // Keine Ergebnisseite: gespeichert wurde nichts.
+    expect(navigieren).not.toHaveBeenCalled();
+  });
+
+  it('bleibt nach der Wahl im Formular, wenn das Verknuepfen scheitert, und laesst es wiederholen', () => {
+    uebergabe.mitBeitragVerknuepfen.and.returnValues(of(false), of(true));
+    const erneut = new Subject<void>();
+    const meldung = spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open').and.returnValue({
+      onAction: () => erneut,
+    } as any);
+
+    component.onVorhandenGewaehlt('h-alt');
+
+    expect(uebergabe.zumNaechsten).not.toHaveBeenCalled();
+    expect(meldung).toHaveBeenCalledWith(EINWURF_NICHT_VERKNUEPFT, ERNEUT_VERKNUEPFEN, jasmine.anything());
+
+    erneut.next();
+
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledTimes(2);
+    expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('id-1', 'ausformuliert');
+  });
+
+  it('reicht die Wahl im Formular an den Workflow weiter', () => {
+    const formular = fixture.debugElement.query(By.directive(AddGenerictextComponent))
+      .componentInstance as AddGenerictextComponent;
+    spyOn(fixture.debugElement.injector.get(MatSnackBar), 'open');
+
+    formular.vorhandenGewaehlt.emit('h-alt');
+
+    expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('id-1', 'h-alt', 'generic_text');
   });
 });
 

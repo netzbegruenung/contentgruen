@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator
 from typing import List
+from uuid import UUID
 
 from domain.models.image import (
     Image,
@@ -17,6 +18,12 @@ class AddImageRequest(BaseModel):
         if not image.text or not image.text.strip():
             raise ValueError("Ein Bild braucht eine Unterschrift")
         return image
+
+
+class AddImageResponse(BaseModel):
+    """Antwort auf addImage: die ID des gespeicherten Bildes."""
+
+    id: UUID
 
 
 class ImageGetAllResponse(BaseModel):

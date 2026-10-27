@@ -141,6 +141,9 @@ duplicated commentary/generictext branches and the four-times-repeated scoring f
 (`statement_score*0.7 + relevance*0.3`), collapsed into one `SearchOrchestrator` that loops over the
 requested content types, applying one shared scoring step and one `enrich(item)` step. `search.py`
 is now ~280 lines and new types are searched automatically — no new branch.
+The direct search asks Qdrant once for all types (`BaseContentService.search_batch`, one
+sub-search per type with its own filter and limit), and the search query is embedded once per
+request (`einbettungen_teilen()` in `qdrant_embeddings_manager.py`, #304).
 
 ### No asynchronous AI ingestion
 

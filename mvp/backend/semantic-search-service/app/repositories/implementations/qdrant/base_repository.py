@@ -1,7 +1,17 @@
 from abc import abstractmethod
 import datetime
 import json
-from typing import List, Optional, Type, TypeVar, Generic
+from typing import (
+    AbstractSet,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Generic,
+)
 import os
 import uuid
 import logging
@@ -11,7 +21,7 @@ from pydantic import ValidationError
 
 from core.config import Settings
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
-from domain.interfaces.embeddings_manager import IEmbeddingsManager
+from domain.interfaces.embeddings_manager import IEmbeddingsManager, Suchparameter
 from domain.models.base_content import (
     BaseContentDbEntry,
     BaseContentSearchResult,
@@ -177,14 +187,14 @@ class QdrantBaseRepository(
         passage-Bestand (siehe QdrantEmbeddingsManager.search).
         """
         try:
-            filter_dict = {"must": nur_sichtbar_bedingungen()}
+            suche = self._suchparameter(limit)
 
             # Perform search with optional content_type filter
             search_results = await self._shared_manager.search(
                 query=query_text,
-                content_type=self.content_type,
-                limit=limit,
-                filter_dict=filter_dict,
+                content_type=suche.content_type,
+                limit=suche.limit,
+                filter_dict=suche.filter_dict,
                 praefix=praefix,
             )
 
@@ -198,15 +208,60 @@ class QdrantBaseRepository(
                 f"Search in {content_desc}: found {len(search_results)} results"
             )
 
-            # Convert to result models
-            return [
-                self.content_search_result_model_class.model_validate(res)
-                for res in search_results
-            ]
+            return self._suchergebnisse(search_results)
 
         except Exception as e:
             logger.error(f"Search failed: {e}", exc_info=True)
             raise
+
+    @classmethod
+    async def search_batch(
+        cls,
+        repositories: Sequence["QdrantBaseRepository"],
+        query_text: str,
+        limit: int,
+    ) -> List[List[BaseContentSearchResult]]:
+        """
+        search(query_text, limit) fuer mehrere Repositories: eine Einbettung, eine
+        Anfrage an Qdrant.
+
+        Ergebnis je Repository in der Reihenfolge von ``repositories``. Alle muessen
+        am selben Manager haengen - im Betrieb der prozessweite Singleton.
+        """
+        if not repositories:
+            return []
+        manager = repositories[0]._shared_manager
+        if any(r._shared_manager is not manager for r in repositories):
+            raise ValueError("search_batch: repositories use different managers")
+
+        try:
+            treffer = await manager.search_batch(
+                query_text, [r._suchparameter(limit) for r in repositories]
+            )
+            # DEBUG ohne query_text, wie in search() (#239).
+            logger.debug(f"Batch search over {len(repositories)} content types")
+            return [r._suchergebnisse(t) for r, t in zip(repositories, treffer)]
+
+        except Exception as e:
+            logger.error(f"Batch search failed: {e}", exc_info=True)
+            raise
+
+    def _suchparameter(self, limit: int) -> Suchparameter:
+        """Typ (content_type), Filter und Limit dieser Suche - fuer search() und search_batch()."""
+        return Suchparameter(
+            content_type=self.content_type,
+            filter_dict={"must": nur_sichtbar_bedingungen()},
+            limit=limit,
+        )
+
+    def _suchergebnisse(
+        self, search_results: List[Dict[str, Any]]
+    ) -> List[TContentSearchResult]:
+        """Rohtreffer des Managers als Suchergebnisse dieses Typs."""
+        return [
+            self.content_search_result_model_class.model_validate(res)
+            for res in search_results
+        ]
 
     async def finde_normalisiert_gleich(
         self, normalform: str
@@ -771,15 +826,38 @@ class QdrantBaseRepository(
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
+        nicht_aus: Optional[AbstractSet[ContentStatus]] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
+
+        Mit nicht_aus wechselt der Status nur, wenn der Beitrag in keinem dieser
+        Zustaende steht. Qdrant prueft das per Filter im selben Schreibvorgang; ein
+        inzwischen gesperrter Beitrag bleibt so gesperrt (Autor loescht, #250).
         """
         try:
+            from qdrant_client.models import (
+                FieldCondition,
+                Filter,
+                HasIdCondition,
+                MatchAny,
+            )
+
+            auswahl = [str(item_id)]
+            if nicht_aus:
+                auswahl = Filter(
+                    must=[HasIdCondition(has_id=[str(item_id)])],
+                    must_not=[
+                        FieldCondition(
+                            key="status",
+                            match=MatchAny(any=sorted(s.value for s in nicht_aus)),
+                        )
+                    ],
+                )
             await self._shared_manager.async_client.set_payload(
                 collection_name=self._shared_manager.collection_name,
                 payload={"status": new_status.value},
-                points=[str(item_id)],
+                points=auswahl,
             )
             logger.debug(f"Updated status of {item_id} to {new_status.value}")
         except Exception as e:

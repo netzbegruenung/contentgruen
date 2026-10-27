@@ -3,9 +3,8 @@ Meine Einwuerfe gegen ein echtes PostgreSQL: der Filter auf den Einwerfer.
 
 Die Unit-Tests pruefen nur, dass ``submitted_by`` als Bedingung ankommt; hier zeigt
 sich, dass fremde und herrenlose Einwuerfe wirklich fehlen und Zaehlung und
-Reihenfolge zur Seite passen. Schema und Ziel wie in ``test_loeschkommando.py``
-(``LOESCHKOMMANDO_DATABASE_URL``, sonst der Dev-Stack); ohne PostgreSQL wird das
-Modul uebersprungen.
+Reihenfolge zur Seite passen. Wegwerf-Schema aus der Fixture ``datenbank`` von
+``test_loeschkommando.py``; woher PostgreSQL kommt, steht in ``postgres.py``.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -14,17 +13,12 @@ import pytest
 
 from infrastructure.database.models import RawInput
 from repositories.raw_input_repository import RawInputRepository
-from test_loeschkommando import _postgres_erreichbar, datenbank  # noqa: F401
+from tests.integration.test_loeschkommando import datenbank  # noqa: F401
 
 EINWERFER = "einwerfer"
 ANDERE = "andere-person"
 
-pytestmark = [
-    pytest.mark.integration,
-    pytest.mark.skipif(
-        not _postgres_erreichbar(), reason="PostgreSQL nicht erreichbar"
-    ),
-]
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture

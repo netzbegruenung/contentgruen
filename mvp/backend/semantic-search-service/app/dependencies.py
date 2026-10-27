@@ -13,9 +13,13 @@ from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
+from services.content.beitrag_loeschen_service import BeitragLoeschenService
 from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
     get_personen_des_tages,
+)
+from repositories.implementations.qdrant.qdrant_repository_factory import (
+    QdrantRepositoryFactory,
 )
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
@@ -118,6 +122,15 @@ def get_suchen_ohne_treffer_service(
         get_suchen_ohne_treffer_repository(),
         statement_service,
         get_personen_des_tages(),
+    )
+
+
+def get_beitrag_loeschen_service(
+    settings: Settings = Depends(get_settings),
+) -> BeitragLoeschenService:
+    """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
+    return BeitragLoeschenService(
+        QdrantRepositoryFactory().create_content_repository(settings)
     )
 
 
@@ -271,6 +284,19 @@ def ist_admin_kopf(x_is_admin: Optional[str]) -> bool:
     return (x_is_admin or "").lower() == "true"
 
 
+def require_user(
+    x_user_id: Optional[str] = Header(None, alias="X-User"),
+) -> str:
+    """
+    Die Kennung der angemeldeten Person aus ``X-User``, sonst 401.
+
+    "anonymous" setzt das BFF fuer oeffentliche Endpunkte; es ist keine Kennung.
+    """
+    if not x_user_id or x_user_id == "anonymous":
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return x_user_id
+
+
 def require_admin(
     x_user_id: Optional[str] = Header(None, alias="X-User"),
     x_is_admin: Optional[str] = Header(None, alias="X-Is-Admin"),
@@ -280,8 +306,7 @@ def require_admin(
     Raises HTTPException if user is not authenticated or not admin.
     Returns the user ID if admin.
     """
-    if not x_user_id or x_user_id == "anonymous":
-        raise HTTPException(status_code=401, detail="Authentication required")
+    require_user(x_user_id)
 
     if not ist_admin_kopf(x_is_admin):
         raise HTTPException(status_code=403, detail="Admin privileges required")

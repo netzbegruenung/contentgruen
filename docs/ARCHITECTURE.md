@@ -116,9 +116,14 @@ listens on 5432 inside the container.
   - Local/Docker: localhost:5433 (container port 5432)
   - Test/Prod: Internal Docker network
 
-> The schema is defined once, in `mvp/backend/postgres-app/init.sql`. It is baked into the
-> `gutgesagt-postgres-app` image used by test and production, and bind-mounted by the local
-> compose files, so every environment provisions the same tables.
+> The schema is defined by the SQLAlchemy models
+> (`app/infrastructure/database/models.py`); the semantic service creates missing tables
+> with `create_all` on start. `mvp/backend/postgres-app/init.sql` additionally creates
+> `usage_tracking` and `usage_events` on an empty volume and must match the models
+> exactly (checked by `tests/integration/test_migrationen.py`). It is baked into the
+> `gutgesagt-postgres-app` image used by test and production, and bind-mounted by the
+> local compose files. Existing databases get schema changes from
+> `mvp/backend/postgres-app/migrations/`.
 
 ## Nginx Configuration
 

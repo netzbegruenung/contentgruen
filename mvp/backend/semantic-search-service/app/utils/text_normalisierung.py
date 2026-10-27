@@ -1,6 +1,6 @@
 """
-Wann zwei Texte "derselbe Text" sind - fuer die Dublettenpruefung von Aussagen
-und Kommentaren.
+Wann zwei Texte "derselbe Text" sind - fuer die Dublettenpruefung von Aussagen,
+Kommentaren und Hintergrundinfos.
 
 Der Vektorvergleich allein trennt das nicht: Eine Aussage in Grossbuchstaben
 erreicht gegen ihr Original nur 0,902, eine Verneinung ("... sind keine
@@ -20,7 +20,7 @@ from typing import AsyncIterator, Dict
 
 # Payload-Feld und die Inhaltstypen, fuer die es gepflegt wird.
 FELD_TEXT_NORMALISIERT = "text_normalisiert"
-TYPEN_MIT_TEXT_NORMALISIERT = frozenset({"statement", "commentary"})
+TYPEN_MIT_TEXT_NORMALISIERT = frozenset({"statement", "commentary", "generic_text"})
 
 _APOSTROPHE = str.maketrans({"’": "'", "‘": "'", "ʼ": "'"})
 _ANFUEHRUNGSZEICHEN = re.compile(r"[\"„“”‚«»‹›]")

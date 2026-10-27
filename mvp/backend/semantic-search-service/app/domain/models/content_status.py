@@ -28,7 +28,11 @@ class ContentStatus(Enum):
     """
 
     DELETED = "deleted"
-    """Geloescht: Der Autor hat den Beitrag entfernt."""
+    """
+    Geloescht: Der Autor hat den Beitrag entfernt
+    (services/content/beitrag_loeschen_service.py). Er bleibt gespeichert und
+    laesst sich nicht zurueckholen.
+    """
 
     PENDING_DESCRIPTION = "pending_description"
     """Altwert: Bild ohne Unterschrift, das auf den frueheren Hintergrunddienst wartete."""

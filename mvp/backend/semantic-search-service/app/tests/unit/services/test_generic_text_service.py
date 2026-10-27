@@ -8,6 +8,7 @@ import pytest
 import pytest_asyncio
 import uuid
 from datetime import datetime
+from unittest.mock import AsyncMock
 
 from domain.models.generic_text import (
     GenericText,
@@ -15,6 +16,7 @@ from domain.models.generic_text import (
     GenericTextSearchResult,
 )
 from domain.models.content_type import ContentType
+from services.content.base_content_service import Dublettenpruefung
 from tests.conftest import create_base_content_fields, create_generic_text_data
 
 
@@ -345,3 +347,150 @@ class TestGenericTextService:
         # Service2 should NOT see this data (different embeddings managers)
         with pytest.raises(ValueError):
             await service2.get(id1)
+
+
+@pytest.mark.unit
+class TestHintergrundinfoDublette:
+    """Dublette: normalisiert gleich oder passage/passage ab der Schwelle (#301)."""
+
+    @pytest.fixture
+    def service(self, test_settings, repository_factory):
+        from services.content.generic_text_service import GenericTextService
+
+        return GenericTextService(test_settings, repository_factory)
+
+    @staticmethod
+    def _treffer(text, score):
+        return GenericTextSearchResult(
+            **create_base_content_fields(),
+            **create_generic_text_data(text=text),
+            id=uuid.uuid4(),
+            content_type=ContentType.GENERIC_TEXT,
+            score=score,
+        )
+
+    @staticmethod
+    def _hintergrundinfo(text):
+        return GenericText(text=text, title="Waermepumpen rechnen sich", references=[])
+
+    @pytest.mark.asyncio
+    async def test_suche_mit_passage_einbettung(self, service):
+        service._repository.search = AsyncMock(return_value=[])
+
+        assert (
+            await service.pruefe_dublette("Waermepumpen erreichen im Altbau JAZ 3,4.")
+        ).vorhanden is None
+        assert service._repository.search.call_args.kwargs["praefix"] == "passage"
+
+    @pytest.mark.asyncio
+    async def test_ab_der_schwelle_ist_dublette(self, service, test_settings):
+        kopie = self._treffer(
+            "Anderer Wortlaut", test_settings.generic_text_similarity_threshold
+        )
+        service._repository.search = AsyncMock(return_value=[kopie])
+
+        assert (await service.pruefe_dublette("Wortlaut")).vorhanden.id == kopie.id
+
+    @pytest.mark.asyncio
+    async def test_unter_der_schwelle_ist_keine(self, service, test_settings):
+        service._repository.search = AsyncMock(
+            return_value=[
+                self._treffer(
+                    "Anderer Wortlaut",
+                    test_settings.generic_text_similarity_threshold - 0.01,
+                )
+            ]
+        )
+
+        assert (await service.pruefe_dublette("Wortlaut")).vorhanden is None
+
+    @pytest.mark.asyncio
+    async def test_gesperrte_vektortreffer_zaehlen_nicht(self, service):
+        from domain.models.content_status import ContentStatus
+
+        gesperrt = self._treffer("Wortlaut", 0.999)
+        gesperrt.status = ContentStatus.BLOCKED
+        service._repository.search = AsyncMock(return_value=[gesperrt])
+
+        assert (await service.pruefe_dublette("Wortlaut")).vorhanden is None
+
+    @pytest.mark.asyncio
+    async def test_uebergebene_pruefung_sucht_nicht_noch_einmal(self, service):
+        service._repository.search = AsyncMock(return_value=[])
+        service._repository.finde_normalisiert_gleich = AsyncMock(return_value=None)
+
+        neu, _, _ = await service.add_generic_text(
+            self._hintergrundinfo("Eine neue Hintergrundinfo"),
+            "person-1",
+            _status(),
+            _herkunft(),
+            dublettenpruefung=Dublettenpruefung(vorhanden=None, aehnlichster=None),
+        )
+
+        assert neu is True
+        service._repository.search.assert_not_awaited()
+        service._repository.finde_normalisiert_gleich.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_aehnlichster_landet_in_most_similar(self, service):
+        aehnlichster = self._treffer("Verwandte Hintergrundinfo", 0.9)
+
+        _, neu_id, _ = await service.add_generic_text(
+            self._hintergrundinfo("Eine neue Hintergrundinfo"),
+            "person-1",
+            _status(),
+            _herkunft(),
+            dublettenpruefung=Dublettenpruefung(
+                vorhanden=None, aehnlichster=aehnlichster
+            ),
+        )
+
+        gespeichert = await service.get(neu_id)
+        assert gespeichert.most_similar_content_id == aehnlichster.id
+        assert gespeichert.most_similar_similarity_score == 0.9
+
+    @pytest.mark.asyncio
+    async def test_normalisiert_gleich_wird_nicht_angelegt(self, service):
+        neu, erste_id, _ = await service.add_generic_text(
+            self._hintergrundinfo("Wärmepumpen erreichen im Altbau eine JAZ von 3,4."),
+            "person-1",
+            _status(),
+            _herkunft(),
+        )
+        wieder_neu, zweite_id, _ = await service.add_generic_text(
+            self._hintergrundinfo("wärmepumpen erreichen im altbau eine jaz von 3,4"),
+            "person-2",
+            _status(),
+            _herkunft(),
+        )
+
+        assert (neu, wieder_neu) == (True, False)
+        assert zweite_id == erste_id
+
+    @pytest.mark.asyncio
+    async def test_ohne_text_prueft_der_titel(self, service):
+        """Ohne Text steht der Titel als Text da - und wird so auch geprueft."""
+        service.pruefe_dublette = AsyncMock(
+            return_value=Dublettenpruefung(vorhanden=None, aehnlichster=None)
+        )
+
+        await service.add_generic_text(
+            GenericText(text="", title="Nur ein Titel", references=[]),
+            "person-1",
+            _status(),
+            _herkunft(),
+        )
+
+        service.pruefe_dublette.assert_awaited_once_with("Nur ein Titel")
+
+
+def _status():
+    from domain.models.content_status import ContentStatus
+
+    return ContentStatus.VISIBLE
+
+
+def _herkunft():
+    from domain.models.content_origin import ContentOrigin
+
+    return ContentOrigin.MANUALLY_CREATED

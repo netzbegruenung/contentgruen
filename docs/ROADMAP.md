@@ -135,6 +135,3 @@ Einzelne Funktionen, die feststehen, aber noch nicht gebaut sind.
   Backend `commentary/getById` und `generictext/getById` existieren. Bis dahin führt der Knopf
   „In der Suche anzeigen“ auf der ausformulierten Fangkorb-Karte als Übergangslösung auf
   `/result?searchQuery=<Satz>` (`raw-input-list.component.html`).
-- **GET-Cache 5 min für rawinput-Pfade beobachten.** Der Fangkorb ist eine Mehrpersonen-Ansicht:
-  Sätze und Standwechsel anderer erscheinen bis zu 5 Minuten verzögert
-  (`auth/cache.interceptor.ts`). Bei spürbarer Reibung die rawinput-Pfade vom Cache ausnehmen.

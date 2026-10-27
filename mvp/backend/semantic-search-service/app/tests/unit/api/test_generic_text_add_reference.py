@@ -28,8 +28,10 @@ from dependencies import (
     get_reference_service,
     get_statement_service,
 )
+from services.content.base_content_service import Dublettenpruefung
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
+from utils.text_normalisierung import SperreJeText
 
 
 NEW_REFERENCE_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
@@ -68,6 +70,11 @@ def services():
         NEW_GENERIC_TEXT_ID,
         "Ein ausreichend langer Testtext fuer die Hintergrundinfo.",
     )
+    # Keine Dublette: Der Router legt Herkunft und Hintergrundinfo an.
+    generic_text_service.pruefe_dublette.return_value = Dublettenpruefung(
+        vorhanden=None, aehnlichster=None
+    )
+    generic_text_service.sperre.side_effect = lambda text: SperreJeText().halten(text)
 
     app.dependency_overrides[get_reference_service] = lambda: reference_service
     app.dependency_overrides[get_generic_text_service] = lambda: generic_text_service
@@ -98,6 +105,9 @@ def test_add_generic_text_with_unknown_reference_is_stored(services):
         "statement_id": None,
         "statement_text": None,
         "verknuepft": True,
+        "dublette": False,
+        "vorhanden_titel": None,
+        "vorhanden_eigen": False,
     }
 
     reference_service.add_reference.assert_called_once()

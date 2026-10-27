@@ -17,4 +17,9 @@ export class ContributionsService {
 
     return this.http.get<GetContributionsOfUserResponse>(url);
   }
+
+  /** Der Autor loescht seinen Beitrag; er bekommt den Zustand "geloescht" (#250). */
+  beitragLoeschen(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.baseUrl}/api/v1/content/${encodeURIComponent(id)}`);
+  }
 }

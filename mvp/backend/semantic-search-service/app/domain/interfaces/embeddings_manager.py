@@ -3,7 +3,17 @@ Interface for embeddings manager to enable dependency injection and testing.
 """
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Literal, Tuple
+
+
+@dataclass(frozen=True)
+class Suchparameter:
+    """Eine Suche in search_batch(): Typ (content_type), Filter, Limit wie bei search()."""
+
+    content_type: Optional[str]
+    filter_dict: Optional[Dict[str, Any]]
+    limit: int
 
 
 class IEmbeddingsManager(ABC):
@@ -50,6 +60,27 @@ class IEmbeddingsManager(ABC):
 
         Returns:
             List of search results
+        """
+        pass
+
+    @abstractmethod
+    async def search_batch(
+        self,
+        query: str,
+        suchen: List[Suchparameter],
+        praefix: Literal["query", "passage"] = "query",
+    ) -> List[List[Dict[str, Any]]]:
+        """
+        Several searches with the same query text, embedded once.
+
+        Args:
+            query: Search query text
+            suchen: One Suchparameter per search, as search() would take them
+            praefix: as in search()
+
+        Returns:
+            Per search its results, in the order of ``suchen``, each as search()
+            would return it
         """
         pass
 
