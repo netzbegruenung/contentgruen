@@ -14,7 +14,7 @@
 ## Ausgangspunkt
 
 Alles hängt am Wert des Headers `X-User`. Das BFF setzt ihn ausschließlich aus dem
-Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:647`, `ClaimUtilities.GetUserId`,
+Claim `sub`, ersatzweise `NameIdentifier` (`BFF/Program.cs:659`, `ClaimUtilities.GetUserId`,
 aufgerufen in `BFF/Proxy/IdentityHeaderTransform.cs:79`).
 Mit Keycloak ist das die Keycloak-UUID, mit `USE_KEYCLOAK=false` (dev/tst) die
 `userId` aus `managed-users.json` (`user-001`). **Vorher prüfen, welche Form die
@@ -36,6 +36,31 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   und sonst für nichts: Gemeldete Beiträge sperrt ein Admin, statt sie zu entfernen.
 
 ## Ablauf
+
+**Vorab: Sitzung beenden.** Vor allem anderen, damit die Person zwischen den Schritten
+nichts Neues anlegt. Das BFF prüft bei jeder Anfrage mit Anmelde-Cookie, ob das Konto noch
+besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und löscht es:
+
+- **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
+  den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
+- **Netzbegrünung-Login:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
+  Konfigurationsverzeichnis des BFF eintragen (`GELOESCHTE_KONTEN_PATH`, Standard
+  `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
+  `#` und Leerzeilen zählen nicht. Das Cookie trägt keine Tokens, deshalb kann das BFF
+  Keycloak nicht selbst fragen; das Löschen in Keycloak (Schritt 4) allein beendet die
+  Sitzung nicht.
+
+Beide Dateien liest das BFF spätestens nach fünf Minuten neu
+(`BFF/Services/ManagedUserService.cs:16`, `BFF/Services/GeloeschteKontenService.cs`), nach
+einem Neustart sofort; also danach das BFF neu starten. Ob es die Liste liest, zeigt die
+Zeile „Loaded N deleted accounts from …“ im BFF-Log, eine abgewiesene Sitzung die Zeile
+„Session of user … ended“ mit dem Pseudonym der Kennung. Der Eintrag in
+`geloeschte-konten.txt` wird überflüssig, sobald zweierlei 14 Tage zurückliegt: der
+Neustart, nach dem das BFF ihn gelesen hat, und das Löschen des Keycloak-Kontos
+(Schritt 4). Ab dann kann kein Cookie mehr gelten, denn ohne Anfrage läuft es nach 14
+Tagen ab, und jede Anfrage seit dem Neustart wurde abgewiesen. Dann wieder entfernen.
+Solange das Keycloak-Konto besteht, kann sich die Person neu anmelden; die Liste weist
+dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
    die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
@@ -78,14 +103,14 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
    wo der Text selbst die Person erkennbar macht** — das ist eine Einzelfallprüfung,
    kein Filterlauf.
 4. **Konto.** Keycloak-Konto im Realm löschen, bzw. Eintrag aus
-   `mvp/config/managed-users.json` entfernen und das BFF neu starten (Cache 5 min,
-   `BFF/Services/ManagedUserService.cs:14`). Die Datei ist **nicht mehr eingecheckt**
-   (`.gitignore:19`); getrackt ist nur `managed-users.example.json`. Was bis zur Umbenennung
-   in `b993b0c4` darin stand, bleibt in der Git-Historie
+   `mvp/config/managed-users.json` entfernen, falls nicht schon vorab geschehen, und das
+   BFF neu starten (Cache 5 min, `BFF/Services/ManagedUserService.cs:16`). Die Datei ist
+   **nicht mehr eingecheckt** (`.gitignore:19`); getrackt ist nur
+   `managed-users.example.json`. Was bis zur Umbenennung in `b993b0c4` darin stand, bleibt in der Git-Historie
    (`git log --follow -- mvp/config/managed-users.example.json`).
    Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
-   (`BFF/Services/ManagedUserService.cs:110`).
+   (`BFF/Services/ManagedUserService.cs:128`).
 
 ## Feedback
 
@@ -113,19 +138,15 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
 - **Anonymisieren vor Löschen.** Erst der Payload-Lauf über alle vier Felder, dann
   die Einzelfall-Löschungen. Andersherum fehlen die gelöschten Punkte im
   Anonymisierungslauf, und ein Punkt mit fremden Mitautoren wäre schon weg.
-- **Der Anzeigename kommt mit der nächsten Anfrage zurück.** Der Semantic-Service legt
-  ihn aus dem Header `X-User-Display-Name` an, sobald er ihn nicht im Prozess-Cache hat
-  (`services/anzeigename_service.py`). Solange das Anmelde-Cookie der Person gilt, entsteht
-  die Zeile in `users` nach einem Neustart des Dienstes wieder — auch nach Schritt 4, denn
-  ein gelöschtes Konto bleibt bis zum Ablauf des Cookies angemeldet. Das Cookie läuft
-  **gleitend**: 14 Tage ab der letzten Nutzung (`BFF/Program.cs:92-93`, `ExpireTimeSpan`
-  und `SlidingExpiration`, für den Beta-Zugang `:149-150`), und das BFF prüft das Konto bei
-  späteren Anfragen nicht mehr. Wer weiter Gut gesagt benutzt, bleibt also ohne Ende
-  angemeldet und kann neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Kommando für
-  Schritt 1 und 2 und den Lauf für Schritt 3 deshalb nach 14 Tagen noch einmal laufen
-  lassen, danach auch das `VACUUM FULL`; beide sind wiederholbar. Findet der zweite Lauf
-  noch Zeilen, war die Person in der Zwischenzeit aktiv: nach weiteren 14 Tagen
-  wiederholen, bis ein Lauf leer bleibt.
+- **Erst die Sitzung, dann die Daten.** Der Semantic-Service legt den Anzeigenamen aus
+  dem Header `X-User-Display-Name` neu an, sobald er ihn nicht im Prozess-Cache hat
+  (`services/anzeigename_service.py`), und solange das Anmelde-Cookie gilt, kann die Person
+  neue Sätze, Stimmen, Einwürfe und Beiträge anlegen. Das Cookie läuft **gleitend**: 14 Tage
+  ab der letzten Nutzung (`BFF/Program.cs`, `ExpireTimeSpan` und `SlidingExpiration`, in
+  beiden Zweigen). Deshalb steht „Sitzung beenden“ vor Schritt 1: Ist das Cookie
+  abgewiesen, kommt nichts mehr nach, und ein Lauf genügt. Wer die Reihenfolge vertauscht
+  oder die Prüfung im BFF-Log nicht sieht, lässt Schritt 1 bis 3 nach dem Beenden der
+  Sitzung noch einmal laufen; alle drei sind wiederholbar.
 - **`VACUUM FULL` danach.** `DELETE` markiert in PostgreSQL nur; die alten Kennungen
   stehen bis zum Table-Rewrite physisch auf der Platte.
 
