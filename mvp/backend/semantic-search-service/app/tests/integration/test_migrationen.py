@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
+from infrastructure.database import migrationen
 from infrastructure.database.models import Base
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
@@ -156,7 +157,7 @@ def test_es_gibt_migrationen():
 def test_ausnahmen_stehen_in_der_readme():
     readme = (postgres.MIGRATIONEN / "README.md").read_text(encoding="utf-8")
     abschnitt = readme.split("### Erneut anwenden", 1)[1].split("\n## ", 1)[0]
-    for name in NUR_EINMAL:
+    for name in NUR_EINMAL | migrationen.NICHT_WIEDERHOLBAR.keys():
         assert f"`{name}`" in abschnitt
 
 
@@ -265,3 +266,197 @@ def test_vergleich_sieht_das_init_skript_vor_285(wegwerf_schema, modell_schema):
     abweichungen = _abweichungen(_schema_der(db), modell_schema)
 
     assert {"indizes", "trigger", "funktionen"} <= abweichungen.keys()
+
+
+# --- Automatisches Einspielen (#293) ------------------------------------------
+
+
+def test_einspielen_auf_neuer_datenbank_ergibt_das_modell(
+    aktuelle_datenbank, modell_schema
+):
+    """
+    Wie bei run-local.sh wipe: init.sql und create_all haben das Schema schon
+    angelegt. Die wiederholbaren Skripte laufen trotzdem und landen im Protokoll,
+    die zwei nicht wiederholbaren erkennt der Lauf an ihrer Wirkung.
+    """
+    eingespielt = migrationen.einspielen(
+        aktuelle_datenbank.engine, postgres.MIGRATIONEN
+    )
+
+    assert eingespielt == [
+        s.name for s in SKRIPTE if s.name not in migrationen.NICHT_WIEDERHOLBAR
+    ]
+    assert migrationen.protokoll(aktuelle_datenbank.engine) == {
+        s.name: (
+            migrationen.ERKANNT
+            if s.name in migrationen.NICHT_WIEDERHOLBAR
+            else migrationen.ANGEWENDET
+        )
+        for s in SKRIPTE
+    }
+    assert _abweichungen(_schema_der(aktuelle_datenbank), modell_schema) == {}
+
+
+@pytest.mark.parametrize(
+    "init",
+    [postgres.INIT_SKRIPT, INIT_VOR_285, INIT_VOR_DATENSPARSAMKEIT],
+    ids=["init", "init_vor_285", "init_vor_datensparsamkeit"],
+)
+def test_einspielen_ab_init_skript_ergibt_das_modell(
+    init, wegwerf_schema, modell_schema
+):
+    """Die Kettentests fuer den automatischen Ablauf, zweimal hintereinander."""
+    db = _aus_init_skript(wegwerf_schema, init)
+
+    migrationen.einspielen(db.engine, postgres.MIGRATIONEN)
+
+    assert migrationen.einspielen(db.engine, postgres.MIGRATIONEN) == []
+    assert _abweichungen(_schema_der(db), modell_schema) == {}
+
+
+def test_einspielen_ohne_tabellen_der_skripte_ergibt_das_modell(
+    aktuelle_datenbank, modell_schema
+):
+    """Wie test_kette_legt_tabellen_an_wie_das_modell, nur ueber den Ablauf."""
+    tabellen = {
+        name
+        for skript in SKRIPTE
+        for name in ANGELEGT.findall(skript.read_text(encoding="utf-8"))
+    }
+    with aktuelle_datenbank.engine.begin() as c:
+        for tabelle in tabellen:
+            c.execute(text(f"DROP TABLE {tabelle} CASCADE"))
+
+    migrationen.einspielen(aktuelle_datenbank.engine, postgres.MIGRATIONEN)
+
+    assert _abweichungen(_schema_der(aktuelle_datenbank), modell_schema) == {}
+
+
+def test_einspielen_spielt_datensparsamkeit_nur_auf_altem_stand_ein(wegwerf_schema):
+    db = _aus_init_skript(wegwerf_schema, INIT_VOR_DATENSPARSAMKEIT)
+
+    eingespielt = migrationen.einspielen(db.engine, postgres.MIGRATIONEN)
+
+    assert "2026-08-25-usage-events-datensparsamkeit.sql" in eingespielt
+    assert (
+        migrationen.protokoll(db.engine)["2026-08-25-usage-events-datensparsamkeit.sql"]
+        == migrationen.ANGEWENDET
+    )
+
+
+def test_einspielen_leert_eingespielte_suchereignisse_nicht(aktuelle_datenbank):
+    """
+    Von Hand eingespielt, noch ohne Protokoll: Das TRUNCATE der Pseudonymisierung
+    darf die seither erfassten Suchereignisse nicht treffen.
+    """
+    with aktuelle_datenbank.engine.begin() as c:
+        c.execute(
+            text(
+                "INSERT INTO search_events (actor_hash, results_count) VALUES ('a', 0)"
+            )
+        )
+
+    migrationen.einspielen(aktuelle_datenbank.engine, postgres.MIGRATIONEN)
+
+    with aktuelle_datenbank.engine.begin() as c:
+        assert c.execute(text("SELECT count(*) FROM search_events")).scalar_one() == 1
+
+
+def test_einspielen_bei_belegter_sperre_fehlgeschlagen_und_spaeter_wiederholt(
+    aktuelle_datenbank,
+):
+    """
+    2026-10-26-init-angleichen.sql wartet 5 s auf die Sperre der Nutzungstabellen
+    und bricht dann ab. Der Lauf vermerkt das und wirft; der naechste holt es nach.
+    """
+    skript = "2026-10-26-init-angleichen.sql"
+    with aktuelle_datenbank.engine.connect() as sperre:
+        sperre.execute(text("LOCK TABLE usage_tracking IN ACCESS SHARE MODE"))
+        with pytest.raises(migrationen.MigrationFehlgeschlagen, match=skript):
+            migrationen.einspielen(aktuelle_datenbank.engine, postgres.MIGRATIONEN)
+        assert migrationen.protokoll(aktuelle_datenbank.engine)[skript] == (
+            migrationen.FEHLGESCHLAGEN
+        )
+        sperre.rollback()
+
+    eingespielt = migrationen.einspielen(
+        aktuelle_datenbank.engine, postgres.MIGRATIONEN
+    )
+
+    assert eingespielt[0] == skript
+    assert set(migrationen.protokoll(aktuelle_datenbank.engine).values()) <= {
+        migrationen.ANGEWENDET,
+        migrationen.ERKANNT,
+    }
+
+
+def _skript(sql: str, nachlauf: str = "") -> str:
+    return f"-- Test\n-- Anwenden: siehe README.md in diesem Verzeichnis.\n\nBEGIN;\n{sql}\nCOMMIT;\n{nachlauf}\n"
+
+
+def test_einspielen_nimmt_neue_datei_ohne_codeaenderung_mit(
+    aktuelle_datenbank, tmp_path
+):
+    (tmp_path / "2026-10-27-a.sql").write_text(
+        _skript("CREATE TABLE IF NOT EXISTS itest_a (n INT);")
+    )
+    assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == [
+        "2026-10-27-a.sql"
+    ]
+
+    (tmp_path / "2026-10-28-b.sql").write_text(
+        _skript("INSERT INTO itest_a VALUES (1);")
+    )
+
+    assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == [
+        "2026-10-28-b.sql"
+    ]
+    with aktuelle_datenbank.engine.begin() as c:
+        assert c.execute(text("SELECT count(*) FROM itest_a")).scalar_one() == 1
+
+
+def test_einspielen_holt_nur_den_gescheiterten_nachlauf_nach(
+    aktuelle_datenbank, tmp_path
+):
+    """Scheitert das VACUUM nach dem COMMIT, laeuft beim naechsten Mal nur das VACUUM."""
+    name = "2026-10-27-mit-vacuum.sql"
+    (tmp_path / name).write_text(
+        _skript(
+            "CREATE TABLE IF NOT EXISTS itest_zaehler (n INT);\n"
+            "INSERT INTO itest_zaehler VALUES (1);",
+            "VACUUM FULL itest_spaeter;",
+        )
+    )
+
+    assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == [name]
+    assert migrationen.protokoll(aktuelle_datenbank.engine)[name] == (
+        migrationen.NACHLAUF_OFFEN
+    )
+
+    with aktuelle_datenbank.engine.begin() as c:
+        c.execute(text("CREATE TABLE itest_spaeter (n INT)"))
+    assert migrationen.einspielen(aktuelle_datenbank.engine, tmp_path) == []
+
+    assert migrationen.protokoll(aktuelle_datenbank.engine)[name] == (
+        migrationen.ANGEWENDET
+    )
+    with aktuelle_datenbank.engine.begin() as c:
+        assert c.execute(text("SELECT count(*) FROM itest_zaehler")).scalar_one() == 1
+
+
+def test_einspielen_rollt_fehlgeschlagene_migration_ganz_zurueck(
+    aktuelle_datenbank, tmp_path
+):
+    name = "2026-10-27-kaputt.sql"
+    (tmp_path / name).write_text(
+        _skript("CREATE TABLE itest_halb (n INT);\nSELECT * FROM itest_gibt_es_nicht;")
+    )
+
+    with pytest.raises(migrationen.MigrationFehlgeschlagen):
+        migrationen.einspielen(aktuelle_datenbank.engine, tmp_path)
+
+    with aktuelle_datenbank.engine.begin() as c:
+        assert c.execute(text("SELECT to_regclass('itest_halb')")).scalar() is None
+    assert migrationen.protokoll(aktuelle_datenbank.engine) == {
+        name: migrationen.FEHLGESCHLAGEN
+    }

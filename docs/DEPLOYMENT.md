@@ -48,9 +48,8 @@ Then access:
 - **Operation:** runs on verdigado's internal infrastructure, like production. Hosts, access
   and the deployment procedure are documented internally, not in this repository.
 - **Images:** floating `:main` tag, rolled out **manually** by the operators. A merge to `main`
-  does not reach this environment by itself, so new database migrations are applied before the
-  new image goes live, see
-  [`mvp/backend/postgres-app/migrations/README.md`](../mvp/backend/postgres-app/migrations/README.md).
+  does not reach this environment by itself. Database migrations need no manual step: the
+  semantic search service applies them on startup, see "Database migrations" below.
   Changes to existing data in Qdrant ship as scripts in `mvp/scripts/manual/` and usually run
   right after the new image goes live; each script's README section gives the order.
 
@@ -103,6 +102,41 @@ deploy anything by itself.
 > `:latest` moving and silently freeze production updates with no failing build to signal it.
 
 For urgent deployments, ask in the project channel (see below).
+
+---
+
+## 🗄 Database migrations
+
+The SQL migrations in `mvp/backend/postgres-app/migrations/` are part of the semantic search
+image (`/migrations`). On every start, after creating missing tables and before accepting
+requests, the service applies each migration that is not yet recorded in the table
+`migrationsprotokoll`, ordered by file name without `.sql`. Each migration and its record are
+committed in one transaction, so a migration runs exactly once.
+
+What this means for a rollout:
+
+- **Nothing to apply by hand.** Rolling out a new image is enough, in test and production alike.
+  The service starts serving only after its migrations are in.
+- **A failing migration stops the start.** It is rolled back and recorded as `fehlgeschlagen`;
+  later migrations do not run. The container exits and Docker restarts it
+  (`restart: unless-stopped`), which retries the migration. A migration that waits for a lock
+  (for example `2026-10-26-init-angleichen.sql`, 5 s) succeeds on a later attempt once the lock
+  is free. If it keeps failing, the service log names the migration and the first line of the
+  error; the previous image keeps working against the unchanged database.
+- **`VACUUM FULL` after the `COMMIT`** of three older migrations runs separately. If it fails,
+  the migration stays committed (`nachlauf_offen`), the service starts anyway and retries only
+  the `VACUUM FULL` on its next start.
+- **First start with this mechanism on an existing database:** migrations applied by hand
+  before are not in the table yet. The repeatable ones run once more (seconds, brief table
+  locks), the two non-repeatable ones are recognised by their effect and recorded as `erkannt`
+  without running.
+- **After restoring a backup** the table holds the state of the backup. Restart the semantic
+  search service so it applies migrations added since.
+
+Check the state with
+`SELECT name, status, zeitpunkt, fehler FROM migrationsprotokoll ORDER BY name;`.
+Details, the manual fallback and the convention for new migrations:
+[`mvp/backend/postgres-app/migrations/README.md`](../mvp/backend/postgres-app/migrations/README.md).
 
 ---
 
@@ -241,4 +275,4 @@ Thanks for helping make it more stable and useful!
 
 ---
 
-*Last updated: 2026-10-26*
+*Last updated: 2026-10-27*
