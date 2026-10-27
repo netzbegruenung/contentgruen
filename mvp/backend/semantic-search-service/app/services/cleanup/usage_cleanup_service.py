@@ -47,7 +47,8 @@ class UsageCleanupService:
 
     def cleanup_old_data(self) -> int:
         """
-        Perform cleanup of old usage events and compact old search events.
+        Perform cleanup of old usage events, compact old search events and
+        rewrite the search events of closed days in random order.
 
         Returns:
             Number of usage event records deleted

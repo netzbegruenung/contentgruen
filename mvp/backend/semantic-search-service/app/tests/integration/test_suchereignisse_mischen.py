@@ -41,22 +41,26 @@ def _pseudonym(tag: date, nummer: int) -> str:
     return f"{tag:%Y%m%d}{nummer:056d}"
 
 
+def _suche(c, tag: date, pseudonym: str, treffer: int = 0) -> None:
+    c.execute(
+        text(
+            "INSERT INTO search_events (actor_hash, results_count, timestamp)"
+            " VALUES (:pseudonym, :treffer, :zeit)"
+        ),
+        {
+            "pseudonym": pseudonym,
+            "treffer": treffer,
+            "zeit": datetime.combine(tag, time.min, tzinfo=timezone.utc),
+        },
+    )
+
+
 def _suchen(db, tag: date, anzahl: int = ANZAHL) -> list:
     """Suchen eines Tages, jede in ihrer eigenen Transaktion wie im Dienst."""
     gesucht = [_pseudonym(tag, nummer) for nummer in range(anzahl)]
     for nummer, pseudonym in enumerate(gesucht):
         with db.engine.begin() as c:
-            c.execute(
-                text(
-                    "INSERT INTO search_events (actor_hash, results_count, timestamp)"
-                    " VALUES (:pseudonym, :treffer, :zeit)"
-                ),
-                {
-                    "pseudonym": pseudonym,
-                    "treffer": nummer % 3,
-                    "zeit": datetime.combine(tag, time.min, tzinfo=timezone.utc),
-                },
-            )
+            _suche(c, tag, pseudonym, nummer % 3)
     return gesucht
 
 
@@ -112,12 +116,16 @@ def _zeilen(db) -> list:
 
 
 def _ohne_reihenfolge(reihenfolge: list, gesucht: list) -> bool:
-    # Bei 40 Zeilen ist jede der beiden Reihenfolgen zufaellig 1 zu 40!.
-    return (
-        sorted(reihenfolge) == gesucht
-        and reihenfolge != gesucht
-        and reihenfolge != gesucht[::-1]
+    # Gezaehlt werden Nachbarn, die auch beim Suchen aufeinander folgten (in einer
+    # der beiden Richtungen). Gemischt sind das im Mittel zwei; ein Drittel oder
+    # mehr ist bei 40 Zeilen zufaellig etwa 1 zu 100 Millionen. So faellt nicht nur
+    # die Reihenfolge selbst und ihre Umkehrung auf, sondern auch eine fast
+    # sortierte oder nur verschobene.
+    platz = {pseudonym: nummer for nummer, pseudonym in enumerate(gesucht)}
+    nachbarn = sum(
+        abs(platz[a] - platz[b]) == 1 for a, b in zip(reihenfolge, reihenfolge[1:])
     )
+    return sorted(reihenfolge) == gesucht and nachbarn < len(gesucht) // 3
 
 
 @pytest.fixture
@@ -202,3 +210,25 @@ def test_mische_abgeschlossene_tage_zweiter_lauf_behaelt_die_zeilen(db):
 
     assert _zeilen(db) == vorher
     assert _transaktionen(db, GESTERN) == 1
+
+
+def test_mische_abgeschlossene_tage_suche_waehrend_des_laufs(db):
+    """Eine Suche kurz vor Mitternacht, deren Suchereignis erst eingeht, waehrend
+    der Lauf mischt: Der Lauf wartet nicht auf sie, sie geht nicht verloren, und
+    der naechste Lauf mischt sie mit."""
+    gesucht = _suchen(db, GESTERN)
+    nachzuegler = _pseudonym(GESTERN, ANZAHL)
+    repository = _repository(db)
+
+    with db.engine.connect() as suche:
+        with suche.begin():
+            _suche(suche, GESTERN, nachzuegler)
+            assert repository.mische_abgeschlossene_tage(heute=HEUTE) == ANZAHL
+
+    assert nachzuegler in _nach_ctid(db, GESTERN)
+    assert _transaktionen(db, GESTERN) == 2
+
+    assert repository.mische_abgeschlossene_tage(heute=HEUTE) == ANZAHL + 1
+
+    assert _transaktionen(db, GESTERN) == 1
+    assert _ohne_reihenfolge(_nach_ctid(db, GESTERN), gesucht + [nachzuegler])

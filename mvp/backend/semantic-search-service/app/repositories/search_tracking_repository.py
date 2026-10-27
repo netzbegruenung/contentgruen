@@ -349,7 +349,9 @@ class SearchTrackingRepository:
 
         Danach tragen die Zeilen eines Tages alle dieselbe Transaktion (xmin) und
         liegen in zufaelliger Reihenfolge (ctid, pg_dump). Der laufende Tag bleibt,
-        wie er ist. Jeder Lauf mischt alle abgeschlossenen Tage neu, auch schon
+        wie er ist. Ein Suchereignis eines abgeschlossenen Tages, das erst waehrend
+        des Laufs eingeht (Suche kurz vor Mitternacht), sieht die Anweisung nicht:
+        Es bleibt erhalten und wird beim naechsten Lauf mitgemischt. Jeder Lauf mischt alle abgeschlossenen Tage neu, auch schon
         gemischte; das sind hoechstens die Tage der Frist, aeltere verdichtet
         verdichte_alte_suchereignisse vorher.
 

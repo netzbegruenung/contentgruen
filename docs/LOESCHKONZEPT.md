@@ -166,9 +166,13 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
   Tag in zufälliger Reihenfolge und in einer Transaktion neu
   (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
   abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
-  und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr, auch nicht nach dem
-  Einspielen eines älteren Dumps. Mit `ENABLE_USAGE_CLEANUP=false` entfällt das Mischen
-  mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf ungemischt. Die
+  und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_USAGE_CLEANUP=false`
+  entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
+  ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
+  eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
+  Mitternacht): Ihre Zeile trägt bis zum nächsten Lauf ein eigenes `xmin` und ist damit
+  als eine der letzten Suchen ihres Tages erkennbar; verloren geht dabei nichts. Die
   alten Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in
   der Datei, bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten
   roh auslesen); in Backups und im WAL, bis diese herausrotiert sind.
