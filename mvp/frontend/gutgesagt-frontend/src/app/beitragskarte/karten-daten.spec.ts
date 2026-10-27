@@ -135,6 +135,13 @@ describe('karten-daten', () => {
       expect(bild.bildUrl).toBe('https://example.org/dach.jpg');
     });
 
+    it('zeigt keine Interaktionen, wenn keine erfasst sind', () => {
+      // Das Post-Formular fragt sie nicht ab; gespeichert wird dann 0.
+      const post = ausSuchergebnis(paket('post_result', { platform: 'Instagram', author: '@a', engagement: 0 }));
+
+      expect(post.extra?.engagement).toBeUndefined();
+    });
+
     it('zaehlt fehlende Nutzung als 0', () => {
       expect(ausSuchergebnis(paket('generictext_result', { usage_count: undefined })).nutzung).toBe(0);
     });

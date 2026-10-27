@@ -303,4 +303,41 @@ public class AuthGatePipelineTests
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
         Assert.DoesNotContain("test-user", logs.TextAtOrAbove(LogLevel.Information));
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Search_WritesNoLogLine(bool authenticated)
+    {
+        // Eine Zeile je Suche traegt die genaue Uhrzeit. Je Tag durchgezaehlt passt sie
+        // zum Anlagezeitpunkt der Aussage, die dieselbe Suche anlegt (#275). Ab
+        // Information darf der Suchweg deshalb gar nichts schreiben, nicht nur keine
+        // Kennung.
+        var logs = new CapturingLoggerProvider();
+        using var host = CreateHost(useKeycloak: true, logs: logs);
+        using var client = host.CreateClient(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var warmup = await client.GetAsync("/api/check-session");
+        var beforeSearch = logs.Entries.Count;
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/search/searchByText")
+        {
+            Content = new StringContent("{\"query_text\":\"Waermepumpe\",\"limit\":5}"),
+        };
+        if (authenticated)
+        {
+            request.Headers.Add(TestUserHeader, "1");
+        }
+        using var response = await client.SendAsync(request);
+
+        // 502: YARP hat weitergeleitet, der ganze Suchweg im BFF ist gelaufen. Dass kein
+        // Backend antwortet, meldet YARP als Warnung; die entsteht nur hier im Test.
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        var lines = logs.Entries.Skip(beforeSearch)
+            .Where(e => e.Level >= LogLevel.Information)
+            .Where(e => !(e.Category == "Yarp.ReverseProxy.Forwarder.HttpForwarder"
+                          && e.Level == LogLevel.Warning))
+            .Select(e => $"{e.Category} {e.Level}: {e.Message}");
+        Assert.Equal("", string.Join(Environment.NewLine, lines));
+    }
 }

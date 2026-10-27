@@ -83,14 +83,12 @@ class StatementService(
         Returns:
         - A list of StatementResult objects representing the most similar statements to the query text.
         """
-        sanitized_query_text = query_text.replace(";", ",").replace("'", '"')
-
         logger.debug(
             f"Searching for statements with at least {min_replysuggestions_count} reply suggestions"
         )
 
         return await self._repository.search_statements_with_replies(
-            sanitized_query_text, limit, min_replysuggestions_count
+            query_text, limit, min_replysuggestions_count
         )
 
     async def search_filtered(
@@ -109,12 +107,10 @@ class StatementService(
         - min_similarity: Nur Treffer mit mindestens diesem Score. Gefiltert wird
           nach der Suche; es kommen also hoechstens `limit` Treffer zurueck.
         """
-        sanitized_query_text = query_text.replace(";", ",").replace("'", '"')
-
         if nur_kuratiert:
-            results = await self._repository.search_curated(sanitized_query_text, limit)
+            results = await self._repository.search_curated(query_text, limit)
         else:
-            results = await self._repository.search(sanitized_query_text, limit)
+            results = await self._repository.search(query_text, limit)
 
         if min_similarity is None:
             return results

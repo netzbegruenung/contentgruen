@@ -98,8 +98,8 @@ async def search_by_text(
 ) -> SearchResponse:
     try:
         # Keine Logzeile je Suche: Der Suchtext ist der sensibelste Einzelwert der
-        # Plattform, und schon die Uhrzeit der Zeile ordnete, je Tag durchgezaehlt,
-        # die Suchereignisse ihrer Uhrzeit zu (#239, search_tracking_service.py).
+        # Plattform, und schon die Uhrzeit der Zeile passte, je Tag durchgezaehlt, zum
+        # Anlagezeitpunkt der Aussage aus derselben Suche (#239, #275).
 
         # Handle both authenticated and anonymous users
         if x_user:
