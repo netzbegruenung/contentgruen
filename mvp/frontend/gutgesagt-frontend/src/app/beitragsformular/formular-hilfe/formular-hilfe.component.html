@@ -22,5 +22,34 @@
         <p *ngIf="hilfe.beispiel as beispiel" class="hilfe-beispiel">
             <strong>Beispiel:</strong> Auf „{{ beispiel.aussage }}“ → „{{ beispiel.antwort }}“
         </p>
+
+        <ng-container *ngIf="mitSchreibregeln">
+            <h3 class="hilfe-abschnitt" [id]="panelId + '-regeln'">Schreibregeln</h3>
+            <ol class="schreibregeln" [attr.aria-labelledby]="panelId + '-regeln'">
+                <li *ngFor="let regel of schreibregeln">{{ regel }}</li>
+            </ol>
+
+            <h3 class="hilfe-abschnitt" [id]="panelId + '-hilfen'">Schreibhilfen</h3>
+            <ul class="schreibhilfen" [attr.aria-labelledby]="panelId + '-hilfen'">
+                <li *ngFor="let hilfe of schreibhilfen"><strong>{{ hilfe.name }}:</strong> {{ hilfe.text }}</li>
+            </ul>
+
+            <ng-container *ngIf="mitTitelbeispielen">
+                <h3 class="hilfe-abschnitt" [id]="panelId + '-titel'">Titel: eine Behauptung in einem Satz</h3>
+                <ul class="hilfe-regeln titel-beispiele" [attr.aria-labelledby]="panelId + '-titel'">
+                    <li *ngFor="let titel of titelBeispiele.gut" class="regel regel-ist titel-gut">
+                        <span class="regel-zeichen" aria-hidden="true">✓</span>
+                        <span class="cdk-visually-hidden">Gut:</span>„{{ titel }}“
+                    </li>
+                    <li *ngFor="let titel of titelBeispiele.schwach" class="regel regel-nicht titel-schwach">
+                        <span class="regel-zeichen" aria-hidden="true">✗</span>
+                        <span class="cdk-visually-hidden">Schwach:</span>„{{ titel.titel }}“ – {{ titel.warum }}
+                    </li>
+                </ul>
+            </ng-container>
+
+            <p class="hilfe-hinweis">{{ nichtJedeAussage }}</p>
+            <p class="hilfe-hinweis">{{ erfundenesMelden }}</p>
+        </ng-container>
     </div>
 </div>
