@@ -8,7 +8,8 @@ for the content-registry work (registry refactor + Post/Image types); see
 ``docs/CONTENT_MODEL.md``.
 
 The whole module self-skips when Qdrant is not reachable, so a Docker-less CI/unit
-run stays green. Point at a different instance with ``QDRANT_URL``.
+run stays green. Point at a different instance with ``QDRANT_URL``. In the strict mode
+of ``scripts/check.sh --integration`` a missing stack aborts the run instead (``stack.py``).
 
 PostgreSQL: ``postgres_url`` and ``wegwerf_schema`` below, helpers in ``postgres.py``.
 """
@@ -18,16 +19,15 @@ import uuid
 
 import pytest
 import pytest_asyncio
-import requests
 
 from core.config import Settings
-from tests.integration import postgres
+from tests.integration import postgres, stack
 from services.embeddings.qdrant_embeddings_manager import QdrantEmbeddingsManager
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 
-QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+QDRANT_URL = stack.QDRANT_URL
 
 
 def pytest_configure(config):
@@ -38,18 +38,21 @@ def pytest_configure(config):
     )
 
 
-def _qdrant_reachable() -> bool:
-    """Return True if a Qdrant instance answers /healthz at QDRANT_URL."""
-    try:
-        resp = requests.get(f"{QDRANT_URL}/healthz", timeout=2)
-        return resp.status_code == 200
-    except requests.RequestException:
-        return False
+def pytest_sessionstart(session):
+    """Im Pflichtmodus vor dem ersten Test abbrechen, wenn der Stack fehlt."""
+    if not stack.pflicht():
+        return
+    fehlend = stack.fehlende_dienste()
+    if fehlend:
+        pytest.exit(
+            "Integrationssuite abgebrochen, Stack fehlt:\n- " + "\n- ".join(fehlend),
+            returncode=pytest.ExitCode.USAGE_ERROR,
+        )
 
 
 # Module-level guard: skip every integration test when there is no backing stack.
 requires_qdrant = pytest.mark.skipif(
-    not _qdrant_reachable(),
+    not stack.qdrant_erreichbar(),
     reason=f"Qdrant not reachable at {QDRANT_URL} (start docker-compose.local-dbs.yml)",
 )
 
@@ -105,19 +108,18 @@ def postgres_url():
 
     Ist ``POSTGRES_TEST_DATABASE_URL`` gesetzt, muss die Datenbank erreichbar sein;
     sonst ein Wegwerf-Container; ohne Docker werden die Tests uebersprungen,
-    in der CI schlagen sie fehl.
+    in der CI und im Pflichtmodus (``stack.py``) schlagen sie fehl.
     """
     url = os.environ.get(postgres.URL_VARIABLE)
-    if url:
-        assert postgres.erreichbar(url), f"{postgres.URL_VARIABLE} nicht erreichbar"
-        yield url
-        return
-    if not postgres.docker_verfuegbar():
-        grund = f"Weder {postgres.URL_VARIABLE} gesetzt noch Docker verfuegbar"
-        # In der CI waere Ueberspringen ein falsches Gruen.
-        if os.environ.get("CI"):
+    grund = stack.postgres_fehlt()
+    if grund:
+        # Eine gesetzte URL muss gehen; in der CI waere Ueberspringen ein falsches Gruen.
+        if url or os.environ.get("CI") or stack.pflicht():
             pytest.fail(grund)
         pytest.skip(grund)
+    if url:
+        yield url
+        return
     with postgres.wegwerf_container() as url:
         yield url
 
