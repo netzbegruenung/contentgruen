@@ -10,7 +10,7 @@ import { ContributionsViewComponent } from './contributions-view.component';
 import { ContributionsService } from '../services/contributions.service';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
-import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
+import { BeitragSheetComponent, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { EinwurfService } from '../services/einwurf.service';
 
 describe('ContributionsViewComponent', () => {
@@ -18,10 +18,13 @@ describe('ContributionsViewComponent', () => {
   let router: Router;
   let bottomSheet: MatBottomSheet;
   let eigeneLaden: jasmine.Spy;
+  /** Womit das Bottom Sheet schliesst; Standard: ohne Ergebnis. */
+  let sheetErgebnis: Observable<unknown>;
   let kennung: string | null;
   let nutzungsstatistik: UserUsageStats | null;
 
   beforeEach(() => {
+    sheetErgebnis = of(undefined);
     kennung = null;
     nutzungsstatistik = null;
   });
@@ -67,7 +70,7 @@ describe('ContributionsViewComponent', () => {
     router = TestBed.inject(Router);
     spyOn(router, 'navigate').and.resolveTo(true);
     bottomSheet = TestBed.inject(MatBottomSheet);
-    spyOn(bottomSheet, 'open');
+    spyOn(bottomSheet, 'open').and.callFake(() => ({ afterDismissed: () => sheetErgebnis }) as any);
   }
 
   async function erstellen(results: any[], mobil = false): Promise<void> {
@@ -322,6 +325,63 @@ describe('ContributionsViewComponent', () => {
     expect(komponente).toBe(BeitragSheetComponent);
     expect(konfiguration.ariaLabel).toBe('Text der Hintergrundinfo');
     expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('erlaubt im Bottom Sheet das Löschen des eigenen Beitrags', async () => {
+    await erstellen([beitrag()]);
+
+    karten()[0].click();
+
+    const [, konfiguration] = (bottomSheet.open as jasmine.Spy).calls.mostRecent().args;
+    expect(konfiguration.data.loeschbar).toBeTrue();
+  });
+
+  it('laedt nach dem Löschen die Seite neu, ohne den gelöschten Beitrag', async () => {
+    const vorher = [beitrag(), beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
+    const nachher = [beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
+    const laden = jasmine
+      .createSpy('getContributions')
+      .and.returnValues(
+        of({ results_count: 2, total_records_count: 2, results: vorher }),
+        of({ results_count: 1, total_records_count: 1, results: nachher }),
+      );
+    konfigurieren(laden);
+    sheetErgebnis = of(GELOESCHT);
+    await TestBed.compileComponents();
+    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture.detectChanges();
+
+    karten()[0].click();
+    fixture.detectChanges();
+
+    expect(laden).toHaveBeenCalledTimes(2);
+    expect(laden.calls.mostRecent().args).toEqual([1, 24]);
+    expect(karten().length).toBe(1);
+    expect(text('.album-statistik')).toContain('1 Beitrag');
+  });
+
+  it('springt eine Seite zurück, wenn der letzte Beitrag einer Seite gelöscht ist', async () => {
+    const seite = (n: number) =>
+      Array.from({ length: n }, (_, i) => beitrag({ id: `b${i}`, title: `Beitrag Nummer ${i}` }));
+    const laden = jasmine
+      .createSpy('getContributions')
+      .and.returnValues(
+        of({ results_count: 24, total_records_count: 25, results: seite(24) }),
+        of({ results_count: 1, total_records_count: 25, results: seite(1) }),
+        of({ results_count: 24, total_records_count: 24, results: seite(24) }),
+      );
+    konfigurieren(laden);
+    await TestBed.compileComponents();
+    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.onPageChange({ pageIndex: 1, pageSize: 24, length: 25 } as any);
+    fixture.detectChanges();
+    sheetErgebnis = of(GELOESCHT);
+
+    karten()[0].click();
+
+    expect(laden.calls.mostRecent().args).toEqual([1, 24]);
+    expect(fixture.componentInstance.pageIndex).toBe(0);
   });
 
   it('sagt, wenn es noch keine Beitraege gibt', async () => {

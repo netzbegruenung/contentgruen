@@ -319,7 +319,9 @@ async def delete_content(
 
     Kein Moderationsweg mehr: Gemeldete Beitraege sperrt ein Admin (siehe
     sperren). Der Endpunkt bleibt fuer Loeschungen aus Datenschutzgruenden, etwa
-    wenn ein Text eine Person erkennbar macht (docs/LOESCHKONZEPT.md).
+    wenn ein Text eine Person erkennbar macht (docs/LOESCHKONZEPT.md). Der Autor
+    loescht seinen Beitrag nicht hier, sondern ueber DELETE /api/v1/content/{id}:
+    Das setzt nur den Zustand "geloescht" (#250).
     """
     try:
         logger.info(f"Admin deleting content: {content_type}/{content_id}")

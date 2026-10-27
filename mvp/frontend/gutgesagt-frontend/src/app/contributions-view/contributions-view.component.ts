@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { filter, takeUntil } from 'rxjs/operators';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { CommonModule } from '@angular/common';
@@ -13,7 +13,7 @@ import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking
 import { AuthService } from '../auth/auth.service';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
-import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
+import { BeitragSheetComponent, BeitragSheetDaten, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
 import { tabMitTasteWaehlen } from '../shared/tab-tasten';
@@ -149,12 +149,27 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     this.fetchData(this.pageIndex + 1, this.pageSize);
   }
 
-  /** Oeffnet den Beitrag als volle Karte; schliessen per Wisch, Klick ausserhalb oder Escape. */
+  /**
+   * Oeffnet den Beitrag als volle Karte; schliessen per Wisch, Klick ausserhalb oder Escape.
+   * Hier stehen nur eigene Beitraege, deshalb darf das Sheet loeschen. Danach laedt die
+   * Seite neu, samt Statistik; war es der letzte Beitrag der Seite, die Seite davor.
+   */
   beitragOeffnen(karte: KartenDaten): void {
-    this.bottomSheet.open(BeitragSheetComponent, {
-      data: karte,
-      ariaLabel: karte.titel || karte.text || 'Beitrag',
-    });
+    const daten: BeitragSheetDaten = { ...karte, loeschbar: true };
+    this.bottomSheet
+      .open(BeitragSheetComponent, {
+        data: daten,
+        ariaLabel: karte.titel || karte.text || 'Beitrag',
+      })
+      .afterDismissed()
+      .pipe(filter((ergebnis) => ergebnis === GELOESCHT))
+      .subscribe(() => {
+        if (this.karten.length === 1 && this.pageIndex > 0) {
+          this.pageIndex--;
+        }
+        this.fetchData(this.pageIndex + 1, this.pageSize);
+        this.nutzungsstatistikLaden();
+      });
   }
 
   /**

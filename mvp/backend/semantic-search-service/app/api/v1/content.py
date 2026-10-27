@@ -1,8 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends, Query, Header
+from fastapi import APIRouter, HTTPException, Depends, Query, Header, Response
 from typing import List, Optional, Dict, Any
 import logging
+import uuid
 
-from dependencies import get_settings, get_reference_service
+from dependencies import (
+    get_beitrag_loeschen_service,
+    get_settings,
+    get_reference_service,
+)
 from dtos.content import (
     ContentGetAllResponse,
     SearchContentByTextRequest,
@@ -20,6 +25,10 @@ from services.anzeigename_service import (
     kennungsfelder_leer,
 )
 from services.content.reference_service import ReferenceService
+from services.content.beitrag_loeschen_service import (
+    BeitragLoeschenService,
+    LoeschErgebnis,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -229,3 +238,30 @@ async def get_recent_content(
     except Exception as e:
         logger.error(f"Error in /recent endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{beitrag_id}", status_code=204)
+async def beitrag_loeschen(
+    beitrag_id: uuid.UUID,
+    x_user: Optional[str] = Header(default=None),
+    service: BeitragLoeschenService = Depends(get_beitrag_loeschen_service),
+) -> Response:
+    """
+    Der Autor loescht seinen Beitrag: Zustand "geloescht", der Beitrag bleibt
+    gespeichert (#250). Endgueltig entfernen nur Admins nach dem Loeschkonzept
+    (DELETE /api/v1/moderation/content/..., docs/LOESCHKONZEPT.md).
+
+    404 auch fuer gesperrte und schon geloeschte Beitraege: Fuer den Autor sind
+    sie nicht da.
+    """
+    if not angemeldet(x_user):
+        raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
+
+    ergebnis = await service.loeschen(beitrag_id, x_user)
+    if ergebnis is LoeschErgebnis.NICHT_DA:
+        raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
+    if ergebnis is LoeschErgebnis.NICHT_AUTOR:
+        raise HTTPException(
+            status_code=403, detail="Löschen kann nur der Autor des Beitrags."
+        )
+    return Response(status_code=204)

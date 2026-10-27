@@ -162,10 +162,8 @@ export class EinwurfService {
   }
 
   /**
-   * Meine Einwuerfe: nur die selbst eingeworfenen, neueste zuerst.
-   *
-   * Immer frisch, weil der Fangkorb nie im Cache liegt (NIE_CACHEN in
-   * auth/cache.interceptor.ts): Ein gerade eingeworfenes Fundstueck steht sofort da.
+   * Meine Einwuerfe: nur die selbst eingeworfenen, neueste zuerst. Immer frisch,
+   * denn der Cache laesst den Fangkorb aus (NIE_CACHEN in auth/cache.interceptor.ts).
    */
   eigeneLaden(page: number, pageSize: number): Observable<EinwurfSeite> {
     const params = new HttpParams().set('page', page).set('page_size', pageSize);
