@@ -1,0 +1,200 @@
+[
+    {
+        "statement": "Windräder töten die Vögel!",
+        "commentaries": [
+            {
+                "title": "Glasscheiben sind für Vögel weit gefährlicher als Windräder",
+                "text": "Vogelschutz ist wichtig, da sind wir uns einig. Die größte Gefahr sind aber Glasscheiben: Die Vogelschutzwarten schätzen 100 bis 115 Millionen tote Vögel pro Jahr in Deutschland. Wer Vögel schützen will, fängt also am Fenster an.",
+                "short_text": "Vogelschutz ist wichtig. Die größte Gefahr sind aber Glasscheiben: geschätzt 100 bis 115 Millionen tote Vögel pro Jahr in Deutschland.",
+                "long_text": "Vogelschutz ist wichtig, da sind wir uns einig. Die Länderarbeitsgemeinschaft der Vogelschutzwarten schätzt, dass in Deutschland jedes Jahr 100 bis 115 Millionen Vögel an Glasscheiben sterben. Das ist eine Hochrechnung, keine Zählung, aber sie zeigt die Größenordnung. Windräder werden vor dem Bau auf Artenschutz geprüft, und an kritischen Standorten schalten sie zu bestimmten Zeiten ab. Wer Vögeln helfen will, kann sofort etwas tun: Fenster und Glasfassaden mit geprüften Mustern sichtbar machen.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "LfU Bayern: Vogelschlag an Glas (Schätzung der Länderarbeitsgemeinschaft der Vogelschutzwarten)",
+                        "reference_string": "https://www.lfu.bayern.de/natur/vogelschutzwarte/vogelschlag/index.htm"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T10:00:00"
+                }
+            },
+            {
+                "title": "Gute Standortplanung schützt Vögel und bringt sauberen Strom",
+                "text": "Niemand will, dass Rotmilan oder Storch zu Schaden kommen. Deshalb wird vor jedem Windpark geprüft, welche Arten dort brüten und jagen. So bekommen wir beides: sauberen Strom und geschützte Vögel.",
+                "short_text": "Vor jedem Windpark wird geprüft, welche Vögel dort brüten und jagen. So geht beides: sauberer Strom und Vogelschutz.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T11:00:00"
+                }
+            },
+            {
+                "title": "Ein Windpark vor Ort lässt sich am besten mit eigenen Erfahrungen erklären",
+                "text": "Die Sorge um die Vögel teile ich. [Hier ein eigenes Erlebnis: was du über einen Windpark in deiner Gegend weißt] Mir ist wichtig, dass wir Vögel und Klima zusammen schützen.",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T12:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T09:00:00"
+        }
+    },
+    {
+        "statement": "Erneuerbare Energien sind total unzuverlässig!",
+        "commentaries": [
+            {
+                "title": "Mehr als die Hälfte unseres Stroms kommt schon aus Erneuerbaren",
+                "text": "Eine sichere Stromversorgung wollen wir alle. 2024 kam schon mehr als die Hälfte des Stroms in Deutschland aus erneuerbaren Energien. Und das Netz bleibt stabil: Im Schnitt fiel der Strom 2023 nur 12,8 Minuten pro Stromkunde aus.",
+                "short_text": "2024 kam mehr als die Hälfte unseres Stroms aus Erneuerbaren. Und im Schnitt fiel der Strom 2023 nur 12,8 Minuten pro Stromkunde aus.",
+                "long_text": "Eine sichere Stromversorgung wollen wir alle. Laut Umweltbundesamt kamen 2024 54,4 Prozent des in Deutschland verbrauchten Stroms aus erneuerbaren Energien. Gleichzeitig meldet die Bundesnetzagentur für 2023 eine durchschnittliche Unterbrechung von 12,8 Minuten je Letztverbraucher, also weniger als eine Viertelstunde im ganzen Jahr. Erneuerbare und eine sichere Versorgung schließen sich nicht aus. Damit das so bleibt, bauen wir Netze und Speicher weiter aus.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Umweltbundesamt: Anteil erneuerbarer Energien am Bruttostromverbrauch",
+                        "reference_string": "https://www.umweltbundesamt.de/sites/default/files/medien/384/bilder/dateien/de_indikator_ener-04b_ee-brstrv_2025-04-25.pdf"
+                    },
+                    {
+                        "text": "Bundesnetzagentur: Versorgungsunterbrechungen Strom 2023",
+                        "reference_string": "https://www.bundesnetzagentur.de/SharedDocs/Pressemitteilungen/DE/2024/20241111_SAIDI_Strom.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T14:00:00"
+                }
+            },
+            {
+                "title": "Wind und Sonne ergänzen sich, Speicher und Netze machen den Rest",
+                "text": "Klar, nachts scheint keine Sonne und manchmal ist Flaute. Im Winter weht dafür oft mehr Wind, im Sommer scheint mehr Sonne. Mit Speichern, gut ausgebauten Netzen und dem Austausch mit unseren Nachbarländern wird daraus eine verlässliche Versorgung.",
+                "short_text": "Im Winter weht mehr Wind, im Sommer scheint mehr Sonne. Speicher, Netze und der Austausch mit Nachbarländern machen daraus verlässlichen Strom.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T15:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T13:00:00"
+        }
+    },
+    {
+        "statement": "Wir brauchen Atomkraft statt dieser Erneuerbaren!",
+        "commentaries": [
+            {
+                "title": "Strom aus Wind und Sonne ist heute die günstigste Wahl für neue Kraftwerke",
+                "text": "Bezahlbarer Strom ist das Ziel, da sind wir uns einig. Neue Solarparks und Windräder an Land erzeugen Strom für 4,1 bis 9,2 Cent pro Kilowattstunde. Und sie sind in wenigen Jahren gebaut.",
+                "short_text": "Neue Solarparks und Windräder an Land liefern Strom für 4,1 bis 9,2 Cent pro Kilowattstunde und sind schnell gebaut.",
+                "long_text": "Bezahlbarer und sicherer Strom ist das Ziel, da sind wir uns einig. Das Fraunhofer ISE hat 2024 die Kosten neuer Kraftwerke verglichen: Freiflächen-Solaranlagen und Windräder an Land erzeugen Strom für 4,1 bis 9,2 Cent pro Kilowattstunde. Selbst Solaranlagen mit Batteriespeicher sind danach günstiger als neue konventionelle Kraftwerke. Neue Reaktoren in Europa haben zuletzt viele Jahre länger gebraucht als geplant. Jeder Euro für Wind, Sonne, Speicher und Netze wirkt schneller.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Fraunhofer ISE: Photovoltaik mit Batteriespeicher günstiger als konventionelle Kraftwerke (Presseinformation 2024)",
+                        "reference_string": "https://www.ise.fraunhofer.de/de/presse-und-medien/presseinformationen/2024/photovoltaik-mit-batteriespeicher-guenstiger-als-konventionelle-kraftwerke.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T17:00:00"
+                }
+            },
+            {
+                "title": "Strom vom eigenen Dach macht unabhängiger als jedes Großkraftwerk",
+                "text": "Unabhängigkeit bei der Energie ist uns allen wichtig. Uran muss Deutschland importieren, die Sonne auf dem eigenen Dach nicht. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
+                "short_text": "Uran muss Deutschland importieren, die Sonne auf dem eigenen Dach nicht. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T18:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T16:00:00"
+        }
+    },
+    {
+        "statement": "Die Grünen wollen mir meine Heizung verbieten!",
+        "commentaries": [
+            {
+                "title": "Wer eine funktionierende Heizung hat, darf sie weiter nutzen und reparieren",
+                "text": "Niemand soll im Winter frieren oder sich verschulden. Eine funktionierende Heizung darf weiterlaufen, und wenn sie kaputtgeht, darf sie repariert werden. Die Regeln gelten für neu eingebaute Heizungen.",
+                "short_text": "Eine funktionierende Heizung darf weiterlaufen und repariert werden. Die Regeln gelten für neu eingebaute Heizungen.",
+                "long_text": "Niemand soll im Winter frieren oder sich verschulden, da sind wir uns einig. Nach dem Gebäudeenergiegesetz müssen bestehende Heizungen nicht ausgebaut werden: Eine funktionierende Heizung darf weiterlaufen, und eine kaputte darf repariert werden. Die Anforderungen an erneuerbare Wärme betreffen neu eingebaute Heizungen. Wer ohnehin tauschen muss, kann sich vorher beraten lassen und Förderung beantragen.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "BDEW: Fragen und Antworten zum Gebäudeenergiegesetz",
+                        "reference_string": "https://www.bdew.de/energie/waerme-waermewende-heizung/heizungsgesetz-gebaeudeenergiegesetz-faq/"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T20:00:00"
+                }
+            },
+            {
+                "title": "Beim Heizungstausch hilft eine Energieberatung mehr als jede Schlagzeile",
+                "text": "Die Unsicherheit beim Thema Heizung verstehe ich gut. Am meisten hilft eine Energieberatung für das eigene Haus: Sie zeigt, was sich lohnt und welche Förderung es gibt. Dann entscheidet man mit Zahlen statt mit Sorgen.",
+                "short_text": "Unsicher beim Thema Heizung? Eine Energieberatung für das eigene Haus zeigt, was sich lohnt und welche Förderung es gibt.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T21:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T19:00:00"
+        }
+    },
+    {
+        "statement": "Wärmepumpen funktionieren nur im Neubau!",
+        "commentaries": [
+            {
+                "title": "Wärmepumpen arbeiten auch in Altbauten effizient",
+                "text": "Im Altbau ist man zu Recht vorsichtig. Ein Feldtest des Fraunhofer ISE in bestehenden Häusern zeigt aber: Luft-Wärmepumpen machen dort aus einer Kilowattstunde Strom im Schnitt 3,3 Kilowattstunden Wärme.",
+                "short_text": "Feldtest in bestehenden Häusern: Luft-Wärmepumpen machen aus 1 Kilowattstunde Strom im Schnitt 3,3 Kilowattstunden Wärme.",
+                "long_text": "Im Altbau ist man zu Recht vorsichtig, denn jedes Haus ist anders. Das Fraunhofer ISE misst seit Jahren Wärmepumpen in bestehenden Wohngebäuden. In den Zwischenergebnissen von 2024 erreichen 22 Außenluft-Wärmepumpen eine mittlere Jahresarbeitszahl von 3,3, mit einer Spanne von 2,4 bis 4,0. Aus einer Kilowattstunde Strom werden also im Schnitt 3,3 Kilowattstunden Wärme. Ob es im eigenen Haus passt, klärt eine Energieberatung.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Fraunhofer ISE: Wärmepumpenfeldtest, Zwischenergebnisse bestätigen effizienten Betrieb auch im Altbau (2024)",
+                        "reference_string": "https://www.ise.fraunhofer.de/de/presse-und-medien/news/2024/waermepumpenfeldstest-zwischenergebnisse-bestaetigen-effizienten-betrieb-auch-im-altbau.html"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T23:00:00"
+                }
+            },
+            {
+                "title": "Ob eine Wärmepumpe passt, zeigt ein Blick auf das eigene Haus",
+                "text": "Jedes Haus ist anders, das stimmt. [Hier ein eigenes Erlebnis: was du über eine Wärmepumpe in einem älteren Haus weißt] Eine Energieberatung klärt, ob es bei dir passt.",
+                "style": "persönlich",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-02T00:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T22:00:00"
+        }
+    }
+]

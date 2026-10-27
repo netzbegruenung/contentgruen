@@ -1,0 +1,113 @@
+[
+    {
+        "statement": "E-Autos sind auch nicht besser für die Umwelt!",
+        "commentaries": [
+            {
+                "title": "Über sein ganzes Leben ist ein E-Auto deutlich klimafreundlicher als ein Benziner",
+                "text": "Die Frage ist berechtigt, denn die Batterie braucht bei der Herstellung viel Energie. Über das ganze Autoleben gerechnet verursacht ein E-Auto der Mittelklasse in Europa aber 66 bis 69 Prozent weniger Treibhausgase als ein vergleichbarer Benziner.",
+                "short_text": "Die Batterie kostet bei der Herstellung Energie. Über das ganze Autoleben verursacht ein E-Auto in Europa trotzdem 66 bis 69 Prozent weniger Treibhausgase als ein Benziner.",
+                "long_text": "Die Frage ist berechtigt, denn die Batterie braucht bei der Herstellung viel Energie. Der International Council on Clean Transportation hat 2021 den ganzen Lebensweg verglichen, von der Herstellung über den Betrieb bis zur Entsorgung. Ergebnis für Europa: Ein E-Auto der Mittelklasse verursacht 66 bis 69 Prozent weniger Treibhausgase als ein vergleichbarer Benziner. Der Rucksack aus der Herstellung wird im Betrieb aufgeholt, und je mehr Ökostrom im Netz ist, desto größer wird der Vorsprung.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "ICCT: A global comparison of the life-cycle greenhouse gas emissions of combustion engine and electric passenger cars (2021)",
+                        "reference_string": "https://theicct.org/publication/a-global-comparison-of-the-life-cycle-greenhouse-gas-emissions-of-combustion-engine-and-electric-passenger-cars/"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T10:00:00"
+                }
+            },
+            {
+                "title": "Mit jedem neuen Windrad fährt ein E-Auto sauberer",
+                "text": "Ein Verbrenner bleibt so schmutzig, wie er gebaut wurde. Ein E-Auto wird mit jedem Windrad und jeder Solaranlage im Netz sauberer. Und wer zu Hause mit eigenem Solarstrom lädt, fährt mit Sonne.",
+                "short_text": "Ein Verbrenner bleibt so schmutzig, wie er gebaut wurde. Ein E-Auto wird mit jedem Windrad und jeder Solaranlage im Netz sauberer.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T11:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T09:00:00"
+        }
+    },
+    {
+        "statement": "Ein Tempolimit bringt doch nichts fürs Klima!",
+        "commentaries": [
+            {
+                "title": "Ein Tempolimit spart sofort Millionen Tonnen CO2, dafür reichen Schilder",
+                "text": "Klimaschutz soll bezahlbar sein, da sind wir uns einig. Tempo 120 auf Autobahnen und 80 außerorts würden laut Umweltbundesamt 6,6 Millionen Tonnen CO2-Äquivalente im Jahr sparen und 2,8 Milliarden Liter Kraftstoff. Dafür reichen Schilder.",
+                "short_text": "Tempo 120 auf Autobahnen und 80 außerorts: laut Umweltbundesamt 6,6 Millionen Tonnen CO2-Äquivalente und 2,8 Milliarden Liter Sprit weniger im Jahr. Dafür reichen Schilder.",
+                "long_text": "Klimaschutz soll bezahlbar sein, da sind wir uns einig. Das Umweltbundesamt hat für das Jahr 2024 gerechnet: Ein Tempolimit von 120 km/h auf Autobahnen und 80 km/h außerorts spart 6,6 Millionen Tonnen CO2-Äquivalente und rund 2,8 Milliarden Liter Kraftstoff. Allein der direkte Effekt der niedrigeren Geschwindigkeit bringt sofort 4,9 Millionen Tonnen. Das wirkt ab dem ersten Tag. Nebenbei sinkt die Spritrechnung.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Umweltbundesamt: Tempolimit",
+                        "reference_string": "https://www.umweltbundesamt.de/themen/verkehr/nachhaltige-mobilitaet/tempolimit"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T13:00:00"
+                }
+            },
+            {
+                "title": "Ein Tempolimit macht das Fahren entspannter und spart Sprit",
+                "text": "Auf der Autobahn will jeder sicher und ohne Stress ankommen. Mit einem Tempolimit fließt der Verkehr gleichmäßiger, und der Tank hält länger. Weniger CO2 gibt es obendrauf.",
+                "short_text": "Mit Tempolimit fließt der Verkehr gleichmäßiger, und der Tank hält länger. Weniger CO2 gibt es obendrauf.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T14:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T12:00:00"
+        }
+    },
+    {
+        "statement": "Das Verbrenner-Aus killt unsere Autoindustrie!",
+        "commentaries": [
+            {
+                "title": "Wer heute einen Verbrenner fährt, darf ihn weiterfahren",
+                "text": "Die Sorge um Arbeitsplätze in der Autoindustrie nehme ich ernst. Die EU-Regeln für 2035 betreffen neu zugelassene Autos. Wer heute einen Verbrenner hat, darf ihn weiterfahren und verkaufen.",
+                "short_text": "Die EU-Regeln für 2035 betreffen neu zugelassene Autos. Wer heute einen Verbrenner hat, darf ihn weiterfahren und verkaufen.",
+                "long_text": "Die Sorge um Arbeitsplätze in der Autoindustrie nehme ich ernst. Die EU-Verordnung zu den CO2-Flottengrenzwerten setzt Ziele für neu zugelassene Pkw. Autos, die schon auf der Straße sind, betrifft sie nicht: Sie dürfen weiterfahren und als Gebrauchtwagen verkauft werden. Für die Hersteller ist der feste Zeitplan vor allem Planungssicherheit, um Fabriken und Zulieferer rechtzeitig umzustellen.",
+                "style": "faktisch",
+                "references": [
+                    {
+                        "text": "Verordnung (EU) 2023/851 zu CO2-Emissionsnormen für neue Pkw",
+                        "reference_string": "https://eur-lex.europa.eu/eli/reg/2023/851/oj"
+                    }
+                ],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T16:00:00"
+                }
+            },
+            {
+                "title": "Gute Autos aus Deutschland haben auch mit Elektroantrieb eine Zukunft",
+                "text": "Deutschland kann Autos bauen, darauf können wir stolz sein. Damit das so bleibt, müssen die besten E-Autos der Welt auch von hier kommen. Ein klarer Fahrplan hilft den Werken und den Beschäftigten dabei.",
+                "short_text": "Deutschland kann Autos bauen. Damit das so bleibt, müssen die besten E-Autos der Welt auch von hier kommen.",
+                "style": "brückenbauend",
+                "references": [],
+                "metadata": {
+                    "usage_count": 0,
+                    "created_at": "2025-09-01T17:00:00"
+                }
+            }
+        ],
+        "metadata": {
+            "usage_count": 0,
+            "created_at": "2025-09-01T15:00:00"
+        }
+    }
+]
