@@ -74,7 +74,12 @@ public class ManagedUserService
         if (validPath == null)
         {
             _logger.LogWarning("Managed users config not found. Tried paths: {Paths}", string.Join(", ", possiblePaths));
-            return new ManagedUsersConfig();
+            // Wie bei einer kaputten Datei (unten): eine kurz fehlende Datei, etwa waehrend sie
+            // ersetzt wird, darf nicht alle Beta-Zugaenge abmelden. Ohne frueheren Stand gilt
+            // eine leere Liste, fuer fuenf Minuten, damit die Warnung nicht jede Anfrage kommt.
+            _usersConfig ??= new ManagedUsersConfig();
+            _lastLoadTime = _time.GetUtcNow();
+            return _usersConfig;
         }
 
         try

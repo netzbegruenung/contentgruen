@@ -13,6 +13,9 @@ namespace BFF.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
+    /// <summary>Wert des Claims auth_method fuer einen Beta-Zugang; KontoPruefung liest ihn.</summary>
+    public const string AuthMethodManaged = "managed";
+
     private readonly ManagedUserService _managedUserService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthController> _logger;
@@ -94,7 +97,7 @@ public class AuthController : ControllerBase
             new Claim("name", user.DisplayName),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim("sub", user.UserId), // Subject claim for compatibility
-            new Claim("auth_method", "managed"),
+            new Claim("auth_method", AuthMethodManaged),
             new Claim("user_id", user.UserId)
         };
 

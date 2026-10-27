@@ -41,8 +41,8 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
 nichts Neues anlegt. Das BFF prüft bei jeder Anfrage mit Anmelde-Cookie, ob das Konto noch
 besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und löscht es:
 
-- **Beta-Zugang:** Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter
-  Schritt 4).
+- **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
+  den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
 - **Netzbegrünung-Login:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
   Konfigurationsverzeichnis des BFF eintragen (`GELOESCHTE_KONTEN_PATH`, Standard
   `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
@@ -54,8 +54,11 @@ Beide Dateien liest das BFF spätestens nach fünf Minuten neu
 (`BFF/Services/ManagedUserService.cs:16`, `BFF/Services/GeloeschteKontenService.cs`), nach
 einem Neustart sofort; also danach das BFF neu starten. Ob es die Liste liest, zeigt die
 Zeile „Loaded N deleted accounts from …“ im BFF-Log, eine abgewiesene Sitzung die Zeile
-„Session of user … ended“ mit dem Pseudonym der Kennung. Der Eintrag in `geloeschte-konten.txt` ist nach 14 Tagen überflüssig, weil kein
-Cookie länger ohne Anfrage gilt und jede Anfrage abgewiesen wird; dann wieder entfernen.
+„Session of user … ended“ mit dem Pseudonym der Kennung. Der Eintrag in
+`geloeschte-konten.txt` ist 14 Tage nach dem Löschen des Keycloak-Kontos (Schritt 4)
+überflüssig, weil kein Cookie länger ohne Anfrage gilt und jede Anfrage abgewiesen wird;
+dann wieder entfernen. Solange das Keycloak-Konto besteht, kann sich die Person neu
+anmelden; die Liste weist dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
    die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
@@ -105,7 +108,7 @@ Cookie länger ohne Anfrage gilt und jede Anfrage abgewiesen wird; dann wieder e
    (`git log --follow -- mvp/config/managed-users.example.json`).
    Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
-   (`BFF/Services/ManagedUserService.cs:120`).
+   (`BFF/Services/ManagedUserService.cs:125`).
 
 ## Vier Fallen
 

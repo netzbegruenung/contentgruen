@@ -236,6 +236,10 @@ _Avoid_: User, Mitglieder
 Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
 _Avoid_: Beta-Account, manueller User, Managed User
 
+**Netzbegrünung-Login**:
+Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung; die andere Kontoart ist der Beta-Zugang. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
+_Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
+
 **Besucher**:
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.
 _Avoid_: Gast, anonymer Nutzer

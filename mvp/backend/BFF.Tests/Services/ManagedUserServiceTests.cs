@@ -322,6 +322,20 @@ public class ManagedUserServiceTests
     }
 
     [Fact]
+    public async Task GetUserByIdAsync_KeepsLastLoadedUsers_WhenFileIsMissingForAMoment()
+    {
+        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        var uhr = new StellbareUhr();
+        var service = ServiceFor(path, uhr);
+        Assert.NotNull(await service.GetUserByIdAsync("user-001"));
+
+        File.Delete(path);
+        uhr.Vorstellen(TimeSpan.FromMinutes(6));
+
+        Assert.NotNull(await service.GetUserByIdAsync("user-001"));
+    }
+
+    [Fact]
     public async Task GetUserByIdAsync_ReturnsNull_AfterUserRemovedAndCacheExpired()
     {
         var path = WriteUsersFile(("ok@example.com", "user-001"), ("weg@example.com", "user-002"));
