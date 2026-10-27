@@ -195,8 +195,12 @@ Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Auss
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat. Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
 _Avoid_: Search Event, Suchprotokoll, Suchlog
+
+**Tageszähler der Suchen**:
+Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen und die Zahl der Personen, aber kein Tagespseudonym. Kennzahlen über längere Zeiträume zählen ihn mit.
+_Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
 Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.

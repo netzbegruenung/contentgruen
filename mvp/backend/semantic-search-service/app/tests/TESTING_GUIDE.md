@@ -49,6 +49,7 @@ database are tested in `tests/integration/` against PostgreSQL: migrations
 ```bash
 # from mvp/backend/semantic-search-service/app
 pytest tests/integration/test_migrationen.py tests/integration/test_suchereignisse.py \
+       tests/integration/test_suchereignisse_tageszaehler.py \
        tests/integration/test_suchen_ohne_treffer.py tests/integration/test_loeschkommando.py
 ```
 

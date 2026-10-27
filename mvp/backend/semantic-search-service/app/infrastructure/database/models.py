@@ -142,6 +142,23 @@ class SearchEvent(Base):
     )
 
 
+class SuchenJeTagZeile(Base):
+    """Tageszaehler der Suchen: was von Suchereignissen nach ihrer Frist bleibt.
+
+    Der Bereinigungsjob verdichtet Suchereignisse, die aelter als
+    search_event_retention_days sind, zu einer Zeile je UTC-Tag und loescht die
+    Einzelzeilen (#289). suchen zaehlt die Suchereignisse des Tages, personen die
+    verschiedenen Tagespseudonyme; die Pseudonyme selbst stehen nicht hier. Siehe
+    SearchTrackingRepository.verdichte_alte_suchereignisse.
+    """
+
+    __tablename__ = "suchen_je_tag"
+
+    tag = Column(Date, primary_key=True)
+    suchen = Column(Integer, nullable=False)
+    personen = Column(Integer, nullable=False)
+
+
 class SucheOhneTrefferZeile(Base):
     """Suchen ohne Treffer, gezaehlt je Aussage und Kalenderwoche.
 
