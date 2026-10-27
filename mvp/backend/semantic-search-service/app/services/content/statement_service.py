@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
@@ -158,7 +159,7 @@ class StatementService(
         if neu:
             return neu, statement_id, statement_text
 
-        async with self._verknuepfungs_sperren[statement_id]:
+        async with self._verknuepfungs_sperre(statement_id):
             aussage = await self._aussage_laden(statement_id)
             if (
                 aussage.origin is ContentOrigin.SEARCH_QUERY
@@ -260,12 +261,21 @@ class StatementService(
         - True if the reply suggestion was successfully added to the statement, False otherwise.
         """
 
+        async with self._verknuepfungs_sperre(statement_id):
+            return await self._antwortvorschlag_anhaengen(
+                statement_id, replysuggestion_id, content_type, relevance
+            )
+
+    @contextlib.asynccontextmanager
+    async def _verknuepfungs_sperre(self, statement_id: uuid.UUID):
+        """
+        Die Sperre je Aussage fuer Lesen-Aendern-Schreiben ihres Payloads (Verknuepfen,
+        Uebernahme beim Vorab-Anlegen).
+        """
         sperre = self._verknuepfungs_sperren[statement_id]
         try:
             async with sperre:
-                return await self._antwortvorschlag_anhaengen(
-                    statement_id, replysuggestion_id, content_type, relevance
-                )
+                yield
         finally:
             # Aufraeumen, sobald niemand mehr die Sperre haelt oder auf sie wartet -
             # sonst sammelte sich je beruehrter Aussage eine Sperre an.

@@ -57,8 +57,10 @@ const LESENDE_POSTS = [
  * Der Fangkorb ist der gemeinsame Vorrat aller Einwuerfe: Andere Mitwirkende aendern ihn
  * laufend, und was jemand als naechstes destilliert, haengt an der aktuellen Stufe.
  * Ein Stand von vor fuenf Minuten fuehrte zu doppelter Arbeit, daher kein Cache.
+ * Dasselbe gilt fuer "Hier fehlt eine Antwort": Was eben jemand beantwortet hat,
+ * soll dort nicht mehr stehen.
  */
-const NIE_CACHEN = ['/api/v1/rawinput/'];
+const NIE_CACHEN = ['/api/v1/rawinput/', '/api/v1/statement/unbeantwortet'];
 
 /**
  * Zaehlt Aenderungen. Eine GET-Antwort kommt nur in den Cache, wenn seit ihrer

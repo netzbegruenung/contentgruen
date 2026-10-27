@@ -135,6 +135,14 @@ describe('cacheInterceptor', () => {
     httpMock.expectOne(`${api}/rawinput/getRawInputs?page=1`).flush({ stand: 'neu' });
   });
 
+  it('haelt "Hier fehlt eine Antwort" nie im Cache', () => {
+    holen(`${api}/statement/unbeantwortet`);
+    httpMock.expectOne(`${api}/statement/unbeantwortet`).flush({ aussagen: [] });
+
+    holen(`${api}/statement/unbeantwortet`);
+    httpMock.expectOne(`${api}/statement/unbeantwortet`).flush({ aussagen: [] });
+  });
+
   it('laedt Meine Einwuerfe jedes Mal frisch', () => {
     // Ein gerade eingeworfenes Fundstueck soll sofort dastehen.
     const einwuerfe = TestBed.inject(EinwurfService);

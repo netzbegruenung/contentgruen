@@ -76,6 +76,14 @@ describe('Routentabelle', () => {
     }
   });
 
+  it('fuehrt nach "Selbst beantworten" aus Formular und Ergebnisseite zurueck auf "Hier fehlt eine Antwort"', () => {
+    const von = { von: 'hier-fehlt-eine-antwort' };
+
+    expect(elternFunktion('workflow/add-commentary')(snapshotMit(von))).toBe('/hier-fehlt-eine-antwort');
+    expect(gespeichertEltern(snapshotMit(von))).toBe('/hier-fehlt-eine-antwort');
+    expect(gespeichertEltern(snapshotMit({}))).toBe('/contribute');
+  });
+
   it('zeigt "Hier fehlt eine Antwort" nur Angemeldeten', () => {
     const eintrag = routes.find((route) => route.path === 'hier-fehlt-eine-antwort');
     expect(eintrag).withContext('Route fehlt').toBeTruthy();

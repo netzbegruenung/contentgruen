@@ -76,7 +76,7 @@ describe('HierFehltEineAntwortComponent', () => {
 
     const knopf = aussagen()[0].querySelector('a.selbst-beantworten') as HTMLAnchorElement;
     expect(knopf.textContent).toContain('Selbst beantworten');
-    expect(knopf.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1');
+    expect(knopf.getAttribute('href')).toBe('/workflow/add-commentary?aussage=a-1&von=hier-fehlt-eine-antwort');
   });
 
   it('sagt, wenn gerade nichts fehlt', () => {

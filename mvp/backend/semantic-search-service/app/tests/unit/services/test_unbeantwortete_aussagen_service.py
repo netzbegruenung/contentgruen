@@ -14,7 +14,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from services.suchen_ohne_treffer_service import SucheOhneTreffer
+from services.content.statement_service import StatementService
+from services.suchen_ohne_treffer_service import (
+    SucheOhneTreffer,
+    SuchenOhneTrefferService,
+)
 from services.unbeantwortete_aussagen_service import (
     UnbeantworteteAussage,
     UnbeantworteteAussagenService,
@@ -37,9 +41,9 @@ def _aussage(statement_id, text, tag):
 
 
 def _service(ohne_kommentar=(), gesucht=()):
-    statement_service = Mock()
+    statement_service = Mock(spec=StatementService)
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
-    suchen = Mock()
+    suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(return_value=list(gesucht))
     return UnbeantworteteAussagenService(statement_service, suchen)
 

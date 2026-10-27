@@ -11,12 +11,17 @@ import {
 } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
+import {
+  VON_HIER_FEHLT_EINE_ANTWORT,
+  VON_PARAM,
+} from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 
 /**
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
  * Kommentar oder mit Suchen ohne Treffer von mindestens zwei Personen), sortiert
  * nach Bedarf, und koennen sie selbst beantworten. Fuer absehbare Themen legen sie
- * hier Aussagen vorab an. Suchanfragen und Zahlen der Kennzahl zeigt die Seite nicht.
+ * hier Aussagen vorab an. Zahlen der Kennzahl zeigt die Seite nicht, und eine Aussage
+ * aus einer Suchanfrage erst ab der Schwelle der Kennzahl (zwei Personen).
  */
 @Component({
   selector: 'app-hier-fehlt-eine-antwort',
@@ -42,9 +47,12 @@ export class HierFehltEineAntwortComponent implements OnInit {
     this.laden();
   }
 
-  /** Query-Parameter fuer "Selbst beantworten": das Kommentarformular mit dieser Aussage. */
+  /**
+   * Query-Parameter fuer "Selbst beantworten": das Kommentarformular mit dieser
+   * Aussage; ?von= fuehrt die Pfeile hierher zurueck.
+   */
   beantwortenParams(aussage: UnbeantworteteAussage): Record<string, string> {
-    return { [AUSSAGE_PARAM]: aussage.statement_id };
+    return { [AUSSAGE_PARAM]: aussage.statement_id, [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT };
   }
 
   get anlegbar(): boolean {

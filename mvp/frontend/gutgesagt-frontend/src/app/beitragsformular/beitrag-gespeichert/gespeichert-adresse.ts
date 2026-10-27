@@ -1,6 +1,7 @@
 import { ActivatedRouteSnapshot } from '@angular/router';
 
 import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
+import { ROUTES } from '../../shared/constants/app.constants';
 
 /**
  * Was die Ergebnisseite nach dem Speichern wissen muss.
@@ -14,6 +15,17 @@ import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
  */
 export const VON_PARAM = 'von';
 export const SUCHE_PARAM = 'suche';
+
+/**
+ * ?von=hier-fehlt-eine-antwort: Das Formular kam ueber "Selbst beantworten" von
+ * "Hier fehlt eine Antwort". Es gilt nicht als aus der Suche (sonst zeigte die
+ * Ergebnisseite die letzte, fremde Suchanfrage), und die Pfeile fuehren dorthin zurueck.
+ */
+export const VON_HIER_FEHLT_EINE_ANTWORT = 'hier-fehlt-eine-antwort';
+
+export function vonHierFehltEineAntwort(params: { get(name: string): string | null }): boolean {
+  return params.get(VON_PARAM) === VON_HIER_FEHLT_EINE_ANTWORT;
+}
 
 export type Herkunft = 'fangkorb' | 'suche' | 'frei';
 
@@ -52,6 +64,6 @@ export function gespeichertEltern(snapshot: ActivatedRouteSnapshot): string {
       return suche ? `/result?searchQuery=${encodeURIComponent(suche)}` : '/search';
     }
     default:
-      return '/contribute';
+      return vonHierFehltEineAntwort(params) ? ROUTES.HIER_FEHLT_EINE_ANTWORT : '/contribute';
   }
 }

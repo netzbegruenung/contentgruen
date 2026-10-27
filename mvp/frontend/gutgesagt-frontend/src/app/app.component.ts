@@ -23,6 +23,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { KETTEN_ICONS } from './shared/fangkorb-texte';
+import { ROUTES } from './shared/constants/app.constants';
 
 @Component({
   selector: 'app-root',
@@ -51,6 +52,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   title = 'Gut gesagt';
   readonly kettenIcons = KETTEN_ICONS;
+  readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   private destroy$ = new Subject<void>();

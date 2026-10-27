@@ -107,8 +107,9 @@ async def get_by_id(
 
 
 # "Hier fehlt eine Antwort": unbeantwortete Aussagen fuer Mitwirkende. Nur
-# Aussagen, keine Suchanfragen und keine Zahlen der Kennzahl "Suchen ohne Treffer"
-# (services/unbeantwortete_aussagen_service.py).
+# Aussagen und keine Zahlen der Kennzahl "Suchen ohne Treffer"; eine Aussage aus
+# einer Suchanfrage erst ab der Schwelle der Kennzahl, nie die einer einzelnen
+# Person (services/unbeantwortete_aussagen_service.py).
 @router.get("/unbeantwortet", response_model=UnbeantworteteAussagenResponse)
 async def unbeantwortet(
     user_id: str = Depends(require_user),

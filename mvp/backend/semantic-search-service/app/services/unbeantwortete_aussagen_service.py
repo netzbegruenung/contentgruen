@@ -4,8 +4,10 @@
 Unbeantwortet ist nach Glossar eine Aussage ohne Kommentar oder eine, nach der
 mindestens zwei Personen ohne Treffer gesucht haben. Die zweite Quelle ist dieselbe
 wie die Admin-Kennzahl (SuchenOhneTrefferService.haeufigste): dieselbe Schwelle,
-nur sichtbare Aussagen, kein Suchtext. Mitwirkende erfahren nicht, wie oft gesucht
-wurde, nur dass gesucht wurde.
+nur sichtbare Aussagen. Stammt eine davon aus einer Suchanfrage, ist ihr Text der
+Suchtext der ersten suchenden Person (wie in der Admin-Kennzahl). Mitwirkende
+erfahren nicht, wie oft gesucht wurde, nur dass gesucht wurde; die Reihenfolge
+verraet allerdings, wonach haeufiger gesucht wurde.
 
 Sortiert nach Bedarf: zuerst die Aussagen mit Suchen ohne Treffer, absteigend nach
 der Zahl der Suchen, dann die uebrigen ohne Kommentar, neueste zuerst. Aussagen aus

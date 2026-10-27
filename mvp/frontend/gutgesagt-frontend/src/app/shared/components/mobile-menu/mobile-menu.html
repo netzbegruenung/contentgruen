@@ -40,7 +40,7 @@
                 <span class="menu-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
                 Fangkorb
             </button>
-            <a mat-button routerLink="/hier-fehlt-eine-antwort" (click)="close()" class="mobile-menu-item mobile-menu-fehlt-antwort">
+            <a mat-button [routerLink]="hierFehltEineAntwortPfad" (click)="close()" class="mobile-menu-item mobile-menu-fehlt-antwort">
                 <mat-icon>contact_support</mat-icon>
                 Hier fehlt eine Antwort
             </a>
