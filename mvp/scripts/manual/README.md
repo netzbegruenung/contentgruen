@@ -33,9 +33,12 @@ semantic-search-Container, mit dessen Qdrant-Umgebung:
   Stichprobe, mit welchem E5-Praefix die Vektoren eingebettet sind. Gibt nur Zaehler
   aus, keine Texte, IDs oder Autoren.
 - `text_normalisiert_nachtragen.py` – traegt das Payload-Feld `text_normalisiert`
-  fuer Aussagen und Kommentare nach (exakter Abgleich der Dublettenpruefung) und legt
-  den Keyword-Index an. Ohne `--ausfuehren` wird nur gezaehlt; idempotent. Erst nach
-  dem Ausrollen der Version laufen lassen, die das Feld schreibt.
+  fuer Aussagen, Kommentare und Hintergrundinfos nach (exakter Abgleich der
+  Dublettenpruefung) und legt den Keyword-Index an. Ohne `--ausfuehren` wird nur gezaehlt; idempotent. Erst nach
+  dem Ausrollen der Version laufen lassen, die das Feld schreibt, und erneut nach
+  jeder Version, die einen weiteren Typ aufnimmt (zuletzt Hintergrundinfos, #301):
+  Bis dahin findet die Pruefung aeltere Beitraege dieses Typs nur ueber die
+  Einbettung, eine nur klein geschriebene Kopie also nicht.
 
 Auf Test/Prod liegt kein Repo-Checkout; die Skripte werden heruntergeladen:
 

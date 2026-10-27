@@ -1,5 +1,5 @@
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
 from domain.models.generic_text import (
@@ -29,6 +29,23 @@ class AddGenericTextRequest(BaseModel):
     # keine bekannt ist, ihr Text. Ohne beides steht sie fuer sich.
     statement_id: Optional[UUID] = None
     statement_text: Optional[str] = Field(default=None, max_length=1000)
+    # Die Person hat diese vorhandene Hintergrundinfo gesehen und speichert trotzdem:
+    # Dann wird die neue angelegt, obwohl sie deren Dublette ist. Gilt nur fuer die
+    # gezeigte - ist inzwischen eine andere vorhanden, sieht die Person erst sie.
+    trotz_dublette_von: Optional[UUID] = None
+    # Die Person nimmt diese vorhandene, eigene Hintergrundinfo statt eine neue zu
+    # speichern: Dann haengt sie an der mitgeschickten Aussage. Erst diese Wahl
+    # verknuepft. Gilt wie trotz_dublette_von nur fuer die gezeigte.
+    vorhanden_nehmen: Optional[UUID] = None
+
+    # Trotzdem speichern und die vorhandene nehmen schliessen einander aus.
+    @model_validator(mode="after")
+    def hoechstens_eine_entscheidung(self) -> "AddGenericTextRequest":
+        if self.trotz_dublette_von is not None and self.vorhanden_nehmen is not None:
+            raise ValueError(
+                "trotz_dublette_von und vorhanden_nehmen schliessen einander aus"
+            )
+        return self
 
     # Leer (oder nur Leerraum) heisst: keine Aussage. Sonst mindestens
     # AUSSAGE_MIN_ZEICHEN - kuerzer ist keine Aussage, auf die man antworten kann.
@@ -63,8 +80,19 @@ class AddGenericTextResponse(BaseModel):
     # Ihr Text - bei Text-Anfragen kann das eine schon vorhandene, sehr aehnliche
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
-    # False nur, wenn eine Aussage angegeben war und nicht verknuepft werden konnte.
+    # Ohne Dublette: False nur, wenn eine Aussage angegeben war und nicht verknuepft
+    # werden konnte. Bei einer Dublette True nur, wenn die Person die eigene mit
+    # vorhanden_nehmen genommen hat und sie jetzt an der Aussage haengt; sonst False.
     verknuepft: bool = True
+    # True: Es gibt schon eine sehr aehnliche Hintergrundinfo; id ist deren ID, nichts
+    # wurde angelegt. Wie beim Kommentar (dtos/commentary.py) entscheidet die Person:
+    # zustimmen (Stimme), die eigene mit vorhanden_nehmen nehmen oder mit
+    # trotz_dublette_von trotzdem speichern. Eine fremde wird nie verknuepft.
+    dublette: bool = False
+    # Titel der vorhandenen Hintergrundinfo, damit das Formular sie nennen kann.
+    vorhanden_titel: Optional[str] = None
+    # Die vorhandene ist von derselben Person. Ohne Dublette False.
+    vorhanden_eigen: bool = False
 
 
 ### GetAll ###

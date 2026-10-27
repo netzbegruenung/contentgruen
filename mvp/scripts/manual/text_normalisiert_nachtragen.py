@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Traegt das Payload-Feld text_normalisiert fuer bestehende Aussagen und Kommentare
-nach und legt den Keyword-Index an. Grundlage des exakten Textabgleichs in der
-Dublettenpruefung (utils/text_normalisierung.py).
+Traegt das Payload-Feld text_normalisiert fuer bestehende Aussagen, Kommentare und
+Hintergrundinfos nach und legt den Keyword-Index an. Grundlage des exakten
+Textabgleichs in der Dublettenpruefung (utils/text_normalisierung.py).
 
 Erst NACH dem Ausrollen der Version laufen lassen, die das Feld schreibt - sonst
 kommen in der Zwischenzeit wieder Eintraege ohne Feld dazu. Die Logik liegt im

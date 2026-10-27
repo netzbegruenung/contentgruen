@@ -1,7 +1,7 @@
 """
 Nachtrag des Payload-Felds text_normalisiert fuer den Bestand.
 
-Neue und geaenderte Aussagen und Kommentare bekommen das Feld beim Schreiben
+Neue und geaenderte Aussagen, Kommentare und Hintergrundinfos bekommen das Feld beim Schreiben
 (QdrantBaseRepository.upsert). Was vorher geschrieben wurde, hat es nicht; die
 Dublettenpruefung findet solche Eintraege dann nur noch ueber die Vektortreffer.
 
