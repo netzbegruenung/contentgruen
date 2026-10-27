@@ -19,7 +19,8 @@ QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 PFLICHT_VARIABLE = "INTEGRATION_STACK_PFLICHT"
 
 
-def pflicht(env: Mapping[str, str] = os.environ) -> bool:
+def pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
+    env = os.environ if env is None else env
     return env.get(PFLICHT_VARIABLE, "") not in ("", "0")
 
 
@@ -33,7 +34,7 @@ def qdrant_erreichbar(url: str = QDRANT_URL) -> bool:
 
 def fehlende_dienste(
     qdrant_url: str = QDRANT_URL, env: Optional[Mapping[str, str]] = None
-) -> list:
+) -> list[str]:
     """Je fehlendem Dienst eine Meldung; leer, wenn der Stack da ist."""
     env = os.environ if env is None else env
     fehlend = []

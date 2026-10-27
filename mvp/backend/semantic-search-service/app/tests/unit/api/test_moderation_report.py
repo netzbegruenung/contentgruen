@@ -130,9 +130,9 @@ class TestAuthenticatedReportersAreLimitedByUser:
 
 
 class TestReporterIdentity:
-    """Aus tests/integration/api/v1/test_moderation_api.py: wer als Melder gespeichert wird."""
+    """Aus tests/integration/api/v1/test_moderation_api.py: die Kennung an der Meldung."""
 
-    def test_angemeldete_person_wird_als_melder_gespeichert(self, client, service):
+    def test_angemeldete_person_wird_mit_kennung_gespeichert(self, client, service):
         client.post(REPORT_URL, json=_payload(), headers={"X-User": "user-1"})
 
         assert service.report_content.await_args.kwargs["user_id"] == "user-1"

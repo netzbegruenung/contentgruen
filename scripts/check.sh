@@ -23,6 +23,9 @@ echo "== Python"; cd "$PY"
 ./venv/bin/python -m pytest app/tests/unit/ --ignore=app/tests/unit/services/test_seeding_implementation.py -q 2>&1 | tail -2; test "${PIPESTATUS[0]}" -eq 0
 if [ -n "$INTEGRATION" ]; then
   echo "== Python integration"
+  # Shown: skip/failure/error summary lines, the abort message of a missing stack (Exit: and
+  # its "- " lines, without pytest's repeat ending in "!") and the final count. For a
+  # traceback rerun the failing test with pytest directly.
   INTEGRATION_STACK_PFLICHT=1 ./venv/bin/python -m pytest app/tests/integration/ -q -rfEs 2>&1 \
     | grep -aE '^(SKIPPED|FAILED|ERROR|Exit: )|^- .*[^!]$|^=+ .*[0-9.]+s( \([0-9:]+\))? =+$' | tail -40
   test "${PIPESTATUS[0]}" -eq 0
