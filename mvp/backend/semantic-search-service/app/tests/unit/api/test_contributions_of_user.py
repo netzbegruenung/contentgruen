@@ -54,6 +54,9 @@ def nutzung():
     service.enrich_content_with_usage.side_effect = lambda eintraege: [
         {**eintrag, "usage_count": 7} for eintrag in eintraege
     ]
+    service.enrich_content_with_recent_usage.side_effect = lambda eintraege: [
+        {**eintrag, "usage_last_7_days": 2} for eintrag in eintraege
+    ]
     return service
 
 
@@ -175,6 +178,7 @@ def test_nutzung_nicht_lesbar_liefert_die_liste_mit_null_und_warnt(
 
     assert response.status_code == 200
     assert [e["usage_count"] for e in response.json()["results"]] == [0, 0]
+    assert [e["usage_last_7_days"] for e in response.json()["results"]] == [0, 0]
     logger.warning.assert_called_once()
 
 
@@ -215,3 +219,24 @@ def test_nutzung_wird_fuer_alle_eintraege_einer_seite_nachgetragen(
 
     uebergeben = nutzung.enrich_content_with_usage.call_args.args[0]
     assert [eintrag["id"] for eintrag in uebergeben] == [e.id for e in eintraege]
+
+
+def test_liefert_den_zuwachs_der_letzten_7_tage(client, repository):
+    """#349: Nutzung und Wochenzuwachs je Beitrag."""
+    repository.getByAuthor.return_value = [beitrag()]
+    repository.getCountByAuthor.return_value = 1
+
+    eintrag = client.get(URL, headers={"X-User": "person-1"}).json()["results"][0]
+
+    assert (eintrag["usage_count"], eintrag["usage_last_7_days"]) == (7, 2)
+
+
+def test_zuwachs_nicht_lesbar_liefert_die_liste_mit_null(client, repository, nutzung):
+    repository.getByAuthor.return_value = [beitrag()]
+    repository.getCountByAuthor.return_value = 1
+    nutzung.enrich_content_with_recent_usage.side_effect = RuntimeError("weg")
+
+    response = client.get(URL, headers={"X-User": "person-1"})
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["usage_last_7_days"] == 0

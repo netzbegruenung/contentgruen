@@ -68,14 +68,21 @@ async def search_content(
                 except Exception as e:
                     logger.warning(f"Herkunft {ref.reference_id} nicht lesbar: {e}")
 
-        # Die Nutzung liegt in PostgreSQL; nachgetragen wie bei /content/recent. Faellt
-        # PostgreSQL aus, fehlt nur die Zahl - die Liste selbst kommt aus Qdrant.
+        # Die Nutzung liegt in PostgreSQL; nachgetragen wie bei /content/recent, dazu
+        # der Zuwachs der letzten 7 Tage (#349). Faellt PostgreSQL aus, fehlen nur die
+        # Zahlen - die Liste selbst kommt aus Qdrant.
         eintraege = [beitrag.model_dump() for beitrag in beitraege]
         try:
-            mit_nutzung = get_usage_service().enrich_content_with_usage(eintraege)
+            nutzung = get_usage_service()
+            mit_nutzung = nutzung.enrich_content_with_recent_usage(
+                nutzung.enrich_content_with_usage(eintraege)
+            )
         except Exception as e:
             logger.warning(f"Nutzung fuer Meine Beitraege nicht lesbar, zeige 0: {e}")
-            mit_nutzung = [{**eintrag, "usage_count": 0} for eintrag in eintraege]
+            mit_nutzung = [
+                {**eintrag, "usage_count": 0, "usage_last_7_days": 0}
+                for eintrag in eintraege
+            ]
 
         response: GetContributionsOfUserResponse = GetContributionsOfUserResponse(
             results_count=len(mit_nutzung),

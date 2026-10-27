@@ -8,6 +8,10 @@ from typing import Optional, List, Dict, Any
 import uuid
 import hashlib
 
+from repositories.gesehene_nutzung_repository import (
+    GeseheneNutzungRepository,
+    get_gesehene_nutzung_repository,
+)
 from repositories.usage_tracking_repository import get_usage_repository
 from services.cache.cache_manager import get_trending_cache
 
@@ -17,9 +21,11 @@ logger = logging.getLogger(__name__)
 class UsageTrackingService:
     """Service for managing usage tracking."""
 
-    def __init__(self):
+    def __init__(self, gesehene_nutzung: Optional[GeseheneNutzungRepository] = None):
         self.repository = get_usage_repository()
         self.cache = get_trending_cache()
+        # Erst beim ersten Besuch geholt: die globale Instanz baut eine Verbindung auf.
+        self._gesehene_nutzung = gesehene_nutzung
 
     def _validate_content_id(self, content_id: Optional[str]) -> bool:
         """
@@ -163,6 +169,24 @@ class UsageTrackingService:
 
         return content_items
 
+    def enrich_content_with_recent_usage(
+        self, content_items: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Traegt ``usage_last_7_days`` nach: wie oft jeder Inhalt in den letzten
+        7 Tagen genutzt wurde, fuer "Meine Beitraege" (#349).
+        """
+        content_ids = []
+        for item in content_items:
+            try:
+                content_ids.append(uuid.UUID(str(item["id"])))
+            except (KeyError, ValueError, TypeError):
+                continue
+        zuwachs = self.repository.get_recent_usage_counts_batch(content_ids, days=7)
+        for item in content_items:
+            item["usage_last_7_days"] = zuwachs.get(str(item.get("id")), 0)
+        return content_items
+
     async def get_user_usage_stats(self, user_id: str) -> Dict[str, Any]:
         """
         Get comprehensive usage statistics for a user's contributed content.
@@ -174,6 +198,22 @@ class UsageTrackingService:
             Dict containing user statistics
         """
         return await self.repository.get_user_statistics(user_id)
+
+    async def nutzung_seit_letztem_besuch(self, user_id: str) -> int:
+        """
+        Wie oft die Beitraege der Person seit ihrem letzten Besuch genutzt wurden,
+        fuer die Rueckmeldung beim Anmelden (#349). Der Aufruf zaehlt als Besuch: Danach
+        gilt die heutige Nutzung als gesehen.
+
+        Verglichen wird die Gesamtnutzung aus der Nutzungsstatistik, also dieselbe
+        Zahl, die "Meine Beitraege" zeigt; eigene Kopien sind darin nicht enthalten.
+        """
+        stats = await self.get_user_usage_stats(user_id)
+        if self._gesehene_nutzung is None:
+            self._gesehene_nutzung = get_gesehene_nutzung_repository()
+        return self._gesehene_nutzung.neu_seit_letztem_besuch(
+            user_id, nutzung_jetzt=stats["total_usage_count"]
+        )
 
     def get_trending_content(
         self, limit: int = 10, hours: int = 24

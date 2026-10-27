@@ -403,3 +403,24 @@ class User(Base):
     aktualisiert_am = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class GeseheneNutzung(Base):
+    """
+    Wie oft die Beitraege einer Person genutzt waren, als sie es zuletzt gezeigt
+    bekam: der Stand fuer die Rueckmeldung beim Anmelden ("Seit deinem letzten Besuch
+    wurden deine Beitraege N-mal genutzt", #349). N ist die Nutzung jetzt minus
+    dieser Stand.
+
+    Bewusst ein Zaehlerstand und kein Zeitpunkt: Die Tabelle haelt nicht fest, wann
+    jemand die App geoeffnet hat, und haengt nicht an der Frist der usage_events.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-10-27-gesehene-nutzung.sql dokumentiert das Schema.
+    Loeschen: docs/LOESCHKONZEPT.md, Schritt 2.
+    """
+
+    __tablename__ = "gesehene_nutzung"
+
+    user_id = Column(String(255), primary_key=True)
+    nutzung = Column(Integer, nullable=False)

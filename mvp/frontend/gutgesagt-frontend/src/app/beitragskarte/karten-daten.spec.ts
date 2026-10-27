@@ -165,6 +165,13 @@ describe('karten-daten', () => {
       ...felder,
     });
 
+    it('uebernimmt Nutzung und Zuwachs der letzten 7 Tage', () => {
+      const daten = ausBeitrag(eintrag({ usage_last_7_days: 4 }));
+
+      expect([daten.nutzung, daten.nutzungLetzteWoche]).toEqual([12, 4]);
+      expect(ausBeitrag(eintrag()).nutzungLetzteWoche).toBe(0);
+    });
+
     it('uebernimmt den Anzeigenamen aus dem Einzelabruf', () => {
       expect(ausBeitrag(eintrag({ autor_name: 'Anna B.' })).autorName).toBe('Anna B.');
       expect(ausBeitrag(eintrag()).autorName).toBeNull();

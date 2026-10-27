@@ -13,6 +13,7 @@ import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
+import { RueckmeldungService } from './services/rueckmeldung.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
@@ -90,7 +91,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
-    private routeConfigService: RouteConfigService) {
+    private routeConfigService: RouteConfigService,
+    private rueckmeldung: RueckmeldungService) {
     this.logger.debug('AppComponent created');
   }
 
@@ -130,6 +132,9 @@ export class AppComponent implements OnInit, OnDestroy {
         // Update avatar based on authentication status
         this.updateAvatarForAuthStatus();
       });
+
+    // Rueckmeldung beim Anmelden, wie oft die eigenen Beitraege genutzt wurden (#349)
+    this.rueckmeldung.starten();
 
     // Try to fetch initial user info but don't redirect on failure
     this.authService.fetchUserInfo()

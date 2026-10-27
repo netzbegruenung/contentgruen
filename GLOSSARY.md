@@ -234,6 +234,10 @@ _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
 
+**Rückmeldung**:
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Als gezeigt gilt der Stand der Nutzung bei der letzten Anmeldung, nicht deren Zeitpunkt.
+_Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
+
 **Punkte**:
 Was eine Person durch die Wirkung ihrer Beiträge bei anderen sammelt: Nutzung durch andere, Zustimmung durch andere und abgeschlossene Quests. Fürs bloße Anlegen gibt es keine Punkte (ADR 0004).
 _Avoid_: XP, Score, Karma

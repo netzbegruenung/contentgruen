@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { SessionService } from './session.service';
@@ -28,6 +28,10 @@ export interface UserUsageStats {
     content_id: string;
     usage_count: number;
   }>;
+}
+
+export interface BesuchResponse {
+  nutzung_seit_letztem_besuch: number;
 }
 
 export interface TrendingContent {
@@ -173,6 +177,25 @@ export class UsageTrackingService {
       .pipe(
         catchError(error => {
           this.loggingService.error('Eigene Nutzungsstatistik nicht geladen', error);
+          return of(null);
+        })
+      );
+  }
+
+  /**
+   * Meldet einen Besuch der angemeldeten Person und liefert, wie oft ihre Beitraege
+   * seit dem letzten Besuch genutzt wurden (#349). POST, weil das Backend dabei den
+   * gezeigten Stand fortschreibt; die Person kommt wie bei der Nutzungsstatistik
+   * aus der Anmeldung, nicht aus dem Pfad.
+   *
+   * @returns Observable mit der Zahl, bei einem Fehler null
+   */
+  besuchMelden(): Observable<number | null> {
+    return this.http.post<BesuchResponse>(`${this.apiUrl}/users/me/besuch`, {})
+      .pipe(
+        map(antwort => antwort.nutzung_seit_letztem_besuch),
+        catchError(error => {
+          this.loggingService.error('Besuch nicht gemeldet', error);
           return of(null);
         })
       );
