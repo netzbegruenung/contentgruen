@@ -3,7 +3,8 @@ Background service for cleaning up old usage tracking data.
 Implements data retention policy for privacy compliance.
 
 Derselbe taegliche Job verdichtet Suchereignisse nach ihrer eigenen Frist zu
-Tageszaehlern der Suchen ohne Tagespseudonym (#289, siehe SearchTrackingRepository).
+Tageszaehlern der Suchen ohne Tagespseudonym (#289, siehe SearchTrackingRepository)
+und schreibt die Suchereignisse abgeschlossener Tage gemischt neu (#337).
 """
 
 import logging
@@ -52,6 +53,7 @@ class UsageCleanupService:
             Number of usage event records deleted
         """
         self._verdichte_suchereignisse()
+        self._mische_suchereignisse()
 
         logger.info(
             f"Starting usage data cleanup (retention: {self.retention_days} days)"
@@ -89,6 +91,19 @@ class UsageCleanupService:
             )
         except Exception as e:
             logger.error(f"Error compacting old search events: {e}", exc_info=True)
+
+    def _mische_suchereignisse(self) -> None:
+        """Suchereignisse abgeschlossener Tage gemischt neu schreiben.
+
+        Nach dem Verdichten, damit verdichtete Tage nicht erst gemischt werden.
+        Ein Fehler hier haelt die Bereinigung der Nutzungsereignisse nicht auf.
+        """
+        try:
+            self.search_repository.mische_abgeschlossene_tage()
+        except Exception as e:
+            logger.error(
+                f"Error rewriting search events of closed days: {e}", exc_info=True
+            )
 
     def _run_scheduled_jobs(self):
         """

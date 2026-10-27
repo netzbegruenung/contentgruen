@@ -159,15 +159,18 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
   stellen mit `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-reihenfolge.sql`
   um; dabei wird die Tabelle neu geschrieben, die alten Nummern stehen danach nicht mehr
   in ihr. In Backups und im WAL stehen sie, bis diese herausrotiert sind.
-  **Offen:** Die physische Reihenfolge der Zeilen folgt weiter dem Einfügen. Wer die
-  Datenbank liest (`SELECT` ohne `ORDER BY`, `ctid`) oder einen Dump hat (`pg_dump`
-  schreibt die Zeilen in dieser Reihenfolge), sieht die Reihenfolge der Suchen eines
-  Tages noch, solange die Einzelzeilen leben. Ebenso die Systemspalte `xmin`: Jede Suche
+  Auch die physische Reihenfolge der Zeilen (`SELECT` ohne `ORDER BY`, `ctid`, die
+  Reihenfolge in `pg_dump`) und die Systemspalte `xmin` folgen dem Einfügen: Jede Suche
   schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
-  steigt (`ORDER BY xmin::text::bigint`). Für Zeilen vor der Migration gilt das nicht mehr,
-  sie tragen alle die Transaktion der Migration. Abhilfe für beides: die Suchereignisse
-  eines abgeschlossenen Tages in zufälliger Reihenfolge und in einer Transaktion neu
-  schreiben.
+  steigt. Seit #337 schreibt der tägliche Bereinigungsjob deshalb jeden abgeschlossenen
+  Tag in zufälliger Reihenfolge und in einer Transaktion neu
+  (`SearchTrackingRepository.mische_abgeschlossene_tage`); den Bestand mischt
+  `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-mischen.sql` einmal.
+  Danach ergeben `xmin` und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr.
+  **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf ungemischt. Die alten
+  Zeilenversionen stehen physisch in der Tabellendatei, bis ein `VACUUM` ihren Platz
+  freigibt (nur mit Werkzeugen lesbar, die Seiten roh auslesen); in Backups und im WAL,
+  bis diese herausrotiert sind.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
