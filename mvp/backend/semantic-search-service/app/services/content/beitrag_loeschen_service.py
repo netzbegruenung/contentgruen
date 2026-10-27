@@ -35,10 +35,12 @@ class LoeschErgebnis(Enum):
 
 class BeitragLoeschenService:
     def __init__(
-        self, repository: IBaseContentRepository, aussagen: IModerationRepository
+        self,
+        repository: IBaseContentRepository,
+        moderation_repo: IModerationRepository,
     ):
         self.repository = repository
-        self.aussagen = aussagen
+        self.moderation_repo = moderation_repo
 
     async def loeschen(self, beitrag_id: uuid.UUID, aufrufer: str) -> LoeschErgebnis:
         """
@@ -71,7 +73,7 @@ class BeitragLoeschenService:
         if beitrag.original_author != aufrufer:
             return LoeschErgebnis.NICHT_AUTOR
 
-        await self.aussagen.aus_aussagen_entfernen(str(beitrag_id))
+        await self.moderation_repo.aus_aussagen_entfernen(str(beitrag_id))
         await self.repository.update_status(
             beitrag_id, ContentStatus.DELETED, nicht_aus=AUSGEBLENDET
         )

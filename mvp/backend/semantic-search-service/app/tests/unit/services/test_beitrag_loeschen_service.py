@@ -49,13 +49,13 @@ def repository(test_settings, speicher):
 
 
 @pytest.fixture
-def aussagen(speicher):
+def moderation_repo(speicher):
     return QdrantModerationRepository(embeddings_manager=speicher)
 
 
 @pytest.fixture
-def service(repository, aussagen):
-    return BeitragLoeschenService(repository, aussagen)
+def service(repository, moderation_repo):
+    return BeitragLoeschenService(repository, moderation_repo)
 
 
 def _status(speicher) -> str:
@@ -200,12 +200,23 @@ class TestVerweiseAnAussagen:
 
         assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 1
 
+    async def test_loeschen_gesperrt_laesst_verweis_stehen(self, service, speicher):
+        """Entsperren soll den Beitrag samt Verweisen zurueckbringen."""
+        speicher.add_test_data(
+            "commentary", [_beitrag(status=ContentStatus.BLOCKED.value)]
+        )
+        aussage_id = _aussage_mit_verweis(speicher)
+
+        await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
+
+        assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 1
+
     async def test_loeschen_verweise_scheitern_beitrag_bleibt_sichtbar(
-        self, service, speicher, aussagen
+        self, service, speicher, moderation_repo
     ):
         """Erst die Verweise, dann der Zustand: Der Autor kann es erneut versuchen."""
         speicher.add_test_data("commentary", [_beitrag()])
-        aussagen.aus_aussagen_entfernen = AsyncMock(
+        moderation_repo.aus_aussagen_entfernen = AsyncMock(
             side_effect=RuntimeError("Qdrant nicht erreichbar")
         )
 

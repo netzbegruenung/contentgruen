@@ -27,7 +27,8 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   (`services/content/beitrag_loeschen_service.py`). Er verschwindet aus Suche, Ansicht,
   Listen, Bestandszählern und „Meine Beiträge“, bleibt aber gespeichert, damit Verknüpfungen und
   Stimmen nicht ins Leere zeigen. Nur die Verweise der Aussagen auf ihn (Antwortvorschläge)
-  gehen weg, damit eine Aussage ohne weiteren Beitrag nicht mehr als beantwortet zählt. Das ist **kein Löschen im Sinne von Art. 17**: Text und
+  gehen weg, damit eine Aussage ohne weiteren Beitrag nicht mehr als beantwortet zählt.
+  Das ist **kein Löschen im Sinne von Art. 17**: Text und
   Kennung stehen weiter in Qdrant. Ein Löschantrag erfasst gelöschte Beiträge deshalb
   genauso wie sichtbare und gesperrte; der Lauf in Schritt 3 filtert nur nach der Kennung,
   nicht nach dem Zustand.
