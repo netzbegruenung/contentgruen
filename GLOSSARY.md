@@ -157,7 +157,7 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
 **Titel**:
@@ -271,6 +271,10 @@ _Avoid_: User, Mitglieder
 **Beta-Zugang**:
 Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
 _Avoid_: Beta-Account, manueller User, Managed User
+
+**Netzbegrünung-Login**:
+Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung; die andere Kontoart ist der Beta-Zugang. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
+_Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
 
 **Startkonto**:
 Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.

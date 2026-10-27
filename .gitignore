@@ -17,6 +17,8 @@ mvp/temp_data/
 # nicht das Problem, die Adressen sind es. Erzeugt wird die Datei mit
 # mvp/config/generate-user-config.py; auf den Servern kommt sie aus der internen Infrastruktur von verdigado.
 /mvp/config/managed-users.json
+# Kennungen geloeschter Konten (docs/LOESCHKONZEPT.md, "Sitzung beenden"): personenbezogen.
+/mvp/config/geloeschte-konten.txt
 
 # Claude temporary files
 commit.txt
