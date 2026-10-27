@@ -10,8 +10,9 @@ public class ManagedUserService
 {
     private readonly ILogger<ManagedUserService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly TimeProvider _time;
     private ManagedUsersConfig? _usersConfig;
-    private DateTime _lastLoadTime = DateTime.MinValue;
+    private DateTimeOffset _lastLoadTime = DateTimeOffset.MinValue;
     private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5);
 
     // Rate limiting for failed login attempts
@@ -27,16 +28,20 @@ public class ManagedUserService
     /// </summary>
     public const string EhemaligePersonKennung = "ehemalige-person";
 
-    public ManagedUserService(ILogger<ManagedUserService> logger, IConfiguration configuration)
+    public ManagedUserService(
+        ILogger<ManagedUserService> logger,
+        IConfiguration configuration,
+        TimeProvider? timeProvider = null)
     {
         _logger = logger;
         _configuration = configuration;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     private async Task<ManagedUsersConfig> LoadUsersAsync()
     {
         // Check cache
-        if (_usersConfig != null && DateTime.UtcNow - _lastLoadTime < _cacheExpiry)
+        if (_usersConfig != null && _time.GetUtcNow() - _lastLoadTime < _cacheExpiry)
         {
             return _usersConfig;
         }
@@ -69,7 +74,12 @@ public class ManagedUserService
         if (validPath == null)
         {
             _logger.LogWarning("Managed users config not found. Tried paths: {Paths}", string.Join(", ", possiblePaths));
-            return new ManagedUsersConfig();
+            // Wie bei einer kaputten Datei (unten): eine kurz fehlende Datei, etwa waehrend sie
+            // ersetzt wird, darf nicht alle Beta-Zugaenge abmelden. Ohne frueheren Stand gilt
+            // eine leere Liste, fuer fuenf Minuten, damit die Warnung nicht jede Anfrage kommt.
+            _usersConfig ??= new ManagedUsersConfig();
+            _lastLoadTime = _time.GetUtcNow();
+            return _usersConfig;
         }
 
         try
@@ -78,15 +88,21 @@ public class ManagedUserService
             var config = JsonSerializer.Deserialize<ManagedUsersConfig>(json) ?? new ManagedUsersConfig();
             config.Users = WithoutReservedUserIds(config.Users);
             _usersConfig = config;
-            _lastLoadTime = DateTime.UtcNow;
+            _lastLoadTime = _time.GetUtcNow();
 
             _logger.LogInformation("Loaded {Count} managed users from config", _usersConfig.Users.Count);
             return _usersConfig;
         }
         catch (Exception ex)
         {
+            // Die zuletzt gelesene Liste bleibt gueltig: KontoPruefung beendet die Sitzung jedes
+            // Beta-Zugangs, der nicht in der Liste steht, und eine halb geschriebene Datei darf
+            // nicht alle abmelden (#278). Neuer Versuch erst nach Ablauf des Caches, sonst
+            // schriebe jede angemeldete Anfrage diesen Fehler ins Log.
             _logger.LogError(ex, "Failed to load managed users config from {Path}", validPath);
-            return new ManagedUsersConfig();
+            _usersConfig ??= new ManagedUsersConfig();
+            _lastLoadTime = _time.GetUtcNow();
+            return _usersConfig;
         }
     }
 

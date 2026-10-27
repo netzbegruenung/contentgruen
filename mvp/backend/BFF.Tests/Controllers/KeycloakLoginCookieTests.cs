@@ -41,9 +41,16 @@ namespace BFF.Tests.Controllers;
 /// </summary>
 public class KeycloakLoginCookieTests
 {
-    private const string Authority = "https://keycloak.invalid/realms/test";
-    private const string ClientId = "test-client";
+    // internal fuer SitzungNachKontoloeschungTests: Deren Host muss das Cookie von hier
+    // entschluesseln koennen und dieselbe Keycloak-Konfiguration haben.
+    internal const string Authority = "https://keycloak.invalid/realms/test";
+    internal const string ClientId = "test-client";
+    internal static readonly string SchluesselringPfad =
+        Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys");
     private const string FrontendUrl = "http://localhost:4200";
+
+    /// <summary>Die Kennung (<c>sub</c>), die die Keycloak-Attrappe ausstellt.</summary>
+    internal const string Kennung = "keycloak-user-1";
 
     private sealed class FakeTokenEndpoint : HttpMessageHandler
     {
@@ -66,7 +73,7 @@ public class KeycloakLoginCookieTests
                 SigningCredentials = Credentials,
                 Claims = new Dictionary<string, object>
                 {
-                    ["sub"] = "keycloak-user-1",
+                    ["sub"] = Kennung,
                     ["nonce"] = Nonce!,
                     ["at_hash"] = Base64UrlEncoder.Encode(hash.AsSpan(0, hash.Length / 2).ToArray()),
                     ["name"] = "Test Nutzerin",
@@ -116,9 +123,7 @@ public class KeycloakLoginCookieTests
             builder.UseSetting("Keycloak:Authority", Authority);
             builder.UseSetting("Keycloak:ClientId", ClientId);
             builder.UseSetting("Keycloak:ClientSecret", "test-secret");
-            builder.UseSetting(
-                "DATAPROTECTION_KEYS_PATH",
-                Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys"));
+            builder.UseSetting("DATAPROTECTION_KEYS_PATH", SchluesselringPfad);
 
             // Registriert nach AddOpenIdConnect, laeuft also nach dessen PostConfigure und
             // ersetzt den ConfigurationManager, der sonst die Metadaten aus dem Netz holen wuerde.
@@ -134,8 +139,11 @@ public class KeycloakLoginCookieTests
         return (factory, endpoint);
     }
 
-    /// <summary>Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck.</summary>
-    private static async Task<HttpResponseMessage> LoginAsync(string? returnUrl)
+    /// <summary>
+    /// Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck. Auch fuer
+    /// SitzungNachKontoloeschungTests, die ein echtes Keycloak-Cookie brauchen.
+    /// </summary>
+    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl)
     {
         var (host, endpoint) = CreateHost();
         using var factory = host;
@@ -171,7 +179,7 @@ public class KeycloakLoginCookieTests
         return await client.SendAsync(callback);
     }
 
-    private static SetCookieHeaderValue AuthCookie(HttpResponseMessage response)
+    internal static SetCookieHeaderValue AuthCookie(HttpResponseMessage response)
     {
         Assert.True(response.Headers.TryGetValues("Set-Cookie", out var values), "no Set-Cookie on the callback");
         var authCookies = SetCookieHeaderValue.ParseList(values!.ToList())
