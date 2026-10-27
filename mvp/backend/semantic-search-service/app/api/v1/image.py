@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends, Header, Query
+from fastapi import APIRouter, HTTPException, Depends, Header, Query, Response
 import datetime
 import logging
 import uuid
@@ -8,6 +8,7 @@ from uuid import UUID
 from dependencies import get_image_service, get_caption_suggestion_service
 from dtos.image import (
     AddImageRequest,
+    AddImageResponse,
     ImageGetAllResponse,
     SuggestCaptionRequest,
     SuggestCaptionResponse,
@@ -23,16 +24,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
-
-
-@router.get("/getById")
+@router.get("/getById", response_model=ImageDbEntry)
 async def get_by_id(
     image_id: UUID = Query(..., description="The UUID of the image to retrieve"),
     image_service: BaseContentService = Depends(get_image_service),
-):
+) -> ImageDbEntry:
     try:
         image = await image_service.get(image_id)
         return image
@@ -48,7 +44,7 @@ async def get_by_id(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/getAll")
+@router.get("/getAll", response_model=ImageGetAllResponse)
 async def get_all(
     image_service: BaseContentService = Depends(get_image_service),
     page: int = Query(default=1, ge=1),
@@ -69,12 +65,24 @@ async def get_all(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/addImage")
+@router.post(
+    "/addImage",
+    response_model=AddImageResponse,
+    response_model_exclude_none=True,
+    status_code=201,
+    responses={
+        202: {
+            "model": AddImageResponse,
+            "description": "Ohne Unterschrift angenommen; die Bildbeschreibung folgt.",
+        }
+    },
+)
 async def add_image(
     request: AddImageRequest,
+    response: Response,
     image_service: BaseContentService = Depends(get_image_service),
     x_user: str = Header(...),
-):
+) -> AddImageResponse:
     """
     Create an image entry.
 
@@ -108,19 +116,10 @@ async def add_image(
         image_id = await image_service.add(entry)
 
         if caption_provided:
-            from fastapi.responses import JSONResponse
+            return AddImageResponse(id=image_id)
 
-            return JSONResponse(
-                status_code=201,
-                content={"id": str(image_id)},
-            )
-        else:
-            from fastapi.responses import JSONResponse
-
-            return JSONResponse(
-                status_code=202,
-                content={"id": str(image_id), "status": "pending_description"},
-            )
+        response.status_code = 202
+        return AddImageResponse(id=image_id, status=ContentStatus.PENDING_DESCRIPTION)
 
     except HTTPException:
         raise
