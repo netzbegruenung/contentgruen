@@ -22,6 +22,15 @@ Die dahinterliegende Logik ist ueber die Unit-Tests abgedeckt:
 Each script requires `requests` and targets `http://localhost:8000` (semantic search) or
 `http://localhost:5054` (BFF).
 
+## Einwuerfe importieren (gegen das BFF)
+
+`einwuerfe_importieren.py <liste> --email <konto> [--adresse <url>] [--trockenlauf]` –
+**schreibend ohne `--trockenlauf`.** Legt Einwuerfe aus einer CSV- oder Markdown-Liste
+in den Fangkorb und ueberspringt Zeilen, deren Link schon im Fangkorb liegt. Nur
+Standardbibliothek, laeuft von jedem Rechner mit Python 3. Aufruf, Dateiformat und
+Exit-Codes in `mvp/SCRIPTS.md`; Beispiellisten `einwuerfe_beispiel.csv` und
+`einwuerfe_beispiel.md`.
+
 ## Bestand in Qdrant (im semantic-search-Container)
 
 Diese beiden Skripte laufen nicht gegen die HTTP-API, sondern per stdin im

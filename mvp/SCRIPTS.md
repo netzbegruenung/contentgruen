@@ -15,6 +15,7 @@ All scripts are located in the `mvp/scripts/` directory and organized by categor
 | **Create backup** | N/A (Linux/Unix only) | `scripts/backup/backup.sh` |
 | **Restore backup** | N/A (Linux/Unix only) | `scripts/backup/restore.sh` |
 | **Test backup/restore** | N/A (Linux/Unix only) | `scripts/backup/test-backup-restore.sh` |
+| **Einwürfe aus einer Liste einwerfen** | `python scripts\manual\einwuerfe_importieren.py` | `scripts/manual/einwuerfe_importieren.py` |
 
 ## Directory Structure
 
@@ -37,6 +38,8 @@ mvp/scripts/
 │   ├── restore.sh         # Restore from backup
 │   ├── test-backup-restore.sh  # Test backup/restore workflow
 │   └── README.md          # Detailed backup documentation
+├── manual/                 # Handarbeit an einer laufenden Instanz (README.md)
+│   └── einwuerfe_importieren.py  # Einwürfe aus einer Liste in den Fangkorb
 └── utils/                  # Utility scripts
     ├── clean-all.*        # Clean all build artifacts and dependencies
     ├── switch-to-docker.* # Configure for Docker mode
@@ -169,6 +172,52 @@ scripts/backup/test-backup-restore.sh
 - GNU coreutils (stat, md5sum, readlink)
 
 See `scripts/backup/README.md` for detailed documentation.
+
+## Einwürfe importieren (`scripts/manual/einwuerfe_importieren.py`)
+
+Legt Einwürfe aus einer CSV- oder Markdown-Liste in den Fangkorb, je Zeile einen,
+über dieselbe API wie das Einwurf-Formular. Das Skript meldet sich am BFF unter dem
+angegebenen Konto an (E-Mail und Passwort wie im Login-Formular, also nur Konten mit
+diesem Login, nicht Keycloak); dieses Konto ist dann der Einwerfer. Für den
+Startbestand ist das ein Startkonto (`docs/VISION.md`).
+
+- Liegt schon ein Einwurf mit gleichem Link im Fangkorb, egal in welcher Stufe, wird
+  die Zeile übersprungen und mit dem vorhandenen Einwurf gemeldet. Was als gleicher
+  Link gilt, entscheidet der Server (`GLOSSARY.md`).
+- `--trockenlauf` zeigt nur, was eingeworfen würde. Angemeldet wird trotzdem, weil die
+  Prüfung auf gleichen Link eine Anmeldung braucht. Doppelte Zeilen innerhalb der
+  Liste erkennt der Trockenlauf nur bei wortgleichem Link; im echten Lauf findet sie
+  der Server.
+- Zeilen ohne http(s)-Link und vom Server abgelehnte Zeilen (etwa ein Hinweis über
+  5000 Zeichen) werden gemeldet; der Rest läuft weiter.
+- Exit-Code 0: alles eingeworfen oder übersprungen; 1: mindestens eine Zeile mit
+  Fehler; 2: Liste unlesbar, Anmeldung gescheitert oder Server nicht erreichbar.
+- Nur Python-Standardbibliothek, läuft also ohne venv und ohne Repo-Checkout.
+
+**Dateiformat** (Beispiele: `scripts/manual/einwuerfe_beispiel.csv`,
+`scripts/manual/einwuerfe_beispiel.md`):
+
+- **CSV** mit Kopfzeile, Spalte `link` und optional `hinweis`; Trennzeichen Komma,
+  Semikolon oder Tab; UTF-8.
+- **Markdown** (Endung `.md`): Jeder Listenpunkt (`-`, `*`, `+`, `1.`) ist ein Einwurf.
+  Der erste Link im Punkt ist der Link (nackt, `<…>` oder `[Text](…)`), der übrige Text
+  der Hinweis. Überschriften und Fließtext werden ignoriert.
+
+Echte Listen gehören nicht ins Repo, auch nicht als Testdaten.
+
+**Usage:**
+```bash
+# Erst ansehen, dann einwerfen. Ohne GUTGESAGT_PASSWORT fragt das Skript nach dem Passwort.
+python3 scripts/manual/einwuerfe_importieren.py liste.csv --email konto@example.org \
+  --adresse https://gutgesagt-test.netzbegruenung.de --trockenlauf
+python3 scripts/manual/einwuerfe_importieren.py liste.csv --email konto@example.org \
+  --adresse https://gutgesagt-test.netzbegruenung.de
+```
+
+`--adresse` ist die Adresse des Frontends (es leitet `/api` ans BFF weiter) oder des
+BFF selbst; Standard ist das lokale BFF `http://localhost:5054`. Getestet in
+`tests/unit/services/test_einwuerfe_importieren.py` (Lesen, Ablauf) und
+`tests/integration/test_einwuerfe_importieren.py` (gegen den Dev-Stack).
 
 ## Utility Scripts (`scripts/utils/`)
 
