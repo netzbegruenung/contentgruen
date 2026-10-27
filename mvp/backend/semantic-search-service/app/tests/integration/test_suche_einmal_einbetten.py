@@ -44,6 +44,10 @@ from services.content.commentary_service import CommentaryService
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
+from repositories.implementations.qdrant.base_repository import QdrantBaseRepository
+from repositories.implementations.qdrant.statement_repository import (
+    StatementRepository,
+)
 
 from tests.fixtures.direktsuche import direktsuche_ueber_dienste
 from tests.integration.conftest import requires_qdrant
@@ -52,6 +56,10 @@ pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
 
 SEARCH_URL = "/api/v1/search/searchByText"
 SUCHANFRAGE = "Lohnen sich Wärmepumpen im Altbau?"
+# Gespeicherte Aussage mit ' und ; - die Suche muss sie wie gespeichert einbetten.
+AUSSAGE_MIT_ZEICHEN = (
+    "Wärmepumpen lohnen sich nicht im Altbau; das rechnet sich's nicht"
+)
 
 
 class _ZaehlenderClient:
@@ -159,7 +167,7 @@ async def suche(integration_settings, real_repository_factory, real_embeddings_m
         )
     )
     _, aussage_id, _ = await statements.add_statement(
-        Statement(text="Wärmepumpen lohnen sich nicht im Altbau", replysuggestions=[]),
+        Statement(text=AUSSAGE_MIT_ZEICHEN, replysuggestions=[]),
         "tester",
         ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
@@ -271,7 +279,9 @@ async def test_search_by_text_vorhandene_suchanfrage_einmal_eingebettet(suche):
         "Wärmepumpen lohnen sich im Altbau; sagt die Studie",
     ],
 )
-async def test_search_by_text_suchanfrage_mit_apostroph_einmal_eingebettet(suche, text):
+async def test_search_by_text_suchanfrage_mit_apostroph_oder_semikolon_einmal_eingebettet(
+    suche, text
+):
     """Suche, Aussage und Dublettenpruefung betten denselben Text ein (#321).
 
     Vor #321 ersetzte die Suche ' und ; vor dem Einbetten: zwei Einbettungen.
@@ -280,6 +290,62 @@ async def test_search_by_text_suchanfrage_mit_apostroph_einmal_eingebettet(suche
 
     assert antwort["query_was_newly_added_as_statement"] is True
     assert einbettungen == [f"query: {text}"]
+
+
+def _wie_vor_321(methode, text_index):
+    """Repository-Methode, die den Suchtext ersetzt wie die Suche vor #321."""
+
+    async def ersetzt(*args, **kwargs):
+        args = list(args)
+        args[text_index] = args[text_index].replace(";", ",").replace("'", '"')
+        return await methode(*args, **kwargs)
+
+    return ersetzt
+
+
+async def test_search_by_text_aussage_mit_apostroph_wie_gespeichert_verglichen(
+    suche,
+):
+    """Charakterisierung (#321): Wortgleich gesucht, liegt die Aussage naeher als vorher.
+
+    Vor #321 bettete die Suche den Text mit " und , ein, die Aussage mit ' und ;.
+    Die Antwort auf die Aussage kam mit geringerer Aehnlichkeit zurueck. Nur
+    Suchanfragen mit diesen Zeichen sind betroffen.
+    """
+    await suche()  # Lage wie im Paritaetstest
+    neu, einbettungen, _ = await suche(AUSSAGE_MIT_ZEICHEN)
+
+    with (
+        patch.object(
+            StatementRepository,
+            "search_statements_with_replies",
+            _wie_vor_321(StatementRepository.search_statements_with_replies, 1),
+        ),
+        patch.object(
+            QdrantBaseRepository,
+            "search_batch",
+            classmethod(_wie_vor_321(QdrantBaseRepository.search_batch.__func__, 2)),
+        ),
+    ):
+        alt, einbettungen_alt, _ = await suche(AUSSAGE_MIT_ZEICHEN)
+
+    assert neu["query_was_newly_added_as_statement"] is False
+    assert einbettungen == [f"query: {AUSSAGE_MIT_ZEICHEN}"]
+    # wirklich der alte Weg: eingebettet wird nur der ersetzte Text
+    ersetzt = AUSSAGE_MIT_ZEICHEN.replace(";", ",").replace("'", '"')
+    assert einbettungen_alt == [f"query: {ersetzt}"]
+    erster_neu = neu["commentary_search_results"][0]
+    erster_alt = alt["commentary_search_results"][0]
+    assert erster_neu["statement_text"] == erster_alt["statement_text"]
+    assert erster_neu["statement_text"] == AUSSAGE_MIT_ZEICHEN
+    assert (
+        erster_neu["statement_similarity_score"]
+        > erster_alt["statement_similarity_score"]
+    ), (
+        erster_neu["statement_similarity_score"],
+        erster_alt["statement_similarity_score"],
+    )
+    assert erster_neu["score"] > erster_alt["score"]
 
 
 @pytest.mark.parametrize("limit", [10, 1])
