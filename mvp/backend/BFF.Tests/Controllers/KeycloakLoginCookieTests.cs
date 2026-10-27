@@ -45,6 +45,9 @@ public class KeycloakLoginCookieTests
     private const string ClientId = "test-client";
     private const string FrontendUrl = "http://localhost:4200";
 
+    /// <summary>Die Kennung (<c>sub</c>), die die Keycloak-Attrappe ausstellt.</summary>
+    internal const string Kennung = "keycloak-user-1";
+
     private sealed class FakeTokenEndpoint : HttpMessageHandler
     {
         public string? Nonce { get; set; }
@@ -66,7 +69,7 @@ public class KeycloakLoginCookieTests
                 SigningCredentials = Credentials,
                 Claims = new Dictionary<string, object>
                 {
-                    ["sub"] = "keycloak-user-1",
+                    ["sub"] = Kennung,
                     ["nonce"] = Nonce!,
                     ["at_hash"] = Base64UrlEncoder.Encode(hash.AsSpan(0, hash.Length / 2).ToArray()),
                     ["name"] = "Test Nutzerin",
@@ -134,8 +137,11 @@ public class KeycloakLoginCookieTests
         return (factory, endpoint);
     }
 
-    /// <summary>Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck.</summary>
-    private static async Task<HttpResponseMessage> LoginAsync(string? returnUrl)
+    /// <summary>
+    /// Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck. Auch fuer
+    /// SitzungNachKontoloeschungTests, die ein echtes Keycloak-Cookie brauchen.
+    /// </summary>
+    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl)
     {
         var (host, endpoint) = CreateHost();
         using var factory = host;
@@ -171,7 +177,7 @@ public class KeycloakLoginCookieTests
         return await client.SendAsync(callback);
     }
 
-    private static SetCookieHeaderValue AuthCookie(HttpResponseMessage response)
+    internal static SetCookieHeaderValue AuthCookie(HttpResponseMessage response)
     {
         Assert.True(response.Headers.TryGetValues("Set-Cookie", out var values), "no Set-Cookie on the callback");
         var authCookies = SetCookieHeaderValue.ParseList(values!.ToList())

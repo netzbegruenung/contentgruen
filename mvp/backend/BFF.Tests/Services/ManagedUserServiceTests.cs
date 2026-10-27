@@ -298,7 +298,52 @@ public class ManagedUserServiceTests
 
     private const string KnownPassword = "Passwort1!";
 
-    private ManagedUserService ServiceFor(string path)
+    // KontoPruefung meldet jeden Beta-Zugang ab, der nicht in der Liste steht (#278). Eine
+    // kaputte Datei darf deshalb nicht als leere Liste gelten.
+    [Fact]
+    public async Task GetUserByIdAsync_KeepsLastLoadedUsers_WhenFileBecomesUnreadable()
+    {
+        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        var uhr = new StellbareUhr();
+        try
+        {
+            var service = ServiceFor(path, uhr);
+            Assert.NotNull(await service.GetUserByIdAsync("user-001"));
+
+            File.WriteAllText(path, "{ \"users\": [ halb geschrieben");
+            uhr.Vorstellen(TimeSpan.FromMinutes(6));
+
+            Assert.NotNull(await service.GetUserByIdAsync("user-001"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task GetUserByIdAsync_ReturnsNull_AfterUserRemovedAndCacheExpired()
+    {
+        var path = WriteUsersFile(("ok@example.com", "user-001"), ("weg@example.com", "user-002"));
+        var uhr = new StellbareUhr();
+        try
+        {
+            var service = ServiceFor(path, uhr);
+            Assert.NotNull(await service.GetUserByIdAsync("user-002"));
+
+            File.Move(WriteUsersFile(("ok@example.com", "user-001")), path, overwrite: true);
+            uhr.Vorstellen(TimeSpan.FromMinutes(5));
+
+            Assert.Null(await service.GetUserByIdAsync("user-002"));
+            Assert.NotNull(await service.GetUserByIdAsync("user-001"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    private ManagedUserService ServiceFor(string path, TimeProvider? uhr = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -307,7 +352,7 @@ public class ManagedUserServiceTests
                 { "ENABLE_MANAGED_AUTH", "true" }
             })
             .Build();
-        return new ManagedUserService(_mockLogger.Object, configuration);
+        return new ManagedUserService(_mockLogger.Object, configuration, uhr);
     }
 
     private static string WriteUsersFile(params (string Email, string UserId)[] users)
