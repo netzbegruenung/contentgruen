@@ -101,8 +101,9 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
         data: { parent: '/search' }
     },
-    // Die Formulare und ihre Ergebnisseiten lesen ?einwurf=; alteEinwurfAdresseUmleiten
-    // schreibt aeltere Adressen vorher um (destillieren/einwurf-adresse.ts).
+    // Diese Routen lesen ?einwurf= (Formular, Ergebnisseite, beim Bild-Formular nur der
+    // Pfeil); alteEinwurfAdresseUmleiten schreibt aeltere Adressen vorher um
+    // (destillieren/einwurf-adresse.ts).
     {
         path: 'workflow/add-commentary',
         loadComponent: () => import('./add-commentary-workflow/add-commentary-workflow.component').then(m => m.AddCommentaryWorkflowComponent),

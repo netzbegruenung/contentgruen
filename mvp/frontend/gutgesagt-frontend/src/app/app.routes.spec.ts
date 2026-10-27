@@ -1,6 +1,7 @@
 import { ActivatedRouteSnapshot, convertToParamMap } from '@angular/router';
 
 import { routes } from './app.routes';
+import { gespeichertEltern } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
 /** Die Elternziel-Funktion einer Route holen, wie goBack sie aufruft. */
@@ -27,20 +28,27 @@ describe('Routentabelle', () => {
   /**
    * Alte Adressen mit dem frueheren Parameternamen schreibt der Guard um, bevor
    * Formular, Ergebnisseite oder Pfeil ihn lesen; das Verhalten selbst testet
-   * einwurf-adresse.spec.ts. Hier: Jede Route, die den Parameter liest, traegt ihn,
-   * und zwar vor dem AuthGuard, damit der Login schon die neue Adresse mitnimmt.
+   * einwurf-adresse.spec.ts. Hier: Jede Route, deren Pfeil den Parameter liest,
+   * traegt ihn, und zwar vor dem AuthGuard, damit der Login schon die neue Adresse
+   * mitnimmt. Die Routen kommen aus der Tabelle, damit eine neue nicht durchrutscht.
    */
   it('leitet alte Einwurf-Adressen auf allen Routen um, die den Parameter lesen', () => {
-    for (const pfad of [
-      'workflow/add-commentary',
-      'workflow/add-generictext',
-      'workflow/add-commentary/gespeichert/:id',
-      'workflow/add-generictext/gespeichert/:id',
-      'workflow/add-image',
-    ]) {
-      const eintrag = routes.find((route) => route.path === pfad);
+    const formularEltern = elternFunktion('workflow/add-commentary');
+    const lesend = routes.filter(
+      (route) => route.data?.['parent'] === formularEltern || route.data?.['parent'] === gespeichertEltern,
+    );
 
-      expect(eintrag?.canActivate?.[0]).withContext(pfad).toBe(alteEinwurfAdresseUmleiten);
+    expect(lesend.map((route) => route.path)).toEqual(
+      jasmine.arrayContaining([
+        'workflow/add-commentary',
+        'workflow/add-generictext',
+        'workflow/add-commentary/gespeichert/:id',
+        'workflow/add-generictext/gespeichert/:id',
+        'workflow/add-image',
+      ]),
+    );
+    for (const eintrag of lesend) {
+      expect(eintrag.canActivate?.[0]).withContext(eintrag.path ?? '').toBe(alteEinwurfAdresseUmleiten);
     }
   });
 

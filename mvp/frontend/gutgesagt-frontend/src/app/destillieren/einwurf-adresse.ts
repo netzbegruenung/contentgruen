@@ -3,8 +3,9 @@ import { CanActivateFn, Router } from '@angular/router';
 
 /**
  * Query-Parameter, mit dem die Destillier-Ansicht ein Beitragsformular oeffnet
- * (?einwurf=<id>). Auch die Ergebnisseite nach dem Speichern traegt ihn, damit ihr
- * Pfeil in den Fangkorb fuehrt.
+ * (?einwurf=<id>). Der Pfeil des Formulars fuehrt damit zurueck zum Einwurf, beim
+ * Bild-Formular ist das sein einziger Zweck. Auch die Ergebnisseite nach dem
+ * Speichern traegt ihn, damit ihr Pfeil in den Fangkorb fuehrt.
  *
  * Eigene Datei ohne weitere Abhaengigkeiten: Die Routentabelle wird beim Start
  * geladen und soll den Destillier-Dienst nicht ins erste Buendel ziehen.
