@@ -47,7 +47,7 @@ describe('AddCommentaryWorkflowComponent', () => {
   });
 
   it('ist ausserhalb des Destillier-Ablaufs nicht vorbefuellt', () => {
-    expect(component.rohinputId).toBeNull();
+    expect(component.einwurfId).toBeNull();
     expect(component.vorbefuellung).toBeNull();
   });
 
@@ -88,7 +88,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
     uebergabe.mitBeitragVerknuepfen.and.returnValue(of(true));
     uebergabe.vorbefuellungLaden.and.returnValue(
       of({
-        rohinputId: 'id-1',
+        einwurfId: 'id-1',
         titel: 'Waermepumpe lohnt sich auch im Altbau',
         url: 'https://example.org/p',
         kopf: { id: 'id-1', typ: null, titel: null, text: null, erstellt: '', autor: null, autorName: null, nutzung: null, quellen: [] },
@@ -106,7 +106,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
       providers: [
         provideRouter([]),
         { provide: DestillierUebergabeService, useValue: uebergabe },
-        { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({ rohinput: 'id-1' })) } }
+        { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({ einwurf: 'id-1' })) } }
       ]
     })
     .compileComponents();
@@ -132,7 +132,7 @@ describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledWith('id-1', 'beitrag-1', 'commentary');
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary', 'gespeichert', 'beitrag-1'], {
-      queryParams: { rohinput: 'id-1' },
+      queryParams: { einwurf: 'id-1' },
       state: { aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, einwurfVerknuepft: true },
       replaceUrl: true,
     });
@@ -290,6 +290,6 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
     await oeffnen({});
 
     expect(formular()!.aussage).toEqual({ id: '', text: '' });
-    expect(component.rohinputId).toBeNull();
+    expect(component.einwurfId).toBeNull();
   });
 });
