@@ -55,10 +55,12 @@ Beide Dateien liest das BFF spätestens nach fünf Minuten neu
 einem Neustart sofort; also danach das BFF neu starten. Ob es die Liste liest, zeigt die
 Zeile „Loaded N deleted accounts from …“ im BFF-Log, eine abgewiesene Sitzung die Zeile
 „Session of user … ended“ mit dem Pseudonym der Kennung. Der Eintrag in
-`geloeschte-konten.txt` ist 14 Tage nach dem Löschen des Keycloak-Kontos (Schritt 4)
-überflüssig, weil kein Cookie länger ohne Anfrage gilt und jede Anfrage abgewiesen wird;
-dann wieder entfernen. Solange das Keycloak-Konto besteht, kann sich die Person neu
-anmelden; die Liste weist dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
+`geloeschte-konten.txt` wird überflüssig, sobald zweierlei 14 Tage zurückliegt: der
+Neustart, nach dem das BFF ihn gelesen hat, und das Löschen des Keycloak-Kontos
+(Schritt 4). Ab dann kann kein Cookie mehr gelten, denn ohne Anfrage läuft es nach 14
+Tagen ab, und jede Anfrage seit dem Neustart wurde abgewiesen. Dann wieder entfernen.
+Solange das Keycloak-Konto besteht, kann sich die Person neu anmelden; die Liste weist
+dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
    die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
@@ -108,7 +110,7 @@ anmelden; die Liste weist dann jede folgende Anfrage ab, nach dem Entfernen nich
    (`git log --follow -- mvp/config/managed-users.example.json`).
    Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
-   (`BFF/Services/ManagedUserService.cs:125`).
+   (`BFF/Services/ManagedUserService.cs:128`).
 
 ## Vier Fallen
 

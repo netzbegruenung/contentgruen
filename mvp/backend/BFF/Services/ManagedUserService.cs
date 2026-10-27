@@ -97,9 +97,12 @@ public class ManagedUserService
         {
             // Die zuletzt gelesene Liste bleibt gueltig: KontoPruefung beendet die Sitzung jedes
             // Beta-Zugangs, der nicht in der Liste steht, und eine halb geschriebene Datei darf
-            // nicht alle abmelden (#278).
+            // nicht alle abmelden (#278). Neuer Versuch erst nach Ablauf des Caches, sonst
+            // schriebe jede angemeldete Anfrage diesen Fehler ins Log.
             _logger.LogError(ex, "Failed to load managed users config from {Path}", validPath);
-            return _usersConfig ?? new ManagedUsersConfig();
+            _usersConfig ??= new ManagedUsersConfig();
+            _lastLoadTime = _time.GetUtcNow();
+            return _usersConfig;
         }
     }
 

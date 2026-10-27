@@ -41,8 +41,12 @@ namespace BFF.Tests.Controllers;
 /// </summary>
 public class KeycloakLoginCookieTests
 {
-    private const string Authority = "https://keycloak.invalid/realms/test";
-    private const string ClientId = "test-client";
+    // internal fuer SitzungNachKontoloeschungTests: Deren Host muss das Cookie von hier
+    // entschluesseln koennen und dieselbe Keycloak-Konfiguration haben.
+    internal const string Authority = "https://keycloak.invalid/realms/test";
+    internal const string ClientId = "test-client";
+    internal static readonly string SchluesselringPfad =
+        Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys");
     private const string FrontendUrl = "http://localhost:4200";
 
     /// <summary>Die Kennung (<c>sub</c>), die die Keycloak-Attrappe ausstellt.</summary>
@@ -119,9 +123,7 @@ public class KeycloakLoginCookieTests
             builder.UseSetting("Keycloak:Authority", Authority);
             builder.UseSetting("Keycloak:ClientId", ClientId);
             builder.UseSetting("Keycloak:ClientSecret", "test-secret");
-            builder.UseSetting(
-                "DATAPROTECTION_KEYS_PATH",
-                Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys"));
+            builder.UseSetting("DATAPROTECTION_KEYS_PATH", SchluesselringPfad);
 
             // Registriert nach AddOpenIdConnect, laeuft also nach dessen PostConfigure und
             // ersetzt den ConfigurationManager, der sonst die Metadaten aus dem Netz holen wuerde.

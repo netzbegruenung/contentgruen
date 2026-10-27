@@ -34,7 +34,7 @@ public static class KontoPruefung
         {
             grund = "the account is listed as deleted";
         }
-        else if (principal.FindFirst("auth_method")?.Value == AuthController.AuthMethodManaged
+        else if (principal.FindFirst(AuthController.AuthMethodClaim)?.Value == AuthController.AuthMethodManaged
                  && await services.GetRequiredService<ManagedUserService>().GetUserByIdAsync(kennung) == null)
         {
             grund = "the Beta-Zugang is no longer in managed-users.json";

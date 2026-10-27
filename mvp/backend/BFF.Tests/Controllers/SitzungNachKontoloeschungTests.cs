@@ -21,13 +21,17 @@ namespace BFF.Tests.Controllers;
 /// Jeder Test meldet sich bei einem Host an, aendert die Kontodateien und schickt das Cookie
 /// an einen zweiten Host mit demselben Schluesselring -- so wie das Loeschkonzept es vorsieht:
 /// Datei aendern, BFF neu starten. Gelesen wird /api/check-session, das allein am Cookie
-/// haengt (200 angemeldet, 401 nicht).
+/// haengt (200 angemeldet, 401 nicht), und eine schreibende Route hinter dem Proxy: Dort
+/// legte die geloeschte Person bisher weiter Daten an.
 /// </summary>
 public class SitzungNachKontoloeschungTests : IDisposable
 {
     private const string Email = "beta@example.org";
     private const string Passwort = "Test123!";
     private const string BetaKennung = "beta-001";
+    // Schreibend und nicht anonym erlaubt (EndpointPolicy). Das Backend ist unerreichbar:
+    // Mit gueltigem Cookie kommt die Anfrage am Auth-Gate vorbei und scheitert erst am Proxy.
+    private const string SchreibendeRoute = "/api/v1/rawinput/";
 
     private readonly string _verzeichnis =
         Path.Combine(Path.GetTempPath(), $"gutgesagt-kontoloeschung-{Guid.NewGuid():N}");
@@ -68,16 +72,14 @@ public class SitzungNachKontoloeschungTests : IDisposable
             builder.UseSetting("USE_KEYCLOAK", useKeycloak ? "true" : "false");
             builder.UseSetting("FRONTEND_URL", "http://localhost:4200");
             builder.UseSetting("BACKEND_URL", "http://127.0.0.1:1");
-            builder.UseSetting("Keycloak:Authority", "https://keycloak.invalid/realms/test");
-            builder.UseSetting("Keycloak:ClientId", "test-client");
+            builder.UseSetting("Keycloak:Authority", KeycloakLoginCookieTests.Authority);
+            builder.UseSetting("Keycloak:ClientId", KeycloakLoginCookieTests.ClientId);
             builder.UseSetting("Keycloak:ClientSecret", "test-secret");
             builder.UseSetting("MANAGED_USERS_PATH", NutzerDatei);
             builder.UseSetting("GELOESCHTE_KONTEN_PATH", GeloeschteKontenDatei);
             // Derselbe Schluesselring wie in KeycloakLoginCookieTests: das Cookie von dort
             // muss sich hier entschluesseln lassen.
-            builder.UseSetting(
-                "DATAPROTECTION_KEYS_PATH",
-                Path.Combine(Path.GetTempPath(), "gutgesagt-bff-test-keys"));
+            builder.UseSetting("DATAPROTECTION_KEYS_PATH", KeycloakLoginCookieTests.SchluesselringPfad);
         });
 
     private static HttpClient Client(WebApplicationFactory<Program> factory) =>
@@ -106,14 +108,37 @@ public class SitzungNachKontoloeschungTests : IDisposable
     private static string CookieHeader(SetCookieHeaderValue cookie) => $"{cookie.Name}={cookie.Value}";
 
     /// <summary>Fragt mit dem Cookie bei einem neu gestarteten Host nach der Sitzung.</summary>
-    private async Task<HttpResponseMessage> CheckSessionAsync(bool useKeycloak, string cookie)
+    private Task<HttpResponseMessage> CheckSessionAsync(bool useKeycloak, string cookie) =>
+        SendeAsync(useKeycloak, cookie, new HttpRequestMessage(HttpMethod.Get, "/api/check-session"));
+
+    /// <summary>Legt mit dem Cookie bei einem neu gestarteten Host etwas an.</summary>
+    private Task<HttpResponseMessage> SchreibeAsync(bool useKeycloak, string cookie) =>
+        SendeAsync(useKeycloak, cookie, new HttpRequestMessage(HttpMethod.Post, SchreibendeRoute)
+        {
+            Content = JsonContent.Create(new { content = "nach der Loeschung" })
+        });
+
+    private async Task<HttpResponseMessage> SendeAsync(bool useKeycloak, string cookie, HttpRequestMessage request)
     {
         using var factory = CreateHost(useKeycloak);
         using var client = Client(factory);
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/check-session");
-        request.Headers.Add("Cookie", cookie);
-        return await client.SendAsync(request);
+        using (request)
+        {
+            request.Headers.Add("Cookie", cookie);
+            return await client.SendAsync(request);
+        }
     }
+
+    private static void AssertCookieGeloescht(HttpResponseMessage response)
+    {
+        var geloescht = KeycloakLoginCookieTests.AuthCookie(response);
+        Assert.True(geloescht.Expires < DateTimeOffset.UtcNow, "the auth cookie is not expired");
+    }
+
+    private void TrageNetzbegruenungLoginAlsGeloeschtEin() =>
+        File.WriteAllText(
+            GeloeschteKontenDatei,
+            $"# geloescht am 27.10.2026\n\n  {KeycloakLoginCookieTests.Kennung}  \n");
 
     [Theory]
     [InlineData(false)]
@@ -140,16 +165,42 @@ public class SitzungNachKontoloeschungTests : IDisposable
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Abweisung_LoeschtDasCookieImBrowser()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BetaZugang_AusNutzerdateiEntfernt_CookieImBrowserGeloescht(bool useKeycloak)
     {
-        var cookie = await BetaCookieAsync(useKeycloak: false);
+        var cookie = await BetaCookieAsync(useKeycloak);
         SchreibeNutzerDatei(mitBetaZugang: false);
 
-        using var response = await CheckSessionAsync(useKeycloak: false, cookie);
+        using var response = await CheckSessionAsync(useKeycloak, cookie);
 
-        var geloescht = KeycloakLoginCookieTests.AuthCookie(response);
-        Assert.True(geloescht.Expires < DateTimeOffset.UtcNow, "the auth cookie is not expired");
+        AssertCookieGeloescht(response);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BetaZugang_KontoBesteht_SchreibendeRouteKommtAmAuthGateVorbei(bool useKeycloak)
+    {
+        var cookie = await BetaCookieAsync(useKeycloak);
+
+        using var response = await SchreibeAsync(useKeycloak, cookie);
+
+        Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BetaZugang_AusNutzerdateiEntfernt_SchreibendeRouteAbgewiesen(bool useKeycloak)
+    {
+        var cookie = await BetaCookieAsync(useKeycloak);
+        SchreibeNutzerDatei(mitBetaZugang: false);
+
+        using var response = await SchreibeAsync(useKeycloak, cookie);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -177,11 +228,31 @@ public class SitzungNachKontoloeschungTests : IDisposable
     public async Task NetzbegruenungLogin_AlsGeloeschtEingetragen_AltesCookieAbgewiesen()
     {
         var cookie = await KeycloakCookieAsync();
-        File.WriteAllText(
-            GeloeschteKontenDatei,
-            $"# geloescht am 27.10.2026\n\n  {KeycloakLoginCookieTests.Kennung}  \n");
+        TrageNetzbegruenungLoginAlsGeloeschtEin();
 
         using var response = await CheckSessionAsync(useKeycloak: true, cookie);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        AssertCookieGeloescht(response);
+    }
+
+    [Fact]
+    public async Task NetzbegruenungLogin_NichtAlsGeloeschtEingetragen_SchreibendeRouteKommtAmAuthGateVorbei()
+    {
+        var cookie = await KeycloakCookieAsync();
+
+        using var response = await SchreibeAsync(useKeycloak: true, cookie);
+
+        Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task NetzbegruenungLogin_AlsGeloeschtEingetragen_SchreibendeRouteAbgewiesen()
+    {
+        var cookie = await KeycloakCookieAsync();
+        TrageNetzbegruenungLoginAlsGeloeschtEin();
+
+        using var response = await SchreibeAsync(useKeycloak: true, cookie);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

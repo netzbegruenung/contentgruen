@@ -13,7 +13,10 @@ namespace BFF.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    /// <summary>Wert des Claims auth_method fuer einen Beta-Zugang; KontoPruefung liest ihn.</summary>
+    /// <summary>Claim mit dem Anmeldeweg; KontoPruefung liest ihn.</summary>
+    public const string AuthMethodClaim = "auth_method";
+
+    /// <summary>Wert von <see cref="AuthMethodClaim"/> fuer einen Beta-Zugang.</summary>
     public const string AuthMethodManaged = "managed";
 
     private readonly ManagedUserService _managedUserService;
@@ -97,7 +100,7 @@ public class AuthController : ControllerBase
             new Claim("name", user.DisplayName),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim("sub", user.UserId), // Subject claim for compatibility
-            new Claim("auth_method", AuthMethodManaged),
+            new Claim(AuthMethodClaim, AuthMethodManaged),
             new Claim("user_id", user.UserId)
         };
 
@@ -176,7 +179,7 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        var authMethod = HttpContext.User.FindFirst("auth_method")?.Value;
+        var authMethod = HttpContext.User.FindFirst(AuthMethodClaim)?.Value;
         var frontendUrl = _configuration.GetValue<string>("FRONTEND_URL", "http://localhost:4200");
 
         if (authMethod == "keycloak")

@@ -9,7 +9,7 @@ namespace BFF.Services;
 /// naechste Anfrage mit dem alten Cookie wird abgewiesen. Ein Beta-Zugang braucht die Liste
 /// nicht, dort genuegt es, ihn aus managed-users.json zu entfernen (KontoPruefung).
 ///
-/// Format: eine Kennung je Zeile, Leerlines und Zeilen mit '#' am Anfang zaehlen nicht. Eine
+/// Format: eine Kennung je Zeile, Leerzeilen und Zeilen mit '#' am Anfang zaehlen nicht. Eine
 /// fehlende Datei ist der Normalfall und heisst: kein Konto eingetragen. Ein Eintrag wird nach
 /// 14 Tagen ueberfluessig, sobald auch das Keycloak-Konto geloescht ist -- laenger lebt kein
 /// Cookie ohne Anfrage, und jede Anfrage danach wird abgewiesen --, und soll dann wieder
@@ -82,10 +82,12 @@ public class GeloeschteKontenService
         catch (Exception ex)
         {
             // Eine eben gelesene Liste bleibt gueltig: eine halb geschriebene oder kurz
-            // gesperrte Datei darf keine Eintraege verlieren. Kein _lastLoadTime, damit die
-            // naechste Anfrage es erneut versucht.
+            // gesperrte Datei darf keine Eintraege verlieren. Neuer Versuch erst nach Ablauf
+            // des Caches, sonst schriebe jede angemeldete Anfrage diesen Fehler ins Log.
             _logger.LogError(ex, "Failed to read deleted accounts from {Path}", _path);
-            return _kennungen ?? new HashSet<string>(StringComparer.Ordinal);
+            _kennungen ??= new HashSet<string>(StringComparer.Ordinal);
+            _lastLoadTime = now;
+            return _kennungen;
         }
     }
 }

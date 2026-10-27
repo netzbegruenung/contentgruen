@@ -321,6 +321,38 @@ public class ManagedUserServiceTests
         }
     }
 
+    // KontoPruefung fragt bei jeder angemeldeten Anfrage; ohne Cache des Fehlerfalls stuende
+    // der Fehler jedes Mal im Log.
+    [Fact]
+    public async Task GetUserByIdAsync_UnreadableFile_LogsErrorOncePerCachePeriod()
+    {
+        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        var uhr = new StellbareUhr();
+        try
+        {
+            var service = ServiceFor(path, uhr);
+            File.WriteAllText(path, "{ \"users\": [ halb geschrieben");
+
+            await service.GetUserByIdAsync("user-001");
+            await service.GetUserByIdAsync("user-001");
+            uhr.Vorstellen(TimeSpan.FromMinutes(4));
+            await service.GetUserByIdAsync("user-001");
+
+            _mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Failed to load managed users config")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Once);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public async Task GetUserByIdAsync_KeepsLastLoadedUsers_WhenFileIsMissingForAMoment()
     {
