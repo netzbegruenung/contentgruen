@@ -35,7 +35,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 from domain.models.content_status import NEW_CONTENT_STATUS
-from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
+from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 
 logger = get_logger(__name__)
@@ -136,8 +136,8 @@ async def unbeantwortet(
 
 
 # Eine Aussage vorab anlegen, fuer ein absehbares Thema, bevor jemand danach sucht.
-# Die Person ist Autorin; eine sehr aehnliche vorhandene Aussage wird nicht doppelt
-# angelegt, sondern zurueckgegeben (statement_was_new = false).
+# Die Person ist Autorin; dieselbe vorhandene Aussage wird nicht doppelt angelegt,
+# sondern zurueckgegeben (statement_was_new = false, StatementService.vorab_anlegen).
 @router.post("/vorab", response_model=AddStatementResponse)
 async def vorab_anlegen(
     request: AussageVorabRequest,
@@ -146,12 +146,7 @@ async def vorab_anlegen(
 ) -> AddStatementResponse:
     try:
         statement_was_new, statement_id, statement_text = (
-            await statement_service.add_statement(
-                Statement(text=request.text, replysuggestions=[]),
-                user_id,
-                NEW_CONTENT_STATUS,
-                ContentOrigin.MANUALLY_CREATED,
-            )
+            await statement_service.vorab_anlegen(request.text, user_id)
         )
     except Exception as e:
         logger.error(f"Error in /vorab: {e}", exc_info=True)

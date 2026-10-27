@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List
 
+from domain.models.statement import StatementDbEntry
 from services.content.statement_service import StatementService
 from services.suchen_ohne_treffer_service import (
     WOCHEN_STANDARD,
@@ -37,8 +38,8 @@ class UnbeantworteteAussage:
     ohne_treffer_gesucht: bool
 
 
-def _zeitpunkt(aussage) -> datetime:
-    created = getattr(aussage, "created", None)
+def _zeitpunkt(aussage: StatementDbEntry) -> datetime:
+    created = aussage.created
     if not isinstance(created, datetime):
         return _FRUEHESTE
     return created if created.tzinfo else created.replace(tzinfo=timezone.utc)

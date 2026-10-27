@@ -73,11 +73,15 @@ main * {
 }
 
 .header-link {
-    color: inherit;
     text-decoration: underline;
     transition: opacity var(--transition-fast);
     cursor: pointer;
     white-space: nowrap;
+}
+
+/* Der einzige echte Link im Kopf ("Hier fehlt eine Antwort") sieht aus wie die anderen. */
+a.header-link {
+    color: inherit;
 }
 
 .header-link:hover {

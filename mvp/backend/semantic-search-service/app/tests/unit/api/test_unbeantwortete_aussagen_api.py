@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 
 from api.v1.statement import router as statement_router
 from dependencies import get_statement_service, get_unbeantwortete_aussagen_service
-from domain.models.content_origin import ContentOrigin
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussage
 
 LISTE_URL = "/api/v1/statement/unbeantwortet"
@@ -91,7 +90,7 @@ class TestUnbeantwortet:
 class TestVorab:
     def test_legt_aussage_mit_person_als_autor_an(self, statement_service):
         neu = uuid.uuid4()
-        statement_service.add_statement = AsyncMock(
+        statement_service.vorab_anlegen = AsyncMock(
             return_value=(True, neu, "Das Heizungsgesetz enteignet uns")
         )
 
@@ -107,15 +106,13 @@ class TestVorab:
             "statement_id": str(neu),
             "statement_text": "Das Heizungsgesetz enteignet uns",
         }
-        aussage, autor, _, herkunft = statement_service.add_statement.await_args.args
-        assert aussage.text == "Das Heizungsgesetz enteignet uns"
-        assert aussage.replysuggestions == []
-        assert autor == "person-1"
-        assert herkunft is ContentOrigin.MANUALLY_CREATED
+        statement_service.vorab_anlegen.assert_awaited_once_with(
+            "Das Heizungsgesetz enteignet uns", "person-1"
+        )
 
     def test_vorhandene_aehnliche_aussage_wird_gemeldet(self, statement_service):
         vorhanden = uuid.uuid4()
-        statement_service.add_statement = AsyncMock(
+        statement_service.vorab_anlegen = AsyncMock(
             return_value=(False, vorhanden, "Heizungsgesetz = Enteignung")
         )
 
@@ -131,16 +128,16 @@ class TestVorab:
 
     @pytest.mark.parametrize("text", ["", "  ", "ab", "x" * 1001])
     def test_text_muss_passen(self, statement_service, text):
-        statement_service.add_statement = AsyncMock()
+        statement_service.vorab_anlegen = AsyncMock()
 
         resp = TestClient(app).post(VORAB_URL, json={"text": text}, headers=ANGEMELDET)
 
         assert resp.status_code == 422
-        statement_service.add_statement.assert_not_called()
+        statement_service.vorab_anlegen.assert_not_called()
 
     @pytest.mark.parametrize("headers", [{}, {"X-User": "anonymous"}])
     def test_nur_fuer_angemeldete(self, statement_service, headers):
-        statement_service.add_statement = AsyncMock()
+        statement_service.vorab_anlegen = AsyncMock()
 
         resp = TestClient(app).post(
             VORAB_URL,
@@ -149,4 +146,4 @@ class TestVorab:
         )
 
         assert resp.status_code == 401
-        statement_service.add_statement.assert_not_called()
+        statement_service.vorab_anlegen.assert_not_called()
