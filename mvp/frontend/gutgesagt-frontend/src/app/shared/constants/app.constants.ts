@@ -58,6 +58,7 @@ export const PAGE_TITLES = {
   RAW_INPUT_LIST: 'Fangkorb',
   DESTILLIEREN: 'Destillieren',
   AUSFORMULIEREN: 'Ausformulieren',
+  HIER_FEHLT_EINE_ANTWORT: 'Hier fehlt eine Antwort',
   SHARE_TARGET: 'Geteilter Inhalt',
   // Typnamen aus der Registry
   COMMENTARY: typLabel('commentary'),
@@ -80,6 +81,7 @@ export const ROUTES = {
   RAW_INPUT: '/einwerfen',
   RAW_INPUT_LIST: '/fangkorb',
   DESTILLIEREN: '/destillieren',
+  HIER_FEHLT_EINE_ANTWORT: '/hier-fehlt-eine-antwort',
   SHARE_TARGET: '/teilen',
   LOGIN: '/login',
   HELP: '/help'

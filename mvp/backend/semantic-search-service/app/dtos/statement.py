@@ -1,6 +1,6 @@
 import uuid
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
 from domain.models.statement import (
@@ -57,6 +57,47 @@ class AddStatementResponse(BaseModel):
     statement_was_new: bool
     statement_id: uuid.UUID
     statement_text: str
+
+
+### Hier fehlt eine Antwort ###
+
+# Wie lang eine vorab angelegte Aussage sein darf; die Obergrenze wie bei der
+# Aussagensuche (SearchStatementByTextRequest).
+AUSSAGE_MIN_ZEICHEN = 3
+AUSSAGE_MAX_ZEICHEN = 1000
+
+
+class UnbeantworteteAussageDto(BaseModel):
+    """
+    Eine unbeantwortete Aussage: ID (fuer "Selbst beantworten") und Text. Ob ohne
+    Treffer danach gesucht wurde, als ja/nein; wie oft, sehen nur Admins.
+    """
+
+    statement_id: uuid.UUID
+    statement_text: str
+    ohne_treffer_gesucht: bool
+
+
+class UnbeantworteteAussagenResponse(BaseModel):
+    aussagen: List[UnbeantworteteAussageDto]
+
+
+class AussageVorabRequest(BaseModel):
+    text: str = Field(
+        ...,
+        description="Die Aussage, fuer die es absehbar eine Antwort braucht",
+    )
+
+    @field_validator("text")
+    @classmethod
+    def text_pruefen(cls, wert: str) -> str:
+        wert = wert.strip()
+        if not AUSSAGE_MIN_ZEICHEN <= len(wert) <= AUSSAGE_MAX_ZEICHEN:
+            raise ValueError(
+                f"Eine Aussage hat {AUSSAGE_MIN_ZEICHEN} bis "
+                f"{AUSSAGE_MAX_ZEICHEN} Zeichen"
+            )
+        return wert
 
 
 ### GetStatementById ###

@@ -3,12 +3,17 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import ValidationError
 
-from dependencies import get_statement_service
+from dependencies import (
+    get_statement_service,
+    get_unbeantwortete_aussagen_service,
+    require_user,
+)
 from dtos.statement import (
     AddReplysuggestionToStatementRequest,
     AddReplysuggestionToStatementResponse,
     AddStatementRequest,
     AddStatementResponse,
+    AussageVorabRequest,
     GetCategoriesResponse,
     GetStatementsOfCategoryRequest,
     GetStatementsOfCategoryResponse,
@@ -20,6 +25,8 @@ from dtos.statement import (
     StatementSearchResponse,
     StatementGetAllResponse,
     StatementSource,
+    UnbeantworteteAussageDto,
+    UnbeantworteteAussagenResponse,
 )
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from core.logging import get_logger
@@ -28,7 +35,8 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 from domain.models.content_status import NEW_CONTENT_STATUS
-from domain.models.content_origin import SEARCH_QUERY_AUTHOR
+from domain.models.content_origin import ContentOrigin, SEARCH_QUERY_AUTHOR
+from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 
 logger = get_logger(__name__)
 
@@ -95,6 +103,63 @@ async def get_by_id(
 
     return GetStatementByIdResponse(
         statement_id=statement.id, statement_text=statement.text
+    )
+
+
+# "Hier fehlt eine Antwort": unbeantwortete Aussagen fuer Mitwirkende. Nur
+# Aussagen, keine Suchanfragen und keine Zahlen der Kennzahl "Suchen ohne Treffer"
+# (services/unbeantwortete_aussagen_service.py).
+@router.get("/unbeantwortet", response_model=UnbeantworteteAussagenResponse)
+async def unbeantwortet(
+    user_id: str = Depends(require_user),
+    service: UnbeantworteteAussagenService = Depends(
+        get_unbeantwortete_aussagen_service
+    ),
+) -> UnbeantworteteAussagenResponse:
+    try:
+        aussagen = await service.liste()
+    except Exception as e:
+        logger.error(f"Error in /unbeantwortet: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="Failed to fetch unanswered statements"
+        )
+    return UnbeantworteteAussagenResponse(
+        aussagen=[
+            UnbeantworteteAussageDto(
+                statement_id=a.statement_id,
+                statement_text=a.text,
+                ohne_treffer_gesucht=a.ohne_treffer_gesucht,
+            )
+            for a in aussagen
+        ]
+    )
+
+
+# Eine Aussage vorab anlegen, fuer ein absehbares Thema, bevor jemand danach sucht.
+# Die Person ist Autorin; eine sehr aehnliche vorhandene Aussage wird nicht doppelt
+# angelegt, sondern zurueckgegeben (statement_was_new = false).
+@router.post("/vorab", response_model=AddStatementResponse)
+async def vorab_anlegen(
+    request: AussageVorabRequest,
+    user_id: str = Depends(require_user),
+    statement_service: StatementService = Depends(get_statement_service),
+) -> AddStatementResponse:
+    try:
+        statement_was_new, statement_id, statement_text = (
+            await statement_service.add_statement(
+                Statement(text=request.text, replysuggestions=[]),
+                user_id,
+                NEW_CONTENT_STATUS,
+                ContentOrigin.MANUALLY_CREATED,
+            )
+        )
+    except Exception as e:
+        logger.error(f"Error in /vorab: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to add statement")
+    return AddStatementResponse(
+        statement_was_new=statement_was_new,
+        statement_id=statement_id,
+        statement_text=statement_text,
     )
 
 

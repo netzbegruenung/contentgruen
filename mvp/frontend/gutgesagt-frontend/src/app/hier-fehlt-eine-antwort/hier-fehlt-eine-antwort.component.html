@@ -1,0 +1,45 @@
+<div class="component-box">
+    <p class="einleitung">
+        Zu diesen Aussagen gibt es noch keinen Kommentar, oder mehrere Personen haben danach
+        gesucht und nichts Passendes gefunden. Zuerst steht, wonach gesucht wurde.
+    </p>
+
+    <p *ngIf="ladefehler" class="hinweis">Die Aussagen konnten nicht geladen werden.</p>
+
+    <ng-container *ngIf="aussagen">
+        <ul *ngIf="aussagen.length > 0; else leer" class="aussagen">
+            <li *ngFor="let aussage of aussagen" class="aussage" data-testid="unbeantwortete-aussage">
+                <p class="aussage-text">{{ aussage.statement_text }}</p>
+                <div class="aussage-fuss">
+                    <span *ngIf="aussage.ohne_treffer_gesucht" class="gesucht">Danach wurde ohne Treffer gesucht</span>
+                    <a mat-stroked-button class="selbst-beantworten"
+                       [routerLink]="kommentarFormular"
+                       [queryParams]="beantwortenParams(aussage)">Selbst beantworten</a>
+                </div>
+            </li>
+        </ul>
+        <ng-template #leer>
+            <p class="hinweis">Gerade fehlt keine Antwort.</p>
+        </ng-template>
+    </ng-container>
+
+    <section class="vorab" aria-labelledby="vorab-titel">
+        <h2 id="vorab-titel">Aussage vorab anlegen</h2>
+        <p class="hinweis">
+            Absehbar, dass bald jemand eine Antwort auf etwas braucht? Leg die Aussage an,
+            dann steht sie hier, bis jemand sie beantwortet.
+        </p>
+        <mat-form-field appearance="outline" class="vorab-feld">
+            <mat-label>Aussage</mat-label>
+            <textarea matInput name="aussage" rows="2"
+                      [maxLength]="maxZeichen"
+                      [value]="neueAussage"
+                      (input)="eingabe($any($event.target).value)"
+                      placeholder="z. B. „Das Heizungsgesetz enteignet uns“"></textarea>
+        </mat-form-field>
+        <button mat-raised-button type="button" class="dark-green-button aussage-anlegen"
+                [disabled]="!anlegbar"
+                (click)="anlegen()">Aussage anlegen</button>
+        <p *ngIf="meldung" class="meldung" role="status">{{ meldung }}</p>
+    </section>
+</div>

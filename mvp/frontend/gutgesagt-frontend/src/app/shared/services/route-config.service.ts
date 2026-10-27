@@ -79,6 +79,13 @@ export class RouteConfigService {
           showContributeButton: true
         };
 
+      case ROUTES.HIER_FEHLT_EINE_ANTWORT:
+        return {
+          pageTitle: PAGE_TITLES.HIER_FEHLT_EINE_ANTWORT,
+          showBackButton: true,
+          showContributeButton: true
+        };
+
       case ROUTES.SHARE_TARGET:
         return {
           pageTitle: PAGE_TITLES.SHARE_TARGET,

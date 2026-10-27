@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
@@ -38,6 +38,7 @@ import { KETTEN_ICONS } from './shared/fangkorb-texte';
     MatDividerModule,
     FormsModule,
     RouterOutlet,
+    RouterLink,
     FooterComponent,
     MobileMenuComponent,
     MobileHeaderComponent

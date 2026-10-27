@@ -68,4 +68,23 @@ describe('MobileMenuComponent', () => {
     expect(about.getAttribute('href')).toBe('/about');
     expect(about.getAttribute('target')).toBeNull();
   });
+
+  it('verlinkt Angemeldete auf "Hier fehlt eine Antwort" und schliesst danach das Menue', () => {
+    component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+
+    const eintrag = link('.mobile-menu-fehlt-antwort');
+    expect(eintrag.getAttribute('href')).toBe('/hier-fehlt-eine-antwort');
+    expect(eintrag.textContent).toContain('Hier fehlt eine Antwort');
+
+    spyOn(component.closeMenu, 'emit');
+    eintrag.click();
+    expect(component.closeMenu.emit).toHaveBeenCalled();
+  });
+
+  it('zeigt "Hier fehlt eine Antwort" ohne Anmeldung nicht', () => {
+    component.userInfo = null;
+    fixture.detectChanges();
+    expect(link('.mobile-menu-fehlt-antwort')).toBeNull();
+  });
 });

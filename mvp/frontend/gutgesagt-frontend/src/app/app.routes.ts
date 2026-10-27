@@ -101,6 +101,12 @@ export const routes: Routes = [
         canActivate: [AuthGuard],
         data: { parent: '/search' }
     },
+    {
+        path: 'hier-fehlt-eine-antwort',
+        loadComponent: () => import('./hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component').then(m => m.HierFehltEineAntwortComponent),
+        canActivate: [AuthGuard],
+        data: { parent: '/search' }
+    },
     // Diese Routen lesen ?einwurf= (Formular, Ergebnisseite, beim Bild-Formular nur der
     // Pfeil); alteEinwurfAdresseUmleiten schreibt aeltere Adressen vorher um
     // (destillieren/einwurf-adresse.ts).

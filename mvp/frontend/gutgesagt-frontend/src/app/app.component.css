@@ -73,6 +73,7 @@ main * {
 }
 
 .header-link {
+    color: inherit;
     text-decoration: underline;
     transition: opacity var(--transition-fast);
     cursor: pointer;

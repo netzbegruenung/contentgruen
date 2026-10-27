@@ -1,6 +1,7 @@
 import { ActivatedRouteSnapshot, convertToParamMap } from '@angular/router';
 
 import { routes } from './app.routes';
+import { AuthGuard } from './auth/auth.guard';
 import { gespeichertEltern } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
@@ -73,5 +74,11 @@ describe('Routentabelle', () => {
         .withContext(pfad)
         .toEqual(['/destillieren', 'e-1']);
     }
+  });
+
+  it('zeigt "Hier fehlt eine Antwort" nur Angemeldeten', () => {
+    const eintrag = routes.find((route) => route.path === 'hier-fehlt-eine-antwort');
+    expect(eintrag).withContext('Route fehlt').toBeTruthy();
+    expect(eintrag!.canActivate).toContain(AuthGuard);
   });
 });

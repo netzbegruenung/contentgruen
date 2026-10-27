@@ -2,6 +2,8 @@ from typing import List, Optional
 import asyncio
 import logging
 
+from pydantic import ValidationError
+
 from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from repositories.implementations.qdrant.base_repository import (
@@ -11,6 +13,7 @@ from repositories.implementations.qdrant.base_repository import (
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_type import ContentType
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +130,61 @@ class StatementRepository(
         except Exception as e:
             logger.error(f"Failed to count curated statements: {e}", exc_info=True)
             return 0
+
+    async def ohne_kommentar(self) -> List[StatementDbEntry]:
+        """
+        Sichtbare Aussagen ohne Kommentar unter ihren Antwortvorschlaegen, fuer
+        "Hier fehlt eine Antwort".
+
+        Ohne die unbeantworteten Suchanfragen (Kriterium wie count_curated): Das
+        waere die Suchanfrage einer einzelnen Person. Suchanfragen, nach denen
+        mehrere ohne Treffer gesucht haben, kommen ueber die Kennzahl "Suchen ohne
+        Treffer" dazu (UnbeantworteteAussagenService). Alle Treffer auf einmal,
+        unsortiert; Qdrant scrollt in ID-Reihenfolge.
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+        kommentar = FieldCondition(
+            key="replysuggestions[].content_type",
+            match=MatchValue(value=ContentType.COMMENTARY.value),
+        )
+        scroll_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                ),
+                *nur_sichtbar_bedingungen(),
+            ],
+            must_not=[_unbeantwortete_suchanfrage(), kommentar],
+        )
+
+        ergebnis: List[StatementDbEntry] = []
+        offset = None
+        while True:
+            seite, naechster = await self._shared_manager.async_client.scroll(
+                collection_name=self._shared_manager.collection_name,
+                scroll_filter=scroll_filter,
+                limit=100,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for punkt in seite:
+                payload = dict(punkt.payload or {})
+                payload["id"] = str(punkt.id)
+                try:
+                    ergebnis.append(
+                        self.content_db_entry_model_class.model_validate(payload)
+                    )
+                except ValidationError as fehler:
+                    logger.warning(
+                        f"ohne_kommentar: Punkt {punkt.id} uebersprungen, "
+                        f"Payload ungueltig ({fehler.error_count()} Fehler)"
+                    )
+            if not seite or naechster is None or naechster == offset:
+                break
+            offset = naechster
+        return ergebnis
 
     async def search_curated(
         self, query_text: str, limit: int

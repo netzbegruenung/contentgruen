@@ -52,6 +52,26 @@ export interface AddStatementResponse {
     statement_text: string;
 }
 
+// Hier fehlt eine Antwort
+
+/**
+ * Eine unbeantwortete Aussage: ohne Kommentar oder mit Suchen ohne Treffer von
+ * mindestens zwei Personen. Wie oft gesucht wurde, sehen nur Admins.
+ */
+export interface UnbeantworteteAussage {
+    statement_id: string;
+    statement_text: string;
+    ohne_treffer_gesucht: boolean;
+}
+
+export interface UnbeantworteteAussagenResponse {
+    aussagen: UnbeantworteteAussage[];
+}
+
+export interface AussageVorabRequest {
+    text: string;
+}
+
 // GetStatementById
 
 export interface GetStatementByIdResponse {

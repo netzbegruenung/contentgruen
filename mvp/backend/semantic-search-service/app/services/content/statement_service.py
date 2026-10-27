@@ -129,6 +129,13 @@ class StatementService(
         """
         return await self._repository.count_curated()
 
+    async def ohne_kommentar(self) -> List[StatementDbEntry]:
+        """
+        Sichtbare Aussagen ohne Kommentar, ohne die unbeantworteten Suchanfragen;
+        Grundlage von "Hier fehlt eine Antwort" (StatementRepository.ohne_kommentar).
+        """
+        return await self._repository.ohne_kommentar()
+
     async def add_statement(
         self,
         statement: Statement,
