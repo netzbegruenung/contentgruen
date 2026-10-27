@@ -177,10 +177,10 @@ class TestSuchpfadBackend:
 @pytest.mark.api
 class TestSuchpfadOhneLogzeile:
     """
-    Eine Logzeile je Suche traegt die genaue Uhrzeit. Durchgezaehlt je Tag passt die
-    k-te Zeile zum k-ten Suchereignis (fortlaufende id) und gibt ihm die Uhrzeit
-    zurueck, die search_events seit #239 nicht mehr speichert. Damit waere die
-    Aussage aus der Suche wieder dem Tagespseudonym zuordenbar.
+    Eine Logzeile je Suche traegt die genaue Uhrzeit, die search_events seit #239
+    nicht mehr speichert. Durchgezaehlt je Tag passt die k-te Zeile zur k-ten Aussage
+    aus einer Suche; damit gaebe das Log die Reihenfolge der Suchen zurueck, die
+    search_events seit #275 auch ueber seine Kennung nicht mehr verraet.
     """
 
     def test_search_by_text_protokolliert_auf_info_nichts(
