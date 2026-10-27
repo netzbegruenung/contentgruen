@@ -1,0 +1,129 @@
+# Was ein PR bestehen muss, wie scripts/check.sh --integration: Retired words, Ruff, Black,
+# Python-Unit- und Integrationstests (Qdrant und PostgreSQL als Dienste), Frontend und BFF.
+# Jeder Schritt ruft check.sh mit --schritt auf, die Befehle stehen also nur dort.
+# Status ci/woodpecker/pr/ci ist Pflicht fuer main. Ist ein PR-Lauf rot, schreibt
+# ci-bericht die roten Schritte in den PR (docs/CI.md).
+# Images: dieselben wie in den Dockerfiles und docker-compose.dev.yml;
+# scripts/tests/test_woodpecker_ci.py haelt beide Stellen gleich.
+# Kein Pfadfilter hier: ein uebersprungener Workflow meldet keinen Status.
+when:
+  - event: pull_request
+  - event: push
+    branch: main
+  - event: [tag, manual]
+
+clone:
+  - name: clone
+    image: docker.io/woodpeckerci/plugin-git:2.10.1
+    settings:
+      # Ganze Historie und main dazu: retired-words prueft die Zeilen seit der Abzweigung.
+      partial: false
+      depth: 0
+      fetch-target-branch: true
+
+services:
+  - name: qdrant
+    image: qdrant/qdrant:v1.18.2
+    # Ohne absoluten Pfad startet der Dienst nicht
+    entrypoint: [/qdrant/qdrant]
+  - name: postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: ci
+      POSTGRES_DB: gutgesagt_app
+
+steps:
+  # Braucht nur git und python3; beides hat das Node-Image
+  - name: retired-words
+    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    depends_on: []
+    when:
+      - event: pull_request
+    commands:
+      - export CHECK_BASE=origin/$${CI_COMMIT_TARGET_BRANCH}
+      - sh scripts/ci-protokoll.sh retired-words bash scripts/check.sh --schritt retired-words
+
+  - name: python-installieren
+    image: python:3.13-slim
+    depends_on: []
+    commands:
+      - sh scripts/ci-protokoll.sh python-installieren python -m venv mvp/backend/semantic-search-service/venv
+      - sh scripts/ci-protokoll.sh python-installieren mvp/backend/semantic-search-service/venv/bin/pip install -q --no-cache-dir -r mvp/backend/semantic-search-service/requirements.txt
+
+  - name: lint
+    image: python:3.13-slim
+    depends_on: [python-installieren]
+    commands:
+      - sh scripts/ci-protokoll.sh lint bash scripts/check.sh --schritt lint
+
+  - name: unit
+    image: python:3.13-slim
+    depends_on: [python-installieren]
+    environment:
+      CHECK_VOLL: "1"
+    commands:
+      - sh scripts/ci-protokoll.sh unit bash scripts/check.sh --schritt unit
+
+  - name: integration
+    image: python:3.13-slim
+    depends_on: [python-installieren]
+    environment:
+      CHECK_VOLL: "1"
+      INTEGRATION_STACK_PFLICHT: "1"
+      QDRANT_URL: http://qdrant:6333
+      POSTGRES_TEST_DATABASE_URL: postgresql+psycopg2://app_user:ci@postgres:5432/gutgesagt_app
+    commands:
+      - sh scripts/ci-protokoll.sh integration bash scripts/check.sh --schritt integration
+
+  - name: frontend
+    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    depends_on: []
+    environment:
+      CHECK_VOLL: "1"
+      CHROME_BIN: /usr/local/bin/chromium-ci
+    commands:
+      - sh scripts/ci-protokoll.sh frontend sh scripts/ci-chromium.sh
+      - sh scripts/ci-protokoll.sh frontend npm ci --prefix mvp/frontend/gutgesagt-frontend --no-audit --no-fund
+      - sh scripts/ci-protokoll.sh frontend bash scripts/check.sh --schritt frontend
+
+  - name: bff
+    image: mcr.microsoft.com/dotnet/sdk:9.0@sha256:840f3b62b9742dde4461a3c31e38ffd34d41d7d33afd39c378cfcfd5dcb82bd5
+    depends_on: []
+    environment:
+      CHECK_VOLL: "1"
+      # Kein Docker im Runner: dotnet direkt im SDK-Image
+      CHECK_OHNE_DOCKER: "1"
+    commands:
+      - sh scripts/ci-protokoll.sh bff bash scripts/check.sh --schritt bff
+
+  # Nur Standardbibliothek, damit der Bericht auch kommt, wenn python-installieren scheitert.
+  # Fehlt das Secret oder ist es nicht fuer pull_request freigegeben, bricht Woodpecker
+  # jeden PR-Lauf ab, bevor ein Schritt laeuft (docs/CI.md).
+  - name: ci-bericht
+    image: python:3.13-slim
+    # je Schritt eine Zeile, in Pipeline-Reihenfolge (auch in der Argumentliste unten)
+    depends_on:
+      - retired-words
+      - python-installieren
+      - lint
+      - unit
+      - integration
+      - frontend
+      - bff
+    when:
+      - event: pull_request
+        status: failure
+    environment:
+      FORGEJO_TOKEN:
+        from_secret: forgejo_ci_bericht_token
+    commands:
+      - >-
+        python3 scripts/ci_bericht.py
+        retired-words
+        python-installieren
+        lint
+        unit
+        integration
+        frontend
+        bff
