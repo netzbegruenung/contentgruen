@@ -100,8 +100,10 @@ class TestBeitragLoeschen:
 
         assert ergebnis is LoeschErgebnis.NICHT_DA
 
-    async def test_loeschen_bild_ohne_unterschrift(self, service, speicher):
-        """Der Autor sieht es in "Meine Beitraege", also kann er es auch loeschen."""
+    async def test_loeschen_bild_ohne_unterschrift_ist_nicht_da(
+        self, service, speicher
+    ):
+        """Altbilder ohne Unterschrift (vor #281) sind ausgeblendet, auch fuer den Autor."""
         speicher.add_test_data(
             "image",
             [_beitrag("image", status=ContentStatus.PENDING_DESCRIPTION.value)],
@@ -109,8 +111,8 @@ class TestBeitragLoeschen:
 
         ergebnis = await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
 
-        assert ergebnis is LoeschErgebnis.GELOESCHT
-        assert _status(speicher) == ContentStatus.DELETED.value
+        assert ergebnis is LoeschErgebnis.NICHT_DA
+        assert _status(speicher) == ContentStatus.PENDING_DESCRIPTION.value
 
     async def test_loeschen_sperre_zwischen_lesen_und_schreiben_bleibt(
         self, service, speicher, repository

@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends, Header, Query, Response
+from fastapi import APIRouter, HTTPException, Depends, Header, Query
 import datetime
 import logging
 import uuid
@@ -17,7 +17,7 @@ from services.content.base_content_service import BaseContentService
 from services.vision.caption_suggestion_service import CaptionSuggestionService
 from domain.models.image import ImageDbEntry
 from domain.models.author_entry import AuthorEntry
-from domain.models.content_status import ContentStatus, NEW_CONTENT_STATUS
+from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 
 router = APIRouter()
@@ -68,58 +68,36 @@ async def get_all(
 @router.post(
     "/addImage",
     response_model=AddImageResponse,
-    response_model_exclude_none=True,
     status_code=201,
-    responses={
-        202: {
-            "model": AddImageResponse,
-            "description": "Ohne Unterschrift angenommen; die Bildbeschreibung folgt.",
-        }
-    },
 )
 async def add_image(
     request: AddImageRequest,
-    response: Response,
     image_service: BaseContentService = Depends(get_image_service),
     x_user: str = Header(...),
 ) -> AddImageResponse:
     """
-    Create an image entry.
+    Ein Bild mit Unterschrift speichern; es ist sofort sichtbar. Returns 201.
 
-    Phase A (caption provided): stores immediately at NEW_CONTENT_STATUS. Returns 201.
-    Phase B (no caption): stores at PENDING_DESCRIPTION for async worker processing.
-    Returns 202 Accepted with the assigned id and status.
+    Die Unterschrift ist Pflicht (AddImageRequest, sonst 422): Einen KI-Vorschlag holt
+    das Formular ueber /suggestCaption, gespeichert wird er erst, wenn die Person ihn
+    uebernimmt (ADR 0003).
     """
     try:
-        image_input = request.image
-        caption_provided = bool(image_input.text and image_input.text.strip())
-
         now = datetime.datetime.now(datetime.timezone.utc)
-        initial_status = (
-            NEW_CONTENT_STATUS
-            if caption_provided
-            else ContentStatus.PENDING_DESCRIPTION
-        )
-
         entry = ImageDbEntry(
-            **image_input.model_dump(),
+            **request.image.model_dump(),
             id=uuid.uuid4(),
             created=now,
             last_modified=now,
             original_author=x_user,
             last_modified_by=x_user,
             authors=[AuthorEntry(name=x_user)],
-            status=initial_status,
+            status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.MANUALLY_CREATED,
         )
 
         image_id = await image_service.add(entry)
-
-        if caption_provided:
-            return AddImageResponse(id=image_id)
-
-        response.status_code = 202
-        return AddImageResponse(id=image_id, status=ContentStatus.PENDING_DESCRIPTION)
+        return AddImageResponse(id=image_id)
 
     except HTTPException:
         raise

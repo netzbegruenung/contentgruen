@@ -13,7 +13,6 @@ from qdrant_client.models import (
     VectorParams,
     HnswConfigDiff,
     PointStruct,
-    PointVectors,
     Filter,
     FieldCondition,
     MatchValue,
@@ -199,7 +198,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                         "Continuing without index - filtering will still work but may be slower"
                     )
 
-                # Create payload index for status to speed up get_by_status scrolls
+                # Create payload index for status to speed up status-filtered searches
                 try:
                     await self._async_client.create_payload_index(
                         collection_name=self.collection_name,
@@ -426,22 +425,6 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         except Exception as e:
             logger.error(f"❌ Unexpected error during upsert batch: {e}", exc_info=True)
             raise
-
-    async def update_vector(self, point_id: str, text: str, content_type: str) -> None:
-        """
-        Re-embed text and replace only the vector of an existing point.
-
-        Unlike upsert_batch, the payload stays untouched. Encoding follows the same
-        rule as upsert_batch (encoding_fuer).
-        """
-        if not self._is_started:
-            raise RuntimeError("QdrantEmbeddingsManager not started.")
-
-        embedding = self.encode_text(text, content_type=encoding_fuer(content_type))
-        await self._async_client.update_vectors(
-            collection_name=self.collection_name,
-            points=[PointVectors(id=point_id, vector=embedding)],
-        )
 
     async def search(
         self,

@@ -6,6 +6,12 @@ status: accepted
 
 KI darf Nutzenden für ihre eigene Verwendung Texte vorschlagen, etwa eine Verbesserung ihrer Argumentation oder eine auf eine Zielgruppe zugeschnittene Fassung eines Beitrags. In den gemeinsamen Vorrat kommt ein solcher Text nur, wenn ein Mensch ihn übernimmt, gegebenenfalls bearbeitet und speichert; er ist dann Autor. KI legt selbst keine Beiträge an. Grund ist das Reputationsrisiko: Ein Beitrag, der einen Fakt erfindet oder eine Position falsch zuschreibt, fällt auf die Partei zurück, und im Vorrat muss für jeden Text eine Person geradestehen.
 
+## Unterschrift eines Bildes
+
+Das gilt auch für die Unterschrift eines Bildes, obwohl sie nur beschreibt, was zu sehen ist: Sie ist der Text, über den das Bild gefunden wird, und kann ebenso einen Fakt erfinden oder eine Position falsch zuschreiben. Die KI schlägt im Bild-Formular eine Unterschrift vor, die Person prüft und bearbeitet sie und speichert das Bild selbst. Ohne Unterschrift wird kein Bild gespeichert, und kein Hintergrunddienst schreibt eine nach (#281).
+
+Verworfen wurde eine Ausnahme für die Unterschrift, bei der ein Hintergrunddienst die fehlende Unterschrift schreibt und das Bild damit sichtbar macht: Dann stünde für den Text, über den das Bild gefunden wird, niemand gerade, und Bild-URLs gingen ohne Zutun der Person an den KI-Anbieter.
+
 ## Considered Options
 
 - Nur Bewertung und Hinweise, keine Textvorschläge: sicherer, verfehlt aber das Ziel, Argumentation schnell zu verbessern und auf Zielgruppen zuzuschneiden.

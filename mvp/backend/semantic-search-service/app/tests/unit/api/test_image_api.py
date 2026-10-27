@@ -4,7 +4,7 @@ Antwortformat der Bild-Endpunkte.
 Jede Route in api/v1/image.py beschreibt ihre Antwort mit einem response_model;
 getById und getAll liefern dabei noch das Domaenenmodell ImageDbEntry. Die
 Antworten selbst bleiben, wie das Frontend sie kennt: addImage gibt 201 mit der
-ID, ohne Unterschrift 202 mit ID und Status.
+ID. Ein Bild ohne Unterschrift lehnt addImage ab (422, test_add_image.py).
 """
 
 import uuid
@@ -72,29 +72,15 @@ def test_add_image_mit_unterschrift_antwortet_201_mit_id(client):
     assert response.content == f'{{"id":"{BILD_ID}"}}'.encode()
 
 
-def test_add_image_ohne_unterschrift_antwortet_202_mit_status(client):
-    response = client.post(
-        "/api/v1/image/addImage",
-        json={"image": {"title": TITEL, "image_url": BILD_URL}},
-        headers={"X-User": "autorin"},
-    )
-
-    assert response.status_code == 202
-    assert (
-        response.content
-        == f'{{"id":"{BILD_ID}","status":"pending_description"}}'.encode()
-    )
-
-
-def test_add_image_dokumentiert_beide_antworten():
+def test_add_image_dokumentiert_nur_201():
     app = FastAPI()
     app.include_router(image_router, prefix="/api/v1/image")
 
     antworten = app.openapi()["paths"]["/api/v1/image/addImage"]["post"]["responses"]
 
-    for code in ("201", "202"):
-        schema = antworten[code]["content"]["application/json"]["schema"]
-        assert schema == {"$ref": "#/components/schemas/AddImageResponse"}
+    assert "202" not in antworten
+    schema = antworten["201"]["content"]["application/json"]["schema"]
+    assert schema == {"$ref": "#/components/schemas/AddImageResponse"}
 
 
 def test_get_by_id_liefert_das_bild(client, image_service):

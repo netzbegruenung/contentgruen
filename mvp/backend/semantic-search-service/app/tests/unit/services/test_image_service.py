@@ -122,10 +122,10 @@ class TestImageService:
             await service.get(uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_add_image_with_caption_phase_a(
+    async def test_add_image_mit_unterschrift_wird_gespeichert(
         self, service, test_embeddings_manager
     ):
-        """Phase A: caption provided — entry is stored and retrievable."""
+        """Bild mit Unterschrift: wird gespeichert und ist lesbar."""
         entry = _make_image_entry(
             title="Wind Park Niedersachsen",
             image_url="https://example.com/wind.jpg",
@@ -142,24 +142,6 @@ class TestImageService:
             stored[str(image_id)]["text"]
             == "Wind turbines in Lower Saxony near an organic farm"
         )
-
-    @pytest.mark.asyncio
-    async def test_add_image_without_caption_phase_b(
-        self, service, test_embeddings_manager
-    ):
-        """Phase B: no caption — entry stored with text=None."""
-        entry = _make_image_entry(
-            title="Unprocessed Image",
-            image_url="https://example.com/raw.jpg",
-            text=None,
-            status=ContentStatus.PENDING_DESCRIPTION,
-        )
-
-        image_id = await service.add(entry)
-
-        assert isinstance(image_id, uuid.UUID)
-        stored = test_embeddings_manager.get_data()
-        assert str(image_id) in stored
 
     @pytest.mark.asyncio
     async def test_count_through_service(self, service, test_embeddings_manager):

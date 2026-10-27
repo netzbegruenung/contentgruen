@@ -251,42 +251,19 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         """
         pass
 
-    async def get_by_status(
-        self, status: ContentStatus, limit: int
-    ) -> List[TContentDbEntry]:
-        """
-        Get items filtered by lifecycle status.
-        Default implementation returns empty list.
-        Override in repositories that support status-based queries.
-        """
-        return []
-
     async def update_status(
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
-        nur_aus: Optional[ContentStatus] = None,
         nicht_aus: Optional[AbstractSet[ContentStatus]] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
-        With nur_aus, the status only changes while the item is in that status;
-        with nicht_aus, only while it is in none of these.
+        With nicht_aus, the status only changes while the item is in none of these.
         Default implementation is a no-op.
         Override in repositories that support status updates.
         """
         pass
-
-    async def unterschrift_setzen(
-        self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
-    ) -> None:
-        """
-        Partial update: set text (and its vector) plus the extra payload fields,
-        leaving status, Sperre and everything else untouched.
-        No silent no-op default: the caller would then make an image sichtbar
-        without its Unterschrift. Override in repositories that support partial updates.
-        """
-        raise NotImplementedError
 
     async def count_last_week(self) -> int:
         """

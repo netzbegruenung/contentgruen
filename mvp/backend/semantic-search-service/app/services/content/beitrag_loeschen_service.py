@@ -39,8 +39,8 @@ class BeitragLoeschenService:
         Gesperrte und geloeschte Beitraege sind fuer den Autor nicht da (get()
         blendet sie aus): Eine Sperre bleibt so stehen, und wiederholtes Loeschen
         aendert nichts. Sperrt ein Admin zwischen Lesen und Schreiben, schuetzt
-        nicht_aus die Sperre im selben Schreibvorgang. Ein Ausschluss statt nur_aus,
-        weil get() Altwerte von vor #214 als sichtbar liest; ein Filter auf
+        nicht_aus die Sperre im selben Schreibvorgang. Ein Ausschluss statt eines
+        Filters auf den erwarteten Zustand, weil get() Altwerte von vor #214 als sichtbar liest; ein Filter auf
         "visible" traefe den gespeicherten Altwert nicht.
 
         Ein unlesbarer Datensatz ist ein Fehler, kein "nicht da": ValidationError

@@ -186,8 +186,9 @@ class BaseContentService(
             f"BaseContentService ({self._repository_class.__name__}): Upserting item of type {type(input_db_entry).__name__} with id: {input_db_entry.id}"
         )
 
+        # Coerce None -> "" for images without Unterschrift from before #281.
         content_db_entry: ContentDbEntry = ContentDbEntry(
-            text=input_db_entry.text or "",  # coerce None → "" for captionless images
+            text=input_db_entry.text or "",
             content_type=input_db_entry.content_type,
             id=input_db_entry.id,
             created=input_db_entry.created,
@@ -288,35 +289,15 @@ class BaseContentService(
         )
         return await self._repository.get_all(limit, offset)
 
-    async def get_by_status(
-        self, status: ContentStatus, limit: int
-    ) -> List[TContentDbEntry]:
-        """Get items filtered by lifecycle status (used by the description worker)."""
-        logger.debug(
-            f"BaseContentService ({self._repository_class.__name__}): Getting items with status {status}"
-        )
-        return await self._repository.get_by_status(status, limit)
-
     async def update_status(
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
-        nur_aus: Optional[ContentStatus] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
-        With nur_aus, only while the item is still in that status.
         """
         logger.debug(
             f"BaseContentService ({self._repository_class.__name__}): Updating status of {item_id} to {new_status}"
         )
-        await self._repository.update_status(item_id, new_status, nur_aus=nur_aus)
-
-    async def unterschrift_setzen(
-        self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
-    ) -> None:
-        """Set Unterschrift (text) and vector only; status and Sperre stay as they are."""
-        logger.debug(
-            f"BaseContentService ({self._repository_class.__name__}): Setting text of {item_id}"
-        )
-        await self._repository.unterschrift_setzen(item_id, text, extra)
+        await self._repository.update_status(item_id, new_status)

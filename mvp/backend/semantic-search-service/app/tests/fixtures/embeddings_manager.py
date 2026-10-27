@@ -27,8 +27,6 @@ class TestEmbeddingsManager(IEmbeddingsManager):
     def __init__(self):
         """Initialize the test embeddings manager with in-memory storage."""
         self._data: Dict[str, Dict[str, Any]] = {}
-        # Text each point's vector was last rebuilt from (update_vector)
-        self.vector_texts: Dict[str, str] = {}
         self._embeddings_mock = MagicMock()
         self._embeddings_mock.search = self._search_impl
         self._embeddings_mock.upsert = self._upsert_impl
@@ -117,7 +115,7 @@ class TestEmbeddingsManager(IEmbeddingsManager):
             """
             Mock set_payload: merges the fields into the stored points. points is a
             list of IDs or a Filter with has_id plus status conditions in must and
-            must_not (update_status mit nur_aus/nicht_aus).
+            must_not (update_status mit nicht_aus).
             """
             if isinstance(points, list):
                 ids, must, must_not = points, [], []
@@ -344,7 +342,6 @@ class TestEmbeddingsManager(IEmbeddingsManager):
     def clear(self) -> None:
         """Clear all test data."""
         self._data.clear()
-        self.vector_texts.clear()
 
     def get_data(self) -> Dict[str, Dict[str, Any]]:
         """Get all stored data for assertions."""
@@ -465,11 +462,6 @@ class TestEmbeddingsManager(IEmbeddingsManager):
                     "content_type": content_type,
                     **getattr(data, "__dict__", {}),
                 }
-
-    async def update_vector(self, point_id: str, text: str, content_type: str) -> None:
-        """Mock update_vector: records which text the vector was built from."""
-        if str(point_id) in self._data:
-            self.vector_texts[str(point_id)] = text
 
     @property
     def is_started(self) -> bool:

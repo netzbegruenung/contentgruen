@@ -40,7 +40,6 @@ from api.v1.voting import router as voting_router
 from api.v1.moderation import router as moderation_router
 from api.v1.health import router as health_router
 from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
-from services.vision.image_description_worker import start_description_worker
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
     loeschen_im_takt,
@@ -98,26 +97,6 @@ async def lifespan(app: FastAPI):
         logger.info("Starting usage data cleanup scheduler...")
         start_cleanup_scheduler()
         logger.info("✅ Cleanup scheduler started")
-
-        # Start image description worker (processes PENDING_DESCRIPTION images async)
-        logger.info("Starting image description worker...")
-        from dependencies import get_image_service
-        from domain.content_registry import REGISTRY
-        from domain.models.content_type import ContentType
-
-        try:
-            _image_svc = get_image_service()
-            if _image_svc is None:
-                logger.warning(
-                    "⚠️ Image description worker not started: embeddings manager unavailable"
-                )
-            else:
-                start_description_worker(
-                    _image_svc, REGISTRY[ContentType.IMAGE].ingestion
-                )
-                logger.info("✅ Image description worker started")
-        except Exception as e:
-            logger.warning(f"⚠️ Image description worker could not start: {e}")
 
         # Start rate limiter cleanup task
         logger.info("Starting rate limiter cleanup task...")

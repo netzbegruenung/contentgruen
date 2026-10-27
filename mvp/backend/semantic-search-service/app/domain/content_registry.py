@@ -16,14 +16,14 @@ own classes for now; the registry does not flatten those.
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional, Type
 
-from core.config import Settings, settings as _settings
+from core.config import Settings
 from domain.models.content_type import ContentType
 from domain.models.base_content import BaseContentDbEntry, BaseContentSearchResult
 from domain.models.commentary import CommentaryDbEntry, CommentarySearchResult
 from domain.models.generic_text import GenericTextDbEntry, GenericTextSearchResult
 from domain.models.post import PostDbEntry, PostSearchResult
 from domain.models.image import ImageDbEntry, ImageSearchResult
-from domain.ingestion_strategies import DirectText, AiVisionDescription
+from domain.ingestion_strategies import DirectText
 from domain.protocols import IngestionStrategy
 from repositories.interfaces.base_content_repository import IBaseContentRepository
 from repositories.interfaces.repository_factory import IRepositoryFactory
@@ -39,7 +39,8 @@ class ContentTypeSpec:
     incrementally (see CONTENT_MODEL.md migration plan).
 
     ``ingestion`` is Seam 1 (CONTENT_MODEL.md): how searchable_text is produced from
-    raw input. Defaults to DirectText (user-supplied text = searchable text).
+    raw input. Every type uses DirectText (user-supplied text = searchable text); since
+    #281 nothing reads the field, the routers store the text as given (ADR 0003).
     """
 
     content_type: ContentType
@@ -105,24 +106,6 @@ REGISTRY: Dict[ContentType, ContentTypeSpec] = {
             ContentType.IMAGE.value,
             ImageDbEntry,
             ImageSearchResult,
-        ),
-        ingestion=(
-            AiVisionDescription(
-                # The module is imported lazily (via __import__) to avoid pulling openai
-                # at module load when OPENAI_API_KEY is not configured (e.g. in test envs).
-                # The IIFE runs once at registry-import time, not on first service request.
-                (
-                    lambda: __import__(
-                        "services.vision.caption_suggestion_service",
-                        fromlist=["CaptionSuggestionService"],
-                    ).CaptionSuggestionService(
-                        api_key=_settings.openai_api_key or "",
-                        model=_settings.openai_vision_model,
-                    )
-                )()
-            )
-            if _settings.openai_api_key
-            else DirectText()
         ),
     ),
 }

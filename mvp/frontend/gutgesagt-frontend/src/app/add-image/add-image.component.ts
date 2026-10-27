@@ -59,6 +59,10 @@ export class AddImageComponent implements OnDestroy {
   imageError: string | null = null;
   captionLoading = false;
   captionError: string | null = null;
+  /** Die Unterschrift kam als KI-Vorschlag; gespeichert wird sie erst mit „Bild speichern“ (ADR 0003). */
+  vorschlagEingesetzt = false;
+  /** Der eingesetzte Vorschlag, um ihn beim Wechsel der Bild-URL zu erkennen. */
+  private vorschlag: string | null = null;
   responseId: string = '';
 
   constructor(
@@ -76,6 +80,21 @@ export class AddImageComponent implements OnDestroy {
     this.imageForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((values) => {
       this.updatePreview(values);
     });
+
+    // Ein Vorschlag beschreibt das Bild, fuer das er geholt wurde. Wechselt die URL und
+    // steht er noch unbearbeitet im Feld, kommt er heraus, statt beim neuen Bild zu landen.
+    this.imageForm
+      .get('image_url')!
+      .valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        if (this.vorschlag === null) return;
+        const unterschrift = this.imageForm.get('caption')!;
+        if (unterschrift.value === this.vorschlag) {
+          unterschrift.setValue('');
+          this.vorschlagEingesetzt = false;
+        }
+        this.vorschlag = null;
+      });
 
     this.updatePreview(this.imageForm.value);
   }
@@ -131,6 +150,8 @@ export class AddImageComponent implements OnDestroy {
     this.imageService.suggestCaption({ image_url: imageUrl }).subscribe({
       next: (response) => {
         this.imageForm.get('caption')?.setValue(response.suggested_caption);
+        this.vorschlag = response.suggested_caption;
+        this.vorschlagEingesetzt = true;
         this.captionLoading = false;
       },
       error: (error) => {
@@ -147,6 +168,8 @@ export class AddImageComponent implements OnDestroy {
     this.imageSaved = false;
     this.imageError = null;
     this.captionError = null;
+    this.vorschlagEingesetzt = false;
+    this.vorschlag = null;
     this.imageForm.reset();
     this.updatePreview(this.imageForm.value);
   }

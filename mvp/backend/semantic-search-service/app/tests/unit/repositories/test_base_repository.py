@@ -583,16 +583,26 @@ class TestGesperrteBeitraege:
 
     @staticmethod
     def _gesperrte_ausgeschlossen(bedingungen) -> bool:
-        """Gesperrte und geloeschte stehen beide im Ausschluss."""
+        """
+        Gesperrte und geloeschte stehen im Ausschluss, ebenso die Altwerte fuer Bilder
+        ohne Unterschrift von vor #281.
+        """
         status = {
             bedingung.match.value
             for bedingung in (bedingungen or [])
             if bedingung.key == "status"
         }
-        return status == {"blocked", "deleted"}
+        return status == {
+            "blocked",
+            "deleted",
+            "pending_description",
+            "description_failed",
+        }
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("status", ["blocked", "deleted"])
+    @pytest.mark.parametrize(
+        "status", ["blocked", "deleted", "pending_description", "description_failed"]
+    )
     async def test_get_verweigert_gesperrten_beitrag(
         self, repository, test_embeddings_manager, status
     ):
@@ -610,7 +620,7 @@ class TestGesperrteBeitraege:
             ],
         )
 
-        with pytest.raises(ValueError, match="gesperrt oder geloescht"):
+        with pytest.raises(ValueError, match="ausgeblendet"):
             await repository.get(test_id)
 
     @pytest.mark.asyncio

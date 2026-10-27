@@ -33,7 +33,6 @@ from domain.models.content_status import (
     ALT_AUFFINDBAR,
     AUSGEBLENDET,
     AUSGEBLENDET_WERTE,
-    FELD_STATUS_VOR_SPERRE,
     ContentStatus,
 )
 from domain.models.content_origin import ContentOrigin
@@ -75,14 +74,13 @@ def _search_query_origin_conditions() -> list:
 
 def ausgeblendet_bedingungen() -> list:
     """
-    must_not-Bedingungen, die gesperrte und geloeschte Beitraege ausschliessen.
+    must_not-Bedingungen, die alles in AUSGEBLENDET ausschliessen: gesperrte und
+    geloeschte Beitraege und Bilder ohne Unterschrift von vor #281.
 
     Ein Admin sperrt einen Beitrag, statt ihn zu loeschen: Er verschwindet aus
     Suche, Einzelansicht, Listen und "Meine Beitraege", bleibt aber im Speicher
     und damit fuer die Moderation auffindbar (QdrantModerationRepository in
-    moderation_repository.py filtert nicht nach Zustand). Bilder, die noch auf
-    ihre Unterschrift warten, bleiben in Listen und "Meine Beitraege" stehen; nur
-    die Suche verlangt sichtbar (nur_sichtbar_bedingungen).
+    moderation_repository.py filtert nicht nach Zustand).
     """
     from qdrant_client.models import FieldCondition, MatchValue
 
@@ -121,11 +119,6 @@ def nur_sichtbar_bedingungen() -> list:
             ]
         )
     ]
-
-
-# Payload-Felder, die Zustand und Sperre eines Beitrags tragen; status_vor_sperre
-# schreibt die Moderation (moderation_repository.py). unterschrift_setzen fasst sie nicht an.
-FELDER_DES_ZUSTANDS = frozenset({"status", FELD_STATUS_VOR_SPERRE})
 
 
 class QdrantBaseRepository(
@@ -350,13 +343,13 @@ class QdrantBaseRepository(
             logger.warning(meldung)
             raise ValueError(meldung)
 
-        # Gesperrt oder geloescht heisst fuer jeden Leser hier "nicht da":
+        # Gesperrt, geloescht oder Bild ohne Unterschrift heisst fuer jeden Leser
+        # hier "nicht da":
         # Einzelansicht, Stimmen, Antwortvorschlaege der Suche (SearchOrchestrator
         # ueberspringt ValueError).
         if result.get("status") in AUSGEBLENDET_WERTE:
             meldung = (
-                f"Entry with id {item_id} is gesperrt oder geloescht "
-                f"({result.get('status')})"
+                f"Entry with id {item_id} is ausgeblendet " f"({result.get('status')})"
             )
             logger.warning(meldung)
             raise ValueError(meldung)
@@ -407,10 +400,8 @@ class QdrantBaseRepository(
                 f"into {self.repository_name} (using content_type: {upsert_content_type})"
             )
 
-            # Extract text for embedding; coerce None to "" for captionless images
-            # (Phase B path). The "" vector is low-signal but allows the point to exist
-            # so get_by_status/update_status can operate on it; status filter in search()
-            # prevents it from surfacing in results until a real caption is stored.
+            # Extract text for embedding; coerce None to "" for the image entries
+            # without Unterschrift from before #281 (pending_description).
             text = data_dict.get("text") or ""
 
             # Normalform fuer den exakten Abgleich der Dublettenpruefung.
@@ -831,54 +822,18 @@ class QdrantBaseRepository(
             logger.error(f"Error counting items from last week: {e}", exc_info=True)
             return 0
 
-    async def get_by_status(
-        self, status: ContentStatus, limit: int
-    ) -> List[TContentDbEntry]:
-        """Payload-filtered scroll for items in the given lifecycle status."""
-        try:
-            from qdrant_client.models import Filter, FieldCondition, MatchValue
-
-            must = [FieldCondition(key="status", match=MatchValue(value=status.value))]
-            if self.content_type:
-                must.append(
-                    FieldCondition(
-                        key="content_type", match=MatchValue(value=self.content_type)
-                    )
-                )
-
-            result = await self._shared_manager.async_client.scroll(
-                collection_name=self._shared_manager.collection_name,
-                scroll_filter=Filter(must=must),
-                limit=limit,
-                with_payload=True,
-                with_vectors=False,
-            )
-
-            return [
-                self.content_db_entry_model_class.model_validate(
-                    {**p.payload, "id": str(p.id)}
-                )
-                for p in result[0]
-            ]
-        except Exception as e:
-            logger.error(f"Failed to get items by status {status}: {e}", exc_info=True)
-            raise
-
     async def update_status(
         self,
         item_id: uuid.UUID,
         new_status: ContentStatus,
-        nur_aus: Optional[ContentStatus] = None,
         nicht_aus: Optional[AbstractSet[ContentStatus]] = None,
     ) -> None:
         """
         Partial-payload update: change only the status field without re-embedding.
 
-        Mit nur_aus wechselt der Status nur, wenn der Beitrag gerade in diesem
-        Status steht; mit nicht_aus nur, wenn er in keinem dieser Zustaende steht.
-        Qdrant prueft das per Filter im selben Schreibvorgang; ein inzwischen
-        gesperrter Beitrag bleibt so gesperrt (Hintergrunddienst fuer
-        Bildbeschreibungen, #251; Autor loescht, #250).
+        Mit nicht_aus wechselt der Status nur, wenn der Beitrag in keinem dieser
+        Zustaende steht. Qdrant prueft das per Filter im selben Schreibvorgang; ein
+        inzwischen gesperrter Beitrag bleibt so gesperrt (Autor loescht, #250).
         """
         try:
             from qdrant_client.models import (
@@ -886,27 +841,19 @@ class QdrantBaseRepository(
                 Filter,
                 HasIdCondition,
                 MatchAny,
-                MatchValue,
             )
 
             auswahl = [str(item_id)]
-            if nur_aus is not None or nicht_aus:
-                must = [HasIdCondition(has_id=[str(item_id)])]
-                if nur_aus is not None:
-                    must.append(
-                        FieldCondition(
-                            key="status", match=MatchValue(value=nur_aus.value)
-                        )
-                    )
-                must_not = []
-                if nicht_aus:
-                    must_not.append(
+            if nicht_aus:
+                auswahl = Filter(
+                    must=[HasIdCondition(has_id=[str(item_id)])],
+                    must_not=[
                         FieldCondition(
                             key="status",
                             match=MatchAny(any=sorted(s.value for s in nicht_aus)),
                         )
-                    )
-                auswahl = Filter(must=must, must_not=must_not or None)
+                    ],
+                )
             await self._shared_manager.async_client.set_payload(
                 collection_name=self._shared_manager.collection_name,
                 payload={"status": new_status.value},
@@ -918,40 +865,6 @@ class QdrantBaseRepository(
                 f"Failed to update status of {item_id} to {new_status}: {e}",
                 exc_info=True,
             )
-            raise
-
-    async def unterschrift_setzen(
-        self, item_id: uuid.UUID, text: str, extra: Dict[str, Any]
-    ) -> None:
-        """
-        Unterschrift (das Feld text) und Vektor eines Beitrags neu setzen, sonst nichts.
-
-        Anders als upsert schreibt das nicht den ganzen Beitrag zurueck: Status,
-        Sperre (status_vor_sperre) und alles andere, was sich seit dem Lesen
-        geaendert hat, bleiben stehen. extra sind weitere Payload-Felder zur
-        Beschreibung, etwa description_model; den Status setzt nur update_status.
-
-        Payload und Vektor sind zwei Schreibvorgaenge, nicht atomar. Scheitert der
-        zweite, steht der neue Text mit altem Vektor da; der Hintergrunddienst
-        aendert den Status erst danach, das Bild wird so nicht sichtbar.
-        """
-        if FELDER_DES_ZUSTANDS & extra.keys():
-            raise ValueError("unterschrift_setzen aendert weder Status noch Sperre")
-        try:
-            payload = {**extra, "text": text}
-            if self.content_type in TYPEN_MIT_TEXT_NORMALISIERT:
-                payload[FELD_TEXT_NORMALISIERT] = text_normalisiert(text)
-            await self._shared_manager.async_client.set_payload(
-                collection_name=self._shared_manager.collection_name,
-                payload=payload,
-                points=[str(item_id)],
-            )
-            await self._shared_manager.update_vector(
-                str(item_id), text, self.content_type
-            )
-            logger.debug(f"Set text and vector of {item_id}")
-        except Exception as e:
-            logger.error(f"Failed to set text of {item_id}: {e}", exc_info=True)
             raise
 
     @abstractmethod

@@ -121,7 +121,7 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 Rungs 0–2 are complete:
 - **Rung 0** — MVP deployed to test and production, in active use.
 - **Rung 1** — `ContentTypeSpec` registry shipped; adding a type is a spec + model + fragment (proven by Post).
-- **Rung 2** — Image type shipped: Phase A (user-captioned images, AI caption suggestion via GPT-4o mini) and Phase B (async background description worker for captionless ingestion).
+- **Rung 2** — Image type shipped: Phase A (user-captioned images, AI caption suggestion via GPT-4o mini) and Phase B (async background description worker for captionless ingestion; removed in #281, ADR 0003).
 
 **Next: dogfood rungs 1–2, then decide rung 3.** Use the platform actively, catalogue friction, and
 grow real content. Rung 3 (tagging, mood/stance analysis) requires a labelled eval set before any

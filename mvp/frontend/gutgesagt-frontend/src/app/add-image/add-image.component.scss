@@ -115,6 +115,22 @@
   gap: 4px;
 }
 
+.vorschlag-hinweis {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 13px;
+  margin: 4px 0 0;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+}
+
 .caption-error-message {
   display: flex;
   align-items: center;
