@@ -562,3 +562,25 @@ mat-sidenav-content {
   margin: 0;
   color: var(--text-secondary);
 }
+
+/* Zugeklappter Rat ueber den Treffern; Grund und Balken aus .hinweis-box */
+.keine-antwort-noetig summary {
+  cursor: pointer;
+  font-family: PTSans-bold, Roboto, sans-serif;
+}
+
+.keine-antwort-noetig[open] summary {
+  margin-bottom: var(--spacing-xs);
+}
+
+.mobile-keine-antwort-noetig {
+  padding: var(--spacing-xs) var(--page-margin);
+}
+
+/* Mobil: was der Beitragstyp des offenen Tabs ist */
+.typ-erklaerung {
+  margin: 0;
+  padding: var(--spacing-sm) 16px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}

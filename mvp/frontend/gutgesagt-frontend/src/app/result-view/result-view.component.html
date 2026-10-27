@@ -18,6 +18,15 @@
     [retryAction]="retrySearch">
 </app-error-message>
 
+<!-- Ueber den Treffern, zugeklappt: nicht auf jede Aussage antworten (docs/VISION.md).
+     Gemeint ist Melden beim Netzwerk, nicht die Meldung eines Beitrags hier. -->
+<ng-template #keineAntwortNoetig>
+    <details class="keine-antwort-noetig hinweis-box">
+        <summary>Nicht jede Aussage braucht eine Antwort</summary>
+        <p>Jede Antwort macht die Aussage sichtbarer. Kleine Accounts mit wenig Reichweite lieber beim Netzwerk melden, statt zu antworten.</p>
+    </details>
+</ng-template>
+
 <!-- Mobile view: Tab navigation and current section -->
 <div class="mobile-results-wrapper"
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) as searchResponse">
@@ -27,6 +36,10 @@
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
             + Eigenen Kommentar ergänzen
         </button>
+    </div>
+
+    <div class="mobile-keine-antwort-noetig" *ngIf="hasCommentaryResults || hasGenerictextResults">
+        <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
     </div>
 
     <!-- Tab Bar Navigation -->
@@ -59,10 +72,12 @@
     <div class="mobile-results-container">
         <!-- Mobil: Karten untereinander statt Karussell -->
         <div *ngIf="currentSection === 'commentary' && hasCommentaryResults" class="mobile-section">
+            <p class="typ-erklaerung">{{ kommentarErklaerung }}</p>
             <app-kartenliste [daten]="kommentarKarten"></app-kartenliste>
         </div>
 
         <div *ngIf="currentSection === 'generictext' && hasGenerictextResults" class="mobile-section">
+            <p class="typ-erklaerung">{{ hintergrundErklaerung }}</p>
             <app-kartenliste [daten]="hintergrundKarten"></app-kartenliste>
         </div>
 
@@ -129,6 +144,10 @@
 
     <!-- Show individual sections only when at least one has results -->
     <ng-container *ngIf="searchResponse.commentary_search_results_count > 0 || searchResponse.generictext_search_results_count > 0">
+
+        <section class="content-section">
+            <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+        </section>
 
         <!-- Commentary Search Results Header/Info -->
         <section class="content-section">

@@ -187,3 +187,102 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     expect(router.url).not.toContain('/login');
   }));
 });
+
+/**
+ * Nutzertest: Was ein Kommentar und was eine Hintergrundinfo ist, war auf der
+ * Ergebnisseite nicht klar. Je eine Erklaerzeile (Text wie auf der Beitragen-Seite)
+ * und ueber den Treffern ein zugeklappter Rat, dass nicht jede Aussage eine
+ * Antwort braucht.
+ */
+describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworten', () => {
+  const KOMMENTAR_SATZ = 'Eine Antwort, die du direkt posten kannst.';
+  const HINTERGRUND_SATZ = 'Fakten und Zahlen, die eine Antwort stützen.';
+
+  let fixture: ComponentFixture<ResultViewComponent>;
+
+  function oeffnen(mobil: boolean, kommentare: number, hintergrund: number): HTMLElement {
+    TestBed.configureTestingModule({
+      imports: [ResultViewComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter(ohneWaechter(routes)),
+        {
+          provide: BreakpointObserver,
+          useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
+        },
+      ],
+    });
+    TestBed.inject(StateManagementService).setSearchResults({
+      query_was_newly_added_as_statement: false,
+      statement_id: null,
+      statement_text: 'waermepumpe teuer',
+      commentary_search_results_count: kommentare,
+      commentary_search_results: [],
+      generictext_search_results_count: hintergrund,
+      generictext_search_results: [],
+    });
+    fixture = TestBed.createComponent(ResultViewComponent);
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  function erklaerungen(seite: HTMLElement): string[] {
+    return Array.from(seite.querySelectorAll('.typ-erklaerung')).map((e) => (e.textContent ?? '').trim());
+  }
+
+  function pruefeRat(seite: HTMLElement): void {
+    const raete = seite.querySelectorAll<HTMLDetailsElement>('details.keine-antwort-noetig');
+    expect(raete.length).withContext('genau ein Rat').toBe(1);
+    const rat = raete[0];
+    expect(rat.open).withContext('standardmaessig zugeklappt').toBeFalse();
+    expect(rat.querySelector('summary')?.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
+    expect(rat.textContent).toContain('melden');
+
+    rat.querySelector('summary')!.click();
+    expect(rat.open).withContext('laesst sich aufklappen').toBeTrue();
+  }
+
+  it('erklaert am Desktop beide Beitragstypen unter ihren Ueberschriften', () => {
+    const seite = oeffnen(false, 2, 1);
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ, HINTERGRUND_SATZ]);
+    // Die Zeile steht direkt unter der Ueberschrift ihres Abschnitts.
+    expect(seite.querySelector('app-commentary-search-results h2 + .typ-erklaerung')?.textContent).toContain(KOMMENTAR_SATZ);
+    expect(seite.querySelector('app-generictext-search-results h2 + .typ-erklaerung')?.textContent).toContain(HINTERGRUND_SATZ);
+  });
+
+  it('zeigt am Desktop ueber den Treffern den zugeklappten Rat', () => {
+    const seite = oeffnen(false, 2, 0);
+    pruefeRat(seite);
+    const rat = seite.querySelector('details.keine-antwort-noetig')!;
+    const ersterAbschnitt = seite.querySelector('app-commentary-search-results')!;
+    expect(rat.compareDocumentPosition(ersterAbschnitt) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .withContext('Rat steht vor den Treffern').toBeTruthy();
+  });
+
+  it('erklaert am Handy den Beitragstyp des offenen Tabs', () => {
+    const seite = oeffnen(true, 2, 1);
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ]);
+
+    fixture.componentInstance.switchToSection('generictext');
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    expect(erklaerungen(seite)).toEqual([HINTERGRUND_SATZ]);
+  });
+
+  it('zeigt am Handy ueber den Tabs den zugeklappten Rat', () => {
+    const seite = oeffnen(true, 0, 1);
+    pruefeRat(seite);
+    const rat = seite.querySelector('details.keine-antwort-noetig')!;
+    expect(rat.compareDocumentPosition(seite.querySelector('.mobile-tab-bar')!) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .withContext('Rat steht vor den Tabs').toBeTruthy();
+  });
+
+  for (const mobil of [false, true]) {
+    it(`laesst die Seite ohne Treffer unveraendert (${mobil ? 'Handy' : 'Desktop'})`, () => {
+      const seite = oeffnen(mobil, 0, 0);
+      expect(seite.querySelector('details.keine-antwort-noetig')).toBeNull();
+      expect(erklaerungen(seite)).toEqual([]);
+    });
+  }
+});
