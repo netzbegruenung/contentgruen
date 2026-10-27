@@ -245,6 +245,49 @@ describe('BeitragskarteComponent', () => {
     });
   });
 
+  describe('Kopieren mit Herkunft', () => {
+    it('gibt der Leiste ohne Herkunft keinen Text mit Herkunft', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(aktionen().kopierTextMitHerkunft).toBe('');
+      expect(element('.kopier-wahl-knopf')).toBeNull();
+    });
+
+    it('haengt die Herkunft an die angezeigte Fassung an', () => {
+      zeigen(
+        ausSuchergebnis(
+          paket('commentary_result', {
+            short_text: 'Kurzfassung',
+            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
+          }),
+        ),
+      );
+      component.textModusSetzen('short');
+      fixture.detectChanges();
+
+      expect(aktionen().kopierText).toBe('Kurzfassung');
+      expect(aktionen().kopierTextMitHerkunft).toBe('Kurzfassung\n\nHerkunft: https://example.org/studie');
+      expect(element('.kopier-wahl-knopf')).not.toBeNull();
+    });
+
+    it('zaehlt auch Text + Herkunft als Nutzung an der Karte', fakeAsync(() => {
+      zeigen(
+        ausSuchergebnis(
+          paket('commentary_result', {
+            usage_count: 2,
+            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
+          }),
+        ),
+      );
+
+      aktionen().kopieren(true);
+      fixture.detectChanges();
+
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
+      tick(600);
+    }));
+  });
+
   describe('Mobile Badge Display', () => {
     it('should show new badge for content created within 24 hours', () => {
       const vor12Stunden = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();

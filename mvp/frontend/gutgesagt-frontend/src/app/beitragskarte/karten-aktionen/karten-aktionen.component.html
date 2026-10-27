@@ -26,14 +26,39 @@
         </button>
     </div>
 
-    <button mat-raised-button type="button" class="gutgesagt-primary-dark kopieren-knopf"
-            [class.copy-success]="copyAnimationActive"
-            [aria-disabled]="vorschau"
-            [tabIndex]="vorschau ? -1 : undefined"
-            (click)="kopieren()">
-        <mat-icon>content_copy</mat-icon>
-        <span>{{ kopierBeschriftung }}</span>
-    </button>
+    <!-- Kopieren und die Wahl daneben teilen sich die mittlere Spalte -->
+    <div class="kopieren">
+        <button mat-raised-button type="button" class="gutgesagt-primary-dark kopieren-knopf"
+                [class.copy-success]="copyAnimationActive"
+                [aria-disabled]="vorschau"
+                [tabIndex]="vorschau ? -1 : undefined"
+                (click)="kopieren()">
+            <mat-icon>content_copy</mat-icon>
+            <span>{{ kopierBeschriftung }}</span>
+        </button>
+
+        <!-- Die Wahl gibt es nur, wenn der Beitrag eine Herkunft hat -->
+        <ng-container *ngIf="kopierTextMitHerkunft">
+            <button mat-icon-button type="button" class="kopier-wahl-knopf"
+                    [matMenuTriggerFor]="kopierWahl"
+                    [aria-disabled]="vorschau"
+                    [tabIndex]="vorschau ? -1 : undefined"
+                    aria-label="Wie kopieren?"
+                    matTooltip="Text oder Text + Herkunft" matTooltipPosition="above">
+                <mat-icon>arrow_drop_down</mat-icon>
+            </button>
+            <mat-menu #kopierWahl="matMenu">
+                <button mat-menu-item type="button" class="kopier-wahl-eintrag" (click)="kopieren()">
+                    <mat-icon>content_copy</mat-icon>
+                    <span>Text</span>
+                </button>
+                <button mat-menu-item type="button" class="kopier-wahl-eintrag" (click)="kopieren(true)">
+                    <mat-icon>library_books</mat-icon>
+                    <span>Text + Herkunft</span>
+                </button>
+            </mat-menu>
+        </ng-container>
+    </div>
 
     <button mat-icon-button type="button" class="menue-knopf"
             [matMenuTriggerFor]="menue"
