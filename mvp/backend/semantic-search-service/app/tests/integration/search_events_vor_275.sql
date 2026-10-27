@@ -1,4 +1,4 @@
--- search_events vor #275, wie create_all sie aus dem Modell anlegte: die Kennung
+-- search_events vor #275, wie create_all sie aus dem Modell anlegte: die id
 -- aus einer Sequenz, fortlaufend in der Reihenfolge der Suchen.
 CREATE TABLE search_events (
     id BIGSERIAL NOT NULL,

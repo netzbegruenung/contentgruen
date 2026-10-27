@@ -132,7 +132,7 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Suche („Tracking search“, „Search request“, „Statement already exists with ID …“,
   „Successfully created new statement with ID …“, „Found entry with id …“, „Query
   polarity …“ mit Wörtern aus dem Suchtext), die der Dienst auf INFO nicht mehr schreibt.
-  Die Kennung (`id`) ist seit #275 eine zufällige UUID, keine fortlaufende Nummer: Eine
+  Die Spalte `id` ist seit #275 eine zufällige UUID, keine fortlaufende Nummer: Eine
   Nummer ergab die Reihenfolge der Suchen eines Tages, und die ließ sich an ruhigen
   Tagen mit der Reihenfolge der Aussagen aus Suchen abgleichen. Bestandsumgebungen
   stellen mit `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-reihenfolge.sql`
@@ -215,8 +215,8 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
     eine Validierungsmeldung, stehen diese mit darin.
   - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
-    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`) nach stdout: Zeitpunkt, Methode, Pfad
-    ohne Adresszusatz, Status, Größe und User-Agent, aber keinen Adresszusatz und keinen
+    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`) nach stdout: Absenderadresse, Zeitpunkt,
+    Methode, Pfad ohne Adresszusatz, Status, Größe und User-Agent, aber keinen Adresszusatz und keinen
     Referrer. Beide trugen den Suchtext: die Adresse bei jedem direkten Aufruf von
     `/result?searchQuery=…`, der Referrer bei jeder Anfrage, die diese Seite auslöst. Für
     die Suche selbst (`/api/v1/search/searchByText`, nur im Dev-Stack über dieses nginx)

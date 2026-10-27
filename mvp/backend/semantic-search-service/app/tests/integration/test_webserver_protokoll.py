@@ -117,7 +117,7 @@ def _anfrage(adresse: str, methode: str = "GET", referer: str = "") -> None:
 
 
 def _zugriffe(name: str) -> list[str]:
-    """Die Zeilen des Zugriffsprotokolls (stdout); nginx' Startmeldungen gehen auf stderr."""
+    """Die Ausgabe des Containers auf stdout: Zugriffsprotokoll und Startmeldungen."""
     return subprocess.run(
         ["docker", "logs", name], capture_output=True, text=True, timeout=30
     ).stdout.splitlines()
