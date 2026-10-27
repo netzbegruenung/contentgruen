@@ -125,6 +125,34 @@ class TestNamen:
 
 
 @pytest.mark.unit
+class TestFuerAufrufer:
+    def _beitrag(self):
+        return {"original_author": "kim-1", "authors": [{"name": "kim-1"}]}
+
+    @pytest.mark.parametrize("aufrufer", [None, "", "anonymous"])
+    def test_fuer_aufrufer_besucher_ohne_namen_und_kennungen(
+        self, service, repository, aufrufer
+    ):
+        beitraege = [self._beitrag()]
+
+        service.fuer_aufrufer(aufrufer, beitraege)
+
+        assert beitraege[0]["original_author"] == ""
+        assert beitraege[0]["authors"] == []
+        assert "autor_name" not in beitraege[0]
+        repository.anzeigenamen.assert_not_called()
+
+    def test_fuer_aufrufer_angemeldet_mit_anzeigename(self, service, repository):
+        repository.anzeigenamen.return_value = {"kim-1": "Kim L."}
+        beitraege = [self._beitrag()]
+
+        service.fuer_aufrufer("leserin", beitraege)
+
+        assert beitraege[0]["original_author"] == "kim-1"
+        assert beitraege[0]["autor_name"] == "Kim L."
+
+
+@pytest.mark.unit
 class TestDependency:
     """anzeigename_merken liest genau die beiden Header, die das BFF setzt."""
 

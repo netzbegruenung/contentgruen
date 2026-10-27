@@ -3,17 +3,20 @@
 
 Die Beitraege mit der meisten Nutzung der letzten sieben Tage. Gezaehlt wird nur
 Nutzung durch andere: Die eigene Kopie erfasst der Zaehl-Endpunkt gar nicht erst
-(api/v1/usage.py). Nutzung durch Startkonten zaehlt heute noch mit; das Merkmal
-kommt mit #352, und dann gehoert der Filter in die Trend-Abfrage
+(api/v1/usage.py). Nutzung durch Startkonten zaehlt heute noch mit, ebenso die
+zweite Kopie derselben Person; das Merkmal und die Entdoppelung kommen mit #352,
+und dann gehoeren sie in die Nutzungsabfrage
 (UsageTrackingRepository.get_trending_content), nicht hierher.
 
 Bei zu wenig Nutzung gibt es keinen Bereich: Eine Liste mit einem einmal kopierten
-Beitrag waere kein Trend, sondern ein Zufall.
+Beitrag zeigte nicht, was oft genutzt wird, sondern einen Zufall.
 """
 
 import logging
 import uuid
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Protocol
+
+from pydantic import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -31,45 +34,51 @@ ANZAHL = 5
 
 KANDIDATEN = 50
 """
-So viele Eintraege holt die Trend-Abfrage. Mehr als ANZAHL, damit gesperrte und
-geloeschte Beitraege Platz fuer die naechsten machen; 50 ist auch das Limit der
-oeffentlichen Trend-Schnittstelle.
+So viele Kandidaten holt die Nutzungsabfrage. Mehr als ANZAHL, damit gesperrte und
+geloeschte Beitraege Platz fuer die naechsten machen; 50 ist auch das Limit von
+/api/v1/usage/trending.
 """
 
 BeitragLaden = Callable[[uuid.UUID], Awaitable[Optional[Dict[str, Any]]]]
 """Den sichtbaren Beitrag zu einer ID als Dict, oder None, wenn er nicht (mehr) sichtbar ist."""
 
 
-def sichtbaren_beitrag_laden(settings, repository_factory, reference_service=None):
+def sichtbaren_beitrag_laden(settings, repository_factory, reference_service):
     """
     Der BeitragLaden gegen Qdrant: erst den Typ nachsehen, dann den Beitrag ueber
     das Repository seines Typs lesen, damit er alle Felder fuer die Karte hat.
 
     Gesperrt, geloescht oder nicht vorhanden meldet ``get`` als ValueError
     (base_repository.py); das heisst hier "nicht zeigen". Aussagen und Herkuenfte
-    haben keine Nutzung, die hier ankaeme, und sind ohnehin keine Beitraege.
+    haben keine Nutzung, die hier ankaeme, und sind ohnehin keine Beitraege. Ein
+    Datensatz, der nicht validiert, fehlt ebenfalls, wird aber als Fehler geloggt:
+    Er ist kaputt, nicht abwesend (wie beitrag_laden in api/v1/usage.py).
 
     Die Herkunft wird wie bei /content/recent um Link und Beschreibung ergaenzt,
-    sonst zeigte die Karte nur eine ID.
+    sonst zeigte die Karte nur eine ID. ``result_type`` ist der Wert des
+    ContentType (``generic_text``); das Frontend kennt beide Schreibweisen.
     """
     from domain.content_registry import REGISTRY
 
-    inhalte = repository_factory.create_content_repository(settings)
+    alle_typen = repository_factory.create_content_repository(settings)
 
     async def laden(beitrag_id: uuid.UUID) -> Optional[Dict[str, Any]]:
         try:
-            eintrag = await inhalte.get(beitrag_id)
-            spec = REGISTRY.get(eintrag.content_type)
+            typ = (await alle_typen.get(beitrag_id)).content_type
+            spec = REGISTRY.get(typ)
             if spec is None:
                 return None
             beitrag = await spec.create_repository(repository_factory, settings).get(
                 beitrag_id
             )
+        except ValidationError as fehler:
+            # Vor ValueError, denn Pydantics ValidationError ist einer.
+            logger.error(f"Content {beitrag_id} is not readable: {fehler}")
+            return None
         except ValueError:
             return None
 
-        if reference_service is not None:
-            await reference_service.herkunft_ergaenzen(beitrag)
+        await reference_service.herkunft_ergaenzen(beitrag)
         daten = beitrag.model_dump()
         daten["result_type"] = spec.content_type.value
         return daten
@@ -77,8 +86,8 @@ def sichtbaren_beitrag_laden(settings, repository_factory, reference_service=Non
     return laden
 
 
-class TrendAbfrage(Protocol):
-    """Die Trend-Abfrage des UsageTrackingService: Beitraege nach Nutzung im Fenster."""
+class NutzungsAbfrage(Protocol):
+    """Die Abfrage des UsageTrackingService: Beitraege nach Nutzung im Zeitfenster."""
 
     def get_trending_content(
         self, limit: int = 10, hours: int = 24
@@ -86,8 +95,8 @@ class TrendAbfrage(Protocol):
 
 
 class OftGenutztService:
-    def __init__(self, trend: TrendAbfrage, beitrag_laden: BeitragLaden):
-        self._trend = trend
+    def __init__(self, nutzung: NutzungsAbfrage, beitrag_laden: BeitragLaden):
+        self._nutzung = nutzung
         self._beitrag_laden = beitrag_laden
 
     async def beitraege(self) -> List[Dict[str, Any]]:
@@ -95,13 +104,13 @@ class OftGenutztService:
         Die oft genutzten Beitraege, meistgenutzte zuerst, je mit ``recent_uses``
         (Nutzungen in der Woche). Leer, wenn es zu wenige sind.
         """
-        kandidaten = self._trend.get_trending_content(
+        kandidaten = self._nutzung.get_trending_content(
             limit=KANDIDATEN, hours=FENSTER_STUNDEN
         )
         beitraege: List[Dict[str, Any]] = []
         for kandidat in kandidaten:
             if kandidat["recent_uses"] < MINDEST_NUTZUNGEN:
-                # Die Trend-Abfrage sortiert absteigend; danach kommt keiner mehr.
+                # Die Nutzungsabfrage sortiert absteigend; danach kommt keiner mehr.
                 break
             beitrag = await self._beitrag_laden(uuid.UUID(kandidat["content_id"]))
             if beitrag is None:

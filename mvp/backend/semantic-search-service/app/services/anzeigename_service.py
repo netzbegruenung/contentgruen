@@ -134,6 +134,19 @@ class AnzeigenameService:
         for eintrag in eintraege:
             eintrag[feld] = namen.get(eintrag.get(kennung))
 
+    def fuer_aufrufer(
+        self, aufrufer: Optional[str], beitraege: List[Dict[str, Any]]
+    ) -> None:
+        """
+        Beitraege fuer eine Liste aufbereiten: Angemeldete bekommen den
+        Anzeigenamen dazu, Besucher weder Namen noch Kennungen.
+        """
+        if angemeldet(aufrufer):
+            self.an_eintraege(beitraege)
+        else:
+            for beitrag in beitraege:
+                beitrag.update(kennungsfelder_leer())
+
 
 _anzeigename_service: Optional[AnzeigenameService] = None
 

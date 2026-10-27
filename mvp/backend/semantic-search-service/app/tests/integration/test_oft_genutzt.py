@@ -1,7 +1,7 @@
 """
 "Diese Woche oft genutzt" (#364) gegen echtes Qdrant: Der Lader liefert sichtbare
 Beitraege mit allen Feldern ihres Typs und laesst gesperrte und unbekannte weg.
-Die Trend-Abfrage (PostgreSQL) steht als Liste daneben; ihre Auswahl pruefen die
+Die Nutzungsabfrage (PostgreSQL) steht als Liste daneben; ihre Auswahl pruefen die
 Unit-Tests des Service.
 """
 
@@ -15,6 +15,7 @@ from domain.models.content_type import ContentType
 from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
+from services.content.reference_service import ReferenceService
 from services.moderation_service import ModerationService
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
 from tests.integration.beitrag_helfer import TEXT, post_beitrag
@@ -23,7 +24,7 @@ from tests.integration.conftest import requires_qdrant
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
 
 
-class _Trend:
+class _Nutzung:
     def __init__(self, ids):
         self.ids = ids
 
@@ -59,8 +60,12 @@ async def test_oft_genutzt_zeigt_sichtbare_ohne_gesperrte(
     assert await moderation.sperren(str(gesperrt), gesperrt_von="admin-1") is True
 
     service = OftGenutztService(
-        _Trend([sichtbar[0], gesperrt, uuid.uuid4(), *sichtbar[1:]]),
-        sichtbaren_beitrag_laden(integration_settings, real_repository_factory),
+        _Nutzung([sichtbar[0], gesperrt, uuid.uuid4(), *sichtbar[1:]]),
+        sichtbaren_beitrag_laden(
+            integration_settings,
+            real_repository_factory,
+            ReferenceService(integration_settings, real_repository_factory),
+        ),
     )
     beitraege = await service.beitraege()
 

@@ -143,7 +143,7 @@ class ReferenceService(
     async def herkunft_ergaenzen(self, beitrag) -> None:
         """
         Die Herkuenfte eines Beitrags fuer die Karte ergaenzen: Link und
-        Beschreibung, die Notiz dieses Beitrags vor dem globalen Referenztext.
+        Beschreibung, die Notiz dieses Beitrags vor dem Text der Herkunft selbst.
         Eine Herkunft, die sich nicht laden laesst, bleibt ohne - die Karte zeigt
         den Beitrag trotzdem.
         """

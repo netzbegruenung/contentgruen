@@ -195,7 +195,7 @@ Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als se
 _Avoid_: Usage, Aufruf, Klick
 
 **Oft genutzt**:
-Ein Beitrag, der in den letzten sieben Tagen mindestens zweimal genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt höchstens fünf davon, die meistgenutzten zuerst, und nur, wenn es mindestens drei sind; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie.
+Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge
 
 **Stimme**:

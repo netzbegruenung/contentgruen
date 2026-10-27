@@ -18,11 +18,7 @@ from dependencies import (
 from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
-from services.anzeigename_service import (
-    angemeldet,
-    get_anzeigename_service,
-    kennungsfelder_leer,
-)
+from services.anzeigename_service import get_anzeigename_service
 from services.content.reference_service import ReferenceService
 from services.cleanup.usage_cleanup_service import get_cleanup_service
 from core.config import Settings
@@ -319,7 +315,7 @@ async def oft_genutzt(
 ):
     """
     "Diese Woche oft genutzt" auf der Startseite (#364): die sichtbaren Beitraege
-    mit der meisten Nutzung der letzten sieben Tage, in der Form von
+    mit der meisten Nutzung der letzten sieben Tage, als Karten wie bei
     /content/recent. Leer, wenn zu wenige oft genug genutzt wurden; dann zeigt die
     Startseite den Bereich gar nicht.
 
@@ -339,11 +335,7 @@ async def oft_genutzt(
             ),
         )
         beitraege = usage_service.enrich_content_with_usage(await service.beitraege())
-        if angemeldet(aufrufer):
-            get_anzeigename_service().an_eintraege(beitraege)
-        else:
-            for beitrag in beitraege:
-                beitrag.update(kennungsfelder_leer())
+        get_anzeigename_service().fuer_aufrufer(aufrufer, beitraege)
         return OftGenutztResponse(results=beitraege)
 
     except Exception as e:
