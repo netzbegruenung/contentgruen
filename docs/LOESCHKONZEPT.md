@@ -132,8 +132,16 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Suche („Tracking search“, „Search request“, „Statement already exists with ID …“,
   „Successfully created new statement with ID …“, „Found entry with id …“, „Query
   polarity …“ mit Wörtern aus dem Suchtext), die der Dienst auf INFO nicht mehr schreibt.
-  **Offen:** Die fortlaufende `id` verrät weiter die Reihenfolge der Suchen eines Tages.
-  An ruhigen Tagen lässt sie sich mit der Reihenfolge der Aussagen aus Suchen abgleichen.
+  Die Kennung (`id`) ist seit #275 eine zufällige UUID, keine fortlaufende Nummer: Eine
+  Nummer ergab die Reihenfolge der Suchen eines Tages, und die ließ sich an ruhigen
+  Tagen mit der Reihenfolge der Aussagen aus Suchen abgleichen. Bestandsumgebungen
+  stellen mit `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-reihenfolge.sql`
+  um; dabei wird die Tabelle neu geschrieben, die alten Nummern stehen danach nicht mehr
+  in ihr. In Backups und im WAL stehen sie, bis diese herausrotiert sind.
+  **Offen:** Die physische Reihenfolge der Zeilen folgt weiter dem Einfügen. Wer die
+  Datenbank liest (`SELECT` ohne `ORDER BY`, `ctid`) oder einen Dump hat (`pg_dump`
+  schreibt die Zeilen in dieser Reihenfolge), sieht die Reihenfolge der Suchen eines
+  Tages noch, solange die Einzelzeilen leben.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
@@ -206,12 +214,19 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
     (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
     eine Validierungsmeldung, stehen diese mit darin.
-  - **Frontend-nginx:** setzt weder `access_log` noch `log_format` noch `real_ip`
-    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`), schreibt also das Standardformat
-    des Basis-Images `nginx:alpine` nach stdout
-    (`mvp/frontend/gutgesagt-frontend/Dockerfile:31`). Hinter dem vorgelagerten Reverse
-    Proxy steht dort dessen Adresse, nicht die des Besuchers; Zeitpunkt, Pfad, Referrer
-    und User-Agent stehen darin. Eine Kennung steht im Pfad nicht: Die Nutzungsstatistik
+  - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
+    (`mvp/frontend/gutgesagt-frontend/nginx*.conf`) nach stdout: Zeitpunkt, Methode, Pfad
+    ohne Adresszusatz, Status, Größe und User-Agent, aber keinen Adresszusatz und keinen
+    Referrer. Beide trugen den Suchtext: die Adresse bei jedem direkten Aufruf von
+    `/result?searchQuery=…`, der Referrer bei jeder Anfrage, die diese Seite auslöst. Für
+    die Suche selbst (`/api/v1/search/searchByText`, nur im Dev-Stack über dieses nginx)
+    schreibt es keine Zeile: Ihre genaue Uhrzeit ließe sich, je Tag durchgezählt, mit dem
+    Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Belegt mit
+    `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
+    `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
+    Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem
+    vorgelagerten Reverse Proxy steht dort dessen Adresse, nicht die des Besuchers. Eine
+    Kennung steht im Pfad nicht: Die Nutzungsstatistik
     unter „Meine Beiträge“ fragt `/api/v1/usage/users/me/usage-stats`
     (`usage-tracking.service.ts`), und der Suchdienst nimmt die Person aus `X-User`
     (`api/v1/usage.py`). Das gilt ebenso für das Zugriffsprotokoll des vorgelagerten
@@ -223,6 +238,15 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
     Löschung also am Host nach der Kennung im Pfad `/api/v1/usage/users/` suchen; das
     gilt auch für Aufrufe aus einem noch zwischengespeicherten alten Frontend, die die
     alte Adresse weiter anfragen (Antwort 404).
+  - **Vorgelagerter Reverse Proxy:** Sein Format steht nicht im Repo. Seit #275 schicken
+    Browser als Referrer nur noch den Ursprung (`<meta name="referrer"
+    content="strict-origin">` in `src/index.html`), der Suchtext kommt also nicht mehr
+    über den Referrer hinein. **Offen:** Direkte Aufrufe von `/result?searchQuery=…`
+    stehen dort weiter mit Suchtext, und je Suche steht eine Zeile
+    `POST /api/v1/search/searchByText` mit voller IP und genauer Uhrzeit, die sich mit
+    dem Anlagezeitpunkt der Aussage aus derselben Suche verbinden lässt. Abhilfe am Host:
+    für diesen Pfad kein Zugriffsprotokoll, sonst ein Format ohne Adresszusatz und
+    Referrer, wie im Frontend-nginx.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
     Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als
