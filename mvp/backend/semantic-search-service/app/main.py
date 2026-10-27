@@ -21,6 +21,7 @@ from services.embeddings.qdrant_embeddings_manager import (
 )
 from services.seeding.seeding_service import get_seeding_service
 from infrastructure.database.connection import get_app_database, close_app_database
+from infrastructure.database import migrationen
 from api.v1.commentary import router as commentary_router
 from api.v1.content import router as content_router
 from api.v1.contribution import router as contribution_router
@@ -77,7 +78,10 @@ async def lifespan(app: FastAPI):
         logger.info("Initializing application database")
         app_db = get_app_database()
         app_db.create_tables()
-        logger.info("✅ Application database initialized")
+        # Nach create_all und vor der ersten Anfrage, wie in den Kettentests.
+        # Scheitert eine Migration, startet der Dienst nicht.
+        eingespielt = migrationen.einspielen(app_db.engine, settings.migrations_path)
+        logger.info("✅ Application database initialized, migrations: %s", eingespielt)
 
         # Initialize seeding service with metadata path
         seeding_service = get_seeding_service(

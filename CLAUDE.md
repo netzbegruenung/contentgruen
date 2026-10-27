@@ -356,8 +356,9 @@ E2E tests (Playwright, against the running dev stack, not in CI and not part of 
 ### Test Environment
 - URL: https://gutgesagt-test.netzbegruenung.de (runs the `:main` image tag)
 - Deployment: Manual, by the operators. A new `:main` image is **not** rolled out
-  automatically, so migrations can run before the deploy.
-  How to apply them, and the convention for new ones: `mvp/backend/postgres-app/migrations/README.md`.
+  automatically. Database migrations are applied by the semantic service on startup
+  (`docs/DEPLOYMENT.md`, "Database migrations"); the convention for new ones:
+  `mvp/backend/postgres-app/migrations/README.md`.
 
 ### Production Environment
 - URL: https://gutgesagt.netzbegruenung.de
