@@ -140,6 +140,25 @@ class ReferenceService(
         await super()._upsert(reference_input)
         return id, True, "New reference created successfully"
 
+    async def herkunft_ergaenzen(self, beitrag) -> None:
+        """
+        Die Herkuenfte eines Beitrags fuer die Karte ergaenzen: Link und
+        Beschreibung, die Notiz dieses Beitrags vor dem globalen Referenztext.
+        Eine Herkunft, die sich nicht laden laesst, bleibt ohne - die Karte zeigt
+        den Beitrag trotzdem.
+        """
+        for ref in getattr(beitrag, "references", None) or []:
+            try:
+                herkunft = await self.get(ref.reference_id)
+            except Exception as e:
+                logger.warning(f"Failed to fetch reference {ref.reference_id}: {e}")
+                continue
+            if herkunft:
+                ref.reference_text = herkunft.reference_string
+                ref.reference_description = (
+                    getattr(ref, "description", None) or herkunft.text
+                )
+
     async def _increment_usage_count(self, reference_id: uuid.UUID) -> None:
         """Increment the usage count for a reference"""
         try:

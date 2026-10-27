@@ -194,6 +194,10 @@ _Avoid_: Tag, Topic, Kategorie, Schlagwort
 Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als seinen Autor. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft. Sie ist immer echt: Kein Zähler wird vorbelegt oder geschätzt, ein neuer Beitrag beginnt bei 0.
 _Avoid_: Usage, Aufruf, Klick
 
+**Oft genutzt**:
+Ein Beitrag, der in den letzten sieben Tagen mindestens zweimal genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt höchstens fünf davon, die meistgenutzten zuerst, und nur, wenn es mindestens drei sind; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie.
+_Avoid_: Trending, Trend, beliebt, Top-Beiträge
+
 **Stimme**:
 Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
 _Avoid_: Vote, Like, Daumen

@@ -4,7 +4,8 @@
 Die Beitraege mit der meisten Nutzung der letzten sieben Tage. Gezaehlt wird nur
 Nutzung durch andere: Die eigene Kopie erfasst der Zaehl-Endpunkt gar nicht erst
 (api/v1/usage.py). Nutzung durch Startkonten zaehlt heute noch mit; das Merkmal
-kommt mit #352.
+kommt mit #352, und dann gehoert der Filter in die Trend-Abfrage
+(UsageTrackingRepository.get_trending_content), nicht hierher.
 
 Bei zu wenig Nutzung gibt es keinen Bereich: Eine Liste mit einem einmal kopierten
 Beitrag waere kein Trend, sondern ein Zufall.
@@ -53,11 +54,11 @@ def sichtbaren_beitrag_laden(settings, repository_factory, reference_service=Non
     """
     from domain.content_registry import REGISTRY
 
-    alle = repository_factory.create_content_repository(settings)
+    inhalte = repository_factory.create_content_repository(settings)
 
     async def laden(beitrag_id: uuid.UUID) -> Optional[Dict[str, Any]]:
         try:
-            eintrag = await alle.get(beitrag_id)
+            eintrag = await inhalte.get(beitrag_id)
             spec = REGISTRY.get(eintrag.content_type)
             if spec is None:
                 return None
@@ -68,7 +69,7 @@ def sichtbaren_beitrag_laden(settings, repository_factory, reference_service=Non
             return None
 
         if reference_service is not None:
-            await _herkunft_ergaenzen(beitrag, reference_service)
+            await reference_service.herkunft_ergaenzen(beitrag)
         daten = beitrag.model_dump()
         daten["result_type"] = spec.content_type.value
         return daten
@@ -76,29 +77,16 @@ def sichtbaren_beitrag_laden(settings, repository_factory, reference_service=Non
     return laden
 
 
-async def _herkunft_ergaenzen(beitrag, reference_service) -> None:
-    for ref in getattr(beitrag, "references", None) or []:
-        try:
-            herkunft = await reference_service.get(ref.reference_id)
-        except Exception as e:
-            logger.warning(f"Failed to fetch reference {ref.reference_id}: {e}")
-            continue
-        if herkunft:
-            ref.reference_text = herkunft.reference_string
-            # Notiz dieses Beitrags vor globalem Referenztext.
-            ref.reference_description = (
-                getattr(ref, "description", None) or herkunft.text
-            )
+class TrendAbfrage(Protocol):
+    """Die Trend-Abfrage des UsageTrackingService: Beitraege nach Nutzung im Fenster."""
 
-
-class Trend(Protocol):
     def get_trending_content(
         self, limit: int = 10, hours: int = 24
     ) -> List[Dict[str, Any]]: ...
 
 
 class OftGenutztService:
-    def __init__(self, trend: Trend, beitrag_laden: BeitragLaden):
+    def __init__(self, trend: TrendAbfrage, beitrag_laden: BeitragLaden):
         self._trend = trend
         self._beitrag_laden = beitrag_laden
 
