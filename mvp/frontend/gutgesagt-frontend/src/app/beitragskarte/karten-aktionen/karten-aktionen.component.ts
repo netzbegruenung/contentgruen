@@ -29,6 +29,8 @@ import { ReportDialogComponent } from '../../shared/components/report-dialog/rep
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden.
+ * Hat der Beitrag eine Herkunft, steht neben "Kopieren" die Wahl "Text" oder
+ * "Text + Herkunft".
  *
  * Abstimmen ist optimistisch mit Entprellung und Ruecknahme, dazu 401/403/429-Behandlung
  * (urspruenglich aus BaseResultItemComponent). Die Leiste sitzt in einer eigenen
@@ -56,6 +58,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() typ: string | null = null;
   @Input() kopierText = '';
   @Input() kopierBeschriftung = 'Kopieren';
+  /** Text samt Herkunft fuer die Wahl "Text + Herkunft"; leer = keine Herkunft, keine Wahl. */
+  @Input() kopierTextMitHerkunft = '';
   @Input() stimme?: 'like' | 'dislike';
   @Input() vorschau = false;
   /** Aus beim eigenen Beitrag (Album-Sheet in Meine Beitraege); Kopieren und Melden bleiben. */
@@ -125,11 +129,21 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     this.umschalten(this.isDisliked ? null : 'dislike');
   }
 
+  /** Der Standard: der Text allein. */
   kopieren(): void {
-    if (this.vorschau || !this.kopierText) {
+    this.inZwischenablage(this.kopierText);
+  }
+
+  /** Die Wahl "Text + Herkunft"; zaehlt wie Kopieren als Nutzung. */
+  kopierenMitHerkunft(): void {
+    this.inZwischenablage(this.kopierTextMitHerkunft);
+  }
+
+  private inZwischenablage(text: string): void {
+    if (this.vorschau || !text) {
       return;
     }
-    this.clipboard.copy(this.kopierText);
+    this.clipboard.copy(text);
     this.snackBar.open('Erfolgreich kopiert!', 'Schließen', { duration: 1500 });
 
     this.copyAnimationActive = true;
