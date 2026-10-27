@@ -10,7 +10,9 @@ Judgement rules the reviewer checks on every pull request. Each rule says why it
 
 ## Scope
 
-- **Behaviour beyond the ticket is a Fachfrage.** A PR that changes what a person sees or can do, where the ticket's acceptance criteria don't cover it, gets a blocking ("must") finding: it is a Fachfrage, a product question only the maintainer decides. The PR description lists it under the heading `## Fachfrage`, one item per change: open as `- [ ] <the change, the question for the maintainer>`, decided as `- [x] <the decision> (<link to the comment or ticket>)`. A PR with an open item is not ready to merge. Why: a change people notice needs a decision before it ships, not a line under "Merge Danger" (as with #316, which hid older images without an Unterschrift from their authors); a fixed heading and checkbox make the question visible and checkable before merge.
+- **Behaviour beyond the ticket is a Fachfrage.** A PR that changes what a person sees or can do, beyond the ticket's acceptance criteria, gets a blocking ("must") finding: a Fachfrage, a product question only the maintainer decides. A PR with an open Fachfrage is not ready to merge. Why: a change people notice needs a decision before it ships, not a side note in the PR description (as with #316, which hid older images without an Unterschrift from their authors).
+
+  Format, read by tooling: the PR description contains the heading `## Fachfrage` once, followed by one item per change up to the next `## ` heading. Heading and items start at the beginning of the line, not indented and not inside a code block or quote. Open: `- [ ] <the change, the question for the maintainer>`. Decided: `- [x] <the decision> (<link to the comment or ticket>)`. Without such a change the heading is left out.
 
 ## Public repository
 
