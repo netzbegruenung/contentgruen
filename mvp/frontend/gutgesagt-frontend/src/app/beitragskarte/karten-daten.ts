@@ -189,7 +189,8 @@ function extra(typ: string | null, inhalt: Record<string, any>): KartenExtra | u
       plattform: inhalt['platform'] || undefined,
       postAutor: inhalt['author'] || undefined,
       postUrl: inhalt['url'] || undefined,
-      engagement: inhalt['engagement'] ?? undefined,
+      // 0 heisst "nicht erfasst" (das Post-Formular fragt nicht danach), nicht "keine".
+      engagement: inhalt['engagement'] || undefined,
     };
   }
   return undefined;

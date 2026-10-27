@@ -187,3 +187,80 @@ describe('ResultViewComponent: Klick auf Hinzufuegen bei leerer Suche', () => {
     expect(router.url).not.toContain('/login');
   }));
 });
+
+describe('ResultViewComponent: Posts in der Suche', () => {
+  let fixture: ComponentFixture<ResultViewComponent>;
+
+  const POST = {
+    score: 0.9,
+    statement_text: '',
+    statement_similarity_score: 0,
+    reply_relevance: 0,
+    post_result: {
+      id: 'p-1',
+      content_type: 'post',
+      title: 'Ein Reel, das Wärmepumpen erklärt',
+      text: 'Worum es geht',
+      platform: 'Instagram',
+      author: '@klimaverein',
+      url: 'https://www.instagram.com/p/abc/',
+      engagement: 0,
+      references: [],
+    },
+  };
+
+  function oeffnen(mobil: boolean, mitKommentar = false): void {
+    TestBed.configureTestingModule({
+      imports: [ResultViewComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter(ohneWaechter(routes)),
+        {
+          provide: BreakpointObserver,
+          useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
+        },
+      ],
+    });
+    TestBed.inject(StateManagementService).setSearchResults({
+      query_was_newly_added_as_statement: false,
+      statement_id: null,
+      statement_text: 'waermepumpe',
+      commentary_search_results_count: mitKommentar ? 1 : 0,
+      commentary_search_results: mitKommentar
+        ? [{ ...POST, post_result: undefined, commentary_result: { ...POST.post_result, id: 'k-1', content_type: 'commentary', title: 'Ein Kommentar' } } as any]
+        : [],
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+      post_search_results_count: 1,
+      post_search_results: [POST as any],
+    });
+    fixture = TestBed.createComponent(ResultViewComponent);
+    fixture.detectChanges();
+  }
+
+  it('zeigt am Handy einen Post-Tab und oeffnet ihn, wenn nur Posts passen', () => {
+    oeffnen(true);
+    const seite: HTMLElement = fixture.nativeElement;
+
+    expect(seite.querySelector('.mobile-empty-state')).toBeNull();
+    expect(seite.querySelector('.tab-post')?.classList).toContain('active');
+    expect(seite.querySelector('.mobile-section')?.textContent).toContain('Ein Reel, das Wärmepumpen erklärt');
+  });
+
+  it('bleibt am Handy beim Kommentar-Tab, wenn es auch Kommentare gibt', () => {
+    oeffnen(true, true);
+
+    expect(fixture.componentInstance.currentSection).toBe('commentary');
+    expect(fixture.nativeElement.querySelector('.tab-post')).toBeTruthy();
+  });
+
+  it('zeigt am Desktop einen Abschnitt mit den Posts statt des Leerzustands', () => {
+    oeffnen(false);
+    const seite: HTMLElement = fixture.nativeElement;
+
+    expect(seite.querySelector('.unified-empty-state')).toBeNull();
+    expect(seite.querySelector('.post-anzahl')?.textContent).toContain('1 passender Post gefunden.');
+    expect(seite.textContent).toContain('Ein Reel, das Wärmepumpen erklärt');
+  });
+});
