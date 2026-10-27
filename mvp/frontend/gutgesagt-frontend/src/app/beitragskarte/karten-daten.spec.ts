@@ -179,6 +179,15 @@ describe('karten-daten', () => {
       ...felder,
     });
 
+    it('uebernimmt das Kennzeichen eigener Beitrag aus dem Einzelabruf (#333)', () => {
+      // Das Beitrag-Sheet im Fangkorb laedt per getById: ohne Kennung, mit Kennzeichen.
+      const ohneKennung = eintrag({ original_author: null, ist_eigener_beitrag: true });
+
+      expect(ausBeitrag(ohneKennung).eigen).toBeTrue();
+      expect(ausBeitrag(ohneKennung).autor).toBeNull();
+      expect(ausBeitrag(eintrag()).eigen).toBeNull();
+    });
+
     it('uebernimmt den Anzeigenamen aus dem Einzelabruf', () => {
       expect(ausBeitrag(eintrag({ autor_name: 'Anna B.' })).autorName).toBe('Anna B.');
       expect(ausBeitrag(eintrag()).autorName).toBeNull();

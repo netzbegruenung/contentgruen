@@ -217,6 +217,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     text: eintrag.text ?? null,
     erstellt: eintrag.created,
     autor: eintrag.original_author || null,
+    eigen: eintrag.ist_eigener_beitrag ?? null,
     autorName: eintrag.autor_name ?? null,
     nutzung: eintrag.usage_count ?? 0,
     quellen: (eintrag.references ?? []).map(quelle),

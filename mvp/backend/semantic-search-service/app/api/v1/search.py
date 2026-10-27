@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
@@ -234,7 +235,8 @@ async def search_by_text(
         orchestrator.enrich_with_usage()
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
-        orchestrator.fuer_aufrufer(aufrufer)
+        # Dieselbe, von require_auth gepruefte Kennung wie fuer die Stimmen.
+        orchestrator.fuer_aufrufer(replace(aufrufer, kennung=validated_user))
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

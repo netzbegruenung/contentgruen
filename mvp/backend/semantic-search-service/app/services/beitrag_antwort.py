@@ -20,7 +20,8 @@ class Aufrufer:
     """Wer eine Antwort bekommt: Kennung aus X-User, Admin aus X-Is-Admin."""
 
     kennung: Optional[str] = None
-    admin: bool = False
+    # Der Kopf allein; ob jemand Admin ist, sagt ist_admin.
+    admin_kopf: bool = False
 
     @property
     def angemeldet(self) -> bool:
@@ -29,7 +30,7 @@ class Aufrufer:
     @property
     def ist_admin(self) -> bool:
         # Den Kopf setzt allein das BFF, und nur fuer Angemeldete.
-        return self.admin and self.angemeldet
+        return self.admin_kopf and self.angemeldet
 
 
 def fuer_aufrufer(antworten: Sequence[A], aufrufer: Aufrufer) -> Sequence[A]:

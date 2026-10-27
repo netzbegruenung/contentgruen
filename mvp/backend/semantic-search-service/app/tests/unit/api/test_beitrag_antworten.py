@@ -141,17 +141,20 @@ def _ohne_kennung(antwort):
     assert BEARBEITER not in antwort.text
 
 
+TREFFERLISTEN = (
+    "commentary_search_results",
+    "generictext_search_results",
+    "post_search_results",
+    "image_search_results",
+)
+
+
 def _eintraege(body):
     """Jeder Beitrag einer Antwort, egal wie die Route ihn verpackt."""
     if "commentary_search_results" in body:
         return [
             treffer[feld.replace("_search_results", "_result")]
-            for feld in (
-                "commentary_search_results",
-                "generictext_search_results",
-                "post_search_results",
-                "image_search_results",
-            )
+            for feld in TREFFERLISTEN
             for treffer in body[feld]
         ]
     if "results" in body:
@@ -175,7 +178,7 @@ POST = "post"
 ID = str(uuid.uuid4())
 SUCHE = {"query_text": "Wärmepumpe", "limit": 3}
 
-# (Methode, URL, Body) - jede lesende Route, die Beitraege ausliefert.
+# (Methode, URL) - jede lesende Route, die Beitraege ausliefert; POST schickt SUCHE.
 ROUTEN = {
     "commentary/getById": (GET, f"/api/v1/commentary/getById?commentary_id={ID}"),
     "commentary/searchCommentaries": (POST, "/api/v1/commentary/searchCommentaries"),
@@ -286,6 +289,8 @@ class TestLesendeRouten:
     def test_admin_sieht_kennung(self, lese_client, route):
         antwort = lese_client(route, ADMIN)
 
+        # Nur die Kennung des Autors, keine Bearbeitungshistorie.
+        assert BEARBEITER not in antwort.text
         for eintrag in _eintraege(antwort.json()):
             assert eintrag["original_author"] == AUTORIN
             assert eintrag["ist_eigener_beitrag"] is False
@@ -346,12 +351,7 @@ def such_antwort(search_client, anzeigenamen_ohne_datenbank):
         )
         assert antwort.status_code == 200, antwort.text
         body = antwort.json()
-        for feld in (
-            "commentary_search_results",
-            "generictext_search_results",
-            "post_search_results",
-            "image_search_results",
-        ):
+        for feld in TREFFERLISTEN:
             assert len(body[feld]) == 1, feld
         return antwort
 
@@ -393,5 +393,6 @@ class TestSuche:
     def test_admin_sieht_kennung(self, such_antwort):
         antwort = such_antwort(ADMIN)
 
+        assert BEARBEITER not in antwort.text
         for eintrag in _eintraege(antwort.json()):
             assert eintrag["original_author"] == AUTORIN
