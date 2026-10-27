@@ -63,5 +63,14 @@
         </span>
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
+
+    <button type="button" class="typ-zeile post-card" (click)="formularOeffnen('post')">
+        <span class="typ-icon" aria-hidden="true">📣</span>
+        <span class="typ-text">
+            <span class="typ-titel">{{ typLabel('post') }}</span>
+            <span class="typ-satz">{{ typBeschreibung('post') }}</span>
+        </span>
+        <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
+    </button>
     </nav>
 </div>

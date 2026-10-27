@@ -32,18 +32,18 @@
      *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) as searchResponse">
 
     <!-- Dezent unter dem Suchband: auch mit Treffern eine eigene Antwort ergaenzen -->
-    <div class="mobile-ergaenzen-kopf" *ngIf="hasCommentaryResults || hasGenerictextResults">
+    <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
         <button type="button" class="ergaenzen-link" (click)="navigateToContribute('commentary')">
             + Eigenen Kommentar ergänzen
         </button>
     </div>
 
-    <div class="mobile-keine-antwort-noetig" *ngIf="hasCommentaryResults || hasGenerictextResults">
+    <div class="mobile-keine-antwort-noetig" *ngIf="hatTreffer">
         <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
     </div>
 
     <!-- Tab Bar Navigation -->
-    <div class="mobile-tab-bar" *ngIf="hasCommentaryResults || hasGenerictextResults">
+    <div class="mobile-tab-bar" *ngIf="hatTreffer">
         <button class="tab-button"
                 [class.active]="currentSection === 'commentary'"
                 [disabled]="!hasCommentaryResults"
@@ -66,6 +66,15 @@
                 ({{searchResponse.generictext_search_results_count}})
             </span>
         </button>
+        <!-- Posts nur mit Treffern: sonst bliebe ein dritter, leerer Tab -->
+        <button *ngIf="hasPostResults" class="tab-button tab-post"
+                [class.active]="currentSection === 'post'"
+                (click)="switchToSection('post')"
+                aria-label="Posts anzeigen">
+            <span class="tab-icon">📣</span>
+            <span class="tab-label">Posts</span>
+            <span class="tab-count">({{searchResponse.post_search_results_count}})</span>
+        </button>
     </div>
 
     <!-- Content Container -->
@@ -81,8 +90,13 @@
             <app-kartenliste [daten]="hintergrundKarten"></app-kartenliste>
         </div>
 
-        <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab -->
-        <div *ngIf="hasCommentaryResults || hasGenerictextResults" class="mobile-ergaenzen">
+        <div *ngIf="currentSection === 'post' && hasPostResults" class="mobile-section">
+            <app-kartenliste [daten]="postKarten"></app-kartenliste>
+        </div>
+
+        <!-- Unter den Treffern: ergaenzen, passend zum offenen Tab; ein Post antwortet auf
+             keine Aussage, im Post-Tab bleibt es beim Kommentar (Fachfrage im PR) -->
+        <div *ngIf="hatTreffer" class="mobile-ergaenzen">
             <p class="mobile-ergaenzen-frage">Nichts Passendes dabei?</p>
             <button *ngIf="currentSection !== 'generictext'" mat-raised-button class="gutgesagt-primary-dark"
                     (click)="navigateToContribute('commentary')">
@@ -95,7 +109,7 @@
         </div>
 
         <!-- Mobile Empty State when no results in any category -->
-        <div *ngIf="!hasCommentaryResults && !hasGenerictextResults" class="mobile-empty-state">
+        <div *ngIf="!hatTreffer" class="mobile-empty-state">
             <p class="search-query-info">Zu "{{searchQuery}}" haben wir noch keine passenden Inhalte</p>
             <h3>Hilf der Community!</h3>
             <div class="mobile-action-buttons">
@@ -115,7 +129,7 @@
 <div *ngIf="!isMobile && !(loading$ | async) && (searchResponse$ | async) as searchResponse">
 
     <!-- Unified Empty State when both searches return no results -->
-    <section class="content-section" *ngIf="searchResponse.commentary_search_results_count === 0 && searchResponse.generictext_search_results_count === 0">
+    <section class="content-section" *ngIf="!hatTreffer">
         <div class="unified-empty-state">
             <p class="search-query-info">Zu "{{searchQuery}}" haben wir noch keine passenden Inhalte</p>
             <h2>Hilf der Community und teile dein Wissen!</h2>
@@ -143,7 +157,7 @@
     </section>
 
     <!-- Show individual sections only when at least one has results -->
-    <ng-container *ngIf="searchResponse.commentary_search_results_count > 0 || searchResponse.generictext_search_results_count > 0">
+    <ng-container *ngIf="hatTreffer">
 
         <div class="content-section">
             <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
@@ -156,7 +170,7 @@
                 [loading]="(loading$ | async) || false"
                 [error]="(error$ | async) || ''"
                 [searchQuery]="searchQuery"
-                [showMinimalEmptyState]="searchResponse.generictext_search_results_count > 0">
+                [showMinimalEmptyState]="hasGenerictextResults || hasPostResults">
             </app-commentary-search-results>
         </section>
 
@@ -175,7 +189,7 @@
                 [loading]="(loading$ | async) || false"
                 [error]="(error$ | async) || ''"
                 [searchQuery]="searchQuery"
-                [showMinimalEmptyState]="searchResponse.commentary_search_results_count > 0">
+                [showMinimalEmptyState]="hasCommentaryResults || hasPostResults">
             </app-generictext-search-results>
         </section>
 
@@ -186,6 +200,17 @@
                 [daten]="hintergrundKarten">
             </app-result-carousel>
         </section>
+
+        <!-- Posts: nur mit Treffern, ergaenzt wird ueber die Beitragen-Seite -->
+        <ng-container *ngIf="hasPostResults">
+            <section class="content-section post-ergebnisse">
+                <h2>Posts</h2>
+                <p class="post-anzahl">{{ searchResponse.post_search_results_count }} {{ searchResponse.post_search_results_count === 1 ? 'passender Post' : 'passende Posts' }} gefunden.</p>
+            </section>
+            <section class="carousel-section">
+                <app-result-carousel [daten]="postKarten"></app-result-carousel>
+            </section>
+        </ng-container>
 
     </ng-container>
 </div>

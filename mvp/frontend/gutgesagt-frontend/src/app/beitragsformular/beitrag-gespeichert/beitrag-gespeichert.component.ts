@@ -2,14 +2,13 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { SHARED_IMPORTS } from '../../shared/shared-imports';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
-import { KartenDaten, ausAussage, ausSuchergebnis } from '../../beitragskarte/karten-daten';
-import { CommentaryService } from '../../services/commentary.service';
-import { GenericTextService } from '../../services/generic-text.service';
+import { KartenDaten, ausAussage } from '../../beitragskarte/karten-daten';
+import { BeitragAnsehenService } from '../beitrag-ansehen.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
@@ -25,9 +24,9 @@ import {
 import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
 
 /** Beitragstypen, fuer die es die Ergebnisseite gibt. */
-export type GespeichertTyp = Extract<FormularTyp, 'commentary' | 'generictext'>;
+export type GespeichertTyp = Extract<FormularTyp, 'commentary' | 'generictext' | 'post'>;
 
-/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo. */
+/** Die Saetze der Seite je Typ - der Kommentar, die Hintergrundinfo, der Post. */
 const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; nichtLadbar: string }> = {
   commentary: {
     gespeichert: 'Dein Kommentar ist gespeichert.',
@@ -38,6 +37,11 @@ const TEXTE: Record<GespeichertTyp, { gespeichert: string; nochEiner: string; ni
     gespeichert: 'Deine Hintergrundinfo ist gespeichert.',
     nochEiner: 'Noch eine Hintergrundinfo',
     nichtLadbar: 'Sie lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du sie.',
+  },
+  post: {
+    gespeichert: 'Dein Post ist gespeichert.',
+    nochEiner: 'Noch einen Post',
+    nichtLadbar: 'Er lässt sich gerade nicht anzeigen – unter „Meine Beiträge“ findest du ihn.',
   },
 };
 
@@ -77,8 +81,7 @@ export class BeitragGespeichertComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private commentaryService: CommentaryService,
-    private genericTextService: GenericTextService,
+    private beitragAnsehen: BeitragAnsehenService,
     private navigationService: NavigationService,
     private uebergabe: DestillierUebergabeService,
     private logger: LoggingService,
@@ -156,13 +159,6 @@ export class BeitragGespeichertComponent implements OnInit {
   }
 
   private laden(id: string): Observable<KartenDaten> {
-    if (this.typ === 'generictext') {
-      return this.genericTextService
-        .getGenericTextById(id)
-        .pipe(map((inhalt) => ausSuchergebnis({ generictext_result: inhalt, score: 1 } as any)));
-    }
-    return this.commentaryService
-      .getCommentaryById(id)
-      .pipe(map((inhalt) => ausSuchergebnis({ commentary_result: inhalt, score: 1 } as any)));
+    return this.beitragAnsehen.karteLaden(id, this.typ) ?? throwError(() => new Error(`Typ ${this.typ} nicht ladbar`));
   }
 }

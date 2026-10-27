@@ -19,6 +19,7 @@ from pydantic import ValidationError
 from dependencies import (
     get_commentary_service,
     get_generic_text_service,
+    get_post_service,
     ist_admin_kopf,
 )
 from domain.models.content_type import ContentType
@@ -283,7 +284,7 @@ async def _beitrag_pruefen(
     einem vorhandenen, fremden Kommentar zustimmt, verknuepft den Einwurf mit ihm.
 
     Ohne ``content_type`` (aeltere App-Version) genuegt ein Beitrag eines der
-    beiden Typen. "Nicht gefunden" und "anderer Typ" melden die Dienste als
+    destillierbaren Typen. "Nicht gefunden" und "anderer Typ" melden die Dienste als
     ValueError; alles andere ist ein echter Fehler und geht weiter - auch ein
     pydantic.ValidationError, obwohl er von ValueError erbt.
     """
@@ -310,6 +311,7 @@ async def update_status(
     repository: RawInputRepository = Depends(get_raw_input_repository),
     commentary_service=Depends(get_commentary_service),
     generic_text_service=Depends(get_generic_text_service),
+    post_service=Depends(get_post_service),
 ) -> RawInputResponse:
     """
     Verwerfen (der Einwerfer oder ein Admin) oder als ausformuliert markieren.
@@ -343,6 +345,7 @@ async def update_status(
                     {
                         ContentType.COMMENTARY: commentary_service,
                         ContentType.GENERIC_TEXT: generic_text_service,
+                        ContentType.POST: post_service,
                     },
                 )
         row = repository.set_status(

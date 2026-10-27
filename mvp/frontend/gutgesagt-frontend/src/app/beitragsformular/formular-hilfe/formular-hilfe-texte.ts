@@ -38,4 +38,14 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
     ist: ['Mit Herkunft, damit andere es nachsehen können', 'Ein Punkt: eine Zahl, ein Zusammenhang'],
     istNicht: ['Meinung ohne Beleg (→ Kommentar)', 'Fremde Texte übernehmen – in eigenen Worten zusammenfassen (CC0)'],
   },
+  post: {
+    zeile: 'Ein Post, den man sich zum Vorbild nehmen und teilen kann.',
+    frage: 'Was ist ein Post?',
+    antwort: 'Ein gelungener Beitrag aus einem sozialen Netzwerk, festgehalten mit Link.',
+    ist: ['Fertig und so teilbar, wie er ist', 'Mit Link, damit andere ihn finden'],
+    istNicht: [
+      'Material, aus dem erst ein Beitrag werden soll (→ einwerfen)',
+      'Den Post abschreiben – beschreib in eigenen Worten, worum es geht (CC0)',
+    ],
+  },
 };
