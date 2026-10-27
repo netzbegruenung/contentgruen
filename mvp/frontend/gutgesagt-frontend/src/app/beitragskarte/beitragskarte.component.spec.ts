@@ -539,7 +539,7 @@ describe('BeitragskarteComponent', () => {
     });
 
     it('zeigt im Fuss den Zuwachs der letzten 7 Tage neben der Nutzung', () => {
-      const daten = { ...ausSuchergebnis(paket('commentary_result', { usage_count: 7 })), nutzungLetzteWoche: 2 };
+      const daten = { ...ausSuchergebnis(paket('commentary_result', { usage_count: 7 })), nutzungLetzte7Tage: 2 };
 
       zeigen(daten, { variante: 'kompakt' });
       const zuwachs = element('.album-fuss .nutzung-zuwachs');
@@ -552,7 +552,7 @@ describe('BeitragskarteComponent', () => {
     it('zeigt ohne Zuwachs keinen Zuwachs', () => {
       const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 7 }));
 
-      zeigen({ ...daten, nutzungLetzteWoche: 0 }, { variante: 'kompakt' });
+      zeigen({ ...daten, nutzungLetzte7Tage: 0 }, { variante: 'kompakt' });
       expect(element('.nutzung-zuwachs')).toBeNull();
 
       zeigen(daten, { variante: 'kompakt' });

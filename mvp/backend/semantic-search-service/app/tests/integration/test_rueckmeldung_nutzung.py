@@ -33,8 +33,10 @@ def _nutzungen(datenbank, beitrag: uuid.UUID, vor_tagen: list) -> None:  # noqa:
             )
 
 
-class TestWochenzuwachs:
-    def test_zaehlt_nur_die_letzten_7_tage(self, datenbank):  # noqa: F811
+class TestZuwachsLetzte7Tage:
+    def test_get_recent_usage_counts_batch_nur_die_letzten_7_tage(
+        self, datenbank
+    ):  # noqa: F811
         beitrag = uuid.uuid4()
         _nutzungen(datenbank, beitrag, [0, 3, 6.9, 7.1, 30])
 
@@ -44,7 +46,9 @@ class TestWochenzuwachs:
 
         assert zuwachs == {str(beitrag): 3}
 
-    def test_ohne_nutzung_null(self, datenbank):  # noqa: F811
+    def test_get_recent_usage_counts_batch_ohne_nutzung_null(
+        self, datenbank
+    ):  # noqa: F811
         alt, ungenutzt = uuid.uuid4(), uuid.uuid4()
         _nutzungen(datenbank, alt, [10])
 
@@ -54,26 +58,32 @@ class TestWochenzuwachs:
 
         assert zuwachs == {str(alt): 0, str(ungenutzt): 0}
 
-    def test_leere_liste(self, datenbank):  # noqa: F811
+    def test_get_recent_usage_counts_batch_leere_liste(self, datenbank):  # noqa: F811
         assert (
             UsageTrackingRepository(datenbank).get_recent_usage_counts_batch([]) == {}
         )
 
 
 class TestSeitLetztemBesuch:
-    def test_erster_besuch_zeigt_alles_bisherige(self, datenbank):  # noqa: F811
+    def test_neu_seit_letztem_besuch_erster_besuch_zeigt_alles_bisherige(
+        self, datenbank
+    ):  # noqa: F811
         repo = GeseheneNutzungRepository(datenbank)
 
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=5) == 5
 
-    def test_danach_nur_den_zuwachs(self, datenbank):  # noqa: F811
+    def test_neu_seit_letztem_besuch_danach_nur_den_zuwachs(
+        self, datenbank
+    ):  # noqa: F811
         repo = GeseheneNutzungRepository(datenbank)
         repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=5)
 
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=8) == 3
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=8) == 0
 
-    def test_weniger_als_gesehen_ist_null(self, datenbank):  # noqa: F811
+    def test_neu_seit_letztem_besuch_weniger_als_gesehen_ist_null(
+        self, datenbank
+    ):  # noqa: F811
         """Ein geloeschter Beitrag nimmt seine Nutzung aus der Summe mit."""
         repo = GeseheneNutzungRepository(datenbank)
         repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=8)
@@ -81,7 +91,7 @@ class TestSeitLetztemBesuch:
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=6) == 0
         assert repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=7) == 1
 
-    def test_je_person_getrennt(self, datenbank):  # noqa: F811
+    def test_neu_seit_letztem_besuch_je_person_getrennt(self, datenbank):  # noqa: F811
         repo = GeseheneNutzungRepository(datenbank)
         repo.neu_seit_letztem_besuch(AUTORIN, nutzung_jetzt=5)
 

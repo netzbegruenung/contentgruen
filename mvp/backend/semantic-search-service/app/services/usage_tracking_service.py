@@ -182,7 +182,7 @@ class UsageTrackingService:
                 content_ids.append(uuid.UUID(str(item["id"])))
             except (KeyError, ValueError, TypeError):
                 continue
-        zuwachs = self.repository.get_recent_usage_counts_batch(content_ids, days=7)
+        zuwachs = self.repository.get_recent_usage_counts_batch(content_ids)
         for item in content_items:
             item["usage_last_7_days"] = zuwachs.get(str(item.get("id")), 0)
         return content_items

@@ -17,6 +17,10 @@ from infrastructure.database.models import UsageTracking, UsageEvent
 
 logger = logging.getLogger(__name__)
 
+# Der Zeitraum fuer den Zuwachs in "Meine Beitraege" (#349); das Frontend nennt
+# ihn im Text an der Karte mit.
+ZUWACHS_TAGE = 7
+
 
 class UsageTrackingRepository:
     """Repository for usage tracking operations."""
@@ -126,10 +130,10 @@ class UsageTrackingRepository:
             return result
 
     def get_recent_usage_counts_batch(
-        self, content_ids: List[uuid.UUID], days: int = 7
+        self, content_ids: List[uuid.UUID]
     ) -> Dict[str, int]:
         """
-        Der Zuwachs je Beitrag: Nutzungen der letzten ``days`` Tage (#349).
+        Der Zuwachs je Beitrag: Nutzungen der letzten ZUWACHS_TAGE Tage (#349).
 
         Gezaehlt aus usage_events, nicht aus usage_tracking: nur dort steht, wann
         genutzt wurde. Deren Frist (90 Tage, cleanup_old_events) liegt weit ueber
@@ -141,7 +145,7 @@ class UsageTrackingRepository:
         result = {str(content_id): 0 for content_id in content_ids}
         if not content_ids:
             return result
-        seit = datetime.now(timezone.utc) - timedelta(days=days)
+        seit = datetime.now(timezone.utc) - timedelta(days=ZUWACHS_TAGE)
         with self.db.get_session() as session:
             zeilen = (
                 session.query(UsageEvent.content_id, func.count(UsageEvent.id))

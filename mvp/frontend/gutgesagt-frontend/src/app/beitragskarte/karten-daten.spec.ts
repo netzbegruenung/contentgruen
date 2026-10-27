@@ -168,8 +168,8 @@ describe('karten-daten', () => {
     it('uebernimmt Nutzung und Zuwachs der letzten 7 Tage', () => {
       const daten = ausBeitrag(eintrag({ usage_last_7_days: 4 }));
 
-      expect([daten.nutzung, daten.nutzungLetzteWoche]).toEqual([12, 4]);
-      expect(ausBeitrag(eintrag()).nutzungLetzteWoche).toBe(0);
+      expect([daten.nutzung, daten.nutzungLetzte7Tage]).toEqual([12, 4]);
+      expect(ausBeitrag(eintrag()).nutzungLetzte7Tage).toBe(0);
     });
 
     it('uebernimmt den Anzeigenamen aus dem Einzelabruf', () => {
