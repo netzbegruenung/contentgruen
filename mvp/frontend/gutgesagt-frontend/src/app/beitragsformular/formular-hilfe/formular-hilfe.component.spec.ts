@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FormularHilfeComponent } from './formular-hilfe.component';
-import { SCHREIBHILFEN, SCHREIBREGELN, TITEL_BEISPIELE } from './schreibregeln';
+import { SCHREIBHILFEN, SCHREIBREGELN, TITEL_BEISPIELE } from '../../shared/schreibregeln';
 
 describe('FormularHilfeComponent', () => {
   let fixture: ComponentFixture<FormularHilfeComponent>;

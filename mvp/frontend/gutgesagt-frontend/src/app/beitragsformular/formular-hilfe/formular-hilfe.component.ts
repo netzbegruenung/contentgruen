@@ -13,7 +13,7 @@ import {
   TITEL_BEISPIELE,
   TYPEN_MIT_SCHREIBREGELN,
   TYPEN_MIT_TITELBEISPIELEN,
-} from './schreibregeln';
+} from '../../shared/schreibregeln';
 
 /**
  * Kopf eines Beitragsformulars: eine Zeile, worauf es ankommt, und hinter dem ?

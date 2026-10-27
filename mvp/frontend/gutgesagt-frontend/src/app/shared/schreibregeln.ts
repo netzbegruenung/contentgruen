@@ -6,6 +6,8 @@
  * Hier gepflegt, damit Formularhilfe und Hilfe-Dialog dieselben Saetze zeigen.
  */
 
+import { FormularTyp } from './formular-adresse';
+
 /** Die sechs Schreibregeln, in der Reihenfolge der Vision. */
 export const SCHREIBREGELN: readonly string[] = [
   'Schreib für die Unentschiedenen, die mitlesen.',
@@ -23,7 +25,7 @@ export interface Schreibhilfe {
 
 export const SCHREIBHILFEN: readonly Schreibhilfe[] = [
   { name: 'Küchenzuruf', text: 'Was würdest du in einem Satz durch die Küche rufen? Das ist deine Kurzfassung.' },
-  { name: 'Aufhänger vor Beleg', text: 'Erst das, was Lesende packt, dann der Beleg.' },
+  { name: 'Aufhänger vor Begründung', text: 'Erst das, was Lesende packt, dann die Begründung.' },
   { name: 'Lesende als Hauptfigur', text: 'Sprich die Lesenden mit „du“ an und erzähl von ihrem Alltag.' },
   { name: 'Zahlen in den Alltag', text: '„Jede dritte Wohnung“ statt „33 Prozent“.' },
 ];
@@ -51,17 +53,20 @@ export const TITEL_BEISPIELE: { gut: readonly string[]; schwach: readonly Schwac
 };
 
 export const NICHT_JEDE_AUSSAGE =
-  'Nicht jede Aussage braucht eine Antwort. Jede Antwort macht sie sichtbarer. Bei kleinen Accounts lieber nicht antworten, sondern die Aussage dem Netzwerk melden, in dem sie steht.';
+  'Nicht jede Aussage braucht eine Antwort. Jede Antwort macht sie sichtbarer. Bei kleinen Accounts lieber nicht antworten, sondern die Aussage bei der Plattform melden, auf der sie steht.';
 
 /** Der Meldedialog hat (noch) keinen eigenen Grund dafuer, daher der Weg ueber „Andere“. */
 export const ERFUNDENES_MELDEN =
-  'Erfundene Erlebnisse oder Zahlen in einem Beitrag? Melde ihn unter „Andere“ und schreib dazu, was nicht stimmt.';
+  'Erfundene Erlebnisse oder Zahlen in einem Beitrag? Melde ihn hier bei Gut gesagt unter „Andere“ und schreib dazu, was nicht stimmt.';
 
 /**
- * Beitragstypen, deren Formularhilfe die Schreibregeln zeigt. Strings statt
- * FormularTyp, weil 'post' dort erst mit dem Post-Formular (#297) dazukommt.
+ * 'post' kennt FormularTyp erst mit dem Post-Formular (#297); bis dahin steht
+ * er hier zusaetzlich, danach reicht FormularTyp.
  */
-export const TYPEN_MIT_SCHREIBREGELN: readonly string[] = ['commentary', 'post'];
+type TypMitHilfe = FormularTyp | 'post';
+
+/** Beitragstypen, deren Formularhilfe die Schreibregeln zeigt. */
+export const TYPEN_MIT_SCHREIBREGELN: readonly TypMitHilfe[] = ['commentary', 'post'];
 
 /** Beitragstypen, deren Formularhilfe Titelbeispiele zeigt. */
-export const TYPEN_MIT_TITELBEISPIELEN: readonly string[] = ['commentary'];
+export const TYPEN_MIT_TITELBEISPIELEN: readonly TypMitHilfe[] = ['commentary'];

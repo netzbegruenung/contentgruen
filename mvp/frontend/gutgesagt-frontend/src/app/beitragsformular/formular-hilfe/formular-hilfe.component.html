@@ -31,7 +31,7 @@
 
             <h3 class="hilfe-abschnitt" [id]="panelId + '-hilfen'">Schreibhilfen</h3>
             <ul class="schreibhilfen" [attr.aria-labelledby]="panelId + '-hilfen'">
-                <li *ngFor="let hilfe of schreibhilfen"><strong>{{ hilfe.name }}:</strong> {{ hilfe.text }}</li>
+                <li *ngFor="let schreibhilfe of schreibhilfen"><strong>{{ schreibhilfe.name }}:</strong> {{ schreibhilfe.text }}</li>
             </ul>
 
             <ng-container *ngIf="mitTitelbeispielen">
@@ -41,9 +41,9 @@
                         <span class="regel-zeichen" aria-hidden="true">✓</span>
                         <span class="cdk-visually-hidden">Gut:</span>„{{ titel }}“
                     </li>
-                    <li *ngFor="let titel of titelBeispiele.schwach" class="regel regel-nicht titel-schwach">
+                    <li *ngFor="let schwacher of titelBeispiele.schwach" class="regel regel-nicht titel-schwach">
                         <span class="regel-zeichen" aria-hidden="true">✗</span>
-                        <span class="cdk-visually-hidden">Schwach:</span>„{{ titel.titel }}“ – {{ titel.warum }}
+                        <span class="cdk-visually-hidden">Schwach:</span>„{{ schwacher.titel }}“ – {{ schwacher.warum }}
                     </li>
                 </ul>
             </ng-container>
