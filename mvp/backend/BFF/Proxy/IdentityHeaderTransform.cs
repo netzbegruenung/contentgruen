@@ -108,7 +108,7 @@ public static class IdentityHeaderTransform
         }
         else
         {
-            logger.LogWarning("No user identifier found for protected endpoint: {Path}", LogPseudonym.InPath(path));
+            logger.LogWarning("No user identifier found for protected endpoint: {Path}", path);
         }
 
         // X-Session-Id ist bewusst clientseitig (anonyme Votes und Meldungen) und traegt keine

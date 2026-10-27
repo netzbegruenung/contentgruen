@@ -210,6 +210,10 @@ _Avoid_: Contributions, Profil
 Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Hier erfährt der Einwerfer, was aus seinen Fundstücken geworden ist. Die Karten bieten dieselben Griffe wie im Fangkorb; ein offener Einwurf lässt sich von hier aus gleich destillieren.
 _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 
+**Nutzungsstatistik**:
+Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
+_Avoid_: Usage Stats, Nutzerstatistik
+
 ## Personen
 
 **Nutzende**:
@@ -231,6 +235,10 @@ _Avoid_: Gast, anonymer Nutzer
 **Autor**:
 Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat. Wer einen Einwurf nur mit einem vorhandenen Beitrag verknüpft, wird dadurch nicht dessen Autor. Einwerfer und Destillierer eines Beitrags aus dem Fangkorb sind nicht seine Autoren, sondern wirken an der Kette mit. Wer einen von KI vorgeschlagenen Text übernimmt und speichert, ist dessen Autor.
 _Avoid_: Ersteller, Owner, Urheber
+
+**Kennung**:
+Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Adressen steht er nicht, in Logs nur als gekürzter Hash. Dieser Hash ist ungesalzen und bei bekannten Kennungen zurückrechenbar, also kein Tagespseudonym.
+_Avoid_: User-ID, Nutzer-ID
 
 **Anzeigename**:
 Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt wird. Andere sehen nie den Klarnamen aus dem Login.
