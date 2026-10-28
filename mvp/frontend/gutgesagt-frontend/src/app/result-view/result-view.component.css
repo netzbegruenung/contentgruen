@@ -252,12 +252,17 @@ mat-sidenav-content {
 }
 
 .tab-button {
-  flex: 1;
+  /* Gleich breit und schrumpfbar: Mit dem dritten Tab (Posts) ist bei 360 px
+     kein Platz fuer Symbol, Name und Zahl in einer Zeile - die Zahl bricht um,
+     statt die Leiste seitlich ueberlaufen zu lassen. */
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 8px;
+  gap: 0 6px;
+  padding: 12px 4px;
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;

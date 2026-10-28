@@ -1,10 +1,12 @@
 import { ActivatedRouteSnapshot } from '@angular/router';
 
+import { EINWURF_PARAM } from '../../destillieren/einwurf-adresse';
+
 /**
  * Was die Ergebnisseite nach dem Speichern wissen muss.
  *
  * Woher das Formular kam, steht in der Adresse (bleibt beim Neuladen erhalten
- * und bestimmt den Zurueck-Pfeil): ?rohinput=<id> aus dem Fangkorb, ?von=suche
+ * und bestimmt den Zurueck-Pfeil): ?einwurf=<id> aus dem Fangkorb, ?von=suche
  * (optional mit ?suche=<Anfrage>) aus der Suche, sonst frei. Was nur der eben
  * gespeicherte Aufruf weiss - worauf geantwortet wurde und ob die Verknuepfung
  * mit Aussage und Einwurf geklappt hat -, reist als Router-State mit und fehlt nach dem
@@ -12,8 +14,6 @@ import { ActivatedRouteSnapshot } from '@angular/router';
  */
 export const VON_PARAM = 'von';
 export const SUCHE_PARAM = 'suche';
-/** Wie ROHINPUT_PARAM in destillier-uebergabe.service.ts; hier ohne dessen Abhaengigkeiten. */
-export const ROHINPUT_ADRESSE_PARAM = 'rohinput';
 
 export type Herkunft = 'fangkorb' | 'suche' | 'frei';
 
@@ -35,7 +35,7 @@ export interface GespeichertZustand {
 }
 
 export function herkunftAus(params: { get(name: string): string | null }): Herkunft {
-  if (params.get(ROHINPUT_ADRESSE_PARAM)) {
+  if (params.get(EINWURF_PARAM)) {
     return 'fangkorb';
   }
   return params.get(VON_PARAM) === 'suche' ? 'suche' : 'frei';

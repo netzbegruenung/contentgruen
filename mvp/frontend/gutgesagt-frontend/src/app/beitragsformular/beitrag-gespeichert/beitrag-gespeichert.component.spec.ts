@@ -6,6 +6,7 @@ import { BeitragGespeichertComponent, EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT } from 
 import { GespeichertZustand, gespeichertEltern } from './gespeichert-adresse';
 import { CommentaryService } from '../../services/commentary.service';
 import { GenericTextService } from '../../services/generic-text.service';
+import { PostService } from '../../services/post.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
@@ -16,6 +17,7 @@ import { FILTER_SCHLUESSEL, filterLaden } from '../../raw-input-list/fangkorb-fi
 describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;
   let commentaryService: jasmine.SpyObj<CommentaryService>;
+  let postService: jasmine.SpyObj<PostService>;
   let uebergabe: jasmine.SpyObj<DestillierUebergabeService>;
   let navigation: jasmine.SpyObj<NavigationService>;
 
@@ -23,12 +25,17 @@ describe('BeitragGespeichertComponent', () => {
     adresse: Record<string, string> = {},
     zustand: GespeichertZustand | undefined = undefined,
     laden = true,
+    typ = 'commentary',
   ): Promise<void> {
     commentaryService = jasmine.createSpyObj('CommentaryService', ['getCommentaryById']);
     commentaryService.getCommentaryById.and.returnValue(
       laden
         ? of({ id: 'k-1', title: 'Wärmepumpe lohnt sich', text: 'Text', content_type: 'commentary', references: [] } as any)
         : throwError(() => new Error('404')),
+    );
+    postService = jasmine.createSpyObj('PostService', ['getPostById']);
+    postService.getPostById.and.returnValue(
+      of({ id: 'k-1', title: 'Ein Reel zur Wärmepumpe', text: 'Text', content_type: 'post', platform: 'Instagram', author: '@konto' } as any),
     );
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
     navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult']);
@@ -39,13 +46,14 @@ describe('BeitragGespeichertComponent', () => {
         provideRouter([]),
         { provide: CommentaryService, useValue: commentaryService },
         { provide: GenericTextService, useValue: jasmine.createSpyObj('GenericTextService', ['getGenericTextById']) },
+        { provide: PostService, useValue: postService },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn']) },
         { provide: DestillierUebergabeService, useValue: uebergabe },
         { provide: NavigationService, useValue: navigation },
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { data: { typ: 'commentary' }, queryParamMap: convertToParamMap(adresse) },
+            snapshot: { data: { typ }, queryParamMap: convertToParamMap(adresse) },
             paramMap: of(convertToParamMap({ id: 'k-1' })),
           },
         },
@@ -81,6 +89,19 @@ describe('BeitragGespeichertComponent', () => {
     expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Wärmepumpe lohnt sich');
   });
 
+  it('zeigt den gespeicherten Post und bietet noch einen an', async () => {
+    await oeffnen({}, undefined, true, 'post');
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    expect(postService.getPostById).toHaveBeenCalledOnceWith('k-1');
+    expect(commentaryService.getCommentaryById).not.toHaveBeenCalled();
+    expect(seite().textContent).toContain('Dein Post ist gespeichert.');
+    expect(seite().querySelector('.gespeichert-karte')!.textContent).toContain('Ein Reel zur Wärmepumpe');
+    expect(knoepfe()).toEqual(['Noch einen Post', 'Meine Beiträge']);
+    (seite().querySelector('.noch-einer') as HTMLButtonElement).click();
+    expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-post']);
+  });
+
   describe('Knoepfe je Herkunft', () => {
     it('frei: noch einer und Meine Beitraege', async () => {
       await oeffnen();
@@ -93,7 +114,7 @@ describe('BeitragGespeichertComponent', () => {
     });
 
     it('Fangkorb: naechster Einwurf und zum Fangkorb', async () => {
-      await oeffnen({ rohinput: 'e-1' }, { einwurfVerknuepft: true });
+      await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: true });
       const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 
       expect(knoepfe()).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
@@ -109,7 +130,7 @@ describe('BeitragGespeichertComponent', () => {
     });
 
     it('Fangkorb: nicht verknuepft fuehrt nach Ausformulieren und sagt es', async () => {
-      await oeffnen({ rohinput: 'e-1' }, { einwurfVerknuepft: false });
+      await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: false });
 
       expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
@@ -157,7 +178,7 @@ describe('BeitragGespeichertComponent', () => {
     });
 
     it('kommt nach dem Neuladen ohne State ohne Antwort-auf aus', async () => {
-      await oeffnen({ rohinput: 'e-1' });
+      await oeffnen({ einwurf: 'e-1' });
 
       expect(seite().querySelector('.gespeichert-aussage')).toBeNull();
       expect(seite().querySelector('.gespeichert-warnung')).toBeNull();
@@ -177,7 +198,7 @@ describe('BeitragGespeichertComponent', () => {
   it('fuehrt mit dem Pfeil dorthin, woher das Formular kam', () => {
     const snapshot = (params: Record<string, string>) => ({ queryParamMap: convertToParamMap(params) }) as any;
 
-    expect(gespeichertEltern(snapshot({ rohinput: 'e-1' }))).toBe('/fangkorb');
+    expect(gespeichertEltern(snapshot({ einwurf: 'e-1' }))).toBe('/fangkorb');
     expect(gespeichertEltern(snapshot({ von: 'suche', suche: 'a b' }))).toBe('/result?searchQuery=a%20b');
     expect(gespeichertEltern(snapshot({ von: 'suche' }))).toBe('/search');
     expect(gespeichertEltern(snapshot({}))).toBe('/contribute');

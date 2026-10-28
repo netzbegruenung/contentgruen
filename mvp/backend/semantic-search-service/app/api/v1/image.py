@@ -5,14 +5,20 @@ import logging
 import uuid
 from uuid import UUID
 
-from dependencies import get_image_service, get_caption_suggestion_service
+from dependencies import (
+    get_aufrufer,
+    get_caption_suggestion_service,
+    get_image_service,
+)
 from dtos.image import (
     AddImageRequest,
     AddImageResponse,
+    BildResponse,
     ImageGetAllResponse,
     SuggestCaptionRequest,
     SuggestCaptionResponse,
 )
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from services.content.base_content_service import BaseContentService
 from services.vision.caption_suggestion_service import CaptionSuggestionService
 from domain.models.image import ImageDbEntry
@@ -24,14 +30,15 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/getById", response_model=ImageDbEntry)
+@router.get("/getById", response_model=BildResponse)
 async def get_by_id(
     image_id: UUID = Query(..., description="The UUID of the image to retrieve"),
     image_service: BaseContentService = Depends(get_image_service),
-) -> ImageDbEntry:
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> BildResponse:
     try:
         image = await image_service.get(image_id)
-        return image
+        return als_responses(BildResponse, [image], aufrufer)[0]
     except HTTPException:
         raise
     except ValueError as e:
@@ -49,6 +56,7 @@ async def get_all(
     image_service: BaseContentService = Depends(get_image_service),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> ImageGetAllResponse:
     try:
         offset = (page - 1) * page_size
@@ -57,7 +65,7 @@ async def get_all(
         )
         return ImageGetAllResponse(
             results_count=len(results),
-            results=results,
+            results=als_responses(BildResponse, results, aufrufer),
             total_records_count=await image_service.count(),
         )
     except Exception as e:

@@ -45,6 +45,7 @@ Access the app at [http://localhost](http://localhost). See [CONTRIBUTING.md](./
 | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | Deployment instructions |
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | System architecture |
 | [`docs/CONTENT_MODEL.md`](./docs/CONTENT_MODEL.md) | Content-type architecture |
+| [`docs/VISION.md`](./docs/VISION.md) | Purpose, audience and limits of the product (German) |
 | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Long-term direction |
 
 ## Community

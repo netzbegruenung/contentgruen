@@ -356,8 +356,9 @@ E2E tests (Playwright, against the running dev stack, not in CI and not part of 
 ### Test Environment
 - URL: https://gutgesagt-test.netzbegruenung.de (runs the `:main` image tag)
 - Deployment: Manual, by the operators. A new `:main` image is **not** rolled out
-  automatically, so migrations can run before the deploy.
-  How to apply them, and the convention for new ones: `mvp/backend/postgres-app/migrations/README.md`.
+  automatically. Database migrations are applied by the semantic service on startup
+  (`docs/DEPLOYMENT.md`, "Database migrations"); the convention for new ones:
+  `mvp/backend/postgres-app/migrations/README.md`.
 
 ### Production Environment
 - URL: https://gutgesagt.netzbegruenung.de
@@ -419,6 +420,7 @@ As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a F
 2. Register a `ContentTypeSpec` entry in `domain/content_registry.py` (reuse `create_registry_repository` — the generic `RegistryQdrantRepository`; no new repository subclass).
 3. Add a `get_<type>_service` dependency in `dependencies.py` that builds the generic service from the spec, and add an `api/v1/<type>.py` router (ingestion/input is the only type-specific seam) wired in `main.py`.
 4. Add the type to the `/searchByText` spec list and the `SearchResponse` DTO — the `SearchOrchestrator` handles it generically.
+   Responses go out through a `<Type>Response(BeitragResponse)` and a `<Type>Treffer` in `dtos/beitrag.py`: an allowlist of fields, never the DbEntry, so no Kennung leaks (#333). Build them with `als_responses`/`fuer_aufrufer` (`services/beitrag_fuer_aufrufer.py`); if the type shows up in `/content/recent`, add it to `NEUESTE` in `api/v1/content.py`.
 5. Frontend: one entry in `shared/content-type-registry.ts` (key, icon, German `label`, `resultField`, `emoji`), the type's fields in the `ausSuchergebnis` adapter (`beitragskarte/karten-daten.ts`) and, if it needs its own body, a block in `app-beitragskarte`. There is one card component for all types. The registry imports no components, so type names (`typLabel()`) stay out of the initial bundle.
 6. Tests-first against live Qdrant in `tests/integration/` (round-trip + orchestrator parity), plus a headless-Chrome FE render/vote test.
 

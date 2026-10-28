@@ -2,7 +2,8 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
-from domain.models.commentary import Commentary, CommentarySearchResult
+from domain.models.commentary import Commentary
+from dtos.beitrag import KommentarTreffer
 
 
 ### AddCommentary ###
@@ -113,4 +114,4 @@ class SearchCommentaryByTextRequest(BaseModel):
 
 
 class CommentarySearchResponse(BaseModel):
-    results: List[CommentarySearchResult]
+    results: List[KommentarTreffer]

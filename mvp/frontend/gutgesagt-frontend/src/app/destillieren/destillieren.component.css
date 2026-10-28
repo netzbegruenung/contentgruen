@@ -117,6 +117,10 @@
   background: var(--generictext-bg);
 }
 
+.typ-post.gewaehlt {
+  background: var(--post-bg);
+}
+
 .typ-name {
   display: block;
   font-weight: 500;

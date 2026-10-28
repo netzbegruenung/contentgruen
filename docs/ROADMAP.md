@@ -15,7 +15,10 @@ A platform that analyzes **any content in any format**, transforms it multimodal
 argumentative replies** — built **mainly on semantic search, with LLM as support** — and
 **gamified for Green Party members**.
 
-This is a destination to steer toward, not a spec to build in one shot.
+This is a destination to steer toward, not a spec to build in one shot. What the product is for,
+who it serves and where its limits are is settled in [VISION.md](./VISION.md) (German).
+The long-term path beyond these rungs (from member to creator, a network of instances, optional
+spin-offs) is in [VISION.md, "Langfristig"](./VISION.md#langfristig).
 
 ## The core principle
 
@@ -91,6 +94,11 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
   the drafts and none are screenshot-embarrassing.
 
 ### Rung 6 — Gamification + KV social data, woven through
+
+> **Moved forward (October 2026):** the social-feedback part (usage shown to authors,
+> milestones, points from other people's use, leaderboards, quests) comes right after the
+> launch, not here — see [VISION.md](./VISION.md#motivation) and ADR 0004. What stays on this
+> rung is KV social data and anything that needs it.
 - The fun/engagement layer (streaks, leaderboards, member voting) sits **on top of** the votes/usage
   you already track — additive, decoupled from the engine. **DSGVO** matters the moment you touch
   member data.

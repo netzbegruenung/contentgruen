@@ -424,6 +424,50 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       expect(kopiert).toHaveBeenCalled();
     });
 
+    it('bietet ohne Herkunft keine Wahl an', () => {
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.kopier-wahl-knopf')).toBeNull();
+    });
+
+    it('bietet mit Herkunft die Wahl zwischen Text und Text + Herkunft an', () => {
+      fixture.componentRef.setInput('kopierTextMitHerkunft', 'Test text\n\nHerkunft: https://example.org');
+      fixture.detectChanges();
+
+      fixture.nativeElement.querySelector('.kopier-wahl-knopf').click();
+      fixture.detectChanges();
+
+      const eintraege = Array.from(document.querySelectorAll('.kopier-wahl-eintrag .mat-mdc-menu-item-text')).map((eintrag) =>
+        eintrag.textContent!.trim(),
+      );
+      expect(eintraege).toEqual(['Text', 'Text + Herkunft']);
+    });
+
+    it('kopiert mit Herkunft den Text samt Herkunft und zaehlt auch das als Nutzung', () => {
+      const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      const kopiert = jasmine.createSpy('kopiert');
+      component.kopiert.subscribe(kopiert);
+      component.kopierTextMitHerkunft = 'Test text\n\nHerkunft: https://example.org';
+
+      component.kopierenMitHerkunft();
+
+      expect(clipboard.copy).toHaveBeenCalledWith('Test text\n\nHerkunft: https://example.org');
+      expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID);
+      expect(kopiert).toHaveBeenCalled();
+    });
+
+    it('kopiert ueber die Wahl "Text" nur den Text, auch wenn es eine Herkunft gibt', () => {
+      const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      component.kopierTextMitHerkunft = 'Test text\n\nHerkunft: https://example.org';
+
+      component.kopieren();
+
+      expect(clipboard.copy).toHaveBeenCalledWith('Test text');
+      expect(usage.trackContentUsage).toHaveBeenCalledTimes(1);
+    });
+
     it('oeffnet den Melde-Dialog mit ID und Typ', () => {
       const dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
 
@@ -469,6 +513,21 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         expect(knopf.getAttribute('tabindex')).toBe('-1');
         expect(knopf.disabled).toBeFalse();
       });
+    });
+
+    it('kopiert auch mit Herkunft nicht und zaehlt keine Nutzung', () => {
+      const clipboard = TestBed.inject(Clipboard) as jasmine.SpyObj<Clipboard>;
+      const usage = TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+      fixture.componentRef.setInput('kopierTextMitHerkunft', 'Test text\n\nHerkunft: https://example.org');
+      fixture.detectChanges();
+
+      const wahl: HTMLButtonElement = fixture.nativeElement.querySelector('.kopier-wahl-knopf');
+      component.kopierenMitHerkunft();
+
+      expect(wahl.getAttribute('aria-disabled')).toBe('true');
+      expect(wahl.getAttribute('tabindex')).toBe('-1');
+      expect(clipboard.copy).not.toHaveBeenCalled();
+      expect(usage.trackContentUsage).not.toHaveBeenCalled();
     });
 
     it('stimmt nicht ab, kopiert nicht und meldet nicht', fakeAsync(() => {

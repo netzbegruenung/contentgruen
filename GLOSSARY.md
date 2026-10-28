@@ -33,7 +33,7 @@ Der optionale Freitext an einem Einwurf, mit dem der Einwerfer anderen sagt, was
 _Avoid_: Notiz, Kommentar, Beschreibung
 
 **Plattform**:
-Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs stammt (etwa Instagram, YouTube, TikTok oder Web).
+Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web).
 _Avoid_: Kanal, Quelle
 
 **Weg**:
@@ -123,7 +123,7 @@ Eine Behauptung oder Frage aus der Debatte, auf die man eine gute Antwort brauch
 _Avoid_: Statement, These, Angriff
 
 **Kommentar**:
-Eine Antwort, die man direkt posten kann, in Kurz-, Mittel- und Langfassung und mit einem Stil.
+Eine Antwort, die man direkt posten kann, mit einer Mittelfassung und optional einer Kurz- und einer Langfassung, mit einem Stil und einem Zweck.
 _Avoid_: Commentary, Fertiger Kommentar, Antwort, Reply
 
 **Hintergrundinfo**:
@@ -139,7 +139,7 @@ Der Text zu einem Bild, über den es gefunden wird. Die Person schreibt ihn beim
 _Avoid_: Caption, Bildtext
 
 **Post**:
-Ein Beitrag, der einen gelungenen Beitrag aus einem sozialen Netzwerk als Vorbild zum Teilen festhält. Er ist fertig und wird so verwendet; ein Einwurf mit demselben Link ist dagegen Material, aus dem erst ein Beitrag werden soll.
+Ein Beitrag, der einen gelungenen Beitrag aus einem sozialen Netzwerk als Vorbild zum Teilen festhält. Er ist fertig und wird so verwendet; ein Einwurf mit demselben Link ist dagegen Material, aus dem erst ein Beitrag werden soll. Sein Link ist Pflicht und ersetzt die Herkunft.
 _Avoid_: Social-Media-Post, Posting
 
 ### Zustände eines Beitrags
@@ -157,11 +157,11 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
 **Titel**:
-Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema.
+Der eine Satz über einem Kommentar oder einer Hintergrundinfo: eine Behauptung mit Haltung, keine Frage und kein Thema. Bild und Post haben auch einen Titel; er beschreibt den Inhalt und folgt dieser Regel nicht.
 _Avoid_: Überschrift, Etikett, Thema
 
 **Herkunft**:
@@ -169,13 +169,29 @@ Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstell
 _Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:
-Die Tonlage eines Kommentars, etwa faktisch, persönlich, humorvoll oder brückenbauend.
+Die Tonlage eines Kommentars, etwa faktisch, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
 _Avoid_: Ton, Tonalität
+
+**Fassung**:
+Eine der Längen eines Kommentars: Kurz (bis 280 Zeichen), Mittel (der Haupttext, Pflicht) oder Lang (mit Begründung und Herkunft). Kopiert und gezählt wird je Fassung.
+_Avoid_: Version, Variante, Länge
+
+**Zweck**:
+Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder für die eigenen Leute.
+_Avoid_: Zielgruppe, Modus, Kanal
+
+**Variante**:
+Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage genommen hat. Er hat einen eigenen Autor und ist mit dem Original als „beruht auf“ verknüpft.
+_Avoid_: Remix, Kopie, Fassung, Fork
+
+**Thema**:
+Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens zwei. Freie Schlagworte gibt es nicht.
+_Avoid_: Tag, Topic, Kategorie, Schlagwort
 
 ## Nutzung und Bewertung
 
 **Nutzung**:
-Ein Kopiervorgang eines Beitrags. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft.
+Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als seinen Autor. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft. Sie ist immer echt: Kein Zähler wird vorbelegt oder geschätzt, ein neuer Beitrag beginnt bei 0.
 _Avoid_: Usage, Aufruf, Klick
 
 **Stimme**:
@@ -190,6 +206,10 @@ _Avoid_: Report, Flag, Beschwerde
 Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener, nimmt sie ihn, statt zuzustimmen. Antwortet der Beitrag auf eine Aussage, wird erst nach dieser Entscheidung mit ihr verknüpft: beim Nehmen der vorhandene, bei „Trotzdem speichern“ nur der neue; ein fremder vorhandener nie. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.
 _Avoid_: Duplikat, Doppelung
 
+**Unbeantwortete Aussage**:
+Eine Aussage ohne Kommentar oder eine, nach der mindestens zwei Personen ohne Treffer gesucht haben. Mitwirkende sehen sie in „Hier fehlt eine Antwort“ und dürfen dort Aussagen auch vorab anlegen.
+_Avoid_: Offene Aussage (offen ist eine Stufe eines Einwurfs), Wunsch, Anfrage
+
 **Suchanfrage**:
 Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber häufige Suchanfragen ohne Treffer zeigen, welche Aussagen noch Antworten brauchen.
 _Avoid_: Query, Suchbegriff
@@ -199,7 +219,7 @@ Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Auss
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit. Über die Uhrzeit lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat. Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen noch). Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:
@@ -213,6 +233,34 @@ _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
+
+**Punkte**:
+Was eine Person durch die Wirkung ihrer Beiträge bei anderen sammelt: Nutzung durch andere, Zustimmung durch andere und abgeschlossene Quests. Fürs bloße Anlegen gibt es keine Punkte (ADR 0004).
+_Avoid_: XP, Score, Karma
+
+**Rangliste**:
+Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und dort erscheint nur, wer ausdrücklich zugestimmt hat.
+_Avoid_: Leaderboard, Highscore
+
+**Quest**:
+Eine Aufgabe mit prüfbarem Ergebnis, die Punkte bringt, etwa eine unbeantwortete Aussage beantworten. Tagesaufgaben sind Quests für einen Tag, das Wochenziel ist eine gemeinsame Quest aller.
+_Avoid_: Mission, Challenge, Auftrag
+
+**Wochenthema**:
+Das Thema, auf das sich eine Woche lang das Wochenziel richtet und für das Punkte doppelt zählen. Platz 1 der Wochen-Rangliste wählt es aus den Themen mit dem meisten Bedarf.
+_Avoid_: Schwerpunkt der Woche, Fokus-Thema
+
+**Lagekarte**:
+Die Übersicht, wo Antworten fehlen, gebildet nur aus eigenen Signalen von Gut gesagt: Suchen ohne Treffer, unbeantwortete Aussagen, Einwürfe. Sie lenkt Aufmerksamkeit; fremde Plattformen beobachtet sie nicht.
+_Avoid_: Kommandozentrale, Monitoring, Radar
+
+**Werkstatt**:
+Gut gesagt als Ort, an dem Mitwirkende Beiträge gemeinsam herstellen und dabei Fähigkeiten entlang realer Tätigkeiten aufbauen, bis hin zur eigenen Stimme. Die Werkstatt gibt keine Aufträge und betreut keine Kanäle.
+_Avoid_: Kommandozentrale, Armee, Agentur
+
+**Meilenstein**:
+Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nutzung durch andere; am Anzeigenamen steht dafür ein Abzeichen.
+_Avoid_: Achievement, Badge, Erfolg
 
 **Meine Einwürfe**:
 Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Hier erfährt der Einwerfer, was aus seinen Fundstücken geworden ist. Die Karten bieten dieselben Griffe wie im Fangkorb; ein offener Einwurf lässt sich von hier aus gleich destillieren.
@@ -236,6 +284,14 @@ _Avoid_: User, Mitglieder
 Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
 _Avoid_: Beta-Account, manueller User, Managed User
 
+**Netzbegrünung-Login**:
+Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung; die andere Kontoart ist der Beta-Zugang. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
+_Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
+
+**Startkonto**:
+Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.
+_Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
+
 **Besucher**:
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.
 _Avoid_: Gast, anonymer Nutzer
@@ -245,11 +301,11 @@ Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat
 _Avoid_: Ersteller, Owner, Urheber
 
 **Kennung**:
-Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Adressen steht er nicht, in Logs nur als gekürzter Hash. Dieser Hash ist ungesalzen und bei bekannten Kennungen zurückrechenbar, also kein Tagespseudonym.
+Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Adressen steht er nicht, in Logs nur als gekürzter Hash. Dieser Hash ist ungesalzen und bei bekannten Kennungen zurückrechenbar, also kein Tagespseudonym. An Beiträgen in Suche und Ansicht sehen ihn nur Admins; andere Mitwirkende sehen stattdessen den Anzeigenamen des Autors und ob es ihr eigener Beitrag ist.
 _Avoid_: User-ID, Nutzer-ID
 
 **Anzeigename**:
-Der selbst gewählte Name, unter dem eine Person anderen in Gut gesagt gezeigt wird. Andere sehen nie den Klarnamen aus dem Login.
+Der Name, unter dem eine Person anderen Mitwirkenden gezeigt wird: Vorname und Initial des Nachnamens aus der Anmeldung, etwa „Anna B.“. Besucher sehen keine Anzeigenamen, und niemand sieht den vollen Namen aus dem Login.
 _Avoid_: Benutzername, Klarname, Kennung
 
 **Ehemalige Person**:

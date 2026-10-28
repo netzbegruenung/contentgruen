@@ -31,6 +31,7 @@ import {
   STUFEN,
 } from './karten-daten';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
+import { herkunftText, tragtHerkunftsangaben } from './herkunft-text';
 import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
@@ -156,8 +157,14 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return !!this.authService.getUserInfo()?.isAuthenticated;
   }
 
-  /** Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. */
+  /**
+   * Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. Beitraege tragen das
+   * Kennzeichen vom Server (#333), Einwuerfe und "Meine Beitraege" die Kennung.
+   */
   get istEigen(): boolean {
+    if (this.daten.eigen != null) {
+      return this.angemeldet && this.daten.eigen;
+    }
     return !!this.daten.autor && this.daten.autor === this.eigeneKennung;
   }
 
@@ -166,7 +173,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * der Meta-Zeile allein das Alter.
    */
   get zeigtAutor(): boolean {
-    return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName);
+    return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
   }
 
   @ViewChild('textElement')
@@ -375,9 +382,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return !!(this.daten.extra?.kurz || this.daten.extra?.lang);
   }
 
-  /** Nur Kommentar und Hintergrundinfo tragen Herkunftsangaben. */
   get zeigtQuellen(): boolean {
-    return this.daten.typ === 'commentary' || this.daten.typ === 'generictext';
+    return tragtHerkunftsangaben(this.daten.typ);
   }
 
   get angezeigterText(): string {
@@ -393,6 +399,12 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get kopierText(): string {
     return this.angezeigterText;
+  }
+
+  /** Die angezeigte Fassung samt Herkunft; leer ohne Herkunft, dann bietet die Leiste keine Wahl an. */
+  get kopierTextMitHerkunft(): string {
+    const herkunft = herkunftText(this.daten);
+    return herkunft && this.kopierText ? `${this.kopierText}\n\n${herkunft}` : '';
   }
 
   get kopierBeschriftung(): string {

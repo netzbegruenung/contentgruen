@@ -71,8 +71,7 @@ export class ContentService {
             id: item.id,
             type: item.result_type,
             title: item.title || 'No title',
-            created: item.created,
-            author: item.original_author
+            created: item.created
           });
         });
 

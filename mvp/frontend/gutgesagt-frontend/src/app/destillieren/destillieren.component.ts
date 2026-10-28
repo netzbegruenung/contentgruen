@@ -17,10 +17,10 @@ import { LoggingService } from '../services/logging.service';
 import { typBeschreibung, typLabel } from '../shared/content-type-registry';
 import {
   DestillierUebergabeService,
-  ROHINPUT_PARAM,
   SCHRITT_PARAM,
   TAB_PARAM,
 } from './destillier-uebergabe.service';
+import { EINWURF_PARAM } from './einwurf-adresse';
 import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
@@ -32,12 +32,13 @@ import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
 
-type Beitragstyp = 'commentary' | 'generictext';
+type Beitragstyp = 'commentary' | 'generictext' | 'post';
 
 /** Die Typwahl, mit denselben Saetzen wie auf der Beitragen-Seite (aus der Registry). */
 export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterung: string }> = [
   { wert: 'commentary', name: typLabel('commentary'), erlaeuterung: typBeschreibung('commentary') },
   { wert: 'generictext', name: typLabel('generictext'), erlaeuterung: typBeschreibung('generictext') },
+  { wert: 'post', name: typLabel('post'), erlaeuterung: typBeschreibung('post') },
 ];
 
 /**
@@ -306,7 +307,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate([FORMULAR_PFAD[this.typ]], {
-      queryParams: { [ROHINPUT_PARAM]: this.einwurf.id },
+      queryParams: { [EINWURF_PARAM]: this.einwurf.id },
     });
   }
 

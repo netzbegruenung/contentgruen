@@ -18,7 +18,7 @@ use existing comments/background info, and contribute their own.
 * [x] Anonymous / public search — search and view results without logging in (contribution stays behind login)
 * [x] Semantic search using Qdrant v1.18.2 and E5 multilingual embeddings
 * [x] Content-type-aware encoding, polarity filtering, and keyword-overlap score boosting
-* [x] Content contribution workflows (commentaries, background info / generic text, statements, images)
+* [x] Content contribution workflows (commentaries, background info / generic text, statements, images, posts)
 * [x] Image content type with an AI-suggested Unterschrift (GPT-4o mini) that the person takes over before saving (ADR 0003, #281; the background description worker was removed) — gated entirely on `OPENAI_API_KEY` / `SEMANTIC_SEARCH_OPENAI_API_KEY`; unset, the suggestion button fails and the person writes the Unterschrift, which is the state production is deployed in today. Setting the key anywhere enables a third-country transfer to OpenAI — read the privacy warning at the field in `core/config.py` first
 * [x] Post content type (social media posts: Facebook / Instagram / TikTok)
 * [x] `ContentTypeSpec` registry — adding a new content type is a spec + model + frontend fragment, not a 500-line clone
@@ -34,7 +34,6 @@ use existing comments/background info, and contribute their own.
 | Task                          | Status   | Notes                                                       |
 | ----------------------------- | -------- | ----------------------------------------------------------- |
 | Mobile UI optimization        | ☐ open   | In progress                                                  |
-| Post add-form                 | ☐ open   | Post result item shipped but no contribution form yet       |
 | Frontend test suite           | ☐ open   | Backend well covered; frontend specs exist but are thin     |
 | Seed content for launch       | ☐ open   | Chicken-and-egg: pre-fill, then grow actively               |
 | Production monitoring/logging | ☐ open   | No realistic prod observability yet                         |
@@ -64,7 +63,7 @@ Candidate features:
 ## Next Steps (high → low priority)
 
 * [ ] Finish mobile responsiveness
-* [ ] Add Post contribution form (add-post frontend workflow)
+* [x] Add Post contribution form (add-post frontend workflow)
 * [ ] Add/refresh seed content
 * [ ] Stand up production monitoring/logging
 * [ ] Add a frontend unit-test suite

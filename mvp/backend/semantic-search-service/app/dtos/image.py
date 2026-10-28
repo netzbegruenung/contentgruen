@@ -2,10 +2,8 @@ from pydantic import BaseModel, field_validator
 from typing import List
 from uuid import UUID
 
-from domain.models.image import (
-    Image,
-    ImageDbEntry,
-)
+from domain.models.image import Image
+from dtos.beitrag import BeitragResponse
 
 
 class AddImageRequest(BaseModel):
@@ -26,9 +24,28 @@ class AddImageResponse(BaseModel):
     id: UUID
 
 
+class BildResponse(BeitragResponse):
+    """
+    Ein Bild, wie Suche, getById und getAll es ausliefern (#311, #333).
+
+    Die Auswahl aus BeitragResponse plus die Bildadresse; keine Bearbeitungshistorie
+    (last_modified*, authors, edit_history) und keine Felder der Moderation und
+    Dublettenpruefung. Wer hier ein Feld ergaenzt, entscheidet, dass es nach aussen
+    geht.
+
+    Der Zustand bleibt, weil getById und getAll bisher nicht nach ihm filtern und
+    gesperrte oder geloeschte Bilder sonst nicht von sichtbaren zu unterscheiden
+    waeren. Das ist eine bekannte Luecke: Laut Glossar findet ein gesperrtes Bild
+    nur ein Admin, ein geloeschtes niemand. Das Filtern gehoert zu #300.
+    """
+
+    title: str
+    image_url: str
+
+
 class ImageGetAllResponse(BaseModel):
     results_count: int
-    results: List[ImageDbEntry]
+    results: List[BildResponse]
     total_records_count: int
 
 

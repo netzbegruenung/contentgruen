@@ -9,9 +9,6 @@ import { FangkorbTab } from '../raw-input-list/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 
-/** Query-Parameter, mit dem die Destillier-Ansicht ein Beitragsformular oeffnet. */
-export const ROHINPUT_PARAM = 'rohinput';
-
 /**
  * Query-Parameter, mit dem die Destillier-Ansicht direkt in einem Schritt oeffnet.
  * Heute nur ``typwahl``: Der Fangkorb schickt von "Ausformulieren" dorthin.
@@ -23,7 +20,7 @@ export const TAB_PARAM = 'tab';
 
 /** Was aus dem Einwurf ins Beitragsformular uebernommen wird. Alles bleibt aenderbar. */
 export interface Vorbefuellung {
-  rohinputId: string;
+  einwurfId: string;
   /** Der eigene Satz - er wird der Titel. */
   titel: string;
   /** Der Link des Einwurfs, ohne Tracking-Parameter - er wird die Herkunft. */
@@ -35,7 +32,7 @@ export interface Vorbefuellung {
 /**
  * Die Naht zwischen Destillier-Ansicht und Beitragsformular.
  *
- * In der Adresse steht nur die ID des Einwurfs (?rohinput=...). Satz und Link
+ * In der Adresse steht nur die ID des Einwurfs (?einwurf=...). Satz und Link
  * holt das Formular vom Server, damit ein PWA-Neustart nichts verliert und kein
  * Freitext in der Adresse landet. Nach dem Speichern wird der Einwurf mit dem
  * Beitrag verknuepft; den naechsten waehlt man auf der Ergebnisseite.
@@ -48,13 +45,13 @@ export class DestillierUebergabeService {
     private logger: LoggingService,
   ) {}
 
-  vorbefuellungLaden(rohinputId: string): Observable<Vorbefuellung> {
-    return this.einwurfService.einwurfLaden(rohinputId).pipe(
+  vorbefuellungLaden(einwurfId: string): Observable<Vorbefuellung> {
+    return this.einwurfService.einwurfLaden(einwurfId).pipe(
       map((einwurf) => {
         const karte = ausEinwurf(einwurf);
         const titel = einwurf.own_draft ?? '';
         return {
-          rohinputId: einwurf.id,
+          einwurfId: einwurf.id,
           titel,
           url: einwurf.url ? trackingParameterEntfernen(einwurf.url) : null,
           kopf: karte.einwurfAngaben ? { ...karte, einwurfAngaben: { ...karte.einwurfAngaben, kopfSatz: titel || undefined } } : karte,
@@ -70,8 +67,8 @@ export class DestillierUebergabeService {
    * Liefert, ob das Verknuepfen geklappt hat; ein Fehler bricht nichts ab, der
    * Beitrag ist ja da. Den naechsten Einwurf waehlt der Aufrufer.
    */
-  mitBeitragVerknuepfen(rohinputId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
-    return this.einwurfService.updateStatus(rohinputId, 'processed', contentId, typ).pipe(
+  mitBeitragVerknuepfen(einwurfId: string, contentId: string, typ: BeitragsTyp): Observable<boolean> {
+    return this.einwurfService.updateStatus(einwurfId, 'processed', contentId, typ).pipe(
       map(() => true),
       catchError((error) => {
         this.logger.error('Einwurf konnte nicht mit dem Beitrag verknuepft werden', error);
