@@ -42,6 +42,7 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 ## KI
 
 - KI schlägt vor, ein Mensch verantwortet jeden Beitrag ([ADR 0003](./adr/0003-keine-generierten-antworten.md)). Keine Kanäle, auf denen KI selbst postet.
+- **Der Bestand zerfasert nicht.** Dieselbe Behauptung in anderen Worten landet auf einer Aussage, verwandte Aussagen werden verknüpft. Das entscheiden spezialisierte, lokal laufende NLP-Modelle (Ähnlichkeit, Folgerung, Negation), keine generischen Sprachmodelle ([ADR 0005](./adr/0005-spezialisierte-nlp-statt-generischer-sprachmodelle.md)).
 - Zuschnitt eines Beitrags für die eigene Verwendung: ja (#226), aber nicht in den Bestand.
 - Beim Schreiben kommt zuerst Gegenlesen ohne KI (siehe Ton), ein KI-Verbesserungsvorschlag erst danach.
 - Ein KI-Entwurf bei null Treffern kommt frühestens, wenn Roadmap-Stufe 4 (Quellen) steht.
