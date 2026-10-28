@@ -13,7 +13,8 @@ import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.compo
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
- * der Avatar wuerfelt nicht, und der Knopf "Feedback" ist fuer alle erreichbar.
+ * der Avatar wuerfelt nicht, sondern oeffnet angemeldet ein Profilmenue (Meine
+ * Beitraege, Abmelden), und der Knopf "Feedback" ist fuer alle erreichbar.
  */
 describe('AppComponent - Desktop-Kopf', () => {
   let fixture: ComponentFixture<AppComponent>;
@@ -127,20 +128,60 @@ describe('AppComponent - Desktop-Kopf', () => {
   describe('Angemeldet', () => {
     beforeEach(() => starten(ANGEMELDET));
 
-    it('Klick auf den Avatar oeffnet Meine Beitraege und wuerfelt kein neues Bild', () => {
+    function profilmenue(): HTMLElement[] {
+      return Array.from(document.querySelectorAll('.profilmenue-eintrag')) as HTMLElement[];
+    }
+
+    it('Klick auf den Avatar oeffnet das Profilmenue und wuerfelt kein neues Bild', async () => {
       const vorher = fixture.componentInstance.selectedProfilePictureUrl;
       const gespeichert = sessionStorage.getItem('profilePicture');
 
-      for (let i = 0; i < 5; i++) {
-        avatar().click();
-      }
-      avatar().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-      fixture.detectChanges();
+      expect(avatar().tagName).toBe('BUTTON');
+      expect(avatar().getAttribute('aria-label')).toBe('Profilmenü öffnen');
+      expect(avatar().getAttribute('aria-haspopup')).toBe('menu');
 
-      expect(navigation.navigateToContributions).toHaveBeenCalledTimes(6);
+      avatar().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(profilmenue().map((e) => e.textContent?.trim())).toEqual([
+        jasmine.stringContaining('Meine Beiträge'),
+        jasmine.stringContaining('Abmelden'),
+      ]);
+      expect(navigation.navigateToContributions).not.toHaveBeenCalled();
       expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(vorher);
       expect(sessionStorage.getItem('profilePicture')).toBe(gespeichert);
-      expect(avatar().getAttribute('aria-label')).toBe('Meine Beiträge anzeigen');
+    });
+
+    it('oeffnet das Profilmenue mit der Tastatur und fuehrt zu Meine Beitraege', async () => {
+      avatar().focus();
+      avatar().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      avatar().click(); // Enter auf einem <button> loest im Browser den Klick aus
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(profilmenue()[0]);
+      profilmenue()[0].click();
+
+      expect(navigation.navigateToContributions).toHaveBeenCalledTimes(1);
+    });
+
+    it('meldet ueber das Profilmenue ab', async () => {
+      const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      avatar().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      profilmenue()[1].click();
+
+      expect(auth.logout).toHaveBeenCalledTimes(1);
+    });
+
+    it('hat im Kopf keinen eigenen Link Meine Beitraege mehr neben dem Avatar', () => {
+      const links = Array.from(kopf().querySelectorAll('button, [role="button"]')).filter(
+        (e) => e.textContent?.includes('Meine Beiträge') || e.getAttribute('aria-label') === 'Meine Beiträge anzeigen'
+      );
+      expect(links.length).toBe(0);
     });
 
     it('sieht den Knopf Feedback ebenfalls', () => {

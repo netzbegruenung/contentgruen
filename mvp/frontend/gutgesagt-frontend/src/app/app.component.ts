@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatMenuModule } from '@angular/material/menu';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
@@ -37,6 +38,7 @@ import { KETTEN_ICONS } from './shared/fangkorb-texte';
     MatTooltipModule,
     MatSidenavModule,
     MatDividerModule,
+    MatMenuModule,
     FormsModule,
     RouterOutlet,
     FooterComponent,
@@ -179,13 +181,6 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Nur angemeldet ein Ziel: "Meine Beitraege". Ohne Anmeldung ist der Avatar ein Bild. */
-  avatarGewaehlt(): void {
-    if (this.userInfo?.isAuthenticated) {
-      this.navigateToContributionsView();
-    }
-  }
-
   navigateToContributeView(): void {
     this.navigationService.navigateToContribute();
   }
@@ -272,7 +267,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /**
    * Einmal je Sitzung ein Bild auslosen. Neu gewuerfelt wird nicht mehr: Der Klick
-   * auf den Avatar fuehrt zu "Meine Beitraege" (#343).
+   * auf den Avatar oeffnet das Profilmenue (#343).
    */
   private profilbildAuslosen(): void {
     const randomIndex = Math.floor(Math.random() * this.profilePictures.length);

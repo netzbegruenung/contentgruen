@@ -68,28 +68,38 @@
                     </ng-template>
 
                     <!--
-                        Angemeldet fuehrt der Avatar zu "Meine Beitraege"; frueher
-                        wuerfelte ein Klick ein neues Bild. Ohne Anmeldung ist er nur
-                        ein Bild: Der Weg zum Anmelden ist der Knopf daneben, nicht
-                        ein zweiter ueber den Avatar (#343).
+                        Angemeldet oeffnet der Avatar ein kleines Profilmenue wie mobil
+                        (Meine Beitraege, Abmelden); frueher wuerfelte ein Klick ein
+                        neues Bild. Ohne Anmeldung ist er nur ein Bild: Der Weg zum
+                        Anmelden ist der Knopf daneben, nicht ein zweiter ueber den
+                        Avatar (#343).
                     -->
-                    <div class="avatar-container"
-                        [class.avatar-klickbar]="userInfo?.isAuthenticated"
-                        [attr.role]="userInfo?.isAuthenticated ? 'button' : null"
-                        [attr.tabindex]="userInfo?.isAuthenticated ? 0 : null"
-                        [attr.aria-label]="userInfo?.isAuthenticated ? 'Meine Beiträge anzeigen' : null"
-                        (click)="avatarGewaehlt()"
-                        (keydown.enter)="avatarGewaehlt()"
-                        (keydown.space)="$event.preventDefault(); avatarGewaehlt()">
-                        <img *ngIf="userInfo?.isAuthenticated"
-                            [src]="selectedProfilePictureUrl"
+                    <button *ngIf="userInfo?.isAuthenticated; else avatarBesucher"
+                        type="button"
+                        class="avatar-container avatar-klickbar"
+                        [matMenuTriggerFor]="profilmenue"
+                        aria-label="Profilmenü öffnen">
+                        <img [src]="selectedProfilePictureUrl"
                             alt="profile picture"
                             class="profile-avatar" />
-                        <img *ngIf="!userInfo?.isAuthenticated"
-                            src="/icons/Profile_avatar_placeholder_large.png"
-                            alt="Nicht angemeldet"
-                            class="profile-avatar anonymous-avatar-icon" />
-                    </div>
+                    </button>
+                    <ng-template #avatarBesucher>
+                        <div class="avatar-container">
+                            <img src="/icons/Profile_avatar_placeholder_large.png"
+                                alt="Nicht angemeldet"
+                                class="profile-avatar anonymous-avatar-icon" />
+                        </div>
+                    </ng-template>
+                    <mat-menu #profilmenue="matMenu">
+                        <button mat-menu-item type="button" class="profilmenue-eintrag"
+                            (click)="navigateToContributionsView()">
+                            <span><span aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span> Meine Beiträge</span>
+                        </button>
+                        <button mat-menu-item type="button" class="profilmenue-eintrag" (click)="logout()">
+                            <mat-icon>logout</mat-icon>
+                            <span>Abmelden</span>
+                        </button>
+                    </mat-menu>
 
                     <!-- Desktop buttons -->
                     <ng-container *ngIf="!isMobile && !isTablet">
@@ -112,12 +122,6 @@
                             (click)="navigateToRawInputListView()"
                             (keydown.enter)="navigateToRawInputListView()"
                             (keydown.space)="navigateToRawInputListView()">{{ kettenIcons.fangkorb }} Fangkorb</span>
-
-                            <span class="header-link text-emphasis"
-                            role="button" tabindex="0" aria-label="Meine Beiträge anzeigen"
-                            (click)="navigateToContributionsView()"
-                            (keydown.enter)="navigateToContributionsView()"
-                            (keydown.space)="navigateToContributionsView()">{{ kettenIcons.meineBeitraege }} Meine Beiträge</span>
 
                             <button mat-raised-button class="dark-green-button" (click)="navigateToContributeView()">
                                 <mat-icon>add</mat-icon> Beitragen

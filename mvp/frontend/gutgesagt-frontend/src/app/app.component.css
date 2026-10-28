@@ -104,9 +104,14 @@ main * {
     display: inline-block;
 }
 
-/* Nur angemeldet ein Knopf (zu "Meine Beitraege"), ohne Anmeldung ein Bild. */
+/* Nur angemeldet ein Knopf (oeffnet das Profilmenue), ohne Anmeldung ein Bild. */
 .avatar-container.avatar-klickbar {
     cursor: pointer;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 50%;
+    line-height: 0;
 }
 
 .profile-avatar {
