@@ -239,7 +239,7 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Punkte**:
-Was eine Person durch die Wirkung ihrer Beiträge bei anderen sammelt: Nutzung durch andere, Zustimmung durch andere und abgeschlossene Quests. Fürs bloße Anlegen gibt es keine Punkte (ADR 0004).
+Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.
 _Avoid_: XP, Score, Karma
 
 **Rangliste**:
