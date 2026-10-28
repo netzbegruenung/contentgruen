@@ -68,18 +68,18 @@ def docker_noetig():
     pytest.skip(grund)
 
 
-# Den freien Port waehlt Docker aus dem Bereich, aus dem auch der Kernel die
-# Absenderports ausgehender Verbindungen nimmt. Haelt eine davon (etwa ein
-# paralleler Testlauf) den Port gerade, scheitert ``docker run`` im rootless
-# Docker an RootlessKit; ein neuer Versuch bekommt einen anderen Port (#383).
+# Unter paralleler Last scheiterte ``docker run`` gelegentlich: RootlessKit konnte
+# den Port, den Docker fuer ``--publish`` gewaehlt hatte, nicht binden ("address
+# already in use"). Docker waehlt ihn aus dem Bereich, aus dem auch der Kernel die
+# Absenderports ausgehender Verbindungen nimmt; vermutlich haelt ihn gerade eine
+# solche. Ein neuer Versuch bekommt einen anderen Port (#383).
 PORT_BELEGT = "address already in use"
 VERSUCHE = 5
 
 
 def _starten(konfiguration: str) -> str:
     """Container starten, bei belegtem Port neu; liefert den Containernamen."""
-    versuch = 1
-    while True:
+    for versuch in range(1, VERSUCHE + 1):
         name = f"gutgesagt-itest-nginx-{uuid.uuid4().hex[:8]}"
         try:
             _docker(
@@ -100,13 +100,14 @@ def _starten(konfiguration: str) -> str:
                 _image(),
                 timeout=300,
             )
-            return name
-        except RuntimeError as fehler:
-            # Der gescheiterte Container bleibt angelegt liegen.
+        except (RuntimeError, subprocess.TimeoutExpired) as fehler:
+            # Der gescheiterte Container bleibt sonst angelegt liegen.
             _entfernen(name)
-            if PORT_BELEGT not in str(fehler) or versuch == VERSUCHE:
-                raise
-        versuch += 1
+            if PORT_BELEGT in str(fehler) and versuch < VERSUCHE:
+                continue
+            raise
+        return name
+    raise AssertionError("VERSUCHE muss mindestens 1 sein")
 
 
 def _entfernen(name: str) -> None:
@@ -164,6 +165,7 @@ def _zugriffe(name: str) -> list[str]:
     ausgabe = subprocess.run(
         ["docker", "logs", name], capture_output=True, text=True, timeout=30
     )
+    assert ausgabe.returncode == 0, ausgabe.stderr
     return (ausgabe.stdout + ausgabe.stderr).splitlines()
 
 
@@ -216,20 +218,21 @@ def test_keine_zeile_je_suche():
 
 
 @pytest.mark.parametrize(
-    ("fehler", "starts"),
+    ("fehler", "fehlschlaege", "starts"),
     [
-        ("bind: address already in use", 2),
-        ("No such image", 1),
+        ("bind: address already in use", 1, 2),
+        ("bind: address already in use", VERSUCHE, VERSUCHE),
+        ("No such image", 1, 1),
     ],
 )
-def test_neuer_start_nur_bei_belegtem_port(monkeypatch, fehler, starts):
-    """Ohne Docker: Nur ein belegter Port fuehrt zu einem neuen Versuch,
-    jeder gescheiterte Container wird entfernt."""
+def test_neuer_start_nur_bei_belegtem_port(monkeypatch, fehler, fehlschlaege, starts):
+    """Ohne Docker: Nur ein belegter Port fuehrt zu einem neuen Versuch, hoechstens
+    ``VERSUCHE`` Starts; jeder gescheiterte Container wird entfernt."""
     gestartet, entfernt = [], []
 
-    def docker(*argumente, timeout=60):
+    def docker(*argumente, **_):
         gestartet.append(argumente[argumente.index("--name") + 1])
-        if len(gestartet) == 1:
+        if len(gestartet) <= fehlschlaege:
             raise RuntimeError(f"docker run: Exit 125: {fehler}")
         return "id"
 
@@ -237,14 +240,15 @@ def test_neuer_start_nur_bei_belegtem_port(monkeypatch, fehler, starts):
     monkeypatch.setattr(f"{__name__}._image", lambda: "nginx:alpine")
     monkeypatch.setattr(f"{__name__}._entfernen", entfernt.append)
 
-    if starts == 1:
+    if fehlschlaege >= starts:
         with pytest.raises(RuntimeError, match=fehler):
             _starten("nginx.conf")
+        assert entfernt == gestartet
     else:
         assert _starten("nginx.conf") == gestartet[-1]
+        assert entfernt == gestartet[:-1]
 
     assert len(gestartet) == starts
-    assert entfernt == gestartet[:1]
     assert len(set(gestartet)) == starts
 
 
