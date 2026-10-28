@@ -1,4 +1,4 @@
-# ContentGrün — Rechtstexte: Lückenliste
+# Gut gesagt — Rechtstexte: Lückenliste
 
 Arbeitsdokument zur Überarbeitung von Impressum, Datenschutzerklärung und
 Nutzungsbedingungen. Die Tabellen haben eine Eintrag-Spalte und sind zum Ausfüllen
@@ -12,8 +12,8 @@ Stand der Analyse: 2026-08-19
 Zeilenangaben beziehen sich auf den Stand vom 19.08.2026; die Neufassung in diesem
 Branch weicht davon ab.
 Geprüfte Dateien:
-- `mvp/frontend/contentgruen-frontend/src/app/impressum/impressum.component.html` (14 Platzhalter)
-- `mvp/frontend/contentgruen-frontend/src/app/datenschutz/datenschutz.component.html` (12 Platzhalter)
+- `mvp/frontend/gutgesagt-frontend/src/app/impressum/impressum.component.html` (14 Platzhalter)
+- `mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html` (12 Platzhalter)
 - (Kontext) `.../nutzungsbedingungen/nutzungsbedingungen.component.html` (1 Platzhalter)
 
 Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner davon ist
@@ -33,26 +33,26 @@ Legende Pflicht-Spalte:
 
 | # | Zeile | Platzhalter | Kontext / wofür | Pflicht? | Eintrag |
 |---|-------|-------------|-----------------|----------|---------|
-| I1 | 11 | `[Vollständiger Name/Organisation]` | „Anbieter" — Blockadresse | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ NETZBEGRÜNUNG — Verein für grüne Netzkultur e. V. (c/o Max Pfeuffer) |
+| I1 | 11 | `[Vollständiger Name/Organisation]` | „Anbieter" — Blockadresse | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ NETZBEGRÜNUNG — Verein für grüne Netzkultur e. V. (c/o-Anschrift wie im Impressum) |
 | I2 | 12 | `[Straße und Hausnummer]` | „Anbieter" — ladungsfähige Anschrift | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ Heilig-Kreuz-Straße 16 |
 | I3 | 13 | `[PLZ]` | „Anbieter" | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ 86609 |
 | I4 | 13 | `[Ort]` | „Anbieter" | **PFLICHT** § 5 Abs. 1 Nr. 1 DDG | ✓ Donauwörth |
 | I5 | 23 | `[Telefonnummer]` | „Kontakt: **Telefon:** …" | OPTIONAL* | ✓ +49 906 299940-0 |
 | I6 | 24 | `[E-Mail-Adresse]` | „Kontakt: **E-Mail:** …" | **PFLICHT** § 5 Abs. 1 Nr. 2 DDG | ✓ backoffice@netzbegruenung.de |
-| I7 | 34 | `[Name der vertretungsberechtigten Person(en)]` | „Vertreten durch" | **BEDINGT** § 5 Abs. 1 Nr. 1 DDG (bei jur. Person zwingend) | ✓ Jennifer Herbert, Korbinian Gall |
+| I7 | 34 | `[Name der vertretungsberechtigten Person(en)]` | „Vertreten durch" | **BEDINGT** § 5 Abs. 1 Nr. 1 DDG (bei jur. Person zwingend) | ✓ Vorstand nach § 26 BGB (Namen im Impressum) |
 | I8 | 35 | `[Position/Funktion]` | „Vertreten durch" — Zeile unter dem Namen | OPTIONAL | ✓ Vertretungsberechtigter Vorstand nach § 26 BGB |
 | I9 | 44 | `[Amtsgericht Ort]` | „Register…: **Registergericht:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG (nur bei Registereintrag) | ✓ Amtsgericht Augsburg |
 | I10 | 45 | `[HRB/VR Nummer]` | „**Registernummer:**" | **BEDINGT** § 5 Abs. 1 Nr. 4 DDG | ✓ VR 201634 |
 | I11 | — | — (Abschnitt mit der Neufassung entfallen) | USt-IdNr. gemäß § 27a UStG | **BEDINGT** § 5 Abs. 1 Nr. 6 DDG (nur wenn vorhanden) | **offen** — Rückfrage an Vorstand: hat der Verein eine USt-IdNr.? Falls ja, ist sie nach § 5 Abs. 1 Nr. 6 DDG aufzunehmen |
-| I12 | 64 | `[Name der verantwortlichen Person]` | „Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV" | **BEDINGT** § 18 Abs. 2 MStV (bei journalistisch-redaktionellen Angeboten) | ✓ Sebastian Banach |
+| I12 | 64 | `[Name der verantwortlichen Person]` | „Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV" | **BEDINGT** § 18 Abs. 2 MStV (bei journalistisch-redaktionellen Angeboten) | ✓ Maintainer (Name im Impressum) |
 | I13 | 65 | `[Anschrift wie oben]` | Anschrift der inhaltlich verantwortlichen Person | **BEDINGT** § 18 Abs. 2 MStV | ✓ Anschrift wie oben (Vereinsanschrift) |
 | I14 | 136 | `[Datum der letzten Aktualisierung]` | „**Stand:**" im Update-Hinweis | OPTIONAL | ✓ September 2026 |
 
 **I1–I10, I12 und I13 sind erledigt (03.09.2026).** Die Angaben sind vom Vorstand
-bestätigt (Quelle: Korbinian Gall, 03.09.2026) und in `impressum.component.html`
+bestätigt (Quelle: Vorstand, 03.09.2026) und in `impressum.component.html`
 sowie `impressum.component.ts` eingetragen. Damit ist auch die Grundsatzfrage aus
 „Reihenfolge zum Ausfüllen" Nr. 1 entschieden: Anbieter ist der Verein, nicht
-Sebastian Banach als Privatperson. Er ist ausschließlich nach § 18 Abs. 2 MStV
+der Maintainer als Privatperson. Er ist ausschließlich nach § 18 Abs. 2 MStV
 inhaltlich verantwortlich (I12/I13), unter der Vereinsanschrift.
 I14 ist mit „September 2026" ebenfalls erledigt. Offen bleibt allein I11: Der
 Abschnitt zur USt-IdNr. ist mit der Neufassung entfallen — zu klären ist per
@@ -82,7 +82,7 @@ keine da ist, Zeile streichen statt leer lassen.
 | # | Zeile | Platzhalter | Kontext / wofür | Pflicht? | Eintrag |
 |---|-------|-------------|-----------------|----------|---------|
 | D1 | — | `[Name/Organisation]` | „Verantwortlicher" | **PFLICHT** Art. 13 Abs. 1 lit. a DSGVO | ✓ NETZBEGRÜNUNG — Verein für grüne Netzkultur e. V. |
-| D2 | — | `[Straße und Hausnummer]` | Anschrift Verantwortlicher | **PFLICHT** Art. 13 Abs. 1 lit. a DSGVO | ✓ c/o Max Pfeuffer, Heilig-Kreuz-Straße 16 |
+| D2 | — | `[Straße und Hausnummer]` | Anschrift Verantwortlicher | **PFLICHT** Art. 13 Abs. 1 lit. a DSGVO | ✓ c/o-Anschrift wie im Impressum, Heilig-Kreuz-Straße 16 |
 | D3 | — | `[PLZ]` | Anschrift Verantwortlicher | **PFLICHT** Art. 13 Abs. 1 lit. a DSGVO | ✓ 86609 |
 | D4 | — | `[Ort]` | Anschrift Verantwortlicher | **PFLICHT** Art. 13 Abs. 1 lit. a DSGVO | ✓ Donauwörth |
 | D5 | — | `[Telefonnummer]` | „Telefon:" Verantwortlicher | OPTIONAL | ✓ +49 906 299940-0 |
@@ -114,7 +114,7 @@ gegen das Behördenverzeichnis gegengeprüft.
 | # | Fehlt | Rechtsgrundlage | Eintrag / Entscheidung |
 |---|-------|-----------------|------------------------|
 | D-M1 | **Speicherdauer / Löschfristen** je Verarbeitung | Art. 13 Abs. 2 lit. a DSGVO — **PFLICHT** | ✓ je Vorgang benannt. Belegte Fristen: Zugriffslogs des Webservers **14 Tage** (logrotate auf dem Prod-Host, geprüft 04.09.2026), Nutzungsereignisse **90 Tage** (fest im Code), Suchereignisse **90 Tage** als Einzelzeilen, danach nur Tageszähler (Code seit #289, Text folgt mit #222), Anmelde-Cookie **8 h gleitend**, Sitzungskennung im Browser **30 Tage**, Sicherungskopien **bis 4 Wochen**. **Ohne Frist und im Text auch so benannt:** Meldungen, Bewertungen, Fangkorb, Beiträge, Zugänge, Anwendungslogs. Für Suchereignisse sagt der Text bis #222 noch „keine Löschfrist“ |
-| D-M2 | **Datenschutzbeauftragter** | Art. 13 Abs. 1 lit. b DSGVO — BEDINGT | ✓ Sven Seeberg, erreichbar über backoffice@netzbegruenung.de (Feld `DSB_KONTAKT`). Weil er benannt **ist**, ist die Angabe Pflicht; ob die Benennung selbst nach § 38 BDSG erforderlich war, ist für den Text ohne Belang |
+| D-M2 | **Datenschutzbeauftragter** | Art. 13 Abs. 1 lit. b DSGVO — BEDINGT | ✓ der benannte Datenschutzbeauftragte (Name in der Datenschutzerklärung), erreichbar über backoffice@netzbegruenung.de (Feld `DSB_KONTAKT`). Weil er benannt **ist**, ist die Angabe Pflicht; ob die Benennung selbst nach § 38 BDSG erforderlich war, ist für den Text ohne Belang |
 | D-M3 | **Empfänger / Auftragsverarbeiter** — Hoster, IdP, Dritte | Art. 13 Abs. 1 lit. e DSGVO — **PFLICHT** | ✓ verdigado eG als Auftragsverarbeiterin (Art. 28 DSGVO), Hetzner Online GmbH als Unterauftragsverarbeiterin, Rechenzentrum in Deutschland. AV-Verträge liegen vor (verdigado, 04.09.2026). Der Identitätsdienst ist derselbe Verein und damit kein Empfänger. Weitere Empfänger gibt es nicht |
 | D-M4 | **Drittlandtransfer** + Garantien | Art. 13 Abs. 1 lit. f DSGVO — BEDINGT | ✓ **trifft nicht zu.** Als Negativaussage aufgenommen: Beiträge, Suchanfragen und verlinkte Bilder werden nicht zur Verarbeitung an Dienste außerhalb der EU übermittelt. Davon abgegrenzt der Abruf eingebundener Bilder, den der Browser der Besuchenden selbst auslöst — der kann außerhalb der EU landen (D-N13b). **Gilt nur, solange kein OpenAI-Key gesetzt ist**, siehe D-N9 |
 | D-M5 | **Widerspruchsrecht Art. 21 DSGVO** | Art. 13 Abs. 2 lit. b / Art. 21 Abs. 4 DSGVO — **PFLICHT**, hervorgehoben darzustellen | ✓ eigener abgesetzter Kasten (`warning-box`) am Ende der Betroffenenrechte, mit Nennung der konkret betroffenen Verarbeitungen: Nutzungsmessung, Protokolldateien, Herkunftsangabe an Beiträgen und Einwürfen |
@@ -124,7 +124,7 @@ gegen das Behördenverzeichnis gegengeprüft.
 
 ---
 
-## 3. Beschriebene Vorgänge, die es in ContentGrün NICHT gibt
+## 3. Beschriebene Vorgänge, die es in Gut gesagt NICHT gibt
 
 **X1–X5 sind mit der Neufassung vom 04.09.2026 erledigt.** Der Platzhaltertext ist
 vollständig ersetzt; keiner der hier beschriebenen Vorgänge steht noch darin. Die Zeilen
@@ -154,7 +154,7 @@ Zeile fest, wie der Vorgang im Text gelandet ist.
 | # | Vorgang | Fundstelle im Code | Was in den Text muss | Eintrag / Entscheidung |
 |---|---------|--------------------|----------------------|------------------------|
 | D-N1 | **Keycloak-SSO über Netzbegrünung** | `login-selector.component.html:26`, `BFF/Program.cs:73` (Scope `email`), `docs/archiv/AUTH_REGISTRIERUNG_OPTIONEN.md:671` | IdP benennen, übermittelte Claims (`sub`, `email`, Name), Verantwortlichkeitsabgrenzung bzw. AV-Vertrag mit Netzbegrünung/Verdigado | ✓ Abschnitt „Anmeldung über die Netzbegrünung": IdP benannt, übermittelte Angaben (Kennung, E-Mail, Name) benannt, und ausdrücklich, dass es **derselbe Verein und damit kein Dritter** ist — für diesen Weg braucht es deshalb keinen AV-Vertrag |
-| D-N2 | **Managed Login (ContentGrün-Account)** | `BFF/Controllers/AuthController.cs:45–98`, `BFF/Models/ManagedUser.cs` | E-Mail + Passwort-Hash, manuell durch Admins angelegt, keine Selbstregistrierung; Rate-Limiting bei Fehlversuchen (`ManagedUserService.cs:82–113`) | ✓ Abschnitt „Zugang, den wir selbst anlegen": E-Mail, Anzeigename, interne Kennung, Passwort-Prüfsumme; keine Selbstregistrierung; Sperre nach Fehlversuchen (15 Minuten). **Speicherdauer nach Account-Ende: keine automatische Löschung**, im Text so benannt |
+| D-N2 | **Managed Login (Gut-gesagt-Account)** | `BFF/Controllers/AuthController.cs:45–98`, `BFF/Models/ManagedUser.cs` | E-Mail + Passwort-Hash, manuell durch Admins angelegt, keine Selbstregistrierung; Rate-Limiting bei Fehlversuchen (`ManagedUserService.cs:82–113`) | ✓ Abschnitt „Zugang, den wir selbst anlegen": E-Mail, Anzeigename, interne Kennung, Passwort-Prüfsumme; keine Selbstregistrierung; Sperre nach Fehlversuchen (15 Minuten). **Speicherdauer nach Account-Ende: keine automatische Löschung**, im Text so benannt |
 | D-N3 | **Beitrags-, Bewertungs- und Bilddaten** | `domain/models/base_content.py:82–95` — `original_author`, `last_modified_by`, `authors[]`, `edit_history[]`, `created`, `last_modified` | Autorenname und **vollständige Bearbeitungshistorie** werden dauerhaft am Inhalt gespeichert und sind anderen Nutzenden sichtbar. Der jetzige Text (Z. 142–147) nennt nur „Kommentar + Zeitpunkt + Nutzername" — Edit-History fehlt | ✓ **Sichtbarkeit: öffentlich** — der Code beantwortet die Frage: die Suche ist ein Public-Endpoint, die Antwort bettet den vollständigen Datensatz ein, und das Frontend rendert „Von: …". Im Text steht das ausdrücklich, samt Bearbeitungsgeschichte und dem Hinweis, dass dort die Kennung steht und nicht der Klarname. **Überholt durch #333:** Suche und lesende Beitragsrouten liefern Kennung, Bearbeitungsgeschichte und Moderationsfelder nicht mehr aus; Angemeldete bekommen Anzeigenamen und das Kennzeichen „eigener Beitrag“, die Kennung nur noch Admins. Der Satz „Technisch übermitteln wir an angemeldete Browser auch die Kennung“ gilt damit nur noch für Einwürfe; der Text wird mit #222 angepasst |
 | D-N4 | **Nutzungsprotokollierung** (`usage_events`) — ⚠️ **Beschreibung überholt** | `infrastructure/database/models.py:83–96` | **Die obige Beschreibung galt für den Stand vom 19.08.2026 und trifft nicht mehr zu.** PR #27 hat `user_id`, `ip_hash` und `user_agent` entfernt; an die Stelle des User-Agent tritt `device_category` mit vier möglichen Werten. Festgehalten wird jetzt: welcher Beitrag, welche Art Ereignis, wann, aus welcher Geräteklasse und unter welcher Sitzungskennung — also **welches Gerät, nicht welches Konto und nicht welche Adresse** | ✓ Zweck: erkennen, welche Beiträge gebraucht werden · Rechtsgrundlage: Art. 6 Abs. 1 lit. f · Löschfrist: **90 Tage**, danach bleibt nur ein Zähler je Beitrag |
 | D-N4b | **Suchprotokollierung** (`search_events`) | `infrastructure/database/models.py` (`SearchEvent`), `services/search_tracking_service.py` | Seit PR #14 nur noch Trefferzahl, Zeitstempel und ein täglich rotierendes Pseudonym (HMAC-SHA256 über Nutzer-/Session-Kennung + UTC-Datum). Seit #239 trägt der Zeitstempel nur den Tag, keine Uhrzeit: Über die Uhrzeit lässt er sich nicht mehr mit dem Anlagezeitpunkt einer Aussage aus derselben Suche verbinden. Seit #275 ist auch die Spalte `id` keine fortlaufende Nummer mehr, sondern zufällig: Die Reihenfolge der Suchen eines Tages steht nicht mehr in den Spalten (nur noch in der physischen Reihenfolge der Zeilen und in der Systemspalte `xmin`, siehe `docs/LOESCHKONZEPT.md`). Der Text („speichern wir den Zeitpunkt“) bleibt zutreffend, sagt nur mehr, als gespeichert wird. Kein Suchtext, keine IP, keine Kennung mehr. Zu beschreiben bleibt: **dass** protokolliert wird, wozu (Reichweitenmessung), und dass das Pseudonym täglich wechselt | ✓ Eigener Unterabschnitt „Suchvorgänge". Zweck: erkennen, wie viele Menschen die Suche an einem Tag nutzen · Rechtsgrundlage: Art. 6 Abs. 1 lit. f · **Löschfrist: keine**, im Text so benannt. **Überholt durch #289:** Der tägliche Bereinigungsjob verdichtet Suchereignisse nach 90 Tagen zu einem Tageszähler (Datum, Zahl der Suchen, Zahl der Personen, kein Pseudonym) und löscht die Einzelzeilen; der Text wird mit #222 angepasst. Die tägliche Rotation des Pseudonyms ist ausdrücklich als Zusage formuliert |
@@ -254,7 +254,7 @@ ausformulieren** — der Stand ändert sich gerade.
 ## Reihenfolge zum Ausfüllen
 
 1. ~~**Zuerst D1–D4 / I1–I4 klären**: Wer ist Anbieter und Verantwortlicher — Netzbegrünung e. V. oder
-   Sebastian Banach als Privatperson?~~ **Entschieden 03.09.2026: Anbieter und Verantwortlicher
+   der Maintainer als Privatperson?~~ **Entschieden 03.09.2026: Anbieter und Verantwortlicher
    ist NETZBEGRÜNUNG — Verein für grüne Netzkultur e. V.** Damit sind I1–I10 und I12/I13
    erledigt; D7–D11 und die AVV-Frage (D-N7) bleiben offen, weil die Datenschutzerklärung
    noch nicht überarbeitet ist.

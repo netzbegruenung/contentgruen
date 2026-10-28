@@ -72,9 +72,23 @@ _Avoid_: Verarbeiter, Bearbeiter, Autor
 Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
 _Avoid_: Löschen, Ablehnen
 
+**Ausformuliert in**:
+Die Verknüpfung eines Einwurfs mit einem Beitrag, die beim Ausformulieren entsteht; festgehalten wird auch, wer verknüpft hat. Ein Einwurf kann in mehreren Beiträgen ausformuliert sein und ein Beitrag mehrere Einwürfe ausformulieren.
+_Avoid_: Markierung, Verarbeitung, Verknüpfung (Oberbegriff)
+
 **Verknüpfung**:
-Die Zuordnung eines Einwurfs zu einem Beitrag, die beim Ausformulieren entsteht; festgehalten wird auch, wer verknüpft hat. Ein Einwurf kann mit mehreren Beiträgen verknüpft sein und ein Beitrag mit mehreren Einwürfen.
-_Avoid_: Markierung, Verarbeitung
+Oberbegriff für jede festgehaltene Beziehung zwischen zwei Inhalten. Jede Art hat ihren eigenen Namen, „Verknüpfung“ allein bezeichnet keine bestimmte:
+
+| Von → nach | Name |
+|---|---|
+| Einwurf → Beitrag | ausformuliert in |
+| Beitrag → Aussage | antwortet auf |
+| Beitrag → Herkunft | stützt sich auf |
+| Variante → Original | beruht auf |
+| Umwandlung → Ausgangsinhalte | entstanden aus |
+| Aussage ↔ Aussage | verwandt mit, widerspricht |
+
+Gleiche Aussagen sind keine Verknüpfung, sie werden zu einer zusammengeführt (ADR 0005); nur ein unsicherer Fall wird als „vielleicht gleich“ zur Prüfung festgehalten. Beiträge, die denselben Punkt machen, werden unter einem Kernpunkt gruppiert, nicht verknüpft.
 
 ### Stufen eines Einwurfs
 
@@ -99,12 +113,16 @@ Die Arbeitslisten im Fangkorb heißen nach der nächsten Arbeit („Destillieren
 ## Umwandlungen
 
 **Umwandlung**:
-Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren mit einem neuen Beitrag, das Zuschneiden eines Kommentars auf eine Zielgruppe.
+Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren mit einem neuen Beitrag. Wer einen Beitrag nur für die eigene Verwendung zuschneidet, etwa auf eine Zielgruppe, macht keine Umwandlung: Der Zuschnitt wird kopiert und kommt nicht in den Bestand.
 _Avoid_: Konvertierung, Transformation, Verarbeitung
 
 **Synthese**:
 Eine Umwandlung, die mehrere Inhalte zu einem neuen zusammenführt.
 _Avoid_: Zusammenfassung, Merge, Aggregation
+
+**KI-Vorschlag**:
+Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa eine Unterschrift für ein Bild oder ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
+_Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 
 ## Beiträge
 
@@ -169,7 +187,7 @@ Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstell
 _Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:
-Die Tonlage eines Kommentars, etwa faktisch, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
+Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
 _Avoid_: Ton, Tonalität
 
 **Fassung**:
@@ -181,7 +199,7 @@ Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die U
 _Avoid_: Zielgruppe, Modus, Kanal
 
 **Variante**:
-Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage genommen hat. Er hat einen eigenen Autor und ist mit dem Original als „beruht auf“ verknüpft.
+Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage genommen hat. Er hat einen eigenen Autor und „beruht auf“ dem Original.
 _Avoid_: Remix, Kopie, Fassung, Fork
 
 **Thema**:
@@ -239,7 +257,7 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Punkte**:
-Was eine Person durch die Wirkung ihrer Beiträge bei anderen sammelt: Nutzung durch andere, Zustimmung durch andere und abgeschlossene Quests. Fürs bloße Anlegen gibt es keine Punkte (ADR 0004).
+Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.
 _Avoid_: XP, Score, Karma
 
 **Rangliste**:
