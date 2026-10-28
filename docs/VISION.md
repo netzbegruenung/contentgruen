@@ -100,7 +100,7 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 - **Wochenthema** (nach Quests, Ranglisten und Themen): Platz 1 der Wochen-Rangliste wählt aus den drei Themen mit dem meisten Bedarf das Thema der nächsten Woche; Punkte dazu zählen doppelt, das Wochenziel bezieht sich darauf. Ohne Wahl nach zwei Tagen gilt das Thema mit dem meisten Bedarf. Anerkennung heißt Mitbestimmung und Sichtbarkeit, nie Sachwert.
 - **Bedarf sichtbar**: Eine Seite „Hier fehlt eine Antwort“ zeigt Angemeldeten unbeantwortete Aussagen; dort lassen sich Aussagen auch vorab anlegen.
 - **Varianten**: „Als Vorlage nehmen“ legt einen neuen Beitrag mit eigenem Autor an, der auf dem Original beruht. Vorschläge an fremde Beiträge kommen später.
-- **Trends**: „Diese Woche oft genutzt“ auf der Startseite; die Social Wall (Vollbild für Treffen) mit Ausbaustufe 2; öffentliche Gesamtzahlen erst, wenn sie etwas hergeben.
+- **Trends**: „Diese Woche oft genutzt“ auf der Startseite; die Social Wall (Vollbild für Treffen) mit Ausbaustufe 2, Ticket mit deren Planung (#225); öffentliche Gesamtzahlen erst, wenn sie etwas hergeben.
 
 ## Suche und Struktur
 
