@@ -96,6 +96,7 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   // Erklaerzeile je Tab, derselbe Satz wie auf der Beitragen-Seite
   readonly kommentarErklaerung = typBeschreibung('commentary');
   readonly hintergrundErklaerung = typBeschreibung('generictext');
+  readonly postErklaerung = typBeschreibung('post');
 
   // User authentication
   userInfo: UserInfo | null = null;

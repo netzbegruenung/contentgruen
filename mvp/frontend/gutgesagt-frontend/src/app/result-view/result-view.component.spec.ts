@@ -267,13 +267,15 @@ describe('ResultViewComponent: Posts in der Suche', () => {
 
 /**
  * Nutzertest: Was ein Kommentar und was eine Hintergrundinfo ist, war auf der
- * Ergebnisseite nicht klar. Je eine Erklaerzeile (Text wie auf der Beitragen-Seite)
+ * Ergebnisseite nicht klar. Je eine Erklaerzeile (Text wie auf der Beitragen-Seite),
+ * im selben Muster auch fuer Posts,
  * und ueber den Treffern ein zugeklappter Rat, dass nicht jede Aussage eine
  * Antwort braucht.
  */
 describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworten', () => {
   const KOMMENTAR_SATZ = 'Eine Antwort, die du direkt posten kannst.';
   const HINTERGRUND_SATZ = 'Fakten und Zahlen, die eine Antwort stützen.';
+  const POST_SATZ = 'Ein gelungener Beitrag aus einem sozialen Netzwerk, zum Teilen.';
 
   let fixture: ComponentFixture<ResultViewComponent>;
 
@@ -330,6 +332,12 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     expect(seite.querySelector('app-generictext-search-results h2 + .typ-erklaerung')?.textContent).toContain(HINTERGRUND_SATZ);
   });
 
+  it('erklaert am Desktop auch Posts unter ihrer Ueberschrift', () => {
+    const seite = oeffnen(false, 2, 1, 1);
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ, HINTERGRUND_SATZ, POST_SATZ]);
+    expect(seite.querySelector('.post-ergebnisse h2 + .typ-erklaerung')?.textContent).toContain(POST_SATZ);
+  });
+
   it('zeigt am Desktop ueber den Treffern den zugeklappten Rat', () => {
     const seite = oeffnen(false, 2, 0);
     pruefeRat(seite);
@@ -350,6 +358,14 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
     fixture.detectChanges();
     expect(erklaerungen(seite)).toEqual([HINTERGRUND_SATZ]);
+  });
+
+  it('erklaert am Handy auch Posts im Post-Tab', () => {
+    const seite = oeffnen(true, 2, 1, 1);
+    fixture.componentInstance.switchToSection('post');
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    expect(erklaerungen(seite)).toEqual([POST_SATZ]);
   });
 
   it('zeigt am Handy ueber den Tabs den zugeklappten Rat', () => {

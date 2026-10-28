@@ -91,6 +91,7 @@
         </div>
 
         <div *ngIf="currentSection === 'post' && hasPostResults" class="mobile-section">
+            <p class="typ-erklaerung">{{ postErklaerung }}</p>
             <app-kartenliste [daten]="postKarten"></app-kartenliste>
         </div>
 
@@ -205,6 +206,7 @@
         <ng-container *ngIf="hasPostResults">
             <section class="content-section post-ergebnisse">
                 <h2>Posts</h2>
+                <p class="typ-erklaerung">{{ postErklaerung }}</p>
                 <p class="post-anzahl">{{ searchResponse.post_search_results_count }} {{ searchResponse.post_search_results_count === 1 ? 'passender Post' : 'passende Posts' }} gefunden.</p>
             </section>
             <section class="carousel-section">
