@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import datetime
 import logging
 
-from dependencies import get_reference_service
+from dependencies import get_aufrufer, get_reference_service
 from dtos.reference import (
     AddReferenceRequest,
     AddReferenceResponse,
@@ -13,6 +13,7 @@ from dtos.reference import (
     ReferenceSearchItem,
     GetReferenceResponse,
 )
+from services.beitrag_fuer_aufrufer import HERKUNFT, Aufrufer, als_responses
 from services.content.reference_service import ReferenceService
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
@@ -38,6 +39,7 @@ async def get_by_id(
         ..., description="The UUID of the reference to retrieve"
     ),
     reference_service: ReferenceService = Depends(get_reference_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ):
     """Get a reference by its ID"""
     try:
@@ -48,19 +50,10 @@ async def get_by_id(
                 status_code=404, detail=f"Reference with id {reference_id} not found"
             )
 
-        # Count how many commentaries use this reference
-        # This would need to be implemented by searching commentaries
-        usage_count = reference.usage_count or 0
-
-        return GetReferenceResponse(
-            id=reference.id,
-            reference_string=reference.reference_string,
-            text=reference.text,
-            created=reference.created,
-            last_modified=reference.last_modified,
-            original_author=reference.original_author,
-            usage_count=usage_count,
+        (herkunft,) = als_responses(
+            GetReferenceResponse, [reference], aufrufer, HERKUNFT
         )
+        return herkunft
 
     except HTTPException:
         raise

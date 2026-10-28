@@ -1,15 +1,50 @@
+import datetime
 import uuid
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional
 
-from domain.models.statement import (
-    Statement,
-    StatementDbEntry,
-    StatementSearchResult,
-)
+from domain.models.statement import Statement, StatementReplysuggestion
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
+
+
+### Aussage nach aussen ###
+
+
+class AussageResponse(BaseModel):
+    """
+    Eine Aussage, wie die lesenden Routen sie ausliefern (#385, Muster aus #333).
+
+    Bewusst eine Auswahl aus dem DbEntry: keine Kennung (``last_modified_by``,
+    ``authors``, ``edit_history``), keine Felder der Moderation und
+    Dublettenpruefung. ``original_author`` ist nur unterwegs belegt:
+    ``fuer_aufrufer`` (services/beitrag_fuer_aufrufer.py, ``AUSSAGE``) setzt
+    daraus Anzeigename und ``ist_eigene_aussage`` und leert es fuer alle ausser
+    Admins.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    content_type: ContentType
+    text: str
+    created: datetime.datetime
+    status: ContentStatus
+    replysuggestions: List[StatementReplysuggestion] = []
+    replysuggestions_count: int = 0
+    # Anzeigename zu original_author; nur fuer angemeldete Aufrufer, sonst None.
+    autor_name: Optional[str] = None
+    # Ob die aufrufende Person die Aussage angelegt hat; nur angemeldet, sonst None.
+    ist_eigene_aussage: Optional[bool] = None
+    # Die Kennung der Person, die die Aussage angelegt hat, nur fuer Admins.
+    original_author: Optional[str] = None
+
+
+class AussageTreffer(AussageResponse):
+    score: float
+
 
 ### AddStatement ###
 
@@ -104,7 +139,7 @@ class SearchStatementByTextRequest(BaseModel):
 
 
 class StatementSearchResponse(BaseModel):
-    results: List[StatementSearchResult]
+    results: List[AussageTreffer]
 
 
 ### GetAllStatements ###
@@ -112,7 +147,7 @@ class StatementSearchResponse(BaseModel):
 
 class StatementGetAllResponse(BaseModel):
     results_count: int
-    results: List[StatementDbEntry]
+    results: List[AussageResponse]
     total_records_count: int
 
 
@@ -146,7 +181,7 @@ class GetStatementsOfTopicRequest(BaseModel):
 
 
 class GetStatementsOfTopicResponse(BaseModel):
-    results: List[StatementDbEntry]
+    results: List[AussageResponse]
 
 
 ### GetCategories ###
@@ -165,4 +200,4 @@ class GetStatementsOfCategoryRequest(BaseModel):
 
 
 class GetStatementsOfCategoryResponse(BaseModel):
-    results: List[StatementDbEntry]
+    results: List[AussageResponse]

@@ -41,6 +41,8 @@ EINZEL_URL = f"/api/v1/rawinput/{EINWURF_ID}"
 SATZ_URL = f"/api/v1/rawinput/{EINWURF_ID}/draft"
 STATUS_URL = f"/api/v1/rawinput/{EINWURF_ID}/status"
 
+ALICE_ALS_ADMIN = {"X-User": "alice", "X-Is-Admin": "true"}
+
 app = FastAPI()
 app.include_router(raw_input_router, prefix="/api/v1/rawinput")
 
@@ -339,7 +341,8 @@ class TestFangkorbListe:
         ]
         repository.count.return_value = 2
 
-        daten = client.get(LIST_URL, headers={"X-User": "alice"}).json()
+        # Den Ausformulierer sehen nur Admins (#385, test_personenbezug_responses.py).
+        daten = client.get(LIST_URL, headers=ALICE_ALS_ADMIN).json()
 
         assert daten["results"][0]["own_draft"] == "Mein Satz"
         assert daten["results"][0]["processed_by"] is None
@@ -381,12 +384,13 @@ class TestFangkorbListe:
         ]
         repository.count.return_value = 1
 
-        (eintrag,) = client.get(LIST_URL, headers={"X-User": "alice"}).json()["results"]
+        (eintrag,) = client.get(LIST_URL, headers=ALICE_ALS_ADMIN).json()["results"]
 
         assert eintrag["status"] == "processed"
         assert eintrag["destilled_by"] == "bob"
         (satz,) = eintrag["drafts"]
         assert satz["user_id"] == "bob"
+        assert satz["ist_eigener_satz"] is False
         assert satz["sentence"] == "Waermepumpe lohnt sich auch im Altbau"
         assert satz["updated_at"].startswith("2026-09-13T18:00")
         assert eintrag["links"] == [
@@ -669,7 +673,9 @@ class TestStatuswechsel:
         )
 
         assert antwort.status_code == 200
-        assert antwort.json()["processed_by"] == "alice"
+        assert antwort.json()["processed_content_id"] == str(inhalt_id)
+        # Die Kennung des Ausformulierers sehen nur Admins (#385).
+        assert antwort.json()["processed_by"] is None
         repository.set_status.assert_called_once_with(
             EINWURF_ID,
             RawInputStatus.PROCESSED,
@@ -1036,23 +1042,6 @@ class TestGleicherLink:
         repository.mit_gleichem_link.assert_called_once_with(
             "http://www.example.org/a/", "alice"
         )
-
-    def test_gleicher_link_ohne_anzeigenamen(self, client, repository):
-        """Das Formular zeigt nur Stufe und Beitrag; Namen fragt es nicht ab."""
-        repository.mit_gleichem_link.return_value = [
-            _gespeicherter_einwurf(url="https://example.org/a")
-        ]
-
-        with patch("api.v1.raw_input.get_anzeigename_service") as namen:
-            antwort = client.post(
-                GLEICHER_LINK_URL,
-                json={"url": "https://example.org/a"},
-                headers={"X-User": "alice"},
-            )
-
-        assert antwort.status_code == 200
-        assert antwort.json()["results"][0]["submitted_by_name"] is None
-        namen.assert_not_called()
 
     def test_gleicher_link_ohne_treffer_ist_leer(self, client, repository):
         antwort = client.post(

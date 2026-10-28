@@ -28,7 +28,9 @@ function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
     content: null,
     url: 'https://example.org/post',
     image_url: null,
-    submitted_by: 'alice',
+    // Wie der Server ihn Nicht-Admins liefert: ohne Kennung, mit Kennzeichen (#385).
+    submitted_by: null,
+    ist_eigener_einwurf: true,
     source_channel: 'web',
     status: 'open',
     created_at: '2026-09-13T12:00:00Z',
@@ -441,7 +443,6 @@ describe('RawInputListComponent', () => {
         einwurf({
           url: 'https://www.instagram.com/reel/ABC/',
           content: 'Gute Antwort in den Kommentaren',
-          submitted_by: 'alice',
         }),
       ]);
       const [karte] = karten();
@@ -480,10 +481,9 @@ describe('RawInputListComponent', () => {
     });
 
     it('nennt den Einwerfer beim Anzeigenamen, ohne Namen "Mitglied", den eigenen Einwurf "Du"', () => {
-      const fremd = '0f3c2a9e-1111-2222-3333-444455556666';
       erstellen([
-        einwurf({ id: 'fremd', submitted_by: fremd, submitted_by_name: 'Jürgen Ö.' }),
-        einwurf({ id: 'ohne-name', submitted_by: fremd }),
+        einwurf({ id: 'fremd', ist_eigener_einwurf: false, submitted_by_name: 'Jürgen Ö.' }),
+        einwurf({ id: 'ohne-name', ist_eigener_einwurf: false }),
       ]);
       const einwerfer = karten().map((karte) => karte.querySelector('.einwurf-einwerfer')!);
       expect(einwerfer.map((zeile) => zeile.textContent!.trim())).toEqual(['Von: Jürgen Ö.', 'Von: Mitglied']);
@@ -491,9 +491,15 @@ describe('RawInputListComponent', () => {
       expect(einwerfer.every((zeile) => !zeile.hasAttribute('title'))).toBeTrue();
 
       fixture.destroy();
-      erstellen([einwurf({ submitted_by: 'alice' })]);
+      erstellen([einwurf({ ist_eigener_einwurf: true })]);
 
       expect(karten()[0].querySelector('.einwurf-einwerfer')!.textContent!.trim()).toBe('Von: Du');
+
+      fixture.destroy();
+      erstellen([einwurf({ ist_eigener_einwurf: null })]);
+
+      // Niemand Bekanntes hat eingeworfen: keine Zeile, auch kein "Mitglied".
+      expect(karten()[0].querySelector('.einwurf-einwerfer')).toBeNull();
     });
 
     it('beschriftet den Primaerknopf nach Stufe und laesst ihn bei Verworfenem weg', () => {
@@ -549,7 +555,7 @@ describe('RawInputListComponent', () => {
     });
 
     it('bietet Mitwirkenden ohne Adminrechte Verwerfen nur am eigenen Einwurf', () => {
-      erstellen([einwurf({ id: 'eigen', submitted_by: 'alice' }), einwurf({ id: 'fremd', submitted_by: 'bob' })]);
+      erstellen([einwurf({ id: 'eigen' }), einwurf({ id: 'fremd', ist_eigener_einwurf: false })]);
       const [eigen, fremd] = kartenKomponenten();
 
       expect(eigen.menueEintraege.map((eintrag) => eintrag.wort)).toEqual(['Link kopieren', 'Verwerfen']);
@@ -559,8 +565,8 @@ describe('RawInputListComponent', () => {
     it('bietet Admins Verwerfen auch an fremden Einwuerfen', () => {
       nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
       erstellen([
-        einwurf({ id: 'fremd', submitted_by: 'bob' }),
-        einwurf({ id: 'verwaist', submitted_by: null }),
+        einwurf({ id: 'fremd', submitted_by: 'bob', ist_eigener_einwurf: false }),
+        einwurf({ id: 'verwaist', submitted_by: null, ist_eigener_einwurf: null }),
       ]);
 
       for (const karte of kartenKomponenten()) {
@@ -570,7 +576,7 @@ describe('RawInputListComponent', () => {
 
     it('verwirft als Admin einen fremden Einwurf', () => {
       nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
-      erstellen([einwurf({ id: 'fremd', submitted_by: 'bob' })]);
+      erstellen([einwurf({ id: 'fremd', submitted_by: 'bob', ist_eigener_einwurf: false })]);
       einwurfService.updateStatus.and.returnValue(of(einwurf({ id: 'fremd', status: 'discarded' })));
 
       component.aktionAusfuehren(component.karten[0], 'verwerfen');

@@ -167,16 +167,20 @@ describe('karten-daten', () => {
     const eintrag = (felder: Partial<ContentResult> = {}): ContentResult => ({
       id: 'b-1',
       created: '2026-09-13T21:05:00',
-      last_modified: '2026-09-13T21:05:00',
       original_author: 'person-1',
-      last_modified_by: 'person-1',
-      edit_history: {},
       text: 'Text',
       content_type: 'generic_text',
       score: 0,
       title: 'Erneuerbare senken Strompreise deutlich',
       usage_count: 12,
       ...felder,
+    });
+
+    it('erkennt den eigenen Beitrag in Meine Beitraege am Kennzeichen, ohne Kennung (#385)', () => {
+      const meiner = eintrag({ original_author: null, ist_eigener_beitrag: true });
+
+      expect(ausBeitrag(meiner).eigen).toBeTrue();
+      expect(ausBeitrag(meiner).autor).toBeNull();
     });
 
     it('uebernimmt das Kennzeichen eigener Beitrag aus dem Einzelabruf (#333)', () => {
@@ -263,6 +267,12 @@ describe('karten-daten', () => {
         beitraege: [],
         verwerfbar: true,
       });
+    });
+
+    it('uebernimmt das Kennzeichen eigener Einwurf vom Server (#385)', () => {
+      expect(ausEinwurf(einwurf({ submitted_by: null, ist_eigener_einwurf: true })).eigen).toBeTrue();
+      expect(ausEinwurf(einwurf({ submitted_by: null, ist_eigener_einwurf: false })).eigen).toBeFalse();
+      expect(ausEinwurf(einwurf({ submitted_by: null })).eigen).toBeNull();
     });
 
     it('nennt den Einwerfer beim Anzeigenamen, sonst ohne Namen', () => {

@@ -140,10 +140,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Die angemeldete Person - dieselbe Kennung, die als ``original_author`` am Beitrag
-   * und als ``submitted_by`` am Einwurf steht. Die Karte holt sie sich selbst, statt
-   * sie von jeder Seite durchgereicht zu bekommen: So steht "Du" in der Suche, im
-   * Album-Sheet und im Fangkorb gleichermassen.
+   * Die angemeldete Person - dieselbe Kennung, die Admins als ``original_author`` am
+   * Beitrag und als ``submitted_by`` am Einwurf bekommen. Nur fuer Daten ohne
+   * Kennzeichen vom Server (siehe ``istEigen``).
    */
   private get eigeneKennung(): string | null {
     return this.authService.getUserInfo()?.userId ?? null;
@@ -158,8 +157,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. Beitraege tragen das
-   * Kennzeichen vom Server (#333), Einwuerfe und "Meine Beitraege" die Kennung.
+   * Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. Beitraege (#333) und
+   * Einwuerfe (#385) tragen das Kennzeichen vom Server; der Kennungsvergleich bleibt
+   * nur fuer Daten ohne Kennzeichen, etwa eine aeltere Antwort im Cache.
    */
   get istEigen(): boolean {
     if (this.daten.eigen != null) {
@@ -286,8 +286,9 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /** Den Einwerfer nennt die Karte, beim eigenen als "Du" (autorAnzeige) - ausser sie zeigt die Stufe. */
+  /** Nur bei bekanntem Einwerfer: Das Kennzeichen fehlt, wenn niemand Bekanntes einwarf (#385). */
   get zeigtEinwerfer(): boolean {
-    return !!this.daten.autor && !this.stufeZeigen;
+    return (!!this.daten.autor || this.daten.eigen != null) && !this.stufeZeigen;
   }
 
   get sichtbareSaetze(): EinwurfSatz[] {

@@ -289,7 +289,7 @@ def get_aufrufer(
     x_user: Optional[str] = Header(None, alias="X-User"),
     x_is_admin: Optional[str] = Header(None, alias="X-Is-Admin"),
 ) -> Aufrufer:
-    """Wer eine Beitragsantwort bekommt (services/beitrag_fuer_aufrufer.py, #333)."""
+    """Wer eine Antwort mit Personenbezug bekommt (services/beitrag_fuer_aufrufer.py, #333, #385)."""
     return Aufrufer(kennung=x_user, admin_kopf=ist_admin_kopf(x_is_admin))
 
 

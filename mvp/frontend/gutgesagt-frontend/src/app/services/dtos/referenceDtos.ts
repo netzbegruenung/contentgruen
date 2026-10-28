@@ -40,6 +40,11 @@ export interface GetReferenceResponse {
     text: string;
     created: string;
     last_modified: string;
-    original_author: string;
     usage_count: number;
+    /** Anzeigename der Person, die die Herkunft angelegt hat; nur angemeldet. */
+    autor_name?: string | null;
+    /** Ob die anfragende Person sie angelegt hat; vom Server berechnet (#385). */
+    ist_eigene_herkunft?: boolean | null;
+    /** Die Kennung, nur fuer Admins; sonst null. */
+    original_author?: string | null;
 }

@@ -6,21 +6,22 @@ Drei Stufen: Einwerfen, Destillieren (einen Satz formulieren, je Person),
 Ausformulieren (den Einwurf mit einem Beitrag verknuepfen, einem neuen oder einem
 vorhandenen).
 Eine Sperre gibt es bewusst nicht - mehrere Leute duerfen denselben Einwurf
-gleichzeitig destillieren, und alle Saetze sind fuer alle Angemeldeten sichtbar.
+gleichzeitig destillieren, und alle Saetze sind fuer alle Angemeldeten sichtbar,
+die Kennungen der Personen aber nur fuer Admins (#385).
 """
 
 import logging
 import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import ValidationError
 
 from dependencies import (
+    get_aufrufer,
     get_commentary_service,
     get_generic_text_service,
     get_post_service,
-    ist_admin_kopf,
 )
 from domain.models.content_type import ContentType
 from domain.models.raw_input import (
@@ -41,7 +42,14 @@ from dtos.raw_input import (
     SaveDraftRequest,
     UpdateRawInputStatusRequest,
 )
-from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services.beitrag_fuer_aufrufer import (
+    AUSFORMULIERER,
+    DESTILLIERER,
+    EINWURF,
+    SATZ,
+    Aufrufer,
+    personen_fuer_aufrufer,
+)
 from repositories.raw_input_repository import (
     RawInputRepository,
     get_raw_input_repository,
@@ -75,30 +83,27 @@ def _angemeldete_person(x_user: Optional[str]) -> str:
     return person
 
 
-def _mit_namen(rows: List[dict], x_user: Optional[str]) -> List[dict]:
+def _fuer_aufrufer(rows: List[dict], aufrufer: Aufrufer) -> List[RawInputResponse]:
     """
-    Anzeigenamen zu Einwerfer und Satz-Autoren, eine Abfrage fuer die ganze Seite.
-    Nur fuer angemeldete Aufrufer - der Fangkorb ist ohnehin nur ihnen offen.
+    Die Einwuerfe, wie der Aufrufer sie sieht (#385, Regel aus #333): Anzeigenamen
+    und Kennzeichen zu Einwerfer und Satz-Autoren aus einer Abfrage fuer die ganze
+    Seite; die Kennungen, auch von Destillierer und Ausformulierer, nur fuer Admins.
     """
-    if not angemeldet(x_user):
-        return rows
-    saetze = [satz for row in rows for satz in row.get("drafts", [])]
-    namen = get_anzeigename_service().namen(
-        [row.get("submitted_by") for row in rows]
-        + [satz.get("user_id") for satz in saetze]
+    einwuerfe = [RawInputResponse(**row) for row in rows]
+    personen_fuer_aufrufer(
+        aufrufer,
+        (einwuerfe, EINWURF),
+        ([satz for einwurf in einwuerfe for satz in einwurf.drafts], SATZ),
+        (einwuerfe, DESTILLIERER),
+        (einwuerfe, AUSFORMULIERER),
+        ([link for einwurf in einwuerfe for link in einwurf.links], AUSFORMULIERER),
     )
-    for row in rows:
-        row["submitted_by_name"] = namen.get(row.get("submitted_by"))
-    for satz in saetze:
-        satz["user_name"] = namen.get(satz.get("user_id"))
-    return rows
+    return einwuerfe
 
 
-def _seite(
-    rows: List[dict], gesamt: int, x_user: Optional[str]
-) -> GetRawInputsResponse:
-    """Eine Seite Einwuerfe mit Anzeigenamen, wie Fangkorb und Meine Einwuerfe sie liefern."""
-    results = [RawInputResponse(**row) for row in _mit_namen(rows, x_user)]
+def _seite(rows: List[dict], gesamt: int, aufrufer: Aufrufer) -> GetRawInputsResponse:
+    """Eine Seite Einwuerfe fuer den Aufrufer, wie Fangkorb und Meine Einwuerfe sie liefern."""
+    results = _fuer_aufrufer(rows, aufrufer)
     return GetRawInputsResponse(
         results_count=len(results), results=results, total_records_count=gesamt
     )
@@ -107,7 +112,7 @@ def _seite(
 @router.post("/addRawInput", response_model=AddRawInputResponse, status_code=201)
 async def add_raw_input(
     request: AddRawInputRequest,
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> AddRawInputResponse:
     """Einen Einwurf in den Fangkorb legen."""
@@ -116,7 +121,7 @@ async def add_raw_input(
             content=request.content,
             url=request.url,
             image_url=request.image_url,
-            submitted_by=_einwerfende_person(x_user),
+            submitted_by=_einwerfende_person(aufrufer.kennung),
             source_channel=(request.source_channel or RawInputSource.WEB).value,
         )
         return AddRawInputResponse(id=raw_input["id"])
@@ -132,7 +137,7 @@ async def add_raw_input(
 async def get_raw_inputs(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> GetRawInputsResponse:
     """
@@ -149,9 +154,9 @@ async def get_raw_inputs(
         rows = repository.get_all(
             limit=page_size,
             offset=offset,
-            current_user=_einwerfende_person(x_user),
+            current_user=_einwerfende_person(aufrufer.kennung),
         )
-        return _seite(rows, repository.count(), x_user)
+        return _seite(rows, repository.count(), aufrufer)
     except Exception as e:
         logger.error(f"Fehler in /getRawInputs: {e}", exc_info=True)
         raise HTTPException(
@@ -162,7 +167,7 @@ async def get_raw_inputs(
 @router.post("/gleicherLink", response_model=GleicherLinkResponse)
 async def einwuerfe_mit_gleichem_link(
     request: GleicherLinkRequest,
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> GleicherLinkResponse:
     """
@@ -174,13 +179,13 @@ async def einwuerfe_mit_gleichem_link(
 
     POST statt GET, obwohl nur gelesen wird: Der Link steht so im Body und nicht
     in der Adresse, die Webserver und Proxy protokollieren. Links fuehren oft auf
-    Profile Dritter. Anzeigenamen loest der Endpunkt nicht auf: Das Formular
-    zeigt nur Stufe und Beitrag.
+    Profile Dritter. Das Formular zeigt nur Stufe und Beitrag; die Personen
+    bereitet der Endpunkt trotzdem wie alle Fangkorb-Routen auf (#385).
     """
-    person = _angemeldete_person(x_user)
+    person = _angemeldete_person(aufrufer.kennung)
     try:
         rows = repository.mit_gleichem_link(request.url, person)
-        return GleicherLinkResponse(results=[RawInputResponse(**row) for row in rows])
+        return GleicherLinkResponse(results=_fuer_aufrufer(rows, aufrufer))
     except Exception as e:
         logger.error(f"Fehler in /gleicherLink: {e}", exc_info=True)
         raise HTTPException(
@@ -192,7 +197,7 @@ async def einwuerfe_mit_gleichem_link(
 async def get_own_raw_inputs(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> GetRawInputsResponse:
     """
@@ -202,7 +207,7 @@ async def get_own_raw_inputs(
     Stufe, auch verworfen, mit allen verknuepften Beitraegen. Steht vor /{id}, sonst
     lese FastAPI den Pfad als Einwurf-ID.
     """
-    person = _angemeldete_person(x_user)
+    person = _angemeldete_person(aufrufer.kennung)
     try:
         rows = repository.get_all(
             limit=page_size,
@@ -210,7 +215,7 @@ async def get_own_raw_inputs(
             current_user=person,
             submitted_by=person,
         )
-        return _seite(rows, repository.count(submitted_by=person), x_user)
+        return _seite(rows, repository.count(submitted_by=person), aufrufer)
     except Exception as e:
         logger.error(f"Fehler in /getOwnRawInputs: {e}", exc_info=True)
         raise HTTPException(
@@ -221,7 +226,7 @@ async def get_own_raw_inputs(
 @router.get("/{raw_input_id}", response_model=RawInputResponse)
 async def get_raw_input(
     raw_input_id: uuid.UUID,
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> RawInputResponse:
     """
@@ -231,7 +236,7 @@ async def get_raw_input(
     braucht - in der Adresse steht nur die ID.
     """
     try:
-        row = repository.get_by_id(raw_input_id, _einwerfende_person(x_user))
+        row = repository.get_by_id(raw_input_id, _einwerfende_person(aufrufer.kennung))
     except Exception as e:
         logger.error(f"Fehler in GET /rawinput/{{id}}: {e}", exc_info=True)
         raise HTTPException(
@@ -239,14 +244,14 @@ async def get_raw_input(
         )
     if row is None:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)
-    return RawInputResponse(**_mit_namen([row], x_user)[0])
+    return _fuer_aufrufer([row], aufrufer)[0]
 
 
 @router.put("/{raw_input_id}/draft", response_model=DraftResponse)
 async def save_draft(
     raw_input_id: uuid.UUID,
     request: SaveDraftRequest,
-    x_user: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
 ) -> DraftResponse:
     """
@@ -257,7 +262,7 @@ async def save_draft(
     Wird oft aufgerufen (verzoegert beim Tippen, beim Verlassen des Felds, beim
     Wegwechseln der App) und ist deshalb idempotent und nicht gedrosselt.
     """
-    person = _angemeldete_person(x_user)
+    person = _angemeldete_person(aufrufer.kennung)
     try:
         gespeichert = repository.save_draft(raw_input_id, person, request.sentence)
         return DraftResponse(**gespeichert)
@@ -306,8 +311,7 @@ async def _beitrag_pruefen(
 async def update_status(
     raw_input_id: uuid.UUID,
     request: UpdateRawInputStatusRequest,
-    x_user: Optional[str] = Header(default=None),
-    x_is_admin: Optional[str] = Header(default=None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
     commentary_service=Depends(get_commentary_service),
     generic_text_service=Depends(get_generic_text_service),
@@ -326,8 +330,7 @@ async def update_status(
     oder discarded; eine Wiederholung desselben Ziels ist unschaedlich. Den
     Beitrag hinter ``content_id`` muss es mit passendem Typ geben, sonst 422.
     """
-    person = _angemeldete_person(x_user)
-    ist_admin = ist_admin_kopf(x_is_admin)
+    person = _angemeldete_person(aufrufer.kennung)
     try:
         if request.status == RawInputStatus.PROCESSED:
             # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt
@@ -354,9 +357,9 @@ async def update_status(
             person,
             request.content_id,
             request.content_type.value if request.content_type else None,
-            ist_admin=ist_admin,
+            ist_admin=aufrufer.ist_admin,
         )
-        return RawInputResponse(**_mit_namen([row], x_user)[0])
+        return _fuer_aufrufer([row], aufrufer)[0]
     except HTTPException:
         raise
     except EinwurfNichtGefunden:

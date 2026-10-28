@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from domain.models.commentary import CommentaryReference
 from domain.models.content import ContentDbEntry
+from dtos.beitrag import BeitragResponse
 
 
 ###   Responses   ###
@@ -50,7 +51,21 @@ class ContributionEntry(ContentDbEntry):
         return value
 
 
+class MeinBeitragResponse(BeitragResponse):
+    """
+    Ein Eintrag in "Meine Beitraege", wie er nach aussen geht (#385).
+
+    Dieselbe Auswahl wie ueberall an Beitraegen (dtos/beitrag.py) plus, was die
+    Album-Karte braucht. ``ContributionEntry`` bleibt das Lesemodell aus Qdrant;
+    Bearbeitungshistorie und Moderationsfelder bleiben dort zurueck.
+    """
+
+    image_url: Optional[str] = None
+    usage_count: int = 0
+    references: List[CommentaryReference] = []
+
+
 class GetContributionsOfUserResponse(BaseModel):
     results_count: int
-    results: List[ContributionEntry]
+    results: List[MeinBeitragResponse]
     total_records_count: int

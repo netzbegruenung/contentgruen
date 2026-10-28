@@ -361,6 +361,7 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
     text: null,
     erstellt: einwurf.created_at,
     autor: einwurf.submitted_by,
+    eigen: einwurf.ist_eigener_einwurf ?? null,
     autorName: einwurf.submitted_by_name ?? null,
     nutzung: null,
     quellen: [],

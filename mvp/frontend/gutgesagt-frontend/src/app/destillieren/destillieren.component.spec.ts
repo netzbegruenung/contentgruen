@@ -18,7 +18,9 @@ function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
     content: 'Guter Thread',
     url: 'https://example.org/post',
     image_url: null,
-    submitted_by: 'alice',
+    // Wie der Server ihn Nicht-Admins liefert: ohne Kennung, mit Kennzeichen (#385).
+    submitted_by: null,
+    ist_eigener_einwurf: true,
     source_channel: 'share',
     status: 'open',
     created_at: '2026-09-13T12:00:00Z',
@@ -200,7 +202,7 @@ describe('DestillierenComponent', () => {
 
   describe('Knoepfe', () => {
     it('zeigt Verwerfen nur beim eigenen Einwurf', async () => {
-      await erstellen('id-1', einwurf({ submitted_by: 'bob' }));
+      await erstellen('id-1', einwurf({ ist_eigener_einwurf: false }));
 
       expect(knopf('verwerfen')).toBeNull();
       expect(knopf('spaeter')!.textContent!.trim()).toBe('Später');
@@ -208,7 +210,7 @@ describe('DestillierenComponent', () => {
 
     it('zeigt Admins Verwerfen auch beim fremden Einwurf', async () => {
       nutzer = { ...nutzer, userId: 'admin', isAdmin: true };
-      await erstellen('id-1', einwurf({ submitted_by: 'bob' }));
+      await erstellen('id-1', einwurf({ ist_eigener_einwurf: false }));
 
       knopf('verwerfen')!.click();
 
@@ -228,7 +230,7 @@ describe('DestillierenComponent', () => {
 
     it('zeigt Mitwirkenden ohne Adminrechte bei fremdem Einwurf kein Verwerfen', async () => {
       nutzer = { ...nutzer, isAdmin: false };
-      await erstellen('id-1', einwurf({ submitted_by: 'bob', status: 'in_progress' }));
+      await erstellen('id-1', einwurf({ ist_eigener_einwurf: false, status: 'in_progress' }));
 
       expect(knopf('verwerfen')).toBeNull();
     });
@@ -293,7 +295,15 @@ describe('DestillierenComponent', () => {
         'id-1',
         einwurf({
           status: 'in_progress',
-          drafts: [{ id: 's-1', user_id: 'bob', sentence: 'Satz von Bob', updated_at: '2026-09-13T12:00:00Z' }],
+          drafts: [
+            {
+              id: 's-1',
+              user_id: null,
+              ist_eigener_satz: false,
+              sentence: 'Satz von Bob',
+              updated_at: '2026-09-13T12:00:00Z',
+            },
+          ],
         }),
       );
 
@@ -501,8 +511,22 @@ describe('DestillierenComponent', () => {
   });
   describe('Saetze anderer', () => {
     const saetze = [
-      { id: 's-1', user_id: 'bob-1234-5678-9abc', user_name: 'Bob K.', sentence: 'Satz von Bob', updated_at: '2026-09-13T12:00:00Z' },
-      { id: 's-2', user_id: 'alice', user_name: 'Alice M.', sentence: 'Mein Satz', updated_at: '2026-09-13T12:05:00Z' },
+      {
+        id: 's-1',
+        user_id: null,
+        user_name: 'Bob K.',
+        ist_eigener_satz: false,
+        sentence: 'Satz von Bob',
+        updated_at: '2026-09-13T12:00:00Z',
+      },
+      {
+        id: 's-2',
+        user_id: null,
+        user_name: 'Alice M.',
+        ist_eigener_satz: true,
+        sentence: 'Mein Satz',
+        updated_at: '2026-09-13T12:05:00Z',
+      },
     ];
 
     it('zeigt vorhandene Saetze anderer oberhalb des eigenen Felds, nicht editierbar', async () => {
@@ -516,7 +540,6 @@ describe('DestillierenComponent', () => {
       expect(fremde.length).toBe(1);
       expect(fremde[0].textContent).toContain('Satz von Bob');
       expect(fremde[0].querySelector('.person')!.textContent!.trim()).toBe('Bob K.');
-      expect(fremde[0].textContent).not.toContain('bob-1234');
       expect(fremde[0].querySelector('.person')!.hasAttribute('title')).toBeFalse();
       expect(fixture.nativeElement.querySelector('.fremde-saetze textarea, .fremde-saetze input')).toBeNull();
       expect(fremde[0].compareDocumentPosition(feld) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -529,6 +552,13 @@ describe('DestillierenComponent', () => {
 
       const person = fixture.nativeElement.querySelector('.fremder-satz .person');
       expect(person.textContent.trim()).toBe('Mitglied');
+    });
+
+    it('zeigt einen Satz ohne Kennzeichen nicht, statt den eigenen doppelt', async () => {
+      const ohneKennzeichen = { ...saetze[0], ist_eigener_satz: null };
+      await erstellen('id-1', einwurf({ status: 'in_progress', drafts: [ohneKennzeichen] }));
+
+      expect(fixture.nativeElement.querySelector('.fremde-saetze')).toBeNull();
     });
 
     it('zeigt keinen Kasten, wenn nur der eigene Satz existiert', async () => {

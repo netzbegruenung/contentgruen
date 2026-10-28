@@ -33,10 +33,9 @@ describe('ContributionsViewComponent', () => {
     return {
       id: 'b1',
       created: '2026-09-13T21:05:00',
-      last_modified: '2026-09-13T21:05:00',
-      original_author: 'person-1',
-      last_modified_by: 'person-1',
-      edit_history: {},
+      // Wie der Server ihn liefert: ohne Kennung, mit Kennzeichen (#385).
+      original_author: null,
+      ist_eigener_beitrag: true,
       text: 'Text der Hintergrundinfo',
       content_type: 'generic_text',
       title: 'Wärmepumpe lohnt sich auch im Altbau',

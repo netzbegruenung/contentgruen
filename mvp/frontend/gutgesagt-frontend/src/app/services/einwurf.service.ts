@@ -38,12 +38,18 @@ export type DestillierStatus = 'discarded' | 'processed';
 /** Die Beitragstypen, die aus dem Destillier-Ablauf entstehen (ContentType im Backend). */
 export type BeitragsTyp = 'commentary' | 'generic_text' | 'post';
 
-/** Ein Satz zu einem Einwurf. Fuer alle Angemeldeten sichtbar. */
+/**
+ * Ein Satz zu einem Einwurf. Fuer alle Angemeldeten sichtbar, die Kennung der Person
+ * aber nur fuer Admins (#385).
+ */
 export interface Satz {
   id: string;
-  user_id: string;
-  /** Anzeigename zu user_id ("Anna B."); null ohne gespeicherten Namen. */
+  /** Nur fuer Admins, sonst null. */
+  user_id: string | null;
+  /** Anzeigename der Person ("Anna B."); null ohne gespeicherten Namen. */
   user_name?: string | null;
+  /** Ob die anfragende Person den Satz gespeichert hat; vom Server berechnet. */
+  ist_eigener_satz?: boolean | null;
   sentence: string;
   updated_at: string;
 }
@@ -55,7 +61,7 @@ export interface Verknuepfung {
   content_type: string | null;
   /** Der ausformulierte Satz; null, wenn er spaeter geleert wurde. */
   draft_id: string | null;
-  /** Der Ausformulierer, nicht zwingend der Autor des Beitrags. */
+  /** Der Ausformulierer, nicht zwingend der Autor des Beitrags; nur fuer Admins. */
   processed_by: string | null;
   processed_at: string;
 }
@@ -65,19 +71,22 @@ export interface Einwurf {
   content: string | null;
   url: string | null;
   image_url: string | null;
-  /** Null moeglich: Wege ohne Sitzung liefern keine Kennung. */
+  /** Die Kennung des Einwerfers, nur fuer Admins (#385); sonst null. */
   submitted_by: string | null;
-  /** Anzeigename zu submitted_by; null ohne gespeicherten Namen. */
+  /** Anzeigename des Einwerfers; null ohne gespeicherten Namen. */
   submitted_by_name?: string | null;
+  /** Ob die anfragende Person den Einwurf eingeworfen hat; vom Server berechnet. */
+  ist_eigener_einwurf?: boolean | null;
   source_channel: string;
   status: EinwurfStatus;
   created_at: string;
-  /** Wer als Erste/r einen Satz gespeichert hat. */
+  /** Wer als Erste/r einen Satz gespeichert hat; nur fuer Admins. */
   destilled_by?: string | null;
   /** Der eigene Satz aus ``drafts``. */
   own_draft?: string | null;
   /** Erste Verknuepfung mit einem Beitrag, falls ausformuliert. */
   processed_content_id?: string | null;
+  /** Nur fuer Admins. */
   processed_by?: string | null;
   processed_at?: string | null;
   /** Alle Saetze aller Personen, aelteste Aenderung zuerst. */
