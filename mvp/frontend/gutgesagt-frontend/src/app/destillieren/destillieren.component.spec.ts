@@ -350,7 +350,7 @@ describe('DestillierenComponent', () => {
       component.typ = 'post';
       component.formularOeffnen();
       expect(router.navigate).toHaveBeenCalledWith(['/workflow/add-post'], {
-        queryParams: { rohinput: 'id-1' }, // retired-ok: Parametername bis #262
+        queryParams: { einwurf: 'id-1' },
       });
     });
   });
