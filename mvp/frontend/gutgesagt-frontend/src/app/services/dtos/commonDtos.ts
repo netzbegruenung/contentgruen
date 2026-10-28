@@ -1,16 +1,4 @@
-import { ContentOrigin } from "./content-origin-enum";
 import { ContentStatus } from "./content-status-enum";
-
-export interface AuthorEntry {
-    name: string;
-    role: string;
-}
-
-export interface EditEntry {
-    editor: string;
-    timestamp: string;
-    action: string;
-}
 
 /**
  * A reference/source linked to a content item, as returned in search results.
@@ -33,28 +21,17 @@ export interface BaseContentResult {
     content_type: string;
     id: string;
     created: string;
-    last_modified: string;
-    /** Leer ('') ohne Anmeldung: dann liefert das Backend keine Kennung. */
-    original_author: string;
-    /** Anzeigename zu original_author ("Anna B."); bei Einzelabruf und /recent flach hier. */
+    /** Kennung des Autors, nur fuer Admins; sonst null (#333). */
+    original_author?: string | null;
+    /** Anzeigename des Autors ("Anna B."); nur fuer Angemeldete, sonst null. */
     autor_name?: string | null;
-    last_modified_by: string;
-    authors: AuthorEntry[];
-    edit_history: EditEntry[];
+    /** Ob die angemeldete Person den Beitrag gespeichert hat; ohne Anmeldung null. */
+    ist_eigener_beitrag?: boolean | null;
     status: ContentStatus;
-    origin: ContentOrigin;
-    most_similar_similarity_score: number;
-    most_similar_content_id: string;
-    report_count: number;
-    is_archived: boolean;
-    report_flagged: boolean;
-    rejection_reason: string;
-    block_reason: string;
     title: string;
     references: ContentReference[];
     references_count: number;
     usage_count?: number;
-    score: number;
 }
 
 /**
@@ -67,6 +44,4 @@ export interface BaseSearchResult {
     statement_similarity_score: number | null;
     reply_relevance: number | null;
     user_vote?: string;  // "like", "dislike", or undefined
-    /** Anzeigename des Autors ("Anna B."); nur fuer Angemeldete, sonst null. */
-    autor_name?: string | null;
 }

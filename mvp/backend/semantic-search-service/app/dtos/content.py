@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 
-from domain.models.content import ContentDbEntry, ContentSearchResult
+from dtos.beitrag import BeitragResponse, BeitragTreffer
 
 
 ### GetAll ###
@@ -9,7 +9,7 @@ from domain.models.content import ContentDbEntry, ContentSearchResult
 
 class ContentGetAllResponse(BaseModel):
     results_count: int
-    results: List[ContentDbEntry]
+    results: List[BeitragResponse]
     total_records_count: int
 
 
@@ -24,4 +24,4 @@ class SearchContentByTextRequest(BaseModel):
 
 
 class ContentSearchResponse(BaseModel):
-    results: List[ContentSearchResult]
+    results: List[BeitragTreffer]
