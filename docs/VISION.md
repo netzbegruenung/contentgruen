@@ -111,7 +111,7 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 
 ## Erfolg messen
 
-Drei Kennzahlen, deren Zielwerte der Maintainer vor dem Launch festlegt: Personen pro Woche, die suchen; Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Acht Wochen nach dem Launch wird Bilanz gezogen.
+Drei Kennzahlen, deren Zielwerte der Maintainer vor dem Launch festlegt: Personen pro Tag, die suchen, im Wochenmittel (das Tagespseudonym wechselt täglich, Personen über eine Woche sind nicht zählbar); Nutzungen pro Woche; Anteil der Suchen ohne Treffer. Acht Wochen nach dem Launch wird Bilanz gezogen.
 
 ## Weg zum Launch
 
@@ -131,7 +131,7 @@ Gut gesagt soll mehr werden als ein Werkzeug für Gegenrede: eine **Werkstatt**,
 - **Recht vor Ausbaustufe 2.** Zu klären: ob die Netzbegrünung eine Organisation im Sinne von DSGVO Art. 9 Abs. 2 lit. d ist, ob Inhalte im Grünen Netz als interne Tätigkeit unter die TTPA fallen, ob kostenloser Betrieb für die Partei eine Sachspende ist. Eine Datenschutz-Folgenabschätzung kommt vor den Ranglisten.
 - **Erstes Testfenster 2027.** Im Frühjahr Lagekarte und Wochenziele um die Landtagswahlen, im Herbst vor der Wahl in Niedersachsen eine erste unbezahlte Gruppe auf dem Weg zur eigenen Stimme, mit Training und Briefings, gemessen von Stufe zu Stufe.
 
-Die Folge, jede Stufe mit Tor:
+Die Folge, jede Stufe mit Tor. Das Tor gilt für öffentliche oder personenbezogene Teile einer Stufe; Auswertungen nur für Admins ohne Personenbezug (etwa das Gruppieren von Suchen ohne Treffer) brauchen keins:
 
 1. Wirkung sichtbar machen (Motivation oben). Tor: Rechtsgrundlage und Folgenabschätzung, Acht-Wochen-Bilanz.
 2. Lagekarte aus eigenen Signalen, Wochenziele. Tor: Testset der Suche, Rechtsklärung.
