@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
@@ -19,6 +20,7 @@ from services.search.search_orchestrator import (
 
 from auth.authorization import require_auth
 from dependencies import (
+    get_aufrufer,
     get_commentary_service,
     get_generic_text_service,
     get_image_service,
@@ -29,7 +31,8 @@ from dependencies import (
     get_voting_service,
 )
 from services.usage_tracking_service import get_usage_service
-from services.anzeigename_service import angemeldet, get_anzeigename_service
+from services.anzeigename_service import angemeldet
+from services.beitrag_fuer_aufrufer import Aufrufer
 from services.voting_service import VotingService
 from services.search_tracking_service import (
     get_search_tracking_service,
@@ -93,7 +96,7 @@ async def search_by_text(
     suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
         get_suchen_ohne_treffer_service
     ),
-    x_user: Optional[str] = Header(None),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
     try:
@@ -102,14 +105,16 @@ async def search_by_text(
         # Anlagezeitpunkt der Aussage aus derselben Suche (#239, #275).
 
         # Handle both authenticated and anonymous users
-        if x_user:
-            validated_user = require_auth(x_user, operation="read")
+        if aufrufer.kennung:
+            validated_user = require_auth(aufrufer.kennung, operation="read")
             # Ohne Kennung: zusammen mit der Zeile darueber waere sonst genau die
             # Verknuepfung "wer hat wonach gesucht" im Log, die hier vermieden wird.
             logger.debug("👤 Authorized user search")
         else:
             validated_user = "anonymous"
             logger.debug("👤 Anonymous user search")
+        # Ab hier gilt die gepruefte Kennung, fuer Stimmen wie fuer Anzeigenamen.
+        aufrufer = replace(aufrufer, kennung=validated_user)
 
         # Check that request is valid
         if request.query_text is None or request.query_text == "":
@@ -231,10 +236,7 @@ async def search_by_text(
         orchestrator.enrich_with_usage()
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
-        if angemeldet(validated_user):
-            orchestrator.apply_author_names(get_anzeigename_service())
-        else:
-            orchestrator.strip_author_ids()
+        orchestrator.fuer_aufrufer(aufrufer)
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

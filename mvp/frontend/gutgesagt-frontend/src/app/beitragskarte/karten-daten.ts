@@ -96,8 +96,14 @@ export interface KartenDaten {
   titel: string | null;
   text: string | null;
   erstellt: string;
-  /** Keycloak-Kennung; null ohne Anmeldung (das Backend liefert sie dann nicht). */
+  /**
+   * Kennung des Autors bzw. Einwerfers. Am Beitrag aus Suche, Einzelabruf und
+   * /recent nur fuer Admins gesetzt (#333), sonst null; dort sagt `eigen`, ob er
+   * der eigene ist.
+   */
   autor: string | null;
+  /** Vom Server berechnet: der eigene Beitrag. null/fehlend = unbekannt, dann zaehlt `autor`. */
+  eigen?: boolean | null;
   /** Anzeigename ("Anna B."); null ohne Anmeldung oder ohne gespeicherten Namen. */
   autorName: string | null;
   /** Verwendungen; null = unbekannt, dann kein Badge. */
@@ -132,8 +138,8 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
     text: inhalt.text ?? null,
     erstellt: inhalt.created,
     autor: inhalt.original_author || null,
-    // Die Suche traegt den Namen am Paket, Einzelabruf und /recent am Inhalt.
-    autorName: paket.autor_name ?? inhalt.autor_name ?? null,
+    eigen: inhalt.ist_eigener_beitrag ?? null,
+    autorName: inhalt.autor_name ?? null,
     nutzung: inhalt.usage_count ?? 0,
     quellen: (inhalt.references ?? []).map(quelle),
     bildUrl: inhalt['image_url'] || undefined,
@@ -213,6 +219,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     text: eintrag.text ?? null,
     erstellt: eintrag.created,
     autor: eintrag.original_author || null,
+    eigen: eintrag.ist_eigener_beitrag ?? null,
     autorName: eintrag.autor_name ?? null,
     nutzung: eintrag.usage_count ?? 0,
     nutzungLetzte7Tage: eintrag.nutzung_letzte_7_tage ?? 0,
