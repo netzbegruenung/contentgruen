@@ -24,8 +24,8 @@ from services.content.generic_text_service import (
     GenericTextService,
     zu_pruefender_text,
 )
-from services.beitrag_antwort import Aufrufer, als_antworten
-from dtos.beitrag import HintergrundinfoAntwort, HintergrundinfoTreffer
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
+from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from domain.models.content_type import ContentType
@@ -109,14 +109,14 @@ from fastapi import Query
 
 
 # Endpoint to search generic text by UUID
-@router.get("/getById", response_model=HintergrundinfoAntwort)
+@router.get("/getById", response_model=HintergrundinfoResponse)
 async def get_by_id(
     generic_text_id: UUID = Query(
         ..., description="The UUID of the generic text to retrieve"
     ),
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
     aufrufer: Aufrufer = Depends(get_aufrufer),
-) -> HintergrundinfoAntwort:
+) -> HintergrundinfoResponse:
     try:
         # Retrieve generic text by ID
         generic_text = await generic_text_service.get(generic_text_id)
@@ -128,7 +128,7 @@ async def get_by_id(
                 detail=f"GenericText with id {generic_text_id} not found",
             )
 
-        return als_antworten(HintergrundinfoAntwort, [generic_text], aufrufer)[0]
+        return als_responses(HintergrundinfoResponse, [generic_text], aufrufer)[0]
 
     except Exception as e:
         logger.error(
@@ -156,8 +156,8 @@ async def get_all(
 
         response: GenericTextGetAllResponse = GenericTextGetAllResponse(
             results_count=len(generic_text_index_results),
-            results=als_antworten(
-                HintergrundinfoAntwort, generic_text_index_results, aufrufer
+            results=als_responses(
+                HintergrundinfoResponse, generic_text_index_results, aufrufer
             ),
             total_records_count=await generic_text_service.count(),
         )
@@ -186,7 +186,7 @@ async def search_generic_text(
         )
 
         response: GenericTextSearchResponse = GenericTextSearchResponse(
-            results=als_antworten(
+            results=als_responses(
                 HintergrundinfoTreffer, generic_text_index_results, aufrufer
             )
         )

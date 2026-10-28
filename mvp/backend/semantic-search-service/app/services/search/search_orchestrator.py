@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Type
 
 from core.logging import get_logger
-from services.beitrag_antwort import Aufrufer, fuer_aufrufer
+from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from services.content.base_content_service import BaseContentService
 from domain.models.content_type import ContentType
 
@@ -265,7 +265,7 @@ class SearchOrchestrator:
         Anzeigename, ``ist_eigener_beitrag`` und die Kennung nur fuer Admins, aus
         einer Abfrage fuer alle Treffer.
 
-        Die Inhalte sind Antwort-DTOs, beim Anlegen des Treffers frisch aus dem
+        Die Inhalte sind Response-DTOs, beim Anlegen des Treffers frisch aus dem
         DbEntry umgewandelt (dtos/search.py) - kein Objekt, das ein Cache noch haelt.
         """
         fuer_aufrufer(

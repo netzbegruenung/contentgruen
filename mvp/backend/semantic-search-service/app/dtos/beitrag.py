@@ -9,7 +9,7 @@ from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextReference
 
 
-class BeitragAntwort(BaseModel):
+class BeitragResponse(BaseModel):
     """
     Ein Beitrag, wie Suche und lesende Routen ihn ausliefern (#333, Muster aus #311).
 
@@ -17,7 +17,7 @@ class BeitragAntwort(BaseModel):
     ``authors``, ``edit_history``), keine Felder der Moderation und
     Dublettenpruefung. Wer hier ein Feld ergaenzt, entscheidet, dass es nach aussen
     geht. ``original_author`` ist nur unterwegs belegt: ``fuer_aufrufer``
-    (services/beitrag_antwort.py) setzt daraus Anzeigename und
+    (services/beitrag_fuer_aufrufer.py) setzt daraus Anzeigename und
     ``ist_eigener_beitrag`` und leert es fuer alle ausser Admins.
 
     ``from_attributes``: Ein DbEntry laesst sich direkt umwandeln, auch als Feld
@@ -44,7 +44,7 @@ class BeitragAntwort(BaseModel):
     original_author: Optional[str] = None
 
 
-class KommentarAntwort(BeitragAntwort):
+class KommentarResponse(BeitragResponse):
     title: str
     long_text: Optional[str] = None
     short_text: Optional[str] = None
@@ -53,13 +53,13 @@ class KommentarAntwort(BeitragAntwort):
     references_count: int = 0
 
 
-class HintergrundinfoAntwort(BeitragAntwort):
+class HintergrundinfoResponse(BeitragResponse):
     title: str
     references: List[GenericTextReference] = []
     references_count: int = 0
 
 
-class PostAntwort(BeitragAntwort):
+class PostResponse(BeitragResponse):
     title: str
     platform: str
     # Das Konto auf der Plattform ("@name"), oeffentlich am Post - keine Kennung.
@@ -71,17 +71,17 @@ class PostAntwort(BeitragAntwort):
 # Treffer der Suche je Typ: dieselbe Auswahl plus die Aehnlichkeit.
 
 
-class BeitragTreffer(BeitragAntwort):
+class BeitragTreffer(BeitragResponse):
     score: float
 
 
-class KommentarTreffer(KommentarAntwort):
+class KommentarTreffer(KommentarResponse):
     score: float
 
 
-class HintergrundinfoTreffer(HintergrundinfoAntwort):
+class HintergrundinfoTreffer(HintergrundinfoResponse):
     score: float
 
 
-class PostTreffer(PostAntwort):
+class PostTreffer(PostResponse):
     score: float

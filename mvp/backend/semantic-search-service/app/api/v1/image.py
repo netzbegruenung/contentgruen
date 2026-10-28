@@ -18,7 +18,7 @@ from dtos.image import (
     SuggestCaptionRequest,
     SuggestCaptionResponse,
 )
-from services.beitrag_antwort import Aufrufer, als_antworten
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from services.content.base_content_service import BaseContentService
 from services.vision.caption_suggestion_service import CaptionSuggestionService
 from domain.models.image import ImageDbEntry
@@ -38,7 +38,7 @@ async def get_by_id(
 ) -> BildResponse:
     try:
         image = await image_service.get(image_id)
-        return als_antworten(BildResponse, [image], aufrufer)[0]
+        return als_responses(BildResponse, [image], aufrufer)[0]
     except HTTPException:
         raise
     except ValueError as e:
@@ -65,7 +65,7 @@ async def get_all(
         )
         return ImageGetAllResponse(
             results_count=len(results),
-            results=als_antworten(BildResponse, results, aufrufer),
+            results=als_responses(BildResponse, results, aufrufer),
             total_records_count=await image_service.count(),
         )
     except Exception as e:

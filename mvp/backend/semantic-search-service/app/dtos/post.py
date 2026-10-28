@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List
 
 from domain.models.post import Post
-from dtos.beitrag import PostAntwort, PostTreffer
+from dtos.beitrag import PostResponse, PostTreffer
 
 
 ### AddPost ###
@@ -22,7 +22,7 @@ class AddPostResponse(BaseModel):
 
 class PostGetAllResponse(BaseModel):
     results_count: int
-    results: List[PostAntwort]
+    results: List[PostResponse]
     total_records_count: int
 
 

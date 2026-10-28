@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
 from domain.models.generic_text import GenericText
-from dtos.beitrag import HintergrundinfoAntwort, HintergrundinfoTreffer
+from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 
 
 ### AddGenericText ###
@@ -97,7 +97,7 @@ class AddGenericTextResponse(BaseModel):
 
 class GenericTextGetAllResponse(BaseModel):
     results_count: int
-    results: List[HintergrundinfoAntwort]
+    results: List[HintergrundinfoResponse]
     total_records_count: int
 
 

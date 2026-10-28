@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-from dtos.beitrag import HintergrundinfoAntwort, KommentarAntwort, PostAntwort
+from dtos.beitrag import HintergrundinfoResponse, KommentarResponse, PostResponse
 from dtos.image import BildResponse
 
 # TODO: Evaluate usage of camelize
@@ -35,7 +35,7 @@ class SearchByTextRequest(BaseModel):
 
 ###   Entities   ###
 
-# Je Treffer der Beitrag als Antwort-DTO (dtos/beitrag.py): Ein DbEntry wird beim
+# Je Treffer der Beitrag als Response-DTO (dtos/beitrag.py): Ein DbEntry wird beim
 # Anlegen des Treffers umgewandelt, Anzeigename und ist_eigener_beitrag stehen dort.
 
 
@@ -44,7 +44,7 @@ class CommentarySearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
-    commentary_result: KommentarAntwort
+    commentary_result: KommentarResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -56,7 +56,7 @@ class GenericTextSearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
-    generictext_result: HintergrundinfoAntwort
+    generictext_result: HintergrundinfoResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None
@@ -68,7 +68,7 @@ class PostSearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
-    post_result: PostAntwort
+    post_result: PostResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
     polarity_mismatch_detected: Optional[bool] = None

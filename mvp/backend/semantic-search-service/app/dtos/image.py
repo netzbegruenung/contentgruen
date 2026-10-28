@@ -3,7 +3,7 @@ from typing import List
 from uuid import UUID
 
 from domain.models.image import Image
-from dtos.beitrag import BeitragAntwort
+from dtos.beitrag import BeitragResponse
 
 
 class AddImageRequest(BaseModel):
@@ -24,11 +24,11 @@ class AddImageResponse(BaseModel):
     id: UUID
 
 
-class BildResponse(BeitragAntwort):
+class BildResponse(BeitragResponse):
     """
     Ein Bild, wie Suche, getById und getAll es ausliefern (#311, #333).
 
-    Die Auswahl aus BeitragAntwort plus die Bildadresse; keine Bearbeitungshistorie
+    Die Auswahl aus BeitragResponse plus die Bildadresse; keine Bearbeitungshistorie
     (last_modified*, authors, edit_history) und keine Felder der Moderation und
     Dublettenpruefung. Wer hier ein Feld ergaenzt, entscheidet, dass es nach aussen
     geht.

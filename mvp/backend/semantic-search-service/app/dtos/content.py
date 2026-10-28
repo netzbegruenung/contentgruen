@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 
-from dtos.beitrag import BeitragAntwort, BeitragTreffer
+from dtos.beitrag import BeitragResponse, BeitragTreffer
 
 
 ### GetAll ###
@@ -9,7 +9,7 @@ from dtos.beitrag import BeitragAntwort, BeitragTreffer
 
 class ContentGetAllResponse(BaseModel):
     results_count: int
-    results: List[BeitragAntwort]
+    results: List[BeitragResponse]
     total_records_count: int
 
 

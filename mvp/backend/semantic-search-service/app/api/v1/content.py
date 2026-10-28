@@ -21,12 +21,12 @@ from domain.models.content import ContentDbEntry, ContentSearchResult
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
-from services.beitrag_antwort import Aufrufer, als_antworten, fuer_aufrufer
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
 from dtos.beitrag import (
-    BeitragAntwort,
+    BeitragResponse,
     BeitragTreffer,
-    HintergrundinfoAntwort,
-    KommentarAntwort,
+    HintergrundinfoResponse,
+    KommentarResponse,
 )
 from services.content.reference_service import ReferenceService
 from services.content.beitrag_loeschen_service import (
@@ -37,8 +37,9 @@ from services.content.beitrag_loeschen_service import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Was /recent liefert, je result_type.
-NEUESTE = {"commentary": KommentarAntwort, "generictext": HintergrundinfoAntwort}
+# Was /recent liefert, je result_type; ein Typ ohne Eintrag bekommt die allgemeine
+# Auswahl (BeitragResponse), statt die Route abzubrechen.
+NEUESTE = {"commentary": KommentarResponse, "generictext": HintergrundinfoResponse}
 
 
 # Test endpoint to check if the API is running
@@ -75,7 +76,7 @@ async def get_all(
 
         response: ContentGetAllResponse = ContentGetAllResponse(
             results_count=len(enriched_results),
-            results=als_antworten(BeitragAntwort, enriched_results, aufrufer),
+            results=als_responses(BeitragResponse, enriched_results, aufrufer),
             total_records_count=total_count,
         )
 
@@ -108,7 +109,7 @@ async def search_content(
         enriched_results = usage_service.enrich_content_with_usage(results_dict)
 
         response: ContentSearchResponse = ContentSearchResponse(
-            results=als_antworten(BeitragTreffer, enriched_results, aufrufer)
+            results=als_responses(BeitragTreffer, enriched_results, aufrufer)
         )
 
         return response
@@ -230,10 +231,13 @@ async def get_recent_content(
         logger.debug("Enriching content with usage statistics...")
         usage_service = get_usage_service()
         angereichert = usage_service.enrich_content_with_usage(all_recent)
-        # Je Eintrag die Antwort seines Typs; result_type gehoert nicht zum Beitrag
-        # und kommt danach wieder dazu.
+        # Je Eintrag das Response-DTO seines Typs; result_type gehoert nicht zum
+        # Beitrag und kommt danach wieder dazu.
         antworten = fuer_aufrufer(
-            [NEUESTE[e["result_type"]].model_validate(e) for e in angereichert],
+            [
+                NEUESTE.get(e["result_type"], BeitragResponse).model_validate(e)
+                for e in angereichert
+            ],
             aufrufer,
         )
         enriched_results = [

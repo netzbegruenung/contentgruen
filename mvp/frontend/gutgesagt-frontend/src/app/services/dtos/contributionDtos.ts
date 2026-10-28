@@ -16,7 +16,8 @@ export interface GetContributionsOfUserResponse {
 export interface ContentResult {
     id: string;
     created: string;
-    last_modified: string;
+    /** Nur /getContributionsOfUser; getById liefert ihn nicht (#333). */
+    last_modified?: string;
     /** Die eigene Kennung in Meine Beitraege; beim Einzelabruf nur fuer Admins (#333). */
     original_author?: string | null;
     /**
@@ -26,8 +27,9 @@ export interface ContentResult {
     autor_name?: string | null;
     /** Nur beim Einzelabruf (getById, #333): ob es der eigene Beitrag ist. */
     ist_eigener_beitrag?: boolean | null;
-    last_modified_by: string;
-    edit_history: object;
+    /** Nur /getContributionsOfUser (eigene Beitraege); getById liefert sie nicht (#333). */
+    last_modified_by?: string;
+    edit_history?: object;
     /** Leer bei Bildern ohne Bildunterschrift. */
     text: string | null;
     content_type: string;

@@ -30,6 +30,7 @@ from dependencies import (
     get_settings,
 )
 from domain.models.author_entry import AuthorEntry
+from domain.models.base_content import BaseContentDbEntry
 from domain.models.commentary import CommentaryDbEntry, CommentarySearchResult
 from domain.models.content import ContentDbEntry, ContentSearchResult
 from domain.models.content_type import ContentType
@@ -37,6 +38,9 @@ from domain.models.edit_entry import EditEntry
 from domain.models.generic_text import GenericTextDbEntry, GenericTextSearchResult
 from domain.models.image import ImageDbEntry
 from domain.models.post import PostDbEntry, PostSearchResult
+from dtos.beitrag import BeitragResponse, KommentarResponse
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
+from services.content.base_content_service import BaseContentService
 from tests.conftest import create_base_content_fields
 from tests.unit.api.test_search_ranking import (  # noqa: F401 - Fixture
     SEARCH_URL,
@@ -136,9 +140,19 @@ def _inhalt(cid=None, klasse=ContentDbEntry, **extra):
     )
 
 
+# Was der DbEntry fuehrt, die allgemeine Auswahl aber nicht: Bearbeitung,
+# Moderation, Dublettenpruefung. Aus dem Modell abgeleitet, damit ein neues Feld am
+# DbEntry hier auffaellt, bis jemand es bewusst in dtos/beitrag.py aufnimmt.
+NICHT_NACH_AUSSEN = set(BaseContentDbEntry.model_fields) - set(
+    BeitragResponse.model_fields
+)
+
+
 def _ohne_kennung(antwort):
     assert AUTORIN not in antwort.text
     assert BEARBEITER not in antwort.text
+    for eintrag in _eintraege(antwort.json()):
+        assert not NICHT_NACH_AUSSEN & set(eintrag), eintrag.get("content_type")
 
 
 TREFFERLISTEN = (
@@ -200,7 +214,7 @@ ROUTEN = {
 
 
 def _dienst(einzeln, treffer_klasse):
-    dienst = MagicMock()
+    dienst = MagicMock(spec=BaseContentService)
     dienst.get = AsyncMock(side_effect=lambda i: einzeln(i))
     dienst.get_all = AsyncMock(side_effect=lambda **_: [einzeln(), einzeln()])
     dienst.count = AsyncMock(return_value=2)
@@ -340,6 +354,7 @@ def such_antwort(search_client, anzeigenamen_ohne_datenbank):
     }
     for abhaengigkeit, einzeln in dienste.items():
         dienst = MagicMock(
+            spec=BaseContentService,
             get=AsyncMock(side_effect=lambda i, e=einzeln: e(i)),
             search=AsyncMock(return_value=[]),
         )
@@ -396,3 +411,20 @@ class TestSuche:
         assert BEARBEITER not in antwort.text
         for eintrag in _eintraege(antwort.json()):
             assert eintrag["original_author"] == AUTORIN
+
+
+# --------------------------------------------------------------------------- #
+# Umwandlung
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.unit
+def test_als_responses_laesst_den_db_entry_unveraendert():
+    """Der DbEntry kann aus einem Cache stammen; geleert wird nur die Kopie."""
+    eintrag = _kommentar()
+
+    (kommentar,) = als_responses(KommentarResponse, [eintrag], Aufrufer(LESERIN))
+
+    assert kommentar.original_author is None
+    assert eintrag.original_author == AUTORIN
+    assert eintrag.edit_history[0].editor == BEARBEITER

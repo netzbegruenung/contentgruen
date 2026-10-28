@@ -13,7 +13,7 @@ from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
-from services.beitrag_antwort import Aufrufer
+from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
 from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
@@ -289,7 +289,7 @@ def get_aufrufer(
     x_user: Optional[str] = Header(None, alias="X-User"),
     x_is_admin: Optional[str] = Header(None, alias="X-Is-Admin"),
 ) -> Aufrufer:
-    """Wer eine Beitragsantwort bekommt (services/beitrag_antwort.py, #333)."""
+    """Wer eine Beitragsantwort bekommt (services/beitrag_fuer_aufrufer.py, #333)."""
     return Aufrufer(kennung=x_user, admin_kopf=ist_admin_kopf(x_is_admin))
 
 
