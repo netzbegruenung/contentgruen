@@ -17,8 +17,9 @@ Dublettenpruefung mit den Schwellen aus core/config.py.
 """
 
 # fmt: off
-# Kommentare aus dem bereinigten Seed (mvp/data/seed/v1.0), die mehrfach vorkommen
+# Aussage, die mehrfach vorkommt
 VERBOT = "Die Grünen sind eine Verbotspartei"
+# Kommentare aus dem bereinigten Seed (mvp/data/seed/v1.0), die mehrfach vorkommen
 GLAS = "Vogelschutz ist wichtig, da sind wir uns einig. Die größte Gefahr sind aber Glasscheiben: Die Vogelschutzwarten schätzen 100 bis 115 Millionen tote Vögel pro Jahr in Deutschland. Wer Vögel schützen will, fängt also am Fenster an."
 STANDORT = "Rotmilan und Storch sollen geschützt bleiben, das wollen wir alle. Deshalb wird vor jedem Windpark geprüft, welche Arten dort brüten und jagen. So bekommen wir beides: sauberen Strom und geschützte Vögel."
 REGELN = "Selbst entscheiden wollen wir alle. Viele Regeln, die heute selbstverständlich sind, schützen unsere Freiheit: der Gurt im Auto, rauchfreie Restaurants, sauberes Trinkwasser. Die Frage ist immer, was eine Regel bringt und für wen."

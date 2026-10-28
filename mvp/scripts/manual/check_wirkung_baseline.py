@@ -60,7 +60,9 @@ Die Auswahl der 10 Seed-Kommentare ist ueber --seed reproduzierbar.
 kommt ohne Qdrant und ohne `requests` aus.
 Die eingefrorene wirkung_korpus.json enthaelt die 3 handangelegten Beitraege und
 10 mit --seed gezogene Kommentare aus mvp/data/seed/v1.0 (quelle = Datei:Nummer des
-Kommentars in der Datei).
+Kommentars in der Datei). Persoenliche Kommentare des Seeds enthalten statt eines
+Erlebnisses den Platzhalter "[Hier ein eigenes Erlebnis: ...]"; er geht unveraendert
+in die Bewertung ein.
 """
 
 from __future__ import annotations

@@ -88,10 +88,13 @@ async def _aussage(service, text, author="person-1", origin=None):
     )
 
 
+GLAS_TITEL = "Glasscheiben sind für Vögel weit gefährlicher als Windräder"
+
+
 def _kommentar(text):
     return Commentary(
         text=text,
-        title="Glasscheiben sind für Vögel weit gefährlicher als Windräder",
+        title=GLAS_TITEL,
         content_type=ContentType.COMMENTARY,
         references=[],
     )
@@ -336,7 +339,7 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
 
     anfrage = {
         "commentary": {
-            "title": "Glasscheiben sind für Vögel weit gefährlicher als Windräder",
+            "title": GLAS_TITEL,
             "text": GLAS,
             "content_type": "commentary",
             "references": [],
