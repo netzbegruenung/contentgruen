@@ -203,8 +203,8 @@ Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine
 _Avoid_: Report, Flag, Beschwerde
 
 **Feedback**:
-Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach 180 Tagen wird es gelöscht.
-_Avoid_: Kontaktformular, Rückmeldung (das ist die Nutzung der eigenen Beiträge), Ticket
+Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach der Frist im Löschkonzept wird es gelöscht.
+_Avoid_: Kontaktformular, Rückmeldung (in `docs/VISION.md` die Rückmeldung zur Nutzungsstatistik der eigenen Beiträge), Ticket
 
 **Dublette**:
 Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener, nimmt sie ihn, statt zuzustimmen. Antwortet der Beitrag auf eine Aussage, wird erst nach dieser Entscheidung mit ihr verknüpft: beim Nehmen der vorhandene, bei „Trotzdem speichern“ nur der neue; ein fremder vorhandener nie. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.

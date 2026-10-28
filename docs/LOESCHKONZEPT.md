@@ -123,8 +123,10 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
   nicht am abschaltbaren Usage-Cleanup.
 - **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
-  Admin löscht die Zeilen mit genau dieser Angabe
-  (`DELETE FROM feedback WHERE kontakt = '<angabe>';`, vorher mit `SELECT` prüfen).
+  Admin löscht die Zeilen mit dieser Angabe, ohne Rücksicht auf Groß- und
+  Kleinschreibung und Leerzeichen am Rand
+  (`DELETE FROM feedback WHERE lower(btrim(kontakt)) = lower(btrim('<angabe>'));`,
+  vorher mit `SELECT` prüfen).
   Ohne Kontaktangabe ist Feedback keiner Person zuzuordnen. Nennt der Freitext selbst
   die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
 - Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.

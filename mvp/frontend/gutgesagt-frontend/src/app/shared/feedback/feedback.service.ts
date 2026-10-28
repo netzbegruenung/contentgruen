@@ -3,8 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
-// Wie im Backend (services/feedback_service.py, AUFBEWAHRUNG_TAGE); das Formular
-// nennt die Frist, bevor gesendet wird.
+// Grenzen wie im Backend (services/feedback_service.py: TEXT_MAX, KONTAKT_MAX,
+// AUFBEWAHRUNG_TAGE). Das Formular nennt die Frist, bevor gesendet wird.
+export const FEEDBACK_TEXT_MAX = 2000;
+export const FEEDBACK_KONTAKT_MAX = 200;
 export const FEEDBACK_AUFBEWAHRUNG_TAGE = 180;
 
 /** Feedback, wie Admins es im Admin-Dashboard sehen. */

@@ -86,7 +86,7 @@ describe('FeedbackDialogComponent', () => {
     const text = element().textContent ?? '';
     expect(text).toContain('optional');
     expect(text).toContain('180 Tagen');
-    expect(text).toContain('ohne Bezug zu deinem Konto');
+    expect(text).toContain('dein Konto nicht mitgespeichert');
   });
 
   it('behaelt den Text, wenn das Senden scheitert', async () => {

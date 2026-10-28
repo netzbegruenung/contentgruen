@@ -103,6 +103,17 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(router.navigate).not.toHaveBeenCalled();
     });
 
+    it('meldet nur ueber einen Klick im Kopf an, egal wie das Element beschriftet ist', () => {
+      const komponente = fixture.componentInstance;
+      const anmelden = spyOn(komponente, 'login');
+      const anmeldenMitZiel = spyOn(komponente, 'loginWithReturnUrl');
+
+      const klickbar = kopf().querySelectorAll('button, a, [role="button"], [tabindex], .avatar-container, img');
+      klickbar.forEach((e) => (e as HTMLElement).click());
+
+      expect(anmelden.calls.count() + anmeldenMitZiel.calls.count()).toBe(1);
+    });
+
     it('sieht den Knopf Feedback und oeffnet damit das Formular', () => {
       const knopf = kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement;
       expect(knopf.textContent).toContain('Feedback');

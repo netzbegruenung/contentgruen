@@ -27,8 +27,9 @@
     </mat-form-field>
 
     <p class="hinweis">
-      Gespeichert werden nur dein Text, der Kontakt, falls du einen angibst, und der Tag,
-      ohne Bezug zu deinem Konto. Nur Admins lesen es. Nach {{ aufbewahrungTage }} Tagen wird alles gelöscht.
+      Gespeichert werden nur dein Text, der Kontakt, falls du einen angibst, und der Tag.
+      Bist du angemeldet, wird dein Konto nicht mitgespeichert. Nur Admins lesen es.
+      Nach {{ aufbewahrungTage }} Tagen wird alles gelöscht.
     </p>
 
     <p *ngIf="fehler" class="fehler" role="alert">{{ fehler }}</p>

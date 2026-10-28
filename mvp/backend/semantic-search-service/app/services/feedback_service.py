@@ -23,7 +23,7 @@ from typing import List, Optional
 
 from core.logging import get_logger
 from repositories.feedback_repository import FeedbackRepository
-from services.suchen_ohne_treffer_service import heute_utc, sekunden_bis_mitternacht
+from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
 logger = get_logger(__name__)
 

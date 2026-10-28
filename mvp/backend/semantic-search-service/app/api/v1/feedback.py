@@ -47,6 +47,10 @@ class FeedbackSendenRequest(BaseModel):
         return wert.strip() or None
 
 
+class FeedbackSendenResponse(BaseModel):
+    success: bool
+
+
 class FeedbackEintragResponse(BaseModel):
     id: uuid.UUID
     text: str
@@ -59,7 +63,7 @@ class FeedbackListeResponse(BaseModel):
     eintraege: List[FeedbackEintragResponse]
 
 
-@router.post("/senden", status_code=201)
+@router.post("/senden", status_code=201, response_model=FeedbackSendenResponse)
 async def feedback_senden(
     request: FeedbackSendenRequest,
     http_request: Request,
@@ -80,7 +84,7 @@ async def feedback_senden(
     except Exception as e:
         logger.error(f"Error storing feedback: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to store feedback")
-    return {"success": True}
+    return FeedbackSendenResponse(success=True)
 
 
 @router.get("", response_model=FeedbackListeResponse)

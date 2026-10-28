@@ -5,11 +5,12 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { FEEDBACK_AUFBEWAHRUNG_TAGE, FeedbackService } from './feedback.service';
-
-// Grenzen wie im Backend (services/feedback_service.py).
-export const FEEDBACK_TEXT_MAX = 2000;
-export const FEEDBACK_KONTAKT_MAX = 200;
+import {
+  FEEDBACK_AUFBEWAHRUNG_TAGE,
+  FEEDBACK_KONTAKT_MAX,
+  FEEDBACK_TEXT_MAX,
+  FeedbackService,
+} from './feedback.service';
 
 /**
  * Das kurze Formular hinter dem Knopf "Feedback" im Kopf: Freitext, optional ein
