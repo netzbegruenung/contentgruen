@@ -157,8 +157,14 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return !!this.authService.getUserInfo()?.isAuthenticated;
   }
 
-  /** Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. */
+  /**
+   * Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. Beitraege tragen das
+   * Kennzeichen vom Server (#333), Einwuerfe und "Meine Beitraege" die Kennung.
+   */
   get istEigen(): boolean {
+    if (this.daten.eigen != null) {
+      return this.angemeldet && this.daten.eigen;
+    }
     return !!this.daten.autor && this.daten.autor === this.eigeneKennung;
   }
 
@@ -167,7 +173,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * der Meta-Zeile allein das Alter.
    */
   get zeigtAutor(): boolean {
-    return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName);
+    return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
   }
 
   @ViewChild('textElement')

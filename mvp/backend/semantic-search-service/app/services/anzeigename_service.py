@@ -13,7 +13,7 @@ eines BFF ohne diese Funktion, und der soll nichts loeschen.
 
 import logging
 import unicodedata
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Dict, Iterable, Optional
 from urllib.parse import unquote
 
 from repositories.user_repository import UserRepository, get_user_repository
@@ -37,23 +37,11 @@ EHEMALIGE_PERSON_NAME = "ehemalige Person"
 
 
 # Was an einem Beitrag eine Person bezeichnet: zwei Felder mit der Kennung und zwei
-# Listen, deren Eintraege sie unter dem genannten Schluessel tragen. Geleert fuer
-# anonyme Aufrufer (kennungsfelder_leer), ersetzt im Loeschkonzept Schritt 3
-# (services/wartung/beitraege_anonymisieren.py).
+# Listen, deren Eintraege sie unter dem genannten Schluessel tragen. Ersetzt im
+# Loeschkonzept Schritt 3 (services/wartung/beitraege_anonymisieren.py); nach aussen
+# gehen sie nicht (dtos/beitrag.py).
 KENNUNGSFELDER = ("original_author", "last_modified_by")
 KENNUNGSLISTEN = (("authors", "name"), ("edit_history", "editor"))
-
-
-def kennungsfelder_leer() -> Dict[str, Any]:
-    """
-    Was an einem Beitrag eine Person bezeichnet, geleert - fuer anonyme Aufrufer.
-    Leer statt entfernt, weil das Schema die Felder als Pflicht fuehrt; jedes Mal
-    frisch, damit sich keine zwei Antworten eine Liste teilen.
-    """
-    return {
-        **{feld: "" for feld in KENNUNGSFELDER},
-        **{liste: [] for liste, _ in KENNUNGSLISTEN},
-    }
 
 
 def angemeldet(user_id: Optional[str]) -> bool:
@@ -116,23 +104,6 @@ class AnzeigenameService:
         if EHEMALIGE_PERSON_KENNUNG in user_ids:
             namen[EHEMALIGE_PERSON_KENNUNG] = EHEMALIGE_PERSON_NAME
         return namen
-
-    def mit_autor_name(self, inhalt) -> Dict[str, Any]:
-        """Ein einzelner Beitrag als Antwort-Dict mit ``autor_name`` daneben."""
-        antwort = inhalt.model_dump(mode="json")
-        self.an_eintraege([antwort])
-        return antwort
-
-    def an_eintraege(
-        self,
-        eintraege: List[Dict[str, Any]],
-        kennung: str = "original_author",
-        feld: str = "autor_name",
-    ) -> None:
-        """Je Eintrag ``feld`` aus ``kennung`` setzen, eine Abfrage fuer alle."""
-        namen = self.namen(eintrag.get(kennung) for eintrag in eintraege)
-        for eintrag in eintraege:
-            eintrag[feld] = namen.get(eintrag.get(kennung))
 
 
 _anzeigename_service: Optional[AnzeigenameService] = None
