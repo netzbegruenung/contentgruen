@@ -4,7 +4,7 @@ Antwortformat der Bild-Endpunkte.
 Jede Route in api/v1/image.py beschreibt ihre Antwort mit einem response_model.
 getById und getAll liefern ein Bild als BildResponse: eine feste Feldauswahl mit
 dem Anzeigenamen statt der Kennung und dem Zustand, ohne Bearbeitungshistorie und
-Moderationsfelder (#311). addImage gibt 201 mit der ID. Ein Bild ohne Unterschrift lehnt addImage ab
+Moderationsfelder (#311); die Felder teilt es mit den anderen Beitragstypen (#333). addImage gibt 201 mit der ID. Ein Bild ohne Unterschrift lehnt addImage ab
 (422, test_add_image.py).
 """
 
@@ -40,6 +40,7 @@ ANZEIGENAME = "Anna B."
 ZEITPUNKT = datetime.datetime(2026, 10, 1, 12, 0)
 
 # Was ein Bild nach aussen zeigt. Alles andere am ImageDbEntry ist intern.
+# original_author ist nur fuer Admins belegt, sonst null (#333).
 BILD_FELDER = {
     "id",
     "content_type",
@@ -48,7 +49,10 @@ BILD_FELDER = {
     "text",
     "created",
     "status",
+    "usage_count",
     "autor_name",
+    "ist_eigener_beitrag",
+    "original_author",
 }
 
 

@@ -301,7 +301,7 @@ Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat
 _Avoid_: Ersteller, Owner, Urheber
 
 **Kennung**:
-Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Adressen steht er nicht, in Logs nur als gekürzter Hash. Dieser Hash ist ungesalzen und bei bekannten Kennungen zurückrechenbar, also kein Tagespseudonym.
+Der feste, technische Bezeichner eines Kontos aus der Anmeldung. Er ist personenbezogen: In Adressen steht er nicht, in Logs nur als gekürzter Hash. Dieser Hash ist ungesalzen und bei bekannten Kennungen zurückrechenbar, also kein Tagespseudonym. An Beiträgen in Suche und Ansicht sehen ihn nur Admins; andere Mitwirkende sehen stattdessen den Anzeigenamen des Autors und ob es ihr eigener Beitrag ist.
 _Avoid_: User-ID, Nutzer-ID
 
 **Anzeigename**:
