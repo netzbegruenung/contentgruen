@@ -5,7 +5,8 @@ intfloat/multilingual-e5-base (2026-09-17).
 Kategorien: A identisch; B trivial abweichend (Gross/klein, Punkt/Ausrufezeichen,
 Leerraum, Anfuehrungszeichen); C gleiche Behauptung, andere Worte; D verwandt, aber andere
 Behauptung; E fremdes Thema. art: aussage (Formular/Seeding), suche (Suchanfragen),
-kommentar. Quelle: seed = mvp/data/seed/v1.0, eigen = fuer die Messung formuliert.
+kommentar. Quelle: seed = mvp/data/seed/v1.0 vor der Bereinigung in #340 (alter Stand,
+nicht mehr im Seed), eigen = fuer die Messung formuliert.
 
 qq = query/query (Aussagen, Suchanfragen), pp = passage/passage (Kommentare),
 qp = query gegen passage (frueherer Kommentarvergleich). gleich = Entscheidung der
