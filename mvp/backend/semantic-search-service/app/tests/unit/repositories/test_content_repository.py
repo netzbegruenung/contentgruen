@@ -431,3 +431,24 @@ class TestContentRepository:
         except (KeyError, AttributeError):
             # Expected with test embeddings manager
             pass
+
+    def test_initialize_with_initial_data_legt_keine_nutzung_an(
+        self, repository, monkeypatch
+    ):
+        """Seed-Inhalte beginnen bei Nutzung 0 (#340): kein Zaehler wird vorbelegt."""
+        from unittest.mock import MagicMock
+        from repositories.aggregated import content_repository as modul
+        import services.usage_tracking_service as usage_modul
+
+        monkeypatch.setattr(
+            modul.DataLoader,
+            "load_json_data_files",
+            lambda *_: [{"text": "Eine Aussage", "content_type": "statement"}],
+        )
+        monkeypatch.setattr(repository, "upsert", lambda *_: None)
+        usage_service = MagicMock()
+        monkeypatch.setattr(usage_modul, "get_usage_service", lambda *_: usage_service)
+
+        repository.initialize_with_initial_data()
+
+        assert usage_service.method_calls == []

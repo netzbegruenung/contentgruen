@@ -136,31 +136,7 @@ class ContentRepository(
             f"Executed initial load of data into {self.repository_name}, number of items: {len(initial_content_inputs)}"
         )
         # Note: Data is automatically persisted to Qdrant
-
-        # Initialize usage tracking with realistic seed data
-        try:
-            from services.usage_tracking_service import get_usage_service
-            import random
-
-            usage_service = get_usage_service()
-            for i, item in enumerate(initial_content_inputs):
-                # Give initial content realistic usage numbers (5-47)
-                # More popular content at the beginning
-                if i < len(initial_content_inputs) * 0.2:  # Top 20%
-                    usage_count = random.randint(25, 47)
-                elif i < len(initial_content_inputs) * 0.5:  # Next 30%
-                    usage_count = random.randint(10, 25)
-                else:  # Bottom 50%
-                    usage_count = random.randint(5, 15)
-
-                usage_service.initialize_content_usage(str(item.id), usage_count)
-
-            logger.info(
-                f"Initialized usage tracking for {len(initial_content_inputs)} items"
-            )
-        except Exception as e:
-            logger.warning(f"Could not initialize usage tracking: {e}")
-            # Non-critical error - continue without usage data
+        # Keine Nutzung vorbelegen: Auch Seed-Inhalte beginnen bei 0 (#340).
 
     async def search(
         self, query_text: str, limit: int = 10
