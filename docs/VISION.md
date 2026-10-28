@@ -25,7 +25,7 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 ## Rechte und Geld
 
 - Der Code steht unter der AGPL; Urheber des heutigen Codes ist der Maintainer. Die Netzbegrünung ist Diensteanbieterin der Instanz.
-- Beiträge Dritter zum Code laufen über das Developer Certificate of Origin (DCO) in `CONTRIBUTING.md`.
+- Beiträge Dritter zum Code laufen über das Developer Certificate of Origin (DCO); es kommt mit #365 in `CONTRIBUTING.md`.
 - Geld kommt, wenn überhaupt, später über Dienstleistungen: Betrieb, Anpassung, Schnittstellen, Support. Premium-Funktionen werden getrennt gebaut und sind tendenziell ebenfalls Open Source.
 - Heute betreibt die Netzbegrünung die Instanz ehrenamtlich. Wer einen professionellen Betrieb mit Support übernimmt, etwa verdigado oder eine eigene Ausgründung, bleibt offen; für parteiferne Organisationen kann ein neutrales Dach nötig werden. Ein Betreiber verarbeitet Daten im Auftrag (AVV).
 - **Kein Geld und keine Sachleistung für Posts, Teilen oder Nutzung**, auch nicht als Preis für Quests oder Ranglisten: Das wäre politische Werbung (TTPA, Medienstaatsvertrag, Plattformregeln) und für eine Partei womöglich eine Sachspende. Erlaubt sind Honorare für die Herstellung von Beiträgen für den Bestand, Kostenerstattung und Stipendien ohne Pflicht zu posten, mit öffentlich genannten Geldgebern. Abweichen nur nach Rechtsgutachten und öffentlich begründet.
@@ -45,7 +45,7 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 - **Spezialisierte NLP-Werkzeuge zuerst.** Suche, Indexierung, Verknüpfung, Verschlagwortung, Umwandlung und Synthese laufen über spezialisierte, lokale Modelle, ohne dass Daten abfließen. Vor allem zerfasert der Bestand nicht: Dieselbe Behauptung in anderen Worten landet auf einer Aussage, verwandte Aussagen werden verknüpft. Ein generisches Sprachmodell nur, wo kein Spezialwerkzeug taugt, und dann über den Grünerator auf eigener Hardware ([ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)).
 - Zuschnitt eines Beitrags für die eigene Verwendung: ja (#226), aber nicht in den Bestand.
 - Beim Schreiben kommt zuerst Gegenlesen ohne KI (siehe Ton), ein KI-Verbesserungsvorschlag erst danach.
-- Ein KI-Entwurf bei null Treffern kommt frühestens, wenn Roadmap-Stufe 4 (Quellen) steht.
+- Ein KI-Vorschlag bei null Treffern kommt frühestens, wenn Roadmap-Stufe 4 (Quellen) steht.
 - Anbieter für erzeugte Texte ist der Grünerator auf eigener Hardware der Netzbegrünung, nicht sein Betrieb über OpenAI; Eingaben ohne Personendaten.
 
 ## Produktgrenze
@@ -57,7 +57,7 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 | Inhalte gemeinsam herstellen: Videoschnipsel teilen, Beiträge anderer remixen und verbessern (langfristig) | | Kanalbetreuung |
 | Trends und eine Social Wall | | Inhalte, die KI herstellt (höchstens Verweis auf Grünerator) |
 
-Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier fehlt eine Antwort“, Einwürfe, eingereichte Links und Zulieferer für Einwürfe (siehe Bestand). Monitoring heißt, fremde Plattformen von sich aus zu beobachten (Kommentarspalten, Accounts, Hashtags, Frühwarnung); das verarbeitet Personendaten Dritter und bleibt Sache von Social-Listening-Werkzeugen außerhalb von Gut gesagt.
+Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier fehlt eine Antwort“, Einwürfe, eingeworfene Links und Zulieferer für Einwürfe (siehe Bestand). Monitoring heißt, fremde Plattformen von sich aus zu beobachten (Kommentarspalten, Accounts, Hashtags, Frühwarnung); das verarbeitet Personendaten Dritter und bleibt Sache von Social-Listening-Werkzeugen außerhalb von Gut gesagt.
 
 ## Bestand
 
@@ -96,7 +96,7 @@ Soziales Feedback, also sichtbare Nutzung durch andere, ist der wichtigste Antri
 - **Meilensteine**: erste Nutzung durch andere, 10, 50, 100 Nutzungen, erste Stimme; ein kleines Abzeichen am Anzeigenamen.
 - **Punkte** kommen aus der Wirkung bei anderen, nicht aus Menge ([ADR 0004](./adr/0004-punkte-aus-wirkung-bei-anderen.md)): Nutzung durch andere (Hauptanteil), Zustimmung, abgeschlossene Quests. Ein Beitrag ohne Nutzung bringt nichts.
 - **Ranglisten** für Einzelne, je Woche und je Monat, nur für Angemeldete: die ersten 10 und der eigene Platz. Nur wer zugestimmt hat, erscheint dort: Beim ersten Punkt fragt die App einmal mit zwei gleichwertigen Knöpfen, nichts ist vorbelegt, die Antwort lässt sich jederzeit ändern. Schon die Teilnahme verrät eine politische Haltung (DSGVO Art. 9).
-- **Quests**: zwei Tagesaufgaben am Tag und ein gemeinsames Wochenziel. Zum Start: eine unbeantwortete Aussage beantworten, eine Fassung ergänzen, eine Variante anlegen, einen Einwurf ausformulieren, einen Einwurf einreichen, drei Beiträge bewerten. Später ein wählbarer Schwerpunkt (Sammeln oder Formulieren), langfristig vielleicht Fähigkeiten, die realen Tätigkeiten entsprechen. Kein kriegerisches Setting.
+- **Quests**: zwei Tagesaufgaben am Tag und ein gemeinsames Wochenziel. Zum Start: eine unbeantwortete Aussage beantworten, eine Fassung ergänzen, eine Variante anlegen, einen Einwurf ausformulieren, einen Einwurf einwerfen, drei Beiträge bewerten. Später ein wählbarer Schwerpunkt (Sammeln oder Formulieren), langfristig vielleicht Fähigkeiten, die realen Tätigkeiten entsprechen. Kein kriegerisches Setting.
 - **Wochenthema** (nach Quests, Ranglisten und Themen): Platz 1 der Wochen-Rangliste wählt aus den drei Themen mit dem meisten Bedarf das Thema der nächsten Woche; Punkte dazu zählen doppelt, das Wochenziel bezieht sich darauf. Ohne Wahl nach zwei Tagen gilt das Thema mit dem meisten Bedarf. Anerkennung heißt Mitbestimmung und Sichtbarkeit, nie Sachwert.
 - **Bedarf sichtbar**: Eine Seite „Hier fehlt eine Antwort“ zeigt Angemeldeten unbeantwortete Aussagen; dort lassen sich Aussagen auch vorab anlegen.
 - **Varianten**: „Als Vorlage nehmen“ legt einen neuen Beitrag mit eigenem Autor an, der auf dem Original beruht. Vorschläge an fremde Beiträge kommen später.
@@ -115,7 +115,7 @@ Drei Kennzahlen, deren Zielwerte der Maintainer vor dem Launch festlegt: Persone
 
 ## Weg zum Launch
 
-1. Einwürfe aus gesammeltem Material vorbereiten, per Skript, mit Link als Herkunft (#288).
+1. Einwürfe aus gesammeltem Material vorbereiten, per Skript, mit Link als Herkunft (#341, #288).
 2. Schreibwochenende im Gründungsteam: die 10 bis 15 häufigsten Aussagen mit je zwei Kommentaren (einer für die Kommentarspalte, einer sachlich mit Herkunft) und einige Posts.
 3. Nutzertest mit drei bis fünf Personen auf diesem Bestand, mobil zuerst, mit mindestens einer Person mit wenig Digitalerfahrung und einer außerhalb des akademischen Milieus. Bis dahin nur Qualität und Launch-Blocker.
 4. Was den Launch blockiert, beheben.
@@ -129,12 +129,12 @@ Gut gesagt soll mehr werden als ein Werkzeug für Gegenrede: eine **Werkstatt**,
 - **Vom Mitglied zur Stimme.** Skill-Pfade entlang realer Tätigkeiten: Teilen, Formulieren, Varianten, Skripte, Schnitt, Sprechen. Den Aufstieg belegt die Wirkung bei anderen (ADR 0004), nicht Follower. Ein eigener Kanal unter eigenem Namen ist Sache der Person; Gut gesagt gibt keine Aufträge und betreut keine Kanäle.
 - **Wirkung belegen.** Ob Antworten Mitlesende erreichen und wie viele Mitglieder zu Stimmen werden, misst Gut gesagt in anonymen Aggregaten und veröffentlicht es; ab Ausbaustufe 2 mit einer Forschungskooperation.
 - **Recht vor Ausbaustufe 2.** Zu klären: ob die Netzbegrünung eine Organisation im Sinne von DSGVO Art. 9 Abs. 2 lit. d ist, ob Inhalte im Grünen Netz als interne Tätigkeit unter die TTPA fallen, ob kostenloser Betrieb für die Partei eine Sachspende ist. Eine Datenschutz-Folgenabschätzung kommt vor den Ranglisten.
-- **Erstes Testfenster 2027.** Im Frühjahr Lagekarte und Wochenmissionen um die Landtagswahlen, im Herbst vor der Wahl in Niedersachsen eine erste unbezahlte Gruppe auf dem Weg zur eigenen Stimme, mit Training und Briefings, gemessen von Stufe zu Stufe.
+- **Erstes Testfenster 2027.** Im Frühjahr Lagekarte und Wochenziele um die Landtagswahlen, im Herbst vor der Wahl in Niedersachsen eine erste unbezahlte Gruppe auf dem Weg zur eigenen Stimme, mit Training und Briefings, gemessen von Stufe zu Stufe.
 
 Die Folge, jede Stufe mit Tor:
 
 1. Wirkung sichtbar machen (Motivation oben). Tor: Rechtsgrundlage und Folgenabschätzung, Acht-Wochen-Bilanz.
-2. Lagekarte aus eigenen Signalen, Wochenmissionen. Tor: Testset der Suche, Rechtsklärung.
+2. Lagekarte aus eigenen Signalen, Wochenziele. Tor: Testset der Suche, Rechtsklärung.
 3. Die Crowd stellt Inhalte her: Skripte, Schnipsel, Remix. Tor: Quellen (Roadmap-Stufe 4), Bildrechte geklärt.
 4. Freiwillige werden Stimmen. Tor: Konversion über mindestens zwei Anlässe gemessen.
 5. Netz eigener Instanzen (Ausbaustufe 3 und 4). Danach optional, in dieser Reihenfolge: Betrieb für andere Organisationen, Training als Bildungsangebot, eine Agentur zu Marktpreisen, eine Medienmarke.

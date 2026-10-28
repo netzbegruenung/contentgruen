@@ -99,12 +99,16 @@ Die Arbeitslisten im Fangkorb heißen nach der nächsten Arbeit („Destillieren
 ## Umwandlungen
 
 **Umwandlung**:
-Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren mit einem neuen Beitrag, das Zuschneiden eines Kommentars auf eine Zielgruppe.
+Eine Aktion, die aus einem oder mehreren vorhandenen Inhalten einen neuen macht und dabei festhält, woraus er entstanden ist. Beispiele: Destillieren, Ausformulieren mit einem neuen Beitrag. Wer einen Beitrag nur für die eigene Verwendung zuschneidet, etwa auf eine Zielgruppe, macht keine Umwandlung: Der Zuschnitt wird kopiert und kommt nicht in den Bestand.
 _Avoid_: Konvertierung, Transformation, Verarbeitung
 
 **Synthese**:
 Eine Umwandlung, die mehrere Inhalte zu einem neuen zusammenführt.
 _Avoid_: Zusammenfassung, Merge, Aggregation
+
+**KI-Vorschlag**:
+Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa eine Unterschrift für ein Bild oder ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
+_Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 
 ## Beiträge
 
@@ -169,7 +173,7 @@ Die Angabe, worauf sich ein Beitrag stützt: ein Link oder eine andere Fundstell
 _Avoid_: Quelle, Referenz, Reference, Beleg (und nicht für den Einstieg in ein Formular)
 
 **Stil**:
-Die Tonlage eines Kommentars, etwa faktisch, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
+Die Tonlage eines Kommentars, etwa sachlich, persönlich, humorvoll oder brückenbauend. „Bissig“ gibt es nur beim Zweck „Für die eigenen Leute“.
 _Avoid_: Ton, Tonalität
 
 **Fassung**:
