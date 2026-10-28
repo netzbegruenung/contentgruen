@@ -8,7 +8,8 @@ from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
-from services.moderation_service import VerweiseNichtEntfernt, get_moderation_service
+from services.moderation_service import get_moderation_service
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.config import Settings
 from core.logging import get_logger
 from dependencies import get_settings, get_current_user_optional, require_admin

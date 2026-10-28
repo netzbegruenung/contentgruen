@@ -18,8 +18,9 @@ from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
 from domain.content_registry import BEITRAGSTYPEN_WERTE
-from services.moderation_service import ModerationService, VerweiseNichtEntfernt
-from tests.conftest import create_base_content_fields
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
+from services.moderation_service import ModerationService
+from tests.conftest import add_aussage_mit_verweis, create_base_content_fields
 
 CONTENT_ID = str(uuid.uuid4())
 
@@ -175,18 +176,7 @@ class TestLoeschen:
     async def test_loeschen_entfernt_beitrag_und_verweise_aus_aussagen(
         self, service, speicher
     ):
-        aussage_id = str(uuid.uuid4())
-        speicher.add_test_data(
-            "statement",
-            [
-                {
-                    **create_base_content_fields(),
-                    "id": aussage_id,
-                    "replysuggestions": json.dumps([{"id": CONTENT_ID}]),
-                    "replysuggestions_count": 1,
-                }
-            ],
-        )
+        aussage_id = add_aussage_mit_verweis(speicher, CONTENT_ID)
 
         assert await service.delete_content(CONTENT_ID, "commentary", "admin-1")
 
@@ -204,7 +194,7 @@ class TestLoeschen:
         speicher.add_test_data(
             typ, [{**create_base_content_fields(), "id": beitrag_id, "text": "x"}]
         )
-        aussage_id = _aussage_mit_verweis(speicher, beitrag_id)
+        aussage_id = add_aussage_mit_verweis(speicher, beitrag_id)
 
         assert await service.delete_content(beitrag_id, typ, "admin-1")
 
@@ -215,7 +205,7 @@ class TestLoeschen:
         self, service, speicher
     ):
         """Erst die Verweise, dann der Beitrag: Ein erneuter Versuch raeumt noch auf."""
-        _aussage_mit_verweis(speicher, CONTENT_ID)
+        add_aussage_mit_verweis(speicher, CONTENT_ID)
         service.moderation_repo.aus_aussagen_entfernen = AsyncMock(
             side_effect=RuntimeError("Qdrant nicht erreichbar")
         )
@@ -232,23 +222,6 @@ class TestLoeschen:
         assert not await service.delete_content(str(uuid.uuid4()), "post", "a")
 
         service.moderation_repo.aus_aussagen_entfernen.assert_not_awaited()
-
-
-def _aussage_mit_verweis(speicher, beitrag_id: str) -> str:
-    """Eine Aussage, deren einziger Antwortvorschlag beitrag_id ist."""
-    aussage_id = str(uuid.uuid4())
-    speicher.add_test_data(
-        "statement",
-        [
-            {
-                **create_base_content_fields(),
-                "id": aussage_id,
-                "replysuggestions": json.dumps([{"id": beitrag_id}]),
-                "replysuggestions_count": 1,
-            }
-        ],
-    )
-    return aussage_id
 
 
 ADMIN_KENNUNG = "admin.person@example.org"

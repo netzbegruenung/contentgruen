@@ -22,6 +22,7 @@ from domain.models.content_status import AUSGEBLENDET, ContentStatus
 from domain.content_registry import BEITRAGSTYPEN
 from repositories.interfaces.base_content_repository import IBaseContentRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
+from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +58,10 @@ class BeitragLoeschenService:
         (eine Unterklasse von ValueError) geht weiter.
 
         Erst die Verweise der Aussagen, dann der Zustand: Scheitert das Entfernen der
-        Verweise, geht der Fehler weiter und der Beitrag bleibt sichtbar, sodass ein
-        erneuter Versuch aufraeumt. Andersherum faende ein zweiter Versuch den
-        geloeschten Beitrag nicht mehr, und die Verweise blieben stehen.
+        Verweise, geht VerweiseNichtEntfernt weiter und der Beitrag bleibt sichtbar,
+        sodass ein erneuter Versuch aufraeumt. Andersherum faende ein zweiter Versuch
+        den geloeschten Beitrag nicht mehr, und die Verweise blieben stehen. Was ein
+        abgebrochener Lauf ohne zweiten Versuch hinterlaesst: verweise_entfernen.py.
         """
         try:
             beitrag = await self.repository.get(beitrag_id)
@@ -73,7 +75,7 @@ class BeitragLoeschenService:
         if beitrag.original_author != aufrufer:
             return LoeschErgebnis.NICHT_AUTOR
 
-        await self.moderation_repo.aus_aussagen_entfernen(str(beitrag_id))
+        await verweise_entfernen(self.moderation_repo, str(beitrag_id))
         await self.repository.update_status(
             beitrag_id, ContentStatus.DELETED, nicht_aus=AUSGEBLENDET
         )

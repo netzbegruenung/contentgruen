@@ -16,15 +16,9 @@ from repositories.implementations.qdrant.moderation_repository import (
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
 from domain.models.content_status import ContentStatus
+from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
-
-
-class VerweiseNichtEntfernt(Exception):
-    """
-    Aussagen verweisen noch auf den Beitrag, der entfernt werden sollte. Er ist
-    nicht entfernt; ein erneuter Versuch raeumt die restlichen Verweise auf.
-    """
 
 
 # Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
@@ -275,7 +269,8 @@ class ModerationService:
         Aussagen verweisen auf Beitraege jedes Typs (#294). Erst die Verweise, dann der
         Beitrag: Scheitert das Entfernen der Verweise, bleibt der Beitrag stehen und
         ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf einen
-        Beitrag, den kein zweiter Aufruf mehr findet.
+        Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf ohne
+        zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
 
         Args:
             content_id: UUID of the content to delete
@@ -293,7 +288,7 @@ class ModerationService:
             logger.warning(f"Content {content_id} not found or already deleted")
             return False
 
-        await self._aus_aussagen_entfernen(content_id)
+        await verweise_entfernen(self.moderation_repo, content_id)
 
         if not await self.moderation_repo.entfernen(content_id):
             logger.warning(f"Content {content_id} could not be deleted")
@@ -308,28 +303,18 @@ class ModerationService:
                 reviewed_by=deleted_by,
                 resolution_notes="Content deleted",
             )
-        except Exception:
+        except Exception as e:
+            # Nur der Typ: Die Meldung einer Datenbank kann reviewed_by enthalten.
+            logger.warning(
+                f"Content {content_id} deleted, marking its reports as reviewed "
+                f"failed ({type(e).__name__})"
+            )
             updated_count = 0
 
         logger.info(
             f"Content {content_id} ({content_type}) deleted, {updated_count} reports marked as reviewed"
         )
         return True
-
-    async def _aus_aussagen_entfernen(self, content_id: str) -> None:
-        """Den Beitrag aus den Antwortvorschlaegen aller Aussagen streichen."""
-        try:
-            geaendert = await self.moderation_repo.aus_aussagen_entfernen(content_id)
-        except Exception as e:
-            logger.error(
-                f"Removing reply suggestions for {content_id} failed: {e}",
-                exc_info=True,
-            )
-            raise VerweiseNichtEntfernt(content_id) from e
-
-        logger.info(
-            f"Removed {content_id} from reply suggestions of {geaendert} statements"
-        )
 
     async def dismiss_report(
         self, report_id: str, dismissed_by: str, notes: Optional[str] = None

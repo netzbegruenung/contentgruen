@@ -97,18 +97,20 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
     sammlung = await real_embeddings_manager.async_client.get_collection(
         real_embeddings_manager.collection_name
     )
-    vektor = [0.1] * sammlung.config.params.vectors.size
+    groesse = sammlung.config.params.vectors.size
+    # Verschiedene Vektoren: Ueberschriebe die Kaskade die Aussage mit dem Vektor des
+    # Beitrags, fiele das sonst nicht auf.
     await real_embeddings_manager.async_client.upsert(
         collection_name=real_embeddings_manager.collection_name,
         points=[
             PointStruct(
                 id=beitrag_id,
-                vector=vektor,
+                vector=[0.1] * groesse,
                 payload={"content_type": typ, "text": TEXT},
             ),
             PointStruct(
                 id=aussage_id,
-                vector=vektor,
+                vector=[0.1, 0.9] * (groesse // 2) + [0.1] * (groesse % 2),
                 payload={
                     "content_type": ContentType.STATEMENT.value,
                     "text": "Bringt ein Tempolimit etwas?",

@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
-from services.moderation_service import VerweiseNichtEntfernt
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
 
 CONTENT_ID = str(uuid.uuid4())
 URL = f"/api/v1/moderation/content/generic_text/{CONTENT_ID}"

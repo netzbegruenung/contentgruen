@@ -21,7 +21,8 @@ from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
 )
-from tests.conftest import create_base_content_fields
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
+from tests.conftest import add_aussage_mit_verweis, create_base_content_fields
 
 BEITRAG_ID = str(uuid.uuid4())
 AUTOR = "autor-1"
@@ -60,23 +61,6 @@ def service(repository, moderation_repo):
 
 def _status(speicher) -> str:
     return speicher.get_data()[BEITRAG_ID]["status"]
-
-
-def _aussage_mit_verweis(speicher) -> str:
-    """Eine Aussage, deren einziger Antwortvorschlag der Beitrag ist."""
-    aussage_id = str(uuid.uuid4())
-    speicher.add_test_data(
-        "statement",
-        [
-            {
-                **create_base_content_fields(),
-                "id": aussage_id,
-                "replysuggestions": json.dumps([{"id": BEITRAG_ID}]),
-                "replysuggestions_count": 1,
-            }
-        ],
-    )
-    return aussage_id
 
 
 @pytest.mark.unit
@@ -182,7 +166,7 @@ class TestVerweiseAnAussagen:
 
     async def test_loeschen_entfernt_verweis_aus_aussage(self, service, speicher):
         speicher.add_test_data("generic_text", [_beitrag("generic_text")])
-        aussage_id = _aussage_mit_verweis(speicher)
+        aussage_id = add_aussage_mit_verweis(speicher, BEITRAG_ID)
 
         await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
 
@@ -194,7 +178,7 @@ class TestVerweiseAnAussagen:
         self, service, speicher
     ):
         speicher.add_test_data("commentary", [_beitrag()])
-        aussage_id = _aussage_mit_verweis(speicher)
+        aussage_id = add_aussage_mit_verweis(speicher, BEITRAG_ID)
 
         await service.loeschen(uuid.UUID(BEITRAG_ID), "andere-person")
 
@@ -205,7 +189,7 @@ class TestVerweiseAnAussagen:
         speicher.add_test_data(
             "commentary", [_beitrag(status=ContentStatus.BLOCKED.value)]
         )
-        aussage_id = _aussage_mit_verweis(speicher)
+        aussage_id = add_aussage_mit_verweis(speicher, BEITRAG_ID)
 
         await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
 
@@ -220,7 +204,7 @@ class TestVerweiseAnAussagen:
             side_effect=RuntimeError("Qdrant nicht erreichbar")
         )
 
-        with pytest.raises(RuntimeError):
+        with pytest.raises(VerweiseNichtEntfernt):
             await service.loeschen(uuid.UUID(BEITRAG_ID), AUTOR)
 
         assert _status(speicher) == ContentStatus.VISIBLE.value

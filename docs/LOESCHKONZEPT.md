@@ -28,6 +28,8 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Listen, Bestandszählern und „Meine Beiträge“, bleibt aber gespeichert, damit Verknüpfungen und
   Stimmen nicht ins Leere zeigen. Nur die Verweise der Aussagen auf ihn (Antwortvorschläge)
   gehen weg, damit eine Aussage ohne weiteren Beitrag nicht mehr als beantwortet zählt.
+  Scheitert das, bleibt der Beitrag sichtbar und der Autor bekommt einen Fehler mit der Bitte,
+  es erneut zu versuchen; wie beim Admin-Weg unten räumt erst der zweite Versuch fertig auf.
   Das ist **kein Löschen im Sinne von Art. 17**: Text und
   Kennung stehen weiter in Qdrant. Ein Löschantrag erfasst gelöschte Beiträge deshalb
   genauso wie sichtbare und gesperrte; der Lauf in Schritt 3 filtert nur nach der Kennung,
@@ -339,3 +341,6 @@ direkt gegen Qdrant: nur der Endpunkt räumt verwaiste Antwortvorschläge auf
 (`repositories/implementations/qdrant/moderation_repository.py`, `aus_aussagen_entfernen`),
 für jeden Beitragstyp, und schreibt einen Moderationsvermerk. Scheitert das Aufräumen,
 antwortet der Endpunkt mit 500 und lässt den Punkt stehen; den Aufruf dann wiederholen.
+Bricht das Aufräumen mitten im Lauf ab, sind manche Aussagen schon ohne Verweis auf den
+stehengebliebenen Punkt; erst der wiederholte Aufruf macht das Bild wieder stimmig
+(`services/content/verweise_entfernen.py`).
