@@ -75,9 +75,16 @@ describe('karten-daten', () => {
       expect(daten.einwurfAngaben).toBeUndefined();
     });
 
-    it('nimmt den Anzeigenamen vom Paket (Suche) oder vom Inhalt (Einzelabruf, /recent)', () => {
-      expect(ausSuchergebnis(paket('commentary_result', {}, { autor_name: 'Anna B.' })).autorName).toBe('Anna B.');
+    it('nimmt den Anzeigenamen vom Inhalt', () => {
       expect(ausSuchergebnis(paket('commentary_result', { autor_name: 'Kim' })).autorName).toBe('Kim');
+    });
+
+    it('uebernimmt das Kennzeichen eigener Beitrag vom Server (#333)', () => {
+      const ohneKennung = { original_author: undefined };
+      expect(ausSuchergebnis(paket('commentary_result', { ...ohneKennung, ist_eigener_beitrag: true })).eigen).toBeTrue();
+      expect(ausSuchergebnis(paket('commentary_result', { ...ohneKennung, ist_eigener_beitrag: false })).eigen).toBeFalse();
+      expect(ausSuchergebnis(paket('commentary_result', { ...ohneKennung, ist_eigener_beitrag: null })).eigen).toBeNull();
+      expect(ausSuchergebnis(paket('commentary_result', ohneKennung)).autor).toBeNull();
     });
 
     it('macht aus der leeren Kennung einer anonymen Antwort null', () => {
@@ -135,6 +142,13 @@ describe('karten-daten', () => {
       expect(bild.bildUrl).toBe('https://example.org/dach.jpg');
     });
 
+    it('zeigt keine Interaktionen, wenn keine erfasst sind', () => {
+      // Das Post-Formular fragt sie nicht ab; gespeichert wird dann 0.
+      const post = ausSuchergebnis(paket('post_result', { platform: 'Instagram', author: '@a', engagement: 0 }));
+
+      expect(post.extra?.engagement).toBeUndefined();
+    });
+
     it('zaehlt fehlende Nutzung als 0', () => {
       expect(ausSuchergebnis(paket('generictext_result', { usage_count: undefined })).nutzung).toBe(0);
     });
@@ -163,6 +177,15 @@ describe('karten-daten', () => {
       title: 'Erneuerbare senken Strompreise deutlich',
       usage_count: 12,
       ...felder,
+    });
+
+    it('uebernimmt das Kennzeichen eigener Beitrag aus dem Einzelabruf (#333)', () => {
+      // Das Beitrag-Sheet im Fangkorb laedt per getById: ohne Kennung, mit Kennzeichen.
+      const ohneKennung = eintrag({ original_author: null, ist_eigener_beitrag: true });
+
+      expect(ausBeitrag(ohneKennung).eigen).toBeTrue();
+      expect(ausBeitrag(ohneKennung).autor).toBeNull();
+      expect(ausBeitrag(eintrag()).eigen).toBeNull();
     });
 
     it('uebernimmt den Anzeigenamen aus dem Einzelabruf', () => {

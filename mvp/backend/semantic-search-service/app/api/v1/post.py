@@ -6,7 +6,7 @@ import logging
 import uuid
 from uuid import UUID
 
-from dependencies import get_post_service
+from dependencies import get_aufrufer, get_post_service
 from dtos.post import (
     AddPostRequest,
     AddPostResponse,
@@ -19,6 +19,8 @@ from domain.models.post import PostDbEntry
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
+from dtos.beitrag import PostResponse, PostTreffer
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -31,16 +33,17 @@ async def read_test():
 
 
 # Retrieve a single post by its UUID
-@router.get("/getById")
+@router.get("/getById", response_model=PostResponse)
 async def get_by_id(
     post_id: UUID = Query(..., description="The UUID of the post to retrieve"),
     post_service: BaseContentService = Depends(get_post_service),
-):
+    aufrufer: Aufrufer = Depends(get_aufrufer),
+) -> PostResponse:
     try:
         # The repository contract is raise-on-missing (ValueError), not return-None,
         # so a missing id must be mapped to 404 here rather than relying on `post is None`.
         post = await post_service.get(post_id)
-        return post
+        return als_responses(PostResponse, [post], aufrufer)[0]
     except HTTPException:
         raise
     except ValueError as e:
@@ -57,6 +60,7 @@ async def get_all(
     post_service: BaseContentService = Depends(get_post_service),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> PostGetAllResponse:
     try:
         offset = (page - 1) * page_size
@@ -65,7 +69,7 @@ async def get_all(
         )
         return PostGetAllResponse(
             results_count=len(results),
-            results=results,
+            results=als_responses(PostResponse, results, aufrufer),
             total_records_count=await post_service.count(),
         )
     except Exception as e:
@@ -78,10 +82,11 @@ async def get_all(
 async def search_post(
     request: SearchPostByTextRequest,
     post_service: BaseContentService = Depends(get_post_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> PostSearchResponse:
     try:
         results = await post_service.search(request.query_text, request.limit)
-        return PostSearchResponse(results=results)
+        return PostSearchResponse(results=als_responses(PostTreffer, results, aufrufer))
     except Exception as e:
         logger.error(f"Error in search_post: {e}")
         raise HTTPException(status_code=500, detail=str(e))

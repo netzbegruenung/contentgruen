@@ -1,0 +1,86 @@
+<div class="add-post-container formular-bereich" [style.--typ-farbe]="typFarbe">
+    <!-- Aus dem Fangkorb: der Einwurf, aus dem der Post entsteht -->
+    <app-beitragskarte *ngIf="vorbefuellung?.kopf as einwurf" class="einwurf-kopf" variante="kopf"
+                       [daten]="einwurf">
+    </app-beitragskarte>
+
+    <app-formular-hilfe typ="post"></app-formular-hilfe>
+
+    <div class="content-wrapper">
+        <div class="form-column">
+            <form [formGroup]="postForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
+                <mat-form-field appearance="outline" class="formular-feld">
+                    <mat-label>Link zum Post</mat-label>
+                    <input matInput id="url" formControlName="url" type="url" required
+                           placeholder="https://www.instagram.com/p/…" />
+                    <mat-error *ngIf="postForm.get('url')?.hasError('required')">Der Link fehlt.</mat-error>
+                    <mat-error *ngIf="postForm.get('url')?.hasError('pattern')">Bitte einen Link mit https://… eintragen.</mat-error>
+                </mat-form-field>
+
+                <div class="feld-paar">
+                    <mat-form-field appearance="outline" class="formular-feld">
+                        <mat-label>Plattform</mat-label>
+                        <mat-select id="platform" formControlName="platform" required>
+                            <mat-option *ngFor="let plattform of plattformen" [value]="plattform.wert">
+                                {{ plattform.name }}
+                            </mat-option>
+                        </mat-select>
+                        <mat-error *ngIf="postForm.get('platform')?.hasError('required')">Die Plattform fehlt.</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="formular-feld">
+                        <mat-label>Gepostet von</mat-label>
+                        <input matInput id="author" formControlName="author" type="text" required
+                               [attr.maxlength]="autorMax" placeholder="@konto" />
+                        <mat-error *ngIf="postForm.get('author')?.hasError('required')">Wer hat ihn gepostet?</mat-error>
+                    </mat-form-field>
+                </div>
+
+                <mat-form-field appearance="outline" class="formular-feld">
+                    <mat-label>Titel</mat-label>
+                    <!-- Eine Zeile; Enter bricht nicht um -->
+                    <textarea matInput id="title" formControlName="title" required
+                              [attr.maxlength]="titelMax" placeholder="Was macht den Post gut?"
+                              cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="4"
+                              (keydown.enter)="$event.preventDefault()"></textarea>
+                    <mat-hint align="end">{{ titelLaenge }} / {{ titelMax }}</mat-hint>
+                    <mat-error *ngIf="postForm.get('title')?.hasError('required')">Der Titel fehlt.</mat-error>
+                    <mat-error *ngIf="postForm.get('title')?.hasError('minlength')">Mindestens 3 Zeichen.</mat-error>
+                    <mat-error *ngIf="postForm.get('title')?.hasError('maxlength')">Höchstens {{ titelMax }} Zeichen.</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="formular-feld">
+                    <mat-label>Worum geht es?</mat-label>
+                    <textarea matInput id="text" formControlName="text" required
+                              [attr.maxlength]="textMax" placeholder="In eigenen Worten – den Post nicht abschreiben"
+                              cdkTextareaAutosize cdkAutosizeMinRows="4" cdkAutosizeMaxRows="16"></textarea>
+                    <mat-hint align="end">{{ textLaenge }} / {{ textMax }}</mat-hint>
+                    <mat-error *ngIf="postForm.get('text')?.hasError('required')">Der Text fehlt.</mat-error>
+                    <mat-error *ngIf="postForm.get('text')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
+                    <mat-error *ngIf="postForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
+                </mat-form-field>
+
+                <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
+                       rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
+
+                <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
+
+                <app-formular-leiste *ngIf="!responseId"
+                                     [fehler]="fehler ? (validierung ?? 'Speichern hat nicht geklappt.') : null">
+                    <button mat-raised-button type="submit" class="submit-btn"
+                            [disabled]="speichert || postForm.invalid">
+                        <mat-spinner *ngIf="speichert" diameter="18" class="knopf-spinner"></mat-spinner>
+                        {{ fehler && !validierung ? 'Erneut versuchen' : 'Post speichern' }}
+                    </button>
+                </app-formular-leiste>
+            </form>
+        </div>
+
+        <section class="preview-column" aria-labelledby="vorschau-titel">
+            <div class="preview-header">
+                <h3 id="vorschau-titel">Vorschau</h3>
+            </div>
+            <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
+        </section>
+    </div>
+</div>

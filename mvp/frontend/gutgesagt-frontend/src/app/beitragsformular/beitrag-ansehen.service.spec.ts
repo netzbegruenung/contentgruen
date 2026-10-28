@@ -7,24 +7,28 @@ import { BeitragAnsehenService } from './beitrag-ansehen.service';
 import { BeitragSheetComponent } from '../beitragskarte/beitrag-sheet.component';
 import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
+import { PostService } from '../services/post.service';
 import { LoggingService } from '../services/logging.service';
 
 describe('BeitragAnsehenService', () => {
   let service: BeitragAnsehenService;
   let kommentare: jasmine.SpyObj<CommentaryService>;
   let hintergrund: jasmine.SpyObj<GenericTextService>;
+  let posts: jasmine.SpyObj<PostService>;
   let sheet: jasmine.SpyObj<MatBottomSheet>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   beforeEach(() => {
     kommentare = jasmine.createSpyObj('CommentaryService', ['getCommentaryById']);
     hintergrund = jasmine.createSpyObj('GenericTextService', ['getGenericTextById']);
+    posts = jasmine.createSpyObj('PostService', ['getPostById']);
     sheet = jasmine.createSpyObj('MatBottomSheet', ['open']);
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
     TestBed.configureTestingModule({
       providers: [
         { provide: CommentaryService, useValue: kommentare },
         { provide: GenericTextService, useValue: hintergrund },
+        { provide: PostService, useValue: posts },
         { provide: MatBottomSheet, useValue: sheet },
         { provide: MatSnackBar, useValue: snackBar },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['warn']) },
@@ -52,6 +56,16 @@ describe('BeitragAnsehenService', () => {
     service.oeffnen('h-1', 'generic_text');
 
     expect(hintergrund.getGenericTextById).toHaveBeenCalledOnceWith('h-1');
+    expect(sheet.open).toHaveBeenCalled();
+  });
+
+  it('oeffnet einen Post', () => {
+    posts.getPostById.and.returnValue(of({ id: 'p-1', title: 'P', text: 'T', platform: 'Instagram', author: '@a' } as any));
+
+    expect(service.kannAnsehen('post')).toBeTrue();
+    service.oeffnen('p-1', 'post');
+
+    expect(posts.getPostById).toHaveBeenCalledOnceWith('p-1');
     expect(sheet.open).toHaveBeenCalled();
   });
 

@@ -17,6 +17,8 @@ argumentative replies** — built **mainly on semantic search, with LLM as suppo
 
 This is a destination to steer toward, not a spec to build in one shot. What the product is for,
 who it serves and where its limits are is settled in [VISION.md](./VISION.md) (German).
+The long-term path beyond these rungs (from member to creator, a network of instances, optional
+spin-offs) is in [VISION.md, "Langfristig"](./VISION.md#langfristig).
 
 ## The core principle
 

@@ -130,6 +130,18 @@ export const routes: Routes = [
         data: { parent: formularEltern }
     },
     {
+        path: 'workflow/add-post',
+        loadComponent: () => import('./add-post-workflow/add-post-workflow.component').then(m => m.AddPostWorkflowComponent),
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
+        data: { parent: formularEltern }
+    },
+    {
+        path: 'workflow/add-post/gespeichert/:id',
+        loadComponent: () => import('./beitragsformular/beitrag-gespeichert/beitrag-gespeichert.component').then(m => m.BeitragGespeichertComponent),
+        canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],
+        data: { parent: gespeichertEltern, typ: 'post' }
+    },
+    {
         path: 'workflow/add-image',
         loadComponent: () => import('./add-image-workflow/add-image-workflow.component').then(m => m.AddImageWorkflowComponent),
         canActivate: [alteEinwurfAdresseUmleiten, AuthGuard],

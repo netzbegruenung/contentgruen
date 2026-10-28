@@ -197,6 +197,26 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-meta').textContent).not.toContain('Kim Grün');
     });
 
+    it('erkennt den eigenen Beitrag am Kennzeichen des Servers, ohne Kennung (#333)', fakeAsync(() => {
+      const daten = ausSuchergebnis(
+        paket('commentary_result', { original_author: undefined, ist_eigener_beitrag: true, usage_count: 2 }),
+      );
+      zeigen({ ...daten, autorName: 'Kim Grün' });
+
+      expect(element('.karte-meta').textContent).toContain('Von: Du');
+
+      element<HTMLButtonElement>('.kopieren-knopf').click();
+      fixture.detectChanges();
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('2×');
+      tick(600);
+    }));
+
+    it('zeigt "Von: Mitglied" auch ohne Kennung und ohne Namen (#333)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { original_author: undefined, ist_eigener_beitrag: false })));
+
+      expect(element('.karte-meta').textContent).toContain('Von: Mitglied');
+    });
+
     it('holt "Von: Du" nach, wenn die Anmeldung erst nach dem Zeichnen ankommt', () => {
       // Die Karte steht oft vor der Antwort von /api/user-info.
       const auth = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
@@ -243,6 +263,49 @@ describe('BeitragskarteComponent', () => {
       );
       expect(element<HTMLAnchorElement>('.quelle-link').getAttribute('href')).toBe('https://example.org/studie');
     });
+  });
+
+  describe('Kopieren mit Herkunft', () => {
+    it('gibt der Leiste ohne Herkunft keinen Text mit Herkunft', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      expect(aktionen().kopierTextMitHerkunft).toBe('');
+      expect(element('.kopier-wahl-knopf')).toBeNull();
+    });
+
+    it('haengt die Herkunft an die angezeigte Fassung an', () => {
+      zeigen(
+        ausSuchergebnis(
+          paket('commentary_result', {
+            short_text: 'Kurzfassung',
+            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
+          }),
+        ),
+      );
+      component.textModusSetzen('short');
+      fixture.detectChanges();
+
+      expect(aktionen().kopierText).toBe('Kurzfassung');
+      expect(aktionen().kopierTextMitHerkunft).toBe('Kurzfassung\n\nHerkunft: https://example.org/studie');
+      expect(element('.kopier-wahl-knopf')).not.toBeNull();
+    });
+
+    it('zaehlt auch Text + Herkunft als Nutzung an der Karte', fakeAsync(() => {
+      zeigen(
+        ausSuchergebnis(
+          paket('commentary_result', {
+            usage_count: 2,
+            references: [{ reference_id: 'r-1', created: '', reference_text: 'https://example.org/studie' }],
+          }),
+        ),
+      );
+
+      aktionen().kopierenMitHerkunft();
+      fixture.detectChanges();
+
+      expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
+      tick(600);
+    }));
   });
 
   describe('Mobile Badge Display', () => {

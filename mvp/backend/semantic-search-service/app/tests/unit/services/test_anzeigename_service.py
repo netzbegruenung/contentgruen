@@ -112,17 +112,6 @@ class TestNamen:
 
         repository.anzeigename_speichern.assert_not_called()
 
-    def test_autor_name_am_beitrag(self, service, repository):
-        repository.anzeigenamen.return_value = {}
-        eintraege = [
-            {"original_author": EHEMALIGE_PERSON_KENNUNG},
-            {"original_author": "x"},
-        ]
-
-        service.an_eintraege(eintraege)
-
-        assert [e["autor_name"] for e in eintraege] == ["ehemalige Person", None]
-
 
 @pytest.mark.unit
 class TestDependency:

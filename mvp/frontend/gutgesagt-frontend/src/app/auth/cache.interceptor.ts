@@ -57,8 +57,12 @@ const LESENDE_POSTS = [
  * Der Fangkorb ist der gemeinsame Vorrat aller Einwuerfe: Andere Mitwirkende aendern ihn
  * laufend, und was jemand als naechstes destilliert, haengt an der aktuellen Stufe.
  * Ein Stand von vor fuenf Minuten fuehrte zu doppelter Arbeit, daher kein Cache.
+ *
+ * Sitzung pruefen und Nutzerinfo fragen das BFF, ob das Anmelde-Cookie noch gilt. Aus dem
+ * Cache beantwortet, liessen AuthGuard und Kopfzeile eine beendete Sitzung, etwa nach einer
+ * Kontoloeschung (#278), noch fuenf Minuten als angemeldet gelten.
  */
-const NIE_CACHEN = ['/api/v1/rawinput/'];
+const NIE_CACHEN = ['/api/v1/rawinput/', '/api/check-session', '/api/user-info'];
 
 /**
  * Zaehlt Aenderungen. Eine GET-Antwort kommt nur in den Cache, wenn seit ihrer
