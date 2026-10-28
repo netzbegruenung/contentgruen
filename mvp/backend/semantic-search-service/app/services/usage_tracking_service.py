@@ -219,25 +219,6 @@ class UsageTrackingService:
         count = self.cache.invalidate_pattern("trending:")
         logger.info(f"Invalidated {count} trending cache entries")
 
-    def initialize_content_usage(self, content_id: str, initial_count: int = 0):
-        """
-        Initialize usage tracking for a content item.
-        Used during seeding.
-
-        Args:
-            content_id: String UUID of the content item
-            initial_count: Initial usage count
-        """
-        if not self._validate_content_id(content_id):
-            logger.error(f"Invalid content ID format: {content_id}")
-            return
-
-        try:
-            content_uuid = uuid.UUID(content_id)
-            self.repository.initialize_usage_data(content_uuid, initial_count)
-        except Exception as e:
-            logger.error(f"Error initializing usage for {content_id}: {e}")
-
     def cleanup_old_events(self, days_to_keep: int = 90) -> int:
         """
         Clean up old usage events from the database.
