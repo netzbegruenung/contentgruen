@@ -229,7 +229,8 @@ per-service URL/header/error duplication that every type's service still re-copi
 | Special behavior (e.g. dedup) | — | optional behavior strategy |
 
 **Adding a new type =** one registry entry + a model/DTO with its extra fields (ingestion defaults
-to `DirectText`) + its fields in the card adapter and, only if it needs its own body,
+to `DirectText`) + a response DTO that selects what goes out (`<Type>Response`/`<Type>Treffer` in
+`dtos/beitrag.py`, without Kennung, #333) + its fields in the card adapter and, only if it needs its own body,
 a block in `app-beitragskarte`. No engine changes, no cloning.
 
 ## Incremental migration path

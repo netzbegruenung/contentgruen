@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from dependencies import (
+    get_aufrufer,
     get_settings,
     get_current_user_optional,
     get_reference_service,
@@ -18,7 +19,15 @@ from dependencies import (
 from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
-from services.anzeigename_service import get_anzeigename_service
+from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
+from domain.models.content_type import ContentType
+from dtos.beitrag import (
+    BeitragResponse,
+    HintergrundinfoResponse,
+    KommentarResponse,
+    PostResponse,
+)
+from dtos.image import BildResponse
 from services.content.reference_service import ReferenceService
 from services.cleanup.usage_cleanup_service import get_cleanup_service
 from core.config import Settings
@@ -28,6 +37,15 @@ logger = logging.getLogger(__name__)
 
 
 router = APIRouter()
+
+# Was "Diese Woche oft genutzt" je Typ ausliefert (dtos/beitrag.py, #333); ein Typ
+# ohne Eintrag bekommt die allgemeine Auswahl.
+OFT_GENUTZT = {
+    ContentType.COMMENTARY.value: KommentarResponse,
+    ContentType.GENERIC_TEXT.value: HintergrundinfoResponse,
+    ContentType.POST.value: PostResponse,
+    ContentType.IMAGE.value: BildResponse,
+}
 
 
 class TrackUsageRequest(BaseModel):
@@ -309,7 +327,7 @@ async def get_trending_content(
 
 @router.get("/trending/woche", response_model=OftGenutztResponse)
 async def oft_genutzt(
-    aufrufer: Optional[str] = Depends(get_current_user_optional),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
 ):
@@ -320,7 +338,8 @@ async def oft_genutzt(
     Startseite den Bereich gar nicht.
 
     Unter /trending, weil das BFF diesen Pfad schon fuer Besucher freigibt
-    (EndpointPolicy.cs). Besucher sehen keine Anzeigenamen.
+    (EndpointPolicy.cs). Je Beitrag das Response-DTO seines Typs, aufbereitet mit
+    ``fuer_aufrufer``: Besucher sehen weder Anzeigenamen noch Kennungen.
     """
     from repositories.implementations.qdrant.qdrant_repository_factory import (
         QdrantRepositoryFactory,
@@ -334,9 +353,28 @@ async def oft_genutzt(
                 settings, QdrantRepositoryFactory(), reference_service
             ),
         )
-        beitraege = usage_service.enrich_content_with_usage(await service.beitraege())
-        get_anzeigename_service().fuer_aufrufer(aufrufer, beitraege)
-        return OftGenutztResponse(results=beitraege)
+        angereichert = usage_service.enrich_content_with_usage(
+            await service.beitraege()
+        )
+        # result_type und recent_uses gehoeren nicht zum Beitrag und kommen
+        # danach wieder dazu.
+        antworten = fuer_aufrufer(
+            [
+                OFT_GENUTZT.get(e["result_type"], BeitragResponse).model_validate(e)
+                for e in angereichert
+            ],
+            aufrufer,
+        )
+        return OftGenutztResponse(
+            results=[
+                {
+                    **antwort.model_dump(mode="json"),
+                    "result_type": e["result_type"],
+                    "recent_uses": e["recent_uses"],
+                }
+                for e, antwort in zip(angereichert, antworten)
+            ]
+        )
 
     except Exception as e:
         logger.error(f"Error getting oft genutzt: {e}", exc_info=True)
