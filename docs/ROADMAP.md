@@ -5,15 +5,17 @@
 > This document describes the *path*: how to get from the MVP to the long-term vision, one
 > independently-useful step at a time.
 >
-> Rungs 0–2 are complete — see [Current position](#current-position-as-of-july-2026) at the end.
+> Rungs 0–2 are complete. Where the project stands now is tracked on Forgejo, see
+> [Current position](#current-position) at the end.
 > The rung descriptions below are kept as written, as the record of what each step was for.
 
 ## The vision (the direction, not a plan)
 
 A platform that analyzes **any content in any format**, transforms it multimodally, and then
-**tags**, **describes**, **mood/stance-checks**, **links it to sources**, and drafts **good
-argumentative replies** — built **mainly on semantic search, with LLM as support** — and
-**gamified for Green Party members**.
+**tags**, **describes**, **mood/stance-checks**, **links it to sources**, and helps members write
+**good argumentative replies** — built **on semantic search and specialised NLP models**, with a
+generic language model only as an exception ([ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md))
+— and **gamified for Green Party members**.
 
 This is a destination to steer toward, not a spec to build in one shot. What the product is for,
 who it serves and where its limits are is settled in [VISION.md](./VISION.md) (German).
@@ -38,7 +40,8 @@ commit to at a time.
   trap: you'll have impressive-but-untrustworthy capability long before it's safe to ship.
 - **"Argumentative replies" is the highest-risk item and is deliberately last.** A reply that
   hallucinates a fact or misattributes a position isn't a bug — it's a screenshot that embarrasses
-  Netzbegrünung. It stays human-in-the-loop (drafts a member edits) far longer than feels necessary.
+  Netzbegrünung. It stays human-in-the-loop (suggestions a member checks, edits and answers for) far
+  longer than feels necessary.
 
 ## The ladder
 
@@ -73,7 +76,7 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 - **Lean:** all AI happens at **ingestion**; search stays cheap and deterministic.
 - **Cost:** 2–3 months. **Gate:** a non-text type is searchable and the engine treats it uniformly.
 
-### Rung 3 — Analysis layer: tag, describe, mood/stance ⬅ next
+### Rung 3 — Analysis layer: tag, describe, mood/stance
 - **Discipline shift: build a small labeled eval set *before* you trust any output.** Without eval
   you cannot tell if it's good.
 - Lean on **semantic search + light classification, not generation** — most tagging/mood can be
@@ -87,11 +90,15 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 - **Cost:** 1–3 months + ongoing curation. **Gate:** given an input, you reliably surface the
   *right* sources.
 
-### Rung 5 — Argumentative replies — human-in-the-loop only
-- It **drafts**; a member **edits and sends**. Never autonomous early. Highest reputational risk;
-  comes last on purpose, on top of a trustworthy corpus and measured analysis.
+### Rung 5 — Help with argumentative replies — human-in-the-loop only
+- **No language model writes replies on its own** ([ADR 0003](./adr/0003-keine-generierten-antworten.md),
+  [ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)). Specialised models find, compare and check;
+  members write. A generic model is only the exception, through the Grünerator on Netzbegrünung's
+  own hardware: on a member's click it suggests a text, and the member checks it, edits it and
+  answers for it, or discards it. Highest reputational risk; comes last on purpose, on top of a
+  trustworthy corpus and measured analysis.
 - **Cost:** 3–6 months, never fully "done" (it's a quality treadmill). **Gate:** members actually use
-  the drafts and none are screenshot-embarrassing.
+  the suggestions and none are screenshot-embarrassing.
 
 ### Rung 6 — Gamification + KV social data, woven through
 
@@ -111,8 +118,10 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 1. **Dogfood every rung before climbing the next.** Real use is the gate, not "it compiles."
 2. **Eval before trust.** From rung 3 on, every ML/LLM output needs a measured quality bar or you're
    flying blind. This is the part AI agents do **not** shortcut.
-3. **Semantic-search-first, LLM as a scalpel.** Every capability done with the existing substrate
-   instead of a per-query LLM call is cheaper to build, cheaper to run, and needs no eval harness.
+3. **Semantic search and specialised NLP first, a generic LLM only as an exception.** Every
+   capability done with the existing substrate or a small specialised model instead of a per-query
+   LLM call is cheaper to build, cheaper to run, and easier to measure. Where no specialised tool
+   fits, the exception is the Grünerator on own hardware ([ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)).
 4. **The dangerous thing is always last and always assisted.** Replies for a political party stay
    human-in-the-loop far longer than feels necessary.
 
@@ -124,16 +133,12 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 - The agents buy you velocity early and the brakes matter late — backwards from how it will *feel*,
   because the early wins will tempt you to skip the gates. **Don't.**
 
-## Current position (as of July 2026)
+## Current position
 
-Rungs 0–2 are complete:
-- **Rung 0** — MVP deployed to test and production, in active use.
-- **Rung 1** — `ContentTypeSpec` registry shipped; adding a type is a spec + model + fragment (proven by Post).
-- **Rung 2** — Image type shipped: Phase A (user-captioned images, AI caption suggestion via GPT-4o mini) and Phase B (async background description worker for captionless ingestion; removed in #281, ADR 0003).
-
-**Next: dogfood rungs 1–2, then decide rung 3.** Use the platform actively, catalogue friction, and
-grow real content. Rung 3 (tagging, mood/stance analysis) requires a labelled eval set before any
-ML output can be trusted — the eval set is the gate, not the code. Do not start rung 3 without it.
+Rungs 0–2 are complete. What is being built now and next is planned on Forgejo, not in this
+file: the milestones [„Launch“](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestone/81) and
+[„Nach dem Launch“](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestone/82). This file keeps the ladder
+and its gates; the rung 3 gate (a labelled eval set before any ML output is trusted) still applies.
 
 ## Roadmap-Features
 

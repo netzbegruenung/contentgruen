@@ -20,38 +20,21 @@ und im Pflichtmodus (``stack.py``) ein Fehler.
 
 import os
 import re
-import subprocess
 import time
 import urllib.error
 import urllib.request
-import uuid
 from contextlib import contextmanager
 from typing import Iterator
 
 import pytest
 
-from tests.integration import postgres, stack
+from tests.integration import nginx, postgres, stack
 
 pytestmark = pytest.mark.integration
 
-FRONTEND = postgres.REPO_WURZEL / "mvp" / "frontend" / "gutgesagt-frontend"
+FRONTEND = nginx.FRONTEND
 SUCHTEXT = "Waermepumpe-im-Altbau-275"
 SUCHE = "/api/v1/search/searchByText"
-
-
-def _image() -> str:
-    dockerfile = (FRONTEND / "Dockerfile").read_text(encoding="utf-8")
-    return re.findall(r"^FROM\s+(\S+)", dockerfile, re.MULTILINE)[-1]
-
-
-def _docker(*argumente: str, timeout: int = 60) -> str:
-    return subprocess.run(
-        ["docker", *argumente],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    ).stdout.strip()
 
 
 @pytest.fixture(scope="module")
@@ -71,27 +54,9 @@ def _nginx(konfiguration: str) -> Iterator[tuple[str, str]]:
     ``gutgesagt-bff`` zeigt auf den Container selbst: nginx.docker.conf braucht den
     Namen beim Start, eine Antwort des BFF braucht der Test nicht.
     """
-    name = f"gutgesagt-itest-nginx-{uuid.uuid4().hex[:8]}"
+    name = nginx.starten(konfiguration)
     try:
-        _docker(
-            "run",
-            "--detach",
-            "--name",
-            name,
-            "--label",
-            "gutgesagt-itest",
-            "--add-host",
-            "gutgesagt-bff:127.0.0.1",
-            "--volume",
-            f"{FRONTEND / konfiguration}:/etc/nginx/conf.d/default.conf:ro",
-            "--volume",
-            f"{FRONTEND / 'nginx.protokoll.conf'}:/etc/nginx/conf.d/00-protokoll.conf:ro",
-            "--publish",
-            "127.0.0.1::80",
-            _image(),
-            timeout=300,
-        )
-        adresse = _docker("port", name, "80/tcp").splitlines()[0]
+        adresse = nginx.docker("port", name, "80/tcp").splitlines()[0]
         basis = f"http://{adresse}"
         frist = time.monotonic() + 30
         while True:
@@ -102,13 +67,15 @@ def _nginx(konfiguration: str) -> Iterator[tuple[str, str]]:
                 break
             except OSError:
                 if time.monotonic() > frist:
-                    raise RuntimeError(
-                        f"nginx startet nicht: {_docker('logs', name)}"
-                    ) from None
+                    try:
+                        zeilen = "\n".join(nginx.ausgabe(name))
+                    except RuntimeError as fehler:
+                        zeilen = str(fehler)
+                    raise RuntimeError(f"nginx startet nicht:\n{zeilen}") from None
                 time.sleep(0.3)
         yield basis, name
     finally:
-        subprocess.run(["docker", "rm", "--force", name], capture_output=True)
+        nginx.entfernen(name)
 
 
 def _anfrage(adresse: str, methode: str = "GET", referer: str = "") -> None:
@@ -122,13 +89,12 @@ def _anfrage(adresse: str, methode: str = "GET", referer: str = "") -> None:
 
 
 def _zugriffe(name: str) -> list[str]:
-    """Die ganze Ausgabe des Containers: Zugriffsprotokoll (stdout),
-    Fehlerprotokoll (stderr) und Startmeldungen. Beide Stroeme landen im
-    ``json-file``-Protokoll von Docker."""
-    ausgabe = subprocess.run(
-        ["docker", "logs", name], capture_output=True, text=True, timeout=30
-    )
-    return (ausgabe.stdout + ausgabe.stderr).splitlines()
+    """Die ganze Ausgabe des Containers, erst nach dem Anhalten gelesen: Docker
+    meldet den Container erst als angehalten, wenn es stdout und stderr ganz
+    uebernommen hat. Sofort gelesen koennten unter Last die letzten Zeilen noch
+    fehlen."""
+    nginx.docker("stop", name)
+    return nginx.ausgabe(name)
 
 
 @pytest.mark.usefixtures("docker_noetig")
