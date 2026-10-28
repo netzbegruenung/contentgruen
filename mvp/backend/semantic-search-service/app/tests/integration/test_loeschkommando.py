@@ -14,7 +14,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy import text
 
-from api.v1.raw_input import _mit_namen
+from api.v1.raw_input import _einwuerfe_fuer_aufrufer
 from infrastructure.database.models import (
     Base,
     ContentReport,
@@ -28,6 +28,7 @@ from infrastructure.database.models import (
 from repositories.raw_input_repository import RawInputRepository
 from repositories.user_repository import UserRepository
 from services.anzeigename_service import AnzeigenameService
+from services.beitrag_fuer_aufrufer import Aufrufer
 from tests.integration import postgres
 
 SKRIPT = postgres.REPO_WURZEL / "mvp" / "scripts" / "manual" / "person_loeschen.sql"
@@ -115,8 +116,11 @@ def _im_fangkorb(datenbank, einwurf: uuid.UUID, aufrufer: str = ANDERE):
     """Der Einwurf, wie der Fangkorb ihn einer angemeldeten Person ausliefert."""
     zeile = RawInputRepository(datenbank).get_by_id(einwurf, current_user=aufrufer)
     dienst = AnzeigenameService(UserRepository(datenbank))
-    with patch("api.v1.raw_input.get_anzeigename_service", return_value=dienst):
-        return _mit_namen([zeile], aufrufer)[0]
+    with patch(
+        "services.beitrag_fuer_aufrufer.get_anzeigename_service", return_value=dienst
+    ):
+        (sicht,) = _einwuerfe_fuer_aufrufer([zeile], Aufrufer(aufrufer))
+    return sicht.model_dump()
 
 
 def _kennung_irgendwo(datenbank, uid: str):

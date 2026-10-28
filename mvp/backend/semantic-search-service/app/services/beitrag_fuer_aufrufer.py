@@ -3,8 +3,8 @@ Was die aufrufende Person an einem Beitrag sieht (#333), ebenso an Aussagen,
 Herkunft, Einwuerfen und Saetzen (#385).
 
 Die Kennung ist personenbezogen (GLOSSARY.md). Angemeldete bekommen statt der
-Kennung den Anzeigenamen und ein Kennzeichen fuer den eigenen Eintrag
-(``ist_eigener_beitrag`` usw.), Admins zusaetzlich die Kennung (Moderation).
+Kennung den Anzeigenamen und ein Kennzeichen, ob es der eigene Beitrag,
+die eigene Aussage usw. ist (``ist_eigener_beitrag`` usw.), Admins zusaetzlich die Kennung (Moderation).
 Besucher bekommen keins von beidem.
 """
 
@@ -22,7 +22,7 @@ A = TypeVar("A", bound=BaseModel)
 
 @dataclass(frozen=True)
 class Aufrufer:
-    """Wer Beitraege ausgeliefert bekommt: Kennung aus X-User, Admin aus X-Is-Admin."""
+    """Wer eine Antwort mit Personenbezug bekommt: Kennung aus X-User, Admin aus X-Is-Admin."""
 
     kennung: Optional[str] = None
     # Der Kopf allein; ob jemand Admin ist, sagt ist_admin.
@@ -91,20 +91,20 @@ def personen_fuer_aufrufer(aufrufer: Aufrufer, *gruppen: Gruppe) -> None:
 
 
 def fuer_aufrufer(
-    beitraege: Sequence[A], aufrufer: Aufrufer, bezug: Personenbezug = BEITRAG
+    objekte: Sequence[A], aufrufer: Aufrufer, bezug: Personenbezug = BEITRAG
 ) -> Sequence[A]:
     """Wie ``personen_fuer_aufrufer`` fuer eine Liste; gibt sie zurueck."""
-    personen_fuer_aufrufer(aufrufer, (beitraege, bezug))
-    return beitraege
+    personen_fuer_aufrufer(aufrufer, (objekte, bezug))
+    return objekte
 
 
 def als_responses(
     klasse: Type[A],
-    inhalte: Iterable,
+    quellen: Iterable,
     aufrufer: Aufrufer,
     bezug: Personenbezug = BEITRAG,
 ) -> List[A]:
-    """Die Inhalte als ``klasse``, fuer diesen Aufrufer."""
-    beitraege = [klasse.model_validate(inhalt) for inhalt in inhalte]
-    fuer_aufrufer(beitraege, aufrufer, bezug)
-    return beitraege
+    """Die Objekte als ``klasse``, fuer diesen Aufrufer."""
+    objekte = [klasse.model_validate(quelle) for quelle in quellen]
+    fuer_aufrufer(objekte, aufrufer, bezug)
+    return objekte

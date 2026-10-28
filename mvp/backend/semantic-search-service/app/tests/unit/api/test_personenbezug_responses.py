@@ -2,8 +2,8 @@
 Aussagen, Herkunft, Einwuerfe und Meine Beitraege ohne Kennung anderer Personen (#385).
 
 Dieselbe Regel wie an Beitraegen (#333, test_beitrag_responses.py): Nicht-Admins
-bekommen statt der Kennung den Anzeigenamen und ein Kennzeichen fuer den eigenen
-Eintrag, beides nur angemeldet; Admins sehen die Kennung weiter. Geprueft an jeder
+bekommen statt der Kennung den Anzeigenamen und ein Kennzeichen, ob es ihr
+eigenes ist, beides nur angemeldet; Admins sehen die Kennung weiter. Geprueft an jeder
 lesenden Route: Keine Kennung einer Person steht irgendwo im Antworttext.
 """
 
@@ -33,7 +33,12 @@ from domain.models.content_type import ContentType
 from domain.models.reference import ReferenceDbEntry
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from dtos.contribution import ContributionEntry
-from dtos.statement import AussageResponse
+from dtos.beitrag import BeitragResponse
+from dtos.contribution import MeinBeitragResponse
+from dtos.raw_input import RawInputDraftResponse, RawInputLinkResponse, RawInputResponse
+from dtos.reference import GetReferenceResponse
+from dtos.statement import AussageResponse, AussageTreffer
+from services import beitrag_fuer_aufrufer as regel
 from repositories.raw_input_repository import get_raw_input_repository
 from services.content.statement_service import StatementService
 from tests.unit.api.test_beitrag_responses import (
@@ -203,6 +208,10 @@ def _herkunft():
     )
 
 
+HERKUNFT_NICHT_NACH_AUSSEN = set(BaseContentDbEntry.model_fields) - set(
+    GetReferenceResponse.model_fields
+)
+
 herkunft_app = FastAPI()
 herkunft_app.include_router(reference_router, prefix="/api/v1/reference")
 
@@ -229,6 +238,7 @@ class TestHerkunft:
 
         _ohne_kennung(antwort)
         herkunft = antwort.json()
+        assert not HERKUNFT_NICHT_NACH_AUSSEN & set(herkunft)
         assert herkunft["autor_name"] == NAME
         assert herkunft["ist_eigene_herkunft"] is False
 
@@ -395,7 +405,7 @@ meine_app.include_router(contribution_router, prefix="/api/v1/contribution")
 @pytest.fixture
 def meine_client(anzeigenamen_ohne_datenbank):
     _namen(anzeigenamen_ohne_datenbank, AUTORIN)
-    eintrag = lambda: ContributionEntry.model_validate(  # noqa: E731
+    beitrag = lambda: ContributionEntry.model_validate(  # noqa: E731
         {
             **_personen(),
             "id": str(uuid.uuid4()),
@@ -405,7 +415,7 @@ def meine_client(anzeigenamen_ohne_datenbank):
         }
     )
     repository = MagicMock(
-        getByAuthor=AsyncMock(side_effect=lambda **_: [eintrag(), eintrag()]),
+        getByAuthor=AsyncMock(side_effect=lambda **_: [beitrag(), beitrag()]),
         getCountByAuthor=AsyncMock(return_value=2),
     )
     factory = MagicMock()
@@ -469,3 +479,31 @@ def test_einwurf_ohne_person_ohne_kennzeichen(
 
     assert einwurf["submitted_by_name"] is None
     assert einwurf["ist_eigener_einwurf"] is None
+
+
+# --------------------------------------------------------------------------- #
+# Felder der Regel
+# --------------------------------------------------------------------------- #
+
+# Jeder Personenbezug mit den DTOs, an denen die Routen ihn anwenden. Die Regel
+# schreibt die Felder per Namen; ein umbenanntes Feld faellt hier auf, nicht erst
+# als AttributeError in der Route.
+DTOS_JE_BEZUG = [
+    (regel.BEITRAG, BeitragResponse),
+    (regel.BEITRAG, MeinBeitragResponse),
+    (regel.AUSSAGE, AussageResponse),
+    (regel.AUSSAGE, AussageTreffer),
+    (regel.HERKUNFT, GetReferenceResponse),
+    (regel.EINWURF, RawInputResponse),
+    (regel.DESTILLIERER, RawInputResponse),
+    (regel.AUSFORMULIERER, RawInputResponse),
+    (regel.AUSFORMULIERER, RawInputLinkResponse),
+    (regel.SATZ, RawInputDraftResponse),
+]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("bezug,dto", DTOS_JE_BEZUG)
+def test_felder_des_personenbezugs_gibt_es_am_dto(bezug, dto):
+    felder = [bezug.kennung, bezug.name, bezug.eigen]
+    assert set(f for f in felder if f) <= set(dto.model_fields)

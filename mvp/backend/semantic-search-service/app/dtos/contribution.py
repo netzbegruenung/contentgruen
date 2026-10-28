@@ -53,7 +53,7 @@ class ContributionEntry(ContentDbEntry):
 
 class MeinBeitragResponse(BeitragResponse):
     """
-    Ein Eintrag in "Meine Beitraege", wie er nach aussen geht (#385).
+    Ein Beitrag in "Meine Beitraege", wie er nach aussen geht (#385).
 
     Dieselbe Auswahl wie ueberall an Beitraegen (dtos/beitrag.py) plus, was die
     Album-Karte braucht. ``ContributionEntry`` bleibt das Lesemodell aus Qdrant;
