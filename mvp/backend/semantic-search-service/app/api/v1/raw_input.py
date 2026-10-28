@@ -84,22 +84,25 @@ def _angemeldete_person(x_user: Optional[str]) -> str:
 
 
 def _einwuerfe_fuer_aufrufer(
-    rows: List[dict], aufrufer: Aufrufer
+    rows: List[dict], aufrufer: Aufrufer, mit_namen: bool = True
 ) -> List[RawInputResponse]:
     """
     Die Einwuerfe, wie der Aufrufer sie sieht (#385, Regel aus #333): Anzeigenamen
     und Kennzeichen zu Einwerfer und Satz-Autoren aus einer Abfrage fuer die ganze
     Seite; die Kennungen, auch von Destillierer und Ausformulierer, nur fuer Admins.
+    Ohne ``mit_namen`` nur die Kennungen, fuer Antworten, die keine Person zeigen.
     """
     einwuerfe = [RawInputResponse(**row) for row in rows]
-    personen_fuer_aufrufer(
-        aufrufer,
+    gruppen = [
         (einwuerfe, EINWURF),
         ([satz for einwurf in einwuerfe for satz in einwurf.drafts], SATZ),
         (einwuerfe, DESTILLIERER),
         (einwuerfe, AUSFORMULIERER),
         ([link for einwurf in einwuerfe for link in einwurf.links], AUSFORMULIERER),
-    )
+    ]
+    if not mit_namen:
+        gruppen = [(objekte, bezug.nur_kennung()) for objekte, bezug in gruppen]
+    personen_fuer_aufrufer(aufrufer, *gruppen)
     return einwuerfe
 
 
@@ -181,13 +184,15 @@ async def einwuerfe_mit_gleichem_link(
 
     POST statt GET, obwohl nur gelesen wird: Der Link steht so im Body und nicht
     in der Adresse, die Webserver und Proxy protokollieren. Links fuehren oft auf
-    Profile Dritter. Das Formular zeigt nur Stufe und Beitrag; die Personen
-    bereitet der Endpunkt trotzdem wie alle Fangkorb-Routen auf (#385).
+    Profile Dritter. Anzeigenamen loest der Endpunkt nicht auf: Das Formular
+    zeigt nur Stufe und Beitrag. Die Kennungen sehen wie ueberall nur Admins (#385).
     """
     person = _angemeldete_person(aufrufer.kennung)
     try:
         rows = repository.mit_gleichem_link(request.url, person)
-        return GleicherLinkResponse(results=_einwuerfe_fuer_aufrufer(rows, aufrufer))
+        return GleicherLinkResponse(
+            results=_einwuerfe_fuer_aufrufer(rows, aufrufer, mit_namen=False)
+        )
     except Exception as e:
         logger.error(f"Fehler in /gleicherLink: {e}", exc_info=True)
         raise HTTPException(

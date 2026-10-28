@@ -32,9 +32,8 @@ from domain.models.base_content import BaseContentDbEntry
 from domain.models.content_type import ContentType
 from domain.models.reference import ReferenceDbEntry
 from domain.models.statement import StatementDbEntry, StatementSearchResult
-from dtos.contribution import ContributionEntry
 from dtos.beitrag import BeitragResponse
-from dtos.contribution import MeinBeitragResponse
+from dtos.contribution import ContributionEntry, MeinBeitragResponse
 from dtos.raw_input import RawInputDraftResponse, RawInputLinkResponse, RawInputResponse
 from dtos.reference import GetReferenceResponse
 from dtos.statement import AussageResponse, AussageTreffer
@@ -50,7 +49,7 @@ from tests.unit.api.test_beitrag_responses import (
     FREMD,
     NAME,
     NICHT_NACH_AUSSEN,
-    _personen,
+    personenfelder,
 )
 
 GET = "get"
@@ -91,7 +90,7 @@ def _liste(body):
 
 def _aussage(klasse=StatementDbEntry, **extra):
     return klasse(
-        **_personen(),
+        **personenfelder(),
         **extra,
         id=uuid.uuid4(),
         content_type=ContentType.STATEMENT,
@@ -199,7 +198,7 @@ class TestAussagen:
 
 def _herkunft():
     return ReferenceDbEntry(
-        **_personen(),
+        **personenfelder(),
         id=uuid.uuid4(),
         content_type=ContentType.REFERENCE,
         reference_string="https://example.org/rede",
@@ -349,14 +348,31 @@ def _einwuerfe(antwort):
     return _liste(antwort.json())
 
 
+# gleicherLink zeigt keine Person: dort nur die Kennungen leeren, keine Namen (#385).
+OHNE_NAMEN = "rawinput/gleicherLink"
+MIT_NAMEN = [route for route in EINWURF_ROUTEN if route != OHNE_NAMEN]
+
+
 @pytest.mark.unit
 @pytest.mark.parametrize("route", EINWURF_ROUTEN)
 class TestEinwuerfe:
-    def test_angemeldet_ohne_kennung_mit_namen(self, einwurf_client, route):
-        antwort = einwurf_client(route, FREMD)
+    def test_angemeldet_ohne_kennung(self, einwurf_client, route):
+        _ohne_kennung(einwurf_client(route, FREMD), *ALLE_KENNUNGEN)
 
-        _ohne_kennung(antwort, *ALLE_KENNUNGEN)
-        for einwurf in _einwuerfe(antwort):
+    def test_admin_sieht_kennungen(self, einwurf_client, route):
+        for einwurf in _einwuerfe(einwurf_client(route, ADMIN)):
+            assert einwurf["submitted_by"] == AUTORIN
+            assert einwurf["destilled_by"] == BEARBEITER
+            assert einwurf["processed_by"] == BEARBEITER
+            assert einwurf["drafts"][0]["user_id"] == SATZ_AUTORIN
+            assert einwurf["links"][0]["processed_by"] == BEARBEITER
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("route", MIT_NAMEN)
+class TestEinwuerfeMitNamen:
+    def test_angemeldet_mit_namen(self, einwurf_client, route):
+        for einwurf in _einwuerfe(einwurf_client(route, FREMD)):
             assert einwurf["submitted_by_name"] == NAME
             assert einwurf["ist_eigener_einwurf"] is False
             (satz,) = einwurf["drafts"]
@@ -375,14 +391,22 @@ class TestEinwuerfe:
             assert einwurf["ist_eigener_einwurf"] is False
             assert einwurf["drafts"][0]["ist_eigener_satz"] is True
 
-    def test_admin_sieht_kennungen(self, einwurf_client, route):
+    def test_admin_mit_kennzeichen(self, einwurf_client, route):
         for einwurf in _einwuerfe(einwurf_client(route, ADMIN)):
-            assert einwurf["submitted_by"] == AUTORIN
-            assert einwurf["destilled_by"] == BEARBEITER
-            assert einwurf["processed_by"] == BEARBEITER
-            assert einwurf["drafts"][0]["user_id"] == SATZ_AUTORIN
-            assert einwurf["links"][0]["processed_by"] == BEARBEITER
             assert einwurf["ist_eigener_einwurf"] is False
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("headers", [FREMD, EIGEN, ADMIN])
+def test_gleicher_link_ohne_namen_und_kennzeichen(
+    einwurf_client, anzeigenamen_ohne_datenbank, headers
+):
+    for einwurf in _einwuerfe(einwurf_client(OHNE_NAMEN, headers)):
+        assert einwurf["submitted_by_name"] is None
+        assert einwurf["ist_eigener_einwurf"] is None
+        assert einwurf["drafts"][0]["user_name"] is None
+        assert einwurf["drafts"][0]["ist_eigener_satz"] is None
+    anzeigenamen_ohne_datenbank.anzeigenamen.assert_not_called()
 
 
 @pytest.mark.unit
@@ -390,6 +414,20 @@ def test_einwuerfe_namen_aus_einer_abfrage(einwurf_client, anzeigenamen_ohne_dat
     einwurf_client("rawinput/getRawInputs", FREMD)
 
     assert anzeigenamen_ohne_datenbank.anzeigenamen.call_count == 1
+
+
+@pytest.mark.unit
+def test_einwurf_ohne_person_ohne_kennzeichen(
+    einwurf_client, anzeigenamen_ohne_datenbank
+):
+    """Ohne Einwerfer (Wege ohne Sitzung) gibt es kein "eigen" und kein "fremd"."""
+    repository = einwurf_app.dependency_overrides[get_raw_input_repository]()
+    repository.get_by_id.side_effect = lambda *_: {**_einwurf(), "submitted_by": None}
+
+    einwurf = einwurf_client("rawinput/{id}", FREMD).json()
+
+    assert einwurf["submitted_by_name"] is None
+    assert einwurf["ist_eigener_einwurf"] is None
 
 
 # --------------------------------------------------------------------------- #
@@ -407,7 +445,7 @@ def meine_client(anzeigenamen_ohne_datenbank):
     _namen(anzeigenamen_ohne_datenbank, AUTORIN)
     beitrag = lambda: ContributionEntry.model_validate(  # noqa: E731
         {
-            **_personen(),
+            **personenfelder(),
             "id": str(uuid.uuid4()),
             "content_type": "commentary",
             "title": "Wärmepumpe lohnt sich auch im Altbau",
@@ -467,20 +505,6 @@ class TestMeineBeitraege:
         repository.getByAuthor.assert_not_called()
 
 
-@pytest.mark.unit
-def test_einwurf_ohne_person_ohne_kennzeichen(
-    einwurf_client, anzeigenamen_ohne_datenbank
-):
-    """Ohne Einwerfer (Wege ohne Sitzung) gibt es kein "eigen" und kein "fremd"."""
-    repository = einwurf_app.dependency_overrides[get_raw_input_repository]()
-    repository.get_by_id.side_effect = lambda *_: {**_einwurf(), "submitted_by": None}
-
-    einwurf = einwurf_client("rawinput/{id}", FREMD).json()
-
-    assert einwurf["submitted_by_name"] is None
-    assert einwurf["ist_eigener_einwurf"] is None
-
-
 # --------------------------------------------------------------------------- #
 # Felder der Regel
 # --------------------------------------------------------------------------- #
@@ -505,5 +529,5 @@ DTOS_JE_BEZUG = [
 @pytest.mark.unit
 @pytest.mark.parametrize("bezug,dto", DTOS_JE_BEZUG)
 def test_felder_des_personenbezugs_gibt_es_am_dto(bezug, dto):
-    felder = [bezug.kennung, bezug.name, bezug.eigen]
+    felder = [bezug.kennung_feld, bezug.name_feld, bezug.eigen_feld]
     assert set(f for f in felder if f) <= set(dto.model_fields)

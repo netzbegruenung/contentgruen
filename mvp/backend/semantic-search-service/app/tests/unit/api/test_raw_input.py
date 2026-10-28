@@ -1043,6 +1043,26 @@ class TestGleicherLink:
             "http://www.example.org/a/", "alice"
         )
 
+    def test_gleicher_link_ohne_anzeigenamen(self, client, repository):
+        """Das Formular zeigt nur Stufe und Beitrag; Namen fragt es nicht ab (#385)."""
+        repository.mit_gleichem_link.return_value = [
+            _gespeicherter_einwurf(url="https://example.org/a")
+        ]
+
+        with patch("services.beitrag_fuer_aufrufer.get_anzeigename_service") as namen:
+            antwort = client.post(
+                GLEICHER_LINK_URL,
+                json={"url": "https://example.org/a"},
+                headers={"X-User": "alice"},
+            )
+
+        assert antwort.status_code == 200
+        (einwurf,) = antwort.json()["results"]
+        assert einwurf["submitted_by_name"] is None
+        assert einwurf["ist_eigener_einwurf"] is None
+        assert "testuser" not in antwort.text
+        namen.assert_not_called()
+
     def test_gleicher_link_ohne_treffer_ist_leer(self, client, repository):
         antwort = client.post(
             GLEICHER_LINK_URL,

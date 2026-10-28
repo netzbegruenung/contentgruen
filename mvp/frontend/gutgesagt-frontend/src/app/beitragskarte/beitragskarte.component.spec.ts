@@ -191,10 +191,18 @@ describe('BeitragskarteComponent', () => {
 
     it('nennt den eigenen Beitrag "Du", nicht die eigene Kennung', () => {
       const daten = ausSuchergebnis(paket('commentary_result'));
-      zeigen({ ...daten, autor: 'test-user', autorName: 'Kim Grün' });
+      zeigen({ ...daten, autor: 'test-user', eigen: true, autorName: 'Kim Grün' });
 
       expect(element('.karte-meta').textContent).toContain('Von: Du');
       expect(element('.karte-meta').textContent).not.toContain('Kim Grün');
+    });
+
+    it('vergleicht keine Kennungen: ohne Kennzeichen des Servers nicht der eigene (#385)', () => {
+      const daten = ausSuchergebnis(paket('commentary_result'));
+      zeigen({ ...daten, autor: 'test-user', eigen: null, autorName: 'Kim Grün' });
+
+      expect(component.istEigen).toBeFalse();
+      expect(element('.karte-meta').textContent).toContain('Von: Kim Grün');
     });
 
     it('erkennt den eigenen Beitrag am Kennzeichen des Servers, ohne Kennung (#333)', fakeAsync(() => {
@@ -223,7 +231,7 @@ describe('BeitragskarteComponent', () => {
       auth.getUserInfo.and.returnValue(null);
       userInfo$.next(null);
       const daten = ausSuchergebnis(paket('commentary_result'));
-      zeigen({ ...daten, autor: 'test-user' });
+      zeigen({ ...daten, autor: 'test-user', eigen: true });
       expect(element('.karte-meta').textContent).not.toContain('Von:');
 
       auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
@@ -354,7 +362,7 @@ describe('BeitragskarteComponent', () => {
       auth.getUserInfo.and.returnValue(null);
       userInfo$.next(null);
       const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 2 }));
-      zeigen({ ...daten, autor: 'test-user' });
+      zeigen({ ...daten, autor: 'test-user', eigen: true });
 
       auth.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
       userInfo$.next({ isAuthenticated: true, userId: 'test-user' } as UserInfo);
@@ -369,7 +377,7 @@ describe('BeitragskarteComponent', () => {
 
     it('zaehlt die eigene Kopie nicht hoch', fakeAsync(() => {
       const daten = ausSuchergebnis(paket('commentary_result', { usage_count: 2 }));
-      zeigen({ ...daten, autor: 'test-user' });
+      zeigen({ ...daten, autor: 'test-user', eigen: true });
 
       element<HTMLButtonElement>('.kopieren-knopf').click();
       fixture.detectChanges();
@@ -714,7 +722,7 @@ describe('BeitragskarteComponent', () => {
       zeigen(einwurfKarte(), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeFalse();
 
-      zeigen(einwurfKarte({ submitted_by: 'test-user' }), { variante: 'einwurf' });
+      zeigen(einwurfKarte({ submitted_by: 'test-user', ist_eigener_einwurf: true }), { variante: 'einwurf' });
       expect(component.darfVerwerfen).toBeTrue();
     });
 

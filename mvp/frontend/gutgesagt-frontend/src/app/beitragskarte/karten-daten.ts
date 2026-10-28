@@ -102,7 +102,7 @@ export interface KartenDaten {
    * der eigene ist.
    */
   autor: string | null;
-  /** Vom Server berechnet: der eigene Beitrag. null/fehlend = unbekannt, dann zaehlt `autor`. */
+  /** Vom Server berechnet: der eigene Beitrag bzw. Einwurf. null/fehlend = nicht der eigene. */
   eigen?: boolean | null;
   /** Anzeigename ("Anna B."); null ohne Anmeldung oder ohne gespeicherten Namen. */
   autorName: string | null;

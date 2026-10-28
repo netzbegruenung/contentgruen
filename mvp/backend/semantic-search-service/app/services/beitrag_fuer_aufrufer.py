@@ -43,14 +43,18 @@ class Personenbezug:
     """
     Die Felder eines Response-DTOs, die eine Person bezeichnen.
 
-    ``kennung`` behalten nur Admins. ``name`` und ``eigen`` bekommen Angemeldete
-    statt der Kennung; ohne sie (Destillierer, Ausformulierer) geht an
-    Nicht-Admins gar nichts zur Person.
+    Das Feld ``kennung_feld`` behalten nur Admins. ``name_feld`` und ``eigen_feld``
+    bekommen Angemeldete statt der Kennung; ohne sie (Destillierer, Ausformulierer)
+    geht an Nicht-Admins gar nichts zur Person.
     """
 
-    kennung: str
-    name: Optional[str] = None
-    eigen: Optional[str] = None
+    kennung_feld: str
+    name_feld: Optional[str] = None
+    eigen_feld: Optional[str] = None
+
+    def nur_kennung(self) -> "Personenbezug":
+        """Derselbe Bezug ohne Anzeigename und Kennzeichen: nur die Kennung leeren."""
+        return Personenbezug(self.kennung_feld)
 
 
 BEITRAG = Personenbezug("original_author", "autor_name", "ist_eigener_beitrag")
@@ -73,21 +77,21 @@ def personen_fuer_aufrufer(aufrufer: Aufrufer, *gruppen: Gruppe) -> None:
     Die Anzeigenamen kommen aus einer Abfrage fuer alle Gruppen zusammen.
     """
     paare = [(objekt, bezug) for objekte, bezug in gruppen for objekt in objekte]
-    benannt = [(o, b) for o, b in paare if b.name]
+    benannt = [(o, b) for o, b in paare if b.name_feld]
     if aufrufer.angemeldet and benannt:
         namen = get_anzeigename_service().namen(
-            getattr(o, b.kennung) for o, b in benannt
+            getattr(o, b.kennung_feld) for o, b in benannt
         )
         for objekt, bezug in benannt:
-            kennung = getattr(objekt, bezug.kennung)
+            kennung = getattr(objekt, bezug.kennung_feld)
             if kennung is None:
                 # Niemand Bekanntes (Einwurf ohne Sitzung): weder eigen noch fremd.
                 continue
-            setattr(objekt, bezug.name, namen.get(kennung))
-            setattr(objekt, bezug.eigen, kennung == aufrufer.kennung)
+            setattr(objekt, bezug.name_feld, namen.get(kennung))
+            setattr(objekt, bezug.eigen_feld, kennung == aufrufer.kennung)
     if not aufrufer.ist_admin:
         for objekt, bezug in paare:
-            setattr(objekt, bezug.kennung, None)
+            setattr(objekt, bezug.kennung_feld, None)
 
 
 def fuer_aufrufer(

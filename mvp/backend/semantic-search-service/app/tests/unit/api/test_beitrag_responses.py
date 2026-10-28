@@ -61,7 +61,7 @@ ADMIN = {"X-User": LESERIN, "X-Is-Admin": "true"}
 ANONYM = {"X-User": "anonymous"}
 
 
-def _personen():
+def personenfelder():
     """Was am DbEntry eine Person bezeichnet, ueberall mit einer Kennung belegt."""
     return create_base_content_fields(
         original_author=AUTORIN,
@@ -79,7 +79,7 @@ def _personen():
 
 def _kommentar(cid=None, klasse=CommentaryDbEntry, **extra):
     return klasse(
-        **_personen(),
+        **personenfelder(),
         **extra,
         id=cid or uuid.uuid4(),
         content_type=ContentType.COMMENTARY,
@@ -95,7 +95,7 @@ def _kommentar(cid=None, klasse=CommentaryDbEntry, **extra):
 
 def _hintergrundinfo(gid=None, klasse=GenericTextDbEntry, **extra):
     return klasse(
-        **_personen(),
+        **personenfelder(),
         **extra,
         id=gid or uuid.uuid4(),
         content_type=ContentType.GENERIC_TEXT,
@@ -108,7 +108,7 @@ def _hintergrundinfo(gid=None, klasse=GenericTextDbEntry, **extra):
 
 def _post(pid=None, klasse=PostDbEntry, **extra):
     return klasse(
-        **_personen(),
+        **personenfelder(),
         **extra,
         id=pid or uuid.uuid4(),
         content_type=ContentType.POST,
@@ -121,7 +121,7 @@ def _post(pid=None, klasse=PostDbEntry, **extra):
 
 def _bild(bid=None):
     return ImageDbEntry(
-        **_personen(),
+        **personenfelder(),
         id=bid or uuid.uuid4(),
         content_type=ContentType.IMAGE,
         title="Solardach auf der Schule",
@@ -132,7 +132,7 @@ def _bild(bid=None):
 
 def _inhalt(cid=None, klasse=ContentDbEntry, **extra):
     return klasse(
-        **_personen(),
+        **personenfelder(),
         **extra,
         id=cid or uuid.uuid4(),
         content_type=ContentType.COMMENTARY,

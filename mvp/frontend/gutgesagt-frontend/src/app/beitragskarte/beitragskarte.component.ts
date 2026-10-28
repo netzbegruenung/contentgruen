@@ -139,15 +139,6 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       .subscribe(() => this.cdr.markForCheck());
   }
 
-  /**
-   * Die angemeldete Person - dieselbe Kennung, die Admins als ``original_author`` am
-   * Beitrag und als ``submitted_by`` am Einwurf bekommen. Nur fuer Daten ohne
-   * Kennzeichen vom Server (siehe ``istEigen``).
-   */
-  private get eigeneKennung(): string | null {
-    return this.authService.getUserInfo()?.userId ?? null;
-  }
-
   private get istAdmin(): boolean {
     return !!this.authService.getUserInfo()?.isAdmin;
   }
@@ -157,15 +148,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. Beitraege (#333) und
-   * Einwuerfe (#385) tragen das Kennzeichen vom Server; der Kennungsvergleich bleibt
-   * nur fuer Daten ohne Kennzeichen, etwa eine aeltere Antwort im Cache.
+   * Der eigene Beitrag oder Einwurf. Ohne Anmeldung nie. Ob es der eigene ist, sagt
+   * allein das Kennzeichen vom Server (#333, #385); fehlt es, ist es nicht der eigene.
    */
   get istEigen(): boolean {
-    if (this.daten.eigen != null) {
-      return this.angemeldet && this.daten.eigen;
-    }
-    return !!this.daten.autor && this.daten.autor === this.eigeneKennung;
+    return this.angemeldet && this.daten.eigen === true;
   }
 
   /**
@@ -285,8 +272,11 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return STUFEN[this.einwurfAngaben.stufe].name;
   }
 
-  /** Den Einwerfer nennt die Karte, beim eigenen als "Du" (autorAnzeige) - ausser sie zeigt die Stufe. */
-  /** Nur bei bekanntem Einwerfer: Das Kennzeichen fehlt, wenn niemand Bekanntes einwarf (#385). */
+  /**
+   * Den Einwerfer nennt die Karte, beim eigenen als "Du" (autorAnzeige) - ausser sie
+   * zeigt die Stufe. Nur bei bekanntem Einwerfer: Das Kennzeichen fehlt, wenn niemand
+   * Bekanntes einwarf (#385).
+   */
   get zeigtEinwerfer(): boolean {
     return (!!this.daten.autor || this.daten.eigen != null) && !this.stufeZeigen;
   }
