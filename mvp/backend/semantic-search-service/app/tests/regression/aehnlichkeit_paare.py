@@ -20,6 +20,7 @@ Dublettenpruefung mit den Schwellen aus core/config.py.
 # Aussage, die mehrfach vorkommt
 VERBOT = "Die Grünen sind eine Verbotspartei"
 # Kommentare aus dem bereinigten Seed (mvp/data/seed/v1.0), die mehrfach vorkommen
+GLAS_TITEL = "Glasscheiben sind für Vögel weit gefährlicher als Windräder"
 GLAS = "Vogelschutz ist wichtig, da sind wir uns einig. Die größte Gefahr sind aber Glasscheiben: Die Vogelschutzwarten schätzen 100 bis 115 Millionen tote Vögel pro Jahr in Deutschland. Wer Vögel schützen will, fängt also am Fenster an."
 STANDORT = "Rotmilan und Storch sollen geschützt bleiben, das wollen wir alle. Deshalb wird vor jedem Windpark geprüft, welche Arten dort brüten und jagen. So bekommen wir beides: sauberen Strom und geschützte Vögel."
 REGELN = "Selbst entscheiden wollen wir alle. Viele Regeln, die heute selbstverständlich sind, schützen unsere Freiheit: der Gurt im Auto, rauchfreie Restaurants, sauberes Trinkwasser. Die Frage ist immer, was eine Regel bringt und für wen."
@@ -113,6 +114,8 @@ PAARE = [
     ("KD1", "kommentar", "D", GLAS, STANDORT, "seed", 0.8562, 0.8172, 0.8102, False),
     ("KD2", "kommentar", "D", REGELN, WIND_SONNE, "seed", 0.8773, 0.8889, 0.8251, False),
     ("KD3", "kommentar", "D", REPARATUR, BERATUNG, "seed", 0.8812, 0.8794, 0.8331, False),
+    # KD4 liegt an zwei verschiedenen Aussagen (Heizung, Waermepumpe), die uebrigen
+    # KD-Paare je an derselben.
     ("KD4", "kommentar", "D", BERATUNG, ALTBAU, "seed", 0.8696, 0.8593, 0.8352, False),
     ("KD5", "kommentar", "D", TELLER, HOF, "seed", 0.9043, 0.8989, 0.8525, False),
     ("KE1", "kommentar", "E", REGELN, GLAS, "seed", 0.8156, 0.7887, 0.7653, False),

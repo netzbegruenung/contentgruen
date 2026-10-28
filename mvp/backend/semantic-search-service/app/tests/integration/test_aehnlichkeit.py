@@ -28,6 +28,7 @@ from tests.integration.conftest import requires_qdrant
 from tests.regression.aehnlichkeit_paare import (
     GLAS,
     GLAS_EIGENE_WORTE,
+    GLAS_TITEL,
     GLAS_ZUSATZ,
     STANDORT,
 )
@@ -86,9 +87,6 @@ async def _aussage(service, text, author="person-1", origin=None):
         ContentStatus.VISIBLE,
         origin or ContentOrigin.MANUALLY_CREATED,
     )
-
-
-GLAS_TITEL = "Glasscheiben sind für Vögel weit gefährlicher als Windräder"
 
 
 def _kommentar(text):
@@ -232,7 +230,7 @@ async def test_kommentar_dublette_mit_passage_einbettung(commentary_service):
     assert (await dublette(GLAS)).id == glas
     # B: nur klein geschrieben
     assert (await dublette(GLAS.lower())).id == glas
-    # C: Kopie mit Quellenzusatz (p/p 0,998)
+    # C: Kopie mit angehaengter Herkunft (p/p 0,998)
     assert (await dublette(GLAS + GLAS_ZUSATZ)).id == glas
     # C: eigene Umformulierung (p/p 0,971) und D: anderer Kommentar zur selben Aussage
     assert await dublette(GLAS_EIGENE_WORTE) is None

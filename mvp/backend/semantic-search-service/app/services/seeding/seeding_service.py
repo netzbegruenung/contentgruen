@@ -450,14 +450,6 @@ class SeedingService:
             return "statements_with_commentaries"
         elif "statements_with_generictexts" in file_path:
             return "statements_with_generictexts"
-        elif "commentary_index" in file_path:
-            return "commentary"
-        elif "reference_index" in file_path:
-            return "reference"
-        elif "statement_index" in file_path:
-            return "statement"
-        elif "generic_text_index" in file_path:
-            return "generic_text"
         else:
             return "unknown"
 
