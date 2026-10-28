@@ -143,6 +143,19 @@ describe('cacheInterceptor', () => {
     httpMock.expectOne(`${api}/statement/unbeantwortet`).flush({ aussagen: [] });
   });
 
+  for (const pfad of ['/api/check-session', '/api/user-info']) {
+    it(`fragt ${pfad} jedes Mal beim BFF nach (#278)`, () => {
+      // Eine beendete Sitzung soll beim naechsten Seitenwechsel auffallen, nicht erst nach
+      // Ablauf des Caches.
+      const url = `${environment.baseUrl}${pfad}`;
+      holen(url);
+      httpMock.expectOne(url).flush({ isAuthenticated: true });
+
+      holen(url);
+      httpMock.expectOne(url).flush({ isAuthenticated: false });
+    });
+  }
+
   it('laedt Meine Einwuerfe jedes Mal frisch', () => {
     // Ein gerade eingeworfenes Fundstueck soll sofort dastehen.
     const einwuerfe = TestBed.inject(EinwurfService);
