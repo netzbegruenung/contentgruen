@@ -58,6 +58,9 @@ wie die uebrigen Skripte in diesem Verzeichnis -- einen laufenden Dev-Stack vora
 Die Auswahl der 10 Seed-Kommentare ist ueber --seed reproduzierbar.
 --korpus-datei liest dieselben Eintraege aus einer eingefrorenen JSON-Datei und
 kommt ohne Qdrant und ohne `requests` aus.
+Die eingefrorene wirkung_korpus.json enthaelt die 3 handangelegten Beitraege und
+10 mit --seed gezogene Kommentare aus mvp/data/seed/v1.0 (quelle = Datei:Nummer des
+Kommentars in der Datei).
 """
 
 from __future__ import annotations

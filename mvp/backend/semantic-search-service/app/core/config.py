@@ -114,9 +114,9 @@ class Settings(BaseSettings):
     # Formular vorgeschlagen (0,885, Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
     statement_similarity_threshold: float = 0.98
     # Kommentar-Dublette: passage/passage-Einbettung, >= Schwelle.
-    # Modell: intfloat/multilingual-e5-base. Umformulierungen hoechstens 0,968,
-    # trivial abweichende Kopien ab 0,984, andere Kommentare zur selben Aussage
-    # hoechstens 0,903.
+    # Modell: intfloat/multilingual-e5-base. Umformulierungen hoechstens 0,972,
+    # Kopien mit angehaengter Herkunft ab 0,998, andere Kommentare zur selben Aussage
+    # hoechstens 0,899. Nur klein geschrieben erreicht 0,955 - das faengt die Normalform.
     commentary_similarity_threshold: float = 0.975
     # Hintergrundinfo-Dublette: dieselbe Einbettung und Schwelle wie beim Kommentar.
     # Noch nicht an eigenen Paaren gemessen; die Integrationstests pruefen

@@ -39,8 +39,8 @@ public class DisplayNamePolicyTests
     }
 
     [Theory]
-    [InlineData("Ursula", "von der Leyen", "Ursula L.")]
-    [InlineData("Karl-Theodor", "Freiherr zu Guttenberg", "Karl-Theodor G.")]
+    [InlineData("Ursula", "von der Heide", "Ursula H.")]
+    [InlineData("Karl-Heinz", "Freiherr zu Talheim", "Karl-Heinz T.")]
     [InlineData("Lena", "Müller-Lüdenscheidt", "Lena M.")]
     [InlineData("Jan", "de Vries", "Jan V.")]
     public void From_MultiPartSurname_TakesInitialOfLastWord(string vorname, string nachname, string erwartet)

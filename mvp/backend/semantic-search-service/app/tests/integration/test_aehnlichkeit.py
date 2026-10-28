@@ -25,7 +25,12 @@ from services.content.statement_service import StatementService
 from services.orchestration.content_orchestrator import DataProcessor
 from services.wartung.text_normalisiert_nachtrag import nachtragen
 from tests.integration.conftest import requires_qdrant
-from tests.regression.aehnlichkeit_paare import DORF, KATZEN
+from tests.regression.aehnlichkeit_paare import (
+    GLAS,
+    GLAS_EIGENE_WORTE,
+    GLAS_ZUSATZ,
+    STANDORT,
+)
 from services.content.reference_service import ReferenceService
 from utils.text_normalisierung import FELD_TEXT_NORMALISIERT
 
@@ -86,7 +91,7 @@ async def _aussage(service, text, author="person-1", origin=None):
 def _kommentar(text):
     return Commentary(
         text=text,
-        title="Katzen gefaehrden Voegel mehr als Windraeder",
+        title="Glasscheiben sind für Vögel weit gefährlicher als Windräder",
         content_type=ContentType.COMMENTARY,
         references=[],
     )
@@ -209,8 +214,8 @@ async def test_parallel_derselbe_neue_text_ergibt_eine_aussage(statement_service
 
 
 async def test_kommentar_dublette_mit_passage_einbettung(commentary_service):
-    neu, katzen, _ = await commentary_service.add_commentary(
-        _kommentar(KATZEN),
+    neu, glas, _ = await commentary_service.add_commentary(
+        _kommentar(GLAS),
         "person-1",
         ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
@@ -220,22 +225,15 @@ async def test_kommentar_dublette_mit_passage_einbettung(commentary_service):
     async def dublette(text):
         return (await commentary_service.pruefe_dublette(text)).vorhanden
 
-    # A: wortgleich (q/p erreichte nur 0,96 - die alte Pruefung griff nie)
-    assert (await dublette(KATZEN)).id == katzen
+    # A: wortgleich (q/p erreichte nur 0,955 - die alte Pruefung griff nie)
+    assert (await dublette(GLAS)).id == glas
     # B: nur klein geschrieben
-    assert (await dublette(KATZEN.lower())).id == katzen
-    # C: Kopie mit Quellenzusatz (p/p 0,997)
-    assert (await dublette(KATZEN + " Quelle: NABU-Studie 2023.")).id == katzen
-    # C: eigene Umformulierung (p/p 0,968) und D: anderer Kommentar zur selben Aussage
-    assert (
-        await dublette(
-            "Ich mag Vögel auch. Aber Hauskatzen töten jedes Jahr rund 100 Millionen "
-            "Vögel, Windräder weniger als 100.000. Selbst der NABU unterstützt "
-            "Windkraft, wenn sie gut geplant ist."
-        )
-        is None
-    )
-    assert await dublette(DORF) is None
+    assert (await dublette(GLAS.lower())).id == glas
+    # C: Kopie mit Quellenzusatz (p/p 0,998)
+    assert (await dublette(GLAS + GLAS_ZUSATZ)).id == glas
+    # C: eigene Umformulierung (p/p 0,971) und D: anderer Kommentar zur selben Aussage
+    assert await dublette(GLAS_EIGENE_WORTE) is None
+    assert await dublette(STANDORT) is None
 
 
 async def test_seeding_haengt_antworten_an_die_vorhandene_aussage(statement_service):
@@ -338,15 +336,15 @@ async def test_parallele_gleiche_kommentare_ueber_den_router(
 
     anfrage = {
         "commentary": {
-            "title": "Katzen gefaehrden Voegel mehr als Windraeder",
-            "text": KATZEN,
+            "title": "Glasscheiben sind für Vögel weit gefährlicher als Windräder",
+            "text": GLAS,
             "content_type": "commentary",
             "references": [],
         },
         "references": [
             {
-                "reference_string": "https://www.nabu.de/natur-und-landschaft/katzen",
-                "description": "NABU zu Hauskatzen",
+                "reference_string": "https://www.lfu.bayern.de/natur/vogelschutzwarte/vogelschlag/index.htm",
+                "description": "LfU Bayern: Vogelschlag an Glas",
             }
         ],
         "statement_text": "Windräder sind Vogel-Schredder!",
@@ -397,7 +395,7 @@ async def test_dublette_mit_anderer_aussage_wird_dort_verknuepft(
 ):
     """Die Verknuepfung selbst: der vorhandene Kommentar haengt an beiden Aussagen."""
     _, kommentar, _ = await commentary_service.add_commentary(
-        _kommentar(KATZEN),
+        _kommentar(GLAS),
         "person-1",
         ContentStatus.VISIBLE,
         ContentOrigin.MANUALLY_CREATED,
