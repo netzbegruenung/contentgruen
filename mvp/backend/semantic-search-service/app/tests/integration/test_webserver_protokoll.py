@@ -45,13 +45,17 @@ def _image() -> str:
 
 
 def _docker(*argumente: str, timeout: int = 60) -> str:
-    return subprocess.run(
+    lauf = subprocess.run(
         ["docker", *argumente],
-        check=True,
         capture_output=True,
         text=True,
         timeout=timeout,
-    ).stdout.strip()
+    )
+    if lauf.returncode:
+        raise RuntimeError(
+            f"docker {argumente[0]}: Exit {lauf.returncode}: {lauf.stderr.strip()}"
+        )
+    return lauf.stdout.strip()
 
 
 @pytest.fixture(scope="module")
@@ -64,6 +68,51 @@ def docker_noetig():
     pytest.skip(grund)
 
 
+# Den freien Port waehlt Docker aus dem Bereich, aus dem auch der Kernel die
+# Absenderports ausgehender Verbindungen nimmt. Haelt eine davon (etwa ein
+# paralleler Testlauf) den Port gerade, scheitert ``docker run`` im rootless
+# Docker an RootlessKit; ein neuer Versuch bekommt einen anderen Port (#383).
+PORT_BELEGT = "address already in use"
+VERSUCHE = 5
+
+
+def _starten(konfiguration: str) -> str:
+    """Container starten, bei belegtem Port neu; liefert den Containernamen."""
+    versuch = 1
+    while True:
+        name = f"gutgesagt-itest-nginx-{uuid.uuid4().hex[:8]}"
+        try:
+            _docker(
+                "run",
+                "--detach",
+                "--name",
+                name,
+                "--label",
+                "gutgesagt-itest",
+                "--add-host",
+                "gutgesagt-bff:127.0.0.1",
+                "--volume",
+                f"{FRONTEND / konfiguration}:/etc/nginx/conf.d/default.conf:ro",
+                "--volume",
+                f"{FRONTEND / 'nginx.protokoll.conf'}:/etc/nginx/conf.d/00-protokoll.conf:ro",
+                "--publish",
+                "127.0.0.1::80",
+                _image(),
+                timeout=300,
+            )
+            return name
+        except RuntimeError as fehler:
+            # Der gescheiterte Container bleibt angelegt liegen.
+            _entfernen(name)
+            if PORT_BELEGT not in str(fehler) or versuch == VERSUCHE:
+                raise
+        versuch += 1
+
+
+def _entfernen(name: str) -> None:
+    subprocess.run(["docker", "rm", "--force", name], capture_output=True)
+
+
 @contextmanager
 def _nginx(konfiguration: str) -> Iterator[tuple[str, str]]:
     """nginx mit der Konfiguration starten; liefert Basisadresse und Containername.
@@ -71,26 +120,8 @@ def _nginx(konfiguration: str) -> Iterator[tuple[str, str]]:
     ``gutgesagt-bff`` zeigt auf den Container selbst: nginx.docker.conf braucht den
     Namen beim Start, eine Antwort des BFF braucht der Test nicht.
     """
-    name = f"gutgesagt-itest-nginx-{uuid.uuid4().hex[:8]}"
+    name = _starten(konfiguration)
     try:
-        _docker(
-            "run",
-            "--detach",
-            "--name",
-            name,
-            "--label",
-            "gutgesagt-itest",
-            "--add-host",
-            "gutgesagt-bff:127.0.0.1",
-            "--volume",
-            f"{FRONTEND / konfiguration}:/etc/nginx/conf.d/default.conf:ro",
-            "--volume",
-            f"{FRONTEND / 'nginx.protokoll.conf'}:/etc/nginx/conf.d/00-protokoll.conf:ro",
-            "--publish",
-            "127.0.0.1::80",
-            _image(),
-            timeout=300,
-        )
         adresse = _docker("port", name, "80/tcp").splitlines()[0]
         basis = f"http://{adresse}"
         frist = time.monotonic() + 30
@@ -108,7 +139,7 @@ def _nginx(konfiguration: str) -> Iterator[tuple[str, str]]:
                 time.sleep(0.3)
         yield basis, name
     finally:
-        subprocess.run(["docker", "rm", "--force", name], capture_output=True)
+        _entfernen(name)
 
 
 def _anfrage(adresse: str, methode: str = "GET", referer: str = "") -> None:
@@ -124,7 +155,12 @@ def _anfrage(adresse: str, methode: str = "GET", referer: str = "") -> None:
 def _zugriffe(name: str) -> list[str]:
     """Die ganze Ausgabe des Containers: Zugriffsprotokoll (stdout),
     Fehlerprotokoll (stderr) und Startmeldungen. Beide Stroeme landen im
-    ``json-file``-Protokoll von Docker."""
+    ``json-file``-Protokoll von Docker.
+
+    Erst nach dem Anhalten gelesen: Docker meldet den Container erst als
+    angehalten, wenn es beide Stroeme ganz uebernommen hat. Sofort gelesen
+    koennten unter Last die letzten Zeilen noch fehlen."""
+    _docker("stop", name)
     ausgabe = subprocess.run(
         ["docker", "logs", name], capture_output=True, text=True, timeout=30
     )
@@ -177,6 +213,39 @@ def test_keine_zeile_je_suche():
     # Anfrage (nur Dev-Stack, nur im Fehlerfall; docs/LOESCHKONZEPT.md).
     zugriffe = [zeile for zeile in zugriffe if "[error]" not in zeile]
     assert not [zeile for zeile in zugriffe if "searchbytext" in zeile.lower()]
+
+
+@pytest.mark.parametrize(
+    ("fehler", "starts"),
+    [
+        ("bind: address already in use", 2),
+        ("No such image", 1),
+    ],
+)
+def test_neuer_start_nur_bei_belegtem_port(monkeypatch, fehler, starts):
+    """Ohne Docker: Nur ein belegter Port fuehrt zu einem neuen Versuch,
+    jeder gescheiterte Container wird entfernt."""
+    gestartet, entfernt = [], []
+
+    def docker(*argumente, timeout=60):
+        gestartet.append(argumente[argumente.index("--name") + 1])
+        if len(gestartet) == 1:
+            raise RuntimeError(f"docker run: Exit 125: {fehler}")
+        return "id"
+
+    monkeypatch.setattr(f"{__name__}._docker", docker)
+    monkeypatch.setattr(f"{__name__}._image", lambda: "nginx:alpine")
+    monkeypatch.setattr(f"{__name__}._entfernen", entfernt.append)
+
+    if starts == 1:
+        with pytest.raises(RuntimeError, match=fehler):
+            _starten("nginx.conf")
+    else:
+        assert _starten("nginx.conf") == gestartet[-1]
+
+    assert len(gestartet) == starts
+    assert entfernt == gestartet[:1]
+    assert len(set(gestartet)) == starts
 
 
 def test_browser_schickt_den_suchtext_nicht_als_verweisende_seite():
