@@ -22,7 +22,6 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.aggregated.content_repository import (
     ContentRepository,
 )
-from repositories.usage_tracking_repository import get_usage_repository
 from domain.models.commentary import Commentary, CommentaryReference
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement, StatementReplysuggestion
@@ -71,13 +70,9 @@ class DataProcessor:
     """Helper class for processing different types of initial data."""
 
     def __init__(self, orchestrator: "ContentOrchestrator"):
+        # metadata.usage_count aus dem Seed wird nicht uebernommen: Kein
+        # Zaehler wird vorbelegt, auch Seed-Inhalte beginnen bei 0 (#340).
         self.orchestrator = orchestrator
-        # Only initialize usage repository if not in test environment
-        try:
-            self.usage_repository = get_usage_repository()
-        except Exception:
-            # In tests or when DB is not available, set to None
-            self.usage_repository = None
 
     async def process_reference(self, reference_data: Dict[str, Any]) -> uuid.UUID:
         """Process a single reference and return its ID."""
@@ -202,20 +197,6 @@ class DataProcessor:
         # Mark as processed
         self.orchestrator.mark_content_processed(title, text, "commentary", "added")
 
-        # Initialize usage tracking with metadata if provided
-        if self.usage_repository and metadata and result[1]:
-            usage_count = metadata.get("usage_count", 0)
-            if usage_count > 0:
-                try:
-                    self.usage_repository.initialize_usage_data(result[1], usage_count)
-                    logger.info(
-                        f"Initialized usage data for commentary {result[1]} with count {usage_count}"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Could not initialize usage data for commentary {result[1]}: {e}"
-                    )
-
         return result[1]
 
     async def create_generictext_with_references(
@@ -284,20 +265,6 @@ class DataProcessor:
         # Mark as processed
         self.orchestrator.mark_content_processed(title, text, "generic_text", "added")
 
-        # Initialize usage tracking with metadata if provided
-        if self.usage_repository and metadata and result[1]:
-            usage_count = metadata.get("usage_count", 0)
-            if usage_count > 0:
-                try:
-                    self.usage_repository.initialize_usage_data(result[1], usage_count)
-                    logger.info(
-                        f"Initialized usage data for generic_text {result[1]} with count {usage_count}"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Could not initialize usage data for generic_text {result[1]}: {e}"
-                    )
-
         return result[1]  # Return the UUID from the tuple
 
     async def create_statement_with_replies(
@@ -355,23 +322,6 @@ class DataProcessor:
                     content_type=vorschlag.content_type,
                     relevance=vorschlag.relevance,
                 )
-
-        # Initialize usage tracking with metadata if provided
-        if self.usage_repository and metadata and result and len(result) > 1:
-            statement_id = result[1]
-            usage_count = metadata.get("usage_count", 0)
-            if usage_count > 0:
-                try:
-                    self.usage_repository.initialize_usage_data(
-                        statement_id, usage_count
-                    )
-                    logger.info(
-                        f"Initialized usage data for statement {statement_id} with count {usage_count}"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Could not initialize usage data for statement {statement_id}: {e}"
-                    )
 
 
 class ContentOrchestrator:
