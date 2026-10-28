@@ -234,6 +234,41 @@ class TestEinwerfendePerson:
 
 @pytest.mark.unit
 @pytest.mark.api
+class TestTrackingParameter:
+    """
+    Der Server entfernt Tracking-Parameter wie das Formular, fuer Clients ohne
+    das Formular (Importskript, #341).
+    """
+
+    def test_link_und_links_im_hinweis_ohne_tracking(self, client, repository):
+        antwort = client.post(
+            ADD_URL,
+            json={
+                "url": "https://example.org/a?fbclid=x&seite=2",
+                "content": "Siehe https://example.org/b?utm_source=y gleich oben",
+            },
+            headers={"X-User": "testuser"},
+        )
+
+        assert antwort.status_code == 201
+        kwargs = repository.create.call_args.kwargs
+        assert kwargs["url"] == "https://example.org/a?seite=2"
+        assert kwargs["content"] == "Siehe https://example.org/b gleich oben"
+
+    def test_link_ohne_tracking_bleibt_wie_er_ist(self, client, repository):
+        client.post(
+            ADD_URL,
+            json={"url": "https://www.example.org/a/?b=%20c"},
+            headers={"X-User": "testuser"},
+        )
+
+        assert repository.create.call_args.kwargs["url"] == (
+            "https://www.example.org/a/?b=%20c"
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.api
 class TestHerkunftskanal:
     """
     source_channel sagt, wie ein Einwurf hereinkam. Der Wert ist selbst berichtet
@@ -258,6 +293,19 @@ class TestHerkunftskanal:
         assert antwort.status_code == 201
         assert repository.create.call_args.kwargs["source_channel"] == (
             RawInputSource.SHARE.value
+        )
+
+    def test_import_wird_uebernommen(self, client, repository):
+        """Der Weg ueber das Importskript (#341)."""
+        antwort = client.post(
+            ADD_URL,
+            json={"url": "https://example.org/a", "source_channel": "import"},
+            headers={"X-User": "testuser"},
+        )
+
+        assert antwort.status_code == 201
+        assert repository.create.call_args.kwargs["source_channel"] == (
+            RawInputSource.IMPORT.value
         )
 
     def test_erfundener_kanal_wird_abgewiesen(self, client, repository):

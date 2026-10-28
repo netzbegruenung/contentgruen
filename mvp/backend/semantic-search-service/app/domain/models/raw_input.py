@@ -69,6 +69,12 @@ class RawInputSource(str, Enum):
     wie viele Einwuerfe ueber das Teilen hereinkamen und wie viele von Hand.
     """
 
+    IMPORT = "import"
+    """
+    Ueber das Importskript ``mvp/scripts/manual/einwuerfe_importieren.py`` (#341),
+    etwa fuer den Startbestand. Auch das ist nicht von Hand eingeworfen.
+    """
+
 
 # Von welchem Status aus ein Ziel erreichbar ist. Dasselbe Ziel noch einmal zu
 # setzen ist erlaubt und aendert nichts: ein wiederholter Aufruf nach verlorener

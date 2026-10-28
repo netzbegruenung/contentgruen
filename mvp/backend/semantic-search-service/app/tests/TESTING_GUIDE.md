@@ -9,6 +9,7 @@ tests/
 │   ├── repositories/              # Repository layer tests
 │   └── services/                  # Service layer tests
 ├── integration/                   # Integration tests against real Qdrant and PostgreSQL
+│   └── api/                       # Against the running dev-stack BFF (skipped by GitHub CI)
 ├── fixtures/                      # Test utilities
 │   └── embeddings_manager.py      # In-memory test backend
 └── conftest.py                    # Shared fixtures
@@ -54,9 +55,12 @@ names what is missing, instead of skipping silently. The switch behind it is
 `pytest tests/integration/` without it still skips when the stack is absent. The
 check lives in `tests/integration/conftest.py` and only runs when `tests/integration/`
 is among the paths given to pytest: `INTEGRATION_STACK_PFLICHT=1 pytest tests/` would
-still skip the Qdrant tests silently.
+still skip the Qdrant tests silently. The tests in `tests/integration/api/` also need
+the dev-stack BFF (`GUTGESAGT_BFF_URL`, default `http://localhost:5054`); in this mode
+a missing BFF fails them, in a plain run they skip.
 
-`tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL.
+`tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL, or,
+under `api/`, to the running BFF.
 A test that mocks the services belongs in `tests/unit/api/`: `TestClient` with
 `dependency_overrides` for services the router takes via `Depends`; where the router
 calls the getter directly (moderation: `get_moderation_service()`), patch that name in

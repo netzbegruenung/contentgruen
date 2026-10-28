@@ -125,7 +125,7 @@ class RawInputRepository:
             url: Link auf den Beitrag draussen
             image_url: Bild-URL (kein Upload, siehe docs/archiv/ROHINPUT.md)
             submitted_by: Wer eingeworfen hat; None fuer Kanaele ohne Sitzung
-            source_channel: Herkunftskanal ("web" oder "share")
+            source_channel: Weg ("web", "share" oder "import")
 
         Returns:
             Dict[str, Any]: der angelegte Einwurf

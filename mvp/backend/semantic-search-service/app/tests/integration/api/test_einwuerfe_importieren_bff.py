@@ -114,7 +114,7 @@ def test_einwerfen_dann_gleicher_link_uebersprungen(
     aufrufen, sitzung, links, tmp_path, capsys
 ):
     liste = tmp_path / "liste.md"
-    liste.write_text(f"- {links[0]} – Zitat auf Seite 3\n- {links[1]}\n")
+    liste.write_text(f"- {links[0]} – Zitat auf Seite 3\n- {links[1]}?fbclid=x\n")
 
     assert aufrufen(liste) == 0
 
@@ -125,7 +125,10 @@ def test_einwerfen_dann_gleicher_link_uebersprungen(
         "open",
     )
     assert a["submitted_by"] == "user-001"
-    assert len(_gleiche(sitzung, links[1])) == 1
+    assert a["source_channel"] == "import"
+    # Tracking-Parameter entfernt der Server wie das Formular.
+    (b,) = _gleiche(sitzung, links[1])
+    assert b["url"] == links[1]
     capsys.readouterr()
 
     # Gleicher Link nach Bereinigung, nicht wortgleich: das entscheidet der Server.

@@ -5,7 +5,8 @@ Einwuerfe aus einer Liste in den Fangkorb legen (#341).
 Liest eine CSV- oder Markdown-Liste (Link, optional Hinweis) und wirft je Zeile
 einen Einwurf ein, ueber dieselbe API wie das Einwurf-Formular: angemeldet am BFF
 unter dem angegebenen Konto. Liegt schon ein Einwurf mit gleichem Link im
-Fangkorb, wird die Zeile gemeldet und uebersprungen. Aufruf und Dateiformat:
+Fangkorb, wird die Zeile gemeldet und uebersprungen. Als Weg traegt der Einwurf
+"import". Aufruf und Dateiformat:
 ``mvp/SCRIPTS.md``.
 
 Nur Standardbibliothek, damit das Skript ohne Repo-Checkout und ohne venv laeuft.
@@ -305,14 +306,25 @@ class BffFangkorb:
         return antwort[name]
 
     def anmelden(self, email: str, passwort: str) -> None:
-        self._post("/api/auth/login/managed", {"email": email, "password": passwort})
+        try:
+            self._post(
+                "/api/auth/login/managed", {"email": email, "password": passwort}
+            )
+        except ApiFehler as fehler:
+            if fehler.status == 404:
+                raise ApiFehler(
+                    404,
+                    "Login mit Beta-Zugang ist auf dieser Instanz aus oder "
+                    "--adresse zeigt nicht auf Gut gesagt",
+                ) from None
+            raise
 
     def gleiche_einwuerfe(self, link: str) -> List[Dict]:
         pfad = "/api/v1/rawinput/gleicherLink"
         return self._feld(self._post(pfad, {"url": link}), "results", pfad)
 
     def einwerfen(self, link: str, hinweis: Optional[str]) -> str:
-        daten = {"url": link}
+        daten = {"url": link, "source_channel": "import"}
         if hinweis:
             daten["content"] = hinweis
         pfad = "/api/v1/rawinput/addRawInput"
@@ -331,7 +343,7 @@ def _fehlertext(fehler: "urllib.error.HTTPError") -> str:
 
 
 def _ausgeben(bericht: Bericht, fehler: List[Fehler], trockenlauf: bool) -> None:
-    zeilen = (
+    ausgabe = (
         [(f.nummer, f"Fehler: {f.grund}") for f in fehler]
         + [
             (
@@ -353,7 +365,7 @@ def _ausgeben(bericht: Bericht, fehler: List[Fehler], trockenlauf: bool) -> None
             for z, grund in bericht.fehlgeschlagen
         ]
     )
-    for nummer, text in sorted(zeilen):
+    for nummer, text in sorted(ausgabe):
         print(f"Zeile {nummer}: {text}")
     print(
         f"{'Trockenlauf, ' if trockenlauf else ''}"
@@ -361,6 +373,20 @@ def _ausgeben(bericht: Bericht, fehler: List[Fehler], trockenlauf: bool) -> None
         f"uebersprungen: {len(bericht.uebersprungen)}, "
         f"Fehler: {len(fehler) + len(bericht.fehlgeschlagen)}"
     )
+
+
+# Hosts, zu denen das Passwort auch ohne TLS gehen darf: nur dieser Rechner.
+_LOKALE_HOSTS = ("localhost", "127.0.0.1", "::1")
+
+
+def _adresse_pruefen(adresse: str) -> Optional[str]:
+    """Warum die Adresse nicht taugt, oder None. Das Passwort geht nie im Klartext ins Netz."""
+    teile = urlsplit(adresse)
+    if teile.scheme not in ("http", "https") or not teile.hostname:
+        return f"--adresse {adresse} ist keine http(s)-Adresse"
+    if teile.scheme == "http" and teile.hostname not in _LOKALE_HOSTS:
+        return f"--adresse {adresse}: ausser fuer localhost nur https, sonst ginge das Passwort unverschluesselt"
+    return None
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -382,6 +408,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="nur zeigen, was eingeworfen wuerde; legt nichts an",
     )
     args = parser.parse_args(argv)
+
+    unpassend = _adresse_pruefen(args.adresse)
+    if unpassend:
+        print(f"Abgebrochen: {unpassend}", file=sys.stderr)
+        return 2
 
     try:
         zeilen, fehler = liste_lesen(args.liste)

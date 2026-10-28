@@ -177,9 +177,10 @@ See `scripts/backup/README.md` for detailed documentation.
 
 Legt Einwürfe aus einer CSV- oder Markdown-Liste in den Fangkorb, je Zeile einen,
 über dieselbe API wie das Einwurf-Formular. Das Skript meldet sich am BFF unter dem
-angegebenen Konto an (E-Mail und Passwort wie im Login-Formular, also nur Konten mit
-diesem Login, nicht Keycloak); dieses Konto ist dann der Einwerfer. Für den
-Startbestand ist das ein Startkonto (`docs/VISION.md`).
+angegebenen Konto an (E-Mail und Passwort wie im Login-Formular, also nur mit einem
+Beta-Zugang, nicht mit dem Netzbegrünung-Login); dieses Konto ist dann der Einwerfer.
+Für den Startbestand ist das ein Startkonto (`docs/VISION.md`). Als Weg trägt jeder
+Einwurf „Import“ (`import`), nicht „Formular“.
 
 - Liegt schon ein Einwurf mit gleichem Link im Fangkorb, egal in welcher Stufe, wird
   die Zeile übersprungen und mit dem vorhandenen Einwurf gemeldet. Was als gleicher
@@ -188,10 +189,15 @@ Startbestand ist das ein Startkonto (`docs/VISION.md`).
   Prüfung auf gleichen Link eine Anmeldung braucht. Doppelte Zeilen innerhalb der
   Liste erkennt der Trockenlauf nur bei wortgleichem Link; im echten Lauf findet sie
   der Server.
+- Tracking-Parameter (`utm_…`, `fbclid` usw.) entfernt der Server beim Einwerfen,
+  im Link und in Links im Hinweis, wie das Formular.
 - Zeilen ohne http(s)-Link und vom Server abgelehnte Zeilen (etwa ein Hinweis über
   5000 Zeichen) werden gemeldet; der Rest läuft weiter.
 - Exit-Code 0: alles eingeworfen oder übersprungen; 1: mindestens eine Zeile mit
-  Fehler; 2: Liste unlesbar, Anmeldung gescheitert oder Server nicht erreichbar.
+  Fehler; 2: Liste unlesbar, `--adresse` unpassend, Anmeldung gescheitert, Server
+  nicht erreichbar oder keine API-Antwort (`--adresse` zeigt nicht auf Gut gesagt).
+- `--adresse` muss https sein; http nur für `localhost`, damit das Passwort nie
+  unverschlüsselt übers Netz geht.
 - Nur Python-Standardbibliothek, läuft also ohne venv und ohne Repo-Checkout.
 
 **Dateiformat** (Beispiele: `scripts/manual/einwuerfe_beispiel.csv`,
@@ -217,7 +223,7 @@ python3 scripts/manual/einwuerfe_importieren.py liste.csv --email konto@example.
 
 `--adresse` ist die Adresse des Frontends (es leitet `/api` ans BFF weiter) oder des
 BFF selbst; Standard ist das lokale BFF `http://localhost:5054`. Getestet in
-`tests/unit/services/test_einwuerfe_importieren.py` (Lesen, Import) und
+`tests/unit/services/test_einwuerfe_importieren_skript.py` (Lesen, Import) und
 `tests/integration/api/test_einwuerfe_importieren_bff.py` (gegen den Dev-Stack).
 
 ## Utility Scripts (`scripts/utils/`)

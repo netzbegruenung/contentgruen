@@ -160,7 +160,7 @@ def test_beispieldateien_sind_lesbar_und_harmlos(skript):
 
 
 class FangkorbImSpeicher:
-    """Steht fuer das BFF: gleicher Link heisst hier wortgleich, das reicht fuer den Ablauf."""
+    """Steht fuer das BFF: gleicher Link heisst hier wortgleich, das reicht fuer diese Tests."""
 
     def __init__(self, skript, vorhanden=(), scheitert_bei=()):
         self.skript = skript
@@ -262,6 +262,112 @@ class TestImportieren:
 
         assert [z.nummer for z, _ in bericht.fehlgeschlagen] == [2]
         assert [z.nummer for z, _ in bericht.angelegt] == [3]
+
+    @pytest.mark.parametrize("status", [401, 403])
+    def test_ohne_gueltige_anmeldung_bricht_der_lauf_ab(self, skript, status):
+        """Sonst scheiterte jede Zeile einzeln, und der Bericht saehe nach Daten aus."""
+
+        class Abgemeldet(FangkorbImSpeicher):
+            def gleiche_einwuerfe(self, link):
+                raise self.skript.ApiFehler(status, "Unauthorized")
+
+        zeilen = _zeilen(
+            skript, ("https://example.org/a", None), ("https://example.org/b", None)
+        )
+
+        with pytest.raises(skript.ApiFehler):
+            skript.importieren(zeilen, Abgemeldet(skript))
+
+
+class TestBffFangkorb:
+    def test_einwurf_traegt_den_weg_import(self, skript, monkeypatch):
+        fangkorb = skript.BffFangkorb("http://localhost:5054")
+        gesendet = []
+        monkeypatch.setattr(
+            fangkorb, "_post", lambda pfad, daten: gesendet.append(daten) or {"id": "1"}
+        )
+
+        assert fangkorb.einwerfen("https://example.org/a", "Zitat") == "1"
+        assert gesendet == [
+            {
+                "url": "https://example.org/a",
+                "source_channel": "import",
+                "content": "Zitat",
+            }
+        ]
+
+    def test_login_404_nennt_die_ursache(self, skript, monkeypatch):
+        """Ist der Login mit Beta-Zugang aus, antwortet das BFF mit 404."""
+        fangkorb = skript.BffFangkorb("http://localhost:5054")
+
+        def nicht_gefunden(pfad, daten):
+            raise skript.ApiFehler(404, "Not Found")
+
+        monkeypatch.setattr(fangkorb, "_post", nicht_gefunden)
+
+        with pytest.raises(skript.ApiFehler, match="Beta-Zugang"):
+            fangkorb.anmelden("konto@example.org", "geheim")
+
+
+def _http_fehler(body):
+    import io
+    import urllib.error
+
+    return urllib.error.HTTPError(
+        "http://localhost:5054/x", 422, "Unprocessable Entity", {}, io.BytesIO(body)
+    )
+
+
+class TestFehlertext:
+    def test_detail_der_api(self, skript):
+        fehler = _http_fehler(b'{"detail": "Link zu lang"}')
+        assert skript._fehlertext(fehler) == "Link zu lang"
+
+    def test_validierungsfehler_von_fastapi(self, skript):
+        fehler = _http_fehler(b'{"detail": [{"msg": "zu lang"}, {"msg": "kein Link"}]}')
+        assert skript._fehlertext(fehler) == "zu lang; kein Link"
+
+    def test_ohne_json_nur_der_http_grund_nie_der_body(self, skript):
+        fehler = _http_fehler(b"<html>Cookie: geheim</html>")
+        assert skript._fehlertext(fehler) == "Unprocessable Entity"
+
+
+class TestAdresse:
+    @pytest.mark.parametrize(
+        "adresse",
+        [
+            "http://localhost:5054",
+            "http://127.0.0.1:8080",
+            "https://gutgesagt.example.org",
+        ],
+    )
+    def test_https_oder_lokal(self, skript, adresse):
+        assert skript._adresse_pruefen(adresse) is None
+
+    @pytest.mark.parametrize(
+        "adresse", ["http://gutgesagt.example.org", "ftp://localhost", "localhost:5054"]
+    )
+    def test_kein_passwort_im_klartext_ins_netz(self, skript, adresse):
+        assert skript._adresse_pruefen(adresse)
+
+    def test_main_bricht_vor_der_anmeldung_ab(
+        self, skript, tmp_path, monkeypatch, capsys
+    ):
+        liste = _datei(tmp_path, "liste.csv", "link\nhttps://example.org/a\n")
+        monkeypatch.setenv("GUTGESAGT_PASSWORT", "egal")
+
+        ergebnis = skript.main(
+            [
+                str(liste),
+                "--email",
+                "konto@example.org",
+                "--adresse",
+                "http://example.org",
+            ]
+        )
+
+        assert ergebnis == 2
+        assert "nur https" in capsys.readouterr().err
 
 
 def test_antwort_ohne_json_bricht_mit_exit_2_ab(skript, tmp_path, monkeypatch, capsys):

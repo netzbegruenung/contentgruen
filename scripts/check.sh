@@ -4,6 +4,8 @@
 # Frontend tests need a Chrome/Chromium: set CHROME_BIN, otherwise the Playwright Chromium is used if present.
 # --integration: also run app/tests/integration against Qdrant (QDRANT_URL, default localhost:6333) and
 # PostgreSQL (POSTGRES_TEST_DATABASE_URL or a throwaway container); aborts if either is missing.
+# tests/integration/api/ additionally needs the running dev-stack BFF (GUTGESAGT_BFF_URL, default
+# localhost:5054, `mvp/run-local.sh up`); without it those tests fail in this mode.
 set -e
 INTEGRATION=
 for arg in "$@"; do
