@@ -4,6 +4,7 @@ import logging
 import uuid
 
 from dependencies import (
+    get_aufrufer,
     get_beitrag_loeschen_service,
     get_settings,
     get_reference_service,
@@ -19,10 +20,13 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from domain.models.content import ContentDbEntry, ContentSearchResult
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
-from services.anzeigename_service import (
-    angemeldet,
-    get_anzeigename_service,
-    kennungsfelder_leer,
+from services.anzeigename_service import angemeldet
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
+from dtos.beitrag import (
+    BeitragResponse,
+    BeitragTreffer,
+    HintergrundinfoResponse,
+    KommentarResponse,
 )
 from services.content.reference_service import ReferenceService
 from services.content.beitrag_loeschen_service import (
@@ -33,6 +37,10 @@ from services.content.verweise_entfernen import VerweiseNichtEntfernt
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Was /recent liefert, je result_type; ein Typ ohne Eintrag bekommt die allgemeine
+# Auswahl (BeitragResponse), statt die Route abzubrechen.
+NEUESTE = {"commentary": KommentarResponse, "generictext": HintergrundinfoResponse}
 
 
 # Test endpoint to check if the API is running
@@ -47,6 +55,7 @@ async def get_all(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     settings: Settings = Depends(get_settings),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> ContentGetAllResponse:
     try:
         logger.debug("/getAll was called")
@@ -68,7 +77,7 @@ async def get_all(
 
         response: ContentGetAllResponse = ContentGetAllResponse(
             results_count=len(enriched_results),
-            results=enriched_results,
+            results=als_responses(BeitragResponse, enriched_results, aufrufer),
             total_records_count=total_count,
         )
 
@@ -83,6 +92,7 @@ async def get_all(
 async def search_content(
     request: SearchContentByTextRequest,
     settings: Settings = Depends(get_settings),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> ContentSearchResponse:
     try:
         logger.debug("/searchContent was called")
@@ -100,7 +110,7 @@ async def search_content(
         enriched_results = usage_service.enrich_content_with_usage(results_dict)
 
         response: ContentSearchResponse = ContentSearchResponse(
-            results=enriched_results
+            results=als_responses(BeitragTreffer, enriched_results, aufrufer)
         )
 
         return response
@@ -112,7 +122,7 @@ async def search_content(
 # Get recent content
 @router.get("/recent")
 async def get_recent_content(
-    x_user: Optional[str] = Header(default="anonymous"),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     limit: int = Query(default=6, ge=1, le=20),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
@@ -221,12 +231,20 @@ async def get_recent_content(
         # Enrich with usage statistics
         logger.debug("Enriching content with usage statistics...")
         usage_service = get_usage_service()
-        enriched_results = usage_service.enrich_content_with_usage(all_recent)
-        if angemeldet(x_user):
-            get_anzeigename_service().an_eintraege(enriched_results)
-        else:
-            for eintrag in enriched_results:
-                eintrag.update(kennungsfelder_leer())
+        angereichert = usage_service.enrich_content_with_usage(all_recent)
+        # Je Eintrag das Response-DTO seines Typs; result_type gehoert nicht zum
+        # Beitrag und kommt danach wieder dazu.
+        antworten = fuer_aufrufer(
+            [
+                NEUESTE.get(e["result_type"], BeitragResponse).model_validate(e)
+                for e in angereichert
+            ],
+            aufrufer,
+        )
+        enriched_results = [
+            {**antwort.model_dump(mode="json"), "result_type": e["result_type"]}
+            for e, antwort in zip(angereichert, antworten)
+        ]
 
         logger.info(f"/recent endpoint returning {len(enriched_results)} results")
 
