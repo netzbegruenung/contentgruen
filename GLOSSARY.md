@@ -72,9 +72,23 @@ _Avoid_: Verarbeiter, Bearbeiter, Autor
 Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
 _Avoid_: Löschen, Ablehnen
 
+**Ausformuliert in**:
+Die Verknüpfung eines Einwurfs mit einem Beitrag, die beim Ausformulieren entsteht; festgehalten wird auch, wer verknüpft hat. Ein Einwurf kann in mehreren Beiträgen ausformuliert sein und ein Beitrag mehrere Einwürfe ausformulieren.
+_Avoid_: Markierung, Verarbeitung, Verknüpfung (Oberbegriff)
+
 **Verknüpfung**:
-Die Zuordnung eines Einwurfs zu einem Beitrag, die beim Ausformulieren entsteht; festgehalten wird auch, wer verknüpft hat. Ein Einwurf kann mit mehreren Beiträgen verknüpft sein und ein Beitrag mit mehreren Einwürfen.
-_Avoid_: Markierung, Verarbeitung
+Oberbegriff für jede festgehaltene Beziehung zwischen zwei Inhalten. Jede Art hat ihren eigenen Namen, „Verknüpfung“ allein bezeichnet keine bestimmte:
+
+| Von → nach | Name |
+|---|---|
+| Einwurf → Beitrag | ausformuliert in |
+| Beitrag → Aussage | antwortet auf |
+| Beitrag → Herkunft | stützt sich auf |
+| Variante → Original | beruht auf |
+| Umwandlung → Ausgangsinhalte | entstanden aus |
+| Aussage ↔ Aussage | verwandt mit, widerspricht |
+
+Gleiche Aussagen sind keine Verknüpfung, sie werden zu einer zusammengeführt (ADR 0005); nur ein unsicherer Fall wird als „vielleicht gleich“ zur Prüfung festgehalten. Beiträge, die denselben Punkt machen, werden unter einem Kernpunkt gruppiert, nicht verknüpft.
 
 ### Stufen eines Einwurfs
 
@@ -185,7 +199,7 @@ Für wen ein Kommentar geschrieben ist: als Antwort in Kommentarspalten an die U
 _Avoid_: Zielgruppe, Modus, Kanal
 
 **Variante**:
-Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage genommen hat. Er hat einen eigenen Autor und ist mit dem Original als „beruht auf“ verknüpft.
+Ein Beitrag, der aus einem anderen entstanden ist, weil jemand ihn als Vorlage genommen hat. Er hat einen eigenen Autor und „beruht auf“ dem Original.
 _Avoid_: Remix, Kopie, Fassung, Fork
 
 **Thema**:
