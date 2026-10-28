@@ -285,30 +285,6 @@ class UsageTrackingRepository:
                 for content_id, recent, total in trending
             ]
 
-    def initialize_usage_data(self, content_id: uuid.UUID, initial_count: int = 0):
-        """
-        Initialize usage tracking for a content item with a specific count.
-        Used for seeding data.
-
-        Args:
-            content_id: UUID of the content item
-            initial_count: Initial usage count
-        """
-        with self.db.get_session() as session:
-            tracking = (
-                session.query(UsageTracking).filter_by(content_id=content_id).first()
-            )
-
-            if not tracking:
-                tracking = UsageTracking(
-                    content_id=content_id,
-                    usage_count=initial_count,
-                    first_used=datetime.utcnow() if initial_count > 0 else None,
-                    last_used=datetime.utcnow() if initial_count > 0 else None,
-                )
-                session.add(tracking)
-                session.commit()
-
     def cleanup_old_events(self, days_to_keep: int = 90) -> int:
         """
         Clean up old usage events from the database.

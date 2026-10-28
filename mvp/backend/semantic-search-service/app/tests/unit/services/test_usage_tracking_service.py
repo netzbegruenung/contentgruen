@@ -202,21 +202,6 @@ class TestUsageTrackingService:
         # self weglassen: gebunden wird der Aufruf an die ungebundene Methode.
         signature.bind(None, **kwargs)
 
-    def test_initialize_content_usage(self, service, mock_repository):
-        """Test initializing content usage with a specific count."""
-        # Arrange
-        content_id = str(uuid.uuid4())
-        initial_count = 25
-
-        # Act
-        service.initialize_content_usage(content_id, initial_count)
-
-        # Assert
-        mock_repository.initialize_usage_data.assert_called_once()
-        call_args = mock_repository.initialize_usage_data.call_args[0]
-        assert str(call_args[0]) == content_id
-        assert call_args[1] == initial_count
-
 
 class TestNutzungSeitLetztemBesuch:
     """Die Rueckmeldung beim Anmelden (#349) vergleicht die Nutzung der Beitraege."""
