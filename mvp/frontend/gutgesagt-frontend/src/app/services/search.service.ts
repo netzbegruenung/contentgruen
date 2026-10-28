@@ -68,8 +68,6 @@ export class SearchService {
               statement_similarity: item.statement_similarity_score,
               reply_relevance: item.reply_relevance,
               status: item.commentary_result.status,
-              origin: item.commentary_result.origin,
-              author: item.commentary_result.original_author,
               references: item.commentary_result.references?.length || 0
             });
           });
@@ -86,9 +84,7 @@ export class SearchService {
               score: item.score,
               statement_similarity: item.statement_similarity_score,
               reply_relevance: item.reply_relevance,
-              status: item.generictext_result.status,
-              origin: item.generictext_result.origin,
-              author: item.generictext_result.original_author
+              status: item.generictext_result.status
             });
           });
         }

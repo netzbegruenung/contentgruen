@@ -7,6 +7,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { AddPostWorkflowComponent } from './add-post-workflow.component';
 import { DestillierUebergabeService } from '../destillieren/destillier-uebergabe.service';
+import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
 
 describe('AddPostWorkflowComponent', () => {
   let fixture: ComponentFixture<AddPostWorkflowComponent>;
@@ -23,7 +24,7 @@ describe('AddPostWorkflowComponent', () => {
       'mitBeitragVerknuepfen',
     ]);
     uebergabe.vorbefuellungLaden.and.returnValue(
-      of({ rohinputId: 'e-1', titel: 'Der Satz', url: 'https://www.instagram.com/p/abc/' }), // retired-ok: Feldname der Vorbefuellung bis #262
+      of({ einwurfId: 'e-1', titel: 'Der Satz', url: 'https://www.instagram.com/p/abc/' }),
     );
     uebergabe.mitBeitragVerknuepfen.and.returnValue(of(true));
 
@@ -58,7 +59,7 @@ describe('AddPostWorkflowComponent', () => {
   });
 
   it('befuellt aus dem Einwurf vor und verknuepft ihn nach dem Speichern mit dem Post', () => {
-    params.next(convertToParamMap({ rohinput: 'e-1' })); // retired-ok: Parametername bis #262
+    params.next(convertToParamMap({ [EINWURF_PARAM]: 'e-1' }));
     const navigieren = spyOn(TestBed.inject(Router), 'navigate');
 
     expect(component.vorbefuellung?.titel).toBe('Der Satz');
@@ -67,7 +68,7 @@ describe('AddPostWorkflowComponent', () => {
 
     expect(uebergabe.mitBeitragVerknuepfen).toHaveBeenCalledOnceWith('e-1', 'p-1', 'post');
     expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-post', 'gespeichert', 'p-1'], {
-      queryParams: { rohinput: 'e-1' }, // retired-ok: Parametername bis #262
+      queryParams: { [EINWURF_PARAM]: 'e-1' },
       state: { einwurfVerknuepft: true },
       replaceUrl: true,
     });
