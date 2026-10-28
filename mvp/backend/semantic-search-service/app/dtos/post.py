@@ -2,11 +2,8 @@ from uuid import UUID
 from pydantic import BaseModel
 from typing import List
 
-from domain.models.post import (
-    Post,
-    PostDbEntry,
-    PostSearchResult,
-)
+from domain.models.post import Post
+from dtos.beitrag import PostResponse, PostTreffer
 
 
 ### AddPost ###
@@ -25,7 +22,7 @@ class AddPostResponse(BaseModel):
 
 class PostGetAllResponse(BaseModel):
     results_count: int
-    results: List[PostDbEntry]
+    results: List[PostResponse]
     total_records_count: int
 
 
@@ -38,4 +35,4 @@ class SearchPostByTextRequest(BaseModel):
 
 
 class PostSearchResponse(BaseModel):
-    results: List[PostSearchResult]
+    results: List[PostTreffer]
