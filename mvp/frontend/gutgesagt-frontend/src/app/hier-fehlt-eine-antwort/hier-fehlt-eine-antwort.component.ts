@@ -20,8 +20,10 @@ import {
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
  * Kommentar oder mit Suchen ohne Treffer von mindestens zwei Personen), sortiert
  * nach Bedarf, und koennen sie selbst beantworten. Fuer absehbare Themen legen sie
- * hier Aussagen vorab an. Zahlen der Kennzahl zeigt die Seite nicht, und eine Aussage
- * aus einer Suchanfrage erst ab der Schwelle der Kennzahl (zwei Personen).
+ * hier Aussagen vorab an. Von der Kennzahl zeigt die Seite nur die Zahl der Personen,
+ * die ohne Treffer gesucht haben, damit Hotspots sichtbar werden, nicht die Zahl der
+ * Suchen; eine Aussage aus einer Suchanfrage erst ab der Schwelle der Kennzahl
+ * (zwei Personen).
  */
 @Component({
   selector: 'app-hier-fehlt-eine-antwort',
@@ -53,6 +55,12 @@ export class HierFehltEineAntwortComponent implements OnInit {
    */
   beantwortenParams(aussage: UnbeantworteteAussage): Record<string, string> {
     return { [AUSSAGE_PARAM]: aussage.statement_id, [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT };
+  }
+
+  /** Der Marker an einer Aussage, nach der ohne Treffer gesucht wurde, mit Personenzahl. */
+  gesuchtMarker(aussage: UnbeantworteteAussage): string {
+    const n = aussage.personen_ohne_treffer;
+    return `Danach wurde ohne Treffer gesucht: ${n} ${n === 1 ? 'Person' : 'Personen'}`;
   }
 
   get anlegbar(): boolean {

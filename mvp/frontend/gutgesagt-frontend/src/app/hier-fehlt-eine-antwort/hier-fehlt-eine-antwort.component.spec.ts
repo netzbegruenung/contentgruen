@@ -43,15 +43,15 @@ describe('HierFehltEineAntwortComponent', () => {
     return Array.from(element().querySelectorAll('[data-testid="unbeantwortete-aussage"]'));
   }
 
-  function liefern(liste: Array<{ statement_id: string; statement_text: string; ohne_treffer_gesucht: boolean }>) {
+  function liefern(liste: Array<{ statement_id: string; statement_text: string; personen_ohne_treffer: number }>) {
     http.expectOne(LISTE_URL).flush({ aussagen: liste });
     fixture.detectChanges();
   }
 
   it('zeigt die unbeantworteten Aussagen in der gelieferten Reihenfolge', () => {
     liefern([
-      { statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', ohne_treffer_gesucht: true },
-      { statement_id: 'a-2', statement_text: 'Windräder sind hässlich', ohne_treffer_gesucht: false },
+      { statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 3 },
+      { statement_id: 'a-2', statement_text: 'Windräder sind hässlich', personen_ohne_treffer: 0 },
     ]);
 
     const zeilen = aussagen();
@@ -60,19 +60,29 @@ describe('HierFehltEineAntwortComponent', () => {
     expect(zeilen[1].textContent).toContain('Windräder sind hässlich');
   });
 
-  it('markiert, wonach ohne Treffer gesucht wurde, ohne Zahlen', () => {
+  it('markiert, wonach ohne Treffer gesucht wurde, mit der Zahl der Personen', () => {
     liefern([
-      { statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', ohne_treffer_gesucht: true },
-      { statement_id: 'a-2', statement_text: 'Windräder sind hässlich', ohne_treffer_gesucht: false },
+      { statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 3 },
+      { statement_id: 'a-2', statement_text: 'Windräder sind hässlich', personen_ohne_treffer: 0 },
     ]);
 
     const [gesucht, ohneKommentar] = aussagen();
-    expect(gesucht.querySelector('.gesucht')?.textContent).toContain('ohne Treffer gesucht');
+    expect(gesucht.querySelector('.gesucht')?.textContent?.trim()).toBe(
+      'Danach wurde ohne Treffer gesucht: 3 Personen',
+    );
     expect(ohneKommentar.querySelector('.gesucht')).toBeNull();
   });
 
+  it('zeigt eine einzelne Person im Singular', () => {
+    liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 1 }]);
+
+    expect(aussagen()[0].querySelector('.gesucht')?.textContent?.trim()).toBe(
+      'Danach wurde ohne Treffer gesucht: 1 Person',
+    );
+  });
+
   it('"Selbst beantworten" führt ins Kommentarformular mit gesetzter Aussage', () => {
-    liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', ohne_treffer_gesucht: false }]);
+    liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
 
     const knopf = aussagen()[0].querySelector('a.selbst-beantworten') as HTMLAnchorElement;
     expect(knopf.textContent).toContain('Selbst beantworten');
@@ -122,7 +132,7 @@ describe('HierFehltEineAntwortComponent', () => {
       });
       fixture.detectChanges();
 
-      liefern([{ statement_id: 'neu-1', statement_text: 'Das Heizungsgesetz enteignet uns', ohne_treffer_gesucht: false }]);
+      liefern([{ statement_id: 'neu-1', statement_text: 'Das Heizungsgesetz enteignet uns', personen_ohne_treffer: 0 }]);
       expect(text()).toContain('Aussage angelegt');
       expect((element().querySelector('textarea[name="aussage"]') as HTMLTextAreaElement).value).toBe('');
       expect(aussagen().length).toBe(1);

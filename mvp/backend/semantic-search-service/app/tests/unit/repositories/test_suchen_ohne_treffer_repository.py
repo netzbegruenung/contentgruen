@@ -98,13 +98,14 @@ class TestHaeufigste:
     def test_haeufigste_summiert_ab_woche_mit_mindestanzahl_an_personen(
         self, repository, session
     ):
-        session.execute.return_value.all.return_value = [(AUSSAGE, 5)]
+        session.execute.return_value.all.return_value = [(AUSSAGE, 5, 2)]
 
         zeilen = repository.haeufigste(date(2026, 10, 5), 2, 20)
 
         abfrage = session.execute.call_args.args[0]
         sql = _sql(abfrage)
         assert "sum(suchen_ohne_treffer.anzahl)" in sql
+        assert "sum(suchen_ohne_treffer.personen) AS personen" in sql
         assert "WHERE suchen_ohne_treffer.woche >=" in sql
         assert "GROUP BY suchen_ohne_treffer.statement_id" in sql
         assert "HAVING sum(suchen_ohne_treffer.personen) >=" in sql
@@ -114,7 +115,7 @@ class TestHaeufigste:
         assert date(2026, 10, 5) in params.values()
         assert 2 in params.values()
         assert 20 in params.values()
-        assert zeilen == [(AUSSAGE, 5)]
+        assert zeilen == [(AUSSAGE, 5, 2)]
 
     def test_haeufigste_blaettert_mit_offset(self, repository, session):
         session.execute.return_value.all.return_value = []

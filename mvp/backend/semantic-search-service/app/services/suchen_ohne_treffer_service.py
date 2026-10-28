@@ -75,11 +75,15 @@ MERKLISTE_MAX = 100_000
 
 @dataclass(frozen=True)
 class SucheOhneTreffer:
-    """Eine Aussage, zu der Suchen keinen Beitrag fanden, mit ihrer Anzahl."""
+    """
+    Eine Aussage, zu der Suchen keinen Beitrag fanden, mit der Anzahl der Suchen
+    und der Personen (Tagespseudonyme, ueber die Wochen summiert).
+    """
 
     statement_id: uuid.UUID
     text: str
     anzahl: int
+    personen: int
 
 
 def wochenbeginn(tag: date) -> date:
@@ -257,12 +261,12 @@ class SuchenOhneTrefferService:
                 seit_woche, MINDESTANZAHL, limit, offset
             )
             aussagen = await asyncio.gather(
-                *(self._sichtbare_aussage(statement_id) for statement_id, _ in zeilen)
+                *(self._sichtbare_aussage(statement_id) for statement_id, *_ in zeilen)
             )
-            for (statement_id, anzahl), aussage in zip(zeilen, aussagen):
+            for (statement_id, anzahl, personen), aussage in zip(zeilen, aussagen):
                 if aussage is not None:
                     ergebnis.append(
-                        SucheOhneTreffer(statement_id, aussage.text, anzahl)
+                        SucheOhneTreffer(statement_id, aussage.text, anzahl, personen)
                     )
             if len(zeilen) < limit:
                 break

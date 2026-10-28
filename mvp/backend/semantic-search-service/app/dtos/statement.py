@@ -69,13 +69,14 @@ AUSSAGE_MAX_ZEICHEN = 1000
 
 class UnbeantworteteAussageDto(BaseModel):
     """
-    Eine unbeantwortete Aussage: ID (fuer "Selbst beantworten") und Text. Ob ohne
-    Treffer danach gesucht wurde, als ja/nein; wie oft, sehen nur Admins.
+    Eine unbeantwortete Aussage: ID (fuer "Selbst beantworten") und Text, dazu wie
+    viele Personen ohne Treffer danach gesucht haben (0: nur ohne Kommentar); wie
+    oft gesucht wurde, sehen nur Admins.
     """
 
     statement_id: uuid.UUID
     statement_text: str
-    ohne_treffer_gesucht: bool
+    personen_ohne_treffer: int
 
 
 class UnbeantworteteAussagenResponse(BaseModel):

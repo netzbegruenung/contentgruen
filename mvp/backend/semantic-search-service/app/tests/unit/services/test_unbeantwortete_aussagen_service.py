@@ -59,41 +59,60 @@ async def test_liste_zeigt_aussagen_ohne_kommentar_neueste_zuerst():
     liste = await service.liste()
 
     assert liste == [
-        UnbeantworteteAussage(B, "Tempo 30 bringt nichts", False),
-        UnbeantworteteAussage(A, "Windräder sind hässlich", False),
+        UnbeantworteteAussage(B, "Tempo 30 bringt nichts", 0),
+        UnbeantworteteAussage(A, "Windräder sind hässlich", 0),
     ]
 
 
-async def test_gesuchte_aussagen_stehen_vorn_nach_zahl_der_suchen():
+async def test_gesuchte_aussagen_stehen_vorn_mit_zahl_der_personen():
     service = _service(
         ohne_kommentar=[_aussage(A, "Windräder sind hässlich", 20)],
         gesucht=[
-            SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 7),
-            SucheOhneTreffer(C, "Das Heizungsgesetz enteignet uns", 3),
+            SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 7, 4),
+            SucheOhneTreffer(C, "Das Heizungsgesetz enteignet uns", 3, 2),
         ],
     )
 
     liste = await service.liste()
 
     assert [a.statement_id for a in liste] == [B, C, A]
-    assert [a.ohne_treffer_gesucht for a in liste] == [True, True, False]
+    assert [a.personen_ohne_treffer for a in liste] == [4, 2, 0]
+
+
+async def test_gesuchte_aussagen_nach_personen_nicht_nach_suchen():
+    """Die Reihenfolge passt zur gezeigten Zahl und verraet die Suchen nicht."""
+    service = _service(
+        gesucht=[
+            SucheOhneTreffer(A, "Windräder töten Vögel", 9, 2),
+            SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 5, 5),
+            SucheOhneTreffer(C, "Das Heizungsgesetz enteignet uns", 4, 2),
+        ],
+    )
+
+    liste = await service.liste()
+
+    assert [(a.statement_id, a.personen_ohne_treffer) for a in liste] == [
+        (B, 5),
+        (A, 2),
+        (C, 2),
+    ]
 
 
 async def test_gesuchte_aussage_ohne_kommentar_erscheint_nur_einmal():
     service = _service(
         ohne_kommentar=[_aussage(A, "Windräder sind hässlich", 20)],
-        gesucht=[SucheOhneTreffer(A, "Windräder sind hässlich", 2)],
+        gesucht=[SucheOhneTreffer(A, "Windräder sind hässlich", 2, 2)],
     )
 
     liste = await service.liste()
 
-    assert liste == [UnbeantworteteAussage(A, "Windräder sind hässlich", True)]
+    assert liste == [UnbeantworteteAussage(A, "Windräder sind hässlich", 2)]
 
 
 async def test_liste_ist_begrenzt():
     service = _service(
         ohne_kommentar=[_aussage(C, "c", 2), _aussage(D, "d", 1)],
-        gesucht=[SucheOhneTreffer(A, "a", 5), SucheOhneTreffer(B, "b", 4)],
+        gesucht=[SucheOhneTreffer(A, "a", 5, 3), SucheOhneTreffer(B, "b", 4, 2)],
     )
 
     liste = await service.liste(limit=3)

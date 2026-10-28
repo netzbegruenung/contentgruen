@@ -93,7 +93,7 @@ def _service(db: Datenbank) -> SuchenOhneTrefferService:
 
 async def _liste(service: SuchenOhneTrefferService):
     return [
-        (e.statement_id, e.anzahl)
+        (e.statement_id, e.anzahl, e.personen)
         for e in await service.haeufigste(wochen=4, heute=DONNERSTAG)
     ]
 
@@ -144,11 +144,11 @@ class TestRepository:
         repository.zaehlen(_aussage(2), WOCHE, neue_person=True)
 
         assert repository.haeufigste(WOCHE, mindestanzahl=2, limit=10) == [
-            (_aussage(2), 2)
+            (_aussage(2), 2, 2)
         ]
         assert repository.haeufigste(WOCHE, mindestanzahl=1, limit=10) == [
-            (_aussage(1), 6),
-            (_aussage(2), 2),
+            (_aussage(1), 6, 1),
+            (_aussage(2), 2, 2),
         ]
 
     def test_haeufigste_summiert_ab_der_woche(self, neue_datenbank):
@@ -158,7 +158,7 @@ class TestRepository:
         repository.zaehlen(AUSSAGE, WOCHE, neue_person=True)
 
         assert repository.haeufigste(VORIGE_WOCHE, mindestanzahl=1, limit=10) == [
-            (AUSSAGE, 2)
+            (AUSSAGE, 2, 2)
         ]
 
     def test_haeufigste_blaettert_in_fester_reihenfolge(self, neue_datenbank):
@@ -175,8 +175,8 @@ class TestRepository:
         ]
 
         assert seiten == [
-            [(_aussage(2), 3), (_aussage(4), 2)],
-            [(_aussage(1), 1), (_aussage(3), 1)],
+            [(_aussage(2), 3, 3), (_aussage(4), 2, 2)],
+            [(_aussage(1), 1, 1), (_aussage(3), 1, 1)],
             [],
         ]
 
@@ -202,7 +202,7 @@ class TestMindestanzahlZaehltPersonen:
 
         assert await _liste(service) == []
 
-    async def test_zwei_personen_erscheinen_mit_der_zahl_der_suchen(
+    async def test_zwei_personen_erscheinen_mit_der_zahl_der_suchen_und_personen(
         self, neue_datenbank
     ):
         service = _service(neue_datenbank)
@@ -211,7 +211,7 @@ class TestMindestanzahlZaehltPersonen:
         service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
         service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
 
-        assert await _liste(service) == [(AUSSAGE, 3)]
+        assert await _liste(service) == [(AUSSAGE, 3, 2)]
 
     async def test_ohne_pseudonym_zaehlt_keine_person(self, neue_datenbank):
         service = _service(neue_datenbank)
@@ -229,7 +229,7 @@ class TestMindestanzahlZaehltPersonen:
         service.erfassen(AUSSAGE, 0, PERSON_A, heute=VORWOCHE)
         service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
 
-        assert await _liste(service) == [(AUSSAGE, 2)]
+        assert await _liste(service) == [(AUSSAGE, 2, 2)]
 
     async def test_dieselbe_person_an_zwei_tagen_zaehlt_zweimal(self, neue_datenbank):
         """
@@ -241,7 +241,7 @@ class TestMindestanzahlZaehltPersonen:
         service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
         service.erfassen(AUSSAGE, 0, PERSON_A, heute=DONNERSTAG)
 
-        assert await _liste(service) == [(AUSSAGE, 2)]
+        assert await _liste(service) == [(AUSSAGE, 2, 2)]
 
 
 @pytest.mark.asyncio
@@ -253,7 +253,7 @@ class TestMigration:
         assert await _liste(service) == []
         service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH)
         service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
-        assert await _liste(service) == [(AUSSAGE, 7)]
+        assert await _liste(service) == [(AUSSAGE, 7, 2)]
 
     def test_migration_darf_mehrfach_laufen(self, bestehende_datenbank):
         postgres.migration(bestehende_datenbank, PERSONEN)

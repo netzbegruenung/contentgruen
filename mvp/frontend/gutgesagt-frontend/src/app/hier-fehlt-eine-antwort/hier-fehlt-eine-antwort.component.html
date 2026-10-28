@@ -1,7 +1,8 @@
 <div class="component-box">
     <p class="einleitung">
         Zu diesen Aussagen gibt es noch keinen Kommentar, oder mehrere Personen haben danach
-        gesucht und nichts Passendes gefunden. Zuerst steht, wonach gesucht wurde.
+        gesucht und nichts Passendes gefunden. Zuerst steht, wonach die meisten Personen
+        gesucht haben.
     </p>
 
     <p *ngIf="ladefehler" class="hinweis">Die Aussagen konnten nicht geladen werden.</p>
@@ -11,7 +12,7 @@
             <li *ngFor="let aussage of aussagen" class="aussage" data-testid="unbeantwortete-aussage">
                 <p class="aussage-text">{{ aussage.statement_text }}</p>
                 <div class="aussage-fuss">
-                    <span *ngIf="aussage.ohne_treffer_gesucht" class="gesucht">Danach wurde ohne Treffer gesucht</span>
+                    <span *ngIf="aussage.personen_ohne_treffer > 0" class="gesucht">{{ gesuchtMarker(aussage) }}</span>
                     <a mat-stroked-button class="selbst-beantworten"
                        [routerLink]="kommentarFormular"
                        [queryParams]="beantwortenParams(aussage)">Selbst beantworten</a>

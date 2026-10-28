@@ -57,17 +57,22 @@ class SuchenOhneTrefferRepository:
 
     def haeufigste(
         self, seit_woche: date, mindestanzahl: int, limit: int, offset: int = 0
-    ) -> List[Tuple[uuid.UUID, int]]:
+    ) -> List[Tuple[uuid.UUID, int, int]]:
         """
-        (Aussage-ID, Anzahl der Suchen) ab seit_woche, absteigend nach Anzahl,
-        seitenweise; nur Aussagen mit mindestens mindestanzahl Personen. Die
+        (Aussage-ID, Anzahl der Suchen, Anzahl der Personen) ab seit_woche,
+        absteigend nach Anzahl der Suchen, seitenweise; nur Aussagen mit mindestens
+        mindestanzahl Personen. Die
         Personen der Wochen duerfen summiert werden: Tagespseudonyme verschiedener
         Tage sind immer verschieden.
         """
         summe = func.sum(SucheOhneTrefferZeile.anzahl)
         personen = func.sum(SucheOhneTrefferZeile.personen)
         abfrage = (
-            select(SucheOhneTrefferZeile.statement_id, summe.label("anzahl"))
+            select(
+                SucheOhneTrefferZeile.statement_id,
+                summe.label("anzahl"),
+                personen.label("personen"),
+            )
             .where(SucheOhneTrefferZeile.woche >= seit_woche)
             .group_by(SucheOhneTrefferZeile.statement_id)
             .having(personen >= mindestanzahl)
@@ -77,8 +82,8 @@ class SuchenOhneTrefferRepository:
         )
         with self.db.get_session() as session:
             return [
-                (statement_id, int(anzahl))
-                for statement_id, anzahl in session.execute(abfrage).all()
+                (statement_id, int(anzahl), int(personen))
+                for statement_id, anzahl, personen in session.execute(abfrage).all()
             ]
 
 

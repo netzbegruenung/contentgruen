@@ -1,7 +1,8 @@
 """
 "Hier fehlt eine Antwort": die Liste der unbeantworteten Aussagen und das Anlegen
 einer Aussage vorab. Beides nur fuer Angemeldete; die Liste traegt ID und Text der
-Aussage, aber weder Suchanfragen noch Zahlen der Kennzahl.
+Aussage und die Zahl der Personen, die ohne Treffer danach gesucht haben, aber nicht
+die Zahl der Suchen.
 """
 
 import uuid
@@ -41,12 +42,12 @@ def statement_service():
 
 @pytest.mark.api
 class TestUnbeantwortet:
-    def test_liefert_id_text_und_ob_ohne_treffer_gesucht(self, liste_service):
+    def test_liefert_id_text_und_personen_ohne_treffer(self, liste_service):
         a, b = uuid.uuid4(), uuid.uuid4()
         liste_service.liste = AsyncMock(
             return_value=[
-                UnbeantworteteAussage(a, "Wärmepumpen sind zu teuer", True),
-                UnbeantworteteAussage(b, "Windräder sind hässlich", False),
+                UnbeantworteteAussage(a, "Wärmepumpen sind zu teuer", 3),
+                UnbeantworteteAussage(b, "Windräder sind hässlich", 0),
             ]
         )
 
@@ -58,12 +59,12 @@ class TestUnbeantwortet:
                 {
                     "statement_id": str(a),
                     "statement_text": "Wärmepumpen sind zu teuer",
-                    "ohne_treffer_gesucht": True,
+                    "personen_ohne_treffer": 3,
                 },
                 {
                     "statement_id": str(b),
                     "statement_text": "Windräder sind hässlich",
-                    "ohne_treffer_gesucht": False,
+                    "personen_ohne_treffer": 0,
                 },
             ]
         }

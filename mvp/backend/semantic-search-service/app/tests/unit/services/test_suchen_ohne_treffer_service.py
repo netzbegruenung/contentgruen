@@ -287,8 +287,8 @@ class TestHeuteUtc:
 
 class TestHaeufigste:
     @pytest.mark.asyncio
-    async def test_haeufigste_liefert_text_und_anzahl_der_aussage(self):
-        repo = FakeRepository(haeufigste=[(AUSSAGE, 7), (ANDERE, 3)])
+    async def test_haeufigste_liefert_text_anzahl_und_personen_der_aussage(self):
+        repo = FakeRepository(haeufigste=[(AUSSAGE, 7, 4), (ANDERE, 3, 2)])
         service = _service(
             repo,
             {
@@ -299,9 +299,9 @@ class TestHaeufigste:
 
         ergebnis = await service.haeufigste(wochen=4, heute=MITTWOCH)
 
-        assert [(e.statement_id, e.text, e.anzahl) for e in ergebnis] == [
-            (AUSSAGE, "Windräder töten Vögel", 7),
-            (ANDERE, "Wärmepumpe im Altbau", 3),
+        assert [(e.statement_id, e.text, e.anzahl, e.personen) for e in ergebnis] == [
+            (AUSSAGE, "Windräder töten Vögel", 7, 4),
+            (ANDERE, "Wärmepumpe im Altbau", 3, 2),
         ]
 
     @pytest.mark.asyncio
@@ -314,7 +314,7 @@ class TestHaeufigste:
 
     @pytest.mark.asyncio
     async def test_haeufigste_laesst_nicht_mehr_vorhandene_aussagen_weg(self):
-        repo = FakeRepository(haeufigste=[(GELOESCHT, 9), (AUSSAGE, 4)])
+        repo = FakeRepository(haeufigste=[(GELOESCHT, 9, 2), (AUSSAGE, 4, 2)])
         service = _service(repo, {AUSSAGE: ("Windräder töten Vögel", SICHTBAR)})
 
         ergebnis = await service.haeufigste(wochen=4, heute=MITTWOCH)
@@ -331,7 +331,7 @@ class TestHaeufigste:
         ],
     )
     async def test_haeufigste_zeigt_nur_sichtbare(self, status):
-        repo = FakeRepository(haeufigste=[(GESPERRT, 9), (AUSSAGE, 4)])
+        repo = FakeRepository(haeufigste=[(GESPERRT, 9, 2), (AUSSAGE, 4, 2)])
         service = _service(
             repo,
             {
@@ -347,9 +347,9 @@ class TestHaeufigste:
     @pytest.mark.asyncio
     async def test_haeufigste_laedt_nach_wenn_aussagen_herausfallen(self):
         """Gesperrte Aussagen belegen keine Plaetze: es wird nachgeladen."""
-        gesperrte = [(uuid.uuid4(), 9) for _ in range(2)]
-        repo = FakeRepository(haeufigste=gesperrte + [(AUSSAGE, 4), (ANDERE, 3)])
-        aussagen = {sid: ("gesperrt", ContentStatus.BLOCKED) for sid, _ in gesperrte}
+        gesperrte = [(uuid.uuid4(), 9, 2) for _ in range(2)]
+        repo = FakeRepository(haeufigste=gesperrte + [(AUSSAGE, 4, 2), (ANDERE, 3, 2)])
+        aussagen = {sid: ("gesperrt", ContentStatus.BLOCKED) for sid, *_ in gesperrte}
         aussagen[AUSSAGE] = ("Windräder töten Vögel", SICHTBAR)
         aussagen[ANDERE] = ("Wärmepumpe im Altbau", SICHTBAR)
 
