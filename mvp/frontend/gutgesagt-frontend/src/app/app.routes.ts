@@ -227,6 +227,10 @@ export const routes: Routes = [
                 loadComponent: () => import('./admin/content-moderation/content-moderation.component').then(m => m.ContentModerationComponent)
             },
             {
+                path: 'themen',
+                loadComponent: () => import('./admin/themen-zuordnen/themen-zuordnen.component').then(m => m.ThemenZuordnenComponent)
+            },
+            {
                 path: '',
                 redirectTo: 'dashboard',
                 pathMatch: 'full'

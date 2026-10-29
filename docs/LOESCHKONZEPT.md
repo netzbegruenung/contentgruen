@@ -218,6 +218,16 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   heute schon gezählt haben, liegt nur im Arbeitsspeicher (als SHA-256-Prüfwert) und wird
   um Mitternacht (UTC) verworfen. Wochen älter als acht löscht ein täglicher Task von
   selbst (`services/suchen_ohne_treffer_service.py`, `loeschen_im_takt`).
+- **`aussage_themen`** (#363) trägt je Zuordnung nur Aussage-ID, Thema und
+  Zuordnungsart, weder Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen
+  ließe. Keine Frist. Aussagen werden nicht gelöscht; wird eine gesperrt, bleiben ihre
+  Zeilen stehen, gehen aber nicht mehr ins Testset. Das **Testset**
+  (`GET /statement/themen/testset`, nur Admins, Knopf „Testset herunterladen“ unter
+  Admin → Themen) ist eine Datei mit Aussage-ID, Text der Aussage, Themen und
+  Zuordnungsart, ohne Aussagen aus Suchanfragen (`services/aussage_themen_service.py`,
+  `fuers_testset`). Wer es herunterlädt, verwaltet die Kopie selbst; der Text einer
+  vorab angelegten Aussage stammt von einer Person und kann, wie jeder Beitrag, Namen
+  enthalten.
 - **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände
   (`mvp/scripts/backup/backup.sh:12,28-29`), gelöschte Daten leben dort bis zu 28 Tage
   weiter. Selektives Editieren von

@@ -588,3 +588,8 @@ mat-sidenav-content {
   padding: var(--spacing-sm) var(--spacing-md) 0;
   color: var(--text-secondary);
 }
+
+/* Filter nach Thema (#363) */
+.mobile-themen-filter {
+  padding: var(--spacing-xs) var(--page-margin);
+}

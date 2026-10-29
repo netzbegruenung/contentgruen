@@ -23,6 +23,8 @@ from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
 )
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
+from services.aussage_themen_service import AussageThemenService
+from repositories.aussage_themen_repository import get_aussage_themen_repository
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
@@ -132,13 +134,20 @@ def get_suchen_ohne_treffer_service(
     )
 
 
+def get_aussage_themen_service(
+    statement_service: StatementService = Depends(get_statement_service),
+) -> AussageThemenService:
+    return AussageThemenService(get_aussage_themen_repository(), statement_service)
+
+
 def get_unbeantwortete_aussagen_service(
     statement_service: StatementService = Depends(get_statement_service),
     suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
         get_suchen_ohne_treffer_service
     ),
+    themen: AussageThemenService = Depends(get_aussage_themen_service),
 ) -> UnbeantworteteAussagenService:
-    return UnbeantworteteAussagenService(statement_service, suchen_ohne_treffer)
+    return UnbeantworteteAussagenService(statement_service, suchen_ohne_treffer, themen)
 
 
 def get_feedback_service() -> FeedbackService:

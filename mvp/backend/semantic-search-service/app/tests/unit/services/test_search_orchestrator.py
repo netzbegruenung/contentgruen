@@ -8,13 +8,14 @@ ein Post im Index lag, warf Pydantic beim Setzen einen ValueError und
 
 import uuid
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from domain.models.content_type import ContentType
 from domain.models.image import ImageSearchResult
 from domain.models.post import PostSearchResult
+from dtos.search import PostSearchResult as PostSearchResultDto
 from services.search.search_orchestrator import (
     ContentTypeSearchSpec,
     SearchOrchestrator,
@@ -70,3 +71,59 @@ def test_enrich_with_usage_bild_und_post_ohne_fehler():
 
     assert bild.usage_count == 3
     assert post.usage_count == 3
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_treffer_tragen_die_themen_der_aussage_ueber_die_sie_gefunden_wurden():
+    """Grundlage des Themenfilters auf der Ergebnisseite (#363)."""
+    aussage_id, kommentar_id = uuid.uuid4(), uuid.uuid4()
+    aussage = SimpleNamespace(
+        id=aussage_id,
+        text="Wärmepumpen sind zu teuer",
+        score=0.95,
+        replysuggestions=[
+            SimpleNamespace(
+                id=kommentar_id, content_type=ContentType.POST, relevance=0.9
+            )
+        ],
+    )
+    post = _post()
+    post_service = MagicMock()
+    post_service.get = AsyncMock(return_value=post)
+    direkt = _post()
+    themen_service = MagicMock()
+    themen_service.themen_von.return_value = {
+        aussage_id: ["energie-heizen", "soziales"]
+    }
+    orchestrator = SearchOrchestrator(
+        specs=[
+            ContentTypeSearchSpec(
+                ContentType.POST, post_service, PostSearchResultDto, "post_result"
+            )
+        ],
+        reference_service=MagicMock(),
+        usage_service=None,
+        voting_service=None,
+    )
+    await orchestrator.collect_statement_based([aussage], 10, {})
+    orchestrator.results_for(ContentType.POST).append(
+        PostSearchResultDto(
+            score=0.6,
+            statement_text="",
+            statement_similarity_score=0.0,
+            reply_relevance=0.0,
+            post_result=direkt,
+        )
+    )
+
+    orchestrator.themen_ergaenzen(themen_service)
+
+    ueber_aussage, direkter_treffer = orchestrator.results_for(ContentType.POST)
+    assert ueber_aussage.statement_id == aussage_id
+    assert [t.schluessel for t in ueber_aussage.themen] == [
+        "energie-heizen",
+        "soziales",
+    ]
+    assert direkter_treffer.themen == []
+    themen_service.themen_von.assert_called_once_with([aussage_id])
