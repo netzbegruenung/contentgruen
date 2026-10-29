@@ -219,7 +219,11 @@ describe('AddGenerictextWorkflowComponent mit Aussage aus der Adresse', () => {
     return fixture.debugElement.query(By.directive(AddGenerictextComponent))?.componentInstance ?? null;
   }
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Die Themenliste laedt das Formular selbst (#455); sonst bleibt nichts offen.
+    http.match((r) => r.url.endsWith('/api/v1/statement/themen'));
+    http.verify();
+  });
 
   it('laedt die Aussage per ID und zeigt sie als Antwort-auf', async () => {
     await oeffnen({ aussage: 'a-1' });
