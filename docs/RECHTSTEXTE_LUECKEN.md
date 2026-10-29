@@ -197,6 +197,7 @@ seit der Neufassung (20c1b06b) nicht mehr im Text. Die Einbeziehung trägt der H
 CC0 das Absenden als bewusste Handlung.
 
 **Offen:**
+- Juristische Prüfung des Wortlauts beider Fassungen: #296.
 - Zustimmung beim ersten Anmelden mit persistentem Feld pro Person: #429.
 - Ob die Fassung des Hinweises am Beitrag mitgespeichert wird (Nachweis, welchem Wortlaut jemand
   zugestimmt hat): Produktfrage, nicht entschieden.
