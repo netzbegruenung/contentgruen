@@ -10,10 +10,15 @@ import uuid
 import asyncio
 
 from sqlalchemy import func, desc
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import UsageTracking, UsageEvent
+from infrastructure.database.models import (
+    NutzungJeFassung,
+    UsageTracking,
+    UsageEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +40,7 @@ class UsageTrackingRepository:
         event_type: str = "copy",
         session_id: Optional[str] = None,
         device_category: Optional[str] = None,
+        fassung: Optional[str] = None,
     ) -> bool:
         """
         Track a usage event for a content item.
@@ -46,6 +52,8 @@ class UsageTrackingRepository:
             device_category: Grobe Geraetekategorie, bereits vom Aufrufer
                 abgeleitet (utils.device_category). Der User-Agent-Rohwert
                 kommt hier nicht mehr an.
+            fassung: Die kopierte Fassung eines Kommentars (#355), vom Aufrufer
+                geprueft; None bei anderen Beitragstypen.
 
         Returns:
             bool: True if tracking was successful
@@ -75,14 +83,29 @@ class UsageTrackingRepository:
                     event_type=event_type,
                     session_id=session_id,
                     device_category=device_category,
+                    fassung=fassung,
                 )
                 session.add(event)
 
-                session.commit()
-                logger.info(
-                    f"Repository: Successfully tracked usage for content {content_id}, new count: {tracking.usage_count}"
-                )
-                return True
+                if fassung:
+                    # Erst nach usage_tracking (Fremdschluessel); hochzaehlen in der
+                    # Datenbank, damit zwei gleichzeitige Kopien beide zaehlen.
+                    session.flush()
+                    session.execute(
+                        insert(NutzungJeFassung)
+                        .values(content_id=content_id, fassung=fassung, nutzung=1)
+                        .on_conflict_do_update(
+                            index_elements=["content_id", "fassung"],
+                            set_={"nutzung": NutzungJeFassung.nutzung + 1},
+                        )
+                    )
+
+                neu = tracking.usage_count
+            # Festgeschrieben beim Verlassen von get_session; erst danach gilt es.
+            logger.info(
+                f"Repository: Successfully tracked usage for content {content_id}, new count: {neu}"
+            )
+            return True
 
         except Exception as e:
             logger.error(
@@ -158,6 +181,60 @@ class UsageTrackingRepository:
             )
             for content_id, anzahl in zeilen:
                 result[str(content_id)] = anzahl
+        return result
+
+    def get_nutzung_je_fassung_batch(
+        self, content_ids: List[uuid.UUID]
+    ) -> Dict[str, Dict[str, Dict[str, int]]]:
+        """
+        Nutzung und Zuwachs der letzten ZUWACHS_TAGE Tage je Fassung (#355), fuer
+        "Meine Beitraege".
+
+        Die Summe kommt aus nutzung_je_fassung und ueberdauert die Frist der
+        usage_events, der Zuwachs aus usage_events wie beim Zuwachs je Beitrag.
+        Nutzung ohne Fassung (andere Beitragstypen, Nutzung von vor #355) fehlt.
+
+        Returns:
+            Dict content_id (als String) -> {Fassung: {"nutzung", "letzte_7_tage"}},
+            ein leeres Dict fuer Beitraege ohne Nutzung je Fassung
+        """
+        result: Dict[str, Dict[str, Dict[str, int]]] = {
+            str(content_id): {} for content_id in content_ids
+        }
+        if not content_ids:
+            return result
+        seit = datetime.now(timezone.utc) - timedelta(days=ZUWACHS_TAGE)
+        with self.db.get_session() as session:
+            summen = (
+                session.query(
+                    NutzungJeFassung.content_id,
+                    NutzungJeFassung.fassung,
+                    NutzungJeFassung.nutzung,
+                )
+                .filter(NutzungJeFassung.content_id.in_(content_ids))
+                .all()
+            )
+            for content_id, fassung, nutzung in summen:
+                result[str(content_id)][fassung] = {
+                    "nutzung": nutzung,
+                    "letzte_7_tage": 0,
+                }
+            zuwachs = (
+                session.query(
+                    UsageEvent.content_id, UsageEvent.fassung, func.count(UsageEvent.id)
+                )
+                .filter(
+                    UsageEvent.content_id.in_(content_ids),
+                    UsageEvent.fassung.isnot(None),
+                    UsageEvent.timestamp >= seit,
+                )
+                .group_by(UsageEvent.content_id, UsageEvent.fassung)
+                .all()
+            )
+            for content_id, fassung, anzahl in zuwachs:
+                eintrag = result[str(content_id)].get(fassung)
+                if eintrag is not None:
+                    eintrag["letzte_7_tage"] = anzahl
         return result
 
     async def get_user_statistics(
