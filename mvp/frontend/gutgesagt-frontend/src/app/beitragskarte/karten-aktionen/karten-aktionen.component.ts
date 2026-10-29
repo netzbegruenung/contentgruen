@@ -26,7 +26,7 @@ import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { ReportDialogComponent } from '../../shared/components/report-dialog/report-dialog.component';
-import { HAND_UMRISS } from '../../shared/components/siegel/siegel-zeichnung';
+import { HAND_UMRISS } from '../../shared/marke/hand';
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden.

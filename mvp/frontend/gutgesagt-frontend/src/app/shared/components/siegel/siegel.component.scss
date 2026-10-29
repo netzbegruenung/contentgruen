@@ -20,8 +20,13 @@ svg {
 
 .siegel-hand {
   // Drehpunkt (Mitte der Hand) steht am Element, damit die Zeichnung ohne dieses Stylesheet stimmt.
-  // Leichtes Überschwingen beim Drehen
-  transition: transform 0.6s cubic-bezier(0.3, 1.6, 0.5, 1);
+  transition: transform 0.6s ease-out;
+}
+
+// Leichtes Überschwingen nur beim Aufstieg: Beim Abstieg auf „neu“ zeigte der Daumen
+// sonst kurz unter die Waagrechte, also nach unten.
+:host(.springt) .siegel-hand {
+  transition-timing-function: cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
 .siegel-glanz > g {

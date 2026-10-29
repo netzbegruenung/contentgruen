@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { SiegelComponent } from './siegel.component';
-import { HAND, SCHATTEN } from './siegel-zeichnung';
+import { HAND, SCHATTEN } from '../../marke/hand';
 
 /**
  * Das Siegel zeigt die Güte eines Beitrags (#416, auf Karten #427): ohne Güte grau
@@ -46,7 +46,7 @@ describe('SiegelComponent', () => {
     zeige(null);
 
     expect(svg().getAttribute('role')).toBe('img');
-    expect(svg().getAttribute('aria-label')).toBe('Siegel: neu, noch nicht bewertet');
+    expect(svg().getAttribute('aria-label')).toBe('Siegel: neu, noch keine Güte');
     expect(winkel()).toBe(90);
     const [, saettigung] = farbe();
     expect(saettigung).toBeLessThan(15);
@@ -63,7 +63,7 @@ describe('SiegelComponent', () => {
     expect(saettigung).toBeGreaterThan(80);
   });
 
-  it('dreht den Daumen je Gütestufe um 9 Grad nach oben, nie nach unten', () => {
+  it('dreht den Daumen je Punkt Güte um 9 Grad nach oben, nie nach unten', () => {
     const erwartet = [81, 72, 63, 54, 45, 36, 27, 18, 9, 0];
     const gesehen = erwartet.map((_, i) => {
       zeige(i + 1);
@@ -96,14 +96,18 @@ describe('SiegelComponent', () => {
     expect(farbtonHoch).toBeGreaterThan(120); // Grün
   });
 
-  it('begrenzt eine Güte außerhalb von 1 bis 10', () => {
+  it('begrenzt eine Güte über 10 auf 10', () => {
     zeige(14);
     expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 10 von 10');
     expect(winkel()).toBe(0);
+  });
 
-    zeige(-3);
-    expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 1 von 10');
-    expect(winkel()).toBe(81);
+  it('zeigt Güte 0 und darunter als neu, grau und waagrecht', () => {
+    for (const guete of [0, -3]) {
+      zeige(guete);
+      expect(svg().getAttribute('aria-label')).withContext(`Güte ${guete}`).toBe('Siegel: neu, noch keine Güte');
+      expect(winkel()).withContext(`Güte ${guete}`).toBe(90);
+    }
   });
 
   it('zeigt Glanz und Krone nur, wenn sie gesetzt sind', () => {
@@ -178,6 +182,9 @@ describe('SiegelComponent', () => {
 
     expect(logo).toContain(`d="${HAND}"`);
     expect(logo).toContain(`d="${SCHATTEN}"`);
+    // Die Blase wie im Siegel
+    expect(logo).toContain('<rect x="4" y="16" width="44" height="38" rx="11"/>');
+    expect(logo).toContain('<path d="M11 51 L8 63 L24 53 Z"/>');
     expect(logo).toContain('Fluent Emoji');
   });
 });

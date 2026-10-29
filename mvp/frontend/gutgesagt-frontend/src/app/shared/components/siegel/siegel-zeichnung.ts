@@ -1,36 +1,23 @@
 /**
- * Zeichnung von Logo, Siegel und Stimm-Knöpfen (#416, Entwurf C „Hand bricht aus der
- * Blase“): eine eckige Sprechblase unten links, die Hand ragt oben rechts heraus.
- *
- * Die Hand ist das Emoji „Thumbs up“ aus Fluent Emoji (Microsoft, MIT), Quelle
- * github.com/microsoft/fluentui-emoji, `assets/Thumbs up/Default/Flat` (HAND, SCHATTEN)
- * und `.../High Contrast` (HAND_UMRISS), alle im 32er-Raster. Lizenzhinweis:
- * `public/marke/FLUENT-EMOJI-LIZENZ.txt`. Das Logo `public/marke/logo.svg` und die
- * Favicons sind dieselbe Zeichnung bei Güte 10; wer hier etwas ändert, ändert sie mit.
+ * Zeichnung von Logo und Siegel (#416, Entwurf C „Hand bricht aus der Blase“): eine
+ * eckige Sprechblase unten links, die Hand (`shared/marke/hand.ts`) ragt oben rechts
+ * heraus. Das Logo `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei
+ * Güte 10; wer hier etwas ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
+ * passt darauf auf).
  */
-export const HAND =
-  'M12.3125 5.53122C12.3125 2.63122 14.4375 1.94789 15.625 1.96872C18.0375 1.96872 18.7073 3.97771 18.9062 5.04681C19.1536 6.37617 18.9115 9.55588 18.8004 11.0156L18.7973 11.0573C18.956 11.0201 19.1274 10.9999 19.3125 10.9999H23.17C24.73 10.9999 26 12.2699 26 13.8299C26 14.636 25.7414 15.3646 25.2346 15.8807C26.2789 16.3414 27 17.3084 27 18.4237C27 19.4466 26.5373 20.3448 25.6357 20.8421C26.4591 21.353 27 22.2078 27 23.1737C27 24.2814 26.4574 25.2429 25.4024 25.7073C25.7767 26.0933 26 26.6677 26 27.5015C26 28.8805 25.0312 30.0031 23.17 30.0031H19.3125C19.2671 30.0031 19.2224 30.0021 19.1783 29.9999H16.0469C5.60938 30.1718 5 23.4062 5 20.6562C5 15.5001 7.29793 13.9674 9.34062 12.605C10.3064 11.9608 11.215 11.3547 11.7969 10.4218C12.285 9.63906 12.3125 8.92181 12.3125 5.53122Z';
-
-/** Die Fingerschattierung der Flat-Fassung; im Siegel als halbtransparentes Schwarz. */
-export const SCHATTEN =
-  'M19 11C17.9792 11.0312 15 11.5937 15 13.9687C15 15.2188 15.4688 15.9219 16.0313 16.3125C15.4688 16.5625 14.9688 17.4906 14.9688 18.6406C14.9688 19.9219 16.0313 20.8594 16.0313 20.8594C16.0313 20.8594 14.9688 21.8906 14.9688 23.125C14.9688 24.057 15.3774 24.7446 16.0313 25.2133C15.6771 25.413 14.9688 26.1062 14.9688 27.2812C14.9688 28.6824 16.277 29.856 18.8392 29.9611C17.5908 29.73 16.9844 28.5862 16.9844 27.5016C16.9844 27.1431 17.1185 26.5675 17.4514 26.0588H23C23.2761 26.0588 23.5 25.8349 23.5 25.5588C23.5 25.2826 23.2761 25.0588 23 25.0588H17.5889C17.1838 24.5287 16.9844 23.8413 16.9844 23.1738C16.9844 22.7584 17.1407 22.0855 17.5304 21.5H23C23.2761 21.5 23.5 21.2761 23.5 21C23.5 20.7239 23.2761 20.5 23 20.5H17.7507C17.2368 19.9509 16.9844 19.1748 16.9844 18.4238C16.9844 18.0665 17.1 17.5188 17.3803 17H23C23.2761 17 23.5 16.7761 23.5 16.5C23.5 16.2239 23.2761 16 23 16H17.8268C17.2634 15.4035 16.9844 14.5164 16.9844 13.83C16.9844 13.02 17.4266 11.2303 19.0002 11.0202L19 11Z';
-
-/** Die Hand als Umriss (Fassung High Contrast), einfarbig für die Stimm-Knöpfe. */
-export const HAND_UMRISS =
-  'M12.977 3.38162C13.8849 1.30448 15.7506 0 17.8557 0C18.4444 0 19.033 0.100345 19.6117 0.301035C21.3377 0.883035 22.1558 1.98683 22.5349 2.79962C23.4129 4.67607 22.914 6.90373 22.2556 8.81028C22.515 8.83035 22.7743 8.83035 23.0337 8.83035C25.7375 8.83035 27.9325 11.0379 27.9325 13.7573C27.9325 14.2289 27.8626 14.7005 27.7329 15.142C28.5311 15.9849 29 17.1188 29 18.323C29 19.3164 28.6907 20.2697 28.132 21.0423C28.4114 21.6544 28.551 22.3267 28.551 23.0292C28.551 24.3236 28.0422 25.5278 27.1842 26.4208C27.2141 26.6416 27.2341 26.8623 27.2341 27.0831C27.2341 29.7924 25.0691 31.99 22.4152 31.99H17.3469C16.9279 31.99 16.5088 31.9925 16.0898 31.995C15.6708 31.9975 15.2517 32 14.8327 32H14.7329C13.6953 32 11.0015 31.8495 8.4175 30.4246C5.94321 29.0599 3 26.2001 3 20.3098C3 14.0583 6.85111 11.7604 8.49731 10.7871C8.68688 10.6767 8.88642 10.5563 8.97621 10.4961C9.95395 9.78363 10.8818 8.74004 11.1811 8.18815C11.5503 7.48573 11.8695 6.52242 12.1788 5.57918L12.2624 5.32946C12.4846 4.66519 12.7111 3.98777 12.977 3.38162ZM18.9632 2.17748C18.584 2.04704 18.2149 1.98683 17.8457 1.98683C16.5587 1.98683 15.4114 2.79962 14.8127 4.18438C14.5513 4.78542 14.3175 5.49235 14.0775 6.21781C13.7406 7.23646 13.3916 8.29163 12.9371 9.14142C12.4682 10.0044 11.3108 11.2687 10.1435 12.1217C10.0019 12.2196 9.81318 12.3333 9.59825 12.4628L9.51497 12.513C7.94858 13.4362 4.9954 15.1922 4.9954 20.2998C4.9954 29.662 13.4259 29.9831 14.7229 29.9831H14.8028C15.3857 29.9762 15.9639 29.974 16.5439 29.9733C15.9722 29.8743 14.902 29.1884 15.0658 27.1958C15.0733 27.1055 15.0831 27.0231 15.0952 26.9483C15.197 25.9426 15.8172 25.3434 16.1409 25.1598C15.4886 24.6895 15.0809 23.9994 15.0809 23.0643C15.0809 21.8256 16.1409 20.7908 16.1409 20.7908C16.1409 20.7908 15.0809 19.8501 15.0809 18.5644C15.0809 17.4105 15.5797 16.4791 16.1409 16.2283C15.5797 15.8363 15.1121 15.1307 15.1121 13.8764C15.1121 11.2823 17.3443 10.1183 19.6782 9.99369C19.7293 9.85801 19.7823 9.7188 19.8365 9.57662C20.8402 6.94167 22.2322 3.28768 18.9632 2.17748ZM21.0366 10.7907C19.7539 10.7907 19.1805 10.6526 18.1637 11.3037C17.9961 11.4321 17.8521 11.5843 17.7291 11.7505C17.6598 11.854 17.6015 11.9599 17.5439 12.0644C17.5336 12.0832 17.5233 12.1019 17.513 12.1206C17.4381 12.2999 17.3555 12.4895 17.2673 12.6826C17.1416 13.0801 17.0918 13.4641 17.0918 13.7372C17.0918 14.426 17.3703 15.3161 17.9323 15.9147H23.0936C23.3692 15.9147 23.5925 16.1393 23.5925 16.4164C23.5925 16.6935 23.3692 16.9181 23.0936 16.9181H17.4869C17.2072 17.4387 17.0918 17.9883 17.0918 18.3468C17.0918 19.1005 17.3437 19.8793 17.8564 20.4302H23.0936C23.3692 20.4302 23.5925 20.6548 23.5925 20.9319C23.5925 21.209 23.3692 21.4337 23.0936 21.4337H17.6366C17.2478 22.0211 17.0918 22.6964 17.0918 23.1132C17.0918 23.783 17.2908 24.4728 17.695 25.0047H23.0936C23.3692 25.0047 23.5925 25.2293 23.5925 25.5064C23.5925 25.7835 23.3692 26.0082 23.0936 26.0082H17.5578C17.2257 26.5186 17.0918 27.0962 17.0918 27.456C17.0918 27.7541 17.1372 28.0566 17.2287 28.3435L17.2472 28.378C17.4037 28.9243 18.0238 29.9761 20.2278 29.9761C20.3045 29.9761 20.3748 29.9773 20.4391 29.9797C21.0952 29.9816 21.7509 29.9831 22.4052 29.9831C23.9616 29.9831 25.2287 28.6485 25.2287 27.0831C25.2287 26.5613 25.089 26.0696 24.8396 25.6482C25.8473 25.2066 26.5457 24.1932 26.5457 23.0191C26.5457 22.0859 26.1067 21.2631 25.4183 20.7413C26.3461 20.3299 26.9946 19.3967 26.9946 18.313C26.9946 17.1088 26.1965 16.0953 25.109 15.7742C25.6178 15.2424 25.9271 14.5299 25.9271 13.7372C25.9271 12.1217 24.6301 10.8172 23.0238 10.8172C22.684 10.8172 21.3874 10.8044 21.0366 10.7907Z';
-
 /** Höchste Güte. Güte 1–10; ohne Daten (`null`) ist ein Beitrag „neu“. */
 export const HOECHSTE_GUETE = 10;
 
-/** Ganzzahlige Güte zwischen 1 und 10, oder `null` für „neu“. */
+/** Ganzzahlige Güte zwischen 1 und 10, oder `null` für „neu“; 0 und darunter gelten als neu. */
 export function normierteGuete(guete: number | null | undefined): number | null {
   if (guete === null || guete === undefined || Number.isNaN(guete)) return null;
-  return Math.min(HOECHSTE_GUETE, Math.max(1, Math.round(guete)));
+  const gerundet = Math.round(guete);
+  return gerundet < 1 ? null : Math.min(HOECHSTE_GUETE, gerundet);
 }
 
 /**
  * Drehung der Hand im Uhrzeigersinn in Grad: 90 = waagrecht (neu), 0 = senkrecht nach
- * oben (Güte 10), 9 Grad je Gütestufe. Größer als 90 wird es nie, der Daumen zeigt
+ * oben (Güte 10), 9 Grad je Punkt Güte. Größer als 90 wird es nie, der Daumen zeigt
  * also nie nach unten.
  */
 export function siegelWinkel(guete: number | null): number {
@@ -41,25 +28,28 @@ export function siegelWinkel(guete: number | null): number {
 const zwischen = (a: number, b: number, t: number): number => a + (b - a) * t;
 const runde = (x: number): number => Math.round(x * 10) / 10;
 
+type Hsl = [farbton: number, saettigung: number, helligkeit: number];
+const GRAU: Hsl = [80, 6, 58];
+const GELB: Hsl = [46, 90, 46];
+const GRUEN: Hsl = [146, 100, 27];
+/** Anteil der Güte-Skala, an dem das Siegel ganz gelb ist. */
+const GELB_BEI = 0.4;
+
+const mische = (von: Hsl, nach: Hsl, t: number): Hsl =>
+  [0, 1, 2].map((i) => zwischen(von[i], nach[i], t)) as Hsl;
+
 /**
- * Farbe des Siegels: Grau über Gelb nach Grün, nie Rot. Bis Güte 4 von Grau nach
- * Gelb, danach nach Grün; Güte 10 ist das Grün des Logos.
+ * Farbe des Siegels: Grau über Gelb nach Grün, nie Rot (der Farbton bleibt zwischen
+ * Gelb und Grün). Güte 10 ist das Grün des Logos.
  */
 export function siegelFarbe(guete: number | null): string {
   const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
-  let [h, s, l]: number[] = [];
-  if (t <= 0.4) {
-    const u = t / 0.4;
-    [h, s, l] = [zwischen(80, 46, u), zwischen(6, 90, u), zwischen(58, 46, u)];
-  } else {
-    const u = (t - 0.4) / 0.6;
-    [h, s, l] = [zwischen(46, 146, u), zwischen(90, 100, u), zwischen(46, 27, u)];
-  }
+  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, GRUEN, (t - GELB_BEI) / (1 - GELB_BEI));
   return `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
 }
 
 /** Was Screenreader über das Siegel sagen. */
 export function siegelText(guete: number | null): string {
   const g = normierteGuete(guete);
-  return g === null ? 'Siegel: neu, noch nicht bewertet' : `Siegel: Güte ${g} von ${HOECHSTE_GUETE}`;
+  return g === null ? 'Siegel: neu, noch keine Güte' : `Siegel: Güte ${g} von ${HOECHSTE_GUETE}`;
 }

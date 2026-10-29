@@ -9,7 +9,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { HAND, SCHATTEN, normierteGuete, siegelFarbe, siegelText, siegelWinkel } from './siegel-zeichnung';
+import { HAND, SCHATTEN } from '../../marke/hand';
+import { normierteGuete, siegelFarbe, siegelText, siegelWinkel } from './siegel-zeichnung';
 
 /** Wie lange die Funken nach einem Aufstieg im DOM bleiben (ms), etwas länger als ihre Animation. */
 const FUNKEN_DAUER_MS = 900;
@@ -39,7 +40,7 @@ let naechsteId = 0;
   host: { '[class.springt]': 'funken.length > 0' },
 })
 export class SiegelComponent implements OnChanges, OnDestroy {
-  /** Güte 1–10; `null` für einen neuen Beitrag ohne Daten. */
+  /** Güte 1–10; `null` (oder 0) für einen neuen Beitrag ohne Daten. */
   @Input() guete: number | null = null;
   @Input() glanz = false;
   @Input() krone = false;
