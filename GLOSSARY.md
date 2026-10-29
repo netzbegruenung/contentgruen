@@ -130,6 +130,10 @@ _Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitragstyp ankommt, und hinter dem ? die Regeln dazu, bei Kommentar und Post auch die Schreibregeln und Schreibhilfen. Sie lenkt sanft und sperrt kein Speichern.
 _Avoid_: Tooltip, Anleitung, Hilfetext
 
+**CC0-Hinweis**:
+Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und bestätigt die verlinkten Nutzungsbedingungen. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
+_Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
+
 **Schreibregel**:
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
@@ -246,6 +250,10 @@ _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Melden auf der Plattform einer Aussage ist keine Meldung.
 _Avoid_: Report, Flag, Beschwerde
 
+**Meldegrund**:
+Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder unerwünschte Werbung, Unangemessener Inhalt, Erfunden oder sachlich falsch, Dublette, Andere. „Erfunden oder sachlich falsch“ ist der Grund für erfundene Erlebnisse oder Zahlen; „Dublette“ heißt, dass der gemeldete Beitrag einem vorhandenen fast gleicht. Was genau nicht stimmt, schreibt die Person in die Beschreibung der Meldung.
+_Avoid_: Kategorie, Report-Grund
+
 **Feedback**:
 Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach der Frist im Löschkonzept wird es gelöscht.
 _Avoid_: Kontaktformular, Rückmeldung (in `docs/VISION.md` die Rückmeldung zur Nutzungsstatistik der eigenen Beiträge), Ticket
@@ -283,7 +291,7 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
-Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Punkte**:
@@ -321,6 +329,10 @@ _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 **Nutzungsstatistik**:
 Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
 _Avoid_: Usage Stats, Nutzerstatistik
+
+**Betriebskennzahlen**:
+Zahlen über den Betrieb der Anwendung, nicht über Inhalte oder Personen: wie viele Anfragen mit welchem Ergebnis eingehen und wie lange die Suche dauert. Der Betrieb liest sie für Alarme; sie tragen keine Kennung, keine Suchanfrage und keine Sitzung. Die Kennzahlen, die Admins sehen, sind etwas anderes.
+_Avoid_: Metriken (ohne Zusatz), Monitoring
 
 ## Personen
 

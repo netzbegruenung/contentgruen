@@ -8,12 +8,13 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
-import { KartenDaten, ausAussage, ausEinwurf, ausSuchergebnis } from './karten-daten';
+import { KartenDaten, ausAussage, ausBeitrag, ausEinwurf, ausSuchergebnis } from './karten-daten';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
 import { Einwurf } from '../services/einwurf.service';
+import { ContentResult } from '../services/dtos/contributionDtos';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -290,7 +291,7 @@ describe('BeitragskarteComponent', () => {
           }),
         ),
       );
-      component.textModusSetzen('short');
+      component.fassungWaehlen('kurz');
       fixture.detectChanges();
 
       expect(aktionen().kopierText).toBe('Kurzfassung');
@@ -314,6 +315,96 @@ describe('BeitragskarteComponent', () => {
       expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
       tick(600);
     }));
+  });
+
+  describe('Fassungen (#355)', () => {
+    function nutzungsMelder(): jasmine.SpyObj<UsageTrackingService> {
+      return TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;
+    }
+
+    it('meldet beim Kopieren die angezeigte Fassung', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+
+      aktionen().kopieren();
+      component.fassungWaehlen('kurz');
+      fixture.detectChanges();
+      aktionen().kopieren();
+      component.fassungWaehlen('lang');
+      fixture.detectChanges();
+      aktionen().kopieren();
+
+      expect(nutzungsMelder().trackContentUsage.calls.allArgs()).toEqual([
+        ['test-id', 'mittel'],
+        ['test-id', 'kurz'],
+        ['test-id', 'lang'],
+      ]);
+    });
+
+    it('meldet am Kommentar ohne weitere Fassungen Mittel', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')));
+
+      aktionen().kopieren();
+
+      expect(nutzungsMelder().trackContentUsage).toHaveBeenCalledWith('test-id', 'mittel');
+    });
+
+    it('meldet bei anderen Beitragstypen keine Fassung', () => {
+      zeigen(ausSuchergebnis(paket('generictext_result')));
+
+      aktionen().kopieren();
+
+      expect(nutzungsMelder().trackContentUsage.calls.mostRecent().args).toEqual(['test-id', undefined]);
+    });
+
+    function meinBeitrag(): ContentResult {
+      return {
+        id: 'b-1',
+        created: new Date().toISOString(),
+        text: 'Mittelfassung',
+        content_type: 'commentary',
+        score: 0,
+        title: 'Wärmepumpe lohnt sich auch im Altbau',
+        short_text: 'Kurzfassung',
+        usage_count: 9,
+        nutzung_letzte_7_tage: 3,
+        nutzung_je_fassung: {
+          kurz: { nutzung: 3, letzte_7_tage: 1 },
+          mittel: { nutzung: 4, letzte_7_tage: 0 },
+        },
+      };
+    }
+
+    function zeilen(auswahl: string): string[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('.nutzung-je-fassung li')).map((li) =>
+        Array.from((li as HTMLElement).querySelectorAll(auswahl))
+          .map((teil) => teil.textContent!.trim())
+          .join(' '),
+      );
+    }
+
+    it('zeigt in Meine Beitraege Nutzung und Zuwachs je Fassung', () => {
+      zeigen(ausBeitrag(meinBeitrag()));
+
+      // 9 insgesamt, 7 davon mit Fassung: 2 stammen aus der Zeit vor der Zaehlung je Fassung.
+      // Vom Zuwachs 3 entfaellt 1 auf Kurz, der Rest von 2 auf "ohne Fassung".
+      expect(zeilen('[aria-hidden="true"]')).toEqual(['Kurz 3× +1', 'Mittel 4×', 'ohne Fassung 2× +2']);
+    });
+
+    it('liest die Nutzung je Fassung in Worten vor', () => {
+      zeigen(ausBeitrag(meinBeitrag()));
+
+      expect(zeilen('.cdk-visually-hidden')).toEqual([
+        'Kurz: 3-mal genutzt, 1 davon in den letzten 7 Tagen',
+        'Mittel: 4-mal genutzt',
+        'ohne Fassung: 2-mal genutzt, 2 davon in den letzten 7 Tagen',
+      ]);
+    });
+
+    it('zeigt ausserhalb von Meine Beitraege keine Nutzung je Fassung', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung' })));
+
+      expect(element('.nutzung-je-fassung')).toBeNull();
+    });
   });
 
   describe('Mobile Badge Display', () => {
@@ -475,7 +566,7 @@ describe('BeitragskarteComponent', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
       expect(element('.karte-text').textContent!.trim()).toBe('Test text');
 
-      component.textModusSetzen('short');
+      component.fassungWaehlen('kurz');
       fixture.detectChanges();
 
       expect(element('.karte-text').textContent!.trim()).toBe('Kurzfassung');

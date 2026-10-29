@@ -117,6 +117,7 @@ async def add_post(
             authors=[AuthorEntry(name=x_user)],
             status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.MANUALLY_CREATED,
+            cc0_wortlaut=request.cc0_wortlaut,
         )
         # Fall back to the title for the embedded text if the body is empty.
         if not entry.text:

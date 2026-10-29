@@ -3,6 +3,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { Einwurf, EinwurfService, EinwurfSeite } from './einwurf.service';
 import { LoggingService } from './logging.service';
 import { environment } from '../../environments/environment';
+import { CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 
 function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
@@ -41,14 +42,17 @@ describe('EinwurfService', () => {
     httpMock.verify();
   });
 
-  it('schickt einen Einwurf an addRawInput', () => {
+  it('schickt einen Einwurf an addRawInput, mit der Kennung des CC0-Hinweises', () => {
     service.einwerfen({ url: 'https://example.org/post' }).subscribe((antwort) => {
       expect(antwort.id).toBe('abc');
     });
 
     const anfrage = httpMock.expectOne(`${basis}/addRawInput`);
     expect(anfrage.request.method).toBe('POST');
-    expect(anfrage.request.body).toEqual({ url: 'https://example.org/post' });
+    expect(anfrage.request.body).toEqual({
+      url: 'https://example.org/post',
+      cc0_wortlaut: CONSENT_HINWEIS.kennung,
+    });
     anfrage.flush({ id: 'abc' });
   });
 
@@ -91,12 +95,15 @@ describe('EinwurfService', () => {
       anfrage.flush(einwurf());
     });
 
-    it('speichert den Satz per PUT', () => {
+    it('speichert den Satz per PUT, mit der Kennung des Hinweises beim Satz', () => {
       service.satzSpeichern('id-1', 'Mein Satz').subscribe();
 
       const anfrage = httpMock.expectOne(`${basis}/id-1/draft`);
       expect(anfrage.request.method).toBe('PUT');
-      expect(anfrage.request.body).toEqual({ sentence: 'Mein Satz' });
+      expect(anfrage.request.body).toEqual({
+        sentence: 'Mein Satz',
+        cc0_wortlaut: CONSENT_HINWEIS_SATZ.kennung,
+      });
       anfrage.flush({ raw_input_id: 'id-1', sentence: 'Mein Satz', updated_at: null });
     });
 
@@ -110,7 +117,10 @@ describe('EinwurfService', () => {
       expect(optionen.method).toBe('PUT');
       expect(optionen.keepalive).toBeTrue();
       expect(optionen.credentials).toBe('include');
-      expect(JSON.parse(optionen.body as string)).toEqual({ sentence: 'Mein Satz' });
+      expect(JSON.parse(optionen.body as string)).toEqual({
+        sentence: 'Mein Satz',
+        cc0_wortlaut: CONSENT_HINWEIS_SATZ.kennung,
+      });
     });
 
     it('verwirft per PATCH ohne content_id', () => {

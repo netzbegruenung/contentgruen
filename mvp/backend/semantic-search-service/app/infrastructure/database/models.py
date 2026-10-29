@@ -67,6 +67,32 @@ class UsageTracking(Base):
             self.first_used = now
 
 
+class NutzungJeFassung(Base):
+    """
+    Wie oft jede Fassung eines Kommentars genutzt wurde (#355): je Beitrag und
+    Fassung ein Zaehler, so wie usage_tracking je Beitrag.
+
+    Ein eigener Zaehler und keine Abfrage ueber usage_events, weil deren Frist
+    (cleanup_old_events) die Ereignisse nach 90 Tagen loescht; die Summe je Fassung
+    soll wie die Nutzung insgesamt bleiben. Nutzung von vor #355 hat keine Fassung
+    und steht nur in usage_tracking.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-10-29-355-nutzung-je-fassung.sql dokumentiert das
+    Schema und ergaenzt usage_events.fassung.
+    """
+
+    __tablename__ = "nutzung_je_fassung"
+
+    content_id = Column(
+        SQLUUID(as_uuid=True),
+        ForeignKey("usage_tracking.content_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    fassung = Column(String(10), primary_key=True)
+    nutzung = Column(Integer, nullable=False)
+
+
 class UsageEvent(Base):
     """Track individual usage events for analytics.
 
@@ -101,6 +127,10 @@ class UsageEvent(Base):
     )
     session_id = Column(String(255), nullable=True)
     device_category = Column(String(20), nullable=True)
+    # Welche Fassung eines Kommentars kopiert wurde ("kurz", "mittel", "lang",
+    # #355); leer bei anderen Beitragstypen und bei Nutzung von vor #355. Traegt den
+    # Zuwachs der letzten 7 Tage je Fassung; die Summe steht in nutzung_je_fassung.
+    fassung = Column(String(10), nullable=True)
 
     # Relationship to tracking
     tracking = relationship("UsageTracking", back_populates="events")
@@ -286,6 +316,9 @@ class RawInput(Base):
     # aendern das nicht; wer den Einwurf mit einem Beitrag verknuepft hat (der
     # Ausformulierer), steht an der Verknuepfung (raw_input_content_links.created_by).
     destilled_by = Column(String(255), nullable=True)
+    # Kennung des CC0-Hinweises beim Einwerfen (#431, domain/cc0_hinweis.py);
+    # NULL bei Einwuerfen von davor und aus Kanaelen ohne Formular.
+    cc0_wortlaut = Column(String(64), nullable=True)
 
     __table_args__ = (
         Index("idx_raw_inputs_status", "status"),
@@ -395,6 +428,9 @@ class RawInputDraft(Base):
     )
     user_id = Column(String(255), nullable=False)
     sentence = Column(Text, nullable=False)
+    # Kennung des CC0-Hinweises beim letzten Speichern des Satzes (#431); NULL bei
+    # Saetzen von davor.
+    cc0_wortlaut = Column(String(64), nullable=True)
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

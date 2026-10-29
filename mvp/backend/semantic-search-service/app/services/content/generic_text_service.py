@@ -99,6 +99,7 @@ class GenericTextService(
         id: Optional[uuid.UUID] = None,
         created_at: Optional[datetime.datetime] = None,
         dublettenpruefung: Optional[Dublettenpruefung] = None,
+        cc0_wortlaut: Optional[str] = None,
     ) -> tuple[bool, uuid.UUID, str]:
         """
         Add a new generic text to the index. If no ID is provided, a new UUID is generated.
@@ -150,6 +151,7 @@ class GenericTextService(
             origin=origin,
             most_similar_similarity_score=beste.score if beste else None,
             most_similar_content_id=beste.id if beste else None,
+            cc0_wortlaut=cc0_wortlaut,
         )
 
         # Call upsert method of base class
