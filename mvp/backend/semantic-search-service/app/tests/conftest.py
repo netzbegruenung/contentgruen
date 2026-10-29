@@ -126,6 +126,23 @@ def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
     yield repository
 
 
+@pytest.fixture(autouse=True)
+def aussage_themen_ohne_datenbank(monkeypatch):
+    """
+    Die Suche haengt die Themen an ihre Aussagen (``get_aussage_themen_service``).
+    Ohne diesen Ersatz baute der erste Aufruf das echte Repository und verbaende
+    sich mit dem PostgreSQL aus den Settings (siehe anzeigenamen_ohne_datenbank);
+    in der CI gibt es dort keins (#460). Der Ersatz kennt keine Themen.
+    """
+    import repositories.aussage_themen_repository as modul
+
+    repository = MagicMock()
+    repository.themen_von.return_value = {}
+    repository.zuordnungen.return_value = {}
+    monkeypatch.setattr(modul, "_repository", repository)
+    yield repository
+
+
 # Sperrgrund und Begruendung fuer Tests, die nur sperren muessen (#448).
 GRUND_FUER_SPERRE = {"sperrgrund": "ohne_bezug", "begruendung": "Kein Bezug zum Zweck."}
 

@@ -74,3 +74,23 @@ def test_bff_pflicht_nicht_in_der_ci():
 
 def test_bff_pflicht_nicht_ohne_pflichtmodus():
     assert not stack.bff_pflicht({})
+
+
+def test_docker_pflicht_im_pflichtmodus():
+    assert stack.docker_pflicht({stack.PFLICHT_VARIABLE: "1"})
+
+
+def test_docker_pflicht_nicht_in_der_ci():
+    """Der CI-Runner hat keinen Docker-Socket (docs/CI.md, #460)."""
+    assert not stack.docker_pflicht({stack.PFLICHT_VARIABLE: "1", "CI": "woodpecker"})
+
+
+def test_docker_pflicht_nicht_ohne_pflichtmodus():
+    assert not stack.docker_pflicht({})
+
+
+def test_docker_ohne_erreichbaren_daemon_fehlt(monkeypatch):
+    """``docker info`` endet ohne Daemon mitunter mit Exit 0 und leerer Version (#460)."""
+    monkeypatch.setattr(postgres.shutil, "which", lambda _: "/usr/bin/docker")
+    monkeypatch.setattr(postgres, "_docker", lambda *argumente, **_: "")
+    assert not postgres.docker_verfuegbar()

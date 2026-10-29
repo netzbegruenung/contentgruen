@@ -14,11 +14,10 @@ truege Adresse und verweisende Seite).
 Startet nginx aus dem Image des Frontend-Dockerfiles mit beiden Konfigurationen
 (``nginx.conf`` fuer Test und Produktion, ``nginx.docker.conf`` fuer den Dev-Stack)
 samt ``nginx.protokoll.conf`` und liest Zugriffs- und Fehlerprotokoll aus
-``docker logs`` (stdout und stderr). Ohne Docker uebersprungen, in der CI
-und im Pflichtmodus (``stack.py``) ein Fehler.
+``docker logs`` (stdout und stderr). Ohne Docker uebersprungen, im Pflichtmodus
+(``stack.py``) ein Fehler, ausser in der CI: Dort gibt es keinen Docker-Socket.
 """
 
-import os
 import re
 import time
 import urllib.error
@@ -42,7 +41,7 @@ def docker_noetig():
     if postgres.docker_verfuegbar():
         return
     grund = "Docker fehlt: nginx laesst sich nicht starten"
-    if os.environ.get("CI") or stack.pflicht():
+    if stack.docker_pflicht():
         pytest.fail(grund)
     pytest.skip(grund)
 

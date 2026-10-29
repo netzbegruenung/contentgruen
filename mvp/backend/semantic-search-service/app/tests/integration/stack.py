@@ -35,6 +35,17 @@ def bff_pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
     return pflicht(env) and not env.get("CI")
 
 
+def docker_pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
+    """Ob fehlendes Docker fuer Tests mit eigenem Container (nginx) ein Fehler ist.
+
+    Wie beim BFF: im Pflichtmodus ja, ausser in der CI. Der Woodpecker-Runner hat
+    keinen Docker-Socket (docs/CI.md); die Tests ueberspringen sich dort sichtbar in
+    den SKIPPED-Zeilen, lokal bleiben sie Pflicht (#460).
+    """
+    env = os.environ if env is None else env
+    return pflicht(env) and not env.get("CI")
+
+
 def qdrant_erreichbar(url: str = QDRANT_URL) -> bool:
     """True, wenn unter ``url`` ein Qdrant auf /healthz antwortet."""
     try:
