@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FremdesBildComponent, istFremdeAdresse } from './fremdes-bild.component';
+import { aufgeloest, themaFarbe } from '../../testing/farben';
 
 /**
  * Bilder fremder Server laedt der Browser erst auf Klick (#447). Ob eine Anfrage rausgeht,
@@ -102,13 +103,30 @@ describe('FremdesBildComponent', () => {
   it('gibt Klick und Enter nicht an die Karte weiter, die sonst die Detailansicht oeffnet', () => {
     zeigen(fremdeAdresse());
     const karte = jasmine.createSpy('karte');
-    element.addEventListener('click', karte);
-    element.addEventListener('keyup', karte);
+    const darum = element.parentElement!;
+    darum.addEventListener('click', karte);
+    darum.addEventListener('keyup', karte);
     const knopf = element.querySelector<HTMLButtonElement>('button.bild-laden')!;
 
     knopf.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
     knopf.click();
 
+    expect(karte).not.toHaveBeenCalled();
+  });
+
+  it('gibt das keyup von Enter nicht weiter, das nach dem Laden schon auf dem Bild landet', () => {
+    zeigen(fremdeAdresse());
+    const karte = jasmine.createSpy('karte');
+    element.parentElement!.addEventListener('keyup', karte);
+    const knopf = element.querySelector<HTMLButtonElement>('button.bild-laden')!;
+    knopf.focus();
+
+    // Enter: keydown loest am Knopf den Klick aus, das keyup trifft danach das Bild
+    knopf.click();
+    fixture.detectChanges();
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+
+    expect(document.activeElement!.tagName).toBe('IMG');
     expect(karte).not.toHaveBeenCalled();
   });
 
@@ -143,21 +161,10 @@ describe('FremdesBildComponent', () => {
 
   it('nutzt Sand als Grund und Tanne als Schrift', () => {
     zeigen(fremdeAdresse());
-    document.body.appendChild(element);
     const stil = getComputedStyle(element.querySelector('button.bild-laden')!);
-    const wurzel = getComputedStyle(document.documentElement);
-    const aufgeloest = (farbe: string): string => {
-      const probe = document.createElement('span');
-      probe.style.color = farbe;
-      document.body.appendChild(probe);
-      const rgb = getComputedStyle(probe).color;
-      probe.remove();
-      return rgb;
-    };
 
-    expect(stil.backgroundColor).toBe(aufgeloest(wurzel.getPropertyValue('--einwurf-grund').trim()));
-    expect(stil.color).toBe(aufgeloest(wurzel.getPropertyValue('--primary-dark').trim()));
-    element.remove();
+    expect(stil.backgroundColor).toBe(aufgeloest(themaFarbe('--einwurf-grund')));
+    expect(stil.color).toBe(aufgeloest(themaFarbe('--primary-dark')));
   });
 });
 

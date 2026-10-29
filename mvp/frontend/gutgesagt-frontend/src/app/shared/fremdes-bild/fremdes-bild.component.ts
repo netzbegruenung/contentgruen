@@ -3,10 +3,21 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostListener,
   Input,
   OnChanges,
   SimpleChanges,
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+/** ``adresse`` als URL, relativ zu ``eigenerOrigin`` gelesen; ``null``, wenn sie sich nicht lesen laesst. */
+function alsUrl(adresse: string, eigenerOrigin: string): URL | null {
+  try {
+    return new URL(adresse, eigenerOrigin);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Ob der Browser fuer ``adresse`` einen fremden Server anspraeche. Eigene und relative
@@ -14,12 +25,8 @@ import {
  * laesst, gilt vorsichtshalber als fremd.
  */
 export function istFremdeAdresse(adresse: string, eigenerOrigin: string = location.origin): boolean {
-  let url: URL;
-  try {
-    url = new URL(adresse, eigenerOrigin);
-  } catch {
-    return true;
-  }
+  const url = alsUrl(adresse, eigenerOrigin);
+  if (!url) return true;
   if (url.protocol === 'data:' || url.protocol === 'blob:') return false;
   return url.origin !== eigenerOrigin;
 }
@@ -34,30 +41,16 @@ export function istFremdeAdresse(adresse: string, eigenerOrigin: string = locati
 @Component({
   selector: 'app-fremdes-bild',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    @if (zeigen) {
-      <!-- Nach dem Klick sofort laden; was ohne Klick sichtbar ist, darf warten -->
-      <img [src]="src" [alt]="alt" [attr.loading]="geladen ? 'eager' : 'lazy'" tabindex="-1" />
-    } @else {
-      <button type="button" class="bild-laden"
-              [attr.aria-label]="alt ? 'Bild laden: ' + alt : 'Bild laden'"
-              [attr.title]="'Lädt das Bild von ' + server"
-              (click)="laden($event)" (keyup)="$event.stopPropagation()">
-        @if (symbol) {
-          <span class="bild-laden-symbol" aria-hidden="true">🖼️</span>
-        }
-        <span>Bild laden</span>
-      </button>
-    }
-  `,
+  imports: [CommonModule],
+  templateUrl: './fremdes-bild.component.html',
   styleUrl: './fremdes-bild.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FremdesBildComponent implements OnChanges {
   @Input({ required: true }) src!: string;
   @Input() alt = '';
   /** Ohne Symbol, wo schon eines daneben steht (Kopfband der Album-Karte). */
-  @Input() symbol = true;
+  @Input() mitSymbol = true;
 
   protected geladen = false;
 
@@ -78,11 +71,16 @@ export class FremdesBildComponent implements OnChanges {
 
   /** Nur der Hostname, damit der Hinweis kurz bleibt. */
   get server(): string {
-    try {
-      return new URL(this.src, location.origin).hostname;
-    } catch {
-      return 'einem fremden Server';
-    }
+    return alsUrl(this.src, location.origin)?.hostname || 'einem fremden Server';
+  }
+
+  /**
+   * Enter loest am Knopf schon beim Druecken den Klick aus; das keyup landet danach auf dem
+   * Bild. Die Karte darum oeffnet bei keyup.enter die Detailansicht, deshalb endet es hier.
+   */
+  @HostListener('keyup.enter', ['$event'])
+  enterAbfangen(ereignis: Event): void {
+    ereignis.stopPropagation();
   }
 
   laden(ereignis: Event): void {
