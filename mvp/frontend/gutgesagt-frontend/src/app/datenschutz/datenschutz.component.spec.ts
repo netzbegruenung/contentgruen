@@ -99,7 +99,7 @@ describe('DatenschutzComponent', () => {
     it('behauptet nicht mehr, angemeldete Browser bekämen die Kennung', () => {
       expect(ganzerText()).not.toContain('Technisch übermitteln wir an angemeldete Browser auch die Kennung');
       expect(abschnitt('Beiträge, die Sie einstellen')).toContain(
-        'Ihre Kennung geben wir nur an Administratorinnen und Administratoren heraus',
+        'Ihre Kennung geben wir außer an Ihren eigenen Browser nur an Administratorinnen und Administratoren heraus',
       );
     });
   });
@@ -128,7 +128,7 @@ describe('DatenschutzComponent', () => {
   });
 
   describe('Einwürfe in den Fangkorb', () => {
-    it('nennt keine Screenshots und die Rolle des Ausformulierers statt „verarbeitende Person“', () => {
+    it('nennt keine Screenshots und statt „verarbeitende Person“ die Person, die den Einwurf verknüpft hat', () => {
       const text = abschnitt('Einwürfe in den Fangkorb');
 
       expect(ganzerText()).not.toContain('Screenshot');
@@ -191,8 +191,10 @@ describe('DatenschutzComponent', () => {
     });
 
     it('KI-Vorschlag für Bildunterschriften: abgeschaltet, vor dem Einschalten wird die Erklärung ergänzt', () => {
-      expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('Unterschrift');
-      expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('ist auf dieser Plattform abgeschaltet');
+      const text = abschnitt('Keine Übermittlung außerhalb der EU');
+
+      expect(text).toContain('Unterschrift');
+      expect(text).toContain('ist auf dieser Plattform abgeschaltet');
     });
   });
 });

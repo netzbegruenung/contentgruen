@@ -26,7 +26,7 @@ describe('NutzungsbedingungenComponent', () => {
   }
 
   /** Der Abschnitt, dessen Ueberschrift mit der Nummer beginnt, etwa „7.“. */
-  function abschnitt(nummer: string): string {
+  function abschnittNummer(nummer: string): string {
     const kopf = Array.from(seite.querySelectorAll('h2')).find((h) =>
       normalisiert(h.textContent).startsWith(`${nummer} `),
     );
@@ -38,15 +38,15 @@ describe('NutzungsbedingungenComponent', () => {
 
   it('verwendet „Destillat“ nicht, das kein Glossarbegriff ist', () => {
     expect(normalisiert(seite.textContent)).not.toMatch(/Destillat/);
-    expect(abschnitt('3.')).toContain('Dein Text');
+    expect(abschnittNummer('3.')).toContain('Dein Text');
   });
 
   it('nennt in Abschnitt 2 Einwerfen, Beitragen und Bewerten statt Kommentieren', () => {
-    expect(abschnitt('2.')).toContain('Zum Einwerfen, Beitragen und Bewerten meldest du dich an');
+    expect(abschnittNummer('2.')).toContain('Zum Einwerfen, Beitragen und Bewerten meldest du dich an');
   });
 
   it('beschreibt Sperren als Regelweg der Moderation', () => {
-    const text = abschnitt('7.');
+    const text = abschnittNummer('7.');
 
     expect(text).toContain('sperren wir ihn');
     expect(text).toContain('Eine Meldung allein sperrt nichts');
