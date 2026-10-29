@@ -114,8 +114,8 @@ deploy anything by itself.
    the Forgejo repository). Draft it with
    ```bash
    git fetch origin --tags
-   scripts/changelog.sh "" vX.Y.Z > changelog.md   # since the previous v* tag
-   scripts/changelog.sh <commit> vX.Y.Z            # first release, or a different start
+   scripts/changelog.sh vX.Y.Z > changelog.md   # since the previous v* tag
+   scripts/changelog.sh vX.Y.Z <commit>         # first release, or a different start
    ```
    The script lists the merged pull requests on `main` (linked, grouped by their Conventional
    Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the new

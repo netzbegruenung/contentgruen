@@ -43,7 +43,7 @@ def changelog(repo, *args):
 
 
 def test_ohne_tag_und_ohne_von_ist_ein_aufruffehler(repo):
-    ergebnis = changelog(repo, "", "main")
+    ergebnis = changelog(repo, "main")
 
     assert ergebnis.returncode == 2
     assert "Kein Tag" in ergebnis.stderr
@@ -56,7 +56,7 @@ def test_ohne_von_listet_die_prs_seit_dem_letzten_tag(repo):
     merge(repo, "fix(suche): Leere Treffer", 2)
     merge(repo, "feat(bild): Unterschrift", 3)
 
-    ergebnis = changelog(repo, "", "main")
+    ergebnis = changelog(repo, "main")
 
     assert ergebnis.returncode == 0, ergebnis.stderr
     assert "Alt" not in ergebnis.stdout
@@ -75,7 +75,7 @@ def test_ist_bis_selbst_getaggt_zaehlt_der_tag_davor(repo):
     merge(repo, "feat: Neu", 2)
     git(repo, "tag", "v0.2.0")
 
-    ergebnis = changelog(repo, "", "v0.2.0")
+    ergebnis = changelog(repo, "v0.2.0")
 
     assert ergebnis.returncode == 0, ergebnis.stderr
     assert "feat: Neu" in ergebnis.stdout
@@ -90,7 +90,7 @@ def test_breaking_changes_und_neue_migrationen(repo):
     git(repo, "add", ".")
     git(repo, "commit", "-q", "-m", "feat(db)!: Spalte umbenannt")
 
-    ergebnis = changelog(repo, "", "main")
+    ergebnis = changelog(repo, "main")
 
     assert ergebnis.returncode == 0, ergebnis.stderr
     assert "## Breaking Changes\n\n- feat(db)!: Spalte umbenannt (" in ergebnis.stdout
@@ -104,9 +104,30 @@ def test_ohne_neue_migrationen_steht_keine_da(repo):
     git(repo, "tag", "v0.1.0")
     merge(repo, "docs: Anleitung", 1)
 
-    ergebnis = changelog(repo, "", "main")
+    ergebnis = changelog(repo, "main")
 
     assert ergebnis.returncode == 0, ergebnis.stderr
     assert "## Sonstiges" in ergebnis.stdout
     assert "## Breaking Changes" not in ergebnis.stdout
     assert "Neue Migrationen: keine" in ergebnis.stdout
+
+
+def test_von_als_zweites_argument_ohne_tag(repo):
+    anfang = git(repo, "rev-parse", "HEAD").strip()
+    merge(repo, "feat: Erstes Release", 1)
+
+    ergebnis = changelog(repo, "main", anfang)
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "- feat: Erstes Release ([#1](" in ergebnis.stdout
+
+
+def test_squash_merge_wird_als_pr_verlinkt(repo):
+    git(repo, "tag", "v0.1.0")
+    git(repo, "commit", "-q", "--allow-empty", "-m", "fix: Knopf (#7)")
+
+    ergebnis = changelog(repo, "main")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    forge = "https://git.verdigado.com/Netzbegruenung/gutgesagt/pulls"
+    assert f"## Behoben\n\n- fix: Knopf ([#7]({forge}/7))\n" in ergebnis.stdout

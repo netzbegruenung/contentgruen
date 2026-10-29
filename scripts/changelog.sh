@@ -2,25 +2,29 @@
 # Draft of the change list for a release: the Forgejo release to a tag (docs/DEPLOYMENT.md,
 # "Updating Production"). Reads the first-parent history of main, changes nothing.
 #
-#   scripts/changelog.sh [VON] [BIS] > changelog.md
+#   scripts/changelog.sh [BIS] [VON] > changelog.md
 #
-# VON: commit or tag of the previous release. Default: the last v* tag before BIS, so the
-#      list for a freshly set tag needs no argument. Without any tag VON is required.
-# BIS: commit or tag of the new release. Default: origin/main.
+# BIS: tag or commit of the new release. Default: origin/main.
+# VON: tag or commit of the previous release. Default: the last v* tag before BIS, so
+#      `scripts/changelog.sh v0.9.1` needs nothing else. Without any tag VON is required.
 set -euo pipefail
 
-BIS="${2:-origin/main}"
+BIS="${1:-origin/main}"
 FORGE="https://git.verdigado.com/Netzbegruenung/gutgesagt"
 GH="https://github.com/netzbegruenung/contentgruen"
 
-git rev-parse --verify -q "${BIS}^{commit}" >/dev/null || { echo "Ref $BIS fehlt: erst git fetch origin --tags" >&2; exit 1; }
-VON="${1:-}"
+ref_pruefen() {
+  git rev-parse --verify -q "${1}^{commit}" >/dev/null || { echo "Ref $1 fehlt: erst git fetch origin --tags" >&2; exit 1; }
+}
+
+ref_pruefen "$BIS"
+VON="${2:-}"
 if [ -z "$VON" ]; then
   # BIS^ rather than BIS: if BIS carries the new tag itself, the previous one is wanted.
   VON="$(git describe --tags --abbrev=0 --match 'v*' "${BIS}^" 2>/dev/null)" || {
-    echo "Kein Tag vor $BIS: VON angeben, z. B. scripts/changelog.sh <commit> $BIS" >&2; exit 2; }
+    echo "Kein Tag vor $BIS: VON angeben, z. B. scripts/changelog.sh $BIS <commit>" >&2; exit 2; }
 fi
-git rev-parse --verify -q "${VON}^{commit}" >/dev/null || { echo "Ref $VON fehlt: erst git fetch origin --tags" >&2; exit 1; }
+ref_pruefen "$VON"
 
 bruch=(); neu=(); behoben=(); sonst=()
 
@@ -34,6 +38,10 @@ while IFS=$'\t' read -r sha subj; do
     nr="${BASH_REMATCH[1]}"
     titel="$(git log -1 --format=%b "$sha" | sed -n '/./{p;q}')"
     zeile="- ${titel:-$subj} ([GitHub #${nr}](${GH}/pull/${nr}))"
+  elif [[ $subj =~ ^(.*)\ \(#([0-9]+)\)$ ]]; then
+    # Forgejo squash or rebase merge
+    titel="${BASH_REMATCH[1]}"; nr="${BASH_REMATCH[2]}"
+    zeile="- ${titel} ([#${nr}](${FORGE}/pulls/${nr}))"
   else
     titel="$subj"
     zeile="- ${titel} (${sha:0:8})"
