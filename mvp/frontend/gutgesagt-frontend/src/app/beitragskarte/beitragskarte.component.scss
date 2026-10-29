@@ -378,7 +378,7 @@
   line-height: 1.4;
 }
 
-// Kurz/Mittel/Lang - nur ab 600 px
+// Kurz/Mittel/Lang - auch am Handy, dort mit groesserer Tippflaeche (#355)
 
 .textlaenge {
   display: flex;
@@ -461,8 +461,12 @@
     display: flex;
   }
 
-  .textlaenge {
-    display: none;
+  .textlaenge ::ng-deep .mat-button-toggle-button {
+    height: 40px;
+  }
+
+  .textlaenge ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+    line-height: 40px;
   }
 
   .karte-meta {
