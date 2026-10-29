@@ -4,6 +4,7 @@ am selben Tag jeweils einen Beitrag des anderen nutzen. Wegwerf-Schema aus der
 Fixture ``datenbank`` von ``test_loeschkommando.py``.
 """
 
+import threading
 from datetime import date, datetime, time, timedelta, timezone
 
 import pytest
@@ -31,7 +32,7 @@ def dienst(datenbank):  # noqa: F811
 
 
 class TestMusterHinweise:
-    def test_gegenseitige_nutzung_am_selben_tag_wird_hinweis(self, dienst):
+    def test_nutzung_melden_gegenseitig_am_selben_tag_wird_hinweis(self, dienst):
         dienst.nutzung_melden("kim-1", "bo-2", _um(MONTAG))
         assert dienst.hinweise() == []
 
@@ -45,20 +46,20 @@ class TestMusterHinweise:
             MONTAG,
         )
 
-    def test_einseitige_nutzung_kein_hinweis(self, dienst):
+    def test_nutzung_melden_einseitig_kein_hinweis(self, dienst):
         for _ in range(3):
             dienst.nutzung_melden("kim-1", "bo-2", _um(MONTAG))
 
         assert dienst.hinweise() == []
 
-    def test_an_verschiedenen_tagen_kein_hinweis(self, dienst):
+    def test_nutzung_melden_an_verschiedenen_tagen_kein_hinweis(self, dienst):
         """Ueber Tagesgrenzen erkennt der Dienst nichts: Er merkt sich nur den Tag."""
         dienst.nutzung_melden("kim-1", "bo-2", _um(MONTAG))
         dienst.nutzung_melden("bo-2", "kim-1", _um(MONTAG + timedelta(1)))
 
         assert dienst.hinweise() == []
 
-    def test_zaehlt_tage_nicht_nutzungen(self, dienst):
+    def test_nutzung_melden_zaehlt_tage_nicht_nutzungen(self, dienst):
         for tag in [MONTAG, MONTAG + timedelta(2)]:
             for _ in range(2):
                 dienst.nutzung_melden("kim-1", "bo-2", _um(tag))
@@ -71,7 +72,27 @@ class TestMusterHinweise:
             MONTAG + timedelta(2),
         )
 
-    def test_eigene_und_anonyme_nutzung_zaehlen_nicht(self, dienst):
+    def test_nutzung_melden_gleichzeitig_verliert_keinen_tag(self, dienst):
+        """A nutzt B und B nutzt A im selben Augenblick: Der Tag zaehlt trotzdem."""
+        for runde in range(10):
+            a, b = f"a-{runde}", f"b-{runde}"
+            start = threading.Barrier(2)
+
+            def melden(von, an):
+                start.wait()
+                dienst.nutzung_melden(von, an, _um(MONTAG))
+
+            faeden = [
+                threading.Thread(target=melden, args=paar) for paar in [(a, b), (b, a)]
+            ]
+            for faden in faeden:
+                faden.start()
+            for faden in faeden:
+                faden.join()
+
+        assert len(dienst.hinweise()) == 10
+
+    def test_nutzung_melden_eigene_und_anonyme_zaehlen_nicht(self, dienst):
         dienst.nutzung_melden("kim-1", "kim-1", _um(MONTAG))
         dienst.nutzung_melden(None, "kim-1", _um(MONTAG))
         dienst.nutzung_melden("anonymous", "kim-1", _um(MONTAG))

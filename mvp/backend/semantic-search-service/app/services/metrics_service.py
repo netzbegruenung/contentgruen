@@ -6,8 +6,10 @@ Provides comprehensive statistics for MVP goals tracking.
 import logging
 from datetime import datetime, timedelta, date
 from typing import Dict, Any, List, Optional
-from sqlalchemy import text, func, distinct, and_, or_
+from sqlalchemy import bindparam, text, func, distinct, and_, or_
 
+from core.config import settings
+from repositories.vote_repository import ausgenommen_werte
 from repositories.search_tracking_repository import get_search_tracking_repository
 from repositories.usage_tracking_repository import get_usage_repository
 from infrastructure.database.connection import get_app_database
@@ -198,9 +200,16 @@ class MetricsService:
                         COUNT(*) as total_votes
                     FROM votes
                     WHERE created >= :start_date
+                        AND NOT (user_id IN :ausgenommen)
                     """
-                    ),
-                    {"start_date": start_date},
+                    ).bindparams(bindparam("ausgenommen", expanding=True)),
+                    {
+                        "start_date": start_date,
+                        # Stimmen von Startkonten zaehlen nicht (#352).
+                        "ausgenommen": ausgenommen_werte(
+                            settings.startkonto_kennungen()
+                        ),
+                    },
                 ).fetchone()
 
                 if result and result[2] > 0:  # total_votes > 0

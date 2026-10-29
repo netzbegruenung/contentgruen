@@ -177,7 +177,7 @@ class NutzungHeute(Base):
     __table_args__ = (Index("idx_nutzung_heute_tag", "tag"),)
 
 
-class MusterHinweis(Base):
+class MusterHinweisZeile(Base):
     """
     Ein auffaelliges Muster fuer Admins (ADR 0004, #352): zwei Konten, die am selben
     Tag jeweils einen Beitrag des anderen genutzt haben. Ein Hinweis, keine

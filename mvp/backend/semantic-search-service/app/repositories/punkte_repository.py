@@ -4,13 +4,14 @@ Einwuerfe. Was daraus wird, steht in services/punkte_service.py.
 """
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Dict, List, Optional, Set
 
 from sqlalchemy import bindparam, func, select, text
 
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import RawInput, RawInputContentLink
+from infrastructure.database.models import RawInput, RawInputContentLink, Sperre
+from repositories.vote_repository import ausgenommen_werte
 
 
 class PunkteRepository:
@@ -35,18 +36,31 @@ class PunkteRepository:
                 abfrage,
                 {
                     "ids": [str(i) for i in content_ids],
-                    # Eine leere Liste ergaebe "IN ()"; "" ist keine Kennung.
-                    "ausgenommen": sorted(ausgenommen) or [""],
+                    "ausgenommen": ausgenommen_werte(ausgenommen),
                 },
             ).scalar_one()
 
-    def einwuerfe_ausformuliert_je_tag(self, user_id: str) -> Dict[date, int]:
+    def einwuerfe_ausformuliert_je_tag(
+        self, user_id: str, bis: datetime
+    ) -> Dict[date, int]:
         """
-        Die Einwuerfe der Person, die in einem Beitrag ausformuliert sind, gezaehlt je
-        UTC-Tag ihrer ersten Verknuepfung. Ein entfernter Beitrag nimmt seine
-        Verknuepfung mit (ModerationService.delete_content), der Einwurf zaehlt dann
-        nicht mehr.
+        Die Einwuerfe der Person, die in einem sichtbaren Beitrag ausformuliert sind,
+        gezaehlt je UTC-Tag ihrer ersten Verknuepfung, die spaetestens ``bis``
+        entstand (die Wartezeit wie beim Beitrag, services/punkte_service.py).
+
+        Eine Verknuepfung mit einem gesperrten Beitrag zaehlt nicht; ein entfernter
+        Beitrag nimmt seine Verknuepfung mit (ModerationService.delete_content).
+        Ob ein verknuepfter Beitrag vom Autor geloescht ist, steht nur in Qdrant;
+        bis zu seiner endgueltigen Entfernung zaehlt er hier mit.
         """
+        gesperrt = (
+            select(Sperre.content_id)
+            .where(
+                Sperre.content_id == RawInputContentLink.content_id,
+                Sperre.aufgehoben_am.is_(None),
+            )
+            .exists()
+        )
         erste = (
             select(
                 func.min(RawInputContentLink.created_at)
@@ -54,8 +68,9 @@ class PunkteRepository:
                 .label("am")
             )
             .join(RawInput, RawInput.id == RawInputContentLink.raw_input_id)
-            .where(RawInput.submitted_by == user_id)
+            .where(RawInput.submitted_by == user_id, ~gesperrt)
             .group_by(RawInputContentLink.raw_input_id)
+            .having(func.min(RawInputContentLink.created_at) <= bis)
             .subquery()
         )
         tag = func.date(erste.c.am)

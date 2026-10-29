@@ -44,7 +44,8 @@ class _Quellen:
         self.ausgenommen = ausgenommen
         return self.zustimmungen_zahl if content_ids else 0
 
-    def einwuerfe_ausformuliert_je_tag(self, user_id: str) -> Dict[date, int]:
+    def einwuerfe_ausformuliert_je_tag(self, user_id: str, bis) -> Dict[date, int]:
+        self.einwuerfe_bis = bis
         return self.einwuerfe
 
 
@@ -97,6 +98,8 @@ async def test_punkte_tun_mit_ausformulierten_einwuerfen_je_tag_gedeckelt():
     stand = await _service(quellen).punkte(KIM)
 
     assert stand.tun == 3 + 1
+    # Einwuerfe warten wie Beitraege drei Tage.
+    assert quellen.einwuerfe_bis == JETZT - timedelta(days=3)
 
 
 async def test_punkte_startkonto_sammelt_keine():

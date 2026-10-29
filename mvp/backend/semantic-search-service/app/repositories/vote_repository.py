@@ -10,6 +10,15 @@ from infrastructure.database.connection import get_app_database
 logger = get_logger(__name__)
 
 
+def ausgenommen_werte(kennungen: Iterable[str]) -> List[str]:
+    """
+    Werte fuer einen expandierenden Parameter ``:ausgenommen`` in
+    ``NOT (user_id IN :ausgenommen)``, etwa die Startkonten (#352). Nie leer: Eine leere
+    Liste ergaebe "IN ()", und "" ist keine Kennung.
+    """
+    return sorted(kennungen) or [""]
+
+
 class VoteRepository:
     """Repository for managing user votes on content items."""
 
@@ -201,8 +210,7 @@ class VoteRepository:
                 query,
                 {
                     "content_id": str(content_id),
-                    # Eine leere Liste ergaebe "IN ()"; "" ist keine Kennung.
-                    "ausgenommen": sorted(ausgenommen) or [""],
+                    "ausgenommen": ausgenommen_werte(ausgenommen),
                 },
             )
 

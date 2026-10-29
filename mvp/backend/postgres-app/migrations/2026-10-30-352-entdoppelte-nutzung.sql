@@ -18,25 +18,46 @@
 -- Neue Datenbanken brauchen das Skript nicht: create_all legt die Tabellen an,
 -- init.sql hat die Spalten. Bestehende brauchen es fuer die Spalten.
 --
--- Nachtragen: Bisherige Nutzung gilt als entdoppelt (nutzung_entdoppelt =
--- usage_count, entdoppelt = true). Ob sie es war, ist nicht mehr festzustellen;
--- so bleibt "Diese Woche oft genutzt" nach dem Einspielen gefuellt. Nachgetragen
--- wird nur, wo die Spalte noch leer ist; ein zweiter Lauf aendert nichts.
+-- Nachtragen: aus den vorhandenen usage_events, so gut es geht entdoppelt: je
+-- Sitzung, Beitrag und UTC-Tag zaehlt das erste Ereignis, Ereignisse ohne
+-- Sitzung zaehlen nicht. nutzung_entdoppelt ist die Zahl dieser Ereignisse. Nutzung
+-- von vor der Frist der usage_events (90 Tage) ist nicht mehr zu entdoppeln und
+-- zaehlt nicht; usage_count, der Zaehler an der Karte, bleibt. Nachgetragen wird
+-- nur, wo die Spalte noch leer ist; ein zweiter Lauf aendert nichts.
+-- ANNAHME (#352): Nutzung durch Startkonten von vor dem Einspielen ist darin nicht
+-- zu erkennen (usage_events traegt keine Kennung) und zaehlt mit.
+--
+-- Sperren: usage_events und usage_tracking schreibt jede Kopie; das Skript wartet
+-- deshalb hoechstens 5 s auf sie.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 
 BEGIN;
-
-ALTER TABLE usage_tracking ADD COLUMN IF NOT EXISTS nutzung_entdoppelt INTEGER;
-UPDATE usage_tracking SET nutzung_entdoppelt = usage_count
-    WHERE nutzung_entdoppelt IS NULL;
-ALTER TABLE usage_tracking ALTER COLUMN nutzung_entdoppelt SET DEFAULT 0;
-ALTER TABLE usage_tracking ALTER COLUMN nutzung_entdoppelt SET NOT NULL;
+SET LOCAL lock_timeout = '5s';
 
 ALTER TABLE usage_events ADD COLUMN IF NOT EXISTS entdoppelt BOOLEAN;
-UPDATE usage_events SET entdoppelt = true WHERE entdoppelt IS NULL;
+UPDATE usage_events AS e SET entdoppelt = (x.id = x.erste_id)
+FROM (
+    SELECT id, first_value(id) OVER (
+        PARTITION BY session_id, content_id,
+            date(timestamp AT TIME ZONE 'UTC')
+        ORDER BY timestamp, id
+    ) AS erste_id
+    FROM usage_events
+) AS x
+WHERE e.id = x.id AND e.entdoppelt IS NULL AND e.session_id IS NOT NULL;
+UPDATE usage_events SET entdoppelt = false WHERE entdoppelt IS NULL;
 ALTER TABLE usage_events ALTER COLUMN entdoppelt SET DEFAULT false;
 ALTER TABLE usage_events ALTER COLUMN entdoppelt SET NOT NULL;
+
+ALTER TABLE usage_tracking ADD COLUMN IF NOT EXISTS nutzung_entdoppelt INTEGER;
+UPDATE usage_tracking AS t SET nutzung_entdoppelt = (
+    SELECT count(*) FROM usage_events AS e
+    WHERE e.content_id = t.content_id AND e.entdoppelt
+)
+WHERE t.nutzung_entdoppelt IS NULL;
+ALTER TABLE usage_tracking ALTER COLUMN nutzung_entdoppelt SET DEFAULT 0;
+ALTER TABLE usage_tracking ALTER COLUMN nutzung_entdoppelt SET NOT NULL;
 
 CREATE TABLE IF NOT EXISTS nutzung_heute (
     pruefwert VARCHAR(64) PRIMARY KEY,

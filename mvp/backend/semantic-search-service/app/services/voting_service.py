@@ -2,7 +2,6 @@ import uuid
 from typing import List, Optional, Dict
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from core.config import settings
 from core.logging import get_logger, log_pseudonym
 from domain.models.vote import Vote, VoteCreate, VoteResponse, VoteType
 from repositories.vote_repository import VoteRepository
@@ -13,8 +12,10 @@ logger = get_logger(__name__)
 class VotingService:
     """Service for managing user votes on content items."""
 
-    def __init__(self):
+    def __init__(self, startkonten: frozenset = frozenset()):
         self.vote_repository = VoteRepository()
+        # Stimmen von Startkonten sieht niemand (#352, GLOSSARY.md "Startkonto").
+        self._startkonten = startkonten
         # Ensure the votes table exists
         self.vote_repository.create_votes_table()
 
@@ -172,10 +173,10 @@ class VotingService:
     def get_content_vote_stats(self, content_id: uuid.UUID) -> dict:
         """Get voting statistics for a content item."""
         try:
-            # Stimmen von Startkonten sieht niemand (#352, GLOSSARY.md "Startkonto").
-            startkonten = settings.startkonto_kennungen()
-            counts = self.vote_repository.get_vote_counts(content_id, startkonten)
-            score = self.vote_repository.get_content_score(content_id, startkonten)
+            counts = self.vote_repository.get_vote_counts(content_id, self._startkonten)
+            score = self.vote_repository.get_content_score(
+                content_id, self._startkonten
+            )
 
             return {
                 "content_id": str(content_id),

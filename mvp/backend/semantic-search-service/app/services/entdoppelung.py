@@ -20,9 +20,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from core.config import settings
-from services import search_tracking_service
-from services.search_tracking_service import tagespseudonym
+from services.search_tracking_service import pseudonym_schluessel, tagespseudonym
 
 ANONYM = "anonymous"
 
@@ -31,9 +29,8 @@ def _hmac(text: str) -> str:
     # Derselbe Schluessel wie beim Tagespseudonym; ohne Konfiguration der
     # Zufallsschluessel des Prozesses (nach einem Neustart zaehlt eine Nutzung am
     # selben Tag dann noch einmal).
-    geheim = settings.actor_hash_secret or search_tracking_service._FALLBACK_SECRET
     return hmac.new(
-        geheim.encode("utf-8"), text.encode("utf-8"), hashlib.sha256
+        pseudonym_schluessel().encode("utf-8"), text.encode("utf-8"), hashlib.sha256
     ).hexdigest()
 
 

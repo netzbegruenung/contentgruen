@@ -20,7 +20,7 @@ from infrastructure.database.models import (
     Base,
     ContentReport,
     GeseheneNutzung,
-    MusterHinweis,
+    MusterHinweisZeile,
     RawInput,
     RawInputContentLink,
     RawInputDraft,
@@ -252,7 +252,7 @@ def spuren(datenbank, einwuerfe):
         # Muster-Hinweise (#352): einer mit der Person, einer ohne sie.
         for a, b in [(ANDERE, PERSON), (ANDERE, DRITTE)]:
             s.add(
-                MusterHinweis(
+                MusterHinweisZeile(
                     konto_a=a,
                     konto_b=b,
                     tage=1,
@@ -344,7 +344,7 @@ class TestLoeschkommando:
         _loeschen(datenbank)
 
         with datenbank.get_session() as s:
-            assert [(h.konto_a, h.konto_b) for h in s.query(MusterHinweis)] == [
+            assert [(h.konto_a, h.konto_b) for h in s.query(MusterHinweisZeile)] == [
                 (ANDERE, DRITTE)
             ]
 

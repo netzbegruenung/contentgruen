@@ -2,6 +2,7 @@
 API endpoints for usage tracking functionality.
 """
 
+import asyncio
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
@@ -232,8 +233,10 @@ async def track_content_usage(
             )
 
         # Ein Startkonto vergibt keine Nutzung (GLOSSARY.md "Startkonto", #352): weder
-        # am Zaehler der Karte noch in Meine Beitraege, der Rueckmeldung beim Anmelden,
-        # "Diese Woche oft genutzt" oder den Punkten. Wie die eigene Kopie kein Fehler.
+        # in Meine Beitraege, der Rueckmeldung beim Anmelden, "Diese Woche oft genutzt"
+        # oder den Punkten. Wie die eigene Kopie kein Fehler.
+        # ANNAHME (#352): auch nicht am Zaehler der Karte, der sonst jede Nutzung
+        # zaehlt; "vergibt keine Nutzung" gilt dort ebenso.
         if settings.ist_startkonto(aufrufer):
             logger.debug(f"Content {content_id} copied by a Startkonto, not counted")
             return TrackUsageResponse(
@@ -278,11 +281,16 @@ async def track_content_usage(
             raise HTTPException(status_code=500, detail="Failed to track usage")
 
         # Fuer die Muster-Hinweise (#352), nur mit Punkten. Ein Fehler hier kostet
-        # die Nutzung nicht, sie ist schon gezaehlt.
+        # die Nutzung nicht, sie ist schon gezaehlt. Kein Depends: Ohne Punkte soll
+        # der Dienst gar nicht erst entstehen.
+        # ANNAHME (#352): erkannt wird nur gegenseitige Nutzung am selben UTC-Tag;
+        # ueber Tagesgrenzen hinweg merkt sich der Dienst nichts (DSFA zu #374, M2).
         if settings.punkte_aktiv and beitrag is not None:
             try:
-                get_muster_hinweise_service().nutzung_melden(
-                    aufrufer, beitrag.original_author
+                await asyncio.to_thread(
+                    get_muster_hinweise_service().nutzung_melden,
+                    aufrufer,
+                    beitrag.original_author,
                 )
             except Exception as e:
                 logger.error(f"Pattern check for content {content_id} failed: {e}")

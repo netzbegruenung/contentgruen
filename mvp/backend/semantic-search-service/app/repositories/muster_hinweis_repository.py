@@ -9,15 +9,15 @@ from dataclasses import dataclass
 from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import delete, desc, exists, select
+from sqlalchemy import delete, desc, exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import MusterHinweis, NutzungHeute
+from infrastructure.database.models import MusterHinweisZeile, NutzungHeute
 
 
 @dataclass(frozen=True)
-class Musterhinweis:
+class MusterHinweis:
     konto_a: str
     konto_b: str
     tage: int
@@ -41,6 +41,14 @@ class MusterHinweisRepository:
         """
         konto_a, konto_b = sorted([nutzende, autor])
         with self.db.get_session() as session:
+            # Je Paar nacheinander: Kaemen A->B und B->A gleichzeitig, saehe sonst
+            # keine der beiden Transaktionen den noch nicht festgeschriebenen
+            # Pruefwert der anderen, und der Tag ginge verloren.
+            session.execute(
+                select(
+                    func.pg_advisory_xact_lock(func.hashtext(f"{konto_a}|{konto_b}"))
+                )
+            )
             session.execute(
                 insert(NutzungHeute)
                 .values(pruefwert=hin, tag=tag)
@@ -51,9 +59,9 @@ class MusterHinweisRepository:
             ).scalar()
             if not gegenseitig:
                 return False
-            neuer_tag = MusterHinweis.letzter_tag < tag
+            neuer_tag = MusterHinweisZeile.letzter_tag < tag
             session.execute(
-                insert(MusterHinweis)
+                insert(MusterHinweisZeile)
                 .values(
                     konto_a=konto_a,
                     konto_b=konto_b,
@@ -63,27 +71,27 @@ class MusterHinweisRepository:
                 )
                 .on_conflict_do_update(
                     index_elements=["konto_a", "konto_b"],
-                    set_={"tage": MusterHinweis.tage + 1, "letzter_tag": tag},
+                    set_={"tage": MusterHinweisZeile.tage + 1, "letzter_tag": tag},
                     where=neuer_tag,
                 )
             )
             return True
 
-    def hinweise(self, limit: int) -> List[Musterhinweis]:
+    def hinweise(self, limit: int) -> List[MusterHinweis]:
         """Die zuletzt aufgefallenen zuerst, bei gleichem Tag die mit mehr Tagen."""
         abfrage = (
-            select(MusterHinweis)
+            select(MusterHinweisZeile)
             .order_by(
-                desc(MusterHinweis.letzter_tag),
-                desc(MusterHinweis.tage),
-                MusterHinweis.konto_a,
-                MusterHinweis.konto_b,
+                desc(MusterHinweisZeile.letzter_tag),
+                desc(MusterHinweisZeile.tage),
+                MusterHinweisZeile.konto_a,
+                MusterHinweisZeile.konto_b,
             )
             .limit(limit)
         )
         with self.db.get_session() as session:
             return [
-                Musterhinweis(z.konto_a, z.konto_b, z.tage, z.erster_tag, z.letzter_tag)
+                MusterHinweis(z.konto_a, z.konto_b, z.tage, z.erster_tag, z.letzter_tag)
                 for z in session.execute(abfrage).scalars()
             ]
 
@@ -91,7 +99,7 @@ class MusterHinweisRepository:
         """Hinweise, deren letzter Tag vor ``tag`` liegt, loeschen."""
         with self.db.get_session() as session:
             return session.execute(
-                delete(MusterHinweis).where(MusterHinweis.letzter_tag < tag)
+                delete(MusterHinweisZeile).where(MusterHinweisZeile.letzter_tag < tag)
             ).rowcount
 
 

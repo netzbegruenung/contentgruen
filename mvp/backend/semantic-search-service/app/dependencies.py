@@ -39,10 +39,7 @@ from services.gegenlesen.gegenlesen_service import (
     lade_statt_sag_liste,
 )
 from services.loeschfristen_service import LoeschfristenService
-from services.muster_hinweise_service import (
-    MusterHinweiseService,
-    get_muster_hinweise_service as _muster_hinweise_service,
-)
+from services.muster_hinweise_service import MusterHinweiseService
 from services.punkte_service import PunkteService
 from services.moderation_service import get_moderation_service
 from repositories.content_report_repository import get_content_report_repository
@@ -105,7 +102,7 @@ def initialize_services() -> None:
     generic_text_service_instance = GenericTextService(settings=settings_instance)
 
     global voting_service_instance
-    voting_service_instance = VotingService()
+    voting_service_instance = VotingService(settings_instance.startkonto_kennungen())
     logger.debug("created content service instances...")
 
     # Create the content orchestrator instance (without triggering data load)
@@ -181,7 +178,11 @@ def get_punkte_service(
         # get_by_author laesst gesperrte und geloeschte Beitraege aus: Sie verlieren
         # ihre Punkte (#352).
         return await ContentRepository(settings).get_by_author(
-            user_id, limit=10000, offset=0, content_types=BEITRAGSTYPEN_WERTE
+            # Alle Beitraege der Person, wie get_user_statistics.
+            user_id,
+            limit=10000,
+            offset=0,
+            content_types=BEITRAGSTYPEN_WERTE,
         )
 
     return PunkteService(
@@ -190,7 +191,12 @@ def get_punkte_service(
 
 
 def get_muster_hinweise_service() -> MusterHinweiseService:
-    return _muster_hinweise_service()
+    from repositories.muster_hinweis_repository import get_muster_hinweis_repository
+    from repositories.usage_tracking_repository import get_usage_repository
+
+    return MusterHinweiseService(
+        get_muster_hinweis_repository(), get_usage_repository()
+    )
 
 
 _gegenlesen_service: Optional[GegenlesenService] = None

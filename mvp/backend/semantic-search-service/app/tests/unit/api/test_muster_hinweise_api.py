@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from api.v1.metrics import router as metrics_router
 from core.config import Settings
 from dependencies import get_muster_hinweise_service, get_settings
-from repositories.muster_hinweis_repository import Musterhinweis
+from repositories.muster_hinweis_repository import MusterHinweis
 
 URL = "/api/v1/metrics/muster-hinweise"
 ADMIN = {"X-User": "admin-1", "X-Is-Admin": "true"}
@@ -22,7 +22,7 @@ ADMIN = {"X-User": "admin-1", "X-Is-Admin": "true"}
 def dienst():
     dienst = Mock()
     dienst.hinweise.return_value = [
-        Musterhinweis("bo-2", "kim-1", 3, date(2026, 10, 20), date(2026, 10, 29))
+        MusterHinweis("bo-2", "kim-1", 3, date(2026, 10, 20), date(2026, 10, 29))
     ]
     return dienst
 

@@ -13,9 +13,14 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select, update
 
-from infrastructure.database.models import NutzungHeute, UsageEvent
+from infrastructure.database.models import NutzungHeute, UsageEvent, UsageTracking
 from repositories.usage_tracking_repository import UsageTrackingRepository
+from tests.integration import postgres
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
+
+MIGRATION = next(
+    m for m in postgres.migrationen() if m.name.startswith("2026-10-30-352-")
+)
 
 pytestmark = pytest.mark.integration
 
@@ -100,3 +105,47 @@ class TestEntdoppelteNutzung:
             assert s.execute(select(NutzungHeute.pruefwert)).scalars().all() == [
                 "heute"
             ]
+
+
+class TestNachtragImBestand:
+    """Die Migration entdoppelt vorhandene Nutzung je Sitzung, Beitrag und Tag."""
+
+    def test_migration_entdoppelt_je_sitzung_beitrag_und_tag(
+        self, datenbank  # noqa: F811
+    ):
+        beitrag, anderer = uuid.uuid4(), uuid.uuid4()
+        montag = datetime(2026, 10, 26, 9, tzinfo=timezone.utc)
+        with datenbank.get_session() as s:
+            s.add_all(
+                [
+                    UsageTracking(content_id=beitrag, usage_count=5),
+                    UsageTracking(content_id=anderer, usage_count=1),
+                ]
+            )
+            s.flush()
+            for sitzung, beitrag_id, am in [
+                ("s1", beitrag, montag),
+                ("s1", beitrag, montag + timedelta(hours=3)),
+                ("s1", beitrag, montag + timedelta(days=1)),
+                ("s2", beitrag, montag),
+                (None, beitrag, montag),
+                ("s1", anderer, montag),
+            ]:
+                s.add(
+                    UsageEvent(content_id=beitrag_id, session_id=sitzung, timestamp=am)
+                )
+        with datenbank.engine.begin() as c:
+            c.exec_driver_sql("ALTER TABLE usage_events DROP COLUMN entdoppelt")
+            c.exec_driver_sql(
+                "ALTER TABLE usage_tracking DROP COLUMN nutzung_entdoppelt"
+            )
+
+        for _ in range(2):
+            postgres.migration(datenbank, MIGRATION)
+
+        repo = UsageTrackingRepository(datenbank)
+        assert repo.get_nutzung_entdoppelt_batch([beitrag, anderer]) == {
+            str(beitrag): 3,
+            str(anderer): 1,
+        }
+        assert repo.get_usage_count(beitrag) == 5

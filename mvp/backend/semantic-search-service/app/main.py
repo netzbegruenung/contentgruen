@@ -51,11 +51,14 @@ from services.suchen_ohne_treffer_service import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
-from dependencies import get_feedback_service, get_loeschfristen_service
+from dependencies import (
+    get_feedback_service,
+    get_loeschfristen_service,
+    get_muster_hinweise_service,
+)
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
 from services.muster_hinweise_service import (
-    get_muster_hinweise_service,
     loeschen_im_takt as muster_hinweise_loeschen_im_takt,
 )
 from services.loeschfristen_service import (

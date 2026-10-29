@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)
 _FALLBACK_SECRET = secrets.token_hex(32)
 
 
+def pseudonym_schluessel() -> str:
+    """Der geheime Schluessel der Tagespseudonyme, auch fuer die Entdoppelung (#352)."""
+    return settings.actor_hash_secret or _FALLBACK_SECRET
+
+
 class SearchTrackingService:
     """Service for managing search tracking."""
 
@@ -70,7 +75,7 @@ class SearchTrackingService:
             moment = datetime.now(timezone.utc)
         day = moment.strftime("%Y-%m-%d")
 
-        secret = settings.actor_hash_secret or _FALLBACK_SECRET
+        secret = pseudonym_schluessel()
         return hmac.new(
             secret.encode("utf-8"),
             f"{actor_id}|{day}".encode("utf-8"),

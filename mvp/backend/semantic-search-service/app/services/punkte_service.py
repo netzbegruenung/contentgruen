@@ -11,8 +11,11 @@ Woher die drei Stufen kommen:
   services/entdoppelung.py) und die Zustimmung anderer zu ihnen. Eigene Stimmen und
   die von Startkonten zaehlen nicht; Ablehnung zieht nichts ab.
 - Tun: je sichtbarem Beitrag, der mindestens BEITRAG_WARTEZEIT alt ist, und je
-  Einwurf der Person, der ausformuliert wurde; je Tag gedeckelt.
-- Quests: gibt es noch nicht; die Stufe bleibt 0, bis sie kommen.
+  Einwurf der Person, der ebenso lange in einem nicht gesperrten Beitrag
+  ausformuliert ist; je Tag gedeckelt.
+- Quests: ANNAHME (#352): gibt es noch nicht; die Stufe bleibt 0, bis sie kommen.
+  Gewicht und Deckel stehen schon in der Konfiguration, weil ADR 0004 alle drei
+  Stufen dort verlangt.
 
 Ein Startkonto sammelt keine Punkte.
 """
@@ -43,7 +46,9 @@ class NutzungsQuelle(Protocol):
 class StimmenUndEinwuerfe(Protocol):
     def zustimmungen(self, content_ids: List[Any], ausgenommen: Set[str]) -> int: ...
 
-    def einwuerfe_ausformuliert_je_tag(self, user_id: str) -> Dict[date, int]: ...
+    def einwuerfe_ausformuliert_je_tag(
+        self, user_id: str, bis: datetime
+    ) -> Dict[date, int]: ...
 
 
 def gewichte_aus(settings: Settings) -> Punktegewichte:
@@ -102,7 +107,9 @@ class PunkteService:
             zustimmungen=zustimmungen,
             beitraege_je_tag=_je_tag(stehende),
             einwuerfe_ausformuliert_je_tag=(
-                self._stimmen_und_einwuerfe.einwuerfe_ausformuliert_je_tag(user_id)
+                self._stimmen_und_einwuerfe.einwuerfe_ausformuliert_je_tag(
+                    user_id, bis=grenze
+                )
             ),
         )
         return punkte_berechnen(daten, gewichte)

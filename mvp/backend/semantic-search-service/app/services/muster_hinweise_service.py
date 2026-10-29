@@ -29,14 +29,10 @@ from typing import List, Optional
 
 from core.logging import get_logger
 from repositories.muster_hinweis_repository import (
+    MusterHinweis,
     MusterHinweisRepository,
-    Musterhinweis,
-    get_muster_hinweis_repository,
 )
-from repositories.usage_tracking_repository import (
-    UsageTrackingRepository,
-    get_usage_repository,
-)
+from repositories.usage_tracking_repository import UsageTrackingRepository
 from services.entdoppelung import ANONYM, paar_pruefwert
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
@@ -78,7 +74,7 @@ class MusterHinweiseService:
             hin, rueck, nutzende, autor, moment.astimezone(timezone.utc).date()
         )
 
-    def hinweise(self) -> List[Musterhinweis]:
+    def hinweise(self) -> List[MusterHinweis]:
         return self._repository.hinweise(ANZAHL)
 
     def fristen_anwenden(self, heute: Optional[date] = None) -> None:
@@ -91,13 +87,6 @@ class MusterHinweiseService:
             f"Discarded {verworfen} check values of past days, "
             f"deleted {geloescht} pattern notes past their Loeschfrist"
         )
-
-
-def get_muster_hinweise_service() -> MusterHinweiseService:
-    return MusterHinweiseService(
-        get_muster_hinweis_repository(),
-        get_usage_repository(),
-    )
 
 
 async def loeschen_im_takt(
