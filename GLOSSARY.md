@@ -243,7 +243,7 @@ Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen a
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht, offene nie. Melden auf der Plattform einer Aussage ist keine Meldung.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung.
 _Avoid_: Report, Flag, Beschwerde
 
 **Feedback**:

@@ -133,7 +133,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Datenart | Frist | Gerechnet ab |
 |---|---|---|
 | Meldungen (`content_reports`), bearbeitet oder abgewiesen | 180 Tage | Bearbeitung (`reviewed_at`; ohne sie, im Altbestand, der Eingang) |
-| Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet |
+| Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird (dann bearbeitet, Frist wie oben) |
 | Einwürfe (`raw_inputs`), die in keinem Beitrag ausformuliert sind, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
 | Einwürfe, die in einem Beitrag ausformuliert sind | solange dieser Beitrag besteht | — danach wie die anderen |
 | Gelöschte Beiträge (Zustand „gelöscht“, Qdrant) | 30 Tage, dann endgültig entfernt | Tag im Payload-Feld `geloescht_am` |
