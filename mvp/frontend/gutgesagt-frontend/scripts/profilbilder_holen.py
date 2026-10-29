@@ -36,56 +36,55 @@ KANTE = 128
 ANTEIL = 0.72
 SAND = (0xF5, 0xF1, 0xE9, 0xFF)
 
-# Datei unter public/avatars -> Pfad im Repository von Fluent Emoji. Die Hauttoene
-# sind gleich verteilt: je vier Mal Light, Medium-Light, Medium, Medium-Dark, Dark.
+# Datei unter public/avatars -> Pfad im Repository von Fluent Emoji. Hauttoene leicht
+# an der westeuropaeischen Bevoelkerung orientiert und trotzdem vielfaeltig: 10 hell
+# oder mittelhell (darunter drei rothaarig, eine blond, zwei mit weissem Haar), 5
+# mittel, 5 mitteldunkel oder dunkel. In der Liste gemischt, damit das Raster nicht
+# nach Hautton sortiert wirkt.
 MENSCHEN = [
-    ("mensch-01.png", "assets/Woman/Medium/3D/woman_3d_medium.png"),
-    ("mensch-02.png", "assets/Man/Dark/3D/man_3d_dark.png"),
-    ("mensch-03.png", "assets/Person/Light/3D/person_3d_light.png"),
+    ("mensch-01.png", "assets/Woman red hair/Light/3D/woman_red_hair_3d_light.png"),
+    ("mensch-02.png", "assets/Man/Medium/3D/man_3d_medium.png"),
+    ("mensch-03.png", "assets/Person deaf/Dark/3D/person_deaf_3d_dark.png"),
     (
         "mensch-04.png",
-        "assets/Old woman/Medium-Dark/3D/old_woman_3d_medium-dark.png",
-    ),
-    ("mensch-05.png", "assets/Old man/Medium-Light/3D/old_man_3d_medium-light.png"),
-    ("mensch-06.png", "assets/Older person/Dark/3D/older_person_3d_dark.png"),
-    (
-        "mensch-07.png",
-        "assets/Woman with headscarf/Medium-Light/3D/"
-        "woman_with_headscarf_3d_medium-light.png",
+        "assets/Person blonde hair/Light/3D/person_blonde_hair_3d_light.png",
     ),
     (
-        "mensch-08.png",
-        "assets/Person beard/Medium-Dark/3D/person_beard_3d_medium-dark.png",
+        "mensch-05.png",
+        "assets/Woman with headscarf/Medium/3D/woman_with_headscarf_3d_medium.png",
     ),
-    ("mensch-09.png", "assets/Woman curly hair/Dark/3D/woman_curly_hair_3d_dark.png"),
-    ("mensch-10.png", "assets/Man white hair/Light/3D/man_white_hair_3d_light.png"),
+    ("mensch-06.png", "assets/Old man/Light/3D/old_man_3d_light.png"),
+    ("mensch-07.png", "assets/Woman curly hair/Dark/3D/woman_curly_hair_3d_dark.png"),
+    ("mensch-08.png", "assets/Man red hair/Light/3D/man_red_hair_3d_light.png"),
     (
-        "mensch-11.png",
-        "assets/Person in manual wheelchair/Medium/3D/"
-        "person_in_manual_wheelchair_3d_medium.png",
+        "mensch-09.png",
+        "assets/Person in manual wheelchair/Medium/3D/person_in_manual_wheelchair_3d_medium.png",
     ),
-    ("mensch-12.png", "assets/Woman red hair/Light/3D/woman_red_hair_3d_light.png"),
-    ("mensch-13.png", "assets/Man bald/Medium-Dark/3D/man_bald_3d_medium-dark.png"),
     (
-        "mensch-14.png",
-        "assets/Person blonde hair/Medium-Light/3D/"
-        "person_blonde_hair_3d_medium-light.png",
+        "mensch-10.png",
+        "assets/Person white hair/Medium-Light/3D/person_white_hair_3d_medium-light.png",
     ),
-    ("mensch-15.png", "assets/Man curly hair/Medium/3D/man_curly_hair_3d_medium.png"),
-    ("mensch-16.png", "assets/Person deaf/Dark/3D/person_deaf_3d_dark.png"),
+    ("mensch-11.png", "assets/Man bald/Medium-Dark/3D/man_bald_3d_medium-dark.png"),
     (
-        "mensch-17.png",
-        "assets/Person with white cane/Medium-Light/3D/"
-        "person_with_white_cane_3d_medium-light.png",
+        "mensch-12.png",
+        "assets/Person red hair/Medium-Light/3D/person_red_hair_3d_medium-light.png",
     ),
+    ("mensch-13.png", "assets/Person beard/Medium/3D/person_beard_3d_medium.png"),
+    ("mensch-14.png", "assets/Woman/Medium-Light/3D/woman_3d_medium-light.png"),
+    (
+        "mensch-15.png",
+        "assets/Older person/Medium-Dark/3D/older_person_3d_medium-dark.png",
+    ),
+    ("mensch-16.png", "assets/Man white hair/Light/3D/man_white_hair_3d_light.png"),
+    ("mensch-17.png", "assets/Old woman/Medium/3D/old_woman_3d_medium.png"),
     (
         "mensch-18.png",
-        "assets/Person white hair/Medium-Dark/3D/person_white_hair_3d_medium-dark.png",
+        "assets/Person curly hair/Medium-Light/3D/person_curly_hair_3d_medium-light.png",
     ),
-    ("mensch-19.png", "assets/Man red hair/Medium/3D/man_red_hair_3d_medium.png"),
+    ("mensch-19.png", "assets/Person/Dark/3D/person_3d_dark.png"),
     (
         "mensch-20.png",
-        "assets/Person curly hair/Light/3D/person_curly_hair_3d_light.png",
+        "assets/Person with white cane/Light/3D/person_with_white_cane_3d_light.png",
     ),
 ]
 
@@ -121,7 +120,7 @@ BILDER = MENSCHEN + MOTIVE
 # Die Vorlage zeigt eine Nahaufnahme, rechts, unten und oben gerade abgeschnitten; das
 # gilt fuer alle Fassungen von "deaf" in Fluent Emoji, und ein Ausschnitt durch den
 # Kreis wuerde das Gesicht treffen. Anteil des Motivs, ueber den die Kante auslaeuft:
-ANGESCHNITTEN = {"mensch-16.png"}
+ANGESCHNITTEN = {"mensch-03.png"}
 AUSLAUF = 0.18
 AUSLAUF_OBEN = 0.10
 

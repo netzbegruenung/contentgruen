@@ -397,7 +397,7 @@ Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitrage
 _Avoid_: Gast, anonymer Nutzer
 
 **Profilbild**:
-Das Bild, das Mitwirkende im Kopf der Seite vertritt. Ohne eigene Wahl ist es fest aus der Kennung abgeleitet und nirgends gespeichert; wählen Mitwirkende im Profilmenü selbst eines (ein Bild oder ihre Initialen), merkt sich ihr Browser diese Wahl, bis sie sie zurücksetzen. Die Auswahl ist nicht nach Geschlecht eingeteilt. Besucher haben kein Profilbild, nur einen Platzhalter.
+Das Bild, das Mitwirkende im Kopf der Seite vertritt. Ohne eigene Wahl ist es fest aus der Kennung abgeleitet und nirgends gespeichert; wählen Mitwirkende im Profilmenü selbst eines der Bilder, merkt sich ihr Browser diese Wahl, bis sie sie zurücksetzen. Die Auswahl ist nicht nach Geschlecht eingeteilt. Besucher haben kein Profilbild, nur einen Platzhalter.
 _Avoid_: Avatar (in Texten für Nutzende), Profilfoto
 
 **Autor**:

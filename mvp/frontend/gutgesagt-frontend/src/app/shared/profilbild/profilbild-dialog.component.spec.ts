@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ProfilbildDialogComponent, profilbildDialogOeffnen } from './profilbild-dialog.component';
-import { INITIALEN, PROFILBILD_SCHLUESSEL, ProfilbildService } from '../../services/profilbild.service';
+import { PROFILBILD_SCHLUESSEL, ProfilbildService } from '../../services/profilbild.service';
 
 describe('ProfilbildDialogComponent', () => {
   let fixture: ComponentFixture<ProfilbildDialogComponent>;
@@ -44,7 +44,7 @@ describe('ProfilbildDialogComponent', () => {
 
     const gruppe = element().querySelector('[role="radiogroup"]');
     expect(gruppe?.getAttribute('aria-label')).toBe('Profilbild');
-    expect(optionen().length).toBe(service.auswahl().length);
+    expect(optionen().length).toBe(service.auswahl.length);
     for (const bild of Array.from(element().querySelectorAll('.profilbild-option img'))) {
       expect(bild.getAttribute('alt')?.length).toBeGreaterThan(3);
     }
@@ -66,7 +66,7 @@ describe('ProfilbildDialogComponent', () => {
 
     const gewaehlt = optionen().filter((o) => o.checked);
     expect(gewaehlt.length).toBe(1);
-    expect(service.auswahl().find((o) => o.id === gewaehlt[0].value)?.url).toBe(service.bild());
+    expect(service.auswahl.find((o) => o.id === gewaehlt[0].value)?.url).toBe(service.bild());
   });
 
   it('speichert erst beim Uebernehmen, nicht schon beim Anklicken', () => {
@@ -78,8 +78,8 @@ describe('ProfilbildDialogComponent', () => {
 
     knopf('Übernehmen')!.click();
 
-    expect(localStorage.getItem(PROFILBILD_SCHLUESSEL)).toBe(INITIALEN);
-    expect(service.gewaehlt()).toBe(INITIALEN);
+    expect(localStorage.getItem(PROFILBILD_SCHLUESSEL)).toBe(service.auswahl[0].id);
+    expect(service.gewaehlt()).toBe(service.auswahl[0].id);
     expect(dialogRef.close).toHaveBeenCalled();
   });
 
@@ -97,7 +97,7 @@ describe('ProfilbildDialogComponent', () => {
     starten();
     expect(knopf('Zurücksetzen')).toBeUndefined();
 
-    service.waehlen(INITIALEN);
+    service.waehlen(service.auswahl[0].id);
     fixture.destroy();
     starten();
     knopf('Zurücksetzen')!.click();
@@ -118,7 +118,7 @@ describe('ProfilbildDialogComponent', () => {
     fixture.detectChanges();
     knopf('Übernehmen')!.click();
 
-    expect(service.gewaehlt()).toBe(service.auswahl()[2].id);
+    expect(service.gewaehlt()).toBe(service.auswahl[2].id);
   });
 });
 
@@ -133,7 +133,7 @@ describe('ProfilbildDialogComponent beim Oeffnen (Abnahme PR 458)', () => {
     service = TestBed.inject(ProfilbildService);
     service.setzePerson({ isAuthenticated: true, userId: 'user-001', userName: 'Test User', claims: {} });
     // Weit unten im Raster vorgewaehlt: frueher sprang der Dialog dorthin.
-    service.waehlen(service.auswahl()[service.auswahl().length - 1].id);
+    service.waehlen(service.auswahl[service.auswahl.length - 1].id);
   });
 
   afterEach(() => {
@@ -141,7 +141,7 @@ describe('ProfilbildDialogComponent beim Oeffnen (Abnahme PR 458)', () => {
     localStorage.removeItem(PROFILBILD_SCHLUESSEL);
   });
 
-  it('beginnt oben mit Ueberschrift, Initialen und Menschen, ohne zum gewaehlten Bild zu scrollen', async () => {
+  it('beginnt oben mit Ueberschrift und den ersten Menschen, ohne zum gewaehlten Bild zu scrollen', async () => {
     // Hoehe wie bei 390 px Breite: das Raster passt nicht ganz hinein.
     const ref = profilbildDialogOeffnen(dialog, { height: '600px', maxHeight: '600px' });
     await new Promise((fertig) => setTimeout(fertig, 50));
@@ -153,8 +153,8 @@ describe('ProfilbildDialogComponent beim Oeffnen (Abnahme PR 458)', () => {
     const fokus = document.activeElement as HTMLElement;
     expect(fokus.closest('.profilbild-option')).toBeNull();
     const ganzOben = inhalt.getBoundingClientRect().top;
-    const initialen = document.querySelector('.profilbild-option') as HTMLElement;
-    expect(initialen.getBoundingClientRect().top - ganzOben).toBeLessThan(150);
+    const erstes = document.querySelector('.profilbild-option') as HTMLElement;
+    expect(erstes.getBoundingClientRect().top - ganzOben).toBeLessThan(150);
     ref.close();
   });
 

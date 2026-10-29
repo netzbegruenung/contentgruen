@@ -196,7 +196,7 @@ describe('AppComponent - Desktop-Kopf', () => {
 
     it('zeigt das gewaehlte Profilbild sofort im Kopf', () => {
       const service = TestBed.inject(ProfilbildService);
-      const option = service.auswahl()[4];
+      const option = service.auswahl[4];
 
       service.waehlen(option.id);
       fixture.detectChanges();
@@ -239,7 +239,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       const vorher = gespeichert();
       starten(ANGEMELDET);
 
-      const urls = TestBed.inject(ProfilbildService).auswahl().map((o) => o.url);
+      const urls = TestBed.inject(ProfilbildService).auswahl.map((o) => o.url);
       expect(urls).toContain(fixture.componentInstance.selectedProfilePictureUrl);
       expect(gespeichert()).toEqual(vorher);
     });

@@ -3,10 +3,8 @@ import { UserInfo } from '../auth/auth.service';
 import {
   ALTE_PROFILBILD_SCHLUESSEL,
   ANONYMES_PROFILBILD,
-  INITIALEN,
   PROFILBILD_SCHLUESSEL,
   ProfilbildService,
-  initialen,
 } from './profilbild.service';
 
 describe('ProfilbildService', () => {
@@ -47,9 +45,9 @@ describe('ProfilbildService', () => {
       expect(erzeugen(ANNA).bild()).toBe(erstes);
     });
 
-    it('leitet aus allen 40 Bildern ab, nie die Initialen oder das anonyme Profilbild', () => {
+    it('leitet aus allen 40 Bildern ab, nie das anonyme Profilbild', () => {
       const service = erzeugen();
-      const bilder = service.auswahl().filter((o) => o.id !== INITIALEN).map((o) => o.url);
+      const bilder = service.auswahl.map((o) => o.url);
       const getroffen = new Set<string>();
       for (let i = 0; i < 2000; i++) {
         service.setzePerson({ ...ANNA, userId: `user-${i}` });
@@ -72,11 +70,12 @@ describe('ProfilbildService', () => {
   });
 
   describe('Auswahl', () => {
-    it('bietet 20 Menschen und 20 Motive an, dazu die Initialen, ohne Geschlecht in Kennung oder Text', () => {
-      const auswahl = erzeugen().auswahl();
+    it('bietet 20 Menschen und 20 Motive an, ohne Geschlecht in Kennung oder Text', () => {
+      const auswahl = erzeugen().auswahl;
 
-      expect(auswahl.length).toBe(41);
-      expect(auswahl[0].id).toBe(INITIALEN);
+      expect(auswahl.length).toBe(40);
+      expect(auswahl[0].id).toBe('mensch-01');
+      expect(auswahl.every((o) => o.url.startsWith('/avatars/') && o.url.endsWith('.png'))).toBeTrue();
       expect(auswahl.filter((o) => o.id.startsWith('mensch-')).length).toBe(20);
       expect(auswahl.map((o) => o.url)).toContain('/avatars/igel.png');
       expect(auswahl.map((o) => o.url)).not.toContain(ANONYMES_PROFILBILD);
@@ -88,19 +87,32 @@ describe('ProfilbildService', () => {
       }
     });
 
-    it('zeichnet die Initialen weiss auf Tanne', () => {
-      const svg = decodeURIComponent(erzeugen().auswahl()[0].url);
+    it('bietet keine Initialen mehr an (Entscheidung 29.10.2026)', () => {
+      const auswahl = erzeugen().auswahl;
 
-      expect(svg).toContain('#005437');
-      expect(svg).toContain('#ffffff');
-      expect(svg).toContain('>AB<');
+      expect(auswahl.some((o) => o.id === 'initialen' || o.url.startsWith('data:'))).toBeFalse();
+    });
+
+    it('verteilt die Hauttoene: 10 hell oder mittelhell, 5 mittel, 5 mitteldunkel oder dunkel', () => {
+      const menschen = erzeugen().auswahl.filter((o) => o.id.startsWith('mensch-')).map((o) => o.alt);
+      const zaehlen = (...toene: string[]) =>
+        menschen.filter((alt) => toene.some((ton) => alt.endsWith(`, ${ton} Hautton`))).length;
+
+      expect(zaehlen('heller', 'mittelheller')).toBe(10);
+      expect(zaehlen('mittlerer')).toBe(5);
+      expect(zaehlen('mitteldunkler', 'dunkler')).toBe(5);
+      expect(menschen.filter((alt) => alt.includes('roten Haaren')).length).toBe(3);
+      expect(menschen.filter((alt) => alt.includes('weißem Haar')).length).toBe(2);
+      for (const merkmal of ['Kopftuch', 'Rollstuhl', 'Blindenstock', 'Gehörlose', 'Bart', 'Locken', 'Ältere']) {
+        expect(menschen.some((alt) => alt.includes(merkmal))).withContext(merkmal).toBeTrue();
+      }
     });
   });
 
   describe('Wahl', () => {
     it('zeigt das gewaehlte Bild und merkt es sich erst dann im localStorage', () => {
       const service = erzeugen();
-      const option = service.auswahl()[3];
+      const option = service.auswahl[3];
 
       service.waehlen(option.id);
 
@@ -110,25 +122,17 @@ describe('ProfilbildService', () => {
     });
 
     it('liest die Wahl beim naechsten Start wieder', () => {
-      const option = erzeugen().auswahl()[5];
+      const option = erzeugen().auswahl[5];
       TestBed.resetTestingModule();
       localStorage.setItem(PROFILBILD_SCHLUESSEL, option.id);
 
       expect(erzeugen().bild()).toBe(option.url);
     });
 
-    it('zeigt gewaehlte Initialen mit dem Namen der angemeldeten Person', () => {
-      const service = erzeugen();
-      service.waehlen(INITIALEN);
-      service.setzePerson(BEN);
-
-      expect(decodeURIComponent(service.bild())).toContain('>B<');
-    });
-
     it('Zuruecksetzen loescht die Wahl und fuehrt zum abgeleiteten Bild zurueck', () => {
       const service = erzeugen();
       const abgeleitet = service.bild();
-      service.waehlen(INITIALEN);
+      service.waehlen('igel');
 
       service.zuruecksetzen();
 
@@ -156,7 +160,7 @@ describe('ProfilbildService', () => {
     });
 
     it('zeigt Besuchern trotz gespeicherter Wahl den anonymen Avatar', () => {
-      localStorage.setItem(PROFILBILD_SCHLUESSEL, INITIALEN);
+      localStorage.setItem(PROFILBILD_SCHLUESSEL, 'igel');
 
       expect(erzeugen(BESUCHER).bild()).toBe(ANONYMES_PROFILBILD);
     });
@@ -165,8 +169,8 @@ describe('ProfilbildService', () => {
       const service = erzeugen();
       const schreiben = spyOn(Storage.prototype, 'setItem').and.throwError('QuotaExceededError');
 
-      expect(() => service.waehlen(INITIALEN)).not.toThrow();
-      expect(service.gewaehlt()).toBe(INITIALEN);
+      expect(() => service.waehlen('igel')).not.toThrow();
+      expect(service.gewaehlt()).toBe('igel');
       schreiben.and.callThrough();
     });
   });
@@ -189,21 +193,6 @@ describe('ProfilbildService', () => {
       expect(() => erzeugen().bild()).not.toThrow();
       lesen.and.callThrough();
       loeschen.and.callThrough();
-    });
-  });
-
-  describe('initialen', () => {
-    it('nimmt die ersten Buchstaben von hoechstens zwei Namensteilen', () => {
-      expect(initialen('Anna B.')).toBe('AB');
-      expect(initialen('Ben')).toBe('B');
-      expect(initialen('  maria von der leyen ')).toBe('MV');
-      expect(initialen('Özlem-Jana Ünal')).toBe('ÖÜ');
-    });
-
-    it('faellt ohne Buchstaben auf ein Fragezeichen zurueck', () => {
-      expect(initialen(null)).toBe('?');
-      expect(initialen('<script> 123')).toBe('S');
-      expect(initialen('1 2')).toBe('?');
     });
   });
 });

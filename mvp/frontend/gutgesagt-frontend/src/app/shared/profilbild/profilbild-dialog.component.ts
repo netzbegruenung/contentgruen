@@ -5,8 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { ProfilbildService } from '../../services/profilbild.service';
 
 /**
- * "Profilbild wählen" aus dem Profilmenü: ein Raster aller Bilder, dazu die
- * Initialen. Echte Radioknöpfe, damit Tab und Pfeiltasten wie gewohnt gehen.
+ * "Profilbild wählen" aus dem Profilmenü: ein Raster aller 40 Bilder. Echte Radioknöpfe, damit Tab und Pfeiltasten wie gewohnt gehen.
  * Gespeichert wird erst beim Übernehmen (#437).
  */
 @Component({
@@ -23,7 +22,7 @@ export class ProfilbildDialogComponent {
   /** Vorbelegt mit dem Bild, das gerade im Kopf steht, ob gewählt oder abgeleitet. */
   ausgewaehlt: string | null =
     this.profilbild.gewaehlt() ??
-    this.profilbild.auswahl().find((option) => option.url === this.profilbild.bild())?.id ??
+    this.profilbild.auswahl.find((option) => option.url === this.profilbild.bild())?.id ??
     null;
 
   constructor(
@@ -47,7 +46,7 @@ export class ProfilbildDialogComponent {
 /**
  * Oeffnet den Dialog so, wie Kopf und Mobil-Menue ihn brauchen. Der Fokus liegt
  * zuerst auf dem Dialog selbst, nicht auf dem gewaehlten Bild: sonst scrollte der
- * Dialog auf schmalen Bildschirmen zu ihm und Ueberschrift und Initialen waeren
+ * Dialog auf schmalen Bildschirmen zu ihm und Ueberschrift und erste Reihen waeren
  * weg. Tab fuehrt von dort zum gewaehlten Radioknopf.
  */
 export function profilbildDialogOeffnen(

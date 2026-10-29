@@ -11,9 +11,6 @@ export interface Profilbild {
 /** Was Besucher im Kopf sehen; ein Profilbild haben nur Mitwirkende. */
 export const ANONYMES_PROFILBILD = '/icons/Profile_avatar_placeholder_large.png';
 
-/** Kennung der Option, die statt eines Bildes die Initialen der Person zeigt. */
-export const INITIALEN = 'initialen';
-
 /** Schluessel im localStorage. Er entsteht erst, wenn die Person ein Bild waehlt (#437). */
 export const PROFILBILD_SCHLUESSEL = 'gutgesagt-profilbild';
 
@@ -34,26 +31,26 @@ export const ALTE_PROFILBILD_SCHLUESSEL: readonly string[] = [
  * nicht welches Geschlecht.
  */
 const MENSCHEN: readonly Profilbild[] = [
-  { id: 'mensch-01', url: '/avatars/mensch-01.png', alt: 'Person mit langen braunen Haaren, mittlerer Hautton' },
-  { id: 'mensch-02', url: '/avatars/mensch-02.png', alt: 'Person mit kurzen schwarzen Haaren, dunkler Hautton' },
-  { id: 'mensch-03', url: '/avatars/mensch-03.png', alt: 'Person mit kurzen dunklen Haaren, heller Hautton' },
-  { id: 'mensch-04', url: '/avatars/mensch-04.png', alt: 'Ältere Person mit grauem Haar, mitteldunkler Hautton' },
-  { id: 'mensch-05', url: '/avatars/mensch-05.png', alt: 'Ältere Person mit grauem Haarkranz, mittelheller Hautton' },
-  { id: 'mensch-06', url: '/avatars/mensch-06.png', alt: 'Ältere Person mit grauem Haar, dunkler Hautton' },
-  { id: 'mensch-07', url: '/avatars/mensch-07.png', alt: 'Person mit Kopftuch, mittelheller Hautton' },
-  { id: 'mensch-08', url: '/avatars/mensch-08.png', alt: 'Person mit Bart, mitteldunkler Hautton' },
-  { id: 'mensch-09', url: '/avatars/mensch-09.png', alt: 'Person mit langen Locken, dunkler Hautton' },
-  { id: 'mensch-10', url: '/avatars/mensch-10.png', alt: 'Person mit weißem Haar, heller Hautton' },
-  { id: 'mensch-11', url: '/avatars/mensch-11.png', alt: 'Person im Rollstuhl, mittlerer Hautton' },
-  { id: 'mensch-12', url: '/avatars/mensch-12.png', alt: 'Person mit langen roten Haaren, heller Hautton' },
-  { id: 'mensch-13', url: '/avatars/mensch-13.png', alt: 'Person mit Glatze, mitteldunkler Hautton' },
-  { id: 'mensch-14', url: '/avatars/mensch-14.png', alt: 'Person mit blonden Haaren, mittelheller Hautton' },
-  { id: 'mensch-15', url: '/avatars/mensch-15.png', alt: 'Person mit kurzen Locken, mittlerer Hautton' },
-  { id: 'mensch-16', url: '/avatars/mensch-16.png', alt: 'Gehörlose Person, die auf ihr Ohr zeigt, dunkler Hautton' },
-  { id: 'mensch-17', url: '/avatars/mensch-17.png', alt: 'Person mit Blindenstock, mittelheller Hautton' },
-  { id: 'mensch-18', url: '/avatars/mensch-18.png', alt: 'Person mit weißem Haar, mitteldunkler Hautton' },
-  { id: 'mensch-19', url: '/avatars/mensch-19.png', alt: 'Person mit kurzen roten Haaren, mittlerer Hautton' },
-  { id: 'mensch-20', url: '/avatars/mensch-20.png', alt: 'Person mit schwarzen Locken, heller Hautton' },
+  { id: 'mensch-01', url: '/avatars/mensch-01.png', alt: 'Person mit langen roten Haaren, heller Hautton' },
+  { id: 'mensch-02', url: '/avatars/mensch-02.png', alt: 'Person mit kurzen braunen Haaren, mittlerer Hautton' },
+  { id: 'mensch-03', url: '/avatars/mensch-03.png', alt: 'Gehörlose Person, die auf ihr Ohr zeigt, dunkler Hautton' },
+  { id: 'mensch-04', url: '/avatars/mensch-04.png', alt: 'Person mit blonden Haaren, heller Hautton' },
+  { id: 'mensch-05', url: '/avatars/mensch-05.png', alt: 'Person mit Kopftuch, mittlerer Hautton' },
+  { id: 'mensch-06', url: '/avatars/mensch-06.png', alt: 'Ältere Person mit grauem Haarkranz, heller Hautton' },
+  { id: 'mensch-07', url: '/avatars/mensch-07.png', alt: 'Person mit langen Locken, dunkler Hautton' },
+  { id: 'mensch-08', url: '/avatars/mensch-08.png', alt: 'Person mit kurzen roten Haaren, heller Hautton' },
+  { id: 'mensch-09', url: '/avatars/mensch-09.png', alt: 'Person im Rollstuhl, mittlerer Hautton' },
+  { id: 'mensch-10', url: '/avatars/mensch-10.png', alt: 'Person mit weißem Haar, mittelheller Hautton' },
+  { id: 'mensch-11', url: '/avatars/mensch-11.png', alt: 'Person mit Glatze, mitteldunkler Hautton' },
+  { id: 'mensch-12', url: '/avatars/mensch-12.png', alt: 'Person mit roten Haaren, mittelheller Hautton' },
+  { id: 'mensch-13', url: '/avatars/mensch-13.png', alt: 'Person mit Bart, mittlerer Hautton' },
+  { id: 'mensch-14', url: '/avatars/mensch-14.png', alt: 'Person mit langen hellen Haaren, mittelheller Hautton' },
+  { id: 'mensch-15', url: '/avatars/mensch-15.png', alt: 'Ältere Person mit grauem Haar, mitteldunkler Hautton' },
+  { id: 'mensch-16', url: '/avatars/mensch-16.png', alt: 'Person mit weißem Haar, heller Hautton' },
+  { id: 'mensch-17', url: '/avatars/mensch-17.png', alt: 'Ältere Person mit grauem Haar, mittlerer Hautton' },
+  { id: 'mensch-18', url: '/avatars/mensch-18.png', alt: 'Person mit hellen Locken, mittelheller Hautton' },
+  { id: 'mensch-19', url: '/avatars/mensch-19.png', alt: 'Person mit kurzen schwarzen Haaren, dunkler Hautton' },
+  { id: 'mensch-20', url: '/avatars/mensch-20.png', alt: 'Person mit Blindenstock, heller Hautton' },
 ];
 
 /** Natur und Tiere, keine politischen Symbole. */
@@ -83,27 +80,6 @@ const MOTIVE: readonly Profilbild[] = [
 /** Aus diesen 40 wird ohne eigene Wahl das feste Bild abgeleitet. */
 const BILDER: readonly Profilbild[] = [...MENSCHEN, ...MOTIVE];
 
-/** Hoechstens zwei Anfangsbuchstaben, je einer aus den ersten Namensteilen mit Buchstaben. */
-export function initialen(name: string | null): string {
-  const buchstaben = (name ?? '')
-    .split(/\s+/)
-    .map((teil) => teil.match(/\p{L}/u)?.[0])
-    .filter((b): b is string => !!b)
-    .slice(0, 2);
-  return buchstaben.length ? buchstaben.join('').toUpperCase() : '?';
-}
-
-/** Weiss auf Tanne (--primary-dark), rund wie die uebrigen Bilder. */
-function initialenBild(name: string | null): string {
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">' +
-    '<circle cx="50" cy="50" r="50" fill="#005437" />' +
-    '<text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="42" ' +
-    `fill="#ffffff" text-anchor="middle" dy="15">${initialen(name)}</text>` +
-    '</svg>';
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
 /** FNV-1a: klein, ohne Abhaengigkeit, und dieselbe Kennung ergibt immer dasselbe Bild. */
 function streuwert(text: string): number {
   let wert = 0x811c9dc5;
@@ -124,11 +100,8 @@ export class ProfilbildService {
   private readonly person = signal<UserInfo | null>(null);
   private readonly wahl = signal<string | null>(null);
 
-  /** Alle waehlbaren Bilder, die Initialen zuerst; sie haengen am Namen der Person. */
-  readonly auswahl = computed<Profilbild[]>(() => [
-    { id: INITIALEN, url: initialenBild(this.person()?.userName ?? null), alt: 'Deine Initialen auf grünem Grund' },
-    ...BILDER,
-  ]);
+  /** Alle waehlbaren Bilder, zuerst die Menschen, dann die Motive. */
+  readonly auswahl: readonly Profilbild[] = BILDER;
 
   /** Die Kennung der eigenen Wahl, oder null, solange die Person nicht gewaehlt hat. */
   readonly gewaehlt = this.wahl.asReadonly();
@@ -138,7 +111,7 @@ export class ProfilbildService {
     if (!person?.isAuthenticated) {
       return ANONYMES_PROFILBILD;
     }
-    const gewaehlt = this.auswahl().find((option) => option.id === this.wahl());
+    const gewaehlt = BILDER.find((option) => option.id === this.wahl());
     if (gewaehlt) {
       return gewaehlt.url;
     }
@@ -173,7 +146,7 @@ export class ProfilbildService {
   }
 
   private istBekannt(id: string | null): id is string {
-    return id === INITIALEN || BILDER.some((bild) => bild.id === id);
+    return BILDER.some((bild) => bild.id === id);
   }
 
   private gespeicherteWahl(): string | null {
