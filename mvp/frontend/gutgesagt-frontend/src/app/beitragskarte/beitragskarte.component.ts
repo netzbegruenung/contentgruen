@@ -37,6 +37,7 @@ import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
+import { STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
 
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
@@ -227,6 +228,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     if (this.einwurfAngaben) {
       klassen.push(`stufe-${this.einwurfAngaben.stufe}`);
     }
+    // Fuer die eigenen Leute (#357, Variante D): Rand in Tanne an der ganzen Karte.
+    if (this.eigeneLeuteAnzeige) {
+      klassen.push('karte--eigene-leute');
+    }
     return klassen;
   }
 
@@ -380,6 +385,17 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get beschriftung(): string {
     return `${this.typName}: ${this.titelAnzeige ?? ''}`;
+  }
+
+  /** Am Kommentar (#357): der Stil als Wort, sonst null. */
+  get stilAnzeige(): string | null {
+    const stil = this.daten.extra?.stil;
+    return stil ? STIL_LABEL[stil] : null;
+  }
+
+  /** Die Markierung fuer Beitraege fuer die eigenen Leute; Kommentarspalte ist der Standard und bleibt unmarkiert. */
+  get eigeneLeuteAnzeige(): string | null {
+    return this.daten.extra?.fuerEigeneLeute ? ZWECK_LABEL.eigene_leute : null;
   }
 
   get hatKurzOderLang(): boolean {

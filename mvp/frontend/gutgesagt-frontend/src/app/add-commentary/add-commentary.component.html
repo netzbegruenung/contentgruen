@@ -62,6 +62,26 @@
                     </mat-form-field>
                 </div>
 
+                <!-- Optionale Angaben zum Kommentar (#357): Zweck mit Standard, Stil ohne Vorgabe -->
+                <div class="optionale-angaben">
+                    <div class="zweck-feld">
+                        <span class="feld-beschriftung" id="zweck-beschriftung">Zweck</span>
+                        <mat-button-toggle-group formControlName="zweck" class="zweck-wahl"
+                                                 aria-labelledby="zweck-beschriftung"
+                                                 [hideSingleSelectionIndicator]="true">
+                            <mat-button-toggle *ngFor="let zweck of zwecke" [value]="zweck">{{ zweckLabel[zweck] }}</mat-button-toggle>
+                        </mat-button-toggle-group>
+                    </div>
+                    <mat-form-field appearance="outline" class="formular-feld stil-feld">
+                        <mat-label>Stil (optional)</mat-label>
+                        <mat-select formControlName="stil">
+                            <mat-option [value]="null">Ohne</mat-option>
+                            <mat-option *ngFor="let stil of stile" [value]="stil">{{ stilLabel[stil] }}</mat-option>
+                        </mat-select>
+                        <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„bissig“ nur für die eigenen Leute</mat-hint>
+                    </mat-form-field>
+                </div>
+
                 <button *ngIf="!showReferences" type="button" class="text-link herkunft-link" (click)="revealReferences()">
                     + Herkunft
                 </button>

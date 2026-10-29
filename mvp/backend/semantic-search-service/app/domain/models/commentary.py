@@ -1,8 +1,14 @@
 import datetime
 from enum import Enum
 from domain.models.zeit import UtcZeit
-from pydantic import BaseModel, ValidationError, field_validator, Field
-from typing import List, Optional
+from pydantic import (
+    BaseModel,
+    ValidationError,
+    field_validator,
+    model_validator,
+    Field,
+)
+from typing import ClassVar, List, Optional
 import uuid
 import json
 
@@ -25,6 +31,64 @@ class Fassung(str, Enum):
     KURZ = "kurz"
     MITTEL = "mittel"
     LANG = "lang"
+
+
+class Zweck(str, Enum):
+    """
+    Fuer wen ein Kommentar geschrieben ist (GLOSSARY.md, #357): als Antwort in
+    Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder fuer die
+    eigenen Leute. Die Suche zeigt die Kommentare fuer die Kommentarspalte zuerst.
+    """
+
+    KOMMENTARSPALTE = "kommentarspalte"
+    EIGENE_LEUTE = "eigene_leute"
+
+
+class Stil(str, Enum):
+    """
+    Die Tonlage eines Kommentars (GLOSSARY.md, #357), optional. ``BISSIG`` nur beim
+    Zweck "Fuer die eigenen Leute" (``Commentary._bissig_nur_fuer_eigene_leute``).
+    """
+
+    SACHLICH = "sachlich"
+    HUMORVOLL = "humorvoll"
+    PERSOENLICH = "persoenlich"
+    BRUECKENBAUEND = "brueckenbauend"
+    BISSIG = "bissig"
+
+
+# Freie Stile von vor #357 (Seed und frueheres Formular), die einem Stil entsprechen.
+# Andere freie Werte ("empathisch", "sarkastisch") haben keinen und fallen beim Lesen weg.
+_STIL_ALTE_SCHREIBWEISEN = {
+    "faktisch": Stil.SACHLICH,
+    "persönlich": Stil.PERSOENLICH,
+    "brückenbauend": Stil.BRUECKENBAUEND,
+}
+
+
+def bissig_ohne_eigene_leute(stil: Optional[Stil], zweck: Optional[Zweck]) -> bool:
+    """Die Regel aus GLOSSARY.md, verletzt: "bissig" ausserhalb von "Fuer die eigenen Leute"."""
+    return stil == Stil.BISSIG and zweck != Zweck.EIGENE_LEUTE
+
+
+def stil_lesen(value, zweck: Optional[Zweck]) -> Optional[Stil]:
+    """
+    Ein gespeicherter Stil, nachsichtig gelesen: alte Schreibweisen werden zum Stil;
+    was es nicht (mehr) gibt oder nicht zum Zweck passt, faellt weg, statt das Lesen
+    scheitern zu lassen. Ohne Zweck gilt Kommentarspalte.
+    """
+    if isinstance(value, str):
+        value = _STIL_ALTE_SCHREIBWEISEN.get(value, value)
+    try:
+        stil = Stil(value)
+    except ValueError:
+        return None
+    return None if bissig_ohne_eigene_leute(stil, zweck) else stil
+
+
+def fuer_eigene_leute(kommentar: Optional["Commentary"]) -> bool:
+    """Ob ein Kommentar fuer die eigenen Leute geschrieben ist; die Suche stellt ihn hintan."""
+    return kommentar is not None and kommentar.zweck == Zweck.EIGENE_LEUTE
 
 
 class CommentaryReference(BaseModel):
@@ -77,8 +141,10 @@ class Commentary(BaseContent):
         Long text of the commentary, might be empty
     short_text: str
         Short text of the commentary, might be empty
-    style: str
-        The style of the commentary (e.g. empathisch, faktisch, persönlich, humorvoll, sarkastisch, brückenbauend)
+    zweck: Zweck
+        Fuer wen der Kommentar geschrieben ist; ohne Angabe Kommentarspalte
+    style: Optional[Stil]
+        Der Stil des Kommentars, optional
     references: List[CommentaryReference]
         List of references for the commentary
     """
@@ -93,8 +159,36 @@ class Commentary(BaseContent):
     )
     long_text: Optional[str] = None
     short_text: Optional[str] = None
-    style: Optional[str] = None
+    zweck: Zweck = Zweck.KOMMENTARSPALTE
+    style: Optional[Stil] = None
     references: List[CommentaryReference]
+
+    # Lesemodelle setzen das: Gespeichertes muss lesbar bleiben, auch mit einem Stil,
+    # den es nicht (mehr) gibt oder der nicht zum Zweck passt (stil_lesen).
+    STIL_NACHSICHTIG_LESEN: ClassVar[bool] = False
+
+    @field_validator("zweck", mode="before")
+    @classmethod
+    def _zweck_ohne_angabe_ist_kommentarspalte(cls, value):
+        return Zweck.KOMMENTARSPALTE if value is None else value
+
+    @field_validator("style", mode="before")
+    @classmethod
+    def _stil_pruefen(cls, value, info):
+        if cls.STIL_NACHSICHTIG_LESEN:
+            return stil_lesen(value, info.data.get("zweck"))
+        # Leer heisst: kein Stil, wie bei den Fassungen.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @model_validator(mode="after")
+    def _bissig_nur_fuer_eigene_leute(self):
+        if bissig_ohne_eigene_leute(self.style, self.zweck):
+            raise ValueError(
+                "Der Stil bissig geht nur beim Zweck Für die eigenen Leute"
+            )
+        return self
 
     @field_validator("references", mode="before")
     def parse_references(cls, value):
@@ -132,6 +226,8 @@ class CommentaryDbEntry(Commentary, BaseContentDbEntry):
 
     references_count: int
     usage_count: Optional[int] = None
+
+    STIL_NACHSICHTIG_LESEN: ClassVar[bool] = True
 
 
 class CommentarySearchResult(CommentaryDbEntry, BaseContentSearchResult):

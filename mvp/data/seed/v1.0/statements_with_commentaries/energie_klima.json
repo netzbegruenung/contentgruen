@@ -7,7 +7,7 @@
                 "text": "Vogelschutz ist wichtig, da sind wir uns einig. Die größte Gefahr sind aber Glasscheiben: Die Vogelschutzwarten schätzen 100 bis 115 Millionen tote Vögel pro Jahr in Deutschland. Wer Vögel schützen will, fängt also am Fenster an.",
                 "short_text": "Vogelschutz ist wichtig. Die größte Gefahr sind aber Glasscheiben: geschätzt 100 bis 115 Millionen tote Vögel pro Jahr in Deutschland.",
                 "long_text": "Vogelschutz ist wichtig, da sind wir uns einig. Die Länderarbeitsgemeinschaft der Vogelschutzwarten schätzt, dass in Deutschland jedes Jahr 100 bis 115 Millionen Vögel an Glasscheiben sterben. Das ist eine Hochrechnung, keine Zählung, aber sie zeigt die Größenordnung. Windräder werden vor dem Bau auf Artenschutz geprüft, und an kritischen Standorten schalten sie zu bestimmten Zeiten ab. Wer Vögeln helfen will, kann sofort etwas tun: Fenster und Glasfassaden mit geprüften Mustern sichtbar machen.",
-                "style": "faktisch",
+                "style": "sachlich",
                 "references": [
                     {
                         "text": "LfU Bayern: Vogelschlag an Glas (Schätzung der Länderarbeitsgemeinschaft der Vogelschutzwarten)",
@@ -23,7 +23,7 @@
                 "title": "Gute Standortplanung schützt Vögel und bringt sauberen Strom",
                 "text": "Rotmilan und Storch sollen geschützt bleiben, das wollen wir alle. Deshalb wird vor jedem Windpark geprüft, welche Arten dort brüten und jagen. So bekommen wir beides: sauberen Strom und geschützte Vögel.",
                 "short_text": "Vor jedem Windpark wird geprüft, welche Vögel dort brüten und jagen. So geht beides: sauberer Strom und Vogelschutz.",
-                "style": "brückenbauend",
+                "style": "brueckenbauend",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,
@@ -33,7 +33,7 @@
             {
                 "title": "Vögel und Klima lassen sich zusammen schützen",
                 "text": "Die Sorge um die Vögel teile ich. [Hier ein eigenes Erlebnis: was du über einen Windpark in deiner Gegend weißt] Mir ist wichtig, dass wir Vögel und Klima zusammen schützen.",
-                "style": "persönlich",
+                "style": "persoenlich",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,
@@ -54,7 +54,7 @@
                 "text": "Eine sichere Stromversorgung wollen wir alle. 2024 kam schon mehr als die Hälfte des Stroms in Deutschland aus erneuerbaren Energien. Und das Netz bleibt stabil: Im Schnitt fiel der Strom 2023 nur 12,8 Minuten pro Stromkunde aus.",
                 "short_text": "2024 kam mehr als die Hälfte unseres Stroms aus Erneuerbaren. Und im Schnitt fiel der Strom 2023 nur 12,8 Minuten pro Stromkunde aus.",
                 "long_text": "Eine sichere Stromversorgung wollen wir alle. Laut Umweltbundesamt kamen 2024 54,4 Prozent des in Deutschland verbrauchten Stroms aus erneuerbaren Energien. Gleichzeitig meldet die Bundesnetzagentur für 2023 eine durchschnittliche Unterbrechung von 12,8 Minuten je Letztverbraucher, also weniger als eine Viertelstunde im ganzen Jahr. Erneuerbare und eine sichere Versorgung schließen sich nicht aus. Damit das so bleibt, bauen wir Netze und Speicher weiter aus.",
-                "style": "faktisch",
+                "style": "sachlich",
                 "references": [
                     {
                         "text": "Umweltbundesamt: Anteil erneuerbarer Energien am Bruttostromverbrauch",
@@ -74,7 +74,7 @@
                 "title": "Wind und Sonne ergänzen sich, Speicher und Netze machen den Rest",
                 "text": "Klar, nachts scheint keine Sonne und manchmal ist Flaute. Im Winter weht dafür oft mehr Wind, im Sommer scheint mehr Sonne. Mit Speichern, gut ausgebauten Netzen und dem Austausch mit unseren Nachbarländern wird daraus eine verlässliche Versorgung.",
                 "short_text": "Im Winter weht mehr Wind, im Sommer scheint mehr Sonne. Speicher, Netze und der Austausch mit Nachbarländern machen daraus verlässlichen Strom.",
-                "style": "brückenbauend",
+                "style": "brueckenbauend",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,
@@ -95,7 +95,7 @@
                 "text": "Bezahlbarer Strom ist das Ziel, da sind wir uns einig. Neue Solarparks und Windräder an Land erzeugen Strom für 4,1 bis 9,2 Cent pro Kilowattstunde. Und sie sind in wenigen Jahren gebaut.",
                 "short_text": "Neue Solarparks und Windräder an Land liefern Strom für 4,1 bis 9,2 Cent pro Kilowattstunde und sind schnell gebaut.",
                 "long_text": "Bezahlbarer und sicherer Strom ist das Ziel, da sind wir uns einig. Das Fraunhofer ISE hat 2024 die Kosten neuer Kraftwerke verglichen: Freiflächen-Solaranlagen und Windräder an Land erzeugen Strom für 4,1 bis 9,2 Cent pro Kilowattstunde. Selbst Solaranlagen mit Batteriespeicher sind danach günstiger als neue konventionelle Kraftwerke.",
-                "style": "faktisch",
+                "style": "sachlich",
                 "references": [
                     {
                         "text": "Fraunhofer ISE: Photovoltaik mit Batteriespeicher günstiger als konventionelle Kraftwerke (Presseinformation 2024)",
@@ -111,7 +111,7 @@
                 "title": "Strom vom eigenen Dach macht unabhängiger als jedes Großkraftwerk",
                 "text": "Unabhängigkeit bei der Energie ist uns allen wichtig. Strom vom eigenen Dach oder aus dem Windpark nebenan muss niemand importieren. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
                 "short_text": "Strom vom eigenen Dach oder aus dem Windpark nebenan muss niemand importieren. Wer Strom selbst erzeugt, hat ein Stück Versorgung in der eigenen Hand.",
-                "style": "brückenbauend",
+                "style": "brueckenbauend",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,
@@ -132,7 +132,7 @@
                 "text": "Warm wohnen, ohne sich zu verschulden, das wollen wir alle. Wenn eine Heizung kaputtgeht, darf sie repariert werden. Die Vorgaben für erneuerbare Wärme gelten für neu eingebaute Heizungen.",
                 "short_text": "Eine kaputte Heizung darf repariert werden. Die Vorgaben für erneuerbare Wärme gelten für neu eingebaute Heizungen.",
                 "long_text": "Warm wohnen, ohne sich zu verschulden, das wollen wir alle. Nach dem Gebäudeenergiegesetz darf eine kaputte Heizung repariert werden, und die Vorgaben für erneuerbare Wärme gelten für neu eingebaute Heizungen. Eine Pflicht zum Austausch gibt es nur für sehr alte Heizkessel, und die gilt schon seit Jahren. Wer ohnehin tauschen muss, kann sich vorher beraten lassen und Förderung beantragen.",
-                "style": "faktisch",
+                "style": "sachlich",
                 "references": [
                     {
                         "text": "BDEW: Fragen und Antworten zum Gebäudeenergiegesetz",
@@ -148,7 +148,7 @@
                 "title": "Beim Heizungstausch hilft eine Energieberatung mehr als jede Schlagzeile",
                 "text": "Die Unsicherheit beim Thema Heizung verstehe ich gut. Am meisten hilft eine Energieberatung für das eigene Haus: Sie zeigt, was sich lohnt und welche Förderung es gibt. So kannst du in Ruhe entscheiden.",
                 "short_text": "Unsicher beim Thema Heizung? Eine Energieberatung für das eigene Haus zeigt, was sich lohnt und welche Förderung es gibt.",
-                "style": "brückenbauend",
+                "style": "brueckenbauend",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,
@@ -169,7 +169,7 @@
                 "text": "Im Altbau ist man zu Recht vorsichtig. Ein Feldtest des Fraunhofer ISE in bestehenden Häusern zeigt aber: Luft-Wärmepumpen machen dort aus einer Kilowattstunde Strom im Schnitt 3,3 Kilowattstunden Wärme.",
                 "short_text": "Feldtest in bestehenden Häusern: Luft-Wärmepumpen machen aus 1 Kilowattstunde Strom im Schnitt 3,3 Kilowattstunden Wärme.",
                 "long_text": "Im Altbau ist man zu Recht vorsichtig, denn jedes Haus ist anders. Das Fraunhofer ISE misst seit Jahren Wärmepumpen in bestehenden Wohngebäuden. In den Zwischenergebnissen von 2024 erreichen 22 Außenluft-Wärmepumpen eine mittlere Jahresarbeitszahl von 3,3, mit einer Spanne von 2,4 bis 4,0. Aus einer Kilowattstunde Strom werden also im Schnitt 3,3 Kilowattstunden Wärme. Ob es im eigenen Haus passt, klärt eine Energieberatung.",
-                "style": "faktisch",
+                "style": "sachlich",
                 "references": [
                     {
                         "text": "Fraunhofer ISE: Wärmepumpenfeldtest, Zwischenergebnisse bestätigen effizienten Betrieb auch im Altbau (2024)",
@@ -184,7 +184,7 @@
             {
                 "title": "Viele ältere Häuser lassen sich gut mit einer Wärmepumpe heizen",
                 "text": "Jedes Haus ist anders, das stimmt. [Hier ein eigenes Erlebnis: was du über eine Wärmepumpe in einem älteren Haus weißt] Eine Energieberatung klärt, ob es bei dir passt.",
-                "style": "persönlich",
+                "style": "persoenlich",
                 "references": [],
                 "metadata": {
                     "usage_count": 0,

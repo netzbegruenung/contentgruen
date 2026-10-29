@@ -21,7 +21,7 @@ Kommentare in `statements_with_commentaries/*.json`:
                 "text": "[Mittelfassung, Pflicht: zwei bis drei kurze Sätze]",
                 "short_text": "[Kurzfassung, optional, höchstens 280 Zeichen]",
                 "long_text": "[Langfassung, optional: Begründung und Herkunft]",
-                "style": "[faktisch | persönlich | humorvoll | brückenbauend]",
+                "style": "[sachlich | persoenlich | humorvoll | brueckenbauend]",
                 "references": [
                     { "text": "[Beschreibung der Herkunft]", "reference_string": "[URL]" }
                 ]
@@ -78,7 +78,7 @@ Aussage: „Windräder töten die Vögel!“
 {
     "title": "Glasscheiben sind für Vögel weit gefährlicher als Windräder",
     "text": "Vogelschutz ist wichtig, da sind wir uns einig. Die größte Gefahr sind aber Glasscheiben: Die Vogelschutzwarten schätzen 100 bis 115 Millionen tote Vögel pro Jahr in Deutschland. Wer Vögel schützen will, fängt also am Fenster an.",
-    "style": "faktisch",
+    "style": "sachlich",
     "references": [
         {
             "text": "LfU Bayern: Vogelschlag an Glas (Schätzung der Länderarbeitsgemeinschaft der Vogelschutzwarten)",

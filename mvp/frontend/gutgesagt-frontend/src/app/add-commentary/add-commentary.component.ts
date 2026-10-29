@@ -4,6 +4,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
 import { filter } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,6 +21,7 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 import { typFarbe } from '../shared/content-type-registry';
+import { STIL_LABEL, Stil, ZWECK_LABEL, ZWECK_STANDARD, Zweck, stileFuer, stilPasst } from '../shared/zweck-stil';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
@@ -90,16 +93,35 @@ export interface Vorhanden {
   gewaehlt: 'zugestimmt' | 'genommen' | null;
 }
 
+/** Die optionalen Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357). */
+interface OptionaleAngaben {
+  zweck: Zweck;
+  stil: Stil | null;
+}
+
+/**
+ * Die optionalen Angaben, wie sie im leeren Formular stehen. Ein weiteres Feld dieser
+ * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` und in der
+ * Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten sich hieraus ab.
+ */
+const OPTIONALE_ANGABEN_LEER: OptionaleAngaben = { zweck: ZWECK_STANDARD, stil: null };
+const OPTIONALE_ANGABEN = Object.keys(OPTIONALE_ANGABEN_LEER) as (keyof OptionaleAngaben)[];
+
+function gleicheAngaben(a: OptionaleAngaben, b: OptionaleAngaben): boolean {
+  return OPTIONALE_ANGABEN.every((feld) => a[feld] === b[feld]);
+}
+
 const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, weitere Fassungen, Aussage und Herkunft werden geleert.',
+  text: 'Titel, Text, weitere Fassungen, Zweck, Stil, Aussage und Herkunft werden geleert.',
   ja: 'Zurücksetzen',
   nein: 'Abbrechen',
 };
 
 /**
  * Das Kommentarformular: Antwort auf, Titel, Kommentar (die Mittelfassung),
- * aufklappbar die weiteren Fassungen Kurz und Lang (#355), Herkunft, Leiste - und
+ * aufklappbar die weiteren Fassungen Kurz und Lang (#355), Zweck und Stil (#357),
+ * Herkunft, Leiste - und
  * daneben (am Handy darunter) die Vorschau.
  *
  * Gespeichert wird in einem Aufruf, samt Aussage: mit ID, wenn eine gewaehlt ist,
@@ -124,6 +146,8 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
+    MatButtonToggleModule,
+    MatSelectModule,
     RouterLink,
     BeitragskarteComponent,
     ReferenceInputComponent,
@@ -142,6 +166,9 @@ export class AddCommentaryComponent implements OnChanges {
   readonly plattformGrenze = PLATTFORM_GRENZE;
   readonly kurzMax = KURZ_MAX;
   readonly langMax = LANG_MAX;
+  readonly zwecke = Object.keys(ZWECK_LABEL) as Zweck[];
+  readonly zweckLabel = ZWECK_LABEL;
+  readonly stilLabel = STIL_LABEL;
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -237,6 +264,7 @@ export class AddCommentaryComponent implements OnChanges {
     text: string;
     kurz: string;
     lang: string;
+    angaben: OptionaleAngaben;
     quellen: unknown;
     aussage: string;
     karte: KartenDaten;
@@ -255,8 +283,19 @@ export class AddCommentaryComponent implements OnChanges {
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
       kurz: ['', [Validators.maxLength(KURZ_MAX)]],
       lang: ['', [Validators.maxLength(LANG_MAX)]],
+      ...OPTIONALE_ANGABEN_LEER,
       references: [[]],
     });
+    // "Bissig" gibt es nur fuer die eigenen Leute: Wechselt der Zweck, faellt ein
+    // Stil weg, der nicht mehr passt. Andere Stile bleiben stehen.
+    this.commentaryForm
+      .get('zweck')!
+      .valueChanges.pipe(takeUntilDestroyed())
+      .subscribe((zweck: Zweck) => {
+        if (!stilPasst(this.commentaryForm.value.stil, zweck)) {
+          this.commentaryForm.patchValue({ stil: null });
+        }
+      });
     // Der Hinweis gilt nur fuer den Text, der geprueft wurde: Wer ihn aendert,
     // entscheidet nicht mehr ueber diesen vorhandenen, sondern speichert neu. Titel
     // und Herkunft raeumen ihn nicht weg - die Dublettenpruefung vergleicht nur den Text.
@@ -310,6 +349,11 @@ export class AddCommentaryComponent implements OnChanges {
     return this.commentaryForm.get('lang')?.value?.length ?? 0;
   }
 
+  /** Die Stile, die zum gewaehlten Zweck passen. */
+  get stile(): Stil[] {
+    return stileFuer(this.commentaryForm.value.zweck ?? ZWECK_STANDARD);
+  }
+
   get plattformHinweis(): string {
     return this.textLaenge > PLATTFORM_GRENZE ? 'zu lang für X/Bluesky' : 'passt auf X/Bluesky';
   }
@@ -322,6 +366,7 @@ export class AddCommentaryComponent implements OnChanges {
       text?.trim() ||
       kurz?.trim() ||
       lang?.trim() ||
+      !gleicheAngaben(this.optionaleAngaben, OPTIONALE_ANGABEN_LEER) ||
       references?.length ||
       this.aussage.id ||
       this.aussage.text
@@ -337,6 +382,7 @@ export class AddCommentaryComponent implements OnChanges {
    */
   get vorschauKarte(): KartenDaten {
     const { title, text, kurz, lang, references } = this.commentaryForm.value;
+    const angaben = this.optionaleAngaben;
     const cache = this.vorschauCache;
     if (
       cache &&
@@ -344,6 +390,7 @@ export class AddCommentaryComponent implements OnChanges {
       cache.text === text &&
       cache.kurz === kurz &&
       cache.lang === lang &&
+      gleicheAngaben(cache.angaben, angaben) &&
       cache.quellen === references &&
       cache.aussage === this.aussage.text
     ) {
@@ -358,6 +405,8 @@ export class AddCommentaryComponent implements OnChanges {
         // Die Karte zeigt Reiter nur fuer Fassungen mit Text.
         short_text: kurz,
         long_text: lang,
+        zweck: angaben.zweck,
+        style: angaben.stil,
         references: (references ?? [])
           .filter((ref: any) => ref?.reference_string?.trim())
           .map((ref: any, index: number) => ({
@@ -377,6 +426,7 @@ export class AddCommentaryComponent implements OnChanges {
       text,
       kurz,
       lang,
+      angaben,
       quellen: references,
       aussage: this.aussage.text,
       karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' },
@@ -427,7 +477,7 @@ export class AddCommentaryComponent implements OnChanges {
     // Ein Satz: eingefuegte Umbrueche werden zu Leerzeichen (Enter selbst bricht nicht um).
     const title = einzeilig(this.commentaryForm.value.title);
     const request: AddCommentaryRequest = {
-      commentary: { title, text, ...this.fassungenFuerAnfrage(), references: [] },
+      commentary: { title, text, ...this.fassungenFuerAnfrage(), ...this.optionaleAngabenFuerAnfrage(), references: [] },
       // Die Herkunft als Text; das Backend legt sie an oder findet sie wieder.
       references: references || [],
       ...this.aussageFuerAnfrage(),
@@ -486,6 +536,18 @@ export class AddCommentaryComponent implements OnChanges {
     const kurz = this.commentaryForm.value.kurz?.trim();
     const lang = this.commentaryForm.value.lang?.trim();
     return { ...(kurz ? { short_text: kurz } : {}), ...(lang ? { long_text: lang } : {}) };
+  }
+
+  /** Die optionalen Angaben, wie sie gerade im Formular stehen. */
+  private get optionaleAngaben(): OptionaleAngaben {
+    const werte = this.commentaryForm.value;
+    return Object.fromEntries(OPTIONALE_ANGABEN.map((feld) => [feld, werte[feld] ?? OPTIONALE_ANGABEN_LEER[feld]])) as unknown as OptionaleAngaben;
+  }
+
+  /** Der Zweck immer (Standard Kommentarspalte), der Stil nur, wenn einer gewaehlt ist. */
+  private optionaleAngabenFuerAnfrage(): Pick<Commentary, 'zweck' | 'style'> {
+    const { zweck, stil } = this.optionaleAngaben;
+    return { zweck, ...(stil ? { style: stil } : {}) };
   }
 
   /** Im Antwort-auf-Block steht eine Aussage (per ID oder als Text). */
@@ -616,7 +678,7 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   leeren(): void {
-    this.commentaryForm.reset({ title: '', text: '', kurz: '', lang: '', references: [] });
+    this.commentaryForm.reset({ title: '', text: '', kurz: '', lang: '', ...OPTIONALE_ANGABEN_LEER, references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;
     this.showReferences = false;
