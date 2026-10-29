@@ -5,6 +5,8 @@ import subprocess
 
 import pytest
 
+import programme
+
 SKRIPT = pathlib.Path(__file__).resolve().parent.parent / "changelog.sh"
 
 
@@ -16,6 +18,7 @@ def git(repo, *args):
 
 @pytest.fixture
 def repo(tmp_path):
+    programme.noetig("git")
     git(tmp_path, "init", "-q", "-b", "main")
     git(tmp_path, "config", "user.name", "Test")
     git(tmp_path, "config", "user.email", "test@example.com")

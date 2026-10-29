@@ -7,6 +7,8 @@ internen Dienstnamen samt Port. GET /api/v1/moderation/reports/ verriet so einem
 unauthentifizierten Aufrufer die interne Topologie.
 """
 
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -14,6 +16,14 @@ from main import app
 
 # Ohne follow_redirects: eine Umleitung soll als solche sichtbar werden.
 client = TestClient(app, follow_redirects=False)
+
+
+@pytest.fixture(autouse=True)
+def health_ohne_datenbank():
+    """Der Health-Check fragt die App-Datenbank; hier zaehlt nur das Routing (#460)."""
+    with patch("api.v1.health.get_app_database"):
+        yield
+
 
 # Geschuetzte Routen, deren Slash-Variante frueher 307 ergab.
 SLASH_VARIANTS = [

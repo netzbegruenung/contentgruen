@@ -58,7 +58,7 @@ is among the paths given to pytest: `INTEGRATION_STACK_PFLICHT=1 pytest tests/` 
 still skip the Qdrant tests silently. The tests in `tests/integration/api/` also need
 the dev-stack BFF (`GUTGESAGT_BFF_URL`, default `http://localhost:5054`); in this mode
 a missing BFF fails them, in a plain run they skip. In CI (`CI` set) they skip in this
-mode too, because the pipeline starts no BFF (`stack.bff_pflicht`).
+mode too, because the pipeline starts no BFF (`stack.pflicht_ausser_in_ci`).
 
 `tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL, or,
 under `api/`, to the running BFF.
@@ -150,6 +150,20 @@ def test_search_returns_results(self, service, test_embeddings_manager):
 def service(self, test_settings, test_embeddings_manager):
     return StatementService(test_settings, embeddings_manager=test_embeddings_manager)
 ```
+
+### Unit Tests Open No App Database
+
+Unit tests must not reach the PostgreSQL from the settings (`get_app_database()`): on
+the dev VM that is the running dev stack, in CI there is none, so such a test passes
+locally and fails in CI (#460). The autouse fixture `app_datenbank_versuche`
+(`tests/fixtures/ohne_app_datenbank.py`, wired in `tests/unit/conftest.py`) makes
+`AppDatabase()` without an address raise, and fails the test even if the code under
+test catches the exception. The way out: override the dependency, patch
+`get_app_database` in the module that calls it, or replace the repository singleton
+as `tests/conftest.py` does (`anzeigenamen_ohne_datenbank`,
+`aussage_themen_ohne_datenbank`). `AppDatabase("sqlite://")` with its own address stays
+allowed. A test that expects the attempt clears the list afterwards
+(`app_datenbank_versuche.clear()`, see `test_app_datenbank_verboten.py`).
 
 ### Content Type Data
 
