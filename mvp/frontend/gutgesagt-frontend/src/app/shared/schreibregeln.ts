@@ -6,6 +6,8 @@
  * Hier gepflegt, damit Formularhilfe und Hilfe-Dialog dieselben Saetze zeigen.
  */
 
+import { ERFUNDEN_ODER_FALSCH } from './meldegruende';
+
 /** Die sechs Schreibregeln, in der Reihenfolge der Vision. */
 export const SCHREIBREGELN: readonly string[] = [
   'Schreib für die Unentschiedenen, die mitlesen.',
@@ -53,6 +55,5 @@ export const TITEL_BEISPIELE: { gut: readonly string[]; schwach: readonly Schwac
 export const NICHT_JEDE_AUSSAGE =
   'Nicht jede Aussage braucht eine Antwort. Jede Antwort macht sie sichtbarer. Bei kleinen Accounts lieber nicht antworten, sondern die Aussage bei der Plattform melden, auf der sie steht.';
 
-/** Der Meldedialog hat (noch) keinen eigenen Grund dafuer, daher der Weg ueber „Andere“. */
-export const ERFUNDENES_MELDEN =
-  'Erfundene Erlebnisse oder Zahlen in einem Beitrag? Melde ihn hier bei Gut gesagt unter „Andere“ und schreib dazu, was nicht stimmt.';
+/** Verweist auf den eigenen Meldegrund dafuer im Meldedialog (#423). */
+export const ERFUNDENES_MELDEN = `Erfundene Erlebnisse oder Zahlen in einem Beitrag? Melde ihn hier bei Gut gesagt unter „${ERFUNDEN_ODER_FALSCH.label}“ und schreib dazu, was nicht stimmt.`;

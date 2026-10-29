@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
+from domain.models.meldegrund import MELDEGRUENDE
 from utils import client_identity
 from utils.client_identity import normalize_session_id
 from utils.rate_limiter import RateLimiter
@@ -182,9 +183,10 @@ class TestRequestValidation:
         assert client.post(REPORT_URL, json=body).status_code == 422
         service.report_content.assert_not_awaited()
 
-    @pytest.mark.parametrize("reason", ["spam", "inappropriate", "duplicate", "other"])
-    def test_documented_reasons_are_accepted(self, client, reason):
+    @pytest.mark.parametrize("reason", MELDEGRUENDE)
+    def test_documented_reasons_are_accepted(self, client, service, reason):
         assert client.post(REPORT_URL, json=_payload(reason=reason)).status_code == 200
+        assert service.report_content.await_args.kwargs["reason"] == reason
 
 
 class TestClientKeyDerivation:
