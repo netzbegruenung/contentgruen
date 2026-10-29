@@ -5,12 +5,30 @@
         gesucht haben.
     </p>
 
+    <app-themen-filter *ngIf="themen.length" class="filter"
+                       [themen]="themen" [aktiv]="aktivesThema"
+                       (aktivChange)="filtern($event)"></app-themen-filter>
+
     <p *ngIf="ladefehler" class="hinweis">Die Aussagen konnten nicht geladen werden.</p>
 
     <ng-container *ngIf="aussagen">
         <ul *ngIf="aussagen.length > 0; else leer" class="aussagen">
             <li *ngFor="let aussage of aussagen" class="aussage" data-testid="unbeantwortete-aussage">
                 <p class="aussage-text">{{ aussage.statement_text }}</p>
+                <div class="aussage-themen" *ngIf="themen.length">
+                    <span *ngFor="let thema of aussage.themen" class="thema-marke">{{ thema.name }}</span>
+                    <button type="button" class="themen-umschalter"
+                            [attr.aria-expanded]="themenBearbeiten === aussage.statement_id"
+                            (click)="themenUmschalten(aussage)">
+                        {{ aussage.themen.length ? 'Themen ändern' : 'Themen zuordnen' }}
+                    </button>
+                </div>
+                <div *ngIf="themenBearbeiten === aussage.statement_id" class="themen-bearbeiten">
+                    <app-themen-auswahl [themen]="themen" [gewaehlt]="schluessel(aussage.themen)"
+                                        beschriftung="Themen dieser Aussage"
+                                        (gewaehltChange)="themenSetzen(aussage, $event)"></app-themen-auswahl>
+                    <p *ngIf="themenFehler" class="hinweis" role="alert">{{ themenFehler }}</p>
+                </div>
                 <div class="aussage-fuss">
                     <span *ngIf="aussage.personen_ohne_treffer > 0" class="gesucht">{{ gesuchtMarker(aussage) }}</span>
                     <a mat-stroked-button class="selbst-beantworten"
@@ -20,7 +38,7 @@
             </li>
         </ul>
         <ng-template #leer>
-            <p class="hinweis">Gerade fehlt keine Antwort.</p>
+            <p class="hinweis">{{ aktivesThema ? 'Zu diesem Thema fehlt gerade keine Antwort.' : 'Gerade fehlt keine Antwort.' }}</p>
         </ng-template>
     </ng-container>
 
@@ -38,6 +56,10 @@
                       (input)="eingabe($any($event.target).value)"
                       placeholder="z. B. „Das Heizungsgesetz enteignet uns“"></textarea>
         </mat-form-field>
+        <app-themen-auswahl *ngIf="themen.length" class="vorab-themen"
+                            [themen]="themen" [gewaehlt]="neueThemen"
+                            beschriftung="Themen der neuen Aussage"
+                            (gewaehltChange)="neueThemen = $event"></app-themen-auswahl>
         <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
                rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
         <button mat-raised-button type="button" class="dark-green-button aussage-anlegen"

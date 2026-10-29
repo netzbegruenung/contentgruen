@@ -143,6 +143,13 @@ class StatementService(
         """Wie get_all, ohne die unbeantworteten Suchanfragen unter der Schwelle."""
         return await self._repository.get_all_curated(limit, offset, ueber_der_schwelle)
 
+    async def kuratierte(self) -> List[StatementDbEntry]:
+        """
+        Alle sichtbaren Aussagen ohne die unbeantworteten Suchanfragen
+        (StatementRepository.kuratierte), fuer die Zuordnung von Themen.
+        """
+        return await self._repository.kuratierte()
+
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
         Sichtbare Aussagen ohne Kommentar, ohne die unbeantworteten Suchanfragen;

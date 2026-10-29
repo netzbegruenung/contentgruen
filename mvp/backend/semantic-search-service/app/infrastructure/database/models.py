@@ -67,6 +67,32 @@ class UsageTracking(Base):
             self.first_used = now
 
 
+class NutzungJeFassung(Base):
+    """
+    Wie oft jede Fassung eines Kommentars genutzt wurde (#355): je Beitrag und
+    Fassung ein Zaehler, so wie usage_tracking je Beitrag.
+
+    Ein eigener Zaehler und keine Abfrage ueber usage_events, weil deren Frist
+    (cleanup_old_events) die Ereignisse nach 90 Tagen loescht; die Summe je Fassung
+    soll wie die Nutzung insgesamt bleiben. Nutzung von vor #355 hat keine Fassung
+    und steht nur in usage_tracking.
+
+    Neue Tabelle: create_all legt sie beim Start an. Das Skript
+    postgres-app/migrations/2026-10-29-355-nutzung-je-fassung.sql dokumentiert das
+    Schema und ergaenzt usage_events.fassung.
+    """
+
+    __tablename__ = "nutzung_je_fassung"
+
+    content_id = Column(
+        SQLUUID(as_uuid=True),
+        ForeignKey("usage_tracking.content_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    fassung = Column(String(10), primary_key=True)
+    nutzung = Column(Integer, nullable=False)
+
+
 class UsageEvent(Base):
     """Track individual usage events for analytics.
 
@@ -101,6 +127,10 @@ class UsageEvent(Base):
     )
     session_id = Column(String(255), nullable=True)
     device_category = Column(String(20), nullable=True)
+    # Welche Fassung eines Kommentars kopiert wurde ("kurz", "mittel", "lang",
+    # #355); leer bei anderen Beitragstypen und bei Nutzung von vor #355. Traegt den
+    # Zuwachs der letzten 7 Tage je Fassung; die Summe steht in nutzung_je_fassung.
+    fassung = Column(String(10), nullable=True)
 
     # Relationship to tracking
     tracking = relationship("UsageTracking", back_populates="events")
@@ -217,6 +247,25 @@ class FeedbackZeile(Base):
     __table_args__ = (Index("idx_feedback_eingegangen_am", "eingegangen_am"),)
 
 
+class AussageThemaZeile(Base):
+    """Ein Thema an einer Aussage, aus der festen Liste (domain/themen.py).
+
+    Je Aussage hoechstens zwei Zeilen; das prueft AussageThemenService, nicht die
+    Tabelle. zuordnungsart unterscheidet die Zuordnung von Hand von der einer spaeteren
+    Automatik. Traegt bewusst weder Kennung noch Zeitpunkt: Die Zuordnungen von
+    Hand sind das Testset fuer Themenvorschlaege und sollen ohne Personendaten
+    exportierbar sein (services/aussage_themen_service.py).
+    """
+
+    __tablename__ = "aussage_themen"
+
+    statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    thema = Column(String(40), primary_key=True)
+    zuordnungsart = Column(
+        String(20), nullable=False, server_default=text("'von_hand'")
+    )
+
+
 class ContentReport(Base):
     """Track user reports of inappropriate or problematic content."""
 
@@ -317,9 +366,9 @@ class RawInputContentLink(Base):
     Blockade, die spaeter teuer wird (docs/archiv/ROHINPUT.md, Abschnitt 6).
 
     ``content_id`` zeigt auf einen Qdrant-Punkt und ist deshalb kein Fremdschluessel;
-    ``raw_input_id`` ist einer, mit ON DELETE CASCADE - nicht, weil Einwuerfe
-    geloescht wuerden (sie werden es nicht), sondern damit ein Loeschen aus
-    Datenschutzgruenden keine Verweise auf Nichts hinterlaesst.
+    ``raw_input_id`` ist einer, mit ON DELETE CASCADE, damit ein Loeschen aus
+    Datenschutzgruenden oder nach der Loeschfrist (services/loeschfristen_service.py)
+    keine Verweise auf Nichts hinterlaesst.
 
     ``created_by`` haelt fest, *wer* verknuepft hat: den Ausformulierer. Das ist die
     Rolle, die ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung

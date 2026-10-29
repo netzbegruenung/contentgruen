@@ -20,6 +20,13 @@ safetensors==0.6.1
 huggingface-hub==0.34.3
 numpy==2.3.2
 
+# Gegenlesen ohne KI (#358, ADR 0005): Lemmata, Verneinung und Passiv mit spaCy,
+# zusammengesetzte Woerter mit CharSplit (MIT; nicht auf PyPI - das gleichnamige
+# PyPI-Paket ist ein anderes Projekt). Beide laufen lokal auf der CPU.
+spacy==3.8.7
+de_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.8.0/de_core_news_sm-3.8.0-py3-none-any.whl#sha256=fec69fec52b1780f2d269d5af7582a5e28028738bd3190532459aeb473bfa3e7
+charsplit @ https://github.com/dtuggener/CharSplit/archive/9710624ef0b0df0edd12a721c33533ff1d07b557.tar.gz#sha256=07688a57372ba02a8d8d327a0d072e131f076f0f3c85b4b3e417e6a3ad91fad4
+
 # Configuration and validation
 pydantic==2.11.7
 pydantic-settings==2.10.1

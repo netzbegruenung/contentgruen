@@ -111,6 +111,11 @@ search_query_statement_rate_limiter = RateLimiter(max_requests=60, window_minute
 # erreichbar; mehr schreibt niemand in einer Viertelstunde an das Team.
 feedback_rate_limiter = RateLimiter(max_requests=5, window_minutes=15)
 
+# Gegenlesen beim Schreiben (#358): 300 je Person in 10 Minuten. Das Formular fragt
+# etwa eine Sekunde nach jeder Eingabepause nach; das sind beim zuegigen Schreiben
+# weniger als 30 in der Minute.
+gegenlesen_rate_limiter = RateLimiter(max_requests=300, window_minutes=10)
+
 # So oft raeumt der Hintergrund-Task abgelaufene Schluessel weg. Ein Schluessel
 # verschwindet damit spaetestens ein Fenster plus dieser Takt nach seinem letzten
 # Aufruf - fuer die Suchaussage zehn plus eine Minute. Die Datenschutzerklaerung

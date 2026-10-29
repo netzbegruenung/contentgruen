@@ -27,7 +27,7 @@ export interface AddCommentaryRequest {
 export interface Commentary {
     text: string;
     title: string;
-    /** Nicht mehr im Formular; aeltere Eintraege koennen sie tragen. */
+    /** Die Fassungen Lang und Kurz (#355), optional; Mittel ist `text`. */
     long_text?: string;
     short_text?: string;
     references: CommentaryReference[];

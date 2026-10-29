@@ -30,8 +30,9 @@ class ContentStatus(Enum):
     DELETED = "deleted"
     """
     Geloescht: Der Autor hat den Beitrag entfernt
-    (services/content/beitrag_loeschen_service.py). Er bleibt gespeichert und
-    laesst sich nicht zurueckholen.
+    (services/content/beitrag_loeschen_service.py). Er bleibt bis zu seiner
+    Loeschfrist gespeichert (services/loeschfristen_service.py) und laesst sich
+    nicht zurueckholen.
     """
 
     PENDING_DESCRIPTION = "pending_description"
@@ -110,4 +111,13 @@ FELD_STATUS_VOR_SPERRE = "status_vor_sperre"
 Payload-Feld mit dem Zustand von vor der Sperre, damit Entsperren ihn
 wiederherstellt. Fehlt er oder ist er ein Altwert von vor #214, macht Entsperren
 den Beitrag sichtbar (repositories/implementations/qdrant/moderation_repository.py).
+"""
+
+
+FELD_GELOESCHT_AM = "geloescht_am"
+"""
+Payload-Feld mit dem UTC-Tag (ISO-Datum), ab dem ein geloeschter Beitrag als
+geloescht gilt. Der taegliche Task der Loeschfristen setzt es beim ersten Lauf, der
+den Beitrag geloescht findet, und entfernt den Beitrag nach seiner Frist endgueltig
+(services/loeschfristen_service.py).
 """

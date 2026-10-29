@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +10,11 @@ import {
   AUSSAGE_MIN_ZEICHEN,
   StatementService,
 } from '../services/statement.service';
-import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
+import { AussageVorabResponse, UnbeantworteteAussage } from '../services/dtos/statementDtos';
+import { Thema } from '../services/dtos/themenDtos';
+import { ThemenService, schluesselVon } from '../services/themen.service';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
+import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
 import {
   VON_HIER_FEHLT_EINE_ANTWORT,
@@ -25,15 +30,49 @@ import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
  * die ohne Treffer gesucht haben, damit Hotspots sichtbar werden, nicht die Zahl der
  * Suchen; eine Aussage aus einer Suchanfrage erst ab der Schwelle der Kennzahl
  * (zwei Personen).
+ *
+ * Themen: Die Liste laesst sich nach einem Thema filtern, jede Aussage zeigt ihre
+ * Themen, und Mitwirkende ordnen sie hier zu oder aendern sie, auch beim Anlegen
+ * vorab. Ist die Themenliste nicht ladbar, fehlen Filter und Auswahl; die Seite
+ * bleibt sonst nutzbar.
  */
+/**
+ * Was nach dem Vorab-Anlegen gemeldet wird. Die Antwort nennt die Themen, die die
+ * Aussage jetzt hat: bei einer vorhandenen ihre bisherigen (die gewaehlten nur, wenn
+ * sie keine hatte), leer, wenn das Zuordnen scheiterte.
+ */
+export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean): string {
+  const ohneThemen = mitThemen && antwort.themen.length === 0;
+  if (antwort.statement_was_new) {
+    return ohneThemen
+      ? 'Aussage angelegt. Die Themen konnten nicht gespeichert werden; du kannst sie in der Liste zuordnen.'
+      : 'Aussage angelegt.';
+  }
+  const vorhanden = `Diese Aussage gibt es schon: „${antwort.statement_text}“`;
+  if (!mitThemen) {
+    return vorhanden;
+  }
+  return ohneThemen
+    ? `${vorhanden} Die Themen konnten nicht gespeichert werden.`
+    : `${vorhanden} Ihre Themen: ${antwort.themen.map((t) => t.name).join(', ')}.`;
+}
+
 @Component({
   selector: 'app-hier-fehlt-eine-antwort',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    ThemenAuswahlComponent,
+    ThemenFilterComponent,
+  ],
   templateUrl: './hier-fehlt-eine-antwort.component.html',
   styleUrls: ['./hier-fehlt-eine-antwort.component.css'],
 })
-export class HierFehltEineAntwortComponent implements OnInit {
+export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
   readonly maxZeichen = AUSSAGE_MAX_ZEICHEN;
   readonly consentHinweis = CONSENT_HINWEIS;
@@ -41,14 +80,58 @@ export class HierFehltEineAntwortComponent implements OnInit {
   aussagen: UnbeantworteteAussage[] | null = null;
   ladefehler = false;
 
+  /** Die feste Themenliste; leer, solange sie nicht geladen ist. */
+  themen: Thema[] = [];
+  /** Der Filter; null = alle Themen. */
+  aktivesThema: string | null = null;
+  /** Die Aussage, deren Themen gerade bearbeitet werden. */
+  themenBearbeiten: string | null = null;
+  themenFehler: string | null = null;
+
   neueAussage = '';
+  neueThemen: string[] = [];
+  /** Die laufende Abfrage der Liste; ein neuer Filter bricht sie ab. */
+  private ladend?: Subscription;
   speichert = false;
   meldung = '';
 
-  constructor(private statementService: StatementService) {}
+  constructor(
+    private statementService: StatementService,
+    private themenService: ThemenService,
+  ) {}
 
   ngOnInit(): void {
+    this.themenService.liste().subscribe({
+      next: (themen) => (this.themen = themen),
+      error: () => (this.themen = []),
+    });
     this.laden();
+  }
+
+  ngOnDestroy(): void {
+    this.ladend?.unsubscribe();
+  }
+
+  filtern(thema: string | null): void {
+    this.aktivesThema = thema;
+    this.themenBearbeiten = null;
+    this.laden();
+  }
+
+  /** Die Themen einer Aussage auf- oder zuklappen. */
+  themenUmschalten(aussage: UnbeantworteteAussage): void {
+    this.themenFehler = null;
+    this.themenBearbeiten = this.themenBearbeiten === aussage.statement_id ? null : aussage.statement_id;
+  }
+
+  readonly schluessel = schluesselVon;
+
+  /** Jede Aenderung der Auswahl wird gleich gespeichert (ThemenService.aendern). */
+  themenSetzen(aussage: UnbeantworteteAussage, themen: string[]): void {
+    this.themenFehler = null;
+    this.themenService.aendern(aussage, themen, this.themen, () => {
+      this.themenFehler = 'Die Themen konnten nicht gespeichert werden.';
+    });
   }
 
   /**
@@ -80,13 +163,13 @@ export class HierFehltEineAntwortComponent implements OnInit {
     }
     this.speichert = true;
     this.meldung = '';
-    this.statementService.aussageVorabAnlegen(this.neueAussage).subscribe({
+    const mitThemen = this.neueThemen.length > 0;
+    this.statementService.aussageVorabAnlegen(this.neueAussage, this.neueThemen).subscribe({
       next: (antwort) => {
         this.speichert = false;
         this.neueAussage = '';
-        this.meldung = antwort.statement_was_new
-          ? 'Aussage angelegt.'
-          : `Diese Aussage gibt es schon: „${antwort.statement_text}“`;
+        this.neueThemen = [];
+        this.meldung = vorabMeldung(antwort, mitThemen);
         this.laden();
       },
       error: () => {
@@ -98,7 +181,9 @@ export class HierFehltEineAntwortComponent implements OnInit {
 
   private laden(): void {
     this.ladefehler = false;
-    this.statementService.unbeantworteteAussagen().subscribe({
+    // Sonst koennte eine langsame Antwort zum vorigen Filter die aktuelle ueberschreiben.
+    this.ladend?.unsubscribe();
+    this.ladend = this.statementService.unbeantworteteAussagen(this.aktivesThema).subscribe({
       next: (aussagen) => (this.aussagen = aussagen),
       error: () => (this.ladefehler = true),
     });

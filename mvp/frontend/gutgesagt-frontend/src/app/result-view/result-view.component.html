@@ -27,9 +27,16 @@
     </details>
 </ng-template>
 
+<!-- Filter nach Thema, nur mit Themen an den Treffern; eine neue Suche setzt ihn zurueck -->
+<ng-template #themenFilter>
+    <app-themen-filter class="themen-filter-leiste"
+                       [themen]="themenDerTreffer" [aktiv]="aktivesThema"
+                       (aktivChange)="nachThemaFiltern($event)"></app-themen-filter>
+</ng-template>
+
 <!-- Mobile view: Tab navigation and current section -->
 <div class="mobile-results-wrapper"
-     *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) as searchResponse">
+     *ngIf="isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
 
     <!-- Dezent unter dem Suchband: auch mit Treffern eine eigene Antwort ergaenzen -->
     <div class="mobile-ergaenzen-kopf" *ngIf="hatTreffer">
@@ -40,6 +47,10 @@
 
     <div class="mobile-keine-antwort-noetig" *ngIf="hatTreffer">
         <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+    </div>
+
+    <div class="mobile-themen-filter" *ngIf="themenDerTreffer.length">
+        <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
     </div>
 
     <!-- Tab Bar Navigation -->
@@ -127,7 +138,7 @@
 </div>
 
 <!-- Desktop view: Show both sections or unified empty state -->
-<div *ngIf="!isMobile && !(loading$ | async) && (searchResponse$ | async) as searchResponse">
+<div *ngIf="!isMobile && !(loading$ | async) && (searchResponse$ | async) && angezeigt as searchResponse">
 
     <!-- Unified Empty State when both searches return no results -->
     <section class="content-section" *ngIf="!hatTreffer">
@@ -162,6 +173,10 @@
 
         <div class="content-section">
             <ng-container *ngTemplateOutlet="keineAntwortNoetig"></ng-container>
+        </div>
+
+        <div class="content-section" *ngIf="themenDerTreffer.length">
+            <ng-container *ngTemplateOutlet="themenFilter"></ng-container>
         </div>
 
         <!-- Commentary Search Results Header/Info -->

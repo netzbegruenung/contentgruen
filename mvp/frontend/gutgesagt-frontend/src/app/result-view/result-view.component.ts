@@ -28,6 +28,9 @@ import { AuthService, UserInfo } from '../auth/auth.service';
 import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
 import { FORMULAR_PFAD, aussageParameter, istAussageId } from '../shared/formular-adresse';
 import { typBeschreibung } from '../shared/content-type-registry';
+import { BaseSearchResult } from '../services/dtos/commonDtos';
+import { Thema } from '../services/dtos/themenDtos';
+import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 
 // Dialog configuration constants
 const HELP_DIALOG_CONFIG = {
@@ -39,6 +42,51 @@ const HELP_DIALOG_CONFIG = {
 
 /** Die Abschnitte der Ergebnisseite: am Handy je ein Tab. */
 type Ergebnisabschnitt = 'commentary' | 'generictext' | 'post';
+
+/** Ob ein Treffer zum Themenfilter passt; ohne Filter passt jeder. */
+function passtZuThema(treffer: BaseSearchResult, thema: string | null): boolean {
+  return thema === null || (treffer.themen ?? []).some((t) => t.schluessel === thema);
+}
+
+/**
+ * Die Themen aller Treffer, jedes einmal, in der Reihenfolge ihres ersten
+ * Auftretens. Nur sie stehen im Filter: Ein Thema ohne Treffer liesse die Seite leer.
+ */
+export function themenDerTreffer(antwort: SearchResponse): Thema[] {
+  const gesehen = new Map<string, Thema>();
+  const alle: BaseSearchResult[] = [
+    ...(antwort.commentary_search_results ?? []),
+    ...(antwort.generictext_search_results ?? []),
+    ...(antwort.post_search_results ?? []),
+  ];
+  for (const treffer of alle) {
+    for (const thema of treffer.themen ?? []) {
+      if (!gesehen.has(thema.schluessel)) {
+        gesehen.set(thema.schluessel, thema);
+      }
+    }
+  }
+  return [...gesehen.values()];
+}
+
+/** Die Suchantwort mit nur den Treffern zum Thema, Zaehler passend dazu. */
+export function nachThemaGefiltert(antwort: SearchResponse, thema: string | null): SearchResponse {
+  if (thema === null) {
+    return antwort;
+  }
+  const kommentare = (antwort.commentary_search_results ?? []).filter((t) => passtZuThema(t, thema));
+  const hintergrund = (antwort.generictext_search_results ?? []).filter((t) => passtZuThema(t, thema));
+  const posts = (antwort.post_search_results ?? []).filter((t) => passtZuThema(t, thema));
+  return {
+    ...antwort,
+    commentary_search_results: kommentare,
+    commentary_search_results_count: kommentare.length,
+    generictext_search_results: hintergrund,
+    generictext_search_results_count: hintergrund.length,
+    post_search_results: posts,
+    post_search_results_count: posts.length,
+  };
+}
 
 @Component({
   selector: 'app-result-view',
@@ -58,7 +106,8 @@ type Ergebnisabschnitt = 'commentary' | 'generictext' | 'post';
     MatDividerModule,
     MatChipsModule,
     LoadingSpinnerComponent,
-    ErrorMessageComponent
+    ErrorMessageComponent,
+    ThemenFilterComponent
   ],
   templateUrl: './result-view.component.html',
   styleUrls: ['./result-view.component.css'],
@@ -92,6 +141,13 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   hasCommentaryResults: boolean = false;
   hasGenerictextResults: boolean = false;
   hasPostResults: boolean = false;
+
+  // Themenfilter: die Themen der Aussagen, ueber die die Treffer gefunden wurden.
+  // `angezeigt` ist die Suchantwort mit nur den Treffern zum aktiven Thema.
+  private antwort: SearchResponse | null = null;
+  angezeigt: SearchResponse | null = null;
+  themenDerTreffer: Thema[] = [];
+  aktivesThema: string | null = null;
 
   // Erklaerzeile je Tab, derselbe Satz wie auf der Beitragen-Seite
   readonly kommentarErklaerung = typBeschreibung('commentary');
@@ -178,25 +234,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.searchResponse$
       .pipe(takeUntil(this.destroy$))
       .subscribe(response => {
-        if (response) {
-          this.hasCommentaryResults = response.commentary_search_results_count > 0;
-          this.hasGenerictextResults = response.generictext_search_results_count > 0;
-          this.kommentarKarten = (response.commentary_search_results ?? []).map((paket) => ausSuchergebnis(paket));
-          this.hintergrundKarten = (response.generictext_search_results ?? []).map((paket) => ausSuchergebnis(paket));
-          this.hasPostResults = (response.post_search_results_count ?? 0) > 0;
-          this.postKarten = (response.post_search_results ?? []).map((paket) => ausSuchergebnis(paket));
-
-          // Der erste Abschnitt mit Treffern: Kommentar, dann Hintergrundinfo, dann Post
-          if (this.hasCommentaryResults) {
-            this.currentSection = 'commentary';
-          } else if (this.hasGenerictextResults) {
-            this.currentSection = 'generictext';
-          } else if (this.hasPostResults) {
-            this.currentSection = 'post';
-          }
-
-          this.cdr.markForCheck();
-        }
+        this.antwort = response;
+        // Eine neue Suche beginnt ohne Filter.
+        this.aktivesThema = null;
+        this.themenDerTreffer = response ? themenDerTreffer(response) : [];
+        this.anzeigen();
       });
 
     // Listen to query parameters and fetch results
@@ -206,6 +248,36 @@ export class ResultViewComponent implements OnInit, OnDestroy {
         this.performSearch();
       }
     });
+  }
+
+  /** Nach einem Thema filtern; null = alle. */
+  nachThemaFiltern(thema: string | null): void {
+    this.aktivesThema = thema;
+    this.anzeigen();
+  }
+
+  /** Karten und Abschnitte aus der Suchantwort, gefiltert nach dem aktiven Thema. */
+  private anzeigen(): void {
+    const response = this.antwort ? nachThemaGefiltert(this.antwort, this.aktivesThema) : null;
+    this.angezeigt = response;
+    if (response) {
+      this.hasCommentaryResults = response.commentary_search_results_count > 0;
+      this.hasGenerictextResults = response.generictext_search_results_count > 0;
+      this.kommentarKarten = (response.commentary_search_results ?? []).map((paket) => ausSuchergebnis(paket));
+      this.hintergrundKarten = (response.generictext_search_results ?? []).map((paket) => ausSuchergebnis(paket));
+      this.hasPostResults = (response.post_search_results_count ?? 0) > 0;
+      this.postKarten = (response.post_search_results ?? []).map((paket) => ausSuchergebnis(paket));
+
+      // Der erste Abschnitt mit Treffern: Kommentar, dann Hintergrundinfo, dann Post
+      if (this.hasCommentaryResults) {
+        this.currentSection = 'commentary';
+      } else if (this.hasGenerictextResults) {
+        this.currentSection = 'generictext';
+      } else if (this.hasPostResults) {
+        this.currentSection = 'post';
+      }
+    }
+    this.cdr.markForCheck();
   }
 
   ngOnDestroy(): void {

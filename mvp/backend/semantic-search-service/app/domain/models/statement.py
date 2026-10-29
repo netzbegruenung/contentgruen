@@ -115,3 +115,14 @@ class StatementSearchResult(StatementDbEntry, BaseContentSearchResult):
     """
     Representing a statement with score and additional result metadata
     """
+
+
+_FRUEHESTE = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+
+
+def angelegt_am(aussage: StatementDbEntry) -> datetime.datetime:
+    """Wann eine Aussage angelegt wurde, immer mit Zeitzone; ohne Angabe ganz frueh."""
+    created = getattr(aussage, "created", None)
+    if not isinstance(created, datetime.datetime):
+        return _FRUEHESTE
+    return created if created.tzinfo else created.replace(tzinfo=datetime.timezone.utc)
