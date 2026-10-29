@@ -76,4 +76,123 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('trägt deren Kennung');
     });
   });
+
+  describe('Beitrag löschen durch den Autor (#250)', () => {
+    it('sagt, dass ein gelöschter Beitrag nur ausgeblendet wird und erst auf Antrag ganz entfernt', () => {
+      const text = abschnitt('Beiträge, die Sie einstellen');
+
+      expect(text).toContain('nicht sofort aus unseren Daten entfernt');
+      expect(text).toContain('lässt sich nicht zurückholen');
+      expect(text).toContain('Vollständig entfernt wird er nur, wenn Sie uns darum bitten');
+      expect(abschnitt('Ihre Rechte')).toContain('Das gilt auch für Beiträge, die Sie selbst gelöscht haben.');
+    });
+  });
+
+  describe('Kennung (#284, #333, #385)', () => {
+    it('spricht von der Kennung, nicht von der Nutzerkennung', () => {
+      expect(ganzerText()).not.toContain('Nutzerkennung');
+      expect(abschnitt('Anmeldung über die Netzbegrünung')).toContain(
+        'eine Kennung (eine feste Zeichenfolge, die Ihr Konto bezeichnet, kein Name)',
+      );
+    });
+
+    it('behauptet nicht mehr, angemeldete Browser bekämen die Kennung', () => {
+      expect(ganzerText()).not.toContain('Technisch übermitteln wir an angemeldete Browser auch die Kennung');
+      expect(abschnitt('Beiträge, die Sie einstellen')).toContain(
+        'Ihre Kennung geben wir nur an Administratorinnen und Administratoren heraus',
+      );
+    });
+  });
+
+  describe('Suchvorgänge (#239, #289)', () => {
+    it('nennt den Tag statt eines Zeitpunkts und die Frist von 90 Tagen mit Tageszähler', () => {
+      const text = abschnitt('Suchvorgänge');
+
+      expect(text).toContain('den Tag (keine Uhrzeit)');
+      expect(text).toContain('nach 90 Tagen automatisch');
+      expect(text).toContain('je Tag nur, wie oft gesucht wurde und von wie vielen verschiedenen Pseudonymen');
+      expect(text).not.toContain('keine Löschfrist');
+    });
+  });
+
+  describe('Feedback (#343)', () => {
+    it('beschreibt Feedback ohne Kennung, nur für Admins, mit 180 Tagen Frist', () => {
+      const text = abschnitt('Feedback');
+
+      expect(text).toContain('auch ohne Konto');
+      expect(text).toContain('Wir speichern dazu weder Ihre Kennung noch eine Sitzungskennung');
+      expect(text).toContain('der Tag des Eingangs');
+      expect(text).toContain('nur Administratorinnen und Administratoren');
+      expect(text).toContain('nach 180 Tagen automatisch');
+    });
+  });
+
+  describe('Einwürfe in den Fangkorb', () => {
+    it('nennt keine Screenshots und die Rolle des Ausformulierers statt „verarbeitende Person“', () => {
+      const text = abschnitt('Einwürfe in den Fangkorb');
+
+      expect(ganzerText()).not.toContain('Screenshot');
+      expect(ganzerText()).not.toContain('verarbeitenden Person');
+      expect(text).toContain('die Kennung der Person, die den Einwurf mit einem Beitrag verknüpft hat');
+    });
+
+    it('sagt, dass Sätze an fremden Einwürfen nach einer Kontolöschung bleiben und „ehemalige Person“ zeigen', () => {
+      const text = abschnitt('Einwürfe in den Fangkorb');
+
+      expect(text).toContain('Ihre Sätze an Einwürfen anderer bleiben stehen');
+      expect(text).toContain('„ehemalige Person“');
+    });
+  });
+
+  describe('Kontolöschung (#278)', () => {
+    it('nennt die Liste gelöschter Konten mit 14 Tagen', () => {
+      expect(abschnitt('Ihre Rechte')).toContain('bis 14 Tage nach der Kontolöschung');
+    });
+
+    it('zählt die gespeicherte Zahl der Rückmeldung zu dem, was mit dem Konto geht', () => {
+      expect(abschnitt('Ihre Rechte')).toContain('die gespeicherte Zahl für die Rückmeldung zur Nutzung');
+    });
+  });
+
+  describe('Protokolldateien (#275)', () => {
+    it('nennt für die Anwendung den Pfad ohne Suchtext und keine verweisende Seite', () => {
+      const text = abschnitt('Zugriffe innerhalb der Anwendung');
+
+      expect(text).toContain('ohne Suchtext und sonstige Zusätze in der Adresse');
+      expect(text).toContain('aber nicht die verweisende Seite');
+      expect(text).toContain('Für Suchen und für Aufrufe der Ergebnisseite schreibt er gar keine Zeile');
+    });
+
+    it('nimmt ältere Zeilen von der Zusage aus, dass keine Suchtexte darin stehen', () => {
+      expect(abschnitt('Protokolle der Anwendung')).toContain('Ausnahme');
+    });
+  });
+
+  describe('Weitere Korrekturen am Ist-Stand', () => {
+    it('Meldungen: Kennung und Sitzungskennung stehen bei angemeldeten Meldungen nebeneinander', () => {
+      expect(abschnitt('Meldungen von Beiträgen')).toContain('stehen also beide nebeneinander');
+      expect(abschnitt('Verwendung von Beiträgen')).toContain(
+        'es sei denn, Sie haben aus demselben Browser angemeldet eine Meldung abgegeben',
+      );
+    });
+
+    it('Gerätespeicher: kein Kennzahlen-Eintrag, dafür Fangkorb-Filter und Teilen-Menü', () => {
+      const text = abschnitt('Weitere Einträge');
+
+      expect(text).not.toContain('Kennzahlen');
+      expect(text).toContain('Ihre Filter im Fangkorb');
+      expect(text).toContain('Teilen-Menü');
+    });
+
+    it('Anmelde-Cookie: enthält die Angaben des Identitätsdienstes, nicht nur drei', () => {
+      expect(abschnitt('Anmelde-Cookie')).toContain(
+        'die Angaben, die der Identitätsdienst bei der Anmeldung übermittelt',
+      );
+    });
+
+    it('KI-Vorschlag für Bildunterschriften: abgeschaltet, vor dem Einschalten wird die Erklärung ergänzt', () => {
+      expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('Unterschrift');
+      expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('ist auf dieser Plattform abgeschaltet');
+    });
+  });
 });

@@ -88,13 +88,14 @@
       </p>
       <p>
         Bei der Anmeldung übermittelt der Identitätsdienst an diese Plattform eine
-        Nutzerkennung, Ihre E-Mail-Adresse und Ihren Namen. Diese Angaben werden in einem
+        <strong>Kennung</strong> (eine feste Zeichenfolge, die Ihr Konto bezeichnet, kein
+        Name), Ihre E-Mail-Adresse und Ihren Namen. Diese Angaben werden in einem
         verschlüsselten Cookie in Ihrem Browser abgelegt und beim Aufruf jeder Seite
         mitgeschickt. Die Zugangs-Tokens des Identitätsdienstes legen wir darin nicht ab. <strong>Ihre E-Mail-Adresse und Ihren
         vollständigen Namen legen wir auf unseren Servern nicht ab.</strong> Aus Ihrem Namen
         bilden wir einen <strong>Anzeigenamen</strong> — Ihren Vornamen und den
         Anfangsbuchstaben Ihres Nachnamens (bei mehrteiligen Namen des letzten Teils), etwa
-        „Anna B." — und speichern nur diesen, zusammen mit Ihrer Nutzerkennung. Ihre Nutzerkennung speichern wir außerdem überall dort, wo etwas
+        „Anna B." — und speichern nur diesen, zusammen mit Ihrer Kennung. Ihre Kennung speichern wir außerdem überall dort, wo etwas
         von Ihnen stammt: an Beiträgen, Bewertungen, Meldungen und Einwürfen. Was das
         bedeutet, steht unten unter „Beiträge, die Sie einstellen".
       </p>
@@ -160,9 +161,9 @@
         erscheinen auch in der Suche ohne Anmeldung — dort steht am Beitrag
         <strong>weder Ihr Anzeigename noch Ihre Kennung</strong>; wir geben beides an Aufrufe
         ohne Anmeldung gar nicht erst heraus. Angemeldete können Ihre Beiträge über den
-        Anzeigenamen untereinander in Beziehung setzen. Technisch übermitteln wir an
-        angemeldete Browser auch die Kennung – sie dient dazu, Ihre eigenen Einträge als ‚Du'
-        zu erkennen, und wird nicht angezeigt.
+        Anzeigenamen untereinander in Beziehung setzen. Ihre Kennung geben wir nur an
+        Administratorinnen und Administratoren heraus. Ob ein Beitrag Ihr eigener ist,
+        berechnet der Server; andere Angemeldete erhalten dazu nur Ihren Anzeigenamen.
       </p>
       <p>
         Den Anzeigenamen übernehmen wir aus den Angaben, die Ihr Konto bei der Anmeldung
@@ -201,6 +202,14 @@
         Text eines Beitrags Sie selbst erkennbar, löschen wir diesen Beitrag auf Ihren Hinweis
         hin vollständig. Mehr dazu unter „Ihre Rechte".
       </p>
+      <p>
+        Einen eigenen Beitrag können Sie unter „Meine Beiträge“ löschen. Er verschwindet dann
+        aus Suche, Ansicht und Listen, wird aber <strong>nicht sofort aus unseren Daten
+        entfernt</strong>: Er bleibt mit Ihrer Kennung gespeichert, damit Verknüpfungen und
+        Bewertungen anderer nicht ins Leere zeigen, und lässt sich nicht zurückholen.
+        Vollständig entfernt wird er nur, wenn Sie uns darum bitten (siehe „Ihre Rechte“);
+        löschen wir Ihr Konto, behandeln wir ihn wie alle Ihre Beiträge.
+      </p>
     </section>
 
     <mat-divider></mat-divider>
@@ -215,7 +224,7 @@
       </p>
       <p>
         <strong>An diesem Eintrag steht nicht, wer gesucht hat.</strong> Statt einer
-        Nutzerkennung trägt er einen festen Systemwert. Wir können aus dem gespeicherten
+        Kennung trägt er einen festen Systemwert. Wir können aus dem gespeicherten
         Suchtext nicht ableiten, von wem er stammt.
       </p>
       <p>
@@ -262,7 +271,7 @@
 
       <h3>Suchvorgänge</h3>
       <p>
-        Zu jeder Suche speichern wir den Zeitpunkt, die Zahl der Treffer und ein
+        Zu jeder Suche speichern wir den Tag (keine Uhrzeit), die Zahl der Treffer und ein
         <strong>täglich wechselndes Pseudonym</strong>. Dieses Pseudonym wird aus dem
         heutigen Datum und Ihrer Kennung berechnet — sind Sie nicht angemeldet, tritt an
         deren Stelle die unten beschriebene Sitzungskennung Ihres Browsers —, und zwar so,
@@ -277,8 +286,9 @@
         <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO — unser
         berechtigtes Interesse an einer belastbaren Reichweitenmessung für die
         Weiterentwicklung.<br>
-        <strong>Dauer: keine Löschfrist.</strong> Eine automatische Löschung dieser Zeilen
-        ist derzeit nicht eingerichtet.
+        <strong>Dauer:</strong> Die einzelnen Zeilen löschen wir <strong>nach 90 Tagen
+        automatisch</strong>. Danach bleibt je Tag nur, wie oft gesucht wurde und von wie
+        vielen verschiedenen Pseudonymen, ohne die Pseudonyme selbst.
       </p>
 
       <h3>Suchen ohne Treffer</h3>
@@ -348,10 +358,11 @@
         <strong>höchstens 30 Tage</strong> behält; danach vergibt er eine neue.
       </p>
       <p>
-        <strong>Ihre Nutzerkennung, Ihre IP-Adresse und die Kennung Ihres Browsers werden
+        <strong>Ihre Kennung, Ihre IP-Adresse und die Kennung Ihres Browsers werden
         dabei nicht gespeichert.</strong> Wir können aus diesen Zeilen also nicht ablesen,
-        welches Konto einen Beitrag verwendet hat — wohl aber, dass mehrere Vorgänge vom
-        selben Gerät kamen.
+        welches Konto einen Beitrag verwendet hat, es sei denn, Sie haben aus demselben
+        Browser angemeldet eine Meldung abgegeben (siehe „Meldungen von Beiträgen“) — wohl
+        aber, dass mehrere Vorgänge vom selben Gerät kamen.
       </p>
       <p>
         <strong>Zweck:</strong> zu erkennen, welche Beiträge gebraucht werden.<br>
@@ -389,7 +400,7 @@
       <h2>Bewertungen</h2>
       <p>
         Sie können Beiträge als hilfreich oder nicht hilfreich bewerten. Gespeichert wird
-        dabei Ihre Nutzerkennung, der Beitrag, die Richtung der Bewertung und der Zeitpunkt.
+        dabei Ihre Kennung, der Beitrag, die Richtung der Bewertung und der Zeitpunkt.
         Bewerten ist nur angemeldet möglich; eine anonyme Bewertung gibt es nicht.
       </p>
       <p>
@@ -416,8 +427,11 @@
       </p>
       <p>
         Gespeichert werden der gemeldete Beitrag, der gewählte Meldegrund, Ihr Freitext, falls
-        Sie einen schreiben, der Zeitpunkt sowie — je nachdem, wie Sie melden — Ihre
-        Nutzerkennung oder die Sitzungskennung Ihres Browsers. Liegt beides nicht vor, tritt
+        Sie einen schreiben, der Zeitpunkt sowie Ihre Kennung, wenn Sie angemeldet sind, und
+        die Sitzungskennung Ihres Browsers. Melden Sie angemeldet, stehen also beide
+        nebeneinander. Das ist die einzige Stelle, an der sich die Sitzungskennung mit einem
+        Konto verbinden lässt, und damit auch die Verwendung von Beiträgen aus diesem Browser
+        (siehe „Verwendung von Beiträgen“). Liegt beides nicht vor, tritt
         an ihre Stelle ein Zufallswert, der nichts über Sie aussagt und nur dazu dient,
         mehrere Meldungen desselben Vorgangs zusammenzuhalten. Kommt die Bearbeitung zum
         Abschluss, kommen die Kennung der bearbeitenden Person, der Zeitpunkt und ein
@@ -453,13 +467,49 @@
     <mat-divider></mat-divider>
 
     <section class="legal-section">
+      <h2>Feedback</h2>
+      <p>
+        Über den Knopf „Feedback“ können Sie uns, <strong>auch ohne Konto</strong>, eine
+        Nachricht zur Plattform schicken und, wenn Sie eine Antwort möchten, eine
+        Kontaktangabe hinterlassen. Gespeichert werden nur Ihr Text, die Kontaktangabe, falls
+        Sie eine machen, und der Tag des Eingangs, keine Uhrzeit. <strong>Wir speichern dazu
+        weder Ihre Kennung noch eine Sitzungskennung</strong>, auch wenn Sie angemeldet sind.
+        Lesen können es nur Administratorinnen und Administratoren.
+      </p>
+      <p>
+        <strong>Bitte schreiben Sie nur hinein, was für Ihr Anliegen nötig ist.</strong> Wir
+        filtern den Text nicht.
+      </p>
+      <p>
+        Damit niemand massenhaft Nachrichten schickt, begrenzen wir, wie viele in kurzer Zeit
+        von derselben Stelle kommen dürfen. Dafür verarbeiten wir Ihre IP-Adresse wie bei
+        Meldungen <strong>nur flüchtig im Arbeitsspeicher und in verkürzter, pseudonymer
+        Form</strong>; der Schlüssel dafür wird bei jedem Neustart des Dienstes neu erzeugt.
+      </p>
+      <p>
+        <strong>Zweck:</strong> die Plattform verbessern und Rückfragen beantworten.<br>
+        <strong>Rechtsgrundlage:</strong> Artikel 6 Absatz 1 Buchstabe f DSGVO — unser
+        berechtigtes Interesse an Hinweisen, mit denen wir die Plattform verbessern, und
+        daran, Ihnen auf Wunsch zu antworten.<br>
+        <strong>Dauer:</strong> Wir löschen Feedback samt Kontaktangabe <strong>nach 180 Tagen
+        automatisch</strong>, auf Ihren Wunsch früher. Nennen Sie uns dafür die Kontaktangabe,
+        die Sie hinterlassen haben; einem Konto ist Ihr Feedback nicht zugeordnet.
+      </p>
+    </section>
+
+    <mat-divider></mat-divider>
+
+    <section class="legal-section">
       <h2>Einwürfe in den Fangkorb</h2>
       <p>
-        Der Fangkorb ist eine Sammelstelle für Rohmaterial: ein Link, ein Screenshot, ein
-        Satz, den jemand aufgeschnappt hat. Gespeichert werden der eingeworfene Text, die
-        angegebenen Adressen, der Zeitpunkt, <strong>die Kennung der einwerfenden
-        Person</strong>, die Sätze, die beim Destillieren dazu entstehen, sowie die Kennung
-        der destillierenden und der verarbeitenden Person.
+        Der Fangkorb ist eine Sammelstelle für Rohmaterial: ein Link auf einen Beitrag in
+        einem sozialen Netzwerk oder eine Website, ein kurzer Hinweis oder beides. Gespeichert werden
+        der Hinweis, die angegebenen Adressen (Link und gegebenenfalls Bild-Adresse), der
+        Zeitpunkt, auf welchem Weg der Einwurf kam (Formular, Teilen-Menü oder Import),
+        <strong>die Kennung der einwerfenden Person</strong>, die Sätze, die beim Destillieren
+        dazu entstehen, jeweils mit der Kennung der Person, die sie gespeichert hat, die
+        Kennung der Person, die den ersten Satz gespeichert hat, und die Kennung der Person,
+        die den Einwurf mit einem Beitrag verknüpft hat.
       </p>
       <p>
         <strong>Wer einen Einwurf gemacht hat, sehen alle angemeldeten Nutzenden</strong>, nicht
@@ -468,8 +518,7 @@
         Ohne Anmeldung ist der Fangkorb nicht erreichbar. Sichtbar ist dort der ganze Einwurf:
         Link, Hinweis und der Anzeigename der einwerfenden Person sowie die Sätze, die beim
         Destillieren dazu entstehen, jeweils mit dem Anzeigenamen der Person, die sie gespeichert
-        hat. Technisch übermitteln wir an angemeldete Browser auch die Kennung – sie dient dazu,
-        Ihre eigenen Einträge als ‚Du' zu erkennen, und wird nicht angezeigt.
+        hat. Die Kennungen sehen nur Administratorinnen und Administratoren.
       </p>
       <p>
         Einwürfe enthalten häufig Angaben über <strong>andere Menschen</strong> — etwa einen
@@ -482,7 +531,11 @@
         Funktion; Artikel 6 Absatz 1 Buchstabe f DSGVO für die Herkunftsangabe — die
         Bearbeitenden müssen nachfragen können, woher ein Einwurf stammt.<br>
         <strong>Dauer: keine Löschfrist.</strong> Löschen wir Ihr Konto, löschen wir Ihre
-        Einwürfe mit.
+        Einwürfe mit, samt der Sätze anderer daran. <strong>Ihre Sätze an Einwürfen anderer
+        bleiben stehen</strong>; an die Stelle Ihrer Kennung tritt je Satz ein eigener
+        Platzhalter, und angezeigt wird „ehemalige Person“. Wo Sie als Person stehen, die den
+        ersten Satz gespeichert hat, tritt ebenfalls ein Platzhalter an Ihre Stelle, und wo
+        Sie einen Einwurf mit einem Beitrag verknüpft haben, entfernen wir Ihre Kennung.
       </p>
     </section>
 
@@ -511,8 +564,10 @@
         Hinter dem vorgelagerten Webserver schreibt der Webserver der Anwendung dieselben
         Zugriffe ein zweites Mal mit. <strong>Ihre eigene IP-Adresse steht dort nicht</strong>
         — an ihrer Stelle steht die Adresse des vorgelagerten Webservers. Festgehalten werden
-        Zeitpunkt, aufgerufene Adresse, verweisende Seite und Angaben zu Browser und
-        Betriebssystem.
+        Zeitpunkt, aufgerufene Seite ohne Suchtext und sonstige Zusätze in der Adresse,
+        Ergebnis der Anfrage und Angaben zu Browser und Betriebssystem, aber nicht die
+        verweisende Seite. Für Suchen und für Aufrufe der Ergebnisseite schreibt er gar keine
+        Zeile.
       </p>
       <p>
         <strong>Zweck:</strong> technischer Betrieb und Fehlersuche.<br>
@@ -526,8 +581,14 @@
       <p>
         Die Anwendung selbst schreibt Betriebsmeldungen mit. Darin steht
         <strong>nicht</strong>, wonach jemand gesucht hat, und es stehen keine
-        E-Mail-Adressen darin. Wo eine Nutzerkennung auftaucht, steht sie nur in einer
+        E-Mail-Adressen darin. Wo eine Kennung auftaucht, steht sie nur in einer
         gekürzten, verrechneten Form.
+      </p>
+      <p>
+        <strong>Ausnahme:</strong> Diese Protokolle laufen im selben Sammelstrom wie die
+        Zugriffe innerhalb der Anwendung. Zeilen, die dort vor der Umstellung auf das oben
+        beschriebene Format entstanden sind, können noch Suchtexte und Kennungen in der
+        aufgerufenen Adresse enthalten, bis diese alten Zeilen gelöscht sind.
       </p>
       <p>
         <strong>Zweck:</strong> Fehlersuche und Betrieb.<br>
@@ -558,8 +619,8 @@
         verschlüsselt, für Skripte im Browser nicht lesbar und gilt <strong>bis zu 14 Tage nach
         Ihrer letzten Nutzung</strong>. Das gilt für beide
         Anmeldewege, über die Netzbegrünung wie mit einem Zugang, den wir selbst anlegen. Es
-        enthält Ihre Nutzerkennung, Ihren Namen und Ihre E-Mail-Adresse, aber keine
-        Zugangs-Tokens. Es ist kein reines Sitzungscookie:
+        enthält die Angaben, die der Identitätsdienst bei der Anmeldung übermittelt, darunter
+        Ihre Kennung, Ihren Namen und Ihre E-Mail-Adresse, aber keine Zugangs-Tokens. Es ist kein reines Sitzungscookie:
         <strong>Es überlebt das Schließen des Browsers und der App</strong>, solange es nicht
         abgelaufen ist. Ohne dieses Cookie funktioniert die Anmeldung nicht.
       </p>
@@ -591,10 +652,11 @@
 
       <h3>Weitere Einträge</h3>
       <p>
-        Zusätzlich merkt sich der Browser, ob Sie den Kennzahlen-Bereich schon einmal gesehen
-        haben, sowie — nur bis zum Schließen des Tabs — das von Ihnen gewählte Profilbild und
-        die Seite, auf die Sie nach dem Anmelden zurückkehren sollen. Diese Einträge enthalten
-        keine personenbezogenen Angaben; die Profilbilder sind eine feste Auswahl von
+        Nur bis zum Schließen des Tabs merkt sich der Browser außerdem: das zufällig gewählte
+        Profilbild, die Seite, auf die Sie nach dem Anmelden zurückkehren sollen, Ihre Filter
+        im Fangkorb und, wenn Sie einen Link über das Teilen-Menü Ihres Geräts an Gut gesagt
+        schicken, dessen Titel, Text und Adresse, bis Sie den Einwurf absenden. Diese Einträge
+        verlassen Ihr Gerät nicht von selbst. Die Profilbilder sind eine feste Auswahl von
         Grafiken, die wir selbst ausliefern.
       </p>
     </section>
@@ -652,6 +714,13 @@
         Sprach- oder Bilderkennungsdienst eines Anbieters außerhalb der EU ein.
       </p>
       <p>
+        Die Software enthält eine Funktion, die im Formular für Bilder auf Klick einen
+        Vorschlag für die Unterschrift macht. Dafür ginge die Adresse des Bildes an einen
+        KI-Anbieter in den USA. Diese Funktion <strong>ist auf dieser Plattform
+        abgeschaltet</strong>. Bevor wir sie oder einen anderen Anbieter einschalten,
+        ergänzen wir diese Erklärung.
+      </p>
+      <p>
         Davon zu unterscheiden ist der oben beschriebene Fall der eingebundenen Bilder: Wohin
         Ihr Browser das Bild lädt, hängt an der eingetragenen Adresse und kann auch außerhalb
         der EU liegen. Diesen Abruf richtet Ihr Browser aus, nicht wir.
@@ -678,7 +747,8 @@
         Zum Suchen und Lesen müssen Sie nichts angeben. Für ein Konto brauchen wir eine
         Kennung und, bei einem von uns angelegten Zugang, eine E-Mail-Adresse — ohne die
         können wir keinen Zugang einrichten. Alles Weitere ist freiwillig: Ob Sie einen
-        Beitrag einstellen, bewerten, melden oder etwas in den Fangkorb werfen, entscheiden
+        Beitrag einstellen, bewerten, melden, Feedback schicken oder etwas in den Fangkorb
+        werfen, entscheiden
         Sie. Nachteile entstehen Ihnen nicht, wenn Sie es lassen.
       </p>
     </section>
@@ -701,10 +771,18 @@
         <strong>Wie eine Löschung bei uns abläuft, und was sie nicht leistet:</strong> Es gibt
         keine Schaltfläche, die Ihr Konto und alles daran Hängende von selbst entfernt. Wir
         führen die Löschung von Hand aus. Dabei entfernen wir Ihren Zugang, Ihren Anzeigenamen,
-        Ihre Bewertungen, Ihre Meldungen und Ihre Einwürfe. Ihre <strong>Beiträge bleiben erhalten und werden
+        Ihre Bewertungen, Ihre Meldungen, Ihre Einwürfe und die gespeicherte Zahl für die
+        Rückmeldung zur Nutzung. Ihre <strong>Beiträge bleiben erhalten und werden
         anonymisiert</strong> — an die Stelle Ihrer Kennung tritt ein Platzhalter; die Gründe
-        stehen oben unter „Beiträge, die Sie einstellen". Macht ein Beitrag Sie selbst
-        erkennbar, löschen wir ihn auf Ihren Hinweis hin ganz.
+        stehen oben unter „Beiträge, die Sie einstellen". Ebenso anonymisieren wir Ihre Sätze
+        an Einwürfen anderer (siehe „Einwürfe in den Fangkorb“). Macht ein Beitrag Sie selbst
+        erkennbar, löschen wir ihn auf Ihren Hinweis hin ganz. Das gilt auch für Beiträge,
+        die Sie selbst gelöscht haben.
+      </p>
+      <p>
+        Damit eine noch gültige Anmeldung nach der Löschung nicht weiter wirkt, tragen wir die
+        Kennung eines gelöschten Kontos in eine Sperrliste ein. Dort steht sie <strong>bis 14
+        Tage nach der Kontolöschung</strong> und wird dann entfernt.
       </p>
       <p>
         Zwei Dinge lassen sich dabei nicht rückgängig machen, und wir sagen sie lieber vorher:
@@ -763,7 +841,7 @@
     </section>
 
     <div class="update-notice">
-      <p><strong>Stand:</strong> September 2026</p>
+      <p><strong>Stand:</strong> Oktober 2026</p>
     </div>
   </div>
 </div>
