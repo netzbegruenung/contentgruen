@@ -147,7 +147,7 @@ async def lifespan(app: FastAPI):
         app.state.loeschfristen = asyncio.create_task(
             loeschfristen_im_takt(get_loeschfristen_service())
         )
-        logger.info("✅ Retention periods task started")
+        logger.info("✅ Loeschfristen task started")
 
         logger.info(
             "✅ Application startup complete - server ready to accept connections"

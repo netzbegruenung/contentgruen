@@ -3,6 +3,7 @@ Service layer for content moderation functionality.
 Provides business logic for reporting and managing flagged content.
 """
 
+import asyncio
 import logging
 from typing import List, Optional, Dict, Any
 from uuid import UUID
@@ -274,14 +275,19 @@ class ModerationService:
     ) -> bool:
         """
         Einen Beitrag endgueltig entfernen, samt den Verweisen der Aussagen auf ihn,
-        seinen Stimmen und seinen Verknuepfungen mit Einwuerfen (#421).
+        seinen Stimmen und dem "ausformuliert in" der Einwuerfe, die in ihm
+        ausformuliert sind (#421).
 
         Die Verweise gehen fuer jeden Beitragstyp weg, unabhaengig von content_type:
         Aussagen verweisen auf Beitraege jedes Typs (#294). Erst Verweise, Stimmen und
-        Verknuepfungen, dann der Beitrag: Scheitert davor etwas, bleibt der Beitrag
+        "ausformuliert in", dann der Beitrag: Scheitert davor etwas, bleibt der Beitrag
         stehen und ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf
         einen Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf
         ohne zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
+
+        Danach stehen die offenen Meldungen zum Beitrag auf bearbeitet. Schon
+        bearbeitete und abgewiesene behalten ihre Entscheidung und deren Zeitpunkt,
+        an dem ihre Loeschfrist haengt.
 
         Args:
             content_id: UUID of the content to delete
@@ -295,7 +301,7 @@ class ModerationService:
         Raises:
             VerweiseNichtEntfernt: Aussagen verweisen noch auf den Beitrag; er ist
                 nicht entfernt.
-            Datenbankfehler beim Loeschen von Stimmen oder Verknuepfungen gehen
+            Datenbankfehler beim Loeschen von Stimmen oder "ausformuliert in" gehen
                 weiter; der Beitrag ist dann ebenfalls nicht entfernt.
         """
         if await self._beitrag_laden(content_id) is None:
@@ -303,10 +309,14 @@ class ModerationService:
             return False
 
         await verweise_entfernen(self.moderation_repo, content_id)
-        stimmen = self._stimmen().loeschen_fuer_beitrag(UUID(content_id))
-        verknuepfungen = self._einwuerfe().verknuepfungen_loeschen(UUID(content_id))
+        stimmen = await asyncio.to_thread(
+            self._stimmen().loeschen_fuer_beitrag, UUID(content_id)
+        )
+        ausformuliert = await asyncio.to_thread(
+            self._einwuerfe().ausformuliert_in_loeschen, UUID(content_id)
+        )
         logger.info(
-            f"Content {content_id}: {stimmen} votes and {verknuepfungen} "
+            f"Content {content_id}: {stimmen} votes and {ausformuliert} "
             "raw input links deleted"
         )
 
@@ -314,7 +324,7 @@ class ModerationService:
             logger.warning(f"Content {content_id} could not be deleted")
             return False
 
-        # Mark all related reports as reviewed. Der Beitrag ist schon weg;
+        # Offene Meldungen als bearbeitet markieren. Der Beitrag ist schon weg;
         # ein Fehler hier macht die Loeschung nicht rueckgaengig.
         try:
             updated_count = self.report_repo.update_reports_by_content_id(
@@ -322,6 +332,7 @@ class ModerationService:
                 status="reviewed",
                 reviewed_by=deleted_by,
                 resolution_notes="Content deleted",
+                nur_offene=True,
             )
         except Exception as e:
             # Nur der Typ: Die Meldung einer Datenbank kann reviewed_by enthalten.

@@ -1,8 +1,8 @@
 """
 Loeschfristen fuer Meldungen, Einwuerfe, geloeschte Beitraege und deren Stimmen (#421).
 
-Die Fristen stehen hier und nur hier; docs/LOESCHKONZEPT.md und die
-Datenschutzerklaerung zitieren sie. Andere Fristen stehen bei ihrer Datenart:
+Fachliche Quelle der Fristen ist docs/LOESCHKONZEPT.md ("Fristen"); im Code stehen
+ihre Zahlen hier und nur hier, damit die Datenschutzerklaerung sie zitieren kann. Andere Fristen stehen bei ihrer Datenart:
 Feedback in services/feedback_service.py, Suchen ohne Treffer in
 services/suchen_ohne_treffer_service.py, Nutzungs- und Suchereignisse in
 core/config.py.
@@ -10,7 +10,7 @@ core/config.py.
 - Meldungen: bearbeitete und abgewiesene MELDUNG_NACH_BEARBEITUNG_TAGE nach der
   Bearbeitung. Sechs Monate, weil so lange eine Entscheidung nach Art. 20 Abs. 1 DSA
   noch angefochten werden kann. Offene Meldungen bleiben: Sie sind Arbeit.
-- Einwuerfe ohne Verknuepfung mit einem Beitrag (offen, destilliert, verworfen, oder
+- Einwuerfe, die in keinem Beitrag ausformuliert sind (offen, destilliert, verworfen, oder
   ausformuliert in einen inzwischen entfernten Beitrag): EINWURF_OHNE_BEITRAG_TAGE
   nach der letzten Arbeit daran (Einwerfen oder Satz gespeichert), mit ihren Saetzen.
   Wer ein Jahr lang nichts daraus gemacht hat, macht es nicht mehr. Ausformulierte
@@ -18,7 +18,7 @@ core/config.py.
 - Geloeschte Beitraege: GELOESCHTER_BEITRAG_TAGE nach dem Loeschen endgueltig
   entfernt, ueber denselben Weg wie die Entfernung durch einen Admin
   (ModerationService.delete_content), also samt Verweisen der Aussagen, Stimmen und
-  Verknuepfungen mit Einwuerfen. Die Frist zaehlt ab dem Tag in FELD_GELOESCHT_AM, den
+  "ausformuliert in". Die Frist zaehlt ab dem Tag in FELD_GELOESCHT_AM, den
   der erste Lauf nach dem Loeschen setzt, also hoechstens einen Tag spaeter.
 - Stimmen haben keine eigene Frist: Aus ihnen entsteht die Guete eines Beitrags, sie
   leben so lange wie er und gehen mit ihm.
@@ -73,28 +73,29 @@ class LoeschfristenService:
         nicht auf; der naechste Lauf holt nach, was liegen blieb.
         """
         heute = heute or heute_utc()
-        try:
-            n = await asyncio.to_thread(
-                self._meldungen.bearbeitete_loeschen_vor,
-                _grenze(heute, MELDUNG_NACH_BEARBEITUNG_TAGE),
-            )
-            logger.info(f"Deleted {n} handled reports past their retention period")
-        except Exception as e:
-            logger.error(f"Error deleting old reports: {e}", exc_info=True)
-
-        try:
-            n = await asyncio.to_thread(
-                self._einwuerfe.ohne_beitrag_loeschen_vor,
-                _grenze(heute, EINWURF_OHNE_BEITRAG_TAGE),
-            )
-            logger.info(f"Deleted {n} raw inputs past their retention period")
-        except Exception as e:
-            logger.error(f"Error deleting old raw inputs: {e}", exc_info=True)
-
+        await self._zeilen_loeschen(
+            self._meldungen.bearbeitete_loeschen_vor,
+            _grenze(heute, MELDUNG_NACH_BEARBEITUNG_TAGE),
+            "handled reports",
+        )
+        await self._zeilen_loeschen(
+            self._einwuerfe.ohne_beitrag_loeschen_vor,
+            _grenze(heute, EINWURF_OHNE_BEITRAG_TAGE),
+            "raw inputs",
+        )
         try:
             await self._geloeschte_beitraege(heute)
         except Exception as e:
             logger.error(f"Error removing deleted content: {e}", exc_info=True)
+
+    @staticmethod
+    async def _zeilen_loeschen(loeschen_vor, grenze: datetime, was: str) -> None:
+        """Eine PostgreSQL-Frist anwenden; ein Fehler wird nur protokolliert."""
+        try:
+            n = await asyncio.to_thread(loeschen_vor, grenze)
+            logger.info(f"Deleted {n} {was} past their Loeschfrist")
+        except Exception as e:
+            logger.error(f"Error deleting old {was}: {e}", exc_info=True)
 
     async def _geloeschte_beitraege(self, heute: date) -> None:
         grenze = heute - timedelta(days=GELOESCHTER_BEITRAG_TAGE)
@@ -124,7 +125,7 @@ class LoeschfristenService:
                 )
         logger.info(
             f"Removed {entfernt} of {len(faellig)} deleted contents past their "
-            f"retention period, dated {len(ohne_tag)}"
+            f"Loeschfrist, dated {len(ohne_tag)}"
         )
 
 
@@ -139,5 +140,5 @@ async def loeschen_im_takt(
         try:
             await service.fristen_anwenden()
         except Exception as e:
-            logger.error(f"Error applying retention periods: {e}", exc_info=True)
+            logger.error(f"Error applying Loeschfristen: {e}", exc_info=True)
         await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))

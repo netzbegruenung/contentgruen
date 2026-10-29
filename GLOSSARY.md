@@ -189,7 +189,7 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt bis zu seiner Löschfrist gespeichert; zurückholen lässt er sich nicht. Danach wird er endgültig entfernt, mit seinen Stimmen und seinen Verknüpfungen mit Einwürfen. Vorher entfernt ihn nur ein Admin endgültig, nach dem Löschkonzept. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt bis zu seiner Löschfrist gespeichert; zurückholen lässt er sich nicht. Danach wird er endgültig entfernt, mit seinen Stimmen; Einwürfe sind danach in ihm nicht mehr ausformuliert. Vorher entfernt ihn nur ein Admin endgültig, nach dem Löschkonzept. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
 **Titel**:

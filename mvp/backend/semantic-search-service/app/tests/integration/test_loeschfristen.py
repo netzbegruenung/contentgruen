@@ -99,6 +99,27 @@ class TestMeldungen:
         assert uebrig == {offen, bearbeitet_jung, altbestand_jung}
         assert not uebrig & {bearbeitet_alt, abgewiesen_alt, altbestand}
 
+    def test_nur_offene_bearbeiten_laesst_entscheidungen_stehen(self, datenbank):
+        """Endgueltiges Entfernen bearbeitet offene Meldungen, nicht die anderen."""
+        with datenbank.get_session() as s:
+            offen = self._meldung(s, "pending", None)
+            abgewiesen = self._meldung(s, "dismissed", ALT)
+            beitrag = s.get(ContentReport, offen).content_id
+            s.get(ContentReport, abgewiesen).content_id = beitrag
+
+        repo = _mit(datenbank, "content_report_repository", ContentReportRepository)
+        assert (
+            repo.update_reports_by_content_id(
+                beitrag, status="reviewed", nur_offene=True
+            )
+            == 1
+        )
+
+        with datenbank.get_session() as s:
+            assert s.get(ContentReport, offen).status == "reviewed"
+            alt = s.get(ContentReport, abgewiesen)
+            assert (alt.status, alt.reviewed_at) == ("dismissed", ALT)
+
 
 class TestEinwuerfe:
     def _einwurf(self, session, created_at=ALT, status="open") -> uuid.UUID:
@@ -161,7 +182,7 @@ class TestEinwuerfe:
 
         repo = RawInputRepository(db=datenbank)
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 0
-        assert repo.verknuepfungen_loeschen(beitrag) == 1
+        assert repo.ausformuliert_in_loeschen(beitrag) == 1
         assert repo.ohne_beitrag_loeschen_vor(GRENZE) == 1
 
 

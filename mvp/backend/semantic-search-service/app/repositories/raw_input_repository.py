@@ -595,7 +595,7 @@ class RawInputRepository:
 
     def ohne_beitrag_loeschen_vor(self, grenze: datetime) -> int:
         """
-        Einwuerfe ohne Verknuepfung loeschen, an denen seit ``grenze`` niemand
+        Einwuerfe, die in keinem Beitrag ausformuliert sind, loeschen, an denen seit ``grenze`` niemand
         gearbeitet hat: weder eingeworfen noch einen Satz gespeichert
         (services/loeschfristen_service.py). Die Saetze daran gehen per CASCADE mit,
         ebenso die Platzhalter ehemaliger Personen in ``users``, deren Satz damit
@@ -627,8 +627,11 @@ class RawInputRepository:
             )
             return geloescht
 
-    def verknuepfungen_loeschen(self, content_id: uuid.UUID) -> int:
-        """Die Verknuepfungen mit einem Beitrag loeschen, der endgueltig entfernt wird."""
+    def ausformuliert_in_loeschen(self, content_id: uuid.UUID) -> int:
+        """
+        "Ausformuliert in" zu einem Beitrag loeschen, der endgueltig entfernt wird;
+        die Einwuerfe selbst bleiben.
+        """
         with self.db.get_session() as session:
             return (
                 session.query(RawInputContentLink)

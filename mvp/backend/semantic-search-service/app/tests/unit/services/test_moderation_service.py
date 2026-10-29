@@ -224,9 +224,13 @@ class TestLoeschen:
 
         kennung = uuid.UUID(CONTENT_ID)
         service._vote_repo.loeschen_fuer_beitrag.assert_called_once_with(kennung)
-        service._raw_input_repo.verknuepfungen_loeschen.assert_called_once_with(kennung)
+        service._raw_input_repo.ausformuliert_in_loeschen.assert_called_once_with(
+            kennung
+        )
         aufruf = service.report_repo.update_reports_by_content_id.call_args.kwargs
         assert aufruf["reviewed_by"] is None
+        # Bearbeitete Meldungen behalten Entscheidung und Loeschfrist.
+        assert aufruf["nur_offene"] is True
 
     async def test_loeschen_stimmen_scheitern_beitrag_bleibt(self, service, speicher):
         """Erst Stimmen und Verknuepfungen, dann der Beitrag: Ein neuer Versuch findet ihn."""

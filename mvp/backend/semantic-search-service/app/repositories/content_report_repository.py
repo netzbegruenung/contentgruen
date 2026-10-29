@@ -243,9 +243,12 @@ class ContentReportRepository:
         status: str,
         reviewed_by: Optional[str] = None,
         resolution_notes: Optional[str] = None,
+        nur_offene: bool = False,
     ) -> int:
         """
         Update all reports for a specific content item.
+
+        Mit nur_offene bleiben bearbeitete und abgewiesene Meldungen, wie sie sind.
 
         Args:
             content_id: UUID of the content
@@ -262,11 +265,12 @@ class ContentReportRepository:
         """
         try:
             with self.db.get_session() as session:
-                reports = (
-                    session.query(ContentReport)
-                    .filter(ContentReport.content_id == content_id)
-                    .all()
+                abfrage = session.query(ContentReport).filter(
+                    ContentReport.content_id == content_id
                 )
+                if nur_offene:
+                    abfrage = abfrage.filter(ContentReport.status == "pending")
+                reports = abfrage.all()
 
                 count = 0
                 for report in reports:
