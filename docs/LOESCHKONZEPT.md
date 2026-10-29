@@ -26,7 +26,11 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Beiträge“): Der Beitrag bekommt nur den Zustand „gelöscht“
   (`services/content/beitrag_loeschen_service.py`). Er verschwindet aus Suche, Ansicht,
   Listen, Bestandszählern und „Meine Beiträge“, bleibt aber gespeichert, damit Verknüpfungen und
-  Stimmen nicht ins Leere zeigen. Das ist **kein Löschen im Sinne von Art. 17**: Text und
+  Stimmen nicht ins Leere zeigen. Nur die Verweise der Aussagen auf ihn (Antwortvorschläge)
+  gehen weg, damit eine Aussage ohne weiteren Beitrag nicht mehr als beantwortet zählt.
+  Scheitert das, bleibt der Beitrag sichtbar und der Autor bekommt einen Fehler mit der Bitte,
+  es erneut zu versuchen; wie beim Admin-Weg unten räumt erst der zweite Versuch fertig auf.
+  Das ist **kein Löschen im Sinne von Art. 17**: Text und
   Kennung stehen weiter in Qdrant. Ein Löschantrag erfasst gelöschte Beiträge deshalb
   genauso wie sichtbare und gesperrte; der Lauf in Schritt 3 filtert nur nach der Kennung,
   nicht nach dem Zustand.
@@ -112,6 +116,25 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
    (`BFF/Services/ManagedUserService.cs:128`).
 
+## Feedback
+
+Die Tabelle `feedback` (Knopf „Feedback“ im Kopf der App, #343) trägt nur den Freitext,
+eine **optionale Kontaktangabe** und den UTC-Tag, keine Kennung und keine Sitzung, auch
+bei angemeldeten Personen. Über die Kennung aus „Ausgangspunkt“ ist Feedback deshalb
+nicht zu finden, und der Ablauf oben erfasst es nicht.
+
+- **Frist:** Nach 180 Tagen löscht ein täglicher Task die ganze Zeile samt Kontakt
+  (`services/feedback_service.py`, `loeschen_im_takt`, `AUFBEWAHRUNG_TAGE`). Er hängt
+  nicht am abschaltbaren Usage-Cleanup.
+- **Auf Antrag:** Die Person nennt die Kontaktangabe, die sie hinterlassen hat; ein
+  Admin löscht die Zeilen mit dieser Angabe, ohne Rücksicht auf Groß- und
+  Kleinschreibung und Leerzeichen am Rand
+  (`DELETE FROM feedback WHERE lower(btrim(kontakt)) = lower(btrim('<angabe>'));`,
+  vorher mit `SELECT` prüfen).
+  Ohne Kontaktangabe ist Feedback keiner Person zuzuordnen. Nennt der Freitext selbst
+  die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
+- Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.
+
 ## Vier Fallen
 
 - **Sitzungskennung vor `content_reports`.** Wird Schritt 2 vor Schritt 1 ausgeführt,
@@ -159,15 +182,23 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
   stellen mit `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-reihenfolge.sql`
   um; dabei wird die Tabelle neu geschrieben, die alten Nummern stehen danach nicht mehr
   in ihr. In Backups und im WAL stehen sie, bis diese herausrotiert sind.
-  **Offen:** Die physische Reihenfolge der Zeilen folgt weiter dem Einfügen. Wer die
-  Datenbank liest (`SELECT` ohne `ORDER BY`, `ctid`) oder einen Dump hat (`pg_dump`
-  schreibt die Zeilen in dieser Reihenfolge), sieht die Reihenfolge der Suchen eines
-  Tages noch, solange die Einzelzeilen leben. Ebenso die Systemspalte `xmin`: Jede Suche
+  Auch die physische Reihenfolge der Zeilen (`SELECT` ohne `ORDER BY`, `ctid`, die
+  Reihenfolge in `pg_dump`) und die Systemspalte `xmin` folgen dem Einfügen: Jede Suche
   schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
-  steigt (`ORDER BY xmin::text::bigint`). Für Zeilen vor der Migration gilt das nicht mehr,
-  sie tragen alle die Transaktion der Migration. Abhilfe für beides: die Suchereignisse
-  eines abgeschlossenen Tages in zufälliger Reihenfolge und in einer Transaktion neu
-  schreiben.
+  steigt. Seit #337 schreibt der tägliche Bereinigungsjob deshalb jeden abgeschlossenen
+  Tag in zufälliger Reihenfolge und in einer Transaktion neu
+  (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
+  abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
+  und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_USAGE_CLEANUP=false`
+  entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
+  ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
+  eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
+  Mitternacht): Ihre Zeile trägt bis zum nächsten Lauf ein eigenes `xmin` und ist damit
+  als eine der letzten Suchen ihres Tages erkennbar; verloren geht dabei nichts. Die
+  alten Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in
+  der Datei, bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten
+  roh auslesen); in Backups und im WAL, bis diese herausrotiert sind.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage
@@ -334,5 +365,9 @@ Lauf ohne Treffer zeigt, dass nichts mehr umzustellen ist.
 Danach die ausgegebenen Texte durchsehen. Macht ein Text die Person erkennbar, wird
 dieser Punkt einzeln über `DELETE /api/v1/moderation/content/{content_type}/{id}` gelöscht — nicht
 direkt gegen Qdrant: nur der Endpunkt räumt verwaiste Antwortvorschläge auf
-(`repositories/implementations/qdrant/moderation_repository.py:91`, `aus_aussagen_entfernen`)
-und schreibt einen Moderationsvermerk.
+(`repositories/implementations/qdrant/moderation_repository.py`, `aus_aussagen_entfernen`),
+für jeden Beitragstyp, und schreibt einen Moderationsvermerk. Scheitert das Aufräumen,
+antwortet der Endpunkt mit 500 und lässt den Punkt stehen; den Aufruf dann wiederholen.
+Bricht das Aufräumen mitten im Lauf ab, sind manche Aussagen schon ohne Verweis auf den
+stehengebliebenen Punkt; erst der wiederholte Aufruf macht das Bild wieder stimmig
+(`services/content/verweise_entfernen.py`).

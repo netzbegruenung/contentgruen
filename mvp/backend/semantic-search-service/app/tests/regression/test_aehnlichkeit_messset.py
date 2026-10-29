@@ -55,6 +55,13 @@ def _scores():
 
 
 @pytest.mark.parametrize("paar", PAARE, ids=[p[0] for p in PAARE])
+def test_kandidat_weicht_vom_bestand_ab_ausser_bei_identisch(paar):
+    """Abgeleitete Varianten (replace, lower, ...) duerfen nicht still zum A-Paar werden."""
+    paar_id, _art, kategorie, kandidat, bestand, *_ = paar
+    assert (kandidat == bestand) is (kategorie == "A"), paar_id
+
+
+@pytest.mark.parametrize("paar", PAARE, ids=[p[0] for p in PAARE])
 def test_scores_wie_gemessen(paar):
     paar_id, *_, qq, pp, qp, _gleich = paar
     assert _scores()[paar_id] == pytest.approx((qq, pp, qp), abs=TOLERANZ)

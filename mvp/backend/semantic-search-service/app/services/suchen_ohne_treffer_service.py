@@ -50,13 +50,14 @@ import asyncio
 import hashlib
 import uuid
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from typing import List, Optional, Set
 
 from core.logging import get_logger
 from domain.models.content_status import ContentStatus
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
 from services.content.statement_service import StatementService
+from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
 logger = get_logger(__name__)
 
@@ -87,10 +88,6 @@ def wochenbeginn(tag: date) -> date:
     return tag - timedelta(days=tag.weekday())
 
 
-def heute_utc() -> date:
-    return datetime.now(timezone.utc).date()
-
-
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
     """Die aelteste Woche, die bleibt; alles davor wird geloescht."""
     return wochenbeginn(heute or heute_utc()) - timedelta(weeks=AUFBEWAHRUNG_WOCHEN - 1)
@@ -101,15 +98,6 @@ def alte_wochen_loeschen(
 ) -> int:
     """Wochen vor der Aufbewahrungsgrenze loeschen; liefert die Zahl der Zeilen."""
     return repository.loeschen_vor(aufbewahrungsgrenze(heute))
-
-
-def sekunden_bis_mitternacht(jetzt: Optional[datetime] = None) -> float:
-    """Sekunden bis zum Beginn des naechsten UTC-Tages."""
-    jetzt = jetzt or datetime.now(timezone.utc)
-    morgen = datetime.combine(
-        jetzt.date() + timedelta(days=1), datetime.min.time(), timezone.utc
-    )
-    return (morgen - jetzt).total_seconds()
 
 
 def _kennung(pseudonym: str, statement_id: uuid.UUID) -> bytes:

@@ -1,0 +1,16 @@
+.feld {
+  width: 100%;
+}
+
+.hinweis {
+  font-size: 12px;
+  color: #666;
+}
+
+.fehler {
+  color: #b00020;
+}
+
+.danke {
+  font-size: 16px;
+}

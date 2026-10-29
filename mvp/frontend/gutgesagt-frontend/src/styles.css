@@ -334,6 +334,17 @@ body {
     margin: 0;
 }
 
+/* Was der Beitragstyp ist, eine Zeile direkt unter der Ueberschrift
+   (Ergebnisseite; Satz aus typBeschreibung() der Registry) */
+.typ-erklaerung {
+    margin: 0 0 var(--spacing-sm);
+    color: var(--text-secondary);
+}
+
+h2:has(+ .typ-erklaerung) {
+    margin-bottom: var(--spacing-xs);
+}
+
 /* Links */
 a {
     color: var(--primary-main);
