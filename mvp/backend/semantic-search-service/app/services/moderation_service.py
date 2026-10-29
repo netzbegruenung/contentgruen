@@ -3,6 +3,7 @@ Service layer for content moderation functionality.
 Provides business logic for reporting and managing flagged content.
 """
 
+import asyncio
 import logging
 from typing import List, Optional, Dict, Any
 from uuid import UUID
@@ -15,7 +16,13 @@ from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
+from repositories.raw_input_repository import (
+    RawInputRepository,
+    get_raw_input_repository,
+)
+from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
+from domain.models.meldegrund import MELDEGRUENDE, Meldegrund
 from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
@@ -32,15 +39,20 @@ class ModerationService:
         self,
         report_repo: Optional[ContentReportRepository] = None,
         moderation_repo: Optional[IModerationRepository] = None,
+        vote_repo: Optional[VoteRepository] = None,
+        raw_input_repo: Optional[RawInputRepository] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
+        # Erst beim endgueltigen Entfernen gebraucht; vorher keine Verbindung.
+        self._vote_repo = vote_repo
+        self._raw_input_repo = raw_input_repo
 
     async def report_content(
         self,
         content_id: str,
         content_type: str,
-        reason: str,
+        reason: Meldegrund,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         description: Optional[str] = None,
@@ -68,9 +80,7 @@ class ModerationService:
             logger.warning("Invalid report submission: no reporter identifier")
             return False
 
-        # Valid reasons
-        valid_reasons = ["spam", "inappropriate", "duplicate", "other"]
-        if reason not in valid_reasons:
+        if reason not in MELDEGRUENDE:
             logger.warning(f"Invalid report reason: {reason}")
             return False
 
@@ -260,22 +270,29 @@ class ModerationService:
         return await self.moderation_repo.gesperrte_laden(limit)
 
     async def delete_content(
-        self, content_id: str, content_type: str, deleted_by: str
+        self, content_id: str, content_type: str, deleted_by: Optional[str]
     ) -> bool:
         """
-        Einen Beitrag endgueltig entfernen, samt den Verweisen der Aussagen auf ihn.
+        Einen Beitrag endgueltig entfernen, samt den Verweisen der Aussagen auf ihn,
+        seinen Stimmen und dem "ausformuliert in" der Einwuerfe, die in ihm
+        ausformuliert sind (#421).
 
         Die Verweise gehen fuer jeden Beitragstyp weg, unabhaengig von content_type:
-        Aussagen verweisen auf Beitraege jedes Typs (#294). Erst die Verweise, dann der
-        Beitrag: Scheitert das Entfernen der Verweise, bleibt der Beitrag stehen und
-        ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf einen
-        Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf ohne
-        zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
+        Aussagen verweisen auf Beitraege jedes Typs (#294). Erst Verweise, Stimmen und
+        "ausformuliert in", dann der Beitrag: Scheitert davor etwas, bleibt der Beitrag
+        stehen und ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf
+        einen Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf
+        ohne zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
+
+        Danach stehen die offenen Meldungen zum Beitrag auf bearbeitet. Schon
+        bearbeitete und abgewiesene behalten ihre Entscheidung und deren Zeitpunkt,
+        an dem ihre Loeschfrist haengt.
 
         Args:
             content_id: UUID of the content to delete
             content_type: Type of content (nur fuer das Log)
-            deleted_by: User ID of the person deleting
+            deleted_by: Kennung des Admins; None, wenn die Loeschfrist entfernt
+                (services/loeschfristen_service.py)
 
         Returns:
             bool: False, wenn es den Beitrag nicht gibt oder er nicht entfernt wurde
@@ -283,18 +300,30 @@ class ModerationService:
         Raises:
             VerweiseNichtEntfernt: Aussagen verweisen noch auf den Beitrag; er ist
                 nicht entfernt.
+            Datenbankfehler beim Loeschen von Stimmen oder "ausformuliert in" gehen
+                weiter; der Beitrag ist dann ebenfalls nicht entfernt.
         """
         if await self._beitrag_laden(content_id) is None:
             logger.warning(f"Content {content_id} not found or already deleted")
             return False
 
         await verweise_entfernen(self.moderation_repo, content_id)
+        stimmen = await asyncio.to_thread(
+            self._stimmen().loeschen_fuer_beitrag, UUID(content_id)
+        )
+        ausformuliert = await asyncio.to_thread(
+            self._einwuerfe().ausformuliert_in_loeschen, UUID(content_id)
+        )
+        logger.info(
+            f"Content {content_id}: {stimmen} votes and {ausformuliert} "
+            "raw input links deleted"
+        )
 
         if not await self.moderation_repo.entfernen(content_id):
             logger.warning(f"Content {content_id} could not be deleted")
             return False
 
-        # Mark all related reports as reviewed. Der Beitrag ist schon weg;
+        # Offene Meldungen als bearbeitet markieren. Der Beitrag ist schon weg;
         # ein Fehler hier macht die Loeschung nicht rueckgaengig.
         try:
             updated_count = self.report_repo.update_reports_by_content_id(
@@ -302,6 +331,7 @@ class ModerationService:
                 status="reviewed",
                 reviewed_by=deleted_by,
                 resolution_notes="Content deleted",
+                nur_offene=True,
             )
         except Exception as e:
             # Nur der Typ: Die Meldung einer Datenbank kann reviewed_by enthalten.
@@ -315,6 +345,16 @@ class ModerationService:
             f"Content {content_id} ({content_type}) deleted, {updated_count} reports marked as reviewed"
         )
         return True
+
+    def _stimmen(self) -> VoteRepository:
+        if self._vote_repo is None:
+            self._vote_repo = VoteRepository()
+        return self._vote_repo
+
+    def _einwuerfe(self) -> RawInputRepository:
+        if self._raw_input_repo is None:
+            self._raw_input_repo = get_raw_input_repository()
+        return self._raw_input_repo
 
     async def dismiss_report(
         self, report_id: str, dismissed_by: str, notes: Optional[str] = None

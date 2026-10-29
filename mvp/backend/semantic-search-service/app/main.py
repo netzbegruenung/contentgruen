@@ -50,9 +50,12 @@ from services.suchen_ohne_treffer_service import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
-from dependencies import get_feedback_service
+from dependencies import get_feedback_service, get_loeschfristen_service
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
+from services.loeschfristen_service import (
+    loeschen_im_takt as loeschfristen_im_takt,
+)
 from utils.rate_limiter import (
     aufraeumen_im_takt,
     feedback_rate_limiter,
@@ -148,6 +151,13 @@ async def lifespan(app: FastAPI):
         # antwortet /api/v1/gegenlesen mit 503; der Dienst laeuft trotzdem.
         app.state.gegenlesen_vorladen = asyncio.create_task(_gegenlesen_vorladen())
 
+        # Loeschfristen fuer Meldungen, Einwuerfe und geloeschte Beitraege, ebenso
+        # unabhaengig vom Usage-Cleanup (services/loeschfristen_service.py).
+        app.state.loeschfristen = asyncio.create_task(
+            loeschfristen_im_takt(get_loeschfristen_service())
+        )
+        logger.info("✅ Loeschfristen task started")
+
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
         )
@@ -165,6 +175,7 @@ async def lifespan(app: FastAPI):
                 "rate_limiter_aufraeumen",
                 "suchen_ohne_treffer_loeschen",
                 "feedback_loeschen",
+                "loeschfristen",
             ):
                 task = getattr(app.state, name, None)
                 if task is not None:
@@ -248,6 +259,12 @@ app.include_router(moderation_router, prefix="/api/v1/moderation", tags=["modera
 app.include_router(health_router, prefix="/api/v1", tags=["monitoring"])
 app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["feedback"])
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
+
+# Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die
+# Middleware zaehlt auch, was das Rate-Limit abweist. Am BFF ist /metrics gesperrt.
+from api.betriebskennzahlen import einbinden as betriebskennzahlen_einbinden
+
+betriebskennzahlen_einbinden(app)
 
 
 if __name__ == "__main__":

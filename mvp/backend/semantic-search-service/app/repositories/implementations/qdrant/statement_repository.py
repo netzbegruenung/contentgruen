@@ -168,21 +168,11 @@ class StatementRepository(
             self._kuratiert_filter(ueber_der_schwelle), limit, offset
         )
 
-    async def ohne_kommentar(self) -> List[StatementDbEntry]:
+    async def kuratierte(self) -> List[StatementDbEntry]:
         """
-        Sichtbare Aussagen ohne sichtbaren Kommentar unter ihren
-        Antwortvorschlaegen, fuer "Hier fehlt eine Antwort".
-
-        Ein gesperrter oder geloeschter Kommentar zaehlt nicht als Antwort: Sein
-        Antwortvorschlag bleibt an der Aussage stehen (Sperren und Loeschen aendern
-        nur den Zustand des Beitrags), deshalb wird der Zustand der verknuepften
-        Kommentare in einem zweiten Schritt nachgeschlagen.
-
-        Ohne die unbeantworteten Suchanfragen (Kriterium wie count_curated): Das
-        waere die Suchanfrage einer einzelnen Person. Suchanfragen, nach denen
-        mehrere ohne Treffer gesucht haben, kommen ueber die Kennzahl "Suchen ohne
-        Treffer" dazu (UnbeantworteteAussagenService). Alle Treffer auf einmal,
-        unsortiert; Qdrant scrollt in ID-Reihenfolge.
+        Alle sichtbaren Aussagen ohne die unbeantworteten Suchanfragen (Kriterium
+        wie count_curated), fuer die nachtraegliche Zuordnung von Themen. Alle
+        Treffer auf einmal, unsortiert; Qdrant scrollt in ID-Reihenfolge.
         """
         scroll_filter = self._kuratiert_filter()
 
@@ -206,12 +196,31 @@ class StatementRepository(
                     )
                 except ValidationError as fehler:
                     logger.warning(
-                        f"ohne_kommentar: Punkt {punkt.id} uebersprungen, "
+                        f"kuratierte: Punkt {punkt.id} uebersprungen, "
                         f"Payload ungueltig ({fehler.error_count()} Fehler)"
                     )
             if not seite or naechster is None or naechster == offset:
                 break
             offset = naechster
+        return aussagen
+
+    async def ohne_kommentar(self) -> List[StatementDbEntry]:
+        """
+        Sichtbare Aussagen ohne sichtbaren Kommentar unter ihren
+        Antwortvorschlaegen, fuer "Hier fehlt eine Antwort".
+
+        Ein gesperrter oder geloeschter Kommentar zaehlt nicht als Antwort: Sein
+        Antwortvorschlag bleibt an der Aussage stehen (Sperren und Loeschen aendern
+        nur den Zustand des Beitrags), deshalb wird der Zustand der verknuepften
+        Kommentare in einem zweiten Schritt nachgeschlagen.
+
+        Ohne die unbeantworteten Suchanfragen (kuratierte): Das
+        waere die Suchanfrage einer einzelnen Person. Suchanfragen, nach denen
+        mehrere ohne Treffer gesucht haben, kommen ueber die Kennzahl "Suchen ohne
+        Treffer" dazu (UnbeantworteteAussagenService). Alle Treffer auf einmal,
+        unsortiert; Qdrant scrollt in ID-Reihenfolge.
+        """
+        aussagen = await self.kuratierte()
 
         sichtbar = await self._sichtbare_kommentare(
             {

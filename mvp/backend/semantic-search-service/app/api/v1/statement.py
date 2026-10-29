@@ -1,14 +1,16 @@
 import uuid
-from typing import FrozenSet, Optional
+from typing import FrozenSet, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import ValidationError
 
 from dependencies import (
     get_aufrufer,
+    get_aussage_themen_service,
     get_statement_service,
     get_suchen_ohne_treffer_service,
     get_unbeantwortete_aussagen_service,
+    require_admin,
     require_user,
 )
 from dtos.statement import (
@@ -16,9 +18,12 @@ from dtos.statement import (
     AddReplysuggestionToStatementResponse,
     AddStatementRequest,
     AddStatementResponse,
+    AussageMitThemenDto,
+    AussagenMitThemenResponse,
     AussageResponse,
     AussageTreffer,
     AussageVorabRequest,
+    AussageVorabResponse,
     GetCategoriesResponse,
     GetStatementsOfCategoryRequest,
     GetStatementsOfCategoryResponse,
@@ -30,7 +35,14 @@ from dtos.statement import (
     StatementSearchResponse,
     StatementGetAllResponse,
     StatementSource,
+    ThemaDto,
+    ThemenResponse,
+    ThemenTestsetResponse,
+    ThemenZuordnenRequest,
+    ThemenZuordnenResponse,
+    ThemenZuordnungDto,
     UnbeantworteteAussageDto,
+    themen_dtos,
     UnbeantworteteAussagenResponse,
 )
 from services.beitrag_fuer_aufrufer import AUSSAGE, Aufrufer, als_responses
@@ -44,6 +56,8 @@ from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
+from services.aussage_themen_service import AussageThemenService
+from domain.themen import NACH_SCHLUESSEL, THEMEN, ThemaUngueltig
 
 logger = get_logger(__name__)
 
@@ -152,13 +166,18 @@ async def get_by_id(
 # (services/unbeantwortete_aussagen_service.py).
 @router.get("/unbeantwortet", response_model=UnbeantworteteAussagenResponse)
 async def unbeantwortet(
+    thema: Optional[str] = Query(
+        default=None, description="Nur Aussagen mit diesem Thema (Schluessel)"
+    ),
     user_id: str = Depends(require_user),
     service: UnbeantworteteAussagenService = Depends(
         get_unbeantwortete_aussagen_service
     ),
 ) -> UnbeantworteteAussagenResponse:
+    if thema is not None and thema not in NACH_SCHLUESSEL:
+        raise HTTPException(status_code=422, detail="Unknown Thema")
     try:
-        aussagen = await service.liste()
+        aussagen = await service.liste(thema=thema)
     except Exception as e:
         logger.error(f"Error in /unbeantwortet: {e}", exc_info=True)
         raise HTTPException(
@@ -170,6 +189,7 @@ async def unbeantwortet(
                 statement_id=a.statement_id,
                 statement_text=a.text,
                 personen_ohne_treffer=a.personen_ohne_treffer,
+                themen=themen_dtos(a.themen),
             )
             for a in aussagen
         ]
@@ -179,12 +199,20 @@ async def unbeantwortet(
 # Eine Aussage vorab anlegen, fuer ein absehbares Thema, bevor jemand danach sucht.
 # Die Person ist Autorin; dieselbe vorhandene Aussage wird nicht doppelt angelegt,
 # sondern zurueckgegeben (statement_was_new = false, StatementService.vorab_anlegen).
-@router.post("/vorab", response_model=AddStatementResponse)
+# Die gewaehlten Themen bekommt die neue Aussage; eine vorhandene nur, wenn sie noch
+# keine hat, damit das Anlegen eine vorhandene Zuordnung nicht nebenbei ersetzt.
+# (Pruefen und Setzen sind zwei Schritte; legen zwei Personen dieselbe Aussage im
+# selben Moment an, gilt die zweite Zuordnung. Aendern geht ohnehin ueber
+# /themen/zuordnen.) Die Antwort nennt die Themen, die die Aussage jetzt hat.
+# Schlaegt das Zuordnen fehl, bleibt die Aussage angelegt und die Antwort ohne
+# Themen: Die Aussage gibt es dann, und die Seite sagt das.
+@router.post("/vorab", response_model=AussageVorabResponse)
 async def vorab_anlegen(
     request: AussageVorabRequest,
     user_id: str = Depends(require_user),
     statement_service: StatementService = Depends(get_statement_service),
-) -> AddStatementResponse:
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
+) -> AussageVorabResponse:
     try:
         statement_was_new, statement_id, statement_text = (
             await statement_service.vorab_anlegen(request.text, user_id)
@@ -192,10 +220,115 @@ async def vorab_anlegen(
     except Exception as e:
         logger.error(f"Error in /vorab: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to add statement")
-    return AddStatementResponse(
+    themen = await _themen_beim_vorab_anlegen(
+        themen_service, statement_id, statement_was_new, request.themen
+    )
+    return AussageVorabResponse(
         statement_was_new=statement_was_new,
         statement_id=statement_id,
         statement_text=statement_text,
+        themen=themen_dtos(themen),
+    )
+
+
+async def _themen_beim_vorab_anlegen(
+    themen_service: AussageThemenService,
+    statement_id: uuid.UUID,
+    neu: bool,
+    gewaehlt: List[str],
+) -> List[str]:
+    """Die Themen der Aussage nach dem Vorab-Anlegen; [] wenn das Zuordnen scheitert."""
+    try:
+        if not neu:
+            bisher = themen_service.themen_von([statement_id]).get(statement_id)
+            if bisher:
+                return bisher
+        if gewaehlt:
+            return await themen_service.zuordnen(statement_id, gewaehlt)
+        return []
+    except Exception as e:
+        logger.warning(f"/vorab: Themen nicht zugeordnet: {type(e).__name__}")
+        return []
+
+
+# Die feste Themenliste (domain/themen.json), fuer die Auswahl beim Zuordnen.
+@router.get("/themen", response_model=ThemenResponse)
+async def themen_liste() -> ThemenResponse:
+    return ThemenResponse(
+        themen=[ThemaDto(schluessel=t.schluessel, name=t.name) for t in THEMEN]
+    )
+
+
+# Die Themen einer Aussage von Hand setzen: ersetzt die bisherigen, eine leere
+# Liste entfernt alle. Jede angemeldete Person darf zuordnen; gespeichert wird
+# nicht, wer es war (services/aussage_themen_service.py).
+@router.put("/themen/zuordnen", response_model=ThemenZuordnenResponse)
+async def themen_zuordnen(
+    request: ThemenZuordnenRequest,
+    user_id: str = Depends(require_user),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
+) -> ThemenZuordnenResponse:
+    try:
+        themen = await themen_service.zuordnen(request.statement_id, request.themen)
+    except ThemaUngueltig as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except AussageNichtGefunden:
+        raise HTTPException(status_code=404, detail="Statement not found")
+    except Exception as e:
+        logger.error(f"Error in /themen/zuordnen: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to assign Themen")
+    return ThemenZuordnenResponse(
+        statement_id=request.statement_id, themen=themen_dtos(themen)
+    )
+
+
+# Admin: alle Aussagen ohne die unbeantworteten Suchanfragen, mit ihren Themen,
+# zum nachtraeglichen Zuordnen; die ohne Thema zuerst.
+@router.get("/themen/aussagen", response_model=AussagenMitThemenResponse)
+async def themen_aussagen(
+    admin_id: str = Depends(require_admin),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
+) -> AussagenMitThemenResponse:
+    try:
+        aussagen = await themen_service.aussagen_zum_zuordnen()
+    except Exception as e:
+        logger.error(f"Error in /themen/aussagen: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch statements")
+    return AussagenMitThemenResponse(
+        aussagen=[
+            AussageMitThemenDto(
+                statement_id=a.statement_id,
+                statement_text=a.text,
+                themen=themen_dtos(a.themen),
+                im_testset=a.im_testset,
+            )
+            for a in aussagen
+        ]
+    )
+
+
+# Admin: die Zuordnungen von Hand als Testset fuer spaetere Themenvorschlaege,
+# ohne Personendaten (kein Autor, keine Kennung, kein Zeitpunkt).
+@router.get("/themen/testset", response_model=ThemenTestsetResponse)
+async def themen_testset(
+    admin_id: str = Depends(require_admin),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
+) -> ThemenTestsetResponse:
+    try:
+        zuordnungen = await themen_service.testset()
+    except Exception as e:
+        logger.error(f"Error in /themen/testset: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to export Themen-Testset")
+    return ThemenTestsetResponse(
+        zuordnungen=[
+            ThemenZuordnungDto(
+                statement_id=z.statement_id,
+                text=z.text,
+                themen=z.themen,
+                zuordnungsart=z.zuordnungsart,
+            )
+            for z in zuordnungen
+        ]
     )
 
 

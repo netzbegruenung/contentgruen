@@ -69,7 +69,7 @@ Die Person, die einen Einwurf mit einem Beitrag verknüpft hat, mit einem neuen 
 _Avoid_: Verarbeiter, Bearbeiter, Autor
 
 **Verwerfen**:
-Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
+Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, bis seine Löschfrist abläuft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
 _Avoid_: Löschen, Ablehnen
 
 **Ausformuliert in**:
@@ -193,7 +193,7 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt bis zu seiner Löschfrist gespeichert; zurückholen lässt er sich nicht. Danach wird er endgültig entfernt, mit seinen Stimmen; Einwürfe sind danach in ihm nicht mehr ausformuliert. Vorher entfernt ihn nur ein Admin endgültig, nach dem Löschkonzept. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
 **Titel**:
@@ -223,6 +223,14 @@ _Avoid_: Remix, Kopie, Fassung, Fork
 **Thema**:
 Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens zwei. Freie Schlagworte gibt es nicht.
 _Avoid_: Tag, Topic, Kategorie, Schlagwort
+
+**Zuordnungsart**:
+Wie ein Thema an eine Aussage kam: von Hand durch eine Person oder später durch eine Automatik. Wer zugeordnet hat und wann, wird nicht gespeichert.
+_Avoid_: Quelle, Herkunft (das ist die Angabe, worauf sich ein Beitrag stützt)
+
+**Testset**:
+Die Zuordnungen von Hand mit dem Text ihrer Aussage, als Datei für Admins. Damit wird geprüft, wie gut spätere Themenvorschläge treffen. Es enthält keine Personendaten; Aussagen aus Suchanfragen gehören nicht dazu.
+_Avoid_: Eval-Set, Trainingsdaten, Goldstandard
 
 ## Nutzung und Bewertung
 
@@ -255,8 +263,12 @@ Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens e
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Melden auf der Plattform einer Aussage ist keine Meldung.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung.
 _Avoid_: Report, Flag, Beschwerde
+
+**Meldegrund**:
+Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder unerwünschte Werbung, Unangemessener Inhalt, Erfunden oder sachlich falsch, Dublette, Andere. „Erfunden oder sachlich falsch“ ist der Grund für erfundene Erlebnisse oder Zahlen; „Dublette“ heißt, dass der gemeldete Beitrag einem vorhandenen fast gleicht. Was genau nicht stimmt, schreibt die Person in die Beschreibung der Meldung.
+_Avoid_: Kategorie, Report-Grund
 
 **Feedback**:
 Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach der Frist im Löschkonzept wird es gelöscht.
@@ -295,7 +307,7 @@ Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren 
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:
-Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Punkte**:
@@ -333,6 +345,10 @@ _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 **Nutzungsstatistik**:
 Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
 _Avoid_: Usage Stats, Nutzerstatistik
+
+**Betriebskennzahlen**:
+Zahlen über den Betrieb der Anwendung, nicht über Inhalte oder Personen: wie viele Anfragen mit welchem Ergebnis eingehen und wie lange die Suche dauert. Der Betrieb liest sie für Alarme; sie tragen keine Kennung, keine Suchanfrage und keine Sitzung. Die Kennzahlen, die Admins sehen, sind etwas anderes.
+_Avoid_: Metriken (ohne Zusatz), Monitoring
 
 ## Personen
 
@@ -376,6 +392,10 @@ _Avoid_: Benutzername, Klarname, Kennung
 Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
+**Löschfrist**:
+Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von selbst löscht. Die Fristen stehen im Löschkonzept. Eine Löschfrist ist etwas anderes als das Löschen auf Antrag einer Person.
+_Avoid_: Retention, Aufbewahrungszeit
+
 **Admin**:
-Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Nur ein Admin entfernt einen Beitrag endgültig, und nur nach dem Löschkonzept. Moderation ist keine eigene Rolle.
+Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion

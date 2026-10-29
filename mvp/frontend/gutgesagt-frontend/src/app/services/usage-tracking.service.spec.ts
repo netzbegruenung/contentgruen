@@ -45,6 +45,23 @@ describe('UsageTrackingService', () => {
     anfrage.flush({ success: true, message: 'ok', usage_count: 1 });
   });
 
+  it('meldet die kopierte Fassung eines Kommentars mit (#355)', () => {
+    service.trackContentUsage('k-1', 'kurz');
+
+    const anfrage = http.expectOne(ADRESSE('k-1'));
+    expect(anfrage.request.body).toEqual({ session_id: 'sitzung-1', fassung: 'kurz' });
+    anfrage.flush({ success: true, message: 'ok', usage_count: 1 });
+  });
+
+  it('meldet zwei Fassungen desselben Beitrags kurz nacheinander beide', () => {
+    service.trackContentUsage('k-1', 'kurz');
+    service.trackContentUsage('k-1', 'lang');
+
+    const anfragen = http.match(ADRESSE('k-1'));
+    expect(anfragen.map((a) => a.request.body.fassung)).toEqual(['kurz', 'lang']);
+    anfragen.forEach((a) => a.flush({ success: true, message: 'ok', usage_count: 1 }));
+  });
+
   it('meldet zwei verschiedene Beitraege kurz nacheinander beide', () => {
     service.trackContentUsage('k-1');
     service.trackContentUsage('k-2');

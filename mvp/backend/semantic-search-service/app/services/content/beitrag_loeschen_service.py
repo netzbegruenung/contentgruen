@@ -5,7 +5,8 @@ Loeschen setzt nur den Zustand "geloescht". Der Beitrag bleibt gespeichert, dami
 Verknuepfungen und Stimmen nicht ins Leere zeigen; Suche, Einzelansicht, Listen,
 Bestandszaehler und "Meine Beitraege" blenden ihn ueber die vorhandenen Filter der
 Repositories aus (AUSGEBLENDET in domain/models/content_status.py). Endgueltig
-entfernt wird ein Beitrag nur ueber das Loeschkonzept (docs/LOESCHKONZEPT.md).
+entfernt wird er nach seiner Loeschfrist (services/loeschfristen_service.py) oder
+vorher durch einen Admin nach dem Loeschkonzept (docs/LOESCHKONZEPT.md).
 
 Nur die Verweise der Aussagen auf ihn gehen weg (#294): Sonst zaehlte eine Aussage,
 deren einziger Beitrag geloescht ist, weiter als beantwortet, etwa im Zaehler auf der

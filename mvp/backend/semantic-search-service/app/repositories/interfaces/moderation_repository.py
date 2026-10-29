@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import date
 from typing import Any, Dict, List, Optional
 
 
@@ -36,6 +37,16 @@ class IModerationRepository(ABC):
     @abstractmethod
     async def gesperrte_laden(self, limit: int) -> List[Dict[str, Any]]:
         """Alle gesperrten Beitraege, hoechstens limit."""
+        pass
+
+    @abstractmethod
+    async def geloeschte_laden(self) -> List[Dict[str, Any]]:
+        """Alle geloeschten Beitraege (Zustand "geloescht"), ohne Obergrenze."""
+        pass
+
+    @abstractmethod
+    async def geloescht_am_setzen(self, beitrag_ids: List[str], tag: date) -> None:
+        """Den Tag des Loeschens (FELD_GELOESCHT_AM) an diese Beitraege schreiben."""
         pass
 
     @abstractmethod

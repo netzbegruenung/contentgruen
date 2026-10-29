@@ -1,3 +1,5 @@
+import { Thema } from './themenDtos';
+
 
 //TODO: Evaluate usage of camel case and transformation in the backend
 
@@ -52,6 +54,11 @@ export interface AddStatementResponse {
     statement_text: string;
 }
 
+/** Die Antwort auf das Vorab-Anlegen, mit den Themen, die die Aussage jetzt hat. */
+export interface AussageVorabResponse extends AddStatementResponse {
+    themen: Thema[];
+}
+
 // Hier fehlt eine Antwort
 
 /**
@@ -64,6 +71,8 @@ export interface UnbeantworteteAussage {
     statement_id: string;
     statement_text: string;
     personen_ohne_treffer: number;
+    /** Hoechstens zwei, in der Reihenfolge der Themenliste. */
+    themen: Thema[];
 }
 
 export interface UnbeantworteteAussagenResponse {
@@ -72,6 +81,8 @@ export interface UnbeantworteteAussagenResponse {
 
 export interface AussageVorabRequest {
     text: string;
+    /** Optional ein bis zwei Themen-Schluessel. */
+    themen?: string[];
 }
 
 // GetStatementById

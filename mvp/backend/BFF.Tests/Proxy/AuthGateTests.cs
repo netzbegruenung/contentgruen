@@ -81,7 +81,7 @@ public class AuthGateTests
     [Fact]
     public void GetMetrics_IsPublic_ButMvpMetricsAreNot()
     {
-        // /getMetrics speist die anonyme Startseite; die Betriebskennzahlen daneben
+        // /getMetrics speist die anonyme Startseite; die Kennzahlen fuer Admins daneben
         // sind admin-only. Der frueher hier stehende Eintrag "/api/v1/metrics/" hat
         // beides nicht unterschieden.
         Assert.True(EndpointPolicy.IsAnonymousAllowed("/api/v1/metrics/getMetrics"));

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS usage_events (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     session_id VARCHAR(255),
     device_category VARCHAR(20),
+    fassung VARCHAR(10),
     FOREIGN KEY (content_id) REFERENCES usage_tracking(content_id) ON DELETE CASCADE
 );
 

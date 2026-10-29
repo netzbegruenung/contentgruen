@@ -390,3 +390,117 @@ describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworte
     });
   }
 });
+
+/**
+ * Themenfilter (#363): Die Treffer tragen die Themen der Aussage, ueber die sie
+ * gefunden wurden. Der Filter bietet nur diese Themen an und zeigt danach nur die
+ * Treffer mit dem gewaehlten Thema.
+ */
+describe('ResultViewComponent: Filter nach Thema', () => {
+  const KLIMA = { schluessel: 'klima', name: 'Klima' };
+  const VERKEHR = { schluessel: 'verkehr', name: 'Verkehr' };
+
+  let fixture: ComponentFixture<ResultViewComponent>;
+
+  function kommentar(id: string, titel: string, themen: Array<{ schluessel: string; name: string }>) {
+    return {
+      score: 0.9,
+      statement_text: 'Tempolimit bringt nichts',
+      statement_similarity_score: 0.9,
+      reply_relevance: 0.9,
+      statement_id: `aussage-${id}`,
+      themen,
+      commentary_result: { id, content_type: 'commentary', title: titel, text: 'Text', references: [] },
+    } as any;
+  }
+
+  function oeffnen(mobil: boolean, kommentare: any[]): HTMLElement {
+    TestBed.configureTestingModule({
+      imports: [ResultViewComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter(ohneWaechter(routes)),
+        {
+          provide: BreakpointObserver,
+          useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
+        },
+      ],
+    });
+    TestBed.inject(StateManagementService).setSearchResults({
+      query_was_newly_added_as_statement: false,
+      statement_id: null,
+      statement_text: 'tempolimit',
+      commentary_search_results_count: kommentare.length,
+      commentary_search_results: kommentare,
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+      post_search_results_count: 0,
+      post_search_results: [],
+    });
+    fixture = TestBed.createComponent(ResultViewComponent);
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  function filterKnoepfe(seite: HTMLElement): HTMLButtonElement[] {
+    return Array.from(seite.querySelectorAll('app-themen-filter button'));
+  }
+
+  for (const mobil of [false, true]) {
+    const wo = mobil ? 'Handy' : 'Desktop';
+
+    it(`bietet nur die Themen der Treffer an (${wo})`, () => {
+      const seite = oeffnen(mobil, [
+        kommentar('k-1', 'Tempo 120 spart CO2', [VERKEHR, KLIMA]),
+        kommentar('k-2', 'Tempolimit rettet Leben', [VERKEHR]),
+      ]);
+
+      expect(filterKnoepfe(seite).map((k) => k.textContent?.trim())).toEqual(['Alle Themen', 'Verkehr', 'Klima']);
+    });
+
+    it(`zeigt nach der Wahl nur die Treffer mit diesem Thema (${wo})`, () => {
+      const seite = oeffnen(mobil, [
+        kommentar('k-1', 'Tempo 120 spart CO2', [VERKEHR, KLIMA]),
+        kommentar('k-2', 'Tempolimit rettet Leben', [VERKEHR]),
+      ]);
+
+      filterKnoepfe(seite).find((k) => k.textContent?.trim() === 'Klima')!.click();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.kommentarKarten.map((k) => k.id)).toEqual(['k-1']);
+      expect(seite.textContent).toContain('Tempo 120 spart CO2');
+      expect(seite.textContent).not.toContain('Tempolimit rettet Leben');
+
+      filterKnoepfe(seite).find((k) => k.textContent?.trim() === 'Alle Themen')!.click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.kommentarKarten.map((k) => k.id)).toEqual(['k-1', 'k-2']);
+    });
+
+    it(`zeigt keinen Filter, wenn kein Treffer ein Thema hat (${wo})`, () => {
+      const seite = oeffnen(mobil, [kommentar('k-1', 'Tempo 120 spart CO2', [])]);
+
+      expect(seite.querySelector('app-themen-filter')).toBeNull();
+    });
+  }
+
+  it('setzt den Filter mit einer neuen Suche zurueck', () => {
+    oeffnen(false, [kommentar('k-1', 'Tempo 120 spart CO2', [KLIMA])]);
+    fixture.componentInstance.nachThemaFiltern('klima');
+
+    TestBed.inject(StateManagementService).setSearchResults({
+      query_was_newly_added_as_statement: false,
+      statement_id: null,
+      statement_text: 'andere suche',
+      commentary_search_results_count: 1,
+      commentary_search_results: [kommentar('k-9', 'Etwas anderes', [VERKEHR])],
+      generictext_search_results_count: 0,
+      generictext_search_results: [],
+      post_search_results_count: 0,
+      post_search_results: [],
+    });
+
+    expect(fixture.componentInstance.aktivesThema).toBeNull();
+    expect(fixture.componentInstance.kommentarKarten.map((k) => k.id)).toEqual(['k-9']);
+  });
+});

@@ -4,10 +4,10 @@ Handles database operations for content moderation.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from sqlalchemy import desc
+from sqlalchemy import and_, desc, or_
 
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import ContentReport
@@ -36,7 +36,7 @@ class ContentReportRepository:
         Args:
             content_id: UUID of the reported content
             content_type: Type of content (commentary, generictext, etc.)
-            reason: Report reason (spam, inappropriate, duplicate, other)
+            reason: Report reason, one of MELDEGRUENDE (domain/models/meldegrund.py)
             reported_by_user_id: Optional user ID of reporter
             reported_by_session_id: Optional session ID of reporter
             description: Optional detailed description
@@ -224,7 +224,7 @@ class ContentReportRepository:
                 if report:
                     report.status = status
                     report.reviewed_by = reviewed_by
-                    report.reviewed_at = datetime.utcnow()
+                    report.reviewed_at = datetime.now(timezone.utc)
                     report.resolution_notes = resolution_notes
                     session.commit()
                     session.refresh(report)
@@ -243,9 +243,12 @@ class ContentReportRepository:
         status: str,
         reviewed_by: Optional[str] = None,
         resolution_notes: Optional[str] = None,
+        nur_offene: bool = False,
     ) -> int:
         """
         Update all reports for a specific content item.
+
+        Mit nur_offene bleiben bearbeitete und abgewiesene Meldungen, wie sie sind.
 
         Args:
             content_id: UUID of the content
@@ -262,17 +265,18 @@ class ContentReportRepository:
         """
         try:
             with self.db.get_session() as session:
-                reports = (
-                    session.query(ContentReport)
-                    .filter(ContentReport.content_id == content_id)
-                    .all()
+                abfrage = session.query(ContentReport).filter(
+                    ContentReport.content_id == content_id
                 )
+                if nur_offene:
+                    abfrage = abfrage.filter(ContentReport.status == "pending")
+                reports = abfrage.all()
 
                 count = 0
                 for report in reports:
                     report.status = status
                     report.reviewed_by = reviewed_by
-                    report.reviewed_at = datetime.utcnow()
+                    report.reviewed_at = datetime.now(timezone.utc)
                     report.resolution_notes = resolution_notes
                     count += 1
 
@@ -286,6 +290,33 @@ class ContentReportRepository:
                 f"Error updating reports for content {content_id}: {e}", exc_info=True
             )
             raise
+
+    def bearbeitete_loeschen_vor(self, grenze: datetime) -> int:
+        """
+        Bearbeitete und abgewiesene Meldungen loeschen, die vor ``grenze``
+        bearbeitet wurden (services/loeschfristen_service.py). Offene bleiben.
+
+        Ohne Zeitpunkt der Bearbeitung (Altbestand) zaehlt der Eingang. Fehler gehen
+        an den Aufrufer.
+
+        Returns:
+            int: Zahl der geloeschten Meldungen
+        """
+        with self.db.get_session() as session:
+            return (
+                session.query(ContentReport)
+                .filter(
+                    ContentReport.status != "pending",
+                    or_(
+                        ContentReport.reviewed_at < grenze,
+                        and_(
+                            ContentReport.reviewed_at.is_(None),
+                            ContentReport.created < grenze,
+                        ),
+                    ),
+                )
+                .delete(synchronize_session=False)
+            )
 
     def get_report_count_by_status(self) -> Dict[str, int]:
         """

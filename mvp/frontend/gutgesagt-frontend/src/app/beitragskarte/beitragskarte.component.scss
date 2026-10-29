@@ -378,7 +378,7 @@
   line-height: 1.4;
 }
 
-// Kurz/Mittel/Lang - nur ab 600 px
+// Kurz/Mittel/Lang - auch am Handy, dort mit groesserer Tippflaeche (#355)
 
 .textlaenge {
   display: flex;
@@ -461,8 +461,12 @@
     display: flex;
   }
 
-  .textlaenge {
-    display: none;
+  .textlaenge ::ng-deep .mat-button-toggle-button {
+    height: 40px;
+  }
+
+  .textlaenge ::ng-deep .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+    line-height: 40px;
   }
 
   .karte-meta {
@@ -579,6 +583,29 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--primary-dark);
+}
+
+// Meine Beitraege: je Fassung eine Angabe in einer Zeile, umbrechend am Handy (#355).
+.nutzung-je-fassung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-secondary);
+
+  li {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .fassung-nutzung {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
 }
 
 // Ohne Nutzung dezent: kein Kreis, nur die graue Zahl.

@@ -23,6 +23,8 @@ from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
 )
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
+from services.aussage_themen_service import AussageThemenService
+from repositories.aussage_themen_repository import get_aussage_themen_repository
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
@@ -36,6 +38,10 @@ from services.gegenlesen.gegenlesen_service import (
     GegenlesenService,
     lade_statt_sag_liste,
 )
+from services.loeschfristen_service import LoeschfristenService
+from services.moderation_service import get_moderation_service
+from repositories.content_report_repository import get_content_report_repository
+from repositories.raw_input_repository import get_raw_input_repository
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -137,13 +143,20 @@ def get_suchen_ohne_treffer_service(
     )
 
 
+def get_aussage_themen_service(
+    statement_service: StatementService = Depends(get_statement_service),
+) -> AussageThemenService:
+    return AussageThemenService(get_aussage_themen_repository(), statement_service)
+
+
 def get_unbeantwortete_aussagen_service(
     statement_service: StatementService = Depends(get_statement_service),
     suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
         get_suchen_ohne_treffer_service
     ),
+    themen: AussageThemenService = Depends(get_aussage_themen_service),
 ) -> UnbeantworteteAussagenService:
-    return UnbeantworteteAussagenService(statement_service, suchen_ohne_treffer)
+    return UnbeantworteteAussagenService(statement_service, suchen_ohne_treffer, themen)
 
 
 def get_feedback_service() -> FeedbackService:
@@ -161,6 +174,15 @@ def get_gegenlesen_service() -> GegenlesenService:
             statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
         )
     return _gegenlesen_service
+
+
+def get_loeschfristen_service() -> LoeschfristenService:
+    return LoeschfristenService(
+        get_content_report_repository(),
+        get_raw_input_repository(),
+        get_moderation_repository(),
+        get_moderation_service(),
+    )
 
 
 def get_beitrag_loeschen_service(

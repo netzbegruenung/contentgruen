@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -99,12 +99,10 @@ describe('AddCommentaryComponent', () => {
   });
 
   describe('Aufbau', () => {
-    it('hat kein Typband, keine Schrittnummern und keine Text-Varianten mehr', () => {
+    it('hat kein Typband und keine Schrittnummern', () => {
       expect(seite().querySelector('.content-type-indicator')).toBeNull();
       expect(seite().querySelector('.step-indicator')).toBeNull();
       expect(seite().querySelector('.optional-toggle')).toBeNull();
-      expect(seite().querySelector('[formControlName="long_text"]')).toBeNull();
-      expect(component.commentaryForm.get('long_text')).toBeNull();
     });
 
     it('zeigt die Qualitaetszeile mit dem ?, anfangs zugeklappt', () => {
@@ -218,7 +216,7 @@ describe('AddCommentaryComponent', () => {
   });
 
   describe('Speichern', () => {
-    it('schickt Titel, Text und Herkunft ohne Lang- und Kurztext', fakeAsync(() => {
+    it('schickt Titel, Text und Herkunft, ohne Kurz und Lang, wenn sie leer sind', fakeAsync(() => {
       const hinzufuegen = speichernMit();
       ausfuellen();
 
@@ -931,6 +929,87 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
+  });
+
+  describe('Weitere Fassungen (#355)', () => {
+    function aufklappen(): void {
+      (seite().querySelector('.fassungen-link') as HTMLButtonElement).click();
+      fixture.detectChanges();
+    }
+
+    it('sind anfangs zugeklappt und lassen sich aufklappen', () => {
+      expect(seite().querySelector('textarea#kurz')).toBeNull();
+      expect(seite().querySelector('textarea#lang')).toBeNull();
+
+      aufklappen();
+
+      expect(seite().querySelector('textarea#kurz')).not.toBeNull();
+      expect(seite().querySelector('textarea#lang')).not.toBeNull();
+      expect(seite().querySelector('.fassungen-link')).toBeNull();
+    });
+
+    it('setzt beim Aufklappen den Fokus in die Kurzfassung', fakeAsync(() => {
+      aufklappen();
+      tick();
+
+      expect(document.activeElement).toBe(seite().querySelector('textarea#kurz'));
+    }));
+
+    it('begrenzt Kurz auf 280 Zeichen fuer X/Bluesky und Lang auf 2000', () => {
+      aufklappen();
+
+      for (const [feld, limit] of [['kurz', 280], ['lang', 2000]] as const) {
+        const control = component.commentaryForm.get(feld)!;
+        control.setValue('a'.repeat(limit));
+        expect(control.hasError('maxlength')).withContext(feld).toBeFalse();
+        control.setValue('a'.repeat(limit + 1));
+        expect(control.hasError('maxlength')).withContext(feld).toBeTrue();
+      }
+      expect((seite().querySelector('textarea#kurz') as HTMLTextAreaElement).maxLength).toBe(280);
+      expect((seite().querySelector('textarea#lang') as HTMLTextAreaElement).maxLength).toBe(2000);
+      expect(seite().querySelector('.kurz-feld')!.textContent).toContain('X/Bluesky');
+    });
+
+    it('sind optional: Speichern geht ohne sie', () => {
+      ausfuellen();
+      aufklappen();
+
+      expect(component.commentaryForm.valid).toBeTrue();
+    });
+
+    it('schickt ausgefuellte Fassungen mit', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      ausfuellen();
+      component.commentaryForm.patchValue({ kurz: 'Die Pumpe rechnet sich.', lang: 'Mit Förderung gerechnet.' });
+
+      component.speichern();
+      flush();
+
+      const anfrage: AddCommentaryRequest = hinzufuegen.calls.mostRecent().args[0];
+      expect(anfrage.commentary.short_text).toBe('Die Pumpe rechnet sich.');
+      expect(anfrage.commentary.long_text).toBe('Mit Förderung gerechnet.');
+    }));
+
+    it('zeigt die Fassungen in der Vorschau als Reiter', () => {
+      ausfuellen();
+      component.commentaryForm.patchValue({ kurz: 'Die Pumpe rechnet sich.' });
+
+      expect(component.vorschauKarte.extra?.kurz).toBe('Die Pumpe rechnet sich.');
+      expect(component.vorschauKarte.extra?.lang).toBeUndefined();
+    });
+
+    it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {
+      aufklappen();
+      component.commentaryForm.patchValue({ kurz: 'Die Pumpe rechnet sich.' });
+      dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+
+      component.zuruecksetzen();
+      fixture.detectChanges();
+
+      expect(dialog.open).toHaveBeenCalled();
+      expect(component.commentaryForm.value.kurz).toBe('');
+      expect(seite().querySelector('textarea#kurz')).toBeNull();
+    });
   });
 
   describe('Vorschau', () => {

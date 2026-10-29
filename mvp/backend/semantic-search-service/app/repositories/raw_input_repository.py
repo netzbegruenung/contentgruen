@@ -12,9 +12,10 @@ import logging
 import re
 import uuid
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence
 
-from sqlalchemy import case, desc, func
+from sqlalchemy import case, delete, desc, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from domain.link_vergleich import gleicher_link, vorfilter_teile
@@ -29,7 +30,12 @@ from domain.models.raw_input import (
     uebergang_erlaubt,
 )
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import RawInput, RawInputContentLink, RawInputDraft
+from infrastructure.database.models import (
+    RawInput,
+    RawInputContentLink,
+    RawInputDraft,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -608,6 +614,52 @@ class RawInputRepository:
         for entwurf in entwuerfe:
             gruppiert[entwurf.raw_input_id].append(entwurf)
         return gruppiert
+
+    def ohne_beitrag_loeschen_vor(self, grenze: datetime) -> int:
+        """
+        Einwuerfe, die in keinem Beitrag ausformuliert sind, loeschen, an denen seit
+        ``grenze`` niemand gearbeitet hat: weder eingeworfen noch einen Satz gespeichert
+        (services/loeschfristen_service.py). Die Saetze daran gehen per CASCADE mit,
+        ebenso die Platzhalter ehemaliger Personen in ``users``, deren Satz damit
+        weg ist (wie in mvp/scripts/manual/person_loeschen.sql).
+
+        Returns:
+            int: Zahl der geloeschten Einwuerfe
+        """
+        letzter_satz = (
+            select(func.max(RawInputDraft.updated_at))
+            .where(RawInputDraft.raw_input_id == RawInput.id)
+            .scalar_subquery()
+        )
+        with self.db.get_session() as session:
+            geloescht = (
+                session.query(RawInput)
+                .filter(
+                    ~exists().where(RawInputContentLink.raw_input_id == RawInput.id),
+                    RawInput.created_at < grenze,
+                    or_(letzter_satz.is_(None), letzter_satz < grenze),
+                )
+                .delete(synchronize_session=False)
+            )
+            session.execute(
+                delete(User).where(
+                    User.user_id.like("ehemalige-person-%"),
+                    ~exists().where(RawInputDraft.user_id == User.user_id),
+                )
+            )
+            return geloescht
+
+    def ausformuliert_in_loeschen(self, content_id: uuid.UUID) -> int:
+        """
+        "Ausformuliert in" zu einem Beitrag loeschen, der endgueltig entfernt wird;
+        die Einwuerfe selbst bleiben.
+        """
+        with self.db.get_session() as session:
+            return (
+                session.query(RawInputContentLink)
+                .filter(RawInputContentLink.content_id == content_id)
+                .delete(synchronize_session=False)
+            )
 
     @staticmethod
     def _verknuepfungen(
