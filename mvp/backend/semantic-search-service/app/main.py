@@ -41,6 +41,7 @@ from api.v1.voting import router as voting_router
 from api.v1.moderation import router as moderation_router
 from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
+from api.v1.gegenlesen import router as gegenlesen_router
 from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
@@ -51,9 +52,11 @@ from repositories.suchen_ohne_treffer_repository import (
 )
 from dependencies import get_feedback_service
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
+from services.gegenlesen.gegenlesen_service import sprachwerkzeuge_laden
 from utils.rate_limiter import (
     aufraeumen_im_takt,
     feedback_rate_limiter,
+    gegenlesen_rate_limiter,
     report_rate_limiter,
     search_query_statement_rate_limiter,
 )
@@ -118,6 +121,7 @@ async def lifespan(app: FastAPI):
                     report_rate_limiter,
                     search_query_statement_rate_limiter,
                     feedback_rate_limiter,
+                    gegenlesen_rate_limiter,
                 ]
             )
         )
@@ -138,6 +142,11 @@ async def lifespan(app: FastAPI):
             feedback_loeschen_im_takt(get_feedback_service())
         )
         logger.info("✅ Feedback cleanup task started")
+
+        # Sprachmodell fuers Gegenlesen (#358) im Hintergrund laden (rund 2 s), damit
+        # die erste Pruefung nicht wartet und der Start nicht blockiert. Fehlt es,
+        # antwortet /api/v1/gegenlesen mit 503; der Dienst laeuft trotzdem.
+        app.state.gegenlesen_vorladen = asyncio.create_task(_gegenlesen_vorladen())
 
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
@@ -166,6 +175,14 @@ async def lifespan(app: FastAPI):
             logger.info("✅ Application shutdown complete")
         except Exception as e:
             logger.error(f"❌ Error during shutdown: {e}", exc_info=True)
+
+
+async def _gegenlesen_vorladen() -> None:
+    try:
+        await asyncio.to_thread(sprachwerkzeuge_laden)
+        logger.info("✅ Gegenlesen: Sprachmodell geladen")
+    except (ImportError, OSError) as fehler:
+        logger.error("Gegenlesen nicht verfuegbar: %s", type(fehler).__name__)
 
 
 logger.info("🔧 Initializing FastAPI app")
@@ -228,6 +245,7 @@ app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])
 app.include_router(moderation_router, prefix="/api/v1/moderation", tags=["moderation"])
 app.include_router(health_router, prefix="/api/v1", tags=["monitoring"])
 app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["feedback"])
+app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
 
 
 if __name__ == "__main__":

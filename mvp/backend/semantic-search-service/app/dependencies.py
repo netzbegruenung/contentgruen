@@ -31,6 +31,10 @@ from repositories.suchen_ohne_treffer_repository import (
 )
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
+from services.gegenlesen.gegenlesen_service import (
+    GegenlesenService,
+    lade_statt_sag_liste,
+)
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -143,6 +147,17 @@ def get_unbeantwortete_aussagen_service(
 
 def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
+
+
+_gegenlesen_service: Optional[GegenlesenService] = None
+
+
+def get_gegenlesen_service() -> GegenlesenService:
+    """Einmal je Prozess: die Liste "statt X sag Y" wird beim ersten Aufruf gelesen."""
+    global _gegenlesen_service
+    if _gegenlesen_service is None:
+        _gegenlesen_service = GegenlesenService(statt_sag=lade_statt_sag_liste())
+    return _gegenlesen_service
 
 
 def get_beitrag_loeschen_service(
