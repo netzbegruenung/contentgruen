@@ -20,6 +20,8 @@ export interface AddCommentaryRequest {
     statement_id?: string;
     /** ... oder, ohne ID, ihr Text; das Backend sucht oder legt sie an. */
     statement_text?: string;
+    /** Mit Text: die Themen der Aussage (#455); eine vorhandene mit Themen behaelt ihre. */
+    themen?: string[];
     /** Die Person hat diesen vorhandenen Kommentar (ID) gesehen und speichert trotzdem. */
     trotz_dublette_von?: string;
     /** Die Person nimmt diesen eigenen vorhandenen Kommentar (ID): er haengt dann an der Aussage. */

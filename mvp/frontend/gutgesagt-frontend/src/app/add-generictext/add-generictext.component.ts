@@ -23,6 +23,10 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { aussageFuerAnfrage, themenWaehlbar } from '../beitragsformular/aussage-fuer-anfrage';
+import { Thema } from '../services/dtos/themenDtos';
+import { ThemenService } from '../services/themen.service';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -88,14 +92,15 @@ export interface Vorhanden {
 
 const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, Aussage und Herkunft werden geleert.',
+  text: 'Titel, Text, Themen, Aussage und Herkunft werden geleert.',
   ja: 'Zurücksetzen',
   nein: 'Abbrechen',
 };
 
 /**
  * Das Hintergrundinfo-Formular, gleich gebaut wie das Kommentarformular: Antwort
- * auf, Titel, Text, Herkunft, Leiste - und daneben (am Handy darunter) die Vorschau.
+ * auf, Titel, Text, fuer eine neue Aussage ihre Themen (#455), Herkunft, Leiste - und
+ * daneben (am Handy darunter) die Vorschau.
  *
  * Gespeichert wird in einem Aufruf, samt Aussage. Danach meldet `success` ID,
  * Aussage und ob verknuepft wurde; wohin es weitergeht, entscheidet der Workflow.
@@ -122,6 +127,7 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
     FormularHilfeComponent,
     GegenlesenComponent,
     FormularLeisteComponent,
+    ThemenAuswahlComponent,
   ],
 })
 export class AddGenerictextComponent implements OnChanges {
@@ -130,6 +136,8 @@ export class AddGenerictextComponent implements OnChanges {
   readonly typFarbe = typFarbe('generictext');
   readonly titelMax = TITEL_MAX;
   readonly textMax = TEXT_MAX;
+  /** Die feste Themenliste; leer, solange sie nicht geladen (oder nicht ladbar) ist. */
+  themenListe: Thema[] = [];
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -214,12 +222,20 @@ export class AddGenerictextComponent implements OnChanges {
     private dialog: MatDialog,
     private beitragAnsehen: BeitragAnsehenService,
     private votingService: VotingService,
+    themenService: ThemenService,
   ) {
     this.generictextForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
+      // Die Themen einer neuen Aussage (#455); gehen mit ihrem Text (aussageFuerAnfrage).
+      themen: [[] as string[]],
       references: [[]],
     });
+    // Ist die Liste nicht ladbar, fehlt die Themenwahl; speichern geht trotzdem.
+    themenService
+      .liste()
+      .pipe(takeUntilDestroyed())
+      .subscribe({ next: (themen) => (this.themenListe = themen), error: () => (this.themenListe = []) });
     // Der Hinweis gilt nur fuer den Text, der geprueft wurde: Wer ihn aendert,
     // entscheidet nicht mehr ueber diese vorhandene, sondern speichert neu.
     this.generictextForm
@@ -264,10 +280,22 @@ export class AddGenerictextComponent implements OnChanges {
     return this.generictextForm.get('text')?.value?.length ?? 0;
   }
 
+  /** Themen waehlen laesst sich fuer eine neue Aussage per Text (themenWaehlbar). */
+  get zeigtThemen(): boolean {
+    return this.themenListe.length > 0 && themenWaehlbar(this.aussage);
+  }
+
   /** Irgendetwas eingetragen oder vorbelegt - dann fragt Zuruecksetzen nach. */
   get hatEingaben(): boolean {
-    const { title, text, references } = this.generictextForm.value;
-    return !!(title?.trim() || text?.trim() || references?.length || this.aussage.id || this.aussage.text);
+    const { title, text, themen, references } = this.generictextForm.value;
+    return !!(
+      title?.trim() ||
+      text?.trim() ||
+      themen?.length ||
+      references?.length ||
+      this.aussage.id ||
+      this.aussage.text
+    );
   }
 
   /**
@@ -420,12 +448,9 @@ export class AddGenerictextComponent implements OnChanges {
     return !this.aussage.id && zuKurz(this.aussage.text);
   }
 
-  /** Die gewaehlte Aussage per ID, sonst ihr Text, sonst nichts. */
-  aussageFuerAnfrage(): Pick<AddGenericTextRequest, 'statement_id' | 'statement_text'> {
-    if (this.aussage.id) {
-      return { statement_id: this.aussage.id };
-    }
-    return this.aussage.text ? { statement_text: this.aussage.text } : {};
+  /** Die gewaehlte Aussage per ID, sonst ihr Text mit den gewaehlten Themen, sonst nichts. */
+  aussageFuerAnfrage(): Pick<AddGenericTextRequest, 'statement_id' | 'statement_text' | 'themen'> {
+    return aussageFuerAnfrage(this.aussage, this.generictextForm.value.themen ?? []);
   }
 
   /** Der vorhandenen, fremden Hintergrundinfo eine Stimme geben statt die eigene zu speichern. */
@@ -486,7 +511,7 @@ export class AddGenerictextComponent implements OnChanges {
     this.entscheidungsFehler = null;
     // Die Aussage, die jetzt im Antwort-auf-Block steht - die Person kann sie seit dem
     // ersten Versuch geaendert haben.
-    const { statement_id, statement_text, ...anfrage } = vorhanden.anfrage;
+    const { statement_id, statement_text, themen, ...anfrage } = vorhanden.anfrage;
     const nehmen: AddGenericTextRequest = { ...anfrage, ...this.aussageFuerAnfrage(), vorhanden_nehmen: vorhanden.id };
     this.genericTextService.addGenericText(nehmen).subscribe({
       next: (antwort) => {
@@ -537,7 +562,7 @@ export class AddGenerictextComponent implements OnChanges {
   }
 
   leeren(): void {
-    this.generictextForm.reset({ title: '', text: '', references: [] });
+    this.generictextForm.reset({ title: '', text: '', themen: [], references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;
     this.showReferences = false;

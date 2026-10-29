@@ -26,6 +26,10 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { aussageFuerAnfrage, themenWaehlbar } from '../beitragsformular/aussage-fuer-anfrage';
+import { Thema } from '../services/dtos/themenDtos';
+import { ThemenService } from '../services/themen.service';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -93,10 +97,15 @@ export interface Vorhanden {
   gewaehlt: 'zugestimmt' | 'genommen' | null;
 }
 
-/** Die optionalen Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357). */
+/**
+ * Die optionalen Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357),
+ * die Themen einer neuen Aussage (#455).
+ */
 interface OptionaleAngaben {
   zweck: Zweck;
   stil: Stil | null;
+  /** Gehoeren zur Aussage, nicht zum Kommentar: gehen mit ihrem Text (aussageFuerAnfrage). */
+  themen: string[];
 }
 
 /**
@@ -104,16 +113,23 @@ interface OptionaleAngaben {
  * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` und in der
  * Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten sich hieraus ab.
  */
-const OPTIONALE_ANGABEN_LEER: OptionaleAngaben = { zweck: ZWECK_STANDARD, stil: null };
+const OPTIONALE_ANGABEN_LEER: Readonly<OptionaleAngaben> = { zweck: ZWECK_STANDARD, stil: null, themen: [] };
 const OPTIONALE_ANGABEN = Object.keys(OPTIONALE_ANGABEN_LEER) as (keyof OptionaleAngaben)[];
 
+/** Die Controls der optionalen Angaben; eingepackt, weil FormBuilder ein Array sonst als Konfiguration liest. */
+const OPTIONALE_ANGABEN_CONTROLS = Object.fromEntries(OPTIONALE_ANGABEN.map((feld) => [feld, [OPTIONALE_ANGABEN_LEER[feld]]]));
+
+function gleicherWert(a: unknown, b: unknown): boolean {
+  return Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((x, i) => x === b[i]) : a === b;
+}
+
 function gleicheAngaben(a: OptionaleAngaben, b: OptionaleAngaben): boolean {
-  return OPTIONALE_ANGABEN.every((feld) => a[feld] === b[feld]);
+  return OPTIONALE_ANGABEN.every((feld) => gleicherWert(a[feld], b[feld]));
 }
 
 const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, weitere Fassungen, Zweck, Stil, Aussage und Herkunft werden geleert.',
+  text: 'Titel, Text, weitere Fassungen, Zweck, Stil, Themen, Aussage und Herkunft werden geleert.',
   ja: 'Zurücksetzen',
   nein: 'Abbrechen',
 };
@@ -121,7 +137,7 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
 /**
  * Das Kommentarformular: Antwort auf, Titel, Kommentar (die Mittelfassung),
  * aufklappbar die weiteren Fassungen Kurz und Lang (#355), Zweck und Stil (#357),
- * Herkunft, Leiste - und
+ * fuer eine neue Aussage ihre Themen (#455), Herkunft, Leiste - und
  * daneben (am Handy darunter) die Vorschau.
  *
  * Gespeichert wird in einem Aufruf, samt Aussage: mit ID, wenn eine gewaehlt ist,
@@ -155,6 +171,7 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
     FormularHilfeComponent,
     GegenlesenComponent,
     FormularLeisteComponent,
+    ThemenAuswahlComponent,
   ],
 })
 export class AddCommentaryComponent implements OnChanges {
@@ -169,6 +186,8 @@ export class AddCommentaryComponent implements OnChanges {
   readonly zwecke = Object.keys(ZWECK_LABEL) as Zweck[];
   readonly zweckLabel = ZWECK_LABEL;
   readonly stilLabel = STIL_LABEL;
+  /** Die feste Themenliste; leer, solange sie nicht geladen (oder nicht ladbar) ist. */
+  themenListe: Thema[] = [];
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -277,15 +296,21 @@ export class AddCommentaryComponent implements OnChanges {
     private dialog: MatDialog,
     private beitragAnsehen: BeitragAnsehenService,
     private votingService: VotingService,
+    themenService: ThemenService,
   ) {
     this.commentaryForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
       kurz: ['', [Validators.maxLength(KURZ_MAX)]],
       lang: ['', [Validators.maxLength(LANG_MAX)]],
-      ...OPTIONALE_ANGABEN_LEER,
+      ...OPTIONALE_ANGABEN_CONTROLS,
       references: [[]],
     });
+    // Ist die Liste nicht ladbar, fehlt die Themenwahl; speichern geht trotzdem.
+    themenService
+      .liste()
+      .pipe(takeUntilDestroyed())
+      .subscribe({ next: (themen) => (this.themenListe = themen), error: () => (this.themenListe = []) });
     // "Bissig" gibt es nur fuer die eigenen Leute: Wechselt der Zweck, faellt ein
     // Stil weg, der nicht mehr passt. Andere Stile bleiben stehen.
     this.commentaryForm
@@ -347,6 +372,11 @@ export class AddCommentaryComponent implements OnChanges {
 
   get langLaenge(): number {
     return this.commentaryForm.get('lang')?.value?.length ?? 0;
+  }
+
+  /** Themen waehlen laesst sich fuer eine neue Aussage per Text (themenWaehlbar). */
+  get zeigtThemen(): boolean {
+    return this.themenListe.length > 0 && themenWaehlbar(this.aussage);
   }
 
   /** Die Stile, die zum gewaehlten Zweck passen. */
@@ -560,12 +590,9 @@ export class AddCommentaryComponent implements OnChanges {
     return !this.aussage.id && zuKurz(this.aussage.text);
   }
 
-  /** Die gewaehlte Aussage per ID, sonst ihr Text, sonst nichts. */
-  aussageFuerAnfrage(): Pick<AddCommentaryRequest, 'statement_id' | 'statement_text'> {
-    if (this.aussage.id) {
-      return { statement_id: this.aussage.id };
-    }
-    return this.aussage.text ? { statement_text: this.aussage.text } : {};
+  /** Die gewaehlte Aussage per ID, sonst ihr Text mit den gewaehlten Themen, sonst nichts. */
+  aussageFuerAnfrage(): Pick<AddCommentaryRequest, 'statement_id' | 'statement_text' | 'themen'> {
+    return aussageFuerAnfrage(this.aussage, this.optionaleAngaben.themen);
   }
 
   /** Dem vorhandenen, fremden Kommentar eine Stimme geben statt den eigenen zu speichern. */
@@ -626,7 +653,7 @@ export class AddCommentaryComponent implements OnChanges {
     this.entscheidungsFehler = null;
     // Die Aussage, die jetzt im Antwort-auf-Block steht - die Person kann sie seit dem
     // ersten Versuch geaendert haben. Der Text kann es nicht: Dann waere der Hinweis weg.
-    const { statement_id, statement_text, ...anfrage } = vorhanden.anfrage;
+    const { statement_id, statement_text, themen, ...anfrage } = vorhanden.anfrage;
     const nehmen: AddCommentaryRequest = { ...anfrage, ...this.aussageFuerAnfrage(), vorhanden_nehmen: vorhanden.id };
     this.commentaryService.addCommentary(nehmen).subscribe({
       next: (antwort) => {

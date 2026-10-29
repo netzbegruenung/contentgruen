@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
 from domain.cc0_hinweis import Cc0Wortlaut
+from domain.themen import themen_pruefen
 from domain.models.commentary import Commentary
 from dtos.beitrag import KommentarTreffer
 
@@ -34,6 +35,11 @@ class AddCommentaryRequest(BaseModel):
     # keine bekannt ist, ihr Text. Ohne beides steht der Kommentar fuer sich.
     statement_id: Optional[UUID] = None
     statement_text: Optional[str] = Field(default=None, max_length=1000)
+    # Die Themen der Aussage, wenn sie per Text kommt (#455): Wie beim Vorab-Anlegen
+    # bekommt sie die neue, eine vorhandene nur, wenn sie noch keine hat. Zu einer
+    # per ID gewaehlten Aussage gelten sie nicht; deren Themen aendert
+    # /statement/themen/zuordnen.
+    themen: List[str] = Field(default_factory=list)
     # Die Person hat diesen vorhandenen Kommentar gesehen und speichert trotzdem:
     # Dann wird der neue angelegt, obwohl er dessen Dublette ist. Gilt nur fuer den
     # gezeigten - ist inzwischen ein anderer vorhanden, sieht die Person erst ihn.
@@ -52,6 +58,12 @@ class AddCommentaryRequest(BaseModel):
                 "trotz_dublette_von und vorhanden_nehmen schliessen einander aus"
             )
         return self
+
+    @field_validator("themen")
+    @classmethod
+    def themen_aus_der_liste(cls, wert: List[str]) -> List[str]:
+        # Vor dem Speichern pruefen: sonst stuende der Beitrag schon, ohne Themen.
+        return themen_pruefen(wert)
 
     # Leer (oder nur Leerraum) heisst: keine Aussage. Sonst mindestens
     # AUSSAGE_MIN_ZEICHEN - kuerzer ist keine Aussage, auf die man antworten kann.

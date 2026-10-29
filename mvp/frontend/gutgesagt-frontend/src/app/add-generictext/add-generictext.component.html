@@ -37,6 +37,16 @@
                     <mat-error *ngIf="generictextForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
 
+                <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
+                <div *ngIf="zeigtThemen" class="optionale-angaben">
+                    <div class="themen-feld">
+                        <span class="feld-beschriftung">Themen der Aussage</span>
+                        <app-themen-auswahl [themen]="themenListe" [gewaehlt]="generictextForm.value.themen"
+                                            beschriftung="Themen der Aussage"
+                                            (gewaehltChange)="generictextForm.patchValue({ themen: $event })"></app-themen-auswahl>
+                    </div>
+                </div>
+
                 <div *ngIf="!showReferences" class="herkunft-anstoss">
                     <button type="button" class="text-link herkunft-link" (click)="revealReferences()">
                         + Herkunft

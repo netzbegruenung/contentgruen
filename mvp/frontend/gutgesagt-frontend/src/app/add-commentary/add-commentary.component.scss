@@ -86,7 +86,8 @@ app-formular-hilfe {
   margin-top: 4px;
 }
 
-.zweck-feld {
+.zweck-feld,
+.themen-feld {
   display: flex;
   flex-direction: column;
   gap: 6px;

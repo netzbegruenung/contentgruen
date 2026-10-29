@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from api.v1.generic_text import HINTERGRUNDINFO_RELEVANZ, router as generic_text_router
 from dependencies import (
+    get_aussage_themen_service,
     get_generic_text_service,
     get_reference_service,
     get_statement_service,
@@ -43,7 +44,16 @@ def _anfrage(**extra) -> dict:
 
 
 @pytest.fixture
-def dienste():
+def themen_service():
+    # Die Aussage hat noch keine Themen; zuordnen gibt die gesetzten zurueck.
+    service = MagicMock()
+    service.themen_von = MagicMock(return_value={})
+    service.zuordnen = AsyncMock(side_effect=lambda _id, themen: themen)
+    return service
+
+
+@pytest.fixture
+def dienste(themen_service):
     commentary_id = uuid.uuid4()
     generic_text_service = MagicMock()
     generic_text_service.add_generic_text = AsyncMock(
@@ -64,6 +74,7 @@ def dienste():
     app.dependency_overrides[get_generic_text_service] = lambda: generic_text_service
     app.dependency_overrides[get_reference_service] = lambda: reference_service
     app.dependency_overrides[get_statement_service] = lambda: statement_service
+    app.dependency_overrides[get_aussage_themen_service] = lambda: themen_service
     yield commentary_id, statement_service
     app.dependency_overrides.clear()
 
@@ -548,4 +559,77 @@ class TestAddGenericTextAntwort:
 
         assert resp.json()["id"] == str(andere)
         assert resp.json()["dublette"] is True
+        generic_text_service.add_generic_text.assert_not_awaited()
+
+
+@pytest.mark.api
+class TestThemenDerAussage:
+    """Wie beim Kommentar (#455, test_add_commentary_antwort.py)."""
+
+    AUSSAGE = "Waermepumpen sind zu teuer"
+
+    def test_neue_aussage_bekommt_die_gewaehlten_themen(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["energie-heizen"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        themen_service.zuordnen.assert_awaited_once_with(
+            statement_id, ["energie-heizen"]
+        )
+
+    def test_vorhandene_aussage_mit_themen_behaelt_ihre(self, dienste, themen_service):
+        _, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            vorhanden,
+            self.AUSSAGE,
+        )
+        themen_service.themen_von = MagicMock(return_value={vorhanden: ["klima"]})
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        themen_service.zuordnen.assert_not_called()
+
+    def test_gewaehlte_aussage_bekommt_keine_themen(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_id=str(statement_id), themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        themen_service.zuordnen.assert_not_called()
+
+    def test_ungueltige_themen_werden_vor_dem_speichern_abgewiesen(self, dienste):
+        generic_text_service = app.dependency_overrides[get_generic_text_service]()
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["heizungsgesetz"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 422
         generic_text_service.add_generic_text.assert_not_awaited()

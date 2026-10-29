@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from api.v1.commentary import KOMMENTAR_RELEVANZ, router as commentary_router
 from dependencies import (
+    get_aussage_themen_service,
     get_commentary_service,
     get_reference_service,
     get_statement_service,
@@ -44,7 +45,16 @@ def _anfrage(**extra) -> dict:
 
 
 @pytest.fixture
-def dienste():
+def themen_service():
+    # Die Aussage hat noch keine Themen; zuordnen gibt die gesetzten zurueck.
+    service = MagicMock()
+    service.themen_von = MagicMock(return_value={})
+    service.zuordnen = AsyncMock(side_effect=lambda _id, themen: themen)
+    return service
+
+
+@pytest.fixture
+def dienste(themen_service):
     commentary_id = uuid.uuid4()
     commentary_service = MagicMock()
     commentary_service.add_commentary = AsyncMock(
@@ -65,6 +75,7 @@ def dienste():
     app.dependency_overrides[get_commentary_service] = lambda: commentary_service
     app.dependency_overrides[get_reference_service] = lambda: reference_service
     app.dependency_overrides[get_statement_service] = lambda: statement_service
+    app.dependency_overrides[get_aussage_themen_service] = lambda: themen_service
     yield commentary_id, statement_service
     app.dependency_overrides.clear()
 
@@ -688,3 +699,140 @@ class TestAddCommentaryAntwort:
 
         assert resp.json()["dublette"] is True
         assert resp.json()["vorhanden_eigen"] is True
+
+
+@pytest.mark.api
+class TestThemenDerAussage:
+    """
+    Wer beim Speichern eine Aussage per Text anlegt, waehlt ihre Themen gleich mit
+    (#455), nach derselben Regel wie beim Vorab-Anlegen: Eine vorhandene Aussage mit
+    Themen behaelt ihre.
+    """
+
+    AUSSAGE = "Waermepumpen sind zu teuer"
+
+    def test_neue_aussage_bekommt_die_gewaehlten_themen(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["energie-heizen"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["verknuepft"] is True
+        themen_service.zuordnen.assert_awaited_once_with(
+            statement_id, ["energie-heizen"]
+        )
+
+    def test_vorhandene_aussage_mit_themen_behaelt_ihre(self, dienste, themen_service):
+        _, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            vorhanden,
+            "Waermepumpen sind viel zu teuer!",
+        )
+        themen_service.themen_von = MagicMock(return_value={vorhanden: ["klima"]})
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        themen_service.zuordnen.assert_not_called()
+
+    def test_gewaehlte_aussage_bekommt_keine_themen(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_id=str(statement_id), themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        themen_service.zuordnen.assert_not_called()
+
+    def test_ohne_themen_wird_nichts_zugeordnet(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            uuid.uuid4(),
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL, json=_anfrage(statement_text=self.AUSSAGE), headers=HEADERS
+        )
+
+        assert resp.status_code == 200
+        themen_service.zuordnen.assert_not_called()
+
+    def test_gescheitertes_zuordnen_behaelt_kommentar_und_verknuepfung(
+        self, dienste, themen_service
+    ):
+        commentary_id, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+        themen_service.zuordnen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(commentary_id)
+        assert resp.json()["statement_id"] == str(statement_id)
+        assert resp.json()["verknuepft"] is True
+
+    def test_fremde_dublette_bekommt_keine_themen(self, dienste, themen_service):
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+        vorhanden = MagicMock(
+            id=uuid.uuid4(), original_author="person-2", title=VORHANDEN_TITEL
+        )
+        commentary_service.pruefe_dublette = AsyncMock(
+            return_value=Dublettenpruefung(vorhanden=vorhanden, aehnlichster=vorhanden)
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["dublette"] is True
+        themen_service.zuordnen.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa"]]
+    )
+    def test_ungueltige_themen_werden_vor_dem_speichern_abgewiesen(
+        self, dienste, themen
+    ):
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=themen),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 422
+        commentary_service.add_commentary.assert_not_awaited()

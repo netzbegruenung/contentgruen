@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
 from domain.cc0_hinweis import Cc0Wortlaut
+from domain.themen import themen_pruefen
 from domain.models.generic_text import GenericText
 from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 
@@ -30,6 +31,11 @@ class AddGenericTextRequest(BaseModel):
     # keine bekannt ist, ihr Text. Ohne beides steht sie fuer sich.
     statement_id: Optional[UUID] = None
     statement_text: Optional[str] = Field(default=None, max_length=1000)
+    # Die Themen der Aussage, wenn sie per Text kommt (#455): Wie beim Vorab-Anlegen
+    # bekommt sie die neue, eine vorhandene nur, wenn sie noch keine hat. Zu einer
+    # per ID gewaehlten Aussage gelten sie nicht; deren Themen aendert
+    # /statement/themen/zuordnen.
+    themen: List[str] = Field(default_factory=list)
     # Die Person hat diese vorhandene Hintergrundinfo gesehen und speichert trotzdem:
     # Dann wird die neue angelegt, obwohl sie deren Dublette ist. Gilt nur fuer die
     # gezeigte - ist inzwischen eine andere vorhanden, sieht die Person erst sie.
@@ -47,6 +53,12 @@ class AddGenericTextRequest(BaseModel):
                 "trotz_dublette_von und vorhanden_nehmen schliessen einander aus"
             )
         return self
+
+    @field_validator("themen")
+    @classmethod
+    def themen_aus_der_liste(cls, wert: List[str]) -> List[str]:
+        # Vor dem Speichern pruefen: sonst stuende der Beitrag schon, ohne Themen.
+        return themen_pruefen(wert)
 
     # Leer (oder nur Leerraum) heisst: keine Aussage. Sonst mindestens
     # AUSSAGE_MIN_ZEICHEN - kuerzer ist keine Aussage, auf die man antworten kann.

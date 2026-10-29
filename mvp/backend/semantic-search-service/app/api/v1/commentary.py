@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
 from dependencies import (
+    get_aussage_themen_service,
     get_aufrufer,
     get_commentary_service,
     get_reference_service,
@@ -23,6 +24,7 @@ from services.content.commentary_service import CommentaryService
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import KommentarResponse, KommentarTreffer
 from services.content.statement_service import AussageNichtGefunden, StatementService
+from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from domain.models.commentary import CommentaryReference
 from services.content.reference_service import ReferenceService
 from domain.models.reference import Reference
@@ -119,6 +121,7 @@ async def add_commentary(
     commentary_service: CommentaryService = Depends(get_commentary_service),
     reference_service: ReferenceService = Depends(get_reference_service),
     statement_service: StatementService = Depends(get_statement_service),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
     x_user: str = Header(...),
 ) -> AddCommentaryResponse:
     try:
@@ -266,6 +269,12 @@ async def add_commentary(
                     )
                 )
                 verknuepft = True
+                # Kam die Aussage per Text, gelten fuer sie die gewaehlten Themen
+                # (#455); scheitert das Zuordnen, bleibt alles andere, wie es ist.
+                if request.statement_id is None and request.themen:
+                    await themen_beim_anlegen(
+                        themen_service, statement_id, request.themen
+                    )
             except AussageNichtGefunden:
                 # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
                 logger.warning(

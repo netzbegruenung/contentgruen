@@ -25,6 +25,7 @@ import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub'
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { environment } from '../../environments/environment';
 
 /** Gleich gebaut wie das Kommentarformular; hier die Unterschiede und die geteilten Wege. */
 describe('AddGenerictextComponent', () => {
@@ -896,6 +897,134 @@ describe('AddGenerictextComponent', () => {
       expect(seite().querySelector('app-formular-leiste .leiste-fehler')).toBeNull();
       expect(seite().querySelector('app-formular-leiste .leiste-aktion')).toBeNull();
     }));
+  });
+
+  describe('Themen der Aussage (#455)', () => {
+    const THEMEN = [
+      { schluessel: 'klima', name: 'Klima' },
+      { schluessel: 'energie-heizen', name: 'Energie und Heizen' },
+      { schluessel: 'soziales', name: 'Soziales' },
+    ];
+
+    function themenLaden(themen = THEMEN): void {
+      TestBed.inject(HttpTestingController)
+        .expectOne(`${environment.baseUrl}/api/v1/statement/themen`)
+        .flush({ themen });
+      fixture.detectChanges();
+    }
+
+    function auswahl(): HTMLElement | null {
+      return seite().querySelector('.optionale-angaben app-themen-auswahl');
+    }
+
+    function thema(name: string): HTMLButtonElement {
+      return Array.from(auswahl()!.querySelectorAll<HTMLButtonElement>('.thema-chip')).find(
+        (knopf) => knopf.textContent?.trim() === name,
+      )!;
+    }
+
+    it('bietet die Themenwahl fuer eine neue Aussage per Text an', () => {
+      themenLaden();
+      expect(auswahl()).toBeNull();
+
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+
+      expect(auswahl()).toBeTruthy();
+      expect(seite().querySelector('.themen-feld')!.textContent).toContain('Themen der Aussage');
+      expect(thema('Klima')).toBeTruthy();
+    });
+
+    it('bietet keine Themenwahl, wenn eine vorhandene Aussage gewaehlt ist', () => {
+      themenLaden();
+
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+
+      expect(auswahl()).toBeNull();
+    });
+
+    it('bietet keine Themenwahl, wenn die Themenliste nicht ladbar ist', () => {
+      TestBed.inject(HttpTestingController)
+        .expectOne(`${environment.baseUrl}/api/v1/statement/themen`)
+        .flush('weg', { status: 503, statusText: 'Service Unavailable' });
+
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+
+      expect(auswahl()).toBeNull();
+    });
+
+    it('schickt die gewaehlten Themen mit dem Text der Aussage', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      ausfuellen();
+
+      thema('Energie und Heizen').click();
+      fixture.detectChanges();
+      thema('Soziales').click();
+      fixture.detectChanges();
+      component.speichern();
+      flush();
+
+      const anfrage: AddGenericTextRequest = hinzufuegen.calls.mostRecent().args[0];
+      expect(anfrage.statement_text).toBe('Wärmepumpen sind zu teuer');
+      expect(anfrage.themen).toEqual(['energie-heizen', 'soziales']);
+      expect('themen' in anfrage.generictext).toBeFalse();
+    }));
+
+    it('laesst hoechstens zwei Themen waehlen', () => {
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+
+      thema('Klima').click();
+      fixture.detectChanges();
+      thema('Soziales').click();
+      fixture.detectChanges();
+
+      expect(thema('Energie und Heizen').disabled).toBeTrue();
+    });
+
+    it('schickt ohne Wahl keine Themen', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      expect('themen' in hinzufuegen.calls.mostRecent().args[0]).toBeFalse();
+    }));
+
+    it('schickt zu einer gewaehlten Aussage keine Themen: Sie behaelt ihre', fakeAsync(() => {
+      const hinzufuegen = speichernMit({ statement_id: ID, verknuepft: true });
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      thema('Klima').click();
+      aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      const anfrage: AddGenericTextRequest = hinzufuegen.calls.mostRecent().args[0];
+      expect(anfrage.statement_id).toBe(ID);
+      expect('themen' in anfrage).toBeFalse();
+    }));
+
+    it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      thema('Klima').click();
+      component.aussage = { id: '', text: '' };
+      expect(component.hatEingaben).toBeTrue();
+      dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+
+      component.zuruecksetzen();
+
+      expect(component.generictextForm.value.themen).toEqual([]);
+      expect(component.hatEingaben).toBeFalse();
+      expect(dialog.open.calls.mostRecent().args[1]!.data.text).toContain('Themen');
+    });
   });
 
   describe('Vorschau', () => {

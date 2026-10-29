@@ -6,6 +6,7 @@ import logging
 from uuid import UUID
 
 from dependencies import (
+    get_aussage_themen_service,
     get_aufrufer,
     get_generic_text_service,
     get_reference_service,
@@ -28,6 +29,7 @@ from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import AussageNichtGefunden, StatementService
+from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextDbEntry, GenericTextReference
 from domain.models.reference import Reference
@@ -204,6 +206,7 @@ async def add_generic_text(
     generic_text_service: GenericTextService = Depends(get_generic_text_service),
     reference_service: ReferenceService = Depends(get_reference_service),
     statement_service: StatementService = Depends(get_statement_service),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
     x_user: str = Header(...),
 ) -> AddGenericTextResponse:
     try:
@@ -290,6 +293,12 @@ async def add_generic_text(
                     )
                 )
                 verknuepft = True
+                # Kam die Aussage per Text, gelten fuer sie die gewaehlten Themen
+                # (#455); scheitert das Zuordnen, bleibt alles andere, wie es ist.
+                if request.statement_id is None and request.themen:
+                    await themen_beim_anlegen(
+                        themen_service, statement_id, request.themen
+                    )
             except AussageNichtGefunden:
                 # Erwartbar (Aussage geloescht, alter Link): ohne Traceback.
                 logger.warning(

@@ -62,6 +62,25 @@ app-formular-hilfe {
   margin-top: 4px;
 }
 
+// Die Themen einer neuen Aussage (#455), wie die optionalen Angaben im Kommentarformular.
+.optionale-angaben {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.themen-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feld-beschriftung {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
 // Unter "+ Herkunft": warum sie sich bei Zahlen lohnt
 .herkunft-anstoss {
   display: flex;

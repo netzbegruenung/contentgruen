@@ -17,11 +17,14 @@ from typing import Dict, Iterable, List, Optional, Protocol, Tuple
 
 from pydantic import ValidationError
 
+from core.logging import get_logger
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.models.statement import StatementDbEntry, angelegt_am
 from domain.themen import NACH_SCHLUESSEL, THEMEN, Zuordnungsart, themen_pruefen
 from services.content.statement_service import AussageNichtGefunden, StatementService
+
+logger = get_logger(__name__)
 
 VON_HAND = Zuordnungsart.VON_HAND
 
@@ -173,3 +176,35 @@ class AussageThemenService:
             raise
         except ValueError as fehler:
             raise AussageNichtGefunden(str(statement_id)) from fehler
+
+
+async def themen_beim_anlegen(
+    themen_service: AussageThemenService,
+    statement_id: uuid.UUID,
+    gewaehlt: List[str],
+    neu: bool = False,
+) -> List[str]:
+    """
+    Die gewaehlten Themen fuer eine Aussage, die gerade beim Vorab-Anlegen oder beim
+    Speichern eines Beitrags per Text angelegt oder gefunden wurde. Die neue bekommt
+    sie; eine vorhandene nur, wenn sie noch keine hat, damit das Anlegen eine
+    vorhandene Zuordnung nicht nebenbei ersetzt. (Pruefen und Setzen sind zwei
+    Schritte; legen zwei Personen dieselbe Aussage im selben Moment an, gilt die
+    zweite Zuordnung. Aendern geht ohnehin ueber /themen/zuordnen.) `neu` spart das
+    Nachsehen, wenn feststeht, dass die Aussage eben entstanden ist.
+
+    Liefert die Themen, die die Aussage jetzt hat. Scheitert das Zuordnen, bleibt
+    die Aussage, wie sie ist, und das Ergebnis ist []: Wer sie angelegt hat, hat
+    damit nichts verloren, was sich nicht nachtraeglich zuordnen liesse.
+    """
+    try:
+        if not neu:
+            bisher = themen_service.themen_von([statement_id]).get(statement_id)
+            if bisher:
+                return bisher
+        if gewaehlt:
+            return await themen_service.zuordnen(statement_id, gewaehlt)
+        return []
+    except Exception as e:
+        logger.warning(f"Themen nicht zugeordnet: {type(e).__name__}")
+        return []
