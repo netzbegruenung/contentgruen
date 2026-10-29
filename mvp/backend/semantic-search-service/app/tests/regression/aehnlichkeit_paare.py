@@ -151,7 +151,7 @@ _ALT = [
     ("C04", "aussage", "C", "gleich", "umformulierung", 'Windräder sind Vogel-Schredder!', 'Windkraftanlagen töten massenhaft Vögel', "eigen"),
     ("C05", "aussage", "C", "gleich", "umformulierung", 'Balkonsolar lohnt sich nie', 'Balkonkraftwerke rechnen sich nicht', "eigen"),
     ("C06", "aussage", "C", "gleich", "umformulierung", 'Tempolimit bringt doch eh nichts fürs Klima!', 'Ein Tempolimit hilft dem Klima überhaupt nicht', "eigen"),
-    ("C07", "aussage", "C", "gleich", "umformulierung", 'Die Grünen interessieren sich nur für Großstädte, das Land ist ihnen egal!', 'Den Grünen ist der ländliche Raum egal', "eigen"),
+    ("C07", "aussage", "D", "verwandt", "mehrfachthema", 'Die Grünen interessieren sich nur für Großstädte, das Land ist ihnen egal!', 'Den Grünen ist der ländliche Raum egal', "eigen"),
     ("C08", "aussage", "C", "gleich", "umformulierung", 'Die Grünen wollen mir meine Heizung verbieten!', 'Die Grünen wollen uns die Gasheizung wegnehmen', "eigen"),
     ("C09", "aussage", "C", "gleich", "umformulierung", 'Die Grünen lassen alle Migranten rein', 'Die Grünen wollen die Grenzen für alle öffnen', "eigen"),
     ("C10", "aussage", "C", "gleich", "umformulierung", 'Wärmepumpen funktionieren nur im Neubau!', 'Im Altbau taugen Wärmepumpen nichts', "eigen"),
@@ -227,6 +227,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "Die Grünen wollen höhere Steuern"),
         ("verwandt", "mehrfachthema", "Die Grünen sind eine Verbotspartei und wollen höhere Steuern"),
         ("fremd", "fremd", "Der Supermarkt hat bis 22 Uhr offen"),
+        ("widerspricht", "antonym", "Die Grünen sind eine liberale Partei, die wenig verbietet"),
+        ("widerspricht", "verneinung", "Die Grünen sind gar keine Verbotspartei"),
     ]),
     ("WI", "wind", "Windräder töten Vögel", [
         ("gleich", "wortstellung", "Vögel werden von Windrädern getötet"),
@@ -242,6 +244,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "Windräder sind zu laut"),
         ("verwandt", "mehrfachthema", "Windräder töten Vögel und verschandeln die Landschaft"),
         ("fremd", "fremd", "Brot ist in den letzten Jahren teurer geworden"),
+        ("widerspricht", "antonym", "Windräder schützen Vögel"),
+        ("widerspricht", "verneinung", "Niemals tötet ein Windrad einen Vogel"),
     ]),
     ("BS", "balkon", "Balkonsolar lohnt sich nie", [
         ("gleich", "tippfehler", "Balkonsolar lont sich nie"),
@@ -256,6 +260,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Lohnt sich Balkonsolar?"),
         ("verwandt", "aspekt", "Balkonsolar ist in Mietwohnungen verboten"),
         ("fremd", "fremd", "Im Winter sollte man öfter lüften"),
+        ("widerspricht", "antonym", "Balkonsolar zahlt sich aus"),
+        ("widerspricht", "verneinung", "Balkonsolar lohnt sich doch"),
     ]),
     ("WP", "waermepumpe", "Wärmepumpen funktionieren nur im Neubau", [
         ("gleich", "tippfehler", "Wärmepumpen funktionieren nur im Neubua"),
@@ -269,6 +275,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Funktionieren Wärmepumpen nur im Neubau?"),
         ("verwandt", "aspekt", "Wärmepumpen sind zu laut für Reihenhäuser"),
         ("fremd", "fremd", "Der Euro hat das Reisen in Europa einfacher gemacht"),
+        ("widerspricht", "antonym", "Wärmepumpen funktionieren nur im Altbau"),
+        ("widerspricht", "verneinung", "Wärmepumpen funktionieren nirgends"),
     ]),
     ("TL", "tempo", "Ein Tempolimit bringt nichts fürs Klima", [
         ("gleich", "tippfehler", "Ein Tempolimt bringt nichts fürs Klima"),
@@ -282,6 +290,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "Ein Tempolimit macht die Autobahn sicherer"),
         ("verwandt", "mehrfachthema", "Ein Tempolimit bringt nichts fürs Klima und kostet nur Zeit"),
         ("fremd", "fremd", "Kinder brauchen mehr Sportunterricht"),
+        ("widerspricht", "antonym", "Ein Tempolimit schadet dem Klima"),
+        ("widerspricht", "verneinung", "Nicht nichts bringt ein Tempolimit fürs Klima"),
     ]),
     ("EA", "eauto", "E-Autos sind schlechter für die Umwelt als Verbrenner", [
         ("gleich", "umformulierung", "Verbrenner sind besser für die Umwelt als E-Autos"),
@@ -295,6 +305,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "E-Autos sind zu teuer"),
         ("verwandt", "aspekt", "Für E-Autos gibt es zu wenige Ladesäulen"),
         ("fremd", "fremd", "Der Stadtpark braucht mehr Bänke"),
+        ("widerspricht", "antonym", "E-Autos sind umweltfreundlicher als Verbrenner"),
+        ("gleich", "verneinung", "E-Autos sind nicht besser für die Umwelt als Verbrenner, sondern schlechter"),
     ]),
     ("FL", "fleisch", "Die Grünen wollen uns das Fleisch verbieten", [
         ("gleich", "tippfehler", "Die Grünen wollen uns das Fleich verbieten"),
@@ -308,6 +320,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Wollen die Grünen uns das Fleisch verbieten?"),
         ("verwandt", "aspekt", "Die Grünen wollen einen Veggie-Tag in Kantinen"),
         ("fremd", "fremd", "Handys gehören nicht in den Unterricht"),
+        ("widerspricht", "antonym", "Die Grünen wollen uns das Fleisch erlauben"),
+        ("widerspricht", "verneinung", "Kein Grüner will uns das Fleisch verbieten"),
     ]),
     ("EE", "erneuerbar", "Erneuerbare Energien sind zu teuer", [
         ("gleich", "tippfehler", "Erneuerbare Energein sind zu teuer"),
@@ -321,6 +335,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Sind erneuerbare Energien zu teuer?"),
         ("verwandt", "aspekt", "Erneuerbare Energien brauchen zu viel Fläche"),
         ("fremd", "fremd", "Im Sommer sollte man viel Wasser trinken"),
+        ("widerspricht", "antonym", "Erneuerbare Energien sind zu billig"),
+        ("gleich", "verneinung", "Erneuerbare Energien sind nicht bezahlbar"),
     ]),
     ("HZ", "heizung", "Die Grünen wollen mir meine Heizung verbieten", [
         ("gleich", "tippfehler", "Die Grünen wollen mir meine Heitzung verbieten"),
@@ -333,10 +349,12 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Wollen die Grünen mir meine Heizung verbieten?"),
         ("verwandt", "mehrfachthema", "Die Grünen wollen mir meine Heizung und mein Auto verbieten"),
         ("fremd", "fremd", "Der Bäcker im Ort macht nächsten Monat zu"),
+        ("widerspricht", "antonym", "Die Grünen wollen mir meine Heizung lassen"),
+        ("widerspricht", "verneinung", "Die Grünen wollen mir nichts an meiner Heizung verbieten"),
     ]),
     ("EU", "eu", "Die EU schadet Deutschland", [
         ("gleich", "tippfehler", "Die EU schadet Deutchland"),
-        ("gleich", "wortstellung", "Deutschland schadet die EU"),
+        ("gleich", "umformulierung", "Deutschland nimmt durch die EU Schaden"),
         ("gleich", "umformulierung", "Die Europäische Union ist schlecht für Deutschland"),
         ("widerspricht", "antonym", "Die EU nützt Deutschland"),
         ("widerspricht", "verneinung", "Die EU schadet Deutschland nicht"),
@@ -345,6 +363,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Schadet die EU Deutschland?"),
         ("verwandt", "aspekt", "Die EU macht zu viele Vorschriften"),
         ("fremd", "fremd", "Hunde sollten im Wald an die Leine"),
+        ("widerspricht", "antonym", "Die EU hilft Deutschland"),
+        ("widerspricht", "verneinung", "Die EU schadet Deutschland keineswegs"),
     ]),
     ("AT", "atom", "Der Atomausstieg war ein Fehler", [
         ("gleich", "tippfehler", "Der Atomaustieg war ein Fehler"),
@@ -358,6 +378,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "War der Atomausstieg ein Fehler?"),
         ("verwandt", "mehrfachthema", "Der Atomausstieg und der Kohleausstieg waren Fehler"),
         ("fremd", "fremd", "Die Schulen brauchen mehr Lehrkräfte"),
+        ("widerspricht", "antonym", "Der Atomausstieg war ein Erfolg"),
+        ("gleich", "verneinung", "Der Atomausstieg war nicht richtig"),
     ]),
     ("DB", "bahn", "Die Bahn ist immer unpünktlich", [
         ("gleich", "tippfehler", "Die Bahn ist imer unpünktlich"),
@@ -371,6 +393,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Warum ist die Bahn so unpünktlich?"),
         ("verwandt", "aspekt", "Bahnfahren ist zu teuer"),
         ("fremd", "fremd", "Tomaten wachsen auch im Kübel"),
+        ("widerspricht", "antonym", "Die Bahn ist stets pünktlich"),
+        ("widerspricht", "verneinung", "Die Bahn ist niemals unpünktlich"),
     ]),
     ("KW", "klimawandel", "Der Klimawandel ist menschengemacht", [
         ("gleich", "tippfehler", "Der Klimawandel ist menschgemacht"),
@@ -384,6 +408,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Ist der Klimawandel menschengemacht?"),
         ("verwandt", "aspekt", "Der Klimawandel macht Hitzesommer häufiger"),
         ("fremd", "fremd", "Fußball ist der beliebteste Sport in Deutschland"),
+        ("widerspricht", "antonym", "Der Klimawandel ist natürlichen Ursprungs"),
+        ("gleich", "verneinung", "Der Klimawandel ist nicht natürlichen Ursprungs"),
     ]),
     ("SP", "strompreis", "Die Energiewende macht den Strom teurer", [
         ("gleich", "tippfehler", "Die Energiewnde macht den Strom teurer"),
@@ -397,6 +423,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Macht die Energiewende den Strom teurer?"),
         ("verwandt", "mehrfachthema", "Die Energiewende macht den Strom teurer und unsicherer"),
         ("fremd", "fremd", "Viele Vereine suchen Ehrenamtliche"),
+        ("widerspricht", "antonym", "Die Energiewende macht den Strom günstiger"),
+        ("widerspricht", "verneinung", "Durch die Energiewende wird der Strom nicht teurer"),
     ]),
     ("LR", "land", "Den Grünen ist der ländliche Raum egal", [
         ("gleich", "tippfehler", "Den Grünen ist der ländlche Raum egal"),
@@ -409,6 +437,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Ist den Grünen der ländliche Raum egal?"),
         ("verwandt", "aspekt", "Auf dem Land fehlen Hausärzte"),
         ("fremd", "fremd", "Kaffee schmeckt frisch gemahlen am besten"),
+        ("widerspricht", "antonym", "Den Grünen liegt der ländliche Raum am Herzen"),
+        ("widerspricht", "verneinung", "Der ländliche Raum ist den Grünen keineswegs egal"),
     ]),
     ("CO", "co2preis", "Der CO2-Preis trifft vor allem Menschen mit wenig Geld", [
         ("gleich", "tippfehler", "Der CO2-Preis trift vor allem Menschen mit wenig Geld"),
@@ -421,6 +451,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Wen trifft der CO2-Preis?"),
         ("verwandt", "aspekt", "Der CO2-Preis macht Tanken teurer"),
         ("fremd", "fremd", "Die Stadtbibliothek hat jetzt auch sonntags offen"),
+        ("widerspricht", "antonym", "Der CO2-Preis trifft vor allem Reiche"),
+        ("widerspricht", "verneinung", "Der CO2-Preis trifft nicht vor allem Menschen mit wenig Geld"),
     ]),
     ("KO", "kohle", "Wir brauchen Kohlekraftwerke für eine sichere Stromversorgung", [
         ("gleich", "tippfehler", "Wir brauchen Kohlekraftwerke für eine sichere Stromversorung"),
@@ -432,6 +464,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "quantor", "Wir brauchen noch einige Jahre Kohlekraftwerke für eine sichere Stromversorgung"),
         ("verwandt", "frage", "Brauchen wir Kohlekraftwerke für eine sichere Stromversorgung?"),
         ("fremd", "fremd", "Die Sommerferien sind zu lang"),
+        ("widerspricht", "antonym", "Kohlekraftwerke gefährden eine sichere Stromversorgung"),
+        ("widerspricht", "verneinung", "Für eine sichere Stromversorgung brauchen wir keine Kohlekraftwerke"),
     ]),
     ("RW", "radweg", "Radwege nehmen Autofahrern den Platz weg", [
         ("gleich", "tippfehler", "Radwege nehmen Autofahern den Platz weg"),
@@ -443,6 +477,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "Radwege machen den Verkehr sicherer"),
         ("verwandt", "frage", "Nehmen Radwege Autofahrern den Platz weg?"),
         ("fremd", "fremd", "Die Gemeinde baut ein neues Hallenbad"),
+        ("widerspricht", "antonym", "Radwege schaffen Autofahrern Platz"),
+        ("widerspricht", "verneinung", "Radwege nehmen Autofahrern nicht den Platz weg"),
     ]),
     ("GN", "gendern", "Die Grünen wollen allen das Gendern vorschreiben", [
         ("gleich", "tippfehler", "Die Grünen wollen allen das Gendern vorschrieben"),
@@ -454,6 +490,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Wollen die Grünen allen das Gendern vorschreiben?"),
         ("verwandt", "aspekt", "Gendern macht Texte schwer lesbar"),
         ("fremd", "fremd", "Im Herbst fallen die Blätter"),
+        ("widerspricht", "antonym", "Die Grünen wollen allen das Gendern freistellen"),
+        ("widerspricht", "verneinung", "Die Grünen schreiben niemandem das Gendern vor"),
     ]),
     ("WS", "wasserstoff", "Wasserstoff ist die Lösung für alle Heizungen", [
         ("gleich", "tippfehler", "Wasserstof ist die Lösung für alle Heizungen"),
@@ -465,6 +503,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "Wasserstoff ist knapp und teuer"),
         ("verwandt", "frage", "Ist Wasserstoff die Lösung für alle Heizungen?"),
         ("fremd", "fremd", "Der Marktplatz soll im Sommer einen Brunnen bekommen"),
+        ("widerspricht", "antonym", "Wasserstoff ist für alle Heizungen ungeeignet"),
+        ("widerspricht", "verneinung", "Wasserstoff ist keine Lösung für Heizungen"),
     ]),
     ("IN", "insekten", "Pestizide sind schuld am Insektensterben", [
         ("gleich", "tippfehler", "Pestizide sind schuld am Insektenstreben"),
@@ -476,6 +516,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "Blühstreifen helfen den Insekten"),
         ("verwandt", "frage", "Sind Pestizide schuld am Insektensterben?"),
         ("fremd", "fremd", "Der Wochenmarkt findet jetzt samstags statt"),
+        ("widerspricht", "antonym", "Pestizide sind unschuldig am Insektensterben"),
+        ("widerspricht", "verneinung", "Pestizide tragen keine Schuld am Insektensterben"),
     ]),
     # Test-Gruppen (TEST_GRUPPEN): neue Bestandstexte, die im Train-Teil nicht vorkommen.
     ("WA", "wald", "Windräder im Wald zerstören die Natur", [
@@ -490,6 +532,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "aspekt", "Für Windräder im Wald werden Bäume gefällt"),
         ("verwandt", "mehrfachthema", "Windräder im Wald zerstören die Natur und stören die Anwohner"),
         ("fremd", "fremd", "Im Rathaus gibt es zu wenige Termine"),
+        ("widerspricht", "antonym", "Windräder im Wald schützen die Natur"),
+        ("widerspricht", "verneinung", "Windräder im Wald zerstören keine Natur"),
     ]),
     ("NV", "nahverkehr", "Der Nahverkehr auf dem Land ist zu schlecht", [
         ("gleich", "tippfehler", "Der Nahverkehr auf dem Land ist zu schlect"),
@@ -502,6 +546,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Ist der Nahverkehr auf dem Land zu schlecht?"),
         ("verwandt", "aspekt", "Busfahren auf dem Land ist zu teuer"),
         ("fremd", "fremd", "Kartoffeln lagert man am besten dunkel"),
+        ("widerspricht", "antonym", "Der Nahverkehr auf dem Land ist ausgezeichnet"),
+        ("gleich", "verneinung", "Der Nahverkehr auf dem Land ist nicht gut genug"),
     ]),
     ("DT", "ticket", "Das Deutschlandticket ist zu teuer", [
         ("gleich", "tippfehler", "Das Deutschlandtiket ist zu teuer"),
@@ -515,6 +561,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Ist das Deutschlandticket zu teuer?"),
         ("verwandt", "aspekt", "Das Deutschlandticket nützt auf dem Dorf wenig"),
         ("fremd", "fremd", "Zahnseide sollte man täglich benutzen"),
+        ("widerspricht", "antonym", "Das Deutschlandticket ist preiswert"),
+        ("widerspricht", "verneinung", "Das Deutschlandticket ist keineswegs zu teuer"),
     ]),
     ("BI", "bio", "Bio-Lebensmittel sind gesünder", [
         ("gleich", "tippfehler", "Bio-Lebensmitel sind gesünder"),
@@ -528,6 +576,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Sind Bio-Lebensmittel gesünder?"),
         ("verwandt", "mehrfachthema", "Bio-Lebensmittel sind gesünder und besser fürs Klima"),
         ("fremd", "fremd", "Die Brücke wird im Sommer saniert"),
+        ("widerspricht", "antonym", "Bio-Lebensmittel sind schädlicher"),
+        ("gleich", "verneinung", "Bio-Lebensmittel sind nicht ungesünder, sondern gesünder"),
     ]),
     ("FB", "fliegen", "Fliegen ist billiger als Bahnfahren", [
         ("gleich", "tippfehler", "Fliegen ist biliger als Bahnfahren"),
@@ -540,6 +590,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Ist Fliegen billiger als Bahnfahren?"),
         ("verwandt", "aspekt", "Kerosin ist von der Energiesteuer befreit"),
         ("fremd", "fremd", "Viele Kinder können nicht schwimmen"),
+        ("widerspricht", "antonym", "Fliegen kostet mehr als Bahnfahren"),
+        ("widerspricht", "verneinung", "Fliegen ist keineswegs billiger als Bahnfahren"),
     ]),
     ("AK", "akku", "Akkus von E-Autos halten nicht lange", [
         ("gleich", "tippfehler", "Akkus von E-Autos halten nich lange"),
@@ -553,6 +605,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Wie lange halten Akkus von E-Autos?"),
         ("verwandt", "aspekt", "Akkus von E-Autos lassen sich recyceln"),
         ("fremd", "fremd", "Der Chor sucht neue Stimmen"),
+        ("widerspricht", "antonym", "Akkus von E-Autos sind langlebig"),
+        ("gleich", "verneinung", "Akkus von E-Autos sind nicht langlebig"),
     ]),
     ("MO", "moor", "Moore speichern viel CO2", [
         ("gleich", "tippfehler", "Moore speicher viel CO2"),
@@ -565,6 +619,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Speichern Moore viel CO2?"),
         ("verwandt", "aspekt", "Moore sollten wieder vernässt werden"),
         ("fremd", "fremd", "Das Stadtfest ist dieses Jahr im August"),
+        ("widerspricht", "antonym", "Moore speichern kaum CO2"),
+        ("widerspricht", "verneinung", "Moore speichern nicht viel CO2"),
     ]),
     ("FW", "fernwaerme", "Fernwärme ist teurer als eine Gasheizung", [
         ("gleich", "tippfehler", "Fernwärme ist teuerer als eine Gasheizung"),
@@ -577,6 +633,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Ist Fernwärme teurer als eine Gasheizung?"),
         ("verwandt", "aspekt", "Fernwärme gibt es nur in Städten"),
         ("fremd", "fremd", "Der Spielplatz bekommt eine neue Rutsche"),
+        ("widerspricht", "antonym", "Fernwärme ist günstiger als eine Gasheizung"),
+        ("widerspricht", "verneinung", "Fernwärme ist keineswegs teurer als eine Gasheizung"),
     ]),
     ("WO", "wolf", "Der Wolf ist eine Gefahr für Weidetiere", [
         ("gleich", "tippfehler", "Der Wolf ist eine Gefahr für Weidetire"),
@@ -589,6 +647,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Ist der Wolf eine Gefahr für Weidetiere?"),
         ("verwandt", "aspekt", "Herdenschutzzäune halten Wölfe ab"),
         ("fremd", "fremd", "Die Grundschule bekommt eine Mensa"),
+        ("widerspricht", "antonym", "Der Wolf ist für Weidetiere harmlos"),
+        ("widerspricht", "verneinung", "Der Wolf ist für Weidetiere nicht gefährlich"),
     ]),
     ("MU", "muell", "Mülltrennung bringt nichts", [
         ("gleich", "tippfehler", "Mültrennung bringt nichts"),
@@ -601,6 +661,8 @@ _AUSSAGE_GRUPPEN = [
         ("verwandt", "frage", "Bringt Mülltrennung etwas?"),
         ("verwandt", "aspekt", "Plastikmüll wird oft ins Ausland gebracht"),
         ("fremd", "fremd", "Der Zug nach Hamburg fällt heute aus"),
+        ("widerspricht", "antonym", "Mülltrennung lohnt sich"),
+        ("widerspricht", "verneinung", "Es stimmt nicht, dass Mülltrennung nichts bringt"),
     ]),
 ]
 
@@ -661,7 +723,7 @@ _HINTERGRUND_GRUPPEN = [
         ("gleich", "trivial", HI_GLAS.lower()),
         ("gleich", "umformulierung", "An Glasscheiben und Glasfassaden sterben in Deutschland jährlich geschätzt 100 bis 115 Millionen Vögel. Das ist eine Hochrechnung der Vogelschutzwarten der Länder, keine Zählung."),
         ("widerspricht", "zahl", HI_GLAS.replace("100 bis 115 Millionen", "100 bis 115 Tausend")),
-        ("widerspricht", "verneinung", HI_GLAS.replace("Die Zahl ist eine Hochrechnung, keine Zählung.", "Die Zahl ist eine Zählung, keine Hochrechnung.")),
+        ("widerspricht", "wortstellung", HI_GLAS.replace("Die Zahl ist eine Hochrechnung, keine Zählung.", "Die Zahl ist eine Zählung, keine Hochrechnung.")),
         ("verwandt", "aspekt", "Markierungen auf großen Glasflächen machen die Scheiben für Vögel sichtbar und verringern Kollisionen."),
         ("fremd", "fremd", "In Deutschland gibt es über zehntausend Gemeinden."),
     ]),

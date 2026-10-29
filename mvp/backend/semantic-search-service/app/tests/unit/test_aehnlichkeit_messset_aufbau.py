@@ -9,7 +9,11 @@ from collections import Counter
 import pytest
 
 from tests.regression.aehnlichkeit_gemessen import GEMESSEN
-from tests.regression.aehnlichkeit_messen import fingerabdruck
+from tests.regression.aehnlichkeit_messen import (
+    PRUEFUNG_JE_ART,
+    fingerabdruck,
+    gemessen,
+)
 from tests.regression.aehnlichkeit_paare import (
     LABELS,
     MINIMALPAAR_PHAENOMENE,
@@ -30,12 +34,7 @@ def test_ids_eindeutig():
 def test_jedes_paar_hat_label_und_phaenomen():
     assert all(p.label in LABELS for p in PAARE)
     assert all(p.phaenomen in PHAENOMENE for p in PAARE)
-    assert {p.art for p in PAARE} == {
-        "aussage",
-        "suche",
-        "kommentar",
-        "hintergrundinfo",
-    }
+    assert {p.art for p in PAARE} == set(PRUEFUNG_JE_ART)
 
 
 @pytest.mark.parametrize("paar", PAARE, ids=[p.id for p in PAARE])
@@ -96,5 +95,5 @@ def test_kein_text_in_train_und_test():
 def test_gemessen_passt_zu_den_paaren():
     """Neue oder umnummerierte Paare: aehnlichkeit_messen.py --schreiben laufen lassen."""
     assert set(GEMESSEN) == {p.id for p in PAARE}
-    veraltet = [p.id for p in PAARE if GEMESSEN[p.id][4] != fingerabdruck(p)]
+    veraltet = [p.id for p in PAARE if gemessen(p.id).fingerabdruck != fingerabdruck(p)]
     assert not veraltet

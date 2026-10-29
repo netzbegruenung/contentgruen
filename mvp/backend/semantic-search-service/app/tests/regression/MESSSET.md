@@ -80,9 +80,11 @@ Paare und beim Prüfen der Labels; sie werden im Review abgenommen.
    (Tempo 130 statt 120) ist *verwandt*: Beides kann zugleich stimmen, auch wenn eins davon
    falsch ist. Eine angehängte Herkunft ändert nichts (*gleich*).
 9. **Verstärker** ohne Inhalt („doch eh“, „total“, „überhaupt“) ändern nichts: *gleich*.
-   Eine Konkretisierung, die den Kern lässt, ist *gleich* (C08 „Heizung“ / „Gasheizung“);
-   ändert sie, wer oder was betroffen ist, ist sie *verwandt* („Ölheizungen verbieten“
-   gegen „meine Heizung verbieten“).
+   Bei einer Konkretisierung zählt, ob dieselben Betroffenen gemeint sind. Benennt sie nur,
+   was in der Debatte ohnehin gemeint ist, ist sie *gleich* (C08: „mir meine Heizung
+   verbieten“ / „uns die Gasheizung wegnehmen“ meint beide Male die vorhandene Heizung
+   der Sprechenden). Schränkt sie auf eine andere Gruppe ein, ist sie *verwandt* (HZ07:
+   „neue Ölheizungen verbieten“ betrifft die vorhandene Heizung gerade nicht).
 
 ## Train/Test-Split
 
@@ -109,12 +111,12 @@ Gemessen am 29.10.2026 mit `intfloat/multilingual-e5-base` und den Schwellen aus
 „als gleich entschieden“ zählt auch normalisiert gleiche Texte mit. Neu erzeugen mit
 `aehnlichkeit_messen.py`.
 
-- **Aussagen:** Die Schwelle 0,98 trennt *gleich* nicht von den anderen Labels. 21 von 96
-  *widerspricht*-Paaren und 28 von 127 *verwandt*-Paaren lägen heute über ihr und würden
+- **Aussagen:** Die Schwelle 0,98 trennt *gleich* nicht von den anderen Labels. 31 von 151
+  *widerspricht*-Paaren und 28 von 128 *verwandt*-Paaren lägen heute über ihr und würden
   still als dieselbe Aussage wiederverwendet (Verneinung, Gegenteil, vertauschte Rollen,
-  „manche“, Fragen). Von 116 *gleich*-Paaren erreichen nur 43 die Schwelle, 48 gelten
+  „manche“, Fragen). Von 122 *gleich*-Paaren erreichen nur 45 die Schwelle, 50 gelten
   mit der Normalform als gleich. Über der Vorschlagsschwelle 0,885 liegen alle *gleich*-
-  und *widerspricht*-Paare und 120 von 127 *verwandt*-Paaren.
+  und *widerspricht*-Paare und 121 von 128 *verwandt*-Paaren.
 - **Hintergrundinfos:** Alle 10 *widerspricht*-Paare (andere Zahl oder Verneinung im sonst
   gleichen Text) liegen über 0,975 und würden als Dublette angeboten, ebenso 3 von 9
   *verwandt*-Paaren; 4 von 14 *gleich*-Paaren (Umformulierungen) liegen darunter.
@@ -125,19 +127,18 @@ aussage (Score qq, Dublette ab 0.98):
 
 | Label | Paare | train/test | Score min–max | als gleich entschieden | ≥ 0.98 | ≥ 0.885 |
 |---|---|---|---|---|---|---|
-| gleich | 116 | 88/28 | 0.887–1.000 | 48 | 43 | 116 |
-| widerspricht | 96 | 66/30 | 0.906–0.996 | 21 | 21 | 96 |
-| verwandt | 127 | 91/36 | 0.821–0.996 | 28 | 28 | 120 |
+| gleich | 122 | 91/31 | 0.887–1.000 | 50 | 45 | 122 |
+| widerspricht | 151 | 104/47 | 0.906–0.996 | 31 | 31 | 151 |
+| verwandt | 128 | 92/36 | 0.821–0.996 | 28 | 28 | 121 |
 | fremd | 39 | 29/10 | 0.759–0.852 | 0 | 0 | 0 |
 
-hintergrundinfo (Score pp, Dublette ab 0.975):
+suche (Score qq, Dublette ab 0.98):
 
-| Label | Paare | train/test | Score min–max | als gleich entschieden | ≥ 0.975 | ≥ 0.885 |
+| Label | Paare | train/test | Score min–max | als gleich entschieden | ≥ 0.98 | ≥ 0.885 |
 |---|---|---|---|---|---|---|
-| gleich | 14 | 9/5 | 0.946–1.000 | 10 | 10 | 14 |
-| widerspricht | 10 | 7/3 | 0.976–1.000 | 10 | 10 | 10 |
-| verwandt | 9 | 6/3 | 0.827–0.999 | 3 | 3 | 6 |
-| fremd | 6 | 4/2 | 0.772–0.843 | 0 | 0 | 0 |
+| gleich | 3 | 3/0 | 0.979–0.987 | 3 | 1 | 3 |
+| verwandt | 3 | 3/0 | 0.888–0.935 | 0 | 0 | 3 |
+| fremd | 1 | 1/0 | 0.746–0.746 | 0 | 0 | 0 |
 
 kommentar (Score pp, Dublette ab 0.975):
 
@@ -147,10 +148,11 @@ kommentar (Score pp, Dublette ab 0.975):
 | verwandt | 5 | 5/0 | 0.817–0.899 | 0 | 0 | 2 |
 | fremd | 2 | 2/0 | 0.789–0.800 | 0 | 0 | 0 |
 
-suche (Score qq, Dublette ab 0.98):
+hintergrundinfo (Score pp, Dublette ab 0.975):
 
-| Label | Paare | train/test | Score min–max | als gleich entschieden | ≥ 0.98 | ≥ 0.885 |
+| Label | Paare | train/test | Score min–max | als gleich entschieden | ≥ 0.975 | ≥ 0.885 |
 |---|---|---|---|---|---|---|
-| gleich | 3 | 3/0 | 0.979–0.987 | 3 | 1 | 3 |
-| verwandt | 3 | 3/0 | 0.888–0.935 | 0 | 0 | 3 |
-| fremd | 1 | 1/0 | 0.746–0.746 | 0 | 0 | 0 |
+| gleich | 14 | 9/5 | 0.946–1.000 | 10 | 10 | 14 |
+| widerspricht | 10 | 7/3 | 0.976–1.000 | 10 | 10 | 10 |
+| verwandt | 9 | 6/3 | 0.827–0.999 | 3 | 3 | 6 |
+| fremd | 6 | 4/2 | 0.772–0.843 | 0 | 0 | 0 |

@@ -16,6 +16,7 @@ import sys
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 
@@ -35,29 +36,57 @@ def fingerabdruck(paar: Paar) -> str:
     return hashlib.sha256(roh.encode()).hexdigest()[:10]
 
 
-def score_und_schwelle(
-    paar: Paar, qq: float, pp: float, settings: Settings
-) -> tuple[float, float]:
-    """Dieselbe Wahl wie die Dublettenpruefung im Dienst je Inhaltstyp."""
-    if paar.art == "kommentar":
-        return pp, settings.commentary_similarity_threshold
-    if paar.art == "hintergrundinfo":
-        return pp, settings.generic_text_similarity_threshold
-    return qq, settings.statement_similarity_threshold
+class Scores(NamedTuple):
+    qq: float
+    pp: float
+    qp: float
 
 
-def entscheidung(paar: Paar, qq: float, pp: float, settings: Settings) -> bool:
-    score, schwelle = score_und_schwelle(paar, qq, pp, settings)
+class Messung(NamedTuple):
+    """Ein Eintrag in aehnlichkeit_gemessen.GEMESSEN."""
+
+    qq: float
+    pp: float
+    qp: float
+    gleich: bool
+    fingerabdruck: str
+
+
+# Je Art: welcher Score und welche Schwelle aus Settings - dieselbe Wahl wie die
+# Dublettenpruefung im Dienst (StatementService, CommentaryService, GenericTextService).
+PRUEFUNG_JE_ART = {
+    "aussage": ("qq", "statement_similarity_threshold"),
+    "suche": ("qq", "statement_similarity_threshold"),
+    "kommentar": ("pp", "commentary_similarity_threshold"),
+    "hintergrundinfo": ("pp", "generic_text_similarity_threshold"),
+}
+
+
+def gemessen(paar_id: str) -> Messung:
+    from tests.regression.aehnlichkeit_gemessen import GEMESSEN
+
+    return Messung(*GEMESSEN[paar_id])
+
+
+def score(paar: Paar, werte: Scores | Messung) -> float:
+    return getattr(werte, PRUEFUNG_JE_ART[paar.art][0])
+
+
+def schwelle(art: str, settings: Settings) -> float:
+    return getattr(settings, PRUEFUNG_JE_ART[art][1])
+
+
+def entscheidung(paar: Paar, werte: Scores | Messung, settings: Settings) -> bool:
     return ist_dasselbe(
         text_normalisiert(paar.kandidat),
         text_normalisiert(paar.bestand),
-        score,
-        schwelle,
+        score(paar, werte),
+        schwelle(paar.art, settings),
     )
 
 
 @lru_cache(maxsize=1)
-def scores() -> dict[str, tuple[float, float, float]]:
+def scores() -> dict[str, Scores]:
     """(qq, pp, qp) je Paar-ID, einmal berechnet."""
     from sentence_transformers import SentenceTransformer
 
@@ -73,7 +102,7 @@ def scores() -> dict[str, tuple[float, float, float]]:
     qa, pa = einbetten("query", kandidaten), einbetten("passage", kandidaten)
     qb, pb = einbetten("query", bestand), einbetten("passage", bestand)
     return {
-        p.id: (
+        p.id: Scores(
             float(np.dot(qa[i], qb[i])),
             float(np.dot(pa[i], pb[i])),
             float(np.dot(qa[i], pb[i])),
@@ -82,38 +111,35 @@ def scores() -> dict[str, tuple[float, float, float]]:
     }
 
 
-def auswertung(gemessen: dict, settings: Settings) -> str:
+def auswertung(messungen: dict[str, Messung], settings: Settings) -> str:
     """Markdown-Tabellen je Art und Label: wie viele Paare ueber den Schwellen liegen."""
     zeilen = []
-    for art in ("aussage", "hintergrundinfo", "kommentar", "suche"):
+    for art, (score_name, _) in PRUEFUNG_JE_ART.items():
         paare = [p for p in PAARE if p.art == art]
-        schwelle = score_und_schwelle(paare[0], 0, 0, settings)[1]
+        ab = schwelle(art, settings)
         zeilen += [
-            f"\n{art} (Score {'qq' if art in ('aussage', 'suche') else 'pp'}, "
-            f"Dublette ab {schwelle}):\n",
+            f"\n{art} (Score {score_name}, Dublette ab {ab}):\n",
             f"| Label | Paare | train/test | Score min–max | als gleich entschieden "
-            f"| ≥ {schwelle} | ≥ {VORSCHLAG_SCHWELLE} |",
+            f"| ≥ {ab} | ≥ {VORSCHLAG_SCHWELLE} |",
             "|---|---|---|---|---|---|---|",
         ]
         for label in LABELS:
             mit = [p for p in paare if p.label == label]
             if not mit:
                 continue
-            werte = [
-                score_und_schwelle(p, *gemessen[p.id][:2], settings)[0] for p in mit
-            ]
+            werte = [score(p, messungen[p.id]) for p in mit]
             teile = Counter(p.teil for p in mit)
             zeilen.append(
                 f"| {label} | {len(mit)} | {teile['train']}/{teile['test']} "
                 f"| {min(werte):.3f}–{max(werte):.3f} "
-                f"| {sum(gemessen[p.id][3] for p in mit)} "
-                f"| {sum(w >= schwelle for w in werte)} "
+                f"| {sum(messungen[p.id].gleich for p in mit)} "
+                f"| {sum(w >= ab for w in werte)} "
                 f"| {sum(w >= VORSCHLAG_SCHWELLE for w in werte)} |"
             )
     return "\n".join(zeilen)
 
 
-def _schreiben(gemessen: dict) -> None:
+def _schreiben(messungen: dict[str, Messung]) -> None:
     kopf = (
         '"""\n'
         f"Erzeugt von tests/regression/aehnlichkeit_messen.py am "
@@ -128,7 +154,7 @@ def _schreiben(gemessen: dict) -> None:
     )
     zeilen = [
         f'    "{pid}": ({qq:.4f}, {pp:.4f}, {qp:.4f}, {gleich}, "{fp}"),'
-        for pid, (qq, pp, qp, gleich, fp) in gemessen.items()
+        for pid, (qq, pp, qp, gleich, fp) in messungen.items()
     ]
     _ZIEL.write_text(kopf + "\n".join(zeilen) + "\n}\n# fmt: on\n", encoding="utf-8")
 
@@ -136,18 +162,16 @@ def _schreiben(gemessen: dict) -> None:
 def main(argv: list[str]) -> None:
     settings = Settings()
     roh = scores()
-    gemessen = {
-        p.id: (
-            *roh[p.id],
-            entscheidung(p, roh[p.id][0], roh[p.id][1], settings),
-            fingerabdruck(p),
+    messungen = {
+        p.id: Messung(
+            *roh[p.id], entscheidung(p, roh[p.id], settings), fingerabdruck(p)
         )
         for p in PAARE
     }
     if "--schreiben" in argv:
-        _schreiben(gemessen)
+        _schreiben(messungen)
         print(f"geschrieben: {_ZIEL}")
-    print(auswertung(gemessen, settings))
+    print(auswertung(messungen, settings))
 
 
 if __name__ == "__main__":
