@@ -10,11 +10,14 @@
 # which starts no BFF: there they are skipped.
 # --schritt <name>: run only that step (retired-words, lint, unit, integration, frontend, bff);
 # the Woodpecker pipeline (.woodpecker/ci.yaml) runs each step this way, see docs/CI.md.
+# --include <pfad>: only the frontend specs under <pfad> (relative to the frontend directory, as for
+# `ng test --include`); implies --schritt frontend.
 # CHECK_VOLL=1 shows the full output instead of the summary lines; CHECK_OHNE_DOCKER=1 runs the
 # BFF tests with the local dotnet instead of the .NET SDK container.
 set -e
 INTEGRATION=
 SCHRITT=
+INCLUDE=
 SCHRITTE="retired-words lint unit integration frontend bff"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -22,7 +25,8 @@ while [ $# -gt 0 ]; do
     --schritt)
       SCHRITT=$2; shift
       case " $SCHRITTE " in *" $SCHRITT "*) ;; *) echo "Unknown step: $SCHRITT (one of: $SCHRITTE)" >&2; exit 2 ;; esac ;;
-    *) echo "Unknown option: $1 (usage: check.sh [--integration] [--schritt <name>])" >&2; exit 2 ;;
+    --include) INCLUDE=$2; shift; SCHRITT=frontend ;;
+    *) echo "Unknown option: $1 (usage: check.sh [--integration] [--schritt <name>] [--include <pfad>])" >&2; exit 2 ;;
   esac
   shift
 done
@@ -62,7 +66,12 @@ fi
 if laeuft frontend; then
   echo "== Frontend"; cd "$FE"
   [ -f src/environments/environment.ts ] || cp src/environments/environment.ts.template src/environments/environment.ts
-  npx ng test --watch=false --browsers=ChromeHeadless --progress=false 2>&1 | kurz 'Executed [0-9]+ of [0-9]+ .*(SUCCESS|FAILED)|ERROR' 2; test "${PIPESTATUS[0]}" -eq 0
+  # A run that fails before Karma starts (no node_modules, no browser) prints no summary line: then the tail.
+  log=$(mktemp); status=0
+  npx ng test --watch=false --browsers=ChromeHeadless --progress=false ${INCLUDE:+--include "$INCLUDE"} >"$log" 2>&1 || status=$?
+  kurz 'Executed [0-9]+ of [0-9]+.*(SUCCESS|FAILED)|ERROR' 2 <"$log"
+  [ "$status" -eq 0 ] || [ -n "$CHECK_VOLL" ] || { echo "-- ng test exit $status, last lines:"; tail -n 15 "$log"; }
+  rm -f "$log"; test "$status" -eq 0
 fi
 
 if laeuft bff; then

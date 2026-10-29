@@ -123,7 +123,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 1. Use `run-local.sh/bat` for development
 2. Make changes (hot-reload enabled)
 3. Test locally
-4. Run tests: `pytest` (Python), `ng test` (Angular)
+4. Run tests: `pytest` (Python), `scripts/check.sh --schritt frontend` (Angular; single specs: `--include <pfad>`)
 5. Commit changes (pre-commit hooks will format code)
 
 ### Testing in Docker
@@ -218,8 +218,7 @@ pytest
 
 When user requests "test frontend":
 ```bash
-cd mvp/frontend/gutgesagt-frontend
-ng test
+scripts/check.sh --schritt frontend    # finds the Playwright Chromium; --include <pfad> for single specs
 ```
 
 ### Review Pull Request
@@ -340,8 +339,7 @@ cd mvp/backend/semantic-search-service/app
 pytest
 
 # Angular tests
-cd mvp/frontend/gutgesagt-frontend
-ng test
+scripts/check.sh --schritt frontend
 
 # .NET tests (test project is BFF.Tests; run from the solution directory)
 cd mvp/backend
@@ -456,7 +454,8 @@ helpers automate the retry.
 ### Full check and review rules
 - `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests and
   `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container; `--integration` adds the
-  integration tests, `--schritt <name>` runs one step). Run it before opening a PR. Woodpecker runs
+  integration tests, `--schritt <name>` runs one step, `--include <pfad>` only the frontend specs under
+  that path). Run it before opening a PR. Woodpecker runs
   the same steps on every PR (`docs/CI.md`); a red run gets a comment with the red steps.
 - Replaced names are listed in `scripts/retired-words.txt`; the check and a pre-commit hook reject
   them in added lines.
