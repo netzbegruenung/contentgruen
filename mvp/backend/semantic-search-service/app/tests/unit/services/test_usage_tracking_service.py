@@ -76,6 +76,9 @@ class TestUsageTrackingService:
             "device_category",
             # Welche Fassung eines Kommentars kopiert wurde (#355), kein Personenbezug.
             "fassung",
+            # HMAC ueber Tagespseudonym und Beitrag (#352), ohne Schluessel nicht
+            # auf die Person zurueckzufuehren.
+            "pruefwert",
         }
 
     def test_track_content_usage_invalid_uuid(self, service, mock_repository):
@@ -171,7 +174,7 @@ class TestUsageTrackingService:
         # Assert
         assert result == expected_trending
         mock_repository.get_trending_content.assert_called_once_with(
-            limit=limit, hours=24
+            limit=limit, hours=24, nur_entdoppelt=False
         )
 
     def test_get_trending_content_call_matches_repository_signature(

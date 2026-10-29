@@ -258,8 +258,12 @@ _Avoid_: Eval-Set, Trainingsdaten, Goldstandard
 Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als seinen Autor. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft. Sie ist immer echt: Kein Zähler wird vorbelegt oder geschätzt, ein neuer Beitrag beginnt bei 0.
 _Avoid_: Usage, Aufruf, Klick
 
+**Entdoppelte Nutzung**:
+Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Sitzung), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus dem Tagespseudonym und dem Beitrag, nicht, wer welchen Beitrag genutzt hat.
+_Avoid_: eindeutige Nutzung, Unique Usage
+
 **Oft genutzt**:
-Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
+Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
 _Avoid_: Trending, Trend, beliebt, Top-Beiträge
 
 **Stimme**:
@@ -334,6 +338,10 @@ _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Noti
 Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.
 _Avoid_: XP, Score, Karma
 
+**Muster-Hinweis**:
+Der Hinweis an Admins, dass zwei Konten sich gegenseitig nutzen: Am selben Tag hat jedes einen Beitrag des anderen genutzt. Er nennt beide Konten und an wie vielen Tagen das geschah, und verschwindet acht Wochen nach dem letzten solchen Tag. Er ist kein Urteil; keine Automatik zieht Punkte ab, ein Admin prüft.
+_Avoid_: Betrugsverdacht, Alarm, Sockenpuppen-Erkennung
+
 **Rangliste**:
 Die Reihenfolge der Mitwirkenden nach Punkten einer Woche oder eines Monats. Nur Angemeldete sehen sie, und dort erscheint nur, wer ausdrücklich zugestimmt hat.
 _Avoid_: Leaderboard, Highscore
@@ -389,7 +397,7 @@ Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der 
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
 
 **Startkonto**:
-Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.
+Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte: Seine Nutzung wird gar nicht gezählt, seine Stimmen stehen in keinem Zähler und bringen keine Punkte. Welche Beta-Zugänge Startkonten sind, steht in der Konfiguration.
 _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 
 **Besucher**:

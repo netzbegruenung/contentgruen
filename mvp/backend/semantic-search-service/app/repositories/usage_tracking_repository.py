@@ -4,7 +4,7 @@ Handles all database operations for usage statistics.
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 import uuid
 import asyncio
@@ -13,8 +13,10 @@ from sqlalchemy import func, desc
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from utils.utc_tag import heute_utc
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import (
+    NutzungHeute,
     NutzungJeFassung,
     UsageTracking,
     UsageEvent,
@@ -41,6 +43,8 @@ class UsageTrackingRepository:
         session_id: Optional[str] = None,
         device_category: Optional[str] = None,
         fassung: Optional[str] = None,
+        pruefwert: Optional[str] = None,
+        tag: Optional[date] = None,
     ) -> bool:
         """
         Track a usage event for a content item.
@@ -54,6 +58,10 @@ class UsageTrackingRepository:
                 kommt hier nicht mehr an.
             fassung: Die kopierte Fassung eines Kommentars (#355), vom Aufrufer
                 geprueft; None bei anderen Beitragstypen.
+            pruefwert: Der Pruefwert dieser Person und dieses Beitrags fuer den Tag
+                (services/entdoppelung.py, #352). Ist er heute neu, ist die Nutzung
+                entdoppelt; ohne Pruefwert ist sie es nie.
+            tag: Der UTC-Tag des Pruefwerts, Standard heute; fuer Tests.
 
         Returns:
             bool: True if tracking was successful
@@ -74,11 +82,26 @@ class UsageTrackingRepository:
                 )
 
                 if not tracking:
-                    tracking = UsageTracking(content_id=content_id, usage_count=0)
+                    tracking = UsageTracking(
+                        content_id=content_id, usage_count=0, nutzung_entdoppelt=0
+                    )
                     session.add(tracking)
 
+                # Entdoppeln: Nur wer den Pruefwert heute als Erste/r eintraegt, zaehlt.
+                # In derselben Transaktion, damit der Pruefwert nur mit der Nutzung gilt.
+                entdoppelt = False
+                if pruefwert:
+                    entdoppelt = (
+                        session.execute(
+                            insert(NutzungHeute)
+                            .values(pruefwert=pruefwert, tag=tag or heute_utc())
+                            .on_conflict_do_nothing(index_elements=["pruefwert"])
+                        ).rowcount
+                        == 1
+                    )
+
                 # Increment usage count
-                tracking.increment_usage()
+                tracking.increment_usage(entdoppelt=entdoppelt)
 
                 # Create usage event record
                 event = UsageEvent(
@@ -87,6 +110,7 @@ class UsageTrackingRepository:
                     session_id=session_id,
                     device_category=device_category,
                     fassung=fassung,
+                    entdoppelt=entdoppelt,
                 )
                 session.add(event)
 
@@ -154,6 +178,38 @@ class UsageTrackingRepository:
                 result[str(tracking.content_id)] = tracking.usage_count
 
             return result
+
+    def get_nutzung_entdoppelt_batch(
+        self, content_ids: List[uuid.UUID]
+    ) -> Dict[str, int]:
+        """
+        Die entdoppelte Nutzung je Beitrag (#352): Grundlage der Punkte fuer Nutzung.
+
+        Returns:
+            Dict content_id (als String) -> Zahl, 0 ohne Nutzung
+        """
+        result = {str(content_id): 0 for content_id in content_ids}
+        if not content_ids:
+            return result
+        with self.db.get_session() as session:
+            zeilen = session.query(
+                UsageTracking.content_id, UsageTracking.nutzung_entdoppelt
+            ).filter(UsageTracking.content_id.in_(content_ids))
+            for content_id, anzahl in zeilen:
+                result[str(content_id)] = anzahl
+        return result
+
+    def vergangene_tage_verwerfen(self, heute: Optional[date] = None) -> int:
+        """
+        Die Pruefwerte vergangener Tage verwerfen (#352): Sie entdoppeln nur am
+        eigenen Tag und sollen nicht laenger liegen. Liefert die Zahl der Zeilen.
+        """
+        with self.db.get_session() as session:
+            return (
+                session.query(NutzungHeute)
+                .filter(NutzungHeute.tag < (heute or heute_utc()))
+                .delete(synchronize_session=False)
+            )
 
     def get_nutzung_letzte_7_tage_batch(
         self, content_ids: List[uuid.UUID]
@@ -316,7 +372,7 @@ class UsageTrackingRepository:
             }
 
     def get_trending_content(
-        self, limit: int = 10, hours: int = 24
+        self, limit: int = 10, hours: int = 24, nur_entdoppelt: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Get trending content based on recent usage.
@@ -330,6 +386,8 @@ class UsageTrackingRepository:
         Args:
             limit: Maximum number of items to return
             hours: Size of the time window in hours
+            nur_entdoppelt: nur die erste Nutzung je Person, Beitrag und Tag zaehlen
+                (#352), fuer "Diese Woche oft genutzt"
 
         Returns:
             List of trending content with usage stats
@@ -339,6 +397,13 @@ class UsageTrackingRepository:
         with self.db.get_session() as session:
             since_date = datetime.utcnow() - timedelta(hours=hours)
 
+            bedingungen = [
+                UsageEvent.timestamp >= since_date,
+                UsageEvent.event_type == "copy",
+            ]
+            if nur_entdoppelt:
+                bedingungen.append(UsageEvent.entdoppelt.is_(True))
+
             trending = (
                 session.query(
                     UsageEvent.content_id,
@@ -347,9 +412,7 @@ class UsageTrackingRepository:
                 )
                 .select_from(UsageEvent)
                 .join(UsageTracking, UsageEvent.content_id == UsageTracking.content_id)
-                .filter(
-                    UsageEvent.timestamp >= since_date, UsageEvent.event_type == "copy"
-                )
+                .filter(*bedingungen)
                 .group_by(UsageEvent.content_id, UsageTracking.usage_count)
                 .order_by(desc("recent_uses"))
                 .limit(limit)

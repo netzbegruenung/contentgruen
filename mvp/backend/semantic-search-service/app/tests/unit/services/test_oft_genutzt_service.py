@@ -25,8 +25,12 @@ class _Nutzung:
         self.kandidaten = kandidaten
         self.aufrufe: List[Dict] = []
 
-    def get_trending_content(self, limit: int = 10, hours: int = 24):
-        self.aufrufe.append({"limit": limit, "hours": hours})
+    def get_trending_content(
+        self, limit: int = 10, hours: int = 24, nur_entdoppelt: bool = False
+    ):
+        self.aufrufe.append(
+            {"limit": limit, "hours": hours, "nur_entdoppelt": nur_entdoppelt}
+        )
         return self.kandidaten[:limit]
 
 
@@ -70,6 +74,15 @@ async def test_beitraege_fragt_die_letzten_sieben_tage_ab():
     await service.beitraege()
 
     assert nutzung.aufrufe[0]["hours"] == 7 * 24
+
+
+async def test_beitraege_zaehlt_nur_entdoppelte_nutzung():
+    """Nur Nutzung verschiedener Personen zaehlt (#352), nicht jede Kopie."""
+    service, nutzung = _service(_kandidaten(3, 3, 3))
+
+    await service.beitraege()
+
+    assert nutzung.aufrufe[0]["nur_entdoppelt"] is True
 
 
 async def test_beitraege_hoechstens_fuenf():

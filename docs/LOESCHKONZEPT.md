@@ -86,7 +86,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
    `users` (Anzeigename) und die in `gesehene_nutzung` (Stand der Rückmeldung beim
-   Anmelden, nur eine Zahl) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
+   Anmelden, nur eine Zahl) löschen, ebenso jeden Muster-Hinweis (`muster_hinweise`,
+   #352), der die Person nennt. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
    zeigen nach Schritt 3 „ehemalige Person“.
 
@@ -142,6 +143,8 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+| Prüfwerte der entdoppelten Nutzung (`nutzung_heute`) | ihr Tag | verworfen beim ersten Lauf nach Mitternacht (UTC) |
+| Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
@@ -170,6 +173,14 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
+- **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über das
+  Tagespseudonym und den Beitrag (bzw. zwei Tagespseudonyme); er entdoppelt nur an
+  seinem Tag und geht danach. Ein Muster-Hinweis nennt zwei Kennungen und soll Admins
+  helfen, Punkte gegen Absprachen zu schützen; nach acht Wochen ohne neuen auffälligen
+  Tag ist er dafür nicht mehr nötig (DSFA zu #374). Beides löscht ein eigener Task
+  (`services/muster_hinweise_service.py`), ebenfalls unabhängig vom Usage-Cleanup.
+  Punkte selbst werden nicht gespeichert, sondern bei jedem Abruf berechnet
+  (`services/punkte_service.py`); sie brauchen keine Frist.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
   eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
 
@@ -409,7 +420,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung, muster_hinweise;"
 ```
 
 ```bash

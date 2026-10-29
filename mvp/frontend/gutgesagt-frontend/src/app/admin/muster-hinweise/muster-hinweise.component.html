@@ -1,0 +1,48 @@
+<mat-card class="muster-hinweise">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>sync_alt</mat-icon>
+      Muster-Hinweise
+    </mat-card-title>
+    <mat-card-subtitle>
+      Konten, die am selben Tag jeweils einen Beitrag des anderen genutzt haben. Nur ein
+      Hinweis zum Prüfen; niemand verliert dadurch automatisch Punkte.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <p *ngIf="fehler" class="hinweis">Die Muster-Hinweise konnten nicht geladen werden.</p>
+
+    <ng-container *ngIf="daten">
+      <p *ngIf="!daten.aktiv; else liste" class="hinweis">
+        Punkte sind ausgeschaltet; ohne sie entstehen keine Muster-Hinweise.
+      </p>
+      <ng-template #liste>
+        <table *ngIf="daten.hinweise.length > 0; else leer">
+          <thead>
+            <tr>
+              <th scope="col">Konto</th>
+              <th scope="col">Konto</th>
+              <th scope="col" class="anzahl">Tage</th>
+              <th scope="col">Zeitraum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of daten.hinweise" data-testid="muster-hinweis">
+              <td>{{ konto(h.konto_a, h.name_a) }}</td>
+              <td>{{ konto(h.konto_b, h.name_b) }}</td>
+              <td class="anzahl">{{ h.tage }}</td>
+              <td>{{ zeitraum(h) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #leer>
+          <p class="hinweis">Kein auffälliges Muster.</p>
+        </ng-template>
+        <p class="fussnote">
+          Erkannt wird nur innerhalb eines Tages. Ein Hinweis verschwindet
+          {{ daten.frist_tage }} Tage nach dem letzten auffälligen Tag.
+        </p>
+      </ng-template>
+    </ng-container>
+  </mat-card-content>
+</mat-card>

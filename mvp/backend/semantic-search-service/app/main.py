@@ -54,6 +54,10 @@ from repositories.suchen_ohne_treffer_repository import (
 from dependencies import get_feedback_service, get_loeschfristen_service
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
+from services.muster_hinweise_service import (
+    get_muster_hinweise_service,
+    loeschen_im_takt as muster_hinweise_loeschen_im_takt,
+)
 from services.loeschfristen_service import (
     loeschen_im_takt as loeschfristen_im_takt,
 )
@@ -159,6 +163,14 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Loeschfristen task started")
 
+        # Pruefwerte der Entdoppelung nach ihrem Tag verwerfen und alte
+        # Muster-Hinweise loeschen (#352), ebenso unabhaengig vom Usage-Cleanup
+        # (services/muster_hinweise_service.py).
+        app.state.muster_hinweise_loeschen = asyncio.create_task(
+            muster_hinweise_loeschen_im_takt(get_muster_hinweise_service())
+        )
+        logger.info("✅ Check value and pattern note cleanup task started")
+
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
         )
@@ -177,6 +189,7 @@ async def lifespan(app: FastAPI):
                 "suchen_ohne_treffer_loeschen",
                 "feedback_loeschen",
                 "loeschfristen",
+                "muster_hinweise_loeschen",
             ):
                 task = getattr(app.state, name, None)
                 if task is not None:

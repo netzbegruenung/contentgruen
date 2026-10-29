@@ -1,7 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { GetMetricsResponse, SuchenOhneTrefferResponse } from './dtos/metricsDtos';
+import {
+  GetMetricsResponse,
+  MusterHinweiseResponse,
+  SuchenOhneTrefferResponse,
+} from './dtos/metricsDtos';
 import { environment } from '../../environments/environment';
 
 export interface MVPMetrics {
@@ -48,5 +52,9 @@ export class MetricsService {
   // Zeitraum: Standard des Backends; die Antwort nennt ihn.
   getSuchenOhneTreffer(): Observable<SuchenOhneTrefferResponse> {
     return this.http.get<SuchenOhneTrefferResponse>(`${this.baseUrl}/suchen-ohne-treffer`);
+  }
+
+  getMusterHinweise(): Observable<MusterHinweiseResponse> {
+    return this.http.get<MusterHinweiseResponse>(`${this.baseUrl}/muster-hinweise`);
   }
 }

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from dtos.metrics import GetMetricsResponse
 from dependencies import (
     get_commentary_service,
+    get_muster_hinweise_service,
     get_reference_service,
     get_statement_service,
     get_settings,
@@ -21,7 +22,9 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 )
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
+from services.anzeigename_service import get_anzeigename_service
 from services.metrics_service import get_metrics_service
+from services.muster_hinweise_service import MUSTER_FRIST_TAGE, MusterHinweiseService
 from services.suchen_ohne_treffer_service import (
     MINDESTANZAHL,
     WOCHEN_MAX,
@@ -420,3 +423,61 @@ async def get_suchen_ohne_treffer(
         raise HTTPException(
             status_code=500, detail="Failed to fetch searches without hits"
         )
+
+
+class MusterHinweisEintrag(BaseModel):
+    konto_a: str
+    name_a: Optional[str]
+    konto_b: str
+    name_b: Optional[str]
+    tage: int
+    erster_tag: date
+    letzter_tag: date
+
+
+class MusterHinweiseResponse(BaseModel):
+    aktiv: bool
+    frist_tage: int
+    hinweise: List[MusterHinweisEintrag]
+
+
+@router.get("/muster-hinweise", response_model=MusterHinweiseResponse)
+async def get_muster_hinweise(
+    admin_user: str = Depends(require_admin),
+    settings: Settings = Depends(get_settings),
+    service: MusterHinweiseService = Depends(get_muster_hinweise_service),
+):
+    """
+    Muster-Hinweise (#352): Kontenpaare, die sich am selben Tag gegenseitig genutzt
+    haben, zuletzt aufgefallene zuerst. Nur ein Hinweis fuer Admins, keine
+    Automatik (services/muster_hinweise_service.py). Ohne ``punkte_aktiv`` entstehen
+    keine Hinweise; ``aktiv`` sagt das dem Dashboard.
+    """
+    if not settings.punkte_aktiv:
+        return MusterHinweiseResponse(
+            aktiv=False, frist_tage=MUSTER_FRIST_TAGE, hinweise=[]
+        )
+    try:
+        hinweise = await asyncio.to_thread(service.hinweise)
+        namen = get_anzeigename_service().namen(
+            k for h in hinweise for k in (h.konto_a, h.konto_b)
+        )
+    except Exception as e:
+        logger.error(f"Error fetching pattern notes: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch pattern notes")
+    return MusterHinweiseResponse(
+        aktiv=True,
+        frist_tage=MUSTER_FRIST_TAGE,
+        hinweise=[
+            MusterHinweisEintrag(
+                konto_a=h.konto_a,
+                name_a=namen.get(h.konto_a),
+                konto_b=h.konto_b,
+                name_b=namen.get(h.konto_b),
+                tage=h.tage,
+                erster_tag=h.erster_tag,
+                letzter_tag=h.letzter_tag,
+            )
+            for h in hinweise
+        ],
+    )

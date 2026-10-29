@@ -2,11 +2,10 @@
 "Diese Woche oft genutzt" auf der Startseite (#364, docs/VISION.md "Trends").
 
 Die Beitraege mit der meisten Nutzung der letzten sieben Tage. Gezaehlt wird nur
-Nutzung durch andere: Die eigene Kopie erfasst der Zaehl-Endpunkt gar nicht erst
-(api/v1/usage.py). Nutzung durch Startkonten zaehlt heute noch mit, ebenso die
-zweite Kopie derselben Person; das Merkmal und die Entdoppelung kommen mit #352,
-und dann gehoeren sie in die Nutzungsabfrage
-(UsageTrackingRepository.get_trending_content), nicht hierher.
+Nutzung verschiedener anderer Personen: Die eigene Kopie und die eines Startkontos
+erfasst der Zaehl-Endpunkt gar nicht erst (api/v1/usage.py), und die
+Nutzungsabfrage zaehlt je Person (Besucher: Sitzung), Beitrag und Tag nur die
+erste Nutzung (UsageTrackingRepository.get_trending_content, #352).
 
 Bei zu wenig Nutzung gibt es keinen Bereich: Eine Liste mit einem einmal kopierten
 Beitrag zeigte nicht, was oft genutzt wird, sondern einen Zufall.
@@ -90,7 +89,7 @@ class NutzungsAbfrage(Protocol):
     """Die Abfrage des UsageTrackingService: Beitraege nach Nutzung im Zeitfenster."""
 
     def get_trending_content(
-        self, limit: int = 10, hours: int = 24
+        self, limit: int = 10, hours: int = 24, nur_entdoppelt: bool = False
     ) -> List[Dict[str, Any]]: ...
 
 
@@ -105,7 +104,7 @@ class OftGenutztService:
         (Nutzungen in der Woche). Leer, wenn es zu wenige sind.
         """
         kandidaten = self._nutzung.get_trending_content(
-            limit=KANDIDATEN, hours=FENSTER_STUNDEN
+            limit=KANDIDATEN, hours=FENSTER_STUNDEN, nur_entdoppelt=True
         )
         beitraege: List[Dict[str, Any]] = []
         for kandidat in kandidaten:

@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     String,
     Integer,
@@ -39,6 +40,10 @@ class UsageTracking(Base):
     # (tests/integration/test_migrationen.py). default bleibt, damit das ORM den Wert
     # nach dem Flush kennt, ohne die Zeile neu zu laden.
     usage_count = Column(Integer, default=0, server_default="0", nullable=False)
+    # Entdoppelte Nutzung (#352): hoechstens eine je Person (Besucher: Sitzung),
+    # Beitrag und Tag. Traegt die Punkte fuer Nutzung und ueberdauert wie usage_count
+    # die Frist der usage_events; usage_count bleibt der Zaehler an der Karte.
+    nutzung_entdoppelt = Column(Integer, default=0, server_default="0", nullable=False)
     last_used = Column(DateTime(timezone=True), nullable=True)
     first_used = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
@@ -56,11 +61,15 @@ class UsageTracking(Base):
         "UsageEvent", back_populates="tracking", cascade="all, delete-orphan"
     )
 
-    def increment_usage(self, timestamp: Optional[datetime] = None):
+    def increment_usage(
+        self, timestamp: Optional[datetime] = None, entdoppelt: bool = False
+    ):
         """Increment the usage count and update timestamps."""
         if self.usage_count is None:
             self.usage_count = 0
         self.usage_count += 1
+        if entdoppelt:
+            self.nutzung_entdoppelt = (self.nutzung_entdoppelt or 0) + 1
         now = timestamp or datetime.utcnow()
         self.last_used = now
         if self.first_used is None:
@@ -131,6 +140,12 @@ class UsageEvent(Base):
     # #355); leer bei anderen Beitragstypen und bei Nutzung von vor #355. Traegt den
     # Zuwachs der letzten 7 Tage je Fassung; die Summe steht in nutzung_je_fassung.
     fassung = Column(String(10), nullable=True)
+    # Die erste Nutzung dieser Person (Besucher: Sitzung) an diesem Beitrag und Tag
+    # (#352). Nur sie zaehlt fuer "Diese Woche oft genutzt"; wer sie war, steht
+    # nirgends (services/entdoppelung.py).
+    entdoppelt = Column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
 
     # Relationship to tracking
     tracking = relationship("UsageTracking", back_populates="events")
@@ -139,6 +154,51 @@ class UsageEvent(Base):
     __table_args__ = (
         Index("idx_usage_events_content_id", "content_id"),
         Index("idx_usage_events_timestamp", "timestamp"),
+    )
+
+
+class NutzungHeute(Base):
+    """
+    Pruefwerte der Nutzungen des laufenden Tages fuer die Entdoppelung (#352).
+
+    Je Person (Besucher: Sitzung) und Beitrag ein HMAC ueber Tagespseudonym und
+    Beitrag, fuer die Muster-Hinweise je Kontenpaar einer ueber beide Tagespseudonyme
+    (services/entdoppelung.py). Ohne den geheimen Schluessel verraet ein Wert weder
+    Person noch Beitrag. Der taegliche Lauf verwirft alle Zeilen vergangener Tage
+    (services/muster_hinweise_service.py); gespeichert bleibt nicht, wer wessen
+    Beitrag genutzt hat (DSFA zu #374, Massnahme M2).
+    """
+
+    __tablename__ = "nutzung_heute"
+
+    pruefwert = Column(String(64), primary_key=True)
+    tag = Column(Date, nullable=False)
+
+    __table_args__ = (Index("idx_nutzung_heute_tag", "tag"),)
+
+
+class MusterHinweis(Base):
+    """
+    Ein auffaelliges Muster fuer Admins (ADR 0004, #352): zwei Konten, die am selben
+    Tag jeweils einen Beitrag des anderen genutzt haben. Ein Hinweis, keine
+    Automatik; niemand verliert dadurch Punkte.
+
+    konto_a ist die kleinere Kennung, konto_b die groessere. tage zaehlt die Tage mit
+    gegenseitiger Nutzung. Nach MUSTER_FRIST_TAGE ohne neuen Tag loescht der taegliche
+    Lauf die Zeile (services/muster_hinweise_service.py, docs/LOESCHKONZEPT.md).
+    """
+
+    __tablename__ = "muster_hinweise"
+
+    konto_a = Column(String(255), primary_key=True)
+    konto_b = Column(String(255), primary_key=True)
+    tage = Column(Integer, nullable=False)
+    erster_tag = Column(Date, nullable=False)
+    letzter_tag = Column(Date, nullable=False)
+
+    __table_args__ = (
+        Index("idx_muster_hinweise_letzter_tag", "letzter_tag"),
+        Index("idx_muster_hinweise_konto_b", "konto_b"),
     )
 
 

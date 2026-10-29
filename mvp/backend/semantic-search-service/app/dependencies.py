@@ -39,6 +39,11 @@ from services.gegenlesen.gegenlesen_service import (
     lade_statt_sag_liste,
 )
 from services.loeschfristen_service import LoeschfristenService
+from services.muster_hinweise_service import (
+    MusterHinweiseService,
+    get_muster_hinweise_service as _muster_hinweise_service,
+)
+from services.punkte_service import PunkteService
 from services.moderation_service import get_moderation_service
 from repositories.content_report_repository import get_content_report_repository
 from repositories.raw_input_repository import get_raw_input_repository
@@ -162,6 +167,30 @@ def get_unbeantwortete_aussagen_service(
 
 def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
+
+
+def get_punkte_service(
+    settings: Settings = Depends(get_settings),
+) -> PunkteService:
+    from domain.content_registry import BEITRAGSTYPEN_WERTE
+    from repositories.aggregated.content_repository import ContentRepository
+    from repositories.punkte_repository import get_punkte_repository
+    from repositories.usage_tracking_repository import get_usage_repository
+
+    async def sichtbare_beitraege(user_id: str):
+        # get_by_author laesst gesperrte und geloeschte Beitraege aus: Sie verlieren
+        # ihre Punkte (#352).
+        return await ContentRepository(settings).get_by_author(
+            user_id, limit=10000, offset=0, content_types=BEITRAGSTYPEN_WERTE
+        )
+
+    return PunkteService(
+        sichtbare_beitraege, get_usage_repository(), get_punkte_repository(), settings
+    )
+
+
+def get_muster_hinweise_service() -> MusterHinweiseService:
+    return _muster_hinweise_service()
 
 
 _gegenlesen_service: Optional[GegenlesenService] = None

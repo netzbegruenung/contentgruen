@@ -11,12 +11,16 @@ from datetime import datetime, timedelta
 
 from dependencies import (
     get_aufrufer,
+    get_muster_hinweise_service,
+    get_punkte_service,
     get_settings,
     get_current_user_optional,
     get_reference_service,
     require_user,
 )
 from utils.device_category import derive_device_category
+from services.entdoppelung import pruefwert
+from services.punkte_service import PunkteService
 from services.usage_tracking_service import get_usage_service
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
@@ -85,6 +89,15 @@ class BesuchResponse(BaseModel):
     """Antwort auf einen Besuch: Grundlage der Rueckmeldung beim Anmelden."""
 
     nutzung_seit_letztem_besuch: int
+
+
+class PunkteResponse(BaseModel):
+    """Der eigene Punktestand je Stufe (ADR 0004, #352)."""
+
+    tun: int
+    quests: int
+    wirkung: int
+    gesamt: int
 
 
 class TrendingContentResponse(BaseModel):
@@ -218,6 +231,17 @@ async def track_content_usage(
                 usage_count=service.get_content_usage(content_id),
             )
 
+        # Ein Startkonto vergibt keine Nutzung (GLOSSARY.md "Startkonto", #352): weder
+        # am Zaehler der Karte noch in Meine Beitraege, der Rueckmeldung beim Anmelden,
+        # "Diese Woche oft genutzt" oder den Punkten. Wie die eigene Kopie kein Fehler.
+        if settings.ist_startkonto(aufrufer):
+            logger.debug(f"Content {content_id} copied by a Startkonto, not counted")
+            return TrackUsageResponse(
+                success=True,
+                message="Usage by a Startkonto is not counted",
+                usage_count=service.get_content_usage(content_id),
+            )
+
         # Sanitize session_id if provided
         if body.session_id:
             # Remove any potentially malicious characters
@@ -244,11 +268,24 @@ async def track_content_usage(
             session_id=body.session_id,
             device_category=device_category,
             fassung=fassung,
+            # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
+            # sonst je Sitzung, je Beitrag und UTC-Tag.
+            pruefwert=pruefwert(aufrufer, body.session_id, content_uuid),
         )
 
         if not success:
             logger.error(f"Failed to track usage for content {content_id}")
             raise HTTPException(status_code=500, detail="Failed to track usage")
+
+        # Fuer die Muster-Hinweise (#352), nur mit Punkten. Ein Fehler hier kostet
+        # die Nutzung nicht, sie ist schon gezaehlt.
+        if settings.punkte_aktiv and beitrag is not None:
+            try:
+                get_muster_hinweise_service().nutzung_melden(
+                    aufrufer, beitrag.original_author
+                )
+            except Exception as e:
+                logger.error(f"Pattern check for content {content_id} failed: {e}")
 
         # Get updated count
         usage_count = service.get_content_usage(content_id)
@@ -319,6 +356,34 @@ async def eigene_nutzungsstatistik(
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/users/me/punkte", response_model=PunkteResponse)
+async def eigene_punkte(
+    current_user: str = Depends(require_user),
+    settings: Settings = Depends(get_settings),
+    service: PunkteService = Depends(get_punkte_service),
+):
+    """
+    Die Punkte der angemeldeten Person, je Stufe und gesamt (#352). Nur die Person
+    selbst sieht sie; Ranglisten kommen spaeter mit eigenem Opt-in.
+
+    Ohne ``punkte_aktiv`` 404: Die Funktion gibt es dann nicht. Die Person kommt aus
+    ``X-User``, nicht aus dem Pfad (#284).
+    """
+    if not settings.punkte_aktiv:
+        raise HTTPException(status_code=404, detail="Not found")
+    try:
+        stand = await service.punkte(current_user)
+    except Exception as e:
+        logger.error(
+            f"Punkte fuer {log_pseudonym(current_user)} nicht berechnet: {e}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return PunkteResponse(
+        tun=stand.tun, quests=stand.quests, wirkung=stand.wirkung, gesamt=stand.gesamt
+    )
 
 
 @router.post("/users/me/besuch", response_model=BesuchResponse)

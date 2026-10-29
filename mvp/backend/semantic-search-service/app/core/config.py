@@ -168,6 +168,37 @@ class Settings(BaseSettings):
         admin_list = [u.strip() for u in self.admin_users.split(",") if u.strip()]
         return user_id in admin_list
 
+    # Startkonten (GLOSSARY.md "Startkonto", #352): Kennungen von Beta-Zugaengen,
+    # unter denen das Gruendungsteam den Startbestand schreibt, kommagetrennt wie
+    # admin_users. Ein Startkonto vergibt keine Nutzung und keine Stimmen, die andere
+    # sehen oder die Punkte bringen, und sammelt selbst keine Punkte. Nutzung durch ein
+    # Startkonto wird gar nicht erst gezaehlt; Nutzung von davor ist nicht mehr
+    # zuzuordnen (usage_events traegt keine Kennung).
+    startkonten: str = ""
+
+    def startkonto_kennungen(self) -> frozenset:
+        return frozenset(u.strip() for u in self.startkonten.split(",") if u.strip())
+
+    def ist_startkonto(self, user_id: Optional[str]) -> bool:
+        return bool(user_id) and user_id in self.startkonto_kennungen()
+
+    # Punkte (ADR 0004, #352). Standard aus.
+    # ANNAHME (#352): Rechtsgrundlage ist die Einwilligung beim ersten Login, die
+    # Punkte als Zweck nennt (DSFA zu #374); bis sie steht und die
+    # Datenschutzerklaerung den Abschnitt hat (#222), bleibt der Schalter aus. Er
+    # schaltet die Punkte (/api/v1/usage/users/me/punkte) und die Muster-Hinweise
+    # fuer Admins; Entdoppelung und Startkonten wirken immer.
+    punkte_aktiv: bool = False
+    # Gewichte und Deckel der drei Stufen (domain/punkte.py): Tun klein und je Tag
+    # gedeckelt, Quests mehr, Wirkung bei anderen am meisten.
+    punkte_nutzung: int = Field(default=10, ge=0)
+    punkte_zustimmung: int = Field(default=5, ge=0)
+    punkte_beitrag: int = Field(default=1, ge=0)
+    punkte_einwurf_ausformuliert: int = Field(default=1, ge=0)
+    punkte_deckel_tun_je_tag: int = Field(default=3, ge=0)
+    punkte_quest: int = Field(default=4, ge=0)
+    punkte_deckel_quests_je_tag: int = Field(default=8, ge=0)
+
     # Secret key for the daily search-actor pseudonym (see SearchTrackingService).
     # Set SEMANTIC_SEARCH_ACTOR_HASH_SECRET in production so the daily-active-user
     # count stays correct across service restarts. If it is left unset a random
