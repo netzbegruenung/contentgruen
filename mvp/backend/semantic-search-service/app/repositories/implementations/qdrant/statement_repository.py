@@ -1,4 +1,4 @@
-from typing import List, Optional, Set
+from typing import AbstractSet, List, Optional, Set
 import asyncio
 import logging
 import uuid
@@ -20,12 +20,23 @@ from domain.models.content_status import AUSGEBLENDET_WERTE
 logger = logging.getLogger(__name__)
 
 
-def _unbeantwortete_suchanfrage():
+def _unbeantwortete_suchanfrage(
+    ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset(),
+):
     """
     Eine Suchanfrage, auf die noch niemand geantwortet hat - das, was nicht als
     kuratiert gilt. Warum nicht allein die Herkunft zaehlt: count_curated.
+
+    ueber_der_schwelle: Aussagen, die trotzdem nicht darunter fallen, die
+    Suchanfragen ueber der Schwelle der Kennzahl "Suchen ohne Treffer" (#436).
     """
-    from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+    from qdrant_client.models import (
+        Filter,
+        FieldCondition,
+        HasIdCondition,
+        MatchValue,
+        Range,
+    )
 
     return Filter(
         must=[
@@ -34,7 +45,12 @@ def _unbeantwortete_suchanfrage():
                 match=MatchValue(value=ContentOrigin.SEARCH_QUERY.value),
             ),
             FieldCondition(key="replysuggestions_count", range=Range(lt=1)),
-        ]
+        ],
+        must_not=(
+            [HasIdCondition(has_id=[str(i) for i in sorted(ueber_der_schwelle)])]
+            if ueber_der_schwelle
+            else None
+        ),
     )
 
 
@@ -94,9 +110,28 @@ class StatementRepository(
         # statements_with_commentaries and statements_with_commentsuggestions data
         pass
 
-    async def count_curated(self) -> int:
+    def _kuratiert_filter(
+        self, ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset()
+    ):
+        """Sichtbare Aussagen ohne die unbeantworteten Suchanfragen unter der Schwelle."""
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        return Filter(
+            must=[
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                ),
+                *nur_sichtbar_bedingungen(),
+            ],
+            must_not=[_unbeantwortete_suchanfrage(ueber_der_schwelle)],
+        )
+
+    async def count_curated(
+        self, ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset()
+    ) -> int:
         """
-        Zaehlt Statements ohne die unbeantworteten Suchanfragen.
+        Zaehlt Statements ohne die unbeantworteten Suchanfragen; die in
+        ueber_der_schwelle zaehlen trotzdem mit (#436).
 
         Nicht "origin != search_query": das Frontend haengt eine neue Antwort
         ueber findOrCreateStatement an ein bereits vorhandenes, hinreichend
@@ -111,27 +146,27 @@ class StatementRepository(
         Startseite zeigt damit gepflegte Substanz, und eine Suchanfrage zaehlt
         in dem Moment mit, in dem ihr jemand Inhalt zur Seite stellt.
         """
-        from qdrant_client.models import Filter, FieldCondition, MatchValue
-
         try:
+            # Nur sichtbare Aussagen, wie in der Suche.
             result = await self._shared_manager.async_client.count(
                 collection_name=self._shared_manager.collection_name,
-                count_filter=Filter(
-                    # Nur sichtbare Aussagen, wie in der Suche.
-                    must=[
-                        FieldCondition(
-                            key="content_type",
-                            match=MatchValue(value=self.content_type),
-                        ),
-                        *nur_sichtbar_bedingungen(),
-                    ],
-                    must_not=[_unbeantwortete_suchanfrage()],
-                ),
+                count_filter=self._kuratiert_filter(ueber_der_schwelle),
             )
             return result.count
         except Exception as e:
             logger.error(f"Failed to count curated statements: {e}", exc_info=True)
             return 0
+
+    async def get_all_curated(
+        self,
+        limit: int,
+        offset: int,
+        ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset(),
+    ) -> List[StatementDbEntry]:
+        """get_all ohne die unbeantworteten Suchanfragen unter der Schwelle (#436)."""
+        return await self._get_all_gefiltert(
+            self._kuratiert_filter(ueber_der_schwelle), limit, offset
+        )
 
     async def kuratierte(self) -> List[StatementDbEntry]:
         """
@@ -139,17 +174,7 @@ class StatementRepository(
         wie count_curated), fuer die nachtraegliche Zuordnung von Themen. Alle
         Treffer auf einmal, unsortiert; Qdrant scrollt in ID-Reihenfolge.
         """
-        from qdrant_client.models import FieldCondition, Filter, MatchValue
-
-        scroll_filter = Filter(
-            must=[
-                FieldCondition(
-                    key="content_type", match=MatchValue(value=self.content_type)
-                ),
-                *nur_sichtbar_bedingungen(),
-            ],
-            must_not=[_unbeantwortete_suchanfrage()],
-        )
+        scroll_filter = self._kuratiert_filter()
 
         aussagen: List[StatementDbEntry] = []
         offset = None
@@ -231,10 +256,14 @@ class StatementRepository(
         }
 
     async def search_curated(
-        self, query_text: str, limit: int
+        self,
+        query_text: str,
+        limit: int,
+        ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset(),
     ) -> List[StatementSearchResult]:
         """
-        Aehnliche Statements ohne die unbeantworteten Suchanfragen.
+        Aehnliche Statements ohne die unbeantworteten Suchanfragen, ausser denen
+        in ueber_der_schwelle (#436).
 
         Dasselbe Kriterium wie count_curated: Wer im Beitragsformular eine
         Aussage sucht, soll gepflegte Aussagen vorgeschlagen bekommen, nicht die
@@ -249,7 +278,7 @@ class StatementRepository(
                 # Suchanfragen.
                 filter_dict={
                     "must": nur_sichtbar_bedingungen(),
-                    "must_not": [_unbeantwortete_suchanfrage()],
+                    "must_not": [_unbeantwortete_suchanfrage(ueber_der_schwelle)],
                 },
             )
             return [

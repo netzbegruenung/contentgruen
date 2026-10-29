@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AddCommentaryRequest, AddCommentaryResponse } from './dtos/commentaryDtos';
 import { CommentaryResult } from './dtos/searchDtos';
+import { mitCc0Wortlaut } from '../shared/consent-hinweis';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
@@ -21,7 +22,7 @@ export class CommentaryService {
 
   addCommentary(request: AddCommentaryRequest): Observable<AddCommentaryResponse> {
     this.logger.debug('Adding new commentary:', request);
-    return this.http.post<AddCommentaryResponse>(this.addCommentaryApiUrl, request).pipe(
+    return this.http.post<AddCommentaryResponse>(this.addCommentaryApiUrl, mitCc0Wortlaut(request)).pipe(
       tap(response => {
         this.logger.info('Commentary added successfully:', response);
       })

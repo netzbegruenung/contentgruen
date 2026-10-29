@@ -211,6 +211,7 @@ async def add_commentary(
                     NEW_CONTENT_STATUS,
                     ContentOrigin.MANUALLY_CREATED,
                     dublettenpruefung=pruefung,
+                    cc0_wortlaut=request.cc0_wortlaut,
                 )
 
         # Nichts angelegt? Dann ist die Antwort der vorhandene Kommentar. Verknuepft

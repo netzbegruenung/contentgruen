@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { HierFehltEineAntwortComponent } from './hier-fehlt-eine-antwort.component';
 import { environment } from '../../environments/environment';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 const LISTE_URL = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
 const VORAB_URL = `${environment.baseUrl}/api/v1/statement/vorab`;
@@ -67,6 +68,20 @@ describe('HierFehltEineAntwortComponent', () => {
     const knoepfe = Array.from(bereich.querySelectorAll('button')) as HTMLButtonElement[];
     return knoepfe.find((k) => k.textContent?.trim() === name)!;
   }
+
+  it('verlinkt die Nutzungsbedingungen ueber dem Knopf zum Anlegen einer Aussage', () => {
+    liefern([]);
+
+    const link: HTMLAnchorElement | null = element().querySelector('.vorab a[href="/nutzungsbedingungen"]');
+    expect(link).toBeTruthy();
+    expect(link!.target).toBe('_blank');
+    const hinweis = link!.closest('p')!;
+    expect(hinweis.classList).toContain('submit-hint');
+    expect(hinweis.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
+    );
+    expect(hinweis.nextElementSibling!.classList).toContain('aussage-anlegen');
+  });
 
   it('zeigt die unbeantworteten Aussagen in der gelieferten Reihenfolge', () => {
     liefern([

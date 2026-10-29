@@ -48,6 +48,11 @@
   width: 100%;
 }
 
+/* Schrift kommt aus der globalen .submit-hint, siehe styles.css. */
+.vorab .submit-hint {
+  margin: 0 0 8px;
+}
+
 .meldung {
   margin-top: 8px;
 }

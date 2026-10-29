@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+from typing import FrozenSet, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import ValidationError
@@ -8,6 +8,7 @@ from dependencies import (
     get_aufrufer,
     get_aussage_themen_service,
     get_statement_service,
+    get_suchen_ohne_treffer_service,
     get_unbeantwortete_aussagen_service,
     require_admin,
     require_user,
@@ -53,6 +54,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 )
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import SEARCH_QUERY_AUTHOR
+from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from services.aussage_themen_service import AussageThemenService
 from domain.themen import NACH_SCHLUESSEL, THEMEN, ThemaUngueltig
@@ -62,16 +64,33 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
+async def _ueber_der_schwelle_fuer(
+    aufrufer: Aufrufer, suchen_ohne_treffer: SuchenOhneTrefferService
+) -> Optional[FrozenSet[uuid.UUID]]:
+    """
+    Welche Aussagen aus Suchanfragen ohne Antwort der Aufrufer sehen darf (#436):
+    Admins alle (None: kein Filter), alle anderen nur die ueber der Schwelle der
+    Kennzahl "Suchen ohne Treffer", wie in "Hier fehlt eine Antwort". Eine leere
+    Menge heisst dann: nur kuratierte Aussagen, nicht etwa kein Filter.
+    """
+    if aufrufer.ist_admin:
+        return None
+    return await suchen_ohne_treffer.ueber_der_schwelle()
+
+
 # Test endpoint to check if the API is running
 @router.get("/")
 async def read_test():
     return {"message": "This is a test endpoint"}
 
 
-# Retrieves all statements from the index
+# Alle Aussagen, seitenweise; was Nicht-Admins sehen: _ueber_der_schwelle_fuer.
 @router.get("/getAll", response_model=StatementGetAllResponse)
 async def get_all(
     statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     aufrufer: Aufrufer = Depends(get_aufrufer),
@@ -80,9 +99,21 @@ async def get_all(
         logger.debug("/getAll was called")
 
         offset = (page - 1) * page_size
-        statement_index_results = await statement_service.get_all(
-            limit=page_size, offset=offset
+        ueber_der_schwelle = await _ueber_der_schwelle_fuer(
+            aufrufer, suchen_ohne_treffer
         )
+        if ueber_der_schwelle is None:
+            statement_index_results = await statement_service.get_all(
+                limit=page_size, offset=offset
+            )
+            total_records_count = await statement_service.count()
+        else:
+            statement_index_results = await statement_service.get_all_curated(
+                limit=page_size, offset=offset, ueber_der_schwelle=ueber_der_schwelle
+            )
+            total_records_count = await statement_service.count_curated(
+                ueber_der_schwelle=ueber_der_schwelle
+            )
 
         logger.debug(f"/getAll got {len(statement_index_results)} results")
 
@@ -91,7 +122,7 @@ async def get_all(
             results=als_responses(
                 AussageResponse, statement_index_results, aufrufer, AUSSAGE
             ),
-            total_records_count=await statement_service.count(),
+            total_records_count=total_records_count,
         )
 
         return response
@@ -301,26 +332,41 @@ async def themen_testset(
     )
 
 
-# Searches for statements in the statement_index using similarity search
+# Aehnliche Aussagen. Fuer Nicht-Admins dieselbe Auswahl wie in getAll (#436);
+# nur_kuratiert laesst fuer alle auch die Suchanfragen ueber der Schwelle weg
+# (Vorschlaege im Antwort-auf-Feld).
 @router.post("/searchStatements", response_model=StatementSearchResponse)
 async def search_statements(
     request: SearchStatementByTextRequest,
     statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
     aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> StatementSearchResponse:
     try:
         logger.debug("/searchStatements was called")
 
-        if request.nur_kuratiert or request.min_similarity is not None:
+        # nur_kuratiert: fuer jede Rolle ohne Suchanfragen ohne Antwort, auch ohne
+        # die ueber der Schwelle; die Kennzahl wird dann nicht abgefragt.
+        if request.nur_kuratiert:
+            ueber_der_schwelle = frozenset()
+        else:
+            ueber_der_schwelle = await _ueber_der_schwelle_fuer(
+                aufrufer, suchen_ohne_treffer
+            )
+
+        if ueber_der_schwelle is None and request.min_similarity is None:
+            statement_index_results = await statement_service.search(
+                request.query_text, request.limit
+            )
+        else:
             statement_index_results = await statement_service.search_filtered(
                 request.query_text,
                 request.limit,
-                nur_kuratiert=request.nur_kuratiert,
+                nur_kuratiert=ueber_der_schwelle is not None,
                 min_similarity=request.min_similarity,
-            )
-        else:
-            statement_index_results = await statement_service.search(
-                request.query_text, request.limit
+                ueber_der_schwelle=ueber_der_schwelle or frozenset(),
             )
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 

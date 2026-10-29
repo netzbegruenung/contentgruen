@@ -2,6 +2,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from typing import List
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.post import Post
 from dtos.beitrag import PostResponse, PostTreffer
 
@@ -11,6 +12,9 @@ from dtos.beitrag import PostResponse, PostTreffer
 
 class AddPostRequest(BaseModel):
     post: Post
+    # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
+    # domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
 
 
 class AddPostResponse(BaseModel):
