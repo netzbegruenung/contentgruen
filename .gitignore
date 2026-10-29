@@ -25,6 +25,8 @@ commit.txt
 
 # Log files
 *.log
+# CI-Protokolle (scripts/ci-protokoll.sh)
+.ci/
 run-local.log
 
 # Accidentally created files

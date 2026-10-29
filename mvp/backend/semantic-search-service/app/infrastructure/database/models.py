@@ -129,7 +129,10 @@ class SearchEvent(Base):
 
     id is a random UUID, not a sequence: a running number would give the order of
     the searches of a day, which lines up with the order of the statements they
-    created (#275).
+    created (#275). For the same reason the daily cleanup job rewrites the rows
+    of each closed day in random order in one transaction, so neither xmin nor
+    the physical row order (ctid, pg_dump) gives that order any more (#337, see
+    SearchTrackingRepository.mische_abgeschlossene_tage).
     """
 
     __tablename__ = "search_events"

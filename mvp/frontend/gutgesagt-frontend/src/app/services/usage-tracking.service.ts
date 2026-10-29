@@ -42,6 +42,14 @@ export interface TrendingContent {
   }>;
 }
 
+/**
+ * "Diese Woche oft genutzt" (#364): Beitraege in der Form von /content/recent,
+ * meistgenutzte zuerst; leer, wenn es zu wenig Nutzung gab.
+ */
+export interface OftGenutztAntwort {
+  results: any[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -215,6 +223,21 @@ export class UsageTrackingService {
         catchError(error => {
           this.loggingService.error('Failed to get trending content', error);
           return of({ trending: [] });
+        })
+      );
+  }
+
+  /**
+   * Die oft genutzten Beitraege der letzten sieben Tage. Ein Fehler liefert keine
+   * Beitraege: Die Startseite laesst den Bereich dann weg, statt eine Fehlermeldung
+   * zwischen Suche und Neuesten zu stellen.
+   */
+  getOftGenutzt(): Observable<OftGenutztAntwort> {
+    return this.http.get<OftGenutztAntwort>(`${this.apiUrl}/trending/woche`)
+      .pipe(
+        catchError(error => {
+          this.loggingService.error('Oft genutzte Beitraege nicht geladen', error);
+          return of({ results: [] });
         })
       );
   }

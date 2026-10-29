@@ -15,6 +15,9 @@ from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
+from repositories.implementations.qdrant.moderation_repository import (
+    get_moderation_repository,
+)
 from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
     get_personen_des_tages,
@@ -131,7 +134,8 @@ def get_beitrag_loeschen_service(
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
     return BeitragLoeschenService(
-        QdrantRepositoryFactory().create_content_repository(settings)
+        QdrantRepositoryFactory().create_content_repository(settings),
+        get_moderation_repository(),
     )
 
 

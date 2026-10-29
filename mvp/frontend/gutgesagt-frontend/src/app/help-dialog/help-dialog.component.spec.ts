@@ -30,4 +30,24 @@ describe('HelpDialogComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('nennt die sechs Schreibregeln', () => {
+    const regeln = fixture.nativeElement.querySelectorAll('.schreibregeln li');
+
+    expect(regeln.length).toBe(6);
+    expect(regeln[0].textContent).toContain('Unentschiedenen');
+    expect(regeln[4].textContent).toContain('Erfinde nichts');
+  });
+
+  it('sagt, dass nicht jede Aussage eine Antwort braucht', () => {
+    expect(fixture.nativeElement.querySelector('.nicht-jede-aussage').textContent).toContain(
+      'Nicht jede Aussage braucht eine Antwort',
+    );
+  });
+
+  it('nennt erfundene Erlebnisse oder Zahlen als Grund zu melden', () => {
+    expect(fixture.nativeElement.querySelector('.erfundenes-melden').textContent).toContain(
+      'Erfundene Erlebnisse oder Zahlen',
+    );
+  });
 });

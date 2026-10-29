@@ -68,7 +68,8 @@ needs a reason that names what is missing.
 Repositories, migrations and SQL scripts that only show their behaviour in a real
 database are tested in `tests/integration/` against PostgreSQL: migrations and
 `init.sql` against the model (`test_migrationen.py`), the timestamp of a
-Suchereignis (`test_suchereignisse.py`), "Suchen ohne Treffer"
+Suchereignis (`test_suchereignisse.py`), the shuffled rewrite of closed days
+(`test_suchereignisse_mischen.py`), "Suchen ohne Treffer"
 (`test_suchen_ohne_treffer.py`), the Rückmeldung on usage (`test_rueckmeldung_nutzung.py`)
 and the deletion command (`test_loeschkommando.py`).
 
@@ -76,6 +77,7 @@ and the deletion command (`test_loeschkommando.py`).
 # from mvp/backend/semantic-search-service/app
 pytest tests/integration/test_migrationen.py tests/integration/test_suchereignisse.py \
        tests/integration/test_suchereignisse_tageszaehler.py \
+       tests/integration/test_suchereignisse_mischen.py \
        tests/integration/test_suchen_ohne_treffer.py tests/integration/test_rueckmeldung_nutzung.py \
        tests/integration/test_loeschkommando.py
 ```
@@ -234,14 +236,12 @@ pytest -x              # Stop on first failure
 
 ## CI Integration
 
-Tests run automatically in GitHub Actions (`.github/workflows/build.yml`) on:
-- Push to the `main` branch
-- Pull request creation/updates
-- Manual dispatch (`workflow_dispatch`)
+Every pull request runs `.woodpecker/ci.yaml` on Woodpecker: the same steps as
+`bash scripts/check.sh --integration`, with Qdrant and PostgreSQL as services
+(`POSTGRES_TEST_DATABASE_URL`, no throwaway container) and `INTEGRATION_STACK_PFLICHT=1`.
+Once set up, its status `ci/woodpecker/pr/ci` is required for `main`; a red pull-request run gets a
+comment with the red steps. Details, the setup steps for a person and how to run one step
+locally (`check.sh --schritt <name>`): [docs/CI.md](../../../../../docs/CI.md).
 
-The `test` job includes:
-- Dependency installation (Python 3.13)
-- Unit test execution
-- Integration test execution against a Qdrant service container
-- JUnit report generation (uploaded as artifacts)
-- Blocking image builds on failures
+After the merge, GitHub Actions on the mirror (`.github/workflows/build.yml`) run the tests
+again and build the images.

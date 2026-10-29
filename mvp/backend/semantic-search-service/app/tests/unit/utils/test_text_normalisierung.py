@@ -26,8 +26,8 @@ class TestTextNormalisiert:
             ),
             ("E-AUTOS SIND EINE TOTGEBURT!!!", "E-Autos sind eine Totgeburt!"),
             (
-                '"Habeck will mir meine Heizung verbieten"',
-                "Habeck will mir meine Heizung verbieten",
+                '"Die Grünen wollen mir meine Heizung verbieten"',
+                "Die Grünen wollen mir meine Heizung verbieten!",
             ),
             ("Das geht's so nicht", "Das geht’s so nicht"),
             ("Klima\n schützen …", "klima schützen"),

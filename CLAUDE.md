@@ -420,7 +420,7 @@ As of the rung-1 content-model refactor, a new type is **a spec + a model (+ a F
 2. Register a `ContentTypeSpec` entry in `domain/content_registry.py` (reuse `create_registry_repository` — the generic `RegistryQdrantRepository`; no new repository subclass).
 3. Add a `get_<type>_service` dependency in `dependencies.py` that builds the generic service from the spec, and add an `api/v1/<type>.py` router (ingestion/input is the only type-specific seam) wired in `main.py`.
 4. Add the type to the `/searchByText` spec list and the `SearchResponse` DTO — the `SearchOrchestrator` handles it generically.
-   Responses go out through a `<Type>Response(BeitragResponse)` and a `<Type>Treffer` in `dtos/beitrag.py`: an allowlist of fields, never the DbEntry, so no Kennung leaks (#333). Build them with `als_responses`/`fuer_aufrufer` (`services/beitrag_fuer_aufrufer.py`); if the type shows up in `/content/recent`, add it to `NEUESTE` in `api/v1/content.py`.
+   Responses go out through a `<Type>Response(BeitragResponse)` and a `<Type>Treffer` in `dtos/beitrag.py`: an allowlist of fields, never the DbEntry, so no Kennung leaks (#333). Build them with `als_responses`/`fuer_aufrufer` (`services/beitrag_fuer_aufrufer.py`); if the type shows up in `/content/recent`, add it to `NEUESTE` in `api/v1/content.py`; `OFT_GENUTZT` in `api/v1/usage.py` maps every type to its response for "Diese Woche oft genutzt".
 5. Frontend: one entry in `shared/content-type-registry.ts` (key, icon, German `label`, `resultField`, `emoji`), the type's fields in the `ausSuchergebnis` adapter (`beitragskarte/karten-daten.ts`) and, if it needs its own body, a block in `app-beitragskarte`. There is one card component for all types. The registry imports no components, so type names (`typLabel()`) stay out of the initial bundle.
 6. Tests-first against live Qdrant in `tests/integration/` (round-trip + orchestrator parity), plus a headless-Chrome FE render/vote test.
 
@@ -454,8 +454,10 @@ intentional. Don't bypass with `--no-verify` except in emergencies. The `safe-co
 helpers automate the retry.
 
 ### Full check and review rules
-- `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests,
-  frontend tests, BFF tests in the .NET SDK container). Run it before opening a PR.
+- `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests and
+  `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container; `--integration` adds the
+  integration tests, `--schritt <name>` runs one step). Run it before opening a PR. Woodpecker runs
+  the same steps on every PR (`docs/CI.md`); a red run gets a comment with the red steps.
 - Replaced names are listed in `scripts/retired-words.txt`; the check and a pre-commit hook reject
   them in added lines.
 - Reviews check the judgement rules in `CODING_STANDARDS.md`.
