@@ -239,15 +239,15 @@ Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fass
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:
-Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
+Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Der Teil aus den Kriterien heißt **Kriterienanteil**; beim Schreiben liefert ihn das Gegenlesen. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Gegenlesen**:
-Die Prüfung eines Beitrags beim Schreiben nach festen Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv und lange zusammengesetzte Wörter. Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
+Das Lesen eines Beitrags beim Schreiben gegen feste Regeln, ohne KI: Verneinung am Anfang, übernommene Schlüsselwörter der Aussage, lange Sätze, Wörter aus der Liste „statt X sag Y“, Passiv und lange zusammengesetzte Wörter. Es läuft etwa eine Sekunde nach der letzten Eingabe, nur die schreibende Person sieht das Ergebnis, und Speichern geht immer. Aus seinen Anmerkungen folgt der Kriterienanteil der Güte, den das Siegel unter der Vorschau zeigt. Erst danach kommt eine KI-Hilfe.
 _Avoid_: Prüfung, Lektorat, Check, Validierung
 
 **Anmerkung**:
-Was das Gegenlesen an einem Entwurf findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
+Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens eine, mit einem Satz dazu, wie es besser geht.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Warnung, Fehler
 
 **Meldung**:

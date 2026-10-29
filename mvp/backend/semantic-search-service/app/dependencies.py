@@ -32,6 +32,7 @@ from repositories.suchen_ohne_treffer_repository import (
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
 from services.gegenlesen.gegenlesen_service import (
+    SPRACHWERKZEUGE,
     GegenlesenService,
     lade_statt_sag_liste,
 )
@@ -156,7 +157,9 @@ def get_gegenlesen_service() -> GegenlesenService:
     """Einmal je Prozess: die Liste "statt X sag Y" wird beim ersten Aufruf gelesen."""
     global _gegenlesen_service
     if _gegenlesen_service is None:
-        _gegenlesen_service = GegenlesenService(statt_sag=lade_statt_sag_liste())
+        _gegenlesen_service = GegenlesenService(
+            statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
+        )
     return _gegenlesen_service
 
 

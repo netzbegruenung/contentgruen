@@ -1,27 +1,46 @@
 """
 Gegenlesen ohne KI (#358): feste Regeln über spaCy-Lemmata und CharSplit.
 
-Die Tests laufen gegen das echte Sprachmodell; ohne spaCy (etwa auf einer Dev-VM,
-auf der requirements.txt noch nicht nachinstalliert ist) werden sie übersprungen.
-In der CI und im Image ist es da.
+Die Tests laufen gegen das echte Sprachmodell. Fehlt es (etwa auf einer Dev-VM, auf der
+requirements.txt noch nicht nachinstalliert ist), werden sie mit Grund übersprungen; in
+der CI (`CI` gesetzt) scheitern sie stattdessen (TESTING_GUIDE.md).
 """
+
+import importlib.util
+import os
 
 import pytest
 
-pytest.importorskip("spacy")
-pytest.importorskip("charsplit")
-
-from services.gegenlesen.gegenlesen_service import (  # noqa: E402
+from services.gegenlesen.gegenlesen_service import (
+    SPACY_MODELL,
     GegenlesenService,
+    Sprachwerkzeuge,
     lade_statt_sag_liste,
 )
 
 pytestmark = [pytest.mark.unit]
 
 
+def _was_fehlt():
+    for paket in ("spacy", "charsplit", SPACY_MODELL):
+        if importlib.util.find_spec(paket) is None:
+            return paket
+    return None
+
+
+_FEHLT = _was_fehlt()
+if _FEHLT is not None:
+    _GRUND = f"{_FEHLT} nicht installiert: pip install -r requirements.txt"
+    if os.environ.get("CI"):
+        pytest.fail(_GRUND, pytrace=False)
+    pytest.skip(_GRUND, allow_module_level=True)
+
+
 @pytest.fixture(scope="module")
 def service():
-    return GegenlesenService(statt_sag=lade_statt_sag_liste())
+    return GegenlesenService(
+        statt_sag=lade_statt_sag_liste(), werkzeuge=Sprachwerkzeuge()
+    )
 
 
 def arten(ergebnis):
@@ -98,6 +117,39 @@ class TestVerneinungAmAnfang:
 
         assert nachher.guete > vorher.guete
 
+    @pytest.mark.parametrize(
+        "titel",
+        [
+            "Nicht nur Wärmepumpen, sondern auch Netze helfen",
+            "Kein Wunder: Wärmepumpen sparen Geld",
+        ],
+    )
+    def test_feste_wendung_ist_keine_verneinung(self, service, titel):
+        ergebnis = service.gegenlesen(titel=titel, text="", aussage="")
+
+        assert "verneinung" not in arten(ergebnis)
+
+    def test_verneinung_an_dritter_stelle_wird_benannt(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpen sind nicht zu teuer", text="", aussage=""
+        )
+
+        assert (
+            "verneint gleich am Anfang („nicht“)"
+            in anmerkung(ergebnis, "verneinung").text
+        )
+
+    def test_verneinter_vorwurf_faellt_ueber_die_schluesselwoerter_auf(self, service):
+        # "keine" ist das vierte Wort, also kein Beginn mit Verneinung; dass der Titel
+        # den Vorwurf wiederholt, merkt die Schlüsselwort-Regel.
+        ergebnis = service.gegenlesen(
+            titel="Die Grünen sind keine Verbotspartei",
+            text="",
+            aussage="Die Grünen sind eine Verbotspartei",
+        )
+
+        assert arten(ergebnis) == ["schluesselwoerter"]
+
 
 class TestSchluesselwoerterDerAussage:
     def test_titel_wiederholt_den_vorwurf(self, service):
@@ -139,6 +191,27 @@ class TestSchluesselwoerterDerAussage:
         )
 
         assert "schluesselwoerter" not in arten(ergebnis)
+
+    def test_zwei_von_drei_themenwoertern_sind_keine_uebernahme(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Windräder sichern günstigen Strom für alle",
+            text="",
+            aussage="Windräder machen den Strom teurer",
+        )
+
+        assert "schluesselwoerter" not in arten(ergebnis)
+
+    def test_adjektiv_nach_sein_zaehlt_als_schluesselwort(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpen sind gar nicht teuer",
+            text="",
+            aussage="Wärmepumpen sind zu teuer",
+        )
+
+        assert anmerkung(ergebnis, "schluesselwoerter").woerter == [
+            "Wärmepumpen",
+            "teuer",
+        ]
 
 
 class TestSatzlaenge:
@@ -204,6 +277,28 @@ class TestStattSag:
 
         assert {"diskurs", "transformation", "narrativ"} <= set(liste)
 
+    def test_zusammensetzung_nennt_das_listenwort(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt",
+            text="Der Transformationsprozess braucht Mut.",
+            aussage="",
+        )
+
+        assert (
+            "statt „Transformation“ (in „Transformationsprozess“) lieber „Umbau“"
+            in (anmerkung(ergebnis, "statt_sag").text)
+        )
+
+    @pytest.mark.parametrize(
+        "wort", ["Narrativwechsel", "Dekarbonisierungsstrategien", "Akteursgruppen"]
+    )
+    def test_listenwort_in_zusammensetzung_ohne_sichere_zerlegung(self, service, wort):
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt", text=f"Die {wort} helfen.", aussage=""
+        )
+
+        assert anmerkung(ergebnis, "statt_sag").woerter == [wort]
+
 
 class TestPassiv:
     def test_werden_mit_partizip(self, service):
@@ -224,6 +319,27 @@ class TestPassiv:
 
         assert "passiv" not in arten(ergebnis)
 
+    def test_infinitiv_neben_partizip_ist_kein_passivpaar(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Alte Heizungen bleiben",
+            text="Bestehende Anlagen dürfen weiterlaufen und repariert werden.",
+            aussage="",
+        )
+
+        assert anmerkung(ergebnis, "passiv").woerter == ["repariert werden"]
+
+    def test_partizipien_in_reihung(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt",
+            text="Das Gesetz wird geprüft und beschlossen.",
+            aussage="",
+        )
+
+        assert anmerkung(ergebnis, "passiv").woerter == [
+            "wird geprüft",
+            "wird beschlossen",
+        ]
+
 
 class TestLangeKomposita:
     def test_langes_zusammengesetztes_wort(self, service):
@@ -242,6 +358,18 @@ class TestLangeKomposita:
 
         assert "kompositum" not in arten(ergebnis)
 
+    @pytest.mark.parametrize(
+        "wort", ["Unverhältnismäßigkeit", "Verantwortungslosigkeit"]
+    )
+    def test_unsichere_zerlegung_wird_nicht_erklaert(self, service, wort):
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt", text=f"Die {wort} stört.", aussage=""
+        )
+
+        assert anmerkung(ergebnis, "kompositum").text.startswith(
+            f"Lange Wörter: „{wort}“. "
+        )
+
 
 class TestGuete:
     def test_viele_anmerkungen_senken_die_guete_nie_unter_eins(self, service):
@@ -256,77 +384,3 @@ class TestGuete:
         )
 
         assert ergebnis.guete == 1
-
-
-class TestSchluesselwoerterAnteil:
-    def test_zwei_von_drei_themenwoertern_sind_keine_uebernahme(self, service):
-        ergebnis = service.gegenlesen(
-            titel="Windräder sichern günstigen Strom für alle",
-            text="",
-            aussage="Windräder machen den Strom teurer",
-        )
-
-        assert "schluesselwoerter" not in arten(ergebnis)
-
-
-class TestPassivKoordination:
-    def test_infinitiv_neben_partizip_ist_kein_passivpaar(self, service):
-        ergebnis = service.gegenlesen(
-            titel="Alte Heizungen bleiben",
-            text="Bestehende Anlagen dürfen weiterlaufen und repariert werden.",
-            aussage="",
-        )
-
-        assert "werden weiterlaufen" not in (
-            anmerkung(ergebnis, "passiv").woerter if "passiv" in arten(ergebnis) else []
-        )
-
-
-class TestSchluesselwoerterPraedikativ:
-    def test_adjektiv_nach_sein_zaehlt_als_schluesselwort(self, service):
-        ergebnis = service.gegenlesen(
-            titel="Wärmepumpen sind gar nicht teuer",
-            text="",
-            aussage="Wärmepumpen sind zu teuer",
-        )
-
-        assert anmerkung(ergebnis, "schluesselwoerter").woerter == [
-            "Wärmepumpen",
-            "teuer",
-        ]
-
-
-class TestReviewBefunde:
-    @pytest.mark.parametrize(
-        "titel",
-        [
-            "Nicht nur Wärmepumpen, sondern auch Netze helfen",
-            "Kein Wunder: Wärmepumpen sparen Geld",
-        ],
-    )
-    def test_feste_wendung_ist_keine_verneinung(self, service, titel):
-        ergebnis = service.gegenlesen(titel=titel, text="", aussage="")
-
-        assert "verneinung" not in arten(ergebnis)
-
-    def test_verneinung_an_dritter_stelle_wird_benannt(self, service):
-        ergebnis = service.gegenlesen(
-            titel="Wärmepumpen sind nicht zu teuer", text="", aussage=""
-        )
-
-        assert (
-            "verneint gleich am Anfang („nicht“)"
-            in anmerkung(ergebnis, "verneinung").text
-        )
-
-    def test_zusammensetzung_nennt_das_listenwort(self, service):
-        ergebnis = service.gegenlesen(
-            titel="Klimaschutz gelingt",
-            text="Der Transformationsprozess braucht Mut.",
-            aussage="",
-        )
-
-        assert (
-            "statt „Transformation“ (in „Transformationsprozess“) lieber „Umbau“"
-            in (anmerkung(ergebnis, "statt_sag").text)
-        )

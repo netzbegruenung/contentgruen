@@ -133,4 +133,32 @@ describe('GegenlesenComponent', () => {
     fixture.detectChanges();
     expect(element().querySelector('.gegenlesen')).not.toBeNull();
   }));
+
+  it('lässt beim Rate-Limit das letzte Ergebnis stehen', fakeAsync(() => {
+    schreibe('Nicht die Wärmepumpe ist das Problem');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+    fixture.detectChanges();
+
+    schreibe('Nicht die Wärmepumpe ist das Problem, sagt sie');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush('zu viele', { status: 429, statusText: 'Too Many Requests' });
+    fixture.detectChanges();
+
+    expect(siegelText()).toBe('Siegel: Güte 7 von 10');
+    expect(element().querySelectorAll('.gegenlesen-anmerkung').length).toBe(1);
+  }));
+
+  it('sagt neue Anmerkungen in einer Region an, die schon vorher da ist', fakeAsync(() => {
+    const region = element().querySelector('[aria-live="polite"]');
+    expect(region).not.toBeNull();
+
+    schreibe('Nicht die Wärmepumpe ist das Problem');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+    http.expectOne(PFAD).flush(MIT_ANMERKUNG);
+    fixture.detectChanges();
+
+    expect(element().querySelector('[aria-live="polite"]')).toBe(region);
+    expect(region!.querySelector('.gegenlesen-anmerkung')).not.toBeNull();
+  }));
 });

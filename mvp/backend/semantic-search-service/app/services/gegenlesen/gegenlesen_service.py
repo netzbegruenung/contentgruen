@@ -14,7 +14,7 @@ import math
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Literal, Optional, Tuple
 
 import yaml
 
@@ -44,10 +44,24 @@ KOMPOSITUM_AB_ZEICHEN = 18
 #: Unter diesem Wert ist CharSplit sich der Zerlegung nicht sicher ("Gesetz" -> "Ges|etz").
 ZERLEGUNG_AB = 0.6
 
+#: Ab diesem Wert zeigt die Anmerkung die Zerlegung als Erklärung. Bei dreiteiligen
+#: Wörtern liegt auch eine richtige Zerlegung unter ZERLEGUNG_AB ("Gebäude +
+#: Energiegesetz" -0,50, "Mietpreis + Bremse" -0,57), falsche liegen tiefer
+#: ("Verantwortungs + Losigkeit" -0,86, "Unverhältnis + Mäßigkeit" -1,22).
+ERKLAEREN_AB = -0.7
+
 #: Abzug je Art von Anmerkung von der höchsten Güte 10. Verneinung und übernommene
 #: Schlüsselwörter wiegen schwer, weil sie den Vorwurf wiederholen; ein kürzerer Satz
 #: oder eine entfernte Verneinung hebt die Güte damit sichtbar um mindestens zwei.
-GEWICHTE: Dict[str, int] = {
+#: Die Arten von Anmerkungen, je eine Regel; das Frontend kennt dieselben
+#: (gegenlesen.service.ts).
+Art = Literal[
+    "verneinung", "schluesselwoerter", "satzlaenge", "statt_sag", "passiv", "kompositum"
+]
+#: Wo eine Anmerkung (zuerst) zutrifft.
+Stelle = Literal["titel", "text"]
+
+GEWICHTE: Dict[Art, int] = {
     "verneinung": 3,
     "schluesselwoerter": 2,
     "satzlaenge": 2,
@@ -77,15 +91,18 @@ _ADJEKTIV_TAGS = {"ADJA", "ADJD"}
 #: Endungen, die das kleine Modell bei seltenen Wörtern nicht abschneidet ("Diskurse").
 _ENDUNGEN = ("en", "er", "es", "n", "e", "s")
 _FUGEN = ("s", "es")
+#: Ein Listenwort am Anfang oder Ende eines längeren Worts zählt als Teil einer
+#: Zusammensetzung, auch wenn CharSplit unsicher ist ("Narrativwechsel"), sofern der
+#: Rest mindestens so lang ist.
+_REST_AB_ZEICHEN = 3
 
 
 @dataclass(frozen=True)
 class Anmerkung:
-    """Was das Gegenlesen an einem Entwurf findet, je Regel höchstens eine (GLOSSARY.md)."""
+    """Was das Gegenlesen an einem Beitrag findet, je Regel höchstens eine (GLOSSARY.md)."""
 
-    art: str
-    #: "titel" oder "text": wo die Anmerkung (zuerst) zutrifft.
-    stelle: str
+    art: Art
+    stelle: Stelle
     text: str
     #: Die betroffenen Wörter, so wie sie im Beitrag stehen.
     woerter: List[str] = field(default_factory=list)
@@ -109,50 +126,59 @@ def lade_statt_sag_liste(
     }
 
 
-class _Sprachwerkzeuge:
+class Sprachwerkzeuge:
     """
-    spaCy und CharSplit, einmal je Prozess geladen (zusammen rund 0,5 GB RAM).
+    spaCy und CharSplit, beim ersten Gebrauch geladen (zusammen rund 0,5 GB RAM).
 
     Die Anfragen laufen im Threadpool. spaCy sagt nicht zu, dass dieselbe Pipeline
     gleichzeitig aus mehreren Threads rechnen darf; ``analysieren`` reiht die Aufrufe
-    deshalb hintereinander. Bei wenigen Millisekunden je Entwurf kostet das nichts.
+    deshalb hintereinander. Bei wenigen Millisekunden je Beitrag kostet das nichts.
     """
 
-    _lock = threading.Lock()
-    _nlp_lock = threading.Lock()
-    _nlp = None
-    _splitter = None
+    def __init__(self, modell: str = SPACY_MODELL):
+        self._modell = modell
+        self._lock = threading.Lock()
+        self._nlp_lock = threading.Lock()
+        self._nlp = None
+        self._splitter = None
 
-    @classmethod
-    def laden(cls):
-        with cls._lock:
-            if cls._nlp is None:
+    def laden(self) -> None:
+        """Vorab laden, damit das erste Gegenlesen nicht auf das Modell wartet."""
+        with self._lock:
+            if self._nlp is None:
                 import spacy
                 from charsplit import Splitter
 
-                cls._nlp = spacy.load(SPACY_MODELL)
-                cls._splitter = Splitter()
-        return cls._nlp, cls._splitter
+                self._nlp = spacy.load(self._modell)
+                self._splitter = Splitter()
 
-    @classmethod
-    def analysieren(cls, text: str):
-        nlp, _ = cls.laden()
-        with cls._nlp_lock:
-            return nlp(text)
+    def analysieren(self, text: str):
+        self.laden()
+        with self._nlp_lock:
+            return self._nlp(text)
 
-    @classmethod
-    def splitter(cls):
-        return cls.laden()[1]
+    def zerlegen(self, wort: str) -> Tuple[float, str, str]:
+        """Beste Zerlegung in Bestimmungswort und Kopf, mit CharSplits Sicherheit."""
+        if "-" in wort:
+            vorne, _, hinten = wort.rpartition("-")
+            return 1.0, vorne, hinten
+        self.laden()
+        wert, bestimmung, kopf = self._splitter.split_compound(wort)[0]
+        return wert, bestimmung, kopf
 
 
-def sprachwerkzeuge_laden() -> None:
-    """Vorab laden, damit das erste Gegenlesen nicht auf das Modell wartet."""
-    _Sprachwerkzeuge.laden()
+#: Eine Instanz je Prozess: Der Dienst nutzt sie, der Start lädt sie vor (main.py).
+SPRACHWERKZEUGE = Sprachwerkzeuge()
 
 
 class GegenlesenService:
-    def __init__(self, statt_sag: Dict[str, Tuple[str, List[str]]]):
+    def __init__(
+        self,
+        statt_sag: Dict[str, Tuple[str, List[str]]],
+        werkzeuge: Sprachwerkzeuge,
+    ):
         self._statt_sag = statt_sag
+        self._werkzeuge = werkzeuge
 
     def gegenlesen(self, titel: str, text: str, aussage: Optional[str]) -> Gegengelesen:
         titel, text, aussage = (
@@ -163,7 +189,7 @@ class GegenlesenService:
         if not titel and not text:
             return Gegengelesen(guete=None, anmerkungen=[])
 
-        analysieren = _Sprachwerkzeuge.analysieren
+        analysieren = self._werkzeuge.analysieren
         titel_doc = analysieren(titel) if titel else None
         text_doc = analysieren(text) if text else None
         # Der Titel ist ein Satz, auch ohne Punkt; im Text zählt jeder Satz für sich.
@@ -279,12 +305,9 @@ class GegenlesenService:
         gefunden: List[Tuple[str, str, str]] = []
         for stelle, satz in saetze:
             for token in _woerter(satz):
-                for form in self._formen(token):
-                    if form in self._statt_sag and token.text not in (
-                        g[1] for g in gefunden
-                    ):
-                        gefunden.append((stelle, token.text, form))
-                        break
+                form = self._listenwort(token)
+                if form is not None and token.text not in (g[1] for g in gefunden):
+                    gefunden.append((stelle, token.text, form))
         if not gefunden:
             return None
         vorschlaege = []
@@ -307,16 +330,14 @@ class GegenlesenService:
         gefunden: List[Tuple[str, str]] = []
         for stelle, satz in saetze:
             for token in satz:
-                kopf = token.head
                 # Tag und Merkmal zusammen: Das kleine Modell taggt auch mal einen
                 # Infinitiv als VVPP ("dürfen weiterlaufen und repariert werden").
-                if (
-                    token.tag_ == "VVPP"
-                    and "Part" in token.morph.get("VerbForm")
-                    and kopf is not token
-                    and kopf.lemma_ == "werden"
-                    and kopf.pos_ == "AUX"
-                ):
+                if token.tag_ != "VVPP" or "Part" not in token.morph.get("VerbForm"):
+                    continue
+                # In einer Reihung ("geprüft und beschlossen") hängt nur das erste
+                # Glied an "werden".
+                kopf = _erstes_glied(token).head
+                if kopf.lemma_ == "werden" and kopf.pos_ == "AUX":
                     vorne, hinten = sorted((kopf, token), key=lambda t: t.i)
                     gefunden.append((stelle, f"{vorne.text} {hinten.text}"))
         if not gefunden:
@@ -333,7 +354,7 @@ class GegenlesenService:
         )
 
     def _komposita(self, saetze) -> Optional[Anmerkung]:
-        gefunden: List[Tuple[str, str, str, str]] = []
+        gefunden: List[Tuple[str, str, str]] = []
         for stelle, satz in saetze:
             for token in satz:
                 if token.pos_ not in _NOMEN or len(token.text) < (
@@ -342,15 +363,11 @@ class GegenlesenService:
                     continue
                 # Lang ist lang, auch wenn CharSplit unsicher ist; die Zerlegung
                 # dient hier nur der Erklärung.
-                _, bestimmung, kopf = self._zerlegen(token.text)
                 if token.text not in (g[1] for g in gefunden):
-                    gefunden.append((stelle, token.text, bestimmung, kopf))
+                    gefunden.append((stelle, token.text, self._erklaeren(token.text)))
         if not gefunden:
             return None
-        teile = [
-            f"„{wort}“ ({_ohne_fuge(bestimmung)} + {kopf})"
-            for _, wort, bestimmung, kopf in gefunden
-        ]
+        teile = [f"„{wort}“{erklaerung}" for _, wort, erklaerung in gefunden]
         return Anmerkung(
             art="kompositum",
             stelle=gefunden[0][0],
@@ -358,24 +375,37 @@ class GegenlesenService:
                 f"Lange Wörter: {_aufzaehlen(teile)}. "
                 "Aufgelöst liest es sich leichter."
             ),
-            woerter=[wort for _, wort, _, _ in gefunden],
+            woerter=[wort for _, wort, _ in gefunden],
         )
 
     # --- Hilfen --------------------------------------------------------------
 
-    def _zerlegen(self, wort: str) -> Tuple[float, str, str]:
-        """Beste Zerlegung in Bestimmungswort und Kopf, mit CharSplits Sicherheit."""
-        if "-" in wort:
-            vorne, _, hinten = wort.rpartition("-")
-            return 1.0, vorne, hinten
-        wert, bestimmung, kopf = _Sprachwerkzeuge.splitter().split_compound(wort)[0]
-        return wert, bestimmung, kopf
+    def _erklaeren(self, wort: str) -> str:
+        """Die Zerlegung als Klammer, nur wenn CharSplit sich einigermaßen sicher ist."""
+        wert, bestimmung, kopf = self._werkzeuge.zerlegen(wort)
+        if wert < ERKLAEREN_AB:
+            return ""
+        return f" ({_ohne_fuge(bestimmung)} + {kopf})"
+
+    def _listenwort(self, token) -> Optional[str]:
+        """Das Wort der Liste "statt X sag Y", das im Wort steckt, sonst None."""
+        for form in self._formen(token):
+            if form in self._statt_sag:
+                return form
+        # Vorne oder hinten in einer Zusammensetzung, auch wenn CharSplit unsicher ist.
+        wort = token.text.lower()
+        for statt in self._statt_sag:
+            if len(wort) - len(statt) >= _REST_AB_ZEICHEN and (
+                wort.startswith(statt) or wort.endswith(statt)
+            ):
+                return statt
+        return None
 
     def _formen(self, token) -> set:
         """Grundformen eines Worts, kleingeschrieben, samt Teilen einer Zusammensetzung."""
         formen = _grundformen(token.lemma_) | _grundformen(token.text)
         if token.pos_ in _NOMEN:
-            wert, bestimmung, kopf = self._zerlegen(token.text)
+            wert, bestimmung, kopf = self._werkzeuge.zerlegen(token.text)
             if wert >= ZERLEGUNG_AB:
                 formen |= _grundformen(bestimmung) | _grundformen(kopf)
         return formen
@@ -384,6 +414,13 @@ class GegenlesenService:
 def _ist_inhaltswort(token) -> bool:
     """Nomen, Namen und Adjektive: die Wörter, die einen Vorwurf tragen."""
     return token.pos_ in _NOMEN or token.tag_ in _ADJEKTIV_TAGS
+
+
+def _erstes_glied(token):
+    """In einer Reihung das erste Glied, an dem der gemeinsame Kopf hängt."""
+    while token.dep_ == "cj" and token.head.dep_ == "cd":
+        token = token.head.head
+    return token
 
 
 def _woerter(satz) -> list:

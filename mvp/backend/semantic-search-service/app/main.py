@@ -52,7 +52,7 @@ from repositories.suchen_ohne_treffer_repository import (
 )
 from dependencies import get_feedback_service
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
-from services.gegenlesen.gegenlesen_service import sprachwerkzeuge_laden
+from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
 from utils.rate_limiter import (
     aufraeumen_im_takt,
     feedback_rate_limiter,
@@ -179,9 +179,11 @@ async def lifespan(app: FastAPI):
 
 async def _gegenlesen_vorladen() -> None:
     try:
-        await asyncio.to_thread(sprachwerkzeuge_laden)
+        await asyncio.to_thread(SPRACHWERKZEUGE.laden)
         logger.info("✅ Gegenlesen: Sprachmodell geladen")
-    except (ImportError, OSError) as fehler:
+    except Exception as fehler:
+        # Auch unerwartete Fehler hier abfangen: Ein Task, dessen Ausnahme niemand
+        # abholt, meldet sie erst beim Beenden. Der Dienst laeuft ohne Gegenlesen weiter.
         logger.error("Gegenlesen nicht verfuegbar: %s", type(fehler).__name__)
 
 

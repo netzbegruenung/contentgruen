@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from core.logging import get_logger
 from dependencies import get_gegenlesen_service, require_user
-from services.gegenlesen.gegenlesen_service import GegenlesenService
+from services.gegenlesen.gegenlesen_service import Art, GegenlesenService, Stelle
 from utils.rate_limiter import gegenlesen_rate_limiter
 
 logger = get_logger(__name__)
@@ -28,6 +28,9 @@ TITEL_MAX = 500
 TEXT_MAX = 10_000
 AUSSAGE_MAX = 1000
 
+#: Fehlt das Sprachmodell, scheitert jede Anfrage gleich; geloggt wird das einmal.
+_nicht_verfuegbar_geloggt = False
+
 
 class GegenlesenRequest(BaseModel):
     titel: str = Field("", max_length=TITEL_MAX)
@@ -36,8 +39,8 @@ class GegenlesenRequest(BaseModel):
 
 
 class AnmerkungResponse(BaseModel):
-    art: str
-    stelle: str
+    art: Art
+    stelle: Stelle
     text: str
     woerter: List[str]
 
@@ -63,7 +66,10 @@ async def gegenlesen(
         )
     except (ImportError, OSError) as fehler:
         # Sprachmodell nicht installiert: Das Formular zeigt dann einfach nichts.
-        logger.error("Gegenlesen nicht verfuegbar: %s", type(fehler).__name__)
+        global _nicht_verfuegbar_geloggt
+        if not _nicht_verfuegbar_geloggt:
+            _nicht_verfuegbar_geloggt = True
+            logger.error("Gegenlesen nicht verfuegbar: %s", type(fehler).__name__)
         raise HTTPException(status_code=503, detail="Gegenlesen nicht verfügbar")
     return GegenlesenResponse(
         guete=ergebnis.guete,
