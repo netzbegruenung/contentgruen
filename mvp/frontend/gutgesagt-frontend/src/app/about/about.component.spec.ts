@@ -4,6 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { AboutComponent } from './about.component';
 import { ORGANISATION } from '../shared/organisation';
+import { FeedbackDialogComponent } from '../shared/feedback/feedback-dialog.component';
 
 /** Text eines Elements mit einfachen Leerzeichen, damit Umbrüche im Template keine Rolle spielen. */
 function einzeilig(element: Element): string {
@@ -101,8 +102,19 @@ describe('AboutComponent', () => {
   it('nimmt Kontakt-Links aus der Organisationskonstante', () => {
     const links = Array.from(seite.querySelectorAll('a[target="_blank"]')).map((a) => a.getAttribute('href'));
 
-    expect(links.filter((href) => href === ORGANISATION.kontakt.url).length).toBe(2);
+    expect(links.filter((href) => href === ORGANISATION.chat.url).length).toBe(1);
     expect(links).toContain(ORGANISATION.url);
+  });
+
+  it('schickt Feedback in die App und nennt die Kontaktadresse, nicht den Chat (#290, #430)', () => {
+    const abschnitt = seite.querySelector('.feedback-kontakt')!;
+
+    expect(abschnitt.querySelector(`a[href="mailto:${ORGANISATION.kontaktMail}"]`)).not.toBeNull();
+    expect(abschnitt.querySelector(`a[href="${ORGANISATION.chat.url}"]`)).toBeNull();
+
+    (abschnitt.querySelector('.feedback-knopf') as HTMLButtonElement).click();
+
+    expect(TestBed.inject(MatDialog).open).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
   });
 
   it('öffnet die Hilfe', () => {

@@ -19,7 +19,7 @@ import { ProfilbildService } from './services/profilbild.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
-import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
+import { feedbackDialogOeffnen } from './shared/feedback/feedback-dialog.component';
 import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
@@ -169,10 +169,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openFeedbackDialog(): void {
-    this.dialog.open(FeedbackDialogComponent, {
-      width: '560px',
-      maxWidth: '95vw',
-    });
+    feedbackDialogOeffnen(this.dialog);
   }
 
   navigateToContributeView(): void {

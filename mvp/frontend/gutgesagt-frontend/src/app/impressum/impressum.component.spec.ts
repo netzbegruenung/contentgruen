@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { abschnitt, normalisiert } from '../testing/rechtstext';
+import { ORGANISATION } from '../shared/organisation';
 import { ImpressumComponent } from './impressum.component';
 
 /** Das Impressum duzt wie die anderen Rechtstexte und die App (#222, Entscheidung 29.10.2026). */
@@ -26,4 +27,14 @@ describe('ImpressumComponent', () => {
     expect(text).not.toContain('Nutzerinnen und Nutzer');
     expect(abschnitt(seite, 'Kontaktstelle nach Art. 11 und 12 DSA')).toContain('kannst du uns');
   });
+
+  it('nennt die Kontaktadresse von Gut gesagt und den Feedback-Knopf (#430)', () => {
+    const kontakt = abschnitt(seite, 'Kontakt');
+    const mail = seite.querySelector(`a[href="mailto:${ORGANISATION.kontaktMail}"]`);
+
+    expect(kontakt).toContain(`Fragen und Hinweise zu Gut gesagt: ${ORGANISATION.kontaktMail}`);
+    expect(kontakt).toContain('„Feedback“');
+    expect(mail).not.toBeNull();
+  });
+
 });

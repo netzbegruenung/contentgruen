@@ -199,7 +199,7 @@
     <div class="cta-buttons">
       <a mat-raised-button
          color="primary"
-         [href]="organisation.kontakt.url"
+         [href]="organisation.chat.url"
          target="_blank"
          rel="noopener">
         <mat-icon>chat</mat-icon>
@@ -221,15 +221,20 @@
   </section>
 
   <!-- Feedback -->
-  <section class="content-section">
+  <section class="content-section feedback-kontakt">
     <h2>Feedback & Kontakt</h2>
     <p>
-      Du hast Feedback, Verbesserungsvorschläge oder möchtest dich einbringen?
+      Du hast eine Frage, einen Fehler gefunden oder einen Verbesserungsvorschlag?
+      Schreib es uns über den Knopf „Feedback“, auch ohne Konto.
     </p>
     <p>
-      <a [href]="organisation.kontakt.url" target="_blank" rel="noopener">
-        Schreib uns eine Nachricht in der {{ organisation.kontakt.name }}
-      </a>
+      <button mat-stroked-button (click)="openFeedbackDialog()" class="feedback-knopf">
+        <mat-icon>feedback</mat-icon>
+        Feedback geben
+      </button>
+    </p>
+    <p>
+      Lieber per Mail? <a [href]="'mailto:' + organisation.kontaktMail">{{ organisation.kontaktMail }}</a>
     </p>
   </section>
 </div>
