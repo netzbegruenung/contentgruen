@@ -15,6 +15,7 @@ import {
   VON_HIER_FEHLT_EINE_ANTWORT,
   VON_PARAM,
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 /**
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
@@ -35,6 +36,7 @@ import {
 export class HierFehltEineAntwortComponent implements OnInit {
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
   readonly maxZeichen = AUSSAGE_MAX_ZEICHEN;
+  readonly consentHinweis = CONSENT_HINWEIS;
 
   aussagen: UnbeantworteteAussage[] | null = null;
   ladefehler = false;

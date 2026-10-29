@@ -2,12 +2,16 @@ from pydantic import BaseModel, field_validator
 from typing import List
 from uuid import UUID
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.image import Image
 from dtos.beitrag import BeitragResponse
 
 
 class AddImageRequest(BaseModel):
     image: Image
+    # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
+    # domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
 
     @field_validator("image")
     @classmethod

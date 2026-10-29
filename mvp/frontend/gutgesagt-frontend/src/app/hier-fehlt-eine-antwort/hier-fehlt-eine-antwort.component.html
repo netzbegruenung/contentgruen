@@ -38,6 +38,8 @@
                       (input)="eingabe($any($event.target).value)"
                       placeholder="z. B. „Das Heizungsgesetz enteignet uns“"></textarea>
         </mat-form-field>
+        <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
+               rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
         <button mat-raised-button type="button" class="dark-green-button aussage-anlegen"
                 [disabled]="!anlegbar"
                 (click)="anlegen()">Aussage anlegen</button>

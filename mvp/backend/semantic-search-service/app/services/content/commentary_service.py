@@ -93,6 +93,7 @@ class CommentaryService(
         id: Optional[uuid.UUID] = None,
         created_at: Optional[datetime.datetime] = None,
         dublettenpruefung: Optional[Dublettenpruefung] = None,
+        cc0_wortlaut: Optional[str] = None,
     ) -> tuple[bool, uuid.UUID, str]:
         """
         Add a new commentary to the index. If no ID is provided, a new UUID is generated.
@@ -139,6 +140,7 @@ class CommentaryService(
             style=commentary.style,
             references=commentary.references,
             references_count=len(commentary.references),
+            cc0_wortlaut=cc0_wortlaut,
         )
 
         # Call upsert method of base class

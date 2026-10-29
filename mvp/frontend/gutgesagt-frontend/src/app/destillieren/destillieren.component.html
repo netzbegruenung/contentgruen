@@ -54,6 +54,8 @@
 
             <p *ngIf="fehler" class="fehler" role="alert">{{ fehler }}</p>
 
+            <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
+                   rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
             <div class="knoepfe">
                 <button mat-raised-button color="primary" type="button" class="weiter"
                         [disabled]="!kannWeiter" (click)="weiter()">Ausformulieren</button>

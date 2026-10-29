@@ -9,6 +9,7 @@ import { AddImageComponent } from './add-image.component';
 import { ImageService } from '../services/image.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 describe('AddImageComponent', () => {
   let fixture: ComponentFixture<AddImageComponent>;
@@ -39,6 +40,10 @@ describe('AddImageComponent', () => {
 
     expect(link).toBeTruthy();
     expect(link!.target).toBe('_blank');
+    expect(link!.closest('p')!.classList).toContain('submit-hint');
+    expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
+    );
   });
 
   it('behaelt nach gescheitertem Speichern die Eingaben und sendet sie mit Erneut versuchen noch einmal', fakeAsync(() => {
