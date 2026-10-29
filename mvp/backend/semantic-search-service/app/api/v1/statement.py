@@ -143,7 +143,7 @@ async def unbeantwortet(
     ),
 ) -> UnbeantworteteAussagenResponse:
     if thema is not None and thema not in NACH_SCHLUESSEL:
-        raise HTTPException(status_code=422, detail="Unknown topic")
+        raise HTTPException(status_code=422, detail="Unknown Thema")
     try:
         aussagen = await service.liste(thema=thema)
     except Exception as e:
@@ -168,7 +168,10 @@ async def unbeantwortet(
 # Die Person ist Autorin; dieselbe vorhandene Aussage wird nicht doppelt angelegt,
 # sondern zurueckgegeben (statement_was_new = false, StatementService.vorab_anlegen).
 # Die gewaehlten Themen bekommt die neue Aussage; eine vorhandene nur, wenn sie noch
-# keine hat, damit niemand die Zuordnung eines anderen still ueberschreibt.
+# keine hat, damit das Anlegen eine vorhandene Zuordnung nicht nebenbei ersetzt.
+# (Pruefen und Setzen sind zwei Schritte; legen zwei Personen dieselbe Aussage im
+# selben Moment an, gilt die zweite Zuordnung. Aendern geht ohnehin ueber
+# /themen/zuordnen.)
 @router.post("/vorab", response_model=AddStatementResponse)
 async def vorab_anlegen(
     request: AussageVorabRequest,
@@ -219,7 +222,7 @@ async def themen_zuordnen(
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:
         logger.error(f"Error in /themen/zuordnen: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to assign topics")
+        raise HTTPException(status_code=500, detail="Failed to assign Themen")
     return ThemenZuordnenResponse(
         statement_id=request.statement_id, themen=themen_dtos(themen)
     )
@@ -260,14 +263,14 @@ async def themen_testset(
         zuordnungen = await themen_service.testset()
     except Exception as e:
         logger.error(f"Error in /themen/testset: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to export topics")
+        raise HTTPException(status_code=500, detail="Failed to export Themen-Testset")
     return ThemenTestsetResponse(
         zuordnungen=[
             ThemenZuordnungDto(
                 statement_id=z.statement_id,
                 text=z.text,
                 themen=z.themen,
-                quelle=z.quelle,
+                zuordnungsart=z.zuordnungsart,
             )
             for z in zuordnungen
         ]

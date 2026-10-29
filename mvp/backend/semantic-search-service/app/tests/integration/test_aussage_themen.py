@@ -53,7 +53,7 @@ def test_tabelle_traegt_weder_person_noch_zeitpunkt(neue_datenbank):
             "aussage_themen", schema=neue_datenbank.schema
         )
     }
-    assert spalten == {"statement_id", "thema", "quelle"}
+    assert spalten == {"statement_id", "thema", "zuordnungsart"}
 
 
 def test_setzen_und_lesen_je_aussage(neue_datenbank):

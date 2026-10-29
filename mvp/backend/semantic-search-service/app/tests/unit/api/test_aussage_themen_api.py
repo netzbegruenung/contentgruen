@@ -127,7 +127,7 @@ class TestTestset:
                     "statement_id": str(aussage),
                     "text": "Windräder töten Vögel",
                     "themen": ["natur-umwelt"],
-                    "quelle": "von_hand",
+                    "zuordnungsart": "von_hand",
                 }
             ]
         }

@@ -153,7 +153,7 @@ class ThemenZuordnungDto(BaseModel):
     statement_id: uuid.UUID
     text: str
     themen: List[str]
-    quelle: str
+    zuordnungsart: str
 
 
 class ThemenTestsetResponse(BaseModel):

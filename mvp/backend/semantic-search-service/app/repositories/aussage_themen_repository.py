@@ -1,7 +1,7 @@
 """
 Repository fuer die Themen an Aussagen (Tabelle aussage_themen).
 
-Je (Aussage, Thema) eine Zeile mit der Quelle der Zuordnung. Was gespeichert wird
+Je (Aussage, Thema) eine Zeile mit der Zuordnungsart der Zuordnung. Was gespeichert wird
 und warum nichts weiter: services/aussage_themen_service.py.
 """
 
@@ -20,7 +20,9 @@ class AussageThemenRepository:
     def __init__(self):
         self.db = get_app_database()
 
-    def setzen(self, statement_id: uuid.UUID, themen: List[str], quelle: str) -> None:
+    def setzen(
+        self, statement_id: uuid.UUID, themen: List[str], zuordnungsart: str
+    ) -> None:
         """
         Die Themen einer Aussage ersetzen, in einer Transaktion. Eine Sperre je
         Aussage haelt zwei gleichzeitige Zuordnungen auseinander; sonst blieben
@@ -40,7 +42,11 @@ class AussageThemenRepository:
                 session.execute(
                     insert(AussageThemaZeile).values(
                         [
-                            {"statement_id": statement_id, "thema": t, "quelle": quelle}
+                            {
+                                "statement_id": statement_id,
+                                "thema": t,
+                                "zuordnungsart": zuordnungsart,
+                            }
                             for t in themen
                         ]
                     )
@@ -59,10 +65,10 @@ class AussageThemenRepository:
         )
         return self._gruppiert(abfrage)
 
-    def zuordnungen(self, quelle: str) -> Dict[uuid.UUID, List[str]]:
-        """Alle Zuordnungen einer Quelle, je Aussage."""
+    def zuordnungen(self, zuordnungsart: str) -> Dict[uuid.UUID, List[str]]:
+        """Alle Zuordnungen einer Zuordnungsart, je Aussage."""
         abfrage = select(AussageThemaZeile.statement_id, AussageThemaZeile.thema).where(
-            AussageThemaZeile.quelle == quelle
+            AussageThemaZeile.zuordnungsart == zuordnungsart
         )
         return self._gruppiert(abfrage)
 

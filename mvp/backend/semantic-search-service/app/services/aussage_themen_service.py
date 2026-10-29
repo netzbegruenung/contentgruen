@@ -2,11 +2,11 @@
 Themen an Aussagen: von Hand zuordnen, lesen und als Testset exportieren.
 
 Eine Aussage hat null bis zwei Themen aus der festen Liste (domain/themen.py).
-Gespeichert wird je Zuordnung nur Aussage, Thema und Quelle, keine Person und
+Gespeichert wird je Zuordnung nur Aussage, Thema und Zuordnungsart, keine Person und
 kein Zeitpunkt: Das Testset fuer spaetere Themenvorschlaege (#401) soll ohne
 Personendaten exportierbar sein, und wer zugeordnet hat, braucht niemand.
 
-Die Quelle unterscheidet die Zuordnungen von Hand von denen einer spaeteren
+Die Zuordnungsart unterscheidet die Zuordnungen von Hand von denen einer spaeteren
 Automatik (Roadmap-Stufe 3); nur die von Hand taugen als Testset.
 """
 
@@ -17,6 +17,7 @@ from typing import Dict, Iterable, List, Protocol, Tuple
 
 from pydantic import ValidationError
 
+from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.themen import NACH_SCHLUESSEL, THEMEN, themen_pruefen
 from services.content.statement_service import AussageNichtGefunden, StatementService
@@ -28,14 +29,14 @@ _REIHENFOLGE = {t.schluessel: i for i, t in enumerate(THEMEN)}
 
 class IAussageThemenRepository(Protocol):
     def setzen(
-        self, statement_id: uuid.UUID, themen: List[str], quelle: str
+        self, statement_id: uuid.UUID, themen: List[str], zuordnungsart: str
     ) -> None: ...
 
     def themen_von(
         self, statement_ids: Iterable[uuid.UUID]
     ) -> Dict[uuid.UUID, List[str]]: ...
 
-    def zuordnungen(self, quelle: str) -> Dict[uuid.UUID, List[str]]: ...
+    def zuordnungen(self, zuordnungsart: str) -> Dict[uuid.UUID, List[str]]: ...
 
 
 @dataclass(frozen=True)
@@ -45,7 +46,7 @@ class ThemenZuordnung:
     statement_id: uuid.UUID
     text: str
     themen: List[str]
-    quelle: str
+    zuordnungsart: str
 
 
 @dataclass(frozen=True)
@@ -58,7 +59,8 @@ class AussageMitThemen:
 _FRUEHESTE = datetime.min.replace(tzinfo=timezone.utc)
 
 
-def _zeitpunkt(aussage) -> datetime:
+def angelegt_am(aussage) -> datetime:
+    """Wann eine Aussage angelegt wurde, immer mit Zeitzone; ohne Angabe ganz frueh."""
     created = getattr(aussage, "created", None)
     if not isinstance(created, datetime):
         return _FRUEHESTE
@@ -117,7 +119,7 @@ class AussageThemenService:
         """
         aussagen = await self._statement_service.kuratierte()
         themen = self.themen_von([a.id for a in aussagen])
-        aussagen.sort(key=_zeitpunkt, reverse=True)
+        aussagen.sort(key=angelegt_am, reverse=True)
         aussagen.sort(key=lambda a: a.id in themen)
         return [
             AussageMitThemen(a.id, a.text, tuple(themen.get(a.id, ())))
@@ -128,6 +130,11 @@ class AussageThemenService:
         """
         Alle Zuordnungen von Hand mit dem Text ihrer Aussage, als Testset fuer
         Themenvorschlaege. Nur sichtbare Aussagen; ohne Person und Zeitpunkt.
+
+        Ohne Aussagen aus Suchanfragen, auch beantwortete: Ihr Text ist, was eine
+        Person eingetippt hat, und kann Persoenliches enthalten. In der App sehen
+        Mitwirkende ihn ab der Schwelle von "Suchen ohne Treffer"; aus der App
+        hinaus geht er nicht.
         """
         zeilen: List[ThemenZuordnung] = []
         for statement_id, themen in self._repository.zuordnungen(VON_HAND).items():
@@ -138,7 +145,10 @@ class AussageThemenService:
                 aussage = await self._aussage(statement_id)
             except AussageNichtGefunden:
                 continue
-            if aussage.status != ContentStatus.VISIBLE:
+            if (
+                aussage.status != ContentStatus.VISIBLE
+                or aussage.origin is ContentOrigin.SEARCH_QUERY
+            ):
                 continue
             zeilen.append(
                 ThemenZuordnung(statement_id, aussage.text, bekannt, VON_HAND)

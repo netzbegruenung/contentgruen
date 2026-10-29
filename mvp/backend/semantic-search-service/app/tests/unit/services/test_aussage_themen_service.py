@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.themen import ThemaUngueltig
 from services.aussage_themen_service import (
@@ -35,8 +36,8 @@ class SpeicherRepository:
     def __init__(self):
         self.zeilen = {}
 
-    def setzen(self, statement_id, themen, quelle):
-        self.zeilen[statement_id] = [(t, quelle) for t in themen]
+    def setzen(self, statement_id, themen, zuordnungsart):
+        self.zeilen[statement_id] = [(t, zuordnungsart) for t in themen]
 
     def themen_von(self, statement_ids):
         return {
@@ -45,17 +46,28 @@ class SpeicherRepository:
             if self.zeilen.get(i)
         }
 
-    def zuordnungen(self, quelle):
+    def zuordnungen(self, zuordnungsart):
         return {
-            i: [t for t, q in zeilen if q == quelle]
+            i: [t for t, q in zeilen if q == zuordnungsart]
             for i, zeilen in self.zeilen.items()
-            if any(q == quelle for _, q in zeilen)
+            if any(q == zuordnungsart for _, q in zeilen)
         }
 
 
-def _aussage(statement_id, text, status=ContentStatus.VISIBLE, **mehr):
+def _aussage(
+    statement_id,
+    text,
+    status=ContentStatus.VISIBLE,
+    origin=ContentOrigin.MANUALLY_CREATED,
+    **mehr,
+):
     return SimpleNamespace(
-        id=statement_id, text=text, status=status, original_author="kennung", **mehr
+        id=statement_id,
+        text=text,
+        status=status,
+        origin=origin,
+        original_author="kennung",
+        **mehr,
     )
 
 
@@ -158,7 +170,7 @@ async def test_testset_enthaelt_text_und_themen_aber_keine_person():
         "statement_id",
         "text",
         "themen",
-        "quelle",
+        "zuordnungsart",
     }
 
 
@@ -193,3 +205,19 @@ async def test_aussagen_zum_zuordnen_zuerst_ohne_thema_dann_neueste():
         (A, "Alt, ohne Thema", ()),
         (B, "Neu, mit Thema", ("klima",)),
     ]
+
+
+async def test_testset_laesst_aussagen_aus_suchanfragen_weg():
+    """Ihr Text ist, was eine Person eingetippt hat; er verlaesst die App nicht."""
+    service, _ = _service(
+        [
+            _aussage(
+                A, "wärmepumpe meine nachbarin sagt", origin=ContentOrigin.SEARCH_QUERY
+            ),
+            _aussage(B, "Tempolimit bringt nichts"),
+        ]
+    )
+    await service.zuordnen(A, ["energie-heizen"])
+    await service.zuordnen(B, ["verkehr"])
+
+    assert [z.statement_id for z in await service.testset()] == [B]

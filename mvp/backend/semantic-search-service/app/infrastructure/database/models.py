@@ -221,7 +221,7 @@ class AussageThemaZeile(Base):
     """Ein Thema an einer Aussage, aus der festen Liste (domain/themen.py).
 
     Je Aussage hoechstens zwei Zeilen; das prueft AussageThemenService, nicht die
-    Tabelle. quelle unterscheidet die Zuordnung von Hand von der einer spaeteren
+    Tabelle. zuordnungsart unterscheidet die Zuordnung von Hand von der einer spaeteren
     Automatik. Traegt bewusst weder Kennung noch Zeitpunkt: Die Zuordnungen von
     Hand sind das Testset fuer Themenvorschlaege und sollen ohne Personendaten
     exportierbar sein (services/aussage_themen_service.py).
@@ -231,7 +231,9 @@ class AussageThemaZeile(Base):
 
     statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
     thema = Column(String(40), primary_key=True)
-    quelle = Column(String(20), nullable=False, server_default=text("'von_hand'"))
+    zuordnungsart = Column(
+        String(20), nullable=False, server_default=text("'von_hand'")
+    )
 
 
 class ContentReport(Base):

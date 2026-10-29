@@ -13,13 +13,16 @@ characterization test (tests/unit/api/test_search_ranking.py) pins it.
 """
 
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
 
 from core.logging import get_logger
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from services.content.base_content_service import BaseContentService
 from domain.models.content_type import ContentType
 from dtos.statement import themen_dtos
+
+if TYPE_CHECKING:
+    from services.aussage_themen_service import AussageThemenService
 
 logger = get_logger(__name__)
 
@@ -264,7 +267,7 @@ class SearchOrchestrator:
             for content_obj, enriched_item in zip(content_objs, enriched):
                 content_obj.usage_count = enriched_item.get("usage_count", 0)
 
-    def themen_ergaenzen(self, themen_service) -> None:
+    def themen_ergaenzen(self, themen_service: "AussageThemenService") -> None:
         """
         Jeder Treffer bekommt die Themen der Aussage, ueber die er gefunden wurde,
         aus einer Abfrage fuer alle Treffer. Ein direkter Treffer hat keine Aussage

@@ -73,7 +73,7 @@ describe('ThemenZuordnenComponent', () => {
 
     knopf(element(), 'download Testset herunterladen').click();
     http.expectOne(`${THEMEN_URL}/testset`).flush({
-      zuordnungen: [{ statement_id: 'a-2', text: 'Tempolimit bringt nichts', themen: ['verkehr'], quelle: 'von_hand' }],
+      zuordnungen: [{ statement_id: 'a-2', text: 'Tempolimit bringt nichts', themen: ['verkehr'], zuordnungsart: 'von_hand' }],
     });
 
     expect(link.download).toBe(TESTSET_DATEI);

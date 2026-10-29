@@ -25,11 +25,10 @@ vor der Begrenzung, damit die Liste nicht durch Aussagen anderer Themen leer ble
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 
 from domain.models.statement import StatementDbEntry
-from services.aussage_themen_service import AussageThemenService
+from services.aussage_themen_service import AussageThemenService, angelegt_am
 from services.content.statement_service import StatementService
 from services.suchen_ohne_treffer_service import (
     WOCHEN_STANDARD,
@@ -43,8 +42,6 @@ LIMIT_STANDARD = 50
 # Aussagen des Themas, die weiter hinten stehen.
 KANDIDATEN_MIT_FILTER = 500
 
-_FRUEHESTE = datetime.min.replace(tzinfo=timezone.utc)
-
 
 @dataclass(frozen=True)
 class UnbeantworteteAussage:
@@ -55,13 +52,6 @@ class UnbeantworteteAussage:
     personen_ohne_treffer: int
     # Schluessel aus domain/themen.py, in der Reihenfolge der Liste.
     themen: Tuple[str, ...] = ()
-
-
-def _zeitpunkt(aussage: StatementDbEntry) -> datetime:
-    created = aussage.created
-    if not isinstance(created, datetime):
-        return _FRUEHESTE
-    return created if created.tzinfo else created.replace(tzinfo=timezone.utc)
 
 
 class UnbeantworteteAussagenService:
@@ -87,13 +77,16 @@ class UnbeantworteteAussagenService:
         schon_drin = {statement_id for statement_id, _, _ in kandidaten}
 
         ohne_kommentar = await self._statement_service.ohne_kommentar()
-        ohne_kommentar.sort(key=_zeitpunkt, reverse=True)
+        ohne_kommentar.sort(key=angelegt_am, reverse=True)
         kandidaten += [
             (aussage.id, aussage.text, 0)
             for aussage in ohne_kommentar
             if aussage.id not in schon_drin
         ]
 
+        if thema is None:
+            # Ohne Filter zaehlen nur die ersten; nur deren Themen nachschlagen.
+            kandidaten = kandidaten[:limit]
         themen = self._themen.themen_von([s for s, _, _ in kandidaten])
         ergebnis = [
             UnbeantworteteAussage(

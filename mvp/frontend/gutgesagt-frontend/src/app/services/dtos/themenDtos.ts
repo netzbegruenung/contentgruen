@@ -35,7 +35,7 @@ export interface ThemenZuordnung {
     statement_id: string;
     text: string;
     themen: string[];
-    quelle: string;
+    zuordnungsart: string;
 }
 
 export interface ThemenTestsetResponse {

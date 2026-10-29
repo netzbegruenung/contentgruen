@@ -245,7 +245,7 @@ async def search_by_text(
         except Exception as e:
             # Ohne Themen bleibt die Suche nutzbar; nur der Filter fehlt dann.
             logger.warning(
-                f"Failed to add topics to search results: {type(e).__name__}"
+                f"Failed to add Themen to search results: {type(e).__name__}"
             )
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)

@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -49,7 +50,7 @@ import {
   templateUrl: './hier-fehlt-eine-antwort.component.html',
   styleUrls: ['./hier-fehlt-eine-antwort.component.css'],
 })
-export class HierFehltEineAntwortComponent implements OnInit {
+export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
   readonly maxZeichen = AUSSAGE_MAX_ZEICHEN;
 
@@ -66,6 +67,8 @@ export class HierFehltEineAntwortComponent implements OnInit {
 
   neueAussage = '';
   neueThemen: string[] = [];
+  /** Die laufende Abfrage der Liste; ein neuer Filter bricht sie ab. */
+  private ladend?: Subscription;
   speichert = false;
   meldung = '';
 
@@ -80,6 +83,10 @@ export class HierFehltEineAntwortComponent implements OnInit {
       error: () => (this.themen = []),
     });
     this.laden();
+  }
+
+  ngOnDestroy(): void {
+    this.ladend?.unsubscribe();
   }
 
   filtern(thema: string | null): void {
@@ -136,6 +143,7 @@ export class HierFehltEineAntwortComponent implements OnInit {
     }
     this.speichert = true;
     this.meldung = '';
+    const mitThemen = this.neueThemen.length > 0;
     this.statementService.aussageVorabAnlegen(this.neueAussage, this.neueThemen).subscribe({
       next: (antwort) => {
         this.speichert = false;
@@ -143,7 +151,8 @@ export class HierFehltEineAntwortComponent implements OnInit {
         this.neueThemen = [];
         this.meldung = antwort.statement_was_new
           ? 'Aussage angelegt.'
-          : `Diese Aussage gibt es schon: „${antwort.statement_text}“`;
+          : `Diese Aussage gibt es schon: „${antwort.statement_text}“` +
+            (mitThemen ? ' Ihre Themen änderst du in der Liste.' : '');
         this.laden();
       },
       error: () => {
@@ -155,7 +164,9 @@ export class HierFehltEineAntwortComponent implements OnInit {
 
   private laden(): void {
     this.ladefehler = false;
-    this.statementService.unbeantworteteAussagen(this.aktivesThema).subscribe({
+    // Sonst koennte eine langsame Antwort zum vorigen Filter die aktuelle ueberschreiben.
+    this.ladend?.unsubscribe();
+    this.ladend = this.statementService.unbeantworteteAussagen(this.aktivesThema).subscribe({
       next: (aussagen) => (this.aussagen = aussagen),
       error: () => (this.ladefehler = true),
     });
