@@ -15,7 +15,7 @@ export const ORGANISATION = {
    * Fragen und Hinweise zu Gut gesagt, neben dem Knopf „Feedback“ (Meldewege, #290).
    * ANNAHME (#430): dieselbe Adresse wie für Beta-Zugänge; eine eigene Adresse gibt es noch nicht.
    */
-  kontaktMail: 'gutgesagt@netzbegruenung.de',
+  gutgesagtMail: 'gutgesagt@netzbegruenung.de',
   /** Der Kanal zum Mitmachen. Kein Meldeweg: Fragen und Fehler gehen über Feedback oder Mail (#290). */
   chat: {
     name: 'Chatbegrünung',

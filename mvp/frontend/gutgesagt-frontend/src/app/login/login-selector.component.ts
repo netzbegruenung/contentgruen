@@ -89,7 +89,7 @@ export class LoginSelectorComponent implements OnInit {
   }
 
   getMailtoLink(): string {
-    const email = ORGANISATION.kontaktMail;
+    const email = ORGANISATION.gutgesagtMail;
     const subject = 'Beta-Account Anfrage';
     return `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   }

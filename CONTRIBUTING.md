@@ -98,6 +98,10 @@ End-to-end tests (Playwright) run against the dev stack, not in CI: see
 3. Make your changes and run the tests (`scripts/check.sh`)
 4. Open a pull request on Forgejo with a clear description of what and why
 
+Without access to Forgejo, write to
+[gutgesagt@netzbegruenung.de](mailto:gutgesagt@netzbegruenung.de) with what you want to change;
+a patch against the GitHub mirror (`git format-patch`) is welcome.
+
 Before starting significant work, please get in touch first to avoid duplication.
 
 ## Feedback and security

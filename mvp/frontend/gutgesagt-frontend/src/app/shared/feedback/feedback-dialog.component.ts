@@ -15,7 +15,7 @@ import {
 /**
  * Das kurze Formular hinter dem Knopf "Feedback" im Kopf: Freitext, optional ein
  * Kontakt. Der Hauptweg fuer Fragen und Fehler von Nutzenden; die Kontaktadresse
- * (`ORGANISATION.kontaktMail`) ist der zweite (#343, #290).
+ * (`ORGANISATION.gutgesagtMail`) ist der zweite (#343, #290).
  */
 @Component({
   selector: 'app-feedback-dialog',

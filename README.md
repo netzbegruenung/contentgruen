@@ -58,6 +58,5 @@ Access the app at [http://localhost](http://localhost). See [CONTRIBUTING.md](./
 - **Development:** issues and pull requests live on Forgejo
   ([git.verdigado.com/Netzbegruenung/gutgesagt](https://git.verdigado.com/Netzbegruenung/gutgesagt)),
   see [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-The GitHub repository [netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen)
-is a read-only mirror. Issues and pull requests opened there are not processed.
+- **GitHub** ([netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen))
+  is a read-only mirror, see [CONTRIBUTING.md](./CONTRIBUTING.md#repository).

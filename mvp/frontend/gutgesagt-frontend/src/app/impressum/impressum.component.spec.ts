@@ -30,9 +30,9 @@ describe('ImpressumComponent', () => {
 
   it('nennt die Kontaktadresse von Gut gesagt und den Feedback-Knopf (#430)', () => {
     const kontakt = abschnitt(seite, 'Kontakt');
-    const mail = seite.querySelector(`a[href="mailto:${ORGANISATION.kontaktMail}"]`);
+    const mail = seite.querySelector(`a[href="mailto:${ORGANISATION.gutgesagtMail}"]`);
 
-    expect(kontakt).toContain(`Fragen und Hinweise zu Gut gesagt: ${ORGANISATION.kontaktMail}`);
+    expect(kontakt).toContain(`Fragen und Hinweise zu Gut gesagt: ${ORGANISATION.gutgesagtMail}`);
     expect(kontakt).toContain('„Feedback“');
     expect(mail).not.toBeNull();
   });

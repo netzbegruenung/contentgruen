@@ -109,7 +109,7 @@ describe('AboutComponent', () => {
   it('schickt Feedback in die App und nennt die Kontaktadresse, nicht den Chat (#290, #430)', () => {
     const abschnitt = seite.querySelector('.feedback-kontakt')!;
 
-    expect(abschnitt.querySelector(`a[href="mailto:${ORGANISATION.kontaktMail}"]`)).not.toBeNull();
+    expect(abschnitt.querySelector(`a[href="mailto:${ORGANISATION.gutgesagtMail}"]`)).not.toBeNull();
     expect(abschnitt.querySelector(`a[href="${ORGANISATION.chat.url}"]`)).toBeNull();
 
     (abschnitt.querySelector('.feedback-knopf') as HTMLButtonElement).click();
