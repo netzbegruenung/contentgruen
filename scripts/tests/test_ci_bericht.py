@@ -12,14 +12,25 @@ def schritt(name, exit_code, ausgabe):
     return ci_bericht.Schritt(name=name, exit_code=exit_code, ausgabe=ausgabe)
 
 
-def bericht(schritte, geheimnisse=()):
+def lauf(pipeline="42", commit="abc123"):
+    return ci_bericht.Lauf(
+        pipeline=pipeline,
+        pipeline_url=f"https://ci.example/repos/1/pipeline/{pipeline}",
+        commit=commit,
+    )
+
+
+def bericht(schritte, geheimnisse=(), pipeline="42", commit="abc123"):
     return ci_bericht.bericht_erstellen(
-        pipeline="42",
-        pipeline_url="https://ci.example/repos/1/pipeline/42",
-        commit="abc123",
+        lauf(pipeline, commit),
         schritte=schritte,
         geheimnisse=list(geheimnisse),
+        fingerabdruck=ci_bericht.fingerabdruck(schritte, list(geheimnisse)),
     )
+
+
+def abdruck_lesen(text):
+    return ci_bericht.marke_lesen(text)[0]
 
 
 def test_bericht_erstellen_nennt_rote_schritte_mit_ausgabe():
@@ -143,14 +154,47 @@ def test_bericht_erstellen_ohne_failed_zeilen_zeigt_die_zusammenfassungszeile():
     assert "Kompiliere" not in sichtbar
 
 
+def test_bericht_erstellen_zeigt_failed_zeilen_vor_captured_log():
+    ausgabe = (
+        "---- Captured log call ----\n"
+        + "".join(f"ERROR    app.services.x:x.py:{i} kaputt\n" for i in range(25))
+        + "ERROR:root:auch Log\n"
+        + "=== short test summary info ===\n"
+        + "FAILED tests/test_a.py::test_eins - assert 1 == 2\n"
+        + "=== 1 failed in 3.21s ===\n"
+    )
+
+    text = bericht([schritt("unit", 1, ausgabe)])
+
+    sichtbar = text.split("<details>", 1)[0]
+    assert "FAILED tests/test_a.py::test_eins" in sichtbar
+    assert "kaputt" not in sichtbar and "auch Log" not in sichtbar
+    assert "weitere" not in sichtbar
+
+
+def test_fehlerzeilen_bleibt_bei_sehr_langen_zeilen_schnell():
+    import time
+
+    zeile = "1:11" * 50_000
+
+    start = time.monotonic()
+    ci_bericht.fehlerzeilen(zeile + "\n" + zeile + " FAILED x\n")
+
+    assert time.monotonic() - start < 1
+
+
+def test_bericht_erstellen_leeres_log_zeigt_platzhalter():
+    text = bericht([schritt("unit", None, "")])
+
+    assert "(keine Ausgabe)" in text.split("<details>", 1)[0]
+
+
 def test_bericht_erstellen_traegt_unsichtbaren_fingerabdruck():
     schritte = [schritt("unit", 1, "FAILED test_x\n")]
 
     text = bericht(schritte)
 
-    assert ci_bericht.fingerabdruck_lesen(text) == ci_bericht.fingerabdruck(
-        schritte, []
-    )
+    assert abdruck_lesen(text) == ci_bericht.fingerabdruck(schritte, [])
     assert "<!-- ci-bericht " in text
 
 
@@ -212,9 +256,7 @@ def test_fingerabdruck_ohne_failed_zeilen_nimmt_das_ende_der_ausgabe():
 
 def test_unveraendert_erstellen_ist_ein_einzeiler_mit_verweis():
     text = ci_bericht.unveraendert_erstellen(
-        pipeline="43",
-        pipeline_url="https://ci.example/43",
-        commit="def456",
+        lauf("43", "def456"),
         fingerabdruck="f00",
         voriger_url="https://forge.example/pr/7#issuecomment-9",
     )
@@ -224,14 +266,21 @@ def test_unveraendert_erstellen_ist_ein_einzeiler_mit_verweis():
     assert "Unverändert rot" in sichtbar
     assert "`#43`" in sichtbar and "`def456`" in sichtbar
     assert "https://forge.example/pr/7#issuecomment-9" in sichtbar
-    assert ci_bericht.fingerabdruck_lesen(text) == "f00"
+    assert ci_bericht.marke_lesen(text) == ("f00", True)
+
+
+def test_unveraendert_erstellen_ohne_adresse_ohne_leeren_link():
+    text = ci_bericht.unveraendert_erstellen(lauf("43"), "f00", "")
+
+    assert "]()" not in text and "letzten Bericht." in text
 
 
 class _Forgejo:
     """Lokaler Stand-in fuer die Kommentar-API: liefert ``kommentare`` auf GET (oder
-    ``get_status``), merkt sich POSTs und antwortet darauf mit ``status``."""
+    ``get_status``), merkt sich POSTs und antwortet darauf mit ``status``. Fuer die
+    Methoden in ``abreissen`` bricht die Antwort mitten im Text ab."""
 
-    def __init__(self, status, kommentare=(), get_status=200):
+    def __init__(self, status, kommentare=(), get_status=200, abreissen=()):
         import http.server
         import threading
 
@@ -242,9 +291,11 @@ class _Forgejo:
         class Handler(http.server.BaseHTTPRequestHandler):
             def _antworten(self, code, antwort):
                 self.send_response(code)
-                self.send_header("Content-Length", str(len(antwort)))
+                fehlend = 100 if self.command in abreissen else 0
+                self.send_header("Content-Length", str(len(antwort) + fehlend))
                 self.end_headers()
                 self.wfile.write(antwort)
+                self.close_connection = True
 
             def do_GET(self):
                 forgejo.abrufe.append((self.path, self.headers["Authorization"]))
@@ -370,12 +421,10 @@ def test_main_gleicher_fehler_wie_letzter_bericht_postet_nur_einen_einzeiler(
     tmp_path, capsys, forgejo_mit_status
 ):
     _protokoll(tmp_path, "unit", 1, "lange Ausgabe\nFAILED test_x - in 0.5s\n")
-    voriger = ci_bericht.bericht_erstellen(
-        "41",
-        "https://ci.example/41",
-        "aaa111",
+    voriger = bericht(
         [schritt("unit", 1, "andere Ausgabe\nFAILED test_x - in 0.7s\n")],
-        [],
+        pipeline="41",
+        commit="aaa111",
     )
     forgejo = forgejo_mit_status(
         201, kommentare=[_kommentar(1, "Mensch: schau mal"), _kommentar(5, voriger)]
@@ -392,12 +441,8 @@ def test_main_gleicher_fehler_wie_letzter_bericht_postet_nur_einen_einzeiler(
 
 def test_main_vergleicht_nur_mit_dem_letzten_bericht(tmp_path, forgejo_mit_status):
     _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
-    gleich = ci_bericht.bericht_erstellen(
-        "40", "u", "a", [schritt("unit", 1, "FAILED test_x\n")], []
-    )
-    anders = ci_bericht.bericht_erstellen(
-        "41", "u", "b", [schritt("unit", 1, "FAILED test_y\n")], []
-    )
+    gleich = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
+    anders = bericht([schritt("unit", 1, "FAILED test_y\n")], pipeline="41")
     forgejo = forgejo_mit_status(
         201, kommentare=[_kommentar(1, gleich), _kommentar(2, anders)]
     )
@@ -413,7 +458,7 @@ def test_main_folgt_auf_einen_einzeiler_wieder_ein_einzeiler(
 ):
     _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
     fp = ci_bericht.fingerabdruck([schritt("unit", 1, "FAILED test_x\n")], [])
-    einzeiler = ci_bericht.unveraendert_erstellen("41", "u", "b", fp, "https://x/3")
+    einzeiler = ci_bericht.unveraendert_erstellen(lauf("41"), fp, "https://x/3")
     forgejo = forgejo_mit_status(201, kommentare=[_kommentar(4, einzeiler)])
 
     ci_bericht.main(["unit"], forgejo.env(), tmp_path)
@@ -440,12 +485,10 @@ def test_main_einzeiler_verweist_auf_den_vollen_bericht_nicht_auf_den_einzeiler(
     tmp_path, forgejo_mit_status
 ):
     _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
-    voll = ci_bericht.bericht_erstellen(
-        "40", "u", "a", [schritt("unit", 1, "FAILED test_x\n")], []
-    )
-    fp = ci_bericht.fingerabdruck_lesen(voll)
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
+    fp = abdruck_lesen(voll)
     einzeiler = ci_bericht.unveraendert_erstellen(
-        "41", "u", "b", fp, "https://forge.example/pr/7#issuecomment-2"
+        lauf("41"), fp, "https://forge.example/pr/7#issuecomment-2"
     )
     forgejo = forgejo_mit_status(
         201, kommentare=[_kommentar(2, voll), _kommentar(3, einzeiler)]
@@ -469,3 +512,29 @@ def test_main_unerwartete_kommentarliste_postet_den_vollen_bericht(
 
     assert code == 0
     assert "<details><summary>Log unit</summary>" in _gesendet(forgejo)
+
+
+def test_main_abgerissene_kommentarliste_postet_den_vollen_bericht(
+    tmp_path, capsys, forgejo_mit_status
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    forgejo = forgejo_mit_status(201, abreissen={"GET"})
+
+    code = ci_bericht.main(["unit"], forgejo.env(), tmp_path)
+
+    assert code == 0
+    assert "<details><summary>Log unit</summary>" in _gesendet(forgejo)
+    assert "IncompleteRead" in capsys.readouterr().err
+
+
+def test_main_abgerissene_antwort_auf_den_bericht_endet_rot_ohne_traceback(
+    tmp_path, capsys, forgejo_mit_status
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    forgejo = forgejo_mit_status(201, abreissen={"POST"})
+
+    code = ci_bericht.main(["unit"], forgejo.env(), tmp_path)
+
+    assert code == 1
+    assert len(forgejo.anfragen) == 1
+    assert "geheim123" not in capsys.readouterr().err

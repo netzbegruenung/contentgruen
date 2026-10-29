@@ -60,8 +60,9 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 
 Woodpecker logs need a Woodpecker login, which agents do not have. If a pull-request run is
 red, the last step `ci-bericht` writes one comment into the pull request: per red step the
-exit code and its error lines (the `FAILED`/`ERROR` lines, or else the last non-empty line,
-the summary of Karma, dotnet or Ruff), the last 80 lines of its output folded in
+exit code and its error lines (the `FAILED`/`ERROR` lines of the pytest short summary, not
+the `ERROR` lines of captured logs; or else the last non-empty line, the summary of Karma,
+dotnet or Ruff), the last 80 lines of its output folded in
 `<details>` ("Log <step>"), and the steps that did not run.
 
 - **Same error, one line.** Each report ends with an invisible HTML comment
@@ -71,8 +72,8 @@ the summary of Karma, dotnet or Ruff), the last 80 lines of its output folded in
   timestamps, clock times, durations and memory addresses. Before posting, the step reads
   the comments of the pull request. If the most recent comment with such a marker has the
   same fingerprint, it posts only one line ("Unverändert rot", commit, pipeline, link to the
-  last full report) carrying the marker again. If the comments cannot be read, the full
-  report is posted. The marker is not signed: whoever can comment on the pull
+  last full report) carrying the marker again. If the comments cannot be read (refused, connection
+  broken, unexpected answer), the full report is posted. The marker is not signed: whoever can comment on the pull
   request can fake one, at worst turning a report into the one line.
 - A green run writes nothing: the step only runs on red runs, the last report stays.
 - Each step runs its commands through `scripts/ci-protokoll.sh`: output to the Woodpecker
