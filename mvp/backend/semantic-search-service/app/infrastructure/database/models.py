@@ -314,9 +314,9 @@ class RawInputContentLink(Base):
     Blockade, die spaeter teuer wird (docs/archiv/ROHINPUT.md, Abschnitt 6).
 
     ``content_id`` zeigt auf einen Qdrant-Punkt und ist deshalb kein Fremdschluessel;
-    ``raw_input_id`` ist einer, mit ON DELETE CASCADE - nicht, weil Einwuerfe
-    geloescht wuerden (sie werden es nicht), sondern damit ein Loeschen aus
-    Datenschutzgruenden keine Verweise auf Nichts hinterlaesst.
+    ``raw_input_id`` ist einer, mit ON DELETE CASCADE, damit ein Loeschen aus
+    Datenschutzgruenden oder nach der Loeschfrist (services/loeschfristen_service.py)
+    keine Verweise auf Nichts hinterlaesst.
 
     ``created_by`` haelt fest, *wer* verknuepft hat: den Ausformulierer. Das ist die
     Rolle, die ``last_modified_by`` am Beitrag nicht bewahrt, und die Voraussetzung

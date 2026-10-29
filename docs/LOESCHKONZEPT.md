@@ -31,13 +31,16 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   Scheitert das, bleibt der Beitrag sichtbar und der Autor bekommt einen Fehler mit der Bitte,
   es erneut zu versuchen; wie beim Admin-Weg unten räumt erst der zweite Versuch fertig auf.
   Das ist **kein Löschen im Sinne von Art. 17**: Text und
-  Kennung stehen weiter in Qdrant. Ein Löschantrag erfasst gelöschte Beiträge deshalb
+  Kennung stehen weiter in Qdrant, bis die Frist für gelöschte Beiträge (30 Tage, unter
+  „Fristen“) abläuft. Ein Löschantrag erfasst gelöschte Beiträge deshalb
   genauso wie sichtbare und gesperrte; der Lauf in Schritt 3 filtert nur nach der Kennung,
   nicht nach dem Zustand.
 - **Ein Admin entfernt endgültig**
   (`DELETE /api/v1/moderation/content/{content_type}/{id}`): Der Punkt ist danach aus
-  Qdrant weg. Das ist der Weg für Schritt 3, wenn ein Text die Person erkennbar macht,
-  und sonst für nichts: Gemeldete Beiträge sperrt ein Admin, statt sie zu entfernen.
+  Qdrant weg, mit ihm seine Stimmen (`votes`) und seine Verknüpfungen mit Einwürfen
+  (`raw_input_content_links`). Das ist der Weg für Schritt 3, wenn ein Text die Person
+  erkennbar macht, und sonst für nichts: Gemeldete Beiträge sperrt ein Admin, statt sie
+  zu entfernen. Denselben Weg nimmt die Frist für gelöschte Beiträge (unten).
 
 ## Ablauf
 
@@ -116,6 +119,44 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    Die Platzhalter sind als `userId` gesperrt: Einen Beta-Zugang mit `ehemalige-person`
    oder `ehemalige-person-…` lässt das BFF nicht zu und protokolliert einen Fehler
    (`BFF/Services/ManagedUserService.cs:128`).
+
+## Fristen
+
+Ein täglicher Task löscht nach festen Fristen, sofort beim Start des Dienstes, dann
+täglich und zusätzlich um Mitternacht (UTC). Die Zahlen stehen an einer Stelle im Code,
+`services/loeschfristen_service.py`; dort steht auch die Begründung. Wie beim Feedback
+hängt der Task nicht am abschaltbaren Usage-Cleanup. Was gelöscht ist, steht in Backups
+bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
+
+| Datenart | Frist | Gerechnet ab |
+|---|---|---|
+| Meldungen (`content_reports`), bearbeitet oder abgewiesen | 180 Tage | Bearbeitung (`reviewed_at`; ohne sie, im Altbestand, der Eingang) |
+| Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet |
+| Einwürfe (`raw_inputs`) ohne Verknüpfung mit einem Beitrag, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
+| Einwürfe mit Verknüpfung (ausformuliert) | solange der verknüpfte Beitrag besteht | — danach wie ohne Verknüpfung |
+| Gelöschte Beiträge (Zustand „gelöscht“, Qdrant) | 30 Tage, dann endgültig entfernt | Tag im Payload-Feld `geloescht_am` |
+| Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
+
+- **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
+  angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
+  meldende Person, ihre Sitzungskennung oder den Freitext. Der Zähler am Beitrag
+  (`report_count`) bleibt; er trägt keinen Personenbezug.
+- **Einwürfe:** Verworfene zählen wie offene und destillierte; ein Einwurf, an dem ein
+  Jahr niemand gearbeitet hat, ist kein Arbeitsvorrat mehr. Verwerfen selbst setzt
+  keinen Zeitpunkt; ein alter Einwurf, der eben verworfen wurde, geht also mit dem
+  nächsten Lauf. Platzhalter ehemaliger Personen (`ehemalige-person-<UUID>` in
+  `users`), deren Satz dabei mitgeht, räumt der Task ab wie `person_loeschen.sql`.
+- **Gelöschte Beiträge:** Der erste Lauf, der einen Beitrag gelöscht findet, schreibt den
+  UTC-Tag nach `geloescht_am`; die 30 Tage zählen ab dann, also höchstens einen Tag nach
+  dem Löschen. Das gilt auch für Altbestand, der vor #421 gelöscht wurde. Entfernt wird
+  über `ModerationService.delete_content`, denselben Weg wie beim Admin: erst Verweise der
+  Aussagen, Stimmen und Verknüpfungen, dann der Punkt. Wie beim Admin stehen alle
+  Meldungen zum Beitrag danach auf bearbeitet, hier ohne Admin (`reviewed_by` leer), und
+  ihre 180 Tage beginnen neu. Scheitert ein Schritt,
+  bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
+  haben keine Frist: Admins brauchen sie für die Moderation.
+- **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
+  eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
 
 ## Feedback
 

@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from sqlalchemy import desc
+from sqlalchemy import and_, desc, or_
 
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import ContentReport
@@ -286,6 +286,33 @@ class ContentReportRepository:
                 f"Error updating reports for content {content_id}: {e}", exc_info=True
             )
             raise
+
+    def bearbeitete_loeschen_vor(self, grenze: datetime) -> int:
+        """
+        Bearbeitete und abgewiesene Meldungen loeschen, die vor ``grenze``
+        bearbeitet wurden (services/loeschfristen_service.py). Offene bleiben.
+
+        Ohne Zeitpunkt der Bearbeitung (Altbestand) zaehlt der Eingang. Fehler gehen
+        an den Aufrufer.
+
+        Returns:
+            int: Zahl der geloeschten Meldungen
+        """
+        with self.db.get_session() as session:
+            return (
+                session.query(ContentReport)
+                .filter(
+                    ContentReport.status != "pending",
+                    or_(
+                        ContentReport.reviewed_at < grenze,
+                        and_(
+                            ContentReport.reviewed_at.is_(None),
+                            ContentReport.created < grenze,
+                        ),
+                    ),
+                )
+                .delete(synchronize_session=False)
+            )
 
     def get_report_count_by_status(self) -> Dict[str, int]:
         """

@@ -69,7 +69,7 @@ Die Person, die einen Einwurf mit einem Beitrag verknüpft hat, mit einem neuen 
 _Avoid_: Verarbeiter, Bearbeiter, Autor
 
 **Verwerfen**:
-Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
+Einen Einwurf als nicht verwertbar markieren. Er bleibt sichtbar, damit niemand ihn erneut prüft, bis seine Löschfrist abläuft, ist aber nicht gesperrt: Andere dürfen ihn trotzdem destillieren und ausformulieren.
 _Avoid_: Löschen, Ablehnen
 
 **Ausformuliert in**:
@@ -189,7 +189,7 @@ Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sper
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
-Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt gespeichert, damit Verknüpfungen und Stimmen nicht ins Leere zeigen; zurückholen lässt er sich nicht. Endgültig entfernt wird ein Beitrag nur nach dem Löschkonzept, durch einen Admin. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
+Ein Beitrag, den sein Autor entfernt hat. Niemand findet ihn mehr, aber er bleibt bis zu seiner Löschfrist gespeichert; zurückholen lässt er sich nicht. Danach wird er endgültig entfernt, mit seinen Stimmen und seinen Verknüpfungen mit Einwürfen. Vorher entfernt ihn nur ein Admin endgültig, nach dem Löschkonzept. Ein gelöschtes Konto ist etwas anderes: Seine Person wird nach dem Löschkonzept entfernt, an ihre Stelle tritt die Ehemalige Person.
 _Avoid_: Archiviert
 
 **Titel**:
@@ -243,7 +243,7 @@ Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen a
 _Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Melden auf der Plattform einer Aussage ist keine Meldung.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht, offene nie. Melden auf der Plattform einer Aussage ist keine Meldung.
 _Avoid_: Report, Flag, Beschwerde
 
 **Feedback**:
@@ -364,6 +364,10 @@ _Avoid_: Benutzername, Klarname, Kennung
 Der Anzeigename, der an die Stelle einer Person tritt, die ihr Konto gelöscht hat: an ihren Sätzen zu Einwürfen anderer im Fangkorb und an ihren Beiträgen. Sätze und Beiträge bleiben, nur der Personenbezug geht.
 _Avoid_: Gelöschter Nutzer, Ehemaliges Mitglied, Anonym
 
+**Löschfrist**:
+Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von selbst löscht. Die Fristen stehen im Löschkonzept. Eine Löschfrist ist etwas anderes als das Löschen auf Antrag einer Person.
+_Avoid_: Retention, Aufbewahrungszeit
+
 **Admin**:
-Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Nur ein Admin entfernt einen Beitrag endgültig, und nur nach dem Löschkonzept. Moderation ist keine eigene Rolle.
+Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion

@@ -54,6 +54,8 @@ def service(speicher):
     return ModerationService(
         report_repo=report_repo,
         moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
+        vote_repo=MagicMock(),
+        raw_input_repo=MagicMock(),
     )
 
 
@@ -215,6 +217,25 @@ class TestLoeschen:
 
         assert CONTENT_ID in speicher.get_data()
         service.report_repo.update_reports_by_content_id.assert_not_called()
+
+    async def test_loeschen_nimmt_stimmen_und_verknuepfungen_mit(self, service):
+        """Nach dem Beitrag zeigt nichts mehr auf ihn (#421)."""
+        assert await service.delete_content(CONTENT_ID, "commentary", None)
+
+        kennung = uuid.UUID(CONTENT_ID)
+        service._vote_repo.loeschen_fuer_beitrag.assert_called_once_with(kennung)
+        service._raw_input_repo.verknuepfungen_loeschen.assert_called_once_with(kennung)
+        aufruf = service.report_repo.update_reports_by_content_id.call_args.kwargs
+        assert aufruf["reviewed_by"] is None
+
+    async def test_loeschen_stimmen_scheitern_beitrag_bleibt(self, service, speicher):
+        """Erst Stimmen und Verknuepfungen, dann der Beitrag: Ein neuer Versuch findet ihn."""
+        service._vote_repo.loeschen_fuer_beitrag.side_effect = RuntimeError("weg")
+
+        with pytest.raises(RuntimeError):
+            await service.delete_content(CONTENT_ID, "commentary", "admin-1")
+
+        assert CONTENT_ID in speicher.get_data()
 
     async def test_loeschen_unbekannter_beitrag_ist_false(self, service):
         service.moderation_repo.aus_aussagen_entfernen = AsyncMock()

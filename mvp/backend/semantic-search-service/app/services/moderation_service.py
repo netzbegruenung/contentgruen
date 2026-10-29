@@ -15,6 +15,11 @@ from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
+from repositories.raw_input_repository import (
+    RawInputRepository,
+    get_raw_input_repository,
+)
+from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
 from services.content.verweise_entfernen import verweise_entfernen
 
@@ -32,9 +37,14 @@ class ModerationService:
         self,
         report_repo: Optional[ContentReportRepository] = None,
         moderation_repo: Optional[IModerationRepository] = None,
+        vote_repo: Optional[VoteRepository] = None,
+        raw_input_repo: Optional[RawInputRepository] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
+        # Erst beim endgueltigen Entfernen gebraucht; vorher keine Verbindung.
+        self._vote_repo = vote_repo
+        self._raw_input_repo = raw_input_repo
 
     async def report_content(
         self,
@@ -260,22 +270,24 @@ class ModerationService:
         return await self.moderation_repo.gesperrte_laden(limit)
 
     async def delete_content(
-        self, content_id: str, content_type: str, deleted_by: str
+        self, content_id: str, content_type: str, deleted_by: Optional[str]
     ) -> bool:
         """
-        Einen Beitrag endgueltig entfernen, samt den Verweisen der Aussagen auf ihn.
+        Einen Beitrag endgueltig entfernen, samt den Verweisen der Aussagen auf ihn,
+        seinen Stimmen und seinen Verknuepfungen mit Einwuerfen (#421).
 
         Die Verweise gehen fuer jeden Beitragstyp weg, unabhaengig von content_type:
-        Aussagen verweisen auf Beitraege jedes Typs (#294). Erst die Verweise, dann der
-        Beitrag: Scheitert das Entfernen der Verweise, bleibt der Beitrag stehen und
-        ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf einen
-        Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf ohne
-        zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
+        Aussagen verweisen auf Beitraege jedes Typs (#294). Erst Verweise, Stimmen und
+        Verknuepfungen, dann der Beitrag: Scheitert davor etwas, bleibt der Beitrag
+        stehen und ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf
+        einen Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf
+        ohne zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
 
         Args:
             content_id: UUID of the content to delete
             content_type: Type of content (nur fuer das Log)
-            deleted_by: User ID of the person deleting
+            deleted_by: Kennung des Admins; None, wenn die Loeschfrist entfernt
+                (services/loeschfristen_service.py)
 
         Returns:
             bool: False, wenn es den Beitrag nicht gibt oder er nicht entfernt wurde
@@ -283,12 +295,20 @@ class ModerationService:
         Raises:
             VerweiseNichtEntfernt: Aussagen verweisen noch auf den Beitrag; er ist
                 nicht entfernt.
+            Datenbankfehler beim Loeschen von Stimmen oder Verknuepfungen gehen
+                weiter; der Beitrag ist dann ebenfalls nicht entfernt.
         """
         if await self._beitrag_laden(content_id) is None:
             logger.warning(f"Content {content_id} not found or already deleted")
             return False
 
         await verweise_entfernen(self.moderation_repo, content_id)
+        stimmen = self._stimmen().loeschen_fuer_beitrag(UUID(content_id))
+        verknuepfungen = self._einwuerfe().verknuepfungen_loeschen(UUID(content_id))
+        logger.info(
+            f"Content {content_id}: {stimmen} votes and {verknuepfungen} "
+            "raw input links deleted"
+        )
 
         if not await self.moderation_repo.entfernen(content_id):
             logger.warning(f"Content {content_id} could not be deleted")
@@ -315,6 +335,16 @@ class ModerationService:
             f"Content {content_id} ({content_type}) deleted, {updated_count} reports marked as reviewed"
         )
         return True
+
+    def _stimmen(self) -> VoteRepository:
+        if self._vote_repo is None:
+            self._vote_repo = VoteRepository()
+        return self._vote_repo
+
+    def _einwuerfe(self) -> RawInputRepository:
+        if self._raw_input_repo is None:
+            self._raw_input_repo = get_raw_input_repository()
+        return self._raw_input_repo
 
     async def dismiss_report(
         self, report_id: str, dismissed_by: str, notes: Optional[str] = None

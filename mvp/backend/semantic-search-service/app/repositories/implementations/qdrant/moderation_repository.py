@@ -1,11 +1,13 @@
 import json
 import logging
+from datetime import date
 from typing import Any, Dict, List, Optional
 
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
 from domain.models.content_status import (
+    FELD_GELOESCHT_AM,
     FELD_STATUS_VOR_SPERRE,
     ContentStatus,
     zustand_aus_altwert,
@@ -18,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Wie viele Aussagen aus_aussagen_entfernen je Scroll-Seite holt.
 AUSSAGEN_JE_SEITE = 100
+# Wie viele geloeschte Beitraege geloeschte_laden je Scroll-Seite holt.
+GELOESCHTE_JE_SEITE = 100
 
 
 def _nur(feld: str, wert: str) -> Filter:
@@ -81,6 +85,32 @@ class QdrantModerationRepository(IModerationRepository):
             with_vectors=False,
         )
         return [{**(punkt.payload or {}), "id": str(punkt.id)} for punkt in punkte]
+
+    async def geloeschte_laden(self) -> List[Dict[str, Any]]:
+        geloeschte: List[Dict[str, Any]] = []
+        offset = None
+        while True:
+            punkte, naechster = await self._client.scroll(
+                collection_name=self._collection,
+                scroll_filter=_nur("status", ContentStatus.DELETED.value),
+                limit=GELOESCHTE_JE_SEITE,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            geloeschte += [{**(p.payload or {}), "id": str(p.id)} for p in punkte]
+            if not punkte or naechster is None:
+                return geloeschte
+            offset = naechster
+
+    async def geloescht_am_setzen(self, beitrag_ids: List[str], tag: date) -> None:
+        if not beitrag_ids:
+            return
+        await self._client.set_payload(
+            collection_name=self._collection,
+            payload={FELD_GELOESCHT_AM: tag.isoformat()},
+            points=beitrag_ids,
+        )
 
     async def entfernen(self, beitrag_id: str) -> bool:
         return await self._manager.delete_by_id(beitrag_id)

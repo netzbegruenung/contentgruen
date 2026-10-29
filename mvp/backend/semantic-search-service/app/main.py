@@ -49,8 +49,11 @@ from services.suchen_ohne_treffer_service import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
-from dependencies import get_feedback_service
+from dependencies import get_feedback_service, get_loeschfristen_service
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
+from services.loeschfristen_service import (
+    loeschen_im_takt as loeschfristen_im_takt,
+)
 from utils.rate_limiter import (
     aufraeumen_im_takt,
     feedback_rate_limiter,
@@ -139,6 +142,13 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Feedback cleanup task started")
 
+        # Loeschfristen fuer Meldungen, Einwuerfe und geloeschte Beitraege, ebenso
+        # unabhaengig vom Usage-Cleanup (services/loeschfristen_service.py).
+        app.state.loeschfristen = asyncio.create_task(
+            loeschfristen_im_takt(get_loeschfristen_service())
+        )
+        logger.info("✅ Retention periods task started")
+
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
         )
@@ -156,6 +166,7 @@ async def lifespan(app: FastAPI):
                 "rate_limiter_aufraeumen",
                 "suchen_ohne_treffer_loeschen",
                 "feedback_loeschen",
+                "loeschfristen",
             ):
                 task = getattr(app.state, name, None)
                 if task is not None:
