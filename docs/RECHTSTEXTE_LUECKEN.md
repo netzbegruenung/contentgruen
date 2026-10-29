@@ -19,8 +19,8 @@ Geprüfte Dateien:
 Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner davon ist
 mehr offen** — alle drei Texte sind ausformuliert, die Datenschutzerklärung zuletzt. Die
 Tabellen bleiben stehen, weil in der Eintrag-Spalte steht, wie der jeweilige Punkt gelöst
-wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Consent-Frage
-(Abschnitt 5), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende.
+wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Zustimmung beim
+Anmelden (Abschnitt 5, #429), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende.
 
 Legende Pflicht-Spalte:
 - PFLICHT = gesetzlich zwingend
@@ -174,30 +174,35 @@ Zeile fest, wie der Vorgang im Text gelandet ist.
 
 ## 5. Consent-Checkbox / Verweis auf Nutzungsbedingungen
 
-**Ergebnis: existiert nicht.** Weder im Anmelde- noch in einem Beitragsformular.
+**Entschieden (#415, 28.10.2026): beides.** Ein Satz über dem Absende-Knopf in jedem Formular
+(#431) und die Zustimmung zu den Nutzungsbedingungen beim ersten Anmelden (#429).
 
-| Ort | Befund |
-|-----|--------|
-| `login/login.component.html` | Reines Formular (E-Mail/Benutzername, Passwort, Button). Kein Checkbox-Element, kein Link auf Nutzungsbedingungen oder Datenschutz |
-| `login/login-selector.component.html` | Zwei Login-Buttons + Info-Panel zur Zugangsbeschaffung. Kein Consent-Element |
-| `contribute-view/`, `workflow/add-commentary`, `workflow/add-generictext`, `workflow/add-image` | Kein `mat-checkbox`, kein Hinweistext auf Nutzungsbedingungen (repo-weiter grep über `app/` nach `mat-checkbox|consent|einwillig|zustimm|akzeptier|nutzungsbedingung`: **kein einziger Treffer** außerhalb der Rechtstext-Seiten selbst) |
-| `footer/footer.component.html:25–27` | **Einziger** Verweis auf die Nutzungsbedingungen im gesamten Frontend — als Footer-Link |
+**Hinweis im Formular: umgesetzt.** Der Satz steht in `shared/consent-hinweis.ts` und verlinkt
+die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
+unwiderruflich unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten
+Dritter.“ Keine Checkbox; die bewusste Handlung ist das Absenden.
 
-**Konflikt:** `nutzungsbedingungen.component.html:16` behauptet, mit der Nutzung erkläre man sich
-„mit diesen Nutzungsbedingungen einverstanden". Ein reiner Footer-Link trägt diese Einbeziehung
-nicht (§ 305 Abs. 2 BGB verlangt einen ausdrücklichen Hinweis bei Vertragsschluss). Für die
-Beitragsfunktion kommt hinzu, dass dort eine **Rechteeinräumung** an den Betreiber erklärt werden
-soll — die braucht eine bewusste Handlung.
+| Ort | Formular | Seit |
+|-----|----------|------|
+| `add-raw-input/` | Einwurf | 55bb5cb8 |
+| `add-commentary/`, `add-generictext/`, `add-image/`, `add-post/` | Kommentar, Hintergrundinfo, Bild, Post (auch im Ablauf Ausformulieren) | 55bb5cb8 |
+| `hier-fehlt-eine-antwort/` | Aussage vorab anlegen („Aussage anlegen“) | #431 |
+| `destillieren/` | Satz. Ohne Absende-Knopf, weil er beim Tippen gespeichert wird: eigene Fassung `CONSENT_HINWEIS_SATZ` („Dein Satz wird beim Tippen gespeichert. Damit stellst du …“) über den Knöpfen | #431 |
 
-**Zu entscheiden:**
-- ☐ Checkbox beim ersten Login („Ich habe die Nutzungsbedingungen und die Datenschutzerklärung gelesen") — braucht persistentes Feld pro Nutzer, das es aktuell nicht gibt
-- ☐ Hinweistext im Beitragsformular über dem Absende-Button (ohne Checkbox, „Mit dem Absenden akzeptierst du …")
-- ☐ Beides
-- ☐ Vorerst nichts
+Jedes dieser Formulare prüft den Satz samt Link im eigenen Komponententest.
 
-**Zusatzbefund:** Auch die Nutzungsbedingungen tragen einen sichtbaren Platzhalter-Hinweis
-(`nutzungsbedingungen.component.html:264`) und einen offenen `[Datum]`-Platzhalter (Z. 1 Treffer) —
-sowie in Z. 254 einen Verweis auf „Community-Richtlinien", die es als Seite nicht gibt.
+**Nutzungsbedingungen:** Die Behauptung, mit der Nutzung erkläre man sich einverstanden, ist
+seit der Neufassung (20c1b06b) nicht mehr im Text. Die Einbeziehung trägt der Hinweis im Formular
+(§ 305 Abs. 2 BGB: ausdrücklicher Hinweis bei Vertragsschluss), für die Rechteeinräumung unter
+CC0 das Absenden als bewusste Handlung.
+
+**Offen:**
+- Zustimmung beim ersten Anmelden mit persistentem Feld pro Person: #429.
+- Ob die Fassung des Hinweises am Beitrag mitgespeichert wird (Nachweis, welchem Wortlaut jemand
+  zugestimmt hat): Produktfrage, nicht entschieden.
+
+Der frühere Zusatzbefund (Platzhalter-Hinweis, `[Datum]`, Verweis auf „Community-Richtlinien“)
+ist mit der Neufassung erledigt; die Seite trägt „Stand: September 2026“.
 
 ---
 
@@ -265,7 +270,7 @@ ausformulieren** — der Stand ändert sich gerade.
 
 **Damit ist die Liste für Impressum, Nutzungsbedingungen und Datenschutzerklärung
 abgearbeitet.** Was bleibt, sind die Punkte der Prüfliste unten, die Produkt- und
-Codetickets aus dem Datenschutz-PR und die Consent-Frage aus Abschnitt 5.
+Codetickets aus dem Datenschutz-PR und die Zustimmung beim Anmelden aus Abschnitt 5 (#429).
 
 ---
 
@@ -288,7 +293,8 @@ entfernt. Die beiden früher hier geführten inhaltlichen Blocker sind aufgelös
 
 1. **Juristische Prüfung** der Datenschutzerklärung — die Punkte stehen unten in der
    Prüfliste. Diese Liste ist keine Rechtsberatung und ersetzt sie nicht.
-2. **Die Consent-Frage aus Abschnitt 5** ist unverändert offen. Sie berührt den
+2. **Die Consent-Frage aus Abschnitt 5** ist entschieden; der Hinweis in den Formularen
+   steht (#431), die Zustimmung beim Anmelden fehlt noch (#429). Sie berührt den
    Datenschutz an einer Stelle mit: § 25 TDDDG (Prüfliste, Punkt 3).
 3. **Eine USt-IdNr.-Rückfrage** im Impressum (I11).
 
@@ -307,7 +313,7 @@ wir ihnen beimessen. Alles Übrige im Text ist am Code belegt.
 
 | # | Stelle | Was zu prüfen ist |
 |---|--------|-------------------|
-| P1 | **Sitzungskennung und § 25 TDDDG** | Die Kennung wird auch **ohne Anmeldung** gesetzt und dient der Nutzungsmessung, nicht der Bereitstellung des ausdrücklich gewünschten Dienstes. Ob sie unter die Ausnahme des § 25 Abs. 2 Nr. 2 TDDDG fällt, haben wir **nicht** entschieden: Der Text beschreibt den Vorgang, stuft ihn aber nicht als technisch erforderlich ein. Ein Consent-Mechanismus existiert nicht (Abschnitt 5). **Braucht eine Antwort, bevor die Plattform öffentlich beworben wird.** Produktseitig damit verbunden: soll für nicht angemeldete Besucher überhaupt eine Kennung gesetzt werden? |
+| P1 | **Sitzungskennung und § 25 TDDDG** | Die Kennung wird auch **ohne Anmeldung** gesetzt und dient der Nutzungsmessung, nicht der Bereitstellung des ausdrücklich gewünschten Dienstes. Ob sie unter die Ausnahme des § 25 Abs. 2 Nr. 2 TDDDG fällt, haben wir **nicht** entschieden: Der Text beschreibt den Vorgang, stuft ihn aber nicht als technisch erforderlich ein. Ein Consent-Mechanismus für die Kennung existiert nicht (Abschnitt 5 betrifft nur die Nutzungsbedingungen). **Braucht eine Antwort, bevor die Plattform öffentlich beworben wird.** Produktseitig damit verbunden: soll für nicht angemeldete Besucher überhaupt eine Kennung gesetzt werden? |
 | P2 | **Rechtsgrundlagen je Vorgang (D-M6)** | Die Zuordnung lit. b / lit. f / lit. c ist unsere Einschätzung, nicht mehr. Besonders zu prüfen: die **öffentliche Herkunftsangabe an Beiträgen** (auf lit. f gestützt) und der **Fangkorb**, wo die Kennung für alle Angemeldeten sichtbar ist |
 | P3 | **Löschung als Anonymisierung** | Beiträge werden bei Kontolöschung nicht gelöscht, sondern die Kennung durch einen Platzhalter ersetzt. Ob das Art. 17 DSGVO in dieser Konstellation genügt — CC0-Lizenz, Bestandscharakter, Verweise anderer Beiträge —, ist eine Wertung. Der Text beschreibt das Verfahren offen, einschließlich der Grenze, dass CC0-Freigaben nicht zurückgeholt werden können |
 | P4 | **Verarbeitungen ohne Löschfrist** | Meldungen, Bewertungen, Fangkorb und Beiträge haben keine automatische Löschfrist (Suchereignisse haben seit #289 eine, siehe D-N4b; Text folgt mit #222). Der Text benennt das ehrlich statt eine Frist zu behaupten. Zu prüfen ist, ob das gegenüber Art. 5 Abs. 1 lit. e DSGVO (Speicherbegrenzung) tragfähig ist oder ob Fristen einzuführen sind — Tickets sind angelegt |
