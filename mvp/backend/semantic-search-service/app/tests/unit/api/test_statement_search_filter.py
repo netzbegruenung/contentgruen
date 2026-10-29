@@ -58,7 +58,11 @@ class TestSearchStatementsFilter:
 
         assert resp.status_code == 200
         statement_service.search_filtered.assert_awaited_once_with(
-            "waermepumpe", 5, nur_kuratiert=True, min_similarity=0.5, auch=frozenset()
+            "waermepumpe",
+            5,
+            nur_kuratiert=True,
+            min_similarity=0.5,
+            zugelassen=frozenset(),
         )
         statement_service.search.assert_not_awaited()
 

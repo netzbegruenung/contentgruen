@@ -92,6 +92,11 @@ def wochenbeginn(tag: date) -> date:
     return tag - timedelta(days=tag.weekday())
 
 
+def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:
+    """Montag der ersten Woche im Zeitraum: die laufende und die (wochen - 1) davor."""
+    return wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
+
+
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
     """Die aelteste Woche, die bleibt; alles davor wird geloescht."""
     return wochenbeginn(heute or heute_utc()) - timedelta(weeks=AUFBEWAHRUNG_WOCHEN - 1)
@@ -240,7 +245,7 @@ class SuchenOhneTrefferService:
         die es nicht mehr gibt oder die nicht sichtbar sind, fallen heraus; damit
         die Liste trotzdem bis zu limit Eintraege hat, wird seitenweise nachgeladen.
         """
-        seit_woche = wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
+        seit_woche = _seit_woche(wochen, heute)
 
         ergebnis: List[SucheOhneTreffer] = []
         offset = 0
@@ -270,7 +275,7 @@ class SuchenOhneTrefferService:
         Nicht-Admins zaehlen sie wie gepflegte Aussagen (api/v1/statement.py, #436),
         nur sichtbare filtert dort Qdrant.
         """
-        seit_woche = wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
+        seit_woche = _seit_woche(wochen, heute)
         return frozenset(self._repository.ueber_der_schwelle(seit_woche, MINDESTANZAHL))
 
     async def _sichtbare_aussage(self, statement_id: uuid.UUID):

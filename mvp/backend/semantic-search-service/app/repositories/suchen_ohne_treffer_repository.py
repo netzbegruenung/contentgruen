@@ -17,6 +17,20 @@ from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import SucheOhneTrefferZeile
 
 
+# Personen im Zeitraum: die Summe ueber die Wochen (Tagespseudonyme verschiedener
+# Tage sind immer verschieden).
+_PERSONEN = func.sum(SucheOhneTrefferZeile.personen)
+
+
+def _ab_mindestanzahl(abfrage, seit_woche: date, mindestanzahl: int):
+    """Je Aussage ab seit_woche, nur mit mindestens mindestanzahl Personen."""
+    return (
+        abfrage.where(SucheOhneTrefferZeile.woche >= seit_woche)
+        .group_by(SucheOhneTrefferZeile.statement_id)
+        .having(_PERSONEN >= mindestanzahl)
+    )
+
+
 class SuchenOhneTrefferRepository:
     def __init__(self):
         self.db = get_app_database()
@@ -66,16 +80,16 @@ class SuchenOhneTrefferRepository:
         Tage sind immer verschieden.
         """
         summe = func.sum(SucheOhneTrefferZeile.anzahl)
-        personen = func.sum(SucheOhneTrefferZeile.personen)
         abfrage = (
-            select(
-                SucheOhneTrefferZeile.statement_id,
-                summe.label("anzahl"),
-                personen.label("personen"),
+            _ab_mindestanzahl(
+                select(
+                    SucheOhneTrefferZeile.statement_id,
+                    summe.label("anzahl"),
+                    _PERSONEN.label("personen"),
+                ),
+                seit_woche,
+                mindestanzahl,
             )
-            .where(SucheOhneTrefferZeile.woche >= seit_woche)
-            .group_by(SucheOhneTrefferZeile.statement_id)
-            .having(personen >= mindestanzahl)
             .order_by(desc("anzahl"), SucheOhneTrefferZeile.statement_id)
             .limit(limit)
             .offset(offset)
@@ -93,11 +107,8 @@ class SuchenOhneTrefferRepository:
         Alle Aussage-IDs ab seit_woche mit mindestens mindestanzahl Personen,
         ungeordnet und ohne Limit; dieselbe Schwelle wie haeufigste.
         """
-        abfrage = (
-            select(SucheOhneTrefferZeile.statement_id)
-            .where(SucheOhneTrefferZeile.woche >= seit_woche)
-            .group_by(SucheOhneTrefferZeile.statement_id)
-            .having(func.sum(SucheOhneTrefferZeile.personen) >= mindestanzahl)
+        abfrage = _ab_mindestanzahl(
+            select(SucheOhneTrefferZeile.statement_id), seit_woche, mindestanzahl
         )
         with self.db.get_session() as session:
             return list(session.execute(abfrage).scalars().all())

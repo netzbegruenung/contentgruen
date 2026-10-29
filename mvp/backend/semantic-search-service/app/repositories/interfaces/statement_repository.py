@@ -35,10 +35,12 @@ class IStatementRepository(
         pass
 
     @abstractmethod
-    async def count_curated(self, auch: AbstractSet[uuid.UUID] = frozenset()) -> int:
+    async def count_curated(
+        self, zugelassen: AbstractSet[uuid.UUID] = frozenset()
+    ) -> int:
         """
         Count statements, leaving out search queries nobody has answered yet,
-        except those in auch (search queries above the threshold, #436).
+        except those in zugelassen (search queries above the threshold, #436).
 
         Returns:
             Number of statements that carry curated substance
@@ -50,21 +52,21 @@ class IStatementRepository(
         self,
         query_text: str,
         limit: int,
-        auch: AbstractSet[uuid.UUID] = frozenset(),
+        zugelassen: AbstractSet[uuid.UUID] = frozenset(),
     ) -> List[StatementSearchResult]:
         """
         Search statements, leaving out search queries nobody has answered yet
-        (same criterion as count_curated, including auch).
+        (same criterion as count_curated, including zugelassen).
         """
         pass
 
     @abstractmethod
     async def get_all_curated(
-        self, limit: int, offset: int, auch: AbstractSet[uuid.UUID] = frozenset()
+        self, limit: int, offset: int, zugelassen: AbstractSet[uuid.UUID] = frozenset()
     ) -> List[StatementDbEntry]:
         """
         List statements page by page, leaving out search queries nobody has
-        answered yet (same criterion as count_curated, including auch).
+        answered yet (same criterion as count_curated, including zugelassen).
         """
         pass
 

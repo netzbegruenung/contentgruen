@@ -1,4 +1,5 @@
 import uuid
+from typing import FrozenSet, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import ValidationError
@@ -49,6 +50,19 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
+async def _zugelassene_suchanfragen(
+    aufrufer: Aufrufer, suchen_ohne_treffer: SuchenOhneTrefferService
+) -> Optional[FrozenSet[uuid.UUID]]:
+    """
+    Welche Aussagen aus Suchanfragen ohne Antwort der Aufrufer sehen darf (#436):
+    Admins alle (None, also kein Filter), alle anderen nur die ueber der Schwelle
+    der Kennzahl "Suchen ohne Treffer", wie in "Hier fehlt eine Antwort".
+    """
+    if aufrufer.ist_admin:
+        return None
+    return await suchen_ohne_treffer.ueber_der_schwelle()
+
+
 # Test endpoint to check if the API is running
 @router.get("/")
 async def read_test():
@@ -73,17 +87,19 @@ async def get_all(
         logger.debug("/getAll was called")
 
         offset = (page - 1) * page_size
-        if aufrufer.ist_admin:
+        zugelassen = await _zugelassene_suchanfragen(aufrufer, suchen_ohne_treffer)
+        if zugelassen is None:
             statement_index_results = await statement_service.get_all(
                 limit=page_size, offset=offset
             )
             total_records_count = await statement_service.count()
         else:
-            auch = await suchen_ohne_treffer.ueber_der_schwelle()
             statement_index_results = await statement_service.get_all_curated(
-                limit=page_size, offset=offset, auch=auch
+                limit=page_size, offset=offset, zugelassen=zugelassen
             )
-            total_records_count = await statement_service.count_curated(auch=auch)
+            total_records_count = await statement_service.count_curated(
+                zugelassen=zugelassen
+            )
 
         logger.debug(f"/getAll got {len(statement_index_results)} results")
 
@@ -198,10 +214,12 @@ async def search_statements(
     try:
         logger.debug("/searchStatements was called")
 
-        nur_kuratiert = request.nur_kuratiert or not aufrufer.ist_admin
-        auch = frozenset()
-        if not request.nur_kuratiert and not aufrufer.ist_admin:
-            auch = await suchen_ohne_treffer.ueber_der_schwelle()
+        # nur_kuratiert: fuer alle ohne Suchanfragen ohne Antwort, die Schwelle
+        # spielt dann keine Rolle; sonst je nach Aufrufer.
+        zugelassen: Optional[FrozenSet[uuid.UUID]] = frozenset()
+        if not request.nur_kuratiert:
+            zugelassen = await _zugelassene_suchanfragen(aufrufer, suchen_ohne_treffer)
+        nur_kuratiert = zugelassen is not None
 
         if nur_kuratiert or request.min_similarity is not None:
             statement_index_results = await statement_service.search_filtered(
@@ -209,7 +227,7 @@ async def search_statements(
                 request.limit,
                 nur_kuratiert=nur_kuratiert,
                 min_similarity=request.min_similarity,
-                auch=auch,
+                zugelassen=zugelassen or frozenset(),
             )
         else:
             statement_index_results = await statement_service.search(
