@@ -18,6 +18,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/content/recent")]
     [InlineData("/api/v1/usage/content/abc/usage")]
     [InlineData("/api/v1/usage/trending")]
+    [InlineData("/api/v1/usage/trending/woche")]  // "Diese Woche oft genutzt" (#364)
     [InlineData("/api/v1/moderation/report")]
     [InlineData("/api/v1/metrics/getmetrics")]   // Bestandszaehler der Startseite
     [InlineData("/api/v1/metrics/getMetrics")]   // Schreibweise darf keine Rolle spielen

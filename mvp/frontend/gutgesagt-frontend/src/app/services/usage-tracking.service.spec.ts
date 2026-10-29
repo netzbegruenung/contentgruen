@@ -98,4 +98,26 @@ describe('UsageTrackingService', () => {
       expect(ergebnis).toBeNull();
     });
   });
+
+  describe('Diese Woche oft genutzt', () => {
+    const OFT_GENUTZT = `${environment.baseUrl}/api/v1/usage/trending/woche`;
+
+    it('liefert die Beitraege der Woche', () => {
+      let ergebnis: unknown;
+      service.getOftGenutzt().subscribe((antwort) => (ergebnis = antwort));
+
+      http.expectOne(OFT_GENUTZT).flush({ results: [{ id: 'k-1' }] });
+
+      expect(ergebnis).toEqual({ results: [{ id: 'k-1' }] });
+    });
+
+    it('liefert bei einem Fehler keine Beitraege, damit die Startseite den Bereich weglaesst', () => {
+      let ergebnis: unknown;
+      service.getOftGenutzt().subscribe((antwort) => (ergebnis = antwort));
+
+      http.expectOne(OFT_GENUTZT).flush('kaputt', { status: 500, statusText: 'Server Error' });
+
+      expect(ergebnis).toEqual({ results: [] });
+    });
+  });
 });

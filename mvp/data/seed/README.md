@@ -10,7 +10,6 @@ der Startbestand: Fertige Beiträge im Bestand schreiben Menschen (`docs/VISION.
 | `v1.0/statements_with_generictexts/` | Aussagen mit Hintergrundinfos |
 | `v1.0/prompt_generate_seedcontent.md` | Vorlage, um den Seed mit KI neu zu erzeugen |
 | `add_metadata.py` | ergänzt `metadata`: Nutzung 0, `created_at` fest aus der Position |
-| `v0.1/` | alter Stand, wird nicht geladen |
 
 Geladen wird das Verzeichnis aus `SEMANTIC_SEARCH_DATA_PATH` (Dev: `/data/seed/v1.0`), und
 zwar nur auf Anstoß über `/api/v1/seeding/start`; von selbst lädt der Dienst nichts. Der Seed
