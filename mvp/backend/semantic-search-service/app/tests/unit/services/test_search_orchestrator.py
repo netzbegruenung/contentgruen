@@ -130,17 +130,16 @@ async def test_treffer_tragen_die_themen_der_aussage_ueber_die_sie_gefunden_wurd
     themen_service.themen_von.assert_called_once_with([aussage_id])
 
 
-def _kommentar_treffer(score: float, zweck: Zweck) -> SimpleNamespace:
+def _kommentar_treffer(score: float, zweck: Zweck, aussage=None) -> SimpleNamespace:
     return SimpleNamespace(
         score=score,
+        statement_id=aussage,
         commentary_result=SimpleNamespace(id=uuid.uuid4(), zweck=zweck),
     )
 
 
-@pytest.mark.unit
-def test_kommentare_fuer_die_kommentarspalte_stehen_vor_denen_fuer_die_eigenen_leute():
-    """Die Suche zeigt zuerst die Kommentare fuer die Kommentarspalte (#357)."""
-    orchestrator = SearchOrchestrator(
+def _kommentar_orchestrator() -> SearchOrchestrator:
+    return SearchOrchestrator(
         specs=[
             ContentTypeSearchSpec(
                 ContentType.COMMENTARY,
@@ -154,21 +153,65 @@ def test_kommentare_fuer_die_kommentarspalte_stehen_vor_denen_fuer_die_eigenen_l
         usage_service=None,
         voting_service=None,
     )
-    eigene_hoch = _kommentar_treffer(0.95, Zweck.EIGENE_LEUTE)
-    spalte_mittel = _kommentar_treffer(0.9, Zweck.KOMMENTARSPALTE)
-    eigene_mittel = _kommentar_treffer(0.88, Zweck.EIGENE_LEUTE)
-    spalte_tief = _kommentar_treffer(0.85, Zweck.KOMMENTARSPALTE)
-    weggeschnitten = _kommentar_treffer(0.81, Zweck.KOMMENTARSPALTE)
+
+
+@pytest.mark.unit
+def test_je_aussage_stehen_kommentarspalten_antworten_vor_denen_fuer_die_eigenen_leute():
+    """
+    Entscheidung zu #357 (Variante B): Umsortiert wird nur innerhalb derselben
+    Aussage. Ihre Kommentare fuer die eigenen Leute ruecken direkt hinter ihre
+    Kommentare fuer die Kommentarspalte; Treffer anderer Aussagen und Direkttreffer bleiben
+    auf ihrem Platz in der Score-Reihenfolge.
+    """
+    a, b = uuid.uuid4(), uuid.uuid4()
+    a_eigene_hoch = _kommentar_treffer(0.97, Zweck.EIGENE_LEUTE, a)
+    b_spalte = _kommentar_treffer(0.95, Zweck.KOMMENTARSPALTE, b)
+    a_spalte_mittel = _kommentar_treffer(0.93, Zweck.KOMMENTARSPALTE, a)
+    a_eigene_mittel = _kommentar_treffer(0.92, Zweck.EIGENE_LEUTE, a)
+    b_eigene = _kommentar_treffer(0.91, Zweck.EIGENE_LEUTE, b)
+    a_spalte_tief = _kommentar_treffer(0.9, Zweck.KOMMENTARSPALTE, a)
+    direkt_eigene = _kommentar_treffer(0.62, Zweck.EIGENE_LEUTE)
+    direkt_spalte = _kommentar_treffer(0.61, Zweck.KOMMENTARSPALTE)
+    weggeschnitten = _kommentar_treffer(0.5, Zweck.KOMMENTARSPALTE, a)
+    orchestrator = _kommentar_orchestrator()
     orchestrator.results_for(ContentType.COMMENTARY).extend(
-        [spalte_tief, eigene_mittel, weggeschnitten, eigene_hoch, spalte_mittel]
+        [
+            direkt_spalte,
+            a_spalte_tief,
+            weggeschnitten,
+            b_eigene,
+            a_eigene_hoch,
+            direkt_eigene,
+            a_spalte_mittel,
+            b_spalte,
+            a_eigene_mittel,
+        ]
     )
 
-    orchestrator.sort_and_truncate(4)
+    orchestrator.sort_and_truncate(8)
 
-    # Erst nach Score gekuerzt: Die Reihenfolge aendert sich, die Auswahl nicht.
+    # Erst nach Score gekuerzt: Die Auswahl bleibt, nur die Reihenfolge je Aussage
+    # aendert sich. Aussage A belegt die Plaetze 1, 3, 4 und 6.
     assert orchestrator.results_for(ContentType.COMMENTARY) == [
-        spalte_mittel,
-        spalte_tief,
-        eigene_hoch,
-        eigene_mittel,
+        a_spalte_mittel,
+        b_spalte,
+        a_spalte_tief,
+        a_eigene_hoch,
+        b_eigene,
+        a_eigene_mittel,
+        direkt_eigene,
+        direkt_spalte,
     ]
+
+
+@pytest.mark.unit
+def test_gleicher_score_haelt_die_kommentarspalten_antwort_vorn():
+    aussage = uuid.uuid4()
+    eigene = _kommentar_treffer(0.9, Zweck.EIGENE_LEUTE, aussage)
+    spalte = _kommentar_treffer(0.9, Zweck.KOMMENTARSPALTE, aussage)
+    orchestrator = _kommentar_orchestrator()
+    orchestrator.results_for(ContentType.COMMENTARY).extend([eigene, spalte])
+
+    orchestrator.sort_and_truncate(5)
+
+    assert orchestrator.results_for(ContentType.COMMENTARY) == [spalte, eigene]

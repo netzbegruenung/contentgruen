@@ -196,8 +196,8 @@ async def search_by_text(
                 service=commentary_service,
                 result_cls=CommentarySearchResult,
                 result_field="commentary_result",
-                # Kommentare fuer die Kommentarspalte vor denen fuer die eigenen
-                # Leute (#357), ueber alle Kommentartreffer hinweg (Fachfrage in #456).
+                # Je Aussage die Kommentare fuer die Kommentarspalte vor denen fuer
+                # die eigenen Leute (#357, entschieden in #456: Variante B).
                 nachrangig=fuer_eigene_leute,
             ),
             ContentTypeSearchSpec(
