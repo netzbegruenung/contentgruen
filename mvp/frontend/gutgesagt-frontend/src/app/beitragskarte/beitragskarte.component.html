@@ -6,7 +6,7 @@
 
     <header class="karte-kopf" *ngIf="!einwurfAngaben" [class.karte-kopf--bild]="kopfBild">
         <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf; fremde Bilder erst auf Klick (#447) -->
-        <app-fremdes-bild *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || ''"></app-fremdes-bild>
+        <app-fremdes-bild *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || ''" [symbol]="false"></app-fremdes-bild>
         <span class="karte-icon" role="img"
               [attr.aria-label]="typName"
               [matTooltip]="typName" matTooltipPosition="below">{{ emoji }}</span>

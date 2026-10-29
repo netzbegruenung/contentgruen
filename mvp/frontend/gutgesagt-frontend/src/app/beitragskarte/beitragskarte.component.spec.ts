@@ -770,6 +770,7 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-kopf img')).toBeNull();
       const knopf = element<HTMLButtonElement>('.karte-kopf .kopf-bild button.bild-laden');
       expect(knopf.getAttribute('aria-label')).toBe('Bild laden: Solardach der Schule');
+      expect(knopf.querySelector('.bild-laden-symbol')).toBeNull();
 
       knopf.click();
       fixture.detectChanges();

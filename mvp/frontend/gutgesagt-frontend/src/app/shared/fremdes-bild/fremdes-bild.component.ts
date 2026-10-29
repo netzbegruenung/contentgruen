@@ -44,7 +44,9 @@ export function istFremdeAdresse(adresse: string, eigenerOrigin: string = locati
               [attr.aria-label]="alt ? 'Bild laden: ' + alt : 'Bild laden'"
               [attr.title]="'Lädt das Bild von ' + server"
               (click)="laden($event)" (keyup)="$event.stopPropagation()">
-        <span class="bild-laden-symbol" aria-hidden="true">🖼️</span>
+        @if (symbol) {
+          <span class="bild-laden-symbol" aria-hidden="true">🖼️</span>
+        }
         <span>Bild laden</span>
       </button>
     }
@@ -54,6 +56,8 @@ export function istFremdeAdresse(adresse: string, eigenerOrigin: string = locati
 export class FremdesBildComponent implements OnChanges {
   @Input({ required: true }) src!: string;
   @Input() alt = '';
+  /** Ohne Symbol, wo schon eines daneben steht (Kopfband der Album-Karte). */
+  @Input() symbol = true;
 
   protected geladen = false;
 
