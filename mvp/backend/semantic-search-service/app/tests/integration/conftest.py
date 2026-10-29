@@ -20,14 +20,19 @@ import uuid
 import pytest
 import pytest_asyncio
 
-from core.config import Settings
+import torch
+from sentence_transformers import SentenceTransformer
+
+from core.config import EMBEDDING_MODELL, Settings
 from tests.integration import postgres, stack
+from services.embeddings import qdrant_embeddings_manager
 from services.embeddings.qdrant_embeddings_manager import QdrantEmbeddingsManager
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 
 QDRANT_URL = stack.QDRANT_URL
+EINBETTUNG_THREADS = 2
 
 
 def pytest_configure(config):
@@ -74,15 +79,32 @@ def integration_settings() -> Settings:
     )
 
 
+@pytest.fixture(scope="session")
+def einbettungsmodell():
+    """Das echte Einbettungsmodell, einmal je Lauf geladen (#459).
+
+    Jeder neue Manager laedt es sonst in ``start()`` neu; das kostete je Test Sekunden.
+    Das Modell haelt keinen Zustand zwischen Aufrufen, geteilt bettet es dasselbe ein.
+    Zwei Threads: Mit einem je Kern bremsen sie sich auf einem ausgelasteten Rechner
+    gegenseitig aus, eine kurze Einbettung dauerte dann Sekunden statt Zehntelsekunden.
+    """
+    torch.set_num_threads(EINBETTUNG_THREADS)
+    return SentenceTransformer(EMBEDDING_MODELL)
+
+
 @pytest_asyncio.fixture
-async def real_embeddings_manager(integration_settings):
+async def real_embeddings_manager(integration_settings, einbettungsmodell, monkeypatch):
     """A started, real ``QdrantEmbeddingsManager`` bound to a clean collection.
 
     Resets the process-wide singleton on the way in and out (the manager is a
     singleton; the autouse ``clean_singleton_state`` in the parent conftest also
     nulls ``_instance`` between tests, so we hold the object reference directly and
-    drive it via the injected factory rather than the global getter).
+    drive it via the injected factory rather than the global getter). The model
+    comes from ``einbettungsmodell``.
     """
+    monkeypatch.setattr(
+        qdrant_embeddings_manager, "SentenceTransformer", lambda _: einbettungsmodell
+    )
     QdrantEmbeddingsManager._instance = None
     manager = QdrantEmbeddingsManager(integration_settings)
     await manager.start()
