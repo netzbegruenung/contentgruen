@@ -87,8 +87,9 @@ def docker_verfuegbar() -> bool:
     if shutil.which("docker") is None:
         return False
     try:
-        _docker("info", "--format", "{{.ServerVersion}}")
-        return True
+        # Ohne erreichbaren Daemon endet "docker info" mitunter mit Exit 0 und leerer
+        # Version; nur eine Version zeigt einen Daemon an.
+        return bool(_docker("info", "--format", "{{.ServerVersion}}"))
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return False
 

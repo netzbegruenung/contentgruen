@@ -28,6 +28,13 @@ Services: `qdrant` (same version as the compose files and `.github/workflows/tes
 minutes) until both accept connections; the throwaway container of the suite is not used, the runner
 has no Docker socket. There is no BFF either: the tests in `tests/integration/api/`, which need
 the dev-stack BFF, skip in CI (`CI` set) instead of failing, and show up in the `SKIPPED` lines.
+The same holds for `test_webserver_protokoll.py`, which starts nginx in a container. The
+app database the code under test would open (`localhost:5433`, the dev stack) does not exist
+in CI either: tests replace the repositories that need it (`tests/conftest.py`), and in unit
+tests a fixture blocks `get_app_database()` (`tests/fixtures/ohne_app_datenbank.py`).
+The `python:3.13-slim` image of the unit step has no git: tests that call a program ask for it
+with `programme.noetig` (`scripts/tests/programme.py`) and skip in CI when it is missing; locally
+a missing program is an error.
 
 Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part of
 `check.sh`):
