@@ -50,4 +50,10 @@ describe('HelpDialogComponent', () => {
       'Erfundene Erlebnisse oder Zahlen',
     );
   });
+
+  it('verweist auf den Meldegrund „Erfunden oder sachlich falsch“', () => {
+    expect(fixture.nativeElement.querySelector('.erfundenes-melden').textContent).toContain(
+      '„Erfunden oder sachlich falsch“',
+    );
+  });
 });

@@ -5,9 +5,10 @@ API endpoints for content moderation and reporting.
 import uuid
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
+from domain.models.meldegrund import Meldegrund
 from services.moderation_service import get_moderation_service
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.config import Settings
@@ -35,9 +36,7 @@ class ReportContentRequest(BaseModel):
     # unbekannten Grund False zurueckgab und damit ein 400 ohne Begruendung
     # erzeugte. Als Schema-Typ steht der erlaubte Wertebereich in der API-Doku
     # und der Fehler nennt ihn.
-    reason: Literal["spam", "inappropriate", "duplicate", "other"] = Field(
-        ..., description="Reason for report"
-    )
+    reason: Meldegrund = Field(..., description="Reason for report")
     # 1000 Zeichen. Ohne Obergrenze wurde ein 5000-Zeichen-Text angenommen und
     # in eine Text-Spalte ohne Laengenbegrenzung geschrieben -- auf einer Route,
     # die bewusst ohne Anmeldung erreichbar ist.

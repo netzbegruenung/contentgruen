@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { ModerationService } from '../../../services/moderation.service';
+import { MELDEGRUENDE } from '../../meldegruende';
 
 export interface ReportDialogData {
   contentId: string;
@@ -39,12 +40,7 @@ export class ReportDialogComponent {
   submitted = false;
   error: string | null = null;
 
-  reasons = [
-    { value: 'spam', label: 'Spam oder unerwünschte Werbung' },
-    { value: 'inappropriate', label: 'Unangemessener Inhalt' },
-    { value: 'duplicate', label: 'Duplikat' },
-    { value: 'other', label: 'Andere' }
-  ];
+  readonly reasons = MELDEGRUENDE;
 
   constructor(
     public dialogRef: MatDialogRef<ReportDialogComponent>,

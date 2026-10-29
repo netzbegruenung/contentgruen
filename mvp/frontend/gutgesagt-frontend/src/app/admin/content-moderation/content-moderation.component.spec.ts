@@ -120,4 +120,30 @@ describe('ContentModerationComponent', () => {
     expect([c.getStatusLabel('pending'), c.getStatusLabel('reviewed'), c.getStatusLabel('dismissed')])
       .toEqual(['Offen', 'Bearbeitet', 'Abgewiesen']);
   });
+
+  it('zeigt eine Meldung mit dem Grund „Erfunden oder sachlich falsch“', () => {
+    mitMeldungen([meldung({ reason: 'fabricated_or_false', description: 'Die Zahl stimmt nicht' })]);
+
+    const zelle = fixture.nativeElement.querySelector('.reason-cell').textContent;
+    expect(zelle).toContain('Erfunden oder sachlich falsch');
+    expect(zelle).toContain('Die Zahl stimmt nicht');
+  });
+
+  it('beschriftet die bisherigen Gründe wie der Meldedialog', () => {
+    mitMeldungen([]);
+    const c = fixture.componentInstance;
+
+    expect(['spam', 'inappropriate', 'duplicate', 'other'].map((g) => c.getReasonLabel(g))).toEqual([
+      'Spam oder unerwünschte Werbung',
+      'Unangemessener Inhalt',
+      'Dublette',
+      'Andere',
+    ]);
+  });
+
+  it('zeigt einen unbekannten Grund unverändert', () => {
+    mitMeldungen([]);
+
+    expect(fixture.componentInstance.getReasonLabel('etwas_altes')).toBe('etwas_altes');
+  });
 });

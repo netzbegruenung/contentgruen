@@ -16,6 +16,7 @@ from repositories.implementations.qdrant.moderation_repository import (
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
 from domain.models.content_status import ContentStatus
+from domain.models.meldegrund import MELDEGRUENDE
 from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
@@ -68,9 +69,7 @@ class ModerationService:
             logger.warning("Invalid report submission: no reporter identifier")
             return False
 
-        # Valid reasons
-        valid_reasons = ["spam", "inappropriate", "duplicate", "other"]
-        if reason not in valid_reasons:
+        if reason not in MELDEGRUENDE:
             logger.warning(f"Invalid report reason: {reason}")
             return False
 

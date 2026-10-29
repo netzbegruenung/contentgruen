@@ -81,7 +81,7 @@ describe('FormularHilfeComponent', () => {
       const panel = seite().querySelector('.hilfe-panel')!.textContent!;
       expect(panel).toContain('Nicht jede Aussage braucht eine Antwort');
       expect(panel).toContain('Erfundene Erlebnisse oder Zahlen');
-      expect(panel).toContain('„Andere“');
+      expect(panel).toContain('„Erfunden oder sachlich falsch“');
     });
 
     it('behält die Beschreibung des Typs über den Schreibregeln', () => {
