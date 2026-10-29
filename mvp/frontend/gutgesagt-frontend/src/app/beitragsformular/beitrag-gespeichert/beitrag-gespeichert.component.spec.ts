@@ -178,7 +178,7 @@ describe('BeitragGespeichertComponent', () => {
     });
 
     it('sagt, wenn die gewaehlten Themen nicht galten (#455)', async () => {
-      const hinweis = 'Diese Aussage gibt es schon: „Wärmepumpen sind zu teuer“. Sie hat das Thema: Klima.';
+      const hinweis = 'Diese Aussage gibt es schon. Themen: Klima.';
       await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true, themenHinweis: hinweis });
 
       expect(seite().querySelector('.themen-hinweis')!.textContent!.trim()).toBe(hinweis);

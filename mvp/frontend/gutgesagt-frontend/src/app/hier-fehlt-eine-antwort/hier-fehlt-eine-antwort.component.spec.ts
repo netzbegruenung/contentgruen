@@ -216,7 +216,7 @@ describe('HierFehltEineAntwortComponent', () => {
       http.expectOne(ZUORDNEN_URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
       fixture.detectChanges();
 
-      expect(text()).toContain('Die Themen konnten nicht gespeichert werden');
+      expect(text()).toContain('Themen nicht gespeichert.');
       expect(aussagen()[0].querySelector('.thema-marke')).toBeNull();
     });
   });
@@ -273,7 +273,7 @@ describe('HierFehltEineAntwortComponent', () => {
       fixture.detectChanges();
       liefern([]);
       expect(text()).toContain('Aussage angelegt.');
-      expect(text()).not.toContain('konnten nicht gespeichert');
+      expect(text()).not.toContain('nicht gespeichert');
     });
 
     it('sagt, wenn die neue Aussage ihre Themen nicht bekam', () => {
@@ -286,7 +286,7 @@ describe('HierFehltEineAntwortComponent', () => {
       fixture.detectChanges();
       liefern([]);
 
-      expect(text()).toContain('Aussage angelegt. Die Themen konnten nicht gespeichert werden');
+      expect(text()).toContain('Aussage angelegt. Themen nicht gespeichert.');
     });
 
     it('nennt bei einer vorhandenen Aussage die Themen, die sie hat, ohne auf die Liste zu verweisen', () => {
@@ -304,7 +304,7 @@ describe('HierFehltEineAntwortComponent', () => {
       fixture.detectChanges();
       liefern([]);
 
-      expect(text()).toContain('Diese Aussage gibt es schon: „Heizungsgesetz = Enteignung“. Sie hat das Thema: Energie und Heizen.');
+      expect(text()).toContain('Diese Aussage gibt es schon. Themen: Energie und Heizen.');
       expect(text()).not.toContain('in der Liste');
     });
 
@@ -321,7 +321,7 @@ describe('HierFehltEineAntwortComponent', () => {
       fixture.detectChanges();
       liefern([]);
 
-      expect(text()).toContain('Diese Aussage gibt es schon: „Heizungsgesetz = Enteignung“.');
+      expect(text()).toContain('Diese Aussage gibt es schon.');
     });
 
     it('schickt zu kurze Aussagen nicht ab', () => {

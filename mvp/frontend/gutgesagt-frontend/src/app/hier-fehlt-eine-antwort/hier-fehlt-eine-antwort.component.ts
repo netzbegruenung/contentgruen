@@ -15,7 +15,7 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenService, schluesselVon } from '../services/themen.service';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
-import { THEMEN_NICHT_GESPEICHERT, aussageGibtEsSchon, themenDerAussage } from '../shared/themen/themen-meldung';
+import { AUSSAGE_GIBT_ES_SCHON, THEMEN_NICHT_GESPEICHERT, themenDerAussage } from '../shared/themen/themen-meldung';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
 import {
   VON_HIER_FEHLT_EINE_ANTWORT,
@@ -44,16 +44,11 @@ import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
  */
 export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean): string {
   const ohneThemen = mitThemen && antwort.themen.length === 0;
-  if (antwort.statement_was_new) {
-    return ohneThemen
-      ? 'Aussage angelegt. Die Themen konnten nicht gespeichert werden; du kannst sie in der Liste zuordnen.'
-      : 'Aussage angelegt.';
+  const anfang = antwort.statement_was_new ? 'Aussage angelegt.' : AUSSAGE_GIBT_ES_SCHON;
+  if (ohneThemen) {
+    return `${anfang} ${THEMEN_NICHT_GESPEICHERT}`;
   }
-  const vorhanden = aussageGibtEsSchon(antwort.statement_text);
-  if (!mitThemen) {
-    return vorhanden;
-  }
-  return ohneThemen ? `${vorhanden} ${THEMEN_NICHT_GESPEICHERT}` : `${vorhanden} ${themenDerAussage(antwort.themen)}`;
+  return antwort.statement_was_new || !mitThemen ? anfang : `${anfang} ${themenDerAussage(antwort.themen)}`;
 }
 
 @Component({
@@ -129,7 +124,7 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   themenSetzen(aussage: UnbeantworteteAussage, themen: string[]): void {
     this.themenFehler = null;
     this.themenService.aendern(aussage, themen, this.themen, () => {
-      this.themenFehler = 'Die Themen konnten nicht gespeichert werden.';
+      this.themenFehler = THEMEN_NICHT_GESPEICHERT;
     });
   }
 

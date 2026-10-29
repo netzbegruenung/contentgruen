@@ -1029,9 +1029,7 @@ describe('AddGenerictextComponent', () => {
       component.speichern();
       flush();
 
-      expect(erfolg.calls.mostRecent().args[0]!.themenHinweis).toBe(
-        'Diese Aussage gibt es schon: „Wärmepumpen sind viel zu teuer“. Sie hat das Thema: Klima.',
-      );
+      expect(erfolg.calls.mostRecent().args[0]!.themenHinweis).toBe('Diese Aussage gibt es schon. Themen: Klima.');
     }));
 
     it('meldet der Ergebnisseite, wenn das Zuordnen scheiterte', fakeAsync(() => {
@@ -1045,7 +1043,7 @@ describe('AddGenerictextComponent', () => {
       component.speichern();
       flush();
 
-      expect(erfolg.calls.mostRecent().args[0]!.themenHinweis).toBe('Die Themen konnten nicht gespeichert werden.');
+      expect(erfolg.calls.mostRecent().args[0]!.themenHinweis).toBe('Themen nicht gespeichert.');
     }));
 
     it('meldet nichts, wenn die Aussage die gewaehlten Themen bekam', fakeAsync(() => {

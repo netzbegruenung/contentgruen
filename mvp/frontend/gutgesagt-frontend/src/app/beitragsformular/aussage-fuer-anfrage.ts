@@ -39,12 +39,12 @@ export function aussageFuerAnfrage(aussage: AntwortAuf, themen: string[]): Aussa
  */
 export function themenHinweisNachSpeichern(
   anfrage: AussageInAnfrage,
-  antwort: { statement_text?: string | null; themen?: Thema[] },
+  antwort: { themen?: Thema[] },
   verknuepft: boolean,
 ): { themenHinweis?: string } {
   if (!verknuepft || !anfrage.themen?.length) {
     return {};
   }
-  const hinweis = themenHinweis(anfrage.themen, antwort.statement_text ?? anfrage.statement_text ?? '', antwort.themen ?? []);
+  const hinweis = themenHinweis(anfrage.themen, antwort.themen ?? []);
   return hinweis ? { themenHinweis: hinweis } : {};
 }

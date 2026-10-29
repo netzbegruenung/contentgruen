@@ -76,7 +76,7 @@ describe('AddCommentaryWorkflowComponent', () => {
 
   it('reicht einen Themenhinweis an die Ergebnisseite weiter (#455)', () => {
     const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
-    const themenHinweis = 'Die Themen konnten nicht gespeichert werden.';
+    const themenHinweis = 'Themen nicht gespeichert.';
 
     component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, themenHinweis });
 

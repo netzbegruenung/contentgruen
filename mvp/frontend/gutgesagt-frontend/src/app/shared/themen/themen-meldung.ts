@@ -5,16 +5,13 @@ import { Thema } from '../../services/dtos/themenDtos';
  * hat - „Hier fehlt eine Antwort“ nach dem Vorab-Anlegen und die Seite „Gespeichert“
  * nach einem Beitrag mit neuer Aussage (#455). Eine Formulierung fuer beide.
  */
-export const THEMEN_NICHT_GESPEICHERT = 'Die Themen konnten nicht gespeichert werden.';
+export const THEMEN_NICHT_GESPEICHERT = 'Themen nicht gespeichert.';
 
-export function aussageGibtEsSchon(text: string): string {
-  return `Diese Aussage gibt es schon: „${text}“.`;
-}
+export const AUSSAGE_GIBT_ES_SCHON = 'Diese Aussage gibt es schon.';
 
-/** Die Themen der Aussage; „Sie“ ist die Aussage, die App duzt. */
+/** Die Themen der Aussage, auch bei einem „Themen:“. */
 export function themenDerAussage(themen: Thema[]): string {
-  const namen = themen.map((t) => t.name).join(', ');
-  return themen.length === 1 ? `Sie hat das Thema: ${namen}.` : `Sie hat die Themen: ${namen}.`;
+  return `Themen: ${themen.map((t) => t.name).join(', ')}.`;
 }
 
 /**
@@ -23,7 +20,7 @@ export function themenDerAussage(themen: Thema[]): string {
  * sie andere, gab es sie schon mit Themen, und die behielt sie; hat sie keine,
  * scheiterte das Zuordnen.
  */
-export function themenHinweis(gewaehlt: string[], aussageText: string, themen: Thema[]): string | null {
+export function themenHinweis(gewaehlt: string[], themen: Thema[]): string | null {
   if (gewaehlt.length === 0) {
     return null;
   }
@@ -34,5 +31,5 @@ export function themenHinweis(gewaehlt: string[], aussageText: string, themen: T
   if (jetzt.size === gewaehlt.length && gewaehlt.every((s) => jetzt.has(s))) {
     return null;
   }
-  return `${aussageGibtEsSchon(aussageText)} ${themenDerAussage(themen)}`;
+  return `${AUSSAGE_GIBT_ES_SCHON} ${themenDerAussage(themen)}`;
 }
