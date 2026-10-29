@@ -7,6 +7,7 @@ kopiert und gezaehlt wird je Fassung. Die Summe je Fassung bleibt ueber die Fris
 Ereignissen. Wegwerf-Schema aus der Fixture ``datenbank`` von ``test_loeschkommando.py``.
 """
 
+import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -46,6 +47,30 @@ class TestNutzungJeFassung:
                 "lang": {"nutzung": 1, "letzte_7_tage": 1},
             }
         }
+
+    def test_track_usage_gleichzeitig_summe_je_fassung_gleich_gesamt(
+        self, datenbank
+    ):  # noqa: F811
+        """Gleichzeitige Kopien zaehlen insgesamt wie je Fassung, keine geht verloren."""
+        repo = UsageTrackingRepository(datenbank)
+        beitrag = uuid.uuid4()
+        repo.track_usage(beitrag, fassung="kurz")
+        start = threading.Barrier(8)
+
+        def kopieren():
+            start.wait()
+            for _ in range(5):
+                repo.track_usage(beitrag, fassung="kurz")
+
+        faeden = [threading.Thread(target=kopieren) for _ in range(8)]
+        for faden in faeden:
+            faden.start()
+        for faden in faeden:
+            faden.join()
+
+        je_fassung = repo.get_nutzung_je_fassung_batch([beitrag])[str(beitrag)]
+        assert je_fassung["kurz"]["nutzung"] == 41
+        assert repo.get_usage_count(beitrag) == 41
 
     def test_get_nutzung_je_fassung_batch_zuwachs_nur_letzte_7_tage(
         self, datenbank

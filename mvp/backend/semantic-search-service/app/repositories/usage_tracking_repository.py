@@ -63,10 +63,13 @@ class UsageTrackingRepository:
         )
         try:
             with self.db.get_session() as session:
-                # Get or create usage tracking record
+                # Get or create usage tracking record. Gesperrt bis zum Commit: Sonst
+                # ginge bei zwei gleichzeitigen Kopien eine im usage_count verloren,
+                # waehrend nutzung_je_fassung beide zaehlt (#355).
                 tracking = (
                     session.query(UsageTracking)
                     .filter_by(content_id=content_id)
+                    .with_for_update()
                     .first()
                 )
 
@@ -89,7 +92,7 @@ class UsageTrackingRepository:
 
                 if fassung:
                     # Erst nach usage_tracking (Fremdschluessel); hochzaehlen in der
-                    # Datenbank, damit zwei gleichzeitige Kopien beide zaehlen.
+                    # Datenbank, auch fuer die erste Kopie einer Fassung.
                     session.flush()
                     session.execute(
                         insert(NutzungJeFassung)

@@ -217,18 +217,18 @@ class UsageTrackingService:
             ]
             return [fassung.value for fassung, da in vorhanden if da]
 
-        kommentare = [
-            item
-            for item in content_items
-            if item.get("content_type") == ContentType.COMMENTARY
-        ]
-        je_fassung = self.repository.get_nutzung_je_fassung_batch(
-            [uuid.UUID(str(item["id"])) for item in kommentare]
-        )
+        kommentare = {}
         for item in content_items:
             item["nutzung_je_fassung"] = None
-        for item in kommentare:
-            gezaehlt = je_fassung.get(str(item["id"]), {})
+            if item.get("content_type") != ContentType.COMMENTARY:
+                continue
+            try:
+                kommentare[uuid.UUID(str(item["id"]))] = item
+            except (KeyError, ValueError, TypeError):
+                continue
+        je_fassung = self.repository.get_nutzung_je_fassung_batch(list(kommentare))
+        for content_id, item in kommentare.items():
+            gezaehlt = je_fassung.get(str(content_id), {})
             item["nutzung_je_fassung"] = {
                 fassung: gezaehlt.get(fassung, {"nutzung": 0, "letzte_7_tage": 0})
                 for fassung in fassungen(item)

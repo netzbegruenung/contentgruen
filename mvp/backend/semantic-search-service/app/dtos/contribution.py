@@ -3,7 +3,7 @@ import json
 from pydantic import BaseModel, field_validator
 from typing import Dict, List, Optional
 
-from domain.models.commentary import CommentaryReference
+from domain.models.commentary import CommentaryReference, Fassung
 from domain.models.content import ContentDbEntry
 from dtos.beitrag import BeitragResponse
 
@@ -80,7 +80,7 @@ class MeinBeitragResponse(BeitragResponse):
     long_text: Optional[str] = None
     # Nur am Kommentar: je vorhandener Fassung ("kurz", "mittel", "lang"); None bei
     # anderen Typen oder wenn die Zahlen nicht lesbar waren.
-    nutzung_je_fassung: Optional[Dict[str, FassungsNutzung]] = None
+    nutzung_je_fassung: Optional[Dict[Fassung, FassungsNutzung]] = None
     references: List[CommentaryReference] = []
 
 

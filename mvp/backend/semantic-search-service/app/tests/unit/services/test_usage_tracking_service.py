@@ -291,3 +291,26 @@ class TestNutzungJeFassungNachtragen:
 
         assert eintrag["nutzung_je_fassung"] is None
         mock_repository.get_nutzung_je_fassung_batch.assert_called_once_with([])
+
+    def test_nutzung_je_fassung_nachtragen_ungueltige_id_betrifft_nur_sich(
+        self, service, mock_repository
+    ):
+        kommentar = str(uuid.uuid4())
+        mock_repository.get_nutzung_je_fassung_batch.return_value = {
+            kommentar: {"mittel": {"nutzung": 2, "letzte_7_tage": 1}}
+        }
+
+        kaputt, gut = service.nutzung_je_fassung_nachtragen(
+            [
+                {"id": "keine-uuid", "content_type": "commentary"},
+                {"id": kommentar, "content_type": "commentary"},
+            ]
+        )
+
+        assert kaputt["nutzung_je_fassung"] is None
+        assert gut["nutzung_je_fassung"] == {
+            "mittel": {"nutzung": 2, "letzte_7_tage": 1}
+        }
+        mock_repository.get_nutzung_je_fassung_batch.assert_called_once_with(
+            [uuid.UUID(kommentar)]
+        )
