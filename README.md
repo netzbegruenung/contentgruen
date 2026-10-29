@@ -4,7 +4,7 @@
 
 Licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
-The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji from [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT, Copyright Microsoft Corporation), see [FLUENT-EMOJI-LIZENZ.txt](./mvp/frontend/gutgesagt-frontend/public/marke/FLUENT-EMOJI-LIZENZ.txt).
+The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji from [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT, Copyright Microsoft Corporation), see [FLUENT-EMOJI-LIZENZ.txt](./mvp/frontend/gutgesagt-frontend/public/marke/FLUENT-EMOJI-LIZENZ.txt). The profile pictures are Fluent Emoji 3D as well, see [public/avatars/FLUENT-EMOJI-LIZENZ.txt](./mvp/frontend/gutgesagt-frontend/public/avatars/FLUENT-EMOJI-LIZENZ.txt).
 
 ## Live Systems
 

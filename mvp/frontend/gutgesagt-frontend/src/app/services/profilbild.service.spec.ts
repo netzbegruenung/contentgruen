@@ -47,14 +47,16 @@ describe('ProfilbildService', () => {
       expect(erzeugen(ANNA).bild()).toBe(erstes);
     });
 
-    it('nimmt dafuer ein Bild aus der Auswahl, nie den anonymen Avatar', () => {
+    it('leitet aus allen 40 Bildern ab, nie die Initialen oder das anonyme Profilbild', () => {
       const service = erzeugen();
-      const urls = service.auswahl().map((o) => o.url);
-      for (const userId of ['a', 'b', 'c', 'user-001', 'x'.repeat(40)]) {
-        service.setzePerson({ ...ANNA, userId });
-        expect(urls).toContain(service.bild());
-        expect(service.bild()).not.toBe(ANONYMES_PROFILBILD);
+      const bilder = service.auswahl().filter((o) => o.id !== INITIALEN).map((o) => o.url);
+      const getroffen = new Set<string>();
+      for (let i = 0; i < 2000; i++) {
+        service.setzePerson({ ...ANNA, userId: `user-${i}` });
+        expect(bilder).toContain(service.bild());
+        getroffen.add(service.bild());
       }
+      expect(getroffen.size).toBe(40);
     });
 
     it('speichert nichts im Browser', () => {
@@ -70,24 +72,26 @@ describe('ProfilbildService', () => {
   });
 
   describe('Auswahl', () => {
-    it('bietet alle Bilder an, dazu die Initialen, ohne Geschlecht in Kennung oder Text', () => {
+    it('bietet 20 Menschen und 20 Motive an, dazu die Initialen, ohne Geschlecht in Kennung oder Text', () => {
       const auswahl = erzeugen().auswahl();
 
-      expect(auswahl.length).toBe(17);
+      expect(auswahl.length).toBe(41);
       expect(auswahl[0].id).toBe(INITIALEN);
-      expect(auswahl.map((o) => o.url)).toContain('/avatars/anon-shapes.svg');
+      expect(auswahl.filter((o) => o.id.startsWith('mensch-')).length).toBe(20);
+      expect(auswahl.map((o) => o.url)).toContain('/avatars/igel.png');
+      expect(auswahl.map((o) => o.url)).not.toContain(ANONYMES_PROFILBILD);
       expect(new Set(auswahl.map((o) => o.id)).size).toBe(auswahl.length);
       for (const option of auswahl) {
         expect(option.id).not.toMatch(/female|male/);
         expect(option.alt).not.toMatch(/female|male|weiblich|männlich|Frau|Mann/i);
-        expect(option.alt.length).toBeGreaterThan(5);
+        expect(option.alt.length).toBeGreaterThan(2);
       }
     });
 
-    it('zeichnet die Initialen in Gruen und Weiss', () => {
+    it('zeichnet die Initialen weiss auf Tanne', () => {
       const svg = decodeURIComponent(erzeugen().auswahl()[0].url);
 
-      expect(svg).toContain('#008939');
+      expect(svg).toContain('#005437');
       expect(svg).toContain('#ffffff');
       expect(svg).toContain('>AB<');
     });

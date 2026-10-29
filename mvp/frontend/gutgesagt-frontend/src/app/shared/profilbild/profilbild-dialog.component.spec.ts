@@ -46,7 +46,8 @@ describe('ProfilbildDialogComponent', () => {
     expect(gruppe?.getAttribute('aria-label')).toBe('Profilbild');
     expect(optionen().length).toBe(service.auswahl().length);
     for (const bild of Array.from(element().querySelectorAll('.profilbild-option img'))) {
-      expect(bild.getAttribute('alt')?.length).toBeGreaterThan(5);
+      expect(bild.getAttribute('alt')?.length).toBeGreaterThan(3);
+      expect(bild.getAttribute('loading')).toBe('lazy');
     }
   });
 

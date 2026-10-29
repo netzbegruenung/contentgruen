@@ -8,12 +8,8 @@ export interface Profilbild {
   alt: string;
 }
 
-/**
- * Lokal ausgeliefert statt von der DiceBear-API: sonst ginge bei jedem
- * Seitenaufruf die IP-Adresse an einen Drittanbieter. Erzeugt von
- * scripts/generate-avatars.mjs.
- */
-export const ANONYMES_PROFILBILD = '/avatars/anon-question.svg';
+/** Was Besucher im Kopf sehen; ein Profilbild haben nur Mitwirkende. */
+export const ANONYMES_PROFILBILD = '/icons/Profile_avatar_placeholder_large.png';
 
 /** Kennung der Option, die statt eines Bildes die Initialen der Person zeigt. */
 export const INITIALEN = 'initialen';
@@ -32,28 +28,60 @@ export const ALTE_PROFILBILD_SCHLUESSEL: readonly string[] = [
 ];
 
 /**
- * Alle Bilder aus public/avatars. Die Reihenfolge mischt bewusst: keine Einteilung
- * nach Geschlecht, und die Beschreibungen sagen, was zu sehen ist.
+ * Fluent Emoji 3D (Microsoft, MIT), erzeugt von scripts/profilbilder_holen.py; dort
+ * stehen Quelle, Commit und dieselbe Reihenfolge. Lizenz in
+ * public/avatars/FLUENT-EMOJI-LIZENZ.txt. Die Beschreibungen sagen, was zu sehen ist,
+ * nicht welches Geschlecht.
  */
-const BILDER: readonly Profilbild[] = [
-  { id: 'formen', url: '/avatars/anon-shapes.svg', alt: 'Geometrische Formen in Blau' },
-  { id: 'gesicht-01', url: '/avatars/female1.svg', alt: 'Lächelndes Gesicht mit kurzen dunklen Haaren' },
-  { id: 'gesicht-02', url: '/avatars/male1.svg', alt: 'Lächelndes Gesicht mit grauem Haarkranz' },
-  { id: 'gesicht-03', url: '/avatars/female3.svg', alt: 'Lächelndes Gesicht mit Brille und Haarknoten' },
-  { id: 'gesicht-04', url: '/avatars/male2.svg', alt: 'Lachendes Gesicht mit roten Locken' },
-  { id: 'gesicht-05', url: '/avatars/female4.svg', alt: 'Lachendes Gesicht mit Bart und Blumen im Haar' },
-  { id: 'gesicht-06', url: '/avatars/male3.svg', alt: 'Lachendes Gesicht mit langen hellen Haaren' },
-  { id: 'gesicht-07', url: '/avatars/anon-female.svg', alt: 'Lachendes Gesicht mit hellblonden Haaren und Augenklappe' },
-  { id: 'gesicht-08', url: '/avatars/male4.svg', alt: 'Lachendes Gesicht mit langen dunklen Haaren' },
-  { id: 'gesicht-09', url: '/avatars/female5.svg', alt: 'Lächelndes Gesicht mit kurzen rotbraunen Haaren' },
-  { id: 'gesicht-10', url: '/avatars/male5.svg', alt: 'Lächelndes Gesicht mit kurzen rosa Haaren' },
-  { id: 'gesicht-11', url: '/avatars/female2.svg', alt: 'Lachendes Gesicht mit Haarknoten und Augenklappe' },
-  { id: 'gesicht-12', url: '/avatars/anon-male.svg', alt: 'Lachendes Gesicht mit Blumenkranz im Haar' },
-  { id: 'gesicht-13', url: '/avatars/male6.svg', alt: 'Lachendes Gesicht mit langen weißen Locken' },
-  { id: 'gesicht-14', url: '/avatars/female6.svg', alt: 'Lachendes Gesicht mit kinnlangen Haaren und Jackett' },
+const MENSCHEN: readonly Profilbild[] = [
+  { id: 'mensch-01', url: '/avatars/mensch-01.png', alt: 'Person mit langen braunen Haaren, mittlerer Hautton' },
+  { id: 'mensch-02', url: '/avatars/mensch-02.png', alt: 'Person mit kurzen schwarzen Haaren, dunkler Hautton' },
+  { id: 'mensch-03', url: '/avatars/mensch-03.png', alt: 'Person mit kurzen dunklen Haaren, heller Hautton' },
+  { id: 'mensch-04', url: '/avatars/mensch-04.png', alt: 'Ältere Person mit grauem Haar, mitteldunkler Hautton' },
+  { id: 'mensch-05', url: '/avatars/mensch-05.png', alt: 'Ältere Person mit grauem Haarkranz, mittelheller Hautton' },
+  { id: 'mensch-06', url: '/avatars/mensch-06.png', alt: 'Ältere Person mit grauem Haar, dunkler Hautton' },
+  { id: 'mensch-07', url: '/avatars/mensch-07.png', alt: 'Person mit Kopftuch, mittelheller Hautton' },
+  { id: 'mensch-08', url: '/avatars/mensch-08.png', alt: 'Person mit Bart, mitteldunkler Hautton' },
+  { id: 'mensch-09', url: '/avatars/mensch-09.png', alt: 'Person mit langen Locken, dunkler Hautton' },
+  { id: 'mensch-10', url: '/avatars/mensch-10.png', alt: 'Person mit weißem Haar, heller Hautton' },
+  { id: 'mensch-11', url: '/avatars/mensch-11.png', alt: 'Person im Rollstuhl, mittlerer Hautton' },
+  { id: 'mensch-12', url: '/avatars/mensch-12.png', alt: 'Person mit langen roten Haaren, heller Hautton' },
+  { id: 'mensch-13', url: '/avatars/mensch-13.png', alt: 'Person mit Glatze, mitteldunkler Hautton' },
+  { id: 'mensch-14', url: '/avatars/mensch-14.png', alt: 'Person mit blonden Haaren, mittelheller Hautton' },
+  { id: 'mensch-15', url: '/avatars/mensch-15.png', alt: 'Person mit kurzen Locken, mittlerer Hautton' },
+  { id: 'mensch-16', url: '/avatars/mensch-16.png', alt: 'Gehörlose Person, die auf ihr Ohr zeigt, dunkler Hautton' },
+  { id: 'mensch-17', url: '/avatars/mensch-17.png', alt: 'Person mit Blindenstock, mittelheller Hautton' },
+  { id: 'mensch-18', url: '/avatars/mensch-18.png', alt: 'Person mit weißem Haar, mitteldunkler Hautton' },
+  { id: 'mensch-19', url: '/avatars/mensch-19.png', alt: 'Person mit kurzen roten Haaren, mittlerer Hautton' },
+  { id: 'mensch-20', url: '/avatars/mensch-20.png', alt: 'Person mit schwarzen Locken, heller Hautton' },
 ];
 
-const FRAGEZEICHEN: Profilbild = { id: 'fragezeichen', url: ANONYMES_PROFILBILD, alt: 'Fragezeichen auf grauem Grund' };
+/** Natur und Tiere, keine politischen Symbole. */
+const MOTIVE: readonly Profilbild[] = [
+  { id: 'igel', url: '/avatars/igel.png', alt: 'Igel' },
+  { id: 'sonnenblume', url: '/avatars/sonnenblume.png', alt: 'Sonnenblume' },
+  { id: 'laubbaum', url: '/avatars/laubbaum.png', alt: 'Laubbaum' },
+  { id: 'daumen-hoch', url: '/avatars/daumen-hoch.png', alt: 'Daumen hoch' },
+  { id: 'setzling', url: '/avatars/setzling.png', alt: 'Setzling' },
+  { id: 'schmetterling', url: '/avatars/schmetterling.png', alt: 'Schmetterling' },
+  { id: 'biene', url: '/avatars/biene.png', alt: 'Biene' },
+  { id: 'marienkaefer', url: '/avatars/marienkaefer.png', alt: 'Marienkäfer' },
+  { id: 'eule', url: '/avatars/eule.png', alt: 'Eule' },
+  { id: 'fuchs', url: '/avatars/fuchs.png', alt: 'Fuchs' },
+  { id: 'katze', url: '/avatars/katze.png', alt: 'Katze' },
+  { id: 'hund', url: '/avatars/hund.png', alt: 'Hund' },
+  { id: 'schildkroete', url: '/avatars/schildkroete.png', alt: 'Schildkröte' },
+  { id: 'pilz', url: '/avatars/pilz.png', alt: 'Pilz' },
+  { id: 'kleeblatt', url: '/avatars/kleeblatt.png', alt: 'Vierblättriges Kleeblatt' },
+  { id: 'sonne', url: '/avatars/sonne.png', alt: 'Sonne' },
+  { id: 'erde', url: '/avatars/erde.png', alt: 'Erdkugel' },
+  { id: 'fahrrad', url: '/avatars/fahrrad.png', alt: 'Fahrrad' },
+  { id: 'tulpe', url: '/avatars/tulpe.png', alt: 'Tulpe' },
+  { id: 'tannenbaum', url: '/avatars/tannenbaum.png', alt: 'Tannenbaum' },
+];
+
+/** Aus diesen 40 wird ohne eigene Wahl das feste Bild abgeleitet. */
+const BILDER: readonly Profilbild[] = [...MENSCHEN, ...MOTIVE];
 
 /** Hoechstens zwei Anfangsbuchstaben, je einer aus den ersten Namensteilen mit Buchstaben. */
 export function initialen(name: string | null): string {
@@ -65,11 +93,11 @@ export function initialen(name: string | null): string {
   return buchstaben.length ? buchstaben.join('').toUpperCase() : '?';
 }
 
-/** Gruener Grund, weisse Schrift; Satz wie beim Fragezeichen in generate-avatars.mjs. */
+/** Weiss auf Tanne (--primary-dark), rund wie die uebrigen Bilder. */
 function initialenBild(name: string | null): string {
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">' +
-    '<rect width="100" height="100" fill="#008939" />' +
+    '<circle cx="50" cy="50" r="50" fill="#005437" />' +
     '<text x="50%" y="50%" font-family="Arial, Helvetica, sans-serif" font-size="42" ' +
     `fill="#ffffff" text-anchor="middle" dy="15">${initialen(name)}</text>` +
     '</svg>';
@@ -100,7 +128,6 @@ export class ProfilbildService {
   readonly auswahl = computed<Profilbild[]>(() => [
     { id: INITIALEN, url: initialenBild(this.person()?.userName ?? null), alt: 'Deine Initialen auf grünem Grund' },
     ...BILDER,
-    FRAGEZEICHEN,
   ]);
 
   /** Die Kennung der eigenen Wahl, oder null, solange die Person nicht gewaehlt hat. */
@@ -146,7 +173,7 @@ export class ProfilbildService {
   }
 
   private istBekannt(id: string | null): id is string {
-    return id === INITIALEN || id === FRAGEZEICHEN.id || BILDER.some((bild) => bild.id === id);
+    return id === INITIALEN || BILDER.some((bild) => bild.id === id);
   }
 
   private gespeicherteWahl(): string | null {
