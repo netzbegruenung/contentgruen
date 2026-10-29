@@ -7,6 +7,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MetricsService, MVPMetrics } from '../../services/metrics.service';
 import { SuchenOhneTrefferComponent } from '../suchen-ohne-treffer/suchen-ohne-treffer.component';
 import { FeedbackListeComponent } from '../feedback-liste/feedback-liste.component';
+import { EinladungenComponent } from '../einladungen/einladungen.component';
 import { interval, Subscription } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 
@@ -20,7 +21,8 @@ import { startWith, switchMap } from 'rxjs/operators';
     MatIconModule,
     MatTooltipModule,
     SuchenOhneTrefferComponent,
-    FeedbackListeComponent
+    FeedbackListeComponent,
+    EinladungenComponent
   ],
   templateUrl: './mvp-dashboard.component.html',
   styleUrls: ['./mvp-dashboard.component.css']

@@ -23,6 +23,8 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/metrics/getmetrics")]   // Bestandszaehler der Startseite
     [InlineData("/api/v1/metrics/getMetrics")]   // Schreibweise darf keine Rolle spielen
     [InlineData("/api/v1/feedback/senden")]      // Feedback auch von Besuchern
+    [InlineData("/api/v1/einladungen/pruefen")]  // Einladung oeffnen, noch ohne Konto (#429)
+    [InlineData("/api/v1/einladungen/einloesen")]
     public void IsAnonymousAllowed_TrueForPublicPaths(string path)
     {
         Assert.True(EndpointPolicy.IsAnonymousAllowed(path));
@@ -35,6 +37,8 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/usage/cleanup/run")]
     [InlineData("/api/v1/metrics/mvp-dashboard")]  // admin-only, anders als /getMetrics
     [InlineData("/api/v1/feedback")]             // Admin-Liste, anders als /senden
+    [InlineData("/api/v1/einladungen")]          // Verwalten nur fuer Admins (#429)
+    [InlineData("/api/v1/einladungen/33333333-3333-3333-3333-333333333333")]
     public void IsAnonymousAllowed_FalseForProtectedPaths(string path)
     {
         Assert.False(EndpointPolicy.IsAnonymousAllowed(path));

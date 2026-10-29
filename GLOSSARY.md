@@ -377,7 +377,7 @@ Alle Personen, die Gut gesagt verwenden, angemeldet oder nicht. Sie sind entwede
 _Avoid_: User, Nutzer, Anwender
 
 **Mitwirkende**:
-Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen. Heute sind das Mitglieder der Netzbegrünung und Personen mit Beta-Zugang.
+Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen. Heute sind das Mitglieder der Netzbegrünung, Personen mit Beta-Zugang und Personen, die über eine Einladung ein Konto angelegt haben.
 _Avoid_: User, Mitglieder
 
 **Beta-Zugang**:
@@ -387,6 +387,10 @@ _Avoid_: Beta-Account, manueller User, Managed User
 **Netzbegrünung-Login**:
 Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung; die andere Kontoart ist der Beta-Zugang. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
+
+**Einladung**:
+Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen), der Zahl erlaubter Konten und dem letzten gültigen Tag, und kann sie abschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie viele Konten über sie entstanden sind; welche, steht nirgends.
+_Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
 
 **Startkonto**:
 Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.

@@ -1,0 +1,81 @@
+<mat-card class="einladungen">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>person_add</mat-icon>
+      Einladungen
+    </mat-card-title>
+    <mat-card-subtitle>
+      Wer den Link hat, legt damit selbst ein Konto an. Für eine Gruppe mehrere Konten, für eine
+      Person eines.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <p *ngIf="!registrierungEingerichtet" class="warnung">
+      Konten anlegen ist auf diesem Server noch nicht eingerichtet: Links funktionieren erst danach.
+    </p>
+
+    <form class="anlegen" (ngSubmit)="anlegen()">
+      <mat-form-field appearance="outline" class="notiz">
+        <mat-label>Notiz</mat-label>
+        <input matInput name="notiz" [(ngModel)]="notiz" [maxlength]="NOTIZ_MAX" required />
+        <mat-hint>Wofür der Link ist. Keine Namen oder Mail-Adressen.</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="zahl">
+        <mat-label>Erlaubte Konten</mat-label>
+        <input matInput type="number" name="erlaubteKonten" [(ngModel)]="erlaubteKonten"
+               min="1" [max]="KONTEN_MAX" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="tag">
+        <mat-label>Gültig bis einschließlich</mat-label>
+        <input matInput type="date" name="gueltigBis" [(ngModel)]="gueltigBis" required />
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!notiz.trim() || speichert">
+        Einladung anlegen
+      </button>
+    </form>
+    <p *ngIf="anlegenFehler" class="warnung">Die Einladung konnte nicht angelegt werden.</p>
+
+    <p *ngIf="fehler" class="hinweis">Die Einladungen konnten nicht geladen werden.</p>
+
+    <ng-container *ngIf="einladungen">
+      <table *ngIf="einladungen.length > 0; else leer">
+        <thead>
+          <tr>
+            <th scope="col">Notiz</th>
+            <th scope="col">Konten</th>
+            <th scope="col">Gültig bis</th>
+            <th scope="col">Zustand</th>
+            <th scope="col">Link</th>
+            <th scope="col"><span class="unsichtbar">Aktion</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of einladungen" data-testid="einladung" [class.inaktiv]="e.zustand !== 'aktiv'">
+            <td class="text">{{ e.notiz }}</td>
+            <td class="eng">{{ e.angelegte_konten }} von {{ e.erlaubte_konten }}</td>
+            <td class="eng">{{ tag(e.gueltig_bis) }}</td>
+            <td class="eng">{{ e.zustand }}</td>
+            <td class="link">
+              <code>{{ link(e) }}</code>
+              <button mat-icon-button type="button" (click)="kopieren(e)"
+                      [attr.aria-label]="'Link kopieren: ' + e.notiz">
+                <mat-icon>{{ kopiert === e.id ? 'check' : 'content_copy' }}</mat-icon>
+              </button>
+            </td>
+            <td class="eng">
+              <button mat-stroked-button type="button" data-testid="schalten" (click)="schalten(e)">
+                {{ e.abgeschaltet ? 'Einschalten' : 'Abschalten' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #leer>
+        <p class="hinweis">Noch keine Einladungen.</p>
+      </ng-template>
+      <p class="fussnote">
+        Gezählt wird nur, wie viele Konten über eine Einladung entstanden sind, nicht welche.
+      </p>
+    </ng-container>
+  </mat-card-content>
+</mat-card>

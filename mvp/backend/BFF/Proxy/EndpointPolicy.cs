@@ -31,6 +31,10 @@ public static class EndpointPolicy
         // Feedback an das Team, auch von Besuchern. Nur das Senden: die Liste unter
         // /api/v1/feedback ist admin-only und bleibt hinter dem Gate.
         "/api/v1/feedback/senden",
+        // Einladungen (#429): Wer den Link oeffnet, hat noch kein Konto. Nur Pruefen und
+        // Einloesen; Liste, Anlegen und Abschalten unter /api/v1/einladungen sind admin-only.
+        "/api/v1/einladungen/pruefen",
+        "/api/v1/einladungen/einloesen",
         // Nur dieser eine Metrics-Endpunkt, nicht das ganze Praefix: /getMetrics
         // liefert Bestandszaehler fuer die Startseite, die uebrigen sechs sind
         // Kennzahlen fuer Admins und im Backend admin-only. Der frueher hier stehende

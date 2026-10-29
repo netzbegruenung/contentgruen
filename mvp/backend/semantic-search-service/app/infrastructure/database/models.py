@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     String,
     Integer,
@@ -245,6 +246,27 @@ class FeedbackZeile(Base):
     eingegangen_am = Column(Date, nullable=False)
 
     __table_args__ = (Index("idx_feedback_eingegangen_am", "eingegangen_am"),)
+
+
+class EinladungZeile(Base):
+    """Eine Einladung (#429): Wer den Code hat, legt damit ein Konto an.
+
+    Haelt nur den Zaehler der angelegten Konten, keine Mail-Adresse und keine
+    Kennung: Am Konto steht nicht, ueber welche Einladung es entstand, und hier
+    nicht, wer sie genutzt hat (services/einladung_service.py).
+    """
+
+    __tablename__ = "einladungen"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code = Column(String(64), nullable=False, unique=True)
+    notiz = Column(Text, nullable=False)
+    erlaubte_konten = Column(Integer, nullable=False)
+    angelegte_konten = Column(Integer, nullable=False, server_default=text("0"))
+    # Letzter Tag (UTC), an dem die Einladung gilt.
+    gueltig_bis = Column(Date, nullable=False)
+    abgeschaltet = Column(Boolean, nullable=False, server_default=text("false"))
+    angelegt_am = Column(Date, nullable=False)
 
 
 class AussageThemaZeile(Base):

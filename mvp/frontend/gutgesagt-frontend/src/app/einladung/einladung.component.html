@@ -1,0 +1,48 @@
+<mat-card class="einladung">
+  <mat-card-header>
+    <mat-card-title>Einladung zu Gut gesagt</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <p *ngIf="stand === 'pruefe'">Einladung wird geprüft …</p>
+
+    <ng-container *ngIf="stand === 'ungueltig'">
+      <p>
+        Diese Einladung gilt nicht (mehr): Sie ist abgelaufen, abgeschaltet oder alle Plätze sind
+        vergeben. Frag die Person, von der du den Link hast, nach einem neuen.
+      </p>
+      <p>Hast du schon ein Konto? Dann <a routerLink="/login">melde dich an</a>.</p>
+    </ng-container>
+
+    <form *ngIf="stand === 'formular' || stand === 'sendet' || stand === 'fehler'" (ngSubmit)="einloesen()">
+      <p>
+        Gib deine Mail-Adresse ein. Du bekommst eine Mail, mit der du dein Passwort festlegst; danach
+        meldest du dich an.
+      </p>
+      <mat-form-field appearance="outline" class="email">
+        <mat-label>Mail-Adresse</mat-label>
+        <input matInput type="email" name="email" autocomplete="email" [(ngModel)]="email" required />
+      </mat-form-field>
+      <p *ngIf="stand === 'fehler'" class="warnung">
+        Das hat nicht geklappt. Bitte versuch es in ein paar Minuten noch einmal.
+      </p>
+      <p class="fussnote">
+        Mit dem Konto gelten die <a routerLink="/nutzungsbedingungen">Nutzungsbedingungen</a>; mehr
+        zum Umgang mit deinen Daten steht in der <a routerLink="/datenschutz">Datenschutzerklärung</a>.
+      </p>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!email.trim() || stand === 'sendet'">
+        Konto anlegen
+      </button>
+    </form>
+
+    <ng-container *ngIf="stand === 'gesendet'">
+      <p>
+        Schau in dein Postfach: Dort ist eine Mail, mit der du dein Passwort festlegst. Der Link darin
+        gilt drei Tage.
+      </p>
+      <p>
+        Keine Mail bekommen, oder gab es schon ein Konto mit dieser Adresse? Dann
+        <a routerLink="/login">melde dich an</a> und nutze dort „Passwort vergessen“.
+      </p>
+    </ng-container>
+  </mat-card-content>
+</mat-card>

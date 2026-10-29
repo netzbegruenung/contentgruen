@@ -79,6 +79,12 @@ for the Gegenlesen, about 0.5 GB more RAM than before (measured on the dev VM: ~
 model, ~350 MB for CharSplit's n-gram table), loaded in the background about two seconds after
 start. If the container has a memory limit, raise it accordingly.
 
+### 🔑 Login (Keycloak)
+
+Since #429 the app signs in against its own realm „Gut gesagt“; the BFF takes the realm from
+`Keycloak__Authority`. The semantic service creates accounts from Einladungen through the
+Keycloak admin API. Realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

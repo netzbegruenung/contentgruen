@@ -192,6 +192,23 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
 - Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.
 
+## Einladungen
+
+Die Tabelle `einladungen` (#429) trägt eine Notiz, die Zahl erlaubter und angelegter Konten,
+den letzten gültigen Tag und ob die Einladung abgeschaltet ist. Sie enthält **keine
+Mail-Adresse und keine Kennung**: Wer über eine Einladung ein Konto anlegt, erhöht nur den
+Zähler. Die Mail-Adresse geht beim Einlösen an Keycloak und wird in Gut gesagt weder
+gespeichert noch geloggt. Über die Kennung aus „Ausgangspunkt“ ist deshalb nichts zu finden,
+und der Ablauf oben erfasst die Tabelle nicht.
+
+- **Notiz:** Das Dashboard bittet, keine Namen oder Mail-Adressen einzutragen. Steht doch
+  einer darin, ist das eine Einzelfallprüfung; die Notiz lässt sich in der Datenbank
+  ändern.
+- **Frist:** keine. Einladungen bleiben stehen, auch abgelaufene; sie tragen keinen
+  Personenbezug.
+- **Konto im Realm:** Löschen wie bisher in Keycloak; dass es über eine Einladung entstand,
+  steht nirgends.
+
 ## Vier Fallen
 
 - **Sitzungskennung vor `content_reports`.** Wird Schritt 2 vor Schritt 1 ausgeführt,
