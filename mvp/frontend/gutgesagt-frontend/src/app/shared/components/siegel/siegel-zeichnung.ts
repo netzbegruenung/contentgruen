@@ -1,8 +1,10 @@
 /**
- * Zeichnung von Logo und Siegel (#416, Entwurf C „Hand bricht aus der Blase“): eine
- * eckige Sprechblase unten links, die Hand (`shared/marke/hand.ts`) ragt oben rechts
- * heraus. Das Logo `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei
- * Güte 10; wer hier etwas ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
+ * Was die Güte an der Zeichnung des Siegels ändert (#416, Entwurf C „Hand bricht aus der
+ * Blase“): Winkel der Hand, Farbe und Text für Screenreader. Die Zeichnung selbst, eine
+ * eckige Sprechblase unten links, aus der die Hand oben rechts ragt, steht in
+ * `siegel.component.html`, die Hand in `shared/marke/hand.ts`. Das Logo
+ * `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
+ * Blase oder die Hand ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
  * passt darauf auf).
  */
 /** Höchste Güte. Güte 1–10; ohne Daten (`null`) ist ein Beitrag „neu“. */

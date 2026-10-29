@@ -13,8 +13,7 @@ svg {
   overflow: visible;
 }
 
-.siegel-blase-gruppe,
-.siegel-blase {
+.siegel-blase-gruppe {
   transition: fill 0.4s ease;
 }
 
@@ -69,8 +68,7 @@ svg {
 // Ohne Bewegung: nur Farb- und Winkelwechsel, kein Drehen, kein Springen, keine Funken.
 @media (prefers-reduced-motion: reduce) {
   .siegel-hand,
-  .siegel-blase-gruppe,
-  .siegel-blase {
+  .siegel-blase-gruppe {
     transition: none;
   }
 

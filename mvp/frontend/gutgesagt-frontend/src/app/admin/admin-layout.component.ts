@@ -25,7 +25,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
         mit demselben Ziel waren einer zu viel.
       -->
       <mat-toolbar color="primary" class="admin-toolbar">
-        <span>🌱 Gut gesagt – Admin</span>
+        <!-- Logo auf weissem Grund, sonst verschwaende die gruene Blase im gruenen Kopf (#416) -->
+        <img class="admin-logo" src="marke/logo.svg" alt="" width="32" height="32">
+        <span>Gut gesagt – Admin</span>
       </mat-toolbar>
 
       <mat-sidenav-container class="admin-sidenav-container">
@@ -59,6 +61,16 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       position: sticky;
       top: 0;
       z-index: 100;
+    }
+
+    .admin-logo {
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+      padding: 2px;
+      border-radius: 8px;
+      background-color: #fff;
+      box-sizing: border-box;
     }
 
     .spacer {

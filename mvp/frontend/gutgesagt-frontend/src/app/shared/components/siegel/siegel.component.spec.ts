@@ -32,7 +32,7 @@ describe('SiegelComponent', () => {
 
   /** Farbe der Blase als [Farbton, Sättigung, Helligkeit]. */
   function farbe(): [number, number, number] {
-    const blase = (fixture.nativeElement as HTMLElement).querySelector('.siegel-blase')!;
+    const blase = (fixture.nativeElement as HTMLElement).querySelector('.siegel-blase-gruppe')!;
     const treffer = /hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%\)/.exec(blase.getAttribute('fill')!);
     return [Number(treffer![1]), Number(treffer![2]), Number(treffer![3])];
   }
