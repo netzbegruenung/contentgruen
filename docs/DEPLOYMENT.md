@@ -107,10 +107,14 @@ deploy anything by itself.
 2. **Version scheme:** `v0.x` releases until the launch (`v0.9.0` first), `v1.0.0` at the
    launch, [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
    not move `:latest` (see above), and production only follows `:latest`.
-3. **Tag on Forgejo:** set the tag on a commit of `main` on Forgejo. The push mirror carries it
+3. **Version in the footer:** the footer shows the `version` from
+   `mvp/frontend/gutgesagt-frontend/package.json`. Before tagging, a pull request sets it to
+   `X.Y.Z` (without the `v`); otherwise the new images show the old number.
+   `npm version X.Y.Z --no-git-tag-version` in that directory also updates `package-lock.json`.
+4. **Tag on Forgejo:** set the tag on a commit of `main` on Forgejo. The push mirror carries it
    to GitHub, where `release.yml` tests and builds the images. Check that the run is green
    and `:latest` moved before announcing the release.
-4. **Change list:** the change list of a release is the Forgejo release to its tag (Releases on
+5. **Change list:** the change list of a release is the Forgejo release to its tag (Releases on
    the Forgejo repository). Draft it with
    ```bash
    git fetch origin --tags
@@ -119,8 +123,10 @@ deploy anything by itself.
    ```
    The script lists the merged pull requests on `main` (linked, grouped by their Conventional
    Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the new
-   scripts in `mvp/scripts/manual/`. Review the draft, add operational steps it cannot know
-   (for example a rename that needs action per environment), and publish it as the release.
+   scripts in `mvp/scripts/manual/`. It recognises a breaking change only by the `!` in the PR
+   title (`feat!:`), not by a `BREAKING CHANGE:` footer, and links any commit on `main` whose
+   subject ends in `(#N)` as pull request N. Review the draft, add operational steps it cannot
+   know (for example a rename that needs action per environment), and publish it as the release.
 
 For urgent deployments, ask in the project channel (see below).
 

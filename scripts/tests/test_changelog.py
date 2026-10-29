@@ -131,3 +131,58 @@ def test_squash_merge_wird_als_pr_verlinkt(repo):
     assert ergebnis.returncode == 0, ergebnis.stderr
     forge = "https://git.verdigado.com/Netzbegruenung/gutgesagt/pulls"
     assert f"## Behoben\n\n- fix: Knopf ([#7]({forge}/7))\n" in ergebnis.stdout
+
+
+def test_vertauschte_argumente_sind_ein_aufruffehler(repo):
+    git(repo, "tag", "v0.1.0")
+    merge(repo, "feat: Neu", 1)
+
+    ergebnis = changelog(repo, "v0.1.0", "main")
+
+    assert ergebnis.returncode == 2
+    assert "liegt nicht vor" in ergebnis.stderr
+    assert ergebnis.stdout == ""
+
+
+def test_prerelease_tag_ist_kein_startpunkt(repo):
+    merge(repo, "feat: Alt", 1)
+    git(repo, "tag", "v0.1.0")
+    merge(repo, "feat: Kandidat", 2)
+    git(repo, "tag", "v0.2.0-rc.1")
+    merge(repo, "fix: Danach", 3)
+
+    ergebnis = changelog(repo, "main")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "feat: Kandidat" in ergebnis.stdout
+    assert "seit v0.1.0" in ergebnis.stdout
+
+
+def test_getaggtes_bis_steht_mit_tag_namen_im_kopf(repo):
+    git(repo, "tag", "v0.1.0")
+    merge(repo, "feat: Neu", 1)
+    git(repo, "tag", "v0.2.0")
+
+    ergebnis = changelog(repo, "v0.2.0")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert ergebnis.stdout.startswith("Stand: v0.2.0 (")
+    assert "seit v0.1.0 (" in ergebnis.stdout
+
+
+def test_nur_skripte_aus_manual_gelten_als_neue_skripte(repo):
+    git(repo, "tag", "v0.1.0")
+    manual = repo / "mvp/scripts/manual"
+    manual.mkdir(parents=True)
+    (manual / "aufraeumen.py").write_text("print(1)\n")
+    (manual / "beispiel.csv").write_text("a,b\n")
+    (manual / "README.md").write_text("# Manual\n")
+    git(repo, "add", ".")
+    git(repo, "commit", "-q", "-m", "feat: Aufräumskript")
+
+    ergebnis = changelog(repo, "main")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "  - `mvp/scripts/manual/aufraeumen.py`" in ergebnis.stdout
+    assert "beispiel.csv" not in ergebnis.stdout
+    assert "README.md" not in ergebnis.stdout
