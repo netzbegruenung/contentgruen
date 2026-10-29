@@ -51,11 +51,3 @@ class ImageGetAllResponse(BaseModel):
     results_count: int
     results: List[BildResponse]
     total_records_count: int
-
-
-class SuggestCaptionRequest(BaseModel):
-    image_url: str
-
-
-class SuggestCaptionResponse(BaseModel):
-    suggested_caption: str

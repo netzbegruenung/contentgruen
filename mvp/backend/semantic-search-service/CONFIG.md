@@ -61,7 +61,6 @@ nano .env
 | `SEMANTIC_SEARCH_QDRANT_COLLECTION` | Qdrant collection name | `content_collection` |
 | `SEMANTIC_SEARCH_APP_DATABASE_URL` | App database connection string | localhost:5433 |
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
-| `OPENAI_API_KEY` | Enables AI image captioning (alias: `SEMANTIC_SEARCH_OPENAI_API_KEY`) | unset |
 
 ## Path Validation
 

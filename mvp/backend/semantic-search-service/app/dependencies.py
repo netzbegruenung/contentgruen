@@ -58,7 +58,6 @@ generic_text_service_instance: Optional[GenericTextService] = None
 post_service_instance: Optional["BaseContentService"] = None
 # Registry-driven content type (Image): same pattern as Post.
 image_service_instance: Optional["BaseContentService"] = None
-caption_suggestion_service_instance: Optional["CaptionSuggestionService"] = None
 content_orchestrator_instance: Optional[ContentOrchestrator] = None
 voting_service_instance: Optional[VotingService] = None
 
@@ -274,31 +273,6 @@ def get_image_service():
             REGISTRY[ContentType.IMAGE], get_settings(), QdrantRepositoryFactory()
         )
     return image_service_instance
-
-
-def get_caption_suggestion_service():
-    """
-    Dependency for the CaptionSuggestionService (singleton).
-
-    Raises ValueError if OPENAI_API_KEY / SEMANTIC_SEARCH_OPENAI_API_KEY is unset,
-    so misconfiguration is caught at the first request rather than at startup.
-    The singleton avoids creating a new AsyncOpenAI connection pool per request.
-    """
-    global caption_suggestion_service_instance
-    if caption_suggestion_service_instance is None:
-        from services.vision.caption_suggestion_service import CaptionSuggestionService
-
-        s = get_settings()
-        if not s.openai_api_key:
-            raise ValueError(
-                "openai_api_key is not configured. "
-                "Set OPENAI_API_KEY or SEMANTIC_SEARCH_OPENAI_API_KEY."
-            )
-        caption_suggestion_service_instance = CaptionSuggestionService(
-            api_key=s.openai_api_key,
-            model=s.openai_vision_model,
-        )
-    return caption_suggestion_service_instance
 
 
 def get_voting_service() -> VotingService:

@@ -1,8 +1,8 @@
 """
 /image/addImage: Ein Bild wird nur mit Unterschrift gespeichert, und dann sofort
-sichtbar (ADR 0003). Einen KI-Vorschlag holt das Formular ueber /suggestCaption;
-gespeichert wird er erst, wenn die Person ihn uebernimmt und absendet. Ein Bild
-ohne Unterschrift, das ein Hintergrunddienst nachbeschreibt, gibt es nicht mehr.
+sichtbar (ADR 0003). Die Unterschrift schreibt die Person; den KI-Vorschlag ueber
+OpenAI gibt es nicht mehr (#393). Ein Bild ohne Unterschrift, das ein
+Hintergrunddienst nachbeschreibt, gibt es auch nicht.
 """
 
 import pytest
@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.v1.image import router as image_router
-from dependencies import get_caption_suggestion_service, get_image_service
+from dependencies import get_image_service
 from domain.models.content_status import ContentStatus
 
 ADD_URL = "/api/v1/image/addImage"
@@ -42,15 +42,6 @@ def image_service():
     app.dependency_overrides.pop(get_image_service, None)
 
 
-@pytest.fixture
-def vorschlag_service():
-    service = MagicMock()
-    service.suggest_caption = AsyncMock(return_value=UNTERSCHRIFT)
-    app.dependency_overrides[get_caption_suggestion_service] = lambda: service
-    yield service
-    app.dependency_overrides.pop(get_caption_suggestion_service, None)
-
-
 @pytest.mark.api
 class TestAddImage:
     def test_add_image_mit_unterschrift_ist_sofort_sichtbar(self, image_service):
@@ -74,16 +65,13 @@ class TestAddImage:
 
 
 @pytest.mark.api
-class TestSuggestCaption:
-    def test_suggest_caption_liefert_vorschlag_und_speichert_nichts(
-        self, image_service, vorschlag_service
-    ):
+class TestKeinKiVorschlag:
+    def test_suggest_caption_gibt_es_nicht_mehr(self, image_service):
         resp = TestClient(app).post(
             SUGGEST_URL,
             json={"image_url": "https://example.com/demo.jpg"},
             headers=HEADERS,
         )
 
-        assert resp.status_code == 200
-        assert resp.json() == {"suggested_caption": UNTERSCHRIFT}
+        assert resp.status_code == 404
         image_service.add.assert_not_awaited()

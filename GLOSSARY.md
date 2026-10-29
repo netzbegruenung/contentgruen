@@ -179,7 +179,7 @@ Ein Bild mit Unterschrift, das für sich spricht.
 _Avoid_: Grafik, Image
 
 **Unterschrift**:
-Der Text zu einem Bild, über den es gefunden wird. Die Person schreibt ihn beim Einstellen oder übernimmt einen Vorschlag der KI; ohne Unterschrift wird kein Bild gespeichert (ADR 0003).
+Der Text zu einem Bild, über den es gefunden wird. Die Person schreibt ihn beim Einstellen selbst; ohne Unterschrift wird kein Bild gespeichert (ADR 0003).
 _Avoid_: Caption, Bildtext
 
 **Post**:

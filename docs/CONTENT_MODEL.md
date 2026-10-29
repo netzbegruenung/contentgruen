@@ -57,9 +57,8 @@ Everything else is shared.
 ```
 
 - For every type the ingestion strategy is **identity**: `searchable_text = user input`.
-- For an **image/graphic**, that input is the Unterschrift. The image form can ask the AI vision
-  endpoint for a suggestion (`POST /image/suggestCaption`), but only the text the person saves is
-  stored (ADR 0003, #281). From that point on the image is just another text-bearing content item —
+- For an **image/graphic**, that input is the Unterschrift the person writes in the image form
+  (ADR 0003, #281, #393). From that point on the image is just another text-bearing content item —
   matched on its Unterschrift, rendered as a picture.
 - The text is **persisted, never recomputed**. Search is cheap and deterministic.
 
@@ -120,8 +119,9 @@ class DirectText:        # comment, generic_text, speech transcript, paper abstr
 ```
 
 An AI-derived ingestion (e.g. describing an image) is not a strategy here: by ADR 0003 an AI text
-reaches the Vorrat only after a person takes it over. The image form fetches a suggestion
-(`POST /image/suggestCaption`) and the person saves it as the Unterschrift (#281).
+reaches the Vorrat only after a person takes it over. A future suggestion for the Unterschrift
+(e.g. text recognised in the image) therefore belongs in the image form: fetched on click, set as a
+draft the person edits or discards, saved only with the form (#281, #393).
 
 **3. Per-type models (Seam 2)** stay tiny — just the extra fields:
 
@@ -275,11 +275,10 @@ dedup behavior as a strategy) and `reference`.
   (`references_count`, `usage_count`, `content_type`), so the frontend DTOs adopt snake_case to
   match — no per-field transformation, no `DtoMapper` boundary. This unblocked the shared
   `BaseContentResult` DTO base (`services/dtos/commonDtos.ts`).
-- **AI vision provider — DECIDED.** OpenAI `gpt-4o-mini`, called from the search service only for
-  the suggested Unterschrift in the image form (`CaptionSuggestionService`, `POST
-  /image/suggestCaption`). Configured via `OPENAI_API_KEY` (or `SEMANTIC_SEARCH_OPENAI_API_KEY`);
-  without a key there is no suggestion and the person writes the Unterschrift. Since #281 the AI is
-  no longer called at ingestion (ADR 0003).
+- **AI vision provider — DECIDED: none external.** The OpenAI suggestion for the Unterschrift
+  (`gpt-4o-mini`, `POST /image/suggestCaption`) was removed together with the `openai` dependency
+  (#393); the person writes the Unterschrift. Image models run on own infrastructure only
+  (ADR 0005); since #281 no AI is called at ingestion (ADR 0003).
 
 ## Open decisions
 - **Legacy type migration**: whether to move `statement` and `reference` onto the registry, or leave
