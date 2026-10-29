@@ -30,6 +30,9 @@ REGELN = [
     (PY + "/app/infrastructure/database/", ["lint", "unit", "integration"]),
     (PY + "/app/services/embeddings/", ["lint", "unit", "integration"]),
     (PY + "/app/tests/integration/", ["lint", "unit", "integration"]),
+    # Gemeinsam fuer Unit- und Integrationstests
+    (PY + "/app/tests/conftest.py", ["lint", "unit", "integration"]),
+    (PY + "/app/pytest.ini", ["lint", "unit", "integration"]),
     (PY + "/", ["lint", "unit"]),
     ("mvp/backend/postgres-app/", ["lint", "unit", "integration"]),
     ("mvp/backend/BFF/", ["bff"]),

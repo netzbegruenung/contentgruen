@@ -106,6 +106,10 @@ PY = "mvp/backend/semantic-search-service"
         ),
         (f"{PY}/requirements.txt", ["retired-words", "lint", "unit", "integration"]),
         (
+            f"{PY}/app/tests/conftest.py",
+            ["retired-words", "lint", "unit", "integration"],
+        ),
+        (
             "mvp/backend/postgres-app/migrations/2026-10-30-x.sql",
             ["retired-words", "lint", "unit", "integration"],
         ),
