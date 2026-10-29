@@ -127,8 +127,13 @@ class TestUnbeantwortet:
 @pytest.fixture
 def themen_service():
     service = MagicMock()
-    service.zuordnen = AsyncMock(side_effect=lambda _id, themen: themen)
-    service.themen_von = MagicMock(return_value={})
+    # Wie AussageThemenService.ergaenzen: eine Aussage mit Themen (bestand) behaelt ihre.
+    service.bestand = {}
+    service.ergaenzen = AsyncMock(
+        side_effect=lambda statement_id, themen: service.bestand.get(
+            statement_id, themen
+        )
+    )
     app.dependency_overrides[get_aussage_themen_service] = lambda: service
     yield service
     app.dependency_overrides.clear()
@@ -215,7 +220,7 @@ class TestVorab:
         )
 
         assert resp.status_code == 200
-        themen_service.zuordnen.assert_awaited_once_with(
+        themen_service.ergaenzen.assert_awaited_once_with(
             neu, ["energie-heizen", "soziales"]
         )
         assert [t["schluessel"] for t in resp.json()["themen"]] == [
@@ -230,7 +235,7 @@ class TestVorab:
         statement_service.vorab_anlegen = AsyncMock(
             return_value=(False, vorhanden, "Heizungsgesetz = Enteignung")
         )
-        themen_service.themen_von = MagicMock(return_value={vorhanden: ["klima"]})
+        themen_service.bestand[vorhanden] = ["klima"]
 
         resp = TestClient(app).post(
             VORAB_URL,
@@ -239,7 +244,7 @@ class TestVorab:
         )
 
         assert resp.status_code == 200
-        themen_service.zuordnen.assert_not_called()
+        themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
         assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
 
     def test_scheitert_das_zuordnen_bleibt_die_aussage_angelegt(
@@ -250,7 +255,7 @@ class TestVorab:
         statement_service.vorab_anlegen = AsyncMock(
             return_value=(True, neu, "Das Heizungsgesetz enteignet uns")
         )
-        themen_service.zuordnen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
+        themen_service.ergaenzen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
 
         resp = TestClient(app).post(
             VORAB_URL,
@@ -276,7 +281,7 @@ class TestVorab:
             headers=ANGEMELDET,
         )
 
-        themen_service.zuordnen.assert_awaited_once_with(vorhanden, ["soziales"])
+        themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
 
     @pytest.mark.parametrize(
         "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa"]]

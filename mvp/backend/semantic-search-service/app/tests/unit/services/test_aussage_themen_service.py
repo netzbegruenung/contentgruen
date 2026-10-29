@@ -39,6 +39,14 @@ class SpeicherRepository:
     def setzen(self, statement_id, themen, zuordnungsart):
         self.zeilen[statement_id] = [(t, zuordnungsart) for t in themen]
 
+    def ergaenzen(self, statement_id, themen, zuordnungsart):
+        # Wie AussageThemenRepository.ergaenzen, dort unter der Sperre der Aussage.
+        if self.zeilen.get(statement_id):
+            return [t for t, _ in self.zeilen[statement_id]]
+        if themen:
+            self.setzen(statement_id, themen, zuordnungsart)
+        return list(themen)
+
     def themen_von(self, statement_ids):
         return {
             i: [t for t, _ in self.zeilen[i]]
@@ -131,6 +139,44 @@ async def test_zuordnen_zu_einer_unbekannten_aussage_scheitert():
 
     with pytest.raises(AussageNichtGefunden):
         await service.zuordnen(A, ["klima"])
+    assert repository.zeilen == {}
+
+
+async def test_ergaenzen_gibt_einer_aussage_ohne_themen_die_gewaehlten():
+    service, repository = _service([_aussage(A, "Windräder töten Vögel")])
+
+    themen = await service.ergaenzen(A, ["natur-umwelt", "klima"])
+
+    assert themen == ["klima", "natur-umwelt"]
+    assert repository.zeilen[A] == [("natur-umwelt", VON_HAND), ("klima", VON_HAND)]
+
+
+async def test_ergaenzen_laesst_vorhandene_themen_stehen():
+    service, repository = _service([_aussage(A, "Windräder töten Vögel")])
+    await service.zuordnen(A, ["energie-heizen"])
+
+    themen = await service.ergaenzen(A, ["klima"])
+
+    assert themen == ["energie-heizen"]
+    assert service.themen_von([A]) == {A: ["energie-heizen"]}
+
+
+async def test_ergaenzen_ohne_wahl_nennt_die_vorhandenen_auch_einer_gesperrten_aussage():
+    """Ohne Wahl wird nichts gesetzt; dann zaehlt auch nicht, ob die Aussage sichtbar ist."""
+    repository = SpeicherRepository()
+    repository.setzen(A, ["klima"], VON_HAND)
+    service, _ = _service([_aussage(A, "x", status=ContentStatus.BLOCKED)], repository)
+
+    assert await service.ergaenzen(A, []) == ["klima"]
+
+
+async def test_ergaenzen_weist_ungueltige_themen_und_gesperrte_aussagen_ab():
+    service, repository = _service([_aussage(A, "x", status=ContentStatus.BLOCKED)])
+
+    with pytest.raises(ThemaUngueltig):
+        await service.ergaenzen(A, ["windkraft"])
+    with pytest.raises(AussageNichtGefunden):
+        await service.ergaenzen(A, ["klima"])
     assert repository.zeilen == {}
 
 

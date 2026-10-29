@@ -47,8 +47,13 @@ def _anfrage(**extra) -> dict:
 def themen_service():
     # Die Aussage hat noch keine Themen; zuordnen gibt die gesetzten zurueck.
     service = MagicMock()
-    service.themen_von = MagicMock(return_value={})
-    service.zuordnen = AsyncMock(side_effect=lambda _id, themen: themen)
+    # Wie AussageThemenService.ergaenzen: eine Aussage mit Themen (bestand) behaelt ihre.
+    service.bestand = {}
+    service.ergaenzen = AsyncMock(
+        side_effect=lambda statement_id, themen: service.bestand.get(
+            statement_id, themen
+        )
+    )
     return service
 
 
@@ -591,7 +596,7 @@ class TestThemenDerAussage:
         assert resp.json()["themen"] == [
             {"schluessel": "energie-heizen", "name": "Energie und Heizen"}
         ]
-        themen_service.zuordnen.assert_awaited_once_with(
+        themen_service.ergaenzen.assert_awaited_once_with(
             statement_id, ["energie-heizen"]
         )
 
@@ -602,7 +607,7 @@ class TestThemenDerAussage:
             vorhanden,
             self.AUSSAGE,
         )
-        themen_service.themen_von = MagicMock(return_value={vorhanden: ["klima"]})
+        themen_service.bestand[vorhanden] = ["klima"]
 
         resp = TestClient(app).post(
             ADD_URL,
@@ -613,7 +618,7 @@ class TestThemenDerAussage:
         assert resp.status_code == 200
         # Die Antwort nennt ihre, damit das Formular sagen kann, dass die Wahl nicht galt.
         assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
-        themen_service.zuordnen.assert_not_called()
+        themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
 
     def test_gewaehlte_aussage_bekommt_keine_themen(self, dienste, themen_service):
         _, statement_service = dienste
@@ -631,7 +636,7 @@ class TestThemenDerAussage:
 
         assert resp.status_code == 200
         assert resp.json()["themen"] == []
-        themen_service.zuordnen.assert_not_called()
+        themen_service.ergaenzen.assert_not_called()
 
     def test_ohne_themen_wird_nichts_zugeordnet(self, dienste, themen_service):
         _, statement_service = dienste
@@ -646,7 +651,7 @@ class TestThemenDerAussage:
 
         assert resp.status_code == 200
         assert resp.json()["themen"] == []
-        themen_service.zuordnen.assert_not_called()
+        themen_service.ergaenzen.assert_not_called()
 
     def test_gescheitertes_zuordnen_behaelt_hintergrundinfo_und_verknuepfung(
         self, dienste, themen_service
@@ -657,7 +662,7 @@ class TestThemenDerAussage:
             statement_id,
             self.AUSSAGE,
         )
-        themen_service.zuordnen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
+        themen_service.ergaenzen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
 
         resp = TestClient(app).post(
             ADD_URL,
@@ -680,7 +685,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.json()["dublette"] is True
-        themen_service.zuordnen.assert_not_called()
+        themen_service.ergaenzen.assert_not_called()
 
     def test_vorhanden_nehmen_gibt_der_neuen_aussage_die_themen(
         self, dienste, themen_service
@@ -704,7 +709,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.json()["verknuepft"] is True
-        themen_service.zuordnen.assert_awaited_once_with(statement_id, ["klima"])
+        themen_service.ergaenzen.assert_awaited_once_with(statement_id, ["klima"])
 
     def test_ungueltige_themen_werden_vor_dem_speichern_abgewiesen(self, dienste):
         generic_text_service = app.dependency_overrides[get_generic_text_service]()

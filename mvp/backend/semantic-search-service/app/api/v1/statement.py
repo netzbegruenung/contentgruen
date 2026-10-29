@@ -217,9 +217,7 @@ async def vorab_anlegen(
     except Exception as e:
         logger.error(f"Error in /vorab: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to add statement")
-    themen = await themen_beim_anlegen(
-        themen_service, statement_id, request.themen, neu=statement_was_new
-    )
+    themen = await themen_beim_anlegen(themen_service, statement_id, request.themen)
     return AussageVorabResponse(
         statement_was_new=statement_was_new,
         statement_id=statement_id,

@@ -11,6 +11,7 @@ Schema kommen aus ``conftest.py`` (siehe ``postgres.py``).
 """
 
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 import pytest
@@ -99,3 +100,35 @@ def test_migration_legt_die_tabelle_an_und_darf_zweimal_laufen(postgres_url):
         repository.setzen(A, ["klima"], VON_HAND)
 
         assert repository.zuordnungen(VON_HAND) == {A: ["klima"]}
+
+
+def test_ergaenzen_setzt_nur_ohne_vorhandene_themen(neue_datenbank):
+    repository = _repository(neue_datenbank)
+
+    assert repository.ergaenzen(A, ["klima", "verkehr"], VON_HAND) == [
+        "klima",
+        "verkehr",
+    ]
+    assert sorted(repository.ergaenzen(A, ["europa"], VON_HAND)) == [
+        "klima",
+        "verkehr",
+    ]
+    assert repository.ergaenzen(B, [], VON_HAND) == []
+    assert {k: sorted(v) for k, v in repository.themen_von([A, B]).items()} == {
+        A: ["klima", "verkehr"]
+    }
+
+
+def test_ergaenzen_gleichzeitig_gewinnt_genau_eine_wahl(neue_datenbank):
+    """Pruefen und Setzen ohne Zeitfenster (#462): Nie zwei Wahlen an derselben Aussage."""
+    repository = _repository(neue_datenbank)
+    wahlen = ["klima", "europa", "verkehr", "soziales"] * 3
+
+    with ThreadPoolExecutor(max_workers=len(wahlen)) as pool:
+        ergebnisse = list(
+            pool.map(lambda t: repository.ergaenzen(A, [t], VON_HAND), wahlen)
+        )
+
+    gespeichert = repository.themen_von([A])[A]
+    assert len(gespeichert) == 1
+    assert all(e == gespeichert for e in ergebnisse)
