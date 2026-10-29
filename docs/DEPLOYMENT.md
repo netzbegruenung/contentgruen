@@ -80,15 +80,15 @@ Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, requi
 for `main`, see [CI.md](CI.md)). After the merge, GitHub Actions on the mirror build the images:
 - `.github/workflows/build.yml` — builds on every push to `main`, publishing `:main` and
   `:sha-<short>` tags. The test environment runs `:main`, rolled out manually (see above).
-- `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
-  `:latest` for all four images.
+- `.github/workflows/release.yml` — runs on `v*` tags, publishing `:X.Y.Z` (the tag without
+  its `v`), `:X.Y` and `:latest` for all four images.
 
-Both run the same test suites first, defined once in `.github/workflows/tests-backend.yml`
-and `tests-frontend.yml` and called by each; images are pushed only if they pass.
+Both run the same test suites first, defined once in `.github/workflows/tests-backend.yml`,
+`tests-frontend.yml` and `tests-bff.yml` and called by each; images are pushed only if they pass.
 
 `:latest` is produced by `docker/metadata-action`'s `latest=auto` flavor: it moves for normal
-release tags but is skipped for prereleases (`v1.2.3-rc.1`), so release candidates can be
-tagged without moving production.
+release tags but is skipped for prereleases (`v1.2.3-rc.1`). A prerelease tag therefore never
+reaches production.
 
 Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages
@@ -100,6 +100,27 @@ deploy anything by itself.
 > Because production pins `:latest`, the `latest=auto` flavor in `release.yml` is
 > load-bearing. Disabling it, or moving the tag rules away from `type=semver`, would stop
 > `:latest` moving and silently freeze production updates with no failing build to signal it.
+
+#### Releases
+
+1. **Only the maintainer sets tags.** Agents and contributors propose, they do not tag.
+2. **Version scheme:** `v0.x` releases until the launch (`v0.9.0` first), `v1.0.0` at the
+   launch, [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
+   not move `:latest` (see above), and production only follows `:latest`.
+3. **Tag on Forgejo:** set the tag on a commit of `main` on Forgejo. The push mirror carries it
+   to GitHub, where `release.yml` tests and builds the images. Check that the run is green
+   and `:latest` moved before announcing the release.
+4. **Change list:** the change list of a release is the Forgejo release to its tag (Releases on
+   the Forgejo repository). Draft it with
+   ```bash
+   git fetch origin --tags
+   scripts/changelog.sh "" vX.Y.Z > changelog.md   # since the previous v* tag
+   scripts/changelog.sh <commit> vX.Y.Z            # first release, or a different start
+   ```
+   The script lists the merged pull requests on `main` (linked, grouped by their Conventional
+   Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the new
+   scripts in `mvp/scripts/manual/`. Review the draft, add operational steps it cannot know
+   (for example a rename that needs action per environment), and publish it as the release.
 
 For urgent deployments, ask in the project channel (see below).
 
