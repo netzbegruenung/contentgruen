@@ -56,6 +56,9 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 | Umwandeln und Synthese (#226) | Messenger-Bot | Hass- und Strafanzeigen (Verweis auf Beratungsstellen) |
 | Inhalte gemeinsam herstellen: Videoschnipsel teilen, Beiträge anderer remixen und verbessern (langfristig) | | Kanalbetreuung |
 | Trends und eine Social Wall | | Inhalte, die KI herstellt (höchstens Verweis auf Grünerator) |
+| Hilfen im Arbeitsfluss: Formularhilfe, Hilfe-Dialog, kurze How-tos und Tipps dort, wo die Tätigkeit stattfindet | | Eine eigene Lernplattform mit Kursen oder Schulungsbereich |
+
+Gut gesagt ist eine Mobilisierungsplattform, keine Lernplattform. Schulungsmaterial, How-tos und Tipps gibt es nur knapp und am Ort der Tätigkeit; gelernt wird am echten Tun (siehe Werkstatt unten), nicht in einem eigenen Bereich, der vom Kern ablenkt.
 
 Bedarf erkennt Gut gesagt nur aus eigenen Signalen: Suchen ohne Treffer, „Hier fehlt eine Antwort“, Einwürfe, eingeworfene Links und Zulieferer für Einwürfe (siehe Bestand). Monitoring heißt, fremde Plattformen von sich aus zu beobachten (Kommentarspalten, Accounts, Hashtags, Frühwarnung); das verarbeitet Personendaten Dritter und bleibt Sache von Social-Listening-Werkzeugen außerhalb von Gut gesagt.
 
