@@ -18,32 +18,19 @@ core/config.py neu zu messen - nicht nur aehnlichkeit_gemessen.py neu zu erzeuge
 import pytest
 
 from core.config import Settings
-from tests.regression.aehnlichkeit_messen import entscheidung, gemessen, scores
+from tests.regression.aehnlichkeit_messen import (
+    BEKANNTE_FEHLENTSCHEIDUNGEN,
+    entscheidung,
+    gemessen,
+    knapp,
+    scores,
+)
 from tests.regression.aehnlichkeit_paare import PAARE
 
 pytestmark = pytest.mark.langsam
 
 # Wie weit ein Score von der Messung abweichen darf (CPU/Bibliotheksversion).
 TOLERANZ = 0.005
-
-# Paare, bei denen die heutige Dublettenpruefung (Kosinus + Schwelle) eine andere
-# Behauptung als dieselbe nimmt. Bekannt und gewollt sichtbar: Diese Faelle
-# soll die NLI-Stufe (#387) abfangen. Wer hier ein Paar entfernt, hat es geloest.
-# fmt: off
-BEKANNTE_FEHLENTSCHEIDUNGEN = frozenset({
-    # Aussagen (59): still als dieselbe Aussage wiederverwendet
-    "VB05", "VB09", "WI07", "BS09", "WP04", "WP07", "TL06", "TL07", "TL13", "EA04",
-    "EA05", "EA06", "EA07", "EA08", "FL04", "FL09", "FL12", "EE12", "HZ04", "HZ08",
-    "HZ09", "HZ11", "HZ12", "EU06", "DB07", "KW08", "SP07", "LR04", "CO05", "CO12",
-    "RW05", "RW06", "WS08", "IN05", "IN06", "IN08", "WA06", "WA10", "DT05", "BI04",
-    "BI06", "FB03", "FB04", "FB05", "FB06", "FB11", "FB12", "AK04", "AK07", "AK08",
-    "MO06", "FW03", "FW04", "FW05", "FW06", "FW08", "FW11", "FW12", "WO08",
-    # Hintergrundinfos (13): andere Zahl oder Verneinung im sonst gleichen
-    # Text, als Dublette angeboten
-    "HK03", "HK04", "HA04", "HA05", "HA06", "HU04", "HU05", "HJ03", "HJ04", "HT03",
-    "HT04", "HG03", "HG04",
-})
-# fmt: on
 
 
 @pytest.mark.parametrize("paar", PAARE, ids=[p.id for p in PAARE])
@@ -55,7 +42,11 @@ def test_scores_wie_gemessen(paar):
 @pytest.mark.parametrize("paar", PAARE, ids=[p.id for p in PAARE])
 def test_entscheidung_der_dublettenpruefung(paar):
     """Dieselbe Regel wie StatementService.add_statement / CommentaryService / GenericTextService."""
-    ergebnis = entscheidung(paar, scores()[paar.id], Settings())
+    settings = Settings()
+    werte = scores()[paar.id]
+    ergebnis = entscheidung(paar, werte, settings)
+    if knapp(paar, werte, settings) or knapp(paar, gemessen(paar.id), settings):
+        pytest.skip("Score direkt an der Schwelle, Entscheidung nicht stabil")
 
     assert ergebnis is gemessen(paar.id).gleich
     # Die Grundregeln unabhaengig von den gespeicherten Erwartungen:
@@ -73,5 +64,6 @@ def test_bekannte_fehlentscheidungen_sind_noch_falsch():
         pid
         for pid in BEKANNTE_FEHLENTSCHEIDUNGEN
         if not entscheidung(nach_id[pid], scores()[pid], settings)
+        and not knapp(nach_id[pid], scores()[pid], settings)
     ]
     assert not geloest

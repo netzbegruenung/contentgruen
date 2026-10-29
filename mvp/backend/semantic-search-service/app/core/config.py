@@ -124,9 +124,9 @@ class Settings(BaseSettings):
     # Wer Schwelle oder Modell aendert, misst die Kommentar-Paare neu.
     commentary_similarity_threshold: float = 0.975
     # Hintergrundinfo-Dublette: dieselbe Einbettung und Schwelle wie beim Kommentar.
-    # Gemessen an Hintergrundinfo-Paaren (tests/regression/MESSSET.md): Derselbe Text
-    # mit anderer Zahl liegt bei 0,976-1,000 und gilt als Dublette, Umformulierungen
-    # zum Teil darunter (ab 0,946). Die Schwelle trennt das nicht; siehe #387.
+    # Gemessen an Hintergrundinfo-Paaren (Zahlen in tests/regression/MESSSET.md):
+    # Derselbe Text mit anderer Zahl liegt darueber und gilt als Dublette,
+    # Umformulierungen zum Teil darunter. Die Schwelle trennt das nicht; siehe #387.
     generic_text_similarity_threshold: float = 0.975
     default_search_limit: int = 10
     max_reply_suggestions: int = 50

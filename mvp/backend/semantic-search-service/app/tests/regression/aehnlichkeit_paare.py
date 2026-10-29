@@ -10,9 +10,10 @@ koennen stimmen; fremd = anderes Thema.
 Kategorie (wie der Text abweicht, seit 2026-09-17): A identisch; B trivial abweichend
 (Gross/klein, Punkt/Ausrufezeichen, Leerraum, Anfuehrungszeichen); C gleiche Behauptung,
 andere Worte; D verwandt oder widersprechend; E fremdes Thema. art: aussage
-(Formular/Seeding), suche (Suchanfragen), kommentar, hintergrundinfo. Quelle: seed =
-mvp/data/seed/v1.0 (Kommentare aus dem bereinigten Stand nach #340, Aussagen zum Teil aus
-dem Stand davor), eigen = fuer die Messung formuliert. Keine echten Personen, keine
+(Formular/Seeding), suche (Suchanfragen), kommentar, hintergrundinfo. Quelle (QUELLEN,
+mehrere mit "+" in dieser Reihenfolge): seed = mvp/data/seed/v1.0 (Kommentare aus dem
+bereinigten Stand nach #340, Aussagen zum Teil aus dem Stand davor), dev = Eingaben aus
+der Entwicklungsumgebung (nur Paare vom 17.09.2026), eigen = fuer die Messung formuliert. Keine echten Personen, keine
 erfundenen Erlebnisse - es gelten die Regeln des Seeds (mvp/data/seed/README.md). Paare
 mit dem Label widerspricht duerfen falsche Zahlen enthalten: Das ist ihr Zweck.
 
@@ -22,6 +23,7 @@ Neue Paare ans Ende ihrer Gruppe anhaengen: Die IDs der Gruppen werden durchgeza
 from typing import NamedTuple
 
 LABELS = ("gleich", "widerspricht", "verwandt", "fremd")
+QUELLEN = ("seed", "dev", "eigen")
 # Woran sich das Paar unterscheidet. Minimalpaare: verneinung, antonym, quantor.
 PHAENOMENE = (
     "identisch",
@@ -181,7 +183,7 @@ _ALT = [
     ("E05", "aussage", "E", "fremd", "fremd", 'Die Grünen wollen mir meine Heizung verbieten!', 'Blühwiese statt Rasen vor dem Rathaus', "seed+dev"),
     ("E06", "aussage", "E", "fremd", "fremd", 'Die Grünen wollen uns das Fleisch verbieten', 'Deutschland kann das Klima nicht alleine retten', "seed"),
     ("E07", "aussage", "E", "fremd", "fremd", 'E-Autos sind eine Totgeburt!', 'Die Grünen lassen alle Migranten rein', "seed"),
-    ("E08", "aussage", "E", "fremd", "fremd", 'Klimaschutz', VERBOT, "dev+seed"),
+    ("E08", "aussage", "E", "fremd", "fremd", 'Klimaschutz', VERBOT, "seed+dev"),
     ("S01", "suche", "B", "gleich", "trivial", 'klimaschutz', 'Klimaschutz', "dev"),
     ("S02", "suche", "B", "gleich", "trivial", 'Wärmepumpe Altbau', 'wärmepumpe altbau', "eigen"),
     ("S03", "suche", "C", "gleich", "umformulierung", 'Wärmepumpe Altbau', 'Wärmepumpen im Altbau', "eigen"),

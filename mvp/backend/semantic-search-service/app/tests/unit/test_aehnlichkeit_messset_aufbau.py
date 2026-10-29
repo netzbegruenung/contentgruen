@@ -5,12 +5,17 @@ Texten passen. Die Scores selbst prueft tests/regression (langsam, nicht in CI).
 """
 
 from collections import Counter
+from pathlib import Path
 
 import pytest
 
+from core.config import Settings
 from tests.regression.aehnlichkeit_gemessen import GEMESSEN
 from tests.regression.aehnlichkeit_messen import (
+    BEKANNTE_FEHLENTSCHEIDUNGEN,
     PRUEFUNG_JE_ART,
+    auswertung,
+    entscheidung,
     fingerabdruck,
     gemessen,
 )
@@ -19,6 +24,7 @@ from tests.regression.aehnlichkeit_paare import (
     MINIMALPAAR_PHAENOMENE,
     PAARE,
     PHAENOMENE,
+    QUELLEN,
     TEST_GRUPPEN,
 )
 from utils.text_normalisierung import text_normalisiert
@@ -37,8 +43,22 @@ def test_jedes_paar_hat_label_und_phaenomen():
     assert {p.art for p in PAARE} == set(PRUEFUNG_JE_ART)
 
 
+def test_quelle_aus_den_erlaubten_in_fester_reihenfolge():
+    erlaubt = {"+".join(q for q in QUELLEN if q in teile) for teile in _teilmengen()}
+    assert {p.quelle for p in PAARE} <= erlaubt
+
+
+def _teilmengen():
+    return [
+        {q for i, q in enumerate(QUELLEN) if maske >> i & 1}
+        for maske in range(1, 2 ** len(QUELLEN))
+    ]
+
+
 @pytest.mark.parametrize("paar", PAARE, ids=[p.id for p in PAARE])
 def test_kategorie_passt_zum_label(paar):
+    """Bei den neuen Gruppen leitet _kategorie() die Kategorie aus dem Label ab; echt
+    geprueft wird hier der Altbestand, dessen Kategorie von Hand steht."""
     erlaubt = {"A": {"gleich"}, "B": {"gleich"}, "C": {"gleich"}}
     erlaubt |= {"D": {"verwandt", "widerspricht"}, "E": {"fremd"}}
     assert paar.label in erlaubt[paar.kategorie]
@@ -52,8 +72,11 @@ def test_kandidat_weicht_vom_bestand_ab_ausser_bei_identisch(paar):
 
 def test_umfang_der_aussage_paare():
     assert len(AUSSAGEN) >= 300
+    # Harte Negative: Minimalpaare mit anderer Behauptung (MESSSET.md, Phänomen).
     minimal = Counter(
-        p.phaenomen for p in AUSSAGEN if p.phaenomen in MINIMALPAAR_PHAENOMENE
+        p.phaenomen
+        for p in AUSSAGEN
+        if p.phaenomen in MINIMALPAAR_PHAENOMENE and p.label != "gleich"
     )
     assert sum(minimal.values()) >= 100
     assert set(minimal) == MINIMALPAAR_PHAENOMENE
@@ -97,3 +120,30 @@ def test_gemessen_passt_zu_den_paaren():
     assert set(GEMESSEN) == {p.id for p in PAARE}
     veraltet = [p.id for p in PAARE if gemessen(p.id).fingerabdruck != fingerabdruck(p)]
     assert not veraltet
+
+
+def test_gespeicherte_entscheidung_passt_zu_den_scores():
+    """Was aehnlichkeit_gemessen.py als Entscheidung speichert, folgt aus den
+    gespeicherten Scores und den Schwellen in core/config.py. Faellt nach einer
+    Schwellenaenderung auf: dann neu messen."""
+    settings = Settings()
+    abweichend = [
+        p.id
+        for p in PAARE
+        if entscheidung(p, gemessen(p.id), settings) is not gemessen(p.id).gleich
+    ]
+    assert not abweichend
+
+
+def test_bekannte_fehlentscheidungen_passen_zur_messung():
+    fehlentscheidungen = {
+        p.id for p in PAARE if p.label != "gleich" and gemessen(p.id).gleich
+    }
+    assert BEKANNTE_FEHLENTSCHEIDUNGEN == fehlentscheidungen
+
+
+def test_messset_md_zeigt_die_gespeicherte_messung():
+    """Die Tabellen in MESSSET.md sind die Ausgabe von aehnlichkeit_messen.py."""
+    doku = Path(__file__).parents[1] / "regression" / "MESSSET.md"
+    messungen = {p.id: gemessen(p.id) for p in PAARE}
+    assert auswertung(messungen, Settings()) in doku.read_text(encoding="utf-8")

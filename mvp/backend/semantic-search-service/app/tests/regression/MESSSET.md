@@ -39,8 +39,19 @@ A, B und C sind immer *gleich*, D ist *verwandt* oder *widerspricht*, E ist *fre
 Das **Phänomen** sagt, woran sich ein Paar unterscheidet: `identisch`, `trivial`,
 `tippfehler`, `wortstellung`, `umformulierung`, `zusatz` (angehängte Herkunft),
 `verneinung`, `antonym`, `quantor`, `skopus`, `frage`, `zahl`, `mehrfachthema`, `aspekt`,
-`fremd`. Minimalpaare sind die Phänomene `verneinung`, `antonym` und `quantor`: Kandidat
-und Bestand unterscheiden sich in einem Wort oder einer Wendung.
+`fremd`. Minimalpaare sind die Paare mit den Phänomenen `verneinung`, `antonym` und
+`quantor`: Kandidat und Bestand unterscheiden sich vor allem in dieser Verneinung, diesem
+Gegenwort oder diesem Quantor, meist in ein bis zwei Wörtern, manchmal in einer längeren
+Wendung („Es stimmt nicht, dass …“). Als harte Negative zählen nur die, deren Label nicht
+*gleich* ist (`test_umfang_der_aussage_paare`).
+
+### Altbestand vom 17.09.2026
+
+Die 77 alten Paare behalten ID, Text und Kategorie. Das Paar-Label folgt aus der
+Kategorie (A–C *gleich*, E *fremd*); bei D ist es nach den Regeln unten entschieden,
+z. B. D11 und D15 *widerspricht*, B09 *verwandt* (Regel 4). Eine Kategorie hat sich
+geändert: C07 ist jetzt D, *verwandt* (Regel 6, Mehrfachthema). Die ID zeigt die
+Kategorie vom 17.09.2026 und wird nicht umbenannt; B09 stand schon damals unter D.
 
 ## Regeln für Grenzfälle
 
@@ -104,12 +115,19 @@ vorkommt (`test_kein_text_in_train_und_test`).
 Neue Paare kommen in eine bestehende Gruppe (ans Ende, die IDs werden durchgezählt) oder
 in eine neue; eine neue Gruppe wird beim Anlegen einem Teil zugeordnet und wechselt nie.
 
+Grenze des Splits: Train und Test teilen keinen Text, aber Themen und Vorlagen. Die
+Varianten folgen in beiden Teilen denselben Mustern („Manche …“, „Ist … ?“, „Es stimmt
+nicht, dass …“), und die Hintergrundinfo-Gruppe zum Tempolimit (Test) behandelt dasselbe
+Thema wie ein Kommentar-Paar im Train-Teil. Ein Modell, das an Train justiert ist, kann
+im Test daher besser aussehen als bei fremden Texten.
+
 ## Ergebnis mit multilingual-e5-base
 
 Gemessen am 29.10.2026 mit `intfloat/multilingual-e5-base` und den Schwellen aus
 `core/config.py`; die 77 alten Paare liefern dieselben Werte wie am 17.09.2026.
-„als gleich entschieden“ zählt auch normalisiert gleiche Texte mit. Neu erzeugen mit
-`aehnlichkeit_messen.py`.
+„als gleich entschieden“ zählt auch normalisiert gleiche Texte mit. Die Tabellen sind die
+Ausgabe von `aehnlichkeit_messen.py` über `aehnlichkeit_gemessen.py`; ein Unit-Test
+prüft, dass sie hier unverändert stehen (`test_messset_md_zeigt_die_gespeicherte_messung`).
 
 - **Aussagen:** Die Schwelle 0,98 trennt *gleich* nicht von den anderen Labels. 31 von 151
   *widerspricht*-Paaren und 28 von 128 *verwandt*-Paaren lägen heute über ihr und würden
@@ -120,7 +138,10 @@ Gemessen am 29.10.2026 mit `intfloat/multilingual-e5-base` und den Schwellen aus
 - **Hintergrundinfos:** Alle 10 *widerspricht*-Paare (andere Zahl oder Verneinung im sonst
   gleichen Text) liegen über 0,975 und würden als Dublette angeboten, ebenso 3 von 9
   *verwandt*-Paaren; 4 von 14 *gleich*-Paaren (Umformulierungen) liegen darunter.
-- Die Fehlentscheidungen stehen als `BEKANNTE_FEHLENTSCHEIDUNGEN` im Regressionstest.
+- Die Fehlentscheidungen stehen als `BEKANNTE_FEHLENTSCHEIDUNGEN` in
+  `aehnlichkeit_messen.py`; ein Unit-Test hält die Liste deckungsgleich mit der Messung.
+  Paare, deren Score weniger als 0,001 neben der Schwelle liegt (`KNAPP`), vergleicht der
+  Regressionstest nicht: Ihre Entscheidung kann auf anderer Hardware kippen.
   Sie abzufangen ist Aufgabe der NLI-Stufe (#387); der Kosinus allein kann es nicht.
 
 aussage (Score qq, Dublette ab 0.98):

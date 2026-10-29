@@ -26,6 +26,29 @@ from utils.text_normalisierung import ist_dasselbe, text_normalisiert
 
 # Vorschlagsschwelle im Feld "Antwort auf" (Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
 VORSCHLAG_SCHWELLE = 0.885
+# So nah an der Schwelle kann eine Entscheidung auf anderer Hardware oder mit einer
+# anderen Bibliotheksversion kippen; der Regressionstest vergleicht sie dort nicht.
+KNAPP = 0.001
+
+# Paare, bei denen die heutige Dublettenpruefung (Kosinus + Schwelle) eine andere
+# Behauptung als dieselbe nimmt. Bekannt und gewollt sichtbar: Diese Faelle
+# soll die NLI-Stufe (#387) abfangen. Wer hier ein Paar entfernt, hat es geloest.
+# Dass die Liste zu aehnlichkeit_gemessen.py passt, prueft der Unit-Test.
+# fmt: off
+BEKANNTE_FEHLENTSCHEIDUNGEN = frozenset({
+    # Aussagen: still als dieselbe Aussage wiederverwendet
+    "VB05", "VB09", "WI07", "BS09", "WP04", "WP07", "TL06", "TL07", "TL13", "EA04",
+    "EA05", "EA06", "EA07", "EA08", "FL04", "FL09", "FL12", "EE12", "HZ04", "HZ08",
+    "HZ09", "HZ11", "HZ12", "EU06", "DB07", "KW08", "SP07", "LR04", "CO05", "CO12",
+    "RW05", "RW06", "WS08", "IN05", "IN06", "IN08", "WA06", "WA10", "DT05", "BI04",
+    "BI06", "FB03", "FB04", "FB05", "FB06", "FB11", "FB12", "AK04", "AK07", "AK08",
+    "MO06", "FW03", "FW04", "FW05", "FW06", "FW08", "FW11", "FW12", "WO08",
+    # Hintergrundinfos: andere Zahl oder Verneinung im sonst gleichen Text, als
+    # Dublette angeboten
+    "HK03", "HK04", "HA04", "HA05", "HA06", "HU04", "HU05", "HJ03", "HJ04", "HT03",
+    "HT04", "HG03", "HG04",
+})
+# fmt: on
 
 _ZIEL = Path(__file__).with_name("aehnlichkeit_gemessen.py")
 
@@ -83,6 +106,14 @@ def entscheidung(paar: Paar, werte: Scores | Messung, settings: Settings) -> boo
         score(paar, werte),
         schwelle(paar.art, settings),
     )
+
+
+def knapp(paar: Paar, werte: Scores | Messung, settings: Settings) -> bool:
+    """Score liegt weniger als KNAPP neben der Schwelle (normalisiert gleiche Texte
+    entscheidet die Normalform, nicht der Score)."""
+    if text_normalisiert(paar.kandidat) == text_normalisiert(paar.bestand):
+        return False
+    return abs(score(paar, werte) - schwelle(paar.art, settings)) < KNAPP
 
 
 @lru_cache(maxsize=1)
@@ -153,7 +184,7 @@ def _schreiben(messungen: dict[str, Messung]) -> None:
         "GEMESSEN = {\n"
     )
     zeilen = [
-        f'    "{pid}": ({qq:.4f}, {pp:.4f}, {qp:.4f}, {gleich}, "{fp}"),'
+        f'    "{pid}": ({qq:.6f}, {pp:.6f}, {qp:.6f}, {gleich}, "{fp}"),'
         for pid, (qq, pp, qp, gleich, fp) in messungen.items()
     ]
     _ZIEL.write_text(kopf + "\n".join(zeilen) + "\n}\n# fmt: on\n", encoding="utf-8")
