@@ -33,6 +33,10 @@ from repositories.suchen_ohne_treffer_repository import (
 )
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
+from services.loeschfristen_service import LoeschfristenService
+from services.moderation_service import get_moderation_service
+from repositories.content_report_repository import get_content_report_repository
+from repositories.raw_input_repository import get_raw_input_repository
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -152,6 +156,15 @@ def get_unbeantwortete_aussagen_service(
 
 def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
+
+
+def get_loeschfristen_service() -> LoeschfristenService:
+    return LoeschfristenService(
+        get_content_report_repository(),
+        get_raw_input_repository(),
+        get_moderation_repository(),
+        get_moderation_service(),
+    )
 
 
 def get_beitrag_loeschen_service(

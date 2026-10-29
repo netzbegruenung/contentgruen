@@ -76,8 +76,9 @@ database are tested in `tests/integration/` against PostgreSQL: migrations and
 Suchereignis (`test_suchereignisse.py`), the shuffled rewrite of closed days
 (`test_suchereignisse_mischen.py`), "Suchen ohne Treffer"
 (`test_suchen_ohne_treffer.py`), the Rückmeldung on usage (`test_rueckmeldung_nutzung.py`),
-the deletion command (`test_loeschkommando.py`) and Meldungen with each Meldegrund
-(`test_meldegrund.py`).
+the deletion command (`test_loeschkommando.py`), Meldungen with each Meldegrund
+(`test_meldegrund.py`) and the Löschfristen (`test_loeschfristen.py`, its Qdrant
+part needs a running Qdrant).
 
 ```bash
 # from mvp/backend/semantic-search-service/app
@@ -85,7 +86,8 @@ pytest tests/integration/test_migrationen.py tests/integration/test_suchereignis
        tests/integration/test_suchereignisse_tageszaehler.py \
        tests/integration/test_suchereignisse_mischen.py \
        tests/integration/test_suchen_ohne_treffer.py tests/integration/test_rueckmeldung_nutzung.py \
-       tests/integration/test_loeschkommando.py tests/integration/test_meldegrund.py
+       tests/integration/test_loeschkommando.py tests/integration/test_meldegrund.py \
+       tests/integration/test_loeschfristen.py
 ```
 
 - **Database:** without further setup the run starts a throwaway container with
