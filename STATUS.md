@@ -36,7 +36,7 @@ use existing comments/background info, and contribute their own.
 | Mobile UI optimization        | ☐ open   | In progress                                                  |
 | Frontend test suite           | ☐ open   | Backend well covered; frontend specs exist but are thin     |
 | Seed content for launch       | ☐ open   | Chicken-and-egg: pre-fill, then grow actively               |
-| Production monitoring/logging | ☐ open   | No realistic prod observability yet                         |
+| Production monitoring/logging | ☐ open   | App side in place (health, `/metrics`, #420); scraping and alerts by the operators |
 | Content status feature        | ☐ open   | Not started in this repository                              |
 | Export/import backup          | ☐ open   | Not started in this repository                              |
 
@@ -53,7 +53,7 @@ Candidate features:
 ## Blockers & Risks
 
 * **Not enough content at launch** (chicken-and-egg) → actively seed and recruit a few early contributors.
-* **No production observability yet** → next priority after launch polish.
+* **No production observability yet** → the app provides health and `/metrics` (#420); scraping and alerts by the operators are next.
 
 ## Strategic Decisions
 

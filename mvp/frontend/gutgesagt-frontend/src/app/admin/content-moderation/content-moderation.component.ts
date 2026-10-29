@@ -14,6 +14,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
 import { ModerationService, ContentReport, GemeldeterBeitrag } from '../../services/moderation.service';
 import { ContentStatus } from '../../services/dtos/content-status-enum';
 import { typLabel } from '../../shared/content-type-registry';
+import { meldegrundLabel } from '../../shared/meldegruende';
 
 type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
 
@@ -185,13 +186,7 @@ export class ContentModerationComponent implements OnInit {
   }
 
   getReasonLabel(reason: string): string {
-    const labels: { [key: string]: string } = {
-      'spam': 'Spam',
-      'inappropriate': 'Unangemessen',
-      'duplicate': 'Dublette',
-      'other': 'Andere'
-    };
-    return labels[reason] || reason;
+    return meldegrundLabel(reason);
   }
 
   getContentTypeLabel(type: string): string {

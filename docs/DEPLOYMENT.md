@@ -263,7 +263,7 @@ docker compose ps
 docker compose logs -f
 
 # Test internal connectivity
-docker exec gutgesagt-bff curl http://gutgesagt-semantic-search:8000/health
+docker exec gutgesagt-bff curl http://gutgesagt-semantic-search:8000/api/v1/health
 ```
 
 ### Reverse proxy or TLS issues?
@@ -284,9 +284,44 @@ docker exec -it gutgesagt-app-postgres psql -U app_user -d gutgesagt_app
 
 ---
 
+## 📈 Monitoring
+
+What the application provides so that test and production can be monitored. Scraping,
+alert rules and alert routing are run by the operators, outside this repository.
+
+| What | Where | Healthy when |
+|---|---|---|
+| Frontend reachable | `GET /` on the frontend (nginx) | 200 |
+| BFF reachable | `GET /api/check-session` on the BFF; answered by the BFF itself, without a backend call | 200 or 401 |
+| Semantic search reachable | `GET /api/v1/health` on the semantic search service, checked directly on the internal network | `status` in the JSON is `healthy` (`degraded`: disk or memory above 90 %; `unhealthy`: PostgreSQL or Qdrant unreachable, or one of the checks failed; above 80 % is only a `warning` in the check and leaves `status` at `healthy`). The endpoint always answers 200, so read the field |
+| Error rate (5xx) | `GET /metrics`, counter `gutgesagt_http_requests_total{status="5xx"}` | low share of all requests |
+| Search response time | `GET /metrics`, histogram `gutgesagt_search_duration_seconds` | quantiles from the buckets |
+
+`/metrics` on the semantic search service uses the Prometheus text format:
+
+- `gutgesagt_http_requests_total{method, route, status}`: requests per HTTP method, route
+  template (`/api/v1/usage/content/{content_id}/usage`, never the path with the ID in it;
+  `unmatched` for paths without a route and for requests the rate limit rejects before
+  routing) and status class (`2xx` ... `5xx`).
+- `gutgesagt_search_duration_seconds`: duration of `POST /api/v1/search/searchByText`.
+- **No personal data:** no Kennung (account ID), no search text, no session. The labels are the
+  method, the route template and the status class, nothing taken from headers or bodies.
+  `tests/integration/test_betriebskennzahlen.py` checks this after a real search by a
+  signed-in test person.
+- The values live in the memory of the process (the service runs with one worker) and
+  start at zero after a restart; alert on rates, not on absolute values.
+- **Not reachable from outside:** the BFF forwards every path to the semantic search
+  service, `/metrics` is therefore listed in `EndpointPolicy.Blocked` and answers 404 there,
+  signed in or not. Scrape the service directly on the internal network.
+
+Disk, RAM and container restarts of the hosts come from host monitoring, not from the
+application. `/api/v1/health` also reports disk and memory, but only as seen from the
+semantic search container.
+
+---
+
 ## 🔮 What's next?
 
-* Monitoring setup (Uptime Robot, Prometheus + Grafana)
 * Unified test/prod deployment via GitOps
 * Migration to Kubernetes (long-term)
 
@@ -309,4 +344,4 @@ Thanks for helping make it more stable and useful!
 
 ---
 
-*Last updated: 2026-10-27*
+*Last updated: 2026-10-29*

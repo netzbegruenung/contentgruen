@@ -5,9 +5,12 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { SessionService } from './session.service';
+import type { Fassung } from '../shared/fassung';
 
 export interface TrackUsageRequest {
   session_id?: string;
+  /** Die kopierte Fassung eines Kommentars (#355); fehlt bei anderen Beitragstypen. */
+  fassung?: Fassung;
 }
 
 export interface TrackUsageResponse {
@@ -57,8 +60,8 @@ export class UsageTrackingService {
   private apiUrl = `${environment.baseUrl}/api/v1/usage`;
 
   /**
-   * Wann welcher Beitrag zuletzt gezaehlt wurde - gegen das Doppelzaehlen eines
-   * Doppeltipps (siehe trackContentUsage).
+   * Wann welcher Beitrag (je Fassung) zuletzt gezaehlt wurde - gegen das
+   * Doppelzaehlen eines Doppeltipps (siehe trackContentUsage).
    */
   private recentCopies = new Map<string, number>();
 
@@ -83,13 +86,18 @@ export class UsageTrackingService {
    * - ``debounceTime`` haelt nur den letzten Wert: Zwei verschiedene Beitraege
    *   innerhalb einer halben Sekunde ergaben eine einzige Zaehlung.
    *
+   * Die Sperre gilt je Beitrag und Fassung: Kurz und gleich danach Lang zu kopieren
+   * sind zwei Kopien, kein Doppeltipp.
+   *
    * @param contentId - The ID of the content item
+   * @param fassung - Die kopierte Fassung eines Kommentars (#355); sonst weglassen
    * @returns Observable that completes immediately (fire-and-forget)
    */
-  trackContentUsage(contentId: string): Observable<any> {
+  trackContentUsage(contentId: string, fassung?: Fassung): Observable<any> {
     // Check if this content was recently copied (within 2 seconds)
     const now = Date.now();
-    const lastCopyTime = this.recentCopies.get(contentId);
+    const sperre = fassung ? `${contentId}:${fassung}` : contentId;
+    const lastCopyTime = this.recentCopies.get(sperre);
 
     if (lastCopyTime && (now - lastCopyTime) < 2000) {
       // Skip duplicate copy within 2 seconds
@@ -98,12 +106,12 @@ export class UsageTrackingService {
     }
 
     // Update the last copy time
-    this.recentCopies.set(contentId, now);
+    this.recentCopies.set(sperre, now);
 
     // Clean up old entries (older than 5 seconds)
     this.cleanupRecentCopies();
 
-    this.performUsageTracking(contentId);
+    this.performUsageTracking(contentId, fassung);
 
     // Return immediately without waiting
     return of({ tracked: true, queued: true });
@@ -113,10 +121,11 @@ export class UsageTrackingService {
    * Perform the actual usage tracking.
    * @private
    */
-  private performUsageTracking(contentId: string): void {
+  private performUsageTracking(contentId: string, fassung?: Fassung): void {
     const url = `${this.apiUrl}/content/${contentId}/usage`;
     const body: TrackUsageRequest = {
-      session_id: this.sessionService.getSessionId()
+      session_id: this.sessionService.getSessionId(),
+      ...(fassung ? { fassung } : {}),
     };
 
     // Fire the request but don't wait for response
@@ -145,9 +154,9 @@ export class UsageTrackingService {
     const now = Date.now();
     const cutoff = now - 5000; // 5 seconds
 
-    for (const [contentId, timestamp] of this.recentCopies.entries()) {
+    for (const [sperre, timestamp] of this.recentCopies.entries()) {
       if (timestamp < cutoff) {
-        this.recentCopies.delete(contentId);
+        this.recentCopies.delete(sperre);
       }
     }
   }

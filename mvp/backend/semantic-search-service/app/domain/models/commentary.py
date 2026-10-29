@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 from domain.models.zeit import UtcZeit
 from pydantic import BaseModel, ValidationError, field_validator, Field
 from typing import List, Optional
@@ -12,6 +13,18 @@ from domain.models.base_content import (
     BaseContentDbEntry,
     BaseContentSearchResult,
 )
+
+
+class Fassung(str, Enum):
+    """
+    Eine der Laengen eines Kommentars (GLOSSARY.md): Mittel ist der Haupttext
+    (``text``), Kurz und Lang sind optional (``short_text``, ``long_text``).
+    Kopiert und gezaehlt wird je Fassung (#355).
+    """
+
+    KURZ = "kurz"
+    MITTEL = "mittel"
+    LANG = "lang"
 
 
 class CommentaryReference(BaseModel):
