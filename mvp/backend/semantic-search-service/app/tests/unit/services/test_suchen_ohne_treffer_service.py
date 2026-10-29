@@ -7,6 +7,7 @@ weitere Person zaehlt, in welche Woche sie faellt und was Admins am Ende sehen.
 """
 
 import asyncio
+import threading
 import uuid
 from datetime import date
 from types import SimpleNamespace
@@ -57,6 +58,11 @@ class FakeRepository:
     def loeschen_vor(self, woche):
         self.geloescht_vor.append(woche)
         return 3
+
+    def ueber_der_schwelle(self, seit_woche, mindestanzahl):
+        self.abfragen.append((seit_woche, mindestanzahl))
+        self.thread = threading.current_thread()
+        return [AUSSAGE, ANDERE]
 
 
 def _statement_service(aussagen):
@@ -341,3 +347,23 @@ class TestHaeufigste:
 
         assert [e.statement_id for e in ergebnis] == [AUSSAGE, ANDERE]
         assert [offset for *_, offset in repo.abfragen] == [0, 2]
+
+
+class TestUeberDerSchwelle:
+    @pytest.mark.asyncio
+    async def test_ueber_der_schwelle_fragt_den_zeitraum_der_kennzahl_ab(self):
+        repo = FakeRepository()
+
+        ergebnis = await _service(repo).ueber_der_schwelle(wochen=4, heute=MITTWOCH)
+
+        assert ergebnis == frozenset({AUSSAGE, ANDERE})
+        assert repo.abfragen == [(date(2026, 10, 5), 2)]
+
+    @pytest.mark.asyncio
+    async def test_ueber_der_schwelle_blockiert_den_event_loop_nicht(self):
+        """Die synchrone Datenbankabfrage laeuft nicht im Thread des Event-Loops."""
+        repo = FakeRepository()
+
+        await _service(repo).ueber_der_schwelle(heute=MITTWOCH)
+
+        assert repo.thread is not threading.current_thread()

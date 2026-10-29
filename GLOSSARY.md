@@ -130,6 +130,10 @@ _Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitragstyp ankommt, und hinter dem ? die Regeln dazu, bei Kommentar und Post auch die Schreibregeln und Schreibhilfen. Sie lenkt sanft und sperrt kein Speichern.
 _Avoid_: Tooltip, Anleitung, Hilfetext
 
+**CC0-Hinweis**:
+Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und bestätigt die verlinkten Nutzungsbedingungen. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
+_Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
+
 **Schreibregel**:
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
@@ -325,6 +329,10 @@ _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 **Nutzungsstatistik**:
 Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
 _Avoid_: Usage Stats, Nutzerstatistik
+
+**Betriebskennzahlen**:
+Zahlen über den Betrieb der Anwendung, nicht über Inhalte oder Personen: wie viele Anfragen mit welchem Ergebnis eingehen und wie lange die Suche dauert. Der Betrieb liest sie für Alarme; sie tragen keine Kennung, keine Suchanfrage und keine Sitzung. Die Kennzahlen, die Admins sehen, sind etwas anderes.
+_Avoid_: Metriken (ohne Zusatz), Monitoring
 
 ## Personen
 

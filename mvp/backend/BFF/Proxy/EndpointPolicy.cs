@@ -33,7 +33,7 @@ public static class EndpointPolicy
         "/api/v1/feedback/senden",
         // Nur dieser eine Metrics-Endpunkt, nicht das ganze Praefix: /getMetrics
         // liefert Bestandszaehler fuer die Startseite, die uebrigen sechs sind
-        // Betriebskennzahlen und im Backend admin-only. Der frueher hier stehende
+        // Kennzahlen fuer Admins und im Backend admin-only. Der frueher hier stehende
         // Eintrag "/api/v1/metrics/" haette alle sieben durchgelassen.
         "/api/v1/metrics/getMetrics"
     };
@@ -55,11 +55,17 @@ public static class EndpointPolicy
     ///
     /// /api/v1/test steht hier als Riegel fuer den Fall, dass der Debug-Router
     /// zurueckkehrt; entfernt ist er bereits.
+    ///
+    /// /metrics sind die Betriebskennzahlen des Suchdienstes (#420), fuer den Scraper im
+    /// internen Netz. Der Proxy leitet jeden Pfad weiter, ohne diesen Eintrag laege der
+    /// Endpunkt also auch hinter dem BFF -- und weil er nicht unter /api/v1 liegt und
+    /// nicht anonym erlaubt ist, nur fuer Angemeldete. Gemeint sind auch sie nicht.
     /// </summary>
     public static readonly string[] Blocked =
     {
         "/api/v1/seeding",
-        "/api/v1/test"
+        "/api/v1/test",
+        "/metrics"
     };
 
     /// <summary>

@@ -390,6 +390,8 @@ class TestEntwurfSpeichern:
         assert sql.startswith("INSERT INTO raw_input_drafts")
         assert "ON CONFLICT (raw_input_id, user_id) DO UPDATE SET" in sql
         assert "sentence = excluded.sentence" in sql
+        # Der Satz steht nach jedem Speichern im aktuellen Wortlaut des Hinweises da.
+        assert "cc0_wortlaut = excluded.cc0_wortlaut" in sql
         assert "updated_at = now()" in sql
         assert sql.endswith("RETURNING raw_input_drafts.updated_at")
 
