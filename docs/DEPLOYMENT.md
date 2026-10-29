@@ -129,7 +129,7 @@ deploy anything by itself.
      new scripts in `mvp/scripts/manual/`. It recognises a breaking change only by the `!` in the
      PR title (`feat!:`), not by a `BREAKING CHANGE:` footer, and links any commit on `main`
      whose subject ends in `(#N)` as pull request N. Review the draft and add, in a section
-     „Betriebsschritte“ above the generated list, the operational steps it cannot know: which
+     „Ablauf beim Ausrollen“ above the generated list, the operational steps it cannot know: which
      scripts in `mvp/scripts/manual/` must run and in which order, renames that need action per
      environment, new settings, more memory.
    If `main` moves while the pull request is open, merge it in and draft the list again, so
