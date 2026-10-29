@@ -129,7 +129,10 @@ class SearchEvent(Base):
 
     id is a random UUID, not a sequence: a running number would give the order of
     the searches of a day, which lines up with the order of the statements they
-    created (#275).
+    created (#275). For the same reason the daily cleanup job rewrites the rows
+    of each closed day in random order in one transaction, so neither xmin nor
+    the physical row order (ctid, pg_dump) gives that order any more (#337, see
+    SearchTrackingRepository.mische_abgeschlossene_tage).
     """
 
     __tablename__ = "search_events"
@@ -193,6 +196,25 @@ class SucheOhneTrefferZeile(Base):
     personen = Column(Integer, nullable=False, server_default=text("0"))
 
     __table_args__ = (Index("idx_suchen_ohne_treffer_woche", "woche"),)
+
+
+class FeedbackZeile(Base):
+    """Feedback an das Team: Freitext und optional eine Kontaktangabe.
+
+    Traegt bewusst keine Kennung und keine Sitzung, auch wenn die Person angemeldet
+    ist, und statt eines Zeitpunkts nur den Tag. Wer eine Antwort will, schreibt
+    selbst einen Kontakt dazu. Nach der Frist loescht der Dienst die Zeile ganz
+    (services/feedback_service.py).
+    """
+
+    __tablename__ = "feedback"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    text = Column(Text, nullable=False)
+    kontakt = Column(Text, nullable=True)
+    eingegangen_am = Column(Date, nullable=False)
+
+    __table_args__ = (Index("idx_feedback_eingegangen_am", "eingegangen_am"),)
 
 
 class ContentReport(Base):

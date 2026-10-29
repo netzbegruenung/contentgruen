@@ -107,7 +107,16 @@ a.header-link {
 
 .avatar-container {
     display: inline-block;
+}
+
+/* Nur angemeldet ein Knopf (oeffnet das Profilmenue), ohne Anmeldung ein Bild. */
+.avatar-container.avatar-klickbar {
     cursor: pointer;
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: 50%;
+    line-height: 0;
 }
 
 .profile-avatar {
@@ -116,7 +125,6 @@ a.header-link {
     box-shadow: var(--elevation-4);
     border-radius: 50%;
     background-color: white;
-    cursor: pointer;
     transition: transform var(--transition-standard), opacity var(--transition-standard);
     flex-shrink: 0;
 }
@@ -127,7 +135,7 @@ a.header-link {
     object-fit: contain;
 }
 
-.profile-avatar:hover {
+.avatar-klickbar .profile-avatar:hover {
     transform: scale(1.05);
 }
 

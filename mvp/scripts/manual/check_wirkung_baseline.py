@@ -58,6 +58,14 @@ wie die uebrigen Skripte in diesem Verzeichnis -- einen laufenden Dev-Stack vora
 Die Auswahl der 10 Seed-Kommentare ist ueber --seed reproduzierbar.
 --korpus-datei liest dieselben Eintraege aus einer eingefrorenen JSON-Datei und
 kommt ohne Qdrant und ohne `requests` aus.
+Die eingefrorene wirkung_korpus.json enthaelt die 3 handangelegten Beitraege und
+10 Kommentare aus mvp/data/seed/v1.0, nicht ueber --korpus gezogen (das liest Qdrant und
+schreibt als quelle das Praefix der Punkt-ID), sondern aus den Dateien: alle Kommentare
+unter statements_with_commentaries/, Dateien nach Namen sortiert, darin in ihrer
+Reihenfolge; daraus random.Random(20260819).sample(..., 10). quelle = Datei:Nummer, die
+Nummer zaehlt die Kommentare einer Datei ueber alle Aussagen ab 0. Persoenliche Kommentare des Seeds enthalten statt eines
+Erlebnisses den Platzhalter "[Hier ein eigenes Erlebnis: ...]"; er geht unveraendert
+in die Bewertung ein.
 """
 
 from __future__ import annotations

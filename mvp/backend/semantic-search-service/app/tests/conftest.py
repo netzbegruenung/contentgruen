@@ -6,6 +6,7 @@ instead of complex mocking, making tests simpler and more maintainable.
 """
 
 import datetime
+import json
 import os
 import pytest
 import uuid
@@ -152,6 +153,26 @@ def create_base_content_fields(**overrides):
     }
     base_fields.update(overrides)
     return base_fields
+
+
+def add_aussage_mit_verweis(speicher, beitrag_id: str) -> str:
+    """
+    Eine Aussage im TestEmbeddingsManager anlegen, deren einziger Antwortvorschlag
+    beitrag_id ist; gibt ihre Kennung zurueck.
+    """
+    aussage_id = str(uuid.uuid4())
+    speicher.add_test_data(
+        "statement",
+        [
+            {
+                **create_base_content_fields(),
+                "id": aussage_id,
+                "replysuggestions": json.dumps([{"id": beitrag_id}]),
+                "replysuggestions_count": 1,
+            }
+        ],
+    )
+    return aussage_id
 
 
 # Test data factories for common content types

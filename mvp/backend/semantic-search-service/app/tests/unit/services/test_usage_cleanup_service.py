@@ -116,6 +116,44 @@ class TestUsageCleanupServiceSuchereignisse:
             120
         )
 
+    def test_cleanup_old_data_mischt_abgeschlossene_tage_nach_dem_verdichten(
+        self, settings_from_env
+    ):
+        """Erst verdichten, dann mischen: Was verdichtet wird, muss nicht mehr
+        gemischt werden (#337)."""
+        service = usage_cleanup_service.get_cleanup_service()
+        repository = service.search_repository
+
+        service.cleanup_old_data()
+
+        aufrufe = [name for name, _, _ in repository.method_calls]
+        assert aufrufe.index("verdichte_alte_suchereignisse") < aufrufe.index(
+            "mische_abgeschlossene_tage"
+        )
+
+    def test_cleanup_old_data_mischt_auch_bei_fehler_des_verdichtens(
+        self, settings_from_env
+    ):
+        service = usage_cleanup_service.get_cleanup_service()
+        service.search_repository.verdichte_alte_suchereignisse.side_effect = (
+            RuntimeError("db weg")
+        )
+
+        service.cleanup_old_data()
+
+        service.search_repository.mische_abgeschlossene_tage.assert_called_once_with()
+
+    def test_cleanup_old_data_nutzung_bleibt_bei_fehler_des_mischens(
+        self, settings_from_env
+    ):
+        service = usage_cleanup_service.get_cleanup_service()
+        service.search_repository.mische_abgeschlossene_tage.side_effect = RuntimeError(
+            "db weg"
+        )
+        service.usage_service.cleanup_old_events.return_value = 4
+
+        assert service.cleanup_old_data() == 4
+
     def test_cleanup_old_data_nutzung_bleibt_bei_fehler_der_suchereignisse(
         self, settings_from_env
     ):

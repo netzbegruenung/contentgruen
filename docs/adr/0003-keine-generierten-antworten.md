@@ -12,6 +12,10 @@ Das gilt auch für die Unterschrift eines Bildes, obwohl sie nur beschreibt, was
 
 Verworfen wurde eine Ausnahme für die Unterschrift, bei der ein Hintergrunddienst die fehlende Unterschrift schreibt und das Bild damit sichtbar macht: Dann stünde für den Text, über den das Bild gefunden wird, niemand gerade, und Bild-URLs gingen ohne Zutun der Person an den KI-Anbieter.
 
+## Ergänzung 28.10.2026: KI-Texte nur für die Suche
+
+Was niemand zu sehen bekommt, braucht keinen Menschen, der dafür geradesteht: Hilfstexte, die nur der Indexierung und Suche dienen, darf ein Hintergrunddienst erzeugen und speichern. Für Bilder sind das der Text im Bild (Texterkennung), eine Bildeinbettung und eine Beschreibung mit Inhalt, Kontext und Stimmung aus einem Modell auf eigener Infrastruktur (ADR 0005). Angezeigt wird weiter nur die Unterschrift, die eine Person gespeichert hat; der erkannte Text darf ihr als Vorschlag angeboten werden. Die Grenze ist die Auslieferung: Sobald ein solcher Text Nutzenden gezeigt wird, gilt wieder der Grundsatz oben (#393).
+
 ## Considered Options
 
 - Nur Bewertung und Hinweise, keine Textvorschläge: sicherer, verfehlt aber das Ziel, Argumentation schnell zu verbessern und auf Zielgruppen zuzuschneiden.

@@ -15,6 +15,9 @@ from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
+from repositories.implementations.qdrant.moderation_repository import (
+    get_moderation_repository,
+)
 from services.suchen_ohne_treffer_service import (
     SuchenOhneTrefferService,
     get_personen_des_tages,
@@ -26,6 +29,8 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
+from repositories.feedback_repository import get_feedback_repository
+from services.feedback_service import FeedbackService
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -136,12 +141,17 @@ def get_unbeantwortete_aussagen_service(
     return UnbeantworteteAussagenService(statement_service, suchen_ohne_treffer)
 
 
+def get_feedback_service() -> FeedbackService:
+    return FeedbackService(get_feedback_repository())
+
+
 def get_beitrag_loeschen_service(
     settings: Settings = Depends(get_settings),
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
     return BeitragLoeschenService(
-        QdrantRepositoryFactory().create_content_repository(settings)
+        QdrantRepositoryFactory().create_content_repository(settings),
+        get_moderation_repository(),
     )
 
 

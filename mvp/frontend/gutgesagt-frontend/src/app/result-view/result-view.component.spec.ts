@@ -264,3 +264,129 @@ describe('ResultViewComponent: Posts in der Suche', () => {
     expect(seite.textContent).toContain('Ein Reel, das Wärmepumpen erklärt');
   });
 });
+
+/**
+ * Nutzertest: Was ein Kommentar und was eine Hintergrundinfo ist, war auf der
+ * Ergebnisseite nicht klar. Je eine Erklaerzeile (Text wie auf der Beitragen-Seite),
+ * im selben Muster auch fuer Posts,
+ * und ueber den Treffern ein zugeklappter Rat, dass nicht jede Aussage eine
+ * Antwort braucht.
+ */
+describe('ResultViewComponent: Erklaerung der Beitragstypen und Rat zum Antworten', () => {
+  const KOMMENTAR_SATZ = 'Eine Antwort, die du direkt posten kannst.';
+  const HINTERGRUND_SATZ = 'Fakten und Zahlen, die eine Antwort stützen.';
+  const POST_SATZ = 'Ein gelungener Beitrag aus einem sozialen Netzwerk, zum Teilen.';
+
+  let fixture: ComponentFixture<ResultViewComponent>;
+
+  function oeffnen(mobil: boolean, kommentare: number, hintergrund: number, posts = 0): HTMLElement {
+    TestBed.configureTestingModule({
+      imports: [ResultViewComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter(ohneWaechter(routes)),
+        {
+          provide: BreakpointObserver,
+          useValue: { observe: (query: string[]) => of({ matches: mobil && query[0] === '(max-width: 599px)', breakpoints: {} }) },
+        },
+      ],
+    });
+    TestBed.inject(StateManagementService).setSearchResults({
+      query_was_newly_added_as_statement: false,
+      statement_id: null,
+      statement_text: 'waermepumpe teuer',
+      commentary_search_results_count: kommentare,
+      commentary_search_results: [],
+      generictext_search_results_count: hintergrund,
+      generictext_search_results: [],
+      post_search_results_count: posts,
+      post_search_results: [],
+    });
+    fixture = TestBed.createComponent(ResultViewComponent);
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  function erklaerungen(seite: HTMLElement): string[] {
+    return Array.from(seite.querySelectorAll('.typ-erklaerung')).map((e) => (e.textContent ?? '').trim());
+  }
+
+  function pruefeRat(seite: HTMLElement): void {
+    const raete = seite.querySelectorAll<HTMLDetailsElement>('details.keine-antwort-noetig');
+    expect(raete.length).withContext('genau ein Rat').toBe(1);
+    const rat = raete[0];
+    expect(rat.open).withContext('standardmaessig zugeklappt').toBeFalse();
+    expect(rat.querySelector('summary')?.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
+    expect(rat.textContent).withContext('Melden auf der Plattform, nicht hier').toContain('auf der Plattform melden');
+
+    rat.querySelector('summary')!.click();
+    expect(rat.open).withContext('laesst sich aufklappen').toBeTrue();
+  }
+
+  it('erklaert am Desktop beide Beitragstypen unter ihren Ueberschriften', () => {
+    const seite = oeffnen(false, 2, 1);
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ, HINTERGRUND_SATZ]);
+    // Die Zeile steht direkt unter der Ueberschrift ihres Abschnitts.
+    expect(seite.querySelector('app-commentary-search-results h2 + .typ-erklaerung')?.textContent).toContain(KOMMENTAR_SATZ);
+    expect(seite.querySelector('app-generictext-search-results h2 + .typ-erklaerung')?.textContent).toContain(HINTERGRUND_SATZ);
+  });
+
+  it('erklaert am Desktop auch Posts unter ihrer Ueberschrift', () => {
+    const seite = oeffnen(false, 2, 1, 1);
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ, HINTERGRUND_SATZ, POST_SATZ]);
+    expect(seite.querySelector('.post-ergebnisse h2 + .typ-erklaerung')?.textContent).toContain(POST_SATZ);
+  });
+
+  it('zeigt am Desktop ueber den Treffern den zugeklappten Rat', () => {
+    const seite = oeffnen(false, 2, 0);
+    pruefeRat(seite);
+    // Auch der Abschnitt ohne Treffer erklaert seinen Typ.
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ, HINTERGRUND_SATZ]);
+    const rat = seite.querySelector('details.keine-antwort-noetig')!;
+    const ersterAbschnitt = seite.querySelector('app-commentary-search-results')!;
+    expect(rat.compareDocumentPosition(ersterAbschnitt) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .withContext('Rat steht vor den Treffern').toBeTruthy();
+    expect(rat.closest('section')).withContext('kein eigener Abschnitt ohne Ueberschrift').toBeNull();
+  });
+
+  it('erklaert am Handy den Beitragstyp des offenen Tabs', () => {
+    const seite = oeffnen(true, 2, 1);
+    expect(erklaerungen(seite)).toEqual([KOMMENTAR_SATZ]);
+
+    fixture.componentInstance.switchToSection('generictext');
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    expect(erklaerungen(seite)).toEqual([HINTERGRUND_SATZ]);
+  });
+
+  it('erklaert am Handy auch Posts im Post-Tab', () => {
+    const seite = oeffnen(true, 2, 1, 1);
+    fixture.componentInstance.switchToSection('post');
+    fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+    fixture.detectChanges();
+    expect(erklaerungen(seite)).toEqual([POST_SATZ]);
+  });
+
+  it('zeigt am Handy ueber den Tabs den zugeklappten Rat', () => {
+    const seite = oeffnen(true, 0, 1);
+    pruefeRat(seite);
+    const rat = seite.querySelector('details.keine-antwort-noetig')!;
+    expect(rat.compareDocumentPosition(seite.querySelector('.mobile-tab-bar')!) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .withContext('Rat steht vor den Tabs').toBeTruthy();
+  });
+
+  for (const mobil of [false, true]) {
+    it(`zeigt den Rat auch, wenn nur Posts treffen (${mobil ? 'Handy' : 'Desktop'})`, () => {
+      pruefeRat(oeffnen(mobil, 0, 0, 1));
+    });
+  }
+
+  for (const mobil of [false, true]) {
+    it(`laesst die Seite ohne Treffer unveraendert (${mobil ? 'Handy' : 'Desktop'})`, () => {
+      const seite = oeffnen(mobil, 0, 0);
+      expect(seite.querySelector('details.keine-antwort-noetig')).toBeNull();
+      expect(erklaerungen(seite)).toEqual([]);
+    });
+  }
+});

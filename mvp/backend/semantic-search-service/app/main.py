@@ -40,6 +40,7 @@ from api.v1.usage import router as usage_router
 from api.v1.voting import router as voting_router
 from api.v1.moderation import router as moderation_router
 from api.v1.health import router as health_router
+from api.v1.feedback import router as feedback_router
 from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
@@ -48,8 +49,11 @@ from services.suchen_ohne_treffer_service import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
+from dependencies import get_feedback_service
+from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
 from utils.rate_limiter import (
     aufraeumen_im_takt,
+    feedback_rate_limiter,
     report_rate_limiter,
     search_query_statement_rate_limiter,
 )
@@ -110,7 +114,11 @@ async def lifespan(app: FastAPI):
         # wird er abgebrochen statt mit der Schleife zu sterben.
         app.state.rate_limiter_aufraeumen = asyncio.create_task(
             aufraeumen_im_takt(
-                [report_rate_limiter, search_query_statement_rate_limiter]
+                [
+                    report_rate_limiter,
+                    search_query_statement_rate_limiter,
+                    feedback_rate_limiter,
+                ]
             )
         )
         logger.info("✅ Rate limiter cleanup task started")
@@ -123,6 +131,13 @@ async def lifespan(app: FastAPI):
             )
         )
         logger.info("✅ Searches-without-hits cleanup task started")
+
+        # Feedback nach der Frist loeschen, ebenso unabhaengig vom Usage-Cleanup
+        # (services/feedback_service.py).
+        app.state.feedback_loeschen = asyncio.create_task(
+            feedback_loeschen_im_takt(get_feedback_service())
+        )
+        logger.info("✅ Feedback cleanup task started")
 
         logger.info(
             "✅ Application startup complete - server ready to accept connections"
@@ -137,7 +152,11 @@ async def lifespan(app: FastAPI):
         # Shutdown
         try:
             logger.info("Shutting down Gut gesagt Semantic Search Service")
-            for name in ("rate_limiter_aufraeumen", "suchen_ohne_treffer_loeschen"):
+            for name in (
+                "rate_limiter_aufraeumen",
+                "suchen_ohne_treffer_loeschen",
+                "feedback_loeschen",
+            ):
                 task = getattr(app.state, name, None)
                 if task is not None:
                     task.cancel()
@@ -208,6 +227,7 @@ app.include_router(usage_router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])
 app.include_router(moderation_router, prefix="/api/v1/moderation", tags=["moderation"])
 app.include_router(health_router, prefix="/api/v1", tags=["monitoring"])
+app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["feedback"])
 
 
 if __name__ == "__main__":

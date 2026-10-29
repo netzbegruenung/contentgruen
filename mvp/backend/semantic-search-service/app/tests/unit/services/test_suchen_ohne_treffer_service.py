@@ -8,22 +8,19 @@ weitere Person zaehlt, in welche Woche sie faellt und was Admins am Ende sehen.
 
 import asyncio
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-import services.suchen_ohne_treffer_service as modul
 from domain.models.content_status import ContentStatus
 from services.suchen_ohne_treffer_service import (
     PersonenDesTages,
     SuchenOhneTrefferService,
     alte_wochen_loeschen,
     aufbewahrungsgrenze,
-    heute_utc,
     loeschen_im_takt,
-    sekunden_bis_mitternacht,
 )
 
 pytestmark = pytest.mark.unit
@@ -268,21 +265,6 @@ class TestAufbewahrung:
         task.cancel()
 
         assert personen.anzahl() == 0
-
-    def test_sekunden_bis_mitternacht_rechnet_in_utc(self):
-        jetzt = datetime(2026, 10, 28, 23, 0, tzinfo=timezone.utc)
-
-        assert sekunden_bis_mitternacht(jetzt) == 3600
-
-
-class TestHeuteUtc:
-    def test_heute_utc_nimmt_das_utc_datum_nicht_die_ortszeit(self):
-        # 23:30 UTC am Sonntag ist in Berlin schon Montag; gezaehlt wird in UTC.
-        spaet = datetime(2026, 11, 1, 23, 30, tzinfo=timezone.utc)
-        with patch.object(modul, "datetime", wraps=datetime) as uhr:
-            uhr.now.return_value = spaet
-            assert heute_utc() == date(2026, 11, 1)
-        uhr.now.assert_called_once_with(timezone.utc)
 
 
 class TestHaeufigste:

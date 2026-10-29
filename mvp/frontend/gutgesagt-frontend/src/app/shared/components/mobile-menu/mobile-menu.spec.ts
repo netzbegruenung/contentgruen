@@ -27,6 +27,18 @@ describe('MobileMenuComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('bietet Feedback auch ohne Anmeldung an und schliesst danach das Menue', () => {
+    const feedback = spyOn(component.feedback, 'emit');
+    const schliessen = spyOn(component.closeMenu, 'emit');
+
+    const knopf = fixture.nativeElement.querySelector('.mobile-menu-feedback') as HTMLButtonElement;
+    expect(knopf.textContent).toContain('Feedback');
+    knopf.click();
+
+    expect(feedback).toHaveBeenCalled();
+    expect(schliessen).toHaveBeenCalled();
+  });
+
   describe('Rechtstexte', () => {
     const eintraege: Array<[string, string]> = [
       ['.legal-impressum', '/impressum'],
