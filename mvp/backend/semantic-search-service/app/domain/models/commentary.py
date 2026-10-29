@@ -66,6 +66,25 @@ _STIL_ALTE_SCHREIBWEISEN = {
 }
 
 
+def stil_lesen(value) -> Optional[Stil]:
+    """
+    Ein gespeicherter Stil, nachsichtig gelesen: alte Schreibweisen werden zum Stil,
+    was es nicht (mehr) gibt, faellt weg, statt das Lesen scheitern zu lassen.
+    """
+    value = _STIL_ALTE_SCHREIBWEISEN.get(value, value)
+    return Stil(value) if value in Stil._value2member_map_ else None
+
+
+def bissig_ohne_eigene_leute(stil: Optional[Stil], zweck: Zweck) -> bool:
+    """Die Regel aus GLOSSARY.md, verletzt: "bissig" ausserhalb von "Fuer die eigenen Leute"."""
+    return stil == Stil.BISSIG and zweck != Zweck.EIGENE_LEUTE
+
+
+def fuer_eigene_leute(kommentar) -> bool:
+    """Ob ein Kommentar fuer die eigenen Leute geschrieben ist; die Suche stellt ihn hintan."""
+    return getattr(kommentar, "zweck", None) == Zweck.EIGENE_LEUTE
+
+
 class CommentaryReference(BaseModel):
     """
     Representing a link to a reference for a commentary
@@ -153,7 +172,7 @@ class Commentary(BaseContent):
 
     @model_validator(mode="after")
     def _bissig_nur_fuer_eigene_leute(self):
-        if self.style == Stil.BISSIG and self.zweck != Zweck.EIGENE_LEUTE:
+        if bissig_ohne_eigene_leute(self.style, self.zweck):
             raise ValueError(
                 "Der Stil bissig geht nur beim Zweck Für die eigenen Leute"
             )
@@ -202,12 +221,11 @@ class CommentaryDbEntry(Commentary, BaseContentDbEntry):
     @field_validator("style", mode="before")
     @classmethod
     def _stil_lesen(cls, value):
-        value = _STIL_ALTE_SCHREIBWEISEN.get(value, value)
-        return value if value in Stil._value2member_map_ else None
+        return stil_lesen(value)
 
     @model_validator(mode="after")
     def _bissig_nur_fuer_eigene_leute(self):
-        if self.style == Stil.BISSIG and self.zweck != Zweck.EIGENE_LEUTE:
+        if bissig_ohne_eigene_leute(self.style, self.zweck):
             self.style = None
         return self
 

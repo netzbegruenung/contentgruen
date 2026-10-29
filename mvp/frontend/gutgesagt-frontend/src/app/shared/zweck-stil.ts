@@ -27,8 +27,8 @@ export const STIL_LABEL: Record<Stil, string> = {
 
 /** "Bissig" gibt es nur beim Zweck "Für die eigenen Leute". */
 export function stileFuer(zweck: Zweck): Stil[] {
-  const stile: Stil[] = ['sachlich', 'humorvoll', 'persoenlich', 'brueckenbauend'];
-  return zweck === 'eigene_leute' ? [...stile, 'bissig'] : stile;
+  const stile = Object.keys(STIL_LABEL) as Stil[];
+  return zweck === 'eigene_leute' ? stile : stile.filter((stil) => stil !== 'bissig');
 }
 
 /** Ob der Stil zum Zweck passt; ohne Stil passt jeder Zweck. */

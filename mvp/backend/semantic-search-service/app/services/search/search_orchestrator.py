@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
 from core.logging import get_logger
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from services.content.base_content_service import BaseContentService
-from domain.models.commentary import Zweck
 from domain.models.content_type import ContentType
 from dtos.statement import themen_dtos
 
@@ -47,6 +46,9 @@ class ContentTypeSearchSpec:
     service: BaseContentService  # get(id); searched together via search_batch()
     result_cls: Type  # the per-type search-result wrapper DTO
     result_field: str  # name of the nested content field on the wrapper (e.g. "commentary_result")
+    # Treffer, fuer die das gilt, ruecken nach dem Kuerzen hinter die anderen (#357:
+    # Kommentare fuer die eigenen Leute hinter die Kommentarspalten-Antworten).
+    nachrangig: Optional[Callable[[object], bool]] = None
 
 
 class SearchOrchestrator:
@@ -248,16 +250,15 @@ class SearchOrchestrator:
         for spec in self._specs.values():
             results = self._results[spec.content_type]
             results.sort(key=lambda x: x.score, reverse=True)
-            # Kommentarspalten-Antworten zuerst (#357): erst gekuerzt, dann stabil
-            # umsortiert - die Auswahl bleibt, nur Beitraege fuer die eigenen Leute
-            # ruecken ans Ende. Typen ohne Zweck bleiben, wie sie sind.
-            self._results[spec.content_type] = sorted(
-                results[:limit],
-                key=lambda x: getattr(
-                    getattr(x, spec.result_field, None), "zweck", None
+            results = results[:limit]
+            # Erst gekuerzt, dann stabil umsortiert: Die Auswahl bleibt, nur nachrangige
+            # Treffer ruecken ans Ende.
+            if spec.nachrangig is not None:
+                nachrangig = spec.nachrangig
+                results.sort(
+                    key=lambda x: nachrangig(getattr(x, spec.result_field, None))
                 )
-                == Zweck.EIGENE_LEUTE,
-            )
+            self._results[spec.content_type] = results
 
     def enrich_with_usage(self) -> None:
         for spec in self._specs.values():

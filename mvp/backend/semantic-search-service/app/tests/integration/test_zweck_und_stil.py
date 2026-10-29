@@ -10,7 +10,7 @@ import uuid
 
 import pytest
 
-from domain.models.commentary import Commentary, Stil, Zweck
+from domain.models.commentary import Commentary, Stil, Zweck, fuer_eigene_leute
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
@@ -77,6 +77,7 @@ async def test_kommentarspalten_antworten_zuerst(
                 service=service,
                 result_cls=KommentarTrefferWrapper,
                 result_field="commentary_result",
+                nachrangig=fuer_eigene_leute,
             )
         ],
         reference_service=None,

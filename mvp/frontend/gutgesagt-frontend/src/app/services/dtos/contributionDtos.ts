@@ -1,5 +1,6 @@
 import { ContentReference } from './commonDtos';
 import type { NutzungJeFassung } from '../../shared/fassung';
+import type { Stil, Zweck } from '../../shared/zweck-stil';
 
 //TODO: Evaluate usage of camel case and transformation in the backend
 
@@ -41,6 +42,9 @@ export interface ContentResult {
     /** Kurz- und Langfassung eines Kommentars (#355). */
     short_text?: string | null;
     long_text?: string | null;
+    /** Am Kommentar (#357); null bei anderen Typen und ohne Angabe. */
+    zweck?: Zweck | null;
+    style?: Stil | null;
     /** Nur am Kommentar in Meine Beitraege: je vorhandener Fassung (#355). */
     nutzung_je_fassung?: NutzungJeFassung | null;
     /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */

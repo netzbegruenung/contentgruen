@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from domain.models.commentary import Zweck
+from domain.models.commentary import Zweck, fuer_eigene_leute
 from domain.models.content_type import ContentType
 from domain.models.image import ImageSearchResult
 from domain.models.post import PostSearchResult
@@ -143,7 +143,11 @@ def test_kommentarspalten_antworten_stehen_vor_denen_fuer_die_eigenen_leute():
     orchestrator = SearchOrchestrator(
         specs=[
             ContentTypeSearchSpec(
-                ContentType.COMMENTARY, None, object, "commentary_result"
+                ContentType.COMMENTARY,
+                None,
+                object,
+                "commentary_result",
+                nachrangig=fuer_eigene_leute,
             )
         ],
         reference_service=None,

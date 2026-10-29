@@ -22,7 +22,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.aggregated.content_repository import (
     ContentRepository,
 )
-from domain.models.commentary import Commentary, CommentaryReference
+from domain.models.commentary import Commentary, CommentaryReference, Zweck
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement, StatementReplysuggestion
 from domain.models.reference import Reference
@@ -450,7 +450,7 @@ class ContentOrchestrator:
                                 "short_text": {"type": "string"},
                                 "zweck": {
                                     "type": "string",
-                                    "enum": ["kommentarspalte", "eigene_leute"],
+                                    "enum": [zweck.value for zweck in Zweck],
                                 },
                                 "style": {"type": "string"},
                                 "references": {

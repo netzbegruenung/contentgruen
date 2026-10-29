@@ -3,7 +3,13 @@ import json
 from pydantic import BaseModel, field_validator
 from typing import Dict, List, Optional
 
-from domain.models.commentary import CommentaryReference, Fassung
+from domain.models.commentary import (
+    CommentaryReference,
+    Fassung,
+    Stil,
+    Zweck,
+    stil_lesen,
+)
 from domain.models.content import ContentDbEntry
 from dtos.beitrag import BeitragResponse
 
@@ -36,7 +42,17 @@ class ContributionEntry(ContentDbEntry):
     # Kurz- und Langfassung eines Kommentars (#355); die Karte zeigt Reiter dafuer.
     short_text: Optional[str] = None
     long_text: Optional[str] = None
+    # Zweck und Stil eines Kommentars (#357); None bei anderen Typen und bei
+    # Kommentaren von vor #357 (dann gilt Kommentarspalte).
+    zweck: Optional[Zweck] = None
+    style: Optional[Stil] = None
     references: List[CommentaryReference] = []
+
+    @field_validator("style", mode="before")
+    @classmethod
+    def _stil_lesen(cls, value):
+        # Wie CommentaryDbEntry: Gespeichertes muss lesbar bleiben.
+        return stil_lesen(value)
 
     @field_validator("usage_count", mode="before")
     @classmethod
@@ -78,6 +94,8 @@ class MeinBeitragResponse(BeitragResponse):
     nutzung_letzte_7_tage: int = 0
     short_text: Optional[str] = None
     long_text: Optional[str] = None
+    zweck: Optional[Zweck] = None
+    style: Optional[Stil] = None
     # Nur am Kommentar: je vorhandener Fassung ("kurz", "mittel", "lang"); None bei
     # anderen Typen oder wenn die Zahlen nicht lesbar waren.
     nutzung_je_fassung: Optional[Dict[Fassung, FassungsNutzung]] = None
