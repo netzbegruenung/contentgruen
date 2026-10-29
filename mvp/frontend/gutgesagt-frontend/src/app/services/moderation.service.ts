@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SessionService } from './session.service';
 import { MeldegrundWert } from '../shared/meldegruende';
+import { SperrgrundWert } from '../shared/sperrgruende';
 
 export interface ReportContentRequest {
   content_id: string;
@@ -37,7 +38,28 @@ export interface ContentReport {
 
 export interface GemeldeterBeitrag {
   status?: string;
+  /** Nur in GET /moderation/gesperrt: die aktive Sperre; null bei Sperren vor #448. */
+  sperre?: SperreFuerAdmins | null;
   [feld: string]: any;
+}
+
+/** Ergebnis der erneuten Prüfung nach einem Widerspruch. */
+export type Pruefung = 'sperre_bleibt' | 'entsperrt';
+
+/** Eine Sperre, wie die Moderation sie sieht (#448). */
+export interface SperreFuerAdmins {
+  id: string;
+  sperrgrund: string;
+  begruendung: string;
+  gesperrt_am: string | null;
+  /** Ohne Autor sieht niemand die Sperrnachricht. */
+  ohne_kontaktdaten: boolean;
+  widerspruch: string | null;
+  widerspruch_am: string | null;
+  widerspruch_offen: boolean;
+  pruefung: Pruefung | null;
+  pruefung_begruendung: string | null;
+  geprueft_am: string | null;
 }
 
 export interface PendingReportsResponse {
@@ -117,8 +139,19 @@ export class ModerationService {
     );
   }
 
-  sperren(contentId: string): Observable<SperreResponse> {
-    return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/sperren`, {});
+  /** Sperren verlangt Sperrgrund und Begründung; beides erfährt der Autor (#448). */
+  sperren(contentId: string, sperrgrund: SperrgrundWert, begruendung: string): Observable<SperreResponse> {
+    return this.http.put<SperreResponse>(`${this.baseUrl}/content/${contentId}/sperren`, {
+      sperrgrund,
+      begruendung,
+    });
+  }
+
+  /** Nach einem Widerspruch erneut geprüft: Die Sperre bleibt. */
+  sperreBestaetigen(sperreId: string, begruendung: string): Observable<SperreResponse> {
+    return this.http.put<SperreResponse>(`${this.baseUrl}/sperren/${sperreId}/bestaetigen`, {
+      begruendung,
+    });
   }
 
   entsperren(contentId: string): Observable<SperreResponse> {

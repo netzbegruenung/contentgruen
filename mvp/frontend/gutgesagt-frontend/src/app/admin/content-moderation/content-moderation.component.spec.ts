@@ -1,9 +1,29 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { ContentModerationComponent } from './content-moderation.component';
 import { ContentReport, ModerationService } from '../../services/moderation.service';
 import { MELDEGRUENDE } from '../../shared/meldegruende';
+import { SperreFuerAdmins } from '../../services/moderation.service';
+import { SperrenDialogErgebnis } from './sperren-dialog.component';
+
+function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
+  return {
+    id: 'sperre-1',
+    sperrgrund: 'unterstellung',
+    begruendung: 'Unterstellt Bosheit.',
+    gesperrt_am: '2026-10-29T10:00:00+00:00',
+    ohne_kontaktdaten: false,
+    widerspruch: null,
+    widerspruch_am: null,
+    widerspruch_offen: false,
+    pruefung: null,
+    pruefung_begruendung: null,
+    geprueft_am: null,
+    ...overrides
+  };
+}
 
 function meldung(overrides: Partial<ContentReport> = {}): ContentReport {
   return {
@@ -24,6 +44,12 @@ function meldung(overrides: Partial<ContentReport> = {}): ContentReport {
 describe('ContentModerationComponent', () => {
   let fixture: ComponentFixture<ContentModerationComponent>;
   let moderation: jasmine.SpyObj<ModerationService>;
+  let dialog: jasmine.SpyObj<MatDialog>;
+
+  /** Der Dialog schließt mit diesem Ergebnis; undefined heißt abgebrochen. */
+  function dialogErgebnis(ergebnis: SperrenDialogErgebnis | undefined) {
+    dialog.open.and.returnValue({ afterClosed: () => of(ergebnis) } as any);
+  }
 
   function mitMeldungen(meldungen: ContentReport[]) {
     moderation.getReports.and.returnValue(of({ total: meldungen.length, reports: meldungen }));
@@ -37,14 +63,19 @@ describe('ContentModerationComponent', () => {
   }
 
   beforeEach(() => {
-    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'dismissReport']);
+    moderation = jasmine.createSpyObj('ModerationService', ['getReports', 'getGesperrte', 'sperren', 'entsperren', 'sperreBestaetigen', 'dismissReport']);
     moderation.sperren.and.returnValue(of({ success: true, message: '' }));
     moderation.entsperren.and.returnValue(of({ success: true, message: '' }));
+    moderation.sperreBestaetigen.and.returnValue(of({ success: true, message: '' }));
+    moderation.getGesperrte.and.returnValue(of({ total: 0, beitraege: [] }));
+    dialog = jasmine.createSpyObj('MatDialog', ['open']);
 
     TestBed.configureTestingModule({
       imports: [ContentModerationComponent, NoopAnimationsModule],
       providers: [{ provide: ModerationService, useValue: moderation }]
     });
+    // Die Komponente importiert MatDialogModule selbst; deshalb hier überschreiben.
+    TestBed.overrideProvider(MatDialog, { useValue: dialog });
   });
 
   it('bietet zu einer offenen Meldung Sperren statt Löschen an', () => {
@@ -55,18 +86,19 @@ describe('ContentModerationComponent', () => {
     expect(knopf('Entsperren')).toBeUndefined();
   });
 
-  it('sperrt nach Rückfrage und lädt die Meldungen neu', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
+  it('sperrt mit Sperrgrund und Begründung aus dem Dialog und lädt die Meldungen neu', () => {
+    dialogErgebnis({ sperrgrund: 'unterstellung', begruendung: 'Unterstellt Bosheit.' });
     mitMeldungen([meldung()]);
 
     knopf('Sperren')!.click();
 
-    expect(moderation.sperren).toHaveBeenCalledWith('beitrag-1');
+    expect(dialog.open).toHaveBeenCalled();
+    expect(moderation.sperren).toHaveBeenCalledWith('beitrag-1', 'unterstellung', 'Unterstellt Bosheit.');
     expect(moderation.getReports).toHaveBeenCalledTimes(2);
   });
 
-  it('sperrt nicht, wenn die Rückfrage abgebrochen wird', () => {
-    spyOn(window, 'confirm').and.returnValue(false);
+  it('sperrt nicht, wenn der Dialog abgebrochen wird', () => {
+    dialogErgebnis(undefined);
     mitMeldungen([meldung()]);
 
     knopf('Sperren')!.click();
@@ -102,7 +134,62 @@ describe('ContentModerationComponent', () => {
     knopf('Entsperren')!.click();
 
     expect(moderation.entsperren).toHaveBeenCalledWith('beitrag-2');
-    expect(moderation.getGesperrte).toHaveBeenCalledTimes(2);
+    // Einmal zum Zählen der Widersprüche, dann Ansicht und Neuladen.
+    expect(moderation.getGesperrte).toHaveBeenCalledTimes(3);
+  });
+
+  it('zeigt Sperrgrund, Begründung und einen offenen Widerspruch zuerst', () => {
+    moderation.getGesperrte.and.returnValue(of({
+      total: 2,
+      beitraege: [
+        { id: 'ohne', content_type: 'commentary', status: 'blocked', title: 'Ohne Widerspruch', sperre: sperre({ id: 's-0' }) },
+        {
+          id: 'mit', content_type: 'commentary', status: 'blocked', title: 'Mit Widerspruch',
+          sperre: sperre({ widerspruch: 'Das ist belegt.', widerspruch_am: '2026-10-29T11:00:00+00:00', widerspruch_offen: true })
+        }
+      ]
+    }));
+    mitMeldungen([]);
+    fixture.componentInstance.onStatusFilterChange('gesperrt');
+    fixture.detectChanges();
+
+    const eintraege = fixture.nativeElement.querySelectorAll('.gesperrter-beitrag');
+    expect(eintraege[0].textContent).toContain('Mit Widerspruch');
+    expect(eintraege[0].textContent).toContain('Das ist belegt.');
+    expect(eintraege[0].textContent).toContain('Unterstellung über Motive');
+    expect(eintraege[0].textContent).toContain('Unterstellt Bosheit.');
+    expect(eintraege[1].textContent).not.toContain('Sperre bestätigen');
+    expect(fixture.componentInstance.offeneWidersprueche).toBe(1);
+  });
+
+  it('bestätigt die Sperre nach einem Widerspruch mit Begründung', () => {
+    dialogErgebnis({ sperrgrund: null, begruendung: 'Bleibt eine Unterstellung.' });
+    moderation.getGesperrte.and.returnValue(of({
+      total: 1,
+      beitraege: [{
+        id: 'mit', content_type: 'commentary', status: 'blocked', title: 'Mit Widerspruch',
+        sperre: sperre({ widerspruch_am: '2026-10-29T11:00:00+00:00', widerspruch_offen: true })
+      }]
+    }));
+    mitMeldungen([]);
+    fixture.componentInstance.onStatusFilterChange('gesperrt');
+    fixture.detectChanges();
+
+    knopf('Sperre bestätigen')!.click();
+
+    expect(moderation.sperreBestaetigen).toHaveBeenCalledWith('sperre-1', 'Bleibt eine Unterstellung.');
+  });
+
+  it('vermerkt, wenn niemand die Sperrnachricht sieht', () => {
+    moderation.getGesperrte.and.returnValue(of({
+      total: 1,
+      beitraege: [{ id: 'x', content_type: 'commentary', status: 'blocked', title: 'T', sperre: sperre({ ohne_kontaktdaten: true }) }]
+    }));
+    mitMeldungen([]);
+    fixture.componentInstance.onStatusFilterChange('gesperrt');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('keine Kontaktdaten');
   });
 
   it('zeigt die ID als Beitrags-ID, nicht als Content-ID', () => {

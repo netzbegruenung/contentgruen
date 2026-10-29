@@ -34,7 +34,8 @@
       </mat-button-toggle>
       <mat-button-toggle value="gesperrt">
         <mat-icon>block</mat-icon>
-        Gesperrt
+        <span [matBadge]="offeneWidersprueche || null" matBadgeOverlap="false" matBadgeColor="warn"
+              [attr.aria-label]="offeneWidersprueche ? 'Gesperrt, ' + offeneWidersprueche + ' offene Widersprüche' : null">Gesperrt</span>
       </mat-button-toggle>
     </mat-button-toggle-group>
   </div>
@@ -60,14 +61,43 @@
         <div class="gesperrter-text">
           <strong>{{ beitragsTitel(beitrag) }}</strong>
           <code>{{ beitrag['id'] }}</code>
+          <div *ngIf="beitrag.sperre as sperre" class="sperre-details">
+            <div><strong>Sperrgrund:</strong> {{ getSperrgrundLabel(sperre.sperrgrund) }}</div>
+            <div><strong>Begründung:</strong> {{ sperre.begruendung }}</div>
+            <div *ngIf="sperre.gesperrt_am"><strong>Gesperrt am:</strong> {{ formatDate(sperre.gesperrt_am) }}</div>
+            <div>
+              <strong>Sperrnachricht:</strong>
+              {{ sperre.ohne_kontaktdaten ? 'keine Kontaktdaten, niemand sieht sie' : 'in „Meine Beiträge“ des Autors' }}
+            </div>
+            <div *ngIf="sperre.widerspruch_am" class="widerspruch" [class.widerspruch-offen]="sperre.widerspruch_offen">
+              <strong>{{ sperre.widerspruch_offen ? 'Widerspruch, offen:' : 'Widerspruch:' }}</strong>
+              {{ formatDate(sperre.widerspruch_am) }}
+              <span *ngIf="sperre.widerspruch"> – „{{ sperre.widerspruch }}“</span>
+              <span *ngIf="!sperre.widerspruch"> – ohne Text</span>
+            </div>
+            <div *ngIf="sperre.pruefung === 'sperre_bleibt'">
+              <strong>Erneut geprüft, Sperre bleibt:</strong> {{ sperre.pruefung_begruendung }}
+            </div>
+          </div>
+          <div *ngIf="!beitrag.sperre" class="sperre-details">Gesperrt vor der Einführung von Sperrgründen, ohne Grund.</div>
         </div>
-        <button
-          mat-button
-          (click)="entsperren(beitrag['id'])"
-          matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
-          <mat-icon>lock_open</mat-icon>
-          Entsperren
-        </button>
+        <div class="gesperrt-aktionen">
+          <button
+            *ngIf="beitrag.sperre?.widerspruch_offen"
+            mat-button
+            (click)="sperreBestaetigen(beitrag)"
+            matTooltip="Nach erneuter Prüfung bleibt die Sperre; der Autor liest die Begründung">
+            <mat-icon>gavel</mat-icon>
+            Sperre bestätigen
+          </button>
+          <button
+            mat-button
+            (click)="entsperren(beitrag['id'])"
+            matTooltip="Sperre aufheben, Beitrag wieder sichtbar machen">
+            <mat-icon>lock_open</mat-icon>
+            Entsperren
+          </button>
+        </div>
       </div>
     </div>
   </ng-container>

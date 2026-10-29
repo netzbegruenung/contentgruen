@@ -130,17 +130,35 @@ describe('ModerationService', () => {
   });
 
   describe('sperren', () => {
-    it('sperrt den Beitrag per PUT, ohne Beitragstyp im Pfad', () => {
+    it('sperrt den Beitrag per PUT mit Sperrgrund und Begründung, ohne Beitragstyp im Pfad', () => {
       const contentId = 'content-123';
 
-      service.sperren(contentId).subscribe();
+      service.sperren(contentId, 'unterstellung', 'Unterstellt Bosheit.').subscribe();
 
       const req = httpMock.expectOne(
         `${environment.baseUrl}/api/v1/moderation/content/${contentId}/sperren`
       );
       expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({
+        sperrgrund: 'unterstellung',
+        begruendung: 'Unterstellt Bosheit.',
+      });
 
       req.flush({ success: true, message: 'gesperrt' });
+    });
+  });
+
+  describe('sperreBestaetigen', () => {
+    it('bestätigt die Sperre per PUT mit Begründung', () => {
+      service.sperreBestaetigen('sperre-1', 'Bleibt.').subscribe();
+
+      const req = httpMock.expectOne(
+        `${environment.baseUrl}/api/v1/moderation/sperren/sperre-1/bestaetigen`
+      );
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual({ begruendung: 'Bleibt.' });
+
+      req.flush({ success: true, message: 'Sperre bestaetigt' });
     });
   });
 

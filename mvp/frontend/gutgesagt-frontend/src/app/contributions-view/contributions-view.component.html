@@ -12,6 +12,9 @@
 
     <div id="meine-bereich-beitraege" role="tabpanel" aria-labelledby="meine-tab-beitraege"
          [hidden]="tab !== 'beitraege'">
+        <!-- Gesperrte eigene Beitraege stehen nicht im Album, nur hier (#448) -->
+        <app-sperrnachrichten></app-sperrnachrichten>
+
         <div *ngIf="isLoading">
             <p>Lade eigene Beiträge …</p>
             <div class="loading-container">
