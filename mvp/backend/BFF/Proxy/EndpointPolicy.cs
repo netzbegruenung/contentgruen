@@ -55,11 +55,17 @@ public static class EndpointPolicy
     ///
     /// /api/v1/test steht hier als Riegel fuer den Fall, dass der Debug-Router
     /// zurueckkehrt; entfernt ist er bereits.
+    ///
+    /// /metrics sind die Betriebskennzahlen des Suchdienstes (#420), fuer den Scraper im
+    /// internen Netz. Der Proxy leitet jeden Pfad weiter, ohne diesen Eintrag laege der
+    /// Endpunkt also auch hinter dem BFF -- und weil er nicht unter /api/v1 liegt und
+    /// nicht anonym erlaubt ist, nur fuer Angemeldete. Gemeint sind auch sie nicht.
     /// </summary>
     public static readonly string[] Blocked =
     {
         "/api/v1/seeding",
-        "/api/v1/test"
+        "/api/v1/test",
+        "/metrics"
     };
 
     /// <summary>
