@@ -74,7 +74,9 @@ async def test_report_content_ohne_name_und_email(service):
     assert meldung["guter_glaube"] is True
 
 
-async def test_meldung_von_vor_438_hat_keine_angaben(service, datenbank):
+async def test_get_pending_reports_meldung_von_vor_438_hat_keine_angaben(
+    service, datenbank
+):
     with datenbank.get_session() as s:
         s.add(
             ContentReport(

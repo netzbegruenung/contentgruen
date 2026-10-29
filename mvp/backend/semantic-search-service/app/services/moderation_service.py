@@ -150,6 +150,12 @@ class ModerationService:
             logger.warning(f"Invalid report reason: {reason}")
             return False
 
+        # Art. 16 Abs. 2 lit. d DSA (#438): keine neue Meldung ohne die Erklaerung
+        # guten Glaubens, auch nicht an der API vorbei.
+        if guter_glaube is not True:
+            logger.warning("Invalid report submission: no Erklaerung guten Glaubens")
+            return False
+
         try:
             content_uuid = UUID(content_id)
 

@@ -64,7 +64,7 @@ class TestReportContent:
         self, service, report_repo, grund
     ):
         assert await service.report_content(
-            CONTENT_ID, "commentary", grund, user_id="person-1"
+            CONTENT_ID, "commentary", grund, user_id="person-1", guter_glaube=True
         )
 
         assert report_repo.create_report.call_args.kwargs["reason"] == grund
@@ -73,7 +73,22 @@ class TestReportContent:
         self, service, report_repo
     ):
         assert not await service.report_content(
-            CONTENT_ID, "commentary", "fake_news", user_id="person-1"
+            CONTENT_ID, "commentary", "fake_news", user_id="person-1", guter_glaube=True
+        )
+
+        report_repo.create_report.assert_not_called()
+
+    @pytest.mark.parametrize("guter_glaube", [None, False])
+    async def test_report_content_ohne_erklaerung_guten_glaubens_wird_abgewiesen(
+        self, service, report_repo, guter_glaube
+    ):
+        """Die Pflicht gilt nicht nur am Endpunkt, sondern fuer jede neue Meldung (#438)."""
+        assert not await service.report_content(
+            CONTENT_ID,
+            "commentary",
+            "spam",
+            user_id="person-1",
+            guter_glaube=guter_glaube,
         )
 
         report_repo.create_report.assert_not_called()
