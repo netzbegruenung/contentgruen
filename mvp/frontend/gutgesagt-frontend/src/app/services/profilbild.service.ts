@@ -6,7 +6,7 @@ import { UserInfo } from '../auth/auth.service';
  * Seitenaufruf die IP-Adresse an einen Drittanbieter. Erzeugt von
  * scripts/generate-avatars.mjs.
  */
-export const ANONYMER_AVATAR = '/avatars/anon-question.svg';
+export const ANONYMES_PROFILBILD = '/avatars/anon-question.svg';
 
 export const PROFILBILDER: readonly string[] = [
   '/avatars/female1.svg',
@@ -46,10 +46,10 @@ export class ProfilbildService {
     this.alteEintraegeLoeschen();
   }
 
-  /** Besucher sehen den anonymen Avatar, Mitwirkende ein einmal je Seite ausgelostes Bild. */
+  /** Besucher sehen das anonyme Profilbild, Mitwirkende ein einmal je Seite ausgelostes Bild. */
   fuer(person: UserInfo | null): string {
     if (!person?.isAuthenticated) {
-      return ANONYMER_AVATAR;
+      return ANONYMES_PROFILBILD;
     }
     this.ausgelost ??= PROFILBILDER[Math.floor(Math.random() * PROFILBILDER.length)];
     return this.ausgelost;

@@ -115,8 +115,7 @@ export class AppComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((userInfo) => {
         this.userInfo = userInfo;
-        // Update avatar based on authentication status
-        this.updateAvatarForAuthStatus();
+        this.selectedProfilePictureUrl = this.profilbild.fuer(userInfo);
       });
 
     // Rueckmeldung beim Anmelden, wie oft die eigenen Beitraege genutzt wurden (#349)
@@ -129,7 +128,6 @@ export class AppComponent implements OnInit, OnDestroy {
         next: (userInfo) => {
           // User is authenticated
           this.userInfo = userInfo;
-          // Set proper profile picture for authenticated user
           this.selectedProfilePictureUrl = this.profilbild.fuer(userInfo);
 
           // Check if we have a stored return URL from login (including Keycloak)
@@ -148,8 +146,7 @@ export class AppComponent implements OnInit, OnDestroy {
             userName: null,
             claims: null
           });
-          // Ensure anonymous avatar is set
-          this.updateAvatarForAuthStatus();
+          this.selectedProfilePictureUrl = this.profilbild.fuer(null);
         },
       });
   }
@@ -230,10 +227,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.logout();
-  }
-
-  private updateAvatarForAuthStatus(): void {
-    this.selectedProfilePictureUrl = this.profilbild.fuer(this.userInfo);
   }
 
   toggleMobileMenu(): void {

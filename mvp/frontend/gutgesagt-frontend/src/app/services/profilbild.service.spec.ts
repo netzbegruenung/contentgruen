@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { UserInfo } from '../auth/auth.service';
 import {
   ALTE_PROFILBILD_SCHLUESSEL,
-  ANONYMER_AVATAR,
+  ANONYMES_PROFILBILD,
   PROFILBILDER,
   ProfilbildService,
 } from './profilbild.service';
@@ -26,9 +26,9 @@ describe('ProfilbildService', () => {
 
   afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => sessionStorage.removeItem(s)));
 
-  it('zeigt Besuchern den anonymen Avatar, auch solange der Anmeldestand offen ist', () => {
-    expect(erzeugen().fuer(BESUCHER)).toBe(ANONYMER_AVATAR);
-    expect(erzeugen().fuer(null)).toBe(ANONYMER_AVATAR);
+  it('zeigt Besuchern das anonyme Profilbild, auch solange der Anmeldestand offen ist', () => {
+    expect(erzeugen().fuer(BESUCHER)).toBe(ANONYMES_PROFILBILD);
+    expect(erzeugen().fuer(null)).toBe(ANONYMES_PROFILBILD);
   });
 
   it('lost Mitwirkenden einmal ein Profilbild aus und behaelt es fuer die Seite', () => {
@@ -74,6 +74,7 @@ describe('ProfilbildService', () => {
     const loeschen = spyOn(Storage.prototype, 'removeItem').and.throwError('SecurityError');
 
     expect(() => erzeugen()).not.toThrow();
+    // Der Spy gilt noch im afterEach, das selbst removeItem aufruft.
     loeschen.and.callThrough();
   });
 });

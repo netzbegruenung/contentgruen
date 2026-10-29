@@ -10,7 +10,7 @@ import { AppComponent } from './app.component';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { NavigationService } from './services/navigation.service';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
-import { ALTE_PROFILBILD_SCHLUESSEL, ANONYMER_AVATAR, PROFILBILDER } from './services/profilbild.service';
+import { ALTE_PROFILBILD_SCHLUESSEL, ANONYMES_PROFILBILD, PROFILBILDER } from './services/profilbild.service';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -193,11 +193,11 @@ describe('AppComponent - Desktop-Kopf', () => {
   describe('Profilbild nur im Speicher der Seite (#437)', () => {
     afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s) => sessionStorage.removeItem(s)));
 
-    it('zeigt Besuchern den anonymen Avatar und legt nichts im sessionStorage ab', () => {
+    it('zeigt Besuchern das anonyme Profilbild und legt nichts im sessionStorage ab', () => {
       const vorher = Object.keys(sessionStorage);
       starten(BESUCHER);
 
-      expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(ANONYMER_AVATAR);
+      expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(ANONYMES_PROFILBILD);
       expect(Object.keys(sessionStorage)).toEqual(vorher);
     });
 
