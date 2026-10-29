@@ -174,10 +174,10 @@ Zeile fest, wie der Vorgang im Text gelandet ist.
 
 ## 5. Consent-Checkbox / Verweis auf Nutzungsbedingungen
 
-**Entschieden (#415, 28.10.2026): beides.** Ein Satz über dem Absende-Knopf in jedem Formular
+**Entschieden (#415, 28.10.2026): beides.** Ein CC0-Hinweis über dem Absende-Knopf in jedem Formular
 (#431) und die Zustimmung zu den Nutzungsbedingungen beim ersten Anmelden (#429).
 
-**Hinweis im Formular: umgesetzt.** Der Satz steht in `shared/consent-hinweis.ts` und verlinkt
+**CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts` und verlinkt
 die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
 unwiderruflich unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten
 Dritter.“ Keine Checkbox; die bewusste Handlung ist das Absenden.
@@ -185,22 +185,28 @@ Dritter.“ Keine Checkbox; die bewusste Handlung ist das Absenden.
 | Ort | Formular | Seit |
 |-----|----------|------|
 | `add-raw-input/` | Einwurf | 55bb5cb8 |
-| `add-commentary/`, `add-generictext/`, `add-image/`, `add-post/` | Kommentar, Hintergrundinfo, Bild, Post (auch im Ablauf Ausformulieren) | 55bb5cb8 |
+| `add-commentary/`, `add-generictext/`, `add-image/` | Kommentar, Hintergrundinfo, Bild (auch im Ablauf Ausformulieren) | 55bb5cb8 |
+| `add-post/` | Post (auch im Ablauf Ausformulieren) | cc52f2e1 |
 | `hier-fehlt-eine-antwort/` | Aussage vorab anlegen („Aussage anlegen“) | #431 |
-| `destillieren/` | Satz. Ohne Absende-Knopf, weil er beim Tippen gespeichert wird: eigene Fassung `CONSENT_HINWEIS_SATZ` („Dein Satz wird beim Tippen gespeichert. Damit stellst du …“) über den Knöpfen | #431 |
+| `destillieren/` | Satz. Ohne Absende-Knopf, weil er beim Tippen gespeichert wird: eigener Wortlaut `CONSENT_HINWEIS_SATZ` („Dein Satz wird beim Tippen gespeichert. Damit stellst du …“) über den Knöpfen | #431 |
 
-Jedes dieser Formulare prüft den Satz samt Link im eigenen Komponententest.
+Jedes dieser Formulare prüft den vollen Wortlaut samt Link im eigenen Komponententest (seit #431
+auch Kommentar, Hintergrundinfo, Bild und Post; vorher nur den Link).
 
 **Nutzungsbedingungen:** Die Behauptung, mit der Nutzung erkläre man sich einverstanden, ist
-seit der Neufassung (20c1b06b) nicht mehr im Text. Die Einbeziehung trägt der Hinweis im Formular
-(§ 305 Abs. 2 BGB: ausdrücklicher Hinweis bei Vertragsschluss), für die Rechteeinräumung unter
-CC0 das Absenden als bewusste Handlung.
+seit der Neufassung (20c1b06b) nicht mehr im Text. Unsere Einschätzung, nicht geprüft: Die
+Einbeziehung soll der CC0-Hinweis im Formular tragen (§ 305 Abs. 2 BGB: ausdrücklicher Hinweis bei
+Vertragsschluss), die Rechteeinräumung unter CC0 das Absenden als bewusste Handlung. Ob das trägt,
+klärt #296; wer nie etwas absendet, sieht den Hinweis nicht, dafür ist #429 da.
 
 **Offen:**
-- Juristische Prüfung des Wortlauts beider Fassungen: #296.
+- Juristische Prüfung beider Wortlaute: #296.
 - Zustimmung beim ersten Anmelden mit persistentem Feld pro Person: #429.
-- Ob die Fassung des Hinweises am Beitrag mitgespeichert wird (Nachweis, welchem Wortlaut jemand
-  zugestimmt hat): Produktfrage, nicht entschieden.
+- Ob der Wortlaut des CC0-Hinweises am Beitrag mitgespeichert wird (Nachweis, welchem Wortlaut
+  jemand zugestimmt hat): Produktfrage, nicht entschieden.
+- Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
+  Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
+  dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.
 
 Der frühere Zusatzbefund (Platzhalter-Hinweis, `[Datum]`, Verweis auf „Community-Richtlinien“)
 ist mit der Neufassung erledigt; die Seite trägt „Stand: September 2026“.
