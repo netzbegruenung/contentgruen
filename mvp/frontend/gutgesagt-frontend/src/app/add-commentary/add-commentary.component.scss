@@ -75,6 +75,7 @@ app-formular-hilfe {
 .fassungen {
   display: flex;
   flex-direction: column;
+  gap: 4px; // wie .beitrag-formular, sonst stoesst der Hinweis der Kurzfassung an die Langfassung
 }
 
 .formular-fuss {
