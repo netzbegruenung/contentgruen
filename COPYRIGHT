@@ -5,3 +5,12 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version. See the LICENSE file for details.
+
+Third-party content
+-------------------
+The hand in the logo, favicon, Siegel and vote buttons and the profile pictures in
+mvp/frontend/gutgesagt-frontend/public/avatars/ are emojis from Fluent Emoji
+(https://github.com/microsoft/fluentui-emoji), Copyright (c) Microsoft Corporation,
+used under the MIT License, modified. The license text is in
+mvp/frontend/gutgesagt-frontend/public/marke/FLUENT-EMOJI-LIZENZ.txt and
+mvp/frontend/gutgesagt-frontend/public/avatars/FLUENT-EMOJI-LIZENZ.txt.

@@ -10,6 +10,14 @@ import { AppComponent } from './app.component';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { NavigationService } from './services/navigation.service';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
+import {
+  ALTE_PROFILBILD_SCHLUESSEL,
+  ANONYMES_PROFILBILD,
+  PROFILBILD_SCHLUESSEL,
+  ProfilbildService,
+} from './services/profilbild.service';
+import { ProfilbildDialogComponent } from './shared/profilbild/profilbild-dialog.component';
+import { RUECKKEHRZIEL_SCHLUESSEL } from './login/rueckkehrziel';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -134,7 +142,6 @@ describe('AppComponent - Desktop-Kopf', () => {
 
     it('Klick auf den Avatar oeffnet das Profilmenue und wuerfelt kein neues Bild', async () => {
       const vorher = fixture.componentInstance.selectedProfilePictureUrl;
-      const gespeichert = sessionStorage.getItem('profilePicture');
 
       expect(avatar().tagName).toBe('BUTTON');
       expect(avatar().getAttribute('aria-label')).toBe('Profilmenü öffnen');
@@ -146,11 +153,12 @@ describe('AppComponent - Desktop-Kopf', () => {
 
       expect(profilmenue().map((e) => e.textContent?.trim())).toEqual([
         jasmine.stringContaining('Meine Beiträge'),
+        jasmine.stringContaining('Profilbild wählen'),
         jasmine.stringContaining('Abmelden'),
       ]);
       expect(navigation.navigateToContributions).not.toHaveBeenCalled();
       expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(vorher);
-      expect(sessionStorage.getItem('profilePicture')).toBe(gespeichert);
+      expect(sessionStorage.getItem('profilePicture')).toBeNull();
     });
 
     it('oeffnet das Profilmenue mit der Tastatur und fuehrt zu Meine Beitraege', async () => {
@@ -172,9 +180,31 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      profilmenue()[1].click();
+      profilmenue()[2].click();
 
       expect(auth.logout).toHaveBeenCalledTimes(1);
+    });
+
+    it('oeffnet ueber das Profilmenue den Dialog Profilbild waehlen', async () => {
+      avatar().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      profilmenue()[1].click();
+
+      expect(dialog.open).toHaveBeenCalledWith(ProfilbildDialogComponent, jasmine.anything());
+    });
+
+    it('zeigt das gewaehlte Profilbild sofort im Kopf', () => {
+      const service = TestBed.inject(ProfilbildService);
+      const option = service.auswahl[4];
+
+      service.waehlen(option.id);
+      fixture.detectChanges();
+
+      expect(avatar().querySelector('img')?.getAttribute('src')).toBe(option.url);
+      expect(avatar().querySelector('img')?.getAttribute('alt')).toBe('Profilbild');
+      localStorage.removeItem(PROFILBILD_SCHLUESSEL);
     });
 
     it('hat im Kopf keinen eigenen Link Meine Beitraege mehr neben dem Avatar', () => {
@@ -188,6 +218,65 @@ describe('AppComponent - Desktop-Kopf', () => {
       (kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement).click();
 
       expect(dialog.open).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
+    });
+  });
+
+  describe('Profilbild ohne Wahl nicht im Browser gespeichert (#437)', () => {
+    function gespeichert(): string[][] {
+      return [Object.keys(localStorage), Object.keys(sessionStorage)];
+    }
+
+    afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => sessionStorage.removeItem(s)));
+
+    it('zeigt Besuchern das anonyme Profilbild und legt nichts im Browser ab', () => {
+      const vorher = gespeichert();
+      starten(BESUCHER);
+
+      expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(ANONYMES_PROFILBILD);
+      expect(gespeichert()).toEqual(vorher);
+    });
+
+    it('zeigt Mitwirkenden ein festes Profilbild und legt nichts im Browser ab', () => {
+      const vorher = gespeichert();
+      starten(ANGEMELDET);
+
+      const urls = TestBed.inject(ProfilbildService).auswahl.map((o) => o.url);
+      expect(urls).toContain(fixture.componentInstance.selectedProfilePictureUrl);
+      expect(gespeichert()).toEqual(vorher);
+    });
+
+    it('raeumt die Eintraege frueherer Versionen beim Start weg', () => {
+      sessionStorage.setItem('profilePicture', '/avatars/female1.svg');
+      sessionStorage.setItem('anonymousAvatar', '/avatars/anon-question.svg');
+      sessionStorage.setItem('userAvatar', '/avatars/male2.svg');
+
+      starten(BESUCHER);
+
+      ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => expect(sessionStorage.getItem(s)).toBeNull());
+    });
+  });
+
+  describe('Rueckkehrziel nach dem Anmelden (Befund 10 aus dem Review zu PR 458)', () => {
+    afterEach(() => sessionStorage.removeItem(RUECKKEHRZIEL_SCHLUESSEL));
+
+    it('fuehrt angemeldet zum gemerkten Ziel und loescht es', () => {
+      sessionStorage.setItem(RUECKKEHRZIEL_SCHLUESSEL, '/contribute');
+
+      starten(ANGEMELDET);
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/contribute');
+      expect(sessionStorage.getItem(RUECKKEHRZIEL_SCHLUESSEL)).toBeNull();
+    });
+
+    it('startet auch, wenn der Browser den sessionStorage sperrt', () => {
+      const spione = [
+        spyOn(Storage.prototype, 'getItem').and.throwError('SecurityError'),
+        spyOn(Storage.prototype, 'removeItem').and.throwError('SecurityError'),
+      ];
+
+      expect(() => starten(ANGEMELDET)).not.toThrow();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      spione.forEach((spion) => spion.and.callThrough());
     });
   });
 });

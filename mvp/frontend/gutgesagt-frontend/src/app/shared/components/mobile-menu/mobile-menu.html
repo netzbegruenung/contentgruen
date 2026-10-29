@@ -3,7 +3,7 @@
         <div class="mobile-menu-user-header">
             <img *ngIf="userInfo?.isAuthenticated"
                 [src]="selectedProfilePictureUrl"
-                alt="profile picture"
+                alt="Profilbild"
                 class="mobile-menu-avatar" />
             <img *ngIf="!userInfo?.isAuthenticated"
                 src="/icons/Profile_avatar_placeholder_large.png"
@@ -49,6 +49,10 @@
                 Meine Beiträge
             </button>
         </div>
+        <button mat-button (click)="onProfilbildClick()" class="mobile-menu-item mobile-menu-profilbild">
+            <mat-icon>face</mat-icon>
+            Profilbild wählen
+        </button>
         <button mat-button (click)="onLogoutClick()" class="mobile-menu-item">
             <mat-icon>logout</mat-icon>
             Abmelden
