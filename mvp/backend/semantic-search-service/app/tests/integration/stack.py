@@ -24,6 +24,17 @@ def pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
     return env.get(PFLICHT_VARIABLE, "") not in ("", "0")
 
 
+def bff_pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
+    """Ob ein fehlendes BFF (Tests unter ``api/``) ein Fehler ist.
+
+    Im Pflichtmodus ja, ausser in der CI (``CI`` gesetzt): Woodpecker startet
+    Qdrant und PostgreSQL, aber keinen Dev-Stack mit BFF (docs/CI.md). Dort
+    ueberspringen sich die Tests sichtbar in den SKIPPED-Zeilen.
+    """
+    env = os.environ if env is None else env
+    return pflicht(env) and not env.get("CI")
+
+
 def qdrant_erreichbar(url: str = QDRANT_URL) -> bool:
     """True, wenn unter ``url`` ein Qdrant auf /healthz antwortet."""
     try:
