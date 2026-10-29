@@ -149,7 +149,7 @@ _ALT = [
     ("B10", "aussage", "B", "gleich", "trivial", 'grüne wollen das auto verbieten.', 'Grüne wollen das Auto verbieten', "eigen"),
     ("C01", "aussage", "C", "gleich", "umformulierung", 'E-Autos sind auch nicht besser für die Umwelt', 'Elektroautos sind gar nicht umweltfreundlich!', "seed"),
     ("C02", "aussage", "C", "gleich", "skopus", 'Deutschland kann das Klima nicht alleine retten', 'Deutschland kann nicht alleine das Klima retten!', "seed"),
-    ("C03", "aussage", "C", "gleich", "umformulierung", VERBOT, 'Die Grünen wollen immer alles verbieten', "eigen"),
+    ("C03", "aussage", "D", "verwandt", "quantor", VERBOT, 'Die Grünen wollen immer alles verbieten', "eigen"),
     ("C04", "aussage", "C", "gleich", "umformulierung", 'Windräder sind Vogel-Schredder!', 'Windkraftanlagen töten massenhaft Vögel', "eigen"),
     ("C05", "aussage", "C", "gleich", "umformulierung", 'Balkonsolar lohnt sich nie', 'Balkonkraftwerke rechnen sich nicht', "eigen"),
     ("C06", "aussage", "C", "gleich", "umformulierung", 'Tempolimit bringt doch eh nichts fürs Klima!', 'Ein Tempolimit hilft dem Klima überhaupt nicht', "eigen"),
@@ -219,7 +219,7 @@ _AUSSAGE_GRUPPEN = [
     ("VB", "verbot", VERBOT, [
         ("gleich", "wortstellung", "Eine Verbotspartei sind die Grünen"),
         ("gleich", "tippfehler", "Die Grünen sind eine Verbotspartie"),
-        ("gleich", "umformulierung", "Die Grünen wollen ständig alles verbieten"),
+        ("verwandt", "quantor", "Die Grünen wollen ständig alles verbieten"),
         ("widerspricht", "verneinung", "Es stimmt nicht, dass die Grünen eine Verbotspartei sind"),
         ("widerspricht", "verneinung", "Die Grünen sind alles andere als eine Verbotspartei"),
         ("widerspricht", "antonym", "Die Grünen sind eine Freiheitspartei"),
@@ -539,7 +539,7 @@ _AUSSAGE_GRUPPEN = [
     ]),
     ("NV", "nahverkehr", "Der Nahverkehr auf dem Land ist zu schlecht", [
         ("gleich", "tippfehler", "Der Nahverkehr auf dem Land ist zu schlect"),
-        ("gleich", "umformulierung", "Busse und Bahnen auf dem Land taugen nichts"),
+        ("verwandt", "umformulierung", "Busse und Bahnen auf dem Land taugen nichts"),
         ("gleich", "wortstellung", "Auf dem Land ist der Nahverkehr zu schlecht"),
         ("widerspricht", "antonym", "Der Nahverkehr auf dem Land ist gut"),
         ("widerspricht", "verneinung", "Der Nahverkehr auf dem Land ist nicht zu schlecht"),

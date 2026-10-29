@@ -49,18 +49,24 @@ Wendung („Es stimmt nicht, dass …“). Als harte Negative zählen nur die, d
 
 Die 77 alten Paare behalten ID, Text und Kategorie. Das Paar-Label folgt aus der
 Kategorie (A–C *gleich*, E *fremd*); bei D ist es nach den Regeln unten entschieden,
-z. B. D11 und D15 *widerspricht*, B09 *verwandt* (Regel 4). Eine Kategorie hat sich
-geändert: C07 ist jetzt D, *verwandt* (Regel 6, Mehrfachthema). Die ID zeigt die
+z. B. D11 und D15 *widerspricht*, B09 *verwandt* (Regel 4). Zwei Kategorien haben sich
+geändert: C07 ist jetzt D, *verwandt* (Regel 6, Mehrfachthema), und C03 ist jetzt D,
+*verwandt* (Regel 1, „immer alles verbieten“ ist stärker als „Verbotspartei“). Die ID zeigt die
 Kategorie vom 17.09.2026 und wird nicht umbenannt; B09 stand schon damals unter D.
 
 ## Regeln für Grenzfälle
 
 Modelle können diese Fälle nicht für Menschen entscheiden. Die Regeln gelten für neue
-Paare und beim Prüfen der Labels; sie werden im Review abgenommen.
+Paare und beim Prüfen der Labels; abgenommen im Review von #454 am 29.10.2026.
 
 1. **Wörtlich nehmen.** Quantoren und Häufigkeiten gelten so, wie sie dastehen, auch wenn
    sie im Alltag übertrieben gemeint sind. „Balkonsolar lohnt sich nie“ und „… lohnt sich
-   selten“ widersprechen sich, weil „selten“ „manchmal“ einschließt.
+   selten“ widersprechen sich, weil „selten“ „manchmal“ einschließt. Das gilt auch für
+   Wertungen: „Die Grünen wollen ständig alles verbieten“ ist stärker als „Die Grünen
+   sind eine Verbotspartei“ und damit *verwandt* (VB03, C03), ebenso „Busse und Bahnen
+   auf dem Land taugen nichts“ gegen „… ist zu schlecht“ (NV02). Sind beide Seiten
+   gleich stark, ist es eine gleichwertige Umformung und *gleich* (C10: „funktionieren
+   nur im Neubau“ / „im Altbau taugen sie nichts“, Regel 3).
 2. **Skopus von „nicht“.** Entscheidend ist, was verneint wird, nicht wo das Wort steht.
    - Gleiche Bedeutung, andere Stellung: *gleich*. „Deutschland kann das Klima nicht alleine
      retten“ / „Deutschland kann nicht alleine das Klima retten“ (C02).
@@ -90,12 +96,19 @@ Paare und beim Prüfen der Labels; sie werden im Review abgenommen.
    Gegenstand *widerspricht*. Dieselbe Zahl für ein anderes Jahr oder ein anderes Szenario
    (Tempo 130 statt 120) ist *verwandt*: Beides kann zugleich stimmen, auch wenn eins davon
    falsch ist. Eine angehängte Herkunft ändert nichts (*gleich*).
-9. **Verstärker** ohne Inhalt („doch eh“, „total“, „überhaupt“) ändern nichts: *gleich*.
+9. **Füllwörter** ohne Inhalt („doch eh“, „total“, „überhaupt“) ändern nichts: *gleich*.
+   Quantoren und Wertungen („ständig alles“, „taugen nichts“) sind keine Füllwörter, sie
+   zählen wörtlich nach Regel 1.
    Bei einer Konkretisierung zählt, ob dieselben Betroffenen gemeint sind. Benennt sie nur,
    was in der Debatte ohnehin gemeint ist, ist sie *gleich* (C08: „mir meine Heizung
    verbieten“ / „uns die Gasheizung wegnehmen“ meint beide Male die vorhandene Heizung
    der Sprechenden). Schränkt sie auf eine andere Gruppe ein, ist sie *verwandt* (HZ07:
    „neue Ölheizungen verbieten“ betrifft die vorhandene Heizung gerade nicht).
+10. **Gegenteilige Haltungen** widersprechen sich, auch wenn beide Sätze streng logisch
+    zugleich stimmen könnten: Wer dem einen zustimmt, lehnt in der Debatte das andere ab.
+    „Windräder schützen Vögel“ / „Windräder töten Vögel“ (WI14) und „Ein Tempolimit
+    schadet dem Klima“ / „Ein Tempolimit bringt nichts fürs Klima“ (TL12) sind
+    *widerspricht*.
 
 ## Train/Test-Split
 
@@ -130,11 +143,11 @@ Ausgabe von `aehnlichkeit_messen.py` über `aehnlichkeit_gemessen.py`; ein Unit-
 prüft, dass sie hier unverändert stehen (`test_messset_md_zeigt_die_gespeicherte_messung`).
 
 - **Aussagen:** Die Schwelle 0,98 trennt *gleich* nicht von den anderen Labels. 31 von 151
-  *widerspricht*-Paaren und 28 von 128 *verwandt*-Paaren lägen heute über ihr und würden
+  *widerspricht*-Paaren und 28 von 131 *verwandt*-Paaren lägen heute über ihr und würden
   still als dieselbe Aussage wiederverwendet (Verneinung, Gegenteil, vertauschte Rollen,
-  „manche“, Fragen). Von 122 *gleich*-Paaren erreichen nur 45 die Schwelle, 50 gelten
+  „manche“, Fragen). Von 119 *gleich*-Paaren erreichen nur 45 die Schwelle, 50 gelten
   mit der Normalform als gleich. Über der Vorschlagsschwelle 0,885 liegen alle *gleich*-
-  und *widerspricht*-Paare und 121 von 128 *verwandt*-Paaren.
+  und *widerspricht*-Paare und 124 von 131 *verwandt*-Paaren.
 - **Hintergrundinfos:** Alle 10 *widerspricht*-Paare (andere Zahl oder Verneinung im sonst
   gleichen Text) liegen über 0,975 und würden als Dublette angeboten, ebenso 3 von 9
   *verwandt*-Paaren; 4 von 14 *gleich*-Paaren (Umformulierungen) liegen darunter.
@@ -148,9 +161,9 @@ aussage (Score qq, Dublette ab 0.98):
 
 | Label | Paare | train/test | Score min–max | als gleich entschieden | ≥ 0.98 | ≥ 0.885 |
 |---|---|---|---|---|---|---|
-| gleich | 122 | 91/31 | 0.887–1.000 | 50 | 45 | 122 |
+| gleich | 119 | 89/30 | 0.887–1.000 | 50 | 45 | 119 |
 | widerspricht | 151 | 104/47 | 0.906–0.996 | 31 | 31 | 151 |
-| verwandt | 128 | 92/36 | 0.821–0.996 | 28 | 28 | 121 |
+| verwandt | 131 | 94/37 | 0.821–0.996 | 28 | 28 | 124 |
 | fremd | 39 | 29/10 | 0.759–0.852 | 0 | 0 | 0 |
 
 suche (Score qq, Dublette ab 0.98):
