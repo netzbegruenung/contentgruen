@@ -14,8 +14,10 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LIST = ROOT / "scripts" / "retired-words.txt"
-# Historical and generated material keeps its original wording.
+# Historical and generated material keeps its original wording. CHANGELOG.md quotes the
+# titles of merged pull requests as they were.
 SKIP = (
+    "CHANGELOG.md",
     "docs/archiv/",
     "mvp/backend/postgres-app/migrations/",
     "scripts/retired-words.txt",
