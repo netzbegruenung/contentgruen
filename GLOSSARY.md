@@ -129,7 +129,7 @@ Eine Umwandlung, die mehrere Inhalte zu einem neuen zusammenführt.
 _Avoid_: Zusammenfassung, Merge, Aggregation
 
 **KI-Vorschlag**:
-Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa eine Unterschrift für ein Bild oder ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
+Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
 _Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 
 ## Schreiben

@@ -119,9 +119,9 @@ class DirectText:        # comment, generic_text, speech transcript, paper abstr
 ```
 
 An AI-derived ingestion (e.g. describing an image) is not a strategy here: by ADR 0003 an AI text
-reaches the Vorrat only after a person takes it over. A future suggestion for the Unterschrift
-(e.g. text recognised in the image) therefore belongs in the image form: fetched on click, set as a
-draft the person edits or discards, saved only with the form (#281, #393).
+reaches the Vorrat only after a person takes it over. A future KI-Vorschlag for the Unterschrift
+therefore belongs in the image form: fetched on click, edited or discarded by the person, saved only
+with the form (#281, #393).
 
 **3. Per-type models (Seam 2)** stay tiny — just the extra fields:
 

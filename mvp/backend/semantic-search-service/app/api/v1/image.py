@@ -79,9 +79,8 @@ async def add_image(
     """
     Ein Bild mit Unterschrift speichern; es ist sofort sichtbar. Returns 201.
 
-    Die Unterschrift ist Pflicht (AddImageRequest, sonst 422) und kommt von der Person
-    (ADR 0003). Ein Vorschlag fuer sie, etwa aus einer Texterkennung, kaeme nur auf
-    Klick als Entwurf ins Formular und wird erst gespeichert, wenn die Person ihn absendet.
+    Die Unterschrift ist Pflicht (AddImageRequest, sonst 422); sie kommt von der Person
+    (ADR 0003).
     """
     try:
         now = datetime.datetime.now(datetime.timezone.utc)

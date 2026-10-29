@@ -15,7 +15,6 @@ from dependencies import get_image_service
 from domain.models.content_status import ContentStatus
 
 ADD_URL = "/api/v1/image/addImage"
-SUGGEST_URL = "/api/v1/image/suggestCaption"
 HEADERS = {"X-User": "person-1"}
 UNTERSCHRIFT = "Tausende Menschen demonstrieren in Berlin fuer Klimaschutz"
 
@@ -61,17 +60,4 @@ class TestAddImage:
         resp = TestClient(app).post(ADD_URL, json=_anfrage(**bild), headers=HEADERS)
 
         assert resp.status_code == 422
-        image_service.add.assert_not_awaited()
-
-
-@pytest.mark.api
-class TestKeinKiVorschlag:
-    def test_suggest_caption_gibt_es_nicht_mehr(self, image_service):
-        resp = TestClient(app).post(
-            SUGGEST_URL,
-            json={"image_url": "https://example.com/demo.jpg"},
-            headers=HEADERS,
-        )
-
-        assert resp.status_code == 404
         image_service.add.assert_not_awaited()

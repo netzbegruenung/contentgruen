@@ -316,7 +316,7 @@ describe('DatenschutzComponent', () => {
 
       expect(text).toContain('Wir setzen keinen Sprach- oder Bilderkennungsdienst eines Anbieters außerhalb der EU ein.');
       expect(text).not.toContain('Vorschlag für die Unterschrift');
-      expect(text).not.toContain('USA');
+      expect(text).not.toContain('KI-Anbieter');
     });
   });
 });

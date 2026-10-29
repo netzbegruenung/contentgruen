@@ -77,7 +77,16 @@ describe('AddImageComponent', () => {
     flush();
   }));
 
-  it('speichert erst mit einer selbst geschriebenen Unterschrift, einen KI-Knopf gibt es nicht', () => {
+  it('bietet keinen KI-Vorschlag fuer die Unterschrift an (#393)', () => {
+    const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('form button'));
+
+    expect(knoepfe.map((k) => k.className)).toEqual([
+      jasmine.stringContaining('cancel-btn'),
+      jasmine.stringContaining('submit-btn'),
+    ]);
+  });
+
+  it('speichert erst mit einer selbst geschriebenen Unterschrift', () => {
     const component = fixture.componentInstance;
     const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(
       of({ id: 'b-1' } as any),
@@ -89,7 +98,6 @@ describe('AddImageComponent', () => {
     fixture.detectChanges();
     const speichern: HTMLButtonElement = fixture.nativeElement.querySelector('.submit-btn');
 
-    expect(fixture.nativeElement.textContent).not.toContain('KI');
     expect(speichern.disabled).toBeTrue();
     component.saveImageForm();
     expect(senden).not.toHaveBeenCalled();

@@ -144,7 +144,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 - **API**: `SEMANTIC_SEARCH_APP_DATABASE_URL` (PostgreSQL), `SEMANTIC_SEARCH_QDRANT_URL` (Qdrant)
 - **Frontend**: `baseUrl` empty for Docker, `http://localhost:5054` for local
 
-> **Datenschutz — keine KI-Anbieter.** Der Code schickt nichts an einen KI-Anbieter; den
+> **Datenschutz — keine KI-Anbieter.** Die Dienste schicken nichts an einen KI-Anbieter; den
 > Unterschrift-Vorschlag über OpenAI gibt es seit #393 nicht mehr, die Unterschrift schreibt
 > die Person. Die Datenschutzerklärung sagt, dass nichts außerhalb der EU verarbeitet wird.
 > Jede KI-Funktion, die Daten an einen externen Dienst schickt, braucht vorher eine Erweiterung

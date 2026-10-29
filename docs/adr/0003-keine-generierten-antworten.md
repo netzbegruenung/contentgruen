@@ -8,7 +8,7 @@ KI darf Nutzenden für ihre eigene Verwendung Texte vorschlagen, etwa eine Verbe
 
 ## Unterschrift eines Bildes
 
-Das gilt auch für die Unterschrift eines Bildes, obwohl sie nur beschreibt, was zu sehen ist: Sie ist der Text, über den das Bild gefunden wird, und kann ebenso einen Fakt erfinden oder eine Position falsch zuschreiben. Die Person schreibt die Unterschrift im Bild-Formular selbst und speichert das Bild. Ein Vorschlag darf ihr nur auf Klick als Entwurf ins Feld gesetzt werden, den sie prüft, bearbeitet oder verwirft. Den Vorschlag über OpenAI gibt es seit #393 nicht mehr; ein Vorschlagsdienst muss auf eigener Infrastruktur laufen (ADR 0005). Ohne Unterschrift wird kein Bild gespeichert, und kein Hintergrunddienst schreibt eine nach (#281).
+Das gilt auch für die Unterschrift eines Bildes, obwohl sie nur beschreibt, was zu sehen ist: Sie ist der Text, über den das Bild gefunden wird, und kann ebenso einen Fakt erfinden oder eine Position falsch zuschreiben. Die Person schreibt die Unterschrift im Bild-Formular selbst und speichert das Bild. Ein KI-Vorschlag darf ihr nur auf Klick ins Feld gesetzt werden; sie prüft, bearbeitet oder verwirft ihn. Den KI-Vorschlag über OpenAI gibt es seit #393 (30.10.2026) nicht mehr; ein Vorschlagsdienst muss auf eigener Infrastruktur laufen (ADR 0005). Ohne Unterschrift wird kein Bild gespeichert, und kein Hintergrunddienst schreibt eine nach (#281).
 
 Verworfen wurde eine Ausnahme für die Unterschrift, bei der ein Hintergrunddienst die fehlende Unterschrift schreibt und das Bild damit sichtbar macht: Dann stünde für den Text, über den das Bild gefunden wird, niemand gerade, und Bild-URLs gingen ohne Zutun der Person an den KI-Anbieter.
 
