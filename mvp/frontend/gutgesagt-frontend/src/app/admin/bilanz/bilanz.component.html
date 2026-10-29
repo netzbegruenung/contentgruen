@@ -10,6 +10,13 @@
     </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
+    <label class="zeitraum">
+      Zeitraum
+      <select [value]="wochen" (change)="zeitraumWaehlen($any($event.target).value)">
+        <option *ngFor="let z of zeitraeume" [value]="z" [selected]="z === wochen">{{ z }} Wochen</option>
+      </select>
+    </label>
+
     <p *ngIf="fehler" class="hinweis">Die Bilanz konnte nicht geladen werden.</p>
 
     <div *ngIf="daten" class="tabelle">
@@ -41,7 +48,8 @@
       gemittelt über die Tage der Woche; wer sich im Laufe des Tages anmeldet, zählt doppelt.
       Nutzungen: wie oft Beiträge in der Woche genutzt wurden. Suchen ohne Treffer: Anteil an allen Suchen.
       – heißt: nicht bekannt, etwa ohne Suche in der Woche oder wenn die Nutzungen der Woche
-      schon gelöscht sind (Frist 90 Tage).
+      nach der Frist der Nutzungsereignisse schon gelöscht sind. Deshalb die Basislinie
+      rechtzeitig außerhalb des Dashboards festhalten.
     </p>
   </mat-card-content>
 </mat-card>

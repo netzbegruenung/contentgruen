@@ -36,9 +36,8 @@ export class MetricsService {
     return this.http.get<MVPMetrics>(`${this.baseUrl}/mvp-dashboard`);
   }
 
-  // Zeitraum: Standard des Backends; die Antwort nennt ihn.
-  getBilanz(): Observable<BilanzResponse> {
-    return this.http.get<BilanzResponse>(`${this.baseUrl}/bilanz`);
+  getBilanz(wochen: number): Observable<BilanzResponse> {
+    return this.http.get<BilanzResponse>(`${this.baseUrl}/bilanz`, { params: { wochen } });
   }
 
   // Zeitraum: Standard des Backends; die Antwort nennt ihn.

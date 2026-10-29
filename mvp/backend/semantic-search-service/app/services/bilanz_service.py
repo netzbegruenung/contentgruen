@@ -17,10 +17,12 @@ aus Tageszaehlern von vor #467.
 """
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from typing import Dict, Iterable, List, Optional, Protocol
 
 from repositories.search_tracking_repository import Tageswert
+from services.suchen_ohne_treffer_service import wochenbeginn
+from utils.utc_tag import heute_utc
 
 
 @dataclass(frozen=True)
@@ -42,10 +44,6 @@ class _Nutzungen(Protocol):
     def get_nutzungen_je_tag(self, erster: date, letzter: date) -> Dict[date, int]: ...
 
 
-def _montag(tag: date) -> date:
-    return tag - timedelta(days=tag.weekday())
-
-
 def bilanz_je_woche(
     tageswerte: Iterable[Tageswert],
     nutzungen_je_tag: Dict[date, int],
@@ -59,7 +57,7 @@ def bilanz_je_woche(
     Wochen, die frueher beginnen, haben keine Nutzungen (None).
     """
     tage_je_datum = {t.tag: t for t in tageswerte}
-    laufender_montag = _montag(heute)
+    laufender_montag = wochenbeginn(heute)
     ergebnis = []
     for i in range(wochen):
         woche_ab = laufender_montag - timedelta(weeks=i)
@@ -116,8 +114,8 @@ class BilanzService:
         self._nutzung_frist_tage = nutzung_frist_tage
 
     def wochen(self, anzahl: int, heute: Optional[date] = None) -> List[BilanzWoche]:
-        heute = heute or datetime.now(timezone.utc).date()
-        erster = _montag(heute) - timedelta(weeks=anzahl - 1)
+        heute = heute or heute_utc()
+        erster = wochenbeginn(heute) - timedelta(weeks=anzahl - 1)
         # Der Bereinigungsjob loescht, was aelter als die Frist ist, gemessen am
         # Zeitpunkt seines Laufs: Der Tag an der Grenze ist schon angebrochen.
         nutzung_ab = (

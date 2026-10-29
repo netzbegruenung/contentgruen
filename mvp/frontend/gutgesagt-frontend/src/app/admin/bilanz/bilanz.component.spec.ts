@@ -5,7 +5,7 @@ import { BilanzComponent } from './bilanz.component';
 import { BilanzResponse } from '../../services/dtos/metricsDtos';
 import { environment } from '../../../environments/environment';
 
-const URL = `${environment.baseUrl}/api/v1/metrics/bilanz`;
+const URL = `${environment.baseUrl}/api/v1/metrics/bilanz?wochen=8`;
 
 const ANTWORT: BilanzResponse = {
   wochen: 8,
@@ -87,6 +87,21 @@ describe('BilanzComponent', () => {
     fixture.detectChanges();
 
     expect(element().textContent).toContain('– heißt: nicht bekannt');
+  });
+
+  it('lädt einen längeren Zeitraum, damit die Basislinie sichtbar bleibt', () => {
+    http.expectOne(URL).flush(ANTWORT);
+    fixture.detectChanges();
+
+    const auswahl = element().querySelector('select') as HTMLSelectElement;
+    expect(Array.from(auswahl.options).map((o) => o.value)).toEqual(['8', '13', '26', '52']);
+    auswahl.value = '52';
+    auswahl.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    http.expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=52`).flush({ ...ANTWORT, wochen: 52 });
+    fixture.detectChanges();
+    expect(element().textContent).toContain('die letzten 52');
   });
 
   it('meldet einen Ladefehler', () => {

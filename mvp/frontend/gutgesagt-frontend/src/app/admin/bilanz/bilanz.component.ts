@@ -17,13 +17,27 @@ import { BilanzResponse, BilanzWoche } from '../../services/dtos/metricsDtos';
   styleUrls: ['./bilanz.component.css'],
 })
 export class BilanzComponent implements OnInit {
+  // Die Basislinie (Wochen 2 bis 4 des internen Launchs) liegt bei der Bilanz
+  // mindestens zwoelf Wochen zurueck; 8 Wochen reichen nur fuer den laufenden Blick.
+  readonly zeitraeume = [8, 13, 26, 52];
+  wochen = 8;
   daten: BilanzResponse | null = null;
   fehler = false;
 
   constructor(private metricsService: MetricsService) {}
 
   ngOnInit() {
-    this.metricsService.getBilanz().subscribe({
+    this.laden();
+  }
+
+  zeitraumWaehlen(wert: string) {
+    this.wochen = Number(wert);
+    this.laden();
+  }
+
+  private laden() {
+    this.fehler = false;
+    this.metricsService.getBilanz(this.wochen).subscribe({
       next: (daten) => (this.daten = daten),
       error: () => (this.fehler = true),
     });
