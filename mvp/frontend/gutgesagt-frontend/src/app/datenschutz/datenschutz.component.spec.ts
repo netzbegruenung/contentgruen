@@ -318,4 +318,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('ist auf dieser Plattform abgeschaltet');
     });
   });
+
+  describe('Meldungen nach Art. 16 DSA (#438)', () => {
+    it('nennt Name, E-Mail-Adresse und Erklärung guten Glaubens und wofür die Adresse dient', () => {
+      const text = abschnitt('Meldungen von Beiträgen');
+
+      expect(text).toContain('deine Erklärung, in gutem Glauben zu melden');
+      expect(text).toContain('dein Name und deine E-Mail-Adresse, falls du sie angibst');
+      expect(text).toContain('Name und E-Mail-Adresse sind freiwillig');
+      expect(text).toContain('um dir unsere Entscheidung über die Meldung mitzuteilen');
+      expect(text).toContain('Artikel 16 Absatz 5 DSA');
+    });
+  });
 });

@@ -29,6 +29,9 @@ class ContentReportRepository:
         reported_by_user_id: Optional[str] = None,
         reported_by_session_id: Optional[str] = None,
         description: Optional[str] = None,
+        melder_name: Optional[str] = None,
+        melder_email: Optional[str] = None,
+        guter_glaube: Optional[bool] = None,
     ) -> ContentReport:
         """
         Create a new content report.
@@ -40,6 +43,9 @@ class ContentReportRepository:
             reported_by_user_id: Optional user ID of reporter
             reported_by_session_id: Optional session ID of reporter
             description: Optional detailed description
+            melder_name: Optional name of the reporter (#438)
+            melder_email: Optional e-mail address of the reporter (#438)
+            guter_glaube: Erklaerung guten Glaubens (#438)
 
         Returns:
             ContentReport: Created report object
@@ -53,6 +59,9 @@ class ContentReportRepository:
                     reported_by_user_id=reported_by_user_id,
                     reported_by_session_id=reported_by_session_id,
                     description=description,
+                    melder_name=melder_name,
+                    melder_email=melder_email,
+                    guter_glaube=guter_glaube,
                     status="pending",
                 )
                 session.add(report)
@@ -163,6 +172,9 @@ class ContentReportRepository:
                             else None
                         ),
                         "resolution_notes": report.resolution_notes,
+                        "melder_name": report.melder_name,
+                        "melder_email": report.melder_email,
+                        "guter_glaube": report.guter_glaube,
                     }
                     for report in reports
                 ]

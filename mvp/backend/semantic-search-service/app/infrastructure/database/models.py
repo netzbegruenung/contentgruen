@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     String,
     Integer,
@@ -287,6 +288,11 @@ class ContentReport(Base):
     reviewed_by = Column(String(255), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
     resolution_notes = Column(Text, nullable=True)
+    # Angaben nach Art. 16 Abs. 2 DSA (#438): Name und E-Mail-Adresse freiwillig,
+    # die Erklaerung guten Glaubens Pflicht. NULL bei Meldungen von vor #438.
+    melder_name = Column(String(200), nullable=True)
+    melder_email = Column(String(254), nullable=True)
+    guter_glaube = Column(Boolean, nullable=True)
 
     # Indexes and constraints
     __table_args__ = (

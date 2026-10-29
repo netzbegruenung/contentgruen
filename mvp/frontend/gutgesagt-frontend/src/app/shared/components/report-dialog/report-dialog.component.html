@@ -3,8 +3,7 @@
 
   <div mat-dialog-content *ngIf="!submitted">
     <p class="description">
-      Bitte wählen Sie einen Grund für die Meldung dieses Inhalts.
-      Unser Team wird die Meldung überprüfen.
+      Warum meldest du diesen Inhalt? Menschen aus unserem Team prüfen die Meldung.
     </p>
 
     <mat-form-field appearance="fill" class="full-width">
@@ -20,33 +19,71 @@
       <mat-label>Beschreibung (optional)</mat-label>
       <textarea
         matInput
+        name="beschreibung"
         [(ngModel)]="description"
         rows="4"
-        placeholder="Zusätzliche Details..."></textarea>
+        placeholder="Was genau stimmt nicht? Bei rechtswidrigen Inhalten: warum?"></textarea>
     </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Dein Name (optional)</mat-label>
+      <input matInput
+             name="melder_name"
+             [(ngModel)]="melderName"
+             [maxlength]="nameMax"
+             autocomplete="name" />
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Deine E-Mail-Adresse (optional)</mat-label>
+      <input matInput
+             type="email"
+             name="melder_email"
+             [(ngModel)]="melderEmail"
+             [maxlength]="emailMax"
+             autocomplete="email" />
+      <mat-hint *ngIf="!emailUngueltig">Nur wenn du unsere Entscheidung erfahren willst.</mat-hint>
+    </mat-form-field>
+    <p *ngIf="emailUngueltig" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
+
+    <mat-checkbox data-testid="melden-guter-glaube" [(ngModel)]="guterGlaube" class="guter-glaube">
+      Ich bin in gutem Glauben davon überzeugt, dass meine Angaben richtig und vollständig sind.
+    </mat-checkbox>
+
+    <p class="hinweis">
+      Name und E-Mail-Adresse sehen nur Admins. Mehr dazu in der
+      <a href="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung</a>.
+    </p>
 
     <div *ngIf="error" class="error-message">
       {{ error }}
     </div>
   </div>
 
-  <div mat-dialog-content *ngIf="submitted" class="success-message">
+  <div mat-dialog-content *ngIf="submitted" class="success-message" role="status">
     <mat-icon class="success-icon">check_circle</mat-icon>
-    <p>Vielen Dank für Ihre Meldung!</p>
-    <p class="sub-message">Wir werden den Inhalt überprüfen.</p>
+    <p>Deine Meldung ist eingegangen.</p>
+    <p class="sub-message">
+      Menschen aus unserem Team prüfen sie.
+      <ng-container *ngIf="mitEmail">Unsere Entscheidung teilen wir dir per E-Mail mit.</ng-container>
+    </p>
   </div>
 
   <div mat-dialog-actions align="end" *ngIf="!submitted">
-    <button mat-button (click)="cancel()" [disabled]="submitting">
+    <button mat-button (click)="close(false)" [disabled]="submitting">
       Abbrechen
     </button>
     <button
       mat-raised-button
       color="warn"
+      data-testid="melden-senden"
       (click)="submitReport()"
-      [disabled]="submitting || !selectedReason">
+      [disabled]="!kannMelden">
       <span *ngIf="!submitting">Melden</span>
       <mat-spinner *ngIf="submitting" diameter="20"></mat-spinner>
     </button>
+  </div>
+  <div mat-dialog-actions align="end" *ngIf="submitted">
+    <button mat-raised-button (click)="close(true)">Schließen</button>
   </div>
 </div>

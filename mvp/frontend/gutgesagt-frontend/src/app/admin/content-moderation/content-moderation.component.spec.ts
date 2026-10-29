@@ -231,4 +231,23 @@ describe('ContentModerationComponent', () => {
 
     expect(fixture.componentInstance.getReasonLabel('etwas_altes')).toBe('etwas_altes');
   });
+
+  it('zeigt Name und E-Mail-Adresse der meldenden Person, damit Admins die Entscheidung mitteilen können (#438)', () => {
+    mitMeldungen([meldung({ melder_name: 'Anna Beispiel', melder_email: 'anna@example.org', guter_glaube: true })]);
+
+    const zelle: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell');
+    expect(zelle.textContent).toContain('Anna Beispiel');
+    const link = zelle.querySelector('a') as HTMLAnchorElement;
+    expect(link.textContent).toContain('anna@example.org');
+    expect(link.getAttribute('href')).toBe('mailto:anna@example.org');
+    expect(zelle.textContent).toContain('in gutem Glauben');
+  });
+
+  it('vermerkt bei alten Meldungen, dass die Erklärung guten Glaubens fehlt', () => {
+    mitMeldungen([meldung({ guter_glaube: null })]);
+
+    const zelle: HTMLElement = fixture.nativeElement.querySelector('.reporter-cell');
+    expect(zelle.textContent).toContain('ohne Erklärung guten Glaubens');
+    expect(zelle.querySelector('a')).toBeNull();
+  });
 });

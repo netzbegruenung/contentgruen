@@ -116,6 +116,9 @@ class ModerationService:
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         description: Optional[str] = None,
+        melder_name: Optional[str] = None,
+        melder_email: Optional[str] = None,
+        guter_glaube: Optional[bool] = None,
     ) -> bool:
         """
         Report a content item.
@@ -127,6 +130,9 @@ class ModerationService:
             user_id: Optional user ID of reporter
             session_id: Optional session ID of reporter
             description: Optional detailed description
+            melder_name: Optional name of the reporter (Art. 16 Abs. 2 lit. c DSA)
+            melder_email: Optional e-mail address of the reporter (same)
+            guter_glaube: Erklaerung guten Glaubens (Art. 16 Abs. 2 lit. d DSA)
 
         Returns:
             bool: True if report was created successfully
@@ -164,6 +170,9 @@ class ModerationService:
                 reported_by_user_id=user_id,
                 reported_by_session_id=session_id,
                 description=description,
+                melder_name=melder_name,
+                melder_email=melder_email,
+                guter_glaube=guter_glaube,
             )
             logger.info(f"Content {content_id} reported: {reason}")
             return report is not None

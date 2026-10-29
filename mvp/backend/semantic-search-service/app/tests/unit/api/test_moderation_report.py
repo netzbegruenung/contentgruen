@@ -31,6 +31,7 @@ def _payload(**overrides):
         "content_id": CONTENT_ID,
         "content_type": "commentary",
         "reason": "spam",
+        "guter_glaube": True,
     }
     body.update(overrides)
     return body
@@ -323,3 +324,58 @@ class TestSessionIdNormalisation:
         client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": value})
 
         assert service.report_content.await_args.kwargs["session_id"] == value
+
+
+class TestAngabenNachArtikel16:
+    """Name, E-Mail-Adresse und Erklaerung guten Glaubens (Art. 16 Abs. 2 DSA, #438)."""
+
+    def test_name_und_email_gehen_an_den_service(self, client, service):
+        response = client.post(
+            REPORT_URL,
+            json=_payload(melder_name="Anna Beispiel", melder_email="anna@example.org"),
+        )
+
+        assert response.status_code == 200
+        kwargs = service.report_content.await_args.kwargs
+        assert kwargs["melder_name"] == "Anna Beispiel"
+        assert kwargs["melder_email"] == "anna@example.org"
+        assert kwargs["guter_glaube"] is True
+
+    def test_ohne_name_und_email_wird_gemeldet(self, client, service):
+        assert client.post(REPORT_URL, json=_payload()).status_code == 200
+
+        kwargs = service.report_content.await_args.kwargs
+        assert kwargs["melder_name"] is None
+        assert kwargs["melder_email"] is None
+
+    def test_leere_angaben_zaehlen_als_nicht_angegeben(self, client, service):
+        client.post(REPORT_URL, json=_payload(melder_name="  ", melder_email=""))
+
+        kwargs = service.report_content.await_args.kwargs
+        assert kwargs["melder_name"] is None
+        assert kwargs["melder_email"] is None
+
+    @pytest.mark.parametrize("guter_glaube", [False, None])
+    def test_ohne_erklaerung_guten_glaubens_wird_abgewiesen(
+        self, client, service, guter_glaube
+    ):
+        body = _payload(guter_glaube=guter_glaube)
+        if guter_glaube is None:
+            del body["guter_glaube"]
+
+        assert client.post(REPORT_URL, json=body).status_code == 422
+        service.report_content.assert_not_awaited()
+
+    @pytest.mark.parametrize("email", ["anna", "anna@", "@example.org", "a b@c.de"])
+    def test_ungueltige_email_wird_abgewiesen(self, client, service, email):
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_email=email)).status_code
+            == 422
+        )
+        service.report_content.assert_not_awaited()
+
+    def test_zu_langer_name_wird_abgewiesen(self, client):
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_name="X" * 201)).status_code
+            == 422
+        )

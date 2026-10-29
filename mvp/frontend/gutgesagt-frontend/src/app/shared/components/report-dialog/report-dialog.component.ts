@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
@@ -16,6 +17,19 @@ export interface ReportDialogData {
   contentType: string;
 }
 
+// Grenzen wie im Suchdienst (api/v1/moderation.py: MELDER_NAME_MAX, MELDER_EMAIL_MAX).
+export const MELDER_NAME_MAX = 200;
+export const MELDER_EMAIL_MAX = 254;
+
+// Grob wie eine Adresse aussehen; die genaue Pruefung macht der Suchdienst.
+const EMAIL_MUSTER = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Der Meldedialog. ANNAHME (#438): Der DSA gilt fuer Gut gesagt (offen in #296).
+ * Deshalb fragt er die Angaben nach Art. 16 Abs. 2 DSA ab: Name und E-Mail-Adresse
+ * freiwillig, die Erklaerung guten Glaubens als Pflicht. Eine Eingangsbestaetigung
+ * per Mail gibt es nicht (kein Mailversand); bestaetigt wird der Eingang hier.
+ */
 @Component({
   selector: 'app-report-dialog',
   standalone: true,
@@ -24,6 +38,7 @@ export interface ReportDialogData {
     FormsModule,
     MatDialogModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatSelectModule,
     MatInputModule,
@@ -36,11 +51,18 @@ export interface ReportDialogData {
 export class ReportDialogComponent {
   selectedReason: MeldegrundWert = 'spam';
   description: string = '';
+  melderName = '';
+  melderEmail = '';
+  guterGlaube = false;
   submitting = false;
   submitted = false;
+  /** Ob die abgeschickte Meldung eine E-Mail-Adresse trug: davon haengt die Bestaetigung ab. */
+  mitEmail = false;
   error: string | null = null;
 
   readonly reasons = MELDEGRUENDE;
+  readonly nameMax = MELDER_NAME_MAX;
+  readonly emailMax = MELDER_EMAIL_MAX;
 
   constructor(
     public dialogRef: MatDialogRef<ReportDialogComponent>,
@@ -48,29 +70,46 @@ export class ReportDialogComponent {
     private moderationService: ModerationService
   ) {}
 
+  get emailUngueltig(): boolean {
+    const email = this.melderEmail.trim();
+    return email !== '' && !EMAIL_MUSTER.test(email);
+  }
+
+  get kannMelden(): boolean {
+    return !this.submitting && !!this.selectedReason && this.guterGlaube && !this.emailUngueltig;
+  }
+
   submitReport() {
+    if (!this.kannMelden) {
+      return;
+    }
     this.submitting = true;
     this.error = null;
+    const melderEmail = this.melderEmail.trim() || null;
 
-    this.moderationService.reportContent(
-      this.data.contentId,
-      this.data.contentType,
-      this.selectedReason,
-      this.description || undefined
-    ).subscribe({
-      next: (response) => {
+    this.moderationService.reportContent({
+      contentId: this.data.contentId,
+      contentType: this.data.contentType,
+      reason: this.selectedReason,
+      description: this.description || undefined,
+      melderName: this.melderName.trim() || null,
+      melderEmail,
+      guterGlaube: true,
+    }).subscribe({
+      next: () => {
         this.submitting = false;
         this.submitted = true;
-        setTimeout(() => this.dialogRef.close(true), 2000);
+        this.mitEmail = melderEmail !== null;
       },
       error: (error) => {
         this.submitting = false;
 
-        // Handle rate limiting (HTTP 429)
         if (error.status === 429) {
-          this.error = 'Zu viele Meldungen. Bitte warten Sie einige Minuten, bevor Sie erneut melden.';
+          this.error = 'Zu viele Meldungen. Bitte warte einige Minuten, bevor du erneut meldest.';
+        } else if (error.status === 422) {
+          this.error = 'Bitte prüfe deine Angaben, etwa die E-Mail-Adresse.';
         } else {
-          this.error = 'Fehler beim Senden der Meldung. Bitte versuchen Sie es erneut.';
+          this.error = 'Fehler beim Senden der Meldung. Bitte versuche es erneut.';
         }
 
         console.error('Error reporting content:', error);
@@ -78,7 +117,7 @@ export class ReportDialogComponent {
     });
   }
 
-  cancel() {
-    this.dialogRef.close(false);
+  close(gemeldet: boolean) {
+    this.dialogRef.close(gemeldet);
   }
 }

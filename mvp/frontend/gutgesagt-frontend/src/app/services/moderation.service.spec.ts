@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { ModerationService } from './moderation.service';
+import { ModerationService, NeueMeldung } from './moderation.service';
 import { SessionService } from './session.service';
 import { environment } from '../../environments/environment';
 
@@ -32,6 +32,18 @@ describe('ModerationService', () => {
     httpMock.verify();
   });
 
+  function meldung(felder: Partial<NeueMeldung> = {}): NeueMeldung {
+    return {
+      contentId: 'content-123',
+      contentType: 'commentary',
+      reason: 'spam',
+      melderName: null,
+      melderEmail: null,
+      guterGlaube: true,
+      ...felder,
+    };
+  }
+
   describe('reportContent', () => {
     it('should send report request with X-Session-Id header', () => {
       const contentId = 'content-123';
@@ -39,7 +51,7 @@ describe('ModerationService', () => {
       const reason = 'spam';
       const description = 'This is spam content';
 
-      service.reportContent(contentId, contentType, reason, description).subscribe();
+      service.reportContent(meldung({ contentId, contentType, reason, description })).subscribe();
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
       expect(req.request.method).toBe('POST');
@@ -48,7 +60,10 @@ describe('ModerationService', () => {
         content_id: contentId,
         content_type: contentType,
         reason: reason,
-        description: description
+        description: description,
+        melder_name: null,
+        melder_email: null,
+        guter_glaube: true,
       });
 
       req.flush({ success: true, message: 'Report submitted' });
@@ -59,7 +74,7 @@ describe('ModerationService', () => {
       const contentType = 'generictext';
       const reason = 'inappropriate';
 
-      service.reportContent(contentId, contentType, reason).subscribe();
+      service.reportContent(meldung({ contentId, contentType, reason })).subscribe();
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
       expect(req.request.body.description).toBeUndefined();
@@ -68,8 +83,18 @@ describe('ModerationService', () => {
       req.flush({ success: true, message: 'Report submitted' });
     });
 
+    it('schickt Name, E-Mail-Adresse und die Erklärung guten Glaubens mit (#438)', () => {
+      service.reportContent(meldung({ melderName: 'Anna Beispiel', melderEmail: 'anna@example.org' })).subscribe();
+
+      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
+      expect(req.request.body.melder_name).toBe('Anna Beispiel');
+      expect(req.request.body.melder_email).toBe('anna@example.org');
+      expect(req.request.body.guter_glaube).toBeTrue();
+      req.flush({ success: true, message: 'Report submitted' });
+    });
+
     it('should call sessionService.getSessionId()', () => {
-      service.reportContent('content-123', 'commentary', 'spam').subscribe();
+      service.reportContent(meldung()).subscribe();
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
       req.flush({ success: true, message: 'Report submitted' });
@@ -80,7 +105,7 @@ describe('ModerationService', () => {
     it('should handle successful report submission', (done) => {
       const mockResponse = { success: true, message: 'Content reported successfully' };
 
-      service.reportContent('content-123', 'commentary', 'spam').subscribe(response => {
+      service.reportContent(meldung()).subscribe(response => {
         expect(response).toEqual(mockResponse);
         done();
       });
@@ -90,7 +115,7 @@ describe('ModerationService', () => {
     });
 
     it('should handle error response', (done) => {
-      service.reportContent('content-123', 'commentary', 'spam').subscribe({
+      service.reportContent(meldung()).subscribe({
         next: () => fail('should have failed'),
         error: (error) => {
           expect(error.status).toBe(429);

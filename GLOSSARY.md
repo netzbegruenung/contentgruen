@@ -283,8 +283,12 @@ Was das Gegenlesen an einem Beitrag beim Schreiben findet, je Regel höchstens e
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf; der CC0-Hinweis steht über dem Absende-Knopf), Warnung, Fehler
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Bearbeitete und abgewiesene Meldungen werden nach ihrer Löschfrist gelöscht. Offene bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird; dann gelten sie als bearbeitet. Melden auf der Plattform einer Aussage ist keine Meldung. Wer meldet, gibt die Erklärung guten Glaubens ab und kann Name und E-Mail-Adresse angeben; beides sehen nur Admins. Eine E-Mail-Adresse braucht es nur, damit ein Admin der Person die Entscheidung über die Meldung mitteilen kann. Den Eingang bestätigt die App sofort, eine Mail dazu gibt es nicht.
 _Avoid_: Report, Flag, Beschwerde
+
+**Erklärung guten Glaubens**:
+Was jede Person beim Melden ankreuzt: dass sie in gutem Glauben davon überzeugt ist, dass ihre Angaben richtig und vollständig sind (Art. 16 Abs. 2 lit. d DSA). Ohne sie gibt es keine Meldung über die App; ältere Meldungen tragen sie nicht.
+_Avoid_: Bestätigung, Einverständnis, Zustimmung (das ist der CC0-Hinweis)
 
 **Meldegrund**:
 Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder unerwünschte Werbung, Unangemessener Inhalt, Erfunden oder sachlich falsch, Dublette, Andere. „Erfunden oder sachlich falsch“ ist der Grund für erfundene Erlebnisse oder Zahlen; „Dublette“ heißt, dass der gemeldete Beitrag einem vorhandenen fast gleicht. Was genau nicht stimmt, schreibt die Person in die Beschreibung der Meldung.

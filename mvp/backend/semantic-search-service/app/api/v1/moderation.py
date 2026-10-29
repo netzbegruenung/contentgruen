@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from domain.models.meldegrund import Meldegrund
 from domain.models.sperrgrund import Sperrgrund
@@ -25,6 +25,11 @@ from utils.client_identity import derive_client_key, normalize_session_id
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+# Grenzen wie im Meldedialog (shared/components/report-dialog). 254 ist die
+# laengste zulaessige E-Mail-Adresse (RFC 5321).
+MELDER_NAME_MAX = 200
+MELDER_EMAIL_MAX = 254
 
 
 # Request/Response Models
@@ -50,6 +55,41 @@ class ReportContentRequest(BaseModel):
         max_length=1000,
         description="Optional detailed description (max 1000 characters)",
     )
+    # Angaben nach Art. 16 Abs. 2 DSA (#438). ANNAHME (#438): Der DSA gilt fuer
+    # Gut gesagt (offen in #296). Name und E-Mail-Adresse sind freiwillig
+    # (lit. c); nur wer sie angibt, kann die Entscheidung erfahren (Abs. 5).
+    # Beides sehen nur Admins, und keins von beiden landet im Log.
+    melder_name: Optional[str] = Field(
+        None,
+        max_length=MELDER_NAME_MAX,
+        description="Optional: Name der meldenden Person",
+    )
+    melder_email: Optional[EmailStr] = Field(
+        None,
+        max_length=MELDER_EMAIL_MAX,
+        description="Optional: E-Mail-Adresse fuer die Mitteilung der Entscheidung",
+    )
+    # Die Erklaerung guten Glaubens (lit. d) ist Pflicht: Ohne sie ist eine
+    # Meldung nach Abs. 3 nicht vollstaendig.
+    guter_glaube: bool = Field(
+        ...,
+        description="Die meldende Person erklaert, in gutem Glauben zu melden",
+    )
+
+    @field_validator("melder_name", "melder_email", mode="before")
+    @classmethod
+    def _leer_ist_nicht_angegeben(cls, wert):
+        if isinstance(wert, str):
+            wert = wert.strip()
+            return wert or None
+        return wert
+
+    @field_validator("guter_glaube")
+    @classmethod
+    def _guter_glaube_erklaert(cls, wert: bool) -> bool:
+        if wert is not True:
+            raise ValueError("Die Erklaerung guten Glaubens fehlt")
+        return wert
 
 
 class ReportContentResponse(BaseModel):
@@ -196,6 +236,9 @@ async def report_content(
             user_id=x_user_id if is_authenticated else None,
             session_id=reporter_session,
             description=request.description,
+            melder_name=request.melder_name,
+            melder_email=request.melder_email,
+            guter_glaube=request.guter_glaube,
         )
 
         if success:
