@@ -14,21 +14,16 @@ describe('ReportDialogComponent', () => {
     );
   }
 
-  it('bietet „Erfunden oder sachlich falsch“ als Meldegrund an', () => {
-    const grund = dialog().reasons.find((g) => g.value === 'fabricated_or_false');
-
-    expect(grund?.label).toBe('Erfunden oder sachlich falsch');
-  });
-
   it('nennt die Dublette nach dem Glossar', () => {
     const grund = dialog().reasons.find((g) => g.value === 'duplicate');
 
     expect(grund?.label).toBe('Dublette');
   });
 
-  it('bietet den Grund an, auf den der Hinweis zu Erfundenem verweist', () => {
+  it('bietet „Erfunden oder sachlich falsch“ an, und der Hinweis zu Erfundenem verweist darauf', () => {
     const grund = dialog().reasons.find((g) => g.value === 'fabricated_or_false')!;
 
+    expect(grund.label).toBe('Erfunden oder sachlich falsch');
     expect(ERFUNDENES_MELDEN).toContain(`„${grund.label}“`);
     expect(ERFUNDENES_MELDEN).not.toContain('„Andere“');
   });

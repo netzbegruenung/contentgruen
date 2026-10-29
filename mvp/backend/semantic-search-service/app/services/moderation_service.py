@@ -16,7 +16,7 @@ from repositories.implementations.qdrant.moderation_repository import (
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
 from domain.models.content_status import ContentStatus
-from domain.models.meldegrund import MELDEGRUENDE
+from domain.models.meldegrund import MELDEGRUENDE, Meldegrund
 from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class ModerationService:
         self,
         content_id: str,
         content_type: str,
-        reason: str,
+        reason: Meldegrund,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         description: Optional[str] = None,

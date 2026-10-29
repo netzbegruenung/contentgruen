@@ -13,6 +13,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from domain.models.meldegrund import MELDEGRUENDE
+from repositories.content_report_repository import ContentReportRepository
+from repositories.interfaces.moderation_repository import IModerationRepository
 from services.moderation_service import ModerationService
 
 CONTENT_ID = str(uuid.uuid4())
@@ -25,7 +27,7 @@ FRONTEND_MELDEGRUENDE = (
 
 @pytest.fixture
 def report_repo():
-    repo = MagicMock()
+    repo = MagicMock(spec=ContentReportRepository)
     repo.has_report_from_user = MagicMock(return_value=False)
     repo.create_report = MagicMock(return_value=MagicMock())
     return repo
@@ -33,14 +35,13 @@ def report_repo():
 
 @pytest.fixture
 def service(report_repo):
-    return ModerationService(report_repo=report_repo, moderation_repo=MagicMock())
+    return ModerationService(
+        report_repo=report_repo, moderation_repo=MagicMock(spec=IModerationRepository)
+    )
 
 
 @pytest.mark.unit
 class TestMeldegruende:
-    def test_meldegruende_enthalten_erfunden_oder_sachlich_falsch(self):
-        assert "fabricated_or_false" in MELDEGRUENDE
-
     def test_meldegruende_bisherige_bleiben_gueltig(self):
         # Gespeicherte Meldungen tragen diese Werte; sie muessen gueltig bleiben.
         assert {"spam", "inappropriate", "duplicate", "other"} <= set(MELDEGRUENDE)

@@ -44,7 +44,9 @@ def service(datenbank):
         )
 
 
-async def test_erfunden_oder_sachlich_falsch_steht_in_der_admin_liste(service):
+async def test_report_content_erfunden_oder_sachlich_falsch_steht_in_der_admin_liste(
+    service,
+):
     beitrag = str(uuid.uuid4())
 
     assert await service.report_content(
@@ -61,15 +63,22 @@ async def test_erfunden_oder_sachlich_falsch_steht_in_der_admin_liste(service):
     assert meldung["description"] == "Die Zahl im zweiten Satz stimmt nicht"
 
 
-async def test_bestehende_meldungen_bleiben_unveraendert(service, datenbank):
+async def test_report_content_bestehende_meldungen_bleiben_unveraendert(
+    service, datenbank
+):
+    vorher = {
+        str(uuid.uuid4()): grund
+        for grund in ("spam", "inappropriate", "duplicate", "other")
+    }
     with datenbank.get_session() as s:
-        for grund in ("spam", "inappropriate", "duplicate", "other"):
+        for beitrag, grund in vorher.items():
             s.add(
                 ContentReport(
-                    content_id=uuid.uuid4(),
+                    content_id=uuid.UUID(beitrag),
                     content_type="commentary",
                     reported_by_session_id="sitzung",
                     reason=grund,
+                    description=f"Beschreibung zu {grund}",
                 )
             )
 
@@ -77,7 +86,11 @@ async def test_bestehende_meldungen_bleiben_unveraendert(service, datenbank):
         str(uuid.uuid4()), "commentary", "fabricated_or_false", user_id="person-1"
     )
 
-    gruende = sorted(m["reason"] for m in await service.get_pending_reports())
-    assert gruende == sorted(
-        ["spam", "inappropriate", "duplicate", "other", "fabricated_or_false"]
-    )
+    nachher = {m["content_id"]: m for m in await service.get_pending_reports()}
+    assert len(nachher) == 5
+    for beitrag, grund in vorher.items():
+        meldung = nachher[beitrag]
+        assert meldung["reason"] == grund
+        assert meldung["description"] == f"Beschreibung zu {grund}"
+        assert meldung["reported_by_session_id"] == "sitzung"
+        assert meldung["status"] == "pending"

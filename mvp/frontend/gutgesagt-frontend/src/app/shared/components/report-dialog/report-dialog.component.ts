@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { ModerationService } from '../../../services/moderation.service';
-import { MELDEGRUENDE } from '../../meldegruende';
+import { MELDEGRUENDE, MeldegrundWert } from '../../meldegruende';
 
 export interface ReportDialogData {
   contentId: string;
@@ -34,7 +34,7 @@ export interface ReportDialogData {
   styleUrls: ['./report-dialog.component.css']
 })
 export class ReportDialogComponent {
-  selectedReason: string = 'spam';
+  selectedReason: MeldegrundWert = 'spam';
   description: string = '';
   submitting = false;
   submitted = false;

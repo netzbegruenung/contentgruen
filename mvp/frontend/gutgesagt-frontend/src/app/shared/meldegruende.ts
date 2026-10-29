@@ -3,8 +3,10 @@
  * und Hilfe. Die Werte sind dieselben wie in `domain/models/meldegrund.py` im
  * Suchdienst; gespeicherte Meldungen tragen sie, deshalb nie umbenennen.
  */
+export type MeldegrundWert = 'spam' | 'inappropriate' | 'fabricated_or_false' | 'duplicate' | 'other';
+
 export interface Meldegrund {
-  value: string;
+  value: MeldegrundWert;
   label: string;
 }
 

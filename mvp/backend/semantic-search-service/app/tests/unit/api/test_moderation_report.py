@@ -184,16 +184,9 @@ class TestRequestValidation:
         service.report_content.assert_not_awaited()
 
     @pytest.mark.parametrize("reason", MELDEGRUENDE)
-    def test_documented_reasons_are_accepted(self, client, reason):
+    def test_documented_reasons_are_accepted(self, client, service, reason):
         assert client.post(REPORT_URL, json=_payload(reason=reason)).status_code == 200
-
-    def test_erfunden_oder_sachlich_falsch_reaches_the_service(self, client, service):
-        response = client.post(REPORT_URL, json=_payload(reason="fabricated_or_false"))
-
-        assert response.status_code == 200
-        assert (
-            service.report_content.await_args.kwargs["reason"] == "fabricated_or_false"
-        )
+        assert service.report_content.await_args.kwargs["reason"] == reason
 
 
 class TestClientKeyDerivation:

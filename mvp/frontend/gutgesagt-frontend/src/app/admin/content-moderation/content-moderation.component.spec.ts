@@ -3,6 +3,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { ContentModerationComponent } from './content-moderation.component';
 import { ContentReport, ModerationService } from '../../services/moderation.service';
+import { MELDEGRUENDE } from '../../shared/meldegruende';
 
 function meldung(overrides: Partial<ContentReport> = {}): ContentReport {
   return {
@@ -129,16 +130,13 @@ describe('ContentModerationComponent', () => {
     expect(zelle).toContain('Die Zahl stimmt nicht');
   });
 
-  it('beschriftet die bisherigen Gründe wie der Meldedialog', () => {
+  it('beschriftet jeden Grund wie der Meldedialog', () => {
     mitMeldungen([]);
     const c = fixture.componentInstance;
 
-    expect(['spam', 'inappropriate', 'duplicate', 'other'].map((g) => c.getReasonLabel(g))).toEqual([
-      'Spam oder unerwünschte Werbung',
-      'Unangemessener Inhalt',
-      'Dublette',
-      'Andere',
-    ]);
+    for (const grund of MELDEGRUENDE) {
+      expect(c.getReasonLabel(grund.value)).toBe(grund.label);
+    }
   });
 
   it('zeigt einen unbekannten Grund unverändert', () => {

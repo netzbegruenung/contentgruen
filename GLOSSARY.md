@@ -247,7 +247,7 @@ Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine
 _Avoid_: Report, Flag, Beschwerde
 
 **Meldegrund**:
-Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder unerwünschte Werbung, Unangemessener Inhalt, Erfunden oder sachlich falsch, Dublette, Andere. „Erfunden oder sachlich falsch“ ist der Grund für erfundene Erlebnisse oder Zahlen. Was genau nicht stimmt, schreibt die Person in die Beschreibung der Meldung.
+Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder unerwünschte Werbung, Unangemessener Inhalt, Erfunden oder sachlich falsch, Dublette, Andere. „Erfunden oder sachlich falsch“ ist der Grund für erfundene Erlebnisse oder Zahlen; „Dublette“ heißt, dass der gemeldete Beitrag einem vorhandenen fast gleicht. Was genau nicht stimmt, schreibt die Person in die Beschreibung der Meldung.
 _Avoid_: Kategorie, Report-Grund
 
 **Feedback**:
