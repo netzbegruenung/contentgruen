@@ -268,7 +268,6 @@ builder.Services.AddReverseProxy()
                         transformContext.ProxyRequest,
                         httpContext.User,
                         httpContext.Request.Path.Value,
-                        httpContext.Request.Headers,
                         adminUserIds,
                         logger);
                 }

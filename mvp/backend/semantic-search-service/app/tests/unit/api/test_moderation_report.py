@@ -19,7 +19,6 @@ from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
 from domain.models.meldegrund import MELDEGRUENDE
 from utils import client_identity
-from utils.client_identity import normalize_session_id
 from utils.rate_limiter import RateLimiter
 
 REPORT_URL = "/api/v1/moderation/report"
@@ -271,55 +270,53 @@ class TestClientKeyDerivation:
         assert client_identity.derive_client_key(request) == "ip:unknown"
 
 
-class TestSessionIdNormalisation:
+class TestKeineKennungAusDemBrowser:
     """
-    Formatpruefung der clientseitigen Session-Kennung.
-
-    Bewusst Hygiene und keine Sicherheitsmassnahme: der Wert kommt vom Client,
-    und wer ihn wechseln will, erzeugt gueltige UUIDs. Er darf deshalb auch
-    keine Meldung kosten, wenn er unpassend ist.
+    Seit #446 schickt der Browser keine Sitzungskennung mehr. Ein X-Session-Id,
+    den ein alter Client oder jemand direkt gegen die API mitschickt, wird nicht
+    gespeichert. Anonyme Meldungen tragen einen Zufallswert je Meldung, der nichts
+    ueber den Melder sagt und nur den CHECK der Tabelle erfuellt.
     """
 
-    def test_uuid_is_accepted(self):
+    def test_mitgeschickte_sitzungskennung_wird_nicht_gespeichert(
+        self, client, service
+    ):
         value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
 
-        assert normalize_session_id(value) == value
-
-    def test_surrounding_whitespace_is_trimmed(self):
-        assert (
-            normalize_session_id("  3f2504e0-4f89-41d3-9a0c-0305e82c3301  ")
-            == "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
-        )
-
-    @pytest.mark.parametrize(
-        "value",
-        ["A", "", "   ", "sess-1", "<script>alert(1)</script>", "X" * 255],
-    )
-    def test_non_uuid_values_are_discarded(self, value):
-        assert normalize_session_id(value) is None
-
-    def test_none_stays_none(self):
-        assert normalize_session_id(None) is None
-
-    def test_malformed_header_does_not_reject_the_report(self, client):
-        """Eine kaputte Kennung darf die Meldung nicht kosten."""
         response = client.post(
-            REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"}
+            REPORT_URL, json=_payload(), headers={"X-Session-Id": value}
         )
 
         assert response.status_code == 200
-
-    def test_malformed_header_is_not_stored(self, client, service):
-        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"})
-
         stored = service.report_content.await_args.kwargs["session_id"]
-        assert stored != "A"
-        # Stattdessen ein Zufallstoken, damit der CHECK der Tabelle erfuellt ist.
+        assert stored != value
         assert stored.startswith("anon:")
 
-    def test_valid_header_is_stored_unchanged(self, client, service):
-        value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+    def test_jede_anonyme_meldung_bekommt_einen_eigenen_zufallswert(
+        self, client, service
+    ):
+        """Nicht aus Adresse oder Browser abgeleitet: zwei Meldungen, zwei Werte."""
+        kopf = {"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"}
+        client.post(REPORT_URL, json=_payload(), headers=kopf)
+        client.post(REPORT_URL, json=_payload(), headers=kopf)
 
-        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": value})
+        eins, zwei = [
+            aufruf.kwargs["session_id"]
+            for aufruf in service.report_content.await_args_list
+        ]
+        assert eins.startswith("anon:") and zwei.startswith("anon:")
+        assert eins != zwei
 
-        assert service.report_content.await_args.kwargs["session_id"] == value
+    def test_angemeldete_meldung_traegt_nur_die_kennung(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={
+                "X-User": "user-1",
+                "X-Session-Id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+            },
+        )
+
+        kwargs = service.report_content.await_args.kwargs
+        assert kwargs["user_id"] == "user-1"
+        assert kwargs["session_id"] is None

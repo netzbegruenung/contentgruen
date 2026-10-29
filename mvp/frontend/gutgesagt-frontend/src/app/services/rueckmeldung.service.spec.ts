@@ -7,7 +7,6 @@ import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from './logging.service';
-import { SessionService } from './session.service';
 import { RueckmeldungService } from './rueckmeldung.service';
 
 /**
@@ -38,7 +37,6 @@ describe('RueckmeldungService', () => {
         { provide: AuthService, useValue: { userInfo$: anmeldung.asObservable() } },
         { provide: MatSnackBar, useValue: snackBar },
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['debug', 'info', 'error']) },
-        { provide: SessionService, useValue: { getSessionId: () => 'sitzung-1' } },
       ],
     });
     service = TestBed.inject(RueckmeldungService);

@@ -27,7 +27,7 @@ public static class EndpointPolicy
         "/api/v1/content/recent",        // anonymer Zugriff auf neue Inhalte
         "/api/v1/usage/content/",        // anonyme Nutzungserfassung
         "/api/v1/usage/trending",        // anonymer Zugriff auf Trending
-        "/api/v1/moderation/report",     // anonyme Meldung mit Session-ID
+        "/api/v1/moderation/report",     // anonyme Meldung (DSA Art. 16)
         // Feedback an das Team, auch von Besuchern. Nur das Senden: die Liste unter
         // /api/v1/feedback ist admin-only und bleibt hinter dem Gate.
         "/api/v1/feedback/senden",

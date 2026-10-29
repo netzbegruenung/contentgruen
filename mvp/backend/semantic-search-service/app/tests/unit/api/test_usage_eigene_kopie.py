@@ -158,3 +158,20 @@ class TestUnlesbarerBeitrag:
 
         assert antwort.status_code == 200
         dienst.track_content_usage.assert_called_once()
+
+
+class TestKeineSitzungskennung:
+    """Seit #446 haelt eine Kopie keine Kennung aus dem Browser mehr fest."""
+
+    def test_mitgeschickte_sitzungskennung_wird_nicht_weitergegeben(
+        self, client, dienst
+    ):
+        """Ein alter Client schickt noch session_id mit; sie wird verworfen."""
+        antwort = client.post(
+            f"/api/v1/usage/content/{BEITRAG_ID}/usage",
+            json={"session_id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301"},
+        )
+
+        assert antwort.status_code == 200
+        _, kwargs = dienst.track_content_usage.call_args
+        assert "session_id" not in kwargs

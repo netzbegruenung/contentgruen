@@ -51,7 +51,6 @@ class UsageTrackingService:
     def track_content_usage(
         self,
         content_id: str,
-        session_id: Optional[str] = None,
         device_category: Optional[str] = None,
         fassung: Optional[str] = None,
     ) -> bool:
@@ -60,7 +59,6 @@ class UsageTrackingService:
 
         Args:
             content_id: String UUID of the content item
-            session_id: Optional session identifier
             device_category: Grobe Geraetekategorie, bereits abgeleitet
             fassung: Die kopierte Fassung eines Kommentars (#355), sonst None
 
@@ -79,7 +77,6 @@ class UsageTrackingService:
             result = self.repository.track_usage(
                 content_id=content_uuid,
                 event_type="copy",
-                session_id=session_id,
                 device_category=device_category,
                 fassung=fassung,
             )

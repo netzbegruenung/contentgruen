@@ -74,7 +74,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
    die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
    (`api/v1/moderation.py:169-174`). Nur über sie sind die `usage_events` einer Person
-   erreichbar.
+   erreichbar. Seit #446 gibt es keine Sitzungskennung mehr: Neue Meldungen und neue
+   `usage_events` tragen keine, der Schritt findet also nur noch ältere Zeilen.
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen (ein von der Person gemeldeter, inzwischen gesperrter
    Beitrag bleibt über die Moderationsansicht „Gesperrt“ erreichbar);

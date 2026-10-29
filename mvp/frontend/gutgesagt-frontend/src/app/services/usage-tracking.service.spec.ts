@@ -5,7 +5,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { UsageTrackingService } from './usage-tracking.service';
 import { LoggingService } from './logging.service';
-import { SessionService } from './session.service';
 
 /**
  * Der Zaehler soll jede Kopie melden - ausser dem Doppeltipp, der dieselbe Kopie
@@ -24,7 +23,6 @@ describe('UsageTrackingService', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: LoggingService, useValue: jasmine.createSpyObj('LoggingService', ['debug', 'info', 'error']) },
-        { provide: SessionService, useValue: { getSessionId: () => 'sitzung-1' } },
       ],
     });
     service = TestBed.inject(UsageTrackingService);
@@ -37,11 +35,12 @@ describe('UsageTrackingService', () => {
     http.expectOne(ADRESSE(id)).flush({ success: true, message: 'ok', usage_count: count });
   }
 
-  it('meldet jede Kopie sofort', () => {
+  it('meldet jede Kopie sofort, ohne Kennung des Browsers (#446)', () => {
     service.trackContentUsage('k-1');
 
     const anfrage = http.expectOne(ADRESSE('k-1'));
-    expect(anfrage.request.body).toEqual({ session_id: 'sitzung-1' });
+    expect(anfrage.request.body).toEqual({});
+    expect(anfrage.request.headers.has('X-Session-Id')).toBeFalse();
     anfrage.flush({ success: true, message: 'ok', usage_count: 1 });
   });
 
@@ -49,7 +48,7 @@ describe('UsageTrackingService', () => {
     service.trackContentUsage('k-1', 'kurz');
 
     const anfrage = http.expectOne(ADRESSE('k-1'));
-    expect(anfrage.request.body).toEqual({ session_id: 'sitzung-1', fassung: 'kurz' });
+    expect(anfrage.request.body).toEqual({ fassung: 'kurz' });
     anfrage.flush({ success: true, message: 'ok', usage_count: 1 });
   });
 

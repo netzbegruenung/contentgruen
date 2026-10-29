@@ -319,7 +319,7 @@ Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die 
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus IP-Adresse, User-Agent und Datum mit einem Schlüssel, der jeden Tag neu entsteht und nirgends gespeichert wird. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Meine Beiträge**:

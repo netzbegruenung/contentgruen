@@ -6,7 +6,7 @@ status: accepted
 
 Punkte, Ranglisten und Meilensteine entstehen aus dem, was andere mit einem Beitrag tun: Nutzung durch andere (der Hauptanteil), Zustimmung durch andere und abgeschlossene Quests. Ein Beitrag, den niemand nutzt, bringt keine Punkte, auch nicht fürs Schreiben. Grund ist, dass Ranglisten ausdrücklich gewollt sind, aber Masse und Schärfe belohnen würden, wenn schon das Anlegen zählte: Der Bestand würde voller und schlechter, und das Ziel, Unentschiedene mitzunehmen, ginge verloren.
 
-Damit die Punkte nicht zu fälschen sind, zählt eine Nutzung für Punkte höchstens einmal je Person (bei Besuchern je Sitzung), Beitrag und Tag. Eigene Nutzung und Nutzung durch Startkonten zählen nicht, Startkonten sammeln selbst keine. Ablehnung zieht nichts ab, damit niemand gezielt nach unten drückt. Gesperrte oder endgültig entfernte Beiträge verlieren ihre Punkte, und Punkte für Quest-Beiträge gibt es erst, wenn der Beitrag drei Tage ohne Sperre steht. Auffällige Muster, etwa zwei Konten, die sich gegenseitig nutzen, sehen Admins als Hinweis; eine Automatik straft niemanden ab.
+Damit die Punkte nicht zu fälschen sind, zählt eine Nutzung für Punkte höchstens einmal je Person (bei Besuchern je Tagespseudonym, seit #446), Beitrag und Tag. Eigene Nutzung und Nutzung durch Startkonten zählen nicht, Startkonten sammeln selbst keine. Ablehnung zieht nichts ab, damit niemand gezielt nach unten drückt. Gesperrte oder endgültig entfernte Beiträge verlieren ihre Punkte, und Punkte für Quest-Beiträge gibt es erst, wenn der Beitrag drei Tage ohne Sperre steht. Auffällige Muster, etwa zwei Konten, die sich gegenseitig nutzen, sehen Admins als Hinweis; eine Automatik straft niemanden ab.
 
 ## Drei Stufen (Ergänzung 28.10.2026)
 

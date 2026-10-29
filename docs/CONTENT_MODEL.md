@@ -208,10 +208,10 @@ into the initial bundle) — so a new type is
 registered once and picked up by search results, recent-content, and contribution menus
 automatically. This also retired the false-abstraction `unified-result-item`.
 
-**4. A shared HTTP layer** *(still open)*: an `X-Session-Id` interceptor, an
-`ApiUrlService` for the `/api/v1` base, and a reusable `handleHttpError` operator — removing the
-per-service URL/header/error duplication that every type's service still re-copies. Today
-`X-Session-Id` is set per-service in `search.service.ts` and `moderation.service.ts`.
+**4. A shared HTTP layer** *(still open)*: an `ApiUrlService` for the `/api/v1` base and a
+reusable `handleHttpError` operator — removing the per-service URL/error duplication that every
+type's service still re-copies. The `X-Session-Id` header is gone since #446: visitors are
+recognised server-side by their daily pseudonym.
 
 ## What is shared vs per-type (the contract)
 

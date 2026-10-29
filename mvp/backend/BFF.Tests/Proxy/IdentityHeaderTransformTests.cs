@@ -67,7 +67,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("echte-kennung"),
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -85,7 +84,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("echte-kennung"),
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -102,7 +100,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("echte-kennung", isAdmin: true),
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -122,7 +119,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AnonymousUser(),
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -141,7 +137,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AnonymousUser(),
             PublicPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -167,7 +162,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AnonymousUser(),
             PublicPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -186,7 +180,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("echte-kennung"),
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -210,7 +203,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             user,
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -229,7 +221,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("echte-kennung"),
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -245,7 +236,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AnonymousUser(),
             PublicPath,
-            new HeaderDictionary(),
             NoAllowlist,
             Logger);
 
@@ -262,11 +252,12 @@ public class IdentityHeaderTransformTests
     }
 
     [Fact]
-    public void ClientControlledIdentityHeaders_DoesNotContainSessionHeader()
+    public void ClientControlledIdentityHeaders_ContainsSessionHeader()
     {
-        // X-Session-Id ist bewusst clientseitig (anonyme Votes und Meldungen) und traegt
-        // keine Rechte. Er darf nicht versehentlich mit gestrippt werden.
-        Assert.DoesNotContain(IdentityHeaderTransform.SessionHeader, IdentityHeaderTransform.ClientControlledIdentityHeaders);
+        // Seit #446 gibt es keine Sitzungskennung im Browser mehr; Besucher erkennt der
+        // Suchdienst an einem Tagespseudonym. Ein mitgeschickter X-Session-Id darf ihn
+        // nicht erreichen.
+        Assert.Contains(IdentityHeaderTransform.SessionHeader, IdentityHeaderTransform.ClientControlledIdentityHeaders);
     }
 
     [Fact]
@@ -280,7 +271,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("kennung-in-liste"),
             ProtectedPath,
-            new HeaderDictionary(),
             new[] { "andere-kennung", "kennung-in-liste" },
             Logger);
 
@@ -296,7 +286,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("kennung-ohne-rechte"),
             ProtectedPath,
-            new HeaderDictionary(),
             new[] { "andere-kennung" },
             Logger);
 
@@ -316,7 +305,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AuthenticatedUser("kennung-mit-claim", isAdmin: true),
             ProtectedPath,
-            new HeaderDictionary(),
             new[] { "voellig-andere-kennung" },
             Logger);
 
@@ -353,7 +341,6 @@ public class IdentityHeaderTransformTests
             proxyRequest,
             AnonymousUser(),
             path,
-            new HeaderDictionary(),
             new[] { "kennung-in-liste", IdentityHeaderTransform.AnonymousUser },
             Logger);
 
@@ -364,23 +351,19 @@ public class IdentityHeaderTransformTests
     }
 
     [Fact]
-    public void Apply_SessionIdHeader_IsReplacedNotAppended()
+    public void Apply_SessionIdHeader_IsNotForwarded()
     {
-        var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.SessionHeader, "kopie-von-yarp"));
-        var incoming = new HeaderDictionary
-        {
-            { IdentityHeaderTransform.SessionHeader, "session-abc" }
-        };
+        // YARP hat den Header des Clients schon auf den Proxy-Request kopiert.
+        var proxyRequest = ProxyRequestCarrying((IdentityHeaderTransform.SessionHeader, "session-abc"));
 
         IdentityHeaderTransform.Apply(
             proxyRequest,
             AnonymousUser(),
             PublicPath,
-            incoming,
             NoAllowlist,
             Logger);
 
-        Assert.Equal(new[] { "session-abc" }, ValuesOf(proxyRequest, IdentityHeaderTransform.SessionHeader));
+        Assert.Empty(ValuesOf(proxyRequest, IdentityHeaderTransform.SessionHeader));
     }
 
     [Fact]
@@ -394,7 +377,6 @@ public class IdentityHeaderTransformTests
             new HttpRequestMessage(),
             AuthenticatedUser("echte-kennung", isAdmin: true),
             ProtectedPath,
-            new HeaderDictionary(),
             NoAllowlist,
             logger);
 

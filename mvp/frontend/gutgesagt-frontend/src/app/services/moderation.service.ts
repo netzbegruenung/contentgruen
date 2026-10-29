@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { SessionService } from './session.service';
 import { MeldegrundWert } from '../shared/meldegruende';
 import { SperrgrundWert } from '../shared/sperrgruende';
 
@@ -85,8 +84,7 @@ export class ModerationService {
   private baseUrl = `${environment.baseUrl}/api/v1/moderation`;
 
   constructor(
-    private http: HttpClient,
-    private sessionService: SessionService
+    private http: HttpClient
   ) {}
 
   reportContent(
@@ -102,16 +100,7 @@ export class ModerationService {
       description: description
     };
 
-    // Add session ID header for anonymous user tracking
-    const headers = new HttpHeaders({
-      'X-Session-Id': this.sessionService.getSessionId()
-    });
-
-    return this.http.post<ReportContentResponse>(
-      `${this.baseUrl}/report`,
-      request,
-      { headers }
-    );
+    return this.http.post<ReportContentResponse>(`${this.baseUrl}/report`, request);
   }
 
   getPendingReports(limit: number = 50, offset: number = 0): Observable<PendingReportsResponse> {

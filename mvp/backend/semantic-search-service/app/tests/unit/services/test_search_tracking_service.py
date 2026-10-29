@@ -1,7 +1,7 @@
 """
 Unit tests for the search tracking service.
 
-The point of these tests is the privacy contract: no raw user id, session id, IP
+The point of these tests is the privacy contract: no raw user id, IP, User-Agent
 or search text may reach the repository, and the stored pseudonym must not be
 correlatable across day boundaries.
 """
@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from services.search_tracking_service import SearchTrackingService
+from utils.besucher_pseudonym import besucher_tagespseudonym
 
 
 class TestDeriveActorHash:
@@ -62,26 +63,42 @@ class TestDeriveActorHash:
         assert "alice" not in digest
         assert len(digest) == 64
 
-    def test_derive_actor_hash_prefers_user_over_session(self):
+    def test_derive_actor_hash_prefers_user_over_visitor(self):
         moment = datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
 
-        with_session = SearchTrackingService._derive_actor_hash(
-            user_id="alice", session_id="sess-1", moment=moment
+        with_visitor = SearchTrackingService._derive_actor_hash(
+            user_id="alice", besucher="198.51.100.5|Firefox", moment=moment
         )
-        without_session = SearchTrackingService._derive_actor_hash(
+        without_visitor = SearchTrackingService._derive_actor_hash(
             user_id="alice", moment=moment
         )
 
-        assert with_session == without_session
+        assert with_visitor == without_visitor
 
-    def test_derive_actor_hash_falls_back_to_session(self):
+    def test_derive_actor_hash_falls_back_to_visitor(self):
         moment = datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
 
         digest = SearchTrackingService._derive_actor_hash(
-            session_id="sess-1", moment=moment
+            besucher="198.51.100.5|Firefox", moment=moment
         )
 
-        assert digest is not None
+        assert digest == besucher_tagespseudonym("198.51.100.5|Firefox", moment.date())
+        assert "198.51.100.5" not in digest
+
+    def test_visitor_pseudonym_does_not_depend_on_the_configured_secret(
+        self, fixed_secret
+    ):
+        """Der Schluessel der Besucher steht in keiner Konfiguration (#446)."""
+        moment = datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
+        vorher = SearchTrackingService._derive_actor_hash(
+            besucher="198.51.100.5|Firefox", moment=moment
+        )
+
+        fixed_secret.actor_hash_secret = "anderes-secret"
+
+        assert vorher == SearchTrackingService._derive_actor_hash(
+            besucher="198.51.100.5|Firefox", moment=moment
+        )
 
     def test_derive_actor_hash_returns_none_without_any_actor(self):
         assert SearchTrackingService._derive_actor_hash() is None
@@ -105,13 +122,15 @@ class TestTrackSearch:
     def test_track_search_passes_only_pseudonym_and_count(
         self, service, mock_repository
     ):
-        service.track_search(results_count=5, user_id="alice", session_id="sess-1")
+        service.track_search(
+            results_count=5, user_id="alice", besucher="198.51.100.5|Firefox"
+        )
 
         _, kwargs = mock_repository.track_search.call_args
         assert set(kwargs) == {"results_count", "actor_hash", "day"}
         assert kwargs["results_count"] == 5
         assert "alice" not in kwargs["actor_hash"]
-        assert "sess-1" not in kwargs["actor_hash"]
+        assert "198.51.100.5" not in kwargs["actor_hash"]
 
     def test_track_search_without_actor_stores_no_pseudonym(
         self, service, mock_repository
