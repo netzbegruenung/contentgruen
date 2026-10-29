@@ -9,9 +9,8 @@ Lizenz steht in public/avatars/FLUENT-EMOJI-LIZENZ.txt.
 Jedes Bild ist ein Kreis in Sand (#F5F1E9) mit dem Emoji in der Mitte, etwa
 72 % so breit wie der Kreis, als PNG mit 128 px Kantenlaenge; was ueber den Kreis
 hinausragt, schneidet der Kreis ab. Motive, die schon in der Vorlage gerade
-abgeschnitten sind (ANGESCHNITTEN), laufen an diesen Kanten weich in den Sand aus,
-statt mit einer harten Linie zu enden. Die Reihenfolge
-und die Dateinamen muessen zu BILDER in src/app/services/profilbild.service.ts
+abgeschnitten sind (etwa alle Fassungen von "deaf"), sind bewusst nicht dabei.
+Die Reihenfolge und die Dateinamen muessen zu BILDER in src/app/services/profilbild.service.ts
 passen; das prueft scripts/tests/test_profilbilder.py.
 
 Aufruf (nur noetig, wenn sich ein Bild aendern soll), mit der venv des
@@ -26,7 +25,7 @@ import sys
 import urllib.parse
 import urllib.request
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageDraw
 
 COMMIT = "1ffb34c752ecf5d402f04cfb4b392c77f57c54bc"
 QUELLE = f"https://raw.githubusercontent.com/microsoft/fluentui-emoji/{COMMIT}/"
@@ -44,7 +43,7 @@ SAND = (0xF5, 0xF1, 0xE9, 0xFF)
 MENSCHEN = [
     ("mensch-01.png", "assets/Woman red hair/Light/3D/woman_red_hair_3d_light.png"),
     ("mensch-02.png", "assets/Man/Medium/3D/man_3d_medium.png"),
-    ("mensch-03.png", "assets/Person deaf/Dark/3D/person_deaf_3d_dark.png"),
+    ("mensch-03.png", "assets/Man curly hair/Dark/3D/man_curly_hair_3d_dark.png"),
     (
         "mensch-04.png",
         "assets/Person blonde hair/Light/3D/person_blonde_hair_3d_light.png",
@@ -117,13 +116,6 @@ MOTIVE = [
 
 BILDER = MENSCHEN + MOTIVE
 
-# Die Vorlage zeigt eine Nahaufnahme, rechts, unten und oben gerade abgeschnitten; das
-# gilt fuer alle Fassungen von "deaf" in Fluent Emoji, und ein Ausschnitt durch den
-# Kreis wuerde das Gesicht treffen. Anteil des Motivs, ueber den die Kante auslaeuft:
-ANGESCHNITTEN = {"mensch-03.png"}
-AUSLAUF = 0.18
-AUSLAUF_OBEN = 0.10
-
 
 def holen(pfad: str) -> Image.Image:
     url = QUELLE + urllib.parse.quote(pfad)
@@ -138,33 +130,7 @@ def _eingepasst(groesse: tuple[int, int], seite: int) -> tuple[int, int]:
     return max(1, round(breite * faktor)), max(1, round(hoehe * faktor))
 
 
-def _rampe(laenge: int, auslauf: int, ab_ende: bool) -> list[int]:
-    """Deckkraft 255 im Inneren, auf den letzten (oder ersten) `auslauf` Pixeln linear auf null."""
-    werte = [255] * laenge
-    for i in range(auslauf):
-        werte[laenge - 1 - i if ab_ende else i] = round(255 * i / auslauf)
-    return werte
-
-
-def _auslaufen(emoji: Image.Image) -> Image.Image:
-    """Rechts, unten und oben laeuft das Motiv in den Grund aus; links bleibt es."""
-    breite, hoehe = emoji.size
-    rechts = _rampe(breite, max(1, round(breite * AUSLAUF)), ab_ende=True)
-    unten = _rampe(hoehe, max(1, round(hoehe * AUSLAUF)), ab_ende=True)
-    oben = _rampe(hoehe, max(1, round(hoehe * AUSLAUF_OBEN)), ab_ende=False)
-    verlauf = Image.new("L", (breite, hoehe))
-    verlauf.putdata(
-        [
-            rechts[x] * unten[y] * oben[y] // (255 * 255)
-            for y in range(hoehe)
-            for x in range(breite)
-        ]
-    )
-    emoji.putalpha(ImageChops.multiply(emoji.getchannel("A"), verlauf))
-    return emoji
-
-
-def profilbild(emoji: Image.Image, angeschnitten: bool = False) -> Image.Image:
+def profilbild(emoji: Image.Image) -> Image.Image:
     # Viermal so gross zeichnen und dann verkleinern: so wird der Kreisrand glatt.
     gross = KANTE * 4
     kreis = Image.new("L", (gross, gross), 0)
@@ -174,8 +140,6 @@ def profilbild(emoji: Image.Image, angeschnitten: bool = False) -> Image.Image:
     emoji = emoji.crop(emoji.getchannel("A").getbbox())
     seite = round(gross * ANTEIL)
     emoji = emoji.resize(_eingepasst(emoji.size, seite), Image.Resampling.LANCZOS)
-    if angeschnitten:
-        emoji = _auslaufen(emoji)
     links = (gross - emoji.width) // 2
     oben = (gross - emoji.height) // 2
     bild.alpha_composite(emoji, (links, oben))
@@ -188,7 +152,7 @@ def main() -> None:
     summe = 0
     for datei, pfad in BILDER:
         ziel = ZIEL / datei
-        profilbild(holen(pfad), datei in ANGESCHNITTEN).save(ziel, optimize=True)
+        profilbild(holen(pfad)).save(ziel, optimize=True)
         summe += ziel.stat().st_size
     sys.stdout.write(
         f"{len(BILDER)} Profilbilder in {ZIEL}, zusammen {summe // 1024} KiB\n"

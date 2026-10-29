@@ -33,7 +33,7 @@ export const ALTE_PROFILBILD_SCHLUESSEL: readonly string[] = [
 const MENSCHEN: readonly Profilbild[] = [
   { id: 'mensch-01', url: '/avatars/mensch-01.png', alt: 'Person mit langen roten Haaren, heller Hautton' },
   { id: 'mensch-02', url: '/avatars/mensch-02.png', alt: 'Person mit kurzen braunen Haaren, mittlerer Hautton' },
-  { id: 'mensch-03', url: '/avatars/mensch-03.png', alt: 'Gehörlose Person, die auf ihr Ohr zeigt, dunkler Hautton' },
+  { id: 'mensch-03', url: '/avatars/mensch-03.png', alt: 'Person mit kurzen Locken, dunkler Hautton' },
   { id: 'mensch-04', url: '/avatars/mensch-04.png', alt: 'Person mit blonden Haaren, heller Hautton' },
   { id: 'mensch-05', url: '/avatars/mensch-05.png', alt: 'Person mit Kopftuch, mittlerer Hautton' },
   { id: 'mensch-06', url: '/avatars/mensch-06.png', alt: 'Ältere Person mit grauem Haarkranz, heller Hautton' },

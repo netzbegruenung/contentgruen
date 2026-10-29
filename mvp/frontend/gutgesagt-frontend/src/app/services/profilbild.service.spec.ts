@@ -103,7 +103,7 @@ describe('ProfilbildService', () => {
       expect(zaehlen('mitteldunkler', 'dunkler')).toBe(5);
       expect(menschen.filter((alt) => alt.includes('roten Haaren')).length).toBe(3);
       expect(menschen.filter((alt) => alt.includes('weißem Haar')).length).toBe(2);
-      for (const merkmal of ['Kopftuch', 'Rollstuhl', 'Blindenstock', 'Gehörlose', 'Bart', 'Locken', 'Ältere']) {
+      for (const merkmal of ['Kopftuch', 'Rollstuhl', 'Blindenstock', 'Bart', 'Locken', 'Ältere']) {
         expect(menschen.some((alt) => alt.includes(merkmal))).withContext(merkmal).toBeTrue();
       }
     });
