@@ -180,6 +180,21 @@ class TestRepository:
             [],
         ]
 
+    def test_ueber_der_schwelle_alle_ab_mindestanzahl_personen(self, neue_datenbank):
+        """Ohne Limit, Personen ueber die Wochen ab seit_woche summiert (#436)."""
+        repository = _repository(neue_datenbank)
+        for _ in range(5):
+            repository.zaehlen(_aussage(1), WOCHE, neue_person=False)
+        repository.zaehlen(_aussage(1), WOCHE, neue_person=True)
+        repository.zaehlen(_aussage(2), VORIGE_WOCHE, neue_person=True)
+        repository.zaehlen(_aussage(2), WOCHE, neue_person=True)
+        repository.zaehlen(_aussage(3), date(2026, 10, 12), neue_person=True)
+        repository.zaehlen(_aussage(3), WOCHE, neue_person=True)
+
+        assert set(repository.ueber_der_schwelle(VORIGE_WOCHE, mindestanzahl=2)) == {
+            _aussage(2)
+        }
+
     def test_loeschen_vor_entfernt_nur_aeltere_wochen(self, neue_datenbank):
         repository = _repository(neue_datenbank)
         repository.zaehlen(AUSSAGE, date(2026, 10, 12), neue_person=True)
@@ -242,6 +257,21 @@ class TestMindestanzahlZaehltPersonen:
         service.erfassen(AUSSAGE, 0, PERSON_A, heute=DONNERSTAG)
 
         assert await _liste(service) == [(AUSSAGE, 2, 2)]
+
+    async def test_ueber_der_schwelle_dieselbe_auswahl_wie_die_liste(
+        self, neue_datenbank
+    ):
+        """Fuer Nicht-Admins zaehlen dieselben Aussagen wie in der Kennzahl (#436)."""
+        service = _service(neue_datenbank)
+        einzeln = _aussage(9)
+
+        service.erfassen(AUSSAGE, 0, PERSON_A, heute=VORWOCHE)
+        service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
+        service.erfassen(einzeln, 0, PERSON_A, heute=MITTWOCH)
+        service.erfassen(einzeln, 0, PERSON_A, heute=MITTWOCH)
+
+        assert await service.ueber_der_schwelle(wochen=4, heute=DONNERSTAG) == {AUSSAGE}
+        assert await service.ueber_der_schwelle(wochen=1, heute=DONNERSTAG) == set()
 
 
 @pytest.mark.asyncio

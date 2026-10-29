@@ -36,7 +36,7 @@ class ContentReportRepository:
         Args:
             content_id: UUID of the reported content
             content_type: Type of content (commentary, generictext, etc.)
-            reason: Report reason (spam, inappropriate, duplicate, other)
+            reason: Report reason, one of MELDEGRUENDE (domain/models/meldegrund.py)
             reported_by_user_id: Optional user ID of reporter
             reported_by_session_id: Optional session ID of reporter
             description: Optional detailed description

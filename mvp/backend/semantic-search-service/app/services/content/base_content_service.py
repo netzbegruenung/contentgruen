@@ -198,6 +198,7 @@ class BaseContentService(
             report_flagged=input_db_entry.report_flagged,
             rejection_reason=input_db_entry.rejection_reason,
             block_reason=input_db_entry.block_reason,
+            cc0_wortlaut=input_db_entry.cc0_wortlaut,
         )
 
         # Use injected content repository for aggregated view

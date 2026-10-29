@@ -77,6 +77,10 @@ class BaseContentDbEntry(BaseContent):
         Reason for rejection if the content was rejected.
     block_reason: Optional[str]
         Reason for blocking if the content was blocked.
+    cc0_wortlaut: Optional[str]
+        Kennung des CC0-Hinweises, dem die Person beim Speichern zugestimmt hat
+        (domain/cc0_hinweis.py); None bei Bestand von vor #431 und bei Eintraegen,
+        die nicht ueber ein Formular entstehen (Seeding, Herkunft, Aussage).
     """
 
     id: uuid.UUID
@@ -95,6 +99,7 @@ class BaseContentDbEntry(BaseContent):
     report_flagged: bool = False
     rejection_reason: Optional[str] = None
     block_reason: Optional[str] = None
+    cc0_wortlaut: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
