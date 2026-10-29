@@ -74,6 +74,11 @@ containers. Server, reverse proxy, compose file, secrets and backup schedule are
 there; the details are documented internally. `mvp/docker-compose.prd.yml` in this repository
 is only a placeholder.
 
+Memory: since #358 the semantic service also loads spaCy (`de_core_news_sm`) and CharSplit
+for the Gegenlesen, about 0.5 GB more RAM than before (measured on the dev VM: ~180 MB for the
+model, ~350 MB for CharSplit's n-gram table), loaded in the background about two seconds after
+start. If the container has a memory limit, raise it accordingly.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

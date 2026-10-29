@@ -69,6 +69,9 @@ _VERNEINUNGSWOERTER = {
     "keinesfalls",
     "nein",
 }
+#: Feste Wendungen, die nur so aussehen wie eine Verneinung.
+_KEINE_VERNEINUNG = {("nicht", "nur"), ("kein", "wunder")}
+_NOMEN = ("NOUN", "PROPN")
 #: Adjektive auch prädikativ: "zu teuer" hat die Wortart ADV, aber den Tag ADJD.
 _ADJEKTIV_TAGS = {"ADJA", "ADJD"}
 #: Endungen, die das kleine Modell bei seltenen Wörtern nicht abschneidet ("Diskurse").
@@ -78,7 +81,7 @@ _FUGEN = ("s", "es")
 
 @dataclass(frozen=True)
 class Anmerkung:
-    """Eine Beobachtung beim Gegenlesen, als Hinweis für die schreibende Person."""
+    """Was das Gegenlesen an einem Entwurf findet, je Regel höchstens eine (GLOSSARY.md)."""
 
     art: str
     #: "titel" oder "text": wo die Anmerkung (zuerst) zutrifft.
@@ -107,9 +110,16 @@ def lade_statt_sag_liste(
 
 
 class _Sprachwerkzeuge:
-    """spaCy und CharSplit, einmal je Prozess geladen (zusammen rund 0,5 GB RAM)."""
+    """
+    spaCy und CharSplit, einmal je Prozess geladen (zusammen rund 0,5 GB RAM).
+
+    Die Anfragen laufen im Threadpool. spaCy sagt nicht zu, dass dieselbe Pipeline
+    gleichzeitig aus mehreren Threads rechnen darf; ``analysieren`` reiht die Aufrufe
+    deshalb hintereinander. Bei wenigen Millisekunden je Entwurf kostet das nichts.
+    """
 
     _lock = threading.Lock()
+    _nlp_lock = threading.Lock()
     _nlp = None
     _splitter = None
 
@@ -124,9 +134,19 @@ class _Sprachwerkzeuge:
                 cls._splitter = Splitter()
         return cls._nlp, cls._splitter
 
+    @classmethod
+    def analysieren(cls, text: str):
+        nlp, _ = cls.laden()
+        with cls._nlp_lock:
+            return nlp(text)
+
+    @classmethod
+    def splitter(cls):
+        return cls.laden()[1]
+
 
 def sprachwerkzeuge_laden() -> None:
-    """Vorab laden, damit die erste Prüfung nicht auf das Modell wartet."""
+    """Vorab laden, damit das erste Gegenlesen nicht auf das Modell wartet."""
     _Sprachwerkzeuge.laden()
 
 
@@ -143,9 +163,9 @@ class GegenlesenService:
         if not titel and not text:
             return Gegengelesen(guete=None, anmerkungen=[])
 
-        nlp, self._splitter = _Sprachwerkzeuge.laden()
-        titel_doc = nlp(titel) if titel else None
-        text_doc = nlp(text) if text else None
+        analysieren = _Sprachwerkzeuge.analysieren
+        titel_doc = analysieren(titel) if titel else None
+        text_doc = analysieren(text) if text else None
         # Der Titel ist ein Satz, auch ohne Punkt; im Text zählt jeder Satz für sich.
         saetze: List[Tuple[str, list]] = []
         if titel_doc is not None:
@@ -161,9 +181,11 @@ class GegenlesenService:
             a
             for a in (
                 self._verneinung(aufhaenger),
-                self._schluesselwoerter(aufhaenger, nlp(aussage) if aussage else None),
+                self._schluesselwoerter(
+                    aufhaenger, analysieren(aussage) if aussage else None
+                ),
                 self._satzlaenge(saetze),
-                self._statt_sag_pruefen(saetze),
+                self._statt_sag_finden(saetze),
                 self._passiv(saetze),
                 self._komposita(saetze),
             )
@@ -178,7 +200,11 @@ class GegenlesenService:
 
     def _verneinung(self, aufhaenger) -> Optional[Anmerkung]:
         for stelle, satz in aufhaenger:
-            for token in _woerter(satz)[:VERNEINUNG_IN_DEN_ERSTEN]:
+            woerter = _woerter(satz)
+            for i, token in enumerate(woerter[:VERNEINUNG_IN_DEN_ERSTEN]):
+                folgt = woerter[i + 1].lower_ if i + 1 < len(woerter) else ""
+                if (token.lower_, folgt) in _KEINE_VERNEINUNG:
+                    continue
                 if (
                     token.dep_ == "ng"
                     or token.tag_ == "PTKNEG"
@@ -190,7 +216,7 @@ class GegenlesenService:
                         art="verneinung",
                         stelle=stelle,
                         text=(
-                            f"{wo} beginnt mit „{token.text}“. Wer verneint, "
+                            f"{wo} verneint gleich am Anfang („{token.text}“). Wer verneint, "
                             "wiederholt das Bild der anderen. Sag lieber, was stimmt."
                         ),
                         woerter=[token.text],
@@ -249,11 +275,11 @@ class GegenlesenService:
             text=f"{anfang} Kürzer liest es sich leichter, am besten bis {SATZ_MAX_WOERTER}.",
         )
 
-    def _statt_sag_pruefen(self, saetze) -> Optional[Anmerkung]:
+    def _statt_sag_finden(self, saetze) -> Optional[Anmerkung]:
         gefunden: List[Tuple[str, str, str]] = []
         for stelle, satz in saetze:
             for token in _woerter(satz):
-                for form in self._formen(token, zerlegen=True):
+                for form in self._formen(token):
                     if form in self._statt_sag and token.text not in (
                         g[1] for g in gefunden
                     ):
@@ -264,8 +290,11 @@ class GegenlesenService:
         vorschlaege = []
         for _, wort, form in gefunden:
             statt, sag = self._statt_sag[form]
+            # In einer Zusammensetzung das Listenwort nennen: "statt „Transformation“
+            # (in „Transformationsprozess“)", nicht das ganze Wort ersetzen.
+            worin = "" if _grundformen(wort) & {form} else f" (in „{wort}“)"
             vorschlaege.append(
-                f"statt „{wort}“ lieber {' oder '.join(f'„{s}“' for s in sag)}"
+                f"statt „{statt}“{worin} lieber {' oder '.join(f'„{s}“' for s in sag)}"
             )
         return Anmerkung(
             art="statt_sag",
@@ -307,15 +336,15 @@ class GegenlesenService:
         gefunden: List[Tuple[str, str, str, str]] = []
         for stelle, satz in saetze:
             for token in satz:
-                if token.pos_ not in ("NOUN", "PROPN") or len(token.text) < (
+                if token.pos_ not in _NOMEN or len(token.text) < (
                     KOMPOSITUM_AB_ZEICHEN
                 ):
                     continue
                 # Lang ist lang, auch wenn CharSplit unsicher ist; die Zerlegung
                 # dient hier nur der Erklärung.
-                zerlegt = self._zerlegen(token.text, sicher=False)
+                _, bestimmung, kopf = self._zerlegen(token.text)
                 if token.text not in (g[1] for g in gefunden):
-                    gefunden.append((stelle, token.text, *zerlegt))
+                    gefunden.append((stelle, token.text, bestimmung, kopf))
         if not gefunden:
             return None
         teile = [
@@ -334,30 +363,27 @@ class GegenlesenService:
 
     # --- Hilfen --------------------------------------------------------------
 
-    def _zerlegen(self, wort: str, sicher: bool = True) -> Optional[Tuple[str, str]]:
-        """Bestimmungswort und Kopf; mit ``sicher`` nur, wenn CharSplit sich sicher ist."""
+    def _zerlegen(self, wort: str) -> Tuple[float, str, str]:
+        """Beste Zerlegung in Bestimmungswort und Kopf, mit CharSplits Sicherheit."""
         if "-" in wort:
             vorne, _, hinten = wort.rpartition("-")
-            return vorne, hinten
-        wert, bestimmung, kopf = self._splitter.split_compound(wort)[0]
-        if sicher and wert < ZERLEGUNG_AB:
-            return None
-        return bestimmung, kopf
+            return 1.0, vorne, hinten
+        wert, bestimmung, kopf = _Sprachwerkzeuge.splitter().split_compound(wort)[0]
+        return wert, bestimmung, kopf
 
-    def _formen(self, token, zerlegen: bool = True) -> set:
+    def _formen(self, token) -> set:
         """Grundformen eines Worts, kleingeschrieben, samt Teilen einer Zusammensetzung."""
         formen = _grundformen(token.lemma_) | _grundformen(token.text)
-        if zerlegen and token.pos_ in ("NOUN", "PROPN"):
-            zerlegt = self._zerlegen(token.text)
-            if zerlegt:
-                for teil in zerlegt:
-                    formen |= _grundformen(teil)
+        if token.pos_ in _NOMEN:
+            wert, bestimmung, kopf = self._zerlegen(token.text)
+            if wert >= ZERLEGUNG_AB:
+                formen |= _grundformen(bestimmung) | _grundformen(kopf)
         return formen
 
 
 def _ist_inhaltswort(token) -> bool:
     """Nomen, Namen und Adjektive: die Wörter, die einen Vorwurf tragen."""
-    return token.pos_ in ("NOUN", "PROPN") or token.tag_ in _ADJEKTIV_TAGS
+    return token.pos_ in _NOMEN or token.tag_ in _ADJEKTIV_TAGS
 
 
 def _woerter(satz) -> list:

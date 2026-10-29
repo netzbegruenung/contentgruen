@@ -133,7 +133,7 @@ class TestSchluesselwoerterDerAussage:
 
         assert "schluesselwoerter" not in arten(ergebnis)
 
-    def test_ohne_aussage_keine_pruefung(self, service):
+    def test_ohne_aussage_kein_abgleich(self, service):
         ergebnis = service.gegenlesen(
             titel="Die Grünen sind keine Verbotspartei", text="", aussage=None
         )
@@ -294,3 +294,39 @@ class TestSchluesselwoerterPraedikativ:
             "Wärmepumpen",
             "teuer",
         ]
+
+
+class TestReviewBefunde:
+    @pytest.mark.parametrize(
+        "titel",
+        [
+            "Nicht nur Wärmepumpen, sondern auch Netze helfen",
+            "Kein Wunder: Wärmepumpen sparen Geld",
+        ],
+    )
+    def test_feste_wendung_ist_keine_verneinung(self, service, titel):
+        ergebnis = service.gegenlesen(titel=titel, text="", aussage="")
+
+        assert "verneinung" not in arten(ergebnis)
+
+    def test_verneinung_an_dritter_stelle_wird_benannt(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Wärmepumpen sind nicht zu teuer", text="", aussage=""
+        )
+
+        assert (
+            "verneint gleich am Anfang („nicht“)"
+            in anmerkung(ergebnis, "verneinung").text
+        )
+
+    def test_zusammensetzung_nennt_das_listenwort(self, service):
+        ergebnis = service.gegenlesen(
+            titel="Klimaschutz gelingt",
+            text="Der Transformationsprozess braucht Mut.",
+            aussage="",
+        )
+
+        assert (
+            "statt „Transformation“ (in „Transformationsprozess“) lieber „Umbau“"
+            in (anmerkung(ergebnis, "statt_sag").text)
+        )

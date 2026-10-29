@@ -144,7 +144,7 @@ async def lifespan(app: FastAPI):
         logger.info("✅ Feedback cleanup task started")
 
         # Sprachmodell fuers Gegenlesen (#358) im Hintergrund laden (rund 2 s), damit
-        # die erste Pruefung nicht wartet und der Start nicht blockiert. Fehlt es,
+        # das erste Gegenlesen nicht wartet und der Start nicht blockiert. Fehlt es,
         # antwortet /api/v1/gegenlesen mit 503; der Dienst laeuft trotzdem.
         app.state.gegenlesen_vorladen = asyncio.create_task(_gegenlesen_vorladen())
 
