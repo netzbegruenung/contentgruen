@@ -2,7 +2,7 @@
 Zweck und Stil am Kommentar (#357), gegen echtes Qdrant.
 
 * Zweck und Stil kommen nach dem Speichern so wieder an.
-* Bei Aussagen stehen Kommentarspalten-Antworten vor denen fuer die eigenen Leute,
+* Bei Aussagen stehen Kommentare fuer die Kommentarspalte vor denen fuer die eigenen Leute,
   auch wenn diese besser bewertet sind.
 """
 
@@ -55,7 +55,7 @@ async def test_zweck_und_stil_ueberstehen_das_speichern(
     assert (gelesen.zweck, gelesen.style) == (Zweck.EIGENE_LEUTE, Stil.BISSIG)
 
 
-async def test_kommentarspalten_antworten_zuerst(
+async def test_kommentare_fuer_die_kommentarspalte_zuerst(
     integration_settings, real_repository_factory
 ):
     service = CommentaryService(integration_settings, real_repository_factory)

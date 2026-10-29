@@ -114,6 +114,8 @@ describe('karten-daten', () => {
 
     it('laesst einen unbekannten Stil weg', () => {
       expect(ausSuchergebnis(paket('commentary_result', { style: 'sarkastisch' })).extra?.stil).toBeUndefined();
+      expect(ausSuchergebnis(paket('commentary_result', { style: 'constructor' })).extra?.stil).toBeUndefined();
+      expect(ausSuchergebnis(paket('commentary_result', { style: null })).extra?.stil).toBeUndefined();
     });
 
     it('setzt das Statement nur, wenn es einen Text hat', () => {

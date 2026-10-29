@@ -22,7 +22,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.aggregated.content_repository import (
     ContentRepository,
 )
-from domain.models.commentary import Commentary, CommentaryReference, Zweck
+from domain.models.commentary import Commentary, CommentaryReference, Stil, Zweck
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement, StatementReplysuggestion
 from domain.models.reference import Reference
@@ -452,7 +452,10 @@ class ContentOrchestrator:
                                     "type": "string",
                                     "enum": [zweck.value for zweck in Zweck],
                                 },
-                                "style": {"type": "string"},
+                                "style": {
+                                    "type": "string",
+                                    "enum": [stil.value for stil in Stil],
+                                },
                                 "references": {
                                     "type": "array",
                                     "items": {

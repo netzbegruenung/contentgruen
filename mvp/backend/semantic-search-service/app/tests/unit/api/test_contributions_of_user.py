@@ -295,12 +295,17 @@ def test_liefert_zweck_und_stil_eines_kommentars(client, repository):
         beitrag(title="Die Pumpe gewinnt", zweck="eigene_leute", style="bissig"),
         beitrag(title="Die Pumpe rechnet sich", style="faktisch"),
         beitrag(title="Alt und frei", style="sarkastisch"),
+        beitrag(title="Alt und bissig", style="bissig"),
+        beitrag(title="Ein Bild", content_type="image"),
     ]
 
     eintraege = client.get(URL, headers={"X-User": "person-1"}).json()["results"]
 
     assert [(e["zweck"], e["style"]) for e in eintraege] == [
         ("eigene_leute", "bissig"),
-        (None, "sachlich"),
+        ("kommentarspalte", "sachlich"),
+        ("kommentarspalte", None),
+        # Wie in der Suche: bissig nur fuer die eigenen Leute.
+        ("kommentarspalte", None),
         (None, None),
     ]

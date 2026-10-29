@@ -138,8 +138,8 @@ def _kommentar_treffer(score: float, zweck: Zweck) -> SimpleNamespace:
 
 
 @pytest.mark.unit
-def test_kommentarspalten_antworten_stehen_vor_denen_fuer_die_eigenen_leute():
-    """Bei Aussagen zeigt die Suche zuerst Kommentarspalten-Antworten (#357)."""
+def test_kommentare_fuer_die_kommentarspalte_stehen_vor_denen_fuer_die_eigenen_leute():
+    """Die Suche zeigt zuerst die Kommentare fuer die Kommentarspalte (#357)."""
     orchestrator = SearchOrchestrator(
         specs=[
             ContentTypeSearchSpec(

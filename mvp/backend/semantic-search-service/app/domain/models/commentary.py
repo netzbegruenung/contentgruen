@@ -8,7 +8,7 @@ from pydantic import (
     model_validator,
     Field,
 )
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 import uuid
 import json
 
@@ -37,7 +37,7 @@ class Zweck(str, Enum):
     """
     Fuer wen ein Kommentar geschrieben ist (GLOSSARY.md, #357): als Antwort in
     Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder fuer die
-    eigenen Leute. Bei Aussagen zeigt die Suche zuerst Kommentarspalten-Antworten.
+    eigenen Leute. Die Suche zeigt die Kommentare fuer die Kommentarspalte zuerst.
     """
 
     KOMMENTARSPALTE = "kommentarspalte"
@@ -66,23 +66,29 @@ _STIL_ALTE_SCHREIBWEISEN = {
 }
 
 
-def stil_lesen(value) -> Optional[Stil]:
-    """
-    Ein gespeicherter Stil, nachsichtig gelesen: alte Schreibweisen werden zum Stil,
-    was es nicht (mehr) gibt, faellt weg, statt das Lesen scheitern zu lassen.
-    """
-    value = _STIL_ALTE_SCHREIBWEISEN.get(value, value)
-    return Stil(value) if value in Stil._value2member_map_ else None
-
-
-def bissig_ohne_eigene_leute(stil: Optional[Stil], zweck: Zweck) -> bool:
+def bissig_ohne_eigene_leute(stil: Optional[Stil], zweck: Optional[Zweck]) -> bool:
     """Die Regel aus GLOSSARY.md, verletzt: "bissig" ausserhalb von "Fuer die eigenen Leute"."""
     return stil == Stil.BISSIG and zweck != Zweck.EIGENE_LEUTE
 
 
-def fuer_eigene_leute(kommentar) -> bool:
+def stil_lesen(value, zweck: Optional[Zweck]) -> Optional[Stil]:
+    """
+    Ein gespeicherter Stil, nachsichtig gelesen: alte Schreibweisen werden zum Stil;
+    was es nicht (mehr) gibt oder nicht zum Zweck passt, faellt weg, statt das Lesen
+    scheitern zu lassen. Ohne Zweck gilt Kommentarspalte.
+    """
+    if isinstance(value, str):
+        value = _STIL_ALTE_SCHREIBWEISEN.get(value, value)
+    try:
+        stil = Stil(value)
+    except ValueError:
+        return None
+    return None if bissig_ohne_eigene_leute(stil, zweck) else stil
+
+
+def fuer_eigene_leute(kommentar: Optional["Commentary"]) -> bool:
     """Ob ein Kommentar fuer die eigenen Leute geschrieben ist; die Suche stellt ihn hintan."""
-    return getattr(kommentar, "zweck", None) == Zweck.EIGENE_LEUTE
+    return kommentar is not None and kommentar.zweck == Zweck.EIGENE_LEUTE
 
 
 class CommentaryReference(BaseModel):
@@ -157,6 +163,10 @@ class Commentary(BaseContent):
     style: Optional[Stil] = None
     references: List[CommentaryReference]
 
+    # Lesemodelle setzen das: Gespeichertes muss lesbar bleiben, auch mit einem Stil,
+    # den es nicht (mehr) gibt oder der nicht zum Zweck passt (stil_lesen).
+    STIL_NACHSICHTIG_LESEN: ClassVar[bool] = False
+
     @field_validator("zweck", mode="before")
     @classmethod
     def _zweck_ohne_angabe_ist_kommentarspalte(cls, value):
@@ -164,11 +174,13 @@ class Commentary(BaseContent):
 
     @field_validator("style", mode="before")
     @classmethod
-    def _stil_lesen(cls, value):
+    def _stil_pruefen(cls, value, info):
+        if cls.STIL_NACHSICHTIG_LESEN:
+            return stil_lesen(value, info.data.get("zweck"))
         # Leer heisst: kein Stil, wie bei den Fassungen.
         if isinstance(value, str) and not value.strip():
             return None
-        return _STIL_ALTE_SCHREIBWEISEN.get(value, value)
+        return value
 
     @model_validator(mode="after")
     def _bissig_nur_fuer_eigene_leute(self):
@@ -215,19 +227,7 @@ class CommentaryDbEntry(Commentary, BaseContentDbEntry):
     references_count: int
     usage_count: Optional[int] = None
 
-    # Gespeichertes muss lesbar bleiben: Ein Stil, den es nicht (mehr) gibt oder der
-    # nicht zum Zweck passt, faellt beim Lesen weg, statt die Suche scheitern zu lassen.
-    # Gleiche Namen wie in Commentary, damit diese die dortigen Pruefungen ersetzen.
-    @field_validator("style", mode="before")
-    @classmethod
-    def _stil_lesen(cls, value):
-        return stil_lesen(value)
-
-    @model_validator(mode="after")
-    def _bissig_nur_fuer_eigene_leute(self):
-        if bissig_ohne_eigene_leute(self.style, self.zweck):
-            self.style = None
-        return self
+    STIL_NACHSICHTIG_LESEN: ClassVar[bool] = True
 
 
 class CommentarySearchResult(CommentaryDbEntry, BaseContentSearchResult):

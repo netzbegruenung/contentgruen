@@ -47,7 +47,7 @@ class ContentTypeSearchSpec:
     result_cls: Type  # the per-type search-result wrapper DTO
     result_field: str  # name of the nested content field on the wrapper (e.g. "commentary_result")
     # Treffer, fuer die das gilt, ruecken nach dem Kuerzen hinter die anderen (#357:
-    # Kommentare fuer die eigenen Leute hinter die Kommentarspalten-Antworten).
+    # Kommentare fuer die eigenen Leute hinter die fuer die Kommentarspalte).
     nachrangig: Optional[Callable[[object], bool]] = None
 
 

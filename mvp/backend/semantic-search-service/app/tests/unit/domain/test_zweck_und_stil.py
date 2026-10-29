@@ -67,7 +67,9 @@ class TestZweckUndStil:
     def test_leerer_stil_heisst_kein_stil(self, leer):
         assert _kommentar(style=leer).style is None
 
-    @pytest.mark.parametrize("wert", ["sarkastisch", "empathisch", "Bissig"])
+    @pytest.mark.parametrize(
+        "wert", ["sarkastisch", "empathisch", "Bissig", "faktisch", "persönlich"]
+    )
     def test_unbekannter_stil_wird_abgewiesen(self, wert):
         with pytest.raises(ValidationError):
             _kommentar(style=wert)
@@ -105,3 +107,8 @@ class TestGespeicherteKommentare:
     def test_alter_bissiger_in_der_kommentarspalte_verliert_den_stil(self):
         """Lesen scheitert nicht; die Regel gilt fuer Neues."""
         assert _gelesen(style="bissig").style is None
+
+    def test_bissiger_fuer_die_eigenen_leute_bleibt_bissig(self):
+        gelesen = _gelesen(zweck="eigene_leute", style="bissig")
+
+        assert (gelesen.zweck, gelesen.style) == (Zweck.EIGENE_LEUTE, Stil.BISSIG)

@@ -220,7 +220,7 @@ function extra(typ: string | null, inhalt: Record<string, any>): KartenExtra | u
 function zweckUndStil(inhalt: Record<string, any>): Pick<KartenExtra, 'stil' | 'fuerEigeneLeute'> {
   const stil = inhalt['style'];
   return {
-    ...(stil in STIL_LABEL ? { stil: stil as Stil } : {}),
+    ...(typeof stil === 'string' && Object.hasOwn(STIL_LABEL, stil) ? { stil: stil as Stil } : {}),
     ...(inhalt['zweck'] === 'eigene_leute' ? { fuerEigeneLeute: true } : {}),
   };
 }

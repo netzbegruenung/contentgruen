@@ -113,6 +113,7 @@
     <ng-container *ngIf="istKompakt">
         <div class="album-inhalt">
             <h3 class="karte-titel">{{ titelAnzeige }}</h3>
+            <ng-container *ngTemplateOutlet="angaben"></ng-container>
             <p class="album-anriss" *ngIf="anriss as anriss">{{ anriss }}</p>
         </div>
         <footer class="album-fuss">
@@ -165,13 +166,7 @@
         </div>
 
         <div class="karte-inhalt">
-            <!-- Am Kommentar (#357): Markierung fuer die eigenen Leute und der Stil -->
-            <p class="karte-angaben" *ngIf="eigeneLeuteAnzeige || stilAnzeige">
-                <span class="karte-eigene-leute" *ngIf="eigeneLeuteAnzeige as eigene">
-                    <mat-icon class="angabe-icon" aria-hidden="true">groups</mat-icon>{{ eigene }}
-                </span>
-                <span class="karte-stil" *ngIf="stilAnzeige as stil"><span class="cdk-visually-hidden">Stil: </span>{{ stil }}</span>
-            </p>
+            <ng-container *ngTemplateOutlet="angaben"></ng-container>
 
             <mat-button-toggle-group *ngIf="hatKurzOderLang" class="textlaenge"
                                      aria-label="Fassung"
@@ -256,4 +251,15 @@
             <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container></p>
         </footer>
     </ng-container>
+
+    <!-- Am Kommentar (#357), in der vollen und der kompakten Karte: Markierung fuer
+         die eigenen Leute und der Stil -->
+    <ng-template #angaben>
+        <p class="karte-angaben" *ngIf="eigeneLeuteAnzeige || stilAnzeige">
+            <span class="karte-eigene-leute" *ngIf="eigeneLeuteAnzeige as eigene">
+                <mat-icon class="angabe-icon" aria-hidden="true">groups</mat-icon>{{ eigene }}
+            </span>
+            <span class="karte-stil" *ngIf="stilAnzeige as stil"><span class="cdk-visually-hidden">Stil: </span>{{ stil }}</span>
+        </p>
+    </ng-template>
 </article>

@@ -93,11 +93,23 @@ export interface Vorhanden {
   gewaehlt: 'zugestimmt' | 'genommen' | null;
 }
 
+/** Die optionalen Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357). */
+interface OptionaleAngaben {
+  zweck: Zweck;
+  stil: Stil | null;
+}
+
 /**
- * Die optionalen Angaben zum Kommentar, wie sie im leeren Formular stehen. Weitere
- * Felder dieser Art kommen hier und in `optionaleAngabenFuerAnfrage` dazu.
+ * Die optionalen Angaben, wie sie im leeren Formular stehen. Ein weiteres Feld dieser
+ * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` und in der
+ * Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten sich hieraus ab.
  */
-const OPTIONALE_ANGABEN_LEER: { zweck: Zweck; stil: Stil | null } = { zweck: ZWECK_STANDARD, stil: null };
+const OPTIONALE_ANGABEN_LEER: OptionaleAngaben = { zweck: ZWECK_STANDARD, stil: null };
+const OPTIONALE_ANGABEN = Object.keys(OPTIONALE_ANGABEN_LEER) as (keyof OptionaleAngaben)[];
+
+function gleicheAngaben(a: OptionaleAngaben, b: OptionaleAngaben): boolean {
+  return OPTIONALE_ANGABEN.every((feld) => a[feld] === b[feld]);
+}
 
 const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Formular zurücksetzen?',
@@ -252,8 +264,7 @@ export class AddCommentaryComponent implements OnChanges {
     text: string;
     kurz: string;
     lang: string;
-    zweck: Zweck;
-    stil: Stil | null;
+    angaben: OptionaleAngaben;
     quellen: unknown;
     aussage: string;
     karte: KartenDaten;
@@ -349,14 +360,13 @@ export class AddCommentaryComponent implements OnChanges {
 
   /** Irgendetwas eingetragen oder vorbelegt - dann fragt Zuruecksetzen nach. */
   get hatEingaben(): boolean {
-    const { title, text, kurz, lang, zweck, stil, references } = this.commentaryForm.value;
+    const { title, text, kurz, lang, references } = this.commentaryForm.value;
     return !!(
       title?.trim() ||
       text?.trim() ||
       kurz?.trim() ||
       lang?.trim() ||
-      zweck !== ZWECK_STANDARD ||
-      stil ||
+      !gleicheAngaben(this.optionaleAngaben, OPTIONALE_ANGABEN_LEER) ||
       references?.length ||
       this.aussage.id ||
       this.aussage.text
@@ -371,7 +381,8 @@ export class AddCommentaryComponent implements OnChanges {
    * Entwurf nichts.
    */
   get vorschauKarte(): KartenDaten {
-    const { title, text, kurz, lang, zweck, stil, references } = this.commentaryForm.value;
+    const { title, text, kurz, lang, references } = this.commentaryForm.value;
+    const angaben = this.optionaleAngaben;
     const cache = this.vorschauCache;
     if (
       cache &&
@@ -379,8 +390,7 @@ export class AddCommentaryComponent implements OnChanges {
       cache.text === text &&
       cache.kurz === kurz &&
       cache.lang === lang &&
-      cache.zweck === zweck &&
-      cache.stil === stil &&
+      gleicheAngaben(cache.angaben, angaben) &&
       cache.quellen === references &&
       cache.aussage === this.aussage.text
     ) {
@@ -395,8 +405,8 @@ export class AddCommentaryComponent implements OnChanges {
         // Die Karte zeigt Reiter nur fuer Fassungen mit Text.
         short_text: kurz,
         long_text: lang,
-        zweck,
-        style: stil,
+        zweck: angaben.zweck,
+        style: angaben.stil,
         references: (references ?? [])
           .filter((ref: any) => ref?.reference_string?.trim())
           .map((ref: any, index: number) => ({
@@ -416,8 +426,7 @@ export class AddCommentaryComponent implements OnChanges {
       text,
       kurz,
       lang,
-      zweck,
-      stil,
+      angaben,
       quellen: references,
       aussage: this.aussage.text,
       karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' },
@@ -529,10 +538,16 @@ export class AddCommentaryComponent implements OnChanges {
     return { ...(kurz ? { short_text: kurz } : {}), ...(lang ? { long_text: lang } : {}) };
   }
 
+  /** Die optionalen Angaben, wie sie gerade im Formular stehen. */
+  private get optionaleAngaben(): OptionaleAngaben {
+    const werte = this.commentaryForm.value;
+    return Object.fromEntries(OPTIONALE_ANGABEN.map((feld) => [feld, werte[feld] ?? OPTIONALE_ANGABEN_LEER[feld]])) as unknown as OptionaleAngaben;
+  }
+
   /** Der Zweck immer (Standard Kommentarspalte), der Stil nur, wenn einer gewaehlt ist. */
   private optionaleAngabenFuerAnfrage(): Pick<Commentary, 'zweck' | 'style'> {
-    const { zweck, stil } = this.commentaryForm.value;
-    return { zweck: zweck ?? ZWECK_STANDARD, ...(stil ? { style: stil } : {}) };
+    const { zweck, stil } = this.optionaleAngaben;
+    return { zweck, ...(stil ? { style: stil } : {}) };
   }
 
   /** Im Antwort-auf-Block steht eine Aussage (per ID oder als Text). */

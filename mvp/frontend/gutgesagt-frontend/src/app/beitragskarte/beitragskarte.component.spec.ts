@@ -325,7 +325,7 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-stil')?.textContent).toContain('persönlich');
     });
 
-    it('markiert Kommentarspalten-Antworten nicht und zeigt ohne Stil keinen', () => {
+    it('markiert Kommentare fuer die Kommentarspalte nicht und zeigt ohne Stil keinen', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'kommentarspalte' })));
 
       expect(element('.karte-eigene-leute')).toBeNull();
@@ -333,11 +333,20 @@ describe('BeitragskarteComponent', () => {
       expect(element('.karte-angaben')).toBeNull();
     });
 
-    it('zeigt den Stil auch bei einer Kommentarspalten-Antwort', () => {
+    it('zeigt den Stil auch bei einem Kommentar fuer die Kommentarspalte', () => {
       zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
 
       expect(element('.karte-eigene-leute')).toBeNull();
       expect(element('.karte-stil')?.textContent).toContain('brückenbauend');
+    });
+
+    it('zeigt Markierung und Stil auch in der kompakten Karte (Meine Beitraege)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'humorvoll' })), {
+        variante: 'kompakt',
+      });
+
+      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
     });
   });
 
