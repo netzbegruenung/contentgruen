@@ -113,7 +113,7 @@ interface OptionaleAngaben {
  * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` (die Themen
  * gehoeren zur Aussage und gehen ueber `aussageFuerAnfrage`) und, wenn die Karte es
  * zeigt, in der Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten
- * sich hieraus ab.
+ * sich hieraus ab (der Cache ohne die Themen, siehe `fuerDieVorschau`).
  */
 const OPTIONALE_ANGABEN_LEER: Readonly<OptionaleAngaben> = { zweck: ZWECK_STANDARD, stil: null, themen: [] };
 const OPTIONALE_ANGABEN = Object.keys(OPTIONALE_ANGABEN_LEER) as (keyof OptionaleAngaben)[];
@@ -125,16 +125,28 @@ function gleicherWert(a: unknown, b: unknown): boolean {
   return Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((x, i) => x === b[i]) : a === b;
 }
 
-function gleicheAngaben(a: OptionaleAngaben, b: OptionaleAngaben): boolean {
-  return OPTIONALE_ANGABEN.every((feld) => gleicherWert(a[feld], b[feld]));
+/** Feld fuer Feld gleich; Arrays (die Themen) nach Inhalt. */
+function gleicheAngaben<T extends object>(a: T, b: T): boolean {
+  return (Object.keys(a) as (keyof T)[]).every((feld) => gleicherWert(a[feld], b[feld]));
 }
 
-const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
-  titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, weitere Fassungen, Zweck, Stil, Themen, Aussage und Herkunft werden geleert.',
-  ja: 'Zurücksetzen',
-  nein: 'Abbrechen',
-};
+/** Was die Vorschau aus den optionalen Angaben zeigt: alles ausser den Themen, die die Karte nicht zeigt. */
+type VorschauAngaben = Omit<OptionaleAngaben, 'themen'>;
+
+function fuerDieVorschau(angaben: OptionaleAngaben): VorschauAngaben {
+  const { themen: _ohneThemen, ...vorschau } = angaben;
+  return vorschau;
+}
+
+/** Die Rueckfrage nennt die Themen nur, wenn ihre Auswahl zu sehen ist. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Titel, Text, weitere Fassungen, Zweck, Stil, ${mitThemen ? 'Themen, ' : ''}Aussage und Herkunft werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
+}
 
 /**
  * Das Kommentarformular: Antwort auf, Titel, Kommentar (die Mittelfassung),
@@ -285,7 +297,7 @@ export class AddCommentaryComponent implements OnChanges {
     text: string;
     kurz: string;
     lang: string;
-    angaben: OptionaleAngaben;
+    angaben: VorschauAngaben;
     quellen: unknown;
     aussage: string;
     karte: KartenDaten;
@@ -414,7 +426,7 @@ export class AddCommentaryComponent implements OnChanges {
    */
   get vorschauKarte(): KartenDaten {
     const { title, text, kurz, lang, references } = this.commentaryForm.value;
-    const angaben = this.optionaleAngaben;
+    const angaben = fuerDieVorschau(this.optionaleAngaben);
     const cache = this.vorschauCache;
     if (
       cache &&
@@ -706,7 +718,7 @@ export class AddCommentaryComponent implements OnChanges {
       return;
     }
     this.dialog
-      .open(BestaetigungsDialogComponent, { data: ZURUECKSETZEN_FRAGE, autoFocus: 'dialog' })
+      .open(BestaetigungsDialogComponent, { data: zuruecksetzenFrage(this.zeigtThemen), autoFocus: 'dialog' })
       .afterClosed()
       .pipe(filter((ja) => ja === true))
       .subscribe(() => this.leeren());

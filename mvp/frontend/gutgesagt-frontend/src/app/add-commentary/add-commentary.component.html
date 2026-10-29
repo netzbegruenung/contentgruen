@@ -81,9 +81,9 @@
                         <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„bissig“ nur für die eigenen Leute</mat-hint>
                     </mat-form-field>
                     <div *ngIf="zeigtThemen" class="themen-feld">
-                        <span class="feld-beschriftung">Themen der Aussage</span>
+                        <span class="feld-beschriftung">Themen der neuen Aussage</span>
                         <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="commentaryForm.value.themen"
-                                            beschriftung="Themen der Aussage"
+                                            beschriftung="Themen der neuen Aussage"
                                             (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
                     </div>
                 </div>

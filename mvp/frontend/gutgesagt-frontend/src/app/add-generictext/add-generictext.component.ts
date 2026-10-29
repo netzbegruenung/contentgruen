@@ -90,12 +90,15 @@ export interface Vorhanden {
   gewaehlt: 'zugestimmt' | 'genommen' | null;
 }
 
-const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
-  titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, Themen, Aussage und Herkunft werden geleert.',
-  ja: 'Zurücksetzen',
-  nein: 'Abbrechen',
-};
+/** Die Rueckfrage nennt die Themen nur, wenn ihre Auswahl zu sehen ist. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Titel, Text, ${mitThemen ? 'Themen, ' : ''}Aussage und Herkunft werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
+}
 
 /**
  * Das Hintergrundinfo-Formular, gleich gebaut wie das Kommentarformular: Antwort
@@ -561,7 +564,7 @@ export class AddGenerictextComponent implements OnChanges {
       return;
     }
     this.dialog
-      .open(BestaetigungsDialogComponent, { data: ZURUECKSETZEN_FRAGE, autoFocus: 'dialog' })
+      .open(BestaetigungsDialogComponent, { data: zuruecksetzenFrage(this.zeigtThemen), autoFocus: 'dialog' })
       .afterClosed()
       .pipe(filter((ja) => ja === true))
       .subscribe(() => this.leeren());

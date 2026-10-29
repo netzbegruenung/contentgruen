@@ -930,7 +930,9 @@ describe('AddGenerictextComponent', () => {
       aussageAusAdresse('Wärmepumpen sind zu teuer');
 
       expect(auswahl()).toBeTruthy();
-      expect(seite().querySelector('.themen-feld')!.textContent).toContain('Themen der Aussage');
+      // Wie in „Hier fehlt eine Antwort“.
+      expect(seite().querySelector('.themen-feld')!.textContent).toContain('Themen der neuen Aussage');
+      expect(auswahl()!.querySelector('[role=group]')!.getAttribute('aria-label')).toBe('Themen der neuen Aussage');
       expect(thema('Klima')).toBeTruthy();
     });
 
@@ -1064,8 +1066,6 @@ describe('AddGenerictextComponent', () => {
       themenLaden();
       aussageAusAdresse('Wärmepumpen sind zu teuer');
       thema('Klima').click();
-      component.aussage = { id: '', text: '' };
-      expect(component.hatEingaben).toBeTrue();
       dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
 
       component.zuruecksetzen();
@@ -1073,6 +1073,16 @@ describe('AddGenerictextComponent', () => {
       expect(component.generictextForm.value.themen).toEqual([]);
       expect(component.hatEingaben).toBeFalse();
       expect(dialog.open.calls.mostRecent().args[1]!.data.text).toContain('Themen');
+    });
+
+    it('nennt in der Rueckfrage keine Themen, solange die Auswahl verborgen ist', () => {
+      themenLaden();
+      ausfuellen();
+      dialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
+
+      component.zuruecksetzen();
+
+      expect(dialog.open.calls.mostRecent().args[1]!.data.text).not.toContain('Themen');
     });
   });
 

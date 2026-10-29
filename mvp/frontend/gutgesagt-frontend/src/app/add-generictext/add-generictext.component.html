@@ -40,9 +40,9 @@
                 <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
                 <div *ngIf="zeigtThemen" class="optionale-angaben">
                     <div class="themen-feld">
-                        <span class="feld-beschriftung">Themen der Aussage</span>
+                        <span class="feld-beschriftung">Themen der neuen Aussage</span>
                         <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="generictextForm.value.themen"
-                                            beschriftung="Themen der Aussage"
+                                            beschriftung="Themen der neuen Aussage"
                                             (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
                     </div>
                 </div>
