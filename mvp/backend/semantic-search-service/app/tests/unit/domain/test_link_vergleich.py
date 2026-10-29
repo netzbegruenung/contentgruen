@@ -16,6 +16,8 @@ from domain.link_vergleich import (
     TRACKING_PARAMETER,
     TRACKING_PRAEFIXE,
     gleicher_link,
+    links_im_text_ohne_tracking,
+    ohne_tracking,
     vergleichsform,
     vorfilter_teile,
 )
@@ -138,6 +140,39 @@ def _ts_liste(quelltext: str, name: str) -> set:
 @pytest.mark.skipif(
     not FRONTEND_BEREINIGUNG.exists(), reason="Frontend nicht im Checkout"
 )
+class TestOhneTracking:
+    """Wie trackingParameterEntfernen im Frontend: nur die Parameter fallen weg."""
+
+    @pytest.mark.parametrize(
+        "link, erwartet",
+        [
+            (
+                "https://www.example.org/a/?utm_source=x",
+                "https://www.example.org/a/",
+            ),
+            ("https://example.org/a?x=1&fbclid=2#k", "https://example.org/a?x=1#k"),
+            ("https://youtu.be/abc?si=1&t=3", "https://youtu.be/abc?t=3"),
+            # Auf anderen Hosts ist si kein Tracking.
+            ("https://example.org/a?si=1", "https://example.org/a?si=1"),
+            # Ohne Tracking-Parameter unveraendert, auch die Kodierung.
+            ("https://example.org/a?b=%20c", "https://example.org/a?b=%20c"),
+            ("ftp://example.org/?utm_a=1", "ftp://example.org/?utm_a=1"),
+            ("kein Link", "kein Link"),
+            (None, None),
+        ],
+    )
+    def test_ohne_tracking(self, link, erwartet):
+        assert ohne_tracking(link) == erwartet
+
+    def test_links_im_text(self):
+        assert (
+            links_im_text_ohne_tracking(
+                "Hier https://example.org/a?igsh=1 und https://example.org/b?c=d"
+            )
+            == "Hier https://example.org/a und https://example.org/b?c=d"
+        )
+
+
 def test_link_vergleich_tracking_wie_frontend():
     """Das Frontend entfernt beim Einwerfen dieselben Parameter, die hier wegfallen."""
     quelltext = FRONTEND_BEREINIGUNG.read_text(encoding="utf-8")

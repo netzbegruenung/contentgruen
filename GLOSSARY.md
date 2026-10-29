@@ -37,7 +37,7 @@ Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eine
 _Avoid_: Kanal, Quelle
 
 **Weg**:
-Wie ein Einwurf in den Fangkorb kam: über das Formular oder über das Teilen-Menü des Geräts. Nicht zu verwechseln mit der Plattform, aus der sein Link stammt.
+Wie ein Einwurf in den Fangkorb kam: über das Formular, über das Teilen-Menü des Geräts oder über das Importskript aus einer Liste (etwa für den Startbestand). Nicht zu verwechseln mit der Plattform, aus der sein Link stammt.
 _Avoid_: Kanal, Quelle, Herkunft
 
 **Gleicher Link**:

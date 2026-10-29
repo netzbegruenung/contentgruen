@@ -5,6 +5,9 @@
 # Frontend tests need a Chrome/Chromium: set CHROME_BIN, otherwise the Playwright Chromium is used if present.
 # --integration: also run app/tests/integration against Qdrant (QDRANT_URL, default localhost:6333) and
 # PostgreSQL (POSTGRES_TEST_DATABASE_URL or a throwaway container); aborts if either is missing.
+# tests/integration/api/ additionally needs the running dev-stack BFF (GUTGESAGT_BFF_URL, default
+# localhost:5054, `mvp/run-local.sh up`); without it those tests fail in this mode, except in CI (`CI` set),
+# which starts no BFF: there they are skipped.
 # --schritt <name>: run only that step (retired-words, lint, unit, integration, frontend, bff);
 # the Woodpecker pipeline (.woodpecker/ci.yaml) runs each step this way, see docs/CI.md.
 # CHECK_VOLL=1 shows the full output instead of the summary lines; CHECK_OHNE_DOCKER=1 runs the

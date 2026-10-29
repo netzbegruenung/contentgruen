@@ -62,3 +62,15 @@ def test_fehlende_dienste_alles_da_ist_leer(monkeypatch, docker_da):
 )
 def test_pflicht_nur_mit_gesetzter_variable(env, erwartet):
     assert stack.pflicht(env) is erwartet
+
+
+def test_bff_pflicht_im_pflichtmodus():
+    assert stack.bff_pflicht({stack.PFLICHT_VARIABLE: "1"})
+
+
+def test_bff_pflicht_nicht_in_der_ci():
+    assert not stack.bff_pflicht({stack.PFLICHT_VARIABLE: "1", "CI": "woodpecker"})
+
+
+def test_bff_pflicht_nicht_ohne_pflichtmodus():
+    assert not stack.bff_pflicht({})
