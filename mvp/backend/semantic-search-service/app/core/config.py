@@ -180,7 +180,8 @@ class Settings(BaseSettings):
     # laengste Auswertung ueber Einzelzeilen (searches-per-user, hoechstens 90 Tage).
     # Darum auch die Untergrenze: Kuerzer zaehlte searches-per-user still zu wenig,
     # und ein negativer Wert verdichtete den laufenden Tag (Personen doppelt).
-    # Laeuft im selben Job: enable_usage_cleanup=false schaltet auch diese Frist ab.
+    # Laeuft im selben Job: enable_usage_cleanup=false schaltet auch diese Frist ab,
+    # ebenso das Mischen abgeschlossener Tage (#337).
     search_event_retention_days: int = Field(default=90, ge=90)
     cleanup_hour: int = 2  # 2 AM
     cleanup_minute: int = 0

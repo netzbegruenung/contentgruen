@@ -163,15 +163,23 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
   stellen mit `mvp/backend/postgres-app/migrations/2026-10-27-suchereignisse-reihenfolge.sql`
   um; dabei wird die Tabelle neu geschrieben, die alten Nummern stehen danach nicht mehr
   in ihr. In Backups und im WAL stehen sie, bis diese herausrotiert sind.
-  **Offen:** Die physische Reihenfolge der Zeilen folgt weiter dem Einfügen. Wer die
-  Datenbank liest (`SELECT` ohne `ORDER BY`, `ctid`) oder einen Dump hat (`pg_dump`
-  schreibt die Zeilen in dieser Reihenfolge), sieht die Reihenfolge der Suchen eines
-  Tages noch, solange die Einzelzeilen leben. Ebenso die Systemspalte `xmin`: Jede Suche
+  Auch die physische Reihenfolge der Zeilen (`SELECT` ohne `ORDER BY`, `ctid`, die
+  Reihenfolge in `pg_dump`) und die Systemspalte `xmin` folgen dem Einfügen: Jede Suche
   schreibt ihr Suchereignis in einer eigenen Transaktion, deren Nummer mit jeder Suche
-  steigt (`ORDER BY xmin::text::bigint`). Für Zeilen vor der Migration gilt das nicht mehr,
-  sie tragen alle die Transaktion der Migration. Abhilfe für beides: die Suchereignisse
-  eines abgeschlossenen Tages in zufälliger Reihenfolge und in einer Transaktion neu
-  schreiben.
+  steigt. Seit #337 schreibt der tägliche Bereinigungsjob deshalb jeden abgeschlossenen
+  Tag in zufälliger Reihenfolge und in einer Transaktion neu
+  (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
+  abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
+  und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_USAGE_CLEANUP=false`
+  entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
+  ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
+  eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach
+  Mitternacht): Ihre Zeile trägt bis zum nächsten Lauf ein eigenes `xmin` und ist damit
+  als eine der letzten Suchen ihres Tages erkennbar; verloren geht dabei nichts. Die
+  alten Zeilenversionen und ihre Einträge im Index auf `timestamp` stehen physisch in
+  der Datei, bis ein `VACUUM` ihren Platz freigibt (nur mit Werkzeugen lesbar, die Seiten
+  roh auslesen); in Backups und im WAL, bis diese herausrotiert sind.
   **Frist:** Suchereignisse bleiben 90 Tage als Einzelzeilen
   (`SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS`, `core/config.py`, nicht unter 90:
   `GET /metrics/searches-per-user` wertet bis zu 90 Tage Einzelzeilen aus). Ältere Tage

@@ -6,6 +6,12 @@ Suchereignisse bleiben search_event_retention_days Tage als Einzelzeilen. Aelter
 Tage werden zu Tageszaehlern der Suchen verdichtet (suchen_je_tag: Tag, Zahl der
 Suchen, Zahl der Personen), ohne Tagespseudonym (#289). Die Zaehlungen je Zeitraum
 unten addieren diese Tageszaehler und stimmen so auch ueber die Frist hinaus.
+
+Jede Suche schreibt ihr Suchereignis in einer eigenen Transaktion. Damit ergaeben
+die Systemspalte xmin und die physische Lage der Zeilen (ctid, pg_dump) die
+Reihenfolge der Suchen eines Tages. Derselbe Job schreibt deshalb jeden
+abgeschlossenen Tag in zufaelliger Reihenfolge und in einer Transaktion neu
+(#337).
 """
 
 import logging
@@ -44,6 +50,31 @@ _VERDICHTEN = text(
             personen = suchen_je_tag.personen + EXCLUDED.personen
     )
     SELECT count(*) FROM weg
+    """
+)
+
+
+# Mischt in einer Anweisung, also einer Transaktion: Alle neu geschriebenen Zeilen
+# tragen dasselbe xmin, und eingefuegt wird in zufaelliger Reihenfolge, die damit
+# auch die physische Lage bestimmt. Gemischt werden bei jedem Lauf alle
+# abgeschlossenen Tage, nicht nur die noch ungemischten: Woran man einen
+# gemischten Tag erkennen koennte, traegt auch ein ungemischter (ein xmin hat ein
+# Tag auch nach dem Neuschreiben der Tabelle in #275 oder nach dem Einspielen
+# eines Dumps). So mischt der Lauf beim Start des Dienstes auch diese Tage.
+_MISCHEN = text(
+    """
+    WITH weg AS (
+        DELETE FROM search_events
+        WHERE timestamp < :heute
+        RETURNING id, actor_hash, results_count, timestamp
+    ), neu AS (
+        INSERT INTO search_events (id, actor_hash, results_count, timestamp)
+        SELECT id, actor_hash, results_count, timestamp
+        FROM weg
+        ORDER BY random()
+        RETURNING 1
+    )
+    SELECT count(*) FROM neu
     """
 )
 
@@ -309,6 +340,39 @@ class SearchTrackingRepository:
             session.commit()
         logger.info(f"Compacted {geloescht} old search events into day counters")
         return geloescht
+
+    def mische_abgeschlossene_tage(self, heute: Optional[date] = None) -> int:
+        """
+        Suchereignisse abgeschlossener Tage in zufaelliger Reihenfolge neu schreiben.
+
+        Wirft bei Datenbankfehlern wie verdichte_alte_suchereignisse.
+
+        Danach tragen die Zeilen eines Tages alle dieselbe Transaktion (xmin) und
+        liegen in zufaelliger Reihenfolge (ctid, pg_dump). Der laufende Tag bleibt,
+        wie er ist. Ein Suchereignis eines abgeschlossenen Tages, das erst waehrend
+        des Laufs eingeht (Suche kurz vor Mitternacht), sieht die Anweisung nicht:
+        Es bleibt erhalten und wird beim naechsten Lauf mitgemischt. Jeder Lauf mischt alle abgeschlossenen Tage neu, auch schon
+        gemischte; das sind hoechstens die Tage der Frist, aeltere verdichtet
+        verdichte_alte_suchereignisse vorher.
+
+        Args:
+            heute: Bezugstag, Standard heute in UTC; Tage davor sind abgeschlossen
+
+        Returns:
+            int: Zahl der neu geschriebenen Suchereignisse
+        """
+        heute = heute or datetime.now(timezone.utc).date()
+        with self.db.get_session() as session:
+            gemischt = (
+                session.execute(
+                    _MISCHEN,
+                    {"heute": datetime.combine(heute, time.min, tzinfo=timezone.utc)},
+                ).scalar()
+                or 0
+            )
+            session.commit()
+        logger.info(f"Rewrote {gemischt} search events of closed days in random order")
+        return gemischt
 
 
 # Global repository instance
