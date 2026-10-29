@@ -223,10 +223,14 @@ class TestGeloeschteBeitraege:
             moderation_repo=beitraege,
             vote_repo=MagicMock(),
             raw_input_repo=MagicMock(),
+            sperre_repo=MagicMock(),
         )
         meldungen = MagicMock(**{"bearbeitete_loeschen_vor.return_value": 0})
         einwuerfe = MagicMock(**{"ohne_beitrag_loeschen_vor.return_value": 0})
-        return LoeschfristenService(meldungen, einwuerfe, beitraege, moderation)
+        sperren = MagicMock(**{"aufgehobene_loeschen_vor.return_value": 0})
+        return LoeschfristenService(
+            meldungen, einwuerfe, beitraege, moderation, sperren
+        )
 
     @pytest.fixture
     def post_service(self, integration_settings, real_repository_factory):

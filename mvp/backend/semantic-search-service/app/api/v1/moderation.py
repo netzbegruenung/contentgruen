@@ -9,7 +9,12 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from domain.models.meldegrund import Meldegrund
-from services.moderation_service import get_moderation_service
+from domain.models.sperrgrund import Sperrgrund
+from services.moderation_service import (
+    SchonGesperrt,
+    SperreUngueltig,
+    get_moderation_service,
+)
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.config import Settings
 from core.logging import get_logger
@@ -66,6 +71,24 @@ class DeleteContentResponse(BaseModel):
 
     success: bool
     message: str
+
+
+class SperrenRequest(BaseModel):
+    """Sperrgrund und Begruendung; beides erfaehrt der Autor (#448)."""
+
+    sperrgrund: Sperrgrund = Field(..., description="Sperrgrund aus der Liste")
+    begruendung: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+        description="Was genau am Beitrag gegen die Nutzungsbedingungen verstoesst",
+    )
+
+
+class SperreBestaetigenRequest(BaseModel):
+    """Begruendung, warum die Sperre nach dem Widerspruch bleibt."""
+
+    begruendung: str = Field(..., min_length=1, max_length=2000)
 
 
 class SperreResponse(BaseModel):
@@ -235,25 +258,34 @@ async def get_reports(
 @router.put("/content/{content_id}/sperren", response_model=SperreResponse)
 async def sperren(
     content_id: uuid.UUID,
+    anfrage: SperrenRequest,
     admin_user: str = Depends(require_admin),
 ):
     """
-    Einen gemeldeten Beitrag sperren (Admin only).
+    Einen gemeldeten Beitrag sperren (Admin only), mit Sperrgrund und Begruendung.
 
     Der Beitrag verschwindet aus Suche und Ansicht, bleibt aber erhalten und laesst
-    sich entsperren. Alle Meldungen zum Beitrag stehen danach auf bearbeitet.
+    sich entsperren. Alle Meldungen zum Beitrag stehen danach auf bearbeitet. Der
+    Autor sieht die Sperrnachricht in "Meine Beitraege" und kann widersprechen.
     """
     try:
         logger.info(f"Admin blocking (sperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
         if not await moderation_service.sperren(
-            str(content_id), gesperrt_von=admin_user
+            str(content_id),
+            gesperrt_von=admin_user,
+            sperrgrund=anfrage.sperrgrund,
+            begruendung=anfrage.begruendung,
         ):
             raise HTTPException(status_code=404, detail="Beitrag nicht gefunden")
 
         return SperreResponse(success=True, message=f"Beitrag {content_id} gesperrt")
 
+    except SchonGesperrt:
+        raise HTTPException(status_code=409, detail="Beitrag ist schon gesperrt")
+    except SperreUngueltig as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -274,7 +306,9 @@ async def entsperren(
         logger.info(f"Admin unblocking (entsperren) content: {content_id}")
 
         moderation_service = get_moderation_service()
-        if not await moderation_service.entsperren(str(content_id)):
+        if not await moderation_service.entsperren(
+            str(content_id), entsperrt_von=admin_user
+        ):
             raise HTTPException(status_code=404, detail="Beitrag nicht gefunden")
 
         return SperreResponse(success=True, message=f"Beitrag {content_id} entsperrt")
@@ -286,10 +320,43 @@ async def entsperren(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@router.put("/sperren/{sperre_id}/bestaetigen", response_model=SperreResponse)
+async def sperre_bestaetigen(
+    sperre_id: uuid.UUID,
+    anfrage: SperreBestaetigenRequest,
+    admin_user: str = Depends(require_admin),
+):
+    """
+    Nach einem Widerspruch erneut geprueft: Die Sperre bleibt (Admin only). Die
+    Begruendung sieht der Autor in seiner Sperrnachricht. Das andere Ergebnis der
+    Pruefung ist Entsperren.
+    """
+    try:
+        logger.info(f"Admin confirming Sperre {sperre_id} after Widerspruch")
+
+        if not await get_moderation_service().sperre_bestaetigen(
+            str(sperre_id), admin_user, anfrage.begruendung
+        ):
+            raise HTTPException(
+                status_code=404, detail="Keine Sperre mit offenem Widerspruch"
+            )
+
+        return SperreResponse(success=True, message="Sperre bestaetigt")
+
+    except SperreUngueltig as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in sperre_bestaetigen endpoint: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @router.get("/gesperrt", response_model=GesperrteResponse)
 async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
     """
-    Alle gesperrten Beitraege (Admin only), auch solche ohne Meldung.
+    Alle gesperrten Beitraege (Admin only), auch solche ohne Meldung, jeder mit
+    seiner Sperre unter "sperre" (Sperrgrund, Widerspruch, Pruefung).
     """
     try:
         logger.info("Admin fetching gesperrte Beitraege")

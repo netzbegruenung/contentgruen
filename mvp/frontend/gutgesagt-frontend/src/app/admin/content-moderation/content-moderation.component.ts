@@ -15,6 +15,8 @@ import { ModerationService, ContentReport, GemeldeterBeitrag } from '../../servi
 import { ContentStatus } from '../../services/dtos/content-status-enum';
 import { typLabel } from '../../shared/content-type-registry';
 import { meldegrundLabel } from '../../shared/meldegruende';
+import { sperrgrundLabel } from '../../shared/sperrgruende';
+import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
 
 type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
 
@@ -56,8 +58,10 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
 })
 export class ContentModerationComponent implements OnInit {
   reports: ContentReport[] = [];
-  // Ansicht "Gesperrt": gesperrte Beiträge, auch ohne Meldung.
+  // Ansicht "Gesperrt": gesperrte Beiträge, auch ohne Meldung; offene Widersprüche zuerst.
   gesperrte: GemeldeterBeitrag[] = [];
+  /** Zahl am Umschalter "Gesperrt": Widersprüche, die auf erneute Prüfung warten. */
+  offeneWidersprueche = 0;
   loading = true;
   error: string | null = null;
   selectedStatus: Ansicht = 'pending';
@@ -72,6 +76,7 @@ export class ContentModerationComponent implements OnInit {
 
   ngOnInit() {
     this.loadReports();
+    this.offeneWiderspruecheZaehlen();
   }
 
   loadReports() {
@@ -82,7 +87,8 @@ export class ContentModerationComponent implements OnInit {
     if (this.selectedStatus === 'gesperrt') {
       this.moderationService.getGesperrte().subscribe({
         next: (response) => {
-          this.gesperrte = [...response.beitraege];
+          this.gesperrte = nachWiderspruch(response.beitraege);
+          this.offeneWidersprueche = zaehleOffene(response.beitraege);
           this.loading = false;
         },
         error: (error) => {
@@ -142,21 +148,67 @@ export class ContentModerationComponent implements OnInit {
     return report.content?.status === ContentStatus.BLOCKED;
   }
 
+  /** Sperren nur mit Sperrgrund und Begründung (#448); beides fragt der Dialog ab. */
   sperren(report: ContentReport) {
-    if (!confirm(`Diesen Beitrag sperren?\n\nEr verschwindet aus Suche und Ansicht, bleibt aber erhalten. Die Sperre lässt sich aufheben. Alle Meldungen zum Beitrag stehen danach auf bearbeitet.`)) {
+    const daten: SperrenDialogDaten = { art: 'sperren', titel: this.beitragsTitel(report.content ?? { id: report.content_id }) };
+    this.dialog
+      .open<SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis>(SperrenDialogComponent, { data: daten, width: '520px' })
+      .afterClosed()
+      .subscribe((ergebnis) => {
+        if (!ergebnis?.sperrgrund) {
+          return;
+        }
+        this.moderationService.sperren(report.content_id, ergebnis.sperrgrund, ergebnis.begruendung).subscribe({
+          next: () => {
+            this.snackBar.open('Beitrag gesperrt', 'OK', { duration: 3000 });
+            this.loadReports();
+          },
+          error: (error) => {
+            const text = error?.status === 409 ? 'Der Beitrag ist schon gesperrt' : 'Fehler beim Sperren des Beitrags';
+            this.snackBar.open(text, 'OK', { duration: 3000 });
+            console.error('Error blocking content:', error);
+          }
+        });
+      });
+  }
+
+  /** Nach einem Widerspruch bleibt die Sperre; die Begründung liest der Autor. */
+  sperreBestaetigen(beitrag: GemeldeterBeitrag) {
+    const sperre = beitrag.sperre;
+    if (!sperre) {
       return;
     }
+    const daten: SperrenDialogDaten = { art: 'bestaetigen', titel: this.beitragsTitel(beitrag) };
+    this.dialog
+      .open<SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis>(SperrenDialogComponent, { data: daten, width: '520px' })
+      .afterClosed()
+      .subscribe((ergebnis) => {
+        if (!ergebnis) {
+          return;
+        }
+        this.moderationService.sperreBestaetigen(sperre.id, ergebnis.begruendung).subscribe({
+          next: () => {
+            this.snackBar.open('Sperre bestätigt', 'OK', { duration: 3000 });
+            this.loadReports();
+          },
+          error: (error) => {
+            this.snackBar.open('Fehler beim Bestätigen der Sperre', 'OK', { duration: 3000 });
+            console.error('Error confirming Sperre:', error);
+          }
+        });
+      });
+  }
 
-    this.moderationService.sperren(report.content_id).subscribe({
-      next: () => {
-        this.snackBar.open('Beitrag gesperrt', 'OK', { duration: 3000 });
-        this.loadReports();
-      },
-      error: (error) => {
-        this.snackBar.open('Fehler beim Sperren des Beitrags', 'OK', { duration: 3000 });
-        console.error('Error blocking content:', error);
-      }
+  /** Lädt die gesperrten Beiträge nur, um die offenen Widersprüche am Umschalter zu zählen. */
+  private offeneWiderspruecheZaehlen() {
+    this.moderationService.getGesperrte().subscribe({
+      next: (response) => (this.offeneWidersprueche = zaehleOffene(response.beitraege)),
+      error: (error) => console.error('Error counting Widersprüche:', error)
     });
+  }
+
+  getSperrgrundLabel(sperrgrund: string): string {
+    return sperrgrundLabel(sperrgrund);
   }
 
   entsperren(contentId: string) {
@@ -234,4 +286,13 @@ export class ContentModerationComponent implements OnInit {
     };
     return colors[status] || '';
   }
+}
+
+function zaehleOffene(beitraege: GemeldeterBeitrag[]): number {
+  return beitraege.filter((b) => b.sperre?.widerspruch_offen).length;
+}
+
+/** Offene Widersprüche zuerst, sonst in der Reihenfolge des Dienstes. */
+function nachWiderspruch(beitraege: GemeldeterBeitrag[]): GemeldeterBeitrag[] {
+  return [...beitraege].sort((a, b) => Number(!!b.sperre?.widerspruch_offen) - Number(!!a.sperre?.widerspruch_offen));
 }

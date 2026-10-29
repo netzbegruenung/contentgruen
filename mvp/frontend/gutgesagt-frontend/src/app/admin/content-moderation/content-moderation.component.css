@@ -83,6 +83,23 @@
   overflow-wrap: anywhere;
 }
 
+.sperre-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9em;
+}
+
+.widerspruch-offen {
+  color: #b00020;
+}
+
+.gesperrt-aktionen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .not-reviewed {
   color: #999;
   font-style: italic;

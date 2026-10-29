@@ -39,6 +39,7 @@ from api.v1.seeding import router as seeding_router
 from api.v1.usage import router as usage_router
 from api.v1.voting import router as voting_router
 from api.v1.moderation import router as moderation_router
+from api.v1.sperren import router as sperren_router
 from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
 from api.v1.gegenlesen import router as gegenlesen_router
@@ -256,6 +257,7 @@ app.include_router(seeding_router, prefix="/api/v1", tags=["seeding"])
 app.include_router(usage_router, prefix="/api/v1/usage", tags=["usage"])
 app.include_router(voting_router, prefix="/api/v1/voting", tags=["voting"])
 app.include_router(moderation_router, prefix="/api/v1/moderation", tags=["moderation"])
+app.include_router(sperren_router, prefix="/api/v1/sperren", tags=["moderation"])
 app.include_router(health_router, prefix="/api/v1", tags=["monitoring"])
 app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["feedback"])
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])

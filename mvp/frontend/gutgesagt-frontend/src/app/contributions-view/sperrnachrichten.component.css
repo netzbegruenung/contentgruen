@@ -1,0 +1,49 @@
+.sperrnachrichten {
+  margin-bottom: 24px;
+}
+
+.sperrnachrichten h2 {
+  font-size: 1.1rem;
+  margin: 0 0 8px;
+}
+
+.sperrnachricht {
+  border: 1px solid #b00020;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.sperrnachricht dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 8px 0;
+}
+
+.sperrnachricht dt {
+  font-weight: 500;
+}
+
+.sperrnachricht dd {
+  margin: 0;
+}
+
+.begruendung {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.volle-breite {
+  width: 100%;
+}
+
+.aktionen {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.fehler {
+  color: #b00020;
+}

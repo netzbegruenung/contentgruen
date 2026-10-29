@@ -24,10 +24,13 @@ from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
 from services.moderation_service import ModerationService
+from tests.conftest import GRUND_FUER_SPERRE
 from tests.integration.conftest import requires_qdrant
 from tests.integration.beitrag_helfer import TEXT, antwortvorschlaege, post_beitrag
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
+
+# Sperren verlangt Sperrgrund und Begruendung (#448).
 
 
 @pytest.fixture
@@ -46,6 +49,7 @@ def moderation(real_embeddings_manager):
         ),
         vote_repo=MagicMock(),
         raw_input_repo=MagicMock(),
+        sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
 
 
@@ -54,7 +58,12 @@ async def test_gesperrter_beitrag_fehlt_ueberall(post_service, moderation):
     await post_service._upsert(post_beitrag(post_id))
     vorher = await post_service.count()
 
-    assert await moderation.sperren(str(post_id), gesperrt_von="admin-1") is True
+    assert (
+        await moderation.sperren(
+            str(post_id), gesperrt_von="admin-1", **GRUND_FUER_SPERRE
+        )
+        is True
+    )
 
     assert await post_service.count() == vorher - 1
 
@@ -73,7 +82,7 @@ async def test_gesperrter_beitrag_fehlt_ueberall(post_service, moderation):
 async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
     post_id = uuid.uuid4()
     await post_service._upsert(post_beitrag(post_id))
-    await moderation.sperren(str(post_id), gesperrt_von="admin-1")
+    await moderation.sperren(str(post_id), gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
     assert await moderation.entsperren(str(post_id)) is True
 

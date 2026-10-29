@@ -300,6 +300,54 @@ class ContentReport(Base):
     )
 
 
+class Sperre(Base):
+    """Eine Sperre eines Beitrags: Sperrgrund, Begruendung und Widerspruch (#448).
+
+    Je Beitrag hoechstens eine Sperre ohne aufgehoben_am. ``autor`` ist die Kennung
+    der Person, die den Beitrag eingestellt hat, zum Zeitpunkt der Sperre; nur sie
+    sieht die Sperrnachricht und darf widersprechen. Ohne ``autor`` gibt es niemanden,
+    dem die Nachricht gezeigt werden kann (Glossar „Sperrnachricht“). Aufgehobene
+    Sperren loescht der taegliche Lauf nach ihrer Frist
+    (services/loeschfristen_service.py).
+    """
+
+    __tablename__ = "sperren"
+
+    id = Column(
+        SQLUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    content_id = Column(SQLUUID(as_uuid=True), nullable=False)
+    sperrgrund = Column(String(40), nullable=False)
+    begruendung = Column(Text, nullable=False)
+    gesperrt_von = Column(String(255), nullable=True)
+    gesperrt_am = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    autor = Column(String(255), nullable=True)
+    aufgehoben_am = Column(DateTime(timezone=True), nullable=True)
+    widerspruch = Column(Text, nullable=True)
+    widerspruch_am = Column(DateTime(timezone=True), nullable=True)
+    # Ergebnis der erneuten Pruefung nach einem Widerspruch: "sperre_bleibt" oder
+    # "entsperrt"; leer, solange der Widerspruch offen ist oder keiner vorliegt.
+    pruefergebnis = Column(String(20), nullable=True)
+    pruefung_begruendung = Column(Text, nullable=True)
+    geprueft_von = Column(String(255), nullable=True)
+    geprueft_am = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index(
+            "idx_sperren_aktiv_je_beitrag",
+            "content_id",
+            unique=True,
+            postgresql_where=text("aufgehoben_am IS NULL"),
+        ),
+        Index("idx_sperren_autor", "autor"),
+        Index("idx_sperren_aufgehoben_am", "aufgehoben_am"),
+    )
+
+
 class RawInput(Base):
     """
     Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh, wie

@@ -16,6 +16,7 @@ import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
 import { BeitragSheetComponent, BeitragSheetDaten, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
+import { SperrnachrichtenComponent } from './sperrnachrichten.component';
 import { tabMitTasteWaehlen } from '../shared/tab-tasten';
 
 /** Die beiden Tabs: eigene Beitraege und "Meine Einwuerfe". */
@@ -43,7 +44,8 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     MatPaginator,
     MatProgressSpinnerModule,
     KartenlisteComponent,
-    MeineEinwuerfeComponent
+    MeineEinwuerfeComponent,
+    SperrnachrichtenComponent
   ],
   templateUrl: './contributions-view.component.html',
   styleUrls: ['./contributions-view.component.css'],

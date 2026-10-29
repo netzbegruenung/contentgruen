@@ -1,5 +1,5 @@
 """
-Loeschfristen fuer Meldungen, Einwuerfe, geloeschte Beitraege und deren Stimmen (#421).
+Loeschfristen fuer Meldungen, Einwuerfe, Sperren, geloeschte Beitraege und deren Stimmen (#421).
 
 Fachliche Quelle der Fristen ist docs/LOESCHKONZEPT.md ("Fristen"); im Code stehen
 ihre Zahlen hier und nur hier, damit die Datenschutzerklaerung sie zitieren kann.
@@ -20,6 +20,10 @@ core/config.py.
   (ModerationService.delete_content), also samt Verweisen der Aussagen, Stimmen und
   "ausformuliert in". Die Frist zaehlt ab dem Tag in FELD_GELOESCHT_AM, den
   der erste Lauf nach dem Loeschen setzt, also hoechstens einen Tag spaeter.
+- Sperren (#448): aufgehobene SPERRE_NACH_AUFHEBUNG_TAGE nach der Aufhebung, samt
+  Widerspruch und Pruefung. Wie bei den Meldungen kann die Entscheidung so lange
+  angefochten werden (Art. 20 Abs. 1 DSA). Aktive Sperren haben keine Frist: Der
+  Beitrag ist gesperrt, und Sperrgrund und Begruendung gehoeren zu dieser Entscheidung.
 - Stimmen haben keine eigene Frist: Aus ihnen entsteht die Guete eines Beitrags, sie
   leben so lange wie er und gehen mit ihm.
 
@@ -37,6 +41,7 @@ from domain.models.content_status import FELD_GELOESCHT_AM
 from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
 from repositories.raw_input_repository import RawInputRepository
+from repositories.sperre_repository import SperreRepository
 from services.moderation_service import ModerationService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
@@ -45,6 +50,7 @@ logger = get_logger(__name__)
 MELDUNG_NACH_BEARBEITUNG_TAGE = 180
 EINWURF_OHNE_BEITRAG_TAGE = 365
 GELOESCHTER_BEITRAG_TAGE = 30
+SPERRE_NACH_AUFHEBUNG_TAGE = 180
 LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
 
 
@@ -67,11 +73,13 @@ class LoeschfristenService:
         einwuerfe: RawInputRepository,
         beitraege: IModerationRepository,
         moderation: ModerationService,
+        sperren: SperreRepository,
     ):
         self._meldungen = meldungen
         self._einwuerfe = einwuerfe
         self._beitraege = beitraege
         self._moderation = moderation
+        self._sperren = sperren
 
     async def fristen_anwenden(self, heute: Optional[date] = None) -> None:
         """
@@ -88,6 +96,11 @@ class LoeschfristenService:
             self._einwuerfe.ohne_beitrag_loeschen_vor,
             _grenze(heute, EINWURF_OHNE_BEITRAG_TAGE),
             "raw inputs",
+        )
+        await self._zeilen_loeschen(
+            self._sperren.aufgehobene_loeschen_vor,
+            _grenze(heute, SPERRE_NACH_AUFHEBUNG_TAGE),
+            "lifted Sperren",
         )
         try:
             await self._geloeschte_beitraege(heute)

@@ -68,4 +68,16 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('teilen wir dir die Entscheidung und ihre Gründe mit');
     expect(text).not.toContain('entfernen rechtswidrige Inhalte, sobald wir Kenntnis erlangen');
   });
+
+  it('nennt in Abschnitt 7 Grund, Mitteilung in „Meine Beiträge“ und den Widerspruch dort (#448)', () => {
+    const text = abschnittNummer('7.');
+
+    expect(text).toContain('muss einen Grund aus Abschnitt 6 wählen und die Entscheidung begründen');
+    expect(text).toContain('den Grund und die Begründung oben in „Meine Beiträge“ mit');
+    expect(text).toContain('Gegen die Sperre kannst du dort oder formlos an die genannte Adresse widersprechen');
+    expect(text).toContain('prüft sie dann erneut');
+    // Ein Ergebnis in der App gibt es nur nach einem Widerspruch in der App.
+    expect(text).toContain('wenn du dort widersprochen hast');
+    expect(text).toContain('auf einen Widerspruch per E-Mail antworten wir per E-Mail');
+  });
 });
