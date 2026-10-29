@@ -81,6 +81,7 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
+            <app-gegenlesen [titel]="postForm.value.title" [text]="postForm.value.text"></app-gegenlesen>
         </section>
     </div>
 </div>

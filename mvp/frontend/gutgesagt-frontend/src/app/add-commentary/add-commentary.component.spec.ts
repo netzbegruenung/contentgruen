@@ -24,6 +24,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -75,6 +76,22 @@ describe('AddCommentaryComponent', () => {
     component.ngOnChanges({ statementText: new SimpleChange('', text, true) });
     fixture.detectChanges();
   }
+
+  it('liest unter der Vorschau Titel, Text und Aussage gegen, ohne das Speichern zu sperren (#358)', () => {
+    aussageAusAdresse('Wärmepumpen sind zu teuer');
+    ausfuellen();
+
+    const vorschau = seite().querySelector('.preview-column')!;
+    const gegenlesen = fixture.debugElement.query((el) => el.componentInstance instanceof GegenlesenComponent)!;
+    expect(vorschau.contains(gegenlesen.nativeElement)).toBeTrue();
+    const instanz = gegenlesen.componentInstance as GegenlesenComponent;
+    expect([instanz.titel, instanz.text, instanz.aussage]).toEqual([
+      'Wärmepumpe lohnt sich im Altbau',
+      'Ein ausreichend langer Text.',
+      'Wärmepumpen sind zu teuer',
+    ]);
+    expect(seite().querySelector<HTMLButtonElement>('.submit-btn')!.disabled).toBeFalse();
+  });
 
   it('should create', () => {
     expect(component).toBeTruthy();
