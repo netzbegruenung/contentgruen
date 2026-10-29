@@ -247,6 +247,7 @@ async def add_generic_text(
                     NEW_CONTENT_STATUS,
                     ContentOrigin.MANUALLY_CREATED,
                     dublettenpruefung=pruefung,
+                    cc0_wortlaut=request.cc0_wortlaut,
                 )
 
         # Nichts angelegt? Dann ist die Antwort die vorhandene Hintergrundinfo.

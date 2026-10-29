@@ -89,9 +89,9 @@ docker exec -i "$PG_CONTAINER" psql -U app_user -d "$PG_DB" -v ON_ERROR_STOP=1 \
   Option liefe `psql` nach einem Fehler weiter und meldete am Ende Erfolg.
 - Schlägt das `VACUUM FULL` nach dem `COMMIT` fehl, **nur** das
   `VACUUM FULL …;` einzeln nachholen, nicht das ganze Skript erneut starten.
-- `PG_CONTAINER` und `PG_DB` sind Container und Datenbank der Umgebung. Wo die
-  Umbenennung aus #206 noch nicht ausgerollt ist, gelten die alten Namen
-  `contentgruen-app-postgres` und `contentgruen_app`.
+- Container und Datenbank heißen in Entwicklung, Test und Produktion gleich.
+  Wer sie abweichend betreibt, ändert die Zuweisung von `PG_CONTAINER` und
+  `PG_DB` in der ersten Zeile; vorher exportierte Werte überschreibt sie.
 - Ins Protokoll schreibt `psql` nichts. Beim nächsten Start läuft das Skript
   deshalb noch einmal, außer es ist eines der drei nicht wiederholbaren.
 

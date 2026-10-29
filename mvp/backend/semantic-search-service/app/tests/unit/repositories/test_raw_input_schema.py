@@ -30,11 +30,16 @@ class TestRawInputSchema:
             "status",
             "created_at",
             "destilled_by",
+            "cc0_wortlaut",
         }
 
     def test_submitted_by_ist_nullable(self):
         """Ein NOT NULL hier verbaut den spaeteren Share-Eingang ohne Sitzung."""
         assert RawInput.__table__.columns["submitted_by"].nullable is True
+
+    def test_cc0_wortlaut_ist_nullable(self):
+        """Einwuerfe von vor #431 und aus Kanaelen ohne Formular haben keine Kennung."""
+        assert RawInput.__table__.columns["cc0_wortlaut"].nullable is True
 
     def test_destilled_by_ist_nullable(self):
         """Offene Einwuerfe hat noch niemand destilliert."""
@@ -133,6 +138,7 @@ class TestEntwurfstabelle:
             "user_id",
             "sentence",
             "updated_at",
+            "cc0_wortlaut",
         }
 
     def test_genau_ein_entwurf_je_person_und_einwurf(self):

@@ -76,6 +76,28 @@ describe('DatenschutzComponent', () => {
     });
   });
 
+  describe('Wortlaut des CC0-Hinweises (#431)', () => {
+    it('nennt die Kennung des Wortlauts an Beitrag, Satz und Einwurf mit Zweck und Rechtsgrundlage', () => {
+      const text = abschnitt('Beiträge, die du einstellst');
+
+      expect(text).toContain('An jedem Beitrag, jedem Satz und jedem Einwurf speichern wir außerdem');
+      expect(text).toContain('welchen Wortlaut des Hinweises zur CC0-Freigabe');
+      expect(text).toContain('die Freigabe nachweisen zu können');
+    });
+  });
+
+  describe('Suchanfragen (#436)', () => {
+    it('sagt, ab wann eine gespeicherte Suchanfrage für alle sichtbar ist', () => {
+      const text = abschnitt('Deine Suchanfragen');
+
+      expect(text).toContain('kann danach für alle auffindbar werden');
+      expect(text).not.toContain('ist danach für alle auffindbar');
+      expect(text).toContain('nur unseren Administratorinnen und Administratoren');
+      expect(text).toContain('mindestens zwei verschiedene Personen innerhalb von vier Wochen');
+      expect(text).toContain('Gib nichts in das Suchfeld ein, was nicht öffentlich werden soll');
+    });
+  });
+
   describe('Beitrag löschen durch den Autor (#250)', () => {
     it('sagt, dass ein gelöschter Beitrag nur ausgeblendet wird und erst auf Antrag ganz entfernt', () => {
       const text = abschnitt('Beiträge, die du einstellst');

@@ -2,6 +2,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.generic_text import GenericText
 from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 
@@ -22,6 +23,9 @@ class ReferenceInput(BaseModel):
 class AddGenericTextRequest(BaseModel):
     generictext: GenericText
     references: List[ReferenceInput]
+    # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
+    # domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
     # Worauf die Hintergrundinfo antwortet: ID einer vorhandenen Aussage oder, wenn
     # keine bekannt ist, ihr Text. Ohne beides steht sie fuer sich.
     statement_id: Optional[UUID] = None

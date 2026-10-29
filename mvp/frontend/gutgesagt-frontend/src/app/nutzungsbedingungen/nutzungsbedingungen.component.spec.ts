@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 import { abschnitt, normalisiert } from '../testing/rechtstext';
 import { NutzungsbedingungenComponent } from './nutzungsbedingungen.component';
 
@@ -46,10 +46,18 @@ describe('NutzungsbedingungenComponent', () => {
     );
   });
 
-  it('sagt nirgends „unwiderruflich“, weder im Text noch im CC0-Satz (Entscheidung 29.10.2026)', () => {
+  it('sagt nirgends „unwiderruflich“, weder im Text noch im CC0-Hinweis (Entscheidung 29.10.2026)', () => {
     expect(normalisiert(seite.textContent)).not.toContain('unwiderruflich');
     expect(CONSENT_HINWEIS.vorLink).not.toContain('unwiderruflich');
+    expect(CONSENT_HINWEIS_SATZ.vorLink).not.toContain('unwiderruflich');
     expect(abschnittNummer('4.')).toContain('Was andere einmal übernommen haben');
+  });
+
+  it('sagt in Abschnitt 4, womit die CC0-Freigabe erklärt wird, auch beim Satz (#431)', () => {
+    const text = abschnittNummer('4.');
+
+    expect(text).toContain('Das erklärst du mit dem Absenden');
+    expect(text).toContain('beim Satz, den du beim Destillieren festhältst, schon mit dem Speichern beim Tippen');
   });
 
   it('beschreibt Sperren als Regelweg der Moderation und behält die Mitteilung an die Person', () => {
