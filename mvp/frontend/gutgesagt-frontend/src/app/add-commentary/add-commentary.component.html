@@ -39,6 +39,29 @@
                     <mat-error *ngIf="commentaryForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
 
+                <button *ngIf="!zeigtFassungen" type="button" class="text-link fassungen-link" (click)="fassungenZeigen()">
+                    + Weitere Fassungen
+                </button>
+                <div *ngIf="zeigtFassungen" class="fassungen">
+                    <mat-form-field appearance="outline" class="formular-feld kurz-feld">
+                        <mat-label>Kurzfassung (optional)</mat-label>
+                        <textarea matInput id="kurz" formControlName="kurz" [attr.maxlength]="kurzMax"
+                                  placeholder="Der Punkt in einem Satz"
+                                  cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="6"></textarea>
+                        <mat-hint>für X/Bluesky</mat-hint>
+                        <mat-hint align="end">{{ kurzLaenge }} / {{ kurzMax }}</mat-hint>
+                        <mat-error *ngIf="commentaryForm.get('kurz')?.hasError('maxlength')">Höchstens {{ kurzMax }} Zeichen.</mat-error>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline" class="formular-feld lang-feld">
+                        <mat-label>Langfassung (optional)</mat-label>
+                        <textarea matInput id="lang" formControlName="lang" [attr.maxlength]="langMax"
+                                  placeholder="Mit Begründung und Herkunft"
+                                  cdkTextareaAutosize cdkAutosizeMinRows="4" cdkAutosizeMaxRows="20"></textarea>
+                        <mat-hint align="end">{{ langLaenge }} / {{ langMax }}</mat-hint>
+                        <mat-error *ngIf="commentaryForm.get('lang')?.hasError('maxlength')">Höchstens {{ langMax }} Zeichen.</mat-error>
+                    </mat-form-field>
+                </div>
+
                 <button *ngIf="!showReferences" type="button" class="text-link herkunft-link" (click)="revealReferences()">
                     + Herkunft
                 </button>

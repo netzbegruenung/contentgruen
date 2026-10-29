@@ -4,6 +4,7 @@ import { Einwurf } from '../services/einwurf.service';
 import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-type-registry';
 import { plattformAusUrl, plattformName } from '../shared/plattform';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
+import type { NutzungJeFassung } from '../shared/fassung';
 
 /**
  * Was eine Beitragskarte anzeigt, unabhaengig davon, woher die Daten kommen.
@@ -110,6 +111,8 @@ export interface KartenDaten {
   nutzung: number | null;
   /** Davon in den letzten 7 Tagen; nur in Meine Beitraege gesetzt, sonst kein Zuwachs. */
   nutzungLetzte7Tage?: number;
+  /** Am Kommentar in Meine Beitraege: Nutzung und Zuwachs je vorhandener Fassung (#355). */
+  nutzungJeFassung?: NutzungJeFassung;
   quellen: KartenQuelle[];
   bildUrl?: string;
   statement?: KartenStatement;
@@ -212,9 +215,10 @@ function extra(typ: string | null, inhalt: Record<string, any>): KartenExtra | u
  * Der Text selbst bleibt leer, sonst stuende der Titel im Album doppelt da.
  */
 export function ausBeitrag(eintrag: ContentResult): KartenDaten {
+  const typ = resolveContentType(eintrag.content_type) ?? null;
   return {
     id: eintrag.id,
-    typ: resolveContentType(eintrag.content_type) ?? null,
+    typ,
     titel: eintrag.title || (eintrag.text ? null : domainAus(eintrag.image_url)),
     text: eintrag.text ?? null,
     erstellt: eintrag.created,
@@ -223,8 +227,10 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     autorName: eintrag.autor_name ?? null,
     nutzung: eintrag.usage_count ?? 0,
     nutzungLetzte7Tage: eintrag.nutzung_letzte_7_tage ?? 0,
+    nutzungJeFassung: typ === 'commentary' ? (eintrag.nutzung_je_fassung ?? undefined) : undefined,
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
+    extra: typ === 'commentary' ? extra(typ, eintrag as Record<string, any>) : undefined,
   };
 }
 

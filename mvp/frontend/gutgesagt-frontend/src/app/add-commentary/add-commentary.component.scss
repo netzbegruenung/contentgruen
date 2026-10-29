@@ -67,8 +67,14 @@ app-formular-hilfe {
   }
 }
 
-.herkunft {
+.herkunft,
+.fassungen {
   margin-top: 4px;
+}
+
+.fassungen {
+  display: flex;
+  flex-direction: column;
 }
 
 .formular-fuss {

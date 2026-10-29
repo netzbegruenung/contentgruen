@@ -175,6 +175,16 @@
                 <mat-button-toggle value="long" *ngIf="daten.extra?.lang">Lang</mat-button-toggle>
             </mat-button-toggle-group>
 
+            <!-- Meine Beitraege: Nutzung und Zuwachs der letzten 7 Tage je Fassung -->
+            <ul class="nutzung-je-fassung" *ngIf="nutzungJeFassung as zeilen" aria-label="Nutzung je Fassung">
+                <li *ngFor="let zeile of zeilen">
+                    {{ zeile.label }}
+                    <span class="fassung-nutzung">{{ zeile.nutzung }}×</span>
+                    <span class="nutzung-zuwachs" *ngIf="zeile.zuwachs"
+                          [attr.aria-label]="zeile.zuwachs + ' davon in den letzten 7 Tagen'">+{{ zeile.zuwachs }}</span>
+                </li>
+            </ul>
+
             <p class="post-herkunft" *ngIf="postHerkunft">{{ postHerkunft }}</p>
 
             <div class="karte-bild" *ngIf="daten.bildUrl">
@@ -231,6 +241,7 @@
                 [stimme]="daten.stimme"
                 [vorschau]="vorschau"
                 [abstimmenSichtbar]="abstimmenSichtbar"
+                [fassung]="fassung"
                 (kopiert)="nutzungHochzaehlen()">
             </app-karten-aktionen>
             <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter. -->

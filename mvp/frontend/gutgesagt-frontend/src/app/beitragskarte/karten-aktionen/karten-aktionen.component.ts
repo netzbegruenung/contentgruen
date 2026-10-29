@@ -27,6 +27,7 @@ import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { ReportDialogComponent } from '../../shared/components/report-dialog/report-dialog.component';
 import { HAND_UMRISS } from '../../shared/marke/hand';
+import type { Fassung } from '../../shared/fassung';
 
 /**
  * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden.
@@ -65,6 +66,8 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
   @Input() vorschau = false;
   /** Aus beim eigenen Beitrag (Album-Sheet in Meine Beitraege); Kopieren und Melden bleiben. */
   @Input() abstimmenSichtbar = true;
+  /** Die angezeigte Fassung eines Kommentars, gezaehlt wird je Fassung (#355); sonst null. */
+  @Input() fassung: Fassung | null = null;
 
   @Output() likeToggled = new EventEmitter<string>();
   @Output() dislikeToggled = new EventEmitter<string>();
@@ -155,7 +158,11 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     }, 600);
 
     if (this.inhaltId) {
-      this.usageTrackingService.trackContentUsage(this.inhaltId);
+      if (this.fassung) {
+        this.usageTrackingService.trackContentUsage(this.inhaltId, this.fassung);
+      } else {
+        this.usageTrackingService.trackContentUsage(this.inhaltId);
+      }
       this.kopiert.emit();
     }
     this.cdr.markForCheck();

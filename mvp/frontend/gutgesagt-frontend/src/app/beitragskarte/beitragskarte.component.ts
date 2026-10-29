@@ -36,6 +36,7 @@ import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
+import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
 
 type TextModus = 'short' | 'standard' | 'long';
 
@@ -371,6 +372,40 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
 
   get hatKurzOderLang(): boolean {
     return !!(this.daten.extra?.kurz || this.daten.extra?.lang);
+  }
+
+  /** Die angezeigte Fassung eines Kommentars; andere Beitragstypen haben keine. */
+  get fassung(): Fassung | null {
+    if (this.daten.typ !== 'commentary') {
+      return null;
+    }
+    if (this.textModus === 'short' && this.daten.extra?.kurz) {
+      return 'kurz';
+    }
+    if (this.textModus === 'long' && this.daten.extra?.lang) {
+      return 'lang';
+    }
+    return 'mittel';
+  }
+
+  /**
+   * Nutzung je Fassung in Meine Beitraege (#355), in der Reihenfolge der Reiter. Was
+   * vor der Zaehlung je Fassung genutzt wurde, steht als "ohne Fassung" dabei: Welche
+   * Fassung damals kopiert wurde, weiss niemand. Ohne Kurz und Lang gibt es nur Mittel,
+   * dann sagt die Zeile nichts, was das Nutzungs-Badge nicht schon sagt.
+   */
+  get nutzungJeFassung(): { label: string; nutzung: number; zuwachs: number }[] | null {
+    const je = this.daten.nutzungJeFassung;
+    if (!je || !this.hatKurzOderLang) {
+      return null;
+    }
+    const zeilen = FASSUNGEN.filter((fassung) => je[fassung]).map((fassung) => ({
+      label: FASSUNG_LABEL[fassung],
+      nutzung: je[fassung]!.nutzung,
+      zuwachs: je[fassung]!.letzte_7_tage,
+    }));
+    const ohneFassung = (this.nutzung ?? 0) - zeilen.reduce((summe, zeile) => summe + zeile.nutzung, 0);
+    return ohneFassung > 0 ? [...zeilen, { label: 'ohne Fassung', nutzung: ohneFassung, zuwachs: 0 }] : zeilen;
   }
 
   get zeigtQuellen(): boolean {

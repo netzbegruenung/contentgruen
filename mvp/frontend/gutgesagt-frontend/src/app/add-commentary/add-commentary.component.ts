@@ -11,7 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommentaryService } from '../services/commentary.service';
 import { VotingService } from '../services/voting.service';
 import { LoggingService } from '../services/logging.service';
-import { AddCommentaryRequest, AddCommentaryResponse } from '../services/dtos/commentaryDtos';
+import { AddCommentaryRequest, AddCommentaryResponse, Commentary } from '../services/dtos/commentaryDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
@@ -36,6 +36,9 @@ export const TITEL_MAX = 120;
 export const TEXT_MAX = 500;
 /** Zeichengrenze von X und Bluesky; nur ein Hinweis, keine Pruefung. */
 export const PLATTFORM_GRENZE = 280;
+/** Die Fassungen Kurz und Lang (#355), wie im Backend (dtos/commentary.py). */
+export const KURZ_MAX = PLATTFORM_GRENZE;
+export const LANG_MAX = 2000;
 
 export const DUBLETTE_HINWEIS = 'Es gibt schon einen sehr ähnlichen Kommentar.';
 
@@ -88,13 +91,14 @@ export interface Vorhanden {
 
 const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
   titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, Aussage und Herkunft werden geleert.',
+  text: 'Titel, Text, weitere Fassungen, Aussage und Herkunft werden geleert.',
   ja: 'Zurücksetzen',
   nein: 'Abbrechen',
 };
 
 /**
- * Das Kommentarformular: Antwort auf, Titel, Kommentar, Herkunft, Leiste - und
+ * Das Kommentarformular: Antwort auf, Titel, Kommentar (die Mittelfassung),
+ * aufklappbar die weiteren Fassungen Kurz und Lang (#355), Herkunft, Leiste - und
  * daneben (am Handy darunter) die Vorschau.
  *
  * Gespeichert wird in einem Aufruf, samt Aussage: mit ID, wenn eine gewaehlt ist,
@@ -134,6 +138,8 @@ export class AddCommentaryComponent implements OnChanges {
   readonly titelMax = TITEL_MAX;
   readonly textMax = TEXT_MAX;
   readonly plattformGrenze = PLATTFORM_GRENZE;
+  readonly kurzMax = KURZ_MAX;
+  readonly langMax = LANG_MAX;
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -156,6 +162,8 @@ export class AddCommentaryComponent implements OnChanges {
   aussage: AntwortAuf = OHNE_AUSSAGE;
 
   showReferences = false;
+  /** "Weitere Fassungen" aufgeklappt: Kurz und Lang, beide optional. */
+  zeigtFassungen = false;
   speichert = false;
   fehler: string | null = null;
   /**
@@ -210,7 +218,15 @@ export class AddCommentaryComponent implements OnChanges {
       : DUBLETTE_HINWEIS;
   }
 
-  private vorschauCache?: { titel: string; text: string; quellen: unknown; aussage: string; karte: KartenDaten };
+  private vorschauCache?: {
+    titel: string;
+    text: string;
+    kurz: string;
+    lang: string;
+    quellen: unknown;
+    aussage: string;
+    karte: KartenDaten;
+  };
 
   constructor(
     fb: FormBuilder,
@@ -223,6 +239,8 @@ export class AddCommentaryComponent implements OnChanges {
     this.commentaryForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
+      kurz: ['', [Validators.maxLength(KURZ_MAX)]],
+      lang: ['', [Validators.maxLength(LANG_MAX)]],
       references: [[]],
     });
     // Der Hinweis gilt nur fuer den Text, der geprueft wurde: Wer ihn aendert,
@@ -270,14 +288,30 @@ export class AddCommentaryComponent implements OnChanges {
     return this.commentaryForm.get('text')?.value?.length ?? 0;
   }
 
+  get kurzLaenge(): number {
+    return this.commentaryForm.get('kurz')?.value?.length ?? 0;
+  }
+
+  get langLaenge(): number {
+    return this.commentaryForm.get('lang')?.value?.length ?? 0;
+  }
+
   get plattformHinweis(): string {
     return this.textLaenge > PLATTFORM_GRENZE ? 'zu lang für X/Bluesky' : 'passt auf X/Bluesky';
   }
 
   /** Irgendetwas eingetragen oder vorbelegt - dann fragt Zuruecksetzen nach. */
   get hatEingaben(): boolean {
-    const { title, text, references } = this.commentaryForm.value;
-    return !!(title?.trim() || text?.trim() || references?.length || this.aussage.id || this.aussage.text);
+    const { title, text, kurz, lang, references } = this.commentaryForm.value;
+    return !!(
+      title?.trim() ||
+      text?.trim() ||
+      kurz?.trim() ||
+      lang?.trim() ||
+      references?.length ||
+      this.aussage.id ||
+      this.aussage.text
+    );
   }
 
   /**
@@ -288,12 +322,14 @@ export class AddCommentaryComponent implements OnChanges {
    * Entwurf nichts.
    */
   get vorschauKarte(): KartenDaten {
-    const { title, text, references } = this.commentaryForm.value;
+    const { title, text, kurz, lang, references } = this.commentaryForm.value;
     const cache = this.vorschauCache;
     if (
       cache &&
       cache.titel === title &&
       cache.text === text &&
+      cache.kurz === kurz &&
+      cache.lang === lang &&
       cache.quellen === references &&
       cache.aussage === this.aussage.text
     ) {
@@ -305,6 +341,9 @@ export class AddCommentaryComponent implements OnChanges {
         content_type: 'commentary',
         title: title || 'Titel',
         text: text || 'Dein Kommentar',
+        // Die Karte zeigt Reiter nur fuer Fassungen mit Text.
+        short_text: kurz,
+        long_text: lang,
         references: (references ?? [])
           .filter((ref: any) => ref?.reference_string?.trim())
           .map((ref: any, index: number) => ({
@@ -322,6 +361,8 @@ export class AddCommentaryComponent implements OnChanges {
     this.vorschauCache = {
       titel: title,
       text,
+      kurz,
+      lang,
       quellen: references,
       aussage: this.aussage.text,
       karte: { ...karte, nutzung: null, erstellt: '', autorName: 'Du' },
@@ -331,6 +372,10 @@ export class AddCommentaryComponent implements OnChanges {
 
   revealReferences(): void {
     this.showReferences = true;
+  }
+
+  fassungenZeigen(): void {
+    this.zeigtFassungen = true;
   }
 
   speichern(): void {
@@ -367,7 +412,7 @@ export class AddCommentaryComponent implements OnChanges {
     // Ein Satz: eingefuegte Umbrueche werden zu Leerzeichen (Enter selbst bricht nicht um).
     const title = einzeilig(this.commentaryForm.value.title);
     const request: AddCommentaryRequest = {
-      commentary: { title, text, references: [] },
+      commentary: { title, text, ...this.fassungenFuerAnfrage(), references: [] },
       // Die Herkunft als Text; das Backend legt sie an oder findet sie wieder.
       references: references || [],
       ...this.aussageFuerAnfrage(),
@@ -419,6 +464,13 @@ export class AddCommentaryComponent implements OnChanges {
         ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
         : this.aussage;
     return { id: antwort.id, aussage, verknuepft };
+  }
+
+  /** Kurz und Lang nur, wenn sie Text haben: Leere zeigte die Karte als Reiter ohne Inhalt. */
+  private fassungenFuerAnfrage(): Pick<Commentary, 'short_text' | 'long_text'> {
+    const kurz = this.commentaryForm.value.kurz?.trim();
+    const lang = this.commentaryForm.value.lang?.trim();
+    return { ...(kurz ? { short_text: kurz } : {}), ...(lang ? { long_text: lang } : {}) };
   }
 
   /** Im Antwort-auf-Block steht eine Aussage (per ID oder als Text). */
@@ -549,10 +601,11 @@ export class AddCommentaryComponent implements OnChanges {
   }
 
   leeren(): void {
-    this.commentaryForm.reset({ title: '', text: '', references: [] });
+    this.commentaryForm.reset({ title: '', text: '', kurz: '', lang: '', references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;
     this.showReferences = false;
+    this.zeigtFassungen = false;
     this.fehler = null;
     this.vorhandenVergessen();
   }
