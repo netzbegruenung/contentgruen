@@ -108,8 +108,10 @@ class Settings(BaseSettings):
     # (utils/text_normalisierung.py).
     #
     # Aussage still wiederverwenden: query/query-Einbettung, >= Schwelle.
-    # Modell: intfloat/multilingual-e5-base. Gemessen an 77 Paaren (hoechster
+    # Modell: intfloat/multilingual-e5-base. Gesetzt an 77 Paaren (hoechster
     # D-Wert 0,969), in Stufe 2 mit echten Formularentscheidungen ueberpruefen.
+    # Das Messset mit Paar-Labels (tests/regression/MESSSET.md) zeigt: Verneinungen,
+    # Gegenteile und Fragen liegen auch ueber 0,98 - das faengt erst #387 ab.
     # Inhaltlich aehnliche Aussagen werden nicht still uebernommen, sondern im
     # Formular vorgeschlagen (0,885, Frontend VORSCHLAG_MIN_AEHNLICHKEIT).
     statement_similarity_threshold: float = 0.98
@@ -122,8 +124,9 @@ class Settings(BaseSettings):
     # Wer Schwelle oder Modell aendert, misst die Kommentar-Paare neu.
     commentary_similarity_threshold: float = 0.975
     # Hintergrundinfo-Dublette: dieselbe Einbettung und Schwelle wie beim Kommentar.
-    # Noch nicht an eigenen Paaren gemessen; die Integrationstests pruefen
-    # wortgleich, Kopie mit Zusatz und eine andere Hintergrundinfo zum selben Thema.
+    # Gemessen an Hintergrundinfo-Paaren (Zahlen in tests/regression/MESSSET.md):
+    # Derselbe Text mit anderer Zahl liegt darueber und gilt als Dublette,
+    # Umformulierungen zum Teil darunter. Die Schwelle trennt das nicht; siehe #387.
     generic_text_similarity_threshold: float = 0.975
     default_search_limit: int = 10
     max_reply_suggestions: int = 50
