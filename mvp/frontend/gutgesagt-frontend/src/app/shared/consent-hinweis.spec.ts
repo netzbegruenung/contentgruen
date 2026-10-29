@@ -13,6 +13,11 @@ describe('CONSENT_HINWEIS', () => {
     );
   });
 
+  it('hat je Wortlaut eine eigene Kennung (docs/CC0_HINWEIS_WORTLAUTE.md)', () => {
+    expect(CONSENT_HINWEIS.kennung).toBe('2026-10-29-formular');
+    expect(CONSENT_HINWEIS_SATZ.kennung).toBe('2026-10-29-satz');
+  });
+
   it('sagt beim Satz, dass er beim Tippen gespeichert wird, ebenfalls ohne "unwiderruflich"', () => {
     expect(ganz(CONSENT_HINWEIS_SATZ)).toBe(
       'Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 ' +

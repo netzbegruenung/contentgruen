@@ -10,6 +10,7 @@ import datetime
 import uuid
 from typing import List, Optional
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from domain.models.content_type import ContentType
@@ -77,6 +78,9 @@ class AddRawInputRequest(BaseModel):
         default=None,
         description="Weg, ueber den der Einwurf hereinkam. Ohne Angabe: web",
     )
+    # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
+    # domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
 
     @field_validator("content", "url", "image_url", mode="before")
     @classmethod
@@ -120,6 +124,9 @@ class SaveDraftRequest(BaseModel):
         max_length=SATZ_LIMIT,
         description="Der Satz, der spaeter der Titel des Beitrags wird",
     )
+    # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
+    # domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
 
     @field_validator("sentence", mode="before")
     @classmethod

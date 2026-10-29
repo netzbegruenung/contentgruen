@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { mitCc0Wortlaut } from '../shared/consent-hinweis';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { PostResult } from './dtos/searchDtos';
@@ -34,7 +35,7 @@ export class PostService {
 
   addPost(request: AddPostRequest): Observable<AddPostResponse> {
     this.logger.debug('Adding new post:', request.post.title);
-    return this.http.post<AddPostResponse>(`${this.baseApiUrl}/addPost`, request);
+    return this.http.post<AddPostResponse>(`${this.baseApiUrl}/addPost`, mitCc0Wortlaut(request));
   }
 
   /** Ein Post per ID, flach wie bei /commentary/getById - kein Suchergebnis. */

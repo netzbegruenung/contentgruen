@@ -202,11 +202,14 @@ Einbeziehung soll der CC0-Hinweis im Formular tragen (§ 305 Abs. 2 BGB: ausdrü
 Vertragsschluss), die Rechteeinräumung unter CC0 das Absenden als bewusste Handlung. Ob das trägt,
 klärt #296; wer nie etwas absendet, sieht den Hinweis nicht, dafür ist #429 da.
 
+**Nachweis:** Jeder Wortlaut hat eine Kennung; sie wird mit jedem neuen Beitrag (Qdrant-Payload),
+Satz und Einwurf (PostgreSQL, `cc0_wortlaut`) gespeichert (Entscheidung 29.10.2026 in #439).
+Wortlaute und Kennungen: `docs/CC0_HINWEIS_WORTLAUTE.md`. Bestand von davor hat keine Kennung.
+Eine vorab angelegte Aussage trägt keine, weil sie kein Beitrag ist.
+
 **Offen:**
 - Juristische Prüfung beider Wortlaute: #296.
 - Zustimmung beim ersten Anmelden mit persistentem Feld pro Person: #429.
-- Ob der Wortlaut des CC0-Hinweises am Beitrag mitgespeichert wird (Nachweis, welchem Wortlaut
-  jemand zugestimmt hat): Produktfrage, nicht entschieden.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.

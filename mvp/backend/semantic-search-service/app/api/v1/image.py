@@ -102,6 +102,7 @@ async def add_image(
             authors=[AuthorEntry(name=x_user)],
             status=NEW_CONTENT_STATUS,
             origin=ContentOrigin.MANUALLY_CREATED,
+            cc0_wortlaut=request.cc0_wortlaut,
         )
 
         image_id = await image_service.add(entry)
