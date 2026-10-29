@@ -1,8 +1,8 @@
-# Manual verification scripts
+# Manual scripts
 
-Ad-hoc scripts for checking a **running** deployment by hand. They are not part of the
-automated test suite and are not collected by pytest — the suite lives in
-`mvp/backend/semantic-search-service/app/tests/`.
+Ad-hoc scripts for checking or maintaining a **running** deployment by hand. Some of them
+write (marked below). They are not part of the automated test suite and are not
+collected by pytest — the suite lives in `mvp/backend/semantic-search-service/app/tests/`.
 
 Start the services first (`mvp/run-local.sh` or `mvp/run-docker.sh`), then:
 
@@ -19,8 +19,17 @@ Die dahinterliegende Logik ist ueber die Unit-Tests abgedeckt:
 `tests/unit/utils/test_negation_detector.py`, `test_german_stemmer.py` und
 `tests/unit/api/test_search_ranking.py`.
 
-Each script requires `requests` and targets `http://localhost:8000` (semantic search) or
+The check scripts require `requests` and target `http://localhost:8000` (semantic search) or
 `http://localhost:5054` (BFF).
+
+## Einwuerfe importieren (gegen das BFF)
+
+`einwuerfe_importieren.py <liste> --email <konto> [--adresse <url>] [--trockenlauf]` –
+**schreibend ohne `--trockenlauf`.** Legt Einwuerfe aus einer CSV- oder Markdown-Liste
+in den Fangkorb und ueberspringt Zeilen, deren Link schon im Fangkorb liegt. Nur
+Standardbibliothek, laeuft von jedem Rechner mit Python 3. Aufruf, Dateiformat und
+Exit-Codes in `mvp/SCRIPTS.md`; Beispiellisten `einwuerfe_beispiel.csv` und
+`einwuerfe_beispiel.md`.
 
 ## Bestand in Qdrant (im semantic-search-Container)
 

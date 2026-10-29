@@ -26,7 +26,8 @@ Services: `qdrant` (same version as the compose files and `.github/workflows/tes
 `mvp/backend/postgres-app`). The integration step reaches them through `QDRANT_URL` and
 `POSTGRES_TEST_DATABASE_URL`, after `scripts/ci_dienste_warten.py` has waited (up to two
 minutes) until both accept connections; the throwaway container of the suite is not used, the runner
-has no Docker socket.
+has no Docker socket. There is no BFF either: the tests in `tests/integration/api/`, which need
+the dev-stack BFF, skip in CI (`CI` set) instead of failing, and show up in the `SKIPPED` lines.
 
 Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part of
 `check.sh`):

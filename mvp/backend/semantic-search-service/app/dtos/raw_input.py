@@ -75,7 +75,7 @@ class AddRawInputRequest(BaseModel):
 
     source_channel: Optional[RawInputSource] = Field(
         default=None,
-        description="Kanal, ueber den der Einwurf hereinkam. Ohne Angabe: web",
+        description="Weg, ueber den der Einwurf hereinkam. Ohne Angabe: web",
     )
 
     @field_validator("content", "url", "image_url", mode="before")
