@@ -92,4 +92,6 @@ def starten(konfiguration: str) -> str:
 
 def entfernen(name: str) -> None:
     """Container entfernen; ein haengender Daemon beendet den Lauf mit Fehler."""
-    subprocess.run(["docker", "rm", "--force", name], capture_output=True, timeout=60)
+    subprocess.run(
+        ["docker", "rm", "--force", "--volumes", name], capture_output=True, timeout=60
+    )
