@@ -1,0 +1,40 @@
+<mat-card class="feedback-liste">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>feedback</mat-icon>
+      Feedback
+    </mat-card-title>
+    <mat-card-subtitle>
+      Was Nutzende über den Knopf „Feedback“ geschrieben haben, das Neueste zuerst.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <p *ngIf="fehler" class="hinweis">Das Feedback konnte nicht geladen werden.</p>
+
+    <ng-container *ngIf="daten">
+      <table *ngIf="daten.eintraege.length > 0; else leer">
+        <thead>
+          <tr>
+            <th scope="col" class="tag">Tag</th>
+            <th scope="col">Feedback</th>
+            <th scope="col">Kontakt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of daten.eintraege" data-testid="feedback-eintrag">
+            <td class="tag">{{ tag(e.eingegangen_am) }}</td>
+            <td class="text">{{ e.text }}</td>
+            <td>{{ e.kontakt ?? '–' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #leer>
+        <p class="hinweis">Noch kein Feedback.</p>
+      </ng-template>
+      <p class="fussnote">
+        Ohne Bezug zu einem Konto. Nach {{ daten.aufbewahrung_tage }} Tagen wird ein Eintrag
+        samt Kontakt gelöscht. Den Kontakt nur nutzen, um auf das Feedback zu antworten.
+      </p>
+    </ng-container>
+  </mat-card-content>
+</mat-card>

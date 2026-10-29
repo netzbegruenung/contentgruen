@@ -28,6 +28,8 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.suchen_ohne_treffer_repository import (
     get_suchen_ohne_treffer_repository,
 )
+from repositories.feedback_repository import get_feedback_repository
+from services.feedback_service import FeedbackService
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -127,6 +129,10 @@ def get_suchen_ohne_treffer_service(
         statement_service,
         get_personen_des_tages(),
     )
+
+
+def get_feedback_service() -> FeedbackService:
+    return FeedbackService(get_feedback_repository())
 
 
 def get_beitrag_loeschen_service(

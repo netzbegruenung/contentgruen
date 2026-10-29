@@ -22,6 +22,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/moderation/report")]
     [InlineData("/api/v1/metrics/getmetrics")]   // Bestandszaehler der Startseite
     [InlineData("/api/v1/metrics/getMetrics")]   // Schreibweise darf keine Rolle spielen
+    [InlineData("/api/v1/feedback/senden")]      // Feedback auch von Besuchern
     public void IsAnonymousAllowed_TrueForPublicPaths(string path)
     {
         Assert.True(EndpointPolicy.IsAnonymousAllowed(path));
@@ -33,6 +34,7 @@ public class EndpointPolicyTests
     [InlineData("/api/v1/moderation/reports")]   // Plural: Admin-Liste, nicht /report
     [InlineData("/api/v1/usage/cleanup/run")]
     [InlineData("/api/v1/metrics/mvp-dashboard")]  // admin-only, anders als /getMetrics
+    [InlineData("/api/v1/feedback")]             // Admin-Liste, anders als /senden
     public void IsAnonymousAllowed_FalseForProtectedPaths(string path)
     {
         Assert.False(EndpointPolicy.IsAnonymousAllowed(path));

@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatMenuModule } from '@angular/material/menu';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
@@ -15,6 +16,7 @@ import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
+import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
@@ -36,6 +38,7 @@ import { KETTEN_ICONS } from './shared/fangkorb-texte';
     MatTooltipModule,
     MatSidenavModule,
     MatDividerModule,
+    MatMenuModule,
     FormsModule,
     RouterOutlet,
     FooterComponent,
@@ -171,6 +174,13 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  openFeedbackDialog(): void {
+    this.dialog.open(FeedbackDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+    });
+  }
+
   navigateToContributeView(): void {
     this.navigationService.navigateToContribute();
   }
@@ -251,23 +261,19 @@ export class AppComponent implements OnInit, OnDestroy {
       this.logger.debug('Using stored profile picture:', this.selectedProfilePictureUrl);
     } else {
       this.logger.debug('No stored profile picture, generating new one');
-      this.regenerateProfilePicture();
+      this.profilbildAuslosen();
     }
   }
 
-  regenerateProfilePicture(): void {
-    if (this.userInfo?.isAuthenticated) {
-      // For logged-in users, randomly select from profile pictures
-      const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
-      this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
-      this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);
-      sessionStorage.setItem('profilePicture', this.selectedProfilePictureUrl);
-    } else {
-      // For anonymous users, toggle between male/female anonymous avatars
-      this.currentAnonymousIndex = (this.currentAnonymousIndex + 1) % this.anonymousAvatars.length;
-      this.selectedProfilePictureUrl = this.anonymousAvatars[this.currentAnonymousIndex];
-      sessionStorage.setItem('anonymousAvatar', this.selectedProfilePictureUrl);
-    }
+  /**
+   * Einmal je Sitzung ein Bild auslosen. Neu gewuerfelt wird nicht mehr: Der Klick
+   * auf den Avatar oeffnet das Profilmenue (#343).
+   */
+  private profilbildAuslosen(): void {
+    const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
+    this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
+    this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);
+    sessionStorage.setItem('profilePicture', this.selectedProfilePictureUrl);
   }
 
   private updateAvatarForAuthStatus(): void {
