@@ -13,6 +13,7 @@ interface Eingabe {
   titel: string;
   text: string;
   aussage: string;
+  titelIstBehauptung: boolean;
 }
 
 const NOCH_LEER: Gegengelesen = { guete: null, anmerkungen: [] };
@@ -41,6 +42,8 @@ export class GegenlesenComponent implements OnChanges {
   @Input() text: string | null = '';
   /** Die Aussage, auf die der Beitrag antwortet; leer, wenn er auf keine antwortet. */
   @Input() aussage: string | null = '';
+  /** Kommentar und Hintergrundinfo behaupten im Titel; ein Post-Titel beschreibt, ohne Verneinungsregel. */
+  @Input() titelIstBehauptung = true;
 
   ergebnis: Gegengelesen = NOCH_LEER;
   verfuegbar = true;
@@ -51,13 +54,19 @@ export class GegenlesenComponent implements OnChanges {
     this.eingabe
       .pipe(
         debounceTime(GEGENLESEN_VERZOEGERUNG_MS),
-        map((e) => ({ titel: e.titel.trim(), text: e.text.trim(), aussage: e.aussage.trim() })),
-        distinctUntilChanged((a, b) => a.titel === b.titel && a.text === b.text && a.aussage === b.aussage),
+        map((e) => ({ ...e, titel: e.titel.trim(), text: e.text.trim(), aussage: e.aussage.trim() })),
+        distinctUntilChanged(
+          (a, b) =>
+            a.titel === b.titel &&
+            a.text === b.text &&
+            a.aussage === b.aussage &&
+            a.titelIstBehauptung === b.titelIstBehauptung,
+        ),
         switchMap((e) =>
           !e.titel && !e.text
             ? of(NOCH_LEER)
             : service
-                .gegenlesen(e.titel, e.text, e.aussage)
+                .gegenlesen(e.titel, e.text, e.aussage, e.titelIstBehauptung)
                 .pipe(
                   catchError((fehler: unknown) =>
                     of<typeof ZU_VIELE | null>(
@@ -77,6 +86,11 @@ export class GegenlesenComponent implements OnChanges {
   }
 
   ngOnChanges(): void {
-    this.eingabe.next({ titel: this.titel ?? '', text: this.text ?? '', aussage: this.aussage ?? '' });
+    this.eingabe.next({
+      titel: this.titel ?? '',
+      text: this.text ?? '',
+      aussage: this.aussage ?? '',
+      titelIstBehauptung: this.titelIstBehauptung,
+    });
   }
 }

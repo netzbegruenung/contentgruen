@@ -36,6 +36,9 @@ class GegenlesenRequest(BaseModel):
     titel: str = Field("", max_length=TITEL_MAX)
     text: str = Field("", max_length=TEXT_MAX)
     aussage: Optional[str] = Field(None, max_length=AUSSAGE_MAX)
+    #: Kommentar und Hintergrundinfo: Der Titel stellt eine Behauptung auf. Ein
+    #: Post-Titel ist beschreibend; dort entfällt die Prüfung auf Verneinung.
+    titel_ist_behauptung: bool = True
 
 
 class AnmerkungResponse(BaseModel):
@@ -62,7 +65,11 @@ async def gegenlesen(
     try:
         # spaCy rechnet auf der CPU (wenige Millisekunden); nicht in der Event-Loop.
         ergebnis = await run_in_threadpool(
-            service.gegenlesen, request.titel, request.text, request.aussage
+            service.gegenlesen,
+            request.titel,
+            request.text,
+            request.aussage,
+            request.titel_ist_behauptung,
         )
     except (ImportError, OSError) as fehler:
         # Sprachmodell nicht installiert: Das Formular zeigt dann einfach nichts.

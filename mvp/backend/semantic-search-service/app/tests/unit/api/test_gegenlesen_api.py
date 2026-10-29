@@ -74,14 +74,29 @@ def test_liefert_guete_und_anmerkungen(client, service):
             }
         ],
     }
-    service.gegenlesen.assert_called_once_with("Nicht so", "Ein Text.", "Eine Aussage")
+    service.gegenlesen.assert_called_once_with(
+        "Nicht so", "Ein Text.", "Eine Aussage", True
+    )
 
 
 def test_aussage_und_text_sind_optional(client, service):
     response = client.post(PFAD, json={"titel": "Nur ein Titel"}, headers=ANGEMELDET)
 
     assert response.status_code == 200
-    service.gegenlesen.assert_called_once_with("Nur ein Titel", "", None)
+    service.gegenlesen.assert_called_once_with("Nur ein Titel", "", None, True)
+
+
+def test_post_titel_ist_keine_behauptung(client, service):
+    response = client.post(
+        PFAD,
+        json={"titel": "Nicht vergessen: Sommerfest", "titel_ist_behauptung": False},
+        headers=ANGEMELDET,
+    )
+
+    assert response.status_code == 200
+    service.gegenlesen.assert_called_once_with(
+        "Nicht vergessen: Sommerfest", "", None, False
+    )
 
 
 @pytest.mark.parametrize("kopf", [{}, {"X-User": "anonymous"}])

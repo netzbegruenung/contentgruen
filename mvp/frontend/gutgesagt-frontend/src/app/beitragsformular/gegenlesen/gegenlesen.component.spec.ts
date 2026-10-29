@@ -65,8 +65,19 @@ describe('GegenlesenComponent', () => {
       titel: 'Nicht die Wärmepumpe ist das Problem',
       text: '',
       aussage: 'Wärmepumpen sind zu teuer',
+      titel_ist_behauptung: true,
     });
     anfrage.flush(MIT_ANMERKUNG);
+  }));
+
+  it('sagt beim Post, dass der Titel keine Behauptung ist', fakeAsync(() => {
+    fixture.componentRef.setInput('titelIstBehauptung', false);
+    schreibe('Nicht vergessen: Sommerfest');
+    tick(GEGENLESEN_VERZOEGERUNG_MS);
+
+    const anfrage = http.expectOne(PFAD);
+    expect(anfrage.request.body.titel_ist_behauptung).toBe(false);
+    anfrage.flush({ guete: 10, anmerkungen: [] });
   }));
 
   it('zeigt das Siegel mit der Güte und die Anmerkungen darunter', fakeAsync(() => {

@@ -107,6 +107,15 @@ class TestVerneinungAmAnfang:
 
         assert "verneinung" not in arten(ergebnis)
 
+    def test_beschreibender_titel_wird_nicht_auf_verneinung_geprueft(self, service):
+        # Post (#358, Fachfrage): Der Titel beschreibt, statt zu behaupten.
+        post = dict(titel="Nicht vergessen: Sommerfest am Samstag", text="", aussage="")
+
+        assert "verneinung" in arten(service.gegenlesen(**post))
+        assert "verneinung" not in arten(
+            service.gegenlesen(**post, titel_ist_behauptung=False)
+        )
+
     def test_verneinung_entfernen_hebt_die_guete(self, service):
         vorher = service.gegenlesen(
             titel="Nicht die Wärmepumpe ist das Problem", text="", aussage=""

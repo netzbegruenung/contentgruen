@@ -180,7 +180,14 @@ class GegenlesenService:
         self._statt_sag = statt_sag
         self._werkzeuge = werkzeuge
 
-    def gegenlesen(self, titel: str, text: str, aussage: Optional[str]) -> Gegengelesen:
+    def gegenlesen(
+        self,
+        titel: str,
+        text: str,
+        aussage: Optional[str],
+        titel_ist_behauptung: bool = True,
+    ) -> Gegengelesen:
+        # Ein Post-Titel beschreibt, statt zu behaupten: dort keine Verneinungsregel.
         titel, text, aussage = (
             (titel or "").strip(),
             (text or "").strip(),
@@ -206,7 +213,7 @@ class GegenlesenService:
         anmerkungen = [
             a
             for a in (
-                self._verneinung(aufhaenger),
+                self._verneinung(aufhaenger) if titel_ist_behauptung else None,
                 self._schluesselwoerter(
                     aufhaenger, analysieren(aussage) if aussage else None
                 ),

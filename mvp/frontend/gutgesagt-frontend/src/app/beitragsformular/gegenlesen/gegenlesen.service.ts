@@ -27,7 +27,7 @@ export class GegenlesenService {
 
   constructor(private http: HttpClient) {}
 
-  gegenlesen(titel: string, text: string, aussage: string): Observable<Gegengelesen> {
-    return this.http.post<Gegengelesen>(this.url, { titel, text, aussage });
+  gegenlesen(titel: string, text: string, aussage: string, titelIstBehauptung: boolean): Observable<Gegengelesen> {
+    return this.http.post<Gegengelesen>(this.url, { titel, text, aussage, titel_ist_behauptung: titelIstBehauptung });
   }
 }
