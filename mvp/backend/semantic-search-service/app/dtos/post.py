@@ -1,8 +1,8 @@
 from uuid import UUID
-from domain.cc0_hinweis import Cc0Wortlaut
 from pydantic import BaseModel
 from typing import List
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.post import Post
 from dtos.beitrag import PostResponse, PostTreffer
 

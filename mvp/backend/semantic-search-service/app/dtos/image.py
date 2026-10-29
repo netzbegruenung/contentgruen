@@ -1,8 +1,8 @@
-from domain.cc0_hinweis import Cc0Wortlaut
 from pydantic import BaseModel, field_validator
 from typing import List
 from uuid import UUID
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.image import Image
 from dtos.beitrag import BeitragResponse
 

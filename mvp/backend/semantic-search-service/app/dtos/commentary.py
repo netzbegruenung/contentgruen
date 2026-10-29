@@ -1,8 +1,8 @@
 from uuid import UUID
-from domain.cc0_hinweis import Cc0Wortlaut
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.commentary import Commentary
 from dtos.beitrag import KommentarTreffer
 

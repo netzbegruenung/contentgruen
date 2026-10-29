@@ -10,9 +10,9 @@ import datetime
 import uuid
 from typing import List, Optional
 
-from domain.cc0_hinweis import Cc0Wortlaut
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.content_type import ContentType
 from domain.models.raw_input import RawInputSource, RawInputStatus
 from utils.url_validator import validate_url_security
