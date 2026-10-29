@@ -235,7 +235,7 @@ Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qu
 _Avoid_: Vote, Like, Daumen
 
 **Siegel**:
-Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb grün. Nach unten zeigt es nie, rot wird es nie. Glanz zeichnet den Beitrag aus, die Krone die Person. Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, die dieselbe Hand einfarbig als Umriss zeigen.
+Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb tannengrün. Nach unten zeigt es nie, rot wird es nie. Glanz und Krone sind eigene Abzeichen am Siegel, keine Stufen der Güte, und können bei jeder Güte auftreten: Glanz heißt, der Beitrag hat viel Wirkung; die Krone zeichnet die Person aus. Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, die dieselbe Hand einfarbig als Umriss zeigen.
 _Avoid_: Badge, Qualitätsdaumen
 
 **Güte**:

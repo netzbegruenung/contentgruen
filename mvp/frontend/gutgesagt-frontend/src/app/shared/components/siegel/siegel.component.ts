@@ -21,12 +21,13 @@ let naechsteId = 0;
 /**
  * Das Siegel: die kleine Fassung des Logos, die die Güte eines Beitrags zeigt (#416).
  * Ohne Güte (`null`) grau und waagrecht, mit steigender Güte dreht der Daumen nach oben
- * und wird von Grau über Gelb grün. Steigt die Güte, dreht die Hand mit leichtem
+ * und wird von Grau über Gelb tannengrün. Steigt die Güte, dreht die Hand mit leichtem
  * Überschwingen und es sprühen kurz Funken; bei `prefers-reduced-motion` wechselt nur
  * die Farbe und der Winkel.
  *
- * Glanz (Auszeichnung des Beitrags) und Krone (Auszeichnung der Person) sind Varianten
- * für #351; wer sie wem zeigen darf, entscheidet die einbindende Komponente.
+ * Glanz (der Beitrag hat viel Wirkung) und Krone (Auszeichnung der Person) sind eigene
+ * Abzeichen, keine Stufen der Güte: Sie können bei jeder Güte auftreten, auch bei „neu“
+ * (vergeben in #351). Wer sie wem zeigen darf, entscheidet die einbindende Komponente.
  *
  * Die Größe setzt die einbindende Komponente über `width` am Element (Standard 24 px).
  */
@@ -42,7 +43,9 @@ let naechsteId = 0;
 export class SiegelComponent implements OnChanges, OnDestroy {
   /** Güte 1–10; `null` (oder 0) für einen neuen Beitrag ohne Daten. */
   @Input() guete: number | null = null;
+  /** Abzeichen: Der Beitrag hat viel Wirkung (#351). Unabhängig von der Güte. */
   @Input() glanz = false;
+  /** Abzeichen: Auszeichnung der Person (#351). Unabhängig von der Güte. */
   @Input() krone = false;
 
   readonly HAND = HAND;

@@ -25,7 +25,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
         mit demselben Ziel waren einer zu viel.
       -->
       <mat-toolbar color="primary" class="admin-toolbar">
-        <!-- Logo auf weissem Grund, sonst verschwaende die gruene Blase im gruenen Kopf (#416) -->
+        <!-- Die weisse Kontur im Logo haelt die Blase im gruenen Kopf lesbar (#416) -->
         <img class="admin-logo" src="marke/logo.svg" alt="" width="32" height="32">
         <span>Gut gesagt – Admin</span>
       </mat-toolbar>
@@ -67,10 +67,6 @@ import { MatToolbarModule } from '@angular/material/toolbar';
       width: 32px;
       height: 32px;
       margin-right: 12px;
-      padding: 2px;
-      border-radius: 8px;
-      background-color: #fff;
-      box-sizing: border-box;
     }
 
     .spacer {

@@ -3,10 +3,26 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { SiegelComponent } from './siegel.component';
 import { HAND, SCHATTEN } from '../../marke/hand';
 
+/** Tannengrün der Seite (`--primary-dark` in `custom-theme.scss`), gelesen aus dem geladenen Theme. */
+function tannengruen(): string {
+  return getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim().toLowerCase();
+}
+
+/** Eine CSS-Farbe so, wie der Browser sie auflöst: `rgb(r, g, b)`. */
+function aufgeloest(farbe: string): string {
+  const probe = document.createElement('span');
+  probe.style.color = farbe;
+  document.body.appendChild(probe);
+  const rgb = getComputedStyle(probe).color;
+  probe.remove();
+  return rgb;
+}
+
 /**
  * Das Siegel zeigt die Güte eines Beitrags (#416, auf Karten #427): ohne Güte grau
  * und waagrecht, mit steigender Güte dreht der Daumen nach oben und die Farbe läuft
- * von Grau über Gelb nach Grün. Nie nach unten, nie rot.
+ * von Grau über Gelb nach Tannengrün. Nie nach unten, nie rot. Glanz und Krone sind
+ * eigene Abzeichen, keine Stufen der Güte.
  */
 describe('SiegelComponent', () => {
   let fixture: ComponentFixture<SiegelComponent>;
@@ -52,15 +68,14 @@ describe('SiegelComponent', () => {
     expect(saettigung).toBeLessThan(15);
   });
 
-  it('zeigt Güte 10 grün und senkrecht', () => {
+  it('zeigt Güte 10 im Tannengrün der Seite und senkrecht', () => {
     zeige(10);
 
     expect(svg().getAttribute('aria-label')).toBe('Siegel: Güte 10 von 10');
     expect(winkel()).toBe(0);
-    const [farbton, saettigung] = farbe();
-    expect(farbton).toBeGreaterThan(120);
-    expect(farbton).toBeLessThan(160);
-    expect(saettigung).toBeGreaterThan(80);
+    expect(tannengruen()).toBe('#005437');
+    const blase = (fixture.nativeElement as HTMLElement).querySelector('.siegel-blase-gruppe')!;
+    expect(aufgeloest(blase.getAttribute('fill')!)).toBe(aufgeloest(tannengruen()));
   });
 
   it('dreht den Daumen je Punkt Güte um 9 Grad nach oben, nie nach unten', () => {
@@ -72,18 +87,18 @@ describe('SiegelComponent', () => {
     expect(gesehen).toEqual(erwartet);
   });
 
-  it('wird nie rot: gesättigte Farben liegen zwischen Gelb und Grün', () => {
+  it('wird nie rot: gesättigte Farben liegen zwischen Gelb und Tannengrün', () => {
     for (const guete of [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
       zeige(guete);
       const [farbton, saettigung] = farbe();
       if (saettigung >= 15) {
         expect(farbton).withContext(`Güte ${guete}`).toBeGreaterThanOrEqual(40);
-        expect(farbton).withContext(`Güte ${guete}`).toBeLessThanOrEqual(150);
+        expect(farbton).withContext(`Güte ${guete}`).toBeLessThanOrEqual(160);
       }
     }
   });
 
-  it('läuft von Grau über Gelb nach Grün', () => {
+  it('läuft von Grau über Gelb nach Tannengrün', () => {
     zeige(1);
     const [, saettigungNiedrig] = farbe();
     zeige(4);
@@ -118,6 +133,41 @@ describe('SiegelComponent', () => {
     zeige(7, { glanz: true, krone: true });
     expect(el.querySelector('.siegel-glanz')).not.toBeNull();
     expect(el.querySelector('.siegel-krone')).not.toBeNull();
+  });
+
+  it('zeigt Glanz und Krone bei jeder Güte, unabhängig voneinander', () => {
+    for (const guete of [null, 1, 3, 6, 8, 10]) {
+      for (const [glanz, krone] of [[true, false], [false, true], [true, true], [false, false]]) {
+        const el = zeige(guete, { glanz, krone });
+        const fall = `Güte ${guete}, Glanz ${glanz}, Krone ${krone}`;
+        expect(el.querySelector('.siegel-glanz') !== null).withContext(fall).toBe(glanz);
+        expect(el.querySelector('.siegel-krone') !== null).withContext(fall).toBe(krone);
+      }
+    }
+  });
+
+  it('lässt Winkel, Farbe und Screenreader-Text der Güte von Glanz und Krone unberührt', () => {
+    for (const guete of [null, 3, 6, 8, 10]) {
+      zeige(guete, { glanz: false, krone: false });
+      const ohne = [winkel(), farbe(), svg().getAttribute('aria-label')];
+      zeige(guete, { glanz: true, krone: true });
+      expect([winkel(), farbe(), svg().getAttribute('aria-label')]).withContext(`Güte ${guete}`).toEqual(ohne);
+    }
+  });
+
+  it('legt das Sichtfeld eng an die Zeichnung, die Krone ragt darüber hinaus', () => {
+    const el = zeige(10, { krone: true });
+    document.body.appendChild(el);
+    const [, oben] = svg().getAttribute('viewBox')!.split(' ').map(Number);
+    const krone = el.querySelector<SVGPathElement>('.siegel-krone')!.getBBox();
+
+    expect(krone.y).toBeLessThan(oben);
+    expect(getComputedStyle(svg()).overflow).toBe('visible');
+    // Die Blase sitzt unten am Rand: kein Streifen unter der Spitze.
+    const blase = el.querySelector<SVGGElement>('.siegel-blase-gruppe')!.getBBox();
+    const [, , , hoehe] = svg().getAttribute('viewBox')!.split(' ').map(Number);
+    expect(oben + hoehe - (blase.y + blase.height)).toBeLessThan(1);
+    el.remove();
   });
 
   it('gibt jedem Siegel einen eigenen Glanz-Verlauf, damit mehrere auf einer Seite stehen können', () => {
@@ -186,5 +236,23 @@ describe('SiegelComponent', () => {
     expect(logo).toContain('<rect x="4" y="16" width="44" height="38" rx="11"/>');
     expect(logo).toContain('<path d="M11 51 L8 63 L24 53 Z"/>');
     expect(logo).toContain('Fluent Emoji');
+    // Das Logo ist die Güte 10, also im Tannengrün der Seite.
+    expect(logo).toContain(`fill="${tannengruen()}"`);
+    expect(logo).not.toContain('#008a3c');
+  });
+
+  it('gibt dem Logo eine weiße Kontur, damit es auch auf tannengrünem Grund lesbar ist', async () => {
+    const logo = await (await fetch('/marke/logo.svg')).text();
+    const dokument = new DOMParser().parseFromString(logo, 'image/svg+xml');
+    expect(dokument.querySelector('parsererror')).withContext('logo.svg ist wohlgeformtes XML').toBeNull();
+    const kontur = dokument.querySelector('g.kontur');
+
+    expect(kontur).withContext('Gruppe .kontur im Logo').not.toBeNull();
+    expect(kontur!.getAttribute('stroke')).toBe('#fff');
+    expect(Number(kontur!.getAttribute('stroke-width'))).toBeGreaterThanOrEqual(4);
+    // Die Kontur liegt unter der Blase, nicht darüber.
+    const gruppen = Array.from(dokument.documentElement.children);
+    const blase = gruppen.find((g) => g.getAttribute('fill') === tannengruen());
+    expect(gruppen.indexOf(kontur!)).toBeLessThan(gruppen.indexOf(blase!));
   });
 });

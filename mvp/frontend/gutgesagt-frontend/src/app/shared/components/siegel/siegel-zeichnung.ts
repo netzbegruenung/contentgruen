@@ -5,7 +5,7 @@
  * `siegel.component.html`, die Hand in `shared/marke/hand.ts`. Das Logo
  * `public/marke/logo.svg` und die Favicons sind dieselbe Zeichnung bei Güte 10; wer die
  * Blase oder die Hand ändert, ändert sie mit (der Test in `siegel.component.spec.ts`
- * passt darauf auf).
+ * passt darauf auf). Glanz und Krone sind eigene Abzeichen und hängen nicht an der Güte.
  */
 /** Höchste Güte. Güte 1–10; ohne Daten (`null`) ist ein Beitrag „neu“. */
 export const HOECHSTE_GUETE = 10;
@@ -33,7 +33,8 @@ const runde = (x: number): number => Math.round(x * 10) / 10;
 type Hsl = [farbton: number, saettigung: number, helligkeit: number];
 const GRAU: Hsl = [80, 6, 58];
 const GELB: Hsl = [46, 90, 46];
-const GRUEN: Hsl = [146, 100, 27];
+/** Tannengrün der Seite, `--primary-dark` = #005437 in `src/theme/custom-theme.scss`. */
+const TANNENGRUEN: Hsl = [159.3, 100, 16.5];
 /** Anteil der Güte-Skala, an dem das Siegel ganz gelb ist. */
 const GELB_BEI = 0.4;
 
@@ -41,12 +42,12 @@ const mische = (von: Hsl, nach: Hsl, t: number): Hsl =>
   [0, 1, 2].map((i) => zwischen(von[i], nach[i], t)) as Hsl;
 
 /**
- * Farbe des Siegels: Grau über Gelb nach Grün, nie Rot (der Farbton bleibt zwischen
- * Gelb und Grün). Güte 10 ist das Grün des Logos.
+ * Farbe des Siegels: Grau über Gelb nach Tannengrün, nie Rot (der Farbton bleibt zwischen
+ * Gelb und Grün). Güte 10 ist das Tannengrün der Seite, in dem auch das Logo steht.
  */
 export function siegelFarbe(guete: number | null): string {
   const t = (normierteGuete(guete) ?? 0) / HOECHSTE_GUETE;
-  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, GRUEN, (t - GELB_BEI) / (1 - GELB_BEI));
+  const [h, s, l] = t <= GELB_BEI ? mische(GRAU, GELB, t / GELB_BEI) : mische(GELB, TANNENGRUEN, (t - GELB_BEI) / (1 - GELB_BEI));
   return `hsl(${runde(h)} ${runde(s)}% ${runde(l)}%)`;
 }
 

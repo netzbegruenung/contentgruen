@@ -2,7 +2,7 @@
   position: relative;
   display: inline-block;
   width: 24px;
-  aspect-ratio: 64 / 72;
+  aspect-ratio: 57.5 / 64.5;
   vertical-align: middle;
 }
 
@@ -10,6 +10,7 @@ svg {
   display: block;
   width: 100%;
   height: 100%;
+  // Die Krone ragt über das Sichtfeld hinaus, statt dauerhaft Platz darin zu belegen.
   overflow: visible;
 }
 
@@ -38,8 +39,9 @@ svg {
 
 .siegel-funke {
   position: absolute;
-  left: 37.5%;
-  top: 37.5%;
+  // Mitte des Funkens auf der Mitte der Hand (36/24 im Sichtfeld 3.5 -1 57.5 64.5).
+  left: 44%;
+  top: 26%;
   width: 25%;
   height: 25%;
   pointer-events: none;
