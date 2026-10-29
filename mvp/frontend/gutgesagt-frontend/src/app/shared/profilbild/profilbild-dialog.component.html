@@ -1,0 +1,33 @@
+<h2 mat-dialog-title>Profilbild wählen</h2>
+
+<mat-dialog-content>
+  <p>Wähle ein Bild, das dich gut darstellt.</p>
+
+  <div class="profilbild-raster" role="radiogroup" aria-label="Profilbild">
+    <label *ngFor="let option of auswahl()" class="profilbild-option">
+      <input type="radio"
+             name="profilbild"
+             class="profilbild-radio"
+             [value]="option.id"
+             [checked]="option.id === ausgewaehlt"
+             [attr.cdkFocusInitial]="option.id === ausgewaehlt ? '' : null"
+             (change)="ausgewaehlt = option.id" />
+      <img [src]="option.url" [alt]="option.alt" width="64" height="64" />
+    </label>
+  </div>
+
+  <p class="hinweis">
+    Ohne eigene Wahl zeigen wir ein festes Bild, das zu deinem Konto gehört, und speichern
+    nichts. Deine Wahl merkt sich dieser Browser, bis du sie zurücksetzt.
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" *ngIf="gewaehlt()" class="zuruecksetzen" (click)="zuruecksetzen()">
+    Zurücksetzen
+  </button>
+  <button mat-button type="button" (click)="dialogRef.close()">Abbrechen</button>
+  <button mat-raised-button type="button" class="dark-green-button" (click)="uebernehmen()">
+    Übernehmen
+  </button>
+</mat-dialog-actions>

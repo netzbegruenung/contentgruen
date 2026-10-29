@@ -32,7 +32,11 @@ import { fileURLToPath } from 'node:url';
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'avatars');
 
-/** Die zwoelf waehlbaren Profilbilder angemeldeter Nutzender. */
+/**
+ * Die Dateinamen sind alte Seeds und sagen nichts ueber das Bild. Welche Datei in
+ * "Profilbild waehlen" mit welcher neutralen Kennung und Beschreibung erscheint,
+ * steht in src/app/services/profilbild.service.ts.
+ */
 const profile = [
   ['female1', 'b6e3f4', 'smile'],
   ['female2', 'ffd5dc', 'smile'],
@@ -48,7 +52,7 @@ const profile = [
   ['male6', 'f0e68c', 'smile'],
 ];
 
-/** Die Anonym-Avatare der Ergebnisansicht. */
+/** Frueher die Anonym-Avatare der Ergebnisansicht, heute zwei weitere Profilbilder. */
 const anonymous = [
   ['anon-female', 'e0e0e0', 'smile'],
   ['anon-male', 'e0e0e0', 'smile'],

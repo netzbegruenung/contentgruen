@@ -296,11 +296,13 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Service Worker');
     });
 
-    it('Gerätespeicher: das Profilbild liegt nicht im Browser (#437)', () => {
+    it('Gerätespeicher: das Profilbild liegt nur nach eigener Wahl im Browser, bis zum Zurücksetzen (#437)', () => {
       const text = abschnitt('Weitere Einträge');
 
       expect(text).not.toContain('das Profilbild, das dir angezeigt wird');
-      expect(text).toContain('Das Profilbild im Kopf der Seite legen wir nicht in deinem Browser ab');
+      expect(text).toContain('wenn du es selbst wählst');
+      expect(text).toContain('bis du die Wahl zurücksetzt');
+      expect(text).toContain('Ohne eigene Wahl speichern wir nichts');
     });
 
     it('Anmelde-Cookie: Angaben des Identitätsdienstes nur bei der Anmeldung über die Netzbegrünung', () => {

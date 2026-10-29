@@ -10,7 +10,13 @@ import { AppComponent } from './app.component';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { NavigationService } from './services/navigation.service';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
-import { ALTE_PROFILBILD_SCHLUESSEL, ANONYMES_PROFILBILD, PROFILBILDER } from './services/profilbild.service';
+import {
+  ALTE_PROFILBILD_SCHLUESSEL,
+  ANONYMES_PROFILBILD,
+  PROFILBILD_SCHLUESSEL,
+  ProfilbildService,
+} from './services/profilbild.service';
+import { ProfilbildDialogComponent } from './shared/profilbild/profilbild-dialog.component';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -146,6 +152,7 @@ describe('AppComponent - Desktop-Kopf', () => {
 
       expect(profilmenue().map((e) => e.textContent?.trim())).toEqual([
         jasmine.stringContaining('Meine Beiträge'),
+        jasmine.stringContaining('Profilbild wählen'),
         jasmine.stringContaining('Abmelden'),
       ]);
       expect(navigation.navigateToContributions).not.toHaveBeenCalled();
@@ -172,9 +179,31 @@ describe('AppComponent - Desktop-Kopf', () => {
       fixture.detectChanges();
       await fixture.whenStable();
 
-      profilmenue()[1].click();
+      profilmenue()[2].click();
 
       expect(auth.logout).toHaveBeenCalledTimes(1);
+    });
+
+    it('oeffnet ueber das Profilmenue den Dialog Profilbild waehlen', async () => {
+      avatar().click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      profilmenue()[1].click();
+
+      expect(dialog.open).toHaveBeenCalledWith(ProfilbildDialogComponent, jasmine.anything());
+    });
+
+    it('zeigt das gewaehlte Profilbild sofort im Kopf', () => {
+      const service = TestBed.inject(ProfilbildService);
+      const option = service.auswahl()[4];
+
+      service.waehlen(option.id);
+      fixture.detectChanges();
+
+      expect(avatar().querySelector('img')?.getAttribute('src')).toBe(option.url);
+      expect(avatar().querySelector('img')?.getAttribute('alt')).toBe('Profilbild');
+      localStorage.removeItem(PROFILBILD_SCHLUESSEL);
     });
 
     it('hat im Kopf keinen eigenen Link Meine Beitraege mehr neben dem Avatar', () => {
@@ -190,23 +219,29 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(dialog.open).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
     });
   });
-  describe('Profilbild nur im Speicher der Seite (#437)', () => {
-    afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s) => sessionStorage.removeItem(s)));
 
-    it('zeigt Besuchern das anonyme Profilbild und legt nichts im sessionStorage ab', () => {
-      const vorher = Object.keys(sessionStorage);
+  describe('Profilbild ohne Wahl nicht im Browser gespeichert (#437)', () => {
+    function gespeichert(): string[][] {
+      return [Object.keys(localStorage), Object.keys(sessionStorage)];
+    }
+
+    afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => sessionStorage.removeItem(s)));
+
+    it('zeigt Besuchern das anonyme Profilbild und legt nichts im Browser ab', () => {
+      const vorher = gespeichert();
       starten(BESUCHER);
 
       expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(ANONYMES_PROFILBILD);
-      expect(Object.keys(sessionStorage)).toEqual(vorher);
+      expect(gespeichert()).toEqual(vorher);
     });
 
-    it('zeigt Mitwirkenden ein Profilbild und legt nichts im sessionStorage ab', () => {
-      const vorher = Object.keys(sessionStorage);
+    it('zeigt Mitwirkenden ein festes Profilbild und legt nichts im Browser ab', () => {
+      const vorher = gespeichert();
       starten(ANGEMELDET);
 
-      expect(PROFILBILDER).toContain(fixture.componentInstance.selectedProfilePictureUrl);
-      expect(Object.keys(sessionStorage)).toEqual(vorher);
+      const urls = TestBed.inject(ProfilbildService).auswahl().map((o) => o.url);
+      expect(urls).toContain(fixture.componentInstance.selectedProfilePictureUrl);
+      expect(gespeichert()).toEqual(vorher);
     });
 
     it('raeumt die Eintraege frueherer Versionen beim Start weg', () => {
@@ -216,7 +251,7 @@ describe('AppComponent - Desktop-Kopf', () => {
 
       starten(BESUCHER);
 
-      ALTE_PROFILBILD_SCHLUESSEL.forEach((s) => expect(sessionStorage.getItem(s)).toBeNull());
+      ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => expect(sessionStorage.getItem(s)).toBeNull());
     });
   });
 });

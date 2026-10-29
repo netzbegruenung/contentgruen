@@ -3,78 +3,203 @@ import { UserInfo } from '../auth/auth.service';
 import {
   ALTE_PROFILBILD_SCHLUESSEL,
   ANONYMES_PROFILBILD,
-  PROFILBILDER,
+  INITIALEN,
+  PROFILBILD_SCHLUESSEL,
   ProfilbildService,
+  initialen,
 } from './profilbild.service';
 
 describe('ProfilbildService', () => {
-  const MITWIRKENDE: UserInfo = { isAuthenticated: true, userId: 'user-001', userName: 'Test User', claims: {} };
+  const ANNA: UserInfo = { isAuthenticated: true, userId: 'user-anna', userName: 'Anna B.', claims: {} };
+  const BEN: UserInfo = { isAuthenticated: true, userId: 'user-ben', userName: 'Ben', claims: {} };
   const BESUCHER: UserInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
 
-  function erzeugen(): ProfilbildService {
-    return TestBed.inject(ProfilbildService);
+  function erzeugen(person: UserInfo | null = ANNA): ProfilbildService {
+    const service = TestBed.inject(ProfilbildService);
+    service.setzePerson(person);
+    return service;
   }
 
-  function gespeicherteSchluessel(): string[] {
-    return Object.keys(sessionStorage);
+  function aufraeumen(): void {
+    ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => sessionStorage.removeItem(s));
+    localStorage.removeItem(PROFILBILD_SCHLUESSEL);
   }
 
   beforeEach(() => {
+    aufraeumen();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({});
   });
 
-  afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => sessionStorage.removeItem(s)));
+  afterEach(aufraeumen);
 
-  it('zeigt Besuchern das anonyme Profilbild, auch solange der Anmeldestand offen ist', () => {
-    expect(erzeugen().fuer(BESUCHER)).toBe(ANONYMES_PROFILBILD);
-    expect(erzeugen().fuer(null)).toBe(ANONYMES_PROFILBILD);
+  describe('ohne Wahl', () => {
+    it('zeigt Besuchern und bei offenem Anmeldestand den anonymen Avatar', () => {
+      expect(erzeugen(BESUCHER).bild()).toBe(ANONYMES_PROFILBILD);
+      TestBed.resetTestingModule();
+      expect(erzeugen(null).bild()).toBe(ANONYMES_PROFILBILD);
+    });
+
+    it('leitet das Bild fest aus der Kennung ab: gleiche Person, gleiches Bild', () => {
+      const erstes = erzeugen(ANNA).bild();
+      TestBed.resetTestingModule();
+
+      expect(erzeugen(ANNA).bild()).toBe(erstes);
+    });
+
+    it('nimmt dafuer ein Bild aus der Auswahl, nie den anonymen Avatar', () => {
+      const service = erzeugen();
+      const urls = service.auswahl().map((o) => o.url);
+      for (const userId of ['a', 'b', 'c', 'user-001', 'x'.repeat(40)]) {
+        service.setzePerson({ ...ANNA, userId });
+        expect(urls).toContain(service.bild());
+        expect(service.bild()).not.toBe(ANONYMES_PROFILBILD);
+      }
+    });
+
+    it('speichert nichts im Browser', () => {
+      const vorher = [Object.keys(localStorage), Object.keys(sessionStorage)];
+      const service = erzeugen();
+      service.bild();
+      service.setzePerson(BEN);
+      service.bild();
+
+      expect([Object.keys(localStorage), Object.keys(sessionStorage)]).toEqual(vorher);
+      expect(service.gewaehlt()).toBeNull();
+    });
   });
 
-  it('lost Mitwirkenden einmal ein Profilbild aus und behaelt es fuer die Seite', () => {
-    const zufall = spyOn(Math, 'random').and.returnValues(0.5, 0.9);
-    const service = erzeugen();
+  describe('Auswahl', () => {
+    it('bietet alle Bilder an, dazu die Initialen, ohne Geschlecht in Kennung oder Text', () => {
+      const auswahl = erzeugen().auswahl();
 
-    const erstes = service.fuer(MITWIRKENDE);
-    service.fuer(BESUCHER);
+      expect(auswahl.length).toBe(17);
+      expect(auswahl[0].id).toBe(INITIALEN);
+      expect(auswahl.map((o) => o.url)).toContain('/avatars/anon-shapes.svg');
+      expect(new Set(auswahl.map((o) => o.id)).size).toBe(auswahl.length);
+      for (const option of auswahl) {
+        expect(option.id).not.toMatch(/female|male/);
+        expect(option.alt).not.toMatch(/female|male|weiblich|männlich|Frau|Mann/i);
+        expect(option.alt.length).toBeGreaterThan(5);
+      }
+    });
 
-    expect(erstes).toBe(PROFILBILDER[6]);
-    expect(service.fuer(MITWIRKENDE)).toBe(erstes);
-    expect(zufall).toHaveBeenCalledTimes(1);
+    it('zeichnet die Initialen in Gruen und Weiss', () => {
+      const svg = decodeURIComponent(erzeugen().auswahl()[0].url);
+
+      expect(svg).toContain('#008939');
+      expect(svg).toContain('#ffffff');
+      expect(svg).toContain('>AB<');
+    });
   });
 
-  it('legt nichts im sessionStorage ab, weder fuer Besucher noch fuer Mitwirkende', () => {
-    const vorher = gespeicherteSchluessel();
-    const service = erzeugen();
+  describe('Wahl', () => {
+    it('zeigt das gewaehlte Bild und merkt es sich erst dann im localStorage', () => {
+      const service = erzeugen();
+      const option = service.auswahl()[3];
 
-    service.fuer(BESUCHER);
-    service.fuer(MITWIRKENDE);
+      service.waehlen(option.id);
 
-    expect(gespeicherteSchluessel()).toEqual(vorher);
+      expect(service.bild()).toBe(option.url);
+      expect(service.gewaehlt()).toBe(option.id);
+      expect(localStorage.getItem(PROFILBILD_SCHLUESSEL)).toBe(option.id);
+    });
+
+    it('liest die Wahl beim naechsten Start wieder', () => {
+      const option = erzeugen().auswahl()[5];
+      TestBed.resetTestingModule();
+      localStorage.setItem(PROFILBILD_SCHLUESSEL, option.id);
+
+      expect(erzeugen().bild()).toBe(option.url);
+    });
+
+    it('zeigt gewaehlte Initialen mit dem Namen der angemeldeten Person', () => {
+      const service = erzeugen();
+      service.waehlen(INITIALEN);
+      service.setzePerson(BEN);
+
+      expect(decodeURIComponent(service.bild())).toContain('>B<');
+    });
+
+    it('Zuruecksetzen loescht die Wahl und fuehrt zum abgeleiteten Bild zurueck', () => {
+      const service = erzeugen();
+      const abgeleitet = service.bild();
+      service.waehlen(INITIALEN);
+
+      service.zuruecksetzen();
+
+      expect(service.bild()).toBe(abgeleitet);
+      expect(service.gewaehlt()).toBeNull();
+      expect(localStorage.getItem(PROFILBILD_SCHLUESSEL)).toBeNull();
+    });
+
+    it('ignoriert und entfernt eine unbekannte gespeicherte Wahl', () => {
+      localStorage.setItem(PROFILBILD_SCHLUESSEL, 'https://example.org/fremd.svg');
+
+      const service = erzeugen();
+
+      expect(service.gewaehlt()).toBeNull();
+      expect(localStorage.getItem(PROFILBILD_SCHLUESSEL)).toBeNull();
+    });
+
+    it('lehnt eine unbekannte Wahl ab, ohne etwas zu speichern', () => {
+      const service = erzeugen();
+
+      service.waehlen('fremd');
+
+      expect(service.gewaehlt()).toBeNull();
+      expect(localStorage.getItem(PROFILBILD_SCHLUESSEL)).toBeNull();
+    });
+
+    it('zeigt Besuchern trotz gespeicherter Wahl den anonymen Avatar', () => {
+      localStorage.setItem(PROFILBILD_SCHLUESSEL, INITIALEN);
+
+      expect(erzeugen(BESUCHER).bild()).toBe(ANONYMES_PROFILBILD);
+    });
+
+    it('waehlt auch ohne Storage, dann nur fuer die laufende Seite', () => {
+      const service = erzeugen();
+      const schreiben = spyOn(Storage.prototype, 'setItem').and.throwError('QuotaExceededError');
+
+      expect(() => service.waehlen(INITIALEN)).not.toThrow();
+      expect(service.gewaehlt()).toBe(INITIALEN);
+      schreiben.and.callThrough();
+    });
   });
 
-  it('loescht beim Start die alten Eintraege aus dem sessionStorage', () => {
-    sessionStorage.setItem('profilePicture', '/avatars/female1.svg');
-    sessionStorage.setItem('anonymousAvatar', '/avatars/anon-question.svg');
-    sessionStorage.setItem('userAvatar', '/avatars/male2.svg');
+  describe('Start', () => {
+    it('loescht die sessionStorage-Eintraege frueherer Versionen', () => {
+      sessionStorage.setItem('profilePicture', '/avatars/female1.svg');
+      sessionStorage.setItem('anonymousAvatar', '/avatars/anon-question.svg');
+      sessionStorage.setItem('userAvatar', '/avatars/male2.svg');
 
-    erzeugen();
+      erzeugen();
 
-    ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => expect(sessionStorage.getItem(s)).toBeNull());
+      ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => expect(sessionStorage.getItem(s)).toBeNull());
+    });
+
+    it('startet auch, wenn der Browser den Storage sperrt', () => {
+      const lesen = spyOn(Storage.prototype, 'getItem').and.throwError('SecurityError');
+      const loeschen = spyOn(Storage.prototype, 'removeItem').and.throwError('SecurityError');
+
+      expect(() => erzeugen().bild()).not.toThrow();
+      lesen.and.callThrough();
+      loeschen.and.callThrough();
+    });
   });
 
-  it('uebernimmt kein altes Bild aus dem sessionStorage', () => {
-    spyOn(Math, 'random').and.returnValue(0);
-    sessionStorage.setItem('profilePicture', '/avatars/male6.svg');
+  describe('initialen', () => {
+    it('nimmt die ersten Buchstaben von hoechstens zwei Namensteilen', () => {
+      expect(initialen('Anna B.')).toBe('AB');
+      expect(initialen('Ben')).toBe('B');
+      expect(initialen('  maria von der leyen ')).toBe('MV');
+      expect(initialen('Özlem-Jana Ünal')).toBe('ÖÜ');
+    });
 
-    expect(erzeugen().fuer(MITWIRKENDE)).toBe(PROFILBILDER[0]);
-  });
-
-  it('startet auch, wenn der Browser den sessionStorage sperrt', () => {
-    const loeschen = spyOn(Storage.prototype, 'removeItem').and.throwError('SecurityError');
-
-    expect(() => erzeugen()).not.toThrow();
-    // Der Spy gilt noch im afterEach, das selbst removeItem aufruft.
-    loeschen.and.callThrough();
+    it('faellt ohne Buchstaben auf ein Fragezeichen zurueck', () => {
+      expect(initialen(null)).toBe('?');
+      expect(initialen('<script> 123')).toBe('S');
+      expect(initialen('1 2')).toBe('?');
+    });
   });
 });

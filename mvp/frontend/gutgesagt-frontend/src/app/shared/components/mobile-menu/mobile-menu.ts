@@ -37,6 +37,7 @@ export class MobileMenuComponent {
   @Output() login = new EventEmitter<void>();
   @Output() loginToContribute = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
+  @Output() profilbild = new EventEmitter<void>();
   @Output() help = new EventEmitter<void>();
   @Output() feedback = new EventEmitter<void>();
 
@@ -81,6 +82,11 @@ export class MobileMenuComponent {
 
   onLogoutClick(): void {
     this.logout.emit();
+    this.close();
+  }
+
+  onProfilbildClick(): void {
+    this.profilbild.emit();
     this.close();
   }
 

@@ -19,6 +19,7 @@ import { ProfilbildService } from './services/profilbild.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
+import { ProfilbildDialogComponent } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
@@ -64,7 +65,10 @@ export class AppComponent implements OnInit, OnDestroy {
   isMobile: boolean = false;
   isTablet: boolean = false;
 
-  selectedProfilePictureUrl: string = '';
+  /** Kommt aus dem ProfilbildService: abgeleitet oder selbst gewaehlt (#437). */
+  get selectedProfilePictureUrl(): string {
+    return this.profilbild.bild();
+  }
 
   userInfo: UserInfo | null = null;
 
@@ -108,14 +112,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.updatePageTitle(this.router.url);
 
     // Set initial anonymous avatar while checking auth status
-    this.selectedProfilePictureUrl = this.profilbild.fuer(null);
+    this.profilbild.setzePerson(null);
 
     // Subscribe to user info changes
     this.authService.userInfo$
       .pipe(takeUntil(this.destroy$))
       .subscribe((userInfo) => {
         this.userInfo = userInfo;
-        this.selectedProfilePictureUrl = this.profilbild.fuer(userInfo);
+        this.profilbild.setzePerson(userInfo);
       });
 
     // Rueckmeldung beim Anmelden, wie oft die eigenen Beitraege genutzt wurden (#349)
@@ -128,7 +132,7 @@ export class AppComponent implements OnInit, OnDestroy {
         next: (userInfo) => {
           // User is authenticated
           this.userInfo = userInfo;
-          this.selectedProfilePictureUrl = this.profilbild.fuer(userInfo);
+          this.profilbild.setzePerson(userInfo);
 
           // Check if we have a stored return URL from login (including Keycloak)
           const returnUrl = sessionStorage.getItem('loginReturnUrl');
@@ -146,7 +150,7 @@ export class AppComponent implements OnInit, OnDestroy {
             userName: null,
             claims: null
           });
-          this.selectedProfilePictureUrl = this.profilbild.fuer(null);
+          this.profilbild.setzePerson(null);
         },
       });
   }
@@ -156,6 +160,13 @@ export class AppComponent implements OnInit, OnDestroy {
       width: '80vw',
       maxWidth: '80vw',
       data: {} // Pass any data you need here
+    });
+  }
+
+  openProfilbildDialog(): void {
+    this.dialog.open(ProfilbildDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
     });
   }
 
