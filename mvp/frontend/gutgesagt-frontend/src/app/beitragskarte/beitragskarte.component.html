@@ -117,8 +117,14 @@
         </div>
         <footer class="album-fuss">
             <span class="karte-datum">{{ daten.erstellt | date: 'dd.MM.yyyy' }}</span>
-            <span class="badge badge-nutzung" [class.ungenutzt]="!nutzung"
-                  matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+            <span class="album-nutzung">
+                <!-- Zuwachs der letzten 7 Tage (#349), nur wenn es einen gibt -->
+                <span class="nutzung-zuwachs" *ngIf="daten.nutzungLetzte7Tage"
+                      [attr.aria-label]="daten.nutzungLetzte7Tage + ' davon in den letzten 7 Tagen'"
+                      matTooltip="In den letzten 7 Tagen" matTooltipPosition="above">+{{ daten.nutzungLetzte7Tage }}</span>
+                <span class="badge badge-nutzung" [class.ungenutzt]="!nutzung"
+                      matTooltip="Verwendungen" matTooltipPosition="left">{{ nutzungAnzeige }}</span>
+            </span>
         </footer>
     </ng-container>
 

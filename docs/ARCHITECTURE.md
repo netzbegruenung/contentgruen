@@ -109,7 +109,8 @@ listens on 5432 inside the container.
   - Dependency injection for testability
 
 ### PostgreSQL
-- **Purpose**: Application data — votes, usage tracking, search tracking, moderation reports.
+- **Purpose**: Application data — votes, usage tracking, search tracking, moderation reports,
+  and per person the usage last shown in the Rückmeldung (`gesehene_nutzung`).
   Content and its vector embeddings live in Qdrant, not in PostgreSQL.
 - **Image**: `postgres:16-alpine` (service `postgres-app`, container `gutgesagt-app-postgres`)
 - **Access**:

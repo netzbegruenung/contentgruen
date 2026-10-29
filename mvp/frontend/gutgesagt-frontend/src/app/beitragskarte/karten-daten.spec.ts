@@ -179,6 +179,13 @@ describe('karten-daten', () => {
       ...felder,
     });
 
+    it('uebernimmt Nutzung und Zuwachs der letzten 7 Tage', () => {
+      const daten = ausBeitrag(eintrag({ nutzung_letzte_7_tage: 4 }));
+
+      expect([daten.nutzung, daten.nutzungLetzte7Tage]).toEqual([12, 4]);
+      expect(ausBeitrag(eintrag()).nutzungLetzte7Tage).toBe(0);
+    });
+
     it('uebernimmt das Kennzeichen eigener Beitrag aus dem Einzelabruf (#333)', () => {
       // Das Beitrag-Sheet im Fangkorb laedt per getById: ohne Kennung, mit Kennzeichen.
       const ohneKennung = eintrag({ original_author: null, ist_eigener_beitrag: true });
