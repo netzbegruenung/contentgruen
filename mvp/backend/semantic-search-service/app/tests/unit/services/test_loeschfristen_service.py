@@ -53,7 +53,7 @@ def service(meldungen, einwuerfe, beitraege, moderation):
     return LoeschfristenService(meldungen, einwuerfe, beitraege, moderation)
 
 
-def test_fristen():
+def test_fristen_wie_im_loeschkonzept():
     """Die Fristen, wie sie in docs/LOESCHKONZEPT.md stehen."""
     assert MELDUNG_NACH_BEARBEITUNG_TAGE == 180
     assert EINWURF_OHNE_BEITRAG_TAGE == 365
@@ -137,7 +137,7 @@ class TestGeloeschteBeitraege:
 
 
 class TestTakt:
-    async def test_laeuft_nach_fehler_weiter(self):
+    async def test_loeschen_im_takt_laeuft_nach_fehler_weiter(self):
         service = Mock()
         service.fristen_anwenden = AsyncMock(side_effect=[RuntimeError("x"), None])
         schlafen = AsyncMock(side_effect=[None, asyncio.CancelledError()])

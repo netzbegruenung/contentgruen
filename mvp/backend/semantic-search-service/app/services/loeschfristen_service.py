@@ -2,8 +2,8 @@
 Loeschfristen fuer Meldungen, Einwuerfe, geloeschte Beitraege und deren Stimmen (#421).
 
 Fachliche Quelle der Fristen ist docs/LOESCHKONZEPT.md ("Fristen"); im Code stehen
-ihre Zahlen hier und nur hier, damit die Datenschutzerklaerung sie zitieren kann. Andere Fristen stehen bei ihrer Datenart:
-Feedback in services/feedback_service.py, Suchen ohne Treffer in
+ihre Zahlen hier und nur hier, damit die Datenschutzerklaerung sie zitieren kann.
+Andere Fristen stehen bei ihrer Datenart: Feedback in services/feedback_service.py, Suchen ohne Treffer in
 services/suchen_ohne_treffer_service.py, Nutzungs- und Suchereignisse in
 core/config.py.
 
@@ -34,6 +34,10 @@ from typing import Any, Dict, List, Optional
 
 from core.logging import get_logger
 from domain.models.content_status import FELD_GELOESCHT_AM
+from repositories.content_report_repository import ContentReportRepository
+from repositories.interfaces.moderation_repository import IModerationRepository
+from repositories.raw_input_repository import RawInputRepository
+from services.moderation_service import ModerationService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
 logger = get_logger(__name__)
@@ -57,11 +61,13 @@ def _geloescht_am(beitrag: Dict[str, Any]) -> Optional[date]:
 
 
 class LoeschfristenService:
-    def __init__(self, meldungen, einwuerfe, beitraege, moderation):
-        """
-        meldungen: ContentReportRepository, einwuerfe: RawInputRepository,
-        beitraege: IModerationRepository, moderation: ModerationService.
-        """
+    def __init__(
+        self,
+        meldungen: ContentReportRepository,
+        einwuerfe: RawInputRepository,
+        beitraege: IModerationRepository,
+        moderation: ModerationService,
+    ):
         self._meldungen = meldungen
         self._einwuerfe = einwuerfe
         self._beitraege = beitraege
@@ -115,7 +121,7 @@ class LoeschfristenService:
         for beitrag in faellig:
             try:
                 if await self._moderation.delete_content(
-                    beitrag["id"], str(beitrag.get("content_type")), None
+                    beitrag["id"], str(beitrag.get("content_type", "")), None
                 ):
                     entfernt += 1
             except Exception as e:

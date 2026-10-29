@@ -4,7 +4,7 @@ Handles database operations for content moderation.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from sqlalchemy import and_, desc, or_
@@ -224,7 +224,7 @@ class ContentReportRepository:
                 if report:
                     report.status = status
                     report.reviewed_by = reviewed_by
-                    report.reviewed_at = datetime.utcnow()
+                    report.reviewed_at = datetime.now(timezone.utc)
                     report.resolution_notes = resolution_notes
                     session.commit()
                     session.refresh(report)
@@ -276,7 +276,7 @@ class ContentReportRepository:
                 for report in reports:
                     report.status = status
                     report.reviewed_by = reviewed_by
-                    report.reviewed_at = datetime.utcnow()
+                    report.reviewed_at = datetime.now(timezone.utc)
                     report.resolution_notes = resolution_notes
                     count += 1
 

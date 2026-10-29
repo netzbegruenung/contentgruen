@@ -24,6 +24,11 @@ AUSSAGEN_JE_SEITE = 100
 GELOESCHTE_JE_SEITE = 100
 
 
+def _mit_id(punkt) -> Dict[str, Any]:
+    """Payload eines Qdrant-Punkts mit seiner ID unter "id"."""
+    return {**(punkt.payload or {}), "id": str(punkt.id)}
+
+
 def _nur(feld: str, wert: str) -> Filter:
     """Filter auf Punkte, deren Payload-Feld genau diesen Wert hat."""
     return Filter(must=[FieldCondition(key=feld, match=MatchValue(value=wert))])
@@ -84,7 +89,7 @@ class QdrantModerationRepository(IModerationRepository):
             with_payload=True,
             with_vectors=False,
         )
-        return [{**(punkt.payload or {}), "id": str(punkt.id)} for punkt in punkte]
+        return [_mit_id(punkt) for punkt in punkte]
 
     async def geloeschte_laden(self) -> List[Dict[str, Any]]:
         geloeschte: List[Dict[str, Any]] = []
@@ -98,7 +103,7 @@ class QdrantModerationRepository(IModerationRepository):
                 with_payload=True,
                 with_vectors=False,
             )
-            geloeschte += [{**(p.payload or {}), "id": str(p.id)} for p in punkte]
+            geloeschte += [_mit_id(punkt) for punkt in punkte]
             if not punkte or naechster is None:
                 return geloeschte
             offset = naechster

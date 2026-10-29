@@ -39,9 +39,10 @@ Umgebung benutzt** — die Kommandos sind identisch, nur der eingesetzte Wert ni
   (`DELETE /api/v1/moderation/content/{content_type}/{id}`): Der Punkt ist danach aus
   Qdrant weg, mit ihm seine Stimmen (`votes`) und das „ausformuliert in“ der Einwürfe
   zu ihm (`raw_input_content_links`); offene Meldungen zu ihm stehen danach auf
-  bearbeitet, bearbeitete und abgewiesene behalten ihre Entscheidung. Das ist der Weg für Schritt 3, wenn ein Text die Person
-  erkennbar macht, und sonst für nichts: Gemeldete Beiträge sperrt ein Admin, statt sie
-  zu entfernen. Denselben Weg nimmt die Frist für gelöschte Beiträge (unten).
+  bearbeitet, bearbeitete und abgewiesene behalten ihre Entscheidung. Das ist der Weg
+  für Schritt 3, wenn ein Text die Person erkennbar macht, und sonst für nichts:
+  Gemeldete Beiträge sperrt ein Admin, statt sie zu entfernen. Denselben Weg nimmt die
+  Frist für gelöschte Beiträge (unten).
 
 ## Ablauf
 
@@ -141,11 +142,15 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
   meldende Person, ihre Sitzungskennung oder den Freitext. Der Zähler am Beitrag
-  (`report_count`) bleibt; er trägt keinen Personenbezug.
+  (`report_count`) bleibt; er trägt keinen Personenbezug. Das gilt auch für Meldungen zu
+  gesperrten Beiträgen: Die Sperre selbst hat keine Frist, ihr Anlass in der Meldung
+  (samt `resolution_notes`) geht nach 180 Tagen.
 - **Einwürfe:** Verworfene zählen wie offene und destillierte; ein Einwurf, an dem ein
   Jahr niemand gearbeitet hat, ist kein Arbeitsvorrat mehr. Verwerfen selbst setzt
   keinen Zeitpunkt; ein alter Einwurf, der eben verworfen wurde, geht also mit dem
-  nächsten Lauf. Platzhalter ehemaliger Personen (`ehemalige-person-<UUID>` in
+  nächsten Lauf. Auch das Ausformulieren setzt keinen Zeitpunkt am Einwurf: Wird der
+  Beitrag endgültig entfernt, zählt für den Einwurf wieder die letzte Arbeit davor; ist
+  die älter als 365 Tage, geht er mit dem nächsten Lauf. Platzhalter ehemaliger Personen (`ehemalige-person-<UUID>` in
   `users`), deren Satz dabei mitgeht, räumt der Task ab wie `person_loeschen.sql`.
 - **Gelöschte Beiträge:** Der erste Lauf, der einen Beitrag gelöscht findet, schreibt den
   UTC-Tag nach `geloescht_am`; die 30 Tage zählen ab dann, also höchstens einen Tag nach
@@ -153,8 +158,8 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   über `ModerationService.delete_content`, denselben Weg wie beim Admin: erst Verweise der
   Aussagen, Stimmen und „ausformuliert in“, dann der Punkt. Wie beim Admin stehen offene
   Meldungen zum Beitrag danach auf bearbeitet, hier ohne Admin (`reviewed_by` leer), und
-  ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist. Scheitert ein Schritt,
-  bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
+  ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
+  Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
   eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.

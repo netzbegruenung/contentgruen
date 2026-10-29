@@ -218,7 +218,7 @@ class TestLoeschen:
         assert CONTENT_ID in speicher.get_data()
         service.report_repo.update_reports_by_content_id.assert_not_called()
 
-    async def test_loeschen_nimmt_stimmen_und_verknuepfungen_mit(self, service):
+    async def test_loeschen_nimmt_stimmen_und_ausformuliert_in_mit(self, service):
         """Nach dem Beitrag zeigt nichts mehr auf ihn (#421)."""
         assert await service.delete_content(CONTENT_ID, "commentary", None)
 
@@ -233,7 +233,7 @@ class TestLoeschen:
         assert aufruf["nur_offene"] is True
 
     async def test_loeschen_stimmen_scheitern_beitrag_bleibt(self, service, speicher):
-        """Erst Stimmen und Verknuepfungen, dann der Beitrag: Ein neuer Versuch findet ihn."""
+        """Erst Stimmen und "ausformuliert in", dann der Beitrag: Ein neuer Versuch findet ihn."""
         service._vote_repo.loeschen_fuer_beitrag.side_effect = RuntimeError("weg")
 
         with pytest.raises(RuntimeError):

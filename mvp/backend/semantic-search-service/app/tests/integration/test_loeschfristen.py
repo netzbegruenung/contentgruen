@@ -4,7 +4,7 @@ Loeschfristen (#421) gegen echtes PostgreSQL und echtes Qdrant.
 PostgreSQL: Die Repositories loeschen bearbeitete Meldungen nach ihrer Frist und
 Einwuerfe ohne Beitrag nach der letzten Arbeit daran, samt Saetzen und Platzhaltern
 ehemaliger Personen; beim endgueltigen Entfernen eines Beitrags gehen seine Stimmen und
-Verknuepfungen. Qdrant: Der Task stempelt geloeschte Beitraege und entfernt sie nach
+"ausformuliert in". Qdrant: Der Task stempelt geloeschte Beitraege und entfernt sie nach
 ihrer Frist ueber den Weg der Moderation.
 
 Jeder PostgreSQL-Test bekommt ein eigenes Schema (``conftest.py``, ``postgres.py``).
@@ -173,7 +173,7 @@ class TestEinwuerfe:
         # Der Platzhalter ging mit seinem Satz, die echte Person bleibt.
         assert personen == {"destillierer"}
 
-    def test_ausformuliert_ohne_verknuepfung_wie_ohne_beitrag(self, datenbank):
+    def test_ohne_ausformuliert_in_wie_ohne_beitrag(self, datenbank):
         """Ist der Beitrag endgueltig entfernt, zaehlt der Einwurf als ohne Beitrag."""
         beitrag = uuid.uuid4()
         with datenbank.get_session() as s:
