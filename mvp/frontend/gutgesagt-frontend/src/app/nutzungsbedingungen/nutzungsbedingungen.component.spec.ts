@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { abschnitt, normalisiert } from '../testing/rechtstext';
 import { NutzungsbedingungenComponent } from './nutzungsbedingungen.component';
 
 /**
@@ -21,19 +23,9 @@ describe('NutzungsbedingungenComponent', () => {
     seite = fixture.nativeElement as HTMLElement;
   });
 
-  function normalisiert(text: string | null): string {
-    return (text ?? '').replace(/\s+/g, ' ').trim();
-  }
-
   /** Der Abschnitt, dessen Ueberschrift mit der Nummer beginnt, etwa „7.“. */
   function abschnittNummer(nummer: string): string {
-    const kopf = Array.from(seite.querySelectorAll('h2')).find((h) =>
-      normalisiert(h.textContent).startsWith(`${nummer} `),
-    );
-    if (!kopf) {
-      throw new Error(`Kein Abschnitt ${nummer}`);
-    }
-    return normalisiert(kopf.parentElement?.textContent ?? null);
+    return abschnitt(seite, new RegExp(`^${nummer.replace('.', '\\.')} `));
   }
 
   it('verwendet „Destillat“ nicht, das kein Glossarbegriff ist', () => {
@@ -41,15 +33,31 @@ describe('NutzungsbedingungenComponent', () => {
     expect(abschnittNummer('3.')).toContain('Dein Text');
   });
 
-  it('nennt in Abschnitt 2 Einwerfen, Beitragen und Bewerten statt Kommentieren', () => {
-    expect(abschnittNummer('2.')).toContain('Zum Einwerfen, Beitragen und Bewerten meldest du dich an');
+  it('nennt in Abschnitt 1 den KI-Vorschlag auf Klick statt einer automatischen Bildbeschreibung (#281)', () => {
+    const text = abschnittNummer('1.');
+
+    expect(text).toContain('auf Klick einen Vorschlag für die Unterschrift');
+    expect(text).not.toContain('automatisiert beschreibt');
   });
 
-  it('beschreibt Sperren als Regelweg der Moderation', () => {
+  it('nennt in Abschnitt 2 Einwerfen, Einstellen von Beiträgen und Bewerten statt Kommentieren', () => {
+    expect(abschnittNummer('2.')).toContain(
+      'Zum Einwerfen, Einstellen von Beiträgen und Bewerten meldest du dich an',
+    );
+  });
+
+  it('sagt nirgends „unwiderruflich“, weder im Text noch im CC0-Satz (Entscheidung 29.10.2026)', () => {
+    expect(normalisiert(seite.textContent)).not.toContain('unwiderruflich');
+    expect(CONSENT_HINWEIS.vorLink).not.toContain('unwiderruflich');
+    expect(abschnittNummer('4.')).toContain('Was andere einmal übernommen haben');
+  });
+
+  it('beschreibt Sperren als Regelweg der Moderation und behält die Mitteilung an die Person', () => {
     const text = abschnittNummer('7.');
 
     expect(text).toContain('sperren wir ihn');
     expect(text).toContain('Eine Meldung allein sperrt nichts');
+    expect(text).toContain('teilen wir dir die Entscheidung und ihre Gründe mit');
     expect(text).not.toContain('entfernen rechtswidrige Inhalte, sobald wir Kenntnis erlangen');
   });
 });

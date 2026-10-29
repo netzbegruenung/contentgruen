@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { abschnitt as abschnittIn, normalisiert } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
 
 /**
@@ -22,40 +23,31 @@ describe('DatenschutzComponent', () => {
     seite = fixture.nativeElement as HTMLElement;
   });
 
-  function normalisiert(text: string | null): string {
-    return (text ?? '').replace(/\s+/g, ' ').trim();
-  }
-
   function abschnitt(titel: string): string {
-    const kopf = Array.from(seite.querySelectorAll('h2, h3')).find(
-      (h) => normalisiert(h.textContent) === titel,
-    );
-    if (!kopf) {
-      throw new Error(`Kein Abschnitt "${titel}"`);
-    }
-    const ebene = kopf.tagName === 'H2' ? ['H2'] : ['H2', 'H3'];
-    const teile: string[] = [];
-    let knoten = kopf.nextElementSibling;
-    while (knoten && !ebene.includes(knoten.tagName)) {
-      teile.push(knoten.textContent ?? '');
-      knoten = knoten.nextElementSibling;
-    }
-    return normalisiert(teile.join(' '));
+    return abschnittIn(seite, titel);
   }
 
   function ganzerText(): string {
     return normalisiert(seite.textContent);
   }
 
+  describe('Anrede (Entscheidung 29.10.2026)', () => {
+    it('duzt die Lesenden', () => {
+      expect(ganzerText()).not.toMatch(/\b(Ihr|Ihre|Ihren|Ihrem|Ihrer|Ihres|Ihnen)\b/);
+      expect(ganzerText()).not.toMatch(/\b(können|möchten|haben) Sie\b/);
+      expect(abschnitt('Deine Rechte')).toContain('Wende dich dafür an');
+    });
+  });
+
   describe('Rückmeldung zur Nutzung (#349)', () => {
     it('nennt die gespeicherte Zahl ohne Zeitpunkt, lit. f und die Frist bis zur Kontolöschung', () => {
-      const text = abschnitt('Rückmeldung zur Nutzung Ihrer Beiträge');
+      const text = abschnitt('Rückmeldung zur Nutzung deiner Beiträge');
 
       expect(text).toContain('Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt');
       expect(text).toContain('nur eine Zahl');
-      expect(text).toContain('Wann Sie da waren, speichern wir nicht');
+      expect(text).toContain('Wann du da warst, speichern wir nicht');
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
-      expect(text).toContain('bis zur Löschung Ihres Kontos');
+      expect(text).toContain('bis zur Löschung deines Kontos');
     });
   });
 
@@ -67,24 +59,31 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('„Hier fehlt eine Antwort“');
       expect(text).toContain('Danach wurde ohne Treffer gesucht: n Personen');
       expect(text).toContain('die Zahl der Suchen sehen sie nicht');
-      expect(text).toContain('Administratorinnen und Administratoren zusätzlich die Zahl der Suchen');
+      expect(text).toContain('Administratorinnen und Administratoren, zusätzlich mit der Zahl der Suchen');
+    });
+
+    it('bezieht die Zwei-Personen-Schwelle auf die Listen, nicht auf die Auffindbarkeit', () => {
+      const text = abschnitt('Suchen ohne Treffer');
+
+      expect(text).toContain('Auf die Listen der Suchen ohne Treffer kommt ein Eintrag erst');
+      expect(text).not.toContain('Ein Eintrag wird erst sichtbar');
     });
 
     it('sagt, dass eine übernommene Suchanfrage die Kennung der anlegenden Person trägt', () => {
       const text = abschnitt('Suchen ohne Treffer');
 
-      expect(text).toContain('trägt deren Kennung');
+      expect(text).toContain('Die Aussage gilt danach als von ihr angelegt und trägt ihre Kennung');
     });
   });
 
   describe('Beitrag löschen durch den Autor (#250)', () => {
     it('sagt, dass ein gelöschter Beitrag nur ausgeblendet wird und erst auf Antrag ganz entfernt', () => {
-      const text = abschnitt('Beiträge, die Sie einstellen');
+      const text = abschnitt('Beiträge, die du einstellst');
 
       expect(text).toContain('nicht sofort aus unseren Daten entfernt');
       expect(text).toContain('lässt sich nicht zurückholen');
-      expect(text).toContain('Vollständig entfernt wird er nur, wenn Sie uns darum bitten');
-      expect(abschnitt('Ihre Rechte')).toContain('Das gilt auch für Beiträge, die Sie selbst gelöscht haben.');
+      expect(text).toContain('Vollständig entfernt wird er nur, wenn du uns darum bittest');
+      expect(abschnitt('Deine Rechte')).toContain('Das gilt auch für Beiträge, die du selbst gelöscht hast.');
     });
   });
 
@@ -92,14 +91,14 @@ describe('DatenschutzComponent', () => {
     it('spricht von der Kennung, nicht von der Nutzerkennung', () => {
       expect(ganzerText()).not.toContain('Nutzerkennung');
       expect(abschnitt('Anmeldung über die Netzbegrünung')).toContain(
-        'eine Kennung (eine feste Zeichenfolge, die Ihr Konto bezeichnet, kein Name)',
+        'eine Kennung (eine feste Zeichenfolge, die dein Konto bezeichnet, kein Name)',
       );
     });
 
     it('behauptet nicht mehr, angemeldete Browser bekämen die Kennung', () => {
       expect(ganzerText()).not.toContain('Technisch übermitteln wir an angemeldete Browser auch die Kennung');
-      expect(abschnitt('Beiträge, die Sie einstellen')).toContain(
-        'Ihre Kennung geben wir außer an Ihren eigenen Browser nur an Administratorinnen und Administratoren heraus',
+      expect(abschnitt('Beiträge, die du einstellst')).toContain(
+        'Deine Kennung geben wir außer an deinen eigenen Browser nur an Administratorinnen und Administratoren heraus',
       );
     });
   });
@@ -120,7 +119,7 @@ describe('DatenschutzComponent', () => {
       const text = abschnitt('Feedback');
 
       expect(text).toContain('auch ohne Konto');
-      expect(text).toContain('Wir speichern dazu weder Ihre Kennung noch eine Sitzungskennung');
+      expect(text).toContain('Wir speichern dazu weder deine Kennung noch eine Sitzungskennung');
       expect(text).toContain('der Tag des Eingangs');
       expect(text).toContain('nur Administratorinnen und Administratoren');
       expect(text).toContain('nach 180 Tagen automatisch');
@@ -136,21 +135,34 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('die Kennung der Person, die den Einwurf mit einem Beitrag verknüpft hat');
     });
 
+    it('nennt die Zeitpunkte an Sätzen und an der Verknüpfung', () => {
+      const text = abschnitt('Einwürfe in den Fangkorb');
+
+      expect(text).toContain('mit der Kennung der Person, die sie gespeichert hat, und dem Zeitpunkt');
+      expect(text).toContain('der Zeitpunkt dieser Verknüpfung');
+    });
+
     it('sagt, dass Sätze an fremden Einwürfen nach einer Kontolöschung bleiben und „ehemalige Person“ zeigen', () => {
       const text = abschnitt('Einwürfe in den Fangkorb');
 
-      expect(text).toContain('Ihre Sätze an Einwürfen anderer bleiben stehen');
+      expect(text).toContain('Deine Sätze an Einwürfen anderer bleiben stehen');
       expect(text).toContain('„ehemalige Person“');
     });
   });
 
   describe('Kontolöschung (#278)', () => {
-    it('nennt die Liste gelöschter Konten mit 14 Tagen', () => {
-      expect(abschnitt('Ihre Rechte')).toContain('bis 14 Tage nach der Kontolöschung');
+    it('nennt die Liste gelöschter Konten nur für den Netzbegrünung-Login, von Hand gepflegt', () => {
+      const text = abschnitt('Deine Rechte');
+
+      expect(text).toContain('Hast du dich über die Netzbegrünung angemeldet');
+      expect(text).toContain('Liste gelöschter Konten');
+      expect(text).toContain('von Hand wieder aus');
+      expect(text).toContain('in der Regel 14 Tage nach der Kontolöschung');
+      expect(ganzerText()).not.toContain('Sperrliste');
     });
 
     it('zählt die gespeicherte Zahl der Rückmeldung zu dem, was mit dem Konto geht', () => {
-      expect(abschnitt('Ihre Rechte')).toContain('die gespeicherte Zahl für die Rückmeldung zur Nutzung');
+      expect(abschnitt('Deine Rechte')).toContain('die gespeicherte Zahl für die Rückmeldung zur Nutzung');
     });
   });
 
@@ -168,25 +180,41 @@ describe('DatenschutzComponent', () => {
     });
   });
 
+  describe('Rückschlüsse auf die politische Haltung (Art. 9, Entscheidung 29.10.2026)', () => {
+    it('nennt Art. 9, ohne bis #429 eine Rechtsgrundlage zu behaupten', () => {
+      const text = abschnitt('Rückschlüsse auf deine politische Haltung');
+
+      expect(text).toContain('Artikel 9 DSGVO');
+      expect(text).toContain('Wir werten deine Mitwirkung nicht danach aus, welche politische Haltung du hast');
+      expect(text).not.toContain('Rechtsgrundlage');
+      expect(text).not.toContain('Einwilligung');
+    });
+  });
+
   describe('Weitere Korrekturen am Ist-Stand', () => {
     it('Meldungen: Kennung und Sitzungskennung stehen bei angemeldeten Meldungen nebeneinander', () => {
       expect(abschnitt('Meldungen von Beiträgen')).toContain('stehen also beide nebeneinander');
       expect(abschnitt('Verwendung von Beiträgen')).toContain(
-        'es sei denn, Sie haben aus demselben Browser angemeldet eine Meldung abgegeben',
+        'es sei denn, du hast aus demselben Browser angemeldet eine Meldung abgegeben',
       );
     });
 
-    it('Gerätespeicher: kein Kennzahlen-Eintrag, dafür Fangkorb-Filter und Teilen-Menü', () => {
+    it('Verwendung: nicht gespeichert wird der User-Agent, die Sitzungskennung schon', () => {
+      expect(abschnitt('Verwendung von Beiträgen')).toContain('die genaue Bezeichnung deines Browsers (User-Agent)');
+    });
+
+    it('Gerätespeicher: kein Kennzahlen-Eintrag, dafür Fangkorb-Filter, Teilen-Menü und Service Worker', () => {
       const text = abschnitt('Weitere Einträge');
 
       expect(text).not.toContain('Kennzahlen');
-      expect(text).toContain('Ihre Filter im Fangkorb');
+      expect(text).toContain('deine Filter im Fangkorb');
       expect(text).toContain('Teilen-Menü');
+      expect(text).toContain('Service Worker');
     });
 
-    it('Anmelde-Cookie: enthält die Angaben des Identitätsdienstes, nicht nur drei', () => {
+    it('Anmelde-Cookie: Angaben des Identitätsdienstes nur bei der Anmeldung über die Netzbegrünung', () => {
       expect(abschnitt('Anmelde-Cookie')).toContain(
-        'die Angaben, die der Identitätsdienst bei der Anmeldung übermittelt',
+        'bei der Anmeldung über die Netzbegrünung dazu die übrigen Angaben, die ihr Identitätsdienst übermittelt',
       );
     });
 
