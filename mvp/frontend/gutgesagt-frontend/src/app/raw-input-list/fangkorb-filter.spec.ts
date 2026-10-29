@@ -18,7 +18,9 @@ function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
     content: null,
     url: 'https://example.org/post',
     image_url: null,
-    submitted_by: 'alice',
+    // Wie der Server ihn Nicht-Admins liefert: ohne Kennung, mit Kennzeichen (#385).
+    submitted_by: null,
+    ist_eigener_einwurf: false,
     source_channel: 'web',
     status: 'open',
     created_at: '2026-09-13T12:00:00Z',
@@ -27,7 +29,7 @@ function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
 }
 
 function satz(id: string): Satz {
-  return { id, user_id: 'bob', sentence: 'Ein Satz', updated_at: '2026-09-13T12:00:00Z' };
+  return { id, user_id: null, sentence: 'Ein Satz', updated_at: '2026-09-13T12:00:00Z' };
 }
 
 function link(draft_id: string | null): Verknuepfung {
@@ -35,7 +37,7 @@ function link(draft_id: string | null): Verknuepfung {
     content_id: `c-${draft_id}`,
     content_type: 'commentary',
     draft_id,
-    processed_by: 'carol',
+    processed_by: null,
     processed_at: '2026-09-13T13:00:00Z',
   };
 }
@@ -47,7 +49,7 @@ function filter(overrides: Partial<FangkorbFilter> = {}): FangkorbFilter {
 describe('passtZumFilter', () => {
   it('laesst im Standard alles durch', () => {
     for (const status of ['open', 'in_progress', 'processed', 'discarded'] as const) {
-      expect(passtZumFilter(einwurf({ status }), standardFilter(), 'alice')).toBeTrue();
+      expect(passtZumFilter(einwurf({ status }), standardFilter())).toBeTrue();
     }
   });
 
@@ -55,27 +57,32 @@ describe('passtZumFilter', () => {
     const ohneInstagram = filter({ plattformen: ['youtube', 'tiktok', 'web'] });
 
     expect(
-      passtZumFilter(einwurf({ url: 'https://www.instagram.com/reel/A/' }), ohneInstagram, null),
+      passtZumFilter(einwurf({ url: 'https://www.instagram.com/reel/A/' }), ohneInstagram),
     ).toBeFalse();
-    expect(passtZumFilter(einwurf({ url: 'https://youtu.be/1' }), ohneInstagram, null)).toBeTrue();
+    expect(passtZumFilter(einwurf({ url: 'https://youtu.be/1' }), ohneInstagram)).toBeTrue();
   });
 
   it('blendet Einwuerfe ohne Link nie ueber die Plattform aus', () => {
     expect(
-      passtZumFilter(einwurf({ url: null, content: 'nur Text' }), filter({ plattformen: [] }), null),
+      passtZumFilter(einwurf({ url: null, content: 'nur Text' }), filter({ plattformen: [] })),
     ).toBeTrue();
   });
 
-  it('zeigt bei "nur meine" nur selbst Eingeworfenes', () => {
+  it('zeigt bei "nur meine" nur, was der Server als eigenen Einwurf kennzeichnet', () => {
     const nurMeine = filter({ nurMeine: true });
 
-    expect(passtZumFilter(einwurf({ submitted_by: 'alice' }), nurMeine, 'alice')).toBeTrue();
-    expect(passtZumFilter(einwurf({ submitted_by: 'bob' }), nurMeine, 'alice')).toBeFalse();
-    expect(passtZumFilter(einwurf({ submitted_by: null }), nurMeine, 'alice')).toBeFalse();
+    expect(passtZumFilter(einwurf({ ist_eigener_einwurf: true }), nurMeine)).toBeTrue();
+    expect(passtZumFilter(einwurf({ ist_eigener_einwurf: false }), nurMeine)).toBeFalse();
   });
 
-  it('zeigt bei "nur meine" ohne eigene Kennung nichts', () => {
-    expect(passtZumFilter(einwurf({ submitted_by: null }), filter({ nurMeine: true }), null)).toBeFalse();
+  it('zeigt bei "nur meine" ohne Kennzeichen nichts', () => {
+    expect(passtZumFilter(einwurf({ ist_eigener_einwurf: null }), filter({ nurMeine: true }))).toBeFalse();
+  });
+
+  it('vergleicht bei "nur meine" keine Kennungen, auch nicht als Admin', () => {
+    const admin = einwurf({ submitted_by: 'alice', ist_eigener_einwurf: false });
+
+    expect(passtZumFilter(admin, filter({ nurMeine: true }))).toBeFalse();
   });
 });
 

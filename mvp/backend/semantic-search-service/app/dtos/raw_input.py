@@ -175,12 +175,19 @@ class UpdateRawInputStatusRequest(BaseModel):
 
 
 class RawInputDraftResponse(BaseModel):
-    """Ein Satz zu einem Einwurf, mit Person und Zeitpunkt der letzten Aenderung."""
+    """
+    Ein Satz zu einem Einwurf, mit Person und Zeitpunkt der letzten Aenderung.
+
+    ``user_id`` sehen nur Admins; die anderen bekommen ``user_name`` und
+    ``ist_eigener_satz`` (services/beitrag_fuer_aufrufer.py, ``SATZ``, #385).
+    """
 
     id: str
-    user_id: str
+    user_id: Optional[str] = None
     # Anzeigename zu user_id; None ohne gespeicherten Namen.
     user_name: Optional[str] = None
+    # Ob die aufrufende Person den Satz gespeichert hat; nur angemeldet, sonst None.
+    ist_eigener_satz: Optional[bool] = None
     sentence: str
     updated_at: datetime.datetime
 
@@ -189,7 +196,8 @@ class RawInputLinkResponse(BaseModel):
     """
     Ein Beitrag, mit dem der Einwurf verknuepft ist, neu entstanden oder vorhanden.
 
-    ``processed_by`` ist der Ausformulierer, nicht zwingend der Autor des Beitrags.
+    ``processed_by`` ist der Ausformulierer, nicht zwingend der Autor des Beitrags;
+    die Kennung sehen nur Admins (#385).
     ``draft_id`` ist der ausformulierte Satz; None, wenn die Person ihren Satz
     spaeter geleert hat. ``content_type`` ist None bei Verknuepfungen aus der Zeit
     vor Fangkorb v2.
@@ -210,6 +218,10 @@ class RawInputResponse(BaseModel):
     fuer alle Angemeldeten sichtbar. ``own_draft`` ist daraus der Satz der
     anfragenden Person. ``links`` sind alle verknuepften Beitraege, aelteste
     zuerst; die processed-Felder beschreiben davon den ersten.
+
+    Kennungen (``submitted_by``, ``destilled_by``, ``processed_by``) sehen nur
+    Admins; die anderen bekommen ``submitted_by_name`` und ``ist_eigener_einwurf``
+    (services/beitrag_fuer_aufrufer.py, ``EINWURF``, #385).
     """
 
     id: str
@@ -219,6 +231,8 @@ class RawInputResponse(BaseModel):
     submitted_by: Optional[str] = None
     # Anzeigename zu submitted_by; None ohne gespeicherten Namen.
     submitted_by_name: Optional[str] = None
+    # Ob die aufrufende Person den Einwurf eingeworfen hat; nur angemeldet, sonst None.
+    ist_eigener_einwurf: Optional[bool] = None
     source_channel: str
     status: RawInputStatus
     created_at: datetime.datetime

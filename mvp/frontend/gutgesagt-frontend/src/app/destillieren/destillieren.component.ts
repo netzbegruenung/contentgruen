@@ -77,7 +77,6 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   allesDestilliert = false;
   fehler: string | null = null;
 
-  private eigeneKennung: string | null = null;
   private zuletztGespeichert = '';
   private destroy$ = new Subject<void>();
 
@@ -95,17 +94,6 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Der Pfeil im Kopf soll den Satz nicht liegen lassen.
     this.navigation.registerBeforeBack(this.satzSichernVorZurueck);
-    this.eigeneKennung = this.authService.getCurrentUserId();
-    if (!this.eigeneKennung) {
-      this.authService
-        .fetchUserInfo()
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (info) => (this.eigeneKennung = info?.userId ?? null),
-          error: () => (this.eigeneKennung = null),
-        });
-    }
-
     this.route.paramMap
       .pipe(takeUntil(this.destroy$))
       .subscribe((params) => this.laden(params.get('id')));
@@ -133,8 +121,7 @@ export class DestillierenComponent implements OnInit, OnDestroy {
     if (!einwurf || !istVerwerfbar(einwurf)) {
       return false;
     }
-    const eigen = !!einwurf.submitted_by && einwurf.submitted_by === this.eigeneKennung;
-    return eigen || this.istAdmin;
+    return einwurf.ist_eigener_einwurf === true || this.istAdmin;
   }
 
   private get istAdmin(): boolean {
@@ -213,14 +200,11 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Die Saetze anderer Personen zu diesem Einwurf. Solange die eigene Kennung
-   * nicht bekannt ist, lieber keine als den eigenen Satz doppelt.
+   * Die Saetze anderer Personen zu diesem Einwurf, nach dem Kennzeichen vom Server
+   * (#385). Ohne Kennzeichen lieber keinen als den eigenen Satz doppelt.
    */
   get fremdeSaetze(): Satz[] {
-    if (!this.eigeneKennung) {
-      return [];
-    }
-    return (this.einwurf?.drafts ?? []).filter((satz) => satz.user_id !== this.eigeneKennung);
+    return (this.einwurf?.drafts ?? []).filter((satz) => satz.ist_eigener_satz === false);
   }
 
   onBlur(): void {

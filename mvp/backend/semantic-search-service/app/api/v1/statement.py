@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import ValidationError
 
 from dependencies import (
+    get_aufrufer,
     get_statement_service,
     get_unbeantwortete_aussagen_service,
     require_user,
@@ -13,6 +14,8 @@ from dtos.statement import (
     AddReplysuggestionToStatementResponse,
     AddStatementRequest,
     AddStatementResponse,
+    AussageResponse,
+    AussageTreffer,
     AussageVorabRequest,
     GetCategoriesResponse,
     GetStatementsOfCategoryRequest,
@@ -28,6 +31,7 @@ from dtos.statement import (
     UnbeantworteteAussageDto,
     UnbeantworteteAussagenResponse,
 )
+from services.beitrag_fuer_aufrufer import AUSSAGE, Aufrufer, als_responses
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from core.logging import get_logger
 from domain.models.statement import Statement
@@ -55,6 +59,7 @@ async def get_all(
     statement_service: StatementService = Depends(get_statement_service),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> StatementGetAllResponse:
     try:
         logger.debug("/getAll was called")
@@ -68,7 +73,9 @@ async def get_all(
 
         response = StatementGetAllResponse(
             results_count=len(statement_index_results),
-            results=statement_index_results,
+            results=als_responses(
+                AussageResponse, statement_index_results, aufrufer, AUSSAGE
+            ),
             total_records_count=await statement_service.count(),
         )
 
@@ -165,6 +172,7 @@ async def vorab_anlegen(
 async def search_statements(
     request: SearchStatementByTextRequest,
     statement_service: StatementService = Depends(get_statement_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> StatementSearchResponse:
     try:
         logger.debug("/searchStatements was called")
@@ -183,7 +191,9 @@ async def search_statements(
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 
         response: StatementSearchResponse = StatementSearchResponse(
-            results=statement_index_results
+            results=als_responses(
+                AussageTreffer, statement_index_results, aufrufer, AUSSAGE
+            )
         )
 
         return response
@@ -304,6 +314,7 @@ def get_topics(
 def get_statement_topics(
     request: GetStatementsOfTopicRequest,
     statement_service: StatementService = Depends(get_statement_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> GetStatementsOfTopicResponse:
     try:
         logger.debug("/getStatementsOfTopic was called")
@@ -313,7 +324,9 @@ def get_statement_topics(
         )
 
         response: GetStatementsOfTopicResponse = GetStatementsOfTopicResponse(
-            results=statement_index_results
+            results=als_responses(
+                AussageResponse, statement_index_results, aufrufer, AUSSAGE
+            )
         )
 
         return response
@@ -347,6 +360,7 @@ def get_categories(
 def get_statements_of_category(
     request: GetStatementsOfCategoryRequest,
     statement_service: StatementService = Depends(get_statement_service),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> GetStatementsOfCategoryResponse:
     try:
         logger.debug("/getStatementsOfCategory was called")
@@ -356,7 +370,9 @@ def get_statements_of_category(
         )
 
         response: GetStatementsOfCategoryResponse = GetStatementsOfCategoryResponse(
-            results=statement_index_results
+            results=als_responses(
+                AussageResponse, statement_index_results, aufrufer, AUSSAGE
+            )
         )
 
         return response

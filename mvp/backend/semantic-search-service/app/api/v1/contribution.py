@@ -1,12 +1,17 @@
 from typing import List
-from fastapi import APIRouter, Header, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query
 
-from dependencies import get_settings, get_reference_service
+from dependencies import get_aufrufer, get_settings, get_reference_service
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
 from services.content.reference_service import ReferenceService
-from dtos.contribution import ContributionEntry, GetContributionsOfUserResponse
+from dtos.contribution import (
+    ContributionEntry,
+    GetContributionsOfUserResponse,
+    MeinBeitragResponse,
+)
+from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from domain.content_registry import BEITRAGSTYPEN_WERTE
 from services.usage_tracking_service import get_usage_service
 from core.config import Settings
@@ -24,34 +29,35 @@ async def read_test():
     return {"message": "This is a test endpoint"}
 
 
-# getContributionsOfUser()
+# getContributionsOfUser(): wessen Beitraege, sagt allein die Anmeldung, nie die Adresse.
 @router.get("/getContributionsOfUser", response_model=GetContributionsOfUserResponse)
 async def search_content(
-    x_user: str = Header(...),
+    aufrufer: Aufrufer = Depends(get_aufrufer),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
 ) -> GetContributionsOfUserResponse:
+    # Vor dem try: sonst wuerde das 401 unten zu einem 500.
+    if not aufrufer.angemeldet:
+        raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
+    person = aufrufer.kennung
     try:
         logger.debug("/getContributionsOfUser was called")
-
-        if not x_user:
-            raise HTTPException(status_code=400, detail="X-User header missing")
 
         offset = (page - 1) * page_size
 
         repository_factory = QdrantRepositoryFactory()
         content_repository = repository_factory.create_content_repository(settings)
         beitraege: List[ContributionEntry] = await content_repository.getByAuthor(
-            user_id=x_user,
+            user_id=person,
             limit=page_size,
             offset=offset,
             content_types=BEITRAGSTYPEN_WERTE,
             eintrag_modell=ContributionEntry,
         )
         total_count = await content_repository.getCountByAuthor(
-            user_id=x_user, content_types=BEITRAGSTYPEN_WERTE
+            user_id=person, content_types=BEITRAGSTYPEN_WERTE
         )
 
         logger.debug(f"/getContributionsOfUser got {len(beitraege)} results")
@@ -88,9 +94,12 @@ async def search_content(
                 {**eintrag, "nutzung_letzte_7_tage": 0} for eintrag in mit_nutzung
             ]
 
+        # Nur eigene Beitraege: das Kennzeichen ist immer gesetzt, die Kennung bleibt
+        # wie ueberall nur Admins; Bearbeitungshistorie geht nicht nach aussen (#385).
+        results = als_responses(MeinBeitragResponse, mit_nutzung, aufrufer)
         response: GetContributionsOfUserResponse = GetContributionsOfUserResponse(
-            results_count=len(mit_nutzung),
-            results=mit_nutzung,
+            results_count=len(results),
+            results=results,
             total_records_count=total_count,
         )
 

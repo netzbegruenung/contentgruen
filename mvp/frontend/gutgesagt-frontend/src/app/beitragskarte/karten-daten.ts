@@ -102,7 +102,7 @@ export interface KartenDaten {
    * der eigene ist.
    */
   autor: string | null;
-  /** Vom Server berechnet: der eigene Beitrag. null/fehlend = unbekannt, dann zaehlt `autor`. */
+  /** Vom Server berechnet: der eigene Beitrag bzw. Einwurf. null/fehlend = nicht der eigene. */
   eigen?: boolean | null;
   /** Anzeigename ("Anna B."); null ohne Anmeldung oder ohne gespeicherten Namen. */
   autorName: string | null;
@@ -364,6 +364,7 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
     text: null,
     erstellt: einwurf.created_at,
     autor: einwurf.submitted_by,
+    eigen: einwurf.ist_eigener_einwurf ?? null,
     autorName: einwurf.submitted_by_name ?? null,
     nutzung: null,
     quellen: [],

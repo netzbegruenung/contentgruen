@@ -16,20 +16,15 @@ export interface GetContributionsOfUserResponse {
 export interface ContentResult {
     id: string;
     created: string;
-    /** Nur /getContributionsOfUser; getById liefert ihn nicht (#333). */
-    last_modified?: string;
-    /** Die eigene Kennung in Meine Beitraege; beim Einzelabruf nur fuer Admins (#333). */
+    /** Die Kennung des Autors, nur fuer Admins (#333, #385); sonst null. */
     original_author?: string | null;
     /**
-     * Anzeigename zu original_author. /getContributionsOfUser liefert ihn nicht - dort stehen
-     * nur eigene Beitraege, die Karte zeigt "Du".
+     * Anzeigename des Autors. In Meine Beitraege stehen nur eigene Beitraege, die Karte
+     * zeigt "Du".
      */
     autor_name?: string | null;
-    /** Nur beim Einzelabruf (getById, #333): ob es der eigene Beitrag ist. */
+    /** Ob es der eigene Beitrag ist; vom Server berechnet, in Meine Beitraege immer true. */
     ist_eigener_beitrag?: boolean | null;
-    /** Nur /getContributionsOfUser (eigene Beitraege); getById liefert sie nicht (#333). */
-    last_modified_by?: string;
-    edit_history?: object;
     /** Leer bei Bildern ohne Bildunterschrift. */
     text: string | null;
     content_type: string;

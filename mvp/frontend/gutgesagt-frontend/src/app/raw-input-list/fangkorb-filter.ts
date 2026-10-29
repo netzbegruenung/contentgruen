@@ -86,19 +86,15 @@ export function standardFilter(): FangkorbFilter {
  * Tab entscheidet getrennt davon (``passtZumTab``), damit die Zaehler der anderen
  * Tabs dieselben Chips beruecksichtigen.
  *
- * Ohne bekannte eigene Kennung zeigt "nur meine" nichts an, statt stillschweigend
- * alles.
+ * "Nur meine" folgt dem Kennzeichen vom Server (#385); ohne Kennzeichen zeigt es
+ * nichts an, statt stillschweigend alles.
  */
-export function passtZumFilter(
-  einwurf: Einwurf,
-  filter: FangkorbFilter,
-  eigeneKennung: string | null,
-): boolean {
+export function passtZumFilter(einwurf: Einwurf, filter: FangkorbFilter): boolean {
   const plattform = plattformAusUrl(einwurf.url);
   if (plattform && !filter.plattformen.includes(plattform)) {
     return false;
   }
-  if (filter.nurMeine && (!eigeneKennung || einwurf.submitted_by !== eigeneKennung)) {
+  if (filter.nurMeine && einwurf.ist_eigener_einwurf !== true) {
     return false;
   }
   return true;

@@ -16,7 +16,6 @@ import { takeUntil } from 'rxjs/operators';
 import { EinwurfAktionenService } from './einwurf-aktionen.service';
 
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
-import { AuthService } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { Plattform, PLATTFORMEN } from '../shared/plattform';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
@@ -83,34 +82,17 @@ export class RawInputListComponent implements OnInit, OnDestroy {
   isLoading = true;
   ladefehler = false;
 
-  /** Die angemeldete Person; die Karte nennt daran den Einwerfer oder eben nicht. */
-  eigeneKennung: string | null = null;
-
   private destroy$ = new Subject<void>();
 
   constructor(
     private einwurfService: EinwurfService,
     private router: Router,
-    private authService: AuthService,
     private logger: LoggingService,
     private cdr: ChangeDetectorRef,
     private einwurfAktionen: EinwurfAktionenService,
   ) {}
 
   ngOnInit(): void {
-    this.eigeneKennung = this.authService.getCurrentUserId();
-    if (!this.eigeneKennung) {
-      this.authService
-        .fetchUserInfo()
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (info) => {
-            this.eigeneKennung = info?.userId ?? null;
-            this.filtern();
-          },
-          error: () => (this.eigeneKennung = null),
-        });
-    }
     this.laden();
   }
 
@@ -241,7 +223,7 @@ export class RawInputListComponent implements OnInit, OnDestroy {
 
   private filtern(): void {
     this.gefiltert = this.einwuerfe
-      .filter((einwurf) => passtZumFilter(einwurf, this.filter, this.eigeneKennung))
+      .filter((einwurf) => passtZumFilter(einwurf, this.filter))
       .sort((links, rechts) => this.alter(rechts) - this.alter(links));
 
     for (const tab of TABS) {
