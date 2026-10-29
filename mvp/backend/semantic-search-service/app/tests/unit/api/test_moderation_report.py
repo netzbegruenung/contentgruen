@@ -3,9 +3,10 @@ Missbrauchsschutz auf POST /api/v1/moderation/report.
 
 Die Route bleibt bewusst ohne Anmeldung erreichbar (DSA Art. 16). Genau deshalb
 muss die Begrenzung an etwas haengen, das der Aufrufer nicht frei waehlen kann:
-das Rate-Limit lag auf X-Session-Id, einem Wert, den die SPA selbst erzeugt und
-in localStorage haelt. Zwoelf Meldungen mit zwoelf verschiedenen Session-Werten
-gingen alle durch.
+das Rate-Limit lag auf X-Session-Id, einem Wert, den die SPA bis #446 selbst
+erzeugte und in localStorage hielt. Zwoelf Meldungen mit zwoelf verschiedenen
+Session-Werten gingen alle durch. Alte Clients und direkte Aufrufe schicken den
+Header weiter mit, deshalb bleiben die Tests dazu.
 """
 
 from unittest.mock import AsyncMock, Mock, patch

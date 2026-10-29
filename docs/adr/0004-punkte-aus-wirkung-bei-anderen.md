@@ -26,4 +26,4 @@ Unterstützungsarbeit ohne eigene Nutzung (Einwerfen, Destillieren, Fangkorb) er
 
 ## Consequences
 
-Der Zähler an der Karte darf weiter jede Nutzung zählen, die Punkte brauchen aber eine eigene, entdoppelte Zählung. Die Gewichte stehen in der Konfiguration, nicht im Code. Ranglisten zeigen Anzeigenamen; die Datenschutzerklärung braucht dafür einen Abschnitt, und die Teilnahme lässt sich in den Einstellungen abschalten.
+Der Zähler an der Karte darf weiter jede Nutzung zählen, die Punkte brauchen aber eine eigene, entdoppelte Zählung. Die Nutzungsereignisse halten seit #446 keine Kennung mehr fest; diese Zählung muss das Tagespseudonym also selbst festhalten. Die Gewichte stehen in der Konfiguration, nicht im Code. Ranglisten zeigen Anzeigenamen; die Datenschutzerklärung braucht dafür einen Abschnitt, und die Teilnahme lässt sich in den Einstellungen abschalten.

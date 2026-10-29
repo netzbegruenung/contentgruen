@@ -289,7 +289,7 @@ async def search_by_text(
         # Besucher erkennt der Server an Adresse und User-Agent, nicht mehr an einer
         # Kennung aus dem Browser (#446); Angemeldete an ihrer Kennung allein.
         user_id = validated_user if angemeldet(validated_user) else None
-        besucher = None if user_id else besucher_merkmal(http_request)
+        merkmal = None if user_id else besucher_merkmal(http_request)
         jetzt = datetime.now(timezone.utc)
 
         # Track search event for metrics (fire-and-forget, don't block response)
@@ -302,7 +302,7 @@ async def search_by_text(
             # feature is turned into a daily pseudonym inside the tracking service.
             search_tracking_service.track_search(
                 results_count=total_results,
-                besucher=besucher,
+                besucher_merkmal=merkmal,
                 user_id=user_id,
                 moment=jetzt,
             )
@@ -318,7 +318,7 @@ async def search_by_text(
             suchen_ohne_treffer.erfassen(
                 statement_id,
                 total_results,
-                tagespseudonym(user_id=user_id, besucher=besucher, moment=jetzt),
+                tagespseudonym(user_id=user_id, besucher_merkmal=merkmal, moment=jetzt),
                 heute=jetzt.date(),
             )
         except Exception as e:

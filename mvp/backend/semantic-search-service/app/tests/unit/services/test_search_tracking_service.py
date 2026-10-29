@@ -67,7 +67,7 @@ class TestDeriveActorHash:
         moment = datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
 
         with_visitor = SearchTrackingService._derive_actor_hash(
-            user_id="alice", besucher="198.51.100.5|Firefox", moment=moment
+            user_id="alice", besucher_merkmal="198.51.100.5|Firefox", moment=moment
         )
         without_visitor = SearchTrackingService._derive_actor_hash(
             user_id="alice", moment=moment
@@ -79,7 +79,7 @@ class TestDeriveActorHash:
         moment = datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
 
         digest = SearchTrackingService._derive_actor_hash(
-            besucher="198.51.100.5|Firefox", moment=moment
+            besucher_merkmal="198.51.100.5|Firefox", moment=moment
         )
 
         assert digest == besucher_tagespseudonym("198.51.100.5|Firefox", moment.date())
@@ -91,13 +91,13 @@ class TestDeriveActorHash:
         """Der Schluessel der Besucher steht in keiner Konfiguration (#446)."""
         moment = datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
         vorher = SearchTrackingService._derive_actor_hash(
-            besucher="198.51.100.5|Firefox", moment=moment
+            besucher_merkmal="198.51.100.5|Firefox", moment=moment
         )
 
         fixed_secret.actor_hash_secret = "anderes-secret"
 
         assert vorher == SearchTrackingService._derive_actor_hash(
-            besucher="198.51.100.5|Firefox", moment=moment
+            besucher_merkmal="198.51.100.5|Firefox", moment=moment
         )
 
     def test_derive_actor_hash_returns_none_without_any_actor(self):
@@ -123,7 +123,7 @@ class TestTrackSearch:
         self, service, mock_repository
     ):
         service.track_search(
-            results_count=5, user_id="alice", besucher="198.51.100.5|Firefox"
+            results_count=5, user_id="alice", besucher_merkmal="198.51.100.5|Firefox"
         )
 
         _, kwargs = mock_repository.track_search.call_args

@@ -108,7 +108,7 @@ class UsageEvent(Base):
       (siehe utils/device_category.py).
 
     Was bleibt, traegt die Nutzungszaehlung: welcher Inhalt, welche Art
-    Ereignis, wann, und eine Sitzungskennung fuer die Abgrenzung.
+    Ereignis und wann. Die Sitzungskennung schreibt seit #446 niemand mehr.
     """
 
     __tablename__ = "usage_events"

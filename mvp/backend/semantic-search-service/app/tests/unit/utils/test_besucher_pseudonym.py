@@ -60,29 +60,25 @@ class TestTagesschluessel:
 
 
 class TestBesucherTagespseudonym:
-    def test_dasselbe_merkmal_am_selben_tag_ist_dasselbe_pseudonym(self):
-        schluessel = Tagesschluessel()
+    """Mit dem prozessweiten Schluessel, je Test frisch (tests/conftest.py)."""
 
-        assert besucher_tagespseudonym(
-            MERKMAL, HEUTE, schluessel
-        ) == besucher_tagespseudonym(MERKMAL, HEUTE, schluessel)
+    def test_dasselbe_merkmal_am_selben_tag_ist_dasselbe_pseudonym(self):
+        assert besucher_tagespseudonym(MERKMAL, HEUTE) == besucher_tagespseudonym(
+            MERKMAL, HEUTE
+        )
 
     def test_am_naechsten_tag_ist_es_ein_anderes(self):
-        schluessel = Tagesschluessel()
-
-        assert besucher_tagespseudonym(
-            MERKMAL, HEUTE, schluessel
-        ) != besucher_tagespseudonym(MERKMAL, MORGEN, schluessel)
+        assert besucher_tagespseudonym(MERKMAL, HEUTE) != besucher_tagespseudonym(
+            MERKMAL, MORGEN
+        )
 
     def test_anderes_merkmal_ist_ein_anderes_pseudonym(self):
-        schluessel = Tagesschluessel()
-
-        assert besucher_tagespseudonym(
-            MERKMAL, HEUTE, schluessel
-        ) != besucher_tagespseudonym("198.51.100.6|Firefox", HEUTE, schluessel)
+        assert besucher_tagespseudonym(MERKMAL, HEUTE) != besucher_tagespseudonym(
+            "198.51.100.6|Firefox", HEUTE
+        )
 
     def test_enthaelt_weder_adresse_noch_browserkennung(self):
-        pseudonym = besucher_tagespseudonym(MERKMAL, HEUTE, Tagesschluessel())
+        pseudonym = besucher_tagespseudonym(MERKMAL, HEUTE)
 
         assert len(pseudonym) == 64
         assert "198.51.100.5" not in pseudonym

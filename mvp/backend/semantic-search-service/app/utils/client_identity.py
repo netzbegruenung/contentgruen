@@ -2,9 +2,9 @@
 Kurzlebiger Client-Schluessel fuer Rate-Limits auf unauthentifizierten Routen.
 
 Hintergrund: Das Rate-Limit auf POST /api/v1/moderation/report war auf
-X-Session-Id gekeyed. Den Header erzeugt die SPA selbst und legt ihn in
-localStorage ab -- er ist frei waehlbar und wurde nirgends geprueft. Wer je
-Anfrage einen neuen Wert schickt, hat kein Limit. Extern nachgewiesen: zwoelf
+X-Session-Id gekeyed. Den Header erzeugte die SPA bis #446 selbst und legte ihn
+in localStorage ab -- er war frei waehlbar und wurde nirgends geprueft. Wer je
+Anfrage einen neuen Wert schickte, hatte kein Limit. Extern nachgewiesen: zwoelf
 Meldungen in derselben Sekunde von einer Adresse, jede mit anderem
 X-Session-Id, alle 200.
 

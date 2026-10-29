@@ -42,7 +42,7 @@ class SearchTrackingService:
     @staticmethod
     def _derive_actor_hash(
         user_id: Optional[str] = None,
-        besucher: Optional[str] = None,
+        besucher_merkmal: Optional[str] = None,
         moment: Optional[datetime] = None,
     ) -> Optional[str]:
         """
@@ -63,20 +63,20 @@ class SearchTrackingService:
 
         Args:
             user_id: Identifier of the authenticated user, if any
-            besucher: Visitor feature (utils.besucher_pseudonym.besucher_merkmal),
+            besucher_merkmal: Visitor feature (utils.besucher_pseudonym.besucher_merkmal),
                 used when there is no user
             moment: Point in time the pseudonym belongs to (defaults to now, UTC)
 
         Returns:
             64-character hex digest, or None if there is no actor to identify
         """
-        if not user_id and not besucher:
+        if not user_id and not besucher_merkmal:
             return None
 
         if moment is None:
             moment = datetime.now(timezone.utc)
         if not user_id:
-            return besucher_tagespseudonym(besucher, moment.date())
+            return besucher_tagespseudonym(besucher_merkmal, moment.date())
         day = moment.strftime("%Y-%m-%d")
 
         secret = settings.actor_hash_secret or _FALLBACK_SECRET
@@ -89,7 +89,7 @@ class SearchTrackingService:
     def track_search(
         self,
         results_count: int,
-        besucher: Optional[str] = None,
+        besucher_merkmal: Optional[str] = None,
         user_id: Optional[str] = None,
         moment: Optional[datetime] = None,
     ) -> bool:
@@ -101,7 +101,7 @@ class SearchTrackingService:
 
         Args:
             results_count: Number of results returned
-            besucher: Optional visitor feature, hashed before storage
+            besucher_merkmal: Optional visitor feature, hashed before storage
             user_id: Optional user identifier, hashed before storage
             moment: Point in time of the search (defaults to now, UTC). The
                 caller passes the moment it also uses for "Suchen ohne Treffer",
@@ -118,7 +118,7 @@ class SearchTrackingService:
         if moment is None:
             moment = datetime.now(timezone.utc)
         actor_hash = self._derive_actor_hash(
-            user_id=user_id, besucher=besucher, moment=moment
+            user_id=user_id, besucher_merkmal=besucher_merkmal, moment=moment
         )
 
         # No log line per search: it would carry the exact time again, and
@@ -166,12 +166,12 @@ class SearchTrackingService:
 
 def tagespseudonym(
     user_id: Optional[str] = None,
-    besucher: Optional[str] = None,
+    besucher_merkmal: Optional[str] = None,
     moment: Optional[datetime] = None,
 ) -> Optional[str]:
     """Das Tagespseudonym zum Zeitpunkt (Standard: jetzt), wie in search_events."""
     return SearchTrackingService._derive_actor_hash(
-        user_id=user_id, besucher=besucher, moment=moment
+        user_id=user_id, besucher_merkmal=besucher_merkmal, moment=moment
     )
 
 

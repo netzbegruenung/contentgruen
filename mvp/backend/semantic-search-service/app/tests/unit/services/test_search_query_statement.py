@@ -215,7 +215,7 @@ class TestSuchenOhneTreffer:
         assert aufruf.args == (
             aussage,
             0,
-            tagespseudonym(besucher=MERKMAL, moment=_mittag(heute)),
+            tagespseudonym(besucher_merkmal=MERKMAL, moment=_mittag(heute)),
         )
 
     def test_angemeldet_meldet_dieselbe_kennung_wie_das_suchereignis(
@@ -237,7 +237,7 @@ class TestSuchenOhneTreffer:
         _, ereignis = tracking.return_value.track_search.call_args
         assert ereignis["results_count"] == 0
         # Angemeldet geht weder Adresse noch User-Agent ein.
-        assert ereignis["besucher"] is None
+        assert ereignis["besucher_merkmal"] is None
         assert ereignis["user_id"] == "person-1"
         aufruf = suchen_ohne_treffer.erfassen.call_args
         assert aufruf.args[2] == tagespseudonym(
@@ -274,11 +274,11 @@ class TestSuchenOhneTreffer:
 
         _, ereignis = tracking.return_value.track_search.call_args
         assert ereignis["moment"] == vor_mitternacht
-        assert ereignis["besucher"] == MERKMAL
+        assert ereignis["besucher_merkmal"] == MERKMAL
         aufruf = suchen_ohne_treffer.erfassen.call_args
         assert aufruf.kwargs["heute"] == date(2026, 10, 26)
         assert aufruf.args[2] == tagespseudonym(
-            besucher=MERKMAL, moment=vor_mitternacht
+            besucher_merkmal=MERKMAL, moment=vor_mitternacht
         )
 
     def _pseudonyme(self, app, suchen_ohne_treffer, *kopfzeilen):

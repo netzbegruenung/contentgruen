@@ -80,17 +80,15 @@ def besucher_merkmal(request: Request) -> str:
     return f"{teil}|{request.headers.get('User-Agent', '')}"
 
 
-def besucher_tagespseudonym(
-    merkmal: str, tag: date, schluessel: Optional[Tagesschluessel] = None
-) -> str:
+def besucher_tagespseudonym(merkmal: str, tag: date) -> str:
     """
     HMAC-SHA256 ueber Merkmal und Tag mit dem Schluessel des Tages, 64 Hex-Zeichen.
 
-    Ohne ``schluessel`` der prozessweite. Er wird erst beim Aufruf nachgeschlagen,
-    damit Tests ihn je Test ersetzen koennen.
+    Der prozessweite Schluessel wird erst beim Aufruf nachgeschlagen, damit Tests
+    ihn je Test ersetzen koennen (tests/conftest.py).
     """
     return hmac.new(
-        (schluessel or _TAGESSCHLUESSEL).fuer(tag),
+        _TAGESSCHLUESSEL.fuer(tag),
         f"{merkmal}|{tag.isoformat()}".encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
