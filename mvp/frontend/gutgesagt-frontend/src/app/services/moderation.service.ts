@@ -3,11 +3,12 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { SessionService } from './session.service';
+import { MeldegrundWert } from '../shared/meldegruende';
 
 export interface ReportContentRequest {
   content_id: string;
   content_type: string;
-  reason: string;
+  reason: MeldegrundWert;
   description?: string;
 }
 
@@ -69,7 +70,7 @@ export class ModerationService {
   reportContent(
     contentId: string,
     contentType: string,
-    reason: string,
+    reason: MeldegrundWert,
     description?: string
   ): Observable<ReportContentResponse> {
     const request: ReportContentRequest = {
