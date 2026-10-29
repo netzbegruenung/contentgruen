@@ -15,7 +15,13 @@ describe('themenHinweis (#455)', () => {
 
   it('nennt die Themen einer vorhandenen Aussage, die ihre behielt', () => {
     expect(themenHinweis(['energie-heizen'], AUSSAGE, [KLIMA])).toBe(
-      'Diese Aussage gibt es schon: „Wärmepumpen sind zu teuer“ Ihre Themen: Klima.',
+      'Diese Aussage gibt es schon: „Wärmepumpen sind zu teuer“. Sie hat das Thema: Klima.',
+    );
+  });
+
+  it('nennt mehrere Themen in der Mehrzahl', () => {
+    expect(themenHinweis(['soziales'], AUSSAGE, [KLIMA, HEIZEN])).toBe(
+      'Diese Aussage gibt es schon: „Wärmepumpen sind zu teuer“. Sie hat die Themen: Klima, Energie und Heizen.',
     );
   });
 

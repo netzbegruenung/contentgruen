@@ -1241,7 +1241,7 @@ describe('AddCommentaryComponent', () => {
       flush();
 
       expect(erfolg.calls.mostRecent().args[0]!.themenHinweis).toBe(
-        'Diese Aussage gibt es schon: „Wärmepumpen sind viel zu teuer“ Ihre Themen: Klima.',
+        'Diese Aussage gibt es schon: „Wärmepumpen sind viel zu teuer“. Sie hat das Thema: Klima.',
       );
     }));
 

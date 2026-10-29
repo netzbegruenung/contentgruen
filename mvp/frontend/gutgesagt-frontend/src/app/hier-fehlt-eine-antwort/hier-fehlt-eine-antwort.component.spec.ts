@@ -304,7 +304,7 @@ describe('HierFehltEineAntwortComponent', () => {
       fixture.detectChanges();
       liefern([]);
 
-      expect(text()).toContain('Ihre Themen: Energie und Heizen.');
+      expect(text()).toContain('Diese Aussage gibt es schon: „Heizungsgesetz = Enteignung“. Sie hat das Thema: Energie und Heizen.');
       expect(text()).not.toContain('in der Liste');
     });
 
@@ -321,8 +321,7 @@ describe('HierFehltEineAntwortComponent', () => {
       fixture.detectChanges();
       liefern([]);
 
-      expect(text()).toContain('gibt es schon');
-      expect(text()).toContain('Heizungsgesetz = Enteignung');
+      expect(text()).toContain('Diese Aussage gibt es schon: „Heizungsgesetz = Enteignung“.');
     });
 
     it('schickt zu kurze Aussagen nicht ab', () => {

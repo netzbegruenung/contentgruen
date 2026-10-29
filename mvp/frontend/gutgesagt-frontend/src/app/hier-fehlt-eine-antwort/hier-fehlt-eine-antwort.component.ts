@@ -15,7 +15,7 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenService, schluesselVon } from '../services/themen.service';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
-import { THEMEN_NICHT_GESPEICHERT, aussageGibtEsSchon, ihreThemen } from '../shared/themen/themen-meldung';
+import { THEMEN_NICHT_GESPEICHERT, aussageGibtEsSchon, themenDerAussage } from '../shared/themen/themen-meldung';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
 import {
   VON_HIER_FEHLT_EINE_ANTWORT,
@@ -53,7 +53,7 @@ export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean):
   if (!mitThemen) {
     return vorhanden;
   }
-  return ohneThemen ? `${vorhanden} ${THEMEN_NICHT_GESPEICHERT}` : `${vorhanden} ${ihreThemen(antwort.themen)}`;
+  return ohneThemen ? `${vorhanden} ${THEMEN_NICHT_GESPEICHERT}` : `${vorhanden} ${themenDerAussage(antwort.themen)}`;
 }
 
 @Component({

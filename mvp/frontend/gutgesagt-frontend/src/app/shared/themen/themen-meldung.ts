@@ -8,11 +8,13 @@ import { Thema } from '../../services/dtos/themenDtos';
 export const THEMEN_NICHT_GESPEICHERT = 'Die Themen konnten nicht gespeichert werden.';
 
 export function aussageGibtEsSchon(text: string): string {
-  return `Diese Aussage gibt es schon: „${text}“`;
+  return `Diese Aussage gibt es schon: „${text}“.`;
 }
 
-export function ihreThemen(themen: Thema[]): string {
-  return `Ihre Themen: ${themen.map((t) => t.name).join(', ')}.`;
+/** Die Themen der Aussage; „Sie“ ist die Aussage, die App duzt. */
+export function themenDerAussage(themen: Thema[]): string {
+  const namen = themen.map((t) => t.name).join(', ');
+  return themen.length === 1 ? `Sie hat das Thema: ${namen}.` : `Sie hat die Themen: ${namen}.`;
 }
 
 /**
@@ -32,5 +34,5 @@ export function themenHinweis(gewaehlt: string[], aussageText: string, themen: T
   if (jetzt.size === gewaehlt.length && gewaehlt.every((s) => jetzt.has(s))) {
     return null;
   }
-  return `${aussageGibtEsSchon(aussageText)} ${ihreThemen(themen)}`;
+  return `${aussageGibtEsSchon(aussageText)} ${themenDerAussage(themen)}`;
 }
