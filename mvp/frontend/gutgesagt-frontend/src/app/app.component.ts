@@ -15,6 +15,7 @@ import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { RueckmeldungService } from './services/rueckmeldung.service';
+import { ProfilbildService } from './services/profilbild.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
@@ -64,28 +65,6 @@ export class AppComponent implements OnInit, OnDestroy {
   isTablet: boolean = false;
 
   selectedProfilePictureUrl: string = '';
-  // Lokal ausgeliefert statt von der DiceBear-API: sonst ginge bei jedem
-  // Seitenaufruf die IP-Adresse an einen Drittanbieter. Erzeugt von
-  // scripts/generate-avatars.mjs.
-  anonymousAvatars: string[] = [
-    '/avatars/anon-question.svg',
-    '/avatars/anon-shapes.svg'
-  ];
-  currentAnonymousIndex: number = 0;
-  profilePictures: string[] = [
-    '/avatars/female1.svg',
-    '/avatars/female2.svg',
-    '/avatars/female3.svg',
-    '/avatars/female4.svg',
-    '/avatars/female5.svg',
-    '/avatars/female6.svg',
-    '/avatars/male1.svg',
-    '/avatars/male2.svg',
-    '/avatars/male3.svg',
-    '/avatars/male4.svg',
-    '/avatars/male5.svg',
-    '/avatars/male6.svg',
-  ];
 
   userInfo: UserInfo | null = null;
 
@@ -98,7 +77,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
     private routeConfigService: RouteConfigService,
-    private rueckmeldung: RueckmeldungService) {
+    private rueckmeldung: RueckmeldungService,
+    private profilbild: ProfilbildService) {
     this.logger.debug('AppComponent created');
   }
 
@@ -128,7 +108,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.updatePageTitle(this.router.url);
 
     // Set initial anonymous avatar while checking auth status
-    this.selectedProfilePictureUrl = this.anonymousAvatars[this.currentAnonymousIndex];
+    this.selectedProfilePictureUrl = this.profilbild.profilbild(false);
 
     // Subscribe to user info changes
     this.authService.userInfo$
@@ -150,7 +130,7 @@ export class AppComponent implements OnInit, OnDestroy {
           // User is authenticated
           this.userInfo = userInfo;
           // Set proper profile picture for authenticated user
-          this.setRandomProfilePicture();
+          this.selectedProfilePictureUrl = this.profilbild.profilbild(true);
 
           // Check if we have a stored return URL from login (including Keycloak)
           const returnUrl = sessionStorage.getItem('loginReturnUrl');
@@ -252,55 +232,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
-  /**
-   * Nur bekannte, lokal ausgelieferte Avatare akzeptieren. In sessionStorage
-   * kann noch eine alte DiceBear-CDN-URL aus einer frueheren Sitzung
-   * liegen; die wuerde den Drittabruf sonst weiter ausloesen.
-   */
-  private isKnownAvatar(url: string | null): url is string {
-    return !!url && (this.profilePictures.includes(url) || this.anonymousAvatars.includes(url));
-  }
-
-  private setRandomProfilePicture(): void {
-    const sessionProfilePicture = sessionStorage.getItem('profilePicture');
-    if (this.isKnownAvatar(sessionProfilePicture)) {
-      // Use the session-stored profile picture
-      this.selectedProfilePictureUrl = sessionProfilePicture;
-      this.logger.debug('Using stored profile picture:', this.selectedProfilePictureUrl);
-    } else {
-      this.logger.debug('No stored profile picture, generating new one');
-      this.profilbildAuslosen();
-    }
-  }
-
-  /**
-   * Einmal je Sitzung ein Bild auslosen. Neu gewuerfelt wird nicht mehr: Der Klick
-   * auf den Avatar oeffnet das Profilmenue (#343).
-   */
-  private profilbildAuslosen(): void {
-    const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
-    this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
-    this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);
-    sessionStorage.setItem('profilePicture', this.selectedProfilePictureUrl);
-  }
-
   private updateAvatarForAuthStatus(): void {
-    if (!this.userInfo?.isAuthenticated) {
-      // Use anonymous avatar for logged-out users
-      const storedAnonymous = sessionStorage.getItem('anonymousAvatar');
-      if (storedAnonymous && this.anonymousAvatars.includes(storedAnonymous)) {
-        this.selectedProfilePictureUrl = storedAnonymous;
-        this.currentAnonymousIndex = this.anonymousAvatars.indexOf(storedAnonymous);
-      } else {
-        this.selectedProfilePictureUrl = this.anonymousAvatars[this.currentAnonymousIndex];
-        sessionStorage.setItem('anonymousAvatar', this.selectedProfilePictureUrl);
-      }
-    } else {
-      // Clear anonymous avatar from storage when logging in
-      sessionStorage.removeItem('anonymousAvatar');
-      // Use the stored or generate new avatar for logged-in users
-      this.setRandomProfilePicture();
-    }
+    this.selectedProfilePictureUrl = this.profilbild.profilbild(!!this.userInfo?.isAuthenticated);
   }
 
   toggleMobileMenu(): void {

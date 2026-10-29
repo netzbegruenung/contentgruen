@@ -160,29 +160,6 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   // Popular topics for empty state suggestions
   popularTopics: string[] = ['Klimaschutz', 'Mobilität', 'Energie', 'Soziales', 'Digitalisierung', 'Bildung'];
 
-  // Avatar properties
-  selectedProfilePictureUrl: string = '';
-  // Lokal ausgeliefert statt von der DiceBear-API, siehe
-  // scripts/generate-avatars.mjs.
-  anonymousAvatars: string[] = [
-    '/avatars/anon-female.svg',
-    '/avatars/anon-male.svg'
-  ];
-  profilePictures: string[] = [
-    '/avatars/female1.svg',
-    '/avatars/female2.svg',
-    '/avatars/female3.svg',
-    '/avatars/female4.svg',
-    '/avatars/female5.svg',
-    '/avatars/female6.svg',
-    '/avatars/male1.svg',
-    '/avatars/male2.svg',
-    '/avatars/male3.svg',
-    '/avatars/male4.svg',
-    '/avatars/male5.svg',
-    '/avatars/male6.svg',
-  ];
-
   constructor(
     private searchService: SearchService,
     private navigationService: NavigationService,
@@ -223,12 +200,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((userInfo) => {
         this.userInfo = userInfo;
-        this.updateAvatarForAuthStatus();
         this.cdr.markForCheck();
       });
-
-    // Initialize avatar
-    this.initializeAvatar();
 
     // Monitor search results to determine available sections
     this.searchResponse$
@@ -360,50 +333,6 @@ export class ResultViewComponent implements OnInit, OnDestroy {
 
   getContributeButtonLabel(): string {
     return this.userInfo?.isAuthenticated ? 'Beitragen' : 'Anmelden zum Beitragen';
-  }
-
-  /**
-   * Nur bekannte, lokal ausgelieferte Avatare akzeptieren. In sessionStorage
-   * kann noch eine alte DiceBear-CDN-URL aus einer frueheren Sitzung
-   * liegen; die wuerde den Drittabruf sonst weiter ausloesen.
-   */
-  private isKnownAvatar(url: string | null): url is string {
-    return !!url && (this.profilePictures.includes(url) || this.anonymousAvatars.includes(url));
-  }
-
-  private initializeAvatar(): void {
-    const storedAvatar = sessionStorage.getItem('userAvatar');
-    const storedAnonymous = sessionStorage.getItem('anonymousAvatar');
-
-    if (this.userInfo?.isAuthenticated && this.isKnownAvatar(storedAvatar)) {
-      this.selectedProfilePictureUrl = storedAvatar;
-    } else if (!this.userInfo?.isAuthenticated && this.isKnownAvatar(storedAnonymous)) {
-      this.selectedProfilePictureUrl = storedAnonymous;
-    } else {
-      this.updateAvatarForAuthStatus();
-    }
-  }
-
-  private updateAvatarForAuthStatus(): void {
-    if (!this.userInfo?.isAuthenticated) {
-      const storedAnonymous = sessionStorage.getItem('anonymousAvatar');
-      if (this.isKnownAvatar(storedAnonymous)) {
-        this.selectedProfilePictureUrl = storedAnonymous;
-      } else {
-        const randomIndex = Math.floor(Math.random() * this.anonymousAvatars.length);
-        this.selectedProfilePictureUrl = this.anonymousAvatars[randomIndex];
-        sessionStorage.setItem('anonymousAvatar', this.selectedProfilePictureUrl);
-      }
-    } else {
-      const storedAvatar = sessionStorage.getItem('userAvatar');
-      if (this.isKnownAvatar(storedAvatar)) {
-        this.selectedProfilePictureUrl = storedAvatar;
-      } else {
-        const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
-        this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
-        sessionStorage.setItem('userAvatar', this.selectedProfilePictureUrl);
-      }
-    }
   }
 
   /**

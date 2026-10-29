@@ -10,6 +10,7 @@ import { AppComponent } from './app.component';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { NavigationService } from './services/navigation.service';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
+import { ALTE_PROFILBILD_SCHLUESSEL, ANONYMER_AVATAR, PROFILBILDER } from './services/profilbild.service';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -134,7 +135,6 @@ describe('AppComponent - Desktop-Kopf', () => {
 
     it('Klick auf den Avatar oeffnet das Profilmenue und wuerfelt kein neues Bild', async () => {
       const vorher = fixture.componentInstance.selectedProfilePictureUrl;
-      const gespeichert = sessionStorage.getItem('profilePicture');
 
       expect(avatar().tagName).toBe('BUTTON');
       expect(avatar().getAttribute('aria-label')).toBe('Profilmenü öffnen');
@@ -150,7 +150,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       ]);
       expect(navigation.navigateToContributions).not.toHaveBeenCalled();
       expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(vorher);
-      expect(sessionStorage.getItem('profilePicture')).toBe(gespeichert);
+      expect(sessionStorage.getItem('profilePicture')).toBeNull();
     });
 
     it('oeffnet das Profilmenue mit der Tastatur und fuehrt zu Meine Beitraege', async () => {
@@ -188,6 +188,35 @@ describe('AppComponent - Desktop-Kopf', () => {
       (kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement).click();
 
       expect(dialog.open).toHaveBeenCalledWith(FeedbackDialogComponent, jasmine.anything());
+    });
+  });
+  describe('Profilbild nur im Speicher der Seite (#437)', () => {
+    afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s) => sessionStorage.removeItem(s)));
+
+    it('zeigt Besuchern den anonymen Avatar und legt nichts im sessionStorage ab', () => {
+      const vorher = Object.keys(sessionStorage);
+      starten(BESUCHER);
+
+      expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(ANONYMER_AVATAR);
+      expect(Object.keys(sessionStorage)).toEqual(vorher);
+    });
+
+    it('zeigt Mitwirkenden ein Profilbild und legt nichts im sessionStorage ab', () => {
+      const vorher = Object.keys(sessionStorage);
+      starten(ANGEMELDET);
+
+      expect(PROFILBILDER).toContain(fixture.componentInstance.selectedProfilePictureUrl);
+      expect(Object.keys(sessionStorage)).toEqual(vorher);
+    });
+
+    it('raeumt die Eintraege frueherer Versionen beim Start weg', () => {
+      sessionStorage.setItem('profilePicture', '/avatars/female1.svg');
+      sessionStorage.setItem('anonymousAvatar', '/avatars/anon-question.svg');
+      sessionStorage.setItem('userAvatar', '/avatars/male2.svg');
+
+      starten(BESUCHER);
+
+      ALTE_PROFILBILD_SCHLUESSEL.forEach((s) => expect(sessionStorage.getItem(s)).toBeNull());
     });
   });
 });

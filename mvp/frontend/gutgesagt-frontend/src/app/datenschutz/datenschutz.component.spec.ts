@@ -296,6 +296,13 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Service Worker');
     });
 
+    it('Gerätespeicher: das Profilbild liegt nicht im Browser (#437)', () => {
+      const text = abschnitt('Weitere Einträge');
+
+      expect(text).not.toContain('das Profilbild, das dir angezeigt wird');
+      expect(text).toContain('Das Profilbild im Kopf der Seite legen wir nicht in deinem Browser ab');
+    });
+
     it('Anmelde-Cookie: Angaben des Identitätsdienstes nur bei der Anmeldung über die Netzbegrünung', () => {
       expect(abschnitt('Anmelde-Cookie')).toContain(
         'bei der Anmeldung über die Netzbegrünung dazu die übrigen Angaben, die ihr Identitätsdienst übermittelt',
