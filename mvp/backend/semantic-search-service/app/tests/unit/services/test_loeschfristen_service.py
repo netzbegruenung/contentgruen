@@ -16,6 +16,7 @@ from services.loeschfristen_service import (
     EINWURF_OHNE_BEITRAG_TAGE,
     GELOESCHTER_BEITRAG_TAGE,
     MELDUNG_NACH_BEARBEITUNG_TAGE,
+    SPERRE_NACH_AUFHEBUNG_TAGE,
     LoeschfristenService,
     loeschen_im_takt,
 )
@@ -49,8 +50,13 @@ def moderation():
 
 
 @pytest.fixture
-def service(meldungen, einwuerfe, beitraege, moderation):
-    return LoeschfristenService(meldungen, einwuerfe, beitraege, moderation)
+def sperren():
+    return Mock(**{"aufgehobene_loeschen_vor.return_value": 0})
+
+
+@pytest.fixture
+def service(meldungen, einwuerfe, beitraege, moderation, sperren):
+    return LoeschfristenService(meldungen, einwuerfe, beitraege, moderation, sperren)
 
 
 def test_fristen_wie_im_loeschkonzept():
@@ -58,6 +64,7 @@ def test_fristen_wie_im_loeschkonzept():
     assert MELDUNG_NACH_BEARBEITUNG_TAGE == 180
     assert EINWURF_OHNE_BEITRAG_TAGE == 365
     assert GELOESCHTER_BEITRAG_TAGE == 30
+    assert SPERRE_NACH_AUFHEBUNG_TAGE == 180
 
 
 class TestPostgres:
@@ -75,14 +82,22 @@ class TestPostgres:
             datetime(2025, 10, 29, tzinfo=timezone.utc)
         )
 
+    async def test_sperren_aufgehoben_vor_180_tagen(self, service, sperren):
+        await service.fristen_anwenden(HEUTE)
+
+        sperren.aufgehobene_loeschen_vor.assert_called_once_with(
+            datetime(2026, 5, 2, tzinfo=timezone.utc)
+        )
+
     async def test_fehler_bei_meldungen_haelt_den_rest_nicht_auf(
-        self, service, meldungen, einwuerfe, beitraege
+        self, service, meldungen, einwuerfe, beitraege, sperren
     ):
         meldungen.bearbeitete_loeschen_vor.side_effect = RuntimeError("weg")
 
         await service.fristen_anwenden(HEUTE)
 
         einwuerfe.ohne_beitrag_loeschen_vor.assert_called_once()
+        sperren.aufgehobene_loeschen_vor.assert_called_once()
         beitraege.geloeschte_laden.assert_awaited_once()
 
 

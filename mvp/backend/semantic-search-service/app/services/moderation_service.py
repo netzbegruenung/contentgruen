@@ -5,6 +5,7 @@ Provides business logic for reporting and managing flagged content.
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
@@ -20,9 +21,16 @@ from repositories.raw_input_repository import (
     RawInputRepository,
     get_raw_input_repository,
 )
+from repositories.sperre_repository import (
+    SperreRepository,
+    Widerspruchsergebnis,
+    get_sperre_repository,
+)
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund
+from domain.models.sperrgrund import SPERRGRUENDE
+from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG
 from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
@@ -30,6 +38,49 @@ logger = logging.getLogger(__name__)
 
 # Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
 GESPERRTE_HOECHSTENS = 500
+
+
+class SperreUngueltig(ValueError):
+    """Sperren oder Bestaetigen ohne gueltigen Sperrgrund oder ohne Begruendung."""
+
+
+def _ohne_rand(text: Optional[str]) -> Optional[str]:
+    """Text ohne Leerraum am Rand; leer wird None."""
+    return (text or "").strip() or None
+
+
+def _autor(beitrag: Dict[str, Any]) -> Optional[str]:
+    """
+    Wem die Sperrnachricht gilt: die Kennung, die den Beitrag eingestellt hat.
+    Ehemalige Personen (docs/LOESCHKONZEPT.md, Schritt 3) erreicht keine Nachricht.
+    """
+    autor = _ohne_rand(beitrag.get("original_author"))
+    if autor is None or autor.startswith(EHEMALIGE_PERSON_KENNUNG):
+        return None
+    return autor
+
+
+def _iso(zeitpunkt) -> Optional[str]:
+    return zeitpunkt.isoformat() if isinstance(zeitpunkt, datetime) else zeitpunkt
+
+
+def _sperre_fuer_admins(sperre) -> Dict[str, Any]:
+    """Was die Moderation zu einer Sperre sieht; die Kennungen bleiben in der Tabelle."""
+    return {
+        "id": str(sperre.id),
+        "sperrgrund": sperre.sperrgrund,
+        "begruendung": sperre.begruendung,
+        "gesperrt_am": _iso(sperre.gesperrt_am),
+        # Ohne Autor sieht niemand die Sperrnachricht (Glossar "Sperrnachricht").
+        "ohne_kontaktdaten": sperre.autor is None,
+        "widerspruch": sperre.widerspruch,
+        "widerspruch_am": _iso(sperre.widerspruch_am),
+        "widerspruch_offen": sperre.widerspruch_am is not None
+        and sperre.pruefung is None,
+        "pruefung": sperre.pruefung,
+        "pruefung_begruendung": sperre.pruefung_begruendung,
+        "geprueft_am": _iso(sperre.geprueft_am),
+    }
 
 
 class ModerationService:
@@ -41,12 +92,14 @@ class ModerationService:
         moderation_repo: Optional[IModerationRepository] = None,
         vote_repo: Optional[VoteRepository] = None,
         raw_input_repo: Optional[RawInputRepository] = None,
+        sperre_repo: Optional[SperreRepository] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
         # Erst beim endgueltigen Entfernen gebraucht; vorher keine Verbindung.
         self._vote_repo = vote_repo
         self._raw_input_repo = raw_input_repo
+        self._sperre_repo = sperre_repo
 
     async def report_content(
         self,
@@ -199,9 +252,19 @@ class ModerationService:
 
         return await self.moderation_repo.laden(content_id)
 
-    async def sperren(self, content_id: str, gesperrt_von: str) -> bool:
+    async def sperren(
+        self,
+        content_id: str,
+        gesperrt_von: str,
+        sperrgrund: str,
+        begruendung: str,
+    ) -> bool:
         """
         Einen gemeldeten Beitrag sperren, statt ihn zu loeschen.
+
+        Ohne Sperrgrund aus SPERRGRUENDE und ohne Begruendung keine Sperre (#448):
+        Beides erfaehrt der Autor in der Sperrnachricht (Art. 17 DSA). Die Sperre
+        merkt sich den Autor, damit nur er sie sieht und widersprechen kann.
 
         Der Beitrag bleibt im Speicher und bekommt den Status BLOCKED; die
         Repositories blenden ihn damit aus Suche, Einzelansicht, Listen, Zaehlern
@@ -209,20 +272,39 @@ class ModerationService:
         Repository nicht nach Sperre filtert. Alle Meldungen zum Beitrag stehen
         danach auf bearbeitet.
 
-        Erst Qdrant, dann PostgreSQL, ohne gemeinsame Transaktion. Scheitert das
-        Meldungs-Update, ist der Beitrag schon gesperrt und der Fehler geht an den
-        Aufrufer; erneutes Sperren holt die Meldungen nach, weil der Status von
-        vor der ersten Sperre erhalten bleibt.
+        Erst Qdrant, dann PostgreSQL (Sperre, dann Meldungen), ohne gemeinsame
+        Transaktion. Scheitert ein Schritt in PostgreSQL, ist der Beitrag schon
+        gesperrt und der Fehler geht an den Aufrufer; erneutes Sperren holt Sperre
+        und Meldungen nach, weil der Status von vor der ersten Sperre erhalten
+        bleibt. Andersherum saehe der Autor eine Sperre an einem sichtbaren Beitrag.
+        Gibt es schon eine aktive Sperre, bleiben ihr Grund und ihre Begruendung.
+
+        Raises:
+            SperreUngueltig: ohne gueltigen Sperrgrund oder ohne Begruendung
 
         Returns:
             bool: False, wenn es den Beitrag nicht gibt
         """
+        begruendung = _ohne_rand(begruendung)
+        if sperrgrund not in SPERRGRUENDE:
+            raise SperreUngueltig("Unbekannter Sperrgrund")
+        if begruendung is None:
+            raise SperreUngueltig("Begruendung fehlt")
+
         beitrag = await self._beitrag_laden(content_id)
         if beitrag is None:
             logger.warning(f"Content {content_id} not found")
             return False
 
         await self.moderation_repo.sperren(beitrag)
+        await asyncio.to_thread(
+            self._sperren().anlegen,
+            content_id=UUID(content_id),
+            sperrgrund=sperrgrund,
+            begruendung=begruendung,
+            gesperrt_von=gesperrt_von,
+            autor=_autor(beitrag),
+        )
 
         updated_count = self.report_repo.update_reports_by_content_id(
             content_id=UUID(content_id),
@@ -236,11 +318,17 @@ class ModerationService:
         )
         return True
 
-    async def entsperren(self, content_id: str) -> bool:
+    async def entsperren(
+        self, content_id: str, entsperrt_von: Optional[str] = None
+    ) -> bool:
         """
         Eine Sperre aufheben: Der Beitrag bekommt den Zustand von vor der Sperre
         zurueck (ohne gemerkten Zustand: sichtbar) und ist wieder so sichtbar wie
-        vorher. Die Meldungen bleiben bearbeitet.
+        vorher. Die Meldungen bleiben bearbeitet. Die Sperre gilt als aufgehoben,
+        ein offener Widerspruch als geprueft mit dem Ergebnis "entsperrt".
+
+        Erst Qdrant, dann PostgreSQL: Scheitert das Aufheben der Sperre, ist der
+        Beitrag schon wieder sichtbar; erneutes Entsperren holt es nach.
 
         Returns:
             bool: False, wenn es den Beitrag nicht gibt
@@ -250,10 +338,14 @@ class ModerationService:
             logger.warning(f"Content {content_id} not found")
             return False
 
-        if beitrag.get("status") != ContentStatus.BLOCKED.value:
-            return True
-
-        await self.moderation_repo.entsperren(beitrag)
+        if beitrag.get("status") == ContentStatus.BLOCKED.value:
+            await self.moderation_repo.entsperren(beitrag)
+        await asyncio.to_thread(
+            self._sperren().aufheben,
+            UUID(content_id),
+            entsperrt_von,
+            datetime.now(timezone.utc),
+        )
         logger.info(f"Content {content_id} entsperrt")
         return True
 
@@ -266,8 +358,99 @@ class ModerationService:
         Ueber die Meldungen allein waeren sie nicht sicher auffindbar: Ein
         Loeschantrag entfernt die Meldungen der Person (docs/LOESCHKONZEPT.md),
         der gesperrte Beitrag bliebe dann fuer niemanden erreichbar.
+
+        Jeder traegt unter "sperre" seine aktive Sperre mit Sperrgrund und
+        Widerspruch; None bei Sperren aus der Zeit vor #448, die keinen Grund haben.
         """
-        return await self.moderation_repo.gesperrte_laden(limit)
+        beitraege = await self.moderation_repo.gesperrte_laden(limit)
+        sperren = await asyncio.to_thread(self._sperren().aktive_je_beitrag)
+        for beitrag in beitraege:
+            try:
+                sperre = sperren.get(UUID(str(beitrag.get("id"))))
+            except ValueError:
+                sperre = None
+            beitrag["sperre"] = _sperre_fuer_admins(sperre) if sperre else None
+        return beitraege
+
+    async def meine_sperren(self, autor: str) -> List[Dict[str, Any]]:
+        """
+        Die Sperrnachrichten einer Person: je aktive Sperre an einem ihrer Beitraege
+        die Entscheidung mit Sperrgrund und Begruendung, dazu ihr Widerspruch und
+        das Ergebnis der erneuten Pruefung. Wer gesperrt oder geprueft hat, steht
+        nicht darin.
+        """
+        nachrichten = []
+        for sperre in await asyncio.to_thread(self._sperren().aktive_fuer_autor, autor):
+            beitrag = await self.moderation_repo.laden(str(sperre.content_id)) or {}
+            nachrichten.append(
+                {
+                    "id": str(sperre.id),
+                    "content_id": str(sperre.content_id),
+                    "content_type": beitrag.get("content_type"),
+                    "titel": beitrag.get("title") or beitrag.get("text"),
+                    "sperrgrund": sperre.sperrgrund,
+                    "begruendung": sperre.begruendung,
+                    "gesperrt_am": _iso(sperre.gesperrt_am),
+                    "widerspruch_am": _iso(sperre.widerspruch_am),
+                    "pruefung": sperre.pruefung,
+                    "pruefung_begruendung": sperre.pruefung_begruendung,
+                    "geprueft_am": _iso(sperre.geprueft_am),
+                }
+            )
+        return nachrichten
+
+    async def widersprechen(
+        self, sperre_id: str, autor: str, text: Optional[str]
+    ) -> Widerspruchsergebnis:
+        """
+        Der Autor widerspricht einer Sperre; der Widerspruch ist formlos, der Text
+        darf fehlen. Er landet bei den Admins (gesperrte_beitraege) zur erneuten
+        Pruefung. Je Sperre geht ein Widerspruch.
+        """
+        try:
+            kennung = UUID(sperre_id)
+        except ValueError:
+            return Widerspruchsergebnis.NICHT_GEFUNDEN
+        ergebnis = await asyncio.to_thread(
+            self._sperren().widersprechen,
+            kennung,
+            autor,
+            _ohne_rand(text),
+            datetime.now(timezone.utc),
+        )
+        logger.info(f"Widerspruch gegen Sperre {sperre_id}: {ergebnis.value}")
+        return ergebnis
+
+    async def sperre_bestaetigen(
+        self, sperre_id: str, geprueft_von: str, begruendung: str
+    ) -> bool:
+        """
+        Nach erneuter Pruefung bleibt die Sperre; die Begruendung erfaehrt der Autor
+        in seiner Sperrnachricht. Das andere Ergebnis ist entsperren().
+
+        Raises:
+            SperreUngueltig: ohne Begruendung
+
+        Returns:
+            bool: False ohne aktive Sperre mit offenem Widerspruch
+        """
+        begruendung = _ohne_rand(begruendung)
+        if begruendung is None:
+            raise SperreUngueltig("Begruendung fehlt")
+        try:
+            kennung = UUID(sperre_id)
+        except ValueError:
+            return False
+        bestaetigt = await asyncio.to_thread(
+            self._sperren().sperre_bestaetigen,
+            kennung,
+            geprueft_von,
+            begruendung,
+            datetime.now(timezone.utc),
+        )
+        if bestaetigt:
+            logger.info(f"Sperre {sperre_id} nach Widerspruch bestaetigt")
+        return bestaetigt
 
     async def delete_content(
         self, content_id: str, content_type: str, deleted_by: Optional[str]
@@ -355,6 +538,11 @@ class ModerationService:
         if self._raw_input_repo is None:
             self._raw_input_repo = get_raw_input_repository()
         return self._raw_input_repo
+
+    def _sperren(self) -> SperreRepository:
+        if self._sperre_repo is None:
+            self._sperre_repo = get_sperre_repository()
+        return self._sperre_repo
 
     async def dismiss_report(
         self, report_id: str, dismissed_by: str, notes: Optional[str] = None

@@ -20,6 +20,12 @@ from dependencies import get_settings
 CONTENT_ID = str(uuid.uuid4())
 ADMIN = {"X-User": "admin-1", "X-Is-Admin": "true"}
 MITWIRKENDE = {"X-User": "user-1", "X-Is-Admin": "false"}
+GRUND = {"sperrgrund": "unterstellung", "begruendung": "Unterstellt Bosheit."}
+
+
+def _koerper(aktion: str):
+    """Sperren verlangt Sperrgrund und Begruendung (#448), Entsperren nichts."""
+    return GRUND if aktion == "sperren" else None
 
 
 @pytest.fixture
@@ -28,6 +34,7 @@ def service():
     mock.sperren = AsyncMock(return_value=True)
     mock.entsperren = AsyncMock(return_value=True)
     mock.gesperrte_beitraege = AsyncMock(return_value=[])
+    mock.sperre_bestaetigen = AsyncMock(return_value=True)
     return mock
 
 
@@ -45,7 +52,9 @@ def client(service):
 class TestSperrenApi:
     def test_admin_darf(self, client, service, aktion):
         antwort = client.put(
-            f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}", headers=ADMIN
+            f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}",
+            headers=ADMIN,
+            json=_koerper(aktion),
         )
 
         assert antwort.status_code == 200
@@ -55,14 +64,18 @@ class TestSperrenApi:
 
     def test_mitwirkende_duerfen_nicht(self, client, service, aktion):
         antwort = client.put(
-            f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}", headers=MITWIRKENDE
+            f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}",
+            headers=MITWIRKENDE,
+            json=_koerper(aktion),
         )
 
         assert antwort.status_code == 403
         getattr(service, aktion).assert_not_called()
 
     def test_besucher_duerfen_nicht(self, client, service, aktion):
-        antwort = client.put(f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}")
+        antwort = client.put(
+            f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}", json=_koerper(aktion)
+        )
 
         assert antwort.status_code == 401
 
@@ -70,14 +83,18 @@ class TestSperrenApi:
         getattr(service, aktion).return_value = False
 
         antwort = client.put(
-            f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}", headers=ADMIN
+            f"/api/v1/moderation/content/{CONTENT_ID}/{aktion}",
+            headers=ADMIN,
+            json=_koerper(aktion),
         )
 
         assert antwort.status_code == 404
 
     def test_ungueltige_id_ist_422(self, client, service, aktion):
         antwort = client.put(
-            f"/api/v1/moderation/content/kein-uuid/{aktion}", headers=ADMIN
+            f"/api/v1/moderation/content/kein-uuid/{aktion}",
+            headers=ADMIN,
+            json=_koerper(aktion),
         )
 
         assert antwort.status_code == 422
@@ -85,10 +102,90 @@ class TestSperrenApi:
 
 
 @pytest.mark.unit
-def test_sperren_gibt_admin_als_sperrenden_weiter(client, service):
-    client.put(f"/api/v1/moderation/content/{CONTENT_ID}/sperren", headers=ADMIN)
+def test_sperren_gibt_admin_grund_und_begruendung_weiter(client, service):
+    client.put(
+        f"/api/v1/moderation/content/{CONTENT_ID}/sperren", headers=ADMIN, json=GRUND
+    )
 
-    assert service.sperren.call_args.kwargs["gesperrt_von"] == "admin-1"
+    kwargs = service.sperren.call_args.kwargs
+    assert kwargs["gesperrt_von"] == "admin-1"
+    assert kwargs["sperrgrund"] == "unterstellung"
+    assert kwargs["begruendung"] == "Unterstellt Bosheit."
+
+
+@pytest.mark.unit
+def test_entsperren_gibt_admin_weiter(client, service):
+    client.put(f"/api/v1/moderation/content/{CONTENT_ID}/entsperren", headers=ADMIN)
+
+    assert service.entsperren.call_args.kwargs["entsperrt_von"] == "admin-1"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "koerper",
+    [
+        None,
+        {"begruendung": "Unterstellt Bosheit."},
+        {"sperrgrund": "fake_news", "begruendung": "x"},
+        {"sperrgrund": "unterstellung"},
+        {"sperrgrund": "unterstellung", "begruendung": ""},
+        {"sperrgrund": "unterstellung", "begruendung": "x" * 2001},
+    ],
+)
+def test_sperren_ohne_grund_ist_422(client, service, koerper):
+    antwort = client.put(
+        f"/api/v1/moderation/content/{CONTENT_ID}/sperren", headers=ADMIN, json=koerper
+    )
+
+    assert antwort.status_code == 422
+    service.sperren.assert_not_called()
+
+
+@pytest.mark.unit
+def test_sperren_nur_leerraum_als_begruendung_ist_422(client, service):
+    from services.moderation_service import SperreUngueltig
+
+    service.sperren.side_effect = SperreUngueltig("Begruendung fehlt")
+
+    antwort = client.put(
+        f"/api/v1/moderation/content/{CONTENT_ID}/sperren",
+        headers=ADMIN,
+        json={"sperrgrund": "unterstellung", "begruendung": "   "},
+    )
+
+    assert antwort.status_code == 422
+
+
+@pytest.mark.unit
+class TestSperreBestaetigenApi:
+    PFAD = f"/api/v1/moderation/sperren/{uuid.uuid4()}/bestaetigen"
+    KOERPER = {"begruendung": "Bleibt eine Unterstellung."}
+
+    def test_admin_darf(self, client, service):
+        antwort = client.put(self.PFAD, headers=ADMIN, json=self.KOERPER)
+
+        assert antwort.status_code == 200
+        args = service.sperre_bestaetigen.call_args.args
+        assert args[1:] == ("admin-1", "Bleibt eine Unterstellung.")
+
+    def test_ohne_offenen_widerspruch_ist_404(self, client, service):
+        service.sperre_bestaetigen.return_value = False
+
+        antwort = client.put(self.PFAD, headers=ADMIN, json=self.KOERPER)
+
+        assert antwort.status_code == 404
+
+    def test_ohne_begruendung_ist_422(self, client, service):
+        antwort = client.put(self.PFAD, headers=ADMIN, json={"begruendung": ""})
+
+        assert antwort.status_code == 422
+        service.sperre_bestaetigen.assert_not_called()
+
+    def test_mitwirkende_duerfen_nicht(self, client, service):
+        antwort = client.put(self.PFAD, headers=MITWIRKENDE, json=self.KOERPER)
+
+        assert antwort.status_code == 403
+        service.sperre_bestaetigen.assert_not_called()
 
 
 @pytest.mark.unit

@@ -19,6 +19,11 @@ DELETE FROM votes            WHERE user_id             = :'uid';
 DELETE FROM content_reports  WHERE reported_by_user_id = :'uid';
 UPDATE content_reports         SET reviewed_by = NULL WHERE reviewed_by = :'uid';
 UPDATE raw_input_content_links SET created_by  = NULL WHERE created_by  = :'uid';
+-- Sperren an Beitraegen der Person bleiben, solange der Beitrag gesperrt ist; ihr
+-- Widerspruch geht mit der Kennung, ohne Autor sieht niemand die Sperrnachricht.
+UPDATE sperren SET autor = NULL, widerspruch = NULL WHERE autor = :'uid';
+UPDATE sperren SET gesperrt_von = NULL WHERE gesperrt_von = :'uid';
+UPDATE sperren SET geprueft_von = NULL WHERE geprueft_von = :'uid';
 DELETE FROM raw_inputs       WHERE submitted_by        = :'uid';
 -- Saetze an fremden Einwuerfen bleiben, die Kennung wird ersetzt: je Satz ein
 -- eigener Platzhalter, weil der eindeutige Index (raw_input_id, user_id) keinen
