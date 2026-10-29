@@ -95,6 +95,7 @@ class TestAddGenericTextAntwort:
             "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -222,6 +223,7 @@ class TestAddGenericTextAntwort:
             "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
+            "themen": [],
         }
 
     def test_text_ueber_2000_zeichen_wird_abgelehnt(self, dienste):
@@ -272,6 +274,7 @@ class TestAddGenericTextAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
+            "themen": [],
         }
         generic_text_service.pruefe_dublette.assert_awaited_once_with(
             anfrage["generictext"]["text"]
@@ -350,6 +353,7 @@ class TestAddGenericTextAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": False,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -379,6 +383,7 @@ class TestAddGenericTextAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
             beitrag_id=vorhanden,
@@ -583,6 +588,9 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == [
+            {"schluessel": "energie-heizen", "name": "Energie und Heizen"}
+        ]
         themen_service.zuordnen.assert_awaited_once_with(
             statement_id, ["energie-heizen"]
         )
@@ -603,6 +611,8 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        # Die Antwort nennt ihre, damit das Formular sagen kann, dass die Wahl nicht galt.
+        assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
         themen_service.zuordnen.assert_not_called()
 
     def test_gewaehlte_aussage_bekommt_keine_themen(self, dienste, themen_service):
@@ -620,6 +630,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == []
         themen_service.zuordnen.assert_not_called()
 
     def test_ohne_themen_wird_nichts_zugeordnet(self, dienste, themen_service):
@@ -634,6 +645,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == []
         themen_service.zuordnen.assert_not_called()
 
     def test_gescheitertes_zuordnen_behaelt_hintergrundinfo_und_verknuepfung(
@@ -654,6 +666,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == []
         assert resp.json()["id"] == str(generic_text_id)
         assert resp.json()["verknuepft"] is True
 

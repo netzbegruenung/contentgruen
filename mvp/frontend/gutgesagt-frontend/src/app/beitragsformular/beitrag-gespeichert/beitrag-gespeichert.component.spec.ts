@@ -177,6 +177,19 @@ describe('BeitragGespeichertComponent', () => {
       expect(seite().querySelector('.verknuepfung-fehlgeschlagen')!.textContent).toContain('nicht mit der Aussage verknüpft');
     });
 
+    it('sagt, wenn die gewaehlten Themen nicht galten (#455)', async () => {
+      const hinweis = 'Diese Aussage gibt es schon: „Wärmepumpen sind zu teuer“ Ihre Themen: Klima.';
+      await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true, themenHinweis: hinweis });
+
+      expect(seite().querySelector('.themen-hinweis')!.textContent!.trim()).toBe(hinweis);
+    });
+
+    it('zeigt ohne Themenhinweis keinen', async () => {
+      await oeffnen({}, { aussage: { id: 'a-1', text: 'Wärmepumpen sind zu teuer' }, verknuepft: true });
+
+      expect(seite().querySelector('.themen-hinweis')).toBeNull();
+    });
+
     it('kommt nach dem Neuladen ohne State ohne Antwort-auf aus', async () => {
       await oeffnen({ einwurf: 'e-1' });
 

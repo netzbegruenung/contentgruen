@@ -15,6 +15,7 @@ import { Thema } from '../services/dtos/themenDtos';
 import { ThemenService, schluesselVon } from '../services/themen.service';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
+import { THEMEN_NICHT_GESPEICHERT, aussageGibtEsSchon, ihreThemen } from '../shared/themen/themen-meldung';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
 import {
   VON_HIER_FEHLT_EINE_ANTWORT,
@@ -48,13 +49,11 @@ export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean):
       ? 'Aussage angelegt. Die Themen konnten nicht gespeichert werden; du kannst sie in der Liste zuordnen.'
       : 'Aussage angelegt.';
   }
-  const vorhanden = `Diese Aussage gibt es schon: „${antwort.statement_text}“`;
+  const vorhanden = aussageGibtEsSchon(antwort.statement_text);
   if (!mitThemen) {
     return vorhanden;
   }
-  return ohneThemen
-    ? `${vorhanden} Die Themen konnten nicht gespeichert werden.`
-    : `${vorhanden} Ihre Themen: ${antwort.themen.map((t) => t.name).join(', ')}.`;
+  return ohneThemen ? `${vorhanden} ${THEMEN_NICHT_GESPEICHERT}` : `${vorhanden} ${ihreThemen(antwort.themen)}`;
 }
 
 @Component({

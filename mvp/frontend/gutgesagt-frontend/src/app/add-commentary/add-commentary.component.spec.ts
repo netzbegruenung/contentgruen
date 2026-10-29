@@ -1224,6 +1224,55 @@ describe('AddCommentaryComponent', () => {
       expect('themen' in anfrage).toBeFalse();
     }));
 
+    it('meldet der Ergebnisseite, wenn die Aussage ihre Themen behielt', fakeAsync(() => {
+      speichernMit({
+        statement_id: ID,
+        statement_text: 'Wärmepumpen sind viel zu teuer',
+        verknuepft: true,
+        themen: [THEMEN[0]],
+      });
+      const erfolg = spyOn(component.success, 'emit');
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      ausfuellen();
+      thema('Soziales').click();
+
+      component.speichern();
+      flush();
+
+      expect(erfolg.calls.mostRecent().args[0]!.themenHinweis).toBe(
+        'Diese Aussage gibt es schon: „Wärmepumpen sind viel zu teuer“ Ihre Themen: Klima.',
+      );
+    }));
+
+    it('meldet der Ergebnisseite, wenn das Zuordnen scheiterte', fakeAsync(() => {
+      speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, themen: [] });
+      const erfolg = spyOn(component.success, 'emit');
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      ausfuellen();
+      thema('Soziales').click();
+
+      component.speichern();
+      flush();
+
+      expect(erfolg.calls.mostRecent().args[0]!.themenHinweis).toBe('Die Themen konnten nicht gespeichert werden.');
+    }));
+
+    it('meldet nichts, wenn die Aussage die gewaehlten Themen bekam', fakeAsync(() => {
+      speichernMit({ statement_id: ID, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true, themen: [THEMEN[2]] });
+      const erfolg = spyOn(component.success, 'emit');
+      themenLaden();
+      aussageAusAdresse('Wärmepumpen sind zu teuer');
+      ausfuellen();
+      thema('Soziales').click();
+
+      component.speichern();
+      flush();
+
+      expect('themenHinweis' in erfolg.calls.mostRecent().args[0]!).toBeFalse();
+    }));
+
     it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {
       themenLaden();
       aussageAusAdresse('Wärmepumpen sind zu teuer');

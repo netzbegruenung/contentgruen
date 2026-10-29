@@ -1,7 +1,7 @@
 import datetime
 from domain.models.zeit import utc_jetzt
 import logging
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
@@ -25,6 +25,7 @@ from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import KommentarResponse, KommentarTreffer
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
+from dtos.statement import themen_dtos
 from domain.models.commentary import CommentaryReference
 from services.content.reference_service import ReferenceService
 from domain.models.reference import Reference
@@ -249,6 +250,7 @@ async def add_commentary(
         # erkennt, wenn er dort schon haengt.
         statement_id = None
         statement_text = None
+        themen: List[str] = []
         # Ohne Dublette und ohne Aussage gibt es nichts zu verknuepfen: True. Bei einer
         # Dublette nur True, wenn der genommene vorhandene jetzt an der Aussage haengt -
         # sonst wurde nichts verknuepft (#238).
@@ -272,7 +274,7 @@ async def add_commentary(
                 # Kam die Aussage per Text, gelten fuer sie die gewaehlten Themen
                 # (#455); scheitert das Zuordnen, bleibt alles andere, wie es ist.
                 if request.statement_id is None and request.themen:
-                    await themen_beim_anlegen(
+                    themen = await themen_beim_anlegen(
                         themen_service, statement_id, request.themen
                     )
             except AussageNichtGefunden:
@@ -292,6 +294,7 @@ async def add_commentary(
             id=commentary_id,
             statement_id=statement_id,
             statement_text=statement_text,
+            themen=themen_dtos(themen),
             verknuepft=verknuepft,
             dublette=dublette,
             vorhanden_titel=vorhanden.title if dublette else None,

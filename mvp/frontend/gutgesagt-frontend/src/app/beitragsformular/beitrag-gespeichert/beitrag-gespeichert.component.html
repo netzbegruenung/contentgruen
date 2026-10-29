@@ -15,6 +15,8 @@
         <p class="gespeichert-label">Antwort auf</p>
         <app-beitragskarte class="aussage-karte" variante="kopf" [daten]="aussage"></app-beitragskarte>
     </div>
+    <!-- Die gewaehlten Themen der neuen Aussage galten nicht (#455), Satz wie in "Hier fehlt eine Antwort" -->
+    <p *ngIf="zustand.themenHinweis" class="gespeichert-hinweis themen-hinweis" role="status">{{ zustand.themenHinweis }}</p>
 
     <div *ngIf="laedt" class="gespeichert-laedt">
         <mat-spinner diameter="32"></mat-spinner>

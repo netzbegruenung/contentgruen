@@ -30,6 +30,7 @@ from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
+from dtos.statement import themen_dtos
 from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextDbEntry, GenericTextReference
 from domain.models.reference import Reference
@@ -276,6 +277,7 @@ async def add_generic_text(
         # Dublette True nur, wenn die genommene jetzt an der Aussage haengt.
         statement_id = None
         statement_text = None
+        themen: List[str] = []
         verknuepft = not dublette
         aussage_mitgeschickt = bool(
             request.statement_id or (request.statement_text or "").strip()
@@ -296,7 +298,7 @@ async def add_generic_text(
                 # Kam die Aussage per Text, gelten fuer sie die gewaehlten Themen
                 # (#455); scheitert das Zuordnen, bleibt alles andere, wie es ist.
                 if request.statement_id is None and request.themen:
-                    await themen_beim_anlegen(
+                    themen = await themen_beim_anlegen(
                         themen_service, statement_id, request.themen
                     )
             except AussageNichtGefunden:
@@ -316,6 +318,7 @@ async def add_generic_text(
             id=generic_text_id,
             statement_id=statement_id,
             statement_text=statement_text,
+            themen=themen_dtos(themen),
             verknuepft=verknuepft,
             dublette=dublette,
             vorhanden_titel=vorhanden.title if dublette else None,

@@ -96,6 +96,7 @@ class TestAddCommentaryAntwort:
             "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -223,6 +224,7 @@ class TestAddCommentaryAntwort:
             "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
+            "themen": [],
         }
 
     @staticmethod
@@ -257,6 +259,7 @@ class TestAddCommentaryAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
+            "themen": [],
         }
         commentary_service.pruefe_dublette.assert_awaited_once_with(
             anfrage["commentary"]["text"]
@@ -293,6 +296,7 @@ class TestAddCommentaryAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -322,6 +326,7 @@ class TestAddCommentaryAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
             beitrag_id=vorhanden,
@@ -471,6 +476,7 @@ class TestAddCommentaryAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": False,
+            "themen": [],
         }
         # Auch keine Aussage angelegt - das passiert erst beim Verknuepfen.
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
@@ -726,6 +732,9 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == [
+            {"schluessel": "energie-heizen", "name": "Energie und Heizen"}
+        ]
         assert resp.json()["verknuepft"] is True
         themen_service.zuordnen.assert_awaited_once_with(
             statement_id, ["energie-heizen"]
@@ -747,6 +756,8 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        # Die Antwort nennt ihre, damit das Formular sagen kann, dass die Wahl nicht galt.
+        assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
         themen_service.zuordnen.assert_not_called()
 
     def test_gewaehlte_aussage_bekommt_keine_themen(self, dienste, themen_service):
@@ -764,6 +775,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == []
         themen_service.zuordnen.assert_not_called()
 
     def test_ohne_themen_wird_nichts_zugeordnet(self, dienste, themen_service):
@@ -778,6 +790,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == []
         themen_service.zuordnen.assert_not_called()
 
     def test_gescheitertes_zuordnen_behaelt_kommentar_und_verknuepfung(
@@ -798,6 +811,7 @@ class TestThemenDerAussage:
         )
 
         assert resp.status_code == 200
+        assert resp.json()["themen"] == []
         assert resp.json()["id"] == str(commentary_id)
         assert resp.json()["statement_id"] == str(statement_id)
         assert resp.json()["verknuepft"] is True

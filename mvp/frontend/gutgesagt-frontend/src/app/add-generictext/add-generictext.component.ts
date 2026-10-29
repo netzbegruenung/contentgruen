@@ -23,7 +23,8 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
-import { aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
+import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
+import { Thema } from '../services/dtos/themenDtos';
 import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
@@ -425,8 +426,14 @@ export class AddGenerictextComponent implements OnChanges {
    * verknuepfte Aussage; bei Text kann das eine schon vorhandene, aehnliche sein.
    */
   private ergebnisAus(
-    anfrage: { statement_id?: string; statement_text?: string },
-    antwort: { id: string; statement_id?: string | null; statement_text?: string | null; verknuepft?: boolean },
+    anfrage: AussageInAnfrage,
+    antwort: {
+      id: string;
+      statement_id?: string | null;
+      statement_text?: string | null;
+      verknuepft?: boolean;
+      themen?: Thema[];
+    },
   ): BeitragGespeichert {
     const aussageGeschickt = !!(anfrage.statement_id || anfrage.statement_text);
     const verknuepft = !aussageGeschickt || antwort.verknuepft === true;
@@ -434,7 +441,7 @@ export class AddGenerictextComponent implements OnChanges {
       aussageGeschickt && verknuepft && antwort.statement_id
         ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
         : this.aussage;
-    return { id: antwort.id, aussage, verknuepft };
+    return { id: antwort.id, aussage, verknuepft, ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft) };
   }
 
   /** Im Antwort-auf-Block steht eine Aussage (per ID oder als Text). */

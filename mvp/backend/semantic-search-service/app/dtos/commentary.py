@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from domain.cc0_hinweis import Cc0Wortlaut
 from domain.themen import ThemenDerAussage
+from dtos.statement import ThemaDto
 from domain.models.commentary import Commentary
 from dtos.beitrag import KommentarTreffer
 
@@ -110,6 +111,10 @@ class AddCommentaryResponse(BaseModel):
     # Ihr Text - bei Text-Anfragen kann das eine schon vorhandene, sehr aehnliche
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
+    # Kam die Aussage per Text mit Themen (#455): die Themen, die sie jetzt hat. Weichen
+    # sie von den gewaehlten ab, hatte eine vorhandene schon welche, oder das Zuordnen
+    # scheiterte (dann leer); das Formular sagt es. Sonst leer.
+    themen: List[ThemaDto] = Field(default_factory=list)
     # Ohne Dublette: False nur, wenn eine Aussage angegeben war und nicht verknuepft
     # werden konnte. Der Kommentar ist dann trotzdem gespeichert. Ohne Aussage True.
     # Bei einer Dublette True nur, wenn die Person den eigenen mit vorhanden_nehmen

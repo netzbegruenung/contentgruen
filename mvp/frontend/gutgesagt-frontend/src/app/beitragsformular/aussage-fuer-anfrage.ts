@@ -1,4 +1,6 @@
 import { AntwortAuf } from './antwort-auf/antwort-auf.component';
+import { Thema } from '../services/dtos/themenDtos';
+import { themenHinweis } from '../shared/themen/themen-meldung';
 
 /** Worauf ein Beitrag antwortet, wie es die Anfrage zum Speichern traegt. */
 export interface AussageInAnfrage {
@@ -28,4 +30,21 @@ export function aussageFuerAnfrage(aussage: AntwortAuf, themen: string[]): Aussa
     return {};
   }
   return { statement_text: aussage.text, ...(themen.length ? { themen } : {}) };
+}
+
+/**
+ * Fuer die Seite „Gespeichert“: der Satz zu den gewaehlten Themen, wenn die Aussage
+ * andere hat (eine vorhandene behielt ihre) oder keine (das Zuordnen scheiterte), wie
+ * in „Hier fehlt eine Antwort“. Nur bei verknuepfter Aussage; sonst sagt die Seite das.
+ */
+export function themenHinweisNachSpeichern(
+  anfrage: AussageInAnfrage,
+  antwort: { statement_text?: string | null; themen?: Thema[] },
+  verknuepft: boolean,
+): { themenHinweis?: string } {
+  if (!verknuepft || !anfrage.themen?.length) {
+    return {};
+  }
+  const hinweis = themenHinweis(anfrage.themen, antwort.statement_text ?? anfrage.statement_text ?? '', antwort.themen ?? []);
+  return hinweis ? { themenHinweis: hinweis } : {};
 }

@@ -73,6 +73,19 @@ describe('AddCommentaryWorkflowComponent', () => {
       replaceUrl: true,
     });
   });
+
+  it('reicht einen Themenhinweis an die Ergebnisseite weiter (#455)', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    const themenHinweis = 'Die Themen konnten nicht gespeichert werden.';
+
+    component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, themenHinweis });
+
+    expect(navigieren.calls.mostRecent().args[1]!.state).toEqual({
+      aussage: { id: 'a-1', text: 'Aussage' },
+      verknuepft: true,
+      themenHinweis,
+    });
+  });
 });
 
 describe('AddCommentaryWorkflowComponent im Destillier-Ablauf', () => {

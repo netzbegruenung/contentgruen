@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from domain.cc0_hinweis import Cc0Wortlaut
 from domain.themen import ThemenDerAussage
+from dtos.statement import ThemaDto
 from domain.models.generic_text import GenericText
 from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 
@@ -87,6 +88,10 @@ class AddGenericTextResponse(BaseModel):
     # Ihr Text - bei Text-Anfragen kann das eine schon vorhandene, sehr aehnliche
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
+    # Kam die Aussage per Text mit Themen (#455): die Themen, die sie jetzt hat. Weichen
+    # sie von den gewaehlten ab, hatte eine vorhandene schon welche, oder das Zuordnen
+    # scheiterte (dann leer); das Formular sagt es. Sonst leer.
+    themen: List[ThemaDto] = Field(default_factory=list)
     # Ohne Dublette: False nur, wenn eine Aussage angegeben war und nicht verknuepft
     # werden konnte. Bei einer Dublette True nur, wenn die Person die eigene mit
     # vorhanden_nehmen genommen hat und sie jetzt an der Aussage haengt; sonst False.
