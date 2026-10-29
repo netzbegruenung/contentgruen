@@ -26,6 +26,15 @@
 .home-spacer {
   width: 48px;
   height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kopf-logo {
+  display: block;
+  width: 32px;
+  height: 32px;
 }
 
 /*

@@ -53,6 +53,24 @@ describe('MobileHeaderComponent', () => {
     expect(titel().textContent!.trim()).toBe('Fangkorb');
   }));
 
+  it('zeigt ohne Pfeil links das Logo, als Bild ohne eigenen Namen (#416)', fakeAsync(() => {
+    oeffnen('/search');
+
+    const logo: HTMLImageElement = fixture.nativeElement.querySelector('.mobile-header-left img.kopf-logo');
+    expect(logo).not.toBeNull();
+    expect(logo.getAttribute('src')).toBe('marke/logo.svg');
+    expect(logo.getAttribute('alt')).toBe('');
+  }));
+
+  it('zeigt mit Pfeil kein Logo, der Pfeil steht an seiner Stelle', fakeAsync(() => {
+    fixture.componentInstance.showBackButton = true;
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.kopf-logo')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.back-button')).not.toBeNull();
+  }));
+
   it('nennt auf einer Formularseite nur den Typ', fakeAsync(() => {
     oeffnen('/workflow/add-commentary');
 

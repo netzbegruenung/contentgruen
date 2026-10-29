@@ -1,0 +1,79 @@
+:host {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  aspect-ratio: 64 / 72;
+  vertical-align: middle;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.siegel-blase-gruppe,
+.siegel-blase {
+  transition: fill 0.4s ease;
+}
+
+.siegel-hand {
+  // Drehpunkt (Mitte der Hand) steht am Element, damit die Zeichnung ohne dieses Stylesheet stimmt.
+  // Leichtes Überschwingen beim Drehen
+  transition: transform 0.6s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.siegel-glanz > g {
+  mix-blend-mode: screen;
+}
+
+:host(.springt) svg {
+  animation: siegel-springt 0.5s ease-out;
+}
+
+.siegel-funke {
+  position: absolute;
+  left: 37.5%;
+  top: 37.5%;
+  width: 25%;
+  height: 25%;
+  pointer-events: none;
+  background: var(--primary-light, #8abd24);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: siegel-funke 0.8s ease-out forwards;
+}
+
+@keyframes siegel-funke {
+  from {
+    transform: translate(0, 0) scale(0.2);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy)) scale(1.3);
+    opacity: 0;
+  }
+}
+
+@keyframes siegel-springt {
+  40% {
+    transform: scale(1.18);
+  }
+}
+
+// Ohne Bewegung: nur Farb- und Winkelwechsel, kein Drehen, kein Springen, keine Funken.
+@media (prefers-reduced-motion: reduce) {
+  .siegel-hand,
+  .siegel-blase-gruppe,
+  .siegel-blase {
+    transition: none;
+  }
+
+  :host(.springt) svg {
+    animation: none;
+  }
+
+  .siegel-funke {
+    display: none;
+  }
+}

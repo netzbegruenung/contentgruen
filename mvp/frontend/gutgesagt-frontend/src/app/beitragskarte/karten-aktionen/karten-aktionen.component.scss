@@ -41,6 +41,16 @@
     height: 24px;
   }
 
+  .stimm-hand {
+    width: 22px;
+    height: 22px;
+  }
+
+  // Daumen runter: dieselbe Hand, auf den Kopf gestellt
+  .stimm-hand.runter {
+    transform: rotate(180deg);
+  }
+
   &:hover:not(.active-button) {
     background-color: rgba(0, 0, 0, 0.04);
   }

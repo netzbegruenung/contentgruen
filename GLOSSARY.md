@@ -216,6 +216,14 @@ _Avoid_: Usage, Aufruf, Klick
 Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
 _Avoid_: Vote, Like, Daumen
 
+**Siegel**:
+Das Zeichen auf einer Karte, das die Güte eines Beitrags zeigt: die kleine Fassung des Logos, eine Sprechblase mit Daumen. Ohne Güte ist es grau und waagrecht; mit steigender Güte dreht der Daumen nach oben und wird über Gelb grün. Nach unten zeigt es nie, rot wird es nie. Glanz zeichnet den Beitrag aus, die Krone die Person. Das Siegel ist kein Knopf: Stimmen gibt man über die Stimm-Knöpfe, die dieselbe Hand einfarbig als Umriss zeigen.
+_Avoid_: Badge, Qualitätsdaumen, Bewertung
+
+**Güte**:
+Die Zahl hinter dem Siegel, 1 bis 10, aus prüfbaren Kriterien und den Stimmen anderer. Ein Beitrag ohne Daten hat keine Güte, er ist „neu“. Die Nutzung zählt nicht hinein.
+_Avoid_: Stufe (die hat ein Einwurf), Score, Qualität, Punkte
+
 **Meldung**:
 Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren.
 _Avoid_: Report, Flag, Beschwerde

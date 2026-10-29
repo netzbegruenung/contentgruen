@@ -8,11 +8,14 @@
   <title>Gut gesagt – Nie wieder sprachlos</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon_small.png">
+  <!-- Bilder liefert nginx mit "expires 1y" aus: Ein geaendertes Logo braucht einen
+       neuen Dateinamen, sonst sehen wiederkehrende Besucher ein Jahr lang das alte. -->
+  <link rel="icon" type="image/svg+xml" href="marke/logo.svg">
+  <link rel="icon" type="image/png" sizes="64x64" href="marke/favicon-64.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="marke/favicon-32.png">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#008939">
-  <link rel="apple-touch-icon" href="pwa/icon-192.png">
+  <link rel="apple-touch-icon" href="marke/icon-192.png">
 </head>
 <body>
   <app-root></app-root>
