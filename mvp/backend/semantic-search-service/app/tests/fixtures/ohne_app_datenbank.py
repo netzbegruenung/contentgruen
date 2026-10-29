@@ -29,8 +29,11 @@ class AppDatenbankVerboten(RuntimeError):
 
 
 @pytest.fixture(autouse=True)
-def app_datenbank_verboten(monkeypatch):
-    """Liste der Versuche im laufenden Test; wer einen erwartet, leert sie."""
+def app_datenbank_versuche(monkeypatch):
+    """Verbietet die App-Datenbank; liefert die Versuche im laufenden Test.
+
+    Wer einen Versuch erwartet, leert die Liste danach.
+    """
     versuche = []
     original = AppDatabase.__init__
 
@@ -49,7 +52,7 @@ def app_datenbank_verboten(monkeypatch):
 def pytest_runtest_makereport(item, call):
     ausgang = yield
     bericht = ausgang.get_result()
-    versuche = getattr(item, "funcargs", {}).get("app_datenbank_verboten")
+    versuche = getattr(item, "funcargs", {}).get(app_datenbank_versuche.__name__)
     if bericht.when == "call" and bericht.passed and versuche:
         bericht.outcome = "failed"
         bericht.longrepr = f"{MELDUNG} Die Ausnahme wurde abgefangen."

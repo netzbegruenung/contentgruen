@@ -64,29 +64,18 @@ def test_pflicht_nur_mit_gesetzter_variable(env, erwartet):
     assert stack.pflicht(env) is erwartet
 
 
-def test_bff_pflicht_im_pflichtmodus():
-    assert stack.bff_pflicht({stack.PFLICHT_VARIABLE: "1"})
+def test_pflicht_ausser_in_ci_im_pflichtmodus():
+    assert stack.pflicht_ausser_in_ci({stack.PFLICHT_VARIABLE: "1"})
 
 
-def test_bff_pflicht_nicht_in_der_ci():
-    assert not stack.bff_pflicht({stack.PFLICHT_VARIABLE: "1", "CI": "woodpecker"})
+def test_pflicht_ausser_in_ci_nicht_in_der_ci():
+    """Die CI hat weder BFF noch Docker-Socket (docs/CI.md, #460)."""
+    env = {stack.PFLICHT_VARIABLE: "1", "CI": "woodpecker"}
+    assert not stack.pflicht_ausser_in_ci(env)
 
 
-def test_bff_pflicht_nicht_ohne_pflichtmodus():
-    assert not stack.bff_pflicht({})
-
-
-def test_docker_pflicht_im_pflichtmodus():
-    assert stack.docker_pflicht({stack.PFLICHT_VARIABLE: "1"})
-
-
-def test_docker_pflicht_nicht_in_der_ci():
-    """Der CI-Runner hat keinen Docker-Socket (docs/CI.md, #460)."""
-    assert not stack.docker_pflicht({stack.PFLICHT_VARIABLE: "1", "CI": "woodpecker"})
-
-
-def test_docker_pflicht_nicht_ohne_pflichtmodus():
-    assert not stack.docker_pflicht({})
+def test_pflicht_ausser_in_ci_nicht_ohne_pflichtmodus():
+    assert not stack.pflicht_ausser_in_ci({})
 
 
 def test_docker_ohne_erreichbaren_daemon_fehlt(monkeypatch):

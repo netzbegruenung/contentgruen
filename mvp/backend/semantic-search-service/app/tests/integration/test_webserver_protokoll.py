@@ -41,7 +41,7 @@ def docker_noetig():
     if postgres.docker_verfuegbar():
         return
     grund = "Docker fehlt: nginx laesst sich nicht starten"
-    if stack.docker_pflicht():
+    if stack.pflicht_ausser_in_ci():
         pytest.fail(grund)
     pytest.skip(grund)
 

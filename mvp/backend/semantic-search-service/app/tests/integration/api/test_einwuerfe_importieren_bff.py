@@ -6,7 +6,7 @@ Braucht BFF, semantic-search und PostgreSQL des Dev-Stacks (``mvp/run-local.sh u
 und das Testkonto aus ``mvp/config/managed-users.example.json``. Liegt deshalb unter
 ``api/``, das die GitHub-CI auslaesst. Ohne BFF ueberspringt sich das Modul; im
 Pflichtmodus (``scripts/check.sh --integration``) scheitert es stattdessen,
-ausser in der CI, die kein BFF startet (``stack.bff_pflicht``). Die
+ausser in der CI, die kein BFF startet (``stack.pflicht_ausser_in_ci``). Die
 Links sind je Lauf neu, damit wiederholte Laeufe im selben Stack nicht aneinander
 haengen bleiben.
 """
@@ -41,14 +41,14 @@ BFF_FEHLT = f"BFF nicht erreichbar unter {BFF_URL} (mvp/run-local.sh up)"
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        not stack.bff_pflicht() and not _bff_erreichbar(), reason=BFF_FEHLT
+        not stack.pflicht_ausser_in_ci() and not _bff_erreichbar(), reason=BFF_FEHLT
     ),
 ]
 
 
 @pytest.fixture(scope="module", autouse=True)
 def bff():
-    """Im Pflichtmodus ist ein fehlendes BFF ein Fehler, kein Skip (``stack.bff_pflicht``)."""
+    """Im Pflichtmodus ist ein fehlendes BFF ein Fehler, kein Skip (``stack.pflicht_ausser_in_ci``)."""
     if not _bff_erreichbar():
         pytest.fail(BFF_FEHLT)
 

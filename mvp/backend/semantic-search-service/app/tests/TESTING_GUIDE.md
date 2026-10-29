@@ -58,7 +58,7 @@ is among the paths given to pytest: `INTEGRATION_STACK_PFLICHT=1 pytest tests/` 
 still skip the Qdrant tests silently. The tests in `tests/integration/api/` also need
 the dev-stack BFF (`GUTGESAGT_BFF_URL`, default `http://localhost:5054`); in this mode
 a missing BFF fails them, in a plain run they skip. In CI (`CI` set) they skip in this
-mode too, because the pipeline starts no BFF (`stack.bff_pflicht`).
+mode too, because the pipeline starts no BFF (`stack.pflicht_ausser_in_ci`).
 
 `tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL, or,
 under `api/`, to the running BFF.
