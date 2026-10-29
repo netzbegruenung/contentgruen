@@ -93,8 +93,8 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 ### Rung 5 — Help with argumentative replies — human-in-the-loop only
 - **No language model writes replies on its own** ([ADR 0003](./adr/0003-keine-generierten-antworten.md),
   [ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)). Specialised models find, compare and check;
-  members write. A generic model is only the exception, through the Grünerator on Netzbegrünung's
-  own hardware: on a member's click it suggests a text, and the member checks it, edits it and
+  members write. A generic model is only the exception, through a model on own infrastructure
+  (today verdigado's model service): on a member's click it suggests a text, and the member checks it, edits it and
   answers for it, or discards it. Highest reputational risk; comes last on purpose, on top of a
   trustworthy corpus and measured analysis.
 - **Cost:** 3–6 months, never fully "done" (it's a quality treadmill). **Gate:** members actually use
@@ -121,7 +121,7 @@ Each rung lists its goal, what you build, what it leans on, a rough agent-assist
 3. **Semantic search and specialised NLP first, a generic LLM only as an exception.** Every
    capability done with the existing substrate or a small specialised model instead of a per-query
    LLM call is cheaper to build, cheaper to run, and easier to measure. Where no specialised tool
-   fits, the exception is the Grünerator on own hardware ([ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)).
+   fits, the exception is a model on own infrastructure ([ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)).
 4. **The dangerous thing is always last and always assisted.** Replies for a political party stay
    human-in-the-loop far longer than feels necessary.
 
