@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 from services.moderation_service import get_moderation_service
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.config import Settings
 from core.logging import get_logger
 from dependencies import get_settings, get_current_user_optional, require_admin
@@ -315,7 +316,9 @@ async def delete_content(
     """
     Delete content from the system (Admin only).
 
-    Removes content from Qdrant and marks related reports as resolved.
+    Removes content from Qdrant and marks related reports as resolved. Vorher
+    verschwinden die Verweise der Aussagen auf ihn; scheitert das, ist der Beitrag
+    nicht entfernt und die Antwort ein Fehler (#294).
 
     Kein Moderationsweg mehr: Gemeldete Beitraege sperrt ein Admin (siehe
     sperren). Der Endpunkt bleibt fuer Loeschungen aus Datenschutzgruenden, etwa
@@ -343,6 +346,15 @@ async def delete_content(
 
     except HTTPException:
         raise
+    except VerweiseNichtEntfernt:
+        # Kein "ok": Aussagen verwiesen sonst auf einen Beitrag, den es nicht mehr gibt.
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Verweise von Aussagen auf den Beitrag konnten nicht entfernt werden. "
+                "Der Beitrag ist nicht gelöscht; bitte erneut versuchen."
+            ),
+        )
     except Exception as e:
         logger.error(f"Error in delete_content endpoint: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

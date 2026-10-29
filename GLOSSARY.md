@@ -33,7 +33,7 @@ Der optionale Freitext an einem Einwurf, mit dem der Einwerfer anderen sagt, was
 _Avoid_: Notiz, Kommentar, Beschreibung
 
 **Plattform**:
-Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web).
+Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web). Ebenso heißt das Netzwerk, in dem eine Aussage gefallen ist; dort meldet man kleine Accounts, statt ihnen zu antworten (Rat auf der Ergebnisseite).
 _Avoid_: Kanal, Quelle
 
 **Weg**:
@@ -124,6 +124,20 @@ _Avoid_: Zusammenfassung, Merge, Aggregation
 Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa eine Unterschrift für ein Bild oder ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
 _Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 
+## Schreiben
+
+**Formularhilfe**:
+Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitragstyp ankommt, und hinter dem ? die Regeln dazu, bei Kommentar und Post auch die Schreibregeln und Schreibhilfen. Sie lenkt sanft und sperrt kein Speichern.
+_Avoid_: Tooltip, Anleitung, Hilfetext
+
+**Schreibregel**:
+Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
+_Avoid_: Richtlinien, Policy, Netiquette
+
+**Schreibhilfe**:
+Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
+_Avoid_: Tipp, Trick
+
 ## Beiträge
 
 Argument und Framing sind keine eigenen Begriffe: Ein Beitrag enthält ein Argument, oft mit einem Framing.
@@ -212,12 +226,16 @@ _Avoid_: Tag, Topic, Kategorie, Schlagwort
 Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als seinen Autor. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft. Sie ist immer echt: Kein Zähler wird vorbelegt oder geschätzt, ein neuer Beitrag beginnt bei 0.
 _Avoid_: Usage, Aufruf, Klick
 
+**Oft genutzt**:
+Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
+_Avoid_: Trending, Trend, beliebt, Top-Beiträge
+
 **Stimme**:
 Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
 _Avoid_: Vote, Like, Daumen
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Melden auf der Plattform einer Aussage ist keine Meldung.
 _Avoid_: Report, Flag, Beschwerde
 
 **Dublette**:

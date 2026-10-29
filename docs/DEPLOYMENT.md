@@ -76,10 +76,10 @@ is only a placeholder.
 
 ### 🚧 Updating Production
 
-CI runs on GitHub Actions:
-- `.github/workflows/build.yml` — builds on every push to `main` and on pull requests,
-  publishing `:main` and `:sha-<short>` tags. The test environment runs `:main`, rolled out
-  manually (see above).
+Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status
+for `main`, see [CI.md](CI.md)). After the merge, GitHub Actions on the mirror build the images:
+- `.github/workflows/build.yml` — builds on every push to `main`, publishing `:main` and
+  `:sha-<short>` tags. The test environment runs `:main`, rolled out manually (see above).
 - `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
   `:latest` for all four images.
 

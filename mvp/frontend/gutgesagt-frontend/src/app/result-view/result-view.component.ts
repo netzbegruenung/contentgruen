@@ -27,6 +27,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
 import { FORMULAR_PFAD, aussageParameter, istAussageId } from '../shared/formular-adresse';
+import { typBeschreibung } from '../shared/content-type-registry';
 
 // Dialog configuration constants
 const HELP_DIALOG_CONFIG = {
@@ -91,6 +92,11 @@ export class ResultViewComponent implements OnInit, OnDestroy {
   hasCommentaryResults: boolean = false;
   hasGenerictextResults: boolean = false;
   hasPostResults: boolean = false;
+
+  // Erklaerzeile je Tab, derselbe Satz wie auf der Beitragen-Seite
+  readonly kommentarErklaerung = typBeschreibung('commentary');
+  readonly hintergrundErklaerung = typBeschreibung('generictext');
+  readonly postErklaerung = typBeschreibung('post');
 
   // User authentication
   userInfo: UserInfo | null = null;

@@ -4,6 +4,7 @@ import { SearchResponse } from '../services/dtos/searchDtos';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD, aussageParameter } from '../shared/formular-adresse';
+import { typBeschreibung } from '../shared/content-type-registry';
 
 @Component({
   selector: 'app-generictext-search-results',
@@ -20,6 +21,10 @@ export class GenerictextSearchResultsComponent {
   @Input() error = '';                           // Input to display error messages
   @Input() searchQuery: string = '';             // Input for the search query
   @Input() showMinimalEmptyState: boolean = false; // Show minimal version when other component has results
+
+  // Was dieser Beitragstyp ist, derselbe Satz wie auf der Beitragen-Seite
+  readonly erklaerung = typBeschreibung('generictext');
+
   showAddGenerictext = false;               // Tracks whether the add generictext section is visible
 
   // Popular topics for empty state suggestions

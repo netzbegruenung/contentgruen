@@ -33,6 +33,7 @@ from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
 )
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -169,50 +170,14 @@ async def get_recent_content(
 
         # Convert commentary items to dict with type indicator and enrich references
         for item in recent_commentaries:
-            # Enrich references with actual text
-            if item.references:
-                for ref in item.references:
-                    try:
-                        reference_data = await reference_service.get(ref.reference_id)
-                        if reference_data:
-                            ref.reference_text = reference_data.reference_string
-                            # Notiz dieses Beitrags vor globalem Referenztext.
-                            ref.reference_description = (
-                                getattr(ref, "description", None) or reference_data.text
-                            )
-                            logger.debug(
-                                f"Enriched reference {ref.reference_id} with URL and description"
-                            )
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to fetch reference {ref.reference_id}: {e}"
-                        )
-
+            await reference_service.herkunft_ergaenzen(item)
             item_dict = item.model_dump()
             item_dict["result_type"] = "commentary"
             all_recent.append(item_dict)
 
         # Convert generictext items to dict with type indicator and enrich references
         for item in recent_generictexts:
-            # Enrich references with actual text
-            if item.references:
-                for ref in item.references:
-                    try:
-                        reference_data = await reference_service.get(ref.reference_id)
-                        if reference_data:
-                            ref.reference_text = reference_data.reference_string
-                            # Notiz dieses Beitrags vor globalem Referenztext.
-                            ref.reference_description = (
-                                getattr(ref, "description", None) or reference_data.text
-                            )
-                            logger.debug(
-                                f"Enriched reference {ref.reference_id} with URL and description"
-                            )
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to fetch reference {ref.reference_id}: {e}"
-                        )
-
+            await reference_service.herkunft_ergaenzen(item)
             item_dict = item.model_dump()
             item_dict["result_type"] = "generictext"
             all_recent.append(item_dict)
@@ -275,7 +240,14 @@ async def beitrag_loeschen(
     if not angemeldet(x_user):
         raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
 
-    ergebnis = await service.loeschen(beitrag_id, x_user)
+    try:
+        ergebnis = await service.loeschen(beitrag_id, x_user)
+    except VerweiseNichtEntfernt:
+        # Wie beim Admin-Weg: kein Erfolg melden, der Beitrag ist noch sichtbar (#294).
+        raise HTTPException(
+            status_code=500,
+            detail="Der Beitrag ist nicht gelöscht; bitte erneut versuchen.",
+        )
     if ergebnis is LoeschErgebnis.NICHT_DA:
         raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
     if ergebnis is LoeschErgebnis.NICHT_AUTOR:

@@ -13,7 +13,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from domain.content_registry import REGISTRY, create_content_service
+from domain.content_registry import (
+    BEITRAGSTYPEN_WERTE,
+    REGISTRY,
+    create_content_service,
+)
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from repositories.implementations.qdrant.moderation_repository import (
@@ -78,10 +82,12 @@ async def test_entsperrter_beitrag_ist_wieder_da(post_service, moderation):
     assert await antwortvorschlaege(post_service, post_id) == [post_id]
 
 
+@pytest.mark.parametrize("typ", BEITRAGSTYPEN_WERTE)
 async def test_loeschen_entfernt_verweis_aus_aussage(
-    real_embeddings_manager, moderation
+    real_embeddings_manager, moderation, typ
 ):
     """
+    Fuer jeden Beitragstyp, etwa eine Hintergrundinfo, nicht nur fuer Kommentare (#294).
     Die Kaskade schreibt nur die Antwortvorschlaege; der Vektor der Aussage bleibt.
     Ein upsert ohne Vektor lehnt Qdrant ab.
     """
@@ -91,18 +97,20 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
     sammlung = await real_embeddings_manager.async_client.get_collection(
         real_embeddings_manager.collection_name
     )
-    vektor = [0.1] * sammlung.config.params.vectors.size
+    groesse = sammlung.config.params.vectors.size
+    # Verschiedene Vektoren: Ueberschriebe die Kaskade die Aussage mit dem Vektor des
+    # Beitrags, fiele das sonst nicht auf.
     await real_embeddings_manager.async_client.upsert(
         collection_name=real_embeddings_manager.collection_name,
         points=[
             PointStruct(
                 id=beitrag_id,
-                vector=vektor,
-                payload={"content_type": ContentType.COMMENTARY.value, "text": TEXT},
+                vector=[0.1] * groesse,
+                payload={"content_type": typ, "text": TEXT},
             ),
             PointStruct(
                 id=aussage_id,
-                vector=vektor,
+                vector=[0.1, 0.9] * (groesse // 2) + [0.1] * (groesse % 2),
                 payload={
                     "content_type": ContentType.STATEMENT.value,
                     "text": "Bringt ein Tempolimit etwas?",
@@ -121,9 +129,7 @@ async def test_loeschen_entfernt_verweis_aus_aussage(
         with_vectors=True,
     )
 
-    assert await moderation.delete_content(
-        beitrag_id, ContentType.COMMENTARY.value, deleted_by="admin-1"
-    )
+    assert await moderation.delete_content(beitrag_id, typ, deleted_by="admin-1")
 
     assert await real_embeddings_manager.get_by_id(beitrag_id) is None
     [aussage] = await real_embeddings_manager.async_client.retrieve(

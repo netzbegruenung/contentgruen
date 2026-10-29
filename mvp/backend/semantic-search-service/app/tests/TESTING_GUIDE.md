@@ -232,14 +232,12 @@ pytest -x              # Stop on first failure
 
 ## CI Integration
 
-Tests run automatically in GitHub Actions (`.github/workflows/build.yml`) on:
-- Push to the `main` branch
-- Pull request creation/updates
-- Manual dispatch (`workflow_dispatch`)
+Every pull request runs `.woodpecker/ci.yaml` on Woodpecker: the same steps as
+`bash scripts/check.sh --integration`, with Qdrant and PostgreSQL as services
+(`POSTGRES_TEST_DATABASE_URL`, no throwaway container) and `INTEGRATION_STACK_PFLICHT=1`.
+Once set up, its status `ci/woodpecker/pr/ci` is required for `main`; a red pull-request run gets a
+comment with the red steps. Details, the setup steps for a person and how to run one step
+locally (`check.sh --schritt <name>`): [docs/CI.md](../../../../../docs/CI.md).
 
-The `test` job includes:
-- Dependency installation (Python 3.13)
-- Unit test execution
-- Integration test execution against a Qdrant service container
-- JUnit report generation (uploaded as artifacts)
-- Blocking image builds on failures
+After the merge, GitHub Actions on the mirror (`.github/workflows/build.yml`) run the tests
+again and build the images.
