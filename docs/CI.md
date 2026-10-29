@@ -59,18 +59,30 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 ## CI report
 
 Woodpecker logs need a Woodpecker login, which agents do not have. If a pull-request run is
-red, the last step `ci-bericht` writes one comment into the pull request: the red steps with
-the last 80 lines of their output, and the steps that did not run.
+red, the last step `ci-bericht` writes one comment into the pull request: per red step the
+exit code and its error lines (the `FAILED`/`ERROR` lines, or else the last non-empty line,
+the summary of Karma, dotnet or Ruff), the last 80 lines of its output folded in
+`<details>` ("Log <step>"), and the steps that did not run.
 
+- **Same error, one line.** Each report ends with an invisible HTML comment
+  `<!-- ci-bericht fingerabdruck=… -->`: a hash of the red steps, their exit codes and their
+  error lines, without timestamps, clock times, durations and memory addresses. Before
+  posting, the step reads the comments of the pull request. If the most recent comment with
+  such a marker has the same fingerprint, it posts only one line ("Unverändert rot", commit,
+  pipeline, link to that report) carrying the marker again. If the comments cannot be read,
+  the full report is posted. The marker is not signed: whoever can comment on the pull
+  request can fake one, at worst turning a report into the one line.
+- A green run writes nothing: the step only runs on red runs, the last report stays.
 - Each step runs its commands through `scripts/ci-protokoll.sh`: output to the Woodpecker
   log and appended to `.ci/<step>.log`, exit code to `.ci/<step>.status`. A log without a
   status counts as aborted.
 - `scripts/ci_bericht.py` builds the comment (standard library only, so it also reports a
   failed installation). The output is stripped of ANSI codes and control characters, the
   token value is replaced if it shows up, the comment stays below 60 000 characters.
-- One attempt, at most 30 seconds. If Forgejo refuses, the step turns red and logs only the
-  HTTP status, never the response body (Forgejo echoes an invalid token in it). Without a
-  token value the step logs a line and ends green.
+- One attempt per request (reading the comments, posting), at most 30 seconds each. If
+  Forgejo refuses the post, the step turns red and logs only the HTTP status, never the
+  response body (Forgejo echoes an invalid token in it). Without a token value the step
+  logs a line and ends green.
 - **Known limit:** the step runs `ci.yaml` and `scripts/` from the pull-request branch with
   the token. Anyone who can push a branch, or whose fork pull request is approved, can read
   the token through a changed pipeline. It must therefore never be able to do more than the
