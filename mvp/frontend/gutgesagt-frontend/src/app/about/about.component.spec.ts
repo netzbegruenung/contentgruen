@@ -74,6 +74,7 @@ describe('AboutComponent', () => {
     const text = einzeilig(seite.querySelector('.startbestand')!);
 
     expect(text).toContain('Gründungsteam');
+    expect(text).not.toContain('Startkont');
     expect(text).toContain('jeden Beitrag verantwortet ein Mensch');
     expect(text).toContain('Jeder Beitrag beginnt bei 0 Stimmen und 0 Nutzungen');
   });
