@@ -201,7 +201,7 @@ class TestNeueste:
         nutzung = MagicMock()
         nutzung.enrich_content_with_usage.side_effect = lambda eintraege: eintraege
         app.dependency_overrides[get_settings] = lambda: MagicMock()
-        app.dependency_overrides[get_reference_service] = lambda: MagicMock()
+        app.dependency_overrides[get_reference_service] = lambda: AsyncMock()
         with patch(
             "api.v1.content.QdrantRepositoryFactory", return_value=factory
         ), patch("api.v1.content.get_usage_service", return_value=nutzung):
