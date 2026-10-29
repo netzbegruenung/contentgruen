@@ -1,0 +1,40 @@
+<!--
+    Sichtfeld 3.5 -1 57.5 64.5: eng um Blase und Hand in jedem Winkel (rechts reicht die
+    waagrechte Hand bis 60.6, oben der senkrechte Daumen bis -0.6, unten die Spitze der
+    Blase bis 63). Die Krone ragt oben links darüber hinaus (overflow: visible im Stylesheet);
+    links, weil die Hand oben rechts in jedem Winkel ihren Platz braucht.
+    Blase unten links, die Hand dreht um ihre Mitte (36/24) und ragt oben rechts aus der Blase.
+-->
+<svg viewBox="3.5 -1 57.5 64.5" role="img" [attr.aria-label]="text">
+    <defs *ngIf="glanz">
+        <linearGradient [attr.id]="glanzId" x1="0" y1="0" x2="1" y2="1">
+            <stop offset=".3" stop-color="#fff" stop-opacity="0"/>
+            <stop offset=".5" stop-color="#fff" stop-opacity=".55"/>
+            <stop offset=".7" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+    </defs>
+    <g class="siegel-blase-gruppe" [attr.fill]="farbe">
+        <rect x="4" y="16" width="44" height="38" rx="11"/>
+        <path d="M11 51 L8 63 L24 53 Z"/>
+    </g>
+    <g *ngIf="glanz" class="siegel-glanz">
+        <g [attr.fill]="'url(#' + glanzId + ')'">
+            <rect x="4" y="16" width="44" height="38" rx="11"/>
+            <path d="M11 51 L8 63 L24 53 Z"/>
+        </g>
+        <circle cx="52" cy="10" r="2.2" fill="#fff"/>
+        <path d="M52 4v12M46 10h12" stroke="#fff" stroke-width="1.2"/>
+    </g>
+    <g class="siegel-hand" style="transform-origin: 36px 24px" [style.transform]="'rotate(' + winkel + 'deg)'">
+        <g transform="translate(36 24) scale(1.6) translate(-16 -16)">
+            <path [attr.d]="HAND" fill="none" [attr.stroke]="farbe" stroke-width="2.6" stroke-linejoin="round"/>
+            <path [attr.d]="HAND" fill="#fff"/>
+            <path [attr.d]="SCHATTEN" fill="rgb(0 0 0 / .22)"/>
+        </g>
+    </g>
+    <path *ngIf="krone" class="siegel-krone"
+          d="M3.5 -6 L6.9 0.8 L11.2 -5.2 L15.4 0.8 L18.8 -6 L18 4.2 L4.4 4.2 Z"
+          fill="#f2c300" stroke="#8a6d00" stroke-width="1" stroke-linejoin="round"/>
+</svg>
+<span *ngFor="let f of funken" class="siegel-funke" aria-hidden="true"
+      [style.--dx]="f.dx + '%'" [style.--dy]="f.dy + '%'"></span>

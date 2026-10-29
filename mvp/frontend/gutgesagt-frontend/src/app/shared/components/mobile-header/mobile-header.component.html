@@ -8,7 +8,10 @@
       aria-label="Zurück">
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <div *ngIf="!showBackButton" class="home-spacer"></div>
+    <!-- Ohne Pfeil steht hier das Logo; Bild ohne Namen, der Titel daneben nennt die Seite -->
+    <div *ngIf="!showBackButton" class="home-spacer">
+      <img class="kopf-logo" src="marke/logo.svg" alt="" width="32" height="32">
+    </div>
   </div>
 
   <!--

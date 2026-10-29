@@ -495,6 +495,28 @@ describe('KartenAktionenComponent - Abstimmen', () => {
     });
   });
 
+  describe('Stimm-Knöpfe als Umriss-Hand (#416)', () => {
+    it('zeigt die Hand einfarbig als Umriss, hoch und runter gedreht, statt der Material-Icons', () => {
+      fixture.detectChanges();
+
+      const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
+      const haende = knoepfe.map((k) => k.querySelector<SVGElement>('svg.stimm-hand'));
+      expect(haende.every((h) => h !== null)).toBeTrue();
+      expect(haende.map((h) => h!.querySelector('path')!.getAttribute('fill'))).toEqual(['currentColor', 'currentColor']);
+      expect(haende[0]!.classList).not.toContain('runter');
+      expect(haende[1]!.classList).toContain('runter');
+      expect(knoepfe.some((k) => k.querySelector('mat-icon'))).toBeFalse();
+    });
+
+    it('verbirgt die Hand vor Screenreadern, der Knopf behält seinen Namen', () => {
+      fixture.detectChanges();
+
+      const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
+      expect(knoepfe.map((k) => k.querySelector('svg')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
+      expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Gefällt mir', 'Gefällt mir nicht']);
+    });
+  });
+
   describe('Vorschau', () => {
     beforeEach(() => {
       fixture.componentRef.setInput('vorschau', true);
