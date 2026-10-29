@@ -123,8 +123,12 @@ def test_metrics_histogramm_buckets_kumulativ():
 
 def test_main_app_liefert_metrics_ausserhalb_von_api():
     """Der Suchdienst selbst haengt die Middleware ein; der Pfad liegt nicht unter /api."""
+    from api.metrics_betrieb import SUCHE
     from main import app
 
+    # Die Vorlage, an der das Histogramm haengt, muss es in der App geben; sonst bliebe
+    # es nach einer Umbenennung von Prefix oder Route still leer.
+    assert SUCHE in {route.path for route in app.routes}
     client = TestClient(app)
     client.get("/api/v1/content/")
 

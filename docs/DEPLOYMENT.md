@@ -266,7 +266,7 @@ alert rules and alert routing are run by the operators, outside this repository.
 |---|---|---|
 | Frontend reachable | `GET /` on the frontend (nginx) | 200 |
 | BFF reachable | `GET /api/check-session` on the BFF; answered by the BFF itself, without a backend call | 200 or 401 |
-| Semantic search reachable | `GET /api/v1/health` on the semantic search service, internal network only | `status` in the JSON is `healthy` (`degraded`: disk or memory critical). The endpoint always answers 200, so read the field |
+| Semantic search reachable | `GET /api/v1/health` on the semantic search service, checked directly on the internal network | `status` in the JSON is `healthy` (`degraded`: disk or memory critical; `unhealthy`: PostgreSQL or Qdrant unreachable). The endpoint always answers 200, so read the field |
 | Error rate (5xx) | `GET /metrics`, counter `gutgesagt_http_requests_total{status="5xx"}` | low share of all requests |
 | Search response time | `GET /metrics`, histogram `gutgesagt_search_duration_seconds` | quantiles from the buckets |
 
@@ -274,9 +274,10 @@ alert rules and alert routing are run by the operators, outside this repository.
 
 - `gutgesagt_http_requests_total{method, route, status}`: requests per HTTP method, route
   template (`/api/v1/usage/content/{content_id}/usage`, never the path with the ID in it;
-  `unmatched` for paths without a route) and status class (`2xx` ... `5xx`).
+  `unmatched` for paths without a route and for requests the rate limit rejects before
+  routing) and status class (`2xx` ... `5xx`).
 - `gutgesagt_search_duration_seconds`: duration of `POST /api/v1/search/searchByText`.
-- **No personal data:** no account ID, no search text, no session. The labels are the
+- **No personal data:** no Kennung (account ID), no search text, no session. The labels are the
   method, the route template and the status class, nothing taken from headers or bodies.
   `tests/integration/test_betriebskennzahlen.py` checks this after a real search by a
   signed-in test person.

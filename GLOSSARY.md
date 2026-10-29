@@ -322,6 +322,10 @@ _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
 _Avoid_: Usage Stats, Nutzerstatistik
 
+**Betriebskennzahlen**:
+Zahlen über den Betrieb der Anwendung, nicht über Inhalte oder Personen: wie viele Anfragen mit welchem Ergebnis eingehen und wie lange die Suche dauert. Der Betrieb liest sie für Alarme; sie tragen keine Kennung, keine Suchanfrage und keine Sitzung. Die Kennzahlen, die Admins sehen, sind etwas anderes.
+_Avoid_: Metriken (ohne Zusatz), Monitoring
+
 ## Personen
 
 **Nutzende**:

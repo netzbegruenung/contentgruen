@@ -5,10 +5,12 @@ Nicht zu verwechseln mit /api/v1/metrics: das sind fachliche Kennzahlen fuer Adm
 die Startseite. Hier steht nur, was der Betrieb fuer Alarme braucht: Anfragen je Methode,
 Routen-Vorlage und Statusklasse, dazu die Dauer der Suche.
 
-Label-Werte kommen nie aus der Anfrage selbst. Die Route ist die Vorlage, unter der
-FastAPI die Anfrage zugeordnet hat (``/api/v1/usage/content/{content_id}/usage``), nicht
-der Pfad mit der ID darin; ohne Treffer steht dort ``unmatched``. Kennung, Suchtext und
-Sitzung kommen in keinem Header und keinem Body vor, den diese Middleware liest.
+Label-Werte kommen nie frei aus der Anfrage: die Methode nur aus einer festen Liste, die
+Route als Vorlage, unter der FastAPI die Anfrage zugeordnet hat
+(``/api/v1/usage/content/{content_id}/usage``), nicht der Pfad mit der ID darin. Ohne
+Treffer steht dort ``unmatched``, ebenso bei Anfragen, die das Rate-Limit vor dem Routing
+abweist. Kopfzeilen und Body liest diese Middleware nicht, Kennung, Suchtext und Sitzung
+kommen also nicht hinein.
 
 Gesperrt ist /metrics am BFF (EndpointPolicy.Blocked): YARP leitet sonst jeden Pfad
 weiter. Der Scraper fragt den Suchdienst direkt im internen Netz.
@@ -28,6 +30,8 @@ router = APIRouter()
 # jedem Wort, das jemand in die erste Zeile der Anfrage schreibt.
 _METHODEN = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 _OHNE_ROUTE = "unmatched"
+# Prefix aus main.py plus Route aus api/v1/search.py; dass es sie gibt, prueft der Test
+# gegen main.app.
 SUCHE = "/api/v1/search/searchByText"
 # Obergrenzen in Sekunden. Eine Suche bettet ein und fragt Qdrant mehrfach ab; ueblich
 # ist weniger als eine Sekunde, die oberen Stufen fangen Lastspitzen und Kaltstarts.
