@@ -158,11 +158,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     }, 600);
 
     if (this.inhaltId) {
-      if (this.fassung) {
-        this.usageTrackingService.trackContentUsage(this.inhaltId, this.fassung);
-      } else {
-        this.usageTrackingService.trackContentUsage(this.inhaltId);
-      }
+      this.usageTrackingService.trackContentUsage(this.inhaltId, this.fassung ?? undefined);
       this.kopiert.emit();
     }
     this.cdr.markForCheck();

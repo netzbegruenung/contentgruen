@@ -166,22 +166,22 @@
 
         <div class="karte-inhalt">
             <mat-button-toggle-group *ngIf="hatKurzOderLang" class="textlaenge"
-                                     aria-label="Textlänge"
-                                     [value]="textModus"
+                                     aria-label="Fassung"
+                                     [value]="gewaehlteFassung"
                                      [hideSingleSelectionIndicator]="true"
-                                     (change)="textModusSetzen($event.value)">
-                <mat-button-toggle value="short" *ngIf="daten.extra?.kurz">Kurz</mat-button-toggle>
-                <mat-button-toggle value="standard">Mittel</mat-button-toggle>
-                <mat-button-toggle value="long" *ngIf="daten.extra?.lang">Lang</mat-button-toggle>
+                                     (change)="fassungWaehlen($event.value)">
+                <mat-button-toggle value="kurz" *ngIf="daten.extra?.kurz">Kurz</mat-button-toggle>
+                <mat-button-toggle value="mittel">Mittel</mat-button-toggle>
+                <mat-button-toggle value="lang" *ngIf="daten.extra?.lang">Lang</mat-button-toggle>
             </mat-button-toggle-group>
 
             <!-- Meine Beitraege: Nutzung und Zuwachs der letzten 7 Tage je Fassung -->
             <ul class="nutzung-je-fassung" *ngIf="nutzungJeFassung as zeilen" aria-label="Nutzung je Fassung">
                 <li *ngFor="let zeile of zeilen">
-                    {{ zeile.label }}
-                    <span class="fassung-nutzung">{{ zeile.nutzung }}×</span>
-                    <span class="nutzung-zuwachs" *ngIf="zeile.zuwachs"
-                          [attr.aria-label]="zeile.zuwachs + ' davon in den letzten 7 Tagen'">+{{ zeile.zuwachs }}</span>
+                    <span class="cdk-visually-hidden">{{ zeile.vorgelesen }}</span>
+                    <span aria-hidden="true">{{ zeile.label }}</span>
+                    <span class="fassung-nutzung" aria-hidden="true">{{ zeile.nutzung }}×</span>
+                    <span class="nutzung-zuwachs" aria-hidden="true" *ngIf="zeile.zuwachs">+{{ zeile.zuwachs }}</span>
                 </li>
             </ul>
 

@@ -45,7 +45,7 @@
                 <div *ngIf="zeigtFassungen" class="fassungen">
                     <mat-form-field appearance="outline" class="formular-feld kurz-feld">
                         <mat-label>Kurzfassung (optional)</mat-label>
-                        <textarea matInput id="kurz" formControlName="kurz" [attr.maxlength]="kurzMax"
+                        <textarea #kurzFeld matInput id="kurz" formControlName="kurz" [attr.maxlength]="kurzMax"
                                   placeholder="Der Punkt in einem Satz"
                                   cdkTextareaAutosize cdkAutosizeMinRows="2" cdkAutosizeMaxRows="6"></textarea>
                         <mat-hint>für X/Bluesky</mat-hint>

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -153,6 +153,18 @@ export class AddCommentaryComponent implements OnChanges {
 
   @ViewChild(ReferenceInputComponent) referenceInput?: ReferenceInputComponent;
   @ViewChild(AntwortAufComponent) antwortAuf?: AntwortAufComponent;
+
+  // Der Knopf "+ Weitere Fassungen" verschwindet beim Klick; der Fokus geht dann ins
+  // Feld Kurzfassung, sobald es im DOM steht (wie in reference-input), nicht an den Seitenanfang.
+  private kurzFokussieren = false;
+
+  @ViewChild('kurzFeld')
+  set kurzFeld(feld: ElementRef<HTMLTextAreaElement> | undefined) {
+    if (feld && this.kurzFokussieren) {
+      this.kurzFokussieren = false;
+      setTimeout(() => feld.nativeElement.focus());
+    }
+  }
 
   readonly commentaryForm: FormGroup;
 
@@ -376,6 +388,7 @@ export class AddCommentaryComponent implements OnChanges {
 
   fassungenZeigen(): void {
     this.zeigtFassungen = true;
+    this.kurzFokussieren = true;
   }
 
   speichern(): void {

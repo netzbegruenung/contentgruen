@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -925,6 +925,13 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('textarea#lang')).not.toBeNull();
       expect(seite().querySelector('.fassungen-link')).toBeNull();
     });
+
+    it('setzt beim Aufklappen den Fokus in die Kurzfassung', fakeAsync(() => {
+      aufklappen();
+      tick();
+
+      expect(document.activeElement).toBe(seite().querySelector('textarea#kurz'));
+    }));
 
     it('begrenzt Kurz auf 280 Zeichen fuer X/Bluesky und Lang auf 2000', () => {
       aufklappen();

@@ -230,6 +230,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     nutzungJeFassung: typ === 'commentary' ? (eintrag.nutzung_je_fassung ?? undefined) : undefined,
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
+    // Nur die Fassungen des Kommentars (#355); Post-Angaben zeigt Meine Beitraege nicht.
     extra: typ === 'commentary' ? extra(typ, eintrag as Record<string, any>) : undefined,
   };
 }
