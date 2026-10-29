@@ -137,6 +137,7 @@ class CommentaryService(
             most_similar_content_id=most_similar_content_id,
             long_text=commentary.long_text,
             short_text=commentary.short_text,
+            zweck=commentary.zweck,
             style=commentary.style,
             references=commentary.references,
             references_count=len(commentary.references),

@@ -153,6 +153,31 @@ class TestCommentaryService:
         assert stored_data[str(result_id)]["title"] == "Climate Insights"
 
     @pytest.mark.asyncio
+    async def test_add_commentary_speichert_zweck_und_stil(self, service):
+        """Zweck und Stil kommen gespeichert wieder an (#357)."""
+        from domain.models.commentary import Stil, Zweck
+        from domain.models.content_status import ContentStatus
+        from domain.models.content_origin import ContentOrigin
+
+        kommentar = Commentary(
+            text="Wer den Strompreis kennt, lacht ueber die Heizoelrechnung.",
+            title="Die Waermepumpe gewinnt beim Rechnen",
+            zweck=Zweck.EIGENE_LEUTE,
+            style=Stil.BISSIG,
+            references=[],
+        )
+
+        _, kommentar_id, _ = await service.add_commentary(
+            kommentar,
+            author="test_user",
+            status=ContentStatus.VISIBLE,
+            origin=ContentOrigin.MANUALLY_CREATED,
+        )
+
+        gelesen = await service.get(kommentar_id)
+        assert (gelesen.zweck, gelesen.style) == (Zweck.EIGENE_LEUTE, Stil.BISSIG)
+
+    @pytest.mark.asyncio
     async def test_update_commentary(self, service, test_embeddings_manager):
         """Test updating an existing commentary."""
         # Add existing commentary

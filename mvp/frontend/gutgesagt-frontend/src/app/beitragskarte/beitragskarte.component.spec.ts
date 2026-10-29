@@ -8,7 +8,7 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenAktionenComponent } from './karten-aktionen/karten-aktionen.component';
-import { KartenDaten, ausAussage, ausBeitrag, ausEinwurf, ausSuchergebnis } from './karten-daten';
+import { KartenDaten, KartenVariante, ausAussage, ausBeitrag, ausEinwurf, ausSuchergebnis } from './karten-daten';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { UsageTrackingService } from '../services/usage-tracking.service';
@@ -315,6 +315,98 @@ describe('BeitragskarteComponent', () => {
       expect(element('.badge-nutzung').textContent!.trim()).toBe('3×');
       tick(600);
     }));
+  });
+
+  describe('Zweck und Stil (#357)', () => {
+    it('zeigt den Stil und markiert Beitraege fuer die eigenen Leute', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'persoenlich' })));
+
+      expect(element('.karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.karte-stil')?.textContent).toContain('persönlich');
+    });
+
+    it('markiert Kommentare fuer die Kommentarspalte nicht und zeigt ohne Stil keinen', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'kommentarspalte' })));
+
+      expect(element('.karte-eigene-leute')).toBeNull();
+      expect(element('.karte-stil')).toBeNull();
+      expect(element('.karte-angaben')).toBeNull();
+    });
+
+    it('zeigt den Stil auch bei einem Kommentar fuer die Kommentarspalte', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
+
+      expect(element('.karte-eigene-leute')).toBeNull();
+      expect(element('.karte-stil')?.textContent).toContain('brückenbauend');
+    });
+
+    it('zeigt Markierung und Stil auch in der kompakten Karte (Meine Beitraege)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'humorvoll' })), {
+        variante: 'kompakt',
+      });
+
+      expect(element('.album-inhalt .karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.album-inhalt .karte-stil')?.textContent).toContain('humorvoll');
+    });
+
+    describe('Markierung fuer die eigenen Leute (Variante D, Tanne)', () => {
+      const TANNE = 'rgb(0, 84, 55)'; // var(--primary-dark), #005437
+      const WEISS = 'rgb(255, 255, 255)';
+
+      function eigeneLeute(variante: KartenVariante = 'voll'): void {
+        zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute' })), { variante });
+      }
+
+      it('setzt das Etikett weiss auf Tanne', () => {
+        eigeneLeute();
+        const etikett = getComputedStyle(element('.karte-eigene-leute'));
+        const icon = getComputedStyle(element('.karte-eigene-leute .angabe-icon'));
+
+        expect(etikett.backgroundColor).toBe(TANNE);
+        expect(etikett.color).toBe(WEISS);
+        expect(icon.color).toBe(WEISS);
+        expect(etikett.fontWeight).toBe('600');
+        expect(etikett.paddingLeft).toBe('8px');
+        expect(etikett.paddingTop).toBe('1px');
+        expect(etikett.borderTopLeftRadius).toBe('16px'); // var(--border-radius-large)
+      });
+
+      it('gibt der ganzen Karte links einen Rand in Tanne', () => {
+        eigeneLeute();
+        const karte = getComputedStyle(element('.karte'));
+
+        expect(element('.karte').classList).toContain('karte--eigene-leute');
+        expect(karte.borderLeftWidth).toBe('6px');
+        expect(karte.borderLeftStyle).toBe('solid');
+        expect(karte.borderLeftColor).toBe(TANNE);
+      });
+
+      it('auch die kompakte Karte bekommt den Rand', () => {
+        eigeneLeute('kompakt');
+
+        expect(element('.karte').classList).toContain('karte--eigene-leute');
+      });
+
+      it('weist ueber dem Kopieren-Knopf darauf hin', () => {
+        eigeneLeute();
+        const hinweis = element('.karte-fuss .eigene-leute-hinweis');
+
+        expect(hinweis?.textContent?.trim()).toBe('Für die eigenen Leute – nicht für Kommentarspalten');
+        expect(hinweis.nextElementSibling?.tagName.toLowerCase()).toBe('app-karten-aktionen');
+        const stil = getComputedStyle(hinweis);
+        expect(stil.fontSize).toBe('12px');
+        expect(stil.textAlign).toBe('center');
+        expect(stil.color).toBe(TANNE);
+      });
+
+      it('laesst Kommentare fuer die Kommentarspalte ohne Rand und ohne Hinweis', () => {
+        zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'kommentarspalte', style: 'sachlich' })));
+
+        expect(element('.karte').classList).not.toContain('karte--eigene-leute');
+        expect(getComputedStyle(element('.karte')).borderLeftWidth).toBe('0px');
+        expect(element('.eigene-leute-hinweis')).toBeNull();
+      });
+    });
   });
 
   describe('Fassungen (#355)', () => {

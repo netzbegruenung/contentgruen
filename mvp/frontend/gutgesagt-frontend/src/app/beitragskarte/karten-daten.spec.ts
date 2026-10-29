@@ -100,6 +100,24 @@ describe('karten-daten', () => {
       expect(daten.extra).toEqual({ kurz: 'kurz', lang: 'lang' });
     });
 
+    it('liest Zweck und Stil eines Kommentars (#357)', () => {
+      const eigene = ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'bissig' }));
+      const spalte = ausSuchergebnis(paket('commentary_result', { zweck: 'kommentarspalte', style: null }));
+      const ohneAngabe = ausSuchergebnis(paket('commentary_result'));
+
+      expect(eigene.extra?.fuerEigeneLeute).toBeTrue();
+      expect(eigene.extra?.stil).toBe('bissig');
+      expect(spalte.extra?.fuerEigeneLeute).toBeFalsy();
+      expect(spalte.extra?.stil).toBeUndefined();
+      expect(ohneAngabe.extra?.fuerEigeneLeute).toBeFalsy();
+    });
+
+    it('laesst einen unbekannten Stil weg', () => {
+      expect(ausSuchergebnis(paket('commentary_result', { style: 'sarkastisch' })).extra?.stil).toBeUndefined();
+      expect(ausSuchergebnis(paket('commentary_result', { style: 'constructor' })).extra?.stil).toBeUndefined();
+      expect(ausSuchergebnis(paket('commentary_result', { style: null })).extra?.stil).toBeUndefined();
+    });
+
     it('setzt das Statement nur, wenn es einen Text hat', () => {
       const mit = ausSuchergebnis(
         paket('commentary_result', {}, {
@@ -181,6 +199,13 @@ describe('karten-daten', () => {
 
       expect(ausBeitrag(meiner).eigen).toBeTrue();
       expect(ausBeitrag(meiner).autor).toBeNull();
+    });
+
+    it('uebernimmt am Kommentar Zweck und Stil (#357)', () => {
+      const daten = ausBeitrag(eintrag({ content_type: 'commentary', zweck: 'eigene_leute', style: 'humorvoll' }));
+
+      expect(daten.extra?.fuerEigeneLeute).toBeTrue();
+      expect(daten.extra?.stil).toBe('humorvoll');
     });
 
     it('uebernimmt Nutzung und Zuwachs der letzten 7 Tage', () => {

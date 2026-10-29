@@ -22,7 +22,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from repositories.aggregated.content_repository import (
     ContentRepository,
 )
-from domain.models.commentary import Commentary, CommentaryReference
+from domain.models.commentary import Commentary, CommentaryReference, Stil, Zweck
 from domain.models.content_type import ContentType
 from domain.models.statement import Statement, StatementReplysuggestion
 from domain.models.reference import Reference
@@ -170,6 +170,7 @@ class DataProcessor:
             title=title,
             long_text=commentary_data.get("long_text", None),
             short_text=commentary_data.get("short_text", None),
+            zweck=commentary_data.get("zweck", None),
             style=commentary_data.get("style", None),
             references=commentary_references,
         )
@@ -447,7 +448,14 @@ class ContentOrchestrator:
                                 "title": {"type": "string"},
                                 "long_text": {"type": "string"},
                                 "short_text": {"type": "string"},
-                                "style": {"type": "string"},
+                                "zweck": {
+                                    "type": "string",
+                                    "enum": [zweck.value for zweck in Zweck],
+                                },
+                                "style": {
+                                    "type": "string",
+                                    "enum": [stil.value for stil in Stil],
+                                },
                                 "references": {
                                     "type": "array",
                                     "items": {

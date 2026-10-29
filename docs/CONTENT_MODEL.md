@@ -170,7 +170,7 @@ export interface BaseContentResult {
   id: string; text: string; title: string; content_type: ContentType;
   score: number; usage_count: number; votes: VoteInfo; references: ContentReference[]; /* ... */
 }
-export interface CommentaryResult extends BaseContentResult { short_text: string; long_text: string; style: string; }
+export interface CommentaryResult extends BaseContentResult { short_text: string; long_text: string; zweck?: Zweck; style?: Stil | null; }
 export type    GenerictextResult = BaseContentResult;
 export interface ImageResult     extends BaseContentResult { image_url: string; }
 export interface SpeechResult    extends BaseContentResult { speaker: string; spoken_at: string; }

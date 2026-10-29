@@ -57,6 +57,7 @@ from dtos.search import (
     SearchByTextRequest,
     SearchResponse,
 )
+from domain.models.commentary import fuer_eigene_leute
 from domain.models.content_type import ContentType
 from domain.models.statement import StatementSearchResult
 from services.content.commentary_service import CommentaryService
@@ -195,6 +196,9 @@ async def search_by_text(
                 service=commentary_service,
                 result_cls=CommentarySearchResult,
                 result_field="commentary_result",
+                # Je Aussage die Kommentare fuer die Kommentarspalte vor denen fuer
+                # die eigenen Leute (#357, entschieden in #456: Variante B).
+                nachrangig=fuer_eigene_leute,
             ),
             ContentTypeSearchSpec(
                 content_type=ContentType.GENERIC_TEXT,

@@ -1,4 +1,6 @@
 
+import type { Stil, Zweck } from '../../shared/zweck-stil';
+
 //TODO: Evaluate usage of camel case and transformation in the backend
 
 
@@ -30,6 +32,9 @@ export interface Commentary {
     /** Die Fassungen Lang und Kurz (#355), optional; Mittel ist `text`. */
     long_text?: string;
     short_text?: string;
+    /** Zweck und Stil (#357): ohne Zweck gilt Kommentarspalte, Stil optional. */
+    zweck?: Zweck;
+    style?: Stil;
     references: CommentaryReference[];
 }
 

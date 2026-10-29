@@ -12,6 +12,7 @@ Behavior is intentionally identical to the prior hand-rolled branches; the searc
 characterization test (tests/unit/api/test_search_ranking.py) pins it.
 """
 
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
 
@@ -46,6 +47,41 @@ class ContentTypeSearchSpec:
     service: BaseContentService  # get(id); searched together via search_batch()
     result_cls: Type  # the per-type search-result wrapper DTO
     result_field: str  # name of the nested content field on the wrapper (e.g. "commentary_result")
+    # Treffer, fuer die das gilt, ruecken nach dem Kuerzen hinter die anderen derselben
+    # Aussage (#357: Kommentare fuer die eigenen Leute hinter die fuer die
+    # Kommentarspalte, siehe _platz_je_aussage).
+    nachrangig: Optional[Callable[[object], bool]] = None
+
+
+def _platz_je_aussage(results: List, spec: ContentTypeSearchSpec) -> Callable:
+    """
+    Sortierschluessel fuer ``results`` (schon nach Score sortiert): Innerhalb derselben
+    Aussage ruecken nachrangige Treffer hinter die anderen (#357, Entscheidung
+    Variante B: Kommentare fuer die eigenen Leute direkt hinter die fuer die
+    Kommentarspalte derselben Aussage).
+
+    Jede Aussage behaelt die Plaetze, die ihre Treffer in der Score-Reihenfolge
+    belegen; nur wer welchen davon bekommt, aendert sich. Treffer anderer Aussagen
+    und Direkttreffer (ohne Aussage) bleiben, wo sie sind.
+    """
+    plaetze_je_aussage: Dict[object, List[int]] = defaultdict(list)
+    treffer_je_aussage: Dict[object, List] = defaultdict(list)
+    for platz, result in enumerate(results):
+        # Ohne Aussage ist jeder Treffer seine eigene Gruppe.
+        gruppe = result.statement_id or id(result)
+        plaetze_je_aussage[gruppe].append(platz)
+        treffer_je_aussage[gruppe].append(result)
+
+    platz_von: Dict[int, int] = {}
+    for gruppe, treffer in treffer_je_aussage.items():
+        # Stabil: Innerhalb von vorrangig und nachrangig bleibt die Score-Reihenfolge.
+        umsortiert = sorted(
+            treffer,
+            key=lambda x: spec.nachrangig(getattr(x, spec.result_field, None)),
+        )
+        for platz, result in zip(plaetze_je_aussage[gruppe], umsortiert):
+            platz_von[id(result)] = platz
+    return lambda result: platz_von[id(result)]
 
 
 class SearchOrchestrator:
@@ -244,9 +280,14 @@ class SearchOrchestrator:
     # ------------------------------------------------------------------ #
 
     def sort_and_truncate(self, limit: int) -> None:
-        for content_type, results in self._results.items():
+        for spec in self._specs.values():
+            results = self._results[spec.content_type]
             results.sort(key=lambda x: x.score, reverse=True)
-            self._results[content_type] = results[:limit]
+            results = results[:limit]
+            # Erst gekuerzt, dann umsortiert: Die Auswahl bleibt dieselbe.
+            if spec.nachrangig is not None:
+                results.sort(key=_platz_je_aussage(results, spec))
+            self._results[spec.content_type] = results
 
     def enrich_with_usage(self) -> None:
         for spec in self._specs.values():
