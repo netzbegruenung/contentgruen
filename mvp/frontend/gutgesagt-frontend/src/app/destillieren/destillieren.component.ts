@@ -28,6 +28,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { KartenDaten, ausEinwurf, istVerwerfbar } from '../beitragskarte/karten-daten';
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
+import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 
 /** Wie lange nach dem letzten Tastendruck der Satz gespeichert wird. */
 export const AUTOSAVE_VERZOEGERUNG_MS = 1000;
@@ -64,6 +65,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 export class DestillierenComponent implements OnInit, OnDestroy {
   readonly satzLimit = SATZ_LIMIT;
   readonly typen = TYPEN;
+  readonly consentHinweis = CONSENT_HINWEIS_SATZ;
 
   satz = new FormControl('', {
     nonNullable: true,

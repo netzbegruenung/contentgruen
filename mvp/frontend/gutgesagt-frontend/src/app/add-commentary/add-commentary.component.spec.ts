@@ -24,6 +24,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 describe('AddCommentaryComponent', () => {
   let component: AddCommentaryComponent;
@@ -128,6 +129,10 @@ describe('AddCommentaryComponent', () => {
 
       expect(link).toBeTruthy();
       expect(link!.target).toBe('_blank');
+      expect(link!.closest('p')!.classList).toContain('submit-hint');
+      expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
+      );
     });
 
     it('beschriftet den Knopf mit "Kommentar speichern" und zeigt kein Info-Icon an der Vorschau', () => {
