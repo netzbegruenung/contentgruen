@@ -124,6 +124,20 @@ _Avoid_: Zusammenfassung, Merge, Aggregation
 Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa eine Unterschrift für ein Bild oder ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
 _Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 
+## Schreiben
+
+**Formularhilfe**:
+Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitragstyp ankommt, und hinter dem ? die Regeln dazu, bei Kommentar und Post auch die Schreibregeln und Schreibhilfen. Sie lenkt sanft und sperrt kein Speichern.
+_Avoid_: Tooltip, Anleitung, Hilfetext
+
+**Schreibregel**:
+Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
+_Avoid_: Richtlinien, Policy, Netiquette
+
+**Schreibhilfe**:
+Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
+_Avoid_: Tipp, Trick
+
 ## Beiträge
 
 Argument und Framing sind keine eigenen Begriffe: Ein Beitrag enthält ein Argument, oft mit einem Framing.

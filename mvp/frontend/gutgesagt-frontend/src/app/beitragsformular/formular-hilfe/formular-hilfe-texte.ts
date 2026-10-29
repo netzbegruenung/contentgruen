@@ -9,6 +9,10 @@ export interface FormularHilfe {
   ist: string[];
   istNicht: string[];
   beispiel?: { aussage: string; antwort: string };
+  /** Zeigt die Schreibregeln und Schreibhilfen (shared/schreibregeln.ts). */
+  schreibregeln?: true;
+  /** Zeigt gute und schwache Titel; nur wo der Titel eine Behauptung ist. */
+  titelbeispiele?: true;
 }
 
 /**
@@ -30,6 +34,8 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
       antwort:
         'Wer aufs Auto angewiesen ist, soll es auch bleiben dürfen. Es geht um die anderen Wege: dass der Bus öfter fährt und das Kind sicher mit dem Rad zur Schule kommt. Dann ist auf der Straße auch mehr Platz für alle, die fahren müssen.',
     },
+    schreibregeln: true,
+    titelbeispiele: true,
   },
   generictext: {
     zeile: 'Knapp und überprüfbar – am besten mit Beleg.',
@@ -47,5 +53,6 @@ export const FORMULAR_HILFE: Partial<Record<FormularTyp, FormularHilfe>> = {
       'Material, aus dem erst ein Beitrag werden soll (→ einwerfen)',
       'Den Post abschreiben – beschreib in eigenen Worten, worum es geht (CC0)',
     ],
+    schreibregeln: true,
   },
 };
