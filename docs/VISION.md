@@ -42,11 +42,11 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 ## KI
 
 - KI schlägt vor, ein Mensch verantwortet jeden Beitrag ([ADR 0003](./adr/0003-keine-generierten-antworten.md)). Keine Kanäle, auf denen KI selbst postet.
-- **Spezialisierte NLP-Werkzeuge zuerst.** Suche, Indexierung, Verknüpfung, Verschlagwortung, Umwandlung und Synthese laufen über spezialisierte, lokale Modelle, ohne dass Daten abfließen. Vor allem zerfasert der Bestand nicht: Dieselbe Behauptung in anderen Worten landet auf einer Aussage, verwandte Aussagen werden verknüpft. Ein generisches Sprachmodell nur, wo kein Spezialwerkzeug taugt, und dann über den Grünerator auf eigener Hardware ([ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)).
+- **Spezialisierte NLP-Werkzeuge zuerst.** Suche, Indexierung, Verknüpfung, Verschlagwortung, Umwandlung und Synthese laufen über spezialisierte, lokale Modelle, ohne dass Daten abfließen. Vor allem zerfasert der Bestand nicht: Dieselbe Behauptung in anderen Worten landet auf einer Aussage, verwandte Aussagen werden verknüpft. Ein generisches Sprachmodell nur, wo kein Spezialwerkzeug taugt, und dann über ein Modell auf eigener Infrastruktur, heute den Modell-Dienst von verdigado ([ADR 0005](./adr/0005-spezialisierte-nlp-zuerst.md)).
 - Zuschnitt eines Beitrags für die eigene Verwendung: ja (#226), aber nicht in den Bestand.
 - Beim Schreiben kommt zuerst Gegenlesen ohne KI (siehe Ton), ein KI-Verbesserungsvorschlag erst danach.
 - Ein KI-Vorschlag bei null Treffern kommt frühestens, wenn Roadmap-Stufe 4 (Quellen) steht.
-- Anbieter für erzeugte Texte ist der Grünerator auf eigener Hardware der Netzbegrünung, nicht sein Betrieb über OpenAI; Eingaben ohne Personendaten.
+- Generische Modelle laufen auf eigener Infrastruktur, heute über den Modell-Dienst von verdigado, nicht bei externen Anbietern; Eingaben ohne Personendaten. KI-Texte, die nur der Suche dienen und nicht angezeigt werden, darf ein Hintergrunddienst erzeugen ([ADR 0003](./adr/0003-keine-generierten-antworten.md)).
 
 ## Produktgrenze
 

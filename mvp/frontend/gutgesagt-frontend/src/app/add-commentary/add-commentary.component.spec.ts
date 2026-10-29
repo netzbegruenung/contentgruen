@@ -99,6 +99,17 @@ describe('AddCommentaryComponent', () => {
       expect(seite().querySelector('.hilfe-panel')!.textContent).toContain('Nimmt die Sorge hinter der Aussage ernst');
     });
 
+    it('zeigt hinter dem ? die Schreibregeln, die das Speichern nicht sperren', () => {
+      (seite().querySelector('.erklaerung-umschalter') as HTMLButtonElement).click();
+      // Ein Titel als Frage widerspricht dem Beispiel in der Hilfe, gespeichert werden darf er trotzdem
+      component.commentaryForm.patchValue({ title: 'Lohnt sich die Wärmepumpe im Altbau?', text: 'Ein ausreichend langer Text.' });
+      fixture.detectChanges();
+
+      expect(seite().querySelectorAll('.schreibregeln li').length).toBe(6);
+      expect(seite().querySelector('.titel-beispiele')).toBeTruthy();
+      expect((seite().querySelector('.submit-btn') as HTMLButtonElement).disabled).toBeFalse();
+    });
+
     it('beschriftet Titel und Kommentar mit je einem Pflichtzeichen', () => {
       const labels = Array.from(seite().querySelectorAll('mat-label')).map((l) => l.textContent!.trim());
       expect(labels).toContain('Titel');

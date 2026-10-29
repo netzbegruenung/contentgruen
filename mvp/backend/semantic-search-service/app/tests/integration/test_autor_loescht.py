@@ -4,16 +4,21 @@ Der Autor loescht seinen Beitrag, gegen echtes Qdrant (#250).
 Die Unit-Tests pruefen den Service gegen den Speicher-Modus; hier zeigt sich, dass die
 vorhandenen Filter der Repositories einen geloeschten Beitrag ueberall ausblenden: in
 Suche, Einzelansicht, Listen, Zaehlern, "Meine Beitraege" und Antwortvorschlaegen.
-Gespeichert bleibt er trotzdem.
+Gespeichert bleibt er trotzdem. Nur die Verweise der Aussagen auf ihn gehen weg (#294).
 """
 
+import json
 import uuid
 
 import pytest
 
 from domain.content_registry import REGISTRY, create_content_service
 from domain.models.content_status import AUSGEBLENDET, ContentStatus
+from domain.models.content_origin import ContentOrigin
 from domain.models.content_type import ContentType
+from repositories.implementations.qdrant.moderation_repository import (
+    QdrantModerationRepository,
+)
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
@@ -40,8 +45,10 @@ def inhalte(integration_settings, real_repository_factory):
 
 
 @pytest.fixture
-def loeschen(inhalte):
-    return BeitragLoeschenService(inhalte)
+def loeschen(inhalte, real_embeddings_manager):
+    return BeitragLoeschenService(
+        inhalte, QdrantModerationRepository(embeddings_manager=real_embeddings_manager)
+    )
 
 
 async def test_loeschen_beitrag_fehlt_ueberall_bleibt_gespeichert(
@@ -97,3 +104,48 @@ async def test_update_status_nicht_aus_laesst_sperre_stehen(
 
     assert await status(gesperrt) == ContentStatus.BLOCKED.value
     assert await status(sichtbar) == ContentStatus.DELETED.value
+
+
+async def test_loeschen_einziger_beitrag_aussage_zaehlt_nicht_mehr_als_beantwortet(
+    post_service,
+    loeschen,
+    integration_settings,
+    real_repository_factory,
+    real_embeddings_manager,
+):
+    """
+    Startseitenzaehler (statement_count, count_curated): Eine Aussage aus einer
+    Suchanfrage zaehlt nur mit, solange sie einen Beitrag hat (#294).
+    """
+    from qdrant_client.models import PointStruct
+
+    manager = real_embeddings_manager
+    aussagen = real_repository_factory.create_statement_repository(integration_settings)
+    post_id, aussage_id = uuid.uuid4(), str(uuid.uuid4())
+    await post_service._upsert(post_beitrag(post_id))
+    sammlung = await manager.async_client.get_collection(manager.collection_name)
+    await manager.async_client.upsert(
+        collection_name=manager.collection_name,
+        points=[
+            PointStruct(
+                id=aussage_id,
+                vector=[0.1] * sammlung.config.params.vectors.size,
+                payload={
+                    "content_type": ContentType.STATEMENT.value,
+                    "text": "Bringt ein Tempolimit etwas?",
+                    "origin": ContentOrigin.SEARCH_QUERY.value,
+                    "status": ContentStatus.VISIBLE.value,
+                    "replysuggestions": json.dumps([{"id": str(post_id)}]),
+                    "replysuggestions_count": 1,
+                },
+            )
+        ],
+        wait=True,
+    )
+    vorher = await aussagen.count_curated()
+
+    assert await loeschen.loeschen(post_id, AUTOR) is LoeschErgebnis.GELOESCHT
+
+    assert await aussagen.count_curated() == vorher - 1
+    aussage = await manager.get_by_id(aussage_id)
+    assert json.loads(aussage["replysuggestions"]) == []

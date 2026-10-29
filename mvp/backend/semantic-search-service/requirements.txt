@@ -106,5 +106,6 @@ pre-commit>=3.0.0
 # unbeteiligte Dateien umschreibt. Beim Anheben: einmal ueber app/ laufen
 # lassen und das Ergebnis als eigenen Commit fuehren.
 black==25.1.0
-# T201 (kein print()) -- siehe pyproject.toml
-ruff>=0.6.0
+# T201 (kein print()) -- siehe pyproject.toml. Exakt gepinnt wie Black: dieselbe
+# Version lokal, im pre-commit-Hook und in der CI (.woodpecker/ci.yaml).
+ruff==0.16.5

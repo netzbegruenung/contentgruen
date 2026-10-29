@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from api.v1.content import router as content_router
 from dependencies import get_beitrag_loeschen_service
 from services.content.beitrag_loeschen_service import LoeschErgebnis
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
 
 BEITRAG_ID = str(uuid.uuid4())
 
@@ -62,6 +63,17 @@ class TestBeitragLoeschenApi:
         )
 
         assert antwort.status_code == 404
+
+    def test_loeschen_verweise_scheitern_ist_fehler_mit_hinweis(self, client, service):
+        """Kein Erfolg, solange Aussagen noch auf den Beitrag verweisen (#294)."""
+        service.loeschen.side_effect = VerweiseNichtEntfernt(BEITRAG_ID)
+
+        antwort = client.delete(
+            f"/api/v1/content/{BEITRAG_ID}", headers={"X-User": "autor-1"}
+        )
+
+        assert antwort.status_code == 500
+        assert "nicht gelöscht" in antwort.json()["detail"]
 
     @pytest.mark.parametrize("kopf", [{}, {"X-User": "anonymous"}])
     def test_loeschen_besucher_ist_401(self, client, service, kopf):

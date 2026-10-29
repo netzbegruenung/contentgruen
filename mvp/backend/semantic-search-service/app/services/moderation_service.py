@@ -15,10 +15,11 @@ from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
-from domain.models.content_type import ContentType
 from domain.models.content_status import ContentStatus
+from services.content.verweise_entfernen import verweise_entfernen
 
 logger = logging.getLogger(__name__)
+
 
 # Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
 GESPERRTE_HOECHSTENS = 500
@@ -262,86 +263,58 @@ class ModerationService:
         self, content_id: str, content_type: str, deleted_by: str
     ) -> bool:
         """
-        Delete content from the system with cascading delete for reply suggestions.
+        Einen Beitrag endgueltig entfernen, samt den Verweisen der Aussagen auf ihn.
+
+        Die Verweise gehen fuer jeden Beitragstyp weg, unabhaengig von content_type:
+        Aussagen verweisen auf Beitraege jedes Typs (#294). Erst die Verweise, dann der
+        Beitrag: Scheitert das Entfernen der Verweise, bleibt der Beitrag stehen und
+        ein erneuter Versuch raeumt auf. Andersherum stuende ein Verweis auf einen
+        Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf ohne
+        zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
 
         Args:
             content_id: UUID of the content to delete
-            content_type: Type of content
+            content_type: Type of content (nur fuer das Log)
             deleted_by: User ID of the person deleting
 
         Returns:
-            bool: True if deletion was successful
+            bool: False, wenn es den Beitrag nicht gibt oder er nicht entfernt wurde
+
+        Raises:
+            VerweiseNichtEntfernt: Aussagen verweisen noch auf den Beitrag; er ist
+                nicht entfernt.
         """
-        try:
-            content_uuid = UUID(content_id)
-
-            # Delete from Qdrant vector database
-            deleted = await self.moderation_repo.entfernen(content_id)
-
-            if deleted:
-                # Mark all related reports as reviewed. Der Beitrag ist schon weg;
-                # ein Fehler hier macht die Loeschung nicht rueckgaengig.
-                try:
-                    updated_count = self.report_repo.update_reports_by_content_id(
-                        content_id=content_uuid,
-                        status="reviewed",
-                        reviewed_by=deleted_by,
-                        resolution_notes="Content deleted",
-                    )
-                except Exception:
-                    updated_count = 0
-
-                logger.info(
-                    f"Content {content_id} ({content_type}) deleted, {updated_count} reports marked as reviewed"
-                )
-
-                # If deleting a commentary, remove orphaned reply suggestions from statements
-                if content_type == ContentType.COMMENTARY.value:
-                    await self._remove_orphaned_reply_suggestions(content_id)
-
-                return True
-            else:
-                logger.warning(f"Content {content_id} not found or already deleted")
-                return False
-
-        except ValueError as e:
-            logger.error(f"Invalid content_id format: {content_id}")
-            return False
-        except Exception as e:
-            logger.error(f"Error deleting content: {e}", exc_info=True)
+        if await self._beitrag_laden(content_id) is None:
+            logger.warning(f"Content {content_id} not found or already deleted")
             return False
 
-    async def _remove_orphaned_reply_suggestions(self, deleted_content_id: str) -> None:
-        """
-        Remove orphaned reply suggestions from statements after content deletion.
+        await verweise_entfernen(self.moderation_repo, content_id)
 
-        Args:
-            deleted_content_id: UUID of the deleted content
-        """
+        if not await self.moderation_repo.entfernen(content_id):
+            logger.warning(f"Content {content_id} could not be deleted")
+            return False
+
+        # Mark all related reports as reviewed. Der Beitrag ist schon weg;
+        # ein Fehler hier macht die Loeschung nicht rueckgaengig.
         try:
-            logger.info(
-                f"Removing orphaned reply suggestions for deleted content {deleted_content_id}"
+            updated_count = self.report_repo.update_reports_by_content_id(
+                content_id=UUID(content_id),
+                status="reviewed",
+                reviewed_by=deleted_by,
+                resolution_notes="Content deleted",
             )
-            statements_updated = await self.moderation_repo.aus_aussagen_entfernen(
-                deleted_content_id
-            )
-
-            if statements_updated > 0:
-                logger.info(
-                    f"Cascading delete complete: Updated {statements_updated} statements "
-                    f"to remove orphaned reply suggestions for content {deleted_content_id}"
-                )
-            else:
-                logger.info(
-                    f"No statements found with reply suggestions referencing deleted content {deleted_content_id}"
-                )
-
         except Exception as e:
-            logger.error(
-                f"Error removing orphaned reply suggestions for {deleted_content_id}: {e}",
-                exc_info=True,
+            # Nur der Typ: Die Meldung einer Datenbank kann reviewed_by enthalten.
+            logger.warning(
+                f"Content {content_id} deleted, marking its reports as reviewed "
+                f"failed ({type(e).__name__})"
             )
-            # Don't raise - the main content is already deleted, this is cleanup
+            updated_count = 0
+
+        logger.info(
+            f"Content {content_id} ({content_type}) deleted, {updated_count} reports marked as reviewed"
+        )
+        return True
 
     async def dismiss_report(
         self, report_id: str, dismissed_by: str, notes: Optional[str] = None

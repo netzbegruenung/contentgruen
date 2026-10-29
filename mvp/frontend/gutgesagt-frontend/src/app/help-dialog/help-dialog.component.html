@@ -29,6 +29,14 @@
         <p>{{ typ.beschreibung }}</p>
     </ng-container>
 
+    <h3>Gut schreiben</h3>
+    <p>Für Kommentare und Posts. Die Schreibregeln stehen auch im Formular hinter dem ?. Sie sind eine Hilfe, keine Sperre.</p>
+    <ol class="schreibregeln">
+        <li *ngFor="let regel of schreibregeln">{{ regel }}</li>
+    </ol>
+    <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
+    <p class="erfundenes-melden">{{ erfundenesMelden }}</p>
+
     <h3>Technische Details</h3>
     <p>
 
