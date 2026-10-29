@@ -33,6 +33,7 @@ from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
 )
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -239,7 +240,14 @@ async def beitrag_loeschen(
     if not angemeldet(x_user):
         raise HTTPException(status_code=401, detail="Dafür musst du angemeldet sein.")
 
-    ergebnis = await service.loeschen(beitrag_id, x_user)
+    try:
+        ergebnis = await service.loeschen(beitrag_id, x_user)
+    except VerweiseNichtEntfernt:
+        # Wie beim Admin-Weg: kein Erfolg melden, der Beitrag ist noch sichtbar (#294).
+        raise HTTPException(
+            status_code=500,
+            detail="Der Beitrag ist nicht gelöscht; bitte erneut versuchen.",
+        )
     if ergebnis is LoeschErgebnis.NICHT_DA:
         raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
     if ergebnis is LoeschErgebnis.NICHT_AUTOR:

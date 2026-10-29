@@ -10,15 +10,17 @@ Status von vor der Sperre wieder her.
 import uuid
 import json
 import logging
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
+from domain.content_registry import BEITRAGSTYPEN_WERTE
+from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from services.moderation_service import ModerationService
-from tests.conftest import create_base_content_fields
+from tests.conftest import add_aussage_mit_verweis, create_base_content_fields
 
 CONTENT_ID = str(uuid.uuid4())
 
@@ -174,18 +176,7 @@ class TestLoeschen:
     async def test_loeschen_entfernt_beitrag_und_verweise_aus_aussagen(
         self, service, speicher
     ):
-        aussage_id = str(uuid.uuid4())
-        speicher.add_test_data(
-            "statement",
-            [
-                {
-                    **create_base_content_fields(),
-                    "id": aussage_id,
-                    "replysuggestions": json.dumps([{"id": CONTENT_ID}]),
-                    "replysuggestions_count": 1,
-                }
-            ],
-        )
+        aussage_id = add_aussage_mit_verweis(speicher, CONTENT_ID)
 
         assert await service.delete_content(CONTENT_ID, "commentary", "admin-1")
 
@@ -193,6 +184,44 @@ class TestLoeschen:
         assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 0
         aufruf = service.report_repo.update_reports_by_content_id.call_args.kwargs
         assert aufruf["reviewed_by"] == "admin-1"
+
+    @pytest.mark.parametrize("typ", BEITRAGSTYPEN_WERTE)
+    async def test_loeschen_entfernt_verweise_fuer_jeden_beitragstyp(
+        self, service, speicher, typ
+    ):
+        """Aussagen verweisen auf Beitraege jedes Typs, nicht nur auf Kommentare."""
+        beitrag_id = str(uuid.uuid4())
+        speicher.add_test_data(
+            typ, [{**create_base_content_fields(), "id": beitrag_id, "text": "x"}]
+        )
+        aussage_id = add_aussage_mit_verweis(speicher, beitrag_id)
+
+        assert await service.delete_content(beitrag_id, typ, "admin-1")
+
+        assert beitrag_id not in speicher.get_data()
+        assert speicher.get_data()[aussage_id]["replysuggestions_count"] == 0
+
+    async def test_loeschen_verweise_scheitern_meldet_fehler_beitrag_bleibt(
+        self, service, speicher
+    ):
+        """Erst die Verweise, dann der Beitrag: Ein erneuter Versuch raeumt noch auf."""
+        add_aussage_mit_verweis(speicher, CONTENT_ID)
+        service.moderation_repo.aus_aussagen_entfernen = AsyncMock(
+            side_effect=RuntimeError("Qdrant nicht erreichbar")
+        )
+
+        with pytest.raises(VerweiseNichtEntfernt):
+            await service.delete_content(CONTENT_ID, "commentary", "admin-1")
+
+        assert CONTENT_ID in speicher.get_data()
+        service.report_repo.update_reports_by_content_id.assert_not_called()
+
+    async def test_loeschen_unbekannter_beitrag_ist_false(self, service):
+        service.moderation_repo.aus_aussagen_entfernen = AsyncMock()
+
+        assert not await service.delete_content(str(uuid.uuid4()), "post", "a")
+
+        service.moderation_repo.aus_aussagen_entfernen.assert_not_awaited()
 
 
 ADMIN_KENNUNG = "admin.person@example.org"
