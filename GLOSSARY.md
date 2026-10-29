@@ -90,6 +90,14 @@ Oberbegriff für jede festgehaltene Beziehung zwischen zwei Inhalten. Jede Art h
 
 Gleiche Aussagen sind keine Verknüpfung, sie werden zu einer zusammengeführt (ADR 0005); nur ein unsicherer Fall wird als „vielleicht gleich“ zur Prüfung festgehalten. Beiträge, die denselben Punkt machen, werden unter einem Kernpunkt gruppiert, nicht verknüpft.
 
+**Messset**:
+Textpaare, die Menschen entschieden haben und an denen gemessen wird, wie gut ein Modell gleiche Aussagen von verwandten und widersprechenden trennt. Jedes Paar hat ein Paar-Label und liegt fest im Train-Teil (zum Kalibrieren) oder im Test-Teil (nur zum Messen). Grundlage für jede Schwelle und jeden Modellwechsel (ADR 0005); Regeln für Grenzfälle in `tests/regression/MESSSET.md` des Semantic-Search-Service.
+_Avoid_: Testset, Goldstandard, Benchmark
+
+**Paar-Label**:
+Die Entscheidung eines Menschen über ein Paar im Messset: *gleich* (dieselbe Behauptung), *widerspricht* (beide können nicht zugleich stimmen), *verwandt* (selbes Thema, andere Behauptung) oder *fremd* (anderes Thema). Die Labels entsprechen den Verknüpfungen zwischen Aussagen.
+_Avoid_: Klasse, Kategorie (die Kategorie A–E im Messset beschreibt die Textabweichung)
+
 ### Stufen eines Einwurfs
 
 **Offen**:
