@@ -4,6 +4,7 @@ import { AuthService } from '../auth/auth.service';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
 
 interface AuthModes {
   keycloakEnabled: boolean;
@@ -35,15 +36,12 @@ export class LoginSelectorComponent implements OnInit {
     // Get return URL from route parameters or sessionStorage or default to '/'
     const queryReturnUrl = this.route.snapshot.queryParams['returnUrl'];
     if (queryReturnUrl && !queryReturnUrl.startsWith('/login')) {
-      // Store in sessionStorage to preserve through navigation (but not login URLs)
-      sessionStorage.setItem('loginReturnUrl', queryReturnUrl);
+      // Store in sessionStorage to preserve through navigation ('/' is not stored)
+      rueckkehrzielMerken(queryReturnUrl);
       this.returnUrl = queryReturnUrl;
-    } else if (!queryReturnUrl) {
-      // Try to get from sessionStorage if not in query params
-      this.returnUrl = sessionStorage.getItem('loginReturnUrl') || '/';
     } else {
-      // queryReturnUrl is a login URL, ignore it
-      this.returnUrl = sessionStorage.getItem('loginReturnUrl') || '/';
+      // No query parameter, or a login URL to ignore: fall back to the stored target
+      this.returnUrl = rueckkehrzielLesen() || '/';
     }
   }
 
@@ -71,8 +69,8 @@ export class LoginSelectorComponent implements OnInit {
   }
 
   loginWithKeycloak(): void {
-    // Store return URL in session storage for Keycloak redirect (use consistent key)
-    sessionStorage.setItem('loginReturnUrl', this.returnUrl);
+    // Store return URL in session storage for Keycloak redirect; '/' needs no entry
+    rueckkehrzielMerken(this.returnUrl);
     // Redirect to Keycloak login through the API endpoint. The return URL also goes along as a
     // query parameter: the BFF sends the browser straight back there after the login, which does
     // not depend on sessionStorage surviving the round trip through Keycloak.

@@ -396,6 +396,10 @@ _Avoid_: Persona, Sammelkonto, Redaktionskonto, Bot
 Nicht angemeldete Personen, die suchen und Beiträge lesen, aber nichts beitragen dürfen.
 _Avoid_: Gast, anonymer Nutzer
 
+**Profilbild**:
+Das Bild, das Mitwirkende im Kopf der Seite vertritt. Ohne eigene Wahl ist es fest aus der Kennung abgeleitet und nirgends gespeichert; wählen Mitwirkende im Profilmenü selbst eines der Bilder, merkt sich ihr Browser diese Wahl, bis sie sie zurücksetzen. Die Auswahl ist nicht nach Geschlecht eingeteilt. Besucher haben kein Profilbild, nur einen Platzhalter.
+_Avoid_: Avatar (in Texten für Nutzende), Profilfoto
+
 **Autor**:
 Die Person, die einen Beitrag beim Ausformulieren oder Verfassen gespeichert hat. Wer einen Einwurf nur mit einem vorhandenen Beitrag verknüpft, wird dadurch nicht dessen Autor. Einwerfer und Destillierer eines Beitrags aus dem Fangkorb sind nicht seine Autoren, sondern wirken an der Kette mit. Wer einen von KI vorgeschlagenen Text übernimmt und speichert, ist dessen Autor.
 _Avoid_: Ersteller, Owner, Urheber

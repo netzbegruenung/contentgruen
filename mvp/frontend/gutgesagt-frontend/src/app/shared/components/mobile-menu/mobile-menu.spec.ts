@@ -99,4 +99,24 @@ describe('MobileMenuComponent', () => {
     fixture.detectChanges();
     expect(link('.mobile-menu-fehlt-antwort')).toBeNull();
   });
+
+  it('bietet Angemeldeten "Profilbild wählen" an und schliesst danach das Menue', () => {
+    component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+    const profilbild = spyOn(component.profilbild, 'emit');
+    const schliessen = spyOn(component.closeMenu, 'emit');
+
+    const eintrag = fixture.nativeElement.querySelector('.mobile-menu-profilbild') as HTMLButtonElement;
+    expect(eintrag.textContent).toContain('Profilbild wählen');
+    eintrag.click();
+
+    expect(profilbild).toHaveBeenCalled();
+    expect(schliessen).toHaveBeenCalled();
+  });
+
+  it('zeigt "Profilbild wählen" ohne Anmeldung nicht', () => {
+    component.userInfo = null;
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.mobile-menu-profilbild')).toBeNull();
+  });
 });

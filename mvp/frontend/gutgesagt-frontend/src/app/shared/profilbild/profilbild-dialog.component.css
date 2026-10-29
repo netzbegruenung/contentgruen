@@ -1,0 +1,51 @@
+.profilbild-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.profilbild-option {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 4px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.profilbild-option img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Sichtbar fuer Screenreader und Tastatur, nicht fuer das Auge: das Bild ist die Option. */
+.profilbild-radio {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.profilbild-option:hover {
+  border-color: var(--accent-light);
+}
+
+.profilbild-option:has(.profilbild-radio:checked) {
+  border-color: var(--primary-main);
+  background-color: var(--selected-bg);
+}
+
+.profilbild-option:has(.profilbild-radio:focus-visible) {
+  outline: 3px solid var(--primary-dark);
+  outline-offset: 2px;
+}
+
+.hinweis {
+  font-size: 12px;
+  color: var(--text-secondary);
+}

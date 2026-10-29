@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../auth/auth.service';
+import { rueckkehrzielLesen, rueckkehrzielLoeschen, rueckkehrzielMerken } from './rueckkehrziel';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 
 
@@ -30,21 +31,18 @@ export class LoginComponent {
         // Get return URL from route parameters or sessionStorage or default to '/'
         const queryReturnUrl = this.route.snapshot.queryParams['returnUrl'];
         if (queryReturnUrl) {
-            // Only store in sessionStorage if it's not a login page URL
-            if (!queryReturnUrl.startsWith('/login')) {
-                sessionStorage.setItem('loginReturnUrl', queryReturnUrl);
-            }
+            // Stored only if it is a real target (not '/' and not a login page URL)
+            rueckkehrzielMerken(queryReturnUrl);
             this.returnUrl = queryReturnUrl;
         } else {
             // Try to get from sessionStorage if not in query params
             // This ensures the returnUrl persists through failed login attempts
-            this.returnUrl = sessionStorage.getItem('loginReturnUrl') || '/';
+            this.returnUrl = rueckkehrzielLesen() || '/';
         }
 
         // Clean up any login page URLs that might have slipped through
         if (this.returnUrl.startsWith('/login')) {
             this.returnUrl = '/';
-            sessionStorage.setItem('loginReturnUrl', '/');
         }
 
         // Check if this is managed login based on route
@@ -77,7 +75,7 @@ export class LoginComponent {
                         panelClass: ['success-snackbar']
                     });
                     // Clear the stored return URL after successful login
-                    sessionStorage.removeItem('loginReturnUrl');
+                    rueckkehrzielLoeschen();
                     this.router.navigateByUrl(this.returnUrl);
                 },
                 error: (err) => {
@@ -101,7 +99,7 @@ export class LoginComponent {
                         panelClass: ['success-snackbar']
                     });
                     // Clear the stored return URL after successful login
-                    sessionStorage.removeItem('loginReturnUrl');
+                    rueckkehrzielLoeschen();
                     this.router.navigateByUrl(this.returnUrl);
                 },
                 error: (err) => {
