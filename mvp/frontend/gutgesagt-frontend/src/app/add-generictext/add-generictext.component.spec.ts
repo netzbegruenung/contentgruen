@@ -24,6 +24,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 /** Gleich gebaut wie das Kommentarformular; hier die Unterschiede und die geteilten Wege. */
 describe('AddGenerictextComponent', () => {
@@ -116,6 +117,10 @@ describe('AddGenerictextComponent', () => {
 
       expect(link).toBeTruthy();
       expect(link!.target).toBe('_blank');
+      expect(link!.closest('p')!.classList).toContain('submit-hint');
+      expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
+      );
     });
 
     it('beschriftet den Knopf mit "Hintergrundinfo speichern" und zeigt die Vorschau immer', () => {

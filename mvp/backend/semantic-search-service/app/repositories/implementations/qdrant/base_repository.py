@@ -437,22 +437,18 @@ class QdrantBaseRepository(
 
     async def get_all(self, limit: int, offset: int) -> List[TContentDbEntry]:
         """Async implementation of get_all."""
-        try:
-            # Build filter for content_type if needed
-            filter_dict = (
-                {"content_type": self.content_type} if self.content_type else None
-            )
+        return await self._get_all_gefiltert(self._sichtbar_filter(), limit, offset)
 
+    async def _get_all_gefiltert(
+        self, search_filter, limit: int, offset: int
+    ) -> List[TContentDbEntry]:
+        """get_all mit eigenem Scroll-Filter, etwa ohne unbeantwortete Suchanfragen."""
+        try:
             # Use search with empty query to get all items
             # This is a workaround since Qdrant doesn't have direct pagination like SQL
             all_results = []
             batch_size = 100
             current_offset = None
-
-            from qdrant_client.models import Filter, FieldCondition, MatchValue
-
-            # Build filter
-            search_filter = self._sichtbar_filter()
 
             # Scroll through results
             points_collected = 0
