@@ -157,13 +157,21 @@ def test_bericht_erstellen_traegt_unsichtbaren_fingerabdruck():
 
 def test_fingerabdruck_ignoriert_laufzeiten_zeitstempel_und_log():
     erster = [
-        schritt("unit", 1, "lauf 1\n2026-10-29T10:00:01Z FAILED test_x - in 0.52s\n"
-                "=== 1 failed in 3.21s (0:00:03) ===\n"),
+        schritt(
+            "unit",
+            1,
+            "lauf 1\n2026-10-29T10:00:01Z FAILED test_x - in 0.52s\n"
+            "=== 1 failed in 3.21s (0:00:03) ===\n",
+        ),
         schritt("lint", 0, "ok\n"),
     ]
     zweiter = [
-        schritt("unit", 1, "lauf 2, anderes Log\n2026-10-29T11:42:17Z FAILED test_x - in 0.61s\n"
-                "=== 1 failed in 4.08s (0:00:04) ===\n"),
+        schritt(
+            "unit",
+            1,
+            "lauf 2, anderes Log\n2026-10-29T11:42:17Z FAILED test_x - in 0.61s\n"
+            "=== 1 failed in 4.08s (0:00:04) ===\n",
+        ),
         schritt("lint", 0, "anders, aber gruen\n"),
     ]
 
@@ -173,9 +181,15 @@ def test_fingerabdruck_ignoriert_laufzeiten_zeitstempel_und_log():
 def test_fingerabdruck_unterscheidet_fehlerzeilen_schritte_und_exit_code():
     basis = ci_bericht.fingerabdruck([schritt("unit", 1, "FAILED test_x\n")], [])
 
-    assert basis != ci_bericht.fingerabdruck([schritt("unit", 1, "FAILED test_y\n")], [])
-    assert basis != ci_bericht.fingerabdruck([schritt("lint", 1, "FAILED test_x\n")], [])
-    assert basis != ci_bericht.fingerabdruck([schritt("unit", 2, "FAILED test_x\n")], [])
+    assert basis != ci_bericht.fingerabdruck(
+        [schritt("unit", 1, "FAILED test_y\n")], []
+    )
+    assert basis != ci_bericht.fingerabdruck(
+        [schritt("lint", 1, "FAILED test_x\n")], []
+    )
+    assert basis != ci_bericht.fingerabdruck(
+        [schritt("unit", 2, "FAILED test_x\n")], []
+    )
     assert basis != ci_bericht.fingerabdruck(
         [schritt("unit", 1, "FAILED test_x\n"), schritt("bff", 1, "Failed!\n")], []
     )
@@ -313,7 +327,11 @@ def test_main_ohne_token_sendet_nichts(tmp_path, capsys, forgejo_mit_status):
 
 
 def _kommentar(nr, body):
-    return {"id": nr, "body": body, "html_url": f"https://forge.example/pr/7#issuecomment-{nr}"}
+    return {
+        "id": nr,
+        "body": body,
+        "html_url": f"https://forge.example/pr/7#issuecomment-{nr}",
+    }
 
 
 def _gesendet(forgejo):
@@ -338,8 +356,11 @@ def test_main_gleicher_fehler_wie_letzter_bericht_postet_nur_einen_einzeiler(
 ):
     _protokoll(tmp_path, "unit", 1, "lange Ausgabe\nFAILED test_x - in 0.5s\n")
     voriger = ci_bericht.bericht_erstellen(
-        "41", "https://ci.example/41", "aaa111",
-        [schritt("unit", 1, "andere Ausgabe\nFAILED test_x - in 0.7s\n")], [],
+        "41",
+        "https://ci.example/41",
+        "aaa111",
+        [schritt("unit", 1, "andere Ausgabe\nFAILED test_x - in 0.7s\n")],
+        [],
     )
     forgejo = forgejo_mit_status(
         201, kommentare=[_kommentar(1, "Mensch: schau mal"), _kommentar(5, voriger)]

@@ -110,7 +110,9 @@ def _ende(text: str, zeilen: int) -> tuple[str, int]:
 
 
 def _zustand(schritt: Schritt) -> str:
-    return "abgebrochen" if schritt.exit_code is None else f"Exit-Code {schritt.exit_code}"
+    return (
+        "abgebrochen" if schritt.exit_code is None else f"Exit-Code {schritt.exit_code}"
+    )
 
 
 def fehlerzeilen(ausgabe: str) -> list[str]:
@@ -147,7 +149,9 @@ def fingerabdruck_lesen(text: str) -> Optional[str]:
 
 
 def _kopf(pipeline: str) -> str:
-    return f"*Automatischer CI-Bericht (Woodpecker, Pipeline `#{pipeline}`), kein Agent*"
+    return (
+        f"*Automatischer CI-Bericht (Woodpecker, Pipeline `#{pipeline}`), kein Agent*"
+    )
 
 
 def unveraendert_erstellen(
@@ -313,7 +317,9 @@ def main(
 
     if voriger and voriger[0] == abdruck:
         art = "unverändert, Einzeiler"
-        body = unveraendert_erstellen(pipeline, pipeline_url, commit, abdruck, voriger[1])
+        body = unveraendert_erstellen(
+            pipeline, pipeline_url, commit, abdruck, voriger[1]
+        )
     else:
         art = "Bericht"
         body = bericht_erstellen(pipeline, pipeline_url, commit, schritte, [token])
