@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { UserInfo } from '../auth/auth.service';
 import {
   ALTE_PROFILBILD_SCHLUESSEL,
   ANONYMER_AVATAR,
@@ -7,6 +8,9 @@ import {
 } from './profilbild.service';
 
 describe('ProfilbildService', () => {
+  const MITWIRKENDE: UserInfo = { isAuthenticated: true, userId: 'user-001', userName: 'Test User', claims: {} };
+  const BESUCHER: UserInfo = { isAuthenticated: false, userId: null, userName: null, claims: null };
+
   function erzeugen(): ProfilbildService {
     return TestBed.inject(ProfilbildService);
   }
@@ -22,19 +26,20 @@ describe('ProfilbildService', () => {
 
   afterEach(() => ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => sessionStorage.removeItem(s)));
 
-  it('zeigt Besuchern den anonymen Avatar', () => {
-    expect(erzeugen().profilbild(false)).toBe(ANONYMER_AVATAR);
+  it('zeigt Besuchern den anonymen Avatar, auch solange der Anmeldestand offen ist', () => {
+    expect(erzeugen().fuer(BESUCHER)).toBe(ANONYMER_AVATAR);
+    expect(erzeugen().fuer(null)).toBe(ANONYMER_AVATAR);
   });
 
   it('lost Mitwirkenden einmal ein Profilbild aus und behaelt es fuer die Seite', () => {
     const zufall = spyOn(Math, 'random').and.returnValues(0.5, 0.9);
     const service = erzeugen();
 
-    const erstes = service.profilbild(true);
-    service.profilbild(false);
+    const erstes = service.fuer(MITWIRKENDE);
+    service.fuer(BESUCHER);
 
     expect(erstes).toBe(PROFILBILDER[6]);
-    expect(service.profilbild(true)).toBe(erstes);
+    expect(service.fuer(MITWIRKENDE)).toBe(erstes);
     expect(zufall).toHaveBeenCalledTimes(1);
   });
 
@@ -42,8 +47,8 @@ describe('ProfilbildService', () => {
     const vorher = gespeicherteSchluessel();
     const service = erzeugen();
 
-    service.profilbild(false);
-    service.profilbild(true);
+    service.fuer(BESUCHER);
+    service.fuer(MITWIRKENDE);
 
     expect(gespeicherteSchluessel()).toEqual(vorher);
   });
@@ -62,7 +67,7 @@ describe('ProfilbildService', () => {
     spyOn(Math, 'random').and.returnValue(0);
     sessionStorage.setItem('profilePicture', '/avatars/male6.svg');
 
-    expect(erzeugen().profilbild(true)).toBe(PROFILBILDER[0]);
+    expect(erzeugen().fuer(MITWIRKENDE)).toBe(PROFILBILDER[0]);
   });
 
   it('startet auch, wenn der Browser den sessionStorage sperrt', () => {

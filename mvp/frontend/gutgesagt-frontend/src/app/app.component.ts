@@ -108,7 +108,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.updatePageTitle(this.router.url);
 
     // Set initial anonymous avatar while checking auth status
-    this.selectedProfilePictureUrl = this.profilbild.profilbild(false);
+    this.selectedProfilePictureUrl = this.profilbild.fuer(null);
 
     // Subscribe to user info changes
     this.authService.userInfo$
@@ -130,7 +130,7 @@ export class AppComponent implements OnInit, OnDestroy {
           // User is authenticated
           this.userInfo = userInfo;
           // Set proper profile picture for authenticated user
-          this.selectedProfilePictureUrl = this.profilbild.profilbild(true);
+          this.selectedProfilePictureUrl = this.profilbild.fuer(userInfo);
 
           // Check if we have a stored return URL from login (including Keycloak)
           const returnUrl = sessionStorage.getItem('loginReturnUrl');
@@ -233,7 +233,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private updateAvatarForAuthStatus(): void {
-    this.selectedProfilePictureUrl = this.profilbild.profilbild(!!this.userInfo?.isAuthenticated);
+    this.selectedProfilePictureUrl = this.profilbild.fuer(this.userInfo);
   }
 
   toggleMobileMenu(): void {

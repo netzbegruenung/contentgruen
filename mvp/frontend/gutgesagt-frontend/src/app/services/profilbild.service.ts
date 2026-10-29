@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { UserInfo } from '../auth/auth.service';
 
 /**
  * Lokal ausgeliefert statt von der DiceBear-API: sonst ginge bei jedem
@@ -22,7 +23,10 @@ export const PROFILBILDER: readonly string[] = [
   '/avatars/male6.svg',
 ];
 
-/** Schluessel, unter denen fruehere Versionen das Bild im sessionStorage ablegten. */
+/**
+ * Schluessel, unter denen fruehere Versionen das Bild im sessionStorage ablegten.
+ * Das Aufraeumen kann entfallen, wenn keine Sitzung von vor #437 mehr offen ist.
+ */
 export const ALTE_PROFILBILD_SCHLUESSEL: readonly string[] = [
   'profilePicture',
   'anonymousAvatar',
@@ -43,8 +47,8 @@ export class ProfilbildService {
   }
 
   /** Besucher sehen den anonymen Avatar, Mitwirkende ein einmal je Seite ausgelostes Bild. */
-  profilbild(angemeldet: boolean): string {
-    if (!angemeldet) {
+  fuer(person: UserInfo | null): string {
+    if (!person?.isAuthenticated) {
       return ANONYMER_AVATAR;
     }
     this.ausgelost ??= PROFILBILDER[Math.floor(Math.random() * PROFILBILDER.length)];
