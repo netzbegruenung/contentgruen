@@ -24,12 +24,15 @@ def pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
     return env.get(PFLICHT_VARIABLE, "") not in ("", "0")
 
 
-def bff_pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
-    """Ob ein fehlendes BFF (Tests unter ``api/``) ein Fehler ist.
+def pflicht_ausser_in_ci(env: Optional[Mapping[str, str]] = None) -> bool:
+    """Ob das Fehlen eines Dienstes, den nur der Dev-Stack oder der Entwicklungsrechner
+    hat, ein Fehler ist (sonst ueberspringen sich die Tests).
 
-    Im Pflichtmodus ja, ausser in der CI (``CI`` gesetzt): Woodpecker startet
-    Qdrant und PostgreSQL, aber keinen Dev-Stack mit BFF (docs/CI.md). Dort
-    ueberspringen sich die Tests sichtbar in den SKIPPED-Zeilen.
+    Gilt fuer das BFF (Tests unter ``api/``) und fuer Docker (nginx-Container in
+    ``test_webserver_protokoll.py``). Im Pflichtmodus ist ein Fehlen ein Fehler,
+    ausser in der CI (``CI`` gesetzt): Woodpecker startet Qdrant und PostgreSQL,
+    aber kein BFF, und der Runner hat keinen Docker-Socket (docs/CI.md). Dort
+    ueberspringen sich die Tests sichtbar in den SKIPPED-Zeilen (#460).
     """
     env = os.environ if env is None else env
     return pflicht(env) and not env.get("CI")
