@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
 import { NICHT_JEDE_AUSSAGE } from '../shared/schreibregeln';
+import { ORGANISATION } from '../shared/organisation';
 
 /** Die Über-Seite: wofür Gut gesagt da ist, für wen und wie man mitmacht (docs/VISION.md, #345). */
 @Component({
@@ -22,6 +23,7 @@ import { NICHT_JEDE_AUSSAGE } from '../shared/schreibregeln';
 })
 export class AboutComponent {
   readonly nichtJedeAussage = NICHT_JEDE_AUSSAGE;
+  readonly organisation = ORGANISATION;
 
   constructor(private dialog: MatDialog) {}
 

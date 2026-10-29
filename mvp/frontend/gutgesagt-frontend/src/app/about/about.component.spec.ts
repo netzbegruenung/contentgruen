@@ -68,7 +68,7 @@ describe('AboutComponent', () => {
   it('nennt CC0 und verlinkt die Nutzungsbedingungen', () => {
     const abschnitt = seite.querySelector('.cc0')!;
 
-    expect(abschnitt.textContent).toContain('CC0');
+    expect(abschnitt.textContent).toContain('Die Texte der Beiträge stehen unter CC0');
     expect(abschnitt.querySelector('a')!.getAttribute('href')).toBe('/nutzungsbedingungen');
   });
 

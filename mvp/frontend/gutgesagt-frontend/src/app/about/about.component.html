@@ -56,11 +56,11 @@
       </li>
     </ul>
     <p>
-      Mitwirken können heute Mitglieder der Netzbegrünung und Personen mit Beta-Zugang.
+      Mitwirken können heute Mitglieder der {{ organisation.name }} und Personen mit Beta-Zugang.
     </p>
     <p class="startbestand">
-      Den Anfang machen Menschen: Ein Gründungsteam schreibt die ersten Beiträge zu den
-      häufigsten Aussagen selbst, unter wenigen Startkonten. KI schlägt höchstens etwas vor,
+      Den Anfang machen Menschen: Zum Start schreibt ein Gründungsteam die ersten Beiträge zu
+      den häufigsten Aussagen selbst, unter wenigen Startkonten. KI schlägt höchstens etwas vor,
       jeden Beitrag verantwortet ein Mensch. Alle Zahlen, die du siehst, sind echt und beginnen
       bei 0.
     </p>
@@ -70,9 +70,10 @@
   <section class="content-section cc0">
     <h2>Frei für alle: CC0</h2>
     <p>
-      Alle Beiträge stehen unter CC0. Alle dürfen sie kopieren, verändern und weiterverwenden,
-      auch ohne Namen zu nennen und auch außerhalb von Gut gesagt. Darum schreibst du hier nur
-      in eigenen Worten. Mehr dazu in den <a routerLink="/nutzungsbedingungen">Nutzungsbedingungen</a>.
+      Die Texte der Beiträge stehen unter CC0. Alle dürfen sie kopieren, verändern und
+      weiterverwenden, auch ohne Namen zu nennen und auch außerhalb von Gut gesagt. Darum
+      schreibst du hier nur in eigenen Worten. Bilder und verlinkte Herkünfte bleiben, was sie
+      sind: Sie gehören weiter denen, die sie gemacht haben. Mehr dazu in den <a routerLink="/nutzungsbedingungen">Nutzungsbedingungen</a>.
     </p>
   </section>
 
@@ -107,14 +108,14 @@
       <div class="timeline-item">
         <h4>Die Anfänge</h4>
         <p>
-          Die Umsetzung begann in der AG Social des Vereins Netzbegrünung. Gemeinsam mit
+          Die Umsetzung begann in der AG Social des Vereins {{ organisation.name }}. Gemeinsam mit
           anderen Mitgliedern entstand dort die Idee eines gemeinsamen Vorrats an Antworten.
         </p>
       </div>
       <div class="timeline-item">
         <h4>Heute</h4>
         <p>
-          Gut gesagt startet in der Netzbegrünung. Der Bestand ist noch klein und wächst mit
+          Gut gesagt startet in der {{ organisation.name }}. Der Bestand ist noch klein und wächst mit
           jeder Person, die mitmacht.
         </p>
       </div>
@@ -157,12 +158,12 @@
       </li>
       <li>
         <strong>Eigene Infrastruktur:</strong> Die Suche rechnet mit einem offenen Sprachmodell
-        auf dem eigenen Server und speichert in
+        auf eigener Infrastruktur und speichert in
         <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>.
       </li>
       <li>
         <strong>KI schlägt vor, ein Mensch verantwortet:</strong> KI hilft beim Finden und
-        Ordnen. Antworten schreibt sie nicht selbst.
+        Ordnen. Beiträge schreibt sie nicht selbst.
       </li>
       <li>
         <strong>Offener Code:</strong> Gut gesagt ist Open Source unter der AGPL.
@@ -172,10 +173,10 @@
 
   <!-- Community -->
   <section class="content-section">
-    <h2>Teil der Netzbegrünung-Community</h2>
+    <h2>Teil der {{ organisation.name }}-Community</h2>
     <p>
       Gut gesagt ist ein Projekt innerhalb der AG Social des Vereins
-      <a href="https://netzbegruenung.de/" target="_blank" rel="noopener">Netzbegrünung e.V.</a>
+      <a [href]="organisation.url" target="_blank" rel="noopener">{{ organisation.vereinsname }}</a>
     </p>
     <p>
       Die AG Social ist eine Initiative von Vereinsmitgliedern, die sich mit Social Media
@@ -196,7 +197,7 @@
     <div class="cta-buttons">
       <a mat-raised-button
          color="primary"
-         href="https://chatbegruenung.de/channel/GutGesagt"
+         [href]="organisation.kontaktUrl"
          target="_blank"
          rel="noopener">
         <mat-icon>chat</mat-icon>
@@ -206,7 +207,7 @@
          routerLink="/contribute"
          class="secondary-button">
         <mat-icon>add_circle</mat-icon>
-        Beitragen
+        Beitrag verfassen
       </a>
       <button mat-raised-button
               (click)="openHelpDialog()"
@@ -224,8 +225,8 @@
       Du hast Feedback, Verbesserungsvorschläge oder möchtest dich einbringen?
     </p>
     <p>
-      <a href="https://chatbegruenung.de/channel/GutGesagt" target="_blank" rel="noopener">
-        Schreib uns eine Nachricht in der Chatbegrünung
+      <a [href]="organisation.kontaktUrl" target="_blank" rel="noopener">
+        Schreib uns eine Nachricht in der {{ organisation.kontaktName }}
       </a>
     </p>
   </section>
