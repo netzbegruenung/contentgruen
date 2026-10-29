@@ -454,8 +454,10 @@ intentional. Don't bypass with `--no-verify` except in emergencies. The `safe-co
 helpers automate the retry.
 
 ### Full check and review rules
-- `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests,
-  frontend tests, BFF tests in the .NET SDK container). Run it before opening a PR.
+- `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests and
+  `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container; `--integration` adds the
+  integration tests, `--schritt <name>` runs one step). Run it before opening a PR. Woodpecker runs
+  the same steps on every PR (`docs/CI.md`); a red run gets a comment with the red steps.
 - Replaced names are listed in `scripts/retired-words.txt`; the check and a pre-commit hook reject
   them in added lines.
 - Reviews check the judgement rules in `CODING_STANDARDS.md`.
