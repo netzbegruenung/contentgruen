@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
 from domain.cc0_hinweis import Cc0Wortlaut
+from domain.themen import ThemenDerAussage
+from dtos.statement import ThemaDto
 from domain.models.generic_text import GenericText
 from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 
@@ -30,6 +32,11 @@ class AddGenericTextRequest(BaseModel):
     # keine bekannt ist, ihr Text. Ohne beides steht sie fuer sich.
     statement_id: Optional[UUID] = None
     statement_text: Optional[str] = Field(default=None, max_length=1000)
+    # Die Themen der Aussage, wenn sie per Text kommt (#455): Wie beim Vorab-Anlegen
+    # bekommt sie die neue, eine vorhandene nur, wenn sie noch keine hat. Zu einer
+    # per ID gewaehlten Aussage gelten sie nicht; deren Themen aendert
+    # /statement/themen/zuordnen.
+    themen: ThemenDerAussage = Field(default_factory=list)
     # Die Person hat diese vorhandene Hintergrundinfo gesehen und speichert trotzdem:
     # Dann wird die neue angelegt, obwohl sie deren Dublette ist. Gilt nur fuer die
     # gezeigte - ist inzwischen eine andere vorhanden, sieht die Person erst sie.
@@ -81,6 +88,10 @@ class AddGenericTextResponse(BaseModel):
     # Ihr Text - bei Text-Anfragen kann das eine schon vorhandene, sehr aehnliche
     # Aussage sein, nicht wortgleich mit dem Getippten.
     statement_text: Optional[str] = None
+    # Kam die Aussage per Text mit Themen (#455): die Themen, die sie jetzt hat. Weichen
+    # sie von den gewaehlten ab, hatte eine vorhandene schon welche, oder das Zuordnen
+    # scheiterte (dann leer); das Formular sagt es. Sonst leer.
+    themen: List[ThemaDto] = Field(default_factory=list)
     # Ohne Dublette: False nur, wenn eine Aussage angegeben war und nicht verknuepft
     # werden konnte. Bei einer Dublette True nur, wenn die Person die eigene mit
     # vorhanden_nehmen genommen hat und sie jetzt an der Aussage haengt; sonst False.

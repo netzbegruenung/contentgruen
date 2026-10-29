@@ -35,6 +35,8 @@ export interface BeitragGespeichert {
   aussage: { id: string; text: string };
   /** false: Aussage angegeben, aber nicht verknuepft - der Beitrag steht trotzdem. */
   verknuepft: boolean;
+  /** Die gewaehlten Themen galten nicht (themenHinweisNachSpeichern); fehlt sonst. */
+  themenHinweis?: string;
 }
 
 export interface GespeichertZustand {
@@ -42,6 +44,8 @@ export interface GespeichertZustand {
   aussage?: { id: string; text: string };
   /** false: Aussage angegeben, aber nicht verknuepft. */
   verknuepft?: boolean;
+  /** Die gewaehlten Themen der neuen Aussage galten nicht: der Satz dazu (#455). */
+  themenHinweis?: string;
   /** Nur Fangkorb: false, wenn der Einwurf nicht mit dem Beitrag verknuepft wurde. */
   einwurfVerknuepft?: boolean;
 }

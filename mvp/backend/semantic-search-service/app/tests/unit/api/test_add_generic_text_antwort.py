@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from api.v1.generic_text import HINTERGRUNDINFO_RELEVANZ, router as generic_text_router
 from dependencies import (
+    get_aussage_themen_service,
     get_generic_text_service,
     get_reference_service,
     get_statement_service,
@@ -43,7 +44,21 @@ def _anfrage(**extra) -> dict:
 
 
 @pytest.fixture
-def dienste():
+def themen_service():
+    # Die Aussage hat noch keine Themen; zuordnen gibt die gesetzten zurueck.
+    service = MagicMock()
+    # Wie AussageThemenService.ergaenzen: eine Aussage mit Themen (bestand) behaelt ihre.
+    service.bestand = {}
+    service.ergaenzen = AsyncMock(
+        side_effect=lambda statement_id, themen: service.bestand.get(
+            statement_id, themen
+        )
+    )
+    return service
+
+
+@pytest.fixture
+def dienste(themen_service):
     commentary_id = uuid.uuid4()
     generic_text_service = MagicMock()
     generic_text_service.add_generic_text = AsyncMock(
@@ -64,6 +79,7 @@ def dienste():
     app.dependency_overrides[get_generic_text_service] = lambda: generic_text_service
     app.dependency_overrides[get_reference_service] = lambda: reference_service
     app.dependency_overrides[get_statement_service] = lambda: statement_service
+    app.dependency_overrides[get_aussage_themen_service] = lambda: themen_service
     yield commentary_id, statement_service
     app.dependency_overrides.clear()
 
@@ -84,6 +100,7 @@ class TestAddGenericTextAntwort:
             "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -211,6 +228,7 @@ class TestAddGenericTextAntwort:
             "dublette": False,
             "vorhanden_titel": None,
             "vorhanden_eigen": False,
+            "themen": [],
         }
 
     def test_text_ueber_2000_zeichen_wird_abgelehnt(self, dienste):
@@ -261,6 +279,7 @@ class TestAddGenericTextAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
+            "themen": [],
         }
         generic_text_service.pruefe_dublette.assert_awaited_once_with(
             anfrage["generictext"]["text"]
@@ -339,6 +358,7 @@ class TestAddGenericTextAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": False,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_not_awaited()
 
@@ -368,6 +388,7 @@ class TestAddGenericTextAntwort:
             "dublette": True,
             "vorhanden_titel": VORHANDEN_TITEL,
             "vorhanden_eigen": True,
+            "themen": [],
         }
         statement_service.beitrag_als_antwort_verknuepfen.assert_awaited_once_with(
             beitrag_id=vorhanden,
@@ -548,4 +569,156 @@ class TestAddGenericTextAntwort:
 
         assert resp.json()["id"] == str(andere)
         assert resp.json()["dublette"] is True
+        generic_text_service.add_generic_text.assert_not_awaited()
+
+
+@pytest.mark.api
+class TestThemenDerAussage:
+    """Dieselben Faelle wie beim Kommentar (#455, test_add_commentary_antwort.py)."""
+
+    AUSSAGE = "Waermepumpen sind zu teuer"
+
+    def test_neue_aussage_bekommt_die_gewaehlten_themen(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["energie-heizen"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["themen"] == [
+            {"schluessel": "energie-heizen", "name": "Energie und Heizen"}
+        ]
+        themen_service.ergaenzen.assert_awaited_once_with(
+            statement_id, ["energie-heizen"]
+        )
+
+    def test_vorhandene_aussage_mit_themen_behaelt_ihre(self, dienste, themen_service):
+        _, statement_service = dienste
+        vorhanden = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            vorhanden,
+            self.AUSSAGE,
+        )
+        themen_service.bestand[vorhanden] = ["klima"]
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        # Die Antwort nennt ihre, damit das Formular sagen kann, dass die Wahl nicht galt.
+        assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
+        themen_service.ergaenzen.assert_awaited_once_with(vorhanden, ["soziales"])
+
+    def test_gewaehlte_aussage_bekommt_keine_themen(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_id=str(statement_id), themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["themen"] == []
+        themen_service.ergaenzen.assert_not_called()
+
+    def test_ohne_themen_wird_nichts_zugeordnet(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            uuid.uuid4(),
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL, json=_anfrage(statement_text=self.AUSSAGE), headers=HEADERS
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["themen"] == []
+        themen_service.ergaenzen.assert_not_called()
+
+    def test_gescheitertes_zuordnen_behaelt_hintergrundinfo_und_verknuepfung(
+        self, dienste, themen_service
+    ):
+        generic_text_id, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+        themen_service.ergaenzen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["themen"] == []
+        assert resp.json()["id"] == str(generic_text_id)
+        assert resp.json()["verknuepft"] is True
+
+    def test_fremde_dublette_bekommt_keine_themen(self, dienste, themen_service):
+        TestAddGenericTextAntwort._dublette(uuid.uuid4(), autor="person-2")
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["dublette"] is True
+        themen_service.ergaenzen.assert_not_called()
+
+    def test_vorhanden_nehmen_gibt_der_neuen_aussage_die_themen(
+        self, dienste, themen_service
+    ):
+        _, statement_service = dienste
+        vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
+        TestAddGenericTextAntwort._dublette(vorhanden)
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(
+                statement_text=self.AUSSAGE,
+                themen=["klima"],
+                vorhanden_nehmen=str(vorhanden),
+            ),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["verknuepft"] is True
+        themen_service.ergaenzen.assert_awaited_once_with(statement_id, ["klima"])
+
+    def test_ungueltige_themen_werden_vor_dem_speichern_abgewiesen(self, dienste):
+        generic_text_service = app.dependency_overrides[get_generic_text_service]()
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["heizungsgesetz"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 422
         generic_text_service.add_generic_text.assert_not_awaited()
