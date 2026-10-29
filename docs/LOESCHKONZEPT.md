@@ -207,7 +207,8 @@ und der Ablauf oben erfasst die Tabelle nicht.
 - **Frist:** keine. Einladungen bleiben stehen, auch abgelaufene; sie tragen keinen
   Personenbezug.
 - **Konto im Realm:** Löschen wie bisher in Keycloak; dass es über eine Einladung entstand,
-  steht nirgends.
+  steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
+  Zeitpunkt der Kontoanlage mit dem Zähler vergleichen.
 
 ## Vier Fallen
 

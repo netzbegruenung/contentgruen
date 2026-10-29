@@ -3,7 +3,7 @@
     <mat-card-title>Einladung zu Gut gesagt</mat-card-title>
   </mat-card-header>
   <mat-card-content>
-    <p *ngIf="stand === 'pruefe'">Einladung wird geprüft …</p>
+    <p *ngIf="stand === 'pruefe'" role="status">Einladung wird geprüft …</p>
 
     <ng-container *ngIf="stand === 'ungueltig'">
       <p>
@@ -22,7 +22,7 @@
         <mat-label>Mail-Adresse</mat-label>
         <input matInput type="email" name="email" autocomplete="email" [(ngModel)]="email" required />
       </mat-form-field>
-      <p *ngIf="stand === 'fehler'" class="warnung">
+      <p *ngIf="stand === 'fehler'" class="warnung" role="alert">
         Das hat nicht geklappt. Bitte versuch es in ein paar Minuten noch einmal.
       </p>
       <p class="fussnote">
@@ -35,7 +35,7 @@
     </form>
 
     <ng-container *ngIf="stand === 'gesendet'">
-      <p>
+      <p role="status">
         Schau in dein Postfach: Dort ist eine Mail, mit der du dein Passwort festlegst. Der Link darin
         gilt drei Tage.
       </p>

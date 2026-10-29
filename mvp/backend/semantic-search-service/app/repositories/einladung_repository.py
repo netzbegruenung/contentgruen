@@ -23,7 +23,7 @@ class EinladungRepository:
         self,
         code: str,
         notiz: str,
-        erlaubte_konten: int,
+        erlaubte_einloesungen: int,
         gueltig_bis: date,
         angelegt_am: date,
     ) -> EinladungZeile:
@@ -31,8 +31,8 @@ class EinladungRepository:
             zeile = EinladungZeile(
                 code=code,
                 notiz=notiz,
-                erlaubte_konten=erlaubte_konten,
-                angelegte_konten=0,
+                erlaubte_einloesungen=erlaubte_einloesungen,
+                einloesungen=0,
                 gueltig_bis=gueltig_bis,
                 abgeschaltet=False,
                 angelegt_am=angelegt_am,
@@ -62,7 +62,7 @@ class EinladungRepository:
                 session.expunge(zeile)
             return zeile
 
-    def abschalten(
+    def schalten(
         self, einladung_id: uuid.UUID, abgeschaltet: bool
     ) -> Optional[EinladungZeile]:
         with self.db.get_session() as session:
@@ -77,7 +77,7 @@ class EinladungRepository:
 
     def platz_belegen(self, code: str, heute: date) -> bool:
         """
-        Zaehlt ein Konto hoch, wenn die Einladung noch aktiv ist. In einer einzigen
+        Zaehlt eine Einloesung, wenn die Einladung noch aktiv ist. In einer einzigen
         UPDATE-Anweisung, damit zwei gleichzeitige Anfragen den letzten Platz nicht
         beide bekommen.
         """
@@ -88,22 +88,22 @@ class EinladungRepository:
                     EinladungZeile.code == code,
                     EinladungZeile.abgeschaltet.is_(False),
                     EinladungZeile.gueltig_bis >= heute,
-                    EinladungZeile.angelegte_konten < EinladungZeile.erlaubte_konten,
+                    EinladungZeile.einloesungen < EinladungZeile.erlaubte_einloesungen,
                 )
-                .values(angelegte_konten=EinladungZeile.angelegte_konten + 1)
+                .values(einloesungen=EinladungZeile.einloesungen + 1)
             )
             return ergebnis.rowcount == 1
 
     def platz_freigeben(self, code: str) -> None:
-        """Nimmt einen belegten Platz zurueck, wenn kein Konto entstand."""
+        """Nimmt einen belegten Platz zurueck, wenn Keycloak scheiterte."""
         with self.db.get_session() as session:
             session.execute(
                 update(EinladungZeile)
                 .where(
                     EinladungZeile.code == code,
-                    EinladungZeile.angelegte_konten > 0,
+                    EinladungZeile.einloesungen > 0,
                 )
-                .values(angelegte_konten=EinladungZeile.angelegte_konten - 1)
+                .values(einloesungen=EinladungZeile.einloesungen - 1)
             )
 
 

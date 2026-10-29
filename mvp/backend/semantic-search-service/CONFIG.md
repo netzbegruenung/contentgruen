@@ -61,6 +61,9 @@ nano .env
 | `SEMANTIC_SEARCH_QDRANT_COLLECTION` | Qdrant collection name | `content_collection` |
 | `SEMANTIC_SEARCH_APP_DATABASE_URL` | App database connection string | localhost:5433 |
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
+| `SEMANTIC_SEARCH_KEYCLOAK_URL`, `…_KEYCLOAK_ADMIN_CLIENT_ID`, `…_KEYCLOAK_ADMIN_CLIENT_SECRET` | Keycloak admin API for redeeming Einladungen; without them Einladungen can only be managed (`docs/KEYCLOAK_REALM.md`) | unset |
+| `SEMANTIC_SEARCH_KEYCLOAK_REALM` | Realm the accounts are created in | `gutgesagt` |
+| `SEMANTIC_SEARCH_KEYCLOAK_APP_CLIENT_ID`, `SEMANTIC_SEARCH_APP_URL` | Where the link in the "set password" mail leads afterwards | unset |
 | `OPENAI_API_KEY` | Enables AI image captioning (alias: `SEMANTIC_SEARCH_OPENAI_API_KEY`) | unset |
 
 ## Path Validation

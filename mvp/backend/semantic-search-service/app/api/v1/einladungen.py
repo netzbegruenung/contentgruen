@@ -16,14 +16,15 @@ from pydantic import BaseModel, Field, field_validator
 from core.logging import get_logger
 from dependencies import get_einladung_service, require_admin
 from services.einladung_service import (
-    ERLAUBTE_KONTEN_MAX,
+    EINLOESUNGEN_MAX,
     GUELTIG_TAGE_MAX,
     NOTIZ_MAX,
     Einladung,
     EinladungService,
     EinladungUngueltig,
+    EinladungZustand,
     KontoAnlegenFehlgeschlagen,
-    RegistrierungNichtEingerichtet,
+    EinloesenNichtEingerichtet,
 )
 from utils.client_identity import derive_client_key
 from utils.rate_limiter import einladung_pruefen_rate_limiter, einladung_rate_limiter
@@ -42,7 +43,7 @@ CODE_MAX = 64
 
 class EinladungAnlegenRequest(BaseModel):
     notiz: str = Field(..., max_length=NOTIZ_MAX)
-    erlaubte_konten: int = Field(..., ge=1, le=ERLAUBTE_KONTEN_MAX)
+    erlaubte_einloesungen: int = Field(..., ge=1, le=EINLOESUNGEN_MAX)
     gueltig_bis: date
 
     @field_validator("notiz")
@@ -72,12 +73,12 @@ class EinladungResponse(BaseModel):
     id: uuid.UUID
     code: str
     notiz: str
-    erlaubte_konten: int
-    angelegte_konten: int
+    erlaubte_einloesungen: int
+    einloesungen: int
     gueltig_bis: date
     abgeschaltet: bool
     angelegt_am: date
-    zustand: str
+    zustand: EinladungZustand
 
     @classmethod
     def aus(cls, e: Einladung) -> "EinladungResponse":
@@ -85,8 +86,8 @@ class EinladungResponse(BaseModel):
             id=e.id,
             code=e.code,
             notiz=e.notiz,
-            erlaubte_konten=e.erlaubte_konten,
-            angelegte_konten=e.angelegte_konten,
+            erlaubte_einloesungen=e.erlaubte_einloesungen,
+            einloesungen=e.einloesungen,
             gueltig_bis=e.gueltig_bis,
             abgeschaltet=e.abgeschaltet,
             angelegt_am=e.angelegt_am,
@@ -96,7 +97,7 @@ class EinladungResponse(BaseModel):
 
 class EinladungListeResponse(BaseModel):
     # Ob Einloesen ueberhaupt geht; sonst sagt das Dashboard, dass Links ins Leere fuehren.
-    registrierung_eingerichtet: bool
+    einloesen_eingerichtet: bool
     einladungen: List[EinladungResponse]
 
 
@@ -132,7 +133,7 @@ async def einladungen_liste(
 ):
     """Alle Einladungen, die neuesten zuerst, mit Zaehler und Zustand."""
     return EinladungListeResponse(
-        registrierung_eingerichtet=service.registrierung_eingerichtet,
+        einloesen_eingerichtet=service.einloesen_eingerichtet,
         einladungen=[EinladungResponse.aus(e) for e in service.alle()],
     )
 
@@ -144,7 +145,7 @@ async def einladung_anlegen(
     service: EinladungService = Depends(get_einladung_service),
 ):
     einladung = service.anlegen(
-        request.notiz, request.erlaubte_konten, request.gueltig_bis
+        request.notiz, request.erlaubte_einloesungen, request.gueltig_bis
     )
     return EinladungResponse.aus(einladung)
 
@@ -157,7 +158,7 @@ async def einladung_schalten(
     service: EinladungService = Depends(get_einladung_service),
 ):
     """Abschalten oder wieder einschalten; der Zaehler bleibt."""
-    einladung = service.abschalten(einladung_id, request.abgeschaltet)
+    einladung = service.schalten(einladung_id, request.abgeschaltet)
     if einladung is None:
         raise HTTPException(status_code=404, detail="Invitation not found")
     return EinladungResponse.aus(einladung)
@@ -198,7 +199,7 @@ async def einladung_einloesen(
         await asyncio.to_thread(service.einloesen, request.code, request.email)
     except EinladungUngueltig:
         raise HTTPException(status_code=410, detail="Invitation not valid")
-    except RegistrierungNichtEingerichtet:
+    except EinloesenNichtEingerichtet:
         raise HTTPException(status_code=503, detail="Registration not configured")
     except KontoAnlegenFehlgeschlagen:
         raise HTTPException(status_code=502, detail="Account could not be created")

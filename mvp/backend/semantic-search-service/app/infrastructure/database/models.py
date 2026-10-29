@@ -251,7 +251,7 @@ class FeedbackZeile(Base):
 class EinladungZeile(Base):
     """Eine Einladung (#429): Wer den Code hat, legt damit ein Konto an.
 
-    Haelt nur den Zaehler der angelegten Konten, keine Mail-Adresse und keine
+    Haelt nur den Zaehler der Einloesungen, keine Mail-Adresse und keine
     Kennung: Am Konto steht nicht, ueber welche Einladung es entstand, und hier
     nicht, wer sie genutzt hat (services/einladung_service.py).
     """
@@ -261,8 +261,8 @@ class EinladungZeile(Base):
     id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     code = Column(String(64), nullable=False, unique=True)
     notiz = Column(Text, nullable=False)
-    erlaubte_konten = Column(Integer, nullable=False)
-    angelegte_konten = Column(Integer, nullable=False, server_default=text("0"))
+    erlaubte_einloesungen = Column(Integer, nullable=False)
+    einloesungen = Column(Integer, nullable=False, server_default=text("0"))
     # Letzter Tag (UTC), an dem die Einladung gilt.
     gueltig_bis = Column(Date, nullable=False)
     abgeschaltet = Column(Boolean, nullable=False, server_default=text("false"))

@@ -12,8 +12,8 @@ const GRUPPE: Einladung = {
   id: 'e1',
   code: 'GruppenCode123',
   notiz: 'Kreisverband, Herbsttreffen',
-  erlaubte_konten: 50,
-  angelegte_konten: 3,
+  erlaubte_einloesungen: 50,
+  einloesungen: 3,
   gueltig_bis: '2026-11-27',
   abgeschaltet: false,
   angelegt_am: '2026-10-30',
@@ -42,7 +42,7 @@ describe('EinladungenComponent', () => {
   }
 
   function laden(einladungen: Einladung[], eingerichtet = true) {
-    http.expectOne(URL).flush({ registrierung_eingerichtet: eingerichtet, einladungen });
+    http.expectOne(URL).flush({ einloesen_eingerichtet: eingerichtet, einladungen });
     fixture.detectChanges();
   }
 
@@ -61,7 +61,7 @@ describe('EinladungenComponent', () => {
     laden([]);
     const komponente = fixture.componentInstance;
     komponente.notiz = 'Persönlicher Link';
-    komponente.erlaubteKonten = 1;
+    komponente.erlaubteEinloesungen = 1;
     komponente.gueltigBis = '2026-11-13';
 
     komponente.anlegen();
@@ -69,10 +69,10 @@ describe('EinladungenComponent', () => {
     const anfrage = http.expectOne((r) => r.method === 'POST' && r.url === URL);
     expect(anfrage.request.body).toEqual({
       notiz: 'Persönlicher Link',
-      erlaubte_konten: 1,
+      erlaubte_einloesungen: 1,
       gueltig_bis: '2026-11-13',
     });
-    anfrage.flush({ ...GRUPPE, id: 'e2', notiz: 'Persönlicher Link', erlaubte_konten: 1, angelegte_konten: 0 });
+    anfrage.flush({ ...GRUPPE, id: 'e2', notiz: 'Persönlicher Link', erlaubte_einloesungen: 1, einloesungen: 0 });
     fixture.detectChanges();
 
     expect(el().querySelectorAll('[data-testid="einladung"]').length).toBe(1);
@@ -92,6 +92,18 @@ describe('EinladungenComponent', () => {
 
     expect(el().querySelector('[data-testid="einladung"]')!.textContent).toContain('abgeschaltet');
     expect(el().querySelector('[data-testid="schalten"]')!.textContent).toContain('Einschalten');
+  });
+
+  it('meldet, wenn Umschalten scheitert, ohne die Liste zu verlieren', () => {
+    laden([GRUPPE]);
+
+    (el().querySelector('[data-testid="schalten"]') as HTMLButtonElement).click();
+    http.expectOne(`${URL}/e1`).flush('kaputt', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(el().textContent).toContain('nicht umgeschaltet');
+    expect(el().textContent).not.toContain('nicht geladen');
+    expect(el().querySelectorAll('[data-testid="einladung"]').length).toBe(1);
   });
 
   it('warnt, wenn Einloesen nicht eingerichtet ist', () => {

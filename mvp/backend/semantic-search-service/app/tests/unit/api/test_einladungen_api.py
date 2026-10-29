@@ -18,7 +18,7 @@ from services.einladung_service import (
     Einladung,
     EinladungUngueltig,
     KontoAnlegenFehlgeschlagen,
-    RegistrierungNichtEingerichtet,
+    EinloesenNichtEingerichtet,
 )
 from utils.rate_limiter import einladung_rate_limiter
 from utils.utc_tag import heute_utc
@@ -33,8 +33,8 @@ EINLADUNG = Einladung(
     id=uuid.UUID("33333333-3333-3333-3333-333333333333"),
     code="Ab3dEf6hIj9kLm2nOp4qRs",
     notiz="Kreisverband, Herbsttreffen",
-    erlaubte_konten=50,
-    angelegte_konten=3,
+    erlaubte_einloesungen=50,
+    einloesungen=3,
     gueltig_bis=date(2099, 11, 27),
     abgeschaltet=False,
     angelegt_am=date(2026, 10, 30),
@@ -46,9 +46,9 @@ def service():
     service = Mock()
     service.alle.return_value = [EINLADUNG]
     service.anlegen.return_value = EINLADUNG
-    service.abschalten.return_value = EINLADUNG
+    service.schalten.return_value = EINLADUNG
     service.ist_einloesbar.return_value = True
-    service.registrierung_eingerichtet = True
+    service.einloesen_eingerichtet = True
     return service
 
 
@@ -73,11 +73,11 @@ class TestVerwalten:
 
         assert response.status_code == 200
         body = response.json()
-        assert body["registrierung_eingerichtet"] is True
+        assert body["einloesen_eingerichtet"] is True
         [e] = body["einladungen"]
         assert e["code"] == EINLADUNG.code
-        assert e["angelegte_konten"] == 3
-        assert e["erlaubte_konten"] == 50
+        assert e["einloesungen"] == 3
+        assert e["erlaubte_einloesungen"] == 50
         assert e["zustand"] == "aktiv"
 
     @pytest.mark.parametrize("kopf", [{}, MITWIRKEND])
@@ -86,7 +86,11 @@ class TestVerwalten:
         antwort = client.post(
             BASIS,
             headers=kopf,
-            json={"notiz": "x", "erlaubte_konten": 1, "gueltig_bis": "2099-01-01"},
+            json={
+                "notiz": "x",
+                "erlaubte_einloesungen": 1,
+                "gueltig_bis": "2099-01-01",
+            },
         )
         assert antwort.status_code in (401, 403)
         antwort = client.patch(
@@ -94,7 +98,7 @@ class TestVerwalten:
         )
         assert antwort.status_code in (401, 403)
         service.anlegen.assert_not_called()
-        service.abschalten.assert_not_called()
+        service.schalten.assert_not_called()
 
     def test_anlegen(self, client, service):
         response = client.post(
@@ -102,7 +106,7 @@ class TestVerwalten:
             headers=ADMIN,
             json={
                 "notiz": " Persönlicher Link ",
-                "erlaubte_konten": 1,
+                "erlaubte_einloesungen": 1,
                 "gueltig_bis": IN_ZWEI_WOCHEN.isoformat(),
             },
         )
@@ -113,10 +117,10 @@ class TestVerwalten:
     @pytest.mark.parametrize(
         "werte",
         [
-            {"notiz": "  ", "erlaubte_konten": 1},
-            {"notiz": "x", "erlaubte_konten": 0},
-            {"notiz": "x", "erlaubte_konten": 1001},
-            {"notiz": "x" * 201, "erlaubte_konten": 1},
+            {"notiz": "  ", "erlaubte_einloesungen": 1},
+            {"notiz": "x", "erlaubte_einloesungen": 0},
+            {"notiz": "x", "erlaubte_einloesungen": 1001},
+            {"notiz": "x" * 201, "erlaubte_einloesungen": 1},
         ],
     )
     def test_anlegen_weist_ungueltige_werte_ab(self, client, service, werte):
@@ -133,7 +137,11 @@ class TestVerwalten:
         response = client.post(
             BASIS,
             headers=ADMIN,
-            json={"notiz": "x", "erlaubte_konten": 1, "gueltig_bis": "2020-01-01"},
+            json={
+                "notiz": "x",
+                "erlaubte_einloesungen": 1,
+                "gueltig_bis": "2020-01-01",
+            },
         )
 
         assert response.status_code == 422
@@ -145,7 +153,11 @@ class TestVerwalten:
         response = client.post(
             BASIS,
             headers=ADMIN,
-            json={"notiz": "x", "erlaubte_konten": 1, "gueltig_bis": "2199-01-01"},
+            json={
+                "notiz": "x",
+                "erlaubte_einloesungen": 1,
+                "gueltig_bis": "2199-01-01",
+            },
         )
 
         assert response.status_code == 422
@@ -157,10 +169,10 @@ class TestVerwalten:
         )
 
         assert response.status_code == 200
-        service.abschalten.assert_called_once_with(EINLADUNG.id, True)
+        service.schalten.assert_called_once_with(EINLADUNG.id, True)
 
     def test_abschalten_unbekannt(self, client, service):
-        service.abschalten.return_value = None
+        service.schalten.return_value = None
 
         response = client.patch(
             f"{BASIS}/{uuid.uuid4()}", headers=ADMIN, json={"abgeschaltet": True}
@@ -221,7 +233,7 @@ class TestEinloesen:
         assert response.status_code == 502
 
     def test_nicht_eingerichtet(self, client, service):
-        service.einloesen.side_effect = RegistrierungNichtEingerichtet()
+        service.einloesen.side_effect = EinloesenNichtEingerichtet()
 
         response = client.post(
             f"{BASIS}/einloesen",

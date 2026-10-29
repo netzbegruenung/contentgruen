@@ -22,11 +22,20 @@ Durchprobieren von Passwörtern liegen bei Keycloak.
 |---|---|
 | Realm `gutgesagt`, Selbstregistrierung aus | Konten entstehen nur über eine Einladung oder den Identity Provider |
 | Anmelden mit Mail-Adresse, Passwort vergessen, Mail-Bestätigung, Brute-Force-Schutz | alles von Keycloak |
-| Pflichtaktion „Terms and Conditions“, Standardaktion | jedes neue Konto stimmt beim ersten Anmelden den Nutzungsbedingungen zu |
 | Client `gutgesagt` | Anmeldung der App (BFF, Authorization Code mit PKCE) |
 | Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an; engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
 | Gültigkeit des Mail-Links, von Admins ausgelöst: 3 Tage | wie `MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py` |
+
+Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
+Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht. Nach dem Import
+deshalb von Hand:
+
+- *Authentication → Required actions → Terms and Conditions*: `Enabled` und
+  `Set as default action` an. Dann stimmt jedes neue Konto beim ersten Anmelden den
+  Nutzungsbedingungen zu, auch über den Identity Provider. Ohne diesen Schritt weist
+  Keycloak jedes Konto aus einer Einladung ab (`PFLICHTAKTIONEN` in
+  `infrastructure/keycloak_konten.py`).
 
 Platzhalter, vor dem Import ersetzen:
 
@@ -72,17 +81,20 @@ Der Semantic-Service muss `<keycloak>` erreichen können.
 
 ## Einladungen
 
-- Eine Einladung hat eine Notiz, eine Zahl erlaubter Konten und einen letzten gültigen Tag
-  (UTC), sie lässt sich ab- und wieder einschalten. Gruppenlink (etwa 50 Konten, vier Wochen)
+- Eine Einladung hat eine Notiz, eine Zahl erlaubter Einlösungen und einen letzten gültigen Tag
+  (UTC), sie lässt sich ab- und wieder einschalten. Gruppenlink (etwa 50 Einlösungen, vier Wochen)
   und persönlicher Link (ein Konto, zwei Wochen) sind dasselbe.
 - Der Link ist `<app>/einladung#<code>`. Der Code steht hinter `#`, damit er in keinem
   Server-Log landet.
-- Gezählt wird nur, wie viele Konten über eine Einladung entstanden sind. Am Konto steht
-  nicht, über welche Einladung es entstand, und an der Einladung keine Mail-Adresse (Art. 9
-  DSGVO: Eine Einladung für eine bestimmte Gruppe verriete sonst die Zugehörigkeit).
+- Gezählt wird nur, wie oft eine Einladung eingelöst wurde. Am Konto steht nicht, über
+  welche Einladung es entstand, und an der Einladung keine Mail-Adresse (Art. 9 DSGVO: Eine
+  Einladung für eine bestimmte Gruppe verriete sonst die Zugehörigkeit). Ganz ausschließen
+  lässt sich der Bezug nicht: Wer Keycloak-Admin ist, sieht, wann ein Konto entstand, und
+  kann das bei einem persönlichen Link mit dem Zähler vergleichen.
 - Gibt es zur Adresse schon ein Konto, antwortet die Seite wie bei einem neuen und zählt
-  nicht mit; die Person meldet sich an oder nutzt „Passwort vergessen“. So erfährt niemand,
-  ob eine Adresse ein Konto hat.
+  genauso mit; Keycloak schickt dann keine Mail, die Person meldet sich an oder nutzt
+  „Passwort vergessen“. So erfährt niemand, ob eine Adresse ein Konto hat, auch nicht über
+  den Zähler. Messbar bleibt nur, dass die Antwort ohne Mail etwas schneller kommt.
 
 ## Grünes Netz später dazu
 

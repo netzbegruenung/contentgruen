@@ -14,10 +14,13 @@ from typing import Optional
 
 import httpx
 
+from core.logging import get_logger
 from services.einladung_service import KontoAnlegen
 
+logger = get_logger(__name__)
+
 # ANNAHME (#429): Die Pflichtaktion "Terms and Conditions" ist im Realm eingeschaltet
-# (Vorlage docs/keycloak/gutgesagt-realm.json). Keycloak weist ein Konto mit einer
+# (Schritt in docs/KEYCLOAK_REALM.md). Keycloak weist ein Konto mit einer
 # unbekannten Pflichtaktion ab; dann schlaegt jedes Einloesen fehl.
 PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
 # Was der Link in der Mail tut. Keycloak bestaetigt dabei auch die Mail-Adresse.
@@ -95,6 +98,13 @@ class KeycloakKonten:
             except httpx.HTTPError:
                 # Ein Konto ohne Mail kann niemand nutzen, und es blockierte die Adresse:
                 # Ein zweiter Versuch ergaebe "Konto vorhanden", ohne dass je eine Mail kam.
-                http.delete(f"{admin}/{konto_id}", headers=kopf)
+                try:
+                    http.delete(f"{admin}/{konto_id}", headers=kopf).raise_for_status()
+                except httpx.HTTPError as e:
+                    # Dann bleibt das Konto ohne Mail stehen; die Person kommt ueber
+                    # "Passwort vergessen" hinein. Ohne Adresse im Log.
+                    logger.error(
+                        f"Removing account after failed mail failed: {type(e).__name__}"
+                    )
                 raise
         return KontoAnlegen.ANGELEGT

@@ -5,8 +5,7 @@ import { environment } from '../../../environments/environment';
 
 // Grenzen wie im Backend (services/einladung_service.py).
 export const EINLADUNG_NOTIZ_MAX = 200;
-export const EINLADUNG_KONTEN_MAX = 1000;
-export const EINLADUNG_TAGE_MAX = 366;
+export const EINLADUNG_EINLOESUNGEN_MAX = 1000;
 
 export type EinladungZustand = 'aktiv' | 'abgeschaltet' | 'abgelaufen' | 'aufgebraucht';
 
@@ -15,8 +14,8 @@ export interface Einladung {
   id: string;
   code: string;
   notiz: string;
-  erlaubte_konten: number;
-  angelegte_konten: number;
+  erlaubte_einloesungen: number;
+  einloesungen: number;
   /** ISO-Datum (JJJJ-MM-TT), der letzte Tag, an dem sie gilt. */
   gueltig_bis: string;
   abgeschaltet: boolean;
@@ -25,7 +24,7 @@ export interface Einladung {
 }
 
 export interface EinladungListe {
-  registrierung_eingerichtet: boolean;
+  einloesen_eingerichtet: boolean;
   einladungen: Einladung[];
 }
 
@@ -48,10 +47,10 @@ export class EinladungService {
     return this.http.get<EinladungListe>(this.baseUrl);
   }
 
-  anlegen(notiz: string, erlaubteKonten: number, gueltigBis: string): Observable<Einladung> {
+  anlegen(notiz: string, erlaubteEinloesungen: number, gueltigBis: string): Observable<Einladung> {
     return this.http.post<Einladung>(this.baseUrl, {
       notiz,
-      erlaubte_konten: erlaubteKonten,
+      erlaubte_einloesungen: erlaubteEinloesungen,
       gueltig_bis: gueltigBis,
     });
   }

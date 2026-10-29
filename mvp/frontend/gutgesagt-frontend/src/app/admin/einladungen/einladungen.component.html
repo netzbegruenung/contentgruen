@@ -5,12 +5,12 @@
       Einladungen
     </mat-card-title>
     <mat-card-subtitle>
-      Wer den Link hat, legt damit selbst ein Konto an. Für eine Gruppe mehrere Konten, für eine
-      Person eines.
+      Wer den Link hat, legt damit selbst ein Konto an. Für eine Gruppe mehrere Einlösungen, für
+      eine Person eine.
     </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    <p *ngIf="!registrierungEingerichtet" class="warnung">
+    <p *ngIf="!einloesenEingerichtet" class="warnung" role="status">
       Konten anlegen ist auf diesem Server noch nicht eingerichtet: Links funktionieren erst danach.
     </p>
 
@@ -21,9 +21,9 @@
         <mat-hint>Wofür der Link ist. Keine Namen oder Mail-Adressen.</mat-hint>
       </mat-form-field>
       <mat-form-field appearance="outline" class="zahl">
-        <mat-label>Erlaubte Konten</mat-label>
-        <input matInput type="number" name="erlaubteKonten" [(ngModel)]="erlaubteKonten"
-               min="1" [max]="KONTEN_MAX" required />
+        <mat-label>Erlaubte Einlösungen</mat-label>
+        <input matInput type="number" name="erlaubteEinloesungen" [(ngModel)]="erlaubteEinloesungen"
+               min="1" [max]="EINLOESUNGEN_MAX" required />
       </mat-form-field>
       <mat-form-field appearance="outline" class="tag">
         <mat-label>Gültig bis einschließlich</mat-label>
@@ -33,16 +33,21 @@
         Einladung anlegen
       </button>
     </form>
-    <p *ngIf="anlegenFehler" class="warnung">Die Einladung konnte nicht angelegt werden.</p>
+    <p *ngIf="anlegenFehler" class="warnung" role="alert">Die Einladung konnte nicht angelegt werden.</p>
 
-    <p *ngIf="fehler" class="hinweis">Die Einladungen konnten nicht geladen werden.</p>
+    <p *ngIf="fehler" class="hinweis" role="alert">Die Einladungen konnten nicht geladen werden.</p>
+    <p *ngIf="schaltenFehler" class="warnung" role="alert">Die Einladung konnte nicht umgeschaltet werden.</p>
+    <p class="unsichtbar" role="status">{{ kopiert ? 'Link kopiert' : '' }}</p>
+    <p *ngIf="kopierenFehler" class="warnung" role="alert">
+      Kopieren ging nicht. Den Link bitte von Hand markieren und kopieren.
+    </p>
 
     <ng-container *ngIf="einladungen">
       <table *ngIf="einladungen.length > 0; else leer">
         <thead>
           <tr>
             <th scope="col">Notiz</th>
-            <th scope="col">Konten</th>
+            <th scope="col">Eingelöst</th>
             <th scope="col">Gültig bis</th>
             <th scope="col">Zustand</th>
             <th scope="col">Link</th>
@@ -52,7 +57,7 @@
         <tbody>
           <tr *ngFor="let e of einladungen" data-testid="einladung" [class.inaktiv]="e.zustand !== 'aktiv'">
             <td class="text">{{ e.notiz }}</td>
-            <td class="eng">{{ e.angelegte_konten }} von {{ e.erlaubte_konten }}</td>
+            <td class="eng">{{ e.einloesungen }} von {{ e.erlaubte_einloesungen }}</td>
             <td class="eng">{{ tag(e.gueltig_bis) }}</td>
             <td class="eng">{{ e.zustand }}</td>
             <td class="link">
@@ -74,7 +79,8 @@
         <p class="hinweis">Noch keine Einladungen.</p>
       </ng-template>
       <p class="fussnote">
-        Gezählt wird nur, wie viele Konten über eine Einladung entstanden sind, nicht welche.
+        Gezählt wird nur, wie oft eine Einladung eingelöst wurde, nicht von wem. Eine Einlösung für
+        eine Adresse, die schon ein Konto hat, zählt mit.
       </p>
     </ng-container>
   </mat-card-content>

@@ -4,7 +4,7 @@ Einladungen (#429) gegen ein echtes PostgreSQL.
 Service und Repository zusammen bis in die Tabelle, Keycloak als Attrappe: Eine
 Einladung laesst genau so viele Konten anlegen, wie sie erlaubt, auch wenn Anfragen
 gleichzeitig kommen; abgeschaltet oder abgelaufen keines. Die Tabelle traegt keine
-Mail-Adresse. Dazu laeuft die Migration auf einer Datenbank ohne die Tabelle.
+Mail-Adresse, und eine Einloesung zaehlt auch fuer eine Adresse mit Konto. Dazu laeuft die Migration auf einer Datenbank ohne die Tabelle.
 
 Jeder Test bekommt ein eigenes Schema und raeumt es wieder ab; Datenbank und
 Schema kommen aus ``conftest.py`` (siehe ``postgres.py``).
@@ -22,7 +22,9 @@ from repositories.einladung_repository import EinladungRepository
 from services.einladung_service import (
     EinladungService,
     EinladungUngueltig,
+    EinladungZustand,
     KontoAnlegen,
+    KontoAnlegenFehlgeschlagen,
 )
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
@@ -36,11 +38,14 @@ pytestmark = pytest.mark.integration
 
 
 class KontenAttrappe:
-    def __init__(self, ergebnis=KontoAnlegen.ANGELEGT):
+    def __init__(self, ergebnis=KontoAnlegen.ANGELEGT, fehler=False):
         self.ergebnis = ergebnis
+        self.fehler = fehler
         self.adressen = []
 
     def konto_anlegen(self, email):
+        if self.fehler:
+            raise RuntimeError("Keycloak nicht erreichbar")
         self.adressen.append(email)
         return self.ergebnis
 
@@ -52,12 +57,16 @@ def neue_datenbank(postgres_url):
         yield db
 
 
-def _service(db: Datenbank, konten=None) -> EinladungService:
+def _repository(db: Datenbank) -> EinladungRepository:
     with patch(
         "repositories.einladung_repository.get_app_database",
         return_value=db,
     ):
-        return EinladungService(EinladungRepository(), konten)
+        return EinladungRepository()
+
+
+def _service(db: Datenbank, konten=None) -> EinladungService:
+    return EinladungService(_repository(db), konten)
 
 
 def test_einladung_laesst_genau_so_viele_konten_anlegen_wie_erlaubt(neue_datenbank):
@@ -72,16 +81,16 @@ def test_einladung_laesst_genau_so_viele_konten_anlegen_wie_erlaubt(neue_datenba
 
     assert konten.adressen == ["a@example.org", "b@example.org"]
     [einladung] = service.alle()
-    assert einladung.angelegte_konten == 2
-    assert einladung.zustand(HEUTE) == "aufgebraucht"
+    assert einladung.einloesungen == 2
+    assert einladung.zustand(HEUTE) is EinladungZustand.AUFGEBRAUCHT
 
 
 def test_gleichzeitige_anfragen_bekommen_den_letzten_platz_nur_einmal(
     neue_datenbank,
 ):
-    service = _service(neue_datenbank, KontenAttrappe())
+    repository = _repository(neue_datenbank)
+    service = EinladungService(repository, KontenAttrappe())
     code = service.anlegen("Ein Platz", 1, LETZTER_TAG, heute=HEUTE).code
-    repository = service._repository
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         belegt = list(
@@ -89,19 +98,19 @@ def test_gleichzeitige_anfragen_bekommen_den_letzten_platz_nur_einmal(
         )
 
     assert belegt.count(True) == 1
-    assert service.alle()[0].angelegte_konten == 1
+    assert service.alle()[0].einloesungen == 1
 
 
 def test_abgeschaltet_und_abgelaufen_legen_kein_konto_an(neue_datenbank):
     konten = KontenAttrappe()
     service = _service(neue_datenbank, konten)
     einladung = service.anlegen("Aus", 5, LETZTER_TAG, heute=HEUTE)
-    service.abschalten(einladung.id, True)
+    service.schalten(einladung.id, True)
 
     with pytest.raises(EinladungUngueltig):
         service.einloesen(einladung.code, "a@example.org", heute=HEUTE)
 
-    service.abschalten(einladung.id, False)
+    service.schalten(einladung.id, False)
     with pytest.raises(EinladungUngueltig):
         service.einloesen(einladung.code, "a@example.org", heute=date(2026, 11, 14))
 
@@ -110,13 +119,24 @@ def test_abgeschaltet_und_abgelaufen_legen_kein_konto_an(neue_datenbank):
     assert konten.adressen == ["a@example.org"]
 
 
-def test_vorhandenes_konto_belegt_keinen_platz(neue_datenbank):
+def test_vorhandenes_konto_belegt_einen_platz_wie_ein_neues(neue_datenbank):
     service = _service(neue_datenbank, KontenAttrappe(KontoAnlegen.VORHANDEN))
     code = service.anlegen("Ein Platz", 1, LETZTER_TAG, heute=HEUTE).code
 
     service.einloesen(code, "alt@example.org", heute=HEUTE)
 
-    assert service.alle()[0].angelegte_konten == 0
+    assert service.alle()[0].einloesungen == 1
+    assert not service.ist_einloesbar(code, heute=HEUTE)
+
+
+def test_gescheitertes_anlegen_gibt_den_platz_frei(neue_datenbank):
+    service = _service(neue_datenbank, KontenAttrappe(fehler=True))
+    code = service.anlegen("Ein Platz", 1, LETZTER_TAG, heute=HEUTE).code
+
+    with pytest.raises(KontoAnlegenFehlgeschlagen):
+        service.einloesen(code, "neu@example.org", heute=HEUTE)
+
+    assert service.alle()[0].einloesungen == 0
     assert service.ist_einloesbar(code, heute=HEUTE)
 
 
@@ -135,8 +155,8 @@ def test_tabelle_kennt_keine_mail_adresse(neue_datenbank):
         "id",
         "code",
         "notiz",
-        "erlaubte_konten",
-        "angelegte_konten",
+        "erlaubte_einloesungen",
+        "einloesungen",
         "gueltig_bis",
         "abgeschaltet",
         "angelegt_am",
@@ -155,4 +175,4 @@ def test_migration_legt_die_tabelle_an_und_darf_zweimal_laufen(postgres_url):
         code = service.anlegen("nach der Migration", 1, LETZTER_TAG, heute=HEUTE).code
         service.einloesen(code, "a@example.org", heute=HEUTE)
 
-        assert service.alle()[0].angelegte_konten == 1
+        assert service.alle()[0].einloesungen == 1
