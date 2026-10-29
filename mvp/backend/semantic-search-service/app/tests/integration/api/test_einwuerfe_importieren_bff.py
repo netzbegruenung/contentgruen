@@ -127,7 +127,8 @@ def test_einwerfen_dann_gleicher_link_uebersprungen(
         "Zitat auf Seite 3",
         "open",
     )
-    assert a["submitted_by"] == "user-001"
+    # Kennungen anderer sieht nur ein Admin (#385); die Person selbst bekommt keine.
+    assert a["submitted_by"] is None
     assert a["source_channel"] == "import"
     # Tracking-Parameter entfernt der Server wie das Formular.
     (b,) = _gleiche(sitzung, links[1])
