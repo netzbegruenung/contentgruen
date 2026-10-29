@@ -33,7 +33,7 @@ public static class EndpointPolicy
         "/api/v1/feedback/senden",
         // Nur dieser eine Metrics-Endpunkt, nicht das ganze Praefix: /getMetrics
         // liefert Bestandszaehler fuer die Startseite, die uebrigen sechs sind
-        // Betriebskennzahlen und im Backend admin-only. Der frueher hier stehende
+        // Kennzahlen fuer Admins und im Backend admin-only. Der frueher hier stehende
         // Eintrag "/api/v1/metrics/" haette alle sieben durchgelassen.
         "/api/v1/metrics/getMetrics"
     };

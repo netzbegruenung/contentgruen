@@ -266,7 +266,7 @@ alert rules and alert routing are run by the operators, outside this repository.
 |---|---|---|
 | Frontend reachable | `GET /` on the frontend (nginx) | 200 |
 | BFF reachable | `GET /api/check-session` on the BFF; answered by the BFF itself, without a backend call | 200 or 401 |
-| Semantic search reachable | `GET /api/v1/health` on the semantic search service, checked directly on the internal network | `status` in the JSON is `healthy` (`degraded`: disk or memory critical; `unhealthy`: PostgreSQL or Qdrant unreachable). The endpoint always answers 200, so read the field |
+| Semantic search reachable | `GET /api/v1/health` on the semantic search service, checked directly on the internal network | `status` in the JSON is `healthy` (`degraded`: disk or memory above 90 %; `unhealthy`: PostgreSQL or Qdrant unreachable, or one of the checks failed; above 80 % is only a `warning` in the check and leaves `status` at `healthy`). The endpoint always answers 200, so read the field |
 | Error rate (5xx) | `GET /metrics`, counter `gutgesagt_http_requests_total{status="5xx"}` | low share of all requests |
 | Search response time | `GET /metrics`, histogram `gutgesagt_search_duration_seconds` | quantiles from the buckets |
 

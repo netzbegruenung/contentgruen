@@ -1,5 +1,5 @@
 """
-Betriebskennzahlen fuer das Monitoring: GET /metrics im Prometheus-Textformat (#420).
+Betriebskennzahlen fuer den Betrieb: GET /metrics im Prometheus-Textformat (#420).
 
 Nicht zu verwechseln mit /api/v1/metrics: das sind fachliche Kennzahlen fuer Admins und
 die Startseite. Hier steht nur, was der Betrieb fuer Alarme braucht: Anfragen je Methode,
@@ -32,7 +32,7 @@ _METHODEN = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 _OHNE_ROUTE = "unmatched"
 # Prefix aus main.py plus Route aus api/v1/search.py; dass es sie gibt, prueft der Test
 # gegen main.app.
-SUCHE = "/api/v1/search/searchByText"
+SUCHE_VORLAGE = "/api/v1/search/searchByText"
 # Obergrenzen in Sekunden. Eine Suche bettet ein und fragt Qdrant mehrfach ab; ueblich
 # ist weniger als eine Sekunde, die oberen Stufen fangen Lastspitzen und Kaltstarts.
 _SUCHDAUER_GRENZEN = (0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0)
@@ -125,7 +125,7 @@ class BetriebskennzahlenMiddleware:
             # FastAPI legt die zugeordnete Route in denselben Scope (APIRoute.matches).
             route = getattr(scope.get("route"), "path", None) or _OHNE_ROUTE
             self.kennzahlen.anfrage(scope["method"], route, status)
-            if route == SUCHE and scope["method"] == "POST":
+            if route == SUCHE_VORLAGE and scope["method"] == "POST":
                 self.kennzahlen.suchdauer(time.perf_counter() - beginn)
 
 

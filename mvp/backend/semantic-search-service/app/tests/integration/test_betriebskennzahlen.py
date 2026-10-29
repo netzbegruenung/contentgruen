@@ -8,7 +8,8 @@ gibt. In /metrics darf keiner dieser Werte stehen, und jeder Label-Wert der Rout
 eine registrierte Routen-Vorlage sein, kein Pfad mit ID.
 
 Die Suche laeuft durch den echten Router mit echten Diensten auf einer
-Wegwerf-Collection; ersetzt ist nur, was PostgreSQL braucht (Nutzung, Suchereignis).
+Wegwerf-Collection, hinter dem Rate-Limit wie in main.py; ersetzt ist nur, was
+PostgreSQL braucht (Nutzung, Suchereignis).
 """
 
 import datetime
@@ -21,7 +22,7 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 
-from api.metrics_betrieb import einbinden
+from api.betriebskennzahlen import SUCHE_VORLAGE, einbinden
 from api.v1.search import router as search_router
 from dependencies import (
     get_commentary_service,
@@ -37,6 +38,7 @@ from domain.models.commentary import CommentaryDbEntry
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
+from middleware.rate_limit import RateLimitMiddleware
 from services.content.commentary_service import CommentaryService
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
@@ -76,7 +78,10 @@ async def dienst(integration_settings, real_repository_factory):
         )
     )
 
+    # Dieselbe Schichtung wie in main.py: das Rate-Limit ist eine BaseHTTPMiddleware
+    # innen, die Betriebskennzahlen liegen aussen und lesen die Route danach aus dem Scope.
     app = FastAPI()
+    app.add_middleware(RateLimitMiddleware)
     einbinden(app)
     app.include_router(search_router, prefix="/api/v1/search")
     app.dependency_overrides.update(
@@ -121,7 +126,7 @@ async def test_metrics_nach_suche_ohne_merkmal_kennung_und_sitzung(dienst):
     }
 
     suche = await client.post(
-        "/api/v1/search/searchByText",
+        SUCHE_VORLAGE,
         json={"query_text": f"Lohnt sich die Wärmepumpe im Altbau {MERKMAL}?"},
         headers=kopf,
     )
@@ -137,7 +142,7 @@ async def test_metrics_nach_suche_ohne_merkmal_kennung_und_sitzung(dienst):
 
     vorlagen = {route.path for route in app.routes} | {"unmatched"}
     routen = re.findall(r'route="([^"]*)"', text)
-    assert "/api/v1/search/searchByText" in routen
+    assert SUCHE_VORLAGE in routen
     assert "unmatched" in routen
     assert set(routen) <= vorlagen
     # Ausser method, route und status (Zaehler) und le (Histogramm) gibt es kein Label.

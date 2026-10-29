@@ -2,14 +2,14 @@
 Betriebskennzahlen unter GET /metrics (#420).
 
 Gezaehlt wird je Methode, Routen-Vorlage und Statusklasse; dazu die Dauer der Suche als
-Histogramm. Geprueft an einer kleinen App, in die ``einbinden`` aus api/metrics_betrieb.py
+Histogramm. Geprueft an einer kleinen App, in die ``einbinden`` aus api/betriebskennzahlen.py
 Middleware und Endpunkt haengt, ueber HTTP wie der Prometheus-Scraper.
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
-from api.metrics_betrieb import einbinden
+from api.betriebskennzahlen import SUCHE_VORLAGE, einbinden
 
 
 def _client() -> TestClient:
@@ -25,7 +25,7 @@ def _client() -> TestClient:
         return {"id": beitrag_id}
 
     # Dieselbe Vorlage wie der echte Suchendpunkt; dessen Dienste braucht hier keiner.
-    @app.post("/api/v1/search/searchByText")
+    @app.post(SUCHE_VORLAGE)
     async def suche():
         return {}
 
@@ -93,8 +93,8 @@ def _wert(zeilen: list[str], name: str) -> float:
 
 def test_metrics_histogramm_nur_fuer_die_suche():
     client = _client()
-    client.post("/api/v1/search/searchByText", json={"query_text": "egal"})
-    client.post("/api/v1/search/searchByText", json={"query_text": "egal"})
+    client.post(SUCHE_VORLAGE, json={"query_text": "egal"})
+    client.post(SUCHE_VORLAGE, json={"query_text": "egal"})
     client.get("/api/v1/beitrag/anderes")
 
     zeilen = _zeilen(client)
@@ -108,7 +108,7 @@ def test_metrics_histogramm_nur_fuer_die_suche():
 def test_metrics_histogramm_buckets_kumulativ():
     """Jeder Bucket zaehlt alle Suchen bis zu seiner Grenze, also nie weniger als der vorige."""
     client = _client()
-    client.post("/api/v1/search/searchByText", json={"query_text": "egal"})
+    client.post(SUCHE_VORLAGE, json={"query_text": "egal"})
 
     zeilen = _zeilen(client)
     buckets = [
@@ -123,12 +123,11 @@ def test_metrics_histogramm_buckets_kumulativ():
 
 def test_main_app_liefert_metrics_ausserhalb_von_api():
     """Der Suchdienst selbst haengt die Middleware ein; der Pfad liegt nicht unter /api."""
-    from api.metrics_betrieb import SUCHE
     from main import app
 
     # Die Vorlage, an der das Histogramm haengt, muss es in der App geben; sonst bliebe
     # es nach einer Umbenennung von Prefix oder Route still leer.
-    assert SUCHE in {route.path for route in app.routes}
+    assert SUCHE_VORLAGE in {route.path for route in app.routes}
     client = TestClient(app)
     client.get("/api/v1/content/")
 

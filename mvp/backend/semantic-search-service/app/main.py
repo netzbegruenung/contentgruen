@@ -231,7 +231,7 @@ app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["feedback"]
 
 # Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die
 # Middleware zaehlt auch, was das Rate-Limit abweist. Am BFF ist /metrics gesperrt.
-from api.metrics_betrieb import einbinden as betriebskennzahlen_einbinden
+from api.betriebskennzahlen import einbinden as betriebskennzahlen_einbinden
 
 betriebskennzahlen_einbinden(app)
 
