@@ -1,0 +1,20 @@
+<section *ngIf="verfuegbar" class="gegenlesen" aria-labelledby="gegenlesen-titel">
+    <div class="gegenlesen-kopf">
+        <app-siegel [guete]="ergebnis.guete"></app-siegel>
+        <div>
+            <h4 id="gegenlesen-titel">Gegenlesen</h4>
+            <p class="gegenlesen-stand">
+                {{ ergebnis.guete === null ? 'Schreib los, dann liest es mit.' : 'Nach festen Regeln, ohne KI' }}
+            </p>
+        </div>
+    </div>
+    <div class="gegenlesen-ergebnis" aria-live="polite">
+        <ul *ngIf="ergebnis.anmerkungen.length" class="gegenlesen-anmerkungen">
+            <li *ngFor="let a of ergebnis.anmerkungen" class="gegenlesen-anmerkung">{{ a.text }}</li>
+        </ul>
+        <p *ngIf="ergebnis.guete !== null && !ergebnis.anmerkungen.length" class="gegenlesen-gut">
+            Nichts aufgefallen.
+        </p>
+    </div>
+    <p class="gegenlesen-fuss">Nur du siehst das. Speichern kannst du immer.</p>
+</section>

@@ -24,6 +24,7 @@ import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
+import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
@@ -128,6 +129,7 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
     ReferenceInputComponent,
     AntwortAufComponent,
     FormularHilfeComponent,
+    GegenlesenComponent,
     FormularLeisteComponent,
   ],
 })

@@ -1,0 +1,37 @@
+# Liste "statt X sag Y" für das Gegenlesen (#358): Wörter, die Unentschiedene
+# eher abschrecken, und was man stattdessen sagen kann. Gepflegt per Pull Request.
+#
+# statt: das Wort in der Grundform (Groß-/Kleinschreibung egal). Gefunden wird es
+#        auch gebeugt und als Teil eines zusammengesetzten Worts
+#        ("Transformationsprozess").
+# sag:   ein bis drei Vorschläge, der beste zuerst.
+- statt: Diskurs
+  sag: [Debatte, Gespräch]
+- statt: Transformation
+  sag: [Umbau, Wandel]
+- statt: Narrativ
+  sag: [Erzählung, Geschichte]
+- statt: Paradigmenwechsel
+  sag: [Kurswechsel, Wende]
+- statt: Implementierung
+  sag: [Umsetzung]
+- statt: Partizipation
+  sag: [Beteiligung, Mitreden]
+- statt: Akteur
+  sag: [Beteiligte, wer mitmacht]
+- statt: Ressource
+  sag: [Mittel, Geld, Material]
+- statt: Problematik
+  sag: [Problem]
+- statt: Thematik
+  sag: [Thema]
+- statt: Dekarbonisierung
+  sag: [weg von Kohle, Öl und Gas]
+- statt: Resilienz
+  sag: [Widerstandskraft]
+- statt: Suffizienz
+  sag: [weniger verbrauchen, Genügsamkeit]
+- statt: vulnerabel
+  sag: [verletzlich, besonders betroffen]
+- statt: Stakeholder
+  sag: [Beteiligte]

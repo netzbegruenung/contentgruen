@@ -33,6 +33,11 @@ from repositories.suchen_ohne_treffer_repository import (
 )
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
+from services.gegenlesen.gegenlesen_service import (
+    SPRACHWERKZEUGE,
+    GegenlesenService,
+    lade_statt_sag_liste,
+)
 from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import get_moderation_service
 from repositories.content_report_repository import get_content_report_repository
@@ -156,6 +161,19 @@ def get_unbeantwortete_aussagen_service(
 
 def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
+
+
+_gegenlesen_service: Optional[GegenlesenService] = None
+
+
+def get_gegenlesen_service() -> GegenlesenService:
+    """Einmal je Prozess: die Liste "statt X sag Y" wird beim ersten Aufruf gelesen."""
+    global _gegenlesen_service
+    if _gegenlesen_service is None:
+        _gegenlesen_service = GegenlesenService(
+            statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
+        )
+    return _gegenlesen_service
 
 
 def get_loeschfristen_service() -> LoeschfristenService:

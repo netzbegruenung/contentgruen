@@ -119,6 +119,7 @@
                 <h3 id="vorschau-titel">Vorschau</h3>
             </div>
             <app-beitragskarte [daten]="vorschauKarte" [vorschau]="true"></app-beitragskarte>
+            <app-gegenlesen [titel]="commentaryForm.value.title" [text]="commentaryForm.value.text" [aussage]="aussage.text"></app-gegenlesen>
         </section>
     </div>
 </div>
