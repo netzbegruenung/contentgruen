@@ -820,6 +820,30 @@ class TestThemenDerAussage:
         assert resp.json()["dublette"] is True
         themen_service.zuordnen.assert_not_called()
 
+    def test_vorhanden_nehmen_gibt_der_neuen_aussage_die_themen(
+        self, dienste, themen_service
+    ):
+        _, statement_service = dienste
+        vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
+        TestAddCommentaryAntwort._dublette(vorhanden)
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(
+                statement_text=self.AUSSAGE,
+                themen=["klima"],
+                vorhanden_nehmen=str(vorhanden),
+            ),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["verknuepft"] is True
+        themen_service.zuordnen.assert_awaited_once_with(statement_id, ["klima"])
+
     @pytest.mark.parametrize(
         "themen", [["heizungsgesetz"], ["klima", "verkehr", "europa"]]
     )

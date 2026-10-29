@@ -622,6 +622,27 @@ class TestThemenDerAussage:
         assert resp.status_code == 200
         themen_service.zuordnen.assert_not_called()
 
+    def test_gescheitertes_zuordnen_behaelt_hintergrundinfo_und_verknuepfung(
+        self, dienste, themen_service
+    ):
+        generic_text_id, statement_service = dienste
+        statement_id = uuid.uuid4()
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+        themen_service.zuordnen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(generic_text_id)
+        assert resp.json()["verknuepft"] is True
+
     def test_ungueltige_themen_werden_vor_dem_speichern_abgewiesen(self, dienste):
         generic_text_service = app.dependency_overrides[get_generic_text_service]()
 

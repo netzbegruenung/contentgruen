@@ -110,8 +110,10 @@ interface OptionaleAngaben {
 
 /**
  * Die optionalen Angaben, wie sie im leeren Formular stehen. Ein weiteres Feld dieser
- * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` und in der
- * Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten sich hieraus ab.
+ * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` (die Themen
+ * gehoeren zur Aussage und gehen ueber `aussageFuerAnfrage`) und, wenn die Karte es
+ * zeigt, in der Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten
+ * sich hieraus ab.
  */
 const OPTIONALE_ANGABEN_LEER: Readonly<OptionaleAngaben> = { zweck: ZWECK_STANDARD, stil: null, themen: [] };
 const OPTIONALE_ANGABEN = Object.keys(OPTIONALE_ANGABEN_LEER) as (keyof OptionaleAngaben)[];
@@ -339,7 +341,7 @@ export class AddCommentaryComponent implements OnChanges {
       const text = this.statementText?.trim() ?? '';
       const id = text && istAussageId(this.statementId) ? this.statementId : '';
       this.aussageAusAdresse = { id, text };
-      this.aussage = this.aussageAusAdresse;
+      this.aussageSetzen(this.aussageAusAdresse);
     }
     if (changes['vorbefuellung'] && this.vorbefuellung) {
       this.vorbefuellungAnwenden(this.vorbefuellung);
@@ -372,6 +374,18 @@ export class AddCommentaryComponent implements OnChanges {
 
   get langLaenge(): number {
     return this.commentaryForm.get('lang')?.value?.length ?? 0;
+  }
+
+  /**
+   * Was im Antwort-auf-Block gilt. Ist keine Themenwahl mehr moeglich (eine
+   * vorhandene Aussage gewaehlt, das Feld leer), fallen die gewaehlten Themen weg:
+   * Unsichtbar mitgefuehrt kaemen sie spaeter ungesehen mit einer anderen Aussage zurueck.
+   */
+  aussageSetzen(aussage: AntwortAuf): void {
+    this.aussage = aussage;
+    if (!themenWaehlbar(aussage) && this.commentaryForm.value.themen?.length) {
+      this.commentaryForm.patchValue({ themen: [] });
+    }
   }
 
   /** Themen waehlen laesst sich fuer eine neue Aussage per Text (themenWaehlbar). */

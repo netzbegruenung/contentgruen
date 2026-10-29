@@ -1213,6 +1213,8 @@ describe('AddCommentaryComponent', () => {
       thema('Klima').click();
       aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
       ausfuellen();
+      // Nicht unsichtbar mitgefuehrt: Zurueck beim Text kaeme sie sonst ungesehen mit.
+      expect(component.commentaryForm.value.themen).toEqual([]);
 
       component.speichern();
       flush();

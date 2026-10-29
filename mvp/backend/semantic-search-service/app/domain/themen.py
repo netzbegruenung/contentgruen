@@ -13,7 +13,9 @@ import json
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Annotated, Dict, Iterable, List, Tuple
+
+from pydantic import AfterValidator
 
 # Glossar: "eine Aussage hat hoechstens zwei".
 HOECHSTENS_JE_AUSSAGE = 2
@@ -69,3 +71,8 @@ def themen_pruefen(schluessel: Iterable[str]) -> List[str]:
             f"Hoechstens {HOECHSTENS_JE_AUSSAGE} Themen je Aussage, nicht {len(ergebnis)}"
         )
     return ergebnis
+
+
+# Die Themen einer Aussage in einer Anfrage, geprueft, bevor etwas gespeichert wird:
+# Sonst stuende der Beitrag oder die Aussage schon, ohne Themen.
+ThemenDerAussage = Annotated[List[str], AfterValidator(themen_pruefen)]

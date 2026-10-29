@@ -253,7 +253,7 @@ export class AddGenerictextComponent implements OnChanges {
       const text = this.statementText?.trim() ?? '';
       const id = text && istAussageId(this.statementId) ? this.statementId : '';
       this.aussageAusAdresse = { id, text };
-      this.aussage = this.aussageAusAdresse;
+      this.aussageSetzen(this.aussageAusAdresse);
     }
     if (changes['vorbefuellung'] && this.vorbefuellung) {
       this.vorbefuellungAnwenden(this.vorbefuellung);
@@ -278,6 +278,18 @@ export class AddGenerictextComponent implements OnChanges {
 
   get textLaenge(): number {
     return this.generictextForm.get('text')?.value?.length ?? 0;
+  }
+
+  /**
+   * Was im Antwort-auf-Block gilt. Ist keine Themenwahl mehr moeglich (eine
+   * vorhandene Aussage gewaehlt, das Feld leer), fallen die gewaehlten Themen weg:
+   * Unsichtbar mitgefuehrt kaemen sie spaeter ungesehen mit einer anderen Aussage zurueck.
+   */
+  aussageSetzen(aussage: AntwortAuf): void {
+    this.aussage = aussage;
+    if (!themenWaehlbar(aussage) && this.generictextForm.value.themen?.length) {
+      this.generictextForm.patchValue({ themen: [] });
+    }
   }
 
   /** Themen waehlen laesst sich fuer eine neue Aussage per Text (themenWaehlbar). */

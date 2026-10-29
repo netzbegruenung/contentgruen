@@ -1002,6 +1002,8 @@ describe('AddGenerictextComponent', () => {
       thema('Klima').click();
       aussageAusAdresse('Wärmepumpen sind zu teuer', ID);
       ausfuellen();
+      // Nicht unsichtbar mitgefuehrt: Zurueck beim Text kaeme sie sonst ungesehen mit.
+      expect(component.generictextForm.value.themen).toEqual([]);
 
       component.speichern();
       flush();

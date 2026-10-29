@@ -10,7 +10,7 @@
         <div class="form-column">
             <form [formGroup]="commentaryForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
                 <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
-                                 (aussageChange)="aussage = $event">
+                                 (aussageChange)="aussageSetzen($event)">
                 </app-antwort-auf>
 
                 <mat-form-field appearance="outline" class="formular-feld">
