@@ -26,6 +26,10 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
+import { Thema } from '../services/dtos/themenDtos';
+import { ThemenWahl } from '../beitragsformular/themen-wahl';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -93,35 +97,61 @@ export interface Vorhanden {
   gewaehlt: 'zugestimmt' | 'genommen' | null;
 }
 
-/** Die optionalen Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357). */
+/**
+ * Die optionalen Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357),
+ * die Themen einer neuen Aussage (#455).
+ */
 interface OptionaleAngaben {
   zweck: Zweck;
   stil: Stil | null;
+  /** Gehoeren zur Aussage, nicht zum Kommentar: gehen mit ihrem Text (aussageFuerAnfrage). */
+  themen: string[];
 }
 
 /**
  * Die optionalen Angaben, wie sie im leeren Formular stehen. Ein weiteres Feld dieser
- * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` und in der
- * Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten sich hieraus ab.
+ * Art kommt hier, in `OptionaleAngaben`, in `optionaleAngabenFuerAnfrage` (die Themen
+ * gehoeren zur Aussage und gehen ueber `aussageFuerAnfrage`) und, wenn die Karte es
+ * zeigt, in der Vorschau dazu; Zuruecksetzen, Rueckfrage und Vorschau-Cache leiten
+ * sich hieraus ab (der Cache ohne die Themen, siehe `fuerDieVorschau`).
  */
-const OPTIONALE_ANGABEN_LEER: OptionaleAngaben = { zweck: ZWECK_STANDARD, stil: null };
+const OPTIONALE_ANGABEN_LEER: Readonly<OptionaleAngaben> = { zweck: ZWECK_STANDARD, stil: null, themen: [] };
 const OPTIONALE_ANGABEN = Object.keys(OPTIONALE_ANGABEN_LEER) as (keyof OptionaleAngaben)[];
 
-function gleicheAngaben(a: OptionaleAngaben, b: OptionaleAngaben): boolean {
-  return OPTIONALE_ANGABEN.every((feld) => a[feld] === b[feld]);
+/** Die Controls der optionalen Angaben; eingepackt, weil FormBuilder ein Array sonst als Konfiguration liest. */
+const OPTIONALE_ANGABEN_CONTROLS = Object.fromEntries(OPTIONALE_ANGABEN.map((feld) => [feld, [OPTIONALE_ANGABEN_LEER[feld]]]));
+
+function gleicherWert(a: unknown, b: unknown): boolean {
+  return Array.isArray(a) && Array.isArray(b) ? a.length === b.length && a.every((x, i) => x === b[i]) : a === b;
 }
 
-const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
-  titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, weitere Fassungen, Zweck, Stil, Aussage und Herkunft werden geleert.',
-  ja: 'Zurücksetzen',
-  nein: 'Abbrechen',
-};
+/** Feld fuer Feld gleich; Arrays (die Themen) nach Inhalt. */
+function gleicheAngaben<T extends object>(a: T, b: T): boolean {
+  return (Object.keys(a) as (keyof T)[]).every((feld) => gleicherWert(a[feld], b[feld]));
+}
+
+/** Was die Vorschau aus den optionalen Angaben zeigt: alles ausser den Themen, die die Karte nicht zeigt. */
+type VorschauAngaben = Omit<OptionaleAngaben, 'themen'>;
+
+function fuerDieVorschau(angaben: OptionaleAngaben): VorschauAngaben {
+  const { themen: _ohneThemen, ...vorschau } = angaben;
+  return vorschau;
+}
+
+/** Die Rueckfrage nennt die Themen nur, wenn ihre Auswahl zu sehen ist. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Titel, Text, weitere Fassungen, Zweck, Stil, ${mitThemen ? 'Themen, ' : ''}Aussage und Herkunft werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
+}
 
 /**
  * Das Kommentarformular: Antwort auf, Titel, Kommentar (die Mittelfassung),
  * aufklappbar die weiteren Fassungen Kurz und Lang (#355), Zweck und Stil (#357),
- * Herkunft, Leiste - und
+ * fuer eine neue Aussage ihre Themen (#455), Herkunft, Leiste - und
  * daneben (am Handy darunter) die Vorschau.
  *
  * Gespeichert wird in einem Aufruf, samt Aussage: mit ID, wenn eine gewaehlt ist,
@@ -155,6 +185,7 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
     FormularHilfeComponent,
     GegenlesenComponent,
     FormularLeisteComponent,
+    ThemenAuswahlComponent,
   ],
 })
 export class AddCommentaryComponent implements OnChanges {
@@ -169,6 +200,8 @@ export class AddCommentaryComponent implements OnChanges {
   readonly zwecke = Object.keys(ZWECK_LABEL) as Zweck[];
   readonly zweckLabel = ZWECK_LABEL;
   readonly stilLabel = STIL_LABEL;
+  /** Die Themen einer neuen Aussage (#455). */
+  readonly themenWahl: ThemenWahl;
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -264,7 +297,7 @@ export class AddCommentaryComponent implements OnChanges {
     text: string;
     kurz: string;
     lang: string;
-    angaben: OptionaleAngaben;
+    angaben: VorschauAngaben;
     quellen: unknown;
     aussage: string;
     karte: KartenDaten;
@@ -283,9 +316,10 @@ export class AddCommentaryComponent implements OnChanges {
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
       kurz: ['', [Validators.maxLength(KURZ_MAX)]],
       lang: ['', [Validators.maxLength(LANG_MAX)]],
-      ...OPTIONALE_ANGABEN_LEER,
+      ...OPTIONALE_ANGABEN_CONTROLS,
       references: [[]],
     });
+    this.themenWahl = new ThemenWahl(this.commentaryForm.get('themen')!);
     // "Bissig" gibt es nur fuer die eigenen Leute: Wechselt der Zweck, faellt ein
     // Stil weg, der nicht mehr passt. Andere Stile bleiben stehen.
     this.commentaryForm
@@ -314,7 +348,7 @@ export class AddCommentaryComponent implements OnChanges {
       const text = this.statementText?.trim() ?? '';
       const id = text && istAussageId(this.statementId) ? this.statementId : '';
       this.aussageAusAdresse = { id, text };
-      this.aussage = this.aussageAusAdresse;
+      this.aussageSetzen(this.aussageAusAdresse);
     }
     if (changes['vorbefuellung'] && this.vorbefuellung) {
       this.vorbefuellungAnwenden(this.vorbefuellung);
@@ -347,6 +381,16 @@ export class AddCommentaryComponent implements OnChanges {
 
   get langLaenge(): number {
     return this.commentaryForm.get('lang')?.value?.length ?? 0;
+  }
+
+  /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
+  aussageSetzen(aussage: AntwortAuf): void {
+    this.aussage = aussage;
+    this.themenWahl.anAussageAnpassen(aussage);
+  }
+
+  get zeigtThemen(): boolean {
+    return this.themenWahl.zeigtFuer(this.aussage);
   }
 
   /** Die Stile, die zum gewaehlten Zweck passen. */
@@ -382,7 +426,7 @@ export class AddCommentaryComponent implements OnChanges {
    */
   get vorschauKarte(): KartenDaten {
     const { title, text, kurz, lang, references } = this.commentaryForm.value;
-    const angaben = this.optionaleAngaben;
+    const angaben = fuerDieVorschau(this.optionaleAngaben);
     const cache = this.vorschauCache;
     if (
       cache &&
@@ -519,8 +563,14 @@ export class AddCommentaryComponent implements OnChanges {
    * verknuepfte Aussage; bei Text kann das eine schon vorhandene, aehnliche sein.
    */
   private ergebnisAus(
-    anfrage: { statement_id?: string; statement_text?: string },
-    antwort: { id: string; statement_id?: string | null; statement_text?: string | null; verknuepft?: boolean },
+    anfrage: AussageInAnfrage,
+    antwort: {
+      id: string;
+      statement_id?: string | null;
+      statement_text?: string | null;
+      verknuepft?: boolean;
+      themen?: Thema[];
+    },
   ): BeitragGespeichert {
     const aussageGeschickt = !!(anfrage.statement_id || anfrage.statement_text);
     const verknuepft = !aussageGeschickt || antwort.verknuepft === true;
@@ -528,7 +578,7 @@ export class AddCommentaryComponent implements OnChanges {
       aussageGeschickt && verknuepft && antwort.statement_id
         ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
         : this.aussage;
-    return { id: antwort.id, aussage, verknuepft };
+    return { id: antwort.id, aussage, verknuepft, ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft) };
   }
 
   /** Kurz und Lang nur, wenn sie Text haben: Leere zeigte die Karte als Reiter ohne Inhalt. */
@@ -560,12 +610,9 @@ export class AddCommentaryComponent implements OnChanges {
     return !this.aussage.id && zuKurz(this.aussage.text);
   }
 
-  /** Die gewaehlte Aussage per ID, sonst ihr Text, sonst nichts. */
-  aussageFuerAnfrage(): Pick<AddCommentaryRequest, 'statement_id' | 'statement_text'> {
-    if (this.aussage.id) {
-      return { statement_id: this.aussage.id };
-    }
-    return this.aussage.text ? { statement_text: this.aussage.text } : {};
+  /** Die gewaehlte Aussage per ID, sonst ihr Text mit den gewaehlten Themen, sonst nichts. */
+  aussageFuerAnfrage(): Pick<AddCommentaryRequest, 'statement_id' | 'statement_text' | 'themen'> {
+    return aussageFuerAnfrage(this.aussage, this.optionaleAngaben.themen);
   }
 
   /** Dem vorhandenen, fremden Kommentar eine Stimme geben statt den eigenen zu speichern. */
@@ -626,7 +673,7 @@ export class AddCommentaryComponent implements OnChanges {
     this.entscheidungsFehler = null;
     // Die Aussage, die jetzt im Antwort-auf-Block steht - die Person kann sie seit dem
     // ersten Versuch geaendert haben. Der Text kann es nicht: Dann waere der Hinweis weg.
-    const { statement_id, statement_text, ...anfrage } = vorhanden.anfrage;
+    const { statement_id, statement_text, themen, ...anfrage } = vorhanden.anfrage;
     const nehmen: AddCommentaryRequest = { ...anfrage, ...this.aussageFuerAnfrage(), vorhanden_nehmen: vorhanden.id };
     this.commentaryService.addCommentary(nehmen).subscribe({
       next: (antwort) => {
@@ -671,7 +718,7 @@ export class AddCommentaryComponent implements OnChanges {
       return;
     }
     this.dialog
-      .open(BestaetigungsDialogComponent, { data: ZURUECKSETZEN_FRAGE, autoFocus: 'dialog' })
+      .open(BestaetigungsDialogComponent, { data: zuruecksetzenFrage(this.zeigtThemen), autoFocus: 'dialog' })
       .afterClosed()
       .pipe(filter((ja) => ja === true))
       .subscribe(() => this.leeren());

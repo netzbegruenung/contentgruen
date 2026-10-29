@@ -23,6 +23,10 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
+import { AussageInAnfrage, aussageFuerAnfrage, themenHinweisNachSpeichern } from '../beitragsformular/aussage-fuer-anfrage';
+import { Thema } from '../services/dtos/themenDtos';
+import { ThemenWahl } from '../beitragsformular/themen-wahl';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
 import { FormularLeisteComponent } from '../beitragsformular/formular-leiste/formular-leiste.component';
@@ -86,16 +90,20 @@ export interface Vorhanden {
   gewaehlt: 'zugestimmt' | 'genommen' | null;
 }
 
-const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
-  titel: 'Formular zurücksetzen?',
-  text: 'Titel, Text, Aussage und Herkunft werden geleert.',
-  ja: 'Zurücksetzen',
-  nein: 'Abbrechen',
-};
+/** Die Rueckfrage nennt die Themen nur, wenn ihre Auswahl zu sehen ist. */
+function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
+  return {
+    titel: 'Formular zurücksetzen?',
+    text: `Titel, Text, ${mitThemen ? 'Themen, ' : ''}Aussage und Herkunft werden geleert.`,
+    ja: 'Zurücksetzen',
+    nein: 'Abbrechen',
+  };
+}
 
 /**
  * Das Hintergrundinfo-Formular, gleich gebaut wie das Kommentarformular: Antwort
- * auf, Titel, Text, Herkunft, Leiste - und daneben (am Handy darunter) die Vorschau.
+ * auf, Titel, Text, fuer eine neue Aussage ihre Themen (#455), Herkunft, Leiste - und
+ * daneben (am Handy darunter) die Vorschau.
  *
  * Gespeichert wird in einem Aufruf, samt Aussage. Danach meldet `success` ID,
  * Aussage und ob verknuepft wurde; wohin es weitergeht, entscheidet der Workflow.
@@ -122,6 +130,7 @@ const ZURUECKSETZEN_FRAGE: BestaetigungsDialogDaten = {
     FormularHilfeComponent,
     GegenlesenComponent,
     FormularLeisteComponent,
+    ThemenAuswahlComponent,
   ],
 })
 export class AddGenerictextComponent implements OnChanges {
@@ -130,6 +139,8 @@ export class AddGenerictextComponent implements OnChanges {
   readonly typFarbe = typFarbe('generictext');
   readonly titelMax = TITEL_MAX;
   readonly textMax = TEXT_MAX;
+  /** Die Themen einer neuen Aussage (#455). */
+  readonly themenWahl: ThemenWahl;
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -218,8 +229,11 @@ export class AddGenerictextComponent implements OnChanges {
     this.generictextForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
       text: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(TEXT_MAX)]],
+      // Die Themen einer neuen Aussage (#455); gehen mit ihrem Text (aussageFuerAnfrage).
+      themen: [[] as string[]],
       references: [[]],
     });
+    this.themenWahl = new ThemenWahl(this.generictextForm.get('themen')!);
     // Der Hinweis gilt nur fuer den Text, der geprueft wurde: Wer ihn aendert,
     // entscheidet nicht mehr ueber diese vorhandene, sondern speichert neu.
     this.generictextForm
@@ -237,7 +251,7 @@ export class AddGenerictextComponent implements OnChanges {
       const text = this.statementText?.trim() ?? '';
       const id = text && istAussageId(this.statementId) ? this.statementId : '';
       this.aussageAusAdresse = { id, text };
-      this.aussage = this.aussageAusAdresse;
+      this.aussageSetzen(this.aussageAusAdresse);
     }
     if (changes['vorbefuellung'] && this.vorbefuellung) {
       this.vorbefuellungAnwenden(this.vorbefuellung);
@@ -264,10 +278,27 @@ export class AddGenerictextComponent implements OnChanges {
     return this.generictextForm.get('text')?.value?.length ?? 0;
   }
 
+  /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
+  aussageSetzen(aussage: AntwortAuf): void {
+    this.aussage = aussage;
+    this.themenWahl.anAussageAnpassen(aussage);
+  }
+
+  get zeigtThemen(): boolean {
+    return this.themenWahl.zeigtFuer(this.aussage);
+  }
+
   /** Irgendetwas eingetragen oder vorbelegt - dann fragt Zuruecksetzen nach. */
   get hatEingaben(): boolean {
-    const { title, text, references } = this.generictextForm.value;
-    return !!(title?.trim() || text?.trim() || references?.length || this.aussage.id || this.aussage.text);
+    const { title, text, themen, references } = this.generictextForm.value;
+    return !!(
+      title?.trim() ||
+      text?.trim() ||
+      themen?.length ||
+      references?.length ||
+      this.aussage.id ||
+      this.aussage.text
+    );
   }
 
   /**
@@ -398,8 +429,14 @@ export class AddGenerictextComponent implements OnChanges {
    * verknuepfte Aussage; bei Text kann das eine schon vorhandene, aehnliche sein.
    */
   private ergebnisAus(
-    anfrage: { statement_id?: string; statement_text?: string },
-    antwort: { id: string; statement_id?: string | null; statement_text?: string | null; verknuepft?: boolean },
+    anfrage: AussageInAnfrage,
+    antwort: {
+      id: string;
+      statement_id?: string | null;
+      statement_text?: string | null;
+      verknuepft?: boolean;
+      themen?: Thema[];
+    },
   ): BeitragGespeichert {
     const aussageGeschickt = !!(anfrage.statement_id || anfrage.statement_text);
     const verknuepft = !aussageGeschickt || antwort.verknuepft === true;
@@ -407,7 +444,7 @@ export class AddGenerictextComponent implements OnChanges {
       aussageGeschickt && verknuepft && antwort.statement_id
         ? { id: antwort.statement_id, text: antwort.statement_text ?? this.aussage.text }
         : this.aussage;
-    return { id: antwort.id, aussage, verknuepft };
+    return { id: antwort.id, aussage, verknuepft, ...themenHinweisNachSpeichern(anfrage, antwort, verknuepft) };
   }
 
   /** Im Antwort-auf-Block steht eine Aussage (per ID oder als Text). */
@@ -420,12 +457,9 @@ export class AddGenerictextComponent implements OnChanges {
     return !this.aussage.id && zuKurz(this.aussage.text);
   }
 
-  /** Die gewaehlte Aussage per ID, sonst ihr Text, sonst nichts. */
-  aussageFuerAnfrage(): Pick<AddGenericTextRequest, 'statement_id' | 'statement_text'> {
-    if (this.aussage.id) {
-      return { statement_id: this.aussage.id };
-    }
-    return this.aussage.text ? { statement_text: this.aussage.text } : {};
+  /** Die gewaehlte Aussage per ID, sonst ihr Text mit den gewaehlten Themen, sonst nichts. */
+  aussageFuerAnfrage(): Pick<AddGenericTextRequest, 'statement_id' | 'statement_text' | 'themen'> {
+    return aussageFuerAnfrage(this.aussage, this.generictextForm.value.themen ?? []);
   }
 
   /** Der vorhandenen, fremden Hintergrundinfo eine Stimme geben statt die eigene zu speichern. */
@@ -486,7 +520,7 @@ export class AddGenerictextComponent implements OnChanges {
     this.entscheidungsFehler = null;
     // Die Aussage, die jetzt im Antwort-auf-Block steht - die Person kann sie seit dem
     // ersten Versuch geaendert haben.
-    const { statement_id, statement_text, ...anfrage } = vorhanden.anfrage;
+    const { statement_id, statement_text, themen, ...anfrage } = vorhanden.anfrage;
     const nehmen: AddGenericTextRequest = { ...anfrage, ...this.aussageFuerAnfrage(), vorhanden_nehmen: vorhanden.id };
     this.genericTextService.addGenericText(nehmen).subscribe({
       next: (antwort) => {
@@ -530,14 +564,14 @@ export class AddGenerictextComponent implements OnChanges {
       return;
     }
     this.dialog
-      .open(BestaetigungsDialogComponent, { data: ZURUECKSETZEN_FRAGE, autoFocus: 'dialog' })
+      .open(BestaetigungsDialogComponent, { data: zuruecksetzenFrage(this.zeigtThemen), autoFocus: 'dialog' })
       .afterClosed()
       .pipe(filter((ja) => ja === true))
       .subscribe(() => this.leeren());
   }
 
   leeren(): void {
-    this.generictextForm.reset({ title: '', text: '', references: [] });
+    this.generictextForm.reset({ title: '', text: '', themen: [], references: [] });
     this.antwortAuf?.leeren();
     this.aussage = OHNE_AUSSAGE;
     this.showReferences = false;

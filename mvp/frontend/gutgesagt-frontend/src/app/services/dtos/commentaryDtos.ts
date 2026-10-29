@@ -1,3 +1,4 @@
+import type { Thema } from './themenDtos';
 
 import type { Stil, Zweck } from '../../shared/zweck-stil';
 
@@ -20,6 +21,8 @@ export interface AddCommentaryRequest {
     statement_id?: string;
     /** ... oder, ohne ID, ihr Text; das Backend sucht oder legt sie an. */
     statement_text?: string;
+    /** Mit Text: die Themen der Aussage (#455); eine vorhandene mit Themen behaelt ihre. */
+    themen?: string[];
     /** Die Person hat diesen vorhandenen Kommentar (ID) gesehen und speichert trotzdem. */
     trotz_dublette_von?: string;
     /** Die Person nimmt diesen eigenen vorhandenen Kommentar (ID): er haengt dann an der Aussage. */
@@ -49,6 +52,8 @@ export interface AddCommentaryResponse {
     statement_id?: string | null;
     /** Text der tatsaechlich verknuepften Aussage (kann eine vorhandene, aehnliche sein). */
     statement_text?: string | null;
+    /** Kam die Aussage per Text mit Themen: die Themen, die sie jetzt hat (#455); sonst leer. */
+    themen?: Thema[];
     /**
      * Ohne Dublette false: Aussage angegeben, aber nicht verknuepft - der Kommentar steht trotzdem.
      * Bei einer Dublette true nur, wenn der genommene vorhandene jetzt an der Aussage haengt; sonst false.

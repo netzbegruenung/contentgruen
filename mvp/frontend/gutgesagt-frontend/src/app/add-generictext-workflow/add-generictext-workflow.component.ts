@@ -152,6 +152,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
     const zustand: GespeichertZustand = {
       aussage: ergebnis.aussage.text ? ergebnis.aussage : undefined,
       verknuepft: ergebnis.verknuepft,
+      ...(ergebnis.themenHinweis ? { themenHinweis: ergebnis.themenHinweis } : {}),
     };
 
     if (this.einwurfId) {

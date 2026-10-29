@@ -10,7 +10,7 @@
         <div class="form-column">
             <form [formGroup]="commentaryForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
                 <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
-                                 (aussageChange)="aussage = $event">
+                                 (aussageChange)="aussageSetzen($event)">
                 </app-antwort-auf>
 
                 <mat-form-field appearance="outline" class="formular-feld">
@@ -62,7 +62,7 @@
                     </mat-form-field>
                 </div>
 
-                <!-- Optionale Angaben zum Kommentar (#357): Zweck mit Standard, Stil ohne Vorgabe -->
+                <!-- Optionale Angaben zum Kommentar: Zweck mit Standard, Stil ohne Vorgabe (#357), Themen einer neuen Aussage (#455) -->
                 <div class="optionale-angaben">
                     <div class="zweck-feld">
                         <span class="feld-beschriftung" id="zweck-beschriftung">Zweck</span>
@@ -80,6 +80,12 @@
                         </mat-select>
                         <mat-hint *ngIf="commentaryForm.value.zweck !== 'eigene_leute'">„bissig“ nur für die eigenen Leute</mat-hint>
                     </mat-form-field>
+                    <div *ngIf="zeigtThemen" class="themen-feld">
+                        <span class="feld-beschriftung">Themen der neuen Aussage</span>
+                        <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="commentaryForm.value.themen"
+                                            beschriftung="Themen der neuen Aussage"
+                                            (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
+                    </div>
                 </div>
 
                 <button *ngIf="!showReferences" type="button" class="text-link herkunft-link" (click)="revealReferences()">

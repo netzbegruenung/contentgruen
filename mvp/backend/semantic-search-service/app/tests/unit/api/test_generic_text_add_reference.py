@@ -108,6 +108,7 @@ def test_add_generic_text_with_unknown_reference_is_stored(services):
         "dublette": False,
         "vorhanden_titel": None,
         "vorhanden_eigen": False,
+        "themen": [],
     }
 
     reference_service.add_reference.assert_called_once()

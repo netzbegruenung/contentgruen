@@ -764,6 +764,28 @@
   }
 }
 
+// Optionale Angaben: Zweck und Stil am Kommentar (#357), die Themen einer neuen
+// Aussage (#455) in beiden Formularen
+@mixin optionale-angaben {
+  .optionale-angaben {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .themen-feld {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .feld-beschriftung {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+}
+
 // Export all mixins as a single include
 @mixin contribution-form-styles {
   @include content-type-indicator;
@@ -778,4 +800,5 @@
   @include state-containers;
   @include material-overrides;
   @include references-section;
+  @include optionale-angaben;
 }

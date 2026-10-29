@@ -10,7 +10,7 @@
         <div class="form-column">
             <form [formGroup]="generictextForm" (ngSubmit)="speichern()" class="beitrag-formular" novalidate>
                 <app-antwort-auf [aussage]="aussageAusAdresse" [hinweis]="aussageHinweis"
-                                 (aussageChange)="aussage = $event">
+                                 (aussageChange)="aussageSetzen($event)">
                 </app-antwort-auf>
 
                 <mat-form-field appearance="outline" class="formular-feld">
@@ -36,6 +36,16 @@
                     <mat-error *ngIf="generictextForm.get('text')?.hasError('minlength')">Mindestens 10 Zeichen.</mat-error>
                     <mat-error *ngIf="generictextForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
+
+                <!-- Optionale Angaben: die Themen einer neuen Aussage (#455) -->
+                <div *ngIf="zeigtThemen" class="optionale-angaben">
+                    <div class="themen-feld">
+                        <span class="feld-beschriftung">Themen der neuen Aussage</span>
+                        <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="generictextForm.value.themen"
+                                            beschriftung="Themen der neuen Aussage"
+                                            (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
+                    </div>
+                </div>
 
                 <div *ngIf="!showReferences" class="herkunft-anstoss">
                     <button type="button" class="text-link herkunft-link" (click)="revealReferences()">

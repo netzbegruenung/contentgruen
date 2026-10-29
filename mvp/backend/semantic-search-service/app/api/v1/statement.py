@@ -1,5 +1,5 @@
 import uuid
-from typing import FrozenSet, List, Optional
+from typing import FrozenSet, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import ValidationError
@@ -56,7 +56,7 @@ from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import SEARCH_QUERY_AUTHOR
 from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
-from services.aussage_themen_service import AussageThemenService
+from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from domain.themen import NACH_SCHLUESSEL, THEMEN, ThemaUngueltig
 
 logger = get_logger(__name__)
@@ -200,12 +200,9 @@ async def unbeantwortet(
 # Die Person ist Autorin; dieselbe vorhandene Aussage wird nicht doppelt angelegt,
 # sondern zurueckgegeben (statement_was_new = false, StatementService.vorab_anlegen).
 # Die gewaehlten Themen bekommt die neue Aussage; eine vorhandene nur, wenn sie noch
-# keine hat, damit das Anlegen eine vorhandene Zuordnung nicht nebenbei ersetzt.
-# (Pruefen und Setzen sind zwei Schritte; legen zwei Personen dieselbe Aussage im
-# selben Moment an, gilt die zweite Zuordnung. Aendern geht ohnehin ueber
-# /themen/zuordnen.) Die Antwort nennt die Themen, die die Aussage jetzt hat.
-# Schlaegt das Zuordnen fehl, bleibt die Aussage angelegt und die Antwort ohne
-# Themen: Die Aussage gibt es dann, und die Seite sagt das.
+# keine hat (themen_beim_anlegen). Die Antwort nennt die Themen, die die Aussage
+# jetzt hat. Schlaegt das Zuordnen fehl, bleibt die Aussage angelegt und die Antwort
+# ohne Themen: Die Aussage gibt es dann, und die Seite sagt das.
 @router.post("/vorab", response_model=AussageVorabResponse)
 async def vorab_anlegen(
     request: AussageVorabRequest,
@@ -220,35 +217,13 @@ async def vorab_anlegen(
     except Exception as e:
         logger.error(f"Error in /vorab: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to add statement")
-    themen = await _themen_beim_vorab_anlegen(
-        themen_service, statement_id, statement_was_new, request.themen
-    )
+    themen = await themen_beim_anlegen(themen_service, statement_id, request.themen)
     return AussageVorabResponse(
         statement_was_new=statement_was_new,
         statement_id=statement_id,
         statement_text=statement_text,
         themen=themen_dtos(themen),
     )
-
-
-async def _themen_beim_vorab_anlegen(
-    themen_service: AussageThemenService,
-    statement_id: uuid.UUID,
-    neu: bool,
-    gewaehlt: List[str],
-) -> List[str]:
-    """Die Themen der Aussage nach dem Vorab-Anlegen; [] wenn das Zuordnen scheitert."""
-    try:
-        if not neu:
-            bisher = themen_service.themen_von([statement_id]).get(statement_id)
-            if bisher:
-                return bisher
-        if gewaehlt:
-            return await themen_service.zuordnen(statement_id, gewaehlt)
-        return []
-    except Exception as e:
-        logger.warning(f"/vorab: Themen nicht zugeordnet: {type(e).__name__}")
-        return []
 
 
 # Die feste Themenliste (domain/themen.json), fuer die Auswahl beim Zuordnen.

@@ -72,6 +72,19 @@ describe('AddGenerictextWorkflowComponent', () => {
       replaceUrl: true,
     });
   });
+
+  it('reicht einen Themenhinweis an die Ergebnisseite weiter (#455)', () => {
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    const themenHinweis = 'Themen nicht gespeichert.';
+
+    component.onSuccess({ id: 'beitrag-1', aussage: { id: 'a-1', text: 'Aussage' }, verknuepft: true, themenHinweis });
+
+    expect(navigieren.calls.mostRecent().args[1]!.state).toEqual({
+      aussage: { id: 'a-1', text: 'Aussage' },
+      verknuepft: true,
+      themenHinweis,
+    });
+  });
 });
 
 describe('AddGenerictextWorkflowComponent im Destillier-Ablauf', () => {
@@ -219,7 +232,11 @@ describe('AddGenerictextWorkflowComponent mit Aussage aus der Adresse', () => {
     return fixture.debugElement.query(By.directive(AddGenerictextComponent))?.componentInstance ?? null;
   }
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // Die Themenliste laedt das Formular selbst (#455); sonst bleibt nichts offen.
+    http.match((r) => r.url.endsWith('/api/v1/statement/themen'));
+    http.verify();
+  });
 
   it('laedt die Aussage per ID und zeigt sie als Antwort-auf', async () => {
     await oeffnen({ aussage: 'a-1' });
