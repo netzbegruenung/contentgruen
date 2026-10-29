@@ -51,7 +51,7 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import List, Optional, Set
+from typing import FrozenSet, List, Optional, Set
 
 from core.logging import get_logger
 from domain.models.content_status import ContentStatus
@@ -92,9 +92,14 @@ def wochenbeginn(tag: date) -> date:
     return tag - timedelta(days=tag.weekday())
 
 
+def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:
+    """Montag der ersten Woche im Zeitraum: die laufende und die (wochen - 1) davor."""
+    return wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
+
+
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
     """Die aelteste Woche, die bleibt; alles davor wird geloescht."""
-    return wochenbeginn(heute or heute_utc()) - timedelta(weeks=AUFBEWAHRUNG_WOCHEN - 1)
+    return _seit_woche(AUFBEWAHRUNG_WOCHEN, heute)
 
 
 def alte_wochen_loeschen(
@@ -240,7 +245,7 @@ class SuchenOhneTrefferService:
         die es nicht mehr gibt oder die nicht sichtbar sind, fallen heraus; damit
         die Liste trotzdem bis zu limit Eintraege hat, wird seitenweise nachgeladen.
         """
-        seit_woche = wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
+        seit_woche = _seit_woche(wochen, heute)
 
         ergebnis: List[SucheOhneTreffer] = []
         offset = 0
@@ -260,6 +265,30 @@ class SuchenOhneTrefferService:
                 break
             offset += limit
         return ergebnis[:limit]
+
+    async def ueber_der_schwelle(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> FrozenSet[uuid.UUID]:
+        """
+        Alle Aussagen, nach denen im Zeitraum mindestens MINDESTANZAHL Personen ohne
+        Treffer gesucht haben, ohne Limit und ohne Blick auf den Zustand: Fuer
+        Nicht-Admins zaehlen sie wie kuratierte Aussagen (api/v1/statement.py, #436),
+        nur sichtbare filtert dort Qdrant.
+
+        Ohne Limit, weil Zeitraum und Mindestanzahl die Menge begrenzen: es sind
+        hoechstens die Aussagen, nach denen im Zeitraum mindestens MINDESTANZAHL
+        Personen ohne Treffer gesucht haben. Die IDs gehen als eine Bedingung in jeden
+        Qdrant-Filter fuer Nicht-Admins.
+
+        Die Abfrage ist synchron (SQLAlchemy) und laeuft deshalb in einem Thread:
+        Sie kommt bei jedem Aufruf von Nicht-Admins und soll den Event-Loop nicht
+        blockieren.
+        """
+        seit_woche = _seit_woche(wochen, heute)
+        ids = await asyncio.to_thread(
+            self._repository.ueber_der_schwelle, seit_woche, MINDESTANZAHL
+        )
+        return frozenset(ids)
 
     async def _sichtbare_aussage(self, statement_id: uuid.UUID):
         try:
