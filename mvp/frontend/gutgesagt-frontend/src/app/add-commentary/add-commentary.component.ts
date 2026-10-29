@@ -26,9 +26,8 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
-import { aussageFuerAnfrage, themenWaehlbar } from '../beitragsformular/aussage-fuer-anfrage';
-import { Thema } from '../services/dtos/themenDtos';
-import { ThemenService } from '../services/themen.service';
+import { aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
+import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
@@ -188,8 +187,8 @@ export class AddCommentaryComponent implements OnChanges {
   readonly zwecke = Object.keys(ZWECK_LABEL) as Zweck[];
   readonly zweckLabel = ZWECK_LABEL;
   readonly stilLabel = STIL_LABEL;
-  /** Die feste Themenliste; leer, solange sie nicht geladen (oder nicht ladbar) ist. */
-  themenListe: Thema[] = [];
+  /** Die Themen einer neuen Aussage (#455). */
+  readonly themenWahl: ThemenWahl;
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -298,7 +297,6 @@ export class AddCommentaryComponent implements OnChanges {
     private dialog: MatDialog,
     private beitragAnsehen: BeitragAnsehenService,
     private votingService: VotingService,
-    themenService: ThemenService,
   ) {
     this.commentaryForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
@@ -308,11 +306,7 @@ export class AddCommentaryComponent implements OnChanges {
       ...OPTIONALE_ANGABEN_CONTROLS,
       references: [[]],
     });
-    // Ist die Liste nicht ladbar, fehlt die Themenwahl; speichern geht trotzdem.
-    themenService
-      .liste()
-      .pipe(takeUntilDestroyed())
-      .subscribe({ next: (themen) => (this.themenListe = themen), error: () => (this.themenListe = []) });
+    this.themenWahl = new ThemenWahl(this.commentaryForm.get('themen')!);
     // "Bissig" gibt es nur fuer die eigenen Leute: Wechselt der Zweck, faellt ein
     // Stil weg, der nicht mehr passt. Andere Stile bleiben stehen.
     this.commentaryForm
@@ -376,21 +370,14 @@ export class AddCommentaryComponent implements OnChanges {
     return this.commentaryForm.get('lang')?.value?.length ?? 0;
   }
 
-  /**
-   * Was im Antwort-auf-Block gilt. Ist keine Themenwahl mehr moeglich (eine
-   * vorhandene Aussage gewaehlt, das Feld leer), fallen die gewaehlten Themen weg:
-   * Unsichtbar mitgefuehrt kaemen sie spaeter ungesehen mit einer anderen Aussage zurueck.
-   */
+  /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
   aussageSetzen(aussage: AntwortAuf): void {
     this.aussage = aussage;
-    if (!themenWaehlbar(aussage) && this.commentaryForm.value.themen?.length) {
-      this.commentaryForm.patchValue({ themen: [] });
-    }
+    this.themenWahl.anAussageAnpassen(aussage);
   }
 
-  /** Themen waehlen laesst sich fuer eine neue Aussage per Text (themenWaehlbar). */
   get zeigtThemen(): boolean {
-    return this.themenListe.length > 0 && themenWaehlbar(this.aussage);
+    return this.themenWahl.zeigtFuer(this.aussage);
   }
 
   /** Die Stile, die zum gewaehlten Zweck passen. */

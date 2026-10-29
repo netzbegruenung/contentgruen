@@ -41,9 +41,9 @@
                 <div *ngIf="zeigtThemen" class="optionale-angaben">
                     <div class="themen-feld">
                         <span class="feld-beschriftung">Themen der Aussage</span>
-                        <app-themen-auswahl [themen]="themenListe" [gewaehlt]="generictextForm.value.themen"
+                        <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="generictextForm.value.themen"
                                             beschriftung="Themen der Aussage"
-                                            (gewaehltChange)="generictextForm.patchValue({ themen: $event })"></app-themen-auswahl>
+                                            (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
                     </div>
                 </div>
 

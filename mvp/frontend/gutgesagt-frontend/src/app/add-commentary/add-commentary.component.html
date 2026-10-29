@@ -82,9 +82,9 @@
                     </mat-form-field>
                     <div *ngIf="zeigtThemen" class="themen-feld">
                         <span class="feld-beschriftung">Themen der Aussage</span>
-                        <app-themen-auswahl [themen]="themenListe" [gewaehlt]="commentaryForm.value.themen"
+                        <app-themen-auswahl [themen]="themenWahl.liste" [gewaehlt]="commentaryForm.value.themen"
                                             beschriftung="Themen der Aussage"
-                                            (gewaehltChange)="commentaryForm.patchValue({ themen: $event })"></app-themen-auswahl>
+                                            (gewaehltChange)="themenWahl.setzen($event)"></app-themen-auswahl>
                     </div>
                 </div>
 

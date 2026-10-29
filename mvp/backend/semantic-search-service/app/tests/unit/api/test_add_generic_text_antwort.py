@@ -564,7 +564,7 @@ class TestAddGenericTextAntwort:
 
 @pytest.mark.api
 class TestThemenDerAussage:
-    """Wie beim Kommentar (#455, test_add_commentary_antwort.py)."""
+    """Dieselben Faelle wie beim Kommentar (#455, test_add_commentary_antwort.py)."""
 
     AUSSAGE = "Waermepumpen sind zu teuer"
 
@@ -622,6 +622,20 @@ class TestThemenDerAussage:
         assert resp.status_code == 200
         themen_service.zuordnen.assert_not_called()
 
+    def test_ohne_themen_wird_nichts_zugeordnet(self, dienste, themen_service):
+        _, statement_service = dienste
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            uuid.uuid4(),
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL, json=_anfrage(statement_text=self.AUSSAGE), headers=HEADERS
+        )
+
+        assert resp.status_code == 200
+        themen_service.zuordnen.assert_not_called()
+
     def test_gescheitertes_zuordnen_behaelt_hintergrundinfo_und_verknuepfung(
         self, dienste, themen_service
     ):
@@ -642,6 +656,42 @@ class TestThemenDerAussage:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(generic_text_id)
         assert resp.json()["verknuepft"] is True
+
+    def test_fremde_dublette_bekommt_keine_themen(self, dienste, themen_service):
+        TestAddGenericTextAntwort._dublette(uuid.uuid4(), autor="person-2")
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(statement_text=self.AUSSAGE, themen=["soziales"]),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["dublette"] is True
+        themen_service.zuordnen.assert_not_called()
+
+    def test_vorhanden_nehmen_gibt_der_neuen_aussage_die_themen(
+        self, dienste, themen_service
+    ):
+        _, statement_service = dienste
+        vorhanden, statement_id = uuid.uuid4(), uuid.uuid4()
+        TestAddGenericTextAntwort._dublette(vorhanden)
+        statement_service.beitrag_als_antwort_verknuepfen.return_value = (
+            statement_id,
+            self.AUSSAGE,
+        )
+
+        resp = TestClient(app).post(
+            ADD_URL,
+            json=_anfrage(
+                statement_text=self.AUSSAGE,
+                themen=["klima"],
+                vorhanden_nehmen=str(vorhanden),
+            ),
+            headers=HEADERS,
+        )
+
+        assert resp.json()["verknuepft"] is True
+        themen_service.zuordnen.assert_awaited_once_with(statement_id, ["klima"])
 
     def test_ungueltige_themen_werden_vor_dem_speichern_abgewiesen(self, dienste):
         generic_text_service = app.dependency_overrides[get_generic_text_service]()

@@ -23,9 +23,8 @@ import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
 import { istAussageId } from '../shared/formular-adresse';
 import { AntwortAuf, AntwortAufComponent, OHNE_AUSSAGE, zuKurz } from '../beitragsformular/antwort-auf/antwort-auf.component';
-import { aussageFuerAnfrage, themenWaehlbar } from '../beitragsformular/aussage-fuer-anfrage';
-import { Thema } from '../services/dtos/themenDtos';
-import { ThemenService } from '../services/themen.service';
+import { aussageFuerAnfrage } from '../beitragsformular/aussage-fuer-anfrage';
+import { ThemenWahl } from '../beitragsformular/themen-wahl';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { FormularHilfeComponent } from '../beitragsformular/formular-hilfe/formular-hilfe.component';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
@@ -136,8 +135,8 @@ export class AddGenerictextComponent implements OnChanges {
   readonly typFarbe = typFarbe('generictext');
   readonly titelMax = TITEL_MAX;
   readonly textMax = TEXT_MAX;
-  /** Die feste Themenliste; leer, solange sie nicht geladen (oder nicht ladbar) ist. */
-  themenListe: Thema[] = [];
+  /** Die Themen einer neuen Aussage (#455). */
+  readonly themenWahl: ThemenWahl;
 
   @Input() statementText = '';
   @Input() statementId = '';
@@ -222,7 +221,6 @@ export class AddGenerictextComponent implements OnChanges {
     private dialog: MatDialog,
     private beitragAnsehen: BeitragAnsehenService,
     private votingService: VotingService,
-    themenService: ThemenService,
   ) {
     this.generictextForm = fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(TITEL_MAX)]],
@@ -231,11 +229,7 @@ export class AddGenerictextComponent implements OnChanges {
       themen: [[] as string[]],
       references: [[]],
     });
-    // Ist die Liste nicht ladbar, fehlt die Themenwahl; speichern geht trotzdem.
-    themenService
-      .liste()
-      .pipe(takeUntilDestroyed())
-      .subscribe({ next: (themen) => (this.themenListe = themen), error: () => (this.themenListe = []) });
+    this.themenWahl = new ThemenWahl(this.generictextForm.get('themen')!);
     // Der Hinweis gilt nur fuer den Text, der geprueft wurde: Wer ihn aendert,
     // entscheidet nicht mehr ueber diese vorhandene, sondern speichert neu.
     this.generictextForm
@@ -280,21 +274,14 @@ export class AddGenerictextComponent implements OnChanges {
     return this.generictextForm.get('text')?.value?.length ?? 0;
   }
 
-  /**
-   * Was im Antwort-auf-Block gilt. Ist keine Themenwahl mehr moeglich (eine
-   * vorhandene Aussage gewaehlt, das Feld leer), fallen die gewaehlten Themen weg:
-   * Unsichtbar mitgefuehrt kaemen sie spaeter ungesehen mit einer anderen Aussage zurueck.
-   */
+  /** Was im Antwort-auf-Block gilt; die Themen passen sich an (ThemenWahl). */
   aussageSetzen(aussage: AntwortAuf): void {
     this.aussage = aussage;
-    if (!themenWaehlbar(aussage) && this.generictextForm.value.themen?.length) {
-      this.generictextForm.patchValue({ themen: [] });
-    }
+    this.themenWahl.anAussageAnpassen(aussage);
   }
 
-  /** Themen waehlen laesst sich fuer eine neue Aussage per Text (themenWaehlbar). */
   get zeigtThemen(): boolean {
-    return this.themenListe.length > 0 && themenWaehlbar(this.aussage);
+    return this.themenWahl.zeigtFuer(this.aussage);
   }
 
   /** Irgendetwas eingetragen oder vorbelegt - dann fragt Zuruecksetzen nach. */
