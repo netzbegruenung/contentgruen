@@ -8,6 +8,8 @@ ohne Verwendung herum.
 import pathlib
 import re
 
+from PIL import Image
+
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 FRONTEND = WURZEL / "mvp/frontend/gutgesagt-frontend"
 SKRIPT = FRONTEND / "scripts/profilbilder_holen.py"
@@ -47,3 +49,11 @@ def test_lizenz_liegt_neben_den_bildern():
     assert "Copyright (c) Microsoft Corporation." in lizenz
     commit = re.search(r'COMMIT = "([0-9a-f]{40})"', SKRIPT.read_text()).group(1)
     assert commit in lizenz
+
+
+def test_ecken_sind_durchsichtig_nichts_ragt_ueber_den_kreis():
+    for name in _frontend():
+        with Image.open(AVATARE / name) as bild:
+            alpha = bild.convert("RGBA").getchannel("A")
+            ecken = [(0, 0), (127, 0), (0, 127), (127, 127), (8, 8), (119, 119)]
+            assert all(alpha.getpixel(e) == 0 for e in ecken), name

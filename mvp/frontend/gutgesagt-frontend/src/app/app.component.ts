@@ -19,7 +19,7 @@ import { ProfilbildService } from './services/profilbild.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
-import { ProfilbildDialogComponent } from './shared/profilbild/profilbild-dialog.component';
+import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
@@ -164,10 +164,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openProfilbildDialog(): void {
-    this.dialog.open(ProfilbildDialogComponent, {
-      width: '560px',
-      maxWidth: '95vw',
-    });
+    profilbildDialogOeffnen(this.dialog);
   }
 
   openFeedbackDialog(): void {

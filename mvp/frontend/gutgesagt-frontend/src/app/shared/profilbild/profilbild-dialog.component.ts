@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { ProfilbildService } from '../../services/profilbild.service';
 
@@ -42,4 +42,22 @@ export class ProfilbildDialogComponent {
     this.profilbild.zuruecksetzen();
     this.dialogRef.close();
   }
+}
+
+/**
+ * Oeffnet den Dialog so, wie Kopf und Mobil-Menue ihn brauchen. Der Fokus liegt
+ * zuerst auf dem Dialog selbst, nicht auf dem gewaehlten Bild: sonst scrollte der
+ * Dialog auf schmalen Bildschirmen zu ihm und Ueberschrift und Initialen waeren
+ * weg. Tab fuehrt von dort zum gewaehlten Radioknopf.
+ */
+export function profilbildDialogOeffnen(
+  dialog: MatDialog,
+  konfig: MatDialogConfig = {}
+): MatDialogRef<ProfilbildDialogComponent> {
+  return dialog.open(ProfilbildDialogComponent, {
+    width: '560px',
+    maxWidth: '95vw',
+    autoFocus: 'dialog',
+    ...konfig,
+  });
 }

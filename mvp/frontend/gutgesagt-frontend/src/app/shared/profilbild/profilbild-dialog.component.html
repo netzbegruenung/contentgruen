@@ -10,9 +10,8 @@
              class="profilbild-radio"
              [value]="option.id"
              [checked]="option.id === ausgewaehlt"
-             [attr.cdkFocusInitial]="option.id === ausgewaehlt ? '' : null"
              (change)="ausgewaehlt = option.id" />
-      <img [src]="option.url" [alt]="option.alt" width="64" height="64" loading="lazy" decoding="async" />
+      <img [src]="option.url" [alt]="option.alt" width="64" height="64" />
     </label>
   </div>
 

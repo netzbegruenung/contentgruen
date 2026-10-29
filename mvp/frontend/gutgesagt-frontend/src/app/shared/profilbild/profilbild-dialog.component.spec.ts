@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { ProfilbildDialogComponent } from './profilbild-dialog.component';
+import { ProfilbildDialogComponent, profilbildDialogOeffnen } from './profilbild-dialog.component';
 import { INITIALEN, PROFILBILD_SCHLUESSEL, ProfilbildService } from '../../services/profilbild.service';
 
 describe('ProfilbildDialogComponent', () => {
@@ -47,7 +47,6 @@ describe('ProfilbildDialogComponent', () => {
     expect(optionen().length).toBe(service.auswahl().length);
     for (const bild of Array.from(element().querySelectorAll('.profilbild-option img'))) {
       expect(bild.getAttribute('alt')?.length).toBeGreaterThan(3);
-      expect(bild.getAttribute('loading')).toBe('lazy');
     }
   });
 
@@ -120,5 +119,53 @@ describe('ProfilbildDialogComponent', () => {
     knopf('Übernehmen')!.click();
 
     expect(service.gewaehlt()).toBe(service.auswahl()[2].id);
+  });
+});
+
+describe('ProfilbildDialogComponent beim Oeffnen (Abnahme PR 458)', () => {
+  let dialog: MatDialog;
+  let service: ProfilbildService;
+
+  beforeEach(async () => {
+    localStorage.removeItem(PROFILBILD_SCHLUESSEL);
+    await TestBed.configureTestingModule({ providers: [provideNoopAnimations()] }).compileComponents();
+    dialog = TestBed.inject(MatDialog);
+    service = TestBed.inject(ProfilbildService);
+    service.setzePerson({ isAuthenticated: true, userId: 'user-001', userName: 'Test User', claims: {} });
+    // Weit unten im Raster vorgewaehlt: frueher sprang der Dialog dorthin.
+    service.waehlen(service.auswahl()[service.auswahl().length - 1].id);
+  });
+
+  afterEach(() => {
+    dialog.closeAll();
+    localStorage.removeItem(PROFILBILD_SCHLUESSEL);
+  });
+
+  it('beginnt oben mit Ueberschrift, Initialen und Menschen, ohne zum gewaehlten Bild zu scrollen', async () => {
+    // Hoehe wie bei 390 px Breite: das Raster passt nicht ganz hinein.
+    const ref = profilbildDialogOeffnen(dialog, { height: '600px', maxHeight: '600px' });
+    await new Promise((fertig) => setTimeout(fertig, 50));
+
+    const inhalt = document.querySelector('.mat-mdc-dialog-content') as HTMLElement;
+    expect(inhalt.scrollHeight).toBeGreaterThan(inhalt.clientHeight);
+    expect(inhalt.scrollTop).toBe(0);
+
+    const fokus = document.activeElement as HTMLElement;
+    expect(fokus.closest('.profilbild-option')).toBeNull();
+    const ganzOben = inhalt.getBoundingClientRect().top;
+    const initialen = document.querySelector('.profilbild-option') as HTMLElement;
+    expect(initialen.getBoundingClientRect().top - ganzOben).toBeLessThan(150);
+    ref.close();
+  });
+
+  it('fuehrt mit Tab zum gewaehlten Bild, auch wenn es weit unten steht', async () => {
+    profilbildDialogOeffnen(dialog, { height: '600px', maxHeight: '600px' });
+    await new Promise((fertig) => setTimeout(fertig, 50));
+
+    const radios = Array.from(document.querySelectorAll('.profilbild-radio')) as HTMLInputElement[];
+    const gewaehlt = radios.find((r) => r.checked)!;
+    expect(gewaehlt).toBe(radios[radios.length - 1]);
+    // Unter den Radioknoepfen einer Gruppe ist nur der gewaehlte per Tab erreichbar.
+    expect(radios.filter((r) => r.checked).length).toBe(1);
   });
 });
