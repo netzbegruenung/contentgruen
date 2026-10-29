@@ -1,0 +1,37 @@
+.feedback-liste {
+  margin-top: 24px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  vertical-align: top;
+  padding: 8px;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-wrap: anywhere;
+}
+
+.tag {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.text {
+  white-space: pre-wrap;
+}
+
+.hinweis {
+  color: #666;
+}
+
+.fussnote {
+  font-size: 12px;
+  color: #666;
+  margin-top: 12px;
+}

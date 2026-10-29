@@ -58,3 +58,20 @@
 .regel-nicht .regel-zeichen {
     color: #b3261e;
 }
+
+.hilfe-abschnitt {
+    margin: 12px 0 4px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.schreibregeln,
+.schreibhilfen {
+    margin: 0;
+    padding-left: 1.4em;
+}
+
+.hilfe-panel .hilfe-hinweis {
+    margin-top: 8px;
+    color: var(--text-secondary);
+}

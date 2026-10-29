@@ -1,6 +1,7 @@
 import { ActivatedRouteSnapshot, convertToParamMap } from '@angular/router';
 
 import { routes } from './app.routes';
+import { AuthGuard } from './auth/auth.guard';
 import { gespeichertEltern } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
@@ -75,5 +76,19 @@ describe('Routentabelle', () => {
         .withContext(pfad)
         .toEqual(['/destillieren', 'e-1']);
     }
+  });
+
+  it('fuehrt nach "Selbst beantworten" aus Formular und Ergebnisseite zurueck auf "Hier fehlt eine Antwort"', () => {
+    const von = { von: 'hier-fehlt-eine-antwort' };
+
+    expect(elternFunktion('workflow/add-commentary')(snapshotMit(von))).toBe('/hier-fehlt-eine-antwort');
+    expect(gespeichertEltern(snapshotMit(von))).toBe('/hier-fehlt-eine-antwort');
+    expect(gespeichertEltern(snapshotMit({}))).toBe('/contribute');
+  });
+
+  it('zeigt "Hier fehlt eine Antwort" nur Angemeldeten', () => {
+    const eintrag = routes.find((route) => route.path === 'hier-fehlt-eine-antwort');
+    expect(eintrag).withContext('Route fehlt').toBeTruthy();
+    expect(eintrag!.canActivate).toContain(AuthGuard);
   });
 });

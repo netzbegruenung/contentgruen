@@ -19,7 +19,9 @@ import {
   BeitragGespeichert,
   GespeichertZustand,
   SUCHE_PARAM,
+  VON_HIER_FEHLT_EINE_ANTWORT,
   VON_PARAM,
+  vonHierFehltEineAntwort,
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import {
   DestillierUebergabeService,
@@ -66,6 +68,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   vorbefuellung: Vorbefuellung | null = null;
   /** Aus der Suche geoeffnet (?aussage= oder ?searchQuery=); dann mit der Anfrage, soweit bekannt. */
   private ausSuche: { anfrage: string | null } | null = null;
+  /** Ueber "Selbst beantworten" aus "Hier fehlt eine Antwort" geoeffnet (?von=). */
+  private ausHierFehltEineAntwort = false;
 
   constructor(
     private router: Router,
@@ -131,7 +135,8 @@ export class AddCommentaryWorkflowComponent implements OnInit {
   }
 
   private herkunftMerken(params: ParamMap): void {
-    if (!params.get(AUSSAGE_PARAM) && !params.get(SUCHTEXT_PARAM)) {
+    this.ausHierFehltEineAntwort = vonHierFehltEineAntwort(params);
+    if (this.ausHierFehltEineAntwort || (!params.get(AUSSAGE_PARAM) && !params.get(SUCHTEXT_PARAM))) {
       this.ausSuche = null;
       return;
     }
@@ -164,7 +169,9 @@ export class AddCommentaryWorkflowComponent implements OnInit {
 
     const queryParams = this.ausSuche
       ? { [VON_PARAM]: 'suche', ...(this.ausSuche.anfrage ? { [SUCHE_PARAM]: this.ausSuche.anfrage } : {}) }
-      : {};
+      : this.ausHierFehltEineAntwort
+        ? { [VON_PARAM]: VON_HIER_FEHLT_EINE_ANTWORT }
+        : {};
     this.zurErgebnisseite(ergebnis.id, queryParams, zustand);
   }
 

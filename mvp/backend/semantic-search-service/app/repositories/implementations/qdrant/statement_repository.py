@@ -1,6 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, Set
 import asyncio
 import logging
+import uuid
+
+from pydantic import ValidationError
 
 from core.config import Settings
 from domain.interfaces.embeddings_manager import IEmbeddingsManager
@@ -11,6 +14,8 @@ from repositories.implementations.qdrant.base_repository import (
 from repositories.interfaces.statement_repository import IStatementRepository
 from domain.models.statement import StatementDbEntry, StatementSearchResult
 from domain.models.content_origin import ContentOrigin
+from domain.models.content_type import ContentType
+from domain.models.content_status import AUSGEBLENDET_WERTE
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +132,94 @@ class StatementRepository(
         except Exception as e:
             logger.error(f"Failed to count curated statements: {e}", exc_info=True)
             return 0
+
+    async def ohne_kommentar(self) -> List[StatementDbEntry]:
+        """
+        Sichtbare Aussagen ohne sichtbaren Kommentar unter ihren
+        Antwortvorschlaegen, fuer "Hier fehlt eine Antwort".
+
+        Ein gesperrter oder geloeschter Kommentar zaehlt nicht als Antwort: Sein
+        Antwortvorschlag bleibt an der Aussage stehen (Sperren und Loeschen aendern
+        nur den Zustand des Beitrags), deshalb wird der Zustand der verknuepften
+        Kommentare in einem zweiten Schritt nachgeschlagen.
+
+        Ohne die unbeantworteten Suchanfragen (Kriterium wie count_curated): Das
+        waere die Suchanfrage einer einzelnen Person. Suchanfragen, nach denen
+        mehrere ohne Treffer gesucht haben, kommen ueber die Kennzahl "Suchen ohne
+        Treffer" dazu (UnbeantworteteAussagenService). Alle Treffer auf einmal,
+        unsortiert; Qdrant scrollt in ID-Reihenfolge.
+        """
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+        scroll_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                ),
+                *nur_sichtbar_bedingungen(),
+            ],
+            must_not=[_unbeantwortete_suchanfrage()],
+        )
+
+        aussagen: List[StatementDbEntry] = []
+        offset = None
+        while True:
+            seite, naechster = await self._shared_manager.async_client.scroll(
+                collection_name=self._shared_manager.collection_name,
+                scroll_filter=scroll_filter,
+                limit=100,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for punkt in seite:
+                payload = dict(punkt.payload or {})
+                payload["id"] = str(punkt.id)
+                try:
+                    aussagen.append(
+                        self.content_db_entry_model_class.model_validate(payload)
+                    )
+                except ValidationError as fehler:
+                    logger.warning(
+                        f"ohne_kommentar: Punkt {punkt.id} uebersprungen, "
+                        f"Payload ungueltig ({fehler.error_count()} Fehler)"
+                    )
+            if not seite or naechster is None or naechster == offset:
+                break
+            offset = naechster
+
+        sichtbar = await self._sichtbare_kommentare(
+            {
+                vorschlag.id
+                for aussage in aussagen
+                for vorschlag in aussage.replysuggestions
+                if vorschlag.content_type == ContentType.COMMENTARY
+            }
+        )
+        return [
+            aussage
+            for aussage in aussagen
+            if not any(
+                vorschlag.id in sichtbar for vorschlag in aussage.replysuggestions
+            )
+        ]
+
+    async def _sichtbare_kommentare(self, ids: Set[uuid.UUID]) -> Set[uuid.UUID]:
+        """Welche der IDs einen Kommentar bezeichnen, der weder gesperrt noch geloescht ist."""
+        if not ids:
+            return set()
+        punkte = await self._shared_manager.async_client.retrieve(
+            collection_name=self._shared_manager.collection_name,
+            ids=[str(i) for i in ids],
+            with_payload=["content_type", "status"],
+            with_vectors=False,
+        )
+        return {
+            uuid.UUID(str(punkt.id))
+            for punkt in punkte
+            if (punkt.payload or {}).get("content_type") == ContentType.COMMENTARY.value
+            and (punkt.payload or {}).get("status") not in AUSGEBLENDET_WERTE
+        }
 
     async def search_curated(
         self, query_text: str, limit: int

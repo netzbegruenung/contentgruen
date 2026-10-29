@@ -108,6 +108,8 @@ export interface KartenDaten {
   autorName: string | null;
   /** Verwendungen; null = unbekannt, dann kein Badge. */
   nutzung: number | null;
+  /** Davon in den letzten 7 Tagen; nur in Meine Beitraege gesetzt, sonst kein Zuwachs. */
+  nutzungLetzte7Tage?: number;
   quellen: KartenQuelle[];
   bildUrl?: string;
   statement?: KartenStatement;
@@ -220,6 +222,7 @@ export function ausBeitrag(eintrag: ContentResult): KartenDaten {
     eigen: eintrag.ist_eigener_beitrag ?? null,
     autorName: eintrag.autor_name ?? null,
     nutzung: eintrag.usage_count ?? 0,
+    nutzungLetzte7Tage: eintrag.nutzung_letzte_7_tage ?? 0,
     quellen: (eintrag.references ?? []).map(quelle),
     bildUrl: eintrag.image_url || undefined,
   };

@@ -9,6 +9,7 @@ tests/
 │   ├── repositories/              # Repository layer tests
 │   └── services/                  # Service layer tests
 ├── integration/                   # Integration tests against real Qdrant and PostgreSQL
+│   └── api/                       # Against the running dev-stack BFF (skipped by GitHub CI)
 ├── fixtures/                      # Test utilities
 │   └── embeddings_manager.py      # In-memory test backend
 └── conftest.py                    # Shared fixtures
@@ -54,9 +55,13 @@ names what is missing, instead of skipping silently. The switch behind it is
 `pytest tests/integration/` without it still skips when the stack is absent. The
 check lives in `tests/integration/conftest.py` and only runs when `tests/integration/`
 is among the paths given to pytest: `INTEGRATION_STACK_PFLICHT=1 pytest tests/` would
-still skip the Qdrant tests silently.
+still skip the Qdrant tests silently. The tests in `tests/integration/api/` also need
+the dev-stack BFF (`GUTGESAGT_BFF_URL`, default `http://localhost:5054`); in this mode
+a missing BFF fails them, in a plain run they skip. In CI (`CI` set) they skip in this
+mode too, because the pipeline starts no BFF (`stack.bff_pflicht`).
 
-`tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL.
+`tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL, or,
+under `api/`, to the running BFF.
 A test that mocks the services belongs in `tests/unit/api/`: `TestClient` with
 `dependency_overrides` for services the router takes via `Depends`; where the router
 calls the getter directly (moderation: `get_moderation_service()`), patch that name in
@@ -68,14 +73,18 @@ needs a reason that names what is missing.
 Repositories, migrations and SQL scripts that only show their behaviour in a real
 database are tested in `tests/integration/` against PostgreSQL: migrations and
 `init.sql` against the model (`test_migrationen.py`), the timestamp of a
-Suchereignis (`test_suchereignisse.py`), "Suchen ohne Treffer"
-(`test_suchen_ohne_treffer.py`) and the deletion command (`test_loeschkommando.py`).
+Suchereignis (`test_suchereignisse.py`), the shuffled rewrite of closed days
+(`test_suchereignisse_mischen.py`), "Suchen ohne Treffer"
+(`test_suchen_ohne_treffer.py`), the Rückmeldung on usage (`test_rueckmeldung_nutzung.py`)
+and the deletion command (`test_loeschkommando.py`).
 
 ```bash
 # from mvp/backend/semantic-search-service/app
 pytest tests/integration/test_migrationen.py tests/integration/test_suchereignisse.py \
        tests/integration/test_suchereignisse_tageszaehler.py \
-       tests/integration/test_suchen_ohne_treffer.py tests/integration/test_loeschkommando.py
+       tests/integration/test_suchereignisse_mischen.py \
+       tests/integration/test_suchen_ohne_treffer.py tests/integration/test_rueckmeldung_nutzung.py \
+       tests/integration/test_loeschkommando.py
 ```
 
 - **Database:** without further setup the run starts a throwaway container with
@@ -232,14 +241,12 @@ pytest -x              # Stop on first failure
 
 ## CI Integration
 
-Tests run automatically in GitHub Actions (`.github/workflows/build.yml`) on:
-- Push to the `main` branch
-- Pull request creation/updates
-- Manual dispatch (`workflow_dispatch`)
+Every pull request runs `.woodpecker/ci.yaml` on Woodpecker: the same steps as
+`bash scripts/check.sh --integration`, with Qdrant and PostgreSQL as services
+(`POSTGRES_TEST_DATABASE_URL`, no throwaway container) and `INTEGRATION_STACK_PFLICHT=1`.
+Once set up, its status `ci/woodpecker/pr/ci` is required for `main`; a red pull-request run gets a
+comment with the red steps. Details, the setup steps for a person and how to run one step
+locally (`check.sh --schritt <name>`): [docs/CI.md](../../../../../docs/CI.md).
 
-The `test` job includes:
-- Dependency installation (Python 3.13)
-- Unit test execution
-- Integration test execution against a Qdrant service container
-- JUnit report generation (uploaded as artifacts)
-- Blocking image builds on failures
+After the merge, GitHub Actions on the mirror (`.github/workflows/build.yml`) run the tests
+again and build the images.

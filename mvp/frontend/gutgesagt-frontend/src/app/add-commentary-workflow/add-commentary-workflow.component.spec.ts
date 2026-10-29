@@ -8,6 +8,7 @@ import {
   ERNEUT_VERKNUEPFEN,
 } from './add-commentary-workflow.component';
 import { AddCommentaryComponent } from '../add-commentary/add-commentary.component';
+import { StateManagementService } from '../services/state-management.service';
 import { DestillierUebergabeService } from '../destillieren/destillier-uebergabe.service';
 import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
@@ -284,6 +285,19 @@ describe('AddCommentaryWorkflowComponent mit Aussage aus der Adresse', () => {
       von: 'suche',
       suche: 'Waermepumpen sind zu teuer',
     });
+  });
+
+  it('nennt aus "Hier fehlt eine Antwort" nicht die letzte Suche, sondern die Seite', async () => {
+    // Die letzte Suche der Sitzung war eine andere; ohne ?von= gaelte das Formular als aus ihr.
+    await oeffnen({});
+    TestBed.inject(StateManagementService).setSearchQuery('Ganz andere Suche');
+    adresse.next(convertToParamMap({ aussage: 'a-1', von: 'hier-fehlt-eine-antwort' }));
+    http.expectOne((req) => req.url === getByIdUrl).flush({ statement_id: 'a-1', statement_text: 'Waermepumpen sind zu teuer' });
+    const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+    component.onSuccess({ id: 'k-1', aussage: { id: 'a-1', text: 'Waermepumpen sind zu teuer' }, verknuepft: true });
+
+    expect(navigieren.calls.mostRecent().args[1]!.queryParams).toEqual({ von: 'hier-fehlt-eine-antwort' });
   });
 
   it('oeffnet ohne Parameter ein eigenstaendiges Formular', async () => {

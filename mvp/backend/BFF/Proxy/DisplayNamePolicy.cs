@@ -15,7 +15,7 @@ namespace BFF.Proxy;
 ///      Woertern; ein einzelnes Wort ergibt keinen Namen (Vor- oder Nachname? unklar).
 ///   3. GivenName allein ("Kim") - hier ist klar, dass es der Vorname ist.
 /// Das Initial kommt in 1. und 2. aus dem letzten Wort des Nachnamens und ist immer ein
-/// Grossbuchstabe: "von der Leyen" -> "L.", "Mueller-Luedenscheidt" ist ein Wort -> "M.".
+/// Grossbuchstabe: "von der Heide" -> "H.", "Mueller-Luedenscheidt" ist ein Wort -> "M.".
 ///
 /// Bewusst nie preferred_username, E-Mail oder ClaimTypes.Name: das sind Login-Kennungen,
 /// keine Namen, und ein Anzeigename ist oeffentlicher als beide. Steht in einer Quelle ein
@@ -59,7 +59,7 @@ public static class DisplayNamePolicy
 
     /// <summary>
     /// Das erste Textelement, nicht das erste char: sonst zerfiele ein Surrogatpaar. Immer gross,
-    /// damit "von der Leyen" nicht als "l." endet.
+    /// damit "von der Heide" nicht als "h." endet.
     /// </summary>
     private static string Initial(string wort) =>
         StringInfo.GetNextTextElement(wort, 0).ToUpperInvariant();

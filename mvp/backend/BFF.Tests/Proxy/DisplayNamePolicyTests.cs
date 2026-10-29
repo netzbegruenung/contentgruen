@@ -39,8 +39,8 @@ public class DisplayNamePolicyTests
     }
 
     [Theory]
-    [InlineData("Ursula", "von der Leyen", "Ursula L.")]
-    [InlineData("Karl-Theodor", "Freiherr zu Guttenberg", "Karl-Theodor G.")]
+    [InlineData("Maren", "von der Heide", "Maren H.")]
+    [InlineData("Konrad", "Freiherr zu Talheim", "Konrad T.")]
     [InlineData("Lena", "Müller-Lüdenscheidt", "Lena M.")]
     [InlineData("Jan", "de Vries", "Jan V.")]
     public void From_MultiPartSurname_TakesInitialOfLastWord(string vorname, string nachname, string erwartet)
@@ -53,7 +53,7 @@ public class DisplayNamePolicyTests
     [Fact]
     public void From_NameClaimWithLowercaseParticle_GivesUppercaseInitial()
     {
-        Assert.Equal("Ursula L.", DisplayNamePolicy.From(Mit(("name", "Ursula von der leyen"))));
+        Assert.Equal("Maren H.", DisplayNamePolicy.From(Mit(("name", "Maren von der heide"))));
     }
 
     [Fact]

@@ -52,6 +52,28 @@ export interface AddStatementResponse {
     statement_text: string;
 }
 
+// Hier fehlt eine Antwort
+
+/**
+ * Eine unbeantwortete Aussage: ohne Kommentar oder mit Suchen ohne Treffer von
+ * mindestens zwei Personen. personen_ohne_treffer zaehlt diese Personen wie die
+ * Kennzahl (Tagespseudonyme); 0 heisst, die Aussage steht nur wegen des fehlenden
+ * Kommentars hier. Wie oft gesucht wurde, sehen nur Admins.
+ */
+export interface UnbeantworteteAussage {
+    statement_id: string;
+    statement_text: string;
+    personen_ohne_treffer: number;
+}
+
+export interface UnbeantworteteAussagenResponse {
+    aussagen: UnbeantworteteAussage[];
+}
+
+export interface AussageVorabRequest {
+    text: string;
+}
+
 // GetStatementById
 
 export interface GetStatementByIdResponse {

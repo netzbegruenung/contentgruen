@@ -6,6 +6,7 @@ import { NavigationService } from '../services/navigation.service';
 import { LoggingService } from '../services/logging.service';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { RecentContentComponent } from '../recent-content/recent-content.component';
+import { OftGenutztComponent } from '../oft-genutzt/oft-genutzt.component';
 import { AboutTeaserComponent } from '../about-teaser/about-teaser.component';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { ContentRefreshService } from '../services/content-refresh.service';
@@ -22,6 +23,7 @@ import { FANGKORB_KURZ, KETTEN_ICONS } from '../shared/fangkorb-texte';
     MatButtonModule,
     MatIconModule,
     RouterLink,
+    OftGenutztComponent,
     RecentContentComponent,
     AboutTeaserComponent,
   ],

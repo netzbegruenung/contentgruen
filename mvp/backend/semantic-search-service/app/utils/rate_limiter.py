@@ -107,6 +107,10 @@ report_rate_limiter = RateLimiter(max_requests=5, window_minutes=15)
 search_query_statement_rate_limiter = RateLimiter(max_requests=60, window_minutes=10)
 
 
+# Feedback: 5 je Adresse in 15 Minuten, wie Meldungen. Die Route ist ohne Anmeldung
+# erreichbar; mehr schreibt niemand in einer Viertelstunde an das Team.
+feedback_rate_limiter = RateLimiter(max_requests=5, window_minutes=15)
+
 # So oft raeumt der Hintergrund-Task abgelaufene Schluessel weg. Ein Schluessel
 # verschwindet damit spaetestens ein Fenster plus dieser Takt nach seinem letzten
 # Aufruf - fuer die Suchaussage zehn plus eine Minute. Die Datenschutzerklaerung

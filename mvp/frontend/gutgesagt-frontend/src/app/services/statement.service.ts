@@ -4,10 +4,14 @@ import { Observable, of } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
 import { ParamMap } from '@angular/router';
 import {
+  AddStatementResponse,
+  AussageVorabRequest,
   GetStatementByIdResponse,
   SearchStatementByTextRequest,
   StatementSearchResponse,
   StatementSearchResult,
+  UnbeantworteteAussage,
+  UnbeantworteteAussagenResponse,
 } from './dtos/statementDtos';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
@@ -19,6 +23,9 @@ export const VERKNUEPFUNG_FEHLGESCHLAGEN =
 
 /** Hoechstlaenge einer Aussage, wie im Backend (statement_text). */
 export const AUSSAGE_MAX_ZEICHEN = 1000;
+
+/** Mindestlaenge einer vorab angelegten Aussage, wie im Backend (AussageVorabRequest). */
+export const AUSSAGE_MIN_ZEICHEN = 3;
 
 /** Wie viele vorhandene Aussagen das Antwort-auf-Feld hoechstens vorschlaegt. */
 export const VORSCHLAG_ANZAHL = 3;
@@ -36,6 +43,8 @@ export const VORSCHLAG_MIN_AEHNLICHKEIT = 0.885;
 export class StatementService {
   private searchStatementsApiUrl = `${environment.baseUrl}/api/v1/statement/searchStatements`;
   private getStatementByIdApiUrl = `${environment.baseUrl}/api/v1/statement/getById`;
+  private unbeantwortetApiUrl = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
+  private vorabApiUrl = `${environment.baseUrl}/api/v1/statement/vorab`;
 
   constructor(
     private http: HttpClient,
@@ -82,6 +91,22 @@ export class StatementService {
     return this.http.get<GetStatementByIdResponse>(this.getStatementByIdApiUrl, {
       params: { statement_id: statementId },
     });
+  }
+
+  /** "Hier fehlt eine Antwort": die unbeantworteten Aussagen, sortiert nach Bedarf. */
+  unbeantworteteAussagen(): Observable<UnbeantworteteAussage[]> {
+    return this.http
+      .get<UnbeantworteteAussagenResponse>(this.unbeantwortetApiUrl)
+      .pipe(map((antwort) => antwort.aussagen));
+  }
+
+  /**
+   * Eine Aussage vorab anlegen, fuer ein absehbares Thema. Gibt es schon eine sehr
+   * aehnliche, kommt diese zurueck (statement_was_new = false).
+   */
+  aussageVorabAnlegen(text: string): Observable<AddStatementResponse> {
+    const request: AussageVorabRequest = { text: text.trim() };
+    return this.http.post<AddStatementResponse>(this.vorabApiUrl, request);
   }
 
   /**

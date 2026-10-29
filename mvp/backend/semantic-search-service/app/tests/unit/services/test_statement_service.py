@@ -406,6 +406,24 @@ class TestAntwortVerknuepfen:
         assert service._verknuepfungs_sperren == {}
 
     @pytest.mark.asyncio
+    async def test_vorab_anlegen_raeumt_die_sperre_auf(self, service):
+        """Trifft das Vorab-Anlegen eine vorhandene Aussage, bleibt danach keine
+        Sperre je Aussage liegen (wie beim Verknuepfen)."""
+        from unittest.mock import AsyncMock
+
+        statement_id = uuid.uuid4()
+        aussage = self._aussage([])
+        service.add_statement = AsyncMock(
+            return_value=(False, statement_id, "Eine Aussage")
+        )
+        service.get = AsyncMock(return_value=aussage)
+        service.update_statement = AsyncMock()
+
+        await service.vorab_anlegen("Eine Aussage", "person-1")
+
+        assert service._verknuepfungs_sperren == {}
+
+    @pytest.mark.asyncio
     async def test_nicht_lesbare_aussage_ist_nicht_nicht_gefunden(self, service):
         from unittest.mock import AsyncMock
         from pydantic import BaseModel, ValidationError

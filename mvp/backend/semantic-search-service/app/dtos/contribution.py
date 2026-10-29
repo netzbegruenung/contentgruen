@@ -17,8 +17,8 @@ class ContributionEntry(ContentDbEntry):
 
     ContentDbEntry allein verwirft beim Lesen aus Qdrant alles, was nicht zu den
     gemeinsamen Feldern gehoert - auch Titel und Bildadresse, obwohl sie im Payload
-    stehen. Die Nutzung liegt nicht in Qdrant, sondern in PostgreSQL und wird im
-    Endpunkt nachgetragen, ebenso Adresse und Beschreibung der Herkunft.
+    stehen. Die Nutzung und ihr Zuwachs der letzten 7 Tage liegen nicht in Qdrant,
+    sondern in PostgreSQL und werden im Endpunkt nachgetragen, ebenso Adresse und Beschreibung der Herkunft.
 
     Die Herkunft nutzt CommentaryReference: GenericTextReference hat dieselben Felder,
     Bild und Post haben keine Herkunft.
@@ -30,6 +30,9 @@ class ContributionEntry(ContentDbEntry):
     title: Optional[str] = None
     image_url: Optional[str] = None
     usage_count: int = 0
+    # Zuwachs der letzten 7 Tage (#349); steht nicht im Payload, kommt wie
+    # usage_count aus PostgreSQL.
+    nutzung_letzte_7_tage: int = 0
     references: List[CommentaryReference] = []
 
     @field_validator("usage_count", mode="before")
@@ -62,6 +65,7 @@ class MeinBeitragResponse(BeitragResponse):
 
     image_url: Optional[str] = None
     usage_count: int = 0
+    nutzung_letzte_7_tage: int = 0
     references: List[CommentaryReference] = []
 
 

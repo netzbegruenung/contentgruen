@@ -75,8 +75,8 @@ async def test_aufraeumen_im_takt_raeumt_wiederholt_auf(monkeypatch):
     assert aufrufe[0] == [report_rate_limiter]
 
 
-def test_main_raeumt_beide_limiter_im_takt_auf():
-    """Der Start in main.py nennt beide Limiter - nicht nur den fuer Meldungen."""
+def test_main_raeumt_alle_limiter_im_takt_auf():
+    """Der Start in main.py nennt alle Limiter - nicht nur den fuer Meldungen."""
     import inspect
     import main
 
@@ -84,6 +84,7 @@ def test_main_raeumt_beide_limiter_im_takt_auf():
     assert "aufraeumen_im_takt" in quelle
     assert "report_rate_limiter" in quelle
     assert "search_query_statement_rate_limiter" in quelle
+    assert "feedback_rate_limiter" in quelle
 
 
 def test_main_haelt_den_task_und_bricht_ihn_beim_shutdown_ab():

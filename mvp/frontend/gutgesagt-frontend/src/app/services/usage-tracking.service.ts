@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { SessionService } from './session.service';
@@ -30,12 +30,24 @@ export interface UserUsageStats {
   }>;
 }
 
+export interface BesuchResponse {
+  nutzung_seit_letztem_besuch: number;
+}
+
 export interface TrendingContent {
   trending: Array<{
     content_id: string;
     recent_uses: number;
     total_uses: number;
   }>;
+}
+
+/**
+ * "Diese Woche oft genutzt" (#364): Beitraege in der Form von /content/recent,
+ * meistgenutzte zuerst; leer, wenn es zu wenig Nutzung gab.
+ */
+export interface OftGenutztAntwort {
+  results: any[];
 }
 
 @Injectable({
@@ -179,6 +191,25 @@ export class UsageTrackingService {
   }
 
   /**
+   * Meldet einen Besuch der angemeldeten Person und liefert, wie oft ihre Beitraege
+   * seit dem letzten Besuch genutzt wurden (#349). POST, weil das Backend dabei den
+   * gezeigten Stand fortschreibt; die Person kommt wie bei der Nutzungsstatistik
+   * aus der Anmeldung, nicht aus dem Pfad.
+   *
+   * @returns Observable mit der Zahl, bei einem Fehler null
+   */
+  besuchMelden(): Observable<number | null> {
+    return this.http.post<BesuchResponse>(`${this.apiUrl}/users/me/besuch`, {})
+      .pipe(
+        map(antwort => antwort.nutzung_seit_letztem_besuch),
+        catchError(error => {
+          this.loggingService.error('Besuch nicht gemeldet', error);
+          return of(null);
+        })
+      );
+  }
+
+  /**
    * Get currently trending content based on recent usage.
    *
    * @param limit - Maximum number of items to return (default: 10)
@@ -192,6 +223,21 @@ export class UsageTrackingService {
         catchError(error => {
           this.loggingService.error('Failed to get trending content', error);
           return of({ trending: [] });
+        })
+      );
+  }
+
+  /**
+   * Die oft genutzten Beitraege der letzten sieben Tage. Ein Fehler liefert keine
+   * Beitraege: Die Startseite laesst den Bereich dann weg, statt eine Fehlermeldung
+   * zwischen Suche und Neuesten zu stellen.
+   */
+  getOftGenutzt(): Observable<OftGenutztAntwort> {
+    return this.http.get<OftGenutztAntwort>(`${this.apiUrl}/trending/woche`)
+      .pipe(
+        catchError(error => {
+          this.loggingService.error('Oft genutzte Beitraege nicht geladen', error);
+          return of({ results: [] });
         })
       );
   }

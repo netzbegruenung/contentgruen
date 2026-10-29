@@ -135,6 +135,14 @@ describe('cacheInterceptor', () => {
     httpMock.expectOne(`${api}/rawinput/getRawInputs?page=1`).flush({ stand: 'neu' });
   });
 
+  it('haelt "Hier fehlt eine Antwort" nie im Cache', () => {
+    holen(`${api}/statement/unbeantwortet`);
+    httpMock.expectOne(`${api}/statement/unbeantwortet`).flush({ aussagen: [] });
+
+    holen(`${api}/statement/unbeantwortet`);
+    httpMock.expectOne(`${api}/statement/unbeantwortet`).flush({ aussagen: [] });
+  });
+
   for (const pfad of ['/api/check-session', '/api/user-info']) {
     it(`fragt ${pfad} jedes Mal beim BFF nach (#278)`, () => {
       // Eine beendete Sitzung soll beim naechsten Seitenwechsel auffallen, nicht erst nach

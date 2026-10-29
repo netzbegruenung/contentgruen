@@ -4,7 +4,7 @@ Handles all database operations for usage statistics.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 import uuid
 import asyncio
@@ -12,17 +12,22 @@ import asyncio
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 
-from infrastructure.database.connection import get_app_database
+from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import UsageTracking, UsageEvent
 
 logger = logging.getLogger(__name__)
+
+# Der Zeitraum fuer den Zuwachs in "Meine Beitraege" (#349); das Frontend nennt
+# ihn im Text an der Karte mit.
+ZUWACHS_TAGE = 7
 
 
 class UsageTrackingRepository:
     """Repository for usage tracking operations."""
 
-    def __init__(self):
-        self.db = get_app_database()
+    def __init__(self, db: Optional[AppDatabase] = None):
+        """``db``: eine AppDatabase; ohne Angabe die globale."""
+        self.db = db if db is not None else get_app_database()
 
     def track_usage(
         self,
@@ -124,7 +129,40 @@ class UsageTrackingRepository:
 
             return result
 
-    async def get_user_statistics(self, user_id: str) -> Dict[str, Any]:
+    def get_nutzung_letzte_7_tage_batch(
+        self, content_ids: List[uuid.UUID]
+    ) -> Dict[str, int]:
+        """
+        Der Zuwachs je Beitrag: Nutzungen der letzten ZUWACHS_TAGE Tage (#349).
+
+        Gezaehlt aus usage_events, nicht aus usage_tracking: nur dort steht, wann
+        genutzt wurde. Deren Frist (90 Tage, cleanup_old_events) liegt weit ueber
+        einer Woche. Die eigene Kopie kommt gar nicht erst hinein (api/v1/usage.py).
+
+        Returns:
+            Dict content_id (als String) -> Zahl, 0 ohne Nutzung im Zeitraum
+        """
+        result = {str(content_id): 0 for content_id in content_ids}
+        if not content_ids:
+            return result
+        seit = datetime.now(timezone.utc) - timedelta(days=ZUWACHS_TAGE)
+        with self.db.get_session() as session:
+            zeilen = (
+                session.query(UsageEvent.content_id, func.count(UsageEvent.id))
+                .filter(
+                    UsageEvent.content_id.in_(content_ids),
+                    UsageEvent.timestamp >= seit,
+                )
+                .group_by(UsageEvent.content_id)
+                .all()
+            )
+            for content_id, anzahl in zeilen:
+                result[str(content_id)] = anzahl
+        return result
+
+    async def get_user_statistics(
+        self, user_id: str, content_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """
         Get usage statistics for a specific user's contributed content.
 
@@ -134,6 +172,8 @@ class UsageTrackingRepository:
 
         Args:
             user_id: User identifier
+            content_types: nur diese Typen zaehlen; ohne Angabe alles, was der Person
+                zugeordnet ist (auch Aussagen und Herkunftsangaben)
 
         Returns:
             Dict containing user statistics
@@ -145,7 +185,9 @@ class UsageTrackingRepository:
         content_repo = ContentRepository(settings)
 
         # Get all content by this author (using scroll/pagination)
-        user_content = await content_repo.get_by_author(user_id, limit=10000, offset=0)
+        user_content = await content_repo.get_by_author(
+            user_id, limit=10000, offset=0, content_types=content_types
+        )
 
         if not user_content:
             return {

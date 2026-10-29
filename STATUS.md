@@ -27,7 +27,7 @@ use existing comments/background info, and contribute their own.
 * [x] PostgreSQL persistence for application data (votes, usage tracking, moderation); vectors live in Qdrant
 * [x] Backup & restore (with rotation; scheduled in prod)
 * [x] Start page value proposition, recent-content display, help dialog, branding/favicon
-* [x] CI/CD via GitHub Actions (build on `main`/PRs, tagged releases); test and production systems deployed
+* [x] CI/CD: Woodpecker checks every pull request (`docs/CI.md`), GitHub Actions build on `main` and tagged releases; test and production systems deployed
 
 ## Open Core Tasks
 

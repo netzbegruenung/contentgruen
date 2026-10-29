@@ -33,11 +33,11 @@ Der optionale Freitext an einem Einwurf, mit dem der Einwerfer anderen sagt, was
 _Avoid_: Notiz, Kommentar, Beschreibung
 
 **Plattform**:
-Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web).
+Das soziale Netzwerk oder die Website, aus der der Link eines Einwurfs oder eines Posts stammt (etwa Instagram, YouTube, TikTok oder Web). Ebenso heißt das Netzwerk, in dem eine Aussage gefallen ist; dort meldet man kleine Accounts, statt ihnen zu antworten (Rat auf der Ergebnisseite).
 _Avoid_: Kanal, Quelle
 
 **Weg**:
-Wie ein Einwurf in den Fangkorb kam: über das Formular oder über das Teilen-Menü des Geräts. Nicht zu verwechseln mit der Plattform, aus der sein Link stammt.
+Wie ein Einwurf in den Fangkorb kam: über das Formular, über das Teilen-Menü des Geräts oder über das Importskript aus einer Liste (etwa für den Startbestand). Nicht zu verwechseln mit der Plattform, aus der sein Link stammt.
 _Avoid_: Kanal, Quelle, Herkunft
 
 **Gleicher Link**:
@@ -123,6 +123,20 @@ _Avoid_: Zusammenfassung, Merge, Aggregation
 **KI-Vorschlag**:
 Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa eine Unterschrift für ein Bild oder ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
 _Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
+
+## Schreiben
+
+**Formularhilfe**:
+Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitragstyp ankommt, und hinter dem ? die Regeln dazu, bei Kommentar und Post auch die Schreibregeln und Schreibhilfen. Sie lenkt sanft und sperrt kein Speichern.
+_Avoid_: Tooltip, Anleitung, Hilfetext
+
+**Schreibregel**:
+Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
+_Avoid_: Richtlinien, Policy, Netiquette
+
+**Schreibhilfe**:
+Ein Kniff, mit dem ein Text besser ankommt, etwa der Küchenzuruf („Was würdest du in einem Satz durch die Küche rufen?“) als Leitfrage für die Kurzfassung, der Aufhänger vor der Begründung, die Lesenden als Hauptfigur oder Zahlen, die in den Alltag übersetzt sind. Anders als eine Schreibregel ist sie ein Angebot.
+_Avoid_: Tipp, Trick
 
 ## Beiträge
 
@@ -212,13 +226,21 @@ _Avoid_: Tag, Topic, Kategorie, Schlagwort
 Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als seinen Autor. Die Nutzung ist das Hauptmaß dafür, dass ein Beitrag hilft. Sie ist immer echt: Kein Zähler wird vorbelegt oder geschätzt, ein neuer Beitrag beginnt bei 0.
 _Avoid_: Usage, Aufruf, Klick
 
+**Oft genutzt**:
+Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.
+_Avoid_: Trending, Trend, beliebt, Top-Beiträge
+
 **Stimme**:
 Die Zustimmung oder Ablehnung einer angemeldeten Person zu einem Beitrag. Ein Qualitätssignal, keine Nutzung.
 _Avoid_: Vote, Like, Daumen
 
 **Meldung**:
-Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren.
+Der Hinweis einer Person an die Admins, dass ein Beitrag problematisch ist. Eine Meldung ist offen, bearbeitet oder abgewiesen; sie selbst ändert am Beitrag nichts, erst ein Admin kann ihn sperren. Melden auf der Plattform einer Aussage ist keine Meldung.
 _Avoid_: Report, Flag, Beschwerde
+
+**Feedback**:
+Was eine Person dem Team über Gut gesagt selbst mitteilt, über den Knopf „Feedback“: ein Freitext und, wenn sie eine Antwort will, eine Kontaktangabe. Es betrifft die App, nicht einen einzelnen Beitrag (das ist eine Meldung), und trägt keinen Bezug zum Konto. Nur Admins lesen es; nach der Frist im Löschkonzept wird es gelöscht.
+_Avoid_: Kontaktformular, Rückmeldung (in `docs/VISION.md` die Rückmeldung zur Nutzungsstatistik der eigenen Beiträge), Ticket
 
 **Dublette**:
 Ein neuer Beitrag, der einem vorhandenen fast gleicht. Die Person sieht den vorhandenen und entscheidet, ob sie ihm zustimmt oder trotzdem speichert; ist der vorhandene ihr eigener, nimmt sie ihn, statt zuzustimmen. Antwortet der Beitrag auf eine Aussage, wird erst nach dieser Entscheidung mit ihr verknüpft: beim Nehmen der vorhandene, bei „Trotzdem speichern“ nur der neue; ein fremder vorhandener nie. Kommt der Beitrag aus dem Fangkorb, wird der Einwurf beim Zustimmen oder Nehmen mit dem vorhandenen verknüpft: Er ist damit ausformuliert, Autor des vorhandenen bleibt dessen Autor.
@@ -233,11 +255,11 @@ Der Text, mit dem jemand nach passenden Beiträgen sucht. Keine Aussage, aber h�
 _Avoid_: Query, Suchbegriff
 
 **Suche ohne Treffer**:
-Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Unterschieden werden die Personen über ihr Tagespseudonym, deshalb zählt dieselbe Person an zwei Tagen zweimal.
+Eine Suche, zu der kein Beitrag ausreichend passt. Gezählt wird sie an der Aussage, auf der die Suchanfrage landet (ähnliche Suchanfragen landen auf derselben), je Woche und ohne Bezug zur suchenden Person. Admins sehen als Kennzahl die Aussagen mit den meisten Suchen ohne Treffer, nicht die eingegebenen Suchanfragen, und eine Aussage erst, wenn mindestens zwei verschiedene Personen ohne Treffer danach gesucht haben. Mitwirkende sehen dieselben Aussagen in „Hier fehlt eine Antwort“, mit der Zahl der Personen und danach geordnet, aber ohne die Zahl der Suchen. Unterschieden werden die Personen über ihr Tagespseudonym, deshalb zählt dieselbe Person an zwei Tagen zweimal.
 _Avoid_: Nulltreffer, Fehlsuche, leere Suche
 
 **Suchereignis**:
-Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen noch). Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
+Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl der Treffer und das Tagespseudonym der suchenden Person, aber weder die Suchanfrage noch die Uhrzeit noch eine fortlaufende Nummer, die die Reihenfolge der Suchen eines Tages verriete. Über Uhrzeit oder Nummer lässt sich ein Suchereignis deshalb nicht mit der Aussage verbinden, die dieselbe Suche angelegt hat (nur wer die Datenbank selbst liest, sieht die Reihenfolge der Zeilen des laufenden Tages; der tägliche Bereinigungsjob schreibt jeden abgeschlossenen Tag gemischt neu, solange er eingeschaltet ist). Nach seiner Frist (Standard 90 Tage) wird es gelöscht und lebt nur im Tageszähler der Suchen weiter.
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:
@@ -251,6 +273,10 @@ _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
+
+**Rückmeldung**:
+Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
+_Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
 **Punkte**:
 Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.

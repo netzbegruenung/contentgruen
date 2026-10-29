@@ -23,6 +23,7 @@ from dependencies import (
     get_generic_text_service,
     get_post_service,
 )
+from domain.link_vergleich import links_im_text_ohne_tracking, ohne_tracking
 from domain.models.content_type import ContentType
 from domain.models.raw_input import (
     AktionNichtErlaubt,
@@ -123,8 +124,8 @@ async def add_raw_input(
     """Einen Einwurf in den Fangkorb legen."""
     try:
         raw_input = repository.create(
-            content=request.content,
-            url=request.url,
+            content=links_im_text_ohne_tracking(request.content),
+            url=ohne_tracking(request.url),
             image_url=request.image_url,
             submitted_by=_einwerfende_person(aufrufer.kennung),
             source_channel=(request.source_channel or RawInputSource.WEB).value,

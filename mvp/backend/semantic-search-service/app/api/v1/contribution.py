@@ -74,14 +74,25 @@ async def search_content(
                 except Exception as e:
                     logger.warning(f"Herkunft {ref.reference_id} nicht lesbar: {e}")
 
-        # Die Nutzung liegt in PostgreSQL; nachgetragen wie bei /content/recent. Faellt
-        # PostgreSQL aus, fehlt nur die Zahl - die Liste selbst kommt aus Qdrant.
-        eintraege = [beitrag.model_dump() for beitrag in beitraege]
+        # Die Nutzung liegt in PostgreSQL; nachgetragen wie bei /content/recent, dazu
+        # der Zuwachs der letzten 7 Tage (#349). Faellt PostgreSQL aus, fehlen nur die
+        # Zahlen - die Liste selbst kommt aus Qdrant. Getrennt abgefangen: Scheitert nur
+        # der Zuwachs, bleibt die schon gelesene Nutzung stehen.
+        mit_nutzung = [beitrag.model_dump() for beitrag in beitraege]
         try:
-            mit_nutzung = get_usage_service().enrich_content_with_usage(eintraege)
+            mit_nutzung = get_usage_service().enrich_content_with_usage(mit_nutzung)
         except Exception as e:
             logger.warning(f"Nutzung fuer Meine Beitraege nicht lesbar, zeige 0: {e}")
-            mit_nutzung = [{**eintrag, "usage_count": 0} for eintrag in eintraege]
+            mit_nutzung = [{**eintrag, "usage_count": 0} for eintrag in mit_nutzung]
+        try:
+            mit_nutzung = get_usage_service().nutzung_letzte_7_tage_nachtragen(
+                mit_nutzung
+            )
+        except Exception as e:
+            logger.warning(f"Zuwachs fuer Meine Beitraege nicht lesbar, zeige 0: {e}")
+            mit_nutzung = [
+                {**eintrag, "nutzung_letzte_7_tage": 0} for eintrag in mit_nutzung
+            ]
 
         # Nur eigene Beitraege: das Kennzeichen ist immer gesetzt, die Kennung bleibt
         # wie ueberall nur Admins; Bearbeitungshistorie geht nicht nach aussen (#385).

@@ -13,10 +13,15 @@ Parameter schon beim Einwerfen entfernt. Hier werden sie trotzdem noch einmal
 entfernt: Einwuerfe von vor dieser Bereinigung tragen sie noch, und ein Client
 muss sich nicht daran halten. Wer eine Liste aendert, aendert beide;
 ``test_link_vergleich_tracking_wie_frontend`` prueft das.
+
+``ohne_tracking`` und ``links_im_text_ohne_tracking`` entfernen dieselben Parameter
+beim Einwerfen auch auf dem Server, fuer Clients ohne das Formular (das
+Importskript, #341). Fuer das Formular aendert das nichts.
 """
 
+import re
 from typing import List, Optional, Tuple
-from urllib.parse import unquote_plus, urlsplit
+from urllib.parse import unquote_plus, urlsplit, urlunsplit
 
 # Parameter, die vollstaendig entfernt werden.
 TRACKING_PARAMETER = frozenset(
@@ -49,6 +54,44 @@ def _ist_tracking(name: str, host_parameter: frozenset) -> bool:
         or klein in host_parameter
         or klein.startswith(TRACKING_PRAEFIXE)
     )
+
+
+def ohne_tracking(url: Optional[str]) -> Optional[str]:
+    """
+    Der Link ohne Tracking-Parameter, sonst unveraendert (wie
+    ``trackingParameterEntfernen`` im Frontend). Was kein http(s)-Link ist oder
+    keinen Tracking-Parameter traegt, kommt so zurueck, wie es kam.
+    """
+    if not url:
+        return url
+    try:
+        teile = urlsplit(url)
+    except ValueError:
+        return url
+    if teile.scheme.lower() not in ("http", "https") or not teile.hostname:
+        return url
+    host_parameter = _host_tracking_parameter(teile.hostname.lower())
+    parameter = teile.query.split("&") if teile.query else []
+    bleiben = [
+        teil
+        for teil in parameter
+        if teil
+        and not _ist_tracking(unquote_plus(teil.split("=", 1)[0]), host_parameter)
+    ]
+    if len(bleiben) == len([teil for teil in parameter if teil]):
+        return url
+    return urlunsplit(teile._replace(query="&".join(bleiben)))
+
+
+# Wie URL_MUSTER_GLOBAL im Frontend: bewusst schlicht.
+_LINK_IM_TEXT = re.compile(r"https?://[^\s]+", re.IGNORECASE)
+
+
+def links_im_text_ohne_tracking(text: Optional[str]) -> Optional[str]:
+    """Jeder Link im Text ohne Tracking-Parameter (wie ``urlsInTextBereinigen``)."""
+    if not text:
+        return text
+    return _LINK_IM_TEXT.sub(lambda treffer: ohne_tracking(treffer.group(0)), text)
 
 
 def _zerlegt(url: Optional[str]) -> Optional[Tuple[str, str, List[str], str]]:

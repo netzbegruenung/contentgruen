@@ -6,6 +6,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { RouterLink } from '@angular/router';
 import { UserInfo } from '../../../auth/auth.service';
 import { EINWERFEN_TITEL, KETTEN_ICONS } from '../../fangkorb-texte';
+import { ROUTES } from '../../constants/app.constants';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -22,6 +23,7 @@ import { EINWERFEN_TITEL, KETTEN_ICONS } from '../../fangkorb-texte';
 })
 export class MobileMenuComponent {
   readonly kettenIcons = KETTEN_ICONS;
+  readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   readonly einwerfenTitel = EINWERFEN_TITEL;
   @Input() userInfo: UserInfo | null = null;
   @Input() selectedProfilePictureUrl: string = '';
@@ -36,6 +38,7 @@ export class MobileMenuComponent {
   @Output() loginToContribute = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
   @Output() help = new EventEmitter<void>();
+  @Output() feedback = new EventEmitter<void>();
 
   close(): void {
     this.closeMenu.emit();
@@ -83,6 +86,11 @@ export class MobileMenuComponent {
 
   onHelpClick(): void {
     this.help.emit();
+    this.close();
+  }
+
+  onFeedbackClick(): void {
+    this.feedback.emit();
     this.close();
   }
 }

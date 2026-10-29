@@ -240,7 +240,7 @@ def lese_client(anzeigenamen_ohne_datenbank):
                 lambda i=None, **_: _bild(i), ImageDbEntry
             ),
             get_settings: lambda: MagicMock(),
-            get_reference_service: lambda: MagicMock(),
+            get_reference_service: lambda: AsyncMock(),
         }
     )
     factory = MagicMock()

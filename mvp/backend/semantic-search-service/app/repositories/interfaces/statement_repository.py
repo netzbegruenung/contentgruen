@@ -52,3 +52,12 @@ class IStatementRepository(
         (same criterion as count_curated).
         """
         pass
+
+    @abstractmethod
+    async def ohne_kommentar(self) -> List[StatementDbEntry]:
+        """
+        Visible statements without a visible Kommentar among their reply
+        suggestions, leaving out search queries nobody has answered yet (as
+        count_curated). Blocked or deleted Kommentare do not count as an answer.
+        """
+        pass

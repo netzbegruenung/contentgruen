@@ -7,14 +7,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatMenuModule } from '@angular/material/menu';
 import { FormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
+import { RueckmeldungService } from './services/rueckmeldung.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
+import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
 import { MobileMenuComponent } from './shared/components/mobile-menu/mobile-menu';
 import { MobileHeaderComponent } from './shared/components/mobile-header/mobile-header.component';
@@ -23,6 +26,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { KETTEN_ICONS } from './shared/fangkorb-texte';
+import { ROUTES } from './shared/constants/app.constants';
 
 @Component({
   selector: 'app-root',
@@ -36,8 +40,10 @@ import { KETTEN_ICONS } from './shared/fangkorb-texte';
     MatTooltipModule,
     MatSidenavModule,
     MatDividerModule,
+    MatMenuModule,
     FormsModule,
     RouterOutlet,
+    RouterLink,
     FooterComponent,
     MobileMenuComponent,
     MobileHeaderComponent
@@ -50,6 +56,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   title = 'Gut gesagt';
   readonly kettenIcons = KETTEN_ICONS;
+  readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   private destroy$ = new Subject<void>();
@@ -90,7 +97,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
-    private routeConfigService: RouteConfigService) {
+    private routeConfigService: RouteConfigService,
+    private rueckmeldung: RueckmeldungService) {
     this.logger.debug('AppComponent created');
   }
 
@@ -131,6 +139,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.updateAvatarForAuthStatus();
       });
 
+    // Rueckmeldung beim Anmelden, wie oft die eigenen Beitraege genutzt wurden (#349)
+    this.rueckmeldung.starten();
+
     // Try to fetch initial user info but don't redirect on failure
     this.authService.fetchUserInfo()
       .pipe(takeUntil(this.destroy$))
@@ -168,6 +179,13 @@ export class AppComponent implements OnInit, OnDestroy {
       width: '80vw',
       maxWidth: '80vw',
       data: {} // Pass any data you need here
+    });
+  }
+
+  openFeedbackDialog(): void {
+    this.dialog.open(FeedbackDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
     });
   }
 
@@ -251,23 +269,19 @@ export class AppComponent implements OnInit, OnDestroy {
       this.logger.debug('Using stored profile picture:', this.selectedProfilePictureUrl);
     } else {
       this.logger.debug('No stored profile picture, generating new one');
-      this.regenerateProfilePicture();
+      this.profilbildAuslosen();
     }
   }
 
-  regenerateProfilePicture(): void {
-    if (this.userInfo?.isAuthenticated) {
-      // For logged-in users, randomly select from profile pictures
-      const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
-      this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
-      this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);
-      sessionStorage.setItem('profilePicture', this.selectedProfilePictureUrl);
-    } else {
-      // For anonymous users, toggle between male/female anonymous avatars
-      this.currentAnonymousIndex = (this.currentAnonymousIndex + 1) % this.anonymousAvatars.length;
-      this.selectedProfilePictureUrl = this.anonymousAvatars[this.currentAnonymousIndex];
-      sessionStorage.setItem('anonymousAvatar', this.selectedProfilePictureUrl);
-    }
+  /**
+   * Einmal je Sitzung ein Bild auslosen. Neu gewuerfelt wird nicht mehr: Der Klick
+   * auf den Avatar oeffnet das Profilmenue (#343).
+   */
+  private profilbildAuslosen(): void {
+    const randomIndex = Math.floor(Math.random() * this.profilePictures.length);
+    this.selectedProfilePictureUrl = this.profilePictures[randomIndex];
+    this.logger.debug('Selected profile picture:', this.selectedProfilePictureUrl);
+    sessionStorage.setItem('profilePicture', this.selectedProfilePictureUrl);
   }
 
   private updateAvatarForAuthStatus(): void {

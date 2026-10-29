@@ -50,13 +50,14 @@ import asyncio
 import hashlib
 import uuid
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from typing import List, Optional, Set
 
 from core.logging import get_logger
 from domain.models.content_status import ContentStatus
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
 from services.content.statement_service import StatementService
+from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
 logger = get_logger(__name__)
 
@@ -75,20 +76,20 @@ MERKLISTE_MAX = 100_000
 
 @dataclass(frozen=True)
 class SucheOhneTreffer:
-    """Eine Aussage, zu der Suchen keinen Beitrag fanden, mit ihrer Anzahl."""
+    """
+    Eine Aussage, zu der Suchen keinen Beitrag fanden, mit der Anzahl der Suchen
+    und der Personen (Tagespseudonyme, ueber die Wochen summiert).
+    """
 
     statement_id: uuid.UUID
     text: str
     anzahl: int
+    personen: int
 
 
 def wochenbeginn(tag: date) -> date:
     """Der Montag der Woche, in die der Tag faellt."""
     return tag - timedelta(days=tag.weekday())
-
-
-def heute_utc() -> date:
-    return datetime.now(timezone.utc).date()
 
 
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
@@ -101,15 +102,6 @@ def alte_wochen_loeschen(
 ) -> int:
     """Wochen vor der Aufbewahrungsgrenze loeschen; liefert die Zahl der Zeilen."""
     return repository.loeschen_vor(aufbewahrungsgrenze(heute))
-
-
-def sekunden_bis_mitternacht(jetzt: Optional[datetime] = None) -> float:
-    """Sekunden bis zum Beginn des naechsten UTC-Tages."""
-    jetzt = jetzt or datetime.now(timezone.utc)
-    morgen = datetime.combine(
-        jetzt.date() + timedelta(days=1), datetime.min.time(), timezone.utc
-    )
-    return (morgen - jetzt).total_seconds()
 
 
 def _kennung(pseudonym: str, statement_id: uuid.UUID) -> bytes:
@@ -257,12 +249,12 @@ class SuchenOhneTrefferService:
                 seit_woche, MINDESTANZAHL, limit, offset
             )
             aussagen = await asyncio.gather(
-                *(self._sichtbare_aussage(statement_id) for statement_id, _ in zeilen)
+                *(self._sichtbare_aussage(statement_id) for statement_id, *_ in zeilen)
             )
-            for (statement_id, anzahl), aussage in zip(zeilen, aussagen):
+            for (statement_id, anzahl, personen), aussage in zip(zeilen, aussagen):
                 if aussage is not None:
                     ergebnis.append(
-                        SucheOhneTreffer(statement_id, aussage.text, anzahl)
+                        SucheOhneTreffer(statement_id, aussage.text, anzahl, personen)
                     )
             if len(zeilen) < limit:
                 break
