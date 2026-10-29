@@ -1,0 +1,47 @@
+<mat-card class="bilanz">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>insights</mat-icon>
+      Bilanz
+    </mat-card-title>
+    <mat-card-subtitle>
+      Die Kennzahlen je Kalenderwoche<ng-container *ngIf="daten">, die letzten {{ daten.wochen }}</ng-container>.
+      Feste Ziele gibt es nicht: Verglichen wird mit der Basislinie aus dem internen Launch.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <p *ngIf="fehler" class="hinweis">Die Bilanz konnte nicht geladen werden.</p>
+
+    <div *ngIf="daten" class="tabelle">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Woche</th>
+            <th scope="col" class="zahl">Personen pro Tag, die suchen</th>
+            <th scope="col" class="zahl">Nutzungen</th>
+            <th scope="col" class="zahl">Suchen ohne Treffer</th>
+            <th scope="col" class="zahl">Nutzungen je Suche</th>
+            <th scope="col" class="zahl">Suchen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let w of daten.woechentlich" data-testid="bilanz-woche">
+            <th scope="row">{{ woche(w) }}</th>
+            <td class="zahl">{{ zahl(w.personen_pro_tag) }}</td>
+            <td class="zahl">{{ zahl(w.nutzungen) }}</td>
+            <td class="zahl">{{ zahl(w.anteil_ohne_treffer, ' %') }}</td>
+            <td class="zahl">{{ zahl(w.nutzungen_je_suche) }}</td>
+            <td class="zahl">{{ w.suchen }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p *ngIf="daten" class="fussnote">
+      Wochen beginnen montags (UTC). Personen pro Tag: verschiedene Tagespseudonyme je Tag,
+      gemittelt über die Tage der Woche; wer sich im Laufe des Tages anmeldet, zählt doppelt.
+      Nutzungen: wie oft Beiträge in der Woche genutzt wurden. Suchen ohne Treffer: Anteil an allen Suchen.
+      – heißt: nicht bekannt, etwa ohne Suche in der Woche oder wenn die Nutzungen der Woche
+      schon gelöscht sind (Frist 90 Tage).
+    </p>
+  </mat-card-content>
+</mat-card>

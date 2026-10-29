@@ -187,13 +187,15 @@ describe('DatenschutzComponent', () => {
     });
   });
 
-  describe('Suchvorgänge (#239, #289)', () => {
+  describe('Suchvorgänge (#239, #289, #467)', () => {
     it('nennt den Tag statt eines Zeitpunkts und die Frist von 90 Tagen mit Tageszähler', () => {
       const text = abschnitt('Suchvorgänge');
 
       expect(text).toContain('den Tag (keine Uhrzeit)');
       expect(text).toContain('nach 90 Tagen automatisch');
-      expect(text).toContain('je Tag nur, wie oft gesucht wurde und von wie vielen verschiedenen Pseudonymen');
+      expect(text).toContain(
+        'je Tag nur, wie oft gesucht wurde, wie oft davon ohne Treffer und von wie vielen verschiedenen Pseudonymen',
+      );
       expect(text).not.toContain('keine Löschfrist');
     });
   });
