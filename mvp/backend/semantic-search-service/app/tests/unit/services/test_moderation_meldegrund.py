@@ -5,7 +5,9 @@ Schema der Route und Service pruefen denselben Wertebereich: ein Grund, den die
 Route annimmt, darf der Service nicht still mit False abweisen.
 """
 
+import re
 import uuid
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -14,6 +16,11 @@ from domain.models.meldegrund import MELDEGRUENDE
 from services.moderation_service import ModerationService
 
 CONTENT_ID = str(uuid.uuid4())
+
+FRONTEND_MELDEGRUENDE = (
+    Path(__file__).resolve().parents[6]
+    / "frontend/gutgesagt-frontend/src/app/shared/meldegruende.ts"
+)
 
 
 @pytest.fixture
@@ -29,13 +36,23 @@ def service(report_repo):
     return ModerationService(report_repo=report_repo, moderation_repo=MagicMock())
 
 
-def test_meldegruende_enthalten_erfunden_oder_sachlich_falsch():
-    assert "fabricated_or_false" in MELDEGRUENDE
+@pytest.mark.unit
+class TestMeldegruende:
+    def test_meldegruende_enthalten_erfunden_oder_sachlich_falsch(self):
+        assert "fabricated_or_false" in MELDEGRUENDE
 
+    def test_meldegruende_bisherige_bleiben_gueltig(self):
+        # Gespeicherte Meldungen tragen diese Werte; sie muessen gueltig bleiben.
+        assert {"spam", "inappropriate", "duplicate", "other"} <= set(MELDEGRUENDE)
 
-def test_bisherige_meldegruende_bleiben_gueltig():
-    # Gespeicherte Meldungen tragen diese Werte; sie muessen gueltig bleiben.
-    assert {"spam", "inappropriate", "duplicate", "other"} <= set(MELDEGRUENDE)
+    @pytest.mark.skipif(
+        not FRONTEND_MELDEGRUENDE.exists(), reason="Frontend nicht im Checkout"
+    )
+    def test_meldegruende_gleich_wie_im_frontend(self):
+        quelltext = FRONTEND_MELDEGRUENDE.read_text(encoding="utf-8")
+        werte = re.findall(r"value: '([^']+)'", quelltext)
+
+        assert sorted(werte) == sorted(MELDEGRUENDE)
 
 
 @pytest.mark.unit

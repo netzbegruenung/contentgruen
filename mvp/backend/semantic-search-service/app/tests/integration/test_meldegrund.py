@@ -8,7 +8,7 @@ braucht der neue Grund nicht.
 """
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

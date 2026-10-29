@@ -5,7 +5,7 @@ Die einzige Liste im Suchdienst; Schema der Melde-Route und ModerationService
 pruefen beide gegen sie. Gespeicherte Meldungen tragen den Wert als freien Text,
 ein Wert darf deshalb nicht umbenannt oder entfernt werden, solange Meldungen
 mit ihm in der Datenbank liegen. Das Frontend fuehrt dieselben Werte mit ihrer
-Beschriftung in ``shared/meldegruende.ts``.
+Beschriftung in ``shared/meldegruende.ts``; test_moderation_meldegrund.py gleicht beide ab.
 """
 
 from typing import Literal, get_args
