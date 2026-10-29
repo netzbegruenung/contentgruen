@@ -9,7 +9,7 @@ import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 import { FormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
@@ -25,6 +25,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { KETTEN_ICONS } from './shared/fangkorb-texte';
+import { ROUTES } from './shared/constants/app.constants';
 
 @Component({
   selector: 'app-root',
@@ -41,6 +42,7 @@ import { KETTEN_ICONS } from './shared/fangkorb-texte';
     MatMenuModule,
     FormsModule,
     RouterOutlet,
+    RouterLink,
     FooterComponent,
     MobileMenuComponent,
     MobileHeaderComponent
@@ -53,6 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   title = 'Gut gesagt';
   readonly kettenIcons = KETTEN_ICONS;
+  readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   private destroy$ = new Subject<void>();

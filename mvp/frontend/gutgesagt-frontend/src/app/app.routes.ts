@@ -3,7 +3,11 @@ import { AuthGuard } from './auth/auth.guard';
 import { AdminGuard } from './auth/admin.guard';
 import { PublicGuard } from './auth/public.guard';
 import { ShareTargetGuard } from './share-target/share-target.guard';
-import { gespeichertEltern } from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import {
+    gespeichertEltern,
+    vonHierFehltEineAntwort,
+} from './beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { ROUTES } from './shared/constants/app.constants';
 import { EINWURF_PARAM, alteEinwurfAdresseUmleiten } from './destillieren/einwurf-adresse';
 
 /**
@@ -33,7 +37,10 @@ export type SchliesstParameter = string[];
  */
 function formularEltern(snapshot: ActivatedRouteSnapshot): string | unknown[] {
   const einwurfId = snapshot.queryParamMap.get(EINWURF_PARAM);
-  return einwurfId ? ['/destillieren', einwurfId] : '/contribute';
+  if (einwurfId) {
+    return ['/destillieren', einwurfId];
+  }
+  return vonHierFehltEineAntwort(snapshot.queryParamMap) ? ROUTES.HIER_FEHLT_EINE_ANTWORT : '/contribute';
 }
 
 /**
@@ -98,6 +105,12 @@ export const routes: Routes = [
     {
         path: 'contributions',
         loadComponent: () => import('./contributions-view/contributions-view.component').then(m => m.ContributionsViewComponent),
+        canActivate: [AuthGuard],
+        data: { parent: '/search' }
+    },
+    {
+        path: 'hier-fehlt-eine-antwort',
+        loadComponent: () => import('./hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component').then(m => m.HierFehltEineAntwortComponent),
         canActivate: [AuthGuard],
         data: { parent: '/search' }
     },

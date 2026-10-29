@@ -123,6 +123,8 @@
                             (keydown.enter)="navigateToRawInputListView()"
                             (keydown.space)="navigateToRawInputListView()">{{ kettenIcons.fangkorb }} Fangkorb</span>
 
+                            <a class="header-link text-emphasis" [routerLink]="hierFehltEineAntwortPfad">Hier fehlt eine Antwort</a>
+
                             <button mat-raised-button class="dark-green-button" (click)="navigateToContributeView()">
                                 <mat-icon>add</mat-icon> Beitragen
                             </button>

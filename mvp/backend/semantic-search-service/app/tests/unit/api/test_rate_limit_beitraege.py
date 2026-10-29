@@ -24,7 +24,12 @@ def _client(pfad: str) -> TestClient:
 
 
 @pytest.mark.parametrize(
-    "pfad", ["/api/v1/post/addPost", "/api/v1/commentary/addCommentary"]
+    "pfad",
+    [
+        "/api/v1/post/addPost",
+        "/api/v1/commentary/addCommentary",
+        "/api/v1/statement/vorab",
+    ],
 )
 def test_anlegen_ueber_dem_limit_ist_429(pfad):
     client = _client(pfad)

@@ -79,6 +79,11 @@ main * {
     white-space: nowrap;
 }
 
+/* Der einzige echte Link im Kopf ("Hier fehlt eine Antwort") sieht aus wie die anderen. */
+a.header-link {
+    color: inherit;
+}
+
 .header-link:hover {
     opacity: 0.8;
 }
