@@ -32,6 +32,9 @@ The same holds for `test_webserver_protokoll.py`, which starts nginx in a contai
 app database the code under test would open (`localhost:5433`, the dev stack) does not exist
 in CI either: tests replace the repositories that need it (`tests/conftest.py`), and in unit
 tests a fixture blocks `get_app_database()` (`tests/fixtures/ohne_app_datenbank.py`).
+The `python:3.13-slim` image of the unit step has no git: tests that call a program ask for it
+with `programme.noetig` (`scripts/tests/programme.py`) and skip in CI when it is missing; locally
+a missing program is an error.
 
 Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part of
 `check.sh`):
