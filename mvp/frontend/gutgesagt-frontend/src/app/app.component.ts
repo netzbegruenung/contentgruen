@@ -16,6 +16,7 @@ import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
 import { RueckmeldungService } from './services/rueckmeldung.service';
 import { ProfilbildService } from './services/profilbild.service';
+import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
@@ -135,9 +136,9 @@ export class AppComponent implements OnInit, OnDestroy {
           this.profilbild.setzePerson(userInfo);
 
           // Check if we have a stored return URL from login (including Keycloak)
-          const returnUrl = sessionStorage.getItem('loginReturnUrl');
+          const returnUrl = rueckkehrzielLesen();
           if (returnUrl) {
-            sessionStorage.removeItem('loginReturnUrl');
+            rueckkehrzielLoeschen();
             // Navigate to the stored URL
             this.router.navigateByUrl(returnUrl);
           }

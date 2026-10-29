@@ -17,6 +17,7 @@ import {
   ProfilbildService,
 } from './services/profilbild.service';
 import { ProfilbildDialogComponent } from './shared/profilbild/profilbild-dialog.component';
+import { RUECKKEHRZIEL_SCHLUESSEL } from './login/rueckkehrziel';
 
 /**
  * Der Desktop-Kopf aus den Befunden der Testsessions (#343): ein Weg zum Anmelden,
@@ -252,6 +253,30 @@ describe('AppComponent - Desktop-Kopf', () => {
       starten(BESUCHER);
 
       ALTE_PROFILBILD_SCHLUESSEL.forEach((s: string) => expect(sessionStorage.getItem(s)).toBeNull());
+    });
+  });
+
+  describe('Rueckkehrziel nach dem Anmelden (Befund 10 aus dem Review zu PR 458)', () => {
+    afterEach(() => sessionStorage.removeItem(RUECKKEHRZIEL_SCHLUESSEL));
+
+    it('fuehrt angemeldet zum gemerkten Ziel und loescht es', () => {
+      sessionStorage.setItem(RUECKKEHRZIEL_SCHLUESSEL, '/contribute');
+
+      starten(ANGEMELDET);
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/contribute');
+      expect(sessionStorage.getItem(RUECKKEHRZIEL_SCHLUESSEL)).toBeNull();
+    });
+
+    it('startet auch, wenn der Browser den sessionStorage sperrt', () => {
+      const spione = [
+        spyOn(Storage.prototype, 'getItem').and.throwError('SecurityError'),
+        spyOn(Storage.prototype, 'removeItem').and.throwError('SecurityError'),
+      ];
+
+      expect(() => starten(ANGEMELDET)).not.toThrow();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      spione.forEach((spion) => spion.and.callThrough());
     });
   });
 });
