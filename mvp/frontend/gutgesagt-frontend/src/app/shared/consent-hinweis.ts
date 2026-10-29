@@ -1,5 +1,5 @@
 /** Die Freigabe selbst, gleich in jedem Wortlaut des CC0-Hinweises. */
-const FREIGABE = 'stellst du deine eigene Formulierung unwiderruflich unter CC0 und bestätigst die ';
+const FREIGABE = 'stellst du deine eigene Formulierung unter CC0 und bestätigst die ';
 
 /**
  * Der CC0-Hinweis ueber dem Absenden-Knopf, gleich in allen Formularen, die etwas fuer

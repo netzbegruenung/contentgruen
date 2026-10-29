@@ -179,8 +179,11 @@ Zeile fest, wie der Vorgang im Text gelandet ist.
 
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts` und verlinkt
 die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
-unwiderruflich unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten
-Dritter.“ Keine Checkbox; die bewusste Handlung ist das Absenden.
+unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter.“ Keine
+Checkbox; die bewusste Handlung ist das Absenden. Beim Satz, der beim Tippen gespeichert wird,
+ist die eigene Fassung so gewollt (Entscheidung 29.10.2026 in #439). Dass die Freigabe nicht
+zurückgenommen werden kann, steht in den Nutzungsbedingungen, nicht im Hinweis (ebenfalls
+29.10.2026).
 
 | Ort | Formular | Seit |
 |-----|----------|------|
