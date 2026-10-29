@@ -287,3 +287,25 @@ def test_nutzung_je_fassung_nicht_lesbar_behaelt_die_nutzung(
     assert response.status_code == 200
     [eintrag] = response.json()["results"]
     assert (eintrag["usage_count"], eintrag["nutzung_je_fassung"]) == (7, None)
+
+
+def test_liefert_zweck_und_stil_eines_kommentars(client, repository):
+    """Auch die eigene Karte zeigt Stil und Markierung (#357)."""
+    repository.getByAuthor.return_value = [
+        beitrag(title="Die Pumpe gewinnt", zweck="eigene_leute", style="bissig"),
+        beitrag(title="Die Pumpe rechnet sich", style="faktisch"),
+        beitrag(title="Alt und frei", style="sarkastisch"),
+        beitrag(title="Alt und bissig", style="bissig"),
+        beitrag(title="Ein Bild", content_type="image"),
+    ]
+
+    eintraege = client.get(URL, headers={"X-User": "person-1"}).json()["results"]
+
+    assert [(e["zweck"], e["style"]) for e in eintraege] == [
+        ("eigene_leute", "bissig"),
+        ("kommentarspalte", "sachlich"),
+        ("kommentarspalte", None),
+        # Wie in der Suche: bissig nur fuer die eigenen Leute.
+        ("kommentarspalte", None),
+        (None, None),
+    ]
