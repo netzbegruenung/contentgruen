@@ -129,6 +129,7 @@ async def add_raw_input(
             image_url=request.image_url,
             submitted_by=_einwerfende_person(aufrufer.kennung),
             source_channel=(request.source_channel or RawInputSource.WEB).value,
+            cc0_wortlaut=request.cc0_wortlaut,
         )
         return AddRawInputResponse(id=raw_input["id"])
     except Exception as e:
@@ -272,7 +273,9 @@ async def save_draft(
     """
     person = _angemeldete_person(aufrufer.kennung)
     try:
-        gespeichert = repository.save_draft(raw_input_id, person, request.sentence)
+        gespeichert = repository.save_draft(
+            raw_input_id, person, request.sentence, cc0_wortlaut=request.cc0_wortlaut
+        )
         return DraftResponse(**gespeichert)
     except EinwurfNichtGefunden:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)

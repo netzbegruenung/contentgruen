@@ -10,6 +10,7 @@ import { PostService } from '../services/post.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
+import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
 
 describe('AddPostComponent', () => {
   let fixture: ComponentFixture<AddPostComponent>;
@@ -43,7 +44,10 @@ describe('AddPostComponent', () => {
 
     expect(link).toBeTruthy();
     expect(link!.target).toBe('_blank');
-    expect(fixture.nativeElement.textContent).toContain('CC0');
+    expect(link!.closest('p')!.classList).toContain('submit-hint');
+    expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
+    );
   });
 
   it('leitet die Plattform aus dem Link ab, solange niemand sie selbst gewaehlt hat', () => {

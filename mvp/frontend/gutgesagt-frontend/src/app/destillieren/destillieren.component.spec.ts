@@ -11,6 +11,7 @@ import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { FILTER_SCHLUESSEL, filterLaden } from '../raw-input-list/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
+import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 
 function einwurf(overrides: Partial<Einwurf> = {}): Einwurf {
   return {
@@ -134,6 +135,22 @@ describe('DestillierenComponent', () => {
       expect(text()).toContain('9 / 120');
       // Die Adresse steht im Kopfband, dort gekuerzt ohne Schema.
       expect(text()).toContain('example.org/post');
+    });
+
+    it('verlinkt die Nutzungsbedingungen ueber den Knoepfen, mit dem Hinweis aufs Speichern beim Tippen', async () => {
+      await erstellen('id-1');
+
+      const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+        'section.satz a[href="/nutzungsbedingungen"]',
+      );
+      expect(link).toBeTruthy();
+      expect(link!.target).toBe('_blank');
+      const hinweis = link!.closest('p')!;
+      expect(hinweis.classList).toContain('submit-hint');
+      expect(hinweis.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+        `${CONSENT_HINWEIS_SATZ.vorLink}${CONSENT_HINWEIS_SATZ.link}${CONSENT_HINWEIS_SATZ.nachLink}`,
+      );
+      expect(hinweis.nextElementSibling!.classList).toContain('knoepfe');
     });
 
     it('sperrt Weiter ohne Satz und gibt es mit Satz frei', async () => {
