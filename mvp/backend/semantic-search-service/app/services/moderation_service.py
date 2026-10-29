@@ -467,9 +467,10 @@ class ModerationService:
         einen Beitrag, den kein zweiter Aufruf mehr findet. Was ein abgebrochener Lauf
         ohne zweiten Versuch hinterlaesst: services/content/verweise_entfernen.py.
 
-        Danach stehen die offenen Meldungen zum Beitrag auf bearbeitet. Schon
-        bearbeitete und abgewiesene behalten ihre Entscheidung und deren Zeitpunkt,
-        an dem ihre Loeschfrist haengt.
+        Danach gilt eine Sperre des Beitrags als aufgehoben, und die offenen
+        Meldungen zum Beitrag stehen auf bearbeitet. Schon bearbeitete und
+        abgewiesene behalten ihre Entscheidung und deren Zeitpunkt, an dem ihre
+        Loeschfrist haengt.
 
         Args:
             content_id: UUID of the content to delete
@@ -505,6 +506,22 @@ class ModerationService:
         if not await self.moderation_repo.entfernen(content_id):
             logger.warning(f"Content {content_id} could not be deleted")
             return False
+
+        # Eine Sperre des Beitrags gilt als aufgehoben, damit ihre Frist laeuft und
+        # der Autor keine Sperrnachricht zu einem Beitrag sieht, den es nicht mehr
+        # gibt. Wie bei den Meldungen macht ein Fehler die Loeschung nicht rueckgaengig.
+        try:
+            await asyncio.to_thread(
+                self._sperren().aufheben,
+                UUID(content_id),
+                deleted_by,
+                datetime.now(timezone.utc),
+            )
+        except Exception as e:
+            logger.warning(
+                f"Content {content_id} deleted, lifting its Sperre failed "
+                f"({type(e).__name__})"
+            )
 
         # Offene Meldungen als bearbeitet markieren. Der Beitrag ist schon weg;
         # ein Fehler hier macht die Loeschung nicht rueckgaengig.

@@ -299,3 +299,22 @@ class TestGesperrteFuerAdmins:
         [beitrag] = await service.gesperrte_beitraege()
 
         assert beitrag["sperre"] is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestEndgueltigEntfernen:
+    async def test_entfernen_hebt_die_sperre_auf(self, service, sperre_repo):
+        assert await service.delete_content(CONTENT_ID, "commentary", "admin-1")
+
+        args = sperre_repo.aufheben.call_args.args
+        assert args[:2] == (uuid.UUID(CONTENT_ID), "admin-1")
+
+    async def test_fehler_beim_aufheben_haelt_das_entfernen_nicht_auf(
+        self, service, sperre_repo, speicher
+    ):
+        sperre_repo.aufheben.side_effect = RuntimeError("PostgreSQL weg")
+
+        assert await service.delete_content(CONTENT_ID, "commentary", "admin-1")
+
+        assert CONTENT_ID not in speicher.get_data()

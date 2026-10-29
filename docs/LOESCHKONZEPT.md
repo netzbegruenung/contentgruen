@@ -80,6 +80,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    Beitrag bleibt über die Moderationsansicht „Gesperrt“ erreichbar);
    `reviewed_by` und `raw_input_content_links.created_by`
    auf `NULL` setzen statt löschen — die Zeilen gehören inhaltlich anderen;
+   in `sperren` `autor` und `widerspruch` sowie `gesperrt_von` und `geprueft_von` auf
+   `NULL` setzen — die Sperre bleibt, solange der Beitrag gesperrt ist (#448);
    `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
@@ -137,6 +139,8 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Einwürfe (`raw_inputs`), die in keinem Beitrag ausformuliert sind, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
 | Einwürfe, die in einem Beitrag ausformuliert sind | solange dieser Beitrag besteht | — danach wie die anderen |
 | Gelöschte Beiträge (Zustand „gelöscht“, Qdrant) | 30 Tage, dann endgültig entfernt | Tag im Payload-Feld `geloescht_am` |
+| Sperren (`sperren`), aufgehoben, samt Widerspruch | 180 Tage | Aufhebung (`aufgehoben_am`) |
+| Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
@@ -145,6 +149,11 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   (`report_count`) bleibt; er trägt keinen Personenbezug. Das gilt auch für Meldungen zu
   gesperrten Beiträgen: Die Sperre selbst hat keine Frist, ihr Anlass in der Meldung
   (samt `resolution_notes`) geht nach 180 Tagen.
+- **Sperren (#448):** Sperrgrund, Begründung, Kennung des Autors, Widerspruch und
+  Ergebnis der erneuten Prüfung gehören zur Entscheidung über die Sperre. Solange der
+  Beitrag gesperrt ist, gilt sie; nach dem Entsperren kann sie wie eine Meldung noch sechs
+  Monate angefochten werden (Art. 20 Abs. 1 DSA). Wird ein gesperrter Beitrag endgültig
+  entfernt, gilt seine Sperre als aufgehoben, und ihre 180 Tage beginnen.
 - **Einwürfe:** Verworfene zählen wie offene und destillierte; ein Einwurf, an dem ein
   Jahr niemand gearbeitet hat, ist kein Arbeitsvorrat mehr. Verwerfen selbst setzt
   keinen Zeitpunkt; ein alter Einwurf, der eben verworfen wurde, geht also mit dem

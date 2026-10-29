@@ -193,11 +193,23 @@ Der Normalfall: Alle Nutzenden, auch Besucher, können den Beitrag finden und ko
 _Avoid_: Veröffentlicht, Freigegeben, Grün-Intern
 
 **Gesperrt**:
-Ein Beitrag, den ein Admin aus Suche und Ansicht genommen hat. Er bleibt erhalten, und nur Admins finden ihn noch, über die Moderation.
+Ein Beitrag, den ein Admin aus Suche und Ansicht genommen hat, mit Sperrgrund und Begründung. Er bleibt erhalten, und nur Admins finden ihn noch, über die Moderation; sein Autor erfährt davon durch die Sperrnachricht.
 _Avoid_: Blockiert, Abgelehnt, Versteckt
 
+**Sperrgrund**:
+Warum ein Admin einen Beitrag sperrt, gewählt aus einer festen Liste nach Abschnitt 6 der Nutzungsbedingungen: Rechtswidriger Inhalt, Verletzt Rechte Dritter, Personenbezogene Daten Dritter, Unterstellung über Motive oder pauschale Zuschreibung an Gruppen, Werbung oder ohne Bezug zum Zweck der Plattform, Anderer Verstoß gegen die Nutzungsbedingungen. Ohne Sperrgrund und ohne Begründung (Freitext, was genau nicht stimmt) gibt es keine Sperre. Der Meldegrund ist etwas anderes: Er sagt, warum jemand meldet.
+_Avoid_: Sperrkategorie, Meldegrund (für die Sperre)
+
+**Sperrnachricht**:
+Was der Autor eines gesperrten Beitrags über die Sperre erfährt: Entscheidung, Sperrgrund, Begründung und wie er widerspricht, danach das Ergebnis der erneuten Prüfung. Sie steht oben in Meine Beiträge, nur für ihn; eine Mail gibt es nicht. Ist der Autor nicht bekannt, etwa eine Ehemalige Person, sieht niemand sie, und die Moderation vermerkt das als „keine Kontaktdaten“.
+_Avoid_: Benachrichtigung, Notification, Rückmeldung (das ist die Nutzung der eigenen Beiträge)
+
+**Widerspruch**:
+Der Einwand des Autors gegen die Sperre seines Beitrags, formlos in Meine Beiträge oder per Mail; ein Text ist freiwillig. Je Sperre gibt es einen. Ein Admin prüft erneut: Die Sperre bleibt, mit Begründung, oder er entsperrt. Offene Widersprüche stehen in der Moderation zuerst. Der Widerspruch nach Art. 21 DSGVO gegen eine Verarbeitung ist etwas anderes.
+_Avoid_: Beschwerde, Einspruch, Appeal
+
 **Entsperren**:
-Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sperre. Die Meldungen zu ihm bleiben bearbeitet.
+Eine Sperre aufheben: Der Beitrag ist danach wieder so sichtbar wie vor der Sperre. Die Meldungen zu ihm bleiben bearbeitet; ein offener Widerspruch gilt damit als erfolgreich geprüft.
 _Avoid_: Freigeben, Wiederherstellen
 
 **Gelöscht**:
@@ -405,5 +417,5 @@ Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von se
 _Avoid_: Retention, Aufbewahrungszeit
 
 **Admin**:
-Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Einwürfe verwirft und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
+Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion
