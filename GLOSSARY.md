@@ -201,11 +201,11 @@ Warum ein Admin einen Beitrag sperrt, gewählt aus einer festen Liste nach Absch
 _Avoid_: Sperrkategorie, Meldegrund (für die Sperre)
 
 **Sperrnachricht**:
-Was der Autor eines gesperrten Beitrags über die Sperre erfährt: Entscheidung, Sperrgrund, Begründung und wie er widerspricht, danach das Ergebnis der erneuten Prüfung (bleibt die Sperre, mit Begründung). Sie steht oben in Meine Beiträge, nur für ihn, auch noch, nachdem eine Sperre auf seinen Widerspruch hin aufgehoben wurde; eine Mail gibt es nicht. Ist der Autor nicht bekannt, etwa eine Ehemalige Person, sieht niemand sie, und die Moderation vermerkt das als „keine Kontaktdaten“.
+Was der Autor eines gesperrten Beitrags über die Sperre erfährt: Entscheidung, Sperrgrund, Begründung und wie er widerspricht, nach einem Widerspruch in Meine Beiträge sein Text und das Ergebnis der erneuten Prüfung (bleibt die Sperre, mit Begründung). Sie steht oben in Meine Beiträge, nur für ihn, auch noch, nachdem eine Sperre auf seinen Widerspruch hin aufgehoben wurde; eine Mail gibt es nicht. Ist der Autor nicht bekannt, etwa eine Ehemalige Person, sieht niemand sie, und die Moderation vermerkt das als „keine Kontaktdaten“.
 _Avoid_: Benachrichtigung, Notification, Rückmeldung (das ist die Nutzung der eigenen Beiträge)
 
 **Widerspruch**:
-Der Einwand des Autors gegen die Sperre seines Beitrags, formlos in Meine Beiträge oder per Mail; ein Text ist freiwillig. Je Sperre gibt es einen. Ein Admin prüft erneut: Die Sperre bleibt, mit Begründung, oder er entsperrt. Ein Widerspruch per Mail steht nicht in der Moderation; über ihn entscheidet ein Admin ebenso, indem er entsperrt oder die Sperre stehen lässt. Offene Widersprüche stehen in der Moderation zuerst. Der Widerspruch nach Art. 21 DSGVO gegen eine Verarbeitung ist etwas anderes.
+Der Einwand des Autors gegen die Sperre seines Beitrags, formlos in Meine Beiträge oder per Mail; ein Text ist freiwillig. Je Sperre gibt es einen. Ein Admin prüft erneut: Die Sperre bleibt, mit Begründung, oder er entsperrt. Ein Widerspruch per Mail steht nicht in der Moderation; über ihn entscheidet ein Admin ebenso, indem er entsperrt oder die Sperre stehen lässt, und die Antwort geht per Mail, nicht in die Sperrnachricht. Offene Widersprüche stehen in der Moderation zuerst. Der Widerspruch nach Art. 21 DSGVO gegen eine Verarbeitung ist etwas anderes.
 _Avoid_: Beschwerde, Einspruch, Appeal
 
 **Entsperren**:
@@ -323,7 +323,7 @@ Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar 
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Meine Beiträge**:
-Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen und „Meine Einwürfe“.
+Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.
 _Avoid_: Contributions, Profil
 
 **Rückmeldung**:

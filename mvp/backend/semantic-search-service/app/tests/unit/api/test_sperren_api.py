@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from api.v1 import sperren as sperren_module
 from api.v1.sperren import router as sperren_router
-from repositories.sperre_repository import Widerspruchsergebnis
+from domain.models.widerspruch import Widerspruchsergebnis
 
 AUTORIN = {"X-User": "autorin-1"}
 SPERRE_ID = str(uuid.uuid4())
@@ -27,8 +27,9 @@ NACHRICHT = {
     "begruendung": "Unterstellt Bosheit.",
     "gesperrt_am": "2026-10-29T10:00:00+00:00",
     "aufgehoben_am": None,
+    "widerspruch": None,
     "widerspruch_am": None,
-    "pruefung": None,
+    "pruefergebnis": None,
     "pruefung_begruendung": None,
     "geprueft_am": None,
 }

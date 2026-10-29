@@ -18,7 +18,7 @@ function sperre(overrides: Partial<SperreFuerAdmins> = {}): SperreFuerAdmins {
     widerspruch: null,
     widerspruch_am: null,
     widerspruch_offen: false,
-    pruefung: null,
+    pruefergebnis: null,
     pruefung_begruendung: null,
     geprueft_am: null,
     ...overrides

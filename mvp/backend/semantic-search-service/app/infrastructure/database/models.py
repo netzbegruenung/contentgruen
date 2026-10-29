@@ -331,7 +331,7 @@ class Sperre(Base):
     widerspruch_am = Column(DateTime(timezone=True), nullable=True)
     # Ergebnis der erneuten Pruefung nach einem Widerspruch: "sperre_bleibt" oder
     # "entsperrt"; leer, solange der Widerspruch offen ist oder keiner vorliegt.
-    pruefung = Column(String(20), nullable=True)
+    pruefergebnis = Column(String(20), nullable=True)
     pruefung_begruendung = Column(Text, nullable=True)
     geprueft_von = Column(String(255), nullable=True)
     geprueft_am = Column(DateTime(timezone=True), nullable=True)

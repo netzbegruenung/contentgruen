@@ -6,25 +6,19 @@ Was eine Sperre traegt und warum, steht am Modell (infrastructure/database/model
 """
 
 from datetime import datetime
-from enum import Enum
 from typing import Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import delete, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
+from domain.models.widerspruch import (
+    PRUEFERGEBNIS_ENTSPERRT,
+    PRUEFERGEBNIS_SPERRE_BLEIBT,
+    Widerspruchsergebnis,
+)
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import Sperre
-
-PRUEFUNG_SPERRE_BLEIBT = "sperre_bleibt"
-PRUEFUNG_ENTSPERRT = "entsperrt"
-
-
-class Widerspruchsergebnis(Enum):
-    ANGENOMMEN = "angenommen"
-    # Keine aktive Sperre mit dieser Kennung, oder sie gilt einer anderen Person.
-    NICHT_GEFUNDEN = "nicht_gefunden"
-    SCHON_WIDERSPROCHEN = "schon_widersprochen"
 
 
 class SperreRepository:
@@ -40,32 +34,30 @@ class SperreRepository:
         begruendung: str,
         gesperrt_von: Optional[str],
         autor: Optional[str],
-    ) -> Sperre:
+    ) -> Optional[Sperre]:
         """
-        Eine Sperre anlegen; gibt es schon eine aktive, bleibt sie und kommt zurueck.
-        Auch wenn eine gleichzeitige Anfrage sie eben angelegt hat: Der eindeutige
-        Index laesst nur eine zu, die zweite liest dann die erste.
+        Eine Sperre anlegen. Gibt es schon eine aktive, bleibt sie, und es kommt None
+        zurueck; auch wenn eine gleichzeitige Anfrage sie eben angelegt hat: Der
+        eindeutige Index laesst nur eine zu.
         """
         with self.db.get_session() as session:
-            vorhanden = session.execute(self._aktiv(content_id)).scalar_one_or_none()
-            if vorhanden is None:
-                sperre = Sperre(
-                    content_id=content_id,
-                    sperrgrund=sperrgrund,
-                    begruendung=begruendung,
-                    gesperrt_von=gesperrt_von,
-                    autor=autor,
-                )
-                try:
-                    with session.begin_nested():
-                        session.add(sperre)
-                    session.refresh(sperre)
-                    session.expunge(sperre)
-                    return sperre
-                except IntegrityError:
-                    vorhanden = session.execute(self._aktiv(content_id)).scalar_one()
-            session.expunge(vorhanden)
-            return vorhanden
+            if session.execute(self._aktiv(content_id)).scalar_one_or_none():
+                return None
+            sperre = Sperre(
+                content_id=content_id,
+                sperrgrund=sperrgrund,
+                begruendung=begruendung,
+                gesperrt_von=gesperrt_von,
+                autor=autor,
+            )
+            try:
+                with session.begin_nested():
+                    session.add(sperre)
+            except IntegrityError:
+                return None
+            session.refresh(sperre)
+            session.expunge(sperre)
+            return sperre
 
     def aktive(self, content_id: UUID) -> Optional[Sperre]:
         with self.db.get_session() as session:
@@ -94,7 +86,7 @@ class SperreRepository:
                 Sperre.autor == autor,
                 or_(
                     Sperre.aufgehoben_am.is_(None),
-                    Sperre.pruefung == PRUEFUNG_ENTSPERRT,
+                    Sperre.pruefergebnis == PRUEFERGEBNIS_ENTSPERRT,
                 ),
             )
             .order_by(Sperre.gesperrt_am.desc(), Sperre.id)
@@ -129,9 +121,9 @@ class SperreRepository:
             if (
                 entsperrt
                 and sperre.widerspruch_am is not None
-                and sperre.pruefung is None
+                and sperre.pruefergebnis is None
             ):
-                sperre.pruefung = PRUEFUNG_ENTSPERRT
+                sperre.pruefergebnis = PRUEFERGEBNIS_ENTSPERRT
                 sperre.geprueft_von = von
                 sperre.geprueft_am = jetzt
             return True
@@ -173,10 +165,10 @@ class SperreRepository:
                     Sperre.id == sperre_id,
                     Sperre.aufgehoben_am.is_(None),
                     Sperre.widerspruch_am.is_not(None),
-                    Sperre.pruefung.is_(None),
+                    Sperre.pruefergebnis.is_(None),
                 )
                 .values(
-                    pruefung=PRUEFUNG_SPERRE_BLEIBT,
+                    pruefergebnis=PRUEFERGEBNIS_SPERRE_BLEIBT,
                     pruefung_begruendung=begruendung,
                     geprueft_von=von,
                     geprueft_am=jetzt,

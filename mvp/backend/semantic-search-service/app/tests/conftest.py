@@ -126,6 +126,10 @@ def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
     yield repository
 
 
+# Sperrgrund und Begruendung fuer Tests, die nur sperren muessen (#448).
+GRUND_FUER_SPERRE = {"sperrgrund": "ohne_bezug", "begruendung": "Kein Bezug zum Zweck."}
+
+
 def create_base_content_fields(**overrides):
     """
     Create base content fields with all required attributes.

@@ -20,7 +20,8 @@ from domain.models.sperrgrund import SPERRGRUENDE
 from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
-from repositories.sperre_repository import SperreRepository, Widerspruchsergebnis
+from domain.models.widerspruch import Widerspruchsergebnis
+from repositories.sperre_repository import SperreRepository
 from services.moderation_service import (
     ModerationService,
     SchonGesperrt,
@@ -85,7 +86,7 @@ def _sperre(**felder) -> SimpleNamespace:
         autor="autorin-1",
         widerspruch=None,
         widerspruch_am=None,
-        pruefung=None,
+        pruefergebnis=None,
         pruefung_begruendung=None,
         geprueft_am=None,
     )
@@ -183,6 +184,26 @@ class TestSperrenVerlangtGrund:
         assert speicher.get_data()[CONTENT_ID]["status"] == "visible"
         sperre_repo.anlegen.assert_not_called()
 
+    async def test_schon_gesperrt_zieht_die_meldungen_nach(self, service, sperre_repo):
+        """Scheiterte das Meldungs-Update nach angelegter Sperre, holt es der zweite Versuch nach."""
+        sperre_repo.aktive.return_value = _sperre()
+
+        with pytest.raises(SchonGesperrt):
+            await service.sperren(
+                CONTENT_ID, "admin-1", sperrgrund="ohne_bezug", begruendung="Werbung"
+            )
+
+        service.report_repo.update_reports_by_content_id.assert_called_once()
+
+    async def test_gleichzeitig_gesperrt_wird_abgewiesen(self, service, sperre_repo):
+        """Legt eine gleichzeitige Anfrage die Sperre an, erfaehrt der zweite Admin es."""
+        sperre_repo.anlegen.return_value = None
+
+        with pytest.raises(SchonGesperrt):
+            await service.sperren(
+                CONTENT_ID, "admin-2", sperrgrund="ohne_bezug", begruendung="Werbung"
+            )
+
     async def test_entsperren_hebt_die_sperre_auf(self, service, sperre_repo):
         await service.sperren(
             CONTENT_ID, "admin-1", sperrgrund="ohne_bezug", begruendung="Werbung"
@@ -213,10 +234,23 @@ class TestSperrnachricht:
         assert nachricht["titel"] == "Tempolimit rettet Leben"
         assert nachricht["sperrgrund"] == "unterstellung"
         assert nachricht["begruendung"] == "Unterstellt der Gegenseite Bosheit."
+        assert nachricht["widerspruch"] is None
         assert nachricht["widerspruch_am"] is None
-        assert nachricht["pruefung"] is None
+        assert nachricht["pruefergebnis"] is None
         # Wer gesperrt hat, erfaehrt der Autor nicht.
         assert "gesperrt_von" not in nachricht
+
+    async def test_meine_sperren_zeigen_den_eigenen_widerspruch(
+        self, service, sperre_repo
+    ):
+        """Die Datenschutzerklaerung sagt, die Person sehe ihren Widerspruch ein."""
+        sperre_repo.fuer_autor.return_value = [
+            _sperre(widerspruch="Das ist belegt.", widerspruch_am="2026-10-29")
+        ]
+
+        [nachricht] = await service.meine_sperren("autorin-1")
+
+        assert nachricht["widerspruch"] == "Das ist belegt."
 
     async def test_meine_sperren_ohne_beitrag_ohne_titel(self, service, sperre_repo):
         sperre_repo.fuer_autor.return_value = [_sperre(content_id=uuid.uuid4())]

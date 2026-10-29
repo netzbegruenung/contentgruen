@@ -16,8 +16,9 @@ function nachricht(felder: Partial<Sperrnachricht> = {}): Sperrnachricht {
     begruendung: 'Unterstellt der Gegenseite Bosheit.',
     gesperrt_am: '2026-10-29T10:00:00+00:00',
     aufgehoben_am: null,
+    widerspruch: null,
     widerspruch_am: null,
-    pruefung: null,
+    pruefergebnis: null,
     pruefung_begruendung: null,
     geprueft_am: null,
     ...felder,
@@ -104,11 +105,24 @@ describe('SperrnachrichtenComponent', () => {
     expect(knopf('Widerspruch senden')).toBeTruthy();
   });
 
+  it('zeigt den eigenen Widerspruch', () => {
+    anzeigen(nachricht({ widerspruch: 'Das ist belegt.', widerspruch_am: '2026-10-29T12:00:00+00:00' }));
+
+    expect(text()).toContain('Dein Widerspruch');
+    expect(text()).toContain('Das ist belegt.');
+  });
+
+  it('sagt beim Weg per E-Mail, dass die Antwort per E-Mail kommt', () => {
+    anzeigen(nachricht());
+
+    expect(text()).toContain('dann antworten wir dir per E-Mail');
+  });
+
   it('zeigt das Ergebnis der erneuten Prüfung', () => {
     anzeigen(
       nachricht({
         widerspruch_am: '2026-10-29T12:00:00+00:00',
-        pruefung: 'sperre_bleibt',
+        pruefergebnis: 'sperre_bleibt',
         pruefung_begruendung: 'Bleibt eine Unterstellung.',
         geprueft_am: '2026-10-30T09:00:00+00:00',
       }),
@@ -124,7 +138,7 @@ describe('SperrnachrichtenComponent', () => {
       nachricht({
         aufgehoben_am: '2026-10-30T09:00:00+00:00',
         widerspruch_am: '2026-10-29T12:00:00+00:00',
-        pruefung: 'entsperrt',
+        pruefergebnis: 'entsperrt',
         geprueft_am: '2026-10-30T09:00:00+00:00',
       }),
     );

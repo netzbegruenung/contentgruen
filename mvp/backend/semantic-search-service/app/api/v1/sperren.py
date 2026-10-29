@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from core.logging import get_logger
 from dependencies import require_user
-from repositories.sperre_repository import Widerspruchsergebnis
+from domain.models.widerspruch import Widerspruchsergebnis
 from services.moderation_service import get_moderation_service
 
 logger = get_logger(__name__)
@@ -34,8 +34,10 @@ class Sperrnachricht(BaseModel):
     gesperrt_am: Optional[str]
     # Gesetzt nur, wenn die Sperre nach dem Widerspruch aufgehoben wurde.
     aufgehoben_am: Optional[str]
+    # Der eigene Text des Widerspruchs; leer, wenn er ohne Text kam.
+    widerspruch: Optional[str]
     widerspruch_am: Optional[str]
-    pruefung: Optional[str]
+    pruefergebnis: Optional[str]
     pruefung_begruendung: Optional[str]
     geprueft_am: Optional[str]
 

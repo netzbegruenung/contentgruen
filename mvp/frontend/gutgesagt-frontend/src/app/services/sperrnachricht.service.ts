@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Pruefung } from './moderation.service';
+import { Pruefergebnis } from './moderation.service';
 
 /**
  * Eine Sperrnachricht (Glossar): Entscheidung, Sperrgrund und Begründung zu einem
@@ -22,8 +22,10 @@ export interface Sperrnachricht {
   gesperrt_am: string | null;
   /** Gesetzt nur, wenn die Sperre nach dem Widerspruch aufgehoben wurde. */
   aufgehoben_am: string | null;
+  /** Der eigene Text des Widerspruchs; null, wenn er ohne Text kam. */
+  widerspruch: string | null;
   widerspruch_am: string | null;
-  pruefung: Pruefung | null;
+  pruefergebnis: Pruefergebnis | null;
   pruefung_begruendung: string | null;
   geprueft_am: string | null;
 }

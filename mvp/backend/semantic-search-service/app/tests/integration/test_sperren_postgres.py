@@ -17,12 +17,12 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from infrastructure.database.models import Base, Sperre
-from repositories.sperre_repository import (
-    PRUEFUNG_ENTSPERRT,
-    PRUEFUNG_SPERRE_BLEIBT,
-    SperreRepository,
+from domain.models.widerspruch import (
+    PRUEFERGEBNIS_ENTSPERRT,
+    PRUEFERGEBNIS_SPERRE_BLEIBT,
     Widerspruchsergebnis,
 )
+from repositories.sperre_repository import SperreRepository
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
 
@@ -80,8 +80,10 @@ def test_zweites_sperren_behaelt_die_aktive_sperre(neue_datenbank):
         autor="autorin-1",
     )
 
-    assert zweite.id == erste.id
-    assert zweite.sperrgrund == "unterstellung"
+    assert zweite is None
+    [gelesen] = _alle(neue_datenbank)
+    assert gelesen.id == erste.id
+    assert gelesen.sperrgrund == "unterstellung"
 
 
 def test_hoechstens_eine_aktive_sperre_je_beitrag(neue_datenbank):
@@ -133,7 +135,7 @@ def test_widerspruch_nur_vom_autor_und_nur_einmal(neue_datenbank):
     gelesen = repo.aktive(sperre.content_id)
     assert gelesen.widerspruch == "Das ist belegt."
     assert gelesen.widerspruch_am == JETZT
-    assert gelesen.pruefung is None
+    assert gelesen.pruefergebnis is None
 
 
 def test_ohne_autor_kann_niemand_widersprechen(neue_datenbank):
@@ -168,7 +170,7 @@ def test_bestaetigen_nur_bei_offenem_widerspruch(neue_datenbank):
     assert not repo.sperre_bestaetigen(sperre.id, "admin-2", "nochmal", JETZT)
 
     gelesen = repo.aktive(sperre.content_id)
-    assert gelesen.pruefung == PRUEFUNG_SPERRE_BLEIBT
+    assert gelesen.pruefergebnis == PRUEFERGEBNIS_SPERRE_BLEIBT
     assert gelesen.pruefung_begruendung == "bleibt"
     assert gelesen.geprueft_von == "admin-2"
     assert gelesen.aufgehoben_am is None
@@ -183,7 +185,7 @@ def test_entsperren_schliesst_offenen_widerspruch_ab(neue_datenbank):
 
     [gelesen] = _alle(neue_datenbank)
     assert gelesen.aufgehoben_am == JETZT
-    assert gelesen.pruefung == PRUEFUNG_ENTSPERRT
+    assert gelesen.pruefergebnis == PRUEFERGEBNIS_ENTSPERRT
     assert gelesen.geprueft_von == "admin-2"
 
 
@@ -209,11 +211,11 @@ def test_entfernen_laesst_offenen_widerspruch_ohne_ergebnis(neue_datenbank):
 
     [gelesen] = _alle(neue_datenbank)
     assert gelesen.aufgehoben_am == JETZT
-    assert gelesen.pruefung is None
+    assert gelesen.pruefergebnis is None
     assert repo.fuer_autor("autorin-1") == []
 
 
-def test_gleichzeitig_angelegte_sperre_wird_gelesen(neue_datenbank):
+def test_gleichzeitig_angelegte_sperre_gewinnt(neue_datenbank):
     """Legt eine andere Anfrage die Sperre zwischen Lesen und Schreiben an, gewinnt sie."""
     repo = _repo(neue_datenbank)
     content_id = uuid.uuid4()
@@ -237,8 +239,9 @@ def test_gleichzeitig_angelegte_sperre_wird_gelesen(neue_datenbank):
             autor="autorin-1",
         )
 
-    assert zweite.id == erste["sperre"].id
-    assert len(_alle(neue_datenbank)) == 1
+    assert zweite is None
+    [gelesen] = _alle(neue_datenbank)
+    assert gelesen.id == erste["sperre"].id
 
 
 def test_entsperren_ohne_widerspruch_ohne_pruefung(neue_datenbank):
@@ -248,7 +251,7 @@ def test_entsperren_ohne_widerspruch_ohne_pruefung(neue_datenbank):
     repo.aufheben(sperre.content_id, "admin-2", JETZT)
 
     [gelesen] = _alle(neue_datenbank)
-    assert gelesen.pruefung is None
+    assert gelesen.pruefergebnis is None
 
 
 def test_frist_loescht_nur_aufgehobene(neue_datenbank):

@@ -44,7 +44,7 @@ export interface GemeldeterBeitrag {
 }
 
 /** Ergebnis der erneuten Prüfung nach einem Widerspruch. */
-export type Pruefung = 'sperre_bleibt' | 'entsperrt';
+export type Pruefergebnis = 'sperre_bleibt' | 'entsperrt';
 
 /** Eine Sperre, wie die Moderation sie sieht (#448). */
 export interface SperreFuerAdmins {
@@ -57,7 +57,7 @@ export interface SperreFuerAdmins {
   widerspruch: string | null;
   widerspruch_am: string | null;
   widerspruch_offen: boolean;
-  pruefung: Pruefung | null;
+  pruefergebnis: Pruefergebnis | null;
   pruefung_begruendung: string | null;
   geprueft_am: string | null;
 }

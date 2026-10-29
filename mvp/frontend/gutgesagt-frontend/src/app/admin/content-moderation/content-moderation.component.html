@@ -75,7 +75,7 @@
               <span *ngIf="sperre.widerspruch"> – „{{ sperre.widerspruch }}“</span>
               <span *ngIf="!sperre.widerspruch"> – ohne Text</span>
             </div>
-            <div *ngIf="sperre.pruefung === 'sperre_bleibt'">
+            <div *ngIf="sperre.pruefergebnis === 'sperre_bleibt'">
               <strong>Erneut geprüft, Sperre bleibt:</strong> {{ sperre.pruefung_begruendung }}
             </div>
           </div>

@@ -6,7 +6,7 @@
             <ng-container *ngIf="n.titel; else ohneTitel">deinen Beitrag <strong>„{{ n.titel }}“</strong></ng-container>
             <ng-template #ohneTitel>einen deiner Beiträge</ng-template>
             am {{ datum(n.gesperrt_am) }} gesperrt.
-            <ng-container *ngIf="n.pruefung !== 'entsperrt'">Er ist aus Suche und Ansicht genommen, aber nicht gelöscht.</ng-container>
+            <ng-container *ngIf="n.pruefergebnis !== 'entsperrt'">Er ist aus Suche und Ansicht genommen, aber nicht gelöscht.</ng-container>
         </p>
         <dl>
             <dt>Sperrgrund</dt>
@@ -17,9 +17,10 @@
 
         <ng-container *ngIf="!n.widerspruch_am">
             <p class="widerspruchsweg">
-                Hältst du die Sperre für falsch, kannst du widersprechen: hier oder formlos per E-Mail an
-                <a href="mailto:{{ KONTAKT_MAIL }}">{{ KONTAKT_MAIL }}</a>. Wir prüfen die Entscheidung dann
-                erneut und sagen dir hier, was dabei herauskommt.
+                Hältst du die Sperre für falsch, kannst du hier widersprechen. Wir prüfen die Entscheidung
+                dann erneut und sagen dir hier, was dabei herauskommt. Du kannst auch formlos per E-Mail an
+                <a href="mailto:{{ KONTAKT_MAIL }}">{{ KONTAKT_MAIL }}</a> widersprechen; dann antworten wir
+                dir per E-Mail.
             </p>
             <button *ngIf="widerspruchFuer !== n.id" mat-stroked-button type="button"
                     (click)="widerspruchOeffnen(n)">Widersprechen</button>
@@ -39,15 +40,19 @@
             </div>
         </ng-container>
 
-        <p *ngIf="n.widerspruch_am && !n.pruefung" class="stand">
+        <dl *ngIf="n.widerspruch_am && n.widerspruch">
+            <dt>Dein Widerspruch</dt>
+            <dd class="begruendung">{{ n.widerspruch }}</dd>
+        </dl>
+        <p *ngIf="n.widerspruch_am && !n.pruefergebnis" class="stand">
             Dein Widerspruch vom {{ datum(n.widerspruch_am) }} liegt bei uns. Wir prüfen die Sperre erneut und
             sagen dir hier Bescheid.
         </p>
-        <p *ngIf="n.pruefung === 'entsperrt'" class="stand">
+        <p *ngIf="n.pruefergebnis === 'entsperrt'" class="stand">
             Wir haben die Sperre nach deinem Widerspruch am {{ datum(n.geprueft_am) }} erneut geprüft und
             <strong>aufgehoben</strong>. Dein Beitrag ist wieder sichtbar.
         </p>
-        <ng-container *ngIf="n.pruefung === 'sperre_bleibt'">
+        <ng-container *ngIf="n.pruefergebnis === 'sperre_bleibt'">
             <p class="stand">
                 Wir haben die Sperre nach deinem Widerspruch am {{ datum(n.geprueft_am) }} erneut geprüft:
                 <strong>Sie bleibt.</strong>

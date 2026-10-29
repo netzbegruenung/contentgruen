@@ -76,5 +76,8 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('den Grund und die Begründung oben in „Meine Beiträge“ mit');
     expect(text).toContain('Gegen die Sperre kannst du dort oder formlos an die genannte Adresse widersprechen');
     expect(text).toContain('prüft sie dann erneut');
+    // Ein Ergebnis in der App gibt es nur nach einem Widerspruch in der App.
+    expect(text).toContain('wenn du dort widersprochen hast');
+    expect(text).toContain('auf einen Widerspruch per E-Mail antworten wir per E-Mail');
   });
 });

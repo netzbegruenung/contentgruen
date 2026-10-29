@@ -21,15 +21,12 @@ from repositories.raw_input_repository import (
     RawInputRepository,
     get_raw_input_repository,
 )
-from repositories.sperre_repository import (
-    SperreRepository,
-    Widerspruchsergebnis,
-    get_sperre_repository,
-)
+from repositories.sperre_repository import SperreRepository, get_sperre_repository
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
+from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
 from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG
 from services.content.verweise_entfernen import verweise_entfernen
@@ -86,8 +83,8 @@ def _sperre_fuer_admins(sperre) -> Dict[str, Any]:
         "widerspruch": sperre.widerspruch,
         "widerspruch_am": _iso(sperre.widerspruch_am),
         "widerspruch_offen": sperre.widerspruch_am is not None
-        and sperre.pruefung is None,
-        "pruefung": sperre.pruefung,
+        and sperre.pruefergebnis is None,
+        "pruefergebnis": sperre.pruefergebnis,
         "pruefung_begruendung": sperre.pruefung_begruendung,
         "geprueft_am": _iso(sperre.geprueft_am),
     }
@@ -284,13 +281,16 @@ class ModerationService:
 
         Erst Qdrant, dann PostgreSQL (Sperre, dann Meldungen), ohne gemeinsame
         Transaktion. Scheitert ein Schritt in PostgreSQL, ist der Beitrag schon
-        gesperrt und der Fehler geht an den Aufrufer; erneutes Sperren holt Sperre
-        und Meldungen nach, weil der Status von vor der ersten Sperre erhalten
-        bleibt. Andersherum saehe der Autor eine Sperre an einem sichtbaren Beitrag.
+        gesperrt und der Fehler geht an den Aufrufer. Erneutes Sperren holt die
+        Sperre nach, weil der Status von vor der ersten Sperre erhalten bleibt; gibt
+        es die Sperre schon, zieht es noch die Meldungen nach und endet mit
+        SchonGesperrt. Andersherum saehe der Autor eine Sperre an einem sichtbaren
+        Beitrag.
 
         Raises:
             SperreUngueltig: ohne gueltigen Sperrgrund oder ohne Begruendung
-            SchonGesperrt: Es gibt schon eine aktive Sperre; ihr Grund bliebe sonst
+            SchonGesperrt: Es gibt schon eine aktive Sperre, auch wenn eine
+                gleichzeitige Anfrage sie eben angelegt hat; ihr Grund bliebe sonst
                 still stehen, waehrend der Admin einen neuen angegeben hat.
 
         Returns:
@@ -306,18 +306,19 @@ class ModerationService:
         if beitrag is None:
             logger.warning(f"Content {content_id} not found")
             return False
-        if await asyncio.to_thread(self._sperre_repository().aktive, UUID(content_id)):
-            raise SchonGesperrt()
-
-        await self.moderation_repo.sperren(beitrag)
-        await asyncio.to_thread(
-            self._sperre_repository().anlegen,
-            content_id=UUID(content_id),
-            sperrgrund=sperrgrund,
-            begruendung=begruendung,
-            gesperrt_von=gesperrt_von,
-            autor=_autor(beitrag),
-        )
+        neu = None
+        if not await asyncio.to_thread(
+            self._sperre_repository().aktive, UUID(content_id)
+        ):
+            await self.moderation_repo.sperren(beitrag)
+            neu = await asyncio.to_thread(
+                self._sperre_repository().anlegen,
+                content_id=UUID(content_id),
+                sperrgrund=sperrgrund,
+                begruendung=begruendung,
+                gesperrt_von=gesperrt_von,
+                autor=_autor(beitrag),
+            )
 
         updated_count = self.report_repo.update_reports_by_content_id(
             content_id=UUID(content_id),
@@ -329,6 +330,8 @@ class ModerationService:
             f"Content {content_id} gesperrt, "
             f"{updated_count} reports marked as reviewed"
         )
+        if neu is None:
+            raise SchonGesperrt()
         return True
 
     async def entsperren(
@@ -388,7 +391,8 @@ class ModerationService:
     async def meine_sperren(self, autor: str) -> List[Dict[str, Any]]:
         """
         Die Sperrnachrichten einer Person: je aktive Sperre an einem ihrer Beitraege
-        die Entscheidung mit Sperrgrund und Begruendung, dazu ihr Widerspruch und
+        die Entscheidung mit Sperrgrund und Begruendung, dazu ihr Widerspruch (mit
+        ihrem Text, den sie nach der Datenschutzerklaerung einsehen kann) und
         das Ergebnis der erneuten Pruefung; nach einem erfolgreichen Widerspruch
         auch die aufgehobene Sperre. Wer gesperrt oder geprueft hat, steht nicht
         darin.
@@ -408,8 +412,9 @@ class ModerationService:
                     "begruendung": sperre.begruendung,
                     "gesperrt_am": _iso(sperre.gesperrt_am),
                     "aufgehoben_am": _iso(sperre.aufgehoben_am),
+                    "widerspruch": sperre.widerspruch,
                     "widerspruch_am": _iso(sperre.widerspruch_am),
-                    "pruefung": sperre.pruefung,
+                    "pruefergebnis": sperre.pruefergebnis,
                     "pruefung_begruendung": sperre.pruefung_begruendung,
                     "geprueft_am": _iso(sperre.geprueft_am),
                 }

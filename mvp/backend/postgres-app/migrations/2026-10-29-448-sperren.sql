@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS sperren (
     aufgehoben_am TIMESTAMP WITH TIME ZONE,
     widerspruch TEXT,
     widerspruch_am TIMESTAMP WITH TIME ZONE,
-    pruefung VARCHAR(20),
+    pruefergebnis VARCHAR(20),
     pruefung_begruendung TEXT,
     geprueft_von VARCHAR(255),
     geprueft_am TIMESTAMP WITH TIME ZONE,
