@@ -472,7 +472,9 @@ class TestSearchFiltered:
 
         await service.search_filtered("waermepumpe", 5, nur_kuratiert=True)
 
-        service._repository.search_curated.assert_awaited_once_with("waermepumpe", 5)
+        service._repository.search_curated.assert_awaited_once_with(
+            "waermepumpe", 5, frozenset()
+        )
         service._repository.search.assert_not_awaited()
 
     @pytest.mark.asyncio

@@ -316,6 +316,9 @@ class RawInput(Base):
     # aendern das nicht; wer den Einwurf mit einem Beitrag verknuepft hat (der
     # Ausformulierer), steht an der Verknuepfung (raw_input_content_links.created_by).
     destilled_by = Column(String(255), nullable=True)
+    # Kennung des CC0-Hinweises beim Einwerfen (#431, domain/cc0_hinweis.py);
+    # NULL bei Einwuerfen von davor und aus Kanaelen ohne Formular.
+    cc0_wortlaut = Column(String(64), nullable=True)
 
     __table_args__ = (
         Index("idx_raw_inputs_status", "status"),
@@ -425,6 +428,9 @@ class RawInputDraft(Base):
     )
     user_id = Column(String(255), nullable=False)
     sentence = Column(Text, nullable=False)
+    # Kennung des CC0-Hinweises beim letzten Speichern des Satzes (#431); NULL bei
+    # Saetzen von davor.
+    cc0_wortlaut = Column(String(64), nullable=True)
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

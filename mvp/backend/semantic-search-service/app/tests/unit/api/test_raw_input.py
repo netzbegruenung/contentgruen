@@ -179,6 +179,7 @@ class TestEinwerfen:
             "image_url",
             "submitted_by",
             "source_channel",
+            "cc0_wortlaut",
         }
 
 
@@ -573,7 +574,10 @@ class TestSatz:
         assert antwort.status_code == 200
         assert antwort.json()["sentence"] == "Waermepumpe lohnt sich auch im Altbau"
         repository.save_draft.assert_called_once_with(
-            EINWURF_ID, "alice", "Waermepumpe lohnt sich auch im Altbau"
+            EINWURF_ID,
+            "alice",
+            "Waermepumpe lohnt sich auch im Altbau",
+            cc0_wortlaut=None,
         )
 
     def test_satz_120_zeichen_sind_erlaubt(self, client, repository):
@@ -607,7 +611,9 @@ class TestSatz:
 
         client.put(SATZ_URL, json={"sentence": "   "}, headers={"X-User": "alice"})
 
-        repository.save_draft.assert_called_once_with(EINWURF_ID, "alice", None)
+        repository.save_draft.assert_called_once_with(
+            EINWURF_ID, "alice", None, cc0_wortlaut=None
+        )
 
     @pytest.mark.parametrize("kopfzeilen", [{}, {"X-User": "anonymous"}])
     def test_satz_ohne_anmeldung_ist_401(self, client, repository, kopfzeilen):

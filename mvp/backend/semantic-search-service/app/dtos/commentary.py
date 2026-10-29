@@ -2,6 +2,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.commentary import Commentary
 from dtos.beitrag import KommentarTreffer
 
@@ -26,6 +27,9 @@ class ReferenceInput(BaseModel):
 class AddCommentaryRequest(BaseModel):
     commentary: Commentary
     references: List[ReferenceInput]
+    # Kennung des CC0-Hinweises, den die Person beim Speichern gesehen hat (#431,
+    # domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
     # Worauf der Kommentar antwortet: die ID einer vorhandenen Aussage oder, wenn
     # keine bekannt ist, ihr Text. Ohne beides steht der Kommentar fuer sich.
     statement_id: Optional[UUID] = None

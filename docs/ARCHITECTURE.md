@@ -320,12 +320,17 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 - Basic console logging
 - Docker logs for containers
 - No centralized logging yet
+- Health check of the semantic search service: `GET /api/v1/health` (PostgreSQL, Qdrant,
+  disk, memory)
+- Betriebskennzahlen of the semantic search service: `GET /metrics` (Prometheus text
+  format; requests per route template and status class, search duration; no personal
+  data). Blocked at the BFF (`EndpointPolicy.Blocked`), scraped on the internal network
+- What is monitored and how: `docs/DEPLOYMENT.md`, "Monitoring"; scraping and alerting
+  are run by the operators
 
 ### Planned
 - OpenTelemetry integration
 - Centralized log aggregation
-- Metrics collection
-- Health checks
 
 ## Build & CI/CD
 

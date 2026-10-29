@@ -80,15 +80,15 @@ Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, requi
 for `main`, see [CI.md](CI.md)). After the merge, GitHub Actions on the mirror build the images:
 - `.github/workflows/build.yml` — builds on every push to `main`, publishing `:main` and
   `:sha-<short>` tags. The test environment runs `:main`, rolled out manually (see above).
-- `.github/workflows/release.yml` — runs on `v*` tags, publishing `:vX.Y.Z`, `:X.Y` and
-  `:latest` for all four images.
+- `.github/workflows/release.yml` — runs on `v*` tags, publishing `:X.Y.Z` (the tag without
+  its `v`), `:X.Y` and `:latest` for all four images.
 
-Both run the same test suites first, defined once in `.github/workflows/tests-backend.yml`
-and `tests-frontend.yml` and called by each; images are pushed only if they pass.
+Both run the same test suites first, defined once in `.github/workflows/tests-backend.yml`,
+`tests-frontend.yml` and `tests-bff.yml` and called by each; images are pushed only if they pass.
 
 `:latest` is produced by `docker/metadata-action`'s `latest=auto` flavor: it moves for normal
-release tags but is skipped for prereleases (`v1.2.3-rc.1`), so release candidates can be
-tagged without moving production.
+release tags but is skipped for prereleases (`v1.2.3-rc.1`). A prerelease tag therefore never
+reaches production.
 
 Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages
@@ -100,6 +100,33 @@ deploy anything by itself.
 > Because production pins `:latest`, the `latest=auto` flavor in `release.yml` is
 > load-bearing. Disabling it, or moving the tag rules away from `type=semver`, would stop
 > `:latest` moving and silently freeze production updates with no failing build to signal it.
+
+#### Releases
+
+1. **Only the maintainer sets tags.** Agents and contributors propose, they do not tag.
+2. **Version scheme:** `v0.x` releases until the launch (`v0.9.0` first), `v1.0.0` at the
+   launch, [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
+   not move `:latest` (see above), and production only follows `:latest`.
+3. **Version in the footer:** the footer shows the `version` from
+   `mvp/frontend/gutgesagt-frontend/package.json`. Before tagging, a pull request sets it to
+   `X.Y.Z` (without the `v`); otherwise the new images show the old number.
+   `npm version X.Y.Z --no-git-tag-version` in that directory also updates `package-lock.json`.
+4. **Tag on Forgejo:** set the tag on a commit of `main` on Forgejo. The push mirror carries it
+   to GitHub, where `release.yml` tests and builds the images. Check that the run is green
+   and `:latest` moved before announcing the release.
+5. **Change list:** the change list of a release is the Forgejo release to its tag (Releases on
+   the Forgejo repository). Draft it with
+   ```bash
+   git fetch origin --tags
+   scripts/changelog.sh vX.Y.Z > changelog.md   # since the previous v* tag
+   scripts/changelog.sh vX.Y.Z <commit>         # first release, or a different start
+   ```
+   The script lists the merged pull requests on `main` (linked, grouped by their Conventional
+   Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the new
+   scripts in `mvp/scripts/manual/`. It recognises a breaking change only by the `!` in the PR
+   title (`feat!:`), not by a `BREAKING CHANGE:` footer, and links any commit on `main` whose
+   subject ends in `(#N)` as pull request N. Review the draft, add operational steps it cannot
+   know (for example a rename that needs action per environment), and publish it as the release.
 
 For urgent deployments, ask in the project channel (see below).
 
@@ -236,7 +263,7 @@ docker compose ps
 docker compose logs -f
 
 # Test internal connectivity
-docker exec gutgesagt-bff curl http://gutgesagt-semantic-search:8000/health
+docker exec gutgesagt-bff curl http://gutgesagt-semantic-search:8000/api/v1/health
 ```
 
 ### Reverse proxy or TLS issues?
@@ -257,9 +284,44 @@ docker exec -it gutgesagt-app-postgres psql -U app_user -d gutgesagt_app
 
 ---
 
+## 📈 Monitoring
+
+What the application provides so that test and production can be monitored. Scraping,
+alert rules and alert routing are run by the operators, outside this repository.
+
+| What | Where | Healthy when |
+|---|---|---|
+| Frontend reachable | `GET /` on the frontend (nginx) | 200 |
+| BFF reachable | `GET /api/check-session` on the BFF; answered by the BFF itself, without a backend call | 200 or 401 |
+| Semantic search reachable | `GET /api/v1/health` on the semantic search service, checked directly on the internal network | `status` in the JSON is `healthy` (`degraded`: disk or memory above 90 %; `unhealthy`: PostgreSQL or Qdrant unreachable, or one of the checks failed; above 80 % is only a `warning` in the check and leaves `status` at `healthy`). The endpoint always answers 200, so read the field |
+| Error rate (5xx) | `GET /metrics`, counter `gutgesagt_http_requests_total{status="5xx"}` | low share of all requests |
+| Search response time | `GET /metrics`, histogram `gutgesagt_search_duration_seconds` | quantiles from the buckets |
+
+`/metrics` on the semantic search service uses the Prometheus text format:
+
+- `gutgesagt_http_requests_total{method, route, status}`: requests per HTTP method, route
+  template (`/api/v1/usage/content/{content_id}/usage`, never the path with the ID in it;
+  `unmatched` for paths without a route and for requests the rate limit rejects before
+  routing) and status class (`2xx` ... `5xx`).
+- `gutgesagt_search_duration_seconds`: duration of `POST /api/v1/search/searchByText`.
+- **No personal data:** no Kennung (account ID), no search text, no session. The labels are the
+  method, the route template and the status class, nothing taken from headers or bodies.
+  `tests/integration/test_betriebskennzahlen.py` checks this after a real search by a
+  signed-in test person.
+- The values live in the memory of the process (the service runs with one worker) and
+  start at zero after a restart; alert on rates, not on absolute values.
+- **Not reachable from outside:** the BFF forwards every path to the semantic search
+  service, `/metrics` is therefore listed in `EndpointPolicy.Blocked` and answers 404 there,
+  signed in or not. Scrape the service directly on the internal network.
+
+Disk, RAM and container restarts of the hosts come from host monitoring, not from the
+application. `/api/v1/health` also reports disk and memory, but only as seen from the
+semantic search container.
+
+---
+
 ## 🔮 What's next?
 
-* Monitoring setup (Uptime Robot, Prometheus + Grafana)
 * Unified test/prod deployment via GitOps
 * Migration to Kubernetes (long-term)
 
@@ -282,4 +344,4 @@ Thanks for helping make it more stable and useful!
 
 ---
 
-*Last updated: 2026-10-27*
+*Last updated: 2026-10-29*

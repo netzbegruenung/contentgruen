@@ -221,6 +221,22 @@ public class AuthGatePipelineTests
             await Request(useKeycloak, "/api/v1/moderation/reports", authenticated: false));
     }
 
+    [Theory]
+    [InlineData("/metrics", true, true)]
+    [InlineData("/metrics", true, false)]
+    [InlineData("/metrics", false, true)]
+    [InlineData("/metrics", false, false)]
+    [InlineData("/metrics/", true, true)]
+    [InlineData("/Metrics", false, true)]
+    public async Task Betriebskennzahlen_SindVonAussenGesperrt_AuchFuerAngemeldete(
+        string path, bool useKeycloak, bool authenticated)
+    {
+        // /metrics des Suchdienstes ist fuer den Scraper im internen Netz (#420). YARP
+        // leitet jeden Pfad weiter; ohne den Eintrag in EndpointPolicy.Blocked kaeme hier
+        // 502 (weitergeleitet) statt 404 an, fuer Angemeldete wie fuer Besucher.
+        Assert.Equal(HttpStatusCode.NotFound, await Request(useKeycloak, path, authenticated));
+    }
+
     /// <summary>
     /// Liest isAdmin aus /api/user-info -- ueber denselben Host und denselben Testnutzer
     /// (sub=test-user) wie die Gate-Tests oben.

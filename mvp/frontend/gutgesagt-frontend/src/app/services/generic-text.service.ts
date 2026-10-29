@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AddGenericTextRequest, AddGenericTextResponse } from './dtos/generictextDtos';
 import { GenerictextResult } from './dtos/searchDtos';
+import { mitCc0Wortlaut } from '../shared/consent-hinweis';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
@@ -21,7 +22,7 @@ export class GenericTextService {
 
   addGenericText(request: AddGenericTextRequest): Observable<AddGenericTextResponse> {
     this.logger.debug('Adding new generic text:', request);
-    return this.http.post<AddGenericTextResponse>(this.addGenericTextApiUrl, request).pipe(
+    return this.http.post<AddGenericTextResponse>(this.addGenericTextApiUrl, mitCc0Wortlaut(request)).pipe(
       tap(response => {
         this.logger.info('Generic text added successfully:', response);
       })

@@ -3,6 +3,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { ContentModerationComponent } from './content-moderation.component';
 import { ContentReport, ModerationService } from '../../services/moderation.service';
+import { MELDEGRUENDE } from '../../shared/meldegruende';
 
 function meldung(overrides: Partial<ContentReport> = {}): ContentReport {
   return {
@@ -119,5 +120,28 @@ describe('ContentModerationComponent', () => {
 
     expect([c.getStatusLabel('pending'), c.getStatusLabel('reviewed'), c.getStatusLabel('dismissed')])
       .toEqual(['Offen', 'Bearbeitet', 'Abgewiesen']);
+  });
+
+  it('zeigt eine Meldung mit dem Grund „Erfunden oder sachlich falsch“', () => {
+    mitMeldungen([meldung({ reason: 'fabricated_or_false', description: 'Die Zahl stimmt nicht' })]);
+
+    const zelle = fixture.nativeElement.querySelector('.reason-cell').textContent;
+    expect(zelle).toContain('Erfunden oder sachlich falsch');
+    expect(zelle).toContain('Die Zahl stimmt nicht');
+  });
+
+  it('beschriftet jeden Grund wie der Meldedialog', () => {
+    mitMeldungen([]);
+    const c = fixture.componentInstance;
+
+    for (const grund of MELDEGRUENDE) {
+      expect(c.getReasonLabel(grund.value)).toBe(grund.label);
+    }
+  });
+
+  it('zeigt einen unbekannten Grund unverändert', () => {
+    mitMeldungen([]);
+
+    expect(fixture.componentInstance.getReasonLabel('etwas_altes')).toBe('etwas_altes');
   });
 });
