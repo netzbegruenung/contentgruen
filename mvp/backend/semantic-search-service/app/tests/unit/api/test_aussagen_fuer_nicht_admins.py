@@ -76,13 +76,27 @@ class TestGetAll:
         assert resp.status_code == 200
         assert resp.json()["total_records_count"] == 12
         statement_service.get_all_curated.assert_awaited_once_with(
-            limit=5, offset=5, zugelassen=UEBER_DER_SCHWELLE
+            limit=5, offset=5, ueber_der_schwelle=UEBER_DER_SCHWELLE
         )
         statement_service.count_curated.assert_awaited_once_with(
-            zugelassen=UEBER_DER_SCHWELLE
+            ueber_der_schwelle=UEBER_DER_SCHWELLE
         )
         statement_service.get_all.assert_not_awaited()
         statement_service.count.assert_not_awaited()
+
+    def test_nicht_admin_ohne_suchanfragen_ueber_der_schwelle_nur_kuratierte(
+        self, statement_service, suchen_ohne_treffer
+    ):
+        """Eine leere Menge ist ein Filter (nur kuratierte), nicht etwa keiner."""
+        suchen_ohne_treffer.ueber_der_schwelle.return_value = frozenset()
+
+        resp = TestClient(app).get(GET_ALL_URL, headers=MITWIRKENDE)
+
+        assert resp.status_code == 200
+        statement_service.get_all_curated.assert_awaited_once_with(
+            limit=20, offset=0, ueber_der_schwelle=frozenset()
+        )
+        statement_service.get_all.assert_not_awaited()
 
     def test_admin_kopf_ohne_anmeldung_zaehlt_nicht(self, statement_service):
         resp = TestClient(app).get(
@@ -134,7 +148,47 @@ class TestSearchStatements:
             5,
             nur_kuratiert=True,
             min_similarity=None,
-            zugelassen=UEBER_DER_SCHWELLE,
+            ueber_der_schwelle=UEBER_DER_SCHWELLE,
+        )
+        statement_service.search.assert_not_awaited()
+
+    @pytest.mark.parametrize("headers", NICHT_ADMINS, ids=NICHT_ADMIN_IDS)
+    def test_nicht_admin_mit_min_similarity_nur_kuratierte_und_ueber_der_schwelle(
+        self, statement_service, headers
+    ):
+        resp = TestClient(app).post(
+            SEARCH_URL,
+            json={"query_text": "waermepumpe", "limit": 5, "min_similarity": 0.5},
+            headers=headers,
+        )
+
+        assert resp.status_code == 200
+        statement_service.search_filtered.assert_awaited_once_with(
+            "waermepumpe",
+            5,
+            nur_kuratiert=True,
+            min_similarity=0.5,
+            ueber_der_schwelle=UEBER_DER_SCHWELLE,
+        )
+        statement_service.search.assert_not_awaited()
+
+    def test_nicht_admin_ohne_suchanfragen_ueber_der_schwelle_nur_kuratierte(
+        self, statement_service, suchen_ohne_treffer
+    ):
+        """Eine leere Menge ist ein Filter (nur kuratierte), nicht etwa keiner."""
+        suchen_ohne_treffer.ueber_der_schwelle.return_value = frozenset()
+
+        resp = TestClient(app).post(
+            SEARCH_URL, json={"query_text": "waermepumpe", "limit": 5}, headers=BESUCHER
+        )
+
+        assert resp.status_code == 200
+        statement_service.search_filtered.assert_awaited_once_with(
+            "waermepumpe",
+            5,
+            nur_kuratiert=True,
+            min_similarity=None,
+            ueber_der_schwelle=frozenset(),
         )
         statement_service.search.assert_not_awaited()
 
@@ -160,7 +214,7 @@ class TestSearchStatements:
             3,
             nur_kuratiert=True,
             min_similarity=0.885,
-            zugelassen=frozenset(),
+            ueber_der_schwelle=frozenset(),
         )
         suchen_ohne_treffer.ueber_der_schwelle.assert_not_awaited()
 
@@ -177,5 +231,5 @@ class TestSearchStatements:
             5,
             nur_kuratiert=False,
             min_similarity=0.5,
-            zugelassen=frozenset(),
+            ueber_der_schwelle=frozenset(),
         )

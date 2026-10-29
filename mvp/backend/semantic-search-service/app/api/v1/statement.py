@@ -50,13 +50,14 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-async def _zugelassene_suchanfragen(
+async def _ueber_der_schwelle_fuer(
     aufrufer: Aufrufer, suchen_ohne_treffer: SuchenOhneTrefferService
 ) -> Optional[FrozenSet[uuid.UUID]]:
     """
     Welche Aussagen aus Suchanfragen ohne Antwort der Aufrufer sehen darf (#436):
-    Admins alle (None, also kein Filter), alle anderen nur die ueber der Schwelle
-    der Kennzahl "Suchen ohne Treffer", wie in "Hier fehlt eine Antwort".
+    Admins alle (None: kein Filter), alle anderen nur die ueber der Schwelle der
+    Kennzahl "Suchen ohne Treffer", wie in "Hier fehlt eine Antwort". Eine leere
+    Menge heisst dann: nur kuratierte Aussagen, nicht etwa kein Filter.
     """
     if aufrufer.ist_admin:
         return None
@@ -69,10 +70,7 @@ async def read_test():
     return {"message": "This is a test endpoint"}
 
 
-# Alle Aussagen, seitenweise. Admins bekommen alle; alle anderen nur, was auch die
-# Oberflaeche zeigt (#436): keine unbeantwortete Suchanfrage einer einzelnen
-# Person, nur die ueber der Schwelle der Kennzahl "Suchen ohne Treffer", wie in
-# "Hier fehlt eine Antwort".
+# Alle Aussagen, seitenweise; was Nicht-Admins sehen: _ueber_der_schwelle_fuer.
 @router.get("/getAll", response_model=StatementGetAllResponse)
 async def get_all(
     statement_service: StatementService = Depends(get_statement_service),
@@ -87,18 +85,20 @@ async def get_all(
         logger.debug("/getAll was called")
 
         offset = (page - 1) * page_size
-        zugelassen = await _zugelassene_suchanfragen(aufrufer, suchen_ohne_treffer)
-        if zugelassen is None:
+        ueber_der_schwelle = await _ueber_der_schwelle_fuer(
+            aufrufer, suchen_ohne_treffer
+        )
+        if ueber_der_schwelle is None:
             statement_index_results = await statement_service.get_all(
                 limit=page_size, offset=offset
             )
             total_records_count = await statement_service.count()
         else:
             statement_index_results = await statement_service.get_all_curated(
-                limit=page_size, offset=offset, zugelassen=zugelassen
+                limit=page_size, offset=offset, ueber_der_schwelle=ueber_der_schwelle
             )
             total_records_count = await statement_service.count_curated(
-                zugelassen=zugelassen
+                ueber_der_schwelle=ueber_der_schwelle
             )
 
         logger.debug(f"/getAll got {len(statement_index_results)} results")
@@ -214,24 +214,26 @@ async def search_statements(
     try:
         logger.debug("/searchStatements was called")
 
-        # nur_kuratiert: fuer alle ohne Suchanfragen ohne Antwort, die Schwelle
-        # spielt dann keine Rolle; sonst je nach Aufrufer.
-        zugelassen: Optional[FrozenSet[uuid.UUID]] = frozenset()
-        if not request.nur_kuratiert:
-            zugelassen = await _zugelassene_suchanfragen(aufrufer, suchen_ohne_treffer)
-        nur_kuratiert = zugelassen is not None
+        # nur_kuratiert: fuer jede Rolle ohne Suchanfragen ohne Antwort, auch ohne
+        # die ueber der Schwelle; die Kennzahl wird dann nicht abgefragt.
+        if request.nur_kuratiert:
+            ueber_der_schwelle = frozenset()
+        else:
+            ueber_der_schwelle = await _ueber_der_schwelle_fuer(
+                aufrufer, suchen_ohne_treffer
+            )
 
-        if nur_kuratiert or request.min_similarity is not None:
+        if ueber_der_schwelle is None and request.min_similarity is None:
+            statement_index_results = await statement_service.search(
+                request.query_text, request.limit
+            )
+        else:
             statement_index_results = await statement_service.search_filtered(
                 request.query_text,
                 request.limit,
-                nur_kuratiert=nur_kuratiert,
+                nur_kuratiert=ueber_der_schwelle is not None,
                 min_similarity=request.min_similarity,
-                zugelassen=zugelassen or frozenset(),
-            )
-        else:
-            statement_index_results = await statement_service.search(
-                request.query_text, request.limit
+                ueber_der_schwelle=ueber_der_schwelle or frozenset(),
             )
         logger.debug(f"/searchStatements got {len(statement_index_results)} results")
 

@@ -99,7 +99,7 @@ def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:
 
 def aufbewahrungsgrenze(heute: Optional[date] = None) -> date:
     """Die aelteste Woche, die bleibt; alles davor wird geloescht."""
-    return wochenbeginn(heute or heute_utc()) - timedelta(weeks=AUFBEWAHRUNG_WOCHEN - 1)
+    return _seit_woche(AUFBEWAHRUNG_WOCHEN, heute)
 
 
 def alte_wochen_loeschen(
@@ -272,11 +272,23 @@ class SuchenOhneTrefferService:
         """
         Alle Aussagen, nach denen im Zeitraum mindestens MINDESTANZAHL Personen ohne
         Treffer gesucht haben, ohne Limit und ohne Blick auf den Zustand: Fuer
-        Nicht-Admins zaehlen sie wie gepflegte Aussagen (api/v1/statement.py, #436),
+        Nicht-Admins zaehlen sie wie kuratierte Aussagen (api/v1/statement.py, #436),
         nur sichtbare filtert dort Qdrant.
+
+        Ohne Limit, weil Zeitraum und Mindestanzahl die Menge begrenzen: es sind
+        hoechstens die Aussagen, nach denen im Zeitraum mindestens MINDESTANZAHL
+        Personen ohne Treffer gesucht haben. Die IDs gehen als eine Bedingung in jeden
+        Qdrant-Filter fuer Nicht-Admins.
+
+        Die Abfrage ist synchron (SQLAlchemy) und laeuft deshalb in einem Thread:
+        Sie kommt bei jedem Aufruf von Nicht-Admins und soll den Event-Loop nicht
+        blockieren.
         """
         seit_woche = _seit_woche(wochen, heute)
-        return frozenset(self._repository.ueber_der_schwelle(seit_woche, MINDESTANZAHL))
+        ids = await asyncio.to_thread(
+            self._repository.ueber_der_schwelle, seit_woche, MINDESTANZAHL
+        )
+        return frozenset(ids)
 
     async def _sichtbare_aussage(self, statement_id: uuid.UUID):
         try:

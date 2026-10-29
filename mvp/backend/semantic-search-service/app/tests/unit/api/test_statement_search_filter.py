@@ -62,7 +62,7 @@ class TestSearchStatementsFilter:
             5,
             nur_kuratiert=True,
             min_similarity=0.5,
-            zugelassen=frozenset(),
+            ueber_der_schwelle=frozenset(),
         )
         statement_service.search.assert_not_awaited()
 

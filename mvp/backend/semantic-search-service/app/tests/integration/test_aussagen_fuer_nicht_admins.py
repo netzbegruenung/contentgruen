@@ -79,20 +79,23 @@ async def test_liste_ohne_einzelne_suchanfrage_mit_gefragter(
     von_person, beantwortet, einzeln, gefragt = bestand
 
     aussagen = await statement_service.get_all_curated(
-        limit=10, offset=0, zugelassen=frozenset({gefragt})
+        limit=10, offset=0, ueber_der_schwelle=frozenset({gefragt})
     )
 
     assert {a.id for a in aussagen} == {von_person, beantwortet, gefragt}
-    assert await statement_service.count_curated(zugelassen=frozenset({gefragt})) == 3
+    assert (
+        await statement_service.count_curated(ueber_der_schwelle=frozenset({gefragt}))
+        == 3
+    )
 
 
 async def test_liste_blaettert_ueber_die_gefilterten(statement_service, bestand):
     von_person, beantwortet, einzeln, gefragt = bestand
-    zugelassen = frozenset({gefragt})
+    ueber_der_schwelle = frozenset({gefragt})
 
     seiten = [
         await statement_service.get_all_curated(
-            limit=2, offset=offset, zugelassen=zugelassen
+            limit=2, offset=offset, ueber_der_schwelle=ueber_der_schwelle
         )
         for offset in (0, 2)
     ]
@@ -101,7 +104,7 @@ async def test_liste_blaettert_ueber_die_gefilterten(statement_service, bestand)
     assert {a.id for s in seiten for a in s} == {von_person, beantwortet, gefragt}
 
 
-async def test_ohne_zugelassen_nur_kuratierte(statement_service, bestand):
+async def test_ohne_ueber_der_schwelle_nur_kuratierte(statement_service, bestand):
     von_person, beantwortet, einzeln, gefragt = bestand
 
     aussagen = await statement_service.get_all_curated(limit=10, offset=0)
@@ -119,7 +122,7 @@ async def test_suche_ohne_einzelne_suchanfrage_mit_gefragter(
         "Wärmepumpe Elektroauto Windrad Tempolimit",
         10,
         nur_kuratiert=True,
-        zugelassen=frozenset({gefragt}),
+        ueber_der_schwelle=frozenset({gefragt}),
     )
 
     assert {t.id for t in treffer} == {von_person, beantwortet, gefragt}

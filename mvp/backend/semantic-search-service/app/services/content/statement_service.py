@@ -98,7 +98,7 @@ class StatementService(
         limit: int = 10,
         nur_kuratiert: bool = False,
         min_similarity: Optional[float] = None,
-        zugelassen: AbstractSet[uuid.UUID] = frozenset(),
+        ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset(),
     ) -> List[StatementSearchResult]:
         """
         Aehnliche Statements fuer die Vorschlaege im Beitragsformular.
@@ -106,14 +106,14 @@ class StatementService(
         Args:
         - nur_kuratiert: Unbeantwortete Suchanfragen weglassen (Kriterium wie
           count_curated).
-        - zugelassen: Mit nur_kuratiert diese Suchanfragen trotzdem behalten, etwa die
-          ueber der Schwelle (#436).
+        - ueber_der_schwelle: Mit nur_kuratiert diese Suchanfragen trotzdem
+          behalten, die ueber der Schwelle (#436).
         - min_similarity: Nur Treffer mit mindestens diesem Score. Gefiltert wird
           nach der Suche; es kommen also hoechstens `limit` Treffer zurueck.
         """
         if nur_kuratiert:
             results = await self._repository.search_curated(
-                query_text, limit, zugelassen
+                query_text, limit, ueber_der_schwelle
             )
         else:
             results = await self._repository.search(query_text, limit)
@@ -123,22 +123,25 @@ class StatementService(
         return [r for r in results if r.score is not None and r.score >= min_similarity]
 
     async def count_curated(
-        self, zugelassen: AbstractSet[uuid.UUID] = frozenset()
+        self, ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset()
     ) -> int:
         """
         Anzahl der Statements ohne die unbeantworteten Suchanfragen, ausser denen
-        in zugelassen.
+        in ueber_der_schwelle.
 
         Grundlage des Zaehlers "Aussagen" auf der Startseite; die Begruendung
         des Kriteriums steht in StatementRepository.count_curated.
         """
-        return await self._repository.count_curated(zugelassen)
+        return await self._repository.count_curated(ueber_der_schwelle)
 
     async def get_all_curated(
-        self, limit: int, offset: int, zugelassen: AbstractSet[uuid.UUID] = frozenset()
+        self,
+        limit: int,
+        offset: int,
+        ueber_der_schwelle: AbstractSet[uuid.UUID] = frozenset(),
     ) -> List[StatementDbEntry]:
-        """Wie get_all, ohne die unbeantworteten Suchanfragen ausser denen in zugelassen."""
-        return await self._repository.get_all_curated(limit, offset, zugelassen)
+        """Wie get_all, ohne die unbeantworteten Suchanfragen unter der Schwelle."""
+        return await self._repository.get_all_curated(limit, offset, ueber_der_schwelle)
 
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
