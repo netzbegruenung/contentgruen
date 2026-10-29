@@ -9,11 +9,12 @@ import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 import { FormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { Router, ActivatedRoute, NavigationEnd } from '@angular/router';
 import { NavigationService } from './services/navigation.service';
 import { LoggingService } from './services/logging.service';
 import { AuthService, UserInfo } from './auth/auth.service';
+import { RueckmeldungService } from './services/rueckmeldung.service';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from './help-dialog/help-dialog.component';
 import { FeedbackDialogComponent } from './shared/feedback/feedback-dialog.component';
@@ -25,6 +26,7 @@ import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { KETTEN_ICONS } from './shared/fangkorb-texte';
+import { ROUTES } from './shared/constants/app.constants';
 
 @Component({
   selector: 'app-root',
@@ -41,6 +43,7 @@ import { KETTEN_ICONS } from './shared/fangkorb-texte';
     MatMenuModule,
     FormsModule,
     RouterOutlet,
+    RouterLink,
     FooterComponent,
     MobileMenuComponent,
     MobileHeaderComponent
@@ -53,6 +56,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   title = 'Gut gesagt';
   readonly kettenIcons = KETTEN_ICONS;
+  readonly hierFehltEineAntwortPfad = ROUTES.HIER_FEHLT_EINE_ANTWORT;
   pageTitle: string = 'Gut gesagt';
   showBackButton: boolean = false;
   private destroy$ = new Subject<void>();
@@ -93,7 +97,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private logger: LoggingService,
     private dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
-    private routeConfigService: RouteConfigService) {
+    private routeConfigService: RouteConfigService,
+    private rueckmeldung: RueckmeldungService) {
     this.logger.debug('AppComponent created');
   }
 
@@ -133,6 +138,9 @@ export class AppComponent implements OnInit, OnDestroy {
         // Update avatar based on authentication status
         this.updateAvatarForAuthStatus();
       });
+
+    // Rueckmeldung beim Anmelden, wie oft die eigenen Beitraege genutzt wurden (#349)
+    this.rueckmeldung.starten();
 
     // Try to fetch initial user info but don't redirect on failure
     this.authService.fetchUserInfo()

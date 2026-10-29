@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
@@ -125,6 +126,49 @@ class StatementService(
         """
         return await self._repository.count_curated()
 
+    async def ohne_kommentar(self) -> List[StatementDbEntry]:
+        """
+        Sichtbare Aussagen ohne Kommentar, ohne die unbeantworteten Suchanfragen;
+        Grundlage von "Hier fehlt eine Antwort" (StatementRepository.ohne_kommentar).
+        """
+        return await self._repository.ohne_kommentar()
+
+    async def vorab_anlegen(
+        self, text: str, author: str
+    ) -> tuple[bool, uuid.UUID, str]:
+        """
+        Eine Aussage vorab anlegen ("Hier fehlt eine Antwort"), mit der Person als
+        Autorin. Gibt es dieselbe schon (add_statement), kommt sie zurueck.
+
+        Ist die vorhandene eine unbeantwortete Suchanfrage, uebernimmt die Person
+        sie: Herkunft und Autor wechseln, und die Aussage erscheint danach wie eine
+        vorab angelegte auf der Seite. Sonst bliebe sie dort unsichtbar, obwohl die
+        Person gerade dieselbe Aussage benannt hat. Andere vorhandene Aussagen
+        bleiben unveraendert.
+        """
+        neu, statement_id, statement_text = await self.add_statement(
+            Statement(text=text, replysuggestions=[]),
+            author,
+            NEW_CONTENT_STATUS,
+            ContentOrigin.MANUALLY_CREATED,
+        )
+        if neu:
+            return neu, statement_id, statement_text
+
+        async with self._verknuepfungs_sperre(statement_id):
+            aussage = await self._aussage_laden(statement_id)
+            if (
+                aussage.origin is ContentOrigin.SEARCH_QUERY
+                and aussage.replysuggestions_count == 0
+            ):
+                aussage.origin = ContentOrigin.MANUALLY_CREATED
+                aussage.original_author = author
+                aussage.last_modified_by = author
+                aussage.authors = [AuthorEntry(name=author)]
+                aussage.last_modified = utc_jetzt()
+                await self.update_statement(aussage)
+        return neu, statement_id, statement_text
+
     async def add_statement(
         self,
         statement: Statement,
@@ -213,12 +257,21 @@ class StatementService(
         - True if the reply suggestion was successfully added to the statement, False otherwise.
         """
 
+        async with self._verknuepfungs_sperre(statement_id):
+            return await self._antwortvorschlag_anhaengen(
+                statement_id, replysuggestion_id, content_type, relevance
+            )
+
+    @contextlib.asynccontextmanager
+    async def _verknuepfungs_sperre(self, statement_id: uuid.UUID):
+        """
+        Die Sperre je Aussage fuer Lesen-Aendern-Schreiben ihres Payloads (Verknuepfen,
+        Uebernahme beim Vorab-Anlegen).
+        """
         sperre = self._verknuepfungs_sperren[statement_id]
         try:
             async with sperre:
-                return await self._antwortvorschlag_anhaengen(
-                    statement_id, replysuggestion_id, content_type, relevance
-                )
+                yield
         finally:
             # Aufraeumen, sobald niemand mehr die Sperre haelt oder auf sie wartet -
             # sonst sammelte sich je beruehrter Aussage eine Sperre an.

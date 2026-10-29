@@ -568,6 +568,19 @@
   color: var(--text-secondary);
 }
 
+.album-nutzung {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Der Zuwachs der Woche: klein und in der Akzentfarbe, damit er neben der Summe auffaellt.
+.nutzung-zuwachs {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
 // Ohne Nutzung dezent: kein Kreis, nur die graue Zahl.
 .badge-nutzung.ungenutzt {
   background: none;

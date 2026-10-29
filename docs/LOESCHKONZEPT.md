@@ -78,7 +78,8 @@ dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
    `raw_inputs` der Person löschen (CASCADE räumt deren Links und die Sätze daran mit
    ab); in **Sätzen an fremden Einwürfen** (`raw_input_drafts`) und in
    `raw_inputs.destilled_by` die Kennung ersetzen (unten); die Zeile in
-   `users` (Anzeigename) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
+   `users` (Anzeigename) und die in `gesehene_nutzung` (Stand der Rückmeldung beim
+   Anmelden, nur eine Zahl) löschen. Der Anzeigename steht **nur dort** — weder in Qdrant
    noch in `raw_inputs` noch im Log —, die Karten lesen ihn beim Ausliefern dazu und
    zeigen nach Schritt 3 „ehemalige Person“.
 
@@ -243,7 +244,8 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     (`BFF/Proxy/IdentityHeaderTransform.cs`). Warn- und Fehlerzeilen nennen den Pfad
     unverändert; seit #284 trägt kein Pfad, den das Frontend aufruft, eine Kennung (die
     Nutzungsstatistik unter „Meine Beiträge“ heißt `/api/v1/usage/users/me/usage-stats`,
-    die Person kommt aus der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
+    die Rückmeldung beim Anmelden `/api/v1/usage/users/me/besuch`, die Person kommt aus
+    der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
     denen YARP jede Weiterleitung mit Ziel-URL und ASP.NET Core jede Anfrage mit Pfad
     („Request starting“) protokolliert: Die Kategorien `Yarp` und
     `Microsoft.AspNetCore` stehen im Code auf `Warning` (`BFF/Program.cs`), unabhängig von
@@ -291,10 +293,10 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem
     vorgelagerten Reverse Proxy steht dort dessen Adresse, nicht die des Besuchers. Eine
     Kennung steht im Pfad nicht: Die Nutzungsstatistik
-    unter „Meine Beiträge“ fragt `/api/v1/usage/users/me/usage-stats`
-    (`usage-tracking.service.ts`), und der Suchdienst nimmt die Person aus `X-User`
-    (`api/v1/usage.py`). Das gilt ebenso für das Zugriffsprotokoll des vorgelagerten
-    Reverse Proxy. **Altbestand:** Bis #284 stand die Kennung in beiden Protokollen im
+    unter „Meine Beiträge“ fragt `/api/v1/usage/users/me/usage-stats`, die Rückmeldung
+    beim Anmelden `/api/v1/usage/users/me/besuch` (`usage-tracking.service.ts`), und der
+    Suchdienst nimmt die Person aus `X-User` (`api/v1/usage.py`). Das gilt ebenso für
+    das Zugriffsprotokoll des vorgelagerten Reverse Proxy. **Altbestand:** Bis #284 stand die Kennung in beiden Protokollen im
     Klartext. Beim vorgelagerten Reverse Proxy verschwinden diese Zeilen mit dessen Frist.
     Das Frontend-nginx schreibt dagegen in den `json-file`-Strom, für den in Produktion
     keine Frist gilt (siehe Fristen unten); dort bleiben die alten Zeilen mit Kennung
@@ -341,7 +343,7 @@ docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app \
 #   -v ON_ERROR_STOP=1 -v uid="$KENNUNG"
 
 docker exec -i gutgesagt-app-postgres psql -U app_user -d gutgesagt_app -c \
-  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users;"
+  "VACUUM FULL votes, content_reports, raw_inputs, raw_input_content_links, raw_input_drafts, usage_events, users, gesehene_nutzung;"
 ```
 
 ```bash

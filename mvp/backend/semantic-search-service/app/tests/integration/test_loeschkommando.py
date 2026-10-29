@@ -18,6 +18,7 @@ from api.v1.raw_input import _mit_namen
 from infrastructure.database.models import (
     Base,
     ContentReport,
+    GeseheneNutzung,
     RawInput,
     RawInputContentLink,
     RawInputDraft,
@@ -240,6 +241,7 @@ def spuren(datenbank, einwuerfe):
             ),
             {"uid": PERSON, "beitrag": beitrag},
         )
+        s.add(GeseheneNutzung(user_id=PERSON, nutzung=3))
         s.add(UsageTracking(content_id=beitrag))
         s.flush()
         s.add(UsageEvent(content_id=beitrag, session_id="sitzung-der-person"))

@@ -54,6 +54,9 @@ def nutzung():
     service.enrich_content_with_usage.side_effect = lambda eintraege: [
         {**eintrag, "usage_count": 7} for eintrag in eintraege
     ]
+    service.nutzung_letzte_7_tage_nachtragen.side_effect = lambda eintraege: [
+        {**eintrag, "nutzung_letzte_7_tage": 2} for eintrag in eintraege
+    ]
     return service
 
 
@@ -169,13 +172,17 @@ def test_nutzung_nicht_lesbar_liefert_die_liste_mit_null_und_warnt(
     repository.getByAuthor.return_value = [beitrag(), beitrag()]
     repository.getCountByAuthor.return_value = 2
     nutzung.enrich_content_with_usage.side_effect = RuntimeError("PostgreSQL weg")
+    nutzung.nutzung_letzte_7_tage_nachtragen.side_effect = RuntimeError(
+        "PostgreSQL weg"
+    )
 
     with patch.object(contribution_module, "logger") as logger:
         response = client.get(URL, headers={"X-User": "person-1"})
 
     assert response.status_code == 200
     assert [e["usage_count"] for e in response.json()["results"]] == [0, 0]
-    logger.warning.assert_called_once()
+    assert [e["nutzung_letzte_7_tage"] for e in response.json()["results"]] == [0, 0]
+    assert logger.warning.call_count == 2
 
 
 def test_loest_die_herkunft_mit_adresse_und_notiz_auf(client, repository, herkunft):
@@ -215,3 +222,26 @@ def test_nutzung_wird_fuer_alle_eintraege_einer_seite_nachgetragen(
 
     uebergeben = nutzung.enrich_content_with_usage.call_args.args[0]
     assert [eintrag["id"] for eintrag in uebergeben] == [e.id for e in eintraege]
+
+
+def test_liefert_den_zuwachs_der_letzten_7_tage(client, repository):
+    """#349: Nutzung und Wochenzuwachs je Beitrag."""
+    repository.getByAuthor.return_value = [beitrag()]
+    repository.getCountByAuthor.return_value = 1
+
+    eintrag = client.get(URL, headers={"X-User": "person-1"}).json()["results"][0]
+
+    assert (eintrag["usage_count"], eintrag["nutzung_letzte_7_tage"]) == (7, 2)
+
+
+def test_zuwachs_nicht_lesbar_behaelt_die_nutzung(client, repository, nutzung):
+    """Scheitert nur der Zuwachs, bleibt die schon gelesene Nutzung stehen."""
+    repository.getByAuthor.return_value = [beitrag()]
+    repository.getCountByAuthor.return_value = 1
+    nutzung.nutzung_letzte_7_tage_nachtragen.side_effect = RuntimeError("weg")
+
+    response = client.get(URL, headers={"X-User": "person-1"})
+
+    assert response.status_code == 200
+    eintrag = response.json()["results"][0]
+    assert (eintrag["usage_count"], eintrag["nutzung_letzte_7_tage"]) == (7, 0)

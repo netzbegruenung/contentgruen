@@ -77,6 +77,12 @@ class UserUsageStatsResponse(BaseModel):
     top_content: list[Dict[str, Any]]
 
 
+class BesuchResponse(BaseModel):
+    """Antwort auf einen Besuch: Grundlage der Rueckmeldung beim Anmelden."""
+
+    nutzung_seit_letztem_besuch: int
+
+
 class TrendingContentResponse(BaseModel):
     """Response model for trending content."""
 
@@ -295,6 +301,29 @@ async def eigene_nutzungsstatistik(
     except Exception as e:
         logger.error(
             f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {e}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/users/me/besuch", response_model=BesuchResponse)
+async def besuch(
+    current_user: str = Depends(require_user),
+):
+    """
+    Ein Besuch der angemeldeten Person: wie oft ihre Beitraege seitdem genutzt
+    wurden, fuer die Rueckmeldung beim Anmelden (#349). Das Frontend ruft ihn einmal je
+    Anmeldung und zeigt die Rueckmeldung nur bei mehr als 0.
+
+    POST, weil der Aufruf den gezeigten Stand fortschreibt; ein zweiter Aufruf
+    direkt danach liefert 0. Die Person kommt aus ``X-User``, nicht aus dem Pfad (#284).
+    """
+    try:
+        anzahl = await get_usage_service().nutzung_seit_letztem_besuch(current_user)
+        return BesuchResponse(nutzung_seit_letztem_besuch=anzahl)
+    except Exception as e:
+        logger.error(
+            f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {e}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")

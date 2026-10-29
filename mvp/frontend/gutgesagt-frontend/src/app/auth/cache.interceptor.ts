@@ -61,8 +61,11 @@ const LESENDE_POSTS = [
  * Sitzung pruefen und Nutzerinfo fragen das BFF, ob das Anmelde-Cookie noch gilt. Aus dem
  * Cache beantwortet, liessen AuthGuard und Kopfzeile eine beendete Sitzung, etwa nach einer
  * Kontoloeschung (#278), noch fuenf Minuten als angemeldet gelten.
+ *
+ * "Hier fehlt eine Antwort" ist geteilte Arbeit wie der Fangkorb: Was eben jemand
+ * beantwortet hat, soll dort nicht mehr stehen.
  */
-const NIE_CACHEN = ['/api/v1/rawinput/', '/api/check-session', '/api/user-info'];
+const NIE_CACHEN = ['/api/v1/rawinput/', '/api/check-session', '/api/user-info', '/api/v1/statement/unbeantwortet'];
 
 /**
  * Zaehlt Aenderungen. Eine GET-Antwort kommt nur in den Cache, wenn seit ihrer

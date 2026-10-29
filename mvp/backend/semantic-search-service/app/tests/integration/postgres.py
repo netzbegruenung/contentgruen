@@ -134,8 +134,12 @@ def wegwerf_container(warten_s: int = 60) -> Iterator[str]:
             time.sleep(0.5)
         yield url
     finally:
+        # --volumes: das Postgres-Image legt ein anonymes Datenvolume an, das
+        # "rm --force" sonst liegen laesst (je Lauf eines).
         subprocess.run(
-            ["docker", "rm", "--force", name], capture_output=True, timeout=60
+            ["docker", "rm", "--force", "--volumes", name],
+            capture_output=True,
+            timeout=60,
         )
 
 

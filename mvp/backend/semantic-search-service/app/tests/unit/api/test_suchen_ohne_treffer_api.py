@@ -27,7 +27,7 @@ AUSSAGE = uuid.UUID("11111111-1111-1111-1111-111111111111")
 def service():
     service = Mock()
     service.haeufigste = AsyncMock(
-        return_value=[SucheOhneTreffer(AUSSAGE, "Windräder töten Vögel", 5)]
+        return_value=[SucheOhneTreffer(AUSSAGE, "Windräder töten Vögel", 5, 3)]
     )
     return service
 

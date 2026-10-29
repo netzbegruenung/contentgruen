@@ -1,0 +1,53 @@
+.einleitung,
+.hinweis {
+  color: var(--text-secondary);
+}
+
+.aussagen {
+  list-style: none;
+  margin: var(--spacing-md) 0;
+  padding: 0;
+}
+
+.aussage {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--disabled-bg, #f0f0f0);
+}
+
+.aussage-text {
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+.aussage-fuss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gesucht {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.selbst-beantworten {
+  margin-left: auto;
+}
+
+.vorab {
+  margin-top: var(--spacing-md);
+}
+
+.vorab h2 {
+  font-size: 18px;
+}
+
+.vorab-feld {
+  width: 100%;
+}
+
+.meldung {
+  margin-top: 8px;
+}
