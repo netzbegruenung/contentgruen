@@ -11,13 +11,18 @@
 # --schritt <name>: run only that step (retired-words, lint, unit, integration, frontend, bff);
 # the Woodpecker pipeline (.woodpecker/ci.yaml) runs each step this way, see docs/CI.md.
 # --include <pfad>: only the frontend specs under <pfad> (relative to the frontend directory, as for
-# `ng test --include`); implies --schritt frontend.
+# `ng test --include`; repeatable); implies --schritt frontend.
+# --geaendert: only the steps the files changed since the branch left CHECK_BASE (default origin/main)
+# need, the working tree included, and for the frontend only the specs that reach them
+# (scripts/geaendert.py prints the choice and why). For checks in between; CI and the check
+# before the merge run everything.
 # CHECK_VOLL=1 shows the full output instead of the summary lines; CHECK_OHNE_DOCKER=1 runs the
 # BFF tests with the local dotnet instead of the .NET SDK container.
 set -e
 INTEGRATION=
 SCHRITT=
-INCLUDE=
+GEAENDERT=
+INCLUDE=()
 SCHRITTE="retired-words lint unit integration frontend bff"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -25,17 +30,25 @@ while [ $# -gt 0 ]; do
     --schritt)
       SCHRITT=$2; shift
       case " $SCHRITTE " in *" $SCHRITT "*) ;; *) echo "Unknown step: $SCHRITT (one of: $SCHRITTE)" >&2; exit 2 ;; esac ;;
-    --include) INCLUDE=$2; shift; SCHRITT=frontend ;;
-    *) echo "Unknown option: $1 (usage: check.sh [--integration] [--schritt <name>] [--include <pfad>])" >&2; exit 2 ;;
+    --include) INCLUDE+=(--include "$2"); shift; SCHRITT=frontend ;;
+    --geaendert) GEAENDERT=1 ;;
+    *) echo "Unknown option: $1 (usage: check.sh [--integration] [--schritt <name>] [--include <pfad>] [--geaendert])" >&2; exit 2 ;;
   esac
   shift
 done
-# Whether step $1 runs: all steps without --schritt (integration only with --integration), else the one asked for
-laeuft() { if [ -n "$SCHRITT" ]; then [ "$SCHRITT" = "$1" ]; else [ "$1" != integration ] || [ -n "$INTEGRATION" ]; fi; }
-# Summary lines of a test run (grep pattern $1, last $2 lines), or everything with CHECK_VOLL=1
-kurz() { if [ -n "$CHECK_VOLL" ]; then cat; else grep -aE "$1" | tail -n "$2"; fi; }
 # Not git rev-parse: the CI images for Python and the BFF have no git
 ROOT=$(cd "$(dirname "$0")/.." && pwd); PY=$ROOT/mvp/backend/semantic-search-service; FE=$ROOT/mvp/frontend/gutgesagt-frontend
+if [ -n "$GEAENDERT" ]; then
+  [ -z "$SCHRITT" ] || { echo "--geaendert chooses the steps itself, not with --schritt/--include" >&2; exit 2; }
+  echo "== Geaendert"
+  auswahl=$(python3 "$ROOT/scripts/geaendert.py" --base "${CHECK_BASE:-origin/main}")
+  SCHRITT=$(sed -n 's/^schritte //p' <<<"$auswahl")
+  while read -r spec; do INCLUDE+=(--include "$spec"); done < <(sed -n 's/^spec //p' <<<"$auswahl")
+fi
+# Whether step $1 runs: all steps without --schritt (integration only with --integration), else the ones asked for
+laeuft() { if [ -n "$SCHRITT" ]; then [[ " $SCHRITT " == *" $1 "* ]]; else [ "$1" != integration ] || [ -n "$INTEGRATION" ]; fi; }
+# Summary lines of a test run (grep pattern $1, last $2 lines), or everything with CHECK_VOLL=1
+kurz() { if [ -n "$CHECK_VOLL" ]; then cat; else grep -aE "$1" | tail -n "$2"; fi; }
 if [ -z "$CHROME_BIN" ]; then CHROME_BIN=$(ls -d "$HOME"/.cache/ms-playwright/chromium-*/chrome-linux*/chrome 2>/dev/null | tail -1); export CHROME_BIN; fi
 
 if laeuft retired-words; then
@@ -68,7 +81,7 @@ if laeuft frontend; then
   [ -f src/environments/environment.ts ] || cp src/environments/environment.ts.template src/environments/environment.ts
   # A run that fails before Karma starts (no node_modules, no browser) prints no summary line: then the tail.
   log=$(mktemp); status=0
-  npx ng test --watch=false --browsers=ChromeHeadless --progress=false ${INCLUDE:+--include "$INCLUDE"} >"$log" 2>&1 || status=$?
+  npx ng test --watch=false --browsers=ChromeHeadless --progress=false "${INCLUDE[@]}" >"$log" 2>&1 || status=$?
   kurz 'Executed [0-9]+ of [0-9]+.*(SUCCESS|FAILED)|ERROR' 2 <"$log"
   [ "$status" -eq 0 ] || [ -n "$CHECK_VOLL" ] || { echo "-- ng test exit $status, last lines:"; tail -n 15 "$log"; }
   rm -f "$log"; test "$status" -eq 0

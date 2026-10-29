@@ -7,9 +7,10 @@ das BFF sie setzt. Danach ruft sie einen Pfad mit ihrer Kennung darin auf, den e
 gibt. In /metrics darf keiner dieser Werte stehen, und jeder Label-Wert der Route muss
 eine registrierte Routen-Vorlage sein, kein Pfad mit ID.
 
-Die Suche laeuft durch den echten Router mit echten Diensten auf einer
-Wegwerf-Collection, hinter dem Rate-Limit wie in main.py; ersetzt ist nur, was
-PostgreSQL braucht (Nutzung, Suchereignis).
+Die Suche laeuft durch den echten Router mit echten Diensten, hinter dem Rate-Limit wie
+in main.py. Ersetzt sind der Suchindex (``TestEmbeddingsManager``) und was PostgreSQL
+braucht (Nutzung, Suchereignis): Was in /metrics landet, haengt an Router und
+Middleware, nicht an Qdrant. Bis #459 lief der Test gegen echtes Qdrant.
 """
 
 import datetime
@@ -44,9 +45,7 @@ from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 
-from tests.integration.conftest import requires_qdrant
-
-pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
+pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 
 MERKMAL = "Merkmal420xq"
 KENNUNG = "testperson-kennung-420"
@@ -56,11 +55,11 @@ UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 
 
 @pytest_asyncio.fixture
-async def dienst(integration_settings, real_repository_factory):
+async def dienst(test_settings, repository_factory):
     """Suchdienst-App mit Betriebskennzahlen und Suche auf echten Diensten."""
-    factory = real_repository_factory
-    statements = StatementService(integration_settings, factory)
-    commentaries = CommentaryService(integration_settings, factory)
+    factory = repository_factory
+    statements = StatementService(test_settings, factory)
+    commentaries = CommentaryService(test_settings, factory)
     now = datetime.datetime.now()
     await commentaries.add(
         CommentaryDbEntry(
@@ -89,17 +88,15 @@ async def dienst(integration_settings, real_repository_factory):
             get_statement_service: lambda: statements,
             get_commentary_service: lambda: commentaries,
             get_generic_text_service: lambda: GenericTextService(
-                integration_settings, factory
+                test_settings, factory
             ),
             get_post_service: lambda: create_content_service(
-                REGISTRY[ContentType.POST], integration_settings, factory
+                REGISTRY[ContentType.POST], test_settings, factory
             ),
             get_image_service: lambda: create_content_service(
-                REGISTRY[ContentType.IMAGE], integration_settings, factory
+                REGISTRY[ContentType.IMAGE], test_settings, factory
             ),
-            get_reference_service: lambda: ReferenceService(
-                integration_settings, factory
-            ),
+            get_reference_service: lambda: ReferenceService(test_settings, factory),
             get_voting_service: lambda: MagicMock(),
         }
     )
