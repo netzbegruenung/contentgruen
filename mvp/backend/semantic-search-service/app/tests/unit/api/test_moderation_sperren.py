@@ -142,6 +142,19 @@ def test_sperren_ohne_grund_ist_422(client, service, koerper):
 
 
 @pytest.mark.unit
+def test_schon_gesperrt_ist_409(client, service):
+    from services.moderation_service import SchonGesperrt
+
+    service.sperren.side_effect = SchonGesperrt()
+
+    antwort = client.put(
+        f"/api/v1/moderation/content/{CONTENT_ID}/sperren", headers=ADMIN, json=GRUND
+    )
+
+    assert antwort.status_code == 409
+
+
+@pytest.mark.unit
 def test_sperren_nur_leerraum_als_begruendung_ist_422(client, service):
     from services.moderation_service import SperreUngueltig
 

@@ -15,6 +15,7 @@ function nachricht(felder: Partial<Sperrnachricht> = {}): Sperrnachricht {
     sperrgrund: 'unterstellung',
     begruendung: 'Unterstellt der Gegenseite Bosheit.',
     gesperrt_am: '2026-10-29T10:00:00+00:00',
+    aufgehoben_am: null,
     widerspruch_am: null,
     pruefung: null,
     pruefung_begruendung: null,
@@ -115,6 +116,22 @@ describe('SperrnachrichtenComponent', () => {
 
     expect(text()).toContain('Sie bleibt.');
     expect(text()).toContain('Bleibt eine Unterstellung.');
+    expect(text()).not.toContain('liegt bei uns');
+  });
+
+  it('sagt nach erfolgreichem Widerspruch, dass die Sperre aufgehoben ist', () => {
+    anzeigen(
+      nachricht({
+        aufgehoben_am: '2026-10-30T09:00:00+00:00',
+        widerspruch_am: '2026-10-29T12:00:00+00:00',
+        pruefung: 'entsperrt',
+        geprueft_am: '2026-10-30T09:00:00+00:00',
+      }),
+    );
+
+    expect(text()).toContain('aufgehoben');
+    expect(text()).toContain('wieder sichtbar');
+    expect(text()).not.toContain('aus Suche und Ansicht genommen');
     expect(text()).not.toContain('liegt bei uns');
   });
 });

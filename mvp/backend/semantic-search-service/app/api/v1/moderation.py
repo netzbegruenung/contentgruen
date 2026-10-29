@@ -10,7 +10,11 @@ from pydantic import BaseModel, Field
 
 from domain.models.meldegrund import Meldegrund
 from domain.models.sperrgrund import Sperrgrund
-from services.moderation_service import SperreUngueltig, get_moderation_service
+from services.moderation_service import (
+    SchonGesperrt,
+    SperreUngueltig,
+    get_moderation_service,
+)
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.config import Settings
 from core.logging import get_logger
@@ -278,6 +282,8 @@ async def sperren(
 
         return SperreResponse(success=True, message=f"Beitrag {content_id} gesperrt")
 
+    except SchonGesperrt:
+        raise HTTPException(status_code=409, detail="Beitrag ist schon gesperrt")
     except SperreUngueltig as e:
         raise HTTPException(status_code=422, detail=str(e))
     except HTTPException:

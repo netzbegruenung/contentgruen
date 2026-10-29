@@ -6,7 +6,8 @@ genau am Beitrag nicht stimmt, steht in der Begruendung daneben. Beides erfaehrt
 Autor in der Sperrnachricht (Art. 17 DSA). Gespeicherte Sperren tragen den Wert als
 freien Text, ein Wert darf deshalb nicht umbenannt oder entfernt werden, solange
 Sperren mit ihm in der Datenbank liegen. Das Frontend fuehrt dieselben Werte mit ihrer
-Beschriftung in ``shared/sperrgruende.ts``; test_sperrgrund.py gleicht beide ab.
+Beschriftung in ``shared/sperrgruende.ts``; TestSperrgruende in
+tests/unit/services/test_sperre_mit_grund.py gleicht beide ab.
 """
 
 from typing import Literal, get_args

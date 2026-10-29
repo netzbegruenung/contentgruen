@@ -1,11 +1,12 @@
 <section *ngIf="nachrichten.length" class="sperrnachrichten" aria-labelledby="sperrnachrichten-titel">
-    <h2 id="sperrnachrichten-titel">Gesperrte Beiträge</h2>
+    <h2 id="sperrnachrichten-titel">Sperren deiner Beiträge</h2>
     <article *ngFor="let n of nachrichten" class="sperrnachricht">
         <p class="entscheidung">
             Wir haben
             <ng-container *ngIf="n.titel; else ohneTitel">deinen Beitrag <strong>„{{ n.titel }}“</strong></ng-container>
             <ng-template #ohneTitel>einen deiner Beiträge</ng-template>
-            am {{ datum(n.gesperrt_am) }} gesperrt. Er ist aus Suche und Ansicht genommen, aber nicht gelöscht.
+            am {{ datum(n.gesperrt_am) }} gesperrt.
+            <ng-container *ngIf="n.pruefung !== 'entsperrt'">Er ist aus Suche und Ansicht genommen, aber nicht gelöscht.</ng-container>
         </p>
         <dl>
             <dt>Sperrgrund</dt>
@@ -41,6 +42,10 @@
         <p *ngIf="n.widerspruch_am && !n.pruefung" class="stand">
             Dein Widerspruch vom {{ datum(n.widerspruch_am) }} liegt bei uns. Wir prüfen die Sperre erneut und
             sagen dir hier Bescheid.
+        </p>
+        <p *ngIf="n.pruefung === 'entsperrt'" class="stand">
+            Wir haben die Sperre nach deinem Widerspruch am {{ datum(n.geprueft_am) }} erneut geprüft und
+            <strong>aufgehoben</strong>. Dein Beitrag ist wieder sichtbar.
         </p>
         <ng-container *ngIf="n.pruefung === 'sperre_bleibt'">
             <p class="stand">

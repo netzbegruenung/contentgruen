@@ -59,13 +59,13 @@ def test_anlegen_speichert_grund_und_autor(neue_datenbank):
     repo = _repo(neue_datenbank)
     sperre = _sperren(repo)
 
-    [gelesen] = repo.aktive_fuer_autor("autorin-1")
+    [gelesen] = repo.fuer_autor("autorin-1")
     assert gelesen.id == sperre.id
     assert gelesen.sperrgrund == "unterstellung"
     assert gelesen.begruendung == "Unterstellt Bosheit."
     assert gelesen.gesperrt_von == "admin-1"
     assert gelesen.gesperrt_am is not None
-    assert repo.aktive_fuer_autor("andere") == []
+    assert repo.fuer_autor("andere") == []
 
 
 def test_zweites_sperren_behaelt_die_aktive_sperre(neue_datenbank):
@@ -105,7 +105,7 @@ def test_nach_entsperren_neue_sperre_moeglich(neue_datenbank):
     zweite = _sperren(repo, content_id=erste.content_id)
 
     assert zweite.id != erste.id
-    assert [s.id for s in repo.aktive_fuer_autor("autorin-1")] == [zweite.id]
+    assert [s.id for s in repo.fuer_autor("autorin-1")] == [zweite.id]
     assert set(repo.aktive_je_beitrag()) == {erste.content_id}
 
 
@@ -185,6 +185,60 @@ def test_entsperren_schliesst_offenen_widerspruch_ab(neue_datenbank):
     assert gelesen.aufgehoben_am == JETZT
     assert gelesen.pruefung == PRUEFUNG_ENTSPERRT
     assert gelesen.geprueft_von == "admin-2"
+
+
+def test_autor_sieht_aktive_und_nach_widerspruch_aufgehobene(neue_datenbank):
+    repo = _repo(neue_datenbank)
+    aktiv, nach_widerspruch, ohne_widerspruch = (_sperren(repo) for _ in range(3))
+    repo.widersprechen(nach_widerspruch.id, "autorin-1", None, JETZT)
+    repo.aufheben(nach_widerspruch.content_id, "admin-1", JETZT)
+    repo.aufheben(ohne_widerspruch.content_id, "admin-1", JETZT)
+
+    assert {s.id for s in repo.fuer_autor("autorin-1")} == {
+        aktiv.id,
+        nach_widerspruch.id,
+    }
+
+
+def test_entfernen_laesst_offenen_widerspruch_ohne_ergebnis(neue_datenbank):
+    repo = _repo(neue_datenbank)
+    sperre = _sperren(repo)
+    repo.widersprechen(sperre.id, "autorin-1", None, JETZT)
+
+    repo.aufheben(sperre.content_id, "admin-2", JETZT, entsperrt=False)
+
+    [gelesen] = _alle(neue_datenbank)
+    assert gelesen.aufgehoben_am == JETZT
+    assert gelesen.pruefung is None
+    assert repo.fuer_autor("autorin-1") == []
+
+
+def test_gleichzeitig_angelegte_sperre_wird_gelesen(neue_datenbank):
+    """Legt eine andere Anfrage die Sperre zwischen Lesen und Schreiben an, gewinnt sie."""
+    repo = _repo(neue_datenbank)
+    content_id = uuid.uuid4()
+    erste = {}
+    echtes_aktiv = SperreRepository._aktiv
+
+    def aktiv_mit_zwischenruf(cid):
+        if erste:
+            return echtes_aktiv(cid)
+        # Die andere Anfrage legt die Sperre an, waehrend diese noch keine sieht.
+        erste["laeuft"] = True
+        erste["sperre"] = _sperren(_repo(neue_datenbank), content_id=cid)
+        return echtes_aktiv(uuid.uuid4())
+
+    with patch.object(SperreRepository, "_aktiv", staticmethod(aktiv_mit_zwischenruf)):
+        zweite = repo.anlegen(
+            content_id=content_id,
+            sperrgrund="ohne_bezug",
+            begruendung="anders",
+            gesperrt_von="admin-2",
+            autor="autorin-1",
+        )
+
+    assert zweite.id == erste["sperre"].id
+    assert len(_alle(neue_datenbank)) == 1
 
 
 def test_entsperren_ohne_widerspruch_ohne_pruefung(neue_datenbank):

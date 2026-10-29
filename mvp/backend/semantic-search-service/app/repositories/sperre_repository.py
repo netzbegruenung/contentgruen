@@ -10,7 +10,8 @@ from enum import Enum
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, or_, select, update
+from sqlalchemy.exc import IntegrityError
 
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import Sperre
@@ -40,24 +41,31 @@ class SperreRepository:
         gesperrt_von: Optional[str],
         autor: Optional[str],
     ) -> Sperre:
-        """Eine Sperre anlegen; gibt es schon eine aktive, bleibt sie und kommt zurueck."""
+        """
+        Eine Sperre anlegen; gibt es schon eine aktive, bleibt sie und kommt zurueck.
+        Auch wenn eine gleichzeitige Anfrage sie eben angelegt hat: Der eindeutige
+        Index laesst nur eine zu, die zweite liest dann die erste.
+        """
         with self.db.get_session() as session:
             vorhanden = session.execute(self._aktiv(content_id)).scalar_one_or_none()
-            if vorhanden is not None:
-                session.expunge(vorhanden)
-                return vorhanden
-            sperre = Sperre(
-                content_id=content_id,
-                sperrgrund=sperrgrund,
-                begruendung=begruendung,
-                gesperrt_von=gesperrt_von,
-                autor=autor,
-            )
-            session.add(sperre)
-            session.flush()
-            session.refresh(sperre)
-            session.expunge(sperre)
-            return sperre
+            if vorhanden is None:
+                sperre = Sperre(
+                    content_id=content_id,
+                    sperrgrund=sperrgrund,
+                    begruendung=begruendung,
+                    gesperrt_von=gesperrt_von,
+                    autor=autor,
+                )
+                try:
+                    with session.begin_nested():
+                        session.add(sperre)
+                    session.refresh(sperre)
+                    session.expunge(sperre)
+                    return sperre
+                except IntegrityError:
+                    vorhanden = session.execute(self._aktiv(content_id)).scalar_one()
+            session.expunge(vorhanden)
+            return vorhanden
 
     def aktive(self, content_id: UUID) -> Optional[Sperre]:
         with self.db.get_session() as session:
@@ -74,11 +82,21 @@ class SperreRepository:
             session.expunge_all()
             return {z.content_id: z for z in zeilen}
 
-    def aktive_fuer_autor(self, autor: str) -> List[Sperre]:
-        """Die aktiven Sperren an Beitraegen einer Person, die neueste zuerst."""
+    def fuer_autor(self, autor: str) -> List[Sperre]:
+        """
+        Die Sperren, von denen eine Person erfaehrt, die neueste zuerst: aktive und
+        solche, die nach ihrem Widerspruch aufgehoben wurden. Die zweiten bleiben, bis
+        ihre Frist sie loescht, damit sie das Ergebnis der Pruefung sieht.
+        """
         abfrage = (
             select(Sperre)
-            .where(Sperre.autor == autor, Sperre.aufgehoben_am.is_(None))
+            .where(
+                Sperre.autor == autor,
+                or_(
+                    Sperre.aufgehoben_am.is_(None),
+                    Sperre.pruefung == PRUEFUNG_ENTSPERRT,
+                ),
+            )
             .order_by(Sperre.gesperrt_am.desc(), Sperre.id)
         )
         with self.db.get_session() as session:
@@ -86,10 +104,17 @@ class SperreRepository:
             session.expunge_all()
             return list(zeilen)
 
-    def aufheben(self, content_id: UUID, von: Optional[str], jetzt: datetime) -> bool:
+    def aufheben(
+        self,
+        content_id: UUID,
+        von: Optional[str],
+        jetzt: datetime,
+        entsperrt: bool = True,
+    ) -> bool:
         """
-        Die aktive Sperre eines Beitrags aufheben. Ein offener Widerspruch gilt damit
-        als geprueft, mit dem Ergebnis "entsperrt".
+        Die aktive Sperre eines Beitrags aufheben. Beim Entsperren gilt ein offener
+        Widerspruch damit als geprueft, mit dem Ergebnis "entsperrt"; wird der
+        Beitrag endgueltig entfernt (entsperrt=False), bleibt er ohne Ergebnis.
 
         Returns:
             bool: False, wenn es keine aktive Sperre gab
@@ -101,7 +126,11 @@ class SperreRepository:
             if sperre is None:
                 return False
             sperre.aufgehoben_am = jetzt
-            if sperre.widerspruch_am is not None and sperre.pruefung is None:
+            if (
+                entsperrt
+                and sperre.widerspruch_am is not None
+                and sperre.pruefung is None
+            ):
                 sperre.pruefung = PRUEFUNG_ENTSPERRT
                 sperre.geprueft_von = von
                 sperre.geprueft_am = jetzt

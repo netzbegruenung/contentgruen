@@ -26,6 +26,7 @@ NACHRICHT = {
     "sperrgrund": "unterstellung",
     "begruendung": "Unterstellt Bosheit.",
     "gesperrt_am": "2026-10-29T10:00:00+00:00",
+    "aufgehoben_am": None,
     "widerspruch_am": None,
     "pruefung": None,
     "pruefung_begruendung": None,

@@ -8,7 +8,8 @@ import { Pruefung } from './moderation.service';
 /**
  * Eine Sperrnachricht (Glossar): Entscheidung, Sperrgrund und Begründung zu einem
  * gesperrten Beitrag der angemeldeten Person, dazu ihr Widerspruch und das Ergebnis
- * der erneuten Prüfung. Wer gesperrt hat, steht nicht darin.
+ * der erneuten Prüfung, auch wenn die Sperre danach aufgehoben ist. Wer gesperrt hat,
+ * steht nicht darin.
  */
 export interface Sperrnachricht {
   id: string;
@@ -19,6 +20,8 @@ export interface Sperrnachricht {
   sperrgrund: string;
   begruendung: string;
   gesperrt_am: string | null;
+  /** Gesetzt nur, wenn die Sperre nach dem Widerspruch aufgehoben wurde. */
+  aufgehoben_am: string | null;
   widerspruch_am: string | null;
   pruefung: Pruefung | null;
   pruefung_begruendung: string | null;

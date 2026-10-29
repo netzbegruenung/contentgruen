@@ -49,7 +49,7 @@ def moderation(real_embeddings_manager):
         ),
         vote_repo=MagicMock(),
         raw_input_repo=MagicMock(),
-        sperre_repo=MagicMock(),
+        sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
 
 

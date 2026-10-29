@@ -59,7 +59,7 @@ def service(speicher):
         moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
         vote_repo=MagicMock(),
         raw_input_repo=MagicMock(),
-        sperre_repo=MagicMock(),
+        sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
 
 

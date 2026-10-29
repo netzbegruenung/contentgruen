@@ -21,7 +21,11 @@ from repositories.implementations.qdrant.moderation_repository import (
     QdrantModerationRepository,
 )
 from repositories.sperre_repository import SperreRepository, Widerspruchsergebnis
-from services.moderation_service import ModerationService, SperreUngueltig
+from services.moderation_service import (
+    ModerationService,
+    SchonGesperrt,
+    SperreUngueltig,
+)
 from tests.conftest import create_base_content_fields
 
 CONTENT_ID = str(uuid.uuid4())
@@ -52,7 +56,9 @@ def speicher(test_embeddings_manager):
 
 @pytest.fixture
 def sperre_repo():
-    return MagicMock(spec=SperreRepository)
+    repo = MagicMock(spec=SperreRepository)
+    repo.aktive.return_value = None
+    return repo
 
 
 @pytest.fixture
@@ -75,6 +81,7 @@ def _sperre(**felder) -> SimpleNamespace:
         sperrgrund="unterstellung",
         begruendung="Unterstellt der Gegenseite Bosheit.",
         gesperrt_am=None,
+        aufgehoben_am=None,
         autor="autorin-1",
         widerspruch=None,
         widerspruch_am=None,
@@ -142,7 +149,7 @@ class TestSperrenVerlangtGrund:
         assert speicher.get_data()[CONTENT_ID]["status"] == "visible"
         sperre_repo.anlegen.assert_not_called()
 
-    @pytest.mark.parametrize("autor", [None, "", "ehemalige-person"])
+    @pytest.mark.parametrize("autor", [None, "", "ehemalige-person", "Gut gesagt Team"])
     async def test_sperren_ohne_kontakt_merkt_keinen_autor(
         self, test_embeddings_manager, sperre_repo, autor
     ):
@@ -163,6 +170,19 @@ class TestSperrenVerlangtGrund:
 
         assert sperre_repo.anlegen.call_args.kwargs["autor"] is None
 
+    async def test_zweites_sperren_mit_neuem_grund_wird_abgewiesen(
+        self, service, sperre_repo, speicher
+    ):
+        sperre_repo.aktive.return_value = _sperre()
+
+        with pytest.raises(SchonGesperrt):
+            await service.sperren(
+                CONTENT_ID, "admin-2", sperrgrund="ohne_bezug", begruendung="Werbung"
+            )
+
+        assert speicher.get_data()[CONTENT_ID]["status"] == "visible"
+        sperre_repo.anlegen.assert_not_called()
+
     async def test_entsperren_hebt_die_sperre_auf(self, service, sperre_repo):
         await service.sperren(
             CONTENT_ID, "admin-1", sperrgrund="ohne_bezug", begruendung="Werbung"
@@ -182,11 +202,11 @@ class TestSperrnachricht:
         self, service, sperre_repo
     ):
         sperre = _sperre()
-        sperre_repo.aktive_fuer_autor.return_value = [sperre]
+        sperre_repo.fuer_autor.return_value = [sperre]
 
         [nachricht] = await service.meine_sperren("autorin-1")
 
-        sperre_repo.aktive_fuer_autor.assert_called_once_with("autorin-1")
+        sperre_repo.fuer_autor.assert_called_once_with("autorin-1")
         assert nachricht["id"] == str(sperre.id)
         assert nachricht["content_id"] == CONTENT_ID
         assert nachricht["content_type"] == "commentary"
@@ -199,7 +219,7 @@ class TestSperrnachricht:
         assert "gesperrt_von" not in nachricht
 
     async def test_meine_sperren_ohne_beitrag_ohne_titel(self, service, sperre_repo):
-        sperre_repo.aktive_fuer_autor.return_value = [_sperre(content_id=uuid.uuid4())]
+        sperre_repo.fuer_autor.return_value = [_sperre(content_id=uuid.uuid4())]
 
         [nachricht] = await service.meine_sperren("autorin-1")
 
@@ -307,8 +327,10 @@ class TestEndgueltigEntfernen:
     async def test_entfernen_hebt_die_sperre_auf(self, service, sperre_repo):
         assert await service.delete_content(CONTENT_ID, "commentary", "admin-1")
 
-        args = sperre_repo.aufheben.call_args.args
-        assert args[:2] == (uuid.UUID(CONTENT_ID), "admin-1")
+        aufruf = sperre_repo.aufheben.call_args
+        assert aufruf.args[:2] == (uuid.UUID(CONTENT_ID), "admin-1")
+        # Entfernt ist nicht entsperrt: ein offener Widerspruch bekommt kein Ergebnis.
+        assert aufruf.kwargs["entsperrt"] is False
 
     async def test_fehler_beim_aufheben_haelt_das_entfernen_nicht_auf(
         self, service, sperre_repo, speicher

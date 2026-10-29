@@ -17,7 +17,8 @@ export const WIDERSPRUCH_MAX = 2000;
 /**
  * Die Sperrnachrichten oben in „Meine Beiträge“ (#448): je gesperrtem eigenen Beitrag
  * Entscheidung, Sperrgrund, Begründung und der Weg zum Widerspruch, danach der Stand
- * der erneuten Prüfung. Ohne Sperre zeigt die Komponente nichts.
+ * der erneuten Prüfung, auch „aufgehoben“ (dann ist der Beitrag wieder im Album). Ohne
+ * Sperre zeigt die Komponente nichts.
  *
  * Gesperrte Beiträge selbst stehen nicht im Album; nur hier erfährt die Person von
  * der Sperre (Nutzungsbedingungen Abschnitt 7).

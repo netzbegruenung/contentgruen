@@ -32,6 +32,8 @@ class Sperrnachricht(BaseModel):
     sperrgrund: str
     begruendung: str
     gesperrt_am: Optional[str]
+    # Gesetzt nur, wenn die Sperre nach dem Widerspruch aufgehoben wurde.
+    aufgehoben_am: Optional[str]
     widerspruch_am: Optional[str]
     pruefung: Optional[str]
     pruefung_begruendung: Optional[str]
@@ -54,7 +56,7 @@ class WiderspruchResponse(BaseModel):
 
 @router.get("/meine", response_model=MeineSperrenResponse)
 async def meine_sperren(user_id: str = Depends(require_user)):
-    """Die Sperrnachrichten der angemeldeten Person, die neueste zuerst."""
+    """Die Sperrnachrichten der angemeldeten Person, die neueste zuerst (auch nach erfolgreichem Widerspruch)."""
     try:
         return MeineSperrenResponse(
             sperren=await get_moderation_service().meine_sperren(user_id)

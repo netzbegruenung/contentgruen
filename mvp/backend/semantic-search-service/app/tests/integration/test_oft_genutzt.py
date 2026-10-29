@@ -59,7 +59,7 @@ async def test_oft_genutzt_zeigt_sichtbare_ohne_gesperrte(
         moderation_repo=QdrantModerationRepository(
             embeddings_manager=real_embeddings_manager
         ),
-        sperre_repo=MagicMock(),
+        sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
     assert (
         await moderation.sperren(str(gesperrt), gesperrt_von="admin-1", **GRUND) is True

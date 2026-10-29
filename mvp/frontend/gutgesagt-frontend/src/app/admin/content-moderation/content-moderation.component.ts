@@ -164,7 +164,8 @@ export class ContentModerationComponent implements OnInit {
             this.loadReports();
           },
           error: (error) => {
-            this.snackBar.open('Fehler beim Sperren des Beitrags', 'OK', { duration: 3000 });
+            const text = error?.status === 409 ? 'Der Beitrag ist schon gesperrt' : 'Fehler beim Sperren des Beitrags';
+            this.snackBar.open(text, 'OK', { duration: 3000 });
             console.error('Error blocking content:', error);
           }
         });

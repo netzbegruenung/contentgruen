@@ -201,11 +201,11 @@ Warum ein Admin einen Beitrag sperrt, gewählt aus einer festen Liste nach Absch
 _Avoid_: Sperrkategorie, Meldegrund (für die Sperre)
 
 **Sperrnachricht**:
-Was der Autor eines gesperrten Beitrags über die Sperre erfährt: Entscheidung, Sperrgrund, Begründung und wie er widerspricht, danach das Ergebnis der erneuten Prüfung. Sie steht oben in Meine Beiträge, nur für ihn; eine Mail gibt es nicht. Ist der Autor nicht bekannt, etwa eine Ehemalige Person, sieht niemand sie, und die Moderation vermerkt das als „keine Kontaktdaten“.
+Was der Autor eines gesperrten Beitrags über die Sperre erfährt: Entscheidung, Sperrgrund, Begründung und wie er widerspricht, danach das Ergebnis der erneuten Prüfung (bleibt die Sperre, mit Begründung). Sie steht oben in Meine Beiträge, nur für ihn, auch noch, nachdem eine Sperre auf seinen Widerspruch hin aufgehoben wurde; eine Mail gibt es nicht. Ist der Autor nicht bekannt, etwa eine Ehemalige Person, sieht niemand sie, und die Moderation vermerkt das als „keine Kontaktdaten“.
 _Avoid_: Benachrichtigung, Notification, Rückmeldung (das ist die Nutzung der eigenen Beiträge)
 
 **Widerspruch**:
-Der Einwand des Autors gegen die Sperre seines Beitrags, formlos in Meine Beiträge oder per Mail; ein Text ist freiwillig. Je Sperre gibt es einen. Ein Admin prüft erneut: Die Sperre bleibt, mit Begründung, oder er entsperrt. Offene Widersprüche stehen in der Moderation zuerst. Der Widerspruch nach Art. 21 DSGVO gegen eine Verarbeitung ist etwas anderes.
+Der Einwand des Autors gegen die Sperre seines Beitrags, formlos in Meine Beiträge oder per Mail; ein Text ist freiwillig. Je Sperre gibt es einen. Ein Admin prüft erneut: Die Sperre bleibt, mit Begründung, oder er entsperrt. Ein Widerspruch per Mail steht nicht in der Moderation; über ihn entscheidet ein Admin ebenso, indem er entsperrt oder die Sperre stehen lässt. Offene Widersprüche stehen in der Moderation zuerst. Der Widerspruch nach Art. 21 DSGVO gegen eine Verarbeitung ist etwas anderes.
 _Avoid_: Beschwerde, Einspruch, Appeal
 
 **Entsperren**:
