@@ -1,9 +1,9 @@
 import json
 
 from pydantic import BaseModel, field_validator
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-from domain.models.commentary import CommentaryReference
+from domain.models.commentary import CommentaryReference, Fassung
 from domain.models.content import ContentDbEntry
 from dtos.beitrag import BeitragResponse
 
@@ -33,6 +33,9 @@ class ContributionEntry(ContentDbEntry):
     # Zuwachs der letzten 7 Tage (#349); steht nicht im Payload, kommt wie
     # usage_count aus PostgreSQL.
     nutzung_letzte_7_tage: int = 0
+    # Kurz- und Langfassung eines Kommentars (#355); die Karte zeigt Reiter dafuer.
+    short_text: Optional[str] = None
+    long_text: Optional[str] = None
     references: List[CommentaryReference] = []
 
     @field_validator("usage_count", mode="before")
@@ -54,6 +57,13 @@ class ContributionEntry(ContentDbEntry):
         return value
 
 
+class FassungsNutzung(BaseModel):
+    """Nutzung einer Fassung und ihr Zuwachs der letzten 7 Tage (#355)."""
+
+    nutzung: int = 0
+    letzte_7_tage: int = 0
+
+
 class MeinBeitragResponse(BeitragResponse):
     """
     Ein Beitrag in "Meine Beitraege", wie er nach aussen geht (#385).
@@ -66,6 +76,11 @@ class MeinBeitragResponse(BeitragResponse):
     image_url: Optional[str] = None
     usage_count: int = 0
     nutzung_letzte_7_tage: int = 0
+    short_text: Optional[str] = None
+    long_text: Optional[str] = None
+    # Nur am Kommentar: je vorhandener Fassung ("kurz", "mittel", "lang"); None bei
+    # anderen Typen oder wenn die Zahlen nicht lesbar waren.
+    nutzung_je_fassung: Optional[Dict[Fassung, FassungsNutzung]] = None
     references: List[CommentaryReference] = []
 
 

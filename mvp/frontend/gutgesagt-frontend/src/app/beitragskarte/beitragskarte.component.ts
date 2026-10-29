@@ -36,14 +36,26 @@ import { CONTENT_TYPE_REGISTRY, typLabel } from '../shared/content-type-registry
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import { AuthService } from '../auth/auth.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
-
-type TextModus = 'short' | 'standard' | 'long';
+import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
 
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
 
 /** So viele Saetze stehen in der Einwurf-Karte; der Rest wird nur gezaehlt. */
 const SAETZE_SICHTBAR = 3;
+
+/** Eine Zeile "Nutzung je Fassung" in Meine Beitraege; `vorgelesen` fuer Screenreader statt "3×". */
+interface NutzungsZeile {
+  label: string;
+  nutzung: number;
+  zuwachs: number;
+  vorgelesen: string;
+}
+
+function nutzungsZeile(label: string, nutzung: number, zuwachs: number): NutzungsZeile {
+  const davon = zuwachs ? `, ${zuwachs} davon in den letzten 7 Tagen` : '';
+  return { label, nutzung, zuwachs, vorgelesen: `${label}: ${nutzung}-mal genutzt${davon}` };
+}
 
 /**
  * Die eine Karte fuer Beitraege, in vier Varianten (siehe KartenVariante).
@@ -116,7 +128,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
   istNeu = false;
   istBeliebt = false;
   statementOffen = false;
-  textModus: TextModus = 'standard';
+  /** Der gewaehlte Reiter; ohne Text in dieser Fassung zeigt die Karte Mittel. */
+  gewaehlteFassung: Fassung = 'mittel';
   textAufgeklappt = false;
   textGekuerzt = false;
 
@@ -183,7 +196,7 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
       this.istNeu = this.stundenSeit(this.daten.erstellt) < NEU_STUNDEN;
       this.istBeliebt = (this.nutzung ?? 0) >= BELIEBT_AB;
       this.statementOffen = false;
-      this.textModus = 'standard';
+      this.gewaehlteFassung = 'mittel';
       this.textAufgeklappt = false;
     }
   }
@@ -373,19 +386,56 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     return !!(this.daten.extra?.kurz || this.daten.extra?.lang);
   }
 
+  /** Die angezeigte Fassung: die gewaehlte, wenn sie Text hat, sonst Mittel. */
+  get angezeigteFassung(): Fassung {
+    if (this.gewaehlteFassung === 'kurz' && this.daten.extra?.kurz) {
+      return 'kurz';
+    }
+    if (this.gewaehlteFassung === 'lang' && this.daten.extra?.lang) {
+      return 'lang';
+    }
+    return 'mittel';
+  }
+
+  /** Die gezaehlte Fassung beim Kopieren; nur der Kommentar hat Fassungen. */
+  get fassung(): Fassung | null {
+    return this.daten.typ === 'commentary' ? this.angezeigteFassung : null;
+  }
+
+  /**
+   * Nutzung je Fassung in Meine Beitraege (#355), in der Reihenfolge der Reiter. Was
+   * vor der Zaehlung je Fassung genutzt wurde, steht als "ohne Fassung" dabei: Welche
+   * Fassung damals kopiert wurde, weiss niemand. Ohne Kurz und Lang gibt es nur Mittel,
+   * dann sagt die Zeile nichts, was das Nutzungs-Badge nicht schon sagt.
+   */
+  get nutzungJeFassung(): NutzungsZeile[] | null {
+    const je = this.daten.nutzungJeFassung;
+    if (!je || !this.hatKurzOderLang) {
+      return null;
+    }
+    const zeilen = FASSUNGEN.filter((fassung) => je[fassung]).map((fassung) =>
+      nutzungsZeile(FASSUNG_LABEL[fassung], je[fassung]!.nutzung, je[fassung]!.letzte_7_tage),
+    );
+    const summe = (wert: (zeile: NutzungsZeile) => number) => zeilen.reduce((s, zeile) => s + wert(zeile), 0);
+    // Der Rest je Spalte; auch Kopien vor der Zaehlung je Fassung koennen noch in die 7 Tage fallen.
+    const ohneFassung = (this.nutzung ?? 0) - summe((zeile) => zeile.nutzung);
+    const ohneFassungZuwachs = Math.max(0, (this.daten.nutzungLetzte7Tage ?? 0) - summe((zeile) => zeile.zuwachs));
+    return ohneFassung > 0 ? [...zeilen, nutzungsZeile('ohne Fassung', ohneFassung, ohneFassungZuwachs)] : zeilen;
+  }
+
   get zeigtQuellen(): boolean {
     return tragtHerkunftsangaben(this.daten.typ);
   }
 
   get angezeigterText(): string {
-    const text = this.daten.text ?? '';
-    if (this.textModus === 'short') {
-      return this.daten.extra?.kurz || text;
+    const fassung = this.angezeigteFassung;
+    if (fassung === 'kurz') {
+      return this.daten.extra!.kurz!;
     }
-    if (this.textModus === 'long') {
-      return this.daten.extra?.lang || text;
+    if (fassung === 'lang') {
+      return this.daten.extra!.lang!;
     }
-    return text;
+    return this.daten.text ?? '';
   }
 
   get kopierText(): string {
@@ -439,8 +489,8 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  textModusSetzen(modus: TextModus): void {
-    this.textModus = modus;
+  fassungWaehlen(fassung: Fassung): void {
+    this.gewaehlteFassung = fassung;
     this.textAufgeklappt = false;
     this.cdr.markForCheck();
     requestAnimationFrame(() => this.zone.run(() => this.pruefeKuerzung()));

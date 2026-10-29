@@ -67,8 +67,15 @@ app-formular-hilfe {
   }
 }
 
-.herkunft {
+.herkunft,
+.fassungen {
   margin-top: 4px;
+}
+
+.fassungen {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; // wie .beitrag-formular, sonst stoesst der Hinweis der Kurzfassung an die Langfassung
 }
 
 .formular-fuss {

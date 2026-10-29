@@ -93,6 +93,14 @@ async def search_content(
             mit_nutzung = [
                 {**eintrag, "nutzung_letzte_7_tage": 0} for eintrag in mit_nutzung
             ]
+        # Am Kommentar je Fassung (#355); fehlen die Zahlen, bleibt es bei der Summe.
+        try:
+            mit_nutzung = get_usage_service().nutzung_je_fassung_nachtragen(mit_nutzung)
+        except Exception as e:
+            logger.warning(f"Nutzung je Fassung nicht lesbar, zeige keine: {e}")
+            mit_nutzung = [
+                {**eintrag, "nutzung_je_fassung": None} for eintrag in mit_nutzung
+            ]
 
         # Nur eigene Beitraege: das Kennzeichen ist immer gesetzt, die Kennung bleibt
         # wie ueberall nur Admins; Bearbeitungshistorie geht nicht nach aussen (#385).

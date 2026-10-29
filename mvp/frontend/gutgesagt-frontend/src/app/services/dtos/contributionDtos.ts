@@ -1,4 +1,5 @@
 import { ContentReference } from './commonDtos';
+import type { NutzungJeFassung } from '../../shared/fassung';
 
 //TODO: Evaluate usage of camel case and transformation in the backend
 
@@ -37,6 +38,11 @@ export interface ContentResult {
     usage_count: number;
     /** Davon in den letzten 7 Tagen (#349); fehlt bei aelteren Antworten. */
     nutzung_letzte_7_tage?: number;
+    /** Kurz- und Langfassung eines Kommentars (#355). */
+    short_text?: string | null;
+    long_text?: string | null;
+    /** Nur am Kommentar in Meine Beitraege: je vorhandener Fassung (#355). */
+    nutzung_je_fassung?: NutzungJeFassung | null;
     /** Herkunftsangaben; Adresse und Beschreibung loest der Endpunkt auf. */
     references?: ContentReference[];
 }
