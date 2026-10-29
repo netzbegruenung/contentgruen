@@ -38,7 +38,8 @@
     <ul>
       <li>
         <strong>Suchen und nutzen:</strong> Suchen und lesen kann jede Person, auch ohne
-        Anmeldung. Jedes Kopieren und Teilen zählt als Nutzung und zeigt, dass ein Beitrag hilft.
+        Anmeldung. Kopiert jemand einen fremden Beitrag, zählt das als Nutzung und zeigt, dass der
+        Beitrag hilft.
       </li>
       <li>
         <strong>Bewerten:</strong> Angemeldet gibst du Beiträgen deine Stimme. So sieht man,
@@ -48,7 +49,7 @@
         <strong>Neue Beiträge in drei Schritten:</strong> Jeder Schritt kann von einer anderen
         Person kommen.
         <ol class="kette">
-          <li><strong>Einwerfen:</strong> Du legst ein Fundstück, einen Link oder einen Hinweis, in den Fangkorb.</li>
+          <li><strong>Einwerfen:</strong> Du legst ein Fundstück in den Fangkorb: einen Link, einen Hinweis oder beides.</li>
           <li><strong>Destillieren:</strong> Jemand fasst das Argument darin in einem Satz.</li>
           <li><strong>Ausformulieren:</strong> Jemand macht daraus einen fertigen Beitrag.</li>
         </ol>
@@ -61,8 +62,8 @@
     <p class="startbestand">
       Den Anfang machen Menschen: Zum Start schreibt ein Gründungsteam die ersten Beiträge zu
       den häufigsten Aussagen selbst, unter wenigen Startkonten. KI schlägt höchstens etwas vor,
-      jeden Beitrag verantwortet ein Mensch. Alle Zahlen, die du siehst, sind echt und beginnen
-      bei 0.
+      jeden Beitrag verantwortet ein Mensch. Alle Zahlen, die du siehst, sind echt: Jeder Beitrag
+      beginnt bei 0 Stimmen und 0 Nutzungen.
     </p>
   </section>
 
@@ -98,7 +99,7 @@
     <h2>Die Geschichte von Gut gesagt</h2>
     <div class="timeline">
       <div class="timeline-item">
-        <h4>Die Idee</h4>
+        <h3>Die Idee</h3>
         <p>
           Gut gesagt begann als Idee von Sebastian Banach während der Corona-Pandemie. In
           Kommentarspalten tauchten immer wieder dieselben Aussagen auf, und jede Person
@@ -107,14 +108,14 @@
         </p>
       </div>
       <div class="timeline-item">
-        <h4>Die Anfänge</h4>
+        <h3>Die Anfänge</h3>
         <p>
           Die Umsetzung begann in der AG Social des Vereins {{ organisation.name }}. Gemeinsam mit
           anderen Mitgliedern entstand dort die Idee eines gemeinsamen Vorrats an Antworten.
         </p>
       </div>
       <div class="timeline-item">
-        <h4>Heute</h4>
+        <h3>Heute</h3>
         <p>
           Gut gesagt startet in der {{ organisation.name }}. Der Bestand ist noch klein und wächst mit
           jeder Person, die mitmacht.
@@ -198,7 +199,7 @@
     <div class="cta-buttons">
       <a mat-raised-button
          color="primary"
-         [href]="organisation.kontaktUrl"
+         [href]="organisation.kontakt.url"
          target="_blank"
          rel="noopener">
         <mat-icon>chat</mat-icon>
@@ -214,7 +215,7 @@
               (click)="openHelpDialog()"
               class="secondary-button hilfe-knopf">
         <mat-icon>help</mat-icon>
-        Hilfe zur Nutzung
+        Hilfe
       </button>
     </div>
   </section>
@@ -226,8 +227,8 @@
       Du hast Feedback, Verbesserungsvorschläge oder möchtest dich einbringen?
     </p>
     <p>
-      <a [href]="organisation.kontaktUrl" target="_blank" rel="noopener">
-        Schreib uns eine Nachricht in der {{ organisation.kontaktName }}
+      <a [href]="organisation.kontakt.url" target="_blank" rel="noopener">
+        Schreib uns eine Nachricht in der {{ organisation.kontakt.name }}
       </a>
     </p>
   </section>
