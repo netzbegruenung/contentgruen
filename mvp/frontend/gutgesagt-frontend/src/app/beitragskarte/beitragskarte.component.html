@@ -235,6 +235,8 @@
         </div>
 
         <footer class="karte-fuss">
+            <!-- Vor dem Kopieren: nicht fuer Kommentarspalten gedacht (#357, Variante D) -->
+            <p class="eigene-leute-hinweis" *ngIf="eigeneLeuteAnzeige">Für die eigenen Leute – nicht für Kommentarspalten</p>
             <app-karten-aktionen
                 [inhaltId]="daten.id"
                 [typ]="daten.typ"

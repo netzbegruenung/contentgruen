@@ -228,6 +228,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     if (this.einwurfAngaben) {
       klassen.push(`stufe-${this.einwurfAngaben.stufe}`);
     }
+    // Fuer die eigenen Leute (#357, Variante D): Rand in Tanne an der ganzen Karte.
+    if (this.eigeneLeuteAnzeige) {
+      klassen.push('karte--eigene-leute');
+    }
     return klassen;
   }
 

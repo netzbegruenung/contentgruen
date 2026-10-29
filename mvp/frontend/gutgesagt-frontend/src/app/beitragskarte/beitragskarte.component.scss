@@ -339,9 +339,28 @@
   gap: 4px;
   padding: 1px 8px;
   border-radius: var(--border-radius-large);
-  background: var(--einwurf-grund);
-  color: var(--primary-dark);
+  // Variante D (Tanne, #357): nur Farben aus der Palette, kein Gelb - Sonne ist
+  // fuer eine andere Markierung reserviert.
+  background: var(--primary-dark);
+  color: white;
   font-weight: 600;
+
+  .angabe-icon {
+    color: white;
+  }
+}
+
+// Die ganze Karte traegt die Markierung als Rand links (Klasse aus kartenKlassen).
+.karte.karte--eigene-leute {
+  border-left: 6px solid var(--primary-dark);
+}
+
+.eigene-leute-hinweis {
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md) 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--primary-dark);
 }
 
 .angabe-icon {
