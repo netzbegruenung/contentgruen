@@ -216,7 +216,7 @@ describe('AddCommentaryComponent', () => {
   });
 
   describe('Speichern', () => {
-    it('schickt Titel, Text und Herkunft, ohne Kurz und Lang, wenn sie leer sind', fakeAsync(() => {
+    it('schickt Titel, Text, Herkunft und Zweck, ohne Kurz, Lang und Stil, wenn sie leer sind', fakeAsync(() => {
       const hinzufuegen = speichernMit();
       ausfuellen();
 
@@ -227,6 +227,7 @@ describe('AddCommentaryComponent', () => {
       expect(anfrage.commentary).toEqual({
         title: 'Wärmepumpe lohnt sich im Altbau',
         text: 'Ein ausreichend langer Text.',
+        zweck: 'kommentarspalte',
         references: [],
       });
       expect('long_text' in anfrage.commentary).toBeFalse();
@@ -1009,6 +1010,102 @@ describe('AddCommentaryComponent', () => {
       expect(dialog.open).toHaveBeenCalled();
       expect(component.commentaryForm.value.kurz).toBe('');
       expect(seite().querySelector('textarea#kurz')).toBeNull();
+    });
+  });
+
+  describe('Zweck und Stil (#357)', () => {
+    const BESCHRIFTUNG: Record<string, string> = {
+      kommentarspalte: 'Antwort in Kommentarspalten',
+      eigene_leute: 'Für die eigenen Leute',
+    };
+
+    function zweckKnopf(zweck: string): HTMLButtonElement {
+      const knoepfe = Array.from(seite().querySelectorAll<HTMLButtonElement>('.zweck-wahl button'));
+      return knoepfe.find((knopf) => knopf.textContent?.trim() === BESCHRIFTUNG[zweck])!;
+    }
+
+    it('Zweck steht auf Kommentarspalte, Stil ist leer: Speichern geht ohne Wahl', () => {
+      ausfuellen();
+
+      expect(component.commentaryForm.value.zweck).toBe('kommentarspalte');
+      expect(component.commentaryForm.value.stil).toBeNull();
+      expect(zweckKnopf('kommentarspalte').closest('mat-button-toggle')!.classList).toContain('mat-button-toggle-checked');
+      expect(seite().querySelector('.stil-feld mat-label')!.textContent).toContain('Stil (optional)');
+      expect(component.commentaryForm.valid).toBeTrue();
+    });
+
+    it('schickt ohne Wahl keinen Stil und den Zweck Kommentarspalte', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      ausfuellen();
+
+      component.speichern();
+      flush();
+
+      const anfrage: AddCommentaryRequest = hinzufuegen.calls.mostRecent().args[0];
+      expect(anfrage.commentary.zweck).toBe('kommentarspalte');
+      expect('style' in anfrage.commentary).toBeFalse();
+    }));
+
+    it('schickt Zweck und Stil mit', fakeAsync(() => {
+      const hinzufuegen = speichernMit();
+      ausfuellen();
+      zweckKnopf('eigene_leute').click();
+      component.commentaryForm.patchValue({ stil: 'bissig' });
+
+      component.speichern();
+      flush();
+
+      const anfrage: AddCommentaryRequest = hinzufuegen.calls.mostRecent().args[0];
+      expect(anfrage.commentary.zweck).toBe('eigene_leute');
+      expect(anfrage.commentary.style).toBe('bissig');
+    }));
+
+    it('bietet bissig nur fuer die eigenen Leute an', () => {
+      expect(component.stile).not.toContain('bissig');
+
+      zweckKnopf('eigene_leute').click();
+      fixture.detectChanges();
+
+      expect(component.stile).toContain('bissig');
+    });
+
+    it('nimmt bissig zurueck, wenn der Zweck wieder Kommentarspalte wird', () => {
+      zweckKnopf('eigene_leute').click();
+      component.commentaryForm.patchValue({ stil: 'bissig' });
+      fixture.detectChanges();
+
+      zweckKnopf('kommentarspalte').click();
+      fixture.detectChanges();
+
+      expect(component.commentaryForm.value.stil).toBeNull();
+    });
+
+    it('behaelt einen anderen Stil beim Wechsel des Zwecks', () => {
+      component.commentaryForm.patchValue({ zweck: 'eigene_leute', stil: 'humorvoll' });
+
+      component.commentaryForm.patchValue({ zweck: 'kommentarspalte' });
+
+      expect(component.commentaryForm.value.stil).toBe('humorvoll');
+    });
+
+    it('zeigt Stil und Markierung in der Vorschau', () => {
+      ausfuellen();
+      component.commentaryForm.patchValue({ zweck: 'eigene_leute', stil: 'humorvoll' });
+
+      expect(component.vorschauKarte.extra?.stil).toBe('humorvoll');
+      expect(component.vorschauKarte.extra?.fuerEigeneLeute).toBeTrue();
+    });
+
+    it('zaehlen fuers Zuruecksetzen als Eingabe und werden mit geleert', () => {
+      component.commentaryForm.patchValue({ zweck: 'eigene_leute', stil: 'sachlich' });
+      expect(component.hatEingaben).toBeTrue();
+      dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
+
+      component.zuruecksetzen();
+
+      expect(component.commentaryForm.value.zweck).toBe('kommentarspalte');
+      expect(component.commentaryForm.value.stil).toBeNull();
+      expect(component.hatEingaben).toBeFalse();
     });
   });
 

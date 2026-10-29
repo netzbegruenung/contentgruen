@@ -428,3 +428,27 @@ def test_als_responses_laesst_den_db_entry_unveraendert():
     assert kommentar.original_author is None
     assert eintrag.original_author == AUTORIN
     assert eintrag.edit_history[0].editor == BEARBEITER
+
+
+def _zweck_und_stil(antwort):
+    kommentare = [
+        e for e in _eintraege(antwort.json()) if e["content_type"] == "commentary"
+    ]
+    assert kommentare
+    return {(k["zweck"], k["style"]) for k in kommentare}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "route", ["commentary/getById", "commentary/searchCommentaries", "content/recent"]
+)
+def test_kommentar_traegt_zweck_und_stil(lese_client, route):
+    """Die Karte zeigt den Stil und markiert Beitraege fuer die eigenen Leute (#357)."""
+    assert _zweck_und_stil(lese_client(route, FREMD)) == {
+        ("kommentarspalte", "sachlich")
+    }
+
+
+@pytest.mark.unit
+def test_suchtreffer_kommentar_traegt_zweck_und_stil(such_antwort):
+    assert _zweck_und_stil(such_antwort(FREMD)) == {("kommentarspalte", "sachlich")}

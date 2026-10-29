@@ -78,6 +78,36 @@ app-formular-hilfe {
   gap: 4px; // wie .beitrag-formular, sonst stoesst der Hinweis der Kurzfassung an die Langfassung
 }
 
+// Zweck und Stil (#357); weitere optionale Angaben reihen sich hier ein.
+.optionale-angaben {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.zweck-feld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feld-beschriftung {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+// Am Handy untereinander, damit beide Beschriftungen ganz lesbar bleiben.
+.zweck-wahl {
+  flex-wrap: wrap;
+  align-self: flex-start;
+
+  ::ng-deep .mat-button-toggle-checked .mat-button-toggle-button {
+    color: var(--primary-dark);
+    font-weight: 600;
+  }
+}
+
 .formular-fuss {
   display: flex;
   justify-content: flex-end;

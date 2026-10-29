@@ -1,7 +1,13 @@
 import datetime
 from enum import Enum
 from domain.models.zeit import UtcZeit
-from pydantic import BaseModel, ValidationError, field_validator, Field
+from pydantic import (
+    BaseModel,
+    ValidationError,
+    field_validator,
+    model_validator,
+    Field,
+)
 from typing import List, Optional
 import uuid
 import json
@@ -25,6 +31,39 @@ class Fassung(str, Enum):
     KURZ = "kurz"
     MITTEL = "mittel"
     LANG = "lang"
+
+
+class Zweck(str, Enum):
+    """
+    Fuer wen ein Kommentar geschrieben ist (GLOSSARY.md, #357): als Antwort in
+    Kommentarspalten an die Unentschiedenen, die mitlesen (Standard), oder fuer die
+    eigenen Leute. Bei Aussagen zeigt die Suche zuerst Kommentarspalten-Antworten.
+    """
+
+    KOMMENTARSPALTE = "kommentarspalte"
+    EIGENE_LEUTE = "eigene_leute"
+
+
+class Stil(str, Enum):
+    """
+    Die Tonlage eines Kommentars (GLOSSARY.md, #357), optional. ``BISSIG`` nur beim
+    Zweck "Fuer die eigenen Leute" (``Commentary._bissig_nur_fuer_eigene_leute``).
+    """
+
+    SACHLICH = "sachlich"
+    HUMORVOLL = "humorvoll"
+    PERSOENLICH = "persoenlich"
+    BRUECKENBAUEND = "brueckenbauend"
+    BISSIG = "bissig"
+
+
+# Freie Stile von vor #357 (Seed und frueheres Formular), die einem Stil entsprechen.
+# Andere freie Werte ("empathisch", "sarkastisch") haben keinen und fallen beim Lesen weg.
+_STIL_ALTE_SCHREIBWEISEN = {
+    "faktisch": Stil.SACHLICH,
+    "persönlich": Stil.PERSOENLICH,
+    "brückenbauend": Stil.BRUECKENBAUEND,
+}
 
 
 class CommentaryReference(BaseModel):
@@ -77,8 +116,10 @@ class Commentary(BaseContent):
         Long text of the commentary, might be empty
     short_text: str
         Short text of the commentary, might be empty
-    style: str
-        The style of the commentary (e.g. empathisch, faktisch, persönlich, humorvoll, sarkastisch, brückenbauend)
+    zweck: Zweck
+        Fuer wen der Kommentar geschrieben ist; ohne Angabe Kommentarspalte
+    style: Optional[Stil]
+        Der Stil des Kommentars, optional
     references: List[CommentaryReference]
         List of references for the commentary
     """
@@ -93,8 +134,30 @@ class Commentary(BaseContent):
     )
     long_text: Optional[str] = None
     short_text: Optional[str] = None
-    style: Optional[str] = None
+    zweck: Zweck = Zweck.KOMMENTARSPALTE
+    style: Optional[Stil] = None
     references: List[CommentaryReference]
+
+    @field_validator("zweck", mode="before")
+    @classmethod
+    def _zweck_ohne_angabe_ist_kommentarspalte(cls, value):
+        return Zweck.KOMMENTARSPALTE if value is None else value
+
+    @field_validator("style", mode="before")
+    @classmethod
+    def _stil_lesen(cls, value):
+        # Leer heisst: kein Stil, wie bei den Fassungen.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return _STIL_ALTE_SCHREIBWEISEN.get(value, value)
+
+    @model_validator(mode="after")
+    def _bissig_nur_fuer_eigene_leute(self):
+        if self.style == Stil.BISSIG and self.zweck != Zweck.EIGENE_LEUTE:
+            raise ValueError(
+                "Der Stil bissig geht nur beim Zweck Für die eigenen Leute"
+            )
+        return self
 
     @field_validator("references", mode="before")
     def parse_references(cls, value):
@@ -132,6 +195,21 @@ class CommentaryDbEntry(Commentary, BaseContentDbEntry):
 
     references_count: int
     usage_count: Optional[int] = None
+
+    # Gespeichertes muss lesbar bleiben: Ein Stil, den es nicht (mehr) gibt oder der
+    # nicht zum Zweck passt, faellt beim Lesen weg, statt die Suche scheitern zu lassen.
+    # Gleiche Namen wie in Commentary, damit diese die dortigen Pruefungen ersetzen.
+    @field_validator("style", mode="before")
+    @classmethod
+    def _stil_lesen(cls, value):
+        value = _STIL_ALTE_SCHREIBWEISEN.get(value, value)
+        return value if value in Stil._value2member_map_ else None
+
+    @model_validator(mode="after")
+    def _bissig_nur_fuer_eigene_leute(self):
+        if self.style == Stil.BISSIG and self.zweck != Zweck.EIGENE_LEUTE:
+            self.style = None
+        return self
 
 
 class CommentarySearchResult(CommentaryDbEntry, BaseContentSearchResult):

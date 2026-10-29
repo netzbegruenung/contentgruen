@@ -165,6 +165,14 @@
         </div>
 
         <div class="karte-inhalt">
+            <!-- Am Kommentar (#357): Markierung fuer die eigenen Leute und der Stil -->
+            <p class="karte-angaben" *ngIf="eigeneLeuteAnzeige || stilAnzeige">
+                <span class="karte-eigene-leute" *ngIf="eigeneLeuteAnzeige as eigene">
+                    <mat-icon class="angabe-icon" aria-hidden="true">groups</mat-icon>{{ eigene }}
+                </span>
+                <span class="karte-stil" *ngIf="stilAnzeige as stil"><span class="cdk-visually-hidden">Stil: </span>{{ stil }}</span>
+            </p>
+
             <mat-button-toggle-group *ngIf="hatKurzOderLang" class="textlaenge"
                                      aria-label="Fassung"
                                      [value]="gewaehlteFassung"

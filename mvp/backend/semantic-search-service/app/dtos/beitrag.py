@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from uuid import UUID
 
-from domain.models.commentary import CommentaryReference
+from domain.models.commentary import CommentaryReference, Stil, Zweck
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextReference
@@ -48,7 +48,9 @@ class KommentarResponse(BeitragResponse):
     title: str
     long_text: Optional[str] = None
     short_text: Optional[str] = None
-    style: Optional[str] = None
+    # Die Karte zeigt den Stil und markiert Beitraege fuer die eigenen Leute (#357).
+    zweck: Zweck = Zweck.KOMMENTARSPALTE
+    style: Optional[Stil] = None
     references: List[CommentaryReference] = []
     references_count: int = 0
 

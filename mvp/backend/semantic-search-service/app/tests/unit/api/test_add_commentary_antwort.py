@@ -17,6 +17,7 @@ from dependencies import (
     get_reference_service,
     get_statement_service,
 )
+from domain.models.commentary import Stil, Zweck
 from domain.models.content_type import ContentType
 from services.content.base_content_service import Dublettenpruefung
 from utils.text_normalisierung import SperreJeText
@@ -535,6 +536,40 @@ class TestAddCommentaryAntwort:
             "Die Pumpe rechnet sich.",
             "Mit Förderung und Strompreis gerechnet.",
         )
+
+    def test_zweck_und_stil_werden_gespeichert(self, dienste):
+        """Zweck und Stil sind optional (#357); bissig nur fuer die eigenen Leute."""
+        anfrage = _anfrage()
+        anfrage["commentary"]["zweck"] = "eigene_leute"
+        anfrage["commentary"]["style"] = "bissig"
+
+        resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
+
+        assert resp.status_code == 200
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+        gespeichert = commentary_service.add_commentary.call_args.args[0]
+        assert (gespeichert.zweck, gespeichert.style) == (
+            Zweck.EIGENE_LEUTE,
+            Stil.BISSIG,
+        )
+
+    def test_ohne_zweck_wird_kommentarspalte_gespeichert(self, dienste):
+        resp = TestClient(app).post(ADD_URL, json=_anfrage(), headers=HEADERS)
+
+        assert resp.status_code == 200
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+        gespeichert = commentary_service.add_commentary.call_args.args[0]
+        assert (gespeichert.zweck, gespeichert.style) == (Zweck.KOMMENTARSPALTE, None)
+
+    def test_bissig_in_der_kommentarspalte_wird_abgelehnt(self, dienste):
+        anfrage = _anfrage()
+        anfrage["commentary"]["style"] = "bissig"
+
+        resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
+
+        assert resp.status_code == 422
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+        commentary_service.add_commentary.assert_not_called()
 
     def test_leere_fassungen_gelten_als_nicht_vorhanden(self, dienste):
         """Sonst zeigte die Karte einen Reiter ohne Text."""

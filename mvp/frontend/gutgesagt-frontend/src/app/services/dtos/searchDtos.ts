@@ -1,6 +1,7 @@
 // Wire format is snake_case end-to-end (see CONTENT_MODEL.md "Decisions").
 
 import { BaseContentResult, BaseSearchResult, ContentReference } from "./commonDtos";
+import type { Stil, Zweck } from "../../shared/zweck-stil";
 
 // Request DTOs
 
@@ -34,7 +35,9 @@ export interface CommentarySearchResult extends BaseSearchResult {
 export interface CommentaryResult extends BaseContentResult {
     long_text: string;
     short_text: string;
-    style?: string;
+    /** Ohne Angabe: Kommentarspalte (#357). */
+    zweck?: Zweck;
+    style?: Stil | null;
 }
 
 export interface GenerictextSearchResult extends BaseSearchResult {

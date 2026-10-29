@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from domain.models.commentary import Zweck
 from domain.models.content_type import ContentType
 from domain.models.image import ImageSearchResult
 from domain.models.post import PostSearchResult
@@ -127,3 +128,43 @@ async def test_treffer_tragen_die_themen_der_aussage_ueber_die_sie_gefunden_wurd
     ]
     assert direkter_treffer.themen == []
     themen_service.themen_von.assert_called_once_with([aussage_id])
+
+
+def _kommentar_treffer(score: float, zweck: Zweck) -> SimpleNamespace:
+    return SimpleNamespace(
+        score=score,
+        commentary_result=SimpleNamespace(id=uuid.uuid4(), zweck=zweck),
+    )
+
+
+@pytest.mark.unit
+def test_kommentarspalten_antworten_stehen_vor_denen_fuer_die_eigenen_leute():
+    """Bei Aussagen zeigt die Suche zuerst Kommentarspalten-Antworten (#357)."""
+    orchestrator = SearchOrchestrator(
+        specs=[
+            ContentTypeSearchSpec(
+                ContentType.COMMENTARY, None, object, "commentary_result"
+            )
+        ],
+        reference_service=None,
+        usage_service=None,
+        voting_service=None,
+    )
+    eigene_hoch = _kommentar_treffer(0.95, Zweck.EIGENE_LEUTE)
+    spalte_mittel = _kommentar_treffer(0.9, Zweck.KOMMENTARSPALTE)
+    eigene_mittel = _kommentar_treffer(0.88, Zweck.EIGENE_LEUTE)
+    spalte_tief = _kommentar_treffer(0.85, Zweck.KOMMENTARSPALTE)
+    weggeschnitten = _kommentar_treffer(0.81, Zweck.KOMMENTARSPALTE)
+    orchestrator.results_for(ContentType.COMMENTARY).extend(
+        [spalte_tief, eigene_mittel, weggeschnitten, eigene_hoch, spalte_mittel]
+    )
+
+    orchestrator.sort_and_truncate(4)
+
+    # Erst nach Score gekuerzt: Die Reihenfolge aendert sich, die Auswahl nicht.
+    assert orchestrator.results_for(ContentType.COMMENTARY) == [
+        spalte_mittel,
+        spalte_tief,
+        eigene_hoch,
+        eigene_mittel,
+    ]

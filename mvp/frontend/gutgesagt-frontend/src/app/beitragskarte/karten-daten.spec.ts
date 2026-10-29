@@ -100,6 +100,22 @@ describe('karten-daten', () => {
       expect(daten.extra).toEqual({ kurz: 'kurz', lang: 'lang' });
     });
 
+    it('liest Zweck und Stil eines Kommentars (#357)', () => {
+      const eigene = ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'bissig' }));
+      const spalte = ausSuchergebnis(paket('commentary_result', { zweck: 'kommentarspalte', style: null }));
+      const ohneAngabe = ausSuchergebnis(paket('commentary_result'));
+
+      expect(eigene.extra?.fuerEigeneLeute).toBeTrue();
+      expect(eigene.extra?.stil).toBe('bissig');
+      expect(spalte.extra?.fuerEigeneLeute).toBeFalsy();
+      expect(spalte.extra?.stil).toBeUndefined();
+      expect(ohneAngabe.extra?.fuerEigeneLeute).toBeFalsy();
+    });
+
+    it('laesst einen unbekannten Stil weg', () => {
+      expect(ausSuchergebnis(paket('commentary_result', { style: 'sarkastisch' })).extra?.stil).toBeUndefined();
+    });
+
     it('setzt das Statement nur, wenn es einen Text hat', () => {
       const mit = ausSuchergebnis(
         paket('commentary_result', {}, {

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
 from core.logging import get_logger
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from services.content.base_content_service import BaseContentService
+from domain.models.commentary import Zweck
 from domain.models.content_type import ContentType
 from dtos.statement import themen_dtos
 
@@ -244,9 +245,19 @@ class SearchOrchestrator:
     # ------------------------------------------------------------------ #
 
     def sort_and_truncate(self, limit: int) -> None:
-        for content_type, results in self._results.items():
+        for spec in self._specs.values():
+            results = self._results[spec.content_type]
             results.sort(key=lambda x: x.score, reverse=True)
-            self._results[content_type] = results[:limit]
+            # Kommentarspalten-Antworten zuerst (#357): erst gekuerzt, dann stabil
+            # umsortiert - die Auswahl bleibt, nur Beitraege fuer die eigenen Leute
+            # ruecken ans Ende. Typen ohne Zweck bleiben, wie sie sind.
+            self._results[spec.content_type] = sorted(
+                results[:limit],
+                key=lambda x: getattr(
+                    getattr(x, spec.result_field, None), "zweck", None
+                )
+                == Zweck.EIGENE_LEUTE,
+            )
 
     def enrich_with_usage(self) -> None:
         for spec in self._specs.values():

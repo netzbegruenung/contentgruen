@@ -170,6 +170,7 @@ class DataProcessor:
             title=title,
             long_text=commentary_data.get("long_text", None),
             short_text=commentary_data.get("short_text", None),
+            zweck=commentary_data.get("zweck", None),
             style=commentary_data.get("style", None),
             references=commentary_references,
         )
@@ -447,6 +448,10 @@ class ContentOrchestrator:
                                 "title": {"type": "string"},
                                 "long_text": {"type": "string"},
                                 "short_text": {"type": "string"},
+                                "zweck": {
+                                    "type": "string",
+                                    "enum": ["kommentarspalte", "eigene_leute"],
+                                },
                                 "style": {"type": "string"},
                                 "references": {
                                     "type": "array",

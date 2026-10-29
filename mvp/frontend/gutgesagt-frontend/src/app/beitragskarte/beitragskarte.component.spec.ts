@@ -317,6 +317,30 @@ describe('BeitragskarteComponent', () => {
     }));
   });
 
+  describe('Zweck und Stil (#357)', () => {
+    it('zeigt den Stil und markiert Beitraege fuer die eigenen Leute', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'eigene_leute', style: 'persoenlich' })));
+
+      expect(element('.karte-eigene-leute')?.textContent).toContain('Für die eigenen Leute');
+      expect(element('.karte-stil')?.textContent).toContain('persönlich');
+    });
+
+    it('markiert Kommentarspalten-Antworten nicht und zeigt ohne Stil keinen', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { zweck: 'kommentarspalte' })));
+
+      expect(element('.karte-eigene-leute')).toBeNull();
+      expect(element('.karte-stil')).toBeNull();
+      expect(element('.karte-angaben')).toBeNull();
+    });
+
+    it('zeigt den Stil auch bei einer Kommentarspalten-Antwort', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { style: 'brueckenbauend' })));
+
+      expect(element('.karte-eigene-leute')).toBeNull();
+      expect(element('.karte-stil')?.textContent).toContain('brückenbauend');
+    });
+  });
+
   describe('Fassungen (#355)', () => {
     function nutzungsMelder(): jasmine.SpyObj<UsageTrackingService> {
       return TestBed.inject(UsageTrackingService) as jasmine.SpyObj<UsageTrackingService>;

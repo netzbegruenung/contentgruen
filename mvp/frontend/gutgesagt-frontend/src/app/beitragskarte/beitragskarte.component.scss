@@ -322,6 +322,38 @@
   background: var(--surface-variant);
 }
 
+// Zweck und Stil am Kommentar (#357): klein ueber dem Text, die Markierung betont
+.karte-angaben {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.karte-eigene-leute {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: var(--border-radius-large);
+  background: var(--einwurf-grund);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.angabe-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.karte-stil {
+  font-style: italic;
+}
+
 .post-herkunft {
   margin: 0;
   font-size: 13px;

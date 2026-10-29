@@ -5,6 +5,7 @@ import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-typ
 import { plattformAusUrl, plattformName } from '../shared/plattform';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import type { NutzungJeFassung } from '../shared/fassung';
+import { STIL_LABEL, Stil } from '../shared/zweck-stil';
 
 /**
  * Was eine Beitragskarte anzeigt, unabhaengig davon, woher die Daten kommen.
@@ -46,6 +47,10 @@ export interface KartenStatement {
 export interface KartenExtra {
   kurz?: string;
   lang?: string;
+  /** Am Kommentar (#357): der Stil, falls einer gewaehlt ist. */
+  stil?: Stil;
+  /** Am Kommentar (#357): geschrieben fuer die eigenen Leute; sonst Kommentarspalte. */
+  fuerEigeneLeute?: boolean;
   plattform?: string;
   postAutor?: string;
   postUrl?: string;
@@ -193,7 +198,11 @@ function befuellt(wert: unknown): string | undefined {
 function extra(typ: string | null, inhalt: Record<string, any>): KartenExtra | undefined {
   if (typ === 'commentary') {
     // Nur befuellte Fassungen: sonst zeigte die Karte einen Umschalter ohne Wirkung.
-    return { kurz: befuellt(inhalt['short_text']), lang: befuellt(inhalt['long_text']) };
+    return {
+      kurz: befuellt(inhalt['short_text']),
+      lang: befuellt(inhalt['long_text']),
+      ...zweckUndStil(inhalt),
+    };
   }
   if (typ === 'post') {
     return {
@@ -205,6 +214,15 @@ function extra(typ: string | null, inhalt: Record<string, any>): KartenExtra | u
     };
   }
   return undefined;
+}
+
+/** Nur Werte, die die Karte kennt: Ein Stil, den es nicht gibt, bekaeme kein Label. */
+function zweckUndStil(inhalt: Record<string, any>): Pick<KartenExtra, 'stil' | 'fuerEigeneLeute'> {
+  const stil = inhalt['style'];
+  return {
+    ...(stil in STIL_LABEL ? { stil: stil as Stil } : {}),
+    ...(inhalt['zweck'] === 'eigene_leute' ? { fuerEigeneLeute: true } : {}),
+  };
 }
 
 // Meine Beitraege
