@@ -170,6 +170,34 @@ describe('SiegelComponent', () => {
     el.remove();
   });
 
+  it('hält die Krone in jedem Winkel der Hand frei vom Daumen', () => {
+    /** Punkte auf dem Umriss eines Pfads, im Koordinatensystem des Sichtfelds. */
+    function umriss(pfad: SVGPathElement, wurzel: SVGSVGElement): DOMPoint[] {
+      const m = wurzel.getCTM()!.inverse().multiply(pfad.getCTM()!);
+      const laenge = pfad.getTotalLength();
+      return Array.from({ length: 200 }, (_, i) => pfad.getPointAtLength((laenge * i) / 200).matrixTransform(m));
+    }
+    // Halbe Strichstärken von Hand (2.6 bei Maßstab 1.6) und Krone, dazu Luft.
+    const mindestens = (2.6 * 1.6) / 2 + 0.5 + 1;
+
+    for (const guete of [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+      // Je Güte ein frisches Siegel: ohne Wechsel läuft keine Drehung, die Hand steht im Zielwinkel.
+      const f = TestBed.createComponent(SiegelComponent);
+      f.componentRef.setInput('guete', guete);
+      f.componentRef.setInput('krone', true);
+      f.detectChanges();
+      const el = f.nativeElement as HTMLElement;
+      document.body.appendChild(el);
+      const wurzel = el.querySelector<SVGSVGElement>('svg')!;
+      const hand = umriss(el.querySelector<SVGPathElement>('.siegel-hand path')!, wurzel);
+      const krone = umriss(el.querySelector<SVGPathElement>('.siegel-krone')!, wurzel);
+
+      const abstand = Math.min(...hand.flatMap((h) => krone.map((k) => Math.hypot(h.x - k.x, h.y - k.y))));
+      expect(abstand).withContext(`Güte ${guete}`).toBeGreaterThan(mindestens);
+      el.remove();
+    }
+  });
+
   it('gibt jedem Siegel einen eigenen Glanz-Verlauf, damit mehrere auf einer Seite stehen können', () => {
     zeige(7, { glanz: true });
     const zweites = TestBed.createComponent(SiegelComponent);

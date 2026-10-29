@@ -1,7 +1,8 @@
 <!--
     Sichtfeld 3.5 -1 57.5 64.5: eng um Blase und Hand in jedem Winkel (rechts reicht die
     waagrechte Hand bis 60.6, oben der senkrechte Daumen bis -0.6, unten die Spitze der
-    Blase bis 63). Die Krone ragt oben darüber hinaus (overflow: visible im Stylesheet).
+    Blase bis 63). Die Krone ragt oben links darüber hinaus (overflow: visible im Stylesheet);
+    links, weil die Hand oben rechts in jedem Winkel ihren Platz braucht.
     Blase unten links, die Hand dreht um ihre Mitte (36/24) und ragt oben rechts aus der Blase.
 -->
 <svg viewBox="3.5 -1 57.5 64.5" role="img" [attr.aria-label]="text">
@@ -32,7 +33,7 @@
         </g>
     </g>
     <path *ngIf="krone" class="siegel-krone"
-          d="M40 -6 L44 2 L49 -5 L54 2 L58 -6 L57 6 L41 6 Z"
+          d="M3.5 -6 L6.9 0.8 L11.2 -5.2 L15.4 0.8 L18.8 -6 L18 4.2 L4.4 4.2 Z"
           fill="#f2c300" stroke="#8a6d00" stroke-width="1" stroke-linejoin="round"/>
 </svg>
 <span *ngFor="let f of funken" class="siegel-funke" aria-hidden="true"
