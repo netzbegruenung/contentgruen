@@ -1,4 +1,4 @@
-from typing import List, Optional, Set
+from typing import AbstractSet, List, Optional, Set
 import asyncio
 import logging
 import uuid
@@ -20,12 +20,21 @@ from domain.models.content_status import AUSGEBLENDET_WERTE
 logger = logging.getLogger(__name__)
 
 
-def _unbeantwortete_suchanfrage():
+def _unbeantwortete_suchanfrage(auch: AbstractSet[uuid.UUID] = frozenset()):
     """
     Eine Suchanfrage, auf die noch niemand geantwortet hat - das, was nicht als
     kuratiert gilt. Warum nicht allein die Herkunft zaehlt: count_curated.
+
+    auch: Aussagen, die trotzdem nicht darunter fallen, etwa die Suchanfragen
+    ueber der Schwelle der Kennzahl "Suchen ohne Treffer" (#436).
     """
-    from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
+    from qdrant_client.models import (
+        Filter,
+        FieldCondition,
+        HasIdCondition,
+        MatchValue,
+        Range,
+    )
 
     return Filter(
         must=[
@@ -34,7 +43,10 @@ def _unbeantwortete_suchanfrage():
                 match=MatchValue(value=ContentOrigin.SEARCH_QUERY.value),
             ),
             FieldCondition(key="replysuggestions_count", range=Range(lt=1)),
-        ]
+        ],
+        must_not=(
+            [HasIdCondition(has_id=[str(i) for i in sorted(auch)])] if auch else None
+        ),
     )
 
 
@@ -94,9 +106,24 @@ class StatementRepository(
         # statements_with_commentaries and statements_with_commentsuggestions data
         pass
 
-    async def count_curated(self) -> int:
+    def _kuratiert_filter(self, auch: AbstractSet[uuid.UUID] = frozenset()):
+        """Sichtbare Aussagen ohne die unbeantworteten Suchanfragen (ausser auch)."""
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+
+        return Filter(
+            must=[
+                FieldCondition(
+                    key="content_type", match=MatchValue(value=self.content_type)
+                ),
+                *nur_sichtbar_bedingungen(),
+            ],
+            must_not=[_unbeantwortete_suchanfrage(auch)],
+        )
+
+    async def count_curated(self, auch: AbstractSet[uuid.UUID] = frozenset()) -> int:
         """
-        Zaehlt Statements ohne die unbeantworteten Suchanfragen.
+        Zaehlt Statements ohne die unbeantworteten Suchanfragen; die in auch
+        zaehlen trotzdem mit (#436).
 
         Nicht "origin != search_query": das Frontend haengt eine neue Antwort
         ueber findOrCreateStatement an ein bereits vorhandenes, hinreichend
@@ -111,27 +138,24 @@ class StatementRepository(
         Startseite zeigt damit gepflegte Substanz, und eine Suchanfrage zaehlt
         in dem Moment mit, in dem ihr jemand Inhalt zur Seite stellt.
         """
-        from qdrant_client.models import Filter, FieldCondition, MatchValue
-
         try:
+            # Nur sichtbare Aussagen, wie in der Suche.
             result = await self._shared_manager.async_client.count(
                 collection_name=self._shared_manager.collection_name,
-                count_filter=Filter(
-                    # Nur sichtbare Aussagen, wie in der Suche.
-                    must=[
-                        FieldCondition(
-                            key="content_type",
-                            match=MatchValue(value=self.content_type),
-                        ),
-                        *nur_sichtbar_bedingungen(),
-                    ],
-                    must_not=[_unbeantwortete_suchanfrage()],
-                ),
+                count_filter=self._kuratiert_filter(auch),
             )
             return result.count
         except Exception as e:
             logger.error(f"Failed to count curated statements: {e}", exc_info=True)
             return 0
+
+    async def get_all_curated(
+        self, limit: int, offset: int, auch: AbstractSet[uuid.UUID] = frozenset()
+    ) -> List[StatementDbEntry]:
+        """get_all ohne die unbeantworteten Suchanfragen, ausser denen in auch (#436)."""
+        return await self._get_all_gefiltert(
+            self._kuratiert_filter(auch), limit, offset
+        )
 
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
@@ -149,17 +173,7 @@ class StatementRepository(
         Treffer" dazu (UnbeantworteteAussagenService). Alle Treffer auf einmal,
         unsortiert; Qdrant scrollt in ID-Reihenfolge.
         """
-        from qdrant_client.models import FieldCondition, Filter, MatchValue
-
-        scroll_filter = Filter(
-            must=[
-                FieldCondition(
-                    key="content_type", match=MatchValue(value=self.content_type)
-                ),
-                *nur_sichtbar_bedingungen(),
-            ],
-            must_not=[_unbeantwortete_suchanfrage()],
-        )
+        scroll_filter = self._kuratiert_filter()
 
         aussagen: List[StatementDbEntry] = []
         offset = None
@@ -222,10 +236,14 @@ class StatementRepository(
         }
 
     async def search_curated(
-        self, query_text: str, limit: int
+        self,
+        query_text: str,
+        limit: int,
+        auch: AbstractSet[uuid.UUID] = frozenset(),
     ) -> List[StatementSearchResult]:
         """
-        Aehnliche Statements ohne die unbeantworteten Suchanfragen.
+        Aehnliche Statements ohne die unbeantworteten Suchanfragen, ausser denen
+        in auch (#436).
 
         Dasselbe Kriterium wie count_curated: Wer im Beitragsformular eine
         Aussage sucht, soll gepflegte Aussagen vorgeschlagen bekommen, nicht die
@@ -240,7 +258,7 @@ class StatementRepository(
                 # Suchanfragen.
                 filter_dict={
                     "must": nur_sichtbar_bedingungen(),
-                    "must_not": [_unbeantwortete_suchanfrage()],
+                    "must_not": [_unbeantwortete_suchanfrage(auch)],
                 },
             )
             return [

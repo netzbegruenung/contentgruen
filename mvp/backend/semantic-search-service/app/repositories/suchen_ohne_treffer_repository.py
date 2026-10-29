@@ -86,6 +86,22 @@ class SuchenOhneTrefferRepository:
                 for statement_id, anzahl, personen in session.execute(abfrage).all()
             ]
 
+    def ueber_der_schwelle(
+        self, seit_woche: date, mindestanzahl: int
+    ) -> List[uuid.UUID]:
+        """
+        Alle Aussage-IDs ab seit_woche mit mindestens mindestanzahl Personen,
+        ungeordnet und ohne Limit; dieselbe Schwelle wie haeufigste.
+        """
+        abfrage = (
+            select(SucheOhneTrefferZeile.statement_id)
+            .where(SucheOhneTrefferZeile.woche >= seit_woche)
+            .group_by(SucheOhneTrefferZeile.statement_id)
+            .having(func.sum(SucheOhneTrefferZeile.personen) >= mindestanzahl)
+        )
+        with self.db.get_session() as session:
+            return list(session.execute(abfrage).scalars().all())
+
 
 _repository: Optional[SuchenOhneTrefferRepository] = None
 

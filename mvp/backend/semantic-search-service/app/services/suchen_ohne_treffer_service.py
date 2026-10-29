@@ -51,7 +51,7 @@ import hashlib
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import List, Optional, Set
+from typing import FrozenSet, List, Optional, Set
 
 from core.logging import get_logger
 from domain.models.content_status import ContentStatus
@@ -260,6 +260,18 @@ class SuchenOhneTrefferService:
                 break
             offset += limit
         return ergebnis[:limit]
+
+    async def ueber_der_schwelle(
+        self, wochen: int = WOCHEN_STANDARD, heute: Optional[date] = None
+    ) -> FrozenSet[uuid.UUID]:
+        """
+        Alle Aussagen, nach denen im Zeitraum mindestens MINDESTANZAHL Personen ohne
+        Treffer gesucht haben, ohne Limit und ohne Blick auf den Zustand: Fuer
+        Nicht-Admins zaehlen sie wie gepflegte Aussagen (api/v1/statement.py, #436),
+        nur sichtbare filtert dort Qdrant.
+        """
+        seit_woche = wochenbeginn(heute or heute_utc()) - timedelta(weeks=wochen - 1)
+        return frozenset(self._repository.ueber_der_schwelle(seit_woche, MINDESTANZAHL))
 
     async def _sichtbare_aussage(self, statement_id: uuid.UUID):
         try:

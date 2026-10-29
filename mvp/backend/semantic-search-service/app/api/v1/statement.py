@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from dependencies import (
     get_aufrufer,
     get_statement_service,
+    get_suchen_ohne_treffer_service,
     get_unbeantwortete_aussagen_service,
     require_user,
 )
@@ -40,6 +41,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 )
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import SEARCH_QUERY_AUTHOR
+from services.suchen_ohne_treffer_service import SuchenOhneTrefferService
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 
 logger = get_logger(__name__)
@@ -53,10 +55,16 @@ async def read_test():
     return {"message": "This is a test endpoint"}
 
 
-# Retrieves all statements from the index
+# Alle Aussagen, seitenweise. Admins bekommen alle; alle anderen nur, was auch die
+# Oberflaeche zeigt (#436): keine unbeantwortete Suchanfrage einer einzelnen
+# Person, nur die ueber der Schwelle der Kennzahl "Suchen ohne Treffer", wie in
+# "Hier fehlt eine Antwort".
 @router.get("/getAll", response_model=StatementGetAllResponse)
 async def get_all(
     statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     aufrufer: Aufrufer = Depends(get_aufrufer),
@@ -65,9 +73,17 @@ async def get_all(
         logger.debug("/getAll was called")
 
         offset = (page - 1) * page_size
-        statement_index_results = await statement_service.get_all(
-            limit=page_size, offset=offset
-        )
+        if aufrufer.ist_admin:
+            statement_index_results = await statement_service.get_all(
+                limit=page_size, offset=offset
+            )
+            total_records_count = await statement_service.count()
+        else:
+            auch = await suchen_ohne_treffer.ueber_der_schwelle()
+            statement_index_results = await statement_service.get_all_curated(
+                limit=page_size, offset=offset, auch=auch
+            )
+            total_records_count = await statement_service.count_curated(auch=auch)
 
         logger.debug(f"/getAll got {len(statement_index_results)} results")
 
@@ -76,7 +92,7 @@ async def get_all(
             results=als_responses(
                 AussageResponse, statement_index_results, aufrufer, AUSSAGE
             ),
-            total_records_count=await statement_service.count(),
+            total_records_count=total_records_count,
         )
 
         return response
@@ -167,22 +183,33 @@ async def vorab_anlegen(
     )
 
 
-# Searches for statements in the statement_index using similarity search
+# Aehnliche Aussagen. Fuer Nicht-Admins dieselbe Auswahl wie in getAll (#436);
+# nur_kuratiert laesst fuer alle auch die Suchanfragen ueber der Schwelle weg
+# (Vorschlaege im Antwort-auf-Feld).
 @router.post("/searchStatements", response_model=StatementSearchResponse)
 async def search_statements(
     request: SearchStatementByTextRequest,
     statement_service: StatementService = Depends(get_statement_service),
+    suchen_ohne_treffer: SuchenOhneTrefferService = Depends(
+        get_suchen_ohne_treffer_service
+    ),
     aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> StatementSearchResponse:
     try:
         logger.debug("/searchStatements was called")
 
-        if request.nur_kuratiert or request.min_similarity is not None:
+        nur_kuratiert = request.nur_kuratiert or not aufrufer.ist_admin
+        auch = frozenset()
+        if not request.nur_kuratiert and not aufrufer.ist_admin:
+            auch = await suchen_ohne_treffer.ueber_der_schwelle()
+
+        if nur_kuratiert or request.min_similarity is not None:
             statement_index_results = await statement_service.search_filtered(
                 request.query_text,
                 request.limit,
-                nur_kuratiert=request.nur_kuratiert,
+                nur_kuratiert=nur_kuratiert,
                 min_similarity=request.min_similarity,
+                auch=auch,
             )
         else:
             statement_index_results = await statement_service.search(

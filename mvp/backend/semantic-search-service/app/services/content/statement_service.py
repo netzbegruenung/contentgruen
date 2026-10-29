@@ -3,7 +3,7 @@ import contextlib
 import datetime
 from collections import defaultdict
 from domain.models.zeit import utc_jetzt
-from typing import Dict, List, Optional, Tuple
+from typing import AbstractSet, Dict, List, Optional, Tuple
 import uuid
 import logging
 
@@ -98,6 +98,7 @@ class StatementService(
         limit: int = 10,
         nur_kuratiert: bool = False,
         min_similarity: Optional[float] = None,
+        auch: AbstractSet[uuid.UUID] = frozenset(),
     ) -> List[StatementSearchResult]:
         """
         Aehnliche Statements fuer die Vorschlaege im Beitragsformular.
@@ -105,11 +106,13 @@ class StatementService(
         Args:
         - nur_kuratiert: Unbeantwortete Suchanfragen weglassen (Kriterium wie
           count_curated).
+        - auch: Mit nur_kuratiert diese Suchanfragen trotzdem behalten, etwa die
+          ueber der Schwelle (#436).
         - min_similarity: Nur Treffer mit mindestens diesem Score. Gefiltert wird
           nach der Suche; es kommen also hoechstens `limit` Treffer zurueck.
         """
         if nur_kuratiert:
-            results = await self._repository.search_curated(query_text, limit)
+            results = await self._repository.search_curated(query_text, limit, auch)
         else:
             results = await self._repository.search(query_text, limit)
 
@@ -117,14 +120,21 @@ class StatementService(
             return results
         return [r for r in results if r.score is not None and r.score >= min_similarity]
 
-    async def count_curated(self) -> int:
+    async def count_curated(self, auch: AbstractSet[uuid.UUID] = frozenset()) -> int:
         """
-        Anzahl der Statements ohne die unbeantworteten Suchanfragen.
+        Anzahl der Statements ohne die unbeantworteten Suchanfragen, ausser denen
+        in auch.
 
         Grundlage des Zaehlers "Aussagen" auf der Startseite; die Begruendung
         des Kriteriums steht in StatementRepository.count_curated.
         """
-        return await self._repository.count_curated()
+        return await self._repository.count_curated(auch)
+
+    async def get_all_curated(
+        self, limit: int, offset: int, auch: AbstractSet[uuid.UUID] = frozenset()
+    ) -> List[StatementDbEntry]:
+        """Wie get_all, ohne die unbeantworteten Suchanfragen ausser denen in auch."""
+        return await self._repository.get_all_curated(limit, offset, auch)
 
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
