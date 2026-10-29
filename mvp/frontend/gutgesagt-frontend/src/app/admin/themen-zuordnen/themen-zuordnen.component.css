@@ -1,0 +1,44 @@
+.themen-zuordnen {
+  padding: var(--spacing-lg);
+  max-width: 900px;
+}
+
+.hinweis,
+.stand {
+  color: var(--text-secondary);
+}
+
+.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+}
+
+.fehler {
+  color: #b00020;
+}
+
+.aussagen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.aussage {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--disabled-bg, #f0f0f0);
+}
+
+.aussage-text {
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+.nicht-im-testset {
+  margin: -4px 0 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}

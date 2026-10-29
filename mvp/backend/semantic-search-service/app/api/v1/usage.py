@@ -20,6 +20,7 @@ from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
+from domain.models.commentary import Fassung
 from domain.models.content_type import ContentType
 from dtos.beitrag import (
     BeitragResponse,
@@ -52,6 +53,9 @@ class TrackUsageRequest(BaseModel):
     """Request model for tracking usage."""
 
     session_id: Optional[str] = Field(None, max_length=255)
+    # Die kopierte Fassung eines Kommentars (#355); bei anderen Beitragstypen
+    # ohne Bedeutung und nicht gespeichert.
+    fassung: Optional[Fassung] = None
 
     @validator("session_id")
     def validate_session_id(cls, v):
@@ -223,12 +227,23 @@ async def track_content_usage(
         # existiert der Rohwert im weiteren Ablauf nicht mehr.
         device_category = derive_device_category(user_agent)
 
+        # Fassungen hat nur der Kommentar. Bei einem unlesbaren Beitrag ist der Typ
+        # unbekannt: Dann zaehlt die Nutzung, aber keine Fassung.
+        fassung = (
+            body.fassung.value
+            if body.fassung
+            and beitrag is not None
+            and beitrag.content_type == ContentType.COMMENTARY
+            else None
+        )
+
         # Track usage
         logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
             session_id=body.session_id,
             device_category=device_category,
+            fassung=fassung,
         )
 
         if not success:

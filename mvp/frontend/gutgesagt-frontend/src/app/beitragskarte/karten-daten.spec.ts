@@ -190,6 +190,23 @@ describe('karten-daten', () => {
       expect(ausBeitrag(eintrag()).nutzungLetzte7Tage).toBe(0);
     });
 
+    it('uebernimmt am Kommentar die Fassungen und die Nutzung je Fassung (#355)', () => {
+      const je = { kurz: { nutzung: 3, letzte_7_tage: 1 }, mittel: { nutzung: 4, letzte_7_tage: 0 } };
+      const daten = ausBeitrag(
+        eintrag({ content_type: 'commentary', short_text: 'Kurz.', long_text: ' ', nutzung_je_fassung: je }),
+      );
+
+      expect(daten.extra).toEqual({ kurz: 'Kurz.', lang: undefined });
+      expect(daten.nutzungJeFassung).toEqual(je);
+    });
+
+    it('laesst Fassungen bei anderen Beitragstypen weg', () => {
+      const daten = ausBeitrag(eintrag({ short_text: 'Kurz.' }));
+
+      expect(daten.extra).toBeUndefined();
+      expect(daten.nutzungJeFassung).toBeUndefined();
+    });
+
     it('uebernimmt das Kennzeichen eigener Beitrag aus dem Einzelabruf (#333)', () => {
       // Das Beitrag-Sheet im Fangkorb laedt per getById: ohne Kennung, mit Kennzeichen.
       const ohneKennung = eintrag({ original_author: null, ist_eigener_beitrag: true });

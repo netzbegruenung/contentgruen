@@ -1,8 +1,11 @@
+import uuid
+
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from dtos.beitrag import HintergrundinfoResponse, KommentarResponse, PostResponse
 from dtos.image import BildResponse
+from dtos.statement import ThemaDto
 
 # TODO: Evaluate usage of camelize
 
@@ -37,6 +40,10 @@ class SearchByTextRequest(BaseModel):
 
 # Je Treffer der Beitrag als Response-DTO (dtos/beitrag.py): Ein DbEntry wird beim
 # Anlegen des Treffers umgewandelt, Anzeigename und ist_eigener_beitrag stehen dort.
+#
+# statement_id und themen: die Aussage, ueber die der Beitrag gefunden wurde, und
+# deren Themen, fuer den Themenfilter der Ergebnisseite (#363). Ein direkter Treffer
+# ohne Aussage hat keine ID und keine Themen.
 
 
 class CommentarySearchResult(BaseModel):
@@ -44,6 +51,8 @@ class CommentarySearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
+    statement_id: Optional[uuid.UUID] = None
+    themen: List[ThemaDto] = []
     commentary_result: KommentarResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
@@ -56,6 +65,8 @@ class GenericTextSearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
+    statement_id: Optional[uuid.UUID] = None
+    themen: List[ThemaDto] = []
     generictext_result: HintergrundinfoResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
@@ -68,6 +79,8 @@ class PostSearchResult(BaseModel):
     statement_text: str
     statement_similarity_score: float
     reply_relevance: float
+    statement_id: Optional[uuid.UUID] = None
+    themen: List[ThemaDto] = []
     post_result: PostResponse
     user_vote: Optional[str] = None  # "like", "dislike", or None
     # Polarity filtering metadata
@@ -80,6 +93,8 @@ class ImageSearchResult(BaseModel):
     statement_text: Optional[str] = None
     statement_similarity_score: Optional[float] = None
     reply_relevance: Optional[float] = None
+    statement_id: Optional[uuid.UUID] = None
+    themen: List[ThemaDto] = []
     image_result: BildResponse
     user_vote: Optional[str] = None
     polarity_mismatch_detected: Optional[bool] = None

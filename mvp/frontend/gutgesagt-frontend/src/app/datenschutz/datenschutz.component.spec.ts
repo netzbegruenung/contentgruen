@@ -98,14 +98,65 @@ describe('DatenschutzComponent', () => {
     });
   });
 
-  describe('Beitrag löschen durch den Autor (#250)', () => {
-    it('sagt, dass ein gelöschter Beitrag nur ausgeblendet wird und erst auf Antrag ganz entfernt', () => {
+  describe('Beitrag löschen durch den Autor (#250, #421)', () => {
+    it('sagt, dass ein gelöschter Beitrag nach 30 Tagen samt Bewertungen endgültig entfernt wird', () => {
       const text = abschnitt('Beiträge, die du einstellst');
 
       expect(text).toContain('nicht sofort aus unseren Daten entfernt');
       expect(text).toContain('lässt sich nicht zurückholen');
-      expect(text).toContain('Vollständig entfernt wird er nur, wenn du uns darum bittest');
+      expect(text).toContain('Er bleibt noch 30 Tage mit deiner Kennung gespeichert');
+      expect(text).toContain('Danach entfernen wir ihn endgültig, samt der Bewertungen daran');
+      expect(text).toContain('spätestens 31 Tage nach dem Löschen');
+      expect(text).not.toContain('Vollständig entfernt wird er nur');
       expect(abschnitt('Deine Rechte')).toContain('Das gilt auch für Beiträge, die du selbst gelöscht hast.');
+    });
+  });
+
+  describe('Löschfristen (#421)', () => {
+    it('Meldungen: 180 Tage nach der Bearbeitung, offene ohne Frist', () => {
+      const text = abschnitt('Meldungen von Beiträgen');
+
+      expect(text).toContain('180 Tage nach ihrer Bearbeitung automatisch');
+      expect(text).toContain('Offene Meldungen haben keine Frist');
+      expect(text).toContain('Artikel 20 DSA');
+      expect(text).not.toContain('keine Löschfrist');
+    });
+
+    it('Einwürfe: 365 Tage nach der letzten Arbeit, ausformulierte so lange wie ihr Beitrag', () => {
+      const text = abschnitt('Einwürfe in den Fangkorb');
+
+      expect(text).toContain('365 Tage nach der letzten Arbeit daran');
+      expect(text).toContain('das gilt auch für verworfene Einwürfe');
+      expect(text).toContain('bleibt er so lange wie dieser Beitrag');
+      expect(text).not.toContain('keine Löschfrist');
+    });
+
+    it('Bewertungen: gehen mit dem endgültig entfernten Beitrag', () => {
+      const text = abschnitt('Bewertungen');
+
+      expect(text).toContain('der bewertete Beitrag endgültig entfernt wird');
+      expect(text).not.toContain('keine Löschfrist');
+    });
+  });
+
+  describe('Fassungen (#355)', () => {
+    it('nennt die kopierte Fassung eines Kommentars und den Zähler je Fassung', () => {
+      const text = abschnitt('Verwendung von Beiträgen');
+
+      expect(text).toContain('bei einem Kommentar auch welche Fassung (kurz, mittel oder lang)');
+      expect(text).toContain('Zähler pro Beitrag, bei Kommentaren auch je Fassung');
+    });
+  });
+
+  describe('Gegenlesen (#358)', () => {
+    it('nennt feste Regeln ohne KI, keine Speicherung und die flüchtige Zählung', () => {
+      const text = abschnitt('Gegenlesen beim Schreiben');
+
+      expect(text).toContain('gegen feste Schreibregeln');
+      expect(text).toContain('ohne KI');
+      expect(text).toContain('wir speichern weder deinen Entwurf noch die Anmerkungen');
+      expect(text).toContain('höchstens etwa elf Minuten');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe b DSGVO');
     });
   });
 

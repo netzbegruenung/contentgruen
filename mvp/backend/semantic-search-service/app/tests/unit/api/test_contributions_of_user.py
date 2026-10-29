@@ -57,6 +57,9 @@ def nutzung():
     service.nutzung_letzte_7_tage_nachtragen.side_effect = lambda eintraege: [
         {**eintrag, "nutzung_letzte_7_tage": 2} for eintrag in eintraege
     ]
+    service.nutzung_je_fassung_nachtragen.side_effect = lambda eintraege: [
+        {**eintrag, "nutzung_je_fassung": None} for eintrag in eintraege
+    ]
     return service
 
 
@@ -245,3 +248,42 @@ def test_zuwachs_nicht_lesbar_behaelt_die_nutzung(client, repository, nutzung):
     assert response.status_code == 200
     eintrag = response.json()["results"][0]
     assert (eintrag["usage_count"], eintrag["nutzung_letzte_7_tage"]) == (7, 0)
+
+
+def test_liefert_fassungen_und_nutzung_je_fassung(client, repository, nutzung):
+    repository.getByAuthor.return_value = [
+        beitrag(
+            title="Wärmepumpe lohnt sich auch im Altbau",
+            short_text="Kurz gesagt: ja.",
+            long_text="Die lange Begründung.",
+        )
+    ]
+    je_fassung = {
+        "kurz": {"nutzung": 3, "letzte_7_tage": 1},
+        "mittel": {"nutzung": 4, "letzte_7_tage": 0},
+        "lang": {"nutzung": 0, "letzte_7_tage": 0},
+    }
+    nutzung.nutzung_je_fassung_nachtragen.side_effect = lambda eintraege: [
+        {**eintrag, "nutzung_je_fassung": je_fassung} for eintrag in eintraege
+    ]
+
+    [eintrag] = client.get(URL, headers={"X-User": "person-1"}).json()["results"]
+
+    assert (eintrag["short_text"], eintrag["long_text"]) == (
+        "Kurz gesagt: ja.",
+        "Die lange Begründung.",
+    )
+    assert eintrag["nutzung_je_fassung"] == je_fassung
+
+
+def test_nutzung_je_fassung_nicht_lesbar_behaelt_die_nutzung(
+    client, repository, nutzung
+):
+    repository.getByAuthor.return_value = [beitrag(title="Ein Kommentar mit Haltung")]
+    nutzung.nutzung_je_fassung_nachtragen.side_effect = RuntimeError("weg")
+
+    response = client.get(URL, headers={"X-User": "person-1"})
+
+    assert response.status_code == 200
+    [eintrag] = response.json()["results"]
+    assert (eintrag["usage_count"], eintrag["nutzung_je_fassung"]) == (7, None)

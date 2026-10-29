@@ -44,6 +44,8 @@ def moderation(real_embeddings_manager):
         moderation_repo=QdrantModerationRepository(
             embeddings_manager=real_embeddings_manager
         ),
+        vote_repo=MagicMock(),
+        raw_input_repo=MagicMock(),
     )
 
 

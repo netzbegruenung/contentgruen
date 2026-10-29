@@ -1,0 +1,38 @@
+.themen-auswahl,
+.themen-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.thema-chip {
+  border: 1px solid var(--primary-dark);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--primary-dark);
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.thema-chip.gewaehlt {
+  background: var(--primary-dark);
+  color: var(--bg-surface);
+}
+
+.thema-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.thema-chip:focus-visible {
+  outline: 2px solid var(--primary-dark);
+  outline-offset: 2px;
+}
+
+.themen-hinweis {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}

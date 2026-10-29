@@ -13,4 +13,6 @@ Ein Einwurf ist Arbeit, kein Inhalt: Er wird nicht gesucht, nicht kopiert, nicht
 
 ## Consequences
 
-Jede weitere Arbeitsform braucht bis zum allgemeinen Modell eigene Tabellen und Verknüpfungen. Die Verknüpfung Einwurf → Beitrag ist n:m, und Einwürfe werden nie gelöscht, damit Einwerfer, Destillierer und Ausformulierer rekonstruierbar bleiben.
+Jede weitere Arbeitsform braucht bis zum allgemeinen Modell eigene Tabellen und Verknüpfungen. Die Verknüpfung Einwurf → Beitrag ist n:m, und Einwürfe, die in einem Beitrag ausformuliert sind, werden nicht gelöscht, solange es den Beitrag gibt, damit Einwerfer, Destillierer und Ausformulierer rekonstruierbar bleiben.
+
+Nachtrag (#421): Ursprünglich hieß es „Einwürfe werden nie gelöscht“. Seit #421 löscht ein täglicher Task Einwürfe, die in keinem Beitrag ausformuliert sind, nach ihrer Löschfrist (`docs/LOESCHKONZEPT.md`, „Fristen“). Die Herkunft eines bestehenden Beitrags bleibt rekonstruierbar; für einen Einwurf, aus dem nichts geworden ist, gibt es nichts zu rekonstruieren, und Speicherbegrenzung (Art. 5 Abs. 1 lit. e DSGVO) verlangt eine Frist.

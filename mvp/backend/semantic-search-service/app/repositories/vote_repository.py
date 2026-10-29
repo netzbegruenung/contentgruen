@@ -103,6 +103,15 @@ class VoteRepository:
             )
             return result.rowcount > 0
 
+    def loeschen_fuer_beitrag(self, content_id: uuid.UUID) -> int:
+        """Alle Stimmen zu einem Beitrag loeschen, der endgueltig entfernt wird."""
+        with self.db.get_session() as session:
+            result = session.execute(
+                text("DELETE FROM votes WHERE content_id = :content_id"),
+                {"content_id": str(content_id)},
+            )
+            return result.rowcount
+
     def get_user_vote(self, user_id: str, content_id: uuid.UUID) -> Optional[Vote]:
         """Get a user's vote for a specific content item."""
         query = """

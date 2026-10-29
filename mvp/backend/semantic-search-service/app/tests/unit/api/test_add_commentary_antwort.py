@@ -520,6 +520,52 @@ class TestAddCommentaryAntwort:
 
         assert resp.status_code == 200
 
+    def test_kurz_und_lang_werden_gespeichert(self, dienste):
+        """Die Fassungen Kurz und Lang sind optional (#355)."""
+        anfrage = _anfrage()
+        anfrage["commentary"]["short_text"] = "Die Pumpe rechnet sich."
+        anfrage["commentary"]["long_text"] = "Mit Förderung und Strompreis gerechnet."
+
+        resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
+
+        assert resp.status_code == 200
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+        gespeichert = commentary_service.add_commentary.call_args.args[0]
+        assert (gespeichert.short_text, gespeichert.long_text) == (
+            "Die Pumpe rechnet sich.",
+            "Mit Förderung und Strompreis gerechnet.",
+        )
+
+    def test_leere_fassungen_gelten_als_nicht_vorhanden(self, dienste):
+        """Sonst zeigte die Karte einen Reiter ohne Text."""
+        anfrage = _anfrage()
+        anfrage["commentary"]["short_text"] = "   "
+        anfrage["commentary"]["long_text"] = ""
+
+        resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
+
+        assert resp.status_code == 200
+        commentary_service = app.dependency_overrides[get_commentary_service]()
+        gespeichert = commentary_service.add_commentary.call_args.args[0]
+        assert (gespeichert.short_text, gespeichert.long_text) == (None, None)
+
+    @pytest.mark.parametrize(
+        "feld, zeichen, status",
+        [
+            ("short_text", 280, 200),
+            ("short_text", 281, 422),
+            ("long_text", 2000, 200),
+            ("long_text", 2001, 422),
+        ],
+    )
+    def test_fassungen_haben_eine_hoechstlaenge(self, dienste, feld, zeichen, status):
+        anfrage = _anfrage()
+        anfrage["commentary"][feld] = "x" * zeichen
+
+        resp = TestClient(app).post(ADD_URL, json=anfrage, headers=HEADERS)
+
+        assert resp.status_code == status
+
     def test_trotz_dublette_von_legt_den_kommentar_an(self, dienste):
         """Die Person hat den vorhandenen gesehen und speichert trotzdem."""
         commentary_id, _ = dienste

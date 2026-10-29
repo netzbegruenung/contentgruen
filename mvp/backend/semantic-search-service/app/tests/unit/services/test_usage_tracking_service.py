@@ -74,6 +74,8 @@ class TestUsageTrackingService:
             "event_type",
             "session_id",
             "device_category",
+            # Welche Fassung eines Kommentars kopiert wurde (#355), kein Personenbezug.
+            "fassung",
         }
 
     def test_track_content_usage_invalid_uuid(self, service, mock_repository):
@@ -228,4 +230,87 @@ class TestNutzungSeitLetztemBesuch:
         )
         gesehen.neu_seit_letztem_besuch.assert_called_once_with(
             "kim-1", nutzung_jetzt=9
+        )
+
+
+class TestNutzungJeFassungNachtragen:
+    """
+    "Meine Beitraege" zeigt am Kommentar Nutzung und Zuwachs je Fassung (#355): nur
+    fuer die Fassungen, die er hat, und ungenutzte mit 0.
+    """
+
+    @pytest.fixture
+    def mock_repository(self):
+        return Mock()
+
+    @pytest.fixture
+    def service(self, mock_repository):
+        with patch(
+            "services.usage_tracking_service.get_usage_repository",
+            return_value=mock_repository,
+        ):
+            return UsageTrackingService()
+
+    def test_nutzung_je_fassung_nachtragen_nur_vorhandene_fassungen(
+        self, service, mock_repository
+    ):
+        kommentar = str(uuid.uuid4())
+        mock_repository.get_nutzung_je_fassung_batch.return_value = {
+            kommentar: {
+                "kurz": {"nutzung": 3, "letzte_7_tage": 1},
+                # Die Langfassung gibt es nicht (mehr): nicht zeigen.
+                "lang": {"nutzung": 2, "letzte_7_tage": 0},
+            }
+        }
+
+        [eintrag] = service.nutzung_je_fassung_nachtragen(
+            [
+                {
+                    "id": kommentar,
+                    "content_type": "commentary",
+                    "short_text": "Kurz und klar.",
+                    "long_text": "  ",
+                }
+            ]
+        )
+
+        assert eintrag["nutzung_je_fassung"] == {
+            "kurz": {"nutzung": 3, "letzte_7_tage": 1},
+            "mittel": {"nutzung": 0, "letzte_7_tage": 0},
+        }
+
+    def test_nutzung_je_fassung_nachtragen_andere_typen_ohne(
+        self, service, mock_repository
+    ):
+        bild = str(uuid.uuid4())
+        mock_repository.get_nutzung_je_fassung_batch.return_value = {bild: {}}
+
+        [eintrag] = service.nutzung_je_fassung_nachtragen(
+            [{"id": bild, "content_type": "image"}]
+        )
+
+        assert eintrag["nutzung_je_fassung"] is None
+        mock_repository.get_nutzung_je_fassung_batch.assert_called_once_with([])
+
+    def test_nutzung_je_fassung_nachtragen_ungueltige_id_betrifft_nur_sich(
+        self, service, mock_repository
+    ):
+        kommentar = str(uuid.uuid4())
+        mock_repository.get_nutzung_je_fassung_batch.return_value = {
+            kommentar: {"mittel": {"nutzung": 2, "letzte_7_tage": 1}}
+        }
+
+        kaputt, gut = service.nutzung_je_fassung_nachtragen(
+            [
+                {"id": "keine-uuid", "content_type": "commentary"},
+                {"id": kommentar, "content_type": "commentary"},
+            ]
+        )
+
+        assert kaputt["nutzung_je_fassung"] is None
+        assert gut["nutzung_je_fassung"] == {
+            "mittel": {"nutzung": 2, "letzte_7_tage": 1}
+        }
+        mock_repository.get_nutzung_je_fassung_batch.assert_called_once_with(
+            [uuid.UUID(kommentar)]
         )

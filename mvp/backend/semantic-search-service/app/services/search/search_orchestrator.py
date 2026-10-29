@@ -13,12 +13,16 @@ characterization test (tests/unit/api/test_search_ranking.py) pins it.
 """
 
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type
 
 from core.logging import get_logger
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from services.content.base_content_service import BaseContentService
 from domain.models.content_type import ContentType
+from dtos.statement import themen_dtos
+
+if TYPE_CHECKING:
+    from services.aussage_themen_service import AussageThemenService
 
 logger = get_logger(__name__)
 
@@ -82,9 +86,11 @@ class SearchOrchestrator:
         reply_relevance: float,
         content_result,
         polarity_info=None,
+        statement_id=None,
     ):
         kwargs = {
             "score": score,
+            "statement_id": statement_id,
             "statement_text": statement_text,
             "statement_similarity_score": statement_similarity_score,
             "reply_relevance": reply_relevance,
@@ -171,6 +177,7 @@ class SearchOrchestrator:
                         reply_relevance=replysuggestion.relevance,
                         content_result=content_result,
                         polarity_info=polarity_metadata.get(statement_result.id),
+                        statement_id=statement_result.id,
                     )
                 )
 
@@ -259,6 +266,26 @@ class SearchOrchestrator:
             enriched = self._usage_service.enrich_content_with_usage(content_dicts)
             for content_obj, enriched_item in zip(content_objs, enriched):
                 content_obj.usage_count = enriched_item.get("usage_count", 0)
+
+    def themen_ergaenzen(self, themen_service: "AussageThemenService") -> None:
+        """
+        Jeder Treffer bekommt die Themen der Aussage, ueber die er gefunden wurde,
+        aus einer Abfrage fuer alle Treffer. Ein direkter Treffer hat keine Aussage
+        und damit keine Themen.
+        """
+        treffer = [
+            result
+            for spec in self._specs.values()
+            for result in self._results[spec.content_type]
+            if result.statement_id is not None
+        ]
+        if not treffer:
+            return
+        themen = themen_service.themen_von(
+            list(dict.fromkeys(result.statement_id for result in treffer))
+        )
+        for result in treffer:
+            result.themen = themen_dtos(themen.get(result.statement_id, ()))
 
     def fuer_aufrufer(self, aufrufer: Aufrufer) -> None:
         """

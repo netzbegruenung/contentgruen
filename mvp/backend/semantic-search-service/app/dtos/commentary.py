@@ -13,6 +13,10 @@ from dtos.beitrag import KommentarTreffer
 AUSSAGE_MIN_ZEICHEN = 10
 
 KOMMENTAR_TEXT_MAX = 500
+# Die Fassungen Kurz und Lang (#355): Kurz passt auf X und Bluesky, Lang laesst
+# Platz fuer Begruendung und Herkunft.
+KURZFASSUNG_MAX = 280
+LANGFASSUNG_MAX = 2000
 
 
 class ReferenceInput(BaseModel):
@@ -73,6 +77,23 @@ class AddCommentaryRequest(BaseModel):
                 f"Der Kommentartext darf hoechstens {KOMMENTAR_TEXT_MAX} Zeichen lang sein"
             )
         return commentary
+
+    # Kurz und Lang sind optional; leer heisst "keine", sonst zeigte die Karte einen
+    # Reiter ohne Text. Wie beim Haupttext nur beim Anlegen begrenzt.
+    @field_validator("commentary")
+    @classmethod
+    def fassungen_leer_oder_begrenzt(cls, commentary: Commentary) -> Commentary:
+        kurz = (commentary.short_text or "").strip() or None
+        lang = (commentary.long_text or "").strip() or None
+        if kurz and len(kurz) > KURZFASSUNG_MAX:
+            raise ValueError(
+                f"Die Kurzfassung darf hoechstens {KURZFASSUNG_MAX} Zeichen lang sein"
+            )
+        if lang and len(lang) > LANGFASSUNG_MAX:
+            raise ValueError(
+                f"Die Langfassung darf hoechstens {LANGFASSUNG_MAX} Zeichen lang sein"
+            )
+        return commentary.model_copy(update={"short_text": kurz, "long_text": lang})
 
 
 class AddCommentaryResponse(BaseModel):

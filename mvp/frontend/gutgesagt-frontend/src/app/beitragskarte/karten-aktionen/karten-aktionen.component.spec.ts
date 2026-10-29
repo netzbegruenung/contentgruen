@@ -420,7 +420,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.kopieren();
 
       expect(clipboard.copy).toHaveBeenCalledWith('Test text');
-      expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID);
+      expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID, undefined);
       expect(kopiert).toHaveBeenCalled();
     });
 
@@ -453,7 +453,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       component.kopierenMitHerkunft();
 
       expect(clipboard.copy).toHaveBeenCalledWith('Test text\n\nHerkunft: https://example.org');
-      expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID);
+      expect(usage.trackContentUsage).toHaveBeenCalledWith(INHALT_ID, undefined);
       expect(kopiert).toHaveBeenCalled();
     });
 

@@ -1,8 +1,97 @@
 <div class="about-container">
   <!-- Hero Section -->
   <section class="hero-section">
+    <img class="hero-logo" src="marke/logo.svg" alt="" width="96" height="96">
     <h1 class="hero-title">Über Gut gesagt</h1>
-    <p class="subtitle">Eine intelligente Content-Datenbank für grüne Politik und digitalen Aktivismus</p>
+    <p class="subtitle">Antworten, die Unentschiedene mitnehmen. Gesammelt und verbessert von vielen.</p>
+  </section>
+
+  <!-- Wofuer -->
+  <section class="content-section zweck">
+    <h2>Wofür es Gut gesagt gibt</h2>
+    <p>
+      Unter einem Post steht eine Aussage, und du willst gut darauf antworten. Mit Gut gesagt
+      findest du schnell eine passende Antwort, kopierst sie und postest sie. Du suchst mit
+      einem ganzen Satz, so wie die Aussage gefallen ist.
+    </p>
+    <p>
+      Die Antworten schreiben viele Menschen gemeinsam. Andere verbessern sie, bewerten sie und
+      nutzen sie. So wird der Bestand mit jeder Person besser, die mitmacht.
+    </p>
+  </section>
+
+  <!-- Zielgruppe -->
+  <section class="content-section mitlesende">
+    <h2>Für die Mitlesenden</h2>
+    <p>
+      Wer in einer Kommentarspalte antwortet, schreibt selten für die Person, die die Aussage
+      gemacht hat. Viele andere lesen still mit und haben sich noch nicht entschieden. Für diese
+      Unentschiedenen sind die Antworten hier gedacht: kurz, freundlich, in Alltagswörtern. Sie
+      fangen bei dem an, was uns verbindet, und sagen, wofür wir sind.
+    </p>
+    <p class="nicht-jede-aussage">{{ nichtJedeAussage }}</p>
+  </section>
+
+  <!-- Mitmachen -->
+  <section class="content-section mitmachen">
+    <h2>So machst du mit</h2>
+    <ul>
+      <li>
+        <strong>Suchen und nutzen:</strong> Suchen und lesen kann jede Person, auch ohne
+        Anmeldung. Kopiert jemand einen fremden Beitrag, zählt das als Nutzung und zeigt, dass der
+        Beitrag hilft.
+      </li>
+      <li>
+        <strong>Bewerten:</strong> Angemeldet gibst du Beiträgen deine Stimme. So sieht man,
+        welche Antworten gut ankommen.
+      </li>
+      <li>
+        <strong>Neue Beiträge in drei Schritten:</strong> Jeder Schritt kann von einer anderen
+        Person kommen.
+        <ol class="kette">
+          <li><strong>Einwerfen:</strong> Du legst ein Fundstück in den Fangkorb: einen Link, einen Hinweis oder beides.</li>
+          <li><strong>Destillieren:</strong> Jemand fasst das Argument darin in einem Satz.</li>
+          <li><strong>Ausformulieren:</strong> Jemand macht daraus einen fertigen Beitrag.</li>
+        </ol>
+        Weißt du schon, was du sagen willst, verfasst du einen Beitrag auch direkt.
+      </li>
+    </ul>
+    <p>
+      Mitwirken können heute Mitglieder der {{ organisation.name }} und Personen mit Beta-Zugang.
+    </p>
+    <p class="startbestand">
+      Den Anfang machen Menschen: Zum Start schreibt ein Gründungsteam die ersten Beiträge zu
+      den häufigsten Aussagen selbst. KI schlägt höchstens etwas vor,
+      jeden Beitrag verantwortet ein Mensch. Alle Zahlen, die du siehst, sind echt: Jeder Beitrag
+      beginnt bei 0 Stimmen und 0 Nutzungen.
+    </p>
+  </section>
+
+  <!-- CC0 -->
+  <section class="content-section cc0">
+    <h2>Frei für alle: CC0</h2>
+    <p>
+      Die Texte der Beiträge stehen unter CC0. Alle dürfen sie kopieren, verändern und
+      weiterverwenden, auch ohne Namen zu nennen und auch außerhalb von Gut gesagt. Darum
+      schreibst du hier nur in eigenen Worten. Bilder und verlinkte Herkünfte bleiben, was sie
+      sind: Sie gehören weiter denen, die sie gemacht haben. Mehr dazu in den <a routerLink="/nutzungsbedingungen">Nutzungsbedingungen</a>.
+    </p>
+  </section>
+
+  <!-- Keine offizielle Linie -->
+  <section class="content-section linie">
+    <h2>Keine offizielle Linie</h2>
+    <p>
+      Gut gesagt gibt keine Linie vor. Welche Antwort oben steht, entscheidet keine Redaktion,
+      sondern wie gut sie zu deiner Suche passt. Stimmen und Nutzung zeigen dazu, was gut
+      ankommt. Offizielles Material, etwa von Parteigliederungen, erscheint nur als Herkunft an
+      einem Beitrag.
+    </p>
+    <p>
+      Beiträge sind sofort sichtbar. Ist einer problematisch oder sachlich falsch, meldest du
+      ihn. Admins sehen sich die Meldung an und sperren den Beitrag, wenn nötig. Von selbst
+      verschwindet nichts.
+    </p>
   </section>
 
   <!-- Project History -->
@@ -10,106 +99,29 @@
     <h2>Die Geschichte von Gut gesagt</h2>
     <div class="timeline">
       <div class="timeline-item">
-        <h4>Die Idee</h4>
+        <h3>Die Idee</h3>
         <p>
-          Gut gesagt begann als Idee im Kopf von Sebastian Banach bereits während der
-          Corona-Pandemie. Während Verschwörungstheorien und Falschbehauptungen schnell in die
-          Welt gesetzt wurden, waren die Widerlegungen aufwendig und langwierig. Dies gab den
-          Anstoß für die Idee einer intelligenten Plattform für Argumente.
+          Gut gesagt begann als Idee von Sebastian Banach während der Corona-Pandemie. In
+          Kommentarspalten tauchten immer wieder dieselben Aussagen auf, und jede Person
+          schrieb ihre Antwort von vorn. Warum nicht gute Antworten sammeln, damit alle sie
+          finden?
         </p>
       </div>
       <div class="timeline-item">
-        <h4>Die Anfänge</h4>
+        <h3>Die Anfänge</h3>
         <p>
-          Die Umsetzung der Ursprungsidee begann in der AG Social des Vereins Netzbegrünung.
-          Gemeinsam mit anderen engagierten Mitgliedern erkannten wir das Potenzial einer
-          gemeinsamen Wissensdatenbank für grüne Argumente und Fakten für den politischen Diskurs.
+          Die Umsetzung begann in der AG Social des Vereins {{ organisation.name }}. Gemeinsam mit
+          anderen Mitgliedern entstand dort die Idee eines gemeinsamen Vorrats an Antworten.
         </p>
       </div>
       <div class="timeline-item">
-        <h4>Die Entwicklung</h4>
+        <h3>Heute</h3>
         <p>
-          Mit modernsten Technologien wie semantischer Suche und KI-gestützter Textanalyse
-          entwickelte sich Gut gesagt zu einer intelligenten Plattform, die nicht nur Inhalte
-          speichert, sondern sie auch intelligent verknüpft und zugänglich macht.
-        </p>
-      </div>
-      <div class="timeline-item">
-        <h4>Heute</h4>
-        <p>
-          Gut gesagt ist eine wachsende Plattform mit einer aktiven Community.
-          Täglich werden neue Inhalte hinzugefügt, die Datenbank wird kontinuierlich
-          verbessert und die Funktionen erweitert.
+          Gut gesagt startet in der {{ organisation.name }}. Der Bestand ist noch klein und wächst mit
+          jeder Person, die mitmacht.
         </p>
       </div>
     </div>
-  </section>
-
-  <!-- Vision -->
-  <section class="content-section">
-    <h2>Unsere Vision</h2>
-    <p class="vision-text">
-      Die Plattform Gut gesagt ist mehr als eine Argumentedatenbank – es ist ein Werkzeug für eine bessere
-      Diskussionskultur. Wir glauben daran, dass fundierte Argumente und respektvoller Austausch
-      die Grundlage einer starken Demokratie sind.
-    </p>
-
-    <h3>Gesellschaftliche Wirkung</h3>
-    <div class="vision-grid">
-      <div class="vision-item">
-        <mat-icon>forum</mat-icon>
-        <h4>Bessere Diskussionskultur</h4>
-        <p>Konstruktiv, empathisch und faktenbasiert diskutieren – statt in Echokammern zu verharren</p>
-      </div>
-      <div class="vision-item">
-        <mat-icon>handshake</mat-icon>
-        <h4>Gemeinsam Lösungen finden</h4>
-        <p>Wieder mehr miteinander reden statt gegeneinander kämpfen – Brücken bauen durch Argumente</p>
-      </div>
-      <div class="vision-item">
-        <mat-icon>fact_check</mat-icon>
-        <h4>Fakten statt Fake News</h4>
-        <p>Schneller Zugriff auf fundierte Argumente und belegte Fakten gegen Desinformation</p>
-      </div>
-      <div class="vision-item">
-        <mat-icon>balance</mat-icon>
-        <h4>Demokratie stärken</h4>
-        <p>Gesellschaftlichen Austausch fördern und demokratische Werte durch bessere Diskurse schützen</p>
-      </div>
-    </div>
-
-    <h3>Technische Innovation</h3>
-    <div class="vision-grid">
-      <div class="vision-item">
-        <mat-icon>psychology</mat-icon>
-        <h4>Intelligente Verknüpfung</h4>
-        <p>Automatische Erkennung von Zusammenhängen zwischen Argumenten und Gegenargumenten</p>
-      </div>
-      <div class="vision-item">
-        <mat-icon>groups</mat-icon>
-        <h4>Gemeinschaftliches Wissen</h4>
-        <p>Eine stetig wachsende Datenbank durch die Beiträge aller Nutzer:innen</p>
-      </div>
-      <div class="vision-item">
-        <mat-icon>trending_up</mat-icon>
-        <h4>Kontinuierliche Verbesserung</h4>
-        <p>Neue Funktionen, bessere Algorithmen und erweiterte Inhaltsformate</p>
-      </div>
-      <div class="vision-item">
-        <mat-icon>public</mat-icon>
-        <h4>Digitaler Aktivismus</h4>
-        <p>Werkzeuge für effektive und fundierte digitale Kommunikation</p>
-      </div>
-    </div>
-
-    <h3>Was nützt DIR Gut gesagt?</h3>
-    <p class="vision-text" style="margin-top: 2rem;">
-      Mit Gut gesagt findest du blitzschnell die richtigen Argumente für jede Diskussion.
-      Egal ob auf Social Media, im persönlichen Gespräch oder bei politischen Veranstaltungen –
-      du hast immer fundierte Fakten zur Hand, kannst Falschbehauptungen widerlegen und
-      überzeugend für grüne Politik eintreten. Gut gesagt macht dich zum souveränen
-      Gesprächspartner in politischen Diskussionen.
-    </p>
   </section>
 
   <!-- Personal Introduction -->
@@ -117,7 +129,6 @@
     <h2>Der Mensch hinter Gut gesagt</h2>
     <div class="personal-intro">
       <div class="profile-image-container">
-        <!-- Placeholder for profile image - you can add your photo here -->
         <img src="/profilbild_gruen_2024.jpg"
              alt="Sebastian Banach"
              class="profile-image">
@@ -126,62 +137,52 @@
         <h3>Sebastian Banach</h3>
         <p class="role">Entwickler & Gründer von Gut gesagt</p>
         <p>
-          Als leidenschaftlicher Software Entwickler und engagierter Grüner habe ich Gut gesagt ins Leben gerufen,
-          um die digitale Diskussionskultur zu verbessern und grüne Positionen im Netz zu stärken.
-          Meine Vision ist es, allen grünen Mitgliedern ein Werkzeug an die Hand zu geben,
-          mit dem sie fundiert und effektiv in digitalen Diskussionen auftreten können.
+          Als Softwareentwickler und Grüner habe ich Gut gesagt ins Leben gerufen, damit gute
+          Antworten die Menschen erreichen, die in Kommentarspalten mitlesen.
         </p>
         <p>
-          Die Idee zu Gut gesagt entstand aus der täglichen Erfahrung in Social-Media-Diskussionen:
-          Immer wieder die gleichen Falschinformationen, immer wieder die gleichen Pseudo-Argumente,
-          immer wieder Aufwand um fundierte Antworten zu geben.<br>
-          Warum sollten wir alle einzeln das Rad neu erfinden, wenn wir unser Wissen teilen können?
+          Die Idee entstand aus der täglichen Erfahrung in Social-Media-Diskussionen: immer
+          wieder dieselben Aussagen, immer wieder Aufwand für eine gute Antwort.<br>
+          Warum sollten wir alle einzeln das Rad neu erfinden, wenn wir unsere Antworten teilen
+          können?
         </p>
       </div>
     </div>
   </section>
 
   <!-- Technology -->
-  <section class="content-section">
+  <section class="content-section technik">
     <h2>Die Technik dahinter</h2>
-    <p>
-      Gut gesagt nutzt modernste Technologien, um eine intelligente und effiziente
-      Suche zu ermöglichen:
-    </p>
     <ul>
       <li>
-        <strong>Semantische Suche:</strong> Wir analysieren die Bedeutung von Texten,
-        nicht nur Schlagwörter
+        <strong>Suche nach Bedeutung:</strong> Gut gesagt vergleicht, was ein Satz meint, nicht
+        nur seine Wörter. Dieselbe Aussage in anderen Worten führt zu denselben Antworten.
       </li>
       <li>
-        <strong>KI-gestützte Analyse:</strong> Verwendung der Technologien hinter ChatGPT & Co
-        für intelligente Textverarbeitung
+        <strong>Eigene Infrastruktur:</strong> Die Suche rechnet mit einem offenen Sprachmodell
+        auf eigener Infrastruktur und speichert in
+        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>.
       </li>
       <li>
-        <strong>Vektordatenbank:</strong> Nutzt
-        <a href="https://qdrant.tech" target="_blank">Qdrant</a> für semantische Vektorsuche
+        <strong>KI schlägt vor, ein Mensch verantwortet:</strong> KI hilft beim Finden und
+        Ordnen. Beiträge schreibt sie nicht selbst.
       </li>
       <li>
-        <strong>Dreistufiger Suchprozess:</strong> Aussagen → Antwortaussagen → passende Inhalte
+        <strong>Offener Code:</strong> Gut gesagt ist Open Source unter der AGPL.
       </li>
     </ul>
-    <p>
-      Gut gesagt ist selbst keine KI, sondern nutzt KI-Technologien, um menschlich erstellte
-      Inhalte intelligent zu organisieren und zugänglich zu machen.
-    </p>
   </section>
 
   <!-- Community -->
   <section class="content-section">
-    <h2>Teil der Netzbegrünung-Community</h2>
+    <h2>Teil der {{ organisation.name }}-Community</h2>
     <p>
       Gut gesagt ist ein Projekt innerhalb der AG Social des Vereins
-      <a href="https://netzbegruenung.de/" target="_blank">Netzbegrünung e.V.</a>
+      <a [href]="organisation.url" target="_blank" rel="noopener">{{ organisation.vereinsname }}</a>
     </p>
     <p>
       Die AG Social ist eine Initiative von Vereinsmitgliedern, die sich mit Social Media
-      auseinandersetzt und sich für eine bessere digitale Diskussionskultur und die
-      Verbreitung von grünen Positionen im Netz einsetzt.
+      auseinandersetzt und grüne Positionen im Netz dorthin bringen will, wo mitgelesen wird.
     </p>
     <p>
       Wir sind ein offenes Projekt und freuen uns über jede Unterstützung und Feedback!
@@ -198,8 +199,9 @@
     <div class="cta-buttons">
       <a mat-raised-button
          color="primary"
-         href="https://chatbegruenung.de/channel/GutGesagt"
-         target="_blank">
+         [href]="organisation.kontakt.url"
+         target="_blank"
+         rel="noopener">
         <mat-icon>chat</mat-icon>
         Kontakt aufnehmen
       </a>
@@ -207,13 +209,13 @@
          routerLink="/contribute"
          class="secondary-button">
         <mat-icon>add_circle</mat-icon>
-        Inhalte beitragen
+        Beitrag verfassen
       </a>
       <button mat-raised-button
               (click)="openHelpDialog()"
-              class="secondary-button">
+              class="secondary-button hilfe-knopf">
         <mat-icon>help</mat-icon>
-        Hilfe zur Nutzung
+        Hilfe
       </button>
     </div>
   </section>
@@ -225,8 +227,8 @@
       Du hast Feedback, Verbesserungsvorschläge oder möchtest dich einbringen?
     </p>
     <p>
-      <a href="https://chatbegruenung.de/channel/GutGesagt" target="_blank">
-        Schreib uns eine Nachricht in der Chatbegrünung
+      <a [href]="organisation.kontakt.url" target="_blank" rel="noopener">
+        Schreib uns eine Nachricht in der {{ organisation.kontakt.name }}
       </a>
     </p>
   </section>

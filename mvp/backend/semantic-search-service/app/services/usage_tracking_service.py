@@ -9,6 +9,8 @@ import uuid
 import hashlib
 
 from domain.content_registry import BEITRAGSTYPEN_WERTE
+from domain.models.commentary import Fassung
+from domain.models.content_type import ContentType
 from repositories.gesehene_nutzung_repository import (
     GeseheneNutzungRepository,
     get_gesehene_nutzung_repository,
@@ -51,6 +53,7 @@ class UsageTrackingService:
         content_id: str,
         session_id: Optional[str] = None,
         device_category: Optional[str] = None,
+        fassung: Optional[str] = None,
     ) -> bool:
         """
         Track that a content item was used (copied).
@@ -59,6 +62,7 @@ class UsageTrackingService:
             content_id: String UUID of the content item
             session_id: Optional session identifier
             device_category: Grobe Geraetekategorie, bereits abgeleitet
+            fassung: Die kopierte Fassung eines Kommentars (#355), sonst None
 
         Returns:
             bool: True if tracking was successful
@@ -77,6 +81,7 @@ class UsageTrackingService:
                 event_type="copy",
                 session_id=session_id,
                 device_category=device_category,
+                fassung=fassung,
             )
             logger.info(
                 f"Service: Repository returned {result} for content {content_id}"
@@ -186,6 +191,48 @@ class UsageTrackingService:
         zuwachs = self.repository.get_nutzung_letzte_7_tage_batch(content_ids)
         for item in content_items:
             item["nutzung_letzte_7_tage"] = zuwachs.get(str(item.get("id")), 0)
+        return content_items
+
+    def nutzung_je_fassung_nachtragen(
+        self, content_items: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Traegt ``nutzung_je_fassung`` nach: am Kommentar je vorhandener Fassung die
+        Nutzung und ihr Zuwachs der letzten 7 Tage (#355), fuer "Meine Beitraege".
+        Andere Beitragstypen haben keine Fassungen und bekommen None.
+
+        Mittel hat jeder Kommentar, Kurz und Lang nur, wenn sie Text haben. Die
+        Reihenfolge ist Kurz, Mittel, Lang wie die Reiter der Karte. Nutzung ohne
+        Fassung (von vor #355) steht hier nicht; sie steckt nur in ``usage_count``.
+        """
+
+        def hat_text(wert: Any) -> bool:
+            return isinstance(wert, str) and bool(wert.strip())
+
+        def fassungen(item: Dict[str, Any]) -> List[str]:
+            vorhanden = [
+                (Fassung.KURZ, hat_text(item.get("short_text"))),
+                (Fassung.MITTEL, True),
+                (Fassung.LANG, hat_text(item.get("long_text"))),
+            ]
+            return [fassung.value for fassung, da in vorhanden if da]
+
+        kommentare = {}
+        for item in content_items:
+            item["nutzung_je_fassung"] = None
+            if item.get("content_type") != ContentType.COMMENTARY:
+                continue
+            try:
+                kommentare[uuid.UUID(str(item["id"]))] = item
+            except (KeyError, ValueError, TypeError):
+                continue
+        je_fassung = self.repository.get_nutzung_je_fassung_batch(list(kommentare))
+        for content_id, item in kommentare.items():
+            gezaehlt = je_fassung.get(str(content_id), {})
+            item["nutzung_je_fassung"] = {
+                fassung: gezaehlt.get(fassung, {"nutzung": 0, "letzte_7_tage": 0})
+                for fassung in fassungen(item)
+            }
         return content_items
 
     async def get_user_usage_stats(self, user_id: str) -> Dict[str, Any]:

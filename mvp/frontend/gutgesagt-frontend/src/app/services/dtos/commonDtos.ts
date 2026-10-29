@@ -1,3 +1,5 @@
+import { Thema } from './themenDtos';
+
 import { ContentStatus } from "./content-status-enum";
 
 /**
@@ -44,4 +46,8 @@ export interface BaseSearchResult {
     statement_similarity_score: number | null;
     reply_relevance: number | null;
     user_vote?: string;  // "like", "dislike", or undefined
+    /** Die Aussage, ueber die der Beitrag gefunden wurde; fehlt bei direkten Treffern. */
+    statement_id?: string | null;
+    /** Die Themen dieser Aussage, fuer den Themenfilter der Ergebnisseite. */
+    themen?: Thema[];
 }

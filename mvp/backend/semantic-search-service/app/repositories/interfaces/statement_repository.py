@@ -74,6 +74,14 @@ class IStatementRepository(
         pass
 
     @abstractmethod
+    async def kuratierte(self) -> List[StatementDbEntry]:
+        """
+        Visible statements, leaving out search queries nobody has answered yet
+        (as count_curated).
+        """
+        pass
+
+    @abstractmethod
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
         Visible statements without a visible Kommentar among their reply
