@@ -23,10 +23,14 @@ Jede Änderung am Text der Nutzungsbedingungen ist ein neuer Stand, auch eine kl
    steht.
 3. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum eintragen, beim vorigen Stand
    das „bis“-Datum.
-4. Gleich danach (Maintainer): die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm
-   erneut auslösen. Keycloak zeigt den neuen Stand dann bei der nächsten Anmeldung. Wer nicht
-   zustimmt, kommt nicht hinein; wer noch angemeldet ist, bleibt bis zum Ablauf der Sitzung
-   beim alten Stand, so wie es §10 sagt.
+4. Gleich danach (Maintainer): den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen
+   Stand bringen; ohne das stimmen die Personen dem alten Stand-Datum zu. ANNAHME (#466): Das
+   Theme aus #429 zeigt Link und Stand-Datum der Nutzungsbedingungen. Dann die Pflichtaktion
+   „Terms and Conditions“ für alle Konten im Realm „Gut gesagt“ erneut auslösen. Der Realm gehört
+   nur zu Gut gesagt (#429); in einem geteilten Realm träfe das auch Konten, die Gut gesagt nie
+   nutzen. Keycloak fragt bei der nächsten Anmeldung. Wer nicht zustimmt, kommt nicht hinein;
+   wer noch angemeldet ist, bleibt bis zum Ablauf der Sitzung beim alten Stand, so wie es §10
+   sagt.
 
 Das erneute Auslösen geht nicht über die Oberfläche der Admin-Konsole für alle auf einmal,
 sondern über die Admin-Schnittstelle von Keycloak: für jedes Konto `requiredActions` um den
