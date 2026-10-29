@@ -18,10 +18,13 @@ from repositories.implementations.qdrant.moderation_repository import (
 from services.content.reference_service import ReferenceService
 from services.moderation_service import ModerationService
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
+from tests.conftest import GRUND_FUER_SPERRE
 from tests.integration.beitrag_helfer import TEXT, post_beitrag
 from tests.integration.conftest import requires_qdrant
 
 pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
+
+# Sperren verlangt Sperrgrund und Begruendung (#448).
 
 
 class _Nutzung:
@@ -56,8 +59,14 @@ async def test_oft_genutzt_zeigt_sichtbare_ohne_gesperrte(
         moderation_repo=QdrantModerationRepository(
             embeddings_manager=real_embeddings_manager
         ),
+        sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
-    assert await moderation.sperren(str(gesperrt), gesperrt_von="admin-1") is True
+    assert (
+        await moderation.sperren(
+            str(gesperrt), gesperrt_von="admin-1", **GRUND_FUER_SPERRE
+        )
+        is True
+    )
 
     service = OftGenutztService(
         _Nutzung([sichtbar[0], gesperrt, uuid.uuid4(), *sichtbar[1:]]),

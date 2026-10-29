@@ -31,6 +31,7 @@ def service():
     mock.sperren = AsyncMock(return_value=True)
     mock.entsperren = AsyncMock(return_value=True)
     mock.gesperrte_beitraege = AsyncMock(return_value=[])
+    mock.sperre_bestaetigen = AsyncMock(return_value=True)
     mock.delete_content = AsyncMock(return_value=True)
     mock.dismiss_report = AsyncMock(return_value=True)
     mock.get_report_stats = Mock(
@@ -61,6 +62,7 @@ def client(service):
         ("get", "/reports"),
         ("put", f"/content/{CONTENT_ID}/sperren"),
         ("put", f"/content/{CONTENT_ID}/entsperren"),
+        ("put", f"/sperren/{REPORT_ID}/bestaetigen"),
         ("get", "/gesperrt"),
         ("delete", f"/content/commentary/{CONTENT_ID}"),
         ("put", f"/reports/{REPORT_ID}/dismiss"),
@@ -70,7 +72,12 @@ def client(service):
 def test_admin_endpunkt_loggt_keine_admin_kennung(client, caplog, methode, pfad):
     caplog.set_level(logging.DEBUG)
 
-    antwort = getattr(client, methode)(f"/api/v1/moderation{pfad}", headers=ADMIN)
+    # Sperren und Bestaetigen verlangen eine Begruendung (#448).
+    koerper = {"sperrgrund": "unterstellung", "begruendung": "x"}
+    extra = {"json": koerper} if methode == "put" else {}
+    antwort = getattr(client, methode)(
+        f"/api/v1/moderation{pfad}", headers=ADMIN, **extra
+    )
 
     assert antwort.status_code == 200
     assert any(

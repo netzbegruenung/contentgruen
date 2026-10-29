@@ -1,0 +1,66 @@
+<section *ngIf="nachrichten.length" class="sperrnachrichten" aria-labelledby="sperrnachrichten-titel">
+    <h2 id="sperrnachrichten-titel">Sperren deiner Beiträge</h2>
+    <article *ngFor="let n of nachrichten" class="sperrnachricht">
+        <p class="entscheidung">
+            Wir haben
+            <ng-container *ngIf="n.titel; else ohneTitel">deinen Beitrag <strong>„{{ n.titel }}“</strong></ng-container>
+            <ng-template #ohneTitel>einen deiner Beiträge</ng-template>
+            am {{ datum(n.gesperrt_am) }} gesperrt.
+            <ng-container *ngIf="n.pruefergebnis !== 'entsperrt'">Er ist aus Suche und Ansicht genommen, aber nicht gelöscht.</ng-container>
+        </p>
+        <dl>
+            <dt>Sperrgrund</dt>
+            <dd>{{ sperrgrund(n.sperrgrund) }}</dd>
+            <dt>Begründung</dt>
+            <dd class="begruendung">{{ n.begruendung }}</dd>
+        </dl>
+
+        <ng-container *ngIf="!n.widerspruch_am">
+            <p class="widerspruchsweg">
+                Hältst du die Sperre für falsch, kannst du hier widersprechen. Wir prüfen die Entscheidung
+                dann erneut und sagen dir hier, was dabei herauskommt. Du kannst auch formlos per E-Mail an
+                <a href="mailto:{{ KONTAKT_MAIL }}">{{ KONTAKT_MAIL }}</a> widersprechen; dann antworten wir
+                dir per E-Mail.
+            </p>
+            <button *ngIf="widerspruchFuer !== n.id" mat-stroked-button type="button"
+                    (click)="widerspruchOeffnen(n)">Widersprechen</button>
+            <div *ngIf="widerspruchFuer === n.id" class="widerspruch-formular">
+                <mat-form-field appearance="outline" class="volle-breite">
+                    <mat-label>Warum ist die Sperre falsch? (freiwillig)</mat-label>
+                    <textarea matInput rows="4" [(ngModel)]="widerspruchText" [maxlength]="WIDERSPRUCH_MAX"></textarea>
+                    <mat-hint align="end">{{ widerspruchText.length }} / {{ WIDERSPRUCH_MAX }}</mat-hint>
+                </mat-form-field>
+                <p *ngIf="fehler" class="fehler" role="alert">{{ fehler }}</p>
+                <div class="aktionen">
+                    <button mat-button type="button" (click)="widerspruchAbbrechen()" [disabled]="sendet">Abbrechen</button>
+                    <button mat-flat-button color="primary" type="button" (click)="widersprechen(n)" [disabled]="sendet">
+                        Widerspruch senden
+                    </button>
+                </div>
+            </div>
+        </ng-container>
+
+        <dl *ngIf="n.widerspruch_am && n.widerspruch">
+            <dt>Dein Widerspruch</dt>
+            <dd class="begruendung">{{ n.widerspruch }}</dd>
+        </dl>
+        <p *ngIf="n.widerspruch_am && !n.pruefergebnis" class="stand">
+            Dein Widerspruch vom {{ datum(n.widerspruch_am) }} liegt bei uns. Wir prüfen die Sperre erneut und
+            sagen dir hier Bescheid.
+        </p>
+        <p *ngIf="n.pruefergebnis === 'entsperrt'" class="stand">
+            Wir haben die Sperre nach deinem Widerspruch am {{ datum(n.geprueft_am) }} erneut geprüft und
+            <strong>aufgehoben</strong>. Dein Beitrag ist wieder sichtbar.
+        </p>
+        <ng-container *ngIf="n.pruefergebnis === 'sperre_bleibt'">
+            <p class="stand">
+                Wir haben die Sperre nach deinem Widerspruch am {{ datum(n.geprueft_am) }} erneut geprüft:
+                <strong>Sie bleibt.</strong>
+            </p>
+            <dl>
+                <dt>Begründung</dt>
+                <dd class="begruendung">{{ n.pruefung_begruendung }}</dd>
+            </dl>
+        </ng-container>
+    </article>
+</section>

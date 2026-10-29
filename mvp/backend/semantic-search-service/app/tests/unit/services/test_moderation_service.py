@@ -20,9 +20,15 @@ from repositories.implementations.qdrant.moderation_repository import (
 from domain.content_registry import BEITRAGSTYPEN_WERTE
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from services.moderation_service import ModerationService
-from tests.conftest import add_aussage_mit_verweis, create_base_content_fields
+from tests.conftest import (
+    GRUND_FUER_SPERRE,
+    add_aussage_mit_verweis,
+    create_base_content_fields,
+)
 
 CONTENT_ID = str(uuid.uuid4())
+
+# Sperren verlangt Sperrgrund und Begruendung (#448).
 
 
 @pytest.fixture
@@ -56,6 +62,7 @@ def service(speicher):
         moderation_repo=QdrantModerationRepository(embeddings_manager=speicher),
         vote_repo=MagicMock(),
         raw_input_repo=MagicMock(),
+        sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
 
 
@@ -63,12 +70,17 @@ def service(speicher):
 @pytest.mark.asyncio
 class TestSperren:
     async def test_sperren_setzt_status_gesperrt(self, service, speicher):
-        assert await service.sperren(CONTENT_ID, gesperrt_von="admin-1") is True
+        assert (
+            await service.sperren(
+                CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE
+            )
+            is True
+        )
 
         assert _payload(speicher)["status"] == "blocked"
 
     async def test_sperren_setzt_meldungen_auf_bearbeitet(self, service):
-        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
         aufruf = service.report_repo.update_reports_by_content_id.call_args.kwargs
         assert aufruf["content_id"] == uuid.UUID(CONTENT_ID)
@@ -76,16 +88,24 @@ class TestSperren:
         assert aufruf["reviewed_by"] == "admin-1"
 
     async def test_sperren_loescht_nichts(self, service, speicher):
-        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
         assert CONTENT_ID in speicher.get_data()
 
     async def test_sperren_unbekannter_beitrag(self, service):
-        assert await service.sperren(str(uuid.uuid4()), gesperrt_von="a") is False
+        assert (
+            await service.sperren(
+                str(uuid.uuid4()), gesperrt_von="a", **GRUND_FUER_SPERRE
+            )
+            is False
+        )
         service.report_repo.update_reports_by_content_id.assert_not_called()
 
     async def test_sperren_ungueltige_id(self, service):
-        assert await service.sperren("kein-uuid", gesperrt_von="a") is False
+        assert (
+            await service.sperren("kein-uuid", gesperrt_von="a", **GRUND_FUER_SPERRE)
+            is False
+        )
 
     async def test_sperren_meldet_fehler_beim_meldungs_update(self, service, speicher):
         """Bleiben die Meldungen offen, darf Sperren keinen Erfolg melden."""
@@ -94,14 +114,16 @@ class TestSperren:
         )
 
         with pytest.raises(RuntimeError):
-            await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+            await service.sperren(
+                CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE
+            )
 
         # Gesperrt ist der Beitrag trotzdem; erneutes Sperren holt die Meldungen nach.
         assert _payload(speicher)["status"] == "blocked"
 
     async def test_zweimal_sperren_behaelt_status_von_vorher(self, service, speicher):
-        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
-        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
         await service.entsperren(CONTENT_ID)
 
         assert _payload(speicher)["status"] == "visible"
@@ -113,7 +135,7 @@ class TestEntsperren:
     async def test_entsperren_stellt_status_von_vorher_wieder_her(
         self, service, speicher
     ):
-        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
         assert await service.entsperren(CONTENT_ID) is True
 
@@ -126,7 +148,7 @@ class TestEntsperren:
         # Ohne gemerkten Zustand gilt sichtbar: Die Suche findet nur sichtbare,
         # ein Beitrag ohne Status-Feld waere nach dem Entsperren nicht auffindbar.
         del _payload(speicher)["status"]
-        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
         await service.entsperren(CONTENT_ID)
 
@@ -161,7 +183,7 @@ class TestGesperrteBeitraege:
                 }
             ],
         )
-        await service.sperren(CONTENT_ID, gesperrt_von="admin-1")
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
         gesperrte = await service.gesperrte_beitraege()
 
@@ -260,7 +282,9 @@ class TestKeineAdminKennungImLog:
     async def test_sperren_und_entsperren(self, service, caplog):
         caplog.set_level(logging.DEBUG)
 
-        await service.sperren(CONTENT_ID, gesperrt_von=ADMIN_KENNUNG)
+        await service.sperren(
+            CONTENT_ID, gesperrt_von=ADMIN_KENNUNG, **GRUND_FUER_SPERRE
+        )
         await service.entsperren(CONTENT_ID)
 
         assert "gesperrt" in caplog.text and "entsperrt" in caplog.text

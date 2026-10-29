@@ -12,6 +12,7 @@ import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking
 import { AuthService } from '../auth/auth.service';
 import { BeitragSheetComponent, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { EinwurfService } from '../services/einwurf.service';
+import { SperrnachrichtService } from '../services/sperrnachricht.service';
 
 describe('ContributionsViewComponent', () => {
   let fixture: ComponentFixture<ContributionsViewComponent>;
@@ -58,6 +59,7 @@ describe('ContributionsViewComponent', () => {
         { provide: ContributionsService, useValue: { getContributions } },
         { provide: UsageTrackingService, useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik) } },
         { provide: EinwurfService, useValue: { eigeneLaden } },
+        { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },
         {
           provide: AuthService,
           // Die Album-Karten fragen nach der eigenen Kennung und abonnieren sie.

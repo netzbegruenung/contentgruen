@@ -122,6 +122,17 @@ describe('DatenschutzComponent', () => {
       expect(text).not.toContain('keine Löschfrist');
     });
 
+    it('Sperren: Kennung des Autors, Widerspruch, 180 Tage nach der Aufhebung (#448)', () => {
+      const text = abschnitt('Sperren von Beiträgen und Widerspruch');
+
+      expect(text).toContain('Kennung der Person, die den Beitrag eingestellt hat');
+      expect(text).toContain('in „Meine Beiträge“');
+      expect(text).toContain('Eine E-Mail schicken wir dazu nicht');
+      expect(text).toContain('Artikel 17 und 20 DSA');
+      expect(text).toContain('180 Tage danach automatisch');
+      expect(text).toContain('entfernen wir deine Kennung und deinen Widerspruchstext');
+    });
+
     it('Einwürfe: 365 Tage nach der letzten Arbeit, ausformulierte so lange wie ihr Beitrag', () => {
       const text = abschnitt('Einwürfe in den Fangkorb');
 

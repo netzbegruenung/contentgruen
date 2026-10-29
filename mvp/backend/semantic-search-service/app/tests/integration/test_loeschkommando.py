@@ -22,6 +22,7 @@ from infrastructure.database.models import (
     RawInput,
     RawInputContentLink,
     RawInputDraft,
+    Sperre,
     UsageEvent,
     UsageTracking,
     User,
@@ -279,8 +280,33 @@ def spuren(datenbank, einwuerfe):
             draft_id=satz.id,
         )
         s.add(link)
+        # Eine Sperre am Beitrag der Person mit ihrem Widerspruch, eine von ihr
+        # gesperrte und geprueft (#448).
+        eigene_sperre = Sperre(
+            content_id=uuid.uuid4(),
+            sperrgrund="unterstellung",
+            begruendung="Unterstellt Bosheit.",
+            gesperrt_von=ANDERE,
+            autor=PERSON,
+            widerspruch="Das ist belegt.",
+        )
+        fremde_sperre = Sperre(
+            content_id=beitrag,
+            sperrgrund="ohne_bezug",
+            begruendung="Werbung",
+            gesperrt_von=PERSON,
+            autor=ANDERE,
+            geprueft_von=PERSON,
+        )
+        s.add_all([eigene_sperre, fremde_sperre])
         s.flush()
-        return SimpleNamespace(bearbeitet=bearbeitet.id, link=link.id, satz=satz.id)
+        return SimpleNamespace(
+            bearbeitet=bearbeitet.id,
+            link=link.id,
+            satz=satz.id,
+            eigene_sperre=eigene_sperre.id,
+            fremde_sperre=fremde_sperre.id,
+        )
 
 
 class TestLoeschkommando:
@@ -300,6 +326,18 @@ class TestLoeschkommando:
             link = s.get(RawInputContentLink, spuren.link)
             assert (link.created_by, link.draft_id) == (None, spuren.satz)
             assert s.get(RawInputDraft, spuren.satz).sentence == SATZ_DER_PERSON
+
+    def test_sperren_bleiben_ohne_kennung_und_ohne_widerspruch(self, datenbank, spuren):
+        _loeschen(datenbank)
+
+        with datenbank.get_session() as s:
+            eigene = s.get(Sperre, spuren.eigene_sperre)
+            assert (eigene.autor, eigene.widerspruch) == (None, None)
+            assert eigene.gesperrt_von == ANDERE
+            assert eigene.begruendung == "Unterstellt Bosheit."
+            fremde = s.get(Sperre, spuren.fremde_sperre)
+            assert (fremde.gesperrt_von, fremde.geprueft_von) == (None, None)
+            assert fremde.autor == ANDERE
 
     def test_nutzung_der_sitzung_weg(self, datenbank, spuren):
         _loeschen(datenbank)

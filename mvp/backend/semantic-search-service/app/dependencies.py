@@ -42,6 +42,7 @@ from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import get_moderation_service
 from repositories.content_report_repository import get_content_report_repository
 from repositories.raw_input_repository import get_raw_input_repository
+from repositories.sperre_repository import get_sperre_repository
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -182,6 +183,7 @@ def get_loeschfristen_service() -> LoeschfristenService:
         get_raw_input_repository(),
         get_moderation_repository(),
         get_moderation_service(),
+        get_sperre_repository(),
     )
 
 
