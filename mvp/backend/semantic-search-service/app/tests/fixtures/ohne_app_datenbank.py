@@ -10,6 +10,10 @@ Adresse (etwa ``sqlite://``) bleibt erlaubt.
 Faengt der Code die Ausnahme ab, scheitert der Test trotzdem
 (``pytest_runtest_makereport``): Sonst liefe er in der CI still an einer anderen
 Stelle weiter als lokal.
+
+Grenze: Gesperrt ist nur ``AppDatabase()`` ohne Adresse, also der Weg ueber
+``get_app_database()``. Wer die Adresse aus den Settings selbst uebergibt, kommt
+durch; App-Code tut das nicht.
 """
 
 import pytest
@@ -48,11 +52,11 @@ def app_datenbank_versuche(monkeypatch):
     yield versuche
 
 
-@pytest.hookimpl(hookwrapper=True)
+@pytest.hookimpl(wrapper=True)
 def pytest_runtest_makereport(item, call):
-    ausgang = yield
-    bericht = ausgang.get_result()
+    bericht = yield
     versuche = getattr(item, "funcargs", {}).get(app_datenbank_versuche.__name__)
     if bericht.when == "call" and bericht.passed and versuche:
         bericht.outcome = "failed"
         bericht.longrepr = f"{MELDUNG} Die Ausnahme wurde abgefangen."
+    return bericht

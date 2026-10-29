@@ -133,10 +133,14 @@ def aussage_themen_ohne_datenbank(monkeypatch):
     Ohne diesen Ersatz baute der erste Aufruf das echte Repository und verbaende
     sich mit dem PostgreSQL aus den Settings (siehe anzeigenamen_ohne_datenbank);
     in der CI gibt es dort keins (#460). Der Ersatz kennt keine Themen.
+
+    Gilt auch unter ``tests/integration/``: Eine Suche dort sieht keine echten Themen.
+    Wer sie braucht, setzt ``modul._repository`` im Test selbst (oder baut das
+    Repository direkt wie ``test_aussage_themen.py``).
     """
     import repositories.aussage_themen_repository as modul
 
-    repository = MagicMock()
+    repository = MagicMock(spec=modul.AussageThemenRepository)
     repository.themen_von.return_value = {}
     repository.zuordnungen.return_value = {}
     monkeypatch.setattr(modul, "_repository", repository)

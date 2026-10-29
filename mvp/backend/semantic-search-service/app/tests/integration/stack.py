@@ -25,7 +25,8 @@ def pflicht(env: Optional[Mapping[str, str]] = None) -> bool:
 
 
 def pflicht_ausser_in_ci(env: Optional[Mapping[str, str]] = None) -> bool:
-    """Ob ein Dienst, den nur der Dev-Stack oder der Entwicklungsrechner hat, fehlen darf.
+    """Ob das Fehlen eines Dienstes, den nur der Dev-Stack oder der Entwicklungsrechner
+    hat, ein Fehler ist (sonst ueberspringen sich die Tests).
 
     Gilt fuer das BFF (Tests unter ``api/``) und fuer Docker (nginx-Container in
     ``test_webserver_protokoll.py``). Im Pflichtmodus ist ein Fehlen ein Fehler,

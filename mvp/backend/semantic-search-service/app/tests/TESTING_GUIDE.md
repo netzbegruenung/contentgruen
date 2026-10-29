@@ -151,6 +151,20 @@ def service(self, test_settings, test_embeddings_manager):
     return StatementService(test_settings, embeddings_manager=test_embeddings_manager)
 ```
 
+### Unit Tests Open No App Database
+
+Unit tests must not reach the PostgreSQL from the settings (`get_app_database()`): on
+the dev VM that is the running dev stack, in CI there is none, so such a test passes
+locally and fails in CI (#460). The autouse fixture `app_datenbank_versuche`
+(`tests/fixtures/ohne_app_datenbank.py`, wired in `tests/unit/conftest.py`) makes
+`AppDatabase()` without an address raise, and fails the test even if the code under
+test catches the exception. The way out: override the dependency, patch
+`get_app_database` in the module that calls it, or replace the repository singleton
+as `tests/conftest.py` does (`anzeigenamen_ohne_datenbank`,
+`aussage_themen_ohne_datenbank`). `AppDatabase("sqlite://")` with its own address stays
+allowed. A test that expects the attempt clears the list afterwards
+(`app_datenbank_versuche.clear()`, see `test_app_datenbank_verboten.py`).
+
 ### Content Type Data
 
 Use data factories from `conftest.py`:
