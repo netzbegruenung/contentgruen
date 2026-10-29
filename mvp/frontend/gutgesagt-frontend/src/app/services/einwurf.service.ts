@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { CONSENT_HINWEIS_SATZ, mitCc0Wortlaut } from '../shared/consent-hinweis';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
@@ -145,7 +146,7 @@ export class EinwurfService {
 
   einwerfen(request: EinwerfenRequest): Observable<EinwerfenResponse> {
     this.logger.debug('Einwurf wird eingeworfen');
-    return this.http.post<EinwerfenResponse>(`${this.baseApiUrl}/addRawInput`, request);
+    return this.http.post<EinwerfenResponse>(`${this.baseApiUrl}/addRawInput`, mitCc0Wortlaut(request));
   }
 
   /**
@@ -188,7 +189,10 @@ export class EinwurfService {
 
   /** Den eigenen Satz speichern; ein leerer Satz loescht ihn. */
   satzSpeichern(id: string, sentence: string): Observable<SatzResponse> {
-    return this.http.put<SatzResponse>(`${this.einwurfUrl(id)}/draft`, { sentence });
+    return this.http.put<SatzResponse>(
+      `${this.einwurfUrl(id)}/draft`,
+      mitCc0Wortlaut({ sentence }, CONSENT_HINWEIS_SATZ),
+    );
   }
 
   /**
@@ -209,7 +213,7 @@ export class EinwurfService {
         keepalive: true,
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sentence }),
+        body: JSON.stringify(mitCc0Wortlaut({ sentence }, CONSENT_HINWEIS_SATZ)),
       }).catch((error) => this.logger.warn('Satz konnte nicht gesichert werden', error));
     } catch (error) {
       this.logger.warn('Satz konnte nicht gesichert werden', error);

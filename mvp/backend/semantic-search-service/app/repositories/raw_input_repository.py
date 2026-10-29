@@ -116,6 +116,7 @@ class RawInputRepository:
         image_url: Optional[str] = None,
         submitted_by: Optional[str] = None,
         source_channel: str = RawInputSource.WEB.value,
+        cc0_wortlaut: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Einen Einwurf anlegen.
@@ -126,6 +127,7 @@ class RawInputRepository:
             image_url: Bild-URL (kein Upload, siehe docs/archiv/ROHINPUT.md)
             submitted_by: Wer eingeworfen hat; None fuer Kanaele ohne Sitzung
             source_channel: Weg ("web", "share" oder "import")
+            cc0_wortlaut: Kennung des CC0-Hinweises im Formular (domain/cc0_hinweis.py)
 
         Returns:
             Dict[str, Any]: der angelegte Einwurf
@@ -139,6 +141,7 @@ class RawInputRepository:
                     submitted_by=submitted_by,
                     source_channel=source_channel,
                     status=RawInputStatus.OPEN.value,
+                    cc0_wortlaut=cc0_wortlaut,
                 )
                 session.add(raw_input)
                 session.commit()
@@ -283,7 +286,11 @@ class RawInputRepository:
             raise
 
     def save_draft(
-        self, raw_input_id: uuid.UUID, user_id: str, sentence: Optional[str]
+        self,
+        raw_input_id: uuid.UUID,
+        user_id: str,
+        sentence: Optional[str],
+        cc0_wortlaut: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Den eigenen Satz speichern (Upsert) oder, wenn leer, loeschen - und den
@@ -295,6 +302,9 @@ class RawInputRepository:
         Einwurf auf ``open`` zurueck und ``destilled_by`` wird geleert. Die
         Einwurf-Zeile ist dabei gesperrt (FOR UPDATE), damit zwei gleichzeitige
         Speichervorgaenge sich den Stand nicht gegenseitig ueberschreiben.
+
+        ``cc0_wortlaut`` ist die Kennung des CC0-Hinweises beim Satz; jedes Speichern
+        ueberschreibt sie, denn der Satz steht danach in diesem Wortlaut da.
 
         Raises:
             EinwurfNichtGefunden: den Einwurf gibt es nicht
@@ -334,7 +344,7 @@ class RawInputRepository:
                     }
 
                 updated_at = session.execute(
-                    self._entwurf_upsert(raw_input_id, user_id, sentence)
+                    self._entwurf_upsert(raw_input_id, user_id, sentence, cc0_wortlaut)
                 ).scalar_one()
                 neu = status_nach_satz(aktuell)
                 if neu != aktuell:
@@ -492,14 +502,26 @@ class RawInputRepository:
         return aktuell
 
     @staticmethod
-    def _entwurf_upsert(raw_input_id: uuid.UUID, user_id: str, sentence: str):
+    def _entwurf_upsert(
+        raw_input_id: uuid.UUID,
+        user_id: str,
+        sentence: str,
+        cc0_wortlaut: Optional[str] = None,
+    ):
         """INSERT ... ON CONFLICT (raw_input_id, user_id) DO UPDATE."""
         stmt = insert(RawInputDraft).values(
-            raw_input_id=raw_input_id, user_id=user_id, sentence=sentence
+            raw_input_id=raw_input_id,
+            user_id=user_id,
+            sentence=sentence,
+            cc0_wortlaut=cc0_wortlaut,
         )
         return stmt.on_conflict_do_update(
             index_elements=[RawInputDraft.raw_input_id, RawInputDraft.user_id],
-            set_={"sentence": stmt.excluded.sentence, "updated_at": func.now()},
+            set_={
+                "sentence": stmt.excluded.sentence,
+                "cc0_wortlaut": stmt.excluded.cc0_wortlaut,
+                "updated_at": func.now(),
+            },
         ).returning(RawInputDraft.updated_at)
 
     @staticmethod

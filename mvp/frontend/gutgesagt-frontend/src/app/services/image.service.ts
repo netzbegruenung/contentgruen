@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { mitCc0Wortlaut } from '../shared/consent-hinweis';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
@@ -37,7 +38,7 @@ export class ImageService {
 
   addImage(request: AddImageRequest): Observable<AddImageResponse> {
     this.logger.debug('Adding new image:', request.image.title);
-    return this.http.post<AddImageResponse>(`${this.baseApiUrl}/addImage`, request);
+    return this.http.post<AddImageResponse>(`${this.baseApiUrl}/addImage`, mitCc0Wortlaut(request));
   }
 
   suggestCaption(request: SuggestCaptionRequest): Observable<SuggestCaptionResponse> {
