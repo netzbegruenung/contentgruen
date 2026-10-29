@@ -54,13 +54,17 @@ _FEHLERZEILE = re.compile(r"^(?:\S*\d:\d\d\S*\s+)?(?:FAILED|ERROR)\b")
 # Uhrzeiten, Laufzeiten, Speicheradressen
 _VERAENDERLICH = re.compile(
     r"\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:[.,]\d+)?(?:Z|[+-]\d\d:?\d\d)?"
-    r"|\b\d+:\d\d(?::\d\d)?(?:[.,]\d+)?\b"
+    # Uhrzeit mit Sekunden, nicht Zeile:Spalte wie in app/x.py:12:34
+    r"|(?<![\w:.])\d{1,2}:\d\d:\d\d(?:[.,]\d+)?(?![\w:])"
     r"|\b\d+(?:[.,]\d+)?\s*(?:ms|s|secs?|seconds?|min)\b"
     r"|\b0x[0-9a-fA-F]+\b"
 )
 _MARKE = "<!-- ci-bericht fingerabdruck={} -->"
+_MARKE_EINZEILER = "<!-- ci-bericht fingerabdruck={} unveraendert -->"
 # Nur am Ende des Kommentars: im Log kann die Zeichenfolge auch stehen
-_MARKE_LESEN = re.compile(r"<!-- ci-bericht fingerabdruck=([0-9a-f]+) -->\s*\Z")
+_MARKE_LESEN = re.compile(
+    r"<!-- ci-bericht fingerabdruck=([0-9a-f]+)( unveraendert)? -->\s*\Z"
+)
 
 
 @dataclass
@@ -122,8 +126,20 @@ def fehlerzeilen(ausgabe: str) -> list[str]:
     treffer = [z for z in zeilen if _FEHLERZEILE.match(z)]
     if treffer:
         return treffer
-    letzte = [z for z in zeilen if z.strip()][-1:]
-    return letzte
+    return [z for z in zeilen if z.strip()][-1:]
+
+
+def _abdruck_zeilen(ausgabe: str) -> list[str]:
+    """Was in den Fingerabdruck eingeht: die FAILED/ERROR-Zeilen, sonst das Ende der
+    Ausgabe. Eine Zusammenfassung wie "Found 1 error." allein sieht bei verschiedenen
+    Fehlern gleich aus; lieber ein voller Bericht zu viel als ein neuer Fehler als Einzeiler.
+    """
+    zeilen = fehlerzeilen(ausgabe)
+    if zeilen and _FEHLERZEILE.match(zeilen[0]):
+        return zeilen
+    return [z.rstrip() for z in ausgabe.split("\n") if z.strip()][
+        -FEHLERZEILEN_JE_SCHRITT:
+    ]
 
 
 def fingerabdruck(schritte: Sequence[Schritt], geheimnisse: Sequence[str]) -> str:
@@ -134,7 +150,7 @@ def fingerabdruck(schritte: Sequence[Schritt], geheimnisse: Sequence[str]) -> st
             _zustand(s),
             [
                 _VERAENDERLICH.sub("#", z)
-                for z in fehlerzeilen(ausgabe_bereinigen(s.ausgabe, geheimnisse))
+                for z in _abdruck_zeilen(ausgabe_bereinigen(s.ausgabe, geheimnisse))
             ],
         ]
         for s in schritte
@@ -146,6 +162,11 @@ def fingerabdruck(schritte: Sequence[Schritt], geheimnisse: Sequence[str]) -> st
 def fingerabdruck_lesen(text: str) -> Optional[str]:
     treffer = _MARKE_LESEN.search(text)
     return treffer.group(1) if treffer else None
+
+
+def _ist_einzeiler(text: str) -> bool:
+    treffer = _MARKE_LESEN.search(text)
+    return bool(treffer and treffer.group(2))
 
 
 def _kopf(pipeline: str) -> str:
@@ -165,7 +186,7 @@ def unveraendert_erstellen(
     return (
         f"{_kopf(pipeline)}: Unverändert rot, Commit `{commit}` "
         f"([Pipeline]({pipeline_url})), gleicher Fehler wie im "
-        f"[letzten Bericht]({voriger_url}).\n\n{_MARKE.format(fingerabdruck)}\n"
+        f"[letzten Bericht]({voriger_url}).\n\n{_MARKE_EINZEILER.format(fingerabdruck)}\n"
     )
 
 
@@ -192,6 +213,7 @@ def bericht_erstellen(
             fehler = fehlerzeilen(ausgabe)
             sichtbar = min(FEHLERZEILEN_JE_SCHRITT, zeilen)
             weitere = len(fehler) - sichtbar
+            # _ende hier nur, um ueberlange Zeilen zu kuerzen
             fehler_text, _ = _ende("\n".join(fehler[:sichtbar]), sichtbar)
             if weitere > 0:
                 fehler_text += f"\n… {weitere} weitere"
@@ -246,7 +268,7 @@ def _pflicht(env, name: str) -> str:
     return wert
 
 
-def _senden(url: str, token: str, daten: Optional[dict] = None) -> tuple[int, bytes]:
+def _anfrage(url: str, token: str, daten: Optional[dict] = None) -> tuple[int, bytes]:
     """GET (ohne ``daten``) oder POST an die Forgejo-API; wirft wie urlopen."""
     anfrage = urllib.request.Request(
         url,
@@ -269,19 +291,42 @@ def _fehler_melden(was: str, fehler: Exception) -> None:
         print(f"{was}: HTTP {fehler.code}", file=sys.stderr)
     else:
         grund = getattr(fehler, "reason", fehler)
-        print(f"{was}: nicht gesendet ({type(grund).__name__})", file=sys.stderr)
+        print(f"{was}: fehlgeschlagen ({type(grund).__name__})", file=sys.stderr)
 
 
 _NETZFEHLER = (urllib.error.URLError, TimeoutError)
 
 
-def letzter_bericht(kommentare: Sequence[dict]) -> Optional[tuple[str, str]]:
-    """Fingerabdruck und Adresse des juengsten Kommentars mit Fingerabdruck."""
+@dataclass
+class VorigerBericht:
+    fingerabdruck: str
+    # Der volle Bericht dazu, auch wenn danach schon Einzeiler kamen
+    url: str
+
+
+def letzter_bericht(kommentare: object) -> Optional[VorigerBericht]:
+    """Fingerabdruck des juengsten Kommentars mit Fingerabdruck und Adresse des
+    juengsten vollen Berichts mit demselben Abdruck. ValueError, wenn die Antwort
+    keine Kommentarliste ist."""
+    if not isinstance(kommentare, list) or not all(
+        isinstance(k, dict) for k in kommentare
+    ):
+        raise ValueError("keine Kommentarliste")
+    gefunden = None
     for kommentar in reversed(kommentare):
-        abdruck = fingerabdruck_lesen(kommentar.get("body") or "")
-        if abdruck:
-            return abdruck, kommentar.get("html_url") or ""
-    return None
+        body = str(kommentar.get("body") or "")
+        abdruck = fingerabdruck_lesen(body)
+        if not abdruck:
+            continue
+        url = str(kommentar.get("html_url") or "")
+        if gefunden is None:
+            gefunden = VorigerBericht(abdruck, url)
+        elif abdruck != gefunden.fingerabdruck:
+            break
+        if not _ist_einzeiler(body):
+            gefunden.url = url
+            break
+    return gefunden
 
 
 def main(
@@ -310,15 +355,15 @@ def main(
     # als ein roter Lauf ohne Bericht.
     voriger = None
     try:
-        _, antwort = _senden(kommentare_url, token)
+        _, antwort = _anfrage(kommentare_url, token)
         voriger = letzter_bericht(json.loads(antwort))
     except (*_NETZFEHLER, ValueError) as fehler:
         _fehler_melden(f"Kommentare in PR #{pr} lesen", fehler)
 
-    if voriger and voriger[0] == abdruck:
+    if voriger and voriger.fingerabdruck == abdruck:
         art = "unverändert, Einzeiler"
         body = unveraendert_erstellen(
-            pipeline, pipeline_url, commit, abdruck, voriger[1]
+            pipeline, pipeline_url, commit, abdruck, voriger.url
         )
     else:
         art = "Bericht"
@@ -326,7 +371,7 @@ def main(
 
     # Ein Versuch, keine Wiederholung: lieber kein Bericht als zwei.
     try:
-        status, _ = _senden(kommentare_url, token, {"body": body})
+        status, _ = _anfrage(kommentare_url, token, {"body": body})
     except _NETZFEHLER as fehler:
         _fehler_melden(f"CI-Bericht in PR #{pr}", fehler)
         return 1

@@ -134,8 +134,7 @@ def test_bericht_erstellen_klappt_log_ein_und_zeigt_fehlerzeilen_sichtbar():
 
 
 def test_bericht_erstellen_ohne_failed_zeilen_zeigt_die_zusammenfassungszeile():
-    ausgabe = "Executed 300 of 300 (2 FAILED) (4.1 secs / 3.9 secs)\n\n"
-    ausgabe = "Kompiliere ...\n" + ausgabe
+    ausgabe = "Kompiliere ...\nExecuted 300 of 300 (2 FAILED) (4.1 secs / 3.9 secs)\n\n"
 
     text = bericht([schritt("frontend", 1, ausgabe)])
 
@@ -195,6 +194,22 @@ def test_fingerabdruck_unterscheidet_fehlerzeilen_schritte_und_exit_code():
     )
 
 
+def test_fingerabdruck_unterscheidet_zeile_und_spalte_von_uhrzeit():
+    def abdruck(zeile):
+        return ci_bericht.fingerabdruck([schritt("lint", 1, zeile + "\n")], [])
+
+    assert abdruck("ERROR app/x.py:12:34 F401") != abdruck("ERROR app/x.py:15:34 F401")
+
+
+def test_fingerabdruck_ohne_failed_zeilen_nimmt_das_ende_der_ausgabe():
+    erster = "app/a.py:3:8: F401 `os` imported but unused\nFound 1 error.\n"
+    zweiter = "app/b.py:9:1: E501 Line too long\nFound 1 error.\n"
+
+    assert ci_bericht.fingerabdruck(
+        [schritt("lint", 1, erster)], []
+    ) != ci_bericht.fingerabdruck([schritt("lint", 1, zweiter)], [])
+
+
 def test_unveraendert_erstellen_ist_ein_einzeiler_mit_verweis():
     text = ci_bericht.unveraendert_erstellen(
         pipeline="43",
@@ -236,7 +251,7 @@ class _Forgejo:
                 if get_status != 200:
                     self._antworten(get_status, b'{"message": "token geheim123"}')
                 else:
-                    self._antworten(200, json.dumps(list(kommentare)).encode())
+                    self._antworten(200, json.dumps(kommentare).encode())
 
             def do_POST(self):
                 laenge = int(self.headers["Content-Length"])
@@ -419,3 +434,38 @@ def test_main_kommentare_nicht_lesbar_postet_den_vollen_bericht(
     ausgabe = capsys.readouterr()
     assert "HTTP 401" in ausgabe.err
     assert "geheim123" not in ausgabe.err + ausgabe.out
+
+
+def test_main_einzeiler_verweist_auf_den_vollen_bericht_nicht_auf_den_einzeiler(
+    tmp_path, forgejo_mit_status
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    voll = ci_bericht.bericht_erstellen(
+        "40", "u", "a", [schritt("unit", 1, "FAILED test_x\n")], []
+    )
+    fp = ci_bericht.fingerabdruck_lesen(voll)
+    einzeiler = ci_bericht.unveraendert_erstellen(
+        "41", "u", "b", fp, "https://forge.example/pr/7#issuecomment-2"
+    )
+    forgejo = forgejo_mit_status(
+        201, kommentare=[_kommentar(2, voll), _kommentar(3, einzeiler)]
+    )
+
+    ci_bericht.main(["unit"], forgejo.env(), tmp_path)
+
+    text = _gesendet(forgejo)
+    assert "Unverändert rot" in text
+    assert "issuecomment-2" in text and "issuecomment-3" not in text
+
+
+@pytest.mark.parametrize("antwort", [{"message": "kein Array"}, ["kein Objekt"]])
+def test_main_unerwartete_kommentarliste_postet_den_vollen_bericht(
+    tmp_path, forgejo_mit_status, antwort
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    forgejo = forgejo_mit_status(201, kommentare=antwort)
+
+    code = ci_bericht.main(["unit"], forgejo.env(), tmp_path)
+
+    assert code == 0
+    assert "<details><summary>Log unit</summary>" in _gesendet(forgejo)

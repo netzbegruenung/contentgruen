@@ -66,11 +66,13 @@ the summary of Karma, dotnet or Ruff), the last 80 lines of its output folded in
 
 - **Same error, one line.** Each report ends with an invisible HTML comment
   `<!-- ci-bericht fingerabdruck=… -->`: a hash of the red steps, their exit codes and their
-  error lines, without timestamps, clock times, durations and memory addresses. Before
-  posting, the step reads the comments of the pull request. If the most recent comment with
-  such a marker has the same fingerprint, it posts only one line ("Unverändert rot", commit,
-  pipeline, link to that report) carrying the marker again. If the comments cannot be read,
-  the full report is posted. The marker is not signed: whoever can comment on the pull
+  `FAILED`/`ERROR` lines (for a step without such lines its last 20 non-empty lines, since a
+  summary like "Found 1 error." alone looks the same for different errors), without
+  timestamps, clock times, durations and memory addresses. Before posting, the step reads
+  the comments of the pull request. If the most recent comment with such a marker has the
+  same fingerprint, it posts only one line ("Unverändert rot", commit, pipeline, link to the
+  last full report) carrying the marker again. If the comments cannot be read, the full
+  report is posted. The marker is not signed: whoever can comment on the pull
   request can fake one, at worst turning a report into the one line.
 - A green run writes nothing: the step only runs on red runs, the last report stays.
 - Each step runs its commands through `scripts/ci-protokoll.sh`: output to the Woodpecker
