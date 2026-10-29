@@ -24,7 +24,7 @@
                     </button>
                 </div>
                 <div *ngIf="themenBearbeiten === aussage.statement_id" class="themen-bearbeiten">
-                    <app-themen-auswahl [themen]="themen" [gewaehlt]="schluessel(aussage)"
+                    <app-themen-auswahl [themen]="themen" [gewaehlt]="schluessel(aussage.themen)"
                                         beschriftung="Themen dieser Aussage"
                                         (gewaehltChange)="themenSetzen(aussage, $event)"></app-themen-auswahl>
                     <p *ngIf="themenFehler" class="hinweis" role="alert">{{ themenFehler }}</p>

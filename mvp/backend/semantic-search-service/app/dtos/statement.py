@@ -8,7 +8,7 @@ from domain.models.statement import Statement, StatementReplysuggestion
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
-from domain.themen import NACH_SCHLUESSEL, themen_pruefen
+from domain.themen import NACH_SCHLUESSEL, Zuordnungsart, themen_pruefen
 
 
 ### Aussage nach aussen ###
@@ -122,6 +122,16 @@ def themen_dtos(schluessel: Iterable[str]) -> List[ThemaDto]:
     ]
 
 
+class AussageVorabResponse(AddStatementResponse):
+    """
+    Wie AddStatementResponse, dazu die Themen, die die Aussage jetzt hat: bei einer
+    neuen die gewaehlten, bei einer vorhandenen ihre bisherigen, oder die gewaehlten,
+    wenn sie noch keine hatte. Leer, wenn das Zuordnen fehlschlug.
+    """
+
+    themen: List[ThemaDto] = Field(default_factory=list)
+
+
 class ThemenResponse(BaseModel):
     themen: List[ThemaDto]
 
@@ -141,6 +151,8 @@ class AussageMitThemenDto(BaseModel):
     statement_id: uuid.UUID
     statement_text: str
     themen: List[ThemaDto]
+    # Ob die Zuordnung von Hand ins Testset geht; Aussagen aus Suchanfragen nicht.
+    im_testset: bool
 
 
 class AussagenMitThemenResponse(BaseModel):
@@ -153,7 +165,7 @@ class ThemenZuordnungDto(BaseModel):
     statement_id: uuid.UUID
     text: str
     themen: List[str]
-    zuordnungsart: str
+    zuordnungsart: Zuordnungsart
 
 
 class ThemenTestsetResponse(BaseModel):

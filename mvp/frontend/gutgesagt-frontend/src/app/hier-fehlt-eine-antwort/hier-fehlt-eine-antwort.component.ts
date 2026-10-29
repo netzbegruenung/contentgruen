@@ -10,9 +10,9 @@ import {
   AUSSAGE_MIN_ZEICHEN,
   StatementService,
 } from '../services/statement.service';
-import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
+import { AussageVorabResponse, UnbeantworteteAussage } from '../services/dtos/statementDtos';
 import { Thema } from '../services/dtos/themenDtos';
-import { ThemenService } from '../services/themen.service';
+import { ThemenService, schluesselVon } from '../services/themen.service';
 import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
 import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
@@ -35,6 +35,27 @@ import {
  * vorab. Ist die Themenliste nicht ladbar, fehlen Filter und Auswahl; die Seite
  * bleibt sonst nutzbar.
  */
+/**
+ * Was nach dem Vorab-Anlegen gemeldet wird. Die Antwort nennt die Themen, die die
+ * Aussage jetzt hat: bei einer vorhandenen ihre bisherigen (die gewaehlten nur, wenn
+ * sie keine hatte), leer, wenn das Zuordnen scheiterte.
+ */
+export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean): string {
+  const ohneThemen = mitThemen && antwort.themen.length === 0;
+  if (antwort.statement_was_new) {
+    return ohneThemen
+      ? 'Aussage angelegt. Die Themen konnten nicht gespeichert werden; du kannst sie in der Liste zuordnen.'
+      : 'Aussage angelegt.';
+  }
+  const vorhanden = `Diese Aussage gibt es schon: „${antwort.statement_text}“`;
+  if (!mitThemen) {
+    return vorhanden;
+  }
+  return ohneThemen
+    ? `${vorhanden} Die Themen konnten nicht gespeichert werden.`
+    : `${vorhanden} Ihre Themen: ${antwort.themen.map((t) => t.name).join(', ')}.`;
+}
+
 @Component({
   selector: 'app-hier-fehlt-eine-antwort',
   standalone: true,
@@ -101,16 +122,13 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
     this.themenBearbeiten = this.themenBearbeiten === aussage.statement_id ? null : aussage.statement_id;
   }
 
-  schluessel(aussage: UnbeantworteteAussage): string[] {
-    return aussage.themen.map((t) => t.schluessel);
-  }
+  readonly schluessel = schluesselVon;
 
-  /** Jede Aenderung der Auswahl wird gleich gespeichert. */
+  /** Jede Aenderung der Auswahl wird gleich gespeichert (ThemenService.aendern). */
   themenSetzen(aussage: UnbeantworteteAussage, themen: string[]): void {
     this.themenFehler = null;
-    this.themenService.zuordnen(aussage.statement_id, themen).subscribe({
-      next: (gespeichert) => (aussage.themen = gespeichert),
-      error: () => (this.themenFehler = 'Die Themen konnten nicht gespeichert werden.'),
+    this.themenService.aendern(aussage, themen, this.themen, () => {
+      this.themenFehler = 'Die Themen konnten nicht gespeichert werden.';
     });
   }
 
@@ -149,10 +167,7 @@ export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
         this.speichert = false;
         this.neueAussage = '';
         this.neueThemen = [];
-        this.meldung = antwort.statement_was_new
-          ? 'Aussage angelegt.'
-          : `Diese Aussage gibt es schon: „${antwort.statement_text}“` +
-            (mitThemen ? ' Ihre Themen änderst du in der Liste.' : '');
+        this.meldung = vorabMeldung(antwort, mitThemen);
         this.laden();
       },
       error: () => {

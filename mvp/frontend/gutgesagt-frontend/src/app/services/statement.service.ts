@@ -4,7 +4,7 @@ import { Observable, of } from 'rxjs';
 import { tap, map } from 'rxjs/operators';
 import { ParamMap } from '@angular/router';
 import {
-  AddStatementResponse,
+  AussageVorabResponse,
   AussageVorabRequest,
   GetStatementByIdResponse,
   SearchStatementByTextRequest,
@@ -109,9 +109,9 @@ export class StatementService {
    * aehnliche, kommt diese zurueck (statement_was_new = false); die Themen bekommt
    * sie dann nur, wenn sie noch keine hat.
    */
-  aussageVorabAnlegen(text: string, themen: string[] = []): Observable<AddStatementResponse> {
+  aussageVorabAnlegen(text: string, themen: string[] = []): Observable<AussageVorabResponse> {
     const request: AussageVorabRequest = { text: text.trim(), themen };
-    return this.http.post<AddStatementResponse>(this.vorabApiUrl, request);
+    return this.http.post<AussageVorabResponse>(this.vorabApiUrl, request);
   }
 
   /**

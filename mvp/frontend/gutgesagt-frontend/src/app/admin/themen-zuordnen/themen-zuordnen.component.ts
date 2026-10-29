@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { AussageMitThemen, Thema } from '../../services/dtos/themenDtos';
-import { ThemenService } from '../../services/themen.service';
+import { ThemenService, schluesselVon } from '../../services/themen.service';
 import { ThemenAuswahlComponent } from '../../shared/themen/themen-auswahl.component';
 
 /** Dateiname des Testsets beim Herunterladen. */
@@ -44,15 +44,18 @@ export class ThemenZuordnenComponent implements OnInit {
     return (this.aussagen ?? []).filter((a) => a.themen.length > 0).length;
   }
 
-  schluessel(aussage: AussageMitThemen): string[] {
-    return aussage.themen.map((t) => t.schluessel);
+  /** Wie viele Zuordnungen ins Testset gehen; Aussagen aus Suchanfragen nicht. */
+  get imTestset(): number {
+    return (this.aussagen ?? []).filter((a) => a.themen.length > 0 && a.im_testset).length;
   }
 
+  readonly schluessel = schluesselVon;
+
+  /** Jede Aenderung der Auswahl wird gleich gespeichert (ThemenService.aendern). */
   setzen(aussage: AussageMitThemen, themen: string[]): void {
     this.fehler = null;
-    this.themenService.zuordnen(aussage.statement_id, themen).subscribe({
-      next: (gespeichert) => (aussage.themen = gespeichert),
-      error: () => (this.fehler = 'Die Themen konnten nicht gespeichert werden.'),
+    this.themenService.aendern(aussage, themen, this.themen, () => {
+      this.fehler = 'Die Themen konnten nicht gespeichert werden.';
     });
   }
 

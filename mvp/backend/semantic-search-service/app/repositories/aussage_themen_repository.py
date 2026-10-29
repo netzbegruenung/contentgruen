@@ -13,7 +13,13 @@ from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import get_app_database
+from domain.themen import Zuordnungsart
 from infrastructure.database.models import AussageThemaZeile
+
+# Erster Schluessel der Advisory-Sperre je Aussage. Die Form mit zwei Schluesseln
+# hat einen eigenen Schluesselraum, getrennt von der Migrationssperre
+# (infrastructure/database/migrationen.py, SPERRE).
+SPERRE_THEMEN = 363
 
 
 class AussageThemenRepository:
@@ -21,7 +27,7 @@ class AussageThemenRepository:
         self.db = get_app_database()
 
     def setzen(
-        self, statement_id: uuid.UUID, themen: List[str], zuordnungsart: str
+        self, statement_id: uuid.UUID, themen: List[str], zuordnungsart: Zuordnungsart
     ) -> None:
         """
         Die Themen einer Aussage ersetzen, in einer Transaktion. Eine Sperre je
@@ -30,8 +36,8 @@ class AussageThemenRepository:
         """
         with self.db.get_session() as session:
             session.execute(
-                text("SELECT pg_advisory_xact_lock(hashtext(:id))"),
-                {"id": str(statement_id)},
+                text("SELECT pg_advisory_xact_lock(:sperre, hashtext(:id))"),
+                {"sperre": SPERRE_THEMEN, "id": str(statement_id)},
             )
             session.execute(
                 delete(AussageThemaZeile).where(
@@ -45,7 +51,7 @@ class AussageThemenRepository:
                             {
                                 "statement_id": statement_id,
                                 "thema": t,
-                                "zuordnungsart": zuordnungsart,
+                                "zuordnungsart": str(zuordnungsart),
                             }
                             for t in themen
                         ]
@@ -65,10 +71,10 @@ class AussageThemenRepository:
         )
         return self._gruppiert(abfrage)
 
-    def zuordnungen(self, zuordnungsart: str) -> Dict[uuid.UUID, List[str]]:
+    def zuordnungen(self, zuordnungsart: Zuordnungsart) -> Dict[uuid.UUID, List[str]]:
         """Alle Zuordnungen einer Zuordnungsart, je Aussage."""
         abfrage = select(AussageThemaZeile.statement_id, AussageThemaZeile.thema).where(
-            AussageThemaZeile.zuordnungsart == zuordnungsart
+            AussageThemaZeile.zuordnungsart == str(zuordnungsart)
         )
         return self._gruppiert(abfrage)
 

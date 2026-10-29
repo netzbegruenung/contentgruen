@@ -220,6 +220,14 @@ _Avoid_: Remix, Kopie, Fassung, Fork
 Ein Eintrag aus einer festen, kurzen Liste, mit dem Aussagen geordnet werden; eine Aussage hat höchstens zwei. Freie Schlagworte gibt es nicht.
 _Avoid_: Tag, Topic, Kategorie, Schlagwort
 
+**Zuordnungsart**:
+Wie ein Thema an eine Aussage kam: von Hand durch eine Person oder später durch eine Automatik. Wer zugeordnet hat und wann, wird nicht gespeichert.
+_Avoid_: Quelle, Herkunft (das ist die Angabe, worauf sich ein Beitrag stützt)
+
+**Testset**:
+Die Zuordnungen von Hand mit dem Text ihrer Aussage, als Datei für Admins. Damit wird geprüft, wie gut spätere Themenvorschläge treffen. Es enthält keine Personendaten; Aussagen aus Suchanfragen gehören nicht dazu.
+_Avoid_: Eval-Set, Trainingsdaten, Goldstandard
+
 ## Nutzung und Bewertung
 
 **Nutzung**:

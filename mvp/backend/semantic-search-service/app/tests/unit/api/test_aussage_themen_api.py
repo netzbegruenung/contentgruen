@@ -148,10 +148,16 @@ class TestAussagenZumZuordnen:
         themen_service.aussagen_zum_zuordnen = AsyncMock(
             return_value=[
                 SimpleNamespace(
-                    statement_id=a, text="Tempolimit bringt nichts", themen=("verkehr",)
+                    statement_id=a,
+                    text="Tempolimit bringt nichts",
+                    themen=("verkehr",),
+                    im_testset=True,
                 ),
                 SimpleNamespace(
-                    statement_id=b, text="Windräder töten Vögel", themen=()
+                    statement_id=b,
+                    text="tempolimit warum",
+                    themen=(),
+                    im_testset=False,
                 ),
             ]
         )
@@ -165,11 +171,13 @@ class TestAussagenZumZuordnen:
                     "statement_id": str(a),
                     "statement_text": "Tempolimit bringt nichts",
                     "themen": [{"schluessel": "verkehr", "name": "Verkehr"}],
+                    "im_testset": True,
                 },
                 {
                     "statement_id": str(b),
-                    "statement_text": "Windräder töten Vögel",
+                    "statement_text": "tempolimit warum",
                     "themen": [],
+                    "im_testset": False,
                 },
             ]
         }

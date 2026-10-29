@@ -24,6 +24,8 @@ export interface AussageMitThemen {
     statement_id: string;
     statement_text: string;
     themen: Thema[];
+    /** Ob die Zuordnung von Hand ins Testset geht; Aussagen aus Suchanfragen nicht. */
+    im_testset: boolean;
 }
 
 export interface AussagenMitThemenResponse {

@@ -153,6 +153,7 @@ class TestVorab:
             "statement_was_new": True,
             "statement_id": str(neu),
             "statement_text": "Das Heizungsgesetz enteignet uns",
+            "themen": [],
         }
         statement_service.vorab_anlegen.assert_awaited_once_with(
             "Das Heizungsgesetz enteignet uns", "person-1"
@@ -217,6 +218,10 @@ class TestVorab:
         themen_service.zuordnen.assert_awaited_once_with(
             neu, ["energie-heizen", "soziales"]
         )
+        assert [t["schluessel"] for t in resp.json()["themen"]] == [
+            "energie-heizen",
+            "soziales",
+        ]
 
     def test_vorhandene_aussage_mit_themen_behaelt_ihre(
         self, statement_service, themen_service
@@ -235,6 +240,27 @@ class TestVorab:
 
         assert resp.status_code == 200
         themen_service.zuordnen.assert_not_called()
+        assert resp.json()["themen"] == [{"schluessel": "klima", "name": "Klima"}]
+
+    def test_scheitert_das_zuordnen_bleibt_die_aussage_angelegt(
+        self, statement_service, themen_service
+    ):
+        """Die Aussage steht schon; ein 500 hiesse "nicht angelegt" und waere falsch."""
+        neu = uuid.uuid4()
+        statement_service.vorab_anlegen = AsyncMock(
+            return_value=(True, neu, "Das Heizungsgesetz enteignet uns")
+        )
+        themen_service.zuordnen = AsyncMock(side_effect=RuntimeError("PostgreSQL weg"))
+
+        resp = TestClient(app).post(
+            VORAB_URL,
+            json={"text": "Das Heizungsgesetz enteignet uns", "themen": ["soziales"]},
+            headers=ANGEMELDET,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["statement_was_new"] is True
+        assert resp.json()["themen"] == []
 
     def test_vorhandene_aussage_ohne_themen_bekommt_die_gewaehlten(
         self, statement_service, themen_service

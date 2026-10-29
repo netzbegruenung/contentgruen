@@ -10,33 +10,36 @@ Die Zuordnungsart unterscheidet die Zuordnungen von Hand von denen einer spaeter
 Automatik (Roadmap-Stufe 3); nur die von Hand taugen als Testset.
 """
 
+import asyncio
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Dict, Iterable, List, Protocol, Tuple
+from typing import Dict, Iterable, List, Optional, Protocol, Tuple
 
 from pydantic import ValidationError
 
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
-from domain.themen import NACH_SCHLUESSEL, THEMEN, themen_pruefen
+from domain.models.statement import StatementDbEntry, angelegt_am
+from domain.themen import NACH_SCHLUESSEL, THEMEN, Zuordnungsart, themen_pruefen
 from services.content.statement_service import AussageNichtGefunden, StatementService
 
-VON_HAND = "von_hand"
+VON_HAND = Zuordnungsart.VON_HAND
 
 _REIHENFOLGE = {t.schluessel: i for i, t in enumerate(THEMEN)}
 
 
 class IAussageThemenRepository(Protocol):
     def setzen(
-        self, statement_id: uuid.UUID, themen: List[str], zuordnungsart: str
+        self, statement_id: uuid.UUID, themen: List[str], zuordnungsart: Zuordnungsart
     ) -> None: ...
 
     def themen_von(
         self, statement_ids: Iterable[uuid.UUID]
     ) -> Dict[uuid.UUID, List[str]]: ...
 
-    def zuordnungen(self, zuordnungsart: str) -> Dict[uuid.UUID, List[str]]: ...
+    def zuordnungen(
+        self, zuordnungsart: Zuordnungsart
+    ) -> Dict[uuid.UUID, List[str]]: ...
 
 
 @dataclass(frozen=True)
@@ -46,7 +49,7 @@ class ThemenZuordnung:
     statement_id: uuid.UUID
     text: str
     themen: List[str]
-    zuordnungsart: str
+    zuordnungsart: Zuordnungsart
 
 
 @dataclass(frozen=True)
@@ -54,17 +57,21 @@ class AussageMitThemen:
     statement_id: uuid.UUID
     text: str
     themen: Tuple[str, ...]
+    # Ob ihre Zuordnung von Hand ins Testset geht (fuers_testset).
+    im_testset: bool
 
 
-_FRUEHESTE = datetime.min.replace(tzinfo=timezone.utc)
-
-
-def angelegt_am(aussage) -> datetime:
-    """Wann eine Aussage angelegt wurde, immer mit Zeitzone; ohne Angabe ganz frueh."""
-    created = getattr(aussage, "created", None)
-    if not isinstance(created, datetime):
-        return _FRUEHESTE
-    return created if created.tzinfo else created.replace(tzinfo=timezone.utc)
+def fuers_testset(aussage: StatementDbEntry) -> bool:
+    """
+    Ob die Zuordnungen einer Aussage ins Testset duerfen: nur sichtbare, und keine
+    aus Suchanfragen, auch keine beantworteten. Deren Text ist, was eine Person
+    eingetippt hat, und kann Persoenliches enthalten. In der App sehen Mitwirkende
+    ihn ab der Schwelle von "Suchen ohne Treffer"; aus der App hinaus geht er nicht.
+    """
+    return (
+        aussage.status == ContentStatus.VISIBLE
+        and aussage.origin is not ContentOrigin.SEARCH_QUERY
+    )
 
 
 def _bekannt_und_geordnet(themen: Iterable[str]) -> List[str]:
@@ -87,10 +94,13 @@ class AussageThemenService:
 
         Raises:
             ThemaUngueltig: unbekanntes Thema oder mehr als zwei.
-            AussageNichtGefunden: Die Aussage gibt es nicht.
+            AussageNichtGefunden: Die Aussage gibt es nicht, oder sie ist nicht
+                sichtbar (gesperrt oder geloescht).
         """
         geprueft = themen_pruefen(themen)
-        await self._aussage(statement_id)
+        aussage = await self._aussage(statement_id)
+        if aussage.status != ContentStatus.VISIBLE:
+            raise AussageNichtGefunden(str(statement_id))
         self._repository.setzen(statement_id, geprueft, VON_HAND)
         return geprueft
 
@@ -122,38 +132,38 @@ class AussageThemenService:
         aussagen.sort(key=angelegt_am, reverse=True)
         aussagen.sort(key=lambda a: a.id in themen)
         return [
-            AussageMitThemen(a.id, a.text, tuple(themen.get(a.id, ())))
+            AussageMitThemen(
+                a.id, a.text, tuple(themen.get(a.id, ())), fuers_testset(a)
+            )
             for a in aussagen
         ]
 
     async def testset(self) -> List[ThemenZuordnung]:
         """
         Alle Zuordnungen von Hand mit dem Text ihrer Aussage, als Testset fuer
-        Themenvorschlaege. Nur sichtbare Aussagen; ohne Person und Zeitpunkt.
-
-        Ohne Aussagen aus Suchanfragen, auch beantwortete: Ihr Text ist, was eine
-        Person eingetippt hat, und kann Persoenliches enthalten. In der App sehen
-        Mitwirkende ihn ab der Schwelle von "Suchen ohne Treffer"; aus der App
-        hinaus geht er nicht.
+        Themenvorschlaege, ohne Person und Zeitpunkt; welche Aussagen: fuers_testset.
         """
-        zeilen: List[ThemenZuordnung] = []
-        for statement_id, themen in self._repository.zuordnungen(VON_HAND).items():
-            bekannt = _bekannt_und_geordnet(themen)
-            if not bekannt:
-                continue
-            try:
-                aussage = await self._aussage(statement_id)
-            except AussageNichtGefunden:
-                continue
-            if (
-                aussage.status != ContentStatus.VISIBLE
-                or aussage.origin is ContentOrigin.SEARCH_QUERY
-            ):
-                continue
-            zeilen.append(
-                ThemenZuordnung(statement_id, aussage.text, bekannt, VON_HAND)
-            )
-        return zeilen
+        zuordnungen = [
+            (statement_id, bekannt)
+            for statement_id, themen in self._repository.zuordnungen(VON_HAND).items()
+            if (bekannt := _bekannt_und_geordnet(themen))
+        ]
+        aussagen = await asyncio.gather(
+            *(self._aussage_oder_none(statement_id) for statement_id, _ in zuordnungen)
+        )
+        return [
+            ThemenZuordnung(statement_id, aussage.text, bekannt, VON_HAND)
+            for (statement_id, bekannt), aussage in zip(zuordnungen, aussagen)
+            if aussage is not None and fuers_testset(aussage)
+        ]
+
+    async def _aussage_oder_none(
+        self, statement_id: uuid.UUID
+    ) -> Optional[StatementDbEntry]:
+        try:
+            return await self._aussage(statement_id)
+        except AussageNichtGefunden:
+            return None
 
     async def _aussage(self, statement_id: uuid.UUID):
         try:

@@ -165,6 +165,33 @@ describe('HierFehltEineAntwortComponent', () => {
       expect(aussagen()[0].querySelector('.thema-marke')?.textContent?.trim()).toBe('Energie und Heizen');
     });
 
+    it('baut einen zweiten schnellen Klick auf dem ersten auf und speichert der Reihe nach', () => {
+      liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
+      knopf(aussagen()[0], 'Themen zuordnen').click();
+      fixture.detectChanges();
+      const auswahl = () => aussagen()[0].querySelector('app-themen-auswahl')!;
+
+      knopf(auswahl(), 'Klima').click();
+      fixture.detectChanges();
+      knopf(auswahl(), 'Energie und Heizen').click();
+      fixture.detectChanges();
+
+      const erste = http.expectOne(ZUORDNEN_URL);
+      expect(erste.request.body.themen).toEqual(['klima']);
+      erste.flush({ statement_id: 'a-1', themen: [THEMEN[0]] });
+      fixture.detectChanges();
+      // Zwischen den beiden Antworten zeigt die Seite schon beide Themen.
+      expect(aussagen()[0].querySelectorAll('.thema-marke').length).toBe(2);
+
+      const zweite = http.expectOne(ZUORDNEN_URL);
+      expect(zweite.request.body.themen).toEqual(['klima', 'energie-heizen']);
+      zweite.flush({ statement_id: 'a-1', themen: [THEMEN[0], THEMEN[1]] });
+      fixture.detectChanges();
+
+      const marken = Array.from(aussagen()[0].querySelectorAll('.thema-marke')).map((m) => m.textContent?.trim());
+      expect(marken).toEqual(['Klima', 'Energie und Heizen']);
+    });
+
     it('meldet, wenn das Zuordnen scheitert', () => {
       liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
 
@@ -205,6 +232,7 @@ describe('HierFehltEineAntwortComponent', () => {
         statement_was_new: true,
         statement_id: 'neu-1',
         statement_text: 'Das Heizungsgesetz enteignet uns',
+        themen: [],
       });
       fixture.detectChanges();
 
@@ -226,9 +254,43 @@ describe('HierFehltEineAntwortComponent', () => {
         text: 'Das Heizungsgesetz enteignet uns',
         themen: ['energie-heizen'],
       });
-      anfrage.flush({ statement_was_new: true, statement_id: 'neu-1', statement_text: 'x' });
+      anfrage.flush({ statement_was_new: true, statement_id: 'neu-1', statement_text: 'x', themen: [THEMEN[1]] });
       fixture.detectChanges();
       liefern([]);
+      expect(text()).toContain('Aussage angelegt.');
+      expect(text()).not.toContain('konnten nicht gespeichert');
+    });
+
+    it('sagt, wenn die neue Aussage ihre Themen nicht bekam', () => {
+      eingeben('Das Heizungsgesetz enteignet uns');
+      knopf(element().querySelector('.vorab app-themen-auswahl')!, 'Klima').click();
+      fixture.detectChanges();
+      anlegen();
+
+      http.expectOne(VORAB_URL).flush({ statement_was_new: true, statement_id: 'neu-1', statement_text: 'x', themen: [] });
+      fixture.detectChanges();
+      liefern([]);
+
+      expect(text()).toContain('Aussage angelegt. Die Themen konnten nicht gespeichert werden');
+    });
+
+    it('nennt bei einer vorhandenen Aussage die Themen, die sie hat, ohne auf die Liste zu verweisen', () => {
+      eingeben('Das Heizungsgesetz enteignet uns');
+      knopf(element().querySelector('.vorab app-themen-auswahl')!, 'Klima').click();
+      fixture.detectChanges();
+      anlegen();
+
+      http.expectOne(VORAB_URL).flush({
+        statement_was_new: false,
+        statement_id: 'alt-1',
+        statement_text: 'Heizungsgesetz = Enteignung',
+        themen: [THEMEN[1]],
+      });
+      fixture.detectChanges();
+      liefern([]);
+
+      expect(text()).toContain('Ihre Themen: Energie und Heizen.');
+      expect(text()).not.toContain('in der Liste');
     });
 
     it('nennt eine schon vorhandene ähnliche Aussage', () => {
@@ -239,6 +301,7 @@ describe('HierFehltEineAntwortComponent', () => {
         statement_was_new: false,
         statement_id: 'alt-1',
         statement_text: 'Heizungsgesetz = Enteignung',
+        themen: [],
       });
       fixture.detectChanges();
       liefern([]);

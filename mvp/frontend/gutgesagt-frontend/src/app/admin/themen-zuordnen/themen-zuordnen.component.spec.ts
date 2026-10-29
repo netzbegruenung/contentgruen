@@ -39,8 +39,9 @@ describe('ThemenZuordnenComponent', () => {
     http.expectOne(THEMEN_URL).flush({ themen: THEMEN });
     http.expectOne(`${THEMEN_URL}/aussagen`).flush({
       aussagen: [
-        { statement_id: 'a-1', statement_text: 'Windräder töten Vögel', themen: [] },
-        { statement_id: 'a-2', statement_text: 'Tempolimit bringt nichts', themen: [THEMEN[1]] },
+        { statement_id: 'a-1', statement_text: 'Windräder töten Vögel', themen: [], im_testset: true },
+        { statement_id: 'a-2', statement_text: 'Tempolimit bringt nichts', themen: [THEMEN[1]], im_testset: true },
+        { statement_id: 'a-3', statement_text: 'tempolimit warum', themen: [THEMEN[1]], im_testset: false },
       ],
     });
     fixture.detectChanges();
@@ -49,9 +50,14 @@ describe('ThemenZuordnenComponent', () => {
   afterEach(() => http.verify());
 
   it('zeigt alle Aussagen mit ihren Themen und den Stand', () => {
-    expect(zeilen().length).toBe(2);
+    expect(zeilen().length).toBe(3);
     expect(knopf(zeilen()[1], 'Verkehr').getAttribute('aria-pressed')).toBe('true');
-    expect(element().textContent).toContain('1 von 2 Aussagen haben ein Thema');
+    expect(element().textContent).toContain('2 von 3 Aussagen haben ein Thema, 1 davon im Testset');
+  });
+
+  it('kennzeichnet Aussagen aus Suchanfragen, die nicht ins Testset gehen', () => {
+    expect(zeilen()[0].querySelector('.nicht-im-testset')).toBeNull();
+    expect(zeilen()[2].querySelector('.nicht-im-testset')?.textContent).toContain('nicht im Testset');
   });
 
   it('speichert eine Zuordnung sofort', () => {
@@ -63,7 +69,20 @@ describe('ThemenZuordnenComponent', () => {
     anfrage.flush({ statement_id: 'a-1', themen: [THEMEN[0]] });
     fixture.detectChanges();
 
-    expect(element().textContent).toContain('2 von 2 Aussagen haben ein Thema');
+    expect(element().textContent).toContain('3 von 3 Aussagen haben ein Thema, 2 davon im Testset');
+  });
+
+  it('zeigt nach einem gescheiterten Speichern wieder den gespeicherten Stand', () => {
+    knopf(zeilen()[1], 'Klima').click();
+    fixture.detectChanges();
+    expect(knopf(zeilen()[1], 'Klima').getAttribute('aria-pressed')).toBe('true');
+
+    http.expectOne(`${THEMEN_URL}/zuordnen`).flush('kaputt', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(knopf(zeilen()[1], 'Klima').getAttribute('aria-pressed')).toBe('false');
+    expect(knopf(zeilen()[1], 'Verkehr').getAttribute('aria-pressed')).toBe('true');
+    expect(element().textContent).toContain('Die Themen konnten nicht gespeichert werden');
   });
 
   it('lädt das Testset als JSON-Datei herunter', () => {

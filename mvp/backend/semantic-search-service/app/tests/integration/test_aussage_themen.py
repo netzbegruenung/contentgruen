@@ -22,7 +22,7 @@ from services.aussage_themen_service import VON_HAND
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
 
-MIGRATION = postgres.MIGRATIONEN / "2026-10-29-363-aussage-themen.sql"
+MIGRATION = postgres.MIGRATIONEN / "2026-10-29-aussage-themen.sql"
 
 A = uuid.UUID("11111111-1111-1111-1111-111111111111")
 B = uuid.UUID("22222222-2222-2222-2222-222222222222")
@@ -81,9 +81,10 @@ def test_setzen_ersetzt_und_leer_entfernt(neue_datenbank):
     assert repository.themen_von([A]) == {}
 
 
-def test_zuordnungen_nur_der_gefragten_quelle(neue_datenbank):
+def test_zuordnungen_nur_der_gefragten_zuordnungsart(neue_datenbank):
     repository = _repository(neue_datenbank)
     repository.setzen(A, ["klima"], VON_HAND)
+    # Ein Wert, wie ihn eine spaetere Automatik (#401) bekommt.
     repository.setzen(B, ["verkehr"], "vorschlag")
 
     assert repository.zuordnungen(VON_HAND) == {A: ["klima"]}

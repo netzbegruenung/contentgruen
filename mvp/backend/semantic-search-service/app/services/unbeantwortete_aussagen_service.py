@@ -27,8 +27,8 @@ import uuid
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from domain.models.statement import StatementDbEntry
-from services.aussage_themen_service import AussageThemenService, angelegt_am
+from domain.models.statement import angelegt_am
+from services.aussage_themen_service import AussageThemenService
 from services.content.statement_service import StatementService
 from services.suchen_ohne_treffer_service import (
     WOCHEN_STANDARD,

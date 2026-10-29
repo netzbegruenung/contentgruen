@@ -11,6 +11,7 @@ Zuordnungen in der Datenbank stehen; sie werden dann nicht mehr angezeigt
 
 import json
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
@@ -24,6 +25,15 @@ _DATEI = Path(__file__).with_name("themen.json")
 class Thema:
     schluessel: str
     name: str
+
+
+class Zuordnungsart(StrEnum):
+    """
+    Wie ein Thema an eine Aussage kam. Nur die Zuordnungen von Hand taugen als
+    Testset; eine spaetere Automatik (#401) bekommt einen eigenen Wert.
+    """
+
+    VON_HAND = "von_hand"
 
 
 class ThemaUngueltig(ValueError):

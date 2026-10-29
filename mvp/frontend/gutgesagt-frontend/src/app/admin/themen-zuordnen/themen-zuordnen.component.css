@@ -36,3 +36,9 @@
   margin: 0 0 8px;
   font-weight: 500;
 }
+
+.nicht-im-testset {
+  margin: -4px 0 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}

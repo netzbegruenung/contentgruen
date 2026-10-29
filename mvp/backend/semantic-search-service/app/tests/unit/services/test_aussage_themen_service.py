@@ -221,3 +221,27 @@ async def test_testset_laesst_aussagen_aus_suchanfragen_weg():
     await service.zuordnen(B, ["verkehr"])
 
     assert [z.statement_id for z in await service.testset()] == [B]
+
+
+async def test_zuordnen_zu_einer_gesperrten_aussage_scheitert():
+    service, repository = _service(
+        [_aussage(A, "Gesperrt", status=ContentStatus.BLOCKED)]
+    )
+
+    with pytest.raises(AussageNichtGefunden):
+        await service.zuordnen(A, ["klima"])
+    assert repository.zeilen == {}
+
+
+async def test_aussagen_zum_zuordnen_sagen_ob_sie_ins_testset_gehen():
+    """Damit der Zaehler der Admin-Seite zum Testset passt."""
+    service, _ = _service(
+        [
+            _aussage(A, "Tempolimit bringt nichts"),
+            _aussage(B, "tempolimit warum", origin=ContentOrigin.SEARCH_QUERY),
+        ]
+    )
+
+    liste = await service.aussagen_zum_zuordnen()
+
+    assert {a.statement_id: a.im_testset for a in liste} == {A: True, B: False}

@@ -54,6 +54,11 @@ export interface AddStatementResponse {
     statement_text: string;
 }
 
+/** Die Antwort auf das Vorab-Anlegen, mit den Themen, die die Aussage jetzt hat. */
+export interface AussageVorabResponse extends AddStatementResponse {
+    themen: Thema[];
+}
+
 // Hier fehlt eine Antwort
 
 /**
