@@ -21,6 +21,7 @@ from services.search.search_orchestrator import (
 from auth.authorization import require_auth
 from dependencies import (
     get_aufrufer,
+    get_aussage_themen_service,
     get_commentary_service,
     get_generic_text_service,
     get_image_service,
@@ -34,6 +35,7 @@ from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.voting_service import VotingService
+from services.aussage_themen_service import AussageThemenService
 from services.search_tracking_service import (
     get_search_tracking_service,
     tagespseudonym,
@@ -97,6 +99,7 @@ async def search_by_text(
         get_suchen_ohne_treffer_service
     ),
     aufrufer: Aufrufer = Depends(get_aufrufer),
+    themen_service: AussageThemenService = Depends(get_aussage_themen_service),
     x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
     try:
@@ -237,6 +240,13 @@ async def search_by_text(
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
         orchestrator.fuer_aufrufer(aufrufer)
+        try:
+            orchestrator.themen_ergaenzen(themen_service)
+        except Exception as e:
+            # Ohne Themen bleibt die Suche nutzbar; nur der Filter fehlt dann.
+            logger.warning(
+                f"Failed to add topics to search results: {type(e).__name__}"
+            )
 
         commentary_search_results = orchestrator.results_for(ContentType.COMMENTARY)
         generictext_search_results = orchestrator.results_for(ContentType.GENERIC_TEXT)

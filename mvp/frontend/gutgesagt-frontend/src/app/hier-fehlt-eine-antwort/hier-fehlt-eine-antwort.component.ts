@@ -10,6 +10,10 @@ import {
   StatementService,
 } from '../services/statement.service';
 import { UnbeantworteteAussage } from '../services/dtos/statementDtos';
+import { Thema } from '../services/dtos/themenDtos';
+import { ThemenService } from '../services/themen.service';
+import { ThemenAuswahlComponent } from '../shared/themen/themen-auswahl.component';
+import { ThemenFilterComponent } from '../shared/themen/themen-filter.component';
 import { AUSSAGE_PARAM, FORMULAR_PFAD } from '../shared/formular-adresse';
 import {
   VON_HIER_FEHLT_EINE_ANTWORT,
@@ -24,11 +28,24 @@ import {
  * die ohne Treffer gesucht haben, damit Hotspots sichtbar werden, nicht die Zahl der
  * Suchen; eine Aussage aus einer Suchanfrage erst ab der Schwelle der Kennzahl
  * (zwei Personen).
+ *
+ * Themen: Die Liste laesst sich nach einem Thema filtern, jede Aussage zeigt ihre
+ * Themen, und Mitwirkende ordnen sie hier zu oder aendern sie, auch beim Anlegen
+ * vorab. Ist die Themenliste nicht ladbar, fehlen Filter und Auswahl; die Seite
+ * bleibt sonst nutzbar.
  */
 @Component({
   selector: 'app-hier-fehlt-eine-antwort',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    ThemenAuswahlComponent,
+    ThemenFilterComponent,
+  ],
   templateUrl: './hier-fehlt-eine-antwort.component.html',
   styleUrls: ['./hier-fehlt-eine-antwort.component.css'],
 })
@@ -39,14 +56,55 @@ export class HierFehltEineAntwortComponent implements OnInit {
   aussagen: UnbeantworteteAussage[] | null = null;
   ladefehler = false;
 
+  /** Die feste Themenliste; leer, solange sie nicht geladen ist. */
+  themen: Thema[] = [];
+  /** Der Filter; null = alle Themen. */
+  aktivesThema: string | null = null;
+  /** Die Aussage, deren Themen gerade bearbeitet werden. */
+  themenBearbeiten: string | null = null;
+  themenFehler: string | null = null;
+
   neueAussage = '';
+  neueThemen: string[] = [];
   speichert = false;
   meldung = '';
 
-  constructor(private statementService: StatementService) {}
+  constructor(
+    private statementService: StatementService,
+    private themenService: ThemenService,
+  ) {}
 
   ngOnInit(): void {
+    this.themenService.liste().subscribe({
+      next: (themen) => (this.themen = themen),
+      error: () => (this.themen = []),
+    });
     this.laden();
+  }
+
+  filtern(thema: string | null): void {
+    this.aktivesThema = thema;
+    this.themenBearbeiten = null;
+    this.laden();
+  }
+
+  /** Die Themen einer Aussage auf- oder zuklappen. */
+  themenUmschalten(aussage: UnbeantworteteAussage): void {
+    this.themenFehler = null;
+    this.themenBearbeiten = this.themenBearbeiten === aussage.statement_id ? null : aussage.statement_id;
+  }
+
+  schluessel(aussage: UnbeantworteteAussage): string[] {
+    return aussage.themen.map((t) => t.schluessel);
+  }
+
+  /** Jede Aenderung der Auswahl wird gleich gespeichert. */
+  themenSetzen(aussage: UnbeantworteteAussage, themen: string[]): void {
+    this.themenFehler = null;
+    this.themenService.zuordnen(aussage.statement_id, themen).subscribe({
+      next: (gespeichert) => (aussage.themen = gespeichert),
+      error: () => (this.themenFehler = 'Die Themen konnten nicht gespeichert werden.'),
+    });
   }
 
   /**
@@ -78,10 +136,11 @@ export class HierFehltEineAntwortComponent implements OnInit {
     }
     this.speichert = true;
     this.meldung = '';
-    this.statementService.aussageVorabAnlegen(this.neueAussage).subscribe({
+    this.statementService.aussageVorabAnlegen(this.neueAussage, this.neueThemen).subscribe({
       next: (antwort) => {
         this.speichert = false;
         this.neueAussage = '';
+        this.neueThemen = [];
         this.meldung = antwort.statement_was_new
           ? 'Aussage angelegt.'
           : `Diese Aussage gibt es schon: „${antwort.statement_text}“`;
@@ -96,7 +155,7 @@ export class HierFehltEineAntwortComponent implements OnInit {
 
   private laden(): void {
     this.ladefehler = false;
-    this.statementService.unbeantworteteAussagen().subscribe({
+    this.statementService.unbeantworteteAussagen(this.aktivesThema).subscribe({
       next: (aussagen) => (this.aussagen = aussagen),
       error: () => (this.ladefehler = true),
     });

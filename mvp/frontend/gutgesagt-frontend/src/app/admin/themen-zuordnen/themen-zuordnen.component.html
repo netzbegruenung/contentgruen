@@ -1,0 +1,26 @@
+<section class="themen-zuordnen">
+    <h1>Themen zuordnen</h1>
+    <p class="hinweis">
+        Ein bis zwei Themen je Aussage, optional. Die Zuordnungen von Hand sind zugleich das
+        Testset für spätere Themenvorschläge; es enthält nur Aussage, Themen und Quelle.
+    </p>
+
+    <div class="kopf">
+        <span *ngIf="aussagen" class="stand">{{ zugeordnet }} von {{ aussagen.length }} Aussagen haben ein Thema</span>
+        <button mat-stroked-button type="button" class="testset" (click)="testsetHerunterladen()">
+            <mat-icon>download</mat-icon> Testset herunterladen
+        </button>
+    </div>
+
+    <p *ngIf="fehler" class="fehler" role="alert">{{ fehler }}</p>
+
+    <ul *ngIf="aussagen && themen.length" class="aussagen">
+        <li *ngFor="let aussage of aussagen" class="aussage" data-testid="aussage-zum-zuordnen">
+            <p class="aussage-text">{{ aussage.statement_text }}</p>
+            <app-themen-auswahl [themen]="themen" [gewaehlt]="schluessel(aussage)"
+                                beschriftung="Themen dieser Aussage"
+                                (gewaehltChange)="setzen(aussage, $event)"></app-themen-auswahl>
+        </li>
+    </ul>
+    <p *ngIf="aussagen && aussagen.length === 0" class="hinweis">Noch keine Aussagen.</p>
+</section>

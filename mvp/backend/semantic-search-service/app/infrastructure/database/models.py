@@ -217,6 +217,23 @@ class FeedbackZeile(Base):
     __table_args__ = (Index("idx_feedback_eingegangen_am", "eingegangen_am"),)
 
 
+class AussageThemaZeile(Base):
+    """Ein Thema an einer Aussage, aus der festen Liste (domain/themen.py).
+
+    Je Aussage hoechstens zwei Zeilen; das prueft AussageThemenService, nicht die
+    Tabelle. quelle unterscheidet die Zuordnung von Hand von der einer spaeteren
+    Automatik. Traegt bewusst weder Kennung noch Zeitpunkt: Die Zuordnungen von
+    Hand sind das Testset fuer Themenvorschlaege und sollen ohne Personendaten
+    exportierbar sein (services/aussage_themen_service.py).
+    """
+
+    __tablename__ = "aussage_themen"
+
+    statement_id = Column(SQLUUID(as_uuid=True), primary_key=True)
+    thema = Column(String(40), primary_key=True)
+    quelle = Column(String(20), nullable=False, server_default=text("'von_hand'"))
+
+
 class ContentReport(Base):
     """Track user reports of inappropriate or problematic content."""
 

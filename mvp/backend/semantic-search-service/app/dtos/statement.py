@@ -2,12 +2,13 @@ import datetime
 import uuid
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from domain.models.statement import Statement, StatementReplysuggestion
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
+from domain.themen import NACH_SCHLUESSEL, themen_pruefen
 
 
 ### Aussage nach aussen ###
@@ -102,6 +103,63 @@ AUSSAGE_MIN_ZEICHEN = 3
 AUSSAGE_MAX_ZEICHEN = 1000
 
 
+### Themen ###
+
+
+class ThemaDto(BaseModel):
+    """Ein Thema aus der festen Liste: Schluessel (gespeichert) und Name (Anzeige)."""
+
+    schluessel: str
+    name: str
+
+
+def themen_dtos(schluessel: Iterable[str]) -> List[ThemaDto]:
+    """Die Themen als DTOs; Schluessel, die nicht (mehr) in der Liste stehen, fallen weg."""
+    return [
+        ThemaDto(schluessel=t.schluessel, name=t.name)
+        for t in (NACH_SCHLUESSEL.get(s) for s in schluessel)
+        if t is not None
+    ]
+
+
+class ThemenResponse(BaseModel):
+    themen: List[ThemaDto]
+
+
+class ThemenZuordnenRequest(BaseModel):
+    statement_id: uuid.UUID
+    # Hoechstens zwei aus der Liste; geprueft in AussageThemenService.zuordnen.
+    themen: List[str] = Field(default_factory=list)
+
+
+class ThemenZuordnenResponse(BaseModel):
+    statement_id: uuid.UUID
+    themen: List[ThemaDto]
+
+
+class AussageMitThemenDto(BaseModel):
+    statement_id: uuid.UUID
+    statement_text: str
+    themen: List[ThemaDto]
+
+
+class AussagenMitThemenResponse(BaseModel):
+    aussagen: List[AussageMitThemenDto]
+
+
+class ThemenZuordnungDto(BaseModel):
+    """Eine Zeile des Testsets: bewusst ohne Autor, Kennung und Zeitpunkt."""
+
+    statement_id: uuid.UUID
+    text: str
+    themen: List[str]
+    quelle: str
+
+
+class ThemenTestsetResponse(BaseModel):
+    zuordnungen: List[ThemenZuordnungDto]
+
+
 class UnbeantworteteAussageDto(BaseModel):
     """
     Eine unbeantwortete Aussage: ID (fuer "Selbst beantworten") und Text, dazu wie
@@ -112,6 +170,7 @@ class UnbeantworteteAussageDto(BaseModel):
     statement_id: uuid.UUID
     statement_text: str
     personen_ohne_treffer: int
+    themen: List[ThemaDto] = Field(default_factory=list)
 
 
 class UnbeantworteteAussagenResponse(BaseModel):
@@ -122,6 +181,10 @@ class AussageVorabRequest(BaseModel):
     text: str = Field(
         ...,
         description="Die Aussage, fuer die es absehbar eine Antwort braucht",
+    )
+    themen: List[str] = Field(
+        default_factory=list,
+        description="Optional ein bis zwei Themen aus der Liste (domain/themen.json)",
     )
 
     @field_validator("text")
@@ -134,6 +197,12 @@ class AussageVorabRequest(BaseModel):
                 f"{AUSSAGE_MAX_ZEICHEN} Zeichen"
             )
         return wert
+
+    @field_validator("themen")
+    @classmethod
+    def themen_pruefen(cls, wert: List[str]) -> List[str]:
+        # Vor dem Anlegen pruefen: sonst stuende die Aussage schon, ohne Themen.
+        return themen_pruefen(wert)
 
 
 ### GetStatementById ###

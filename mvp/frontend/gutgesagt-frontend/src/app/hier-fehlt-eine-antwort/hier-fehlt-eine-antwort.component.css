@@ -51,3 +51,44 @@
 .meldung {
   margin-top: 8px;
 }
+
+.filter {
+  display: block;
+  margin: var(--spacing-md) 0;
+}
+
+.aussage-themen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.thema-marke {
+  font-size: 13px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.themen-umschalter {
+  border: none;
+  background: none;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--primary-dark);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.themen-bearbeiten {
+  margin-bottom: 8px;
+}
+
+.vorab-themen {
+  display: block;
+  margin-bottom: var(--spacing-md);
+}

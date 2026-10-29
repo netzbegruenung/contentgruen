@@ -41,6 +41,10 @@ import { MatToolbarModule } from '@angular/material/toolbar';
               <mat-icon>flag</mat-icon>
               <span>Moderation</span>
             </a>
+            <a mat-list-item routerLink="/admin/themen" routerLinkActive="active">
+              <mat-icon>label</mat-icon>
+              <span>Themen</span>
+            </a>
           </mat-nav-list>
         </mat-sidenav>
 

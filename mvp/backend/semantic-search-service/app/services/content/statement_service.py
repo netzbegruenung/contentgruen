@@ -126,6 +126,13 @@ class StatementService(
         """
         return await self._repository.count_curated()
 
+    async def kuratierte(self) -> List[StatementDbEntry]:
+        """
+        Alle sichtbaren Aussagen ohne die unbeantworteten Suchanfragen
+        (StatementRepository.kuratierte), fuer die Zuordnung von Themen.
+        """
+        return await self._repository.kuratierte()
+
     async def ohne_kommentar(self) -> List[StatementDbEntry]:
         """
         Sichtbare Aussagen ohne Kommentar, ohne die unbeantworteten Suchanfragen;

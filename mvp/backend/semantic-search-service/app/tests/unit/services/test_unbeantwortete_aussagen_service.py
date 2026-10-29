@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from services.aussage_themen_service import AussageThemenService
 from services.content.statement_service import StatementService
 from services.suchen_ohne_treffer_service import (
     SucheOhneTreffer,
@@ -40,12 +41,18 @@ def _aussage(statement_id, text, tag):
     )
 
 
-def _service(ohne_kommentar=(), gesucht=()):
+def _service(ohne_kommentar=(), gesucht=(), themen=None):
     statement_service = Mock(spec=StatementService)
     statement_service.ohne_kommentar = AsyncMock(return_value=list(ohne_kommentar))
     suchen = Mock(spec=SuchenOhneTrefferService)
     suchen.haeufigste = AsyncMock(return_value=list(gesucht))
-    return UnbeantworteteAussagenService(statement_service, suchen)
+    themen_service = Mock(spec=AussageThemenService)
+    themen_service.themen_von = Mock(
+        side_effect=lambda ids: {
+            i: t for i, t in (themen or {}).items() if i in set(ids)
+        }
+    )
+    return UnbeantworteteAussagenService(statement_service, suchen, themen_service)
 
 
 async def test_liste_zeigt_aussagen_ohne_kommentar_neueste_zuerst():
@@ -118,3 +125,52 @@ async def test_liste_ist_begrenzt():
     liste = await service.liste(limit=3)
 
     assert [a.statement_id for a in liste] == [A, B, C]
+
+
+async def test_liste_traegt_die_themen_jeder_aussage():
+    service = _service(
+        ohne_kommentar=[_aussage(A, "Windräder sind hässlich", 20)],
+        gesucht=[SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 7, 4)],
+        themen={A: ["natur-umwelt"], B: ["energie-heizen", "soziales"]},
+    )
+
+    liste = await service.liste()
+
+    assert [(a.statement_id, a.themen) for a in liste] == [
+        (B, ("energie-heizen", "soziales")),
+        (A, ("natur-umwelt",)),
+    ]
+
+
+async def test_filter_nach_thema_zeigt_nur_aussagen_mit_diesem_thema():
+    service = _service(
+        ohne_kommentar=[
+            _aussage(A, "Windräder sind hässlich", 20),
+            _aussage(C, "Tempo 30 bringt nichts", 10),
+        ],
+        gesucht=[
+            SucheOhneTreffer(B, "Wärmepumpen sind zu teuer", 7, 4),
+            SucheOhneTreffer(D, "Das Heizungsgesetz enteignet uns", 3, 2),
+        ],
+        themen={
+            A: ["energie-heizen", "natur-umwelt"],
+            B: ["energie-heizen"],
+            C: ["verkehr"],
+        },
+    )
+
+    liste = await service.liste(thema="energie-heizen")
+
+    assert [a.statement_id for a in liste] == [B, A]
+
+
+async def test_filter_wird_vor_der_begrenzung_angewandt():
+    service = _service(
+        ohne_kommentar=[_aussage(C, "c", 2)],
+        gesucht=[SucheOhneTreffer(A, "a", 5, 3), SucheOhneTreffer(B, "b", 4, 2)],
+        themen={C: ["klima"]},
+    )
+
+    liste = await service.liste(limit=1, thema="klima")
+
+    assert [a.statement_id for a in liste] == [C]

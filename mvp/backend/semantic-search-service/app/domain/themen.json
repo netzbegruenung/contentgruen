@@ -1,0 +1,14 @@
+[
+  { "schluessel": "klima", "name": "Klima" },
+  { "schluessel": "energie-heizen", "name": "Energie und Heizen" },
+  { "schluessel": "verkehr", "name": "Verkehr" },
+  { "schluessel": "landwirtschaft-ernaehrung", "name": "Landwirtschaft und Ernährung" },
+  { "schluessel": "natur-umwelt", "name": "Natur und Umwelt" },
+  { "schluessel": "wirtschaft-arbeit", "name": "Wirtschaft und Arbeit" },
+  { "schluessel": "soziales", "name": "Soziales" },
+  { "schluessel": "migration", "name": "Migration" },
+  { "schluessel": "demokratie-freiheit", "name": "Demokratie und Freiheit" },
+  { "schluessel": "europa", "name": "Europa" },
+  { "schluessel": "stadt-land", "name": "Stadt und Land" },
+  { "schluessel": "gleichstellung-vielfalt", "name": "Gleichstellung und Vielfalt" }
+]

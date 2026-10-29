@@ -93,19 +93,24 @@ export class StatementService {
     });
   }
 
-  /** "Hier fehlt eine Antwort": die unbeantworteten Aussagen, sortiert nach Bedarf. */
-  unbeantworteteAussagen(): Observable<UnbeantworteteAussage[]> {
+  /**
+   * "Hier fehlt eine Antwort": die unbeantworteten Aussagen, sortiert nach Bedarf;
+   * mit einem Thema nur die Aussagen mit diesem Thema.
+   */
+  unbeantworteteAussagen(thema: string | null = null): Observable<UnbeantworteteAussage[]> {
+    const params: Record<string, string> = thema ? { thema } : {};
     return this.http
-      .get<UnbeantworteteAussagenResponse>(this.unbeantwortetApiUrl)
+      .get<UnbeantworteteAussagenResponse>(this.unbeantwortetApiUrl, { params })
       .pipe(map((antwort) => antwort.aussagen));
   }
 
   /**
    * Eine Aussage vorab anlegen, fuer ein absehbares Thema. Gibt es schon eine sehr
-   * aehnliche, kommt diese zurueck (statement_was_new = false).
+   * aehnliche, kommt diese zurueck (statement_was_new = false); die Themen bekommt
+   * sie dann nur, wenn sie noch keine hat.
    */
-  aussageVorabAnlegen(text: string): Observable<AddStatementResponse> {
-    const request: AussageVorabRequest = { text: text.trim() };
+  aussageVorabAnlegen(text: string, themen: string[] = []): Observable<AddStatementResponse> {
+    const request: AussageVorabRequest = { text: text.trim(), themen };
     return this.http.post<AddStatementResponse>(this.vorabApiUrl, request);
   }
 

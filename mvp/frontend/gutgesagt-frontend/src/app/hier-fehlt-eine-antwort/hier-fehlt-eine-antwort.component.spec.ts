@@ -8,6 +8,20 @@ import { environment } from '../../environments/environment';
 
 const LISTE_URL = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
 const VORAB_URL = `${environment.baseUrl}/api/v1/statement/vorab`;
+const THEMEN_URL = `${environment.baseUrl}/api/v1/statement/themen`;
+const ZUORDNEN_URL = `${THEMEN_URL}/zuordnen`;
+const THEMEN = [
+  { schluessel: 'klima', name: 'Klima' },
+  { schluessel: 'energie-heizen', name: 'Energie und Heizen' },
+  { schluessel: 'verkehr', name: 'Verkehr' },
+];
+
+type Zeile = {
+  statement_id: string;
+  statement_text: string;
+  personen_ohne_treffer: number;
+  themen?: Array<{ schluessel: string; name: string }>;
+};
 
 describe('HierFehltEineAntwortComponent', () => {
   let fixture: ComponentFixture<HierFehltEineAntwortComponent>;
@@ -27,6 +41,7 @@ describe('HierFehltEineAntwortComponent', () => {
     fixture = TestBed.createComponent(HierFehltEineAntwortComponent);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
+    http.expectOne(THEMEN_URL).flush({ themen: THEMEN });
   });
 
   afterEach(() => http.verify());
@@ -43,9 +58,14 @@ describe('HierFehltEineAntwortComponent', () => {
     return Array.from(element().querySelectorAll('[data-testid="unbeantwortete-aussage"]'));
   }
 
-  function liefern(liste: Array<{ statement_id: string; statement_text: string; personen_ohne_treffer: number }>) {
-    http.expectOne(LISTE_URL).flush({ aussagen: liste });
+  function liefern(liste: Zeile[], url = LISTE_URL) {
+    http.expectOne(url).flush({ aussagen: liste.map((z) => ({ themen: [], ...z })) });
     fixture.detectChanges();
+  }
+
+  function knopf(bereich: Element, name: string): HTMLButtonElement {
+    const knoepfe = Array.from(bereich.querySelectorAll('button')) as HTMLButtonElement[];
+    return knoepfe.find((k) => k.textContent?.trim() === name)!;
   }
 
   it('zeigt die unbeantworteten Aussagen in der gelieferten Reihenfolge', () => {
@@ -103,6 +123,62 @@ describe('HierFehltEineAntwortComponent', () => {
     expect(text()).toContain('konnten nicht geladen werden');
   });
 
+  describe('Themen', () => {
+    it('filtert nach einem Thema und lädt die Liste dafür neu', () => {
+      liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
+
+      knopf(element().querySelector('app-themen-filter')!, 'Verkehr').click();
+      fixture.detectChanges();
+
+      liefern([], `${LISTE_URL}?thema=verkehr`);
+      expect(text()).toContain('Zu diesem Thema fehlt gerade keine Antwort');
+    });
+
+    it('zeigt die Themen jeder Aussage', () => {
+      liefern([
+        {
+          statement_id: 'a-1',
+          statement_text: 'Wärmepumpen sind zu teuer',
+          personen_ohne_treffer: 0,
+          themen: [THEMEN[1]],
+        },
+      ]);
+
+      const marken = Array.from(aussagen()[0].querySelectorAll('.thema-marke')).map((m) => m.textContent?.trim());
+      expect(marken).toEqual(['Energie und Heizen']);
+      expect(knopf(aussagen()[0], 'Themen ändern')).toBeTruthy();
+    });
+
+    it('ordnet einer vorhandenen Aussage nachträglich ein Thema zu', () => {
+      liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
+
+      knopf(aussagen()[0], 'Themen zuordnen').click();
+      fixture.detectChanges();
+      knopf(aussagen()[0].querySelector('app-themen-auswahl')!, 'Energie und Heizen').click();
+
+      const anfrage = http.expectOne(ZUORDNEN_URL);
+      expect(anfrage.request.method).toBe('PUT');
+      expect(anfrage.request.body).toEqual({ statement_id: 'a-1', themen: ['energie-heizen'] });
+      anfrage.flush({ statement_id: 'a-1', themen: [THEMEN[1]] });
+      fixture.detectChanges();
+
+      expect(aussagen()[0].querySelector('.thema-marke')?.textContent?.trim()).toBe('Energie und Heizen');
+    });
+
+    it('meldet, wenn das Zuordnen scheitert', () => {
+      liefern([{ statement_id: 'a-1', statement_text: 'Wärmepumpen sind zu teuer', personen_ohne_treffer: 0 }]);
+
+      knopf(aussagen()[0], 'Themen zuordnen').click();
+      fixture.detectChanges();
+      knopf(aussagen()[0].querySelector('app-themen-auswahl')!, 'Klima').click();
+      http.expectOne(ZUORDNEN_URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
+      fixture.detectChanges();
+
+      expect(text()).toContain('Die Themen konnten nicht gespeichert werden');
+      expect(aussagen()[0].querySelector('.thema-marke')).toBeNull();
+    });
+  });
+
   describe('Aussage vorab anlegen', () => {
     function eingeben(wert: string) {
       const feld = element().querySelector('textarea[name="aussage"]') as HTMLTextAreaElement;
@@ -124,7 +200,7 @@ describe('HierFehltEineAntwortComponent', () => {
 
       const anfrage = http.expectOne(VORAB_URL);
       expect(anfrage.request.method).toBe('POST');
-      expect(anfrage.request.body).toEqual({ text: 'Das Heizungsgesetz enteignet uns' });
+      expect(anfrage.request.body).toEqual({ text: 'Das Heizungsgesetz enteignet uns', themen: [] });
       anfrage.flush({
         statement_was_new: true,
         statement_id: 'neu-1',
@@ -136,6 +212,23 @@ describe('HierFehltEineAntwortComponent', () => {
       expect(text()).toContain('Aussage angelegt');
       expect((element().querySelector('textarea[name="aussage"]') as HTMLTextAreaElement).value).toBe('');
       expect(aussagen().length).toBe(1);
+    });
+
+    it('schickt die gewählten Themen mit', () => {
+      eingeben('Das Heizungsgesetz enteignet uns');
+      const auswahl = element().querySelector('.vorab app-themen-auswahl')!;
+      knopf(auswahl, 'Energie und Heizen').click();
+      fixture.detectChanges();
+      anlegen();
+
+      const anfrage = http.expectOne(VORAB_URL);
+      expect(anfrage.request.body).toEqual({
+        text: 'Das Heizungsgesetz enteignet uns',
+        themen: ['energie-heizen'],
+      });
+      anfrage.flush({ statement_was_new: true, statement_id: 'neu-1', statement_text: 'x' });
+      fixture.detectChanges();
+      liefern([]);
     });
 
     it('nennt eine schon vorhandene ähnliche Aussage', () => {

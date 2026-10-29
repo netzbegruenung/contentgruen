@@ -1,3 +1,5 @@
+import { Thema } from './themenDtos';
+
 
 //TODO: Evaluate usage of camel case and transformation in the backend
 
@@ -64,6 +66,8 @@ export interface UnbeantworteteAussage {
     statement_id: string;
     statement_text: string;
     personen_ohne_treffer: number;
+    /** Hoechstens zwei, in der Reihenfolge der Themenliste. */
+    themen: Thema[];
 }
 
 export interface UnbeantworteteAussagenResponse {
@@ -72,6 +76,8 @@ export interface UnbeantworteteAussagenResponse {
 
 export interface AussageVorabRequest {
     text: string;
+    /** Optional ein bis zwei Themen-Schluessel. */
+    themen?: string[];
 }
 
 // GetStatementById
