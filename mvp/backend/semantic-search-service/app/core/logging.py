@@ -90,6 +90,10 @@ def ausnahme_ohne_meldung(ausnahme: BaseException) -> str:
         if art.__module__ not in ("builtins", "__main__"):
             name = f"{art.__module__}.{name}"
         teile.append(f"{name} (Meldung nicht protokolliert)\n")
+        if isinstance(fehler, BaseExceptionGroup):
+            for nummer, teil in enumerate(fehler.exceptions, start=1):
+                teile.append(f"\n+---------------- {nummer} ----------------\n")
+                anhaengen(teil)
 
     anhaengen(ausnahme)
     return "".join(teile).rstrip("\n")

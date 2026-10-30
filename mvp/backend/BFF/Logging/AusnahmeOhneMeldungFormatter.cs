@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,11 @@ namespace BFF.Logging;
 /// Konsolenausgabe wie der Standardformatter "simple", aber Ausnahmen ohne ihre Meldung
 /// (#422). Die Meldung traegt oft, was hereinkam: ein Formatfehler den Wert, eine
 /// ungueltige Adresse die Adresse. Typ und Stack reichen, um den Fehler zu finden. Das
-/// Gegenstueck im Suchdienst ist ausnahme_ohne_meldung() in app/core/logging.py.
+/// Gegenstueck im Semantic-Service ist ausnahme_ohne_meldung() in app/core/logging.py.
+///
+/// Zeitstempel und Scopes schreibt er nicht; die Optionen dafuer
+/// (Logging:Console:FormatterOptions) bleiben ohne Wirkung, wie bisher beim
+/// Standardformatter ohne sie.
 /// </summary>
 public sealed class AusnahmeOhneMeldungFormatter : ConsoleFormatter
 {
@@ -71,25 +76,20 @@ public sealed class AusnahmeOhneMeldungFormatter : ConsoleFormatter
         }
 
         text.Append(ausnahme.GetType().FullName).AppendLine(" (Meldung nicht protokolliert)");
-        if (ausnahme is AggregateException gesammelt)
+
+        // Wie Exception.ToString(): erst die inneren Ausnahmen samt Stack, dann die
+        // Marke, dann der eigene Stack.
+        IReadOnlyList<Exception> innere = ausnahme is AggregateException gesammelt
+            ? gesammelt.InnerExceptions
+            : ausnahme.InnerException is null ? [] : [ausnahme.InnerException];
+        foreach (var innen in innere)
         {
-            foreach (var innere in gesammelt.InnerExceptions)
-            {
-                Anhaengen(text, innere, tiefe + 1);
-            }
-        }
-        else if (ausnahme.InnerException is not null)
-        {
-            Anhaengen(text, ausnahme.InnerException, tiefe + 1);
+            Anhaengen(text, innen, tiefe + 1);
+            text.AppendLine("   --- End of inner exception stack trace ---");
         }
 
         if (ausnahme.StackTrace is not null)
         {
-            if (tiefe > 0)
-            {
-                text.AppendLine("   --- End of inner exception stack trace ---");
-            }
-
             text.AppendLine(ausnahme.StackTrace);
         }
     }

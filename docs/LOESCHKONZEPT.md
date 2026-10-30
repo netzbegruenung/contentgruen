@@ -341,9 +341,13 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     Validierungsmeldung den abgelehnten Wert, ein Datenbankfehler die Parameter der
     Abfrage). Im Semantic-Service schreibt der Formatter Tracebacks so
     (`ausnahme_ohne_meldung()` in `app/core/logging.py`, auch für unbehandelte Ausnahmen,
-    die uvicorn meldet), und kein Log-Aufruf setzt die Ausnahme selbst in den Text, nur
-    `type(e).__name__`; das prüft `tests/unit/core/test_keine_ausnahmemeldung_im_log.py`
-    am Quelltext. Im BFF schreibt die Konsole mit `AusnahmeOhneMeldungFormatter`
+    die uvicorn meldet), und die Log-Aufrufe setzen statt der Ausnahme nur
+    `type(e).__name__` in den Text. Für Aufrufe im `except`-Block, die die Ausnahme
+    direkt verwenden, prüft das `tests/unit/core/test_keine_ausnahmemeldung_im_log.py`
+    am Quelltext; eine Meldung, die erst über eine Variable ins Log geht, sieht der Test
+    nicht. Ebenso seit #422 ohne Eingabe: abgelehnte und bereinigte Herkunfts-Adressen
+    (`utils/url_validator.py`) und ein unbekannter Meldegrund
+    (`services/moderation_service.py`). Im BFF schreibt die Konsole mit `AusnahmeOhneMeldungFormatter`
     (`BFF/Logging/`), im Code gesetzt, sodass ein `Logging__Console__FormatterName` von
     außen ihn nicht ersetzt. **Altbestand:** Zeilen von vor #422 können Meldungen samt
     Eingabewerten tragen, bis sie aus dem `json-file`-Strom rotiert sind (Frist unten).

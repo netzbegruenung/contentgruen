@@ -16,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 // Ausnahmen ohne ihre Meldung, die Eingabewerte tragen kann (#422).
 builder.Logging.AddKonsoleOhneAusnahmemeldung();
+// Schreibt Ausnahmen samt Meldung, aber nur an einen angehaengten Debugger, nie ins Log.
 builder.Logging.AddDebug();
 // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information, ASP.NET Core jede Anfrage
 // samt Pfad ("Request starting ..."). Seit #284 traegt kein Pfad des Frontends mehr eine

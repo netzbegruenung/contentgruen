@@ -141,7 +141,8 @@ class ModerationService:
             return False
 
         if reason not in MELDEGRUENDE:
-            logger.warning(f"Invalid report reason: {reason}")
+            # Der Grund ist hier freier Text von aussen (#422).
+            logger.warning("Invalid report reason")
             return False
 
         try:

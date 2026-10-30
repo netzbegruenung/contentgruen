@@ -68,6 +68,12 @@ public class AusnahmeOhneMeldungFormatterTests
         Assert.Contains("System.InvalidOperationException", zeile);
         Assert.Contains("System.UriFormatException", zeile);
         Assert.DoesNotContain(Eingabe, zeile);
+
+        // Wie Exception.ToString(): innerer Stack vor der Marke, die Marke vor dem aeusseren.
+        var marke = zeile.IndexOf("--- End of inner exception stack trace ---", StringComparison.Ordinal);
+        Assert.True(zeile.IndexOf("System.UriFormatException", StringComparison.Ordinal) < marke);
+        Assert.True(marke < zeile.LastIndexOf(nameof(Ausgeloest), StringComparison.Ordinal));
+        Assert.True(zeile.IndexOf(nameof(Ausgeloest), StringComparison.Ordinal) < marke);
     }
 
     [Fact]

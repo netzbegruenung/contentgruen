@@ -6,6 +6,10 @@ Ausnahme aber als ``f"...: {e}"`` oder ``str(e)`` im Text, steht ihre Meldung tr
 in der Zeile, samt der Eingabewerte, die sie oft traegt. Erlaubt ist ``type(e)``
 (meist ``type(e).__name__``), ``exc_info=e`` und die Zahl der Fehler einer
 pydantic-ValidationError (``e.error_count()``).
+
+Ein Waechter, kein Beweis: Er sieht nur Aufrufe, deren Ziel "log" im Namen traegt,
+innerhalb des ``except``-Blocks, der die Ausnahme benennt. Eine Meldung, die erst in
+eine Variable oder an eine Hilfsfunktion geht und von dort ins Log, sieht er nicht.
 """
 
 import ast
@@ -23,8 +27,8 @@ LOG_METHODEN = {
     "critical",
     "log",
 }
-OHNE_TEXT = {"exc_info", "stack_info", "stacklevel"}
-OHNE_WERTE = {"error_count"}
+KEYWORDS_OHNE_LOGTEXT = {"exc_info", "stack_info", "stacklevel"}
+ERLAUBTE_ATTRIBUTE = {"error_count"}
 
 
 def _quelldateien() -> list[Path]:
@@ -55,7 +59,7 @@ def _namen_ausser_typ(knoten: ast.AST, name: str) -> list[ast.Name]:
         return []
     if (
         isinstance(knoten, ast.Attribute)
-        and knoten.attr in OHNE_WERTE
+        and knoten.attr in ERLAUBTE_ATTRIBUTE
         and isinstance(knoten.value, ast.Name)
     ):
         return []
@@ -78,7 +82,9 @@ def _fundstellen() -> list[str]:
                 if not _ist_log_aufruf(aufruf):
                     continue
                 argumente = list(aufruf.args) + [
-                    kw.value for kw in aufruf.keywords if kw.arg not in OHNE_TEXT
+                    kw.value
+                    for kw in aufruf.keywords
+                    if kw.arg not in KEYWORDS_OHNE_LOGTEXT
                 ]
                 if any(_namen_ausser_typ(arg, handler.name) for arg in argumente):
                     funde.append(f"{pfad.relative_to(APP)}:{aufruf.lineno}")

@@ -100,3 +100,20 @@ class TestFehlerzeileMitAusnahme:
         assert "Exception in ASGI application" in text
         assert "ValueError" in text
         assert EINGABE not in text
+
+    def test_ausnahmegruppe_nennt_die_typen_ihrer_ausnahmen(self, protokoll):
+        initialize_logging(LoggingConfig(level="INFO", enable_console_utf8=False))
+        fehler = _ausgeloest(
+            ExceptionGroup(
+                f"Gruppe {EINGABE}",
+                [_ausgeloest(KeyError(EINGABE)), _ausgeloest(TimeoutError(EINGABE))],
+            )
+        )
+
+        logging.getLogger("services.beispiel").error("Fehlgeschlagen", exc_info=fehler)
+
+        text = protokoll()
+        assert "ExceptionGroup" in text
+        assert "KeyError" in text
+        assert "TimeoutError" in text
+        assert EINGABE not in text
