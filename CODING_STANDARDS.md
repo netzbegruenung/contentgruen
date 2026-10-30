@@ -32,7 +32,7 @@ Judgement rules the reviewer checks on every pull request. Each rule says why it
 ## Documentation
 
 - **Docs move with the code.** A PR that changes behaviour, configuration or operation updates the doc that describes it (`docs/LOESCHKONZEPT.md`, `docs/DEPLOYMENT.md`, the migration README). Why: these docs are used by people acting on production data.
-- **Historical documents stay as they are.** Files under `docs/archiv/`, applied migrations and the sections of released versions in `CHANGELOG.md` keep their content; only the archive note and explicit ticket exceptions change them. Why: they record a past state that later work refers to.
+- **Historical documents stay as they are.** Files under `docs/archiv/` and applied migrations keep their content; only the archive note and explicit ticket exceptions change them. Why: they record a past state that later work refers to.
 
 ## Git
 

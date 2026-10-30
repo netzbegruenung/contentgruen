@@ -117,12 +117,13 @@ deploy anything by itself.
      `mvp/frontend/gutgesagt-frontend/package.json`. Set it to `X.Y.Z` (without the `v`),
      otherwise the new images show the old number. `npm version X.Y.Z --no-git-tag-version`
      in that directory also updates `package-lock.json`.
-   - **Change list:** add a section `## vX.Y.Z` at the top of [CHANGELOG.md](../CHANGELOG.md).
-     Draft it with
+   - **Change list:** draft the text of the Forgejo release and show it in the description of
+     the release pull request, so it is reviewed with it. The change list lives only in the
+     Forgejo release, not in a file in the repository. Draft it with
      ```bash
      git fetch origin --tags
-     scripts/changelog.sh origin/main | sed 's/^## /### /'           # since the previous v* tag
-     scripts/changelog.sh origin/main <commit> | sed 's/^## /### /'  # first release, or a different start
+     scripts/changelog.sh origin/main             # since the previous v* tag
+     scripts/changelog.sh origin/main <commit>    # first release, or a different start
      ```
      The script lists the merged pull requests on `main` (linked, grouped by their Conventional
      Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the
@@ -138,10 +139,10 @@ deploy anything by itself.
    on Forgejo, not on a later commit: later pull requests belong to the next release. The push
    mirror carries the tag to GitHub, where `release.yml` tests and builds the images. Check
    that the run is green and `:latest` moved before announcing the release.
-5. **Forgejo release:** publish the `vX.Y.Z` section of `CHANGELOG.md` as the Forgejo release
-   to the tag (Releases on the Forgejo repository). `scripts/changelog.sh vX.Y.Z` shows the
-   tagged range for a last comparison; for the first release give the start as well
-   (`scripts/changelog.sh v0.9.0 fae44b4b`, the commit of the former `v1.1.0`).
+5. **Forgejo release:** create the release to the tag on Forgejo (Releases on the Forgejo
+   repository) and paste the reviewed draft from the release pull request. `scripts/changelog.sh
+   vX.Y.Z` shows the tagged range for a last comparison; for the first release give the start
+   as well (`scripts/changelog.sh v0.9.0 fae44b4b`, the commit of the former `v1.1.0`).
 
 For urgent deployments, ask in the project channel (see below).
 
