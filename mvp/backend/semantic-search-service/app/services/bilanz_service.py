@@ -10,8 +10,8 @@ Kennzahlen der Bilanz je Kalenderwoche (#467; Signale und Basislinie in #417).
 Feste Zielwerte gibt es bewusst nicht: Die Signale sind Abweichungen von der
 Basislinie aus dem internen Launch (#417).
 
-ANNAHME (#467): Wochen sind Kalenderwochen ab Montag (UTC), wie bei den Suchen
-ohne Treffer, nicht Wochen ab dem Launchtag. Faellt ein Launch auf einen
+Entschieden in #473: Wochen sind Kalenderwochen ab Montag (UTC), wie bei den
+Suchen ohne Treffer, nicht Wochen ab dem Launchtag. Faellt ein Launch auf einen
 Wochentag, zaehlen die Tage davor in seiner ersten Woche mit 0 Personen. Die
 laufende Woche zaehlt die Tage bis heute. Was nicht mehr bekannt ist, bleibt leer (None)
 statt 0: Nutzungen vor der Frist der Nutzungsereignisse und Suchen ohne Treffer
