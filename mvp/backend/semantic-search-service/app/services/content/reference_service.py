@@ -109,7 +109,8 @@ class ReferenceService(
         # Validate URL security
         is_valid, error_msg = validate_url_security(reference.reference_string)
         if not is_valid:
-            logger.warning(f"Rejected reference URL for security: {error_msg}")
+            # error_msg kann Teile der Adresse tragen, etwa das Schema (#422).
+            logger.warning("Rejected reference URL for security")
             raise ValueError(f"Invalid reference URL: {error_msg}")
 
         # Sanitize the URL

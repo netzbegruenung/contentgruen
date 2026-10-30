@@ -1,15 +1,15 @@
 """
 Kein Log-Aufruf setzt eine gefangene Ausnahme in den Text der Zeile (#422).
 
-Der Formatter laesst die Meldung im Traceback weg (core/logging.py); steht die
-Ausnahme aber als ``f"...: {e}"`` oder ``str(e)`` im Text, steht ihre Meldung trotzdem
+Der Formatter laesst den Fehlertext im Traceback weg (core/logging.py); steht die
+Ausnahme aber als ``f"...: {e}"`` oder ``str(e)`` im Text, steht ihr Fehlertext trotzdem
 in der Zeile, samt der Eingabewerte, die sie oft traegt. Erlaubt ist ``type(e)``
 (meist ``type(e).__name__``), ``exc_info=e`` und die Zahl der Fehler einer
 pydantic-ValidationError (``e.error_count()``).
 
 Ein Waechter, kein Beweis: Er sieht nur Aufrufe, deren Ziel "log" im Namen traegt,
-innerhalb des ``except``-Blocks, der die Ausnahme benennt. Eine Meldung, die erst in
-eine Variable oder an eine Hilfsfunktion geht und von dort ins Log, sieht er nicht.
+innerhalb des ``except``-Blocks, der die Ausnahme benennt. Ein Fehlertext, der erst in
+eine Variable oder an eine Hilfsfunktion geht und von dort ins Log, den sieht er nicht.
 """
 
 import ast
@@ -91,7 +91,7 @@ def _fundstellen() -> list[str]:
     return sorted(funde)
 
 
-def test_kein_log_aufruf_schreibt_die_meldung_einer_ausnahme():
+def test_kein_log_aufruf_schreibt_den_fehlertext_einer_ausnahme():
     assert _fundstellen() == []
 
 

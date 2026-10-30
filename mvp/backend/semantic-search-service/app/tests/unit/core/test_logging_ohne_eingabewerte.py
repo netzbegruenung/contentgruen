@@ -1,9 +1,9 @@
 """
 Keine Eingabewerte in Fehlerzeilen (#422).
 
-Die Meldung einer Ausnahme traegt oft, was hereinkam: eine Validierungsmeldung den
+Der Fehlertext einer Ausnahme traegt oft, was hereinkam: eine Validierungsmeldung den
 abgelehnten Wert, ein Datenbankfehler die Parameter der Abfrage. Die Fehlerzeile
-nennt deshalb Typ und Stelle der Ausnahme, nicht ihre Meldung.
+nennt deshalb Typ und Stelle der Ausnahme, nicht ihren Fehlertext.
 """
 
 import logging
@@ -53,7 +53,7 @@ def protokoll(capsys):
 
 
 class TestFehlerzeileMitAusnahme:
-    def test_nennt_typ_und_stelle_aber_nicht_die_meldung(self, protokoll):
+    def test_nennt_typ_und_stelle_aber_nicht_den_fehlertext(self, protokoll):
         initialize_logging(LoggingConfig(level="INFO", enable_console_utf8=False))
         fehler = _ausgeloest(ValueError(f"ungueltiger Wert: {EINGABE}"))
 
@@ -67,7 +67,7 @@ class TestFehlerzeileMitAusnahme:
         assert "_ausgeloest" in text  # die Stelle, an der es passiert ist
         assert EINGABE not in text
 
-    def test_auch_nicht_die_meldung_einer_verketteten_ausnahme(self, protokoll):
+    def test_auch_nicht_den_fehlertext_einer_verketteten_ausnahme(self, protokoll):
         initialize_logging(LoggingConfig(level="INFO", enable_console_utf8=False))
         try:
             try:
@@ -84,7 +84,7 @@ class TestFehlerzeileMitAusnahme:
         assert "RuntimeError" in text
         assert EINGABE not in text
 
-    def test_unbehandelte_ausnahme_im_server_ohne_meldung(self, protokoll):
+    def test_unbehandelte_ausnahme_im_server_ohne_fehlertext(self, protokoll):
         """uvicorn schreibt eine unbehandelte Ausnahme ("Exception in ASGI
         application") mit eigenen Handlern; uvicorn richtet sie ein, bevor es die
         Anwendung importiert."""

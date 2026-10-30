@@ -21,11 +21,14 @@ from core.config import Settings
 # Use simple logging for standalone script (not application logging)
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+from core.logging import SafeFormatter
+
+# Tracebacks ohne Fehlertext wie in der Anwendung (#422).
+_handler = logging.StreamHandler()
+_handler.setFormatter(
+    SafeFormatter("%(asctime)s | %(levelname)-8s | %(message)s", "%Y-%m-%d %H:%M:%S")
 )
+logging.basicConfig(level=logging.INFO, handlers=[_handler])
 logger = logging.getLogger(__name__)
 
 

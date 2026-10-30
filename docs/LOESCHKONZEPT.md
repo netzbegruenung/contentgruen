@@ -307,8 +307,9 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warn- und Fehlerzeilen nennen den Pfad
-    unverändert; seit #284 trägt kein Pfad, den das Frontend aufruft, eine Kennung (die
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warnzeilen nennen den Pfad unverändert
+    (Fehlerzeilen seit #422 nicht mehr, `BFF/Program.cs`); seit #284 trägt kein Pfad,
+    den das Frontend aufruft, eine Kennung (die
     Nutzungsstatistik unter „Meine Beiträge“ heißt `/api/v1/usage/users/me/usage-stats`,
     die Rückmeldung beim Anmelden `/api/v1/usage/users/me/besuch`, die Person kommt aus
     der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
@@ -337,20 +338,27 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     Daten aus dem Repo. Die Zugriffszeilen von uvicorn sind unterdrückt
     (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
   - **Fehlerzeilen (BFF und Semantic-Service):** Seit #422 nennen sie von einer Ausnahme
-    nur Typ und Stack, nicht ihre Meldung, die oft Eingabewerte trägt (eine
+    nur Typ und Stack, nicht ihren Fehlertext, der oft Eingabewerte trägt (eine
     Validierungsmeldung den abgelehnten Wert, ein Datenbankfehler die Parameter der
     Abfrage). Im Semantic-Service schreibt der Formatter Tracebacks so
-    (`ausnahme_ohne_meldung()` in `app/core/logging.py`, auch für unbehandelte Ausnahmen,
+    (`ausnahme_ohne_fehlertext()` in `app/core/logging.py`, auch für unbehandelte Ausnahmen,
     die uvicorn meldet), und die Log-Aufrufe setzen statt der Ausnahme nur
     `type(e).__name__` in den Text. Für Aufrufe im `except`-Block, die die Ausnahme
-    direkt verwenden, prüft das `tests/unit/core/test_keine_ausnahmemeldung_im_log.py`
-    am Quelltext; eine Meldung, die erst über eine Variable ins Log geht, sieht der Test
-    nicht. Ebenso seit #422 ohne Eingabe: abgelehnte und bereinigte Herkunfts-Adressen
-    (`utils/url_validator.py`) und ein unbekannter Meldegrund
-    (`services/moderation_service.py`). Im BFF schreibt die Konsole mit `AusnahmeOhneMeldungFormatter`
+    direkt verwenden, prüft das `tests/unit/core/test_kein_fehlertext_im_log.py`
+    am Quelltext; einen Fehlertext, der erst über eine Variable ins Log geht, sieht der
+    Test nicht. Ebenso seit #422 ohne Eingabe: abgelehnte und bereinigte Herkunfts-Adressen
+    (`utils/url_validator.py`, `services/content/reference_service.py`), die Bild-Adresse
+    bei einem fehlgeschlagenen Unterschrift-Vorschlag (`api/v1/image.py`), ein unbekannter
+    Meldegrund und ungültige IDs von Beiträgen und Meldungen
+    (`services/moderation_service.py`, `services/usage_tracking_service.py`, Test
+    `tests/unit/services/test_ungueltige_id_nicht_im_log.py`). Die Skripte für
+    Sicherung und Wiederherstellung von Qdrant (`scripts/backup_qdrant.py`,
+    `scripts/restore_qdrant.py`) schreiben mit demselben Formatter. Im BFF schreibt die
+    Konsole mit `AusnahmeOhneFehlertextFormatter`
     (`BFF/Logging/`), im Code gesetzt, sodass ein `Logging__Console__FormatterName` von
-    außen ihn nicht ersetzt. **Altbestand:** Zeilen von vor #422 können Meldungen samt
-    Eingabewerten tragen, bis sie aus dem `json-file`-Strom rotiert sind (Frist unten).
+    außen ihn nicht ersetzt; Fehlerzeilen zu einer Anfrage nennen den Pfad nicht.
+    **Altbestand:** Zeilen von vor #422 können Fehlertexte samt Eingabewerten tragen,
+    bis sie aus dem `json-file`-Strom rotiert sind (Frist unten).
   - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
     (`mvp/frontend/gutgesagt-frontend/nginx.protokoll.conf`, für `nginx.conf` und
     `nginx.docker.conf` gemeinsam) nach stdout: Absenderadresse, Zeitpunkt,
@@ -367,7 +375,7 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     http-Block): nginx kennt für Fehlerzeilen kein eigenes Format, und jede trüge Adresse,
     Anfrage samt Adresszusatz und Referrer, etwa im Dev-Stack `connect() failed …`, wenn
     das BFF nicht antwortet. Den Ausgang einer solchen Anfrage zeigt das Zugriffsprotokoll
-    mit dem Status (413, 502 …). Meldungen außerhalb einer Anfrage (Start, Konfiguration,
+    mit dem Status (413, 502 …). Zeilen außerhalb einer Anfrage (Start, Konfiguration,
     Worker) schreibt nginx weiter. Belegt mit
     `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
     `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen

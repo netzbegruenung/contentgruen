@@ -67,12 +67,13 @@ class UsageTrackingService:
         Returns:
             bool: True if tracking was successful
         """
-        logger.info(f"Service: Tracking usage for content {content_id}")
-
         # Validate content ID
         if not self._validate_content_id(content_id):
-            logger.error(f"Invalid content ID format: {content_id}")
+            # Eine ungueltige ID ist freier Text von aussen (#422).
+            logger.error("Invalid content ID format")
             return False
+
+        logger.info(f"Service: Tracking usage for content {content_id}")
 
         try:
             content_uuid = uuid.UUID(content_id)
@@ -94,7 +95,7 @@ class UsageTrackingService:
 
             return result
         except ValueError:
-            logger.error(f"Invalid content ID format: {content_id}")
+            logger.error("Invalid content ID format")
             return False
 
     def get_content_usage(self, content_id: str) -> int:
@@ -108,7 +109,7 @@ class UsageTrackingService:
             int: Usage count
         """
         if not self._validate_content_id(content_id):
-            logger.error(f"Invalid content ID format: {content_id}")
+            logger.error("Invalid content ID format")
             return 0
 
         try:
@@ -131,7 +132,7 @@ class UsageTrackingService:
             Dict with usage statistics or None if error
         """
         if not self._validate_content_id(content_id):
-            logger.error(f"Invalid content ID format: {content_id}")
+            logger.error("Invalid content ID format")
             return None
 
         try:

@@ -22,7 +22,7 @@ class CaptionSuggestionService:
         if not image_url:
             raise ValueError("image_url must not be empty")
 
-        logger.debug(f"Requesting caption suggestion for image: {image_url[:80]}")
+        logger.debug("Requesting caption suggestion")
         response = await self._client.chat.completions.create(
             model=self.model,
             messages=[

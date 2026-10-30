@@ -169,7 +169,7 @@ class ModerationService:
             logger.info(f"Content {content_id} reported: {reason}")
             return report is not None
         except ValueError as e:
-            logger.error(f"Invalid content_id format: {content_id}")
+            logger.error("Invalid content_id format")
             return False
         except Exception as e:
             logger.error(f"Error reporting content: {type(e).__name__}", exc_info=True)
@@ -262,7 +262,7 @@ class ModerationService:
         try:
             UUID(content_id)
         except ValueError:
-            logger.warning(f"Invalid content_id format: {content_id}")
+            logger.warning("Invalid content_id format")
             return None
 
         return await self.moderation_repo.laden(content_id)
@@ -621,7 +621,7 @@ class ModerationService:
                 logger.warning(f"Report {report_id} not found")
                 return False
         except ValueError as e:
-            logger.error(f"Invalid report_id format: {report_id}")
+            logger.error("Invalid report_id format")
             return False
         except Exception as e:
             logger.error(f"Error dismissing report: {type(e).__name__}", exc_info=True)

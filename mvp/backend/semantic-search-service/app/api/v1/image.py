@@ -135,9 +135,8 @@ async def suggest_caption(
         caption = await caption_service.suggest_caption(request.image_url)
         return SuggestCaptionResponse(suggested_caption=caption)
     except Exception as e:
-        logger.error(
-            f"Caption suggestion failed for URL {request.image_url[:80]}: {type(e).__name__}"
-        )
+        # Ohne die Bild-Adresse: sie ist Eingabe (#422).
+        logger.error(f"Caption suggestion failed: {type(e).__name__}")
         raise HTTPException(
             status_code=502,
             detail="Vorschlag konnte nicht erstellt werden. Bitte gib eine Beschriftung manuell ein.",

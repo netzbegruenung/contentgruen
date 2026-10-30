@@ -69,7 +69,7 @@ def validate_url_security(url: str) -> Tuple[bool, str]:
         return True, ""
 
     except Exception as e:
-        # Weder die Adresse noch die Meldung: beide tragen die Eingabe (#422), und
+        # Weder die Adresse noch der Fehlertext: beide tragen die Eingabe (#422), und
         # der Grund landet beim Aufrufer im Log.
         logger.warning(f"Error validating URL: {type(e).__name__}")
         return False, "Invalid URL format"

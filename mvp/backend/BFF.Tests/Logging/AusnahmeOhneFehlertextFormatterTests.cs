@@ -13,11 +13,11 @@ using Xunit;
 namespace BFF.Tests.Logging;
 
 /// <summary>
-/// Keine Eingabewerte in Fehlerzeilen (#422). Die Meldung einer Ausnahme traegt oft, was
+/// Keine Eingabewerte in Fehlerzeilen (#422). Der Fehlertext einer Ausnahme traegt oft, was
 /// hereinkam (ein Formatfehler den Wert, eine ungueltige Adresse die Adresse). Die
-/// Konsolenausgabe nennt Typ und Stack der Ausnahme, nicht ihre Meldung.
+/// Konsolenausgabe nennt Typ und Stack der Ausnahme, nicht ihren Fehlertext.
 /// </summary>
-public class AusnahmeOhneMeldungFormatterTests
+public class AusnahmeOhneFehlertextFormatterTests
 {
     private const string Eingabe = "Waermepumpe-im-Altbau-422";
 
@@ -35,7 +35,7 @@ public class AusnahmeOhneMeldungFormatterTests
 
     private static string Zeile(Exception? ausnahme, string text = "Speichern fehlgeschlagen")
     {
-        var formatter = new AusnahmeOhneMeldungFormatter();
+        var formatter = new AusnahmeOhneFehlertextFormatter();
         using var schreiber = new StringWriter();
         var eintrag = new LogEntry<string>(
             LogLevel.Error, "BFF.Beispiel", new EventId(7), text, ausnahme, (s, _) => s);
@@ -44,7 +44,7 @@ public class AusnahmeOhneMeldungFormatterTests
     }
 
     [Fact]
-    public void Nennt_Typ_und_Stelle_aber_nicht_die_Meldung()
+    public void Nennt_Typ_und_Stelle_aber_nicht_den_Fehlertext()
     {
         var ausnahme = Ausgeloest(() => new FormatException($"ungueltiger Wert: {Eingabe}"));
 
@@ -58,7 +58,7 @@ public class AusnahmeOhneMeldungFormatterTests
     }
 
     [Fact]
-    public void Auch_nicht_die_Meldung_der_inneren_Ausnahme()
+    public void Auch_nicht_den_Fehlertext_der_inneren_Ausnahme()
     {
         var innen = Ausgeloest(() => new UriFormatException(Eingabe));
         var ausnahme = Ausgeloest(() => new InvalidOperationException($"Folgefehler: {Eingabe}", innen));
@@ -81,15 +81,16 @@ public class AusnahmeOhneMeldungFormatterTests
     {
         var zeile = Zeile(null, "Loaded 3 deleted accounts");
 
-        Assert.Contains("Loaded 3 deleted accounts", zeile);
-        Assert.Contains("fail", zeile);
+        var zeilen = zeile.Split(Environment.NewLine);
+        Assert.Equal("fail: BFF.Beispiel[7]", zeilen[0]);
+        Assert.Equal("      Loaded 3 deleted accounts", zeilen[1]);
     }
 
     [Fact]
     public void Der_Host_schreibt_mit_diesem_Formatter_auch_wenn_die_Konfiguration_einen_anderen_nennt()
     {
         // Ein Logging__Console__FormatterName=json am Container brachte sonst die volle
-        // Ausnahme samt Meldung zurueck.
+        // Ausnahme samt Fehlertext zurueck.
         using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseContentRoot(AppContext.BaseDirectory);
@@ -105,6 +106,6 @@ public class AusnahmeOhneMeldungFormatterTests
 
         var optionen = factory.Services.GetRequiredService<IOptionsMonitor<ConsoleLoggerOptions>>();
 
-        Assert.Equal(AusnahmeOhneMeldungFormatter.Name, optionen.CurrentValue.FormatterName);
+        Assert.Equal(AusnahmeOhneFehlertextFormatter.Name, optionen.CurrentValue.FormatterName);
     }
 }
