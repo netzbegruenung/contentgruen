@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from dtos.metrics import GetMetricsResponse
 from dependencies import (
+    get_bilanz_service,
     get_commentary_service,
     get_muster_hinweise_service,
     get_reference_service,
@@ -23,6 +24,7 @@ from repositories.implementations.qdrant.qdrant_repository_factory import (
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import StatementService
 from services.anzeigename_service import get_anzeigename_service
+from services.bilanz_service import BilanzService
 from services.metrics_service import get_metrics_service
 from services.muster_hinweise_service import MUSTER_FRIST_TAGE, MusterHinweiseService
 from services.suchen_ohne_treffer_service import (
@@ -55,27 +57,22 @@ _metrics_cache_lock = asyncio.Lock()
 
 # Response Models for MVP Metrics
 class MVPMetricsResponse(BaseModel):
-    """Response model for MVP dashboard metrics."""
+    """Response model for MVP dashboard metrics.
+
+    Without goals (#417, #467): the Bilanz compares with the baseline of the
+    internal launch instead of fixed numbers.
+    """
 
     timestamp: str
     period_days: int
     daily_active_users: int
-    daily_active_users_goal: int
-    daily_active_users_met: bool
     searches_per_user: float
-    searches_per_user_goal: float
-    searches_per_user_met: bool
     content_created_this_week: int
-    content_created_goal: int
-    content_created_met: bool
     usage_counter_total: int
     usage_counter_current_week: int
     usage_counter_previous_week: int
     usage_counter_trend: str
-    usage_counter_met: bool
     helpful_rate: float
-    helpful_rate_goal: float
-    helpful_rate_met: bool
     helpful_like_count: int
     helpful_dislike_count: int
     helpful_total_votes: int
@@ -125,6 +122,38 @@ class HelpfulRateResponse(BaseModel):
     dislike_count: int
     total_votes: int
     helpful_rate: float
+
+
+class BilanzWocheResponse(BaseModel):
+    """Kennzahlen der Bilanz fuer eine Kalenderwoche (#467), ohne Zielwerte.
+
+    None heisst unbekannt, nicht 0: keine Suche in der Woche, Nutzungsereignisse
+    schon nach ihrer Frist geloescht oder ein Tageszaehler von vor #467.
+    """
+
+    woche_ab: date = Field(description="Montag der Woche (UTC)")
+    tage: int = Field(description="Tage der Woche bis heute, 7 ausser in der laufenden")
+    suchen: int
+    personen_pro_tag: float = Field(
+        description="K1 Personen pro Tag, die suchen: verschiedene Tagespseudonyme "
+        "je Tag, gemittelt ueber die Tage der Woche"
+    )
+    nutzungen: Optional[int] = Field(
+        description="K2 Nutzungen der Woche (Nutzungsereignisse)"
+    )
+    anteil_ohne_treffer: Optional[float] = Field(
+        description="K3 Anteil der Suchen ohne Treffer, in Prozent"
+    )
+    nutzungen_je_suche: Optional[float] = Field(
+        description="H Nutzungen je Suche: Nutzungen geteilt durch Suchen der Woche"
+    )
+
+
+class BilanzResponse(BaseModel):
+    """Die letzten ``wochen`` Kalenderwochen, die laufende zuerst."""
+
+    wochen: int
+    woechentlich: List[BilanzWocheResponse]
 
 
 class SucheOhneTrefferEintrag(BaseModel):
@@ -223,14 +252,9 @@ async def get_mvp_dashboard_metrics(
     admin_user: str = Depends(require_admin),
 ):
     """
-    Get comprehensive MVP dashboard metrics.
-
-    Returns all 5 key metrics for MVP goals:
-    1. Daily Active Users (Goal: 10)
-    2. Searches per User (Goal: >3)
-    3. Content Created per Week (Goal: 20)
-    4. Usage Counter Sum (must be increasing weekly)
-    5. "War hilfreich" Rate (Goal: >60%)
+    Get comprehensive MVP dashboard metrics, without goals: daily active users,
+    searches per user, content created this week, usage counter and the "War
+    hilfreich" rate. The weekly figures of the Bilanz are at /bilanz.
     """
     try:
         logger.info("Fetching MVP dashboard metrics")
@@ -332,7 +356,7 @@ async def get_usage_trend(
     admin_user: str = Depends(require_admin),
 ):
     """
-    Get usage counter trend by week.
+    Get usage counter trend by week: usage events per 7-day window.
 
     Args:
         weeks: Number of weeks to analyze (default: 4)
@@ -389,6 +413,35 @@ async def get_helpful_rate(
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch helpful rate: {e}"
         )
+
+
+@router.get("/bilanz", response_model=BilanzResponse)
+def get_bilanz(
+    wochen: int = Query(
+        8,
+        ge=1,
+        le=52,
+        description="Zeitraum in Kalenderwochen, die laufende eingeschlossen",
+    ),
+    admin_user: str = Depends(require_admin),
+    service: BilanzService = Depends(get_bilanz_service),
+):
+    """
+    Die Kennzahlen der Bilanz (#417) je Kalenderwoche: K1 Personen pro Tag, die
+    suchen (Wochenmittel), K2 Nutzungen, K3 Anteil der Suchen ohne Treffer und H
+    Nutzungen je Suche. Ohne Zielwerte; verglichen wird mit der Basislinie aus
+    dem internen Launch. Rechnung in services/bilanz_service.py.
+    """
+    try:
+        return BilanzResponse(
+            wochen=wochen,
+            woechentlich=[
+                BilanzWocheResponse(**vars(w)) for w in service.wochen(wochen)
+            ],
+        )
+    except Exception as e:
+        logger.error(f"Error fetching Bilanz: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch Bilanz")
 
 
 @router.get("/suchen-ohne-treffer", response_model=SuchenOhneTrefferResponse)

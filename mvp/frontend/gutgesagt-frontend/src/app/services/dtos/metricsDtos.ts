@@ -29,7 +29,7 @@ export interface SuchenOhneTrefferResponse {
     suchanfragen: SucheOhneTreffer[];
 }
 
-/** Ein Muster-Hinweis (#352): zwei Konten, die sich am selben Tag gegenseitig genutzt haben. */
+/** Ein Muster-Hinweis (#352): zwei Konten, die sich innerhalb von sieben Tagen gegenseitig genutzt haben. */
 export interface MusterHinweis {
     konto_a: string;
     name_a: string | null;
@@ -46,4 +46,29 @@ export interface MusterHinweiseResponse {
     aktiv: boolean;
     frist_tage: number;
     hinweise: MusterHinweis[];
+}
+
+// Bilanz (nur Admins, #467): Kennzahlen je Kalenderwoche, ohne Zielwerte.
+// null heisst unbekannt, nicht 0.
+
+export interface BilanzWoche {
+    /** Montag der Woche (UTC), JJJJ-MM-TT. */
+    woche_ab: string;
+    /** Tage der Woche bis heute; unter 7 nur in der laufenden. */
+    tage: number;
+    suchen: number;
+    /** K1 Personen pro Tag, die suchen: verschiedene Tagespseudonyme je Tag, Wochenmittel. */
+    personen_pro_tag: number;
+    /** K2 Nutzungen der Woche (Nutzungsereignisse). */
+    nutzungen: number | null;
+    /** K3 Anteil der Suchen ohne Treffer, in Prozent. */
+    anteil_ohne_treffer: number | null;
+    /** H Nutzungen je Suche: Nutzungen geteilt durch Suchen der Woche. */
+    nutzungen_je_suche: number | null;
+}
+
+export interface BilanzResponse {
+    wochen: number;
+    /** Die laufende Woche zuerst. */
+    woechentlich: BilanzWoche[];
 }

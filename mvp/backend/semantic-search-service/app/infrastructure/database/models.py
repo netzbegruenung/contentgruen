@@ -273,6 +273,10 @@ class SuchenJeTagZeile(Base):
     Einzelzeilen (#289). suchen zaehlt die Suchereignisse des Tages, personen die
     verschiedenen Tagespseudonyme; die Pseudonyme selbst stehen nicht hier. Siehe
     SearchTrackingRepository.verdichte_alte_suchereignisse.
+
+    ohne_treffer zaehlt die Suchen des Tages ohne Treffer, fuer den Anteil in der
+    Bilanz (#467). Leer bei Tagen, die vor #467 verdichtet wurden: Der Wert ist
+    dort nicht mehr bekannt und wird nicht geschaetzt.
     """
 
     __tablename__ = "suchen_je_tag"
@@ -280,6 +284,7 @@ class SuchenJeTagZeile(Base):
     tag = Column(Date, primary_key=True)
     suchen = Column(Integer, nullable=False)
     personen = Column(Integer, nullable=False)
+    ohne_treffer = Column(Integer, nullable=True)
 
 
 class SucheOhneTrefferZeile(Base):

@@ -1,7 +1,7 @@
 """
 Zugriffsschutz und Caching der Metrics-Endpunkte.
 
-Die sechs MVP-Endpunkte liefern Betriebskennzahlen (taegliche aktive Nutzer,
+Die MVP-Endpunkte und die Bilanz (#467) liefern Betriebskennzahlen (taegliche aktive Nutzer,
 Suchvolumen, Vote-Verhaeltnisse) und waren ohne jede Auth-Dependency erreichbar.
 /getMetrics bleibt bewusst oeffentlich -- es liefert nur Bestandszaehler und das
 BFF fuehrt es als anonym erlaubt -- bekommt dafuer aber einen
@@ -31,6 +31,7 @@ ADMIN_ONLY_PATHS = [
     "/api/v1/metrics/content-created",
     "/api/v1/metrics/usage-trend",
     "/api/v1/metrics/helpful-rate",
+    "/api/v1/metrics/bilanz",
 ]
 
 
@@ -58,7 +59,7 @@ def client():
 
 
 class TestAdminOnlyEndpoints:
-    """Die sechs MVP-Endpunkte verlangen X-User plus X-Is-Admin."""
+    """Die Kennzahlen fuer Admins verlangen X-User plus X-Is-Admin."""
 
     @pytest.mark.parametrize("path", ADMIN_ONLY_PATHS)
     def test_anonymous_is_unauthorized(self, client, path):
