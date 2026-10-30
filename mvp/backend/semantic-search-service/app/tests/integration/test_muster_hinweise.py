@@ -1,6 +1,6 @@
 """
 Muster-Hinweise fuer Admins (#352) gegen ein echtes PostgreSQL: zwei Konten, die
-am selben Tag jeweils einen Beitrag des anderen nutzen. Wegwerf-Schema aus der
+innerhalb von sieben Tagen jeweils einen Beitrag des anderen nutzen. Wegwerf-Schema aus der
 Fixture ``datenbank`` von ``test_loeschkommando.py``.
 """
 
@@ -11,7 +11,11 @@ import pytest
 
 from repositories.muster_hinweis_repository import MusterHinweisRepository
 from repositories.usage_tracking_repository import UsageTrackingRepository
-from services.muster_hinweise_service import MUSTER_FRIST_TAGE, MusterHinweiseService
+from services.muster_hinweise_service import (
+    MUSTER_FENSTER_TAGE,
+    MUSTER_FRIST_TAGE,
+    MusterHinweiseService,
+)
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
 
 pytestmark = pytest.mark.integration
@@ -52,9 +56,34 @@ class TestMusterHinweise:
 
         assert dienst.hinweise() == []
 
-    def test_nutzung_melden_an_verschiedenen_tagen_kein_hinweis(self, dienst):
-        """Ueber Tagesgrenzen erkennt der Dienst nichts: Er merkt sich nur den Tag."""
+    def test_nutzung_melden_gegenseitig_innerhalb_des_fensters_wird_hinweis(
+        self, dienst
+    ):
+        spaeter = MONTAG + timedelta(MUSTER_FENSTER_TAGE - 1)
         dienst.nutzung_melden("kim-1", "bo-2", _um(MONTAG))
+        dienst.nutzung_melden("bo-2", "kim-1", _um(spaeter))
+
+        [hinweis] = dienst.hinweise()
+        assert (hinweis.tage, hinweis.erster_tag, hinweis.letzter_tag) == (
+            1,
+            spaeter,
+            spaeter,
+        )
+
+    def test_nutzung_melden_nach_dem_fenster_kein_hinweis(self, dienst):
+        dienst.nutzung_melden("kim-1", "bo-2", _um(MONTAG))
+        dienst.nutzung_melden(
+            "bo-2", "kim-1", _um(MONTAG + timedelta(MUSTER_FENSTER_TAGE))
+        )
+
+        assert dienst.hinweise() == []
+
+    def test_fristen_anwenden_verwirft_paar_pruefwerte_nach_dem_fenster(self, dienst):
+        """Nach dem Lauf ist die alte Richtung weg, auch wenn noch jemand fragt."""
+        dienst.nutzung_melden("kim-1", "bo-2", _um(MONTAG))
+
+        dienst.fristen_anwenden(MONTAG + timedelta(MUSTER_FENSTER_TAGE))
+        # Ein Nachzuegler mit altem Zeitstempel, noch im Fenster des ersten Tages.
         dienst.nutzung_melden("bo-2", "kim-1", _um(MONTAG + timedelta(1)))
 
         assert dienst.hinweise() == []

@@ -55,6 +55,7 @@ from dependencies import (
     get_feedback_service,
     get_loeschfristen_service,
     get_muster_hinweise_service,
+    get_nutzung_rate_limiter,
 )
 from services.feedback_service import loeschen_im_takt as feedback_loeschen_im_takt
 from services.gegenlesen.gegenlesen_service import SPRACHWERKZEUGE
@@ -133,6 +134,7 @@ async def lifespan(app: FastAPI):
                     search_query_statement_rate_limiter,
                     feedback_rate_limiter,
                     gegenlesen_rate_limiter,
+                    get_nutzung_rate_limiter(),
                 ]
             )
         )

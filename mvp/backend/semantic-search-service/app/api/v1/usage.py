@@ -4,7 +4,7 @@ API endpoints for usage tracking functionality.
 
 import asyncio
 import logging
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends, Header, Request
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, ValidationError, validator
 import uuid
@@ -13,13 +13,16 @@ from datetime import datetime, timedelta, timezone
 from dependencies import (
     get_aufrufer,
     get_muster_hinweise_service,
+    get_nutzung_rate_limiter,
     get_punkte_service,
     get_settings,
     get_current_user_optional,
     get_reference_service,
     require_user,
 )
+from utils.client_identity import derive_client_key
 from utils.device_category import derive_device_category
+from utils.rate_limiter import RateLimiter
 from services.entdoppelung import ANONYM, pruefwert
 from services.punkte_service import PunkteService
 from services.usage_tracking_service import get_usage_service
@@ -172,9 +175,11 @@ async def beitrag_laden(content_id: uuid.UUID, settings: Settings):
 async def track_content_usage(
     content_id: str,
     body: TrackUsageRequest,
+    request: Request,
     user_agent: Optional[str] = Header(None),
     aufrufer: Optional[str] = Depends(get_current_user_optional),
     settings: Settings = Depends(get_settings),
+    limiter: RateLimiter = Depends(get_nutzung_rate_limiter),
 ):
     """
     Track that a content item was used (copied).
@@ -194,6 +199,13 @@ async def track_content_usage(
     gar nicht mehr angefasst.
     """
     logger.debug(f"Tracking usage for content {content_id}")
+    # Rate-Limit (#352): angemeldet je Kennung, sonst je Adresse (derive_client_key,
+    # ein prozesslokaler Hash, der nirgends gespeichert wird).
+    angemeldet = aufrufer and aufrufer != ANONYM
+    if await limiter.is_rate_limited(
+        f"user:{aufrufer}" if angemeldet else derive_client_key(request)
+    ):
+        raise HTTPException(status_code=429, detail="Too many copies. Please wait.")
     try:
         # Validate content_id format
         try:

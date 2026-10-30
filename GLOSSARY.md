@@ -263,7 +263,7 @@ Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höch
 _Avoid_: eindeutige Nutzung, Unique Usage
 
 **Prüfwert**:
-Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dieselbe Sitzung) denselben Beitrag schon genutzt hat: aus dem Tagespseudonym und dem Beitrag mit dem geheimen Schlüssel berechnet. Ohne den Schlüssel lässt er sich weder auf die Person noch auf den Beitrag zurückführen. Wer den Schlüssel hat, kann ihn für eine bekannte Kennung und einen bekannten Beitrag am selben Tag nachrechnen, wie beim Tagespseudonym. Nach seinem Tag wird er verworfen. Der Paar-Prüfwert für Muster-Hinweise entsteht ebenso aus den Tagespseudonymen zweier Konten.
+Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dieselbe Sitzung) denselben Beitrag schon genutzt hat: aus dem Tagespseudonym und dem Beitrag mit dem geheimen Schlüssel berechnet. Ohne den Schlüssel lässt er sich weder auf die Person noch auf den Beitrag zurückführen. Wer den Schlüssel hat, kann ihn für eine bekannte Kennung und einen bekannten Beitrag am selben Tag nachrechnen, wie beim Tagespseudonym. Nach seinem Tag wird er verworfen. Der Paar-Prüfwert für Muster-Hinweise entsteht aus den Kennungen zweier Konten statt aus Tagespseudonymen, weil er das Fenster von sieben Tagen überdauern muss; er bleibt sieben Tage nach der letzten Nutzung in dieser Richtung.
 _Avoid_: Hash, Fingerabdruck
 
 **Oft genutzt**:
@@ -343,7 +343,7 @@ Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte f�
 _Avoid_: XP, Score, Karma
 
 **Muster-Hinweis**:
-Der Hinweis an Admins, dass zwei Konten sich gegenseitig nutzen: Am selben Tag hat jedes einen Beitrag des anderen genutzt. Er nennt beide Konten und an wie vielen Tagen das geschah, und verschwindet acht Wochen nach dem letzten solchen Tag. Er ist kein Urteil; keine Automatik zieht Punkte ab, ein Admin prüft.
+Der Hinweis an Admins, dass zwei Konten sich gegenseitig nutzen: Innerhalb von sieben Tagen hat jedes einen Beitrag des anderen genutzt. Er nennt beide Konten und an wie vielen Tagen eine Nutzung auf eine der Gegenrichtung traf, und verschwindet acht Wochen nach dem letzten solchen Tag. Er ist kein Urteil; keine Automatik zieht Punkte ab, ein Admin prüft.
 _Avoid_: Betrugsverdacht, Alarm, Sockenpuppen-Erkennung
 
 **Rangliste**:

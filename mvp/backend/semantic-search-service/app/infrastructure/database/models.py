@@ -162,9 +162,8 @@ class NutzungHeute(Base):
     Pruefwerte der Nutzungen des laufenden Tages fuer die Entdoppelung (#352).
 
     Je Person (Besucher: Sitzung) und Beitrag ein HMAC ueber Tagespseudonym und
-    Beitrag, fuer die Muster-Hinweise je Kontenpaar einer ueber beide Tagespseudonyme
-    (services/entdoppelung.py). Ohne den geheimen Schluessel verraet ein Wert weder
-    Person noch Beitrag. Der taegliche Lauf verwirft alle Zeilen vergangener Tage
+    Beitrag (services/entdoppelung.py). Ohne den geheimen Schluessel verraet ein Wert
+    weder Person noch Beitrag. Der taegliche Lauf verwirft alle Zeilen vergangener Tage
     (services/muster_hinweise_service.py); gespeichert bleibt nicht, wer wessen
     Beitrag genutzt hat (DSFA zu #374, Massnahme M2).
     """
@@ -177,14 +176,31 @@ class NutzungHeute(Base):
     __table_args__ = (Index("idx_nutzung_heute_tag", "tag"),)
 
 
+class MusterPruefwert(Base):
+    """
+    Paar-Pruefwerte fuer die Muster-Hinweise (#352): je Richtung "Konto A hat einen
+    Beitrag von Konto B genutzt" ein HMAC ueber beide Kennungen, mit dem letzten Tag
+    dieser Richtung (services/entdoppelung.py). Welcher Beitrag, steht nirgends. Der
+    taegliche Lauf verwirft Werte, die aelter als das Fenster von sieben Tagen sind
+    (services/muster_hinweise_service.py).
+    """
+
+    __tablename__ = "muster_pruefwerte"
+
+    pruefwert = Column(String(64), primary_key=True)
+    tag = Column(Date, nullable=False)
+
+    __table_args__ = (Index("idx_muster_pruefwerte_tag", "tag"),)
+
+
 class MusterHinweisZeile(Base):
     """
-    Ein auffaelliges Muster fuer Admins (ADR 0004, #352): zwei Konten, die am selben
-    Tag jeweils einen Beitrag des anderen genutzt haben. Ein Hinweis, keine
-    Automatik; niemand verliert dadurch Punkte.
+    Ein auffaelliges Muster fuer Admins (ADR 0004, #352): zwei Konten, die innerhalb
+    von sieben Tagen jeweils einen Beitrag des anderen genutzt haben. Ein Hinweis,
+    keine Automatik; niemand verliert dadurch Punkte.
 
-    konto_a ist die kleinere Kennung, konto_b die groessere. tage zaehlt die Tage mit
-    gegenseitiger Nutzung. Nach MUSTER_FRIST_TAGE ohne neuen Tag loescht der taegliche
+    konto_a ist die kleinere Kennung, konto_b die groessere. tage zaehlt die Tage, an
+    denen eine Nutzung auf eine der Gegenrichtung im Fenster traf. Nach MUSTER_FRIST_TAGE ohne neuen Tag loescht der taegliche
     Lauf die Zeile (services/muster_hinweise_service.py, docs/LOESCHKONZEPT.md).
     """
 

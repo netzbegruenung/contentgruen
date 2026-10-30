@@ -83,6 +83,10 @@ def clean_singleton_state():
 
     QdrantEmbeddingsManager._instance = None
     QdrantEmbeddingsManager._lock = threading.Lock()
+    # Das Rate-Limit am Zaehl-Endpunkt zaehlt sonst ueber Tests hinweg mit.
+    import dependencies
+
+    dependencies._nutzung_rate_limiter = None
 
     yield
 

@@ -56,12 +56,10 @@ def test_pruefwert_enthaelt_weder_kennung_noch_beitrag():
 
 
 def test_paar_pruefwert_hat_richtung():
-    assert paar_pruefwert("kim-1", "bo-2", MORGENS) != paar_pruefwert(
-        "bo-2", "kim-1", MORGENS
-    )
-    assert paar_pruefwert("kim-1", "bo-2", MORGENS) == paar_pruefwert(
-        "kim-1", "bo-2", ABENDS
-    )
-    assert paar_pruefwert("kim-1", "bo-2", MORGENS) != paar_pruefwert(
-        "kim-1", "bo-2", FOLGETAG
-    )
+    assert paar_pruefwert("kim-1", "bo-2") != paar_pruefwert("bo-2", "kim-1")
+
+
+def test_paar_pruefwert_bleibt_ueber_tage_gleich():
+    """Muster ueber mehrere Tage: der Wert muss das Fenster ueberdauern."""
+    assert paar_pruefwert("kim-1", "bo-2") == paar_pruefwert("kim-1", "bo-2")
+    assert paar_pruefwert("kim-1", "bo-2") != paar_pruefwert("kim-1", "lea-3")

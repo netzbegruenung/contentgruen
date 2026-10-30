@@ -144,6 +144,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Sperren, aktiv | keine | — der Beitrag ist gesperrt |
 | Stimmen (`votes`) | solange der Beitrag besteht | — gehen mit ihm |
 | Prüfwerte der entdoppelten Nutzung (`nutzung_heute`) | ihr Tag | verworfen beim ersten Lauf nach Mitternacht (UTC) |
+| Paar-Prüfwerte der Muster-Hinweise (`muster_pruefwerte`) | 7 Tage | letzte Nutzung in dieser Richtung (`tag`) |
 | Muster-Hinweise (`muster_hinweise`) | 56 Tage (8 Wochen) | letzter Tag mit gegenseitiger Nutzung (`letzter_tag`) |
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
@@ -174,8 +175,13 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
 - **Prüfwerte und Muster-Hinweise (#352):** Ein Prüfwert ist ein HMAC über das
-  Tagespseudonym und den Beitrag (bzw. zwei Tagespseudonyme); er entdoppelt nur an
-  seinem Tag und geht danach. Ein Muster-Hinweis nennt zwei Kennungen und soll Admins
+  Tagespseudonym und den Beitrag; er entdoppelt nur an seinem Tag und geht danach.
+  Ein Paar-Prüfwert ist ein HMAC über die Kennungen zweier Konten („A hat einen
+  Beitrag von B genutzt“, welcher steht nirgends); er bleibt sieben Tage, damit sich
+  gegenseitige Nutzung über mehrere Tage erkennen lässt. Er ist nicht per Kennung
+  löschbar (`person_loeschen.sql` kennt den Schlüssel nicht) und geht nach spätestens
+  sieben Tagen von selbst; ein gelöschtes Konto nutzt nichts mehr, ein Hinweis kann
+  aus ihm also nicht mehr entstehen. Ein Muster-Hinweis nennt zwei Kennungen und soll Admins
   helfen, Punkte gegen Absprachen zu schützen; nach acht Wochen ohne neuen auffälligen
   Tag ist er dafür nicht mehr nötig (DSFA zu #374). Beides löscht ein eigener Task
   (`services/muster_hinweise_service.py`), ebenfalls unabhängig vom Usage-Cleanup.

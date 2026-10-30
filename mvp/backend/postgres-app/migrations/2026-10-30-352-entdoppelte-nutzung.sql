@@ -2,7 +2,7 @@
 --
 -- Fuer Punkte und "Diese Woche oft genutzt" zaehlt eine Nutzung hoechstens einmal
 -- je Person (Besucher: Sitzung), Beitrag und Tag; der Zaehler an der Karte zaehlt
--- weiter jede. Vier Aenderungen:
+-- weiter jede. Fuenf Aenderungen:
 --
 --   usage_tracking.nutzung_entdoppelt  die entdoppelte Nutzung je Beitrag, wie
 --                                      usage_count ueber die Frist der
@@ -11,6 +11,8 @@
 --                                      Person an diesem Beitrag und Tag war.
 --   nutzung_heute                      Pruefwerte (HMAC) des laufenden Tages,
 --                                      verworfen nach Tagesende.
+--   muster_pruefwerte                  Paar-Pruefwerte (HMAC) fuer die
+--                                      Muster-Hinweise, 7 Tage.
 --   muster_hinweise                    Kontenpaare, die sich gegenseitig nutzen,
 --                                      fuer Admins; 8 Wochen nach dem letzten Tag
 --                                      geloescht.
@@ -64,6 +66,12 @@ CREATE TABLE IF NOT EXISTS nutzung_heute (
     tag DATE NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_nutzung_heute_tag ON nutzung_heute (tag);
+
+CREATE TABLE IF NOT EXISTS muster_pruefwerte (
+    pruefwert VARCHAR(64) PRIMARY KEY,
+    tag DATE NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_muster_pruefwerte_tag ON muster_pruefwerte (tag);
 
 CREATE TABLE IF NOT EXISTS muster_hinweise (
     konto_a VARCHAR(255) NOT NULL,

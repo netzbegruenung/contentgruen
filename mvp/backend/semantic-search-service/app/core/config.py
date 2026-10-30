@@ -199,6 +199,14 @@ class Settings(BaseSettings):
     punkte_quest: int = Field(default=4, ge=0)
     punkte_deckel_quests_je_tag: int = Field(default=8, ge=0)
 
+    # Rate-Limit am Zaehl-Endpunkt (POST /usage/content/{id}/usage, #352): so viele
+    # Kopien je Person (Besucher: je Adresse) im Fenster. Die Entdoppelung schuetzt
+    # Punkte und "oft genutzt", nicht den Zaehler der Karte, der jede Kopie zaehlt.
+    # 60 in 10 Minuten liegt weit ueber dem, was eine Person kopiert, und laesst
+    # Raum fuer mehrere Besucher hinter einer Adresse.
+    nutzung_rate_limit_anfragen: int = Field(default=60, ge=1)
+    nutzung_rate_limit_minuten: int = Field(default=10, ge=1)
+
     # Secret key for the daily search-actor pseudonym (see SearchTrackingService).
     # Set SEMANTIC_SEARCH_ACTOR_HASH_SECRET in production so the daily-active-user
     # count stays correct across service restarts. If it is left unset a random

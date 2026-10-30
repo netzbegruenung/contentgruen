@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     # under TYPE_CHECKING to avoid pulling the registry/service graph at module load.
     from services.content.base_content_service import BaseContentService
 from core.config import settings, Settings
+from utils.rate_limiter import RateLimiter
 from services.orchestration.content_orchestrator import ContentOrchestrator
 from services.content.commentary_service import CommentaryService
 from services.content.reference_service import ReferenceService
@@ -200,6 +201,20 @@ def get_muster_hinweise_service() -> MusterHinweiseService:
 
 
 _gegenlesen_service: Optional[GegenlesenService] = None
+
+
+_nutzung_rate_limiter: Optional[RateLimiter] = None
+
+
+def get_nutzung_rate_limiter() -> RateLimiter:
+    """Das Rate-Limit am Zaehl-Endpunkt (#352), Werte aus der Konfiguration."""
+    global _nutzung_rate_limiter
+    if _nutzung_rate_limiter is None:
+        _nutzung_rate_limiter = RateLimiter(
+            max_requests=settings.nutzung_rate_limit_anfragen,
+            window_minutes=settings.nutzung_rate_limit_minuten,
+        )
+    return _nutzung_rate_limiter
 
 
 def get_gegenlesen_service() -> GegenlesenService:

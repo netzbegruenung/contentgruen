@@ -18,6 +18,8 @@ def test_fristen_anwenden_verwirft_pruefwerte_und_loescht_nach_acht_wochen():
     MusterHinweiseService(hinweise, nutzung).fristen_anwenden(date(2026, 10, 30))
 
     nutzung.vergangene_tage_verwerfen.assert_called_once_with(date(2026, 10, 30))
+    # Paar-Pruefwerte bleiben sieben Tage: den heutigen und die sechs davor.
+    hinweise.paare_verwerfen_vor.assert_called_once_with(date(2026, 10, 24))
     hinweise.loeschen_vor.assert_called_once_with(date(2026, 9, 4))
 
 

@@ -10,8 +10,10 @@ geheimen Schluessel laesst er sich weder auf die Person noch auf den Beitrag
 zurueckfuehren, und am naechsten Tag passt er zu nichts mehr. Die Tabelle
 ``nutzung_heute`` verwirft der taegliche Lauf (services/muster_hinweise_service.py).
 
-Der Paar-Pruefwert dient den Muster-Hinweisen: Er merkt sich fuer einen Tag, dass ein
-Konto ein Beitrag eines anderen genutzt hat, ebenfalls nur als HMAC.
+Der Paar-Pruefwert dient den Muster-Hinweisen: Er merkt sich sieben Tage lang, dass
+ein Konto einen Beitrag eines anderen genutzt hat (welchen, steht nirgends), ebenfalls
+nur als HMAC, hier aber ueber beide Kennungen statt ueber Tagespseudonyme: Er muss
+gleich bleiben, solange das Fenster laeuft (services/muster_hinweise_service.py).
 """
 
 import hashlib
@@ -53,12 +55,6 @@ def pruefwert(
     return _hmac(f"nutzung|{pseudonym}|{content_id}")
 
 
-def paar_pruefwert(
-    nutzende: str, autor: str, moment: Optional[datetime] = None
-) -> Optional[str]:
-    """Der Pruefwert fuer "``nutzende`` hat heute einen Beitrag von ``autor`` genutzt"."""
-    von = tagespseudonym(user_id=nutzende, moment=moment)
-    an = tagespseudonym(user_id=autor, moment=moment)
-    if von is None or an is None:
-        return None
-    return _hmac(f"paar|{von}|{an}")
+def paar_pruefwert(nutzende: str, autor: str) -> str:
+    """Der Pruefwert fuer "``nutzende`` hat einen Beitrag von ``autor`` genutzt"."""
+    return _hmac(f"paar|{nutzende}|{autor}")

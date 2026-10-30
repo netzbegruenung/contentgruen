@@ -13,7 +13,7 @@ from sqlalchemy import delete, desc, exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import MusterHinweisZeile, NutzungHeute
+from infrastructure.database.models import MusterHinweisZeile, MusterPruefwert
 
 
 @dataclass(frozen=True)
@@ -31,13 +31,19 @@ class MusterHinweisRepository:
         self.db = db if db is not None else get_app_database()
 
     def nutzung_merken(
-        self, hin: str, rueck: str, nutzende: str, autor: str, tag: date
+        self,
+        hin: str,
+        rueck: str,
+        nutzende: str,
+        autor: str,
+        tag: date,
+        fenster_ab: date,
     ) -> bool:
         """
-        Merkt sich fuer den Tag den Pruefwert ``hin`` (``nutzende`` hat einen Beitrag
-        von ``autor`` genutzt). Steht ``rueck`` schon da, haben sich beide heute
-        gegenseitig genutzt: Dann zaehlt der Hinweis zum Paar diesen Tag, hoechstens
-        einmal. Liefert, ob das Paar heute gegenseitig war.
+        Merkt sich den Pruefwert ``hin`` (``nutzende`` hat einen Beitrag von ``autor``
+        genutzt) mit ``tag``. Steht ``rueck`` mit einem Tag ab ``fenster_ab`` da,
+        nutzen sich beide gegenseitig: Dann zaehlt der Hinweis zum Paar diesen Tag,
+        hoechstens einmal. Liefert, ob das Paar gegenseitig war.
         """
         konto_a, konto_b = sorted([nutzende, autor])
         with self.db.get_session() as session:
@@ -49,13 +55,21 @@ class MusterHinweisRepository:
                     func.pg_advisory_xact_lock(func.hashtext(f"{konto_a}|{konto_b}"))
                 )
             )
+            neu = insert(MusterPruefwert).values(pruefwert=hin, tag=tag)
             session.execute(
-                insert(NutzungHeute)
-                .values(pruefwert=hin, tag=tag)
-                .on_conflict_do_nothing(index_elements=["pruefwert"])
+                neu.on_conflict_do_update(
+                    index_elements=["pruefwert"],
+                    set_={"tag": neu.excluded.tag},
+                    where=MusterPruefwert.tag < neu.excluded.tag,
+                )
             )
             gegenseitig = session.execute(
-                select(exists().where(NutzungHeute.pruefwert == rueck))
+                select(
+                    exists().where(
+                        MusterPruefwert.pruefwert == rueck,
+                        MusterPruefwert.tag >= fenster_ab,
+                    )
+                )
             ).scalar()
             if not gegenseitig:
                 return False
@@ -94,6 +108,13 @@ class MusterHinweisRepository:
                 MusterHinweis(z.konto_a, z.konto_b, z.tage, z.erster_tag, z.letzter_tag)
                 for z in session.execute(abfrage).scalars()
             ]
+
+    def paare_verwerfen_vor(self, tag: date) -> int:
+        """Paar-Pruefwerte, deren letzter Tag vor ``tag`` liegt, verwerfen."""
+        with self.db.get_session() as session:
+            return session.execute(
+                delete(MusterPruefwert).where(MusterPruefwert.tag < tag)
+            ).rowcount
 
     def loeschen_vor(self, tag: date) -> int:
         """Hinweise, deren letzter Tag vor ``tag`` liegt, loeschen."""
