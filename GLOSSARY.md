@@ -142,6 +142,10 @@ _Avoid_: Tooltip, Anleitung, Hilfetext
 Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und bestätigt die verlinkten Nutzungsbedingungen. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
+**Stand der Nutzungsbedingungen**:
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm beim Anmelden zugestimmt hat; eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+_Avoid_: Fassung (eine Länge eines Kommentars), Version
+
 **Schreibregel**:
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
@@ -181,6 +185,11 @@ _Avoid_: Grafik, Image
 **Unterschrift**:
 Der Text zu einem Bild, über den es gefunden wird. Die Person schreibt ihn beim Einstellen oder übernimmt einen Vorschlag der KI; ohne Unterschrift wird kein Bild gespeichert (ADR 0003).
 _Avoid_: Caption, Bildtext
+
+**Bild von einem fremden Server**:
+Ein Bild, das ein Beitrag über eine Adresse einbindet und das nicht bei Gut gesagt liegt. Der Browser lädt es erst, wenn die Person auf den Platzhalter „Bild laden“ klickt; gemerkt wird der Klick nicht. Bilder, die Gut gesagt selbst ausliefert (Logo, Profilbilder), laden sofort.
+Im Code heißt es kurz „fremdes Bild“ (`app-fremdes-bild`, `istFremdeAdresse`).
+_Avoid_: externes Bild; „fremd“ ohne Bezug auf Bild oder Server (das ist ein Paar-Label)
 
 **Post**:
 Ein Beitrag, der einen gelungenen Beitrag aus einem sozialen Netzwerk als Vorbild zum Teilen festhält. Er ist fertig und wird so verwendet; ein Einwurf mit demselben Link ist dagegen Material, aus dem erst ein Beitrag werden soll. Sein Link ist Pflicht und ersetzt die Herkunft.
@@ -315,7 +324,7 @@ Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:
-Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen und die Zahl der Personen, aber kein Tagespseudonym. Kennzahlen über längere Zeiträume zählen ihn mit.
+Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen, die Zahl der Suchen ohne Treffer und die Zahl der Personen, aber kein Tagespseudonym. Tage, die vor dieser Spalte verdichtet wurden, kennen die Suchen ohne Treffer nicht. Kennzahlen über längere Zeiträume zählen ihn mit.
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
@@ -365,6 +374,14 @@ _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 **Nutzungsstatistik**:
 Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
 _Avoid_: Usage Stats, Nutzerstatistik
+
+**Bilanz**:
+Der Abgleich der Kennzahlen nach dem öffentlichen Launch mit der Basislinie aus dem internen Launch (#417). Admins sehen die Kennzahlen dafür je Kalenderwoche: Personen pro Tag, die suchen (Wochenmittel der Tagespseudonyme), Nutzungen pro Woche, Anteil der Suchen ohne Treffer und Nutzungen je Suche. Feste Zielwerte gibt es nicht; ein Signal ist eine Abweichung von der Basislinie.
+_Avoid_: Zielerreichung, KPI, MVP-Ziele
+
+**Basislinie**:
+Die Werte der Kennzahlen aus dem internen Launch, an denen die Bilanz misst: je Kennzahl der Median der Wochen 2 bis 4. Sie wird in #348 festgehalten, solange die Nutzungen dieser Wochen noch nicht gelöscht sind. Keine Zielvorgabe, sondern der Vergleichswert.
+_Avoid_: Zielwert, Benchmark
 
 **Betriebskennzahlen**:
 Zahlen über den Betrieb der Anwendung, nicht über Inhalte oder Personen: wie viele Anfragen mit welchem Ergebnis eingehen und wie lange die Suche dauert. Der Betrieb liest sie für Alarme; sie tragen keine Kennung, keine Suchanfrage und keine Sitzung. Die Kennzahlen, die Admins sehen, sind etwas anderes.

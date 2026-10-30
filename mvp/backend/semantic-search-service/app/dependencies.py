@@ -36,6 +36,9 @@ from services.feedback_service import FeedbackService
 from repositories.einladung_repository import get_einladung_repository
 from services.einladung_service import EinladungService
 from infrastructure.keycloak_konten import KeycloakKonten
+from services.bilanz_service import BilanzService
+from repositories.search_tracking_repository import get_search_tracking_repository
+from repositories.usage_tracking_repository import get_usage_repository
 from services.gegenlesen.gegenlesen_service import (
     SPRACHWERKZEUGE,
     GegenlesenService,
@@ -144,6 +147,17 @@ def get_suchen_ohne_treffer_service(
         get_suchen_ohne_treffer_repository(),
         statement_service,
         get_personen_des_tages(),
+    )
+
+
+def get_bilanz_service(
+    settings: Settings = Depends(get_settings),
+) -> BilanzService:
+    # Ohne Bereinigungsjob bleiben die Nutzungsereignisse, eine Frist gilt dann nicht.
+    return BilanzService(
+        get_search_tracking_repository(),
+        get_usage_repository(),
+        settings.usage_retention_days if settings.enable_usage_cleanup else None,
     )
 
 

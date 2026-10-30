@@ -1,0 +1,7 @@
+# Gut gesagt: how to report security vulnerabilities (RFC 9116).
+# Login and hosting are run by verdigado; see the policy for where those reports go.
+Contact: mailto:gutgesagt@netzbegruenung.de
+Expires: 2027-10-29T23:00:00.000Z
+Policy: https://github.com/netzbegruenung/contentgruen/blob/main/SECURITY.md
+Preferred-Languages: de
+Canonical: https://gutgesagt.netzbegruenung.de/.well-known/security.txt

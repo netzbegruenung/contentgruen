@@ -57,7 +57,7 @@ Credentials*.
 Bei der Pflichtaktion zeigt Keycloak den Text `localizationTexts.de.termsText` aus der Vorlage.
 Ein eigenes Theme gibt es nicht: Keycloak gibt diesen Text als HTML aus (`terms.ftl`,
 `kcSanitize`), Link und Stand-Datum stehen also direkt darin. Er verlinkt die Seite
-`/nutzungsbedingungen` und nennt ihren Stand, etwa „(Stand: Oktober 2026)“;
+`/nutzungsbedingungen` und nennt ihren Stand, etwa „(Stand: 30. Oktober 2026)“;
 `scripts/tests/test_keycloak_nutzungsbedingungen.py` prüft, dass der Stand mit der Stand-Zeile
 der Seite übereinstimmt. Keycloak speichert bei der Zustimmung nur den Zeitpunkt; welchem Text
 jemand zugestimmt hat, sagt nur dieses Datum.

@@ -92,54 +92,10 @@
   color: #333;
 }
 
-.metric-value .divider {
-  color: #999;
-  font-size: 24px;
-}
-
-.metric-value .goal {
-  color: #666;
-  font-size: 24px;
-}
-
 .metric-value .label {
   font-size: 14px;
   color: #666;
   font-weight: normal;
-}
-
-mat-progress-bar {
-  margin: 12px 0;
-  height: 8px;
-  border-radius: 4px;
-}
-
-.status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 8px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.status.met {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.status.met mat-icon {
-  color: #2e7d32;
-}
-
-.status.not-met {
-  background-color: #fff3e0;
-  color: #e65100;
-}
-
-.status.not-met mat-icon {
-  color: #e65100;
 }
 
 .trend {
@@ -204,9 +160,5 @@ mat-progress-bar {
 
   .metric-value {
     font-size: 28px;
-  }
-
-  .metric-value .goal {
-    font-size: 20px;
   }
 }
