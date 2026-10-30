@@ -72,9 +72,12 @@ Solange das Keycloak-Konto besteht, kann sich die Person neu anmelden; die Liste
 dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
-   die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
-   (`api/v1/moderation.py:169-174`). Nur über sie sind die `usage_events` einer Person
-   erreichbar.
+   die `reported_by_user_id` und `reported_by_session_id` nebeneinander führen kann
+   (geschrieben bis #446). Nur über sie sind die `usage_events` einer Person
+   erreichbar. Seit #446 gibt es keine Sitzungskennung mehr: Neue Meldungen und neue
+   `usage_events` tragen keine, der Schritt findet also nur noch ältere Zeilen.
+   Anonyme offene Meldungen tragen stattdessen ein Tagespseudonym; es hat keinen
+   Bezug zu einem Konto und wird beim Abschluss der Meldung gelöscht.
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen (ein von der Person gemeldeter, inzwischen gesperrter
    Beitrag bleibt über die Moderationsansicht „Gesperrt“ erreichbar);
@@ -135,6 +138,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Datenart | Frist | Gerechnet ab |
 |---|---|---|
 | Meldungen (`content_reports`), bearbeitet oder abgewiesen | 180 Tage | Bearbeitung (`reviewed_at`; ohne sie, im Altbestand, der Eingang) |
+| Tagespseudonym an anonymen Meldungen (`reported_by_session_id`, `besucher:…`) | bis zum Abschluss der Meldung | Bearbeiten oder Abweisen ersetzt es durch einen Zufallswert (`anon:…`), angemeldete Meldungen verlieren den Wert (#446, `repositories/content_report_repository.py`) |
 | Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird (dann bearbeitet, Frist wie oben) |
 | Einwürfe (`raw_inputs`), die in keinem Beitrag ausformuliert sind, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
 | Einwürfe, die in einem Beitrag ausformuliert sind | solange dieser Beitrag besteht | — danach wie die anderen |

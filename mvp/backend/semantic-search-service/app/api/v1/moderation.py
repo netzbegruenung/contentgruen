@@ -3,6 +3,7 @@ API endpoints for content moderation and reporting.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
@@ -20,7 +21,9 @@ from core.config import Settings
 from core.logging import get_logger
 from dependencies import get_settings, get_current_user_optional, require_admin
 from utils.rate_limiter import report_rate_limiter
-from utils.client_identity import derive_client_key, normalize_session_id
+from utils.besucher_pseudonym import besucher_merkmal
+from utils.client_identity import derive_client_key
+from repositories.content_report_repository import melder_pseudonym
 
 logger = get_logger(__name__)
 
@@ -128,7 +131,6 @@ async def report_content(
     request: ReportContentRequest,
     http_request: Request,
     x_user_id: Optional[str] = Header(None, alias="X-User"),
-    x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
     settings: Settings = Depends(get_settings),
 ):
     """
@@ -139,10 +141,9 @@ async def report_content(
     verletzung meldet, ist typischerweise kein Nutzer der Plattform.
 
     Das Rate-Limit haengt deshalb an der Adresse des Aufrufers, nicht mehr an
-    X-Session-Id. Der Session-Header wird von der SPA selbst erzeugt und in
-    localStorage gehalten; wer je Anfrage einen neuen Wert schickt, hatte damit
-    gar kein Limit. Er dient weiterhin der Zuordnung anonymer Meldungen, aber
-    keiner Sicherheitsentscheidung mehr.
+    X-Session-Id. Den Session-Header erzeugte die SPA selbst; wer je Anfrage
+    einen neuen Wert schickte, hatte damit gar kein Limit. Seit #446 gibt es ihn
+    nicht mehr, und ein mitgeschickter Wert wird auch nicht gespeichert.
 
     Fuer angemeldete Melder gilt zusaetzlich ein Limit auf der Nutzerkennung und
     eine Deduplizierung auf (Nutzer, Inhalt).
@@ -174,20 +175,19 @@ async def report_content(
 
         logger.info(f"Content report received: {request.content_id} - {request.reason}")
 
-        # Meldungen brauchen eine Melder-Kennung: der Service verlangt sie, und die
-        # Tabelle hat einen CHECK darauf. Wer ohne Anmeldung und ohne
-        # X-Session-Id meldet -- etwa direkt gegen die API statt ueber die SPA --
-        # bekam deshalb 400, obwohl die Route ausdruecklich ohne Anmeldung
-        # erreichbar sein soll. Ein Zufallstoken je Meldung erfuellt die
-        # Bedingung, ohne irgendetwas ueber den Melder auszusagen; insbesondere
-        # ist er nicht aus der Adresse abgeleitet.
-        # Nur eine wohlgeformte Kennung uebernehmen. Das ist Hygiene, keine
-        # Sicherheitsmassnahme -- an diesem Wert haengt seit dem Umbau des
-        # Rate-Limits keine Entscheidung mehr. Ein unpassender Wert wird
-        # verworfen statt die Meldung abzuweisen.
-        reporter_session = normalize_session_id(x_session_id)
-        if not is_authenticated and not reporter_session:
-            reporter_session = f"anon:{uuid.uuid4()}"
+        # Anonyme Meldungen tragen das Tagespseudonym des Besuchers: Admins sehen
+        # so, ob offene Meldungen am selben Tag aus derselben Quelle kommen. Es
+        # bleibt nur, bis die Meldung erledigt ist; dann ersetzt das Repository es
+        # durch einen Zufallswert (repositories/content_report_repository.py).
+        # Eine Sitzungskennung aus dem Browser gibt es seit #446 nicht mehr, auch
+        # nicht neben der Kennung angemeldeter Melder.
+        reporter_session = (
+            None
+            if is_authenticated
+            else melder_pseudonym(
+                besucher_merkmal(http_request), datetime.now(timezone.utc).date()
+            )
+        )
 
         success = await moderation_service.report_content(
             content_id=request.content_id,

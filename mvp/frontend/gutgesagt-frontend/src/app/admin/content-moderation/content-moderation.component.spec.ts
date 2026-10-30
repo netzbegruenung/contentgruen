@@ -78,6 +78,30 @@ describe('ContentModerationComponent', () => {
     TestBed.overrideProvider(MatDialog, { useValue: dialog });
   });
 
+  describe('anonyme Melder (#446)', () => {
+    function melder(): string {
+      return (fixture.nativeElement.querySelector('.anonymous')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    }
+
+    it('zeigt bei einer erledigten Meldung (Zufallswert) nur „Anonym“', () => {
+      mitMeldungen([meldung({ reported_by_session_id: 'anon:3f2504e0-4f89-41d3-9a0c-0305e82c3301' })]);
+
+      expect(melder()).toBe('Anonym');
+    });
+
+    it('zeigt bei einer offenen Meldung den Anfang des Tagespseudonyms als Quelle', () => {
+      mitMeldungen([meldung({ reported_by_session_id: 'besucher:' + '9f86d081'.padEnd(64, '0') })]);
+
+      expect(melder()).toBe('Anonym (Quelle 9f86d081)');
+    });
+
+    it('zeigt bei einer alten Sitzungskennung weiter ihren Anfang', () => {
+      mitMeldungen([meldung({ reported_by_session_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301' })]);
+
+      expect(melder()).toBe('Anonym (3f2504e0)');
+    });
+  });
+
   it('bietet zu einer offenen Meldung Sperren statt Löschen an', () => {
     mitMeldungen([meldung()]);
 

@@ -3,9 +3,10 @@ Missbrauchsschutz auf POST /api/v1/moderation/report.
 
 Die Route bleibt bewusst ohne Anmeldung erreichbar (DSA Art. 16). Genau deshalb
 muss die Begrenzung an etwas haengen, das der Aufrufer nicht frei waehlen kann:
-das Rate-Limit lag auf X-Session-Id, einem Wert, den die SPA selbst erzeugt und
-in localStorage haelt. Zwoelf Meldungen mit zwoelf verschiedenen Session-Werten
-gingen alle durch.
+das Rate-Limit lag auf X-Session-Id, einem Wert, den die SPA bis #446 selbst
+erzeugte und in localStorage hielt. Zwoelf Meldungen mit zwoelf verschiedenen
+Session-Werten gingen alle durch. Alte Clients und direkte Aufrufe schicken den
+Header weiter mit, deshalb bleiben die Tests dazu.
 """
 
 from unittest.mock import AsyncMock, Mock, patch
@@ -19,7 +20,6 @@ from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
 from domain.models.meldegrund import MELDEGRUENDE
 from utils import client_identity
-from utils.client_identity import normalize_session_id
 from utils.rate_limiter import RateLimiter
 
 REPORT_URL = "/api/v1/moderation/report"
@@ -271,55 +271,69 @@ class TestClientKeyDerivation:
         assert client_identity.derive_client_key(request) == "ip:unknown"
 
 
-class TestSessionIdNormalisation:
+class TestKeineKennungAusDemBrowser:
     """
-    Formatpruefung der clientseitigen Session-Kennung.
-
-    Bewusst Hygiene und keine Sicherheitsmassnahme: der Wert kommt vom Client,
-    und wer ihn wechseln will, erzeugt gueltige UUIDs. Er darf deshalb auch
-    keine Meldung kosten, wenn er unpassend ist.
+    Seit #446 schickt der Browser keine Sitzungskennung mehr. Ein X-Session-Id,
+    den ein alter Client oder jemand direkt gegen die API mitschickt, wird nicht
+    gespeichert. Anonyme Meldungen tragen das Tagespseudonym des Besuchers, damit
+    Admins sehen, ob offene Meldungen aus derselben Quelle kommen; beim
+    Abschliessen loescht das Repository es (test_loeschfristen.py).
     """
 
-    def test_uuid_is_accepted(self):
+    def test_mitgeschickte_sitzungskennung_wird_nicht_gespeichert(
+        self, client, service
+    ):
         value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
 
-        assert normalize_session_id(value) == value
-
-    def test_surrounding_whitespace_is_trimmed(self):
-        assert (
-            normalize_session_id("  3f2504e0-4f89-41d3-9a0c-0305e82c3301  ")
-            == "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
-        )
-
-    @pytest.mark.parametrize(
-        "value",
-        ["A", "", "   ", "sess-1", "<script>alert(1)</script>", "X" * 255],
-    )
-    def test_non_uuid_values_are_discarded(self, value):
-        assert normalize_session_id(value) is None
-
-    def test_none_stays_none(self):
-        assert normalize_session_id(None) is None
-
-    def test_malformed_header_does_not_reject_the_report(self, client):
-        """Eine kaputte Kennung darf die Meldung nicht kosten."""
         response = client.post(
-            REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"}
+            REPORT_URL, json=_payload(), headers={"X-Session-Id": value}
         )
 
         assert response.status_code == 200
+        stored = service.report_content.await_args.kwargs["session_id"]
+        assert value not in stored
+        assert stored.startswith("besucher:")
 
-    def test_malformed_header_is_not_stored(self, client, service):
-        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"})
+    def test_meldungen_derselben_quelle_tragen_dasselbe_pseudonym(
+        self, client, service
+    ):
+        kopf = {"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"}
+        client.post(REPORT_URL, json=_payload(), headers=kopf)
+        client.post(REPORT_URL, json=_payload(), headers=kopf)
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={"X-Real-IP": "198.51.100.6", "User-Agent": "Firefox"},
+        )
+
+        eins, zwei, andere = [
+            aufruf.kwargs["session_id"]
+            for aufruf in service.report_content.await_args_list
+        ]
+        assert eins == zwei
+        assert andere != eins
+
+    def test_pseudonym_enthaelt_weder_adresse_noch_user_agent(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"},
+        )
 
         stored = service.report_content.await_args.kwargs["session_id"]
-        assert stored != "A"
-        # Stattdessen ein Zufallstoken, damit der CHECK der Tabelle erfuellt ist.
-        assert stored.startswith("anon:")
+        assert len(stored) == len("besucher:") + 64
+        assert "198.51.100.5" not in stored and "Firefox" not in stored
 
-    def test_valid_header_is_stored_unchanged(self, client, service):
-        value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+    def test_angemeldete_meldung_traegt_nur_die_kennung(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={
+                "X-User": "user-1",
+                "X-Session-Id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+            },
+        )
 
-        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": value})
-
-        assert service.report_content.await_args.kwargs["session_id"] == value
+        kwargs = service.report_content.await_args.kwargs
+        assert kwargs["user_id"] == "user-1"
+        assert kwargs["session_id"] is None

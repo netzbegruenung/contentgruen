@@ -1,8 +1,8 @@
 from dataclasses import replace
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Depends, Header, Request
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Depends, Request
+from typing import List
 
 from core.config import settings
 from core.logging import get_logger
@@ -46,6 +46,7 @@ from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
 )
+from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
 from services.polarity_filter_service import get_polarity_filter_service
 from services.keyword_overlap_service import get_keyword_overlap_service
@@ -101,7 +102,6 @@ async def search_by_text(
     ),
     aufrufer: Aufrufer = Depends(get_aufrufer),
     themen_service: AussageThemenService = Depends(get_aussage_themen_service),
-    x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
 ) -> SearchResponse:
     try:
         # Keine Logzeile je Suche: Der Suchtext ist der sensibelste Einzelwert der
@@ -286,7 +286,10 @@ async def search_by_text(
         # Suchereignis und "Suchen ohne Treffer" bilden das Tagespseudonym aus
         # derselben Kennung und demselben Zeitpunkt: So ist es fuer beide dasselbe,
         # und Pseudonym und Tag gehoeren zusammen, auch kurz vor Mitternacht.
+        # Besucher erkennt der Server an Adresse und User-Agent, nicht mehr an einer
+        # Sitzungskennung aus dem Browser (#446); Angemeldete an ihrer Kennung allein.
         user_id = validated_user if angemeldet(validated_user) else None
+        merkmal = None if user_id else besucher_merkmal(http_request)
         jetzt = datetime.now(timezone.utc)
 
         # Track search event for metrics (fire-and-forget, don't block response)
@@ -295,11 +298,12 @@ async def search_by_text(
 
             # Neither the query text nor the client IP is handed on: the search
             # text was stored in full without ever being read back, and the IP
-            # hash was written but never evaluated. The user or session id is
-            # turned into a daily pseudonym inside the tracking service.
+            # hash was written but never evaluated. The user id or the
+            # Besuchermerkmal is turned into a daily pseudonym inside the
+            # tracking service.
             search_tracking_service.track_search(
                 results_count=total_results,
-                session_id=x_session_id,
+                besucher_merkmal=merkmal,
                 user_id=user_id,
                 moment=jetzt,
             )
@@ -315,7 +319,7 @@ async def search_by_text(
             suchen_ohne_treffer.erfassen(
                 statement_id,
                 total_results,
-                tagespseudonym(user_id=user_id, session_id=x_session_id, moment=jetzt),
+                tagespseudonym(user_id=user_id, besucher_merkmal=merkmal, moment=jetzt),
                 heute=jetzt.date(),
             )
         except Exception as e:

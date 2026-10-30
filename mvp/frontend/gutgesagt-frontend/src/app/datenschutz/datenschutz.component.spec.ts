@@ -198,6 +198,56 @@ describe('DatenschutzComponent', () => {
     });
   });
 
+  describe('Tagespseudonym statt Kennung im Browser (#446)', () => {
+    it('Suchvorgänge: Besucher über IP-Adresse, User-Agent und einen täglich neuen, nicht gespeicherten Schlüssel', () => {
+      const text = abschnitt('Suchvorgänge');
+
+      expect(text).toContain('nichts in deinem Browser ab');
+      expect(text).toContain('deiner IP-Adresse');
+      expect(text).toContain('(User-Agent)');
+      expect(text).toContain('jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends speichert');
+      expect(text).toContain('IP-Adresse und User-Agent werden dabei weder gespeichert noch protokolliert');
+      expect(text).not.toContain('Sitzungskennung');
+      // Der Schlüssel wechselt mit der ersten Suche des neuen Tages, nicht um Mitternacht.
+      expect(text).toContain('Mit der ersten Suche eines neuen Tages ersetzt er ihn');
+      expect(text).not.toContain('mit dem Tag ist auch der Schlüssel weg');
+      // "Kennung" ist im Glossar die Kontokennung, nicht der User-Agent.
+      expect(text).not.toContain('Kennung deines Browsers');
+      expect(text).toContain('siehe „Protokolldateien“');
+    });
+
+    it('Suchen ohne Treffer: Netzwechsel zählt neu, gleicher Anschluss und Browser zählt als eine Person', () => {
+      const text = abschnitt('Suchen ohne Treffer');
+
+      expect(text).toContain('anderes Netz');
+      expect(text).toContain('am selben Anschluss denselben Browser nutzen, als eine');
+      expect(text).not.toContain('neue Sitzungskennung');
+    });
+
+    it('Verwendung von Beiträgen: kein Pseudonym und kein Gerätebezug mehr', () => {
+      const text = abschnitt('Verwendung von Beiträgen');
+
+      expect(text).toContain('noch ob mehrere Vorgänge vom selben Gerät kamen');
+      expect(text).not.toContain('höchstens 30 Tage');
+    });
+
+    it('Meldungen: ohne Konto das Tagespseudonym, nur bis zum Abschluss', () => {
+      const text = abschnitt('Meldungen von Beiträgen');
+
+      expect(text).toContain('tritt an ihre Stelle dein Tagespseudonym');
+      expect(text).toContain('Es bleibt nur, solange die Meldung offen ist');
+      expect(text).toContain('mit dem Abschluss der Bearbeitung löschen wir es');
+      expect(text).not.toContain('stehen also beide nebeneinander');
+    });
+
+    it('Speicherung auf deinem Gerät: keine Kennung zum Wiedererkennen, alte wird entfernt', () => {
+      const text = abschnitt('Keine Kennung zum Wiedererkennen');
+
+      expect(text).toContain('keine Kennung in deinem Browser ab');
+      expect(text).toContain('aus deinem Browser entfernt');
+    });
+  });
+
   describe('Feedback (#343)', () => {
     it('beschreibt Feedback ohne Kennung, nur für Admins, mit 180 Tagen Frist', () => {
       const text = abschnitt('Feedback');
@@ -276,14 +326,7 @@ describe('DatenschutzComponent', () => {
   });
 
   describe('Weitere Korrekturen am Ist-Stand', () => {
-    it('Meldungen: Kennung und Sitzungskennung stehen bei angemeldeten Meldungen nebeneinander', () => {
-      expect(abschnitt('Meldungen von Beiträgen')).toContain('stehen also beide nebeneinander');
-      expect(abschnitt('Verwendung von Beiträgen')).toContain(
-        'es sei denn, du hast aus demselben Browser angemeldet eine Meldung abgegeben',
-      );
-    });
-
-    it('Verwendung: nicht gespeichert wird der User-Agent, die Sitzungskennung schon', () => {
+    it('Verwendung: nicht gespeichert wird der User-Agent', () => {
       expect(abschnitt('Verwendung von Beiträgen')).toContain('die genaue Bezeichnung deines Browsers (User-Agent)');
     });
 

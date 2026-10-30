@@ -328,8 +328,24 @@ Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die 
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder dieselbe Sitzung an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung (oder der Sitzungskennung des Browsers) und dem Datum berechnet. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
+
+**Besuchermerkmal**:
+Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei IPv6 nur ihr vorderer Teil, der den Anschluss bezeichnet) und der User-Agent des Browsers. Es existiert nur während einer Anfrage und wird weder gespeichert noch protokolliert. Wer am selben Anschluss denselben Browser nutzt, hat dasselbe Besuchermerkmal.
+_Avoid_: Fingerprint
+
+**Tagesschlüssel**:
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet. Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
+_Avoid_: Salt, Secret
+
+**Anschluss**:
+Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein.
+_Avoid_: IP, Netz
+
+**Sitzungskennung**:
+Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Browser ablegte und bei Suche, Meldung und Nutzung mitschickte. Seit #446 gibt es sie nicht mehr; ältere Nutzungsereignisse tragen sie bis zu ihrer Frist, ältere Meldungen bis zu ihrem Abschluss (Spalten `session_id`, `reported_by_session_id`). Für Besucher heute: Tagespseudonym.
+_Avoid_: Session-ID
 
 **Meine Beiträge**:
 Die persönliche Übersicht einer Person über ihre eigenen Beiträge und deren Nutzung. Die Seite hat zwei Tabs: „Meine Beiträge“ mit den Beiträgen, darüber den Sperrnachrichten zu gesperrten eigenen Beiträgen, und „Meine Einwürfe“.

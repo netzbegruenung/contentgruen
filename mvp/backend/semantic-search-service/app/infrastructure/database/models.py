@@ -108,7 +108,7 @@ class UsageEvent(Base):
       (siehe utils/device_category.py).
 
     Was bleibt, traegt die Nutzungszaehlung: welcher Inhalt, welche Art
-    Ereignis, wann, und eine Sitzungskennung fuer die Abgrenzung.
+    Ereignis und wann. Die Sitzungskennung schreibt seit #446 niemand mehr.
     """
 
     __tablename__ = "usage_events"
@@ -125,6 +125,9 @@ class UsageEvent(Base):
     timestamp = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Seit #446 nicht mehr geschrieben: Es gibt keine Sitzungskennung im Browser
+    # mehr. Aeltere Zeilen tragen sie noch, bis sie nach ihrer Frist geloescht
+    # sind; bis dahin braucht sie scripts/manual/person_loeschen.sql.
     session_id = Column(String(255), nullable=True)
     device_category = Column(String(20), nullable=True)
     # Welche Fassung eines Kommentars kopiert wurde ("kurz", "mittel", "lang",

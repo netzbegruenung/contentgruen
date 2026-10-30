@@ -32,7 +32,6 @@ class TestUsageTrackingService:
         """Test successful content usage tracking."""
         # Arrange
         content_id = str(uuid.uuid4())
-        session_id = "session123"
         device_category = "mobile"
 
         mock_repository.track_usage.return_value = True
@@ -40,7 +39,6 @@ class TestUsageTrackingService:
         # Act
         result = service.track_content_usage(
             content_id=content_id,
-            session_id=session_id,
             device_category=device_category,
         )
 
@@ -49,7 +47,6 @@ class TestUsageTrackingService:
         mock_repository.track_usage.assert_called_once()
         call_args = mock_repository.track_usage.call_args[1]
         assert str(call_args["content_id"]) == content_id
-        assert call_args["session_id"] == session_id
         assert call_args["device_category"] == device_category
         assert call_args["event_type"] == "copy"
 
@@ -57,14 +54,13 @@ class TestUsageTrackingService:
         self, service, mock_repository
     ):
         """
-        Weder Nutzerkennung noch IP noch User-Agent duerfen das Repository
-        erreichen -- die Spalten dafuer gibt es nicht mehr.
+        Weder Nutzerkennung noch IP noch User-Agent noch eine Sitzungskennung
+        (#446) duerfen das Repository erreichen.
         """
         mock_repository.track_usage.return_value = True
 
         service.track_content_usage(
             content_id=str(uuid.uuid4()),
-            session_id="session123",
             device_category="desktop",
         )
 
@@ -72,7 +68,6 @@ class TestUsageTrackingService:
         assert set(call_args) == {
             "content_id",
             "event_type",
-            "session_id",
             "device_category",
             # Welche Fassung eines Kommentars kopiert wurde (#355), kein Personenbezug.
             "fassung",

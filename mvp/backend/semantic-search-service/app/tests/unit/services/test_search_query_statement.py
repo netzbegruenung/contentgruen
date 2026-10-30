@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from api.v1.search import router as search_router
 from dependencies import (
@@ -33,6 +34,7 @@ from services.search.search_query_statement import (
 )
 from services.search_tracking_service import tagespseudonym
 from tests.fixtures.direktsuche import direktsuche_ueber_dienste
+from utils.besucher_pseudonym import besucher_merkmal
 from utils.rate_limiter import RateLimiter
 
 
@@ -96,6 +98,27 @@ class TestRecorder:
 
 
 SEARCH_URL = "/api/v1/search/searchByText"
+# Ein Besucher hinter nginx: Adresse aus X-Real-IP, dazu der User-Agent.
+BESUCHER = {"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"}
+
+
+def _merkmal_von(headers: dict) -> str:
+    """Das Besuchermerkmal, das der Server aus diesen Koepfen bildet."""
+    return besucher_merkmal(
+        Request(
+            {
+                "type": "http",
+                "headers": [
+                    (k.lower().encode("latin-1"), v.encode("latin-1"))
+                    for k, v in headers.items()
+                ],
+                "client": ("10.0.0.2", 12345),
+            }
+        )
+    )
+
+
+MERKMAL = _merkmal_von(BESUCHER)
 
 
 def _mittag(tag):
@@ -173,7 +196,7 @@ class TestSuchpfad:
         service.search_statements.assert_awaited()
 
     def test_limit_haengt_an_der_adresse_nicht_an_der_session(self, suchapp):
-        """Eine neue X-Session-Id je Anfrage umgeht das Limit nicht."""
+        """Eine neue X-Session-Id je Anfrage umgeht das Limit nicht (alte Clients)."""
         app, service = suchapp
         recorder = _recorder(max_requests=1)
         app.dependency_overrides[get_search_query_statement_recorder] = lambda: recorder
@@ -204,7 +227,7 @@ class TestSuchenOhneTreffer:
         TestClient(app).post(
             SEARCH_URL,
             json={"query_text": "klima", "limit": 10},
-            headers={"X-Session-Id": "sitzung-1"},
+            headers=BESUCHER,
         )
 
         aufruf = suchen_ohne_treffer.erfassen.call_args
@@ -212,7 +235,7 @@ class TestSuchenOhneTreffer:
         assert aufruf.args == (
             aussage,
             0,
-            tagespseudonym(session_id="sitzung-1", moment=_mittag(heute)),
+            tagespseudonym(besucher_merkmal=MERKMAL, moment=_mittag(heute)),
         )
 
     def test_angemeldet_meldet_dieselbe_kennung_wie_das_suchereignis(
@@ -228,12 +251,13 @@ class TestSuchenOhneTreffer:
             TestClient(app).post(
                 SEARCH_URL,
                 json={"query_text": "klima", "limit": 10},
-                headers={"X-User": "person-1", "X-Session-Id": "sitzung-1"},
+                headers={"X-User": "person-1", **BESUCHER},
             )
 
         _, ereignis = tracking.return_value.track_search.call_args
         assert ereignis["results_count"] == 0
-        assert ereignis["session_id"] == "sitzung-1"
+        # Angemeldet geht weder Adresse noch User-Agent ein.
+        assert ereignis["besucher_merkmal"] is None
         assert ereignis["user_id"] == "person-1"
         aufruf = suchen_ohne_treffer.erfassen.call_args
         assert aufruf.args[2] == tagespseudonym(
@@ -265,29 +289,59 @@ class TestSuchenOhneTreffer:
             TestClient(app).post(
                 SEARCH_URL,
                 json={"query_text": "klima", "limit": 10},
-                headers={"X-Session-Id": "sitzung-1"},
+                headers=BESUCHER,
             )
 
         _, ereignis = tracking.return_value.track_search.call_args
         assert ereignis["moment"] == vor_mitternacht
+        assert ereignis["besucher_merkmal"] == MERKMAL
         aufruf = suchen_ohne_treffer.erfassen.call_args
         assert aufruf.kwargs["heute"] == date(2026, 10, 26)
         assert aufruf.args[2] == tagespseudonym(
-            session_id="sitzung-1", moment=vor_mitternacht
+            besucher_merkmal=MERKMAL, moment=vor_mitternacht
         )
 
-    def test_suche_ohne_sitzung_meldet_kein_pseudonym(
+    def _pseudonyme(self, app, suchen_ohne_treffer, *kopfzeilen):
+        client = TestClient(app)
+        for headers in kopfzeilen:
+            client.post(
+                SEARCH_URL, json={"query_text": "klima", "limit": 10}, headers=headers
+            )
+        return [a.args[2] for a in suchen_ohne_treffer.erfassen.call_args_list]
+
+    def test_besucher_ist_ohne_sitzungskennung_dieselbe_person(
+        self, suchapp, suchen_ohne_treffer
+    ):
+        """Eine wechselnde X-Session-Id macht keine weitere Person mehr (#446)."""
+        app, service = suchapp
+        service.add_statement = AsyncMock(return_value=(False, uuid.uuid4(), "klima"))
+        app.dependency_overrides[get_search_query_statement_recorder] = _recorder
+
+        eins, zwei = self._pseudonyme(
+            app,
+            suchen_ohne_treffer,
+            {**BESUCHER, "X-Session-Id": str(uuid.uuid4())},
+            {**BESUCHER, "X-Session-Id": str(uuid.uuid4())},
+        )
+
+        assert eins is not None
+        assert eins == zwei
+
+    def test_anderer_browser_am_selben_anschluss_ist_eine_weitere_person(
         self, suchapp, suchen_ohne_treffer
     ):
         app, service = suchapp
-        aussage = uuid.uuid4()
-        service.add_statement = AsyncMock(return_value=(False, aussage, "klima"))
+        service.add_statement = AsyncMock(return_value=(False, uuid.uuid4(), "klima"))
         app.dependency_overrides[get_search_query_statement_recorder] = _recorder
 
-        TestClient(app).post(SEARCH_URL, json={"query_text": "klima", "limit": 10})
+        eins, zwei = self._pseudonyme(
+            app,
+            suchen_ohne_treffer,
+            BESUCHER,
+            {**BESUCHER, "User-Agent": "Chrome"},
+        )
 
-        aufruf = suchen_ohne_treffer.erfassen.call_args
-        assert aufruf.args == (aussage, 0, None)
+        assert eins != zwei
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
         self, suchapp, suchen_ohne_treffer

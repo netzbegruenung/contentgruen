@@ -23,8 +23,10 @@ Tagespseudonym (SearchTrackingService), und das hat Grenzen:
 - dieselbe Person an zwei Tagen zaehlt zweimal, denn ein tagesuebergreifendes
   Merkmal gibt es bewusst nicht;
 - wer sich am selben Tag anmeldet, zaehlt danach unter der Nutzerkennung als
-  weitere Person; Sitzung und Konto zu verbinden waere neuer Personenbezug;
-- die Sitzungskennung setzt der Browser. Wer sie wechselt, ist eine neue Person.
+  weitere Person; Besucher und Konto zu verbinden waere neuer Personenbezug;
+- Besucher erkennt der Server an Anschluss und User-Agent (#446). Wer Browser
+  oder Netz wechselt, ist eine neue Person; wer am selben Anschluss denselben
+  Browser nutzt, zaehlt mit den anderen dort als eine.
 
 Welche Personen eine Aussage heute schon gezaehlt haben, haelt PersonenDesTages
 nur im Speicher und nur fuer den laufenden UTC-Tag; um Mitternacht verwirft
@@ -206,8 +208,8 @@ class SuchenOhneTrefferService:
         wenn sie die Aussage heute noch nicht gezaehlt hat.
 
         pseudonym ist das Tagespseudonym aus SearchTrackingService und heute der
-        Tag, zu dem es gehoert. Ohne Pseudonym (weder Nutzer- noch
-        Sitzungskennung) zaehlt die Suche, aber keine Person.
+        Tag, zu dem es gehoert. Ohne Pseudonym zaehlt die Suche, aber keine
+        Person.
         Ohne Aussage (das Rate-Limit hat das Anlegen ausgelassen) gibt es nichts,
         woran sich zaehlen liesse; die Suche faellt dann aus der Kennzahl.
         Datenbankfehler gehen an den Aufrufer.

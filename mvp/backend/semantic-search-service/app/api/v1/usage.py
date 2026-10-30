@@ -5,7 +5,7 @@ API endpoints for usage tracking functionality.
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, ValidationError, validator
+from pydantic import BaseModel, ValidationError
 import uuid
 from datetime import datetime, timedelta
 
@@ -50,18 +50,16 @@ OFT_GENUTZT = {
 
 
 class TrackUsageRequest(BaseModel):
-    """Request model for tracking usage."""
+    """
+    Request model for tracking usage.
 
-    session_id: Optional[str] = Field(None, max_length=255)
+    Ohne Sitzungskennung (#446): Ein session_id, den ein alter Client noch
+    mitschickt, ist ein unbekanntes Feld und wird verworfen.
+    """
+
     # Die kopierte Fassung eines Kommentars (#355); bei anderen Beitragstypen
     # ohne Bedeutung und nicht gespeichert.
     fassung: Optional[Fassung] = None
-
-    @validator("session_id")
-    def validate_session_id(cls, v):
-        if v and len(v) > 255:
-            raise ValueError("Session ID must be less than 255 characters")
-        return v
 
 
 class TrackUsageResponse(BaseModel):
@@ -177,7 +175,8 @@ async def track_content_usage(
 
     Der User-Agent wird sofort zu einer groben Geraetekategorie verdichtet; der
     Rohwert wird nicht weitergereicht und nicht gespeichert. Die IP-Adresse wird
-    gar nicht mehr angefasst.
+    gar nicht mehr angefasst, und eine Kennung der Person oder des Browsers haelt
+    das Ereignis seit #446 auch nicht mehr fest.
     """
     logger.debug(f"Tracking usage for content {content_id}")
     try:
@@ -218,11 +217,6 @@ async def track_content_usage(
                 usage_count=service.get_content_usage(content_id),
             )
 
-        # Sanitize session_id if provided
-        if body.session_id:
-            # Remove any potentially malicious characters
-            body.session_id = body.session_id[:255]  # Truncate to max length
-
         # User-Agent hier verdichten, nicht weiter unten: ab dieser Zeile
         # existiert der Rohwert im weiteren Ablauf nicht mehr.
         device_category = derive_device_category(user_agent)
@@ -241,7 +235,6 @@ async def track_content_usage(
         logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
-            session_id=body.session_id,
             device_category=device_category,
             fassung=fassung,
         )

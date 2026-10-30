@@ -1,31 +1,22 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ModerationService } from './moderation.service';
-import { SessionService } from './session.service';
 import { environment } from '../../environments/environment';
 
 describe('ModerationService', () => {
   let service: ModerationService;
   let httpMock: HttpTestingController;
-  let sessionService: jasmine.SpyObj<SessionService>;
-
-  const mockSessionId = '12345678-1234-4234-8234-123456789012';
 
   beforeEach(() => {
-    const sessionServiceSpy = jasmine.createSpyObj('SessionService', ['getSessionId']);
-    sessionServiceSpy.getSessionId.and.returnValue(mockSessionId);
-
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
-        ModerationService,
-        { provide: SessionService, useValue: sessionServiceSpy }
+        ModerationService
       ]
     });
 
     service = TestBed.inject(ModerationService);
     httpMock = TestBed.inject(HttpTestingController);
-    sessionService = TestBed.inject(SessionService) as jasmine.SpyObj<SessionService>;
   });
 
   afterEach(() => {
@@ -33,7 +24,7 @@ describe('ModerationService', () => {
   });
 
   describe('reportContent', () => {
-    it('should send report request with X-Session-Id header', () => {
+    it('sendet die Meldung ohne Sitzungskennung (#446)', () => {
       const contentId = 'content-123';
       const contentType = 'commentary';
       const reason = 'spam';
@@ -43,7 +34,7 @@ describe('ModerationService', () => {
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.headers.get('X-Session-Id')).toBe(mockSessionId);
+      expect(req.request.headers.has('X-Session-Id')).toBeFalse();
       expect(req.request.body).toEqual({
         content_id: contentId,
         content_type: contentType,
@@ -63,18 +54,8 @@ describe('ModerationService', () => {
 
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
       expect(req.request.body.description).toBeUndefined();
-      expect(req.request.headers.get('X-Session-Id')).toBe(mockSessionId);
 
       req.flush({ success: true, message: 'Report submitted' });
-    });
-
-    it('should call sessionService.getSessionId()', () => {
-      service.reportContent('content-123', 'commentary', 'spam').subscribe();
-
-      const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/moderation/report`);
-      req.flush({ success: true, message: 'Report submitted' });
-
-      expect(sessionService.getSessionId).toHaveBeenCalled();
     });
 
     it('should handle successful report submission', (done) => {

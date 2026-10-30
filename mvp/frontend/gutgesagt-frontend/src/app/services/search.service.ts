@@ -1,12 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { SearchByTextRequest, SearchResponse } from './dtos/searchDtos';
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 import { StateManagementService } from './state-management.service';
-import { SessionService } from './session.service';
 import { throwError } from 'rxjs';
 
 @Injectable({
@@ -18,8 +17,7 @@ export class SearchService {
   constructor(
     private http: HttpClient,
     private logger: LoggingService,
-    private stateService: StateManagementService,
-    private sessionService: SessionService
+    private stateService: StateManagementService
   ) { }
 
   search(queryText: string, limit: number): Observable<SearchResponse> {
@@ -34,14 +32,9 @@ export class SearchService {
       limit: limit
     };
 
-    // Bei jedem Request frisch abfragen statt einmal im Konstruktor zu cachen:
-    // beim Abmelden wird die Session-ID neu vergeben, und ein gecachter Wert
-    // wuerde die alte Kennung ueber die Abmeldung hinweg weitersenden.
-    const headers = new HttpHeaders({
-      'X-Session-Id': this.sessionService.getSessionId()
-    });
-
-    return this.http.post<SearchResponse>(this.searchApiUrl, requestPayload, { headers }).pipe(
+    // Ohne Sitzungskennung: Besucher erkennt der Server an einem
+    // Tagespseudonym (#446).
+    return this.http.post<SearchResponse>(this.searchApiUrl, requestPayload).pipe(
       tap(response => {
         this.stateService.setSearchResults(response);
 
