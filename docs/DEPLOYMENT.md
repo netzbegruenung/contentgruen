@@ -323,8 +323,8 @@ alert rules and alert routing are run by the operators, outside this repository.
 - `gutgesagt_search_duration_seconds`: duration of `POST /api/v1/search/searchByText`.
 - **No personal data:** no Kennung (account ID), no search text, no session. The labels are the
   method, the route template and the status class, nothing taken from headers or bodies.
-  `tests/integration/test_betriebskennzahlen.py` checks this after a real search by a
-  signed-in test person.
+  `tests/unit/api/test_betriebskennzahlen_suche.py` checks this after a search by a
+  signed-in test person through the real router and middleware.
 - The values live in the memory of the process (the service runs with one worker) and
   start at zero after a restart; alert on rates, not on absolute values.
 - **Not reachable from outside:** the BFF forwards every path to the semantic search
