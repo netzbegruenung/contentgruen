@@ -69,8 +69,10 @@ def validate_url_security(url: str) -> Tuple[bool, str]:
         return True, ""
 
     except Exception as e:
-        logger.warning(f"Error validating URL '{url}': {e}")
-        return False, f"Invalid URL format: {str(e)}"
+        # Weder die Adresse noch der Fehlertext: beide tragen die Eingabe (#422), und
+        # der Grund landet beim Aufrufer im Log.
+        logger.warning(f"Error validating URL: {type(e).__name__}")
+        return False, "Invalid URL format"
 
 
 def sanitize_url(url: str) -> str:
@@ -100,7 +102,7 @@ def sanitize_url(url: str) -> str:
             # Basic sanitization - in production, you'd want more sophisticated filtering
             clean_query = re.sub(r'[<>"\']', "", parsed.query)
             if clean_query != parsed.query:
-                logger.warning(f"Sanitized query parameters in URL: {url}")
+                logger.warning("Sanitized query parameters in URL")
                 parsed = parsed._replace(query=clean_query)
 
         # Reconstruct URL
@@ -112,6 +114,6 @@ def sanitize_url(url: str) -> str:
         return sanitized
 
     except Exception as e:
-        logger.error(f"Error sanitizing URL '{url}': {e}")
+        logger.error(f"Error sanitizing URL: {type(e).__name__}")
         # Raise exception instead of silently returning original URL
         raise ValueError(f"Failed to sanitize URL: {str(e)}")

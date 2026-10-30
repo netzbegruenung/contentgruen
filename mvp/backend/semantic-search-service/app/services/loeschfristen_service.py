@@ -105,7 +105,9 @@ class LoeschfristenService:
         try:
             await self._geloeschte_beitraege(heute)
         except Exception as e:
-            logger.error(f"Error removing deleted content: {e}", exc_info=True)
+            logger.error(
+                f"Error removing deleted content: {type(e).__name__}", exc_info=True
+            )
 
     @staticmethod
     async def _zeilen_loeschen(loeschen_vor, grenze: datetime, was: str) -> None:
@@ -114,7 +116,7 @@ class LoeschfristenService:
             n = await asyncio.to_thread(loeschen_vor, grenze)
             logger.info(f"Deleted {n} {was} past their Loeschfrist")
         except Exception as e:
-            logger.error(f"Error deleting old {was}: {e}", exc_info=True)
+            logger.error(f"Error deleting old {was}: {type(e).__name__}", exc_info=True)
 
     async def _geloeschte_beitraege(self, heute: date) -> None:
         grenze = heute - timedelta(days=GELOESCHTER_BEITRAG_TAGE)
@@ -139,7 +141,7 @@ class LoeschfristenService:
                     entfernt += 1
             except Exception as e:
                 logger.error(
-                    f"Error removing deleted content {beitrag['id']}: {e}",
+                    f"Error removing deleted content {beitrag['id']}: {type(e).__name__}",
                     exc_info=True,
                 )
         logger.info(
@@ -159,5 +161,7 @@ async def loeschen_im_takt(
         try:
             await service.fristen_anwenden()
         except Exception as e:
-            logger.error(f"Error applying Loeschfristen: {e}", exc_info=True)
+            logger.error(
+                f"Error applying Loeschfristen: {type(e).__name__}", exc_info=True
+            )
         await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))

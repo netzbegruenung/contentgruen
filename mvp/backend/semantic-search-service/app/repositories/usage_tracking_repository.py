@@ -110,7 +110,8 @@ class UsageTrackingRepository:
 
         except Exception as e:
             logger.error(
-                f"Error tracking usage for content {content_id}: {e}", exc_info=True
+                f"Error tracking usage for content {content_id}: {type(e).__name__}",
+                exc_info=True,
             )
             return False
 
@@ -418,7 +419,9 @@ class UsageTrackingRepository:
                 return deleted_count
 
         except Exception as e:
-            logger.error(f"Error during cleanup of old events: {e}", exc_info=True)
+            logger.error(
+                f"Error during cleanup of old events: {type(e).__name__}", exc_info=True
+            )
             raise
 
 

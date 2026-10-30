@@ -260,7 +260,9 @@ async def report_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in report_content endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in report_content endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -299,7 +301,9 @@ async def get_reports(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_reports endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in get_reports endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -338,7 +342,7 @@ async def sperren(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in sperren endpoint: {e}", exc_info=True)
+        logger.error(f"Error in sperren endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -365,7 +369,7 @@ async def entsperren(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in entsperren endpoint: {e}", exc_info=True)
+        logger.error(f"Error in entsperren endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -397,7 +401,9 @@ async def sperre_bestaetigen(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in sperre_bestaetigen endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in sperre_bestaetigen endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -414,7 +420,9 @@ async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
         return GesperrteResponse(total=len(beitraege), beitraege=beitraege)
 
     except Exception as e:
-        logger.error(f"Error in gesperrte_beitraege endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in gesperrte_beitraege endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -471,7 +479,9 @@ async def delete_content(
             ),
         )
     except Exception as e:
-        logger.error(f"Error in delete_content endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in delete_content endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -506,7 +516,9 @@ async def dismiss_report(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in dismiss_report endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in dismiss_report endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -532,5 +544,7 @@ async def get_report_stats(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_report_stats endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in get_report_stats endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")

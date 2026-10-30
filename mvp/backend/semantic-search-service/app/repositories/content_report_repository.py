@@ -95,7 +95,9 @@ class ContentReportRepository:
                 logger.info(f"Created report {report.id} for content {content_id}")
                 return report
         except Exception as e:
-            logger.error(f"Error creating content report: {e}", exc_info=True)
+            logger.error(
+                f"Error creating content report: {type(e).__name__}", exc_info=True
+            )
             raise
 
     def has_report_from_user(self, content_id: UUID, user_id: str) -> bool:
@@ -126,7 +128,9 @@ class ContentReportRepository:
                 )
                 return existing is not None
         except Exception as e:
-            logger.error(f"Error checking existing report: {e}", exc_info=True)
+            logger.error(
+                f"Error checking existing report: {type(e).__name__}", exc_info=True
+            )
             # Im Zweifel nicht deduplizieren: eine doppelte Meldung ist harmloser
             # als eine verschluckte.
             return False
@@ -203,7 +207,10 @@ class ContentReportRepository:
                     for report in reports
                 ]
         except Exception as e:
-            logger.error(f"Error getting reports (status={status}): {e}", exc_info=True)
+            logger.error(
+                f"Error getting reports (status={status}): {type(e).__name__}",
+                exc_info=True,
+            )
             return []
 
     def get_reports_by_content_id(self, content_id: UUID) -> List[ContentReport]:
@@ -227,7 +234,8 @@ class ContentReportRepository:
                 return reports
         except Exception as e:
             logger.error(
-                f"Error getting reports for content {content_id}: {e}", exc_info=True
+                f"Error getting reports for content {content_id}: {type(e).__name__}",
+                exc_info=True,
             )
             return []
 
@@ -271,7 +279,9 @@ class ContentReportRepository:
                     logger.warning(f"Report {report_id} not found")
                     return None
         except Exception as e:
-            logger.error(f"Error updating report status: {e}", exc_info=True)
+            logger.error(
+                f"Error updating report status: {type(e).__name__}", exc_info=True
+            )
             return None
 
     def update_reports_by_content_id(
@@ -325,7 +335,8 @@ class ContentReportRepository:
                 return count
         except Exception as e:
             logger.error(
-                f"Error updating reports for content {content_id}: {e}", exc_info=True
+                f"Error updating reports for content {content_id}: {type(e).__name__}",
+                exc_info=True,
             )
             raise
 
@@ -374,7 +385,9 @@ class ContentReportRepository:
                 )
                 return {status: count for status, count in results}
         except Exception as e:
-            logger.error(f"Error getting report counts: {e}", exc_info=True)
+            logger.error(
+                f"Error getting report counts: {type(e).__name__}", exc_info=True
+            )
             return {}
 
 

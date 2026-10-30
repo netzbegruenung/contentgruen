@@ -166,10 +166,11 @@ What this means for a rollout:
   its own `lock_timeout`. The container exits; with a restart policy (the dev stack uses
   `restart: unless-stopped`) Docker starts it again, which retries the migration. Without one,
   start it again by hand. A migration that failed on a lock succeeds on a later attempt once
-  the lock is free. If it keeps failing, the service log names the migration and the first
-  line of the error. The failed migration leaves no trace in the database; migrations committed
-  before it in the same start stay in. Before rolling back to the previous image, check that it
-  works with them.
+  the lock is free. If it keeps failing, the service log names the migration and the type
+  of the error (not its message, which can carry values, #422); the first line of the
+  message is in `migrationsprotokoll.fehler`. The failed migration leaves no trace in the
+  database; migrations committed before it in the same start stay in. Before rolling back
+  to the previous image, check that it works with them.
 - **`VACUUM FULL` after the `COMMIT`** of three older migrations runs separately and waits at
   most 30 s for its lock. If it fails, the migration stays committed (`nachlauf_offen`), the
   service starts anyway and retries only the `VACUUM FULL` on its next start.

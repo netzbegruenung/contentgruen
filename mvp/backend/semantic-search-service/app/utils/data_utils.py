@@ -35,7 +35,9 @@ class DataLoader:
         try:
             os.listdir(data_folder_path)
         except FileNotFoundError as e:
-            logger.error(f"Folder not found: {data_folder_path}. Error: {e}")
+            logger.error(
+                f"Folder not found: {data_folder_path}. Error: {type(e).__name__}"
+            )
             return data
 
         for filename in os.listdir(data_folder_path):
@@ -46,13 +48,17 @@ class DataLoader:
                     current_data = json.load(f)
                     validate(current_data, data_schema)
             except FileNotFoundError as e:
-                logger.error(f"File not found: {json_file_path}. Error: {e}")
+                logger.error(
+                    f"File not found: {json_file_path}. Error: {type(e).__name__}"
+                )
                 continue
             except json.JSONDecodeError as e:
-                logger.error(f"Error decoding JSON from {json_file_path}. Error: {e}")
+                logger.error(
+                    f"Error decoding JSON from {json_file_path}. Error: {type(e).__name__}"
+                )
                 continue
             except Exception as e:
-                logger.error(f"An error occurred: {str(e)}", exc_info=True)
+                logger.error(f"An error occurred: {type(e).__name__}", exc_info=True)
                 continue
 
             logger.debug(f"Read {len(current_data)} items from {json_file_path}")
@@ -87,7 +93,9 @@ class DataLoader:
         try:
             all_files = [f for f in os.listdir(data_folder_path) if f.endswith(".json")]
         except FileNotFoundError as e:
-            logger.error(f"Folder not found: {data_folder_path}. Error: {e}")
+            logger.error(
+                f"Folder not found: {data_folder_path}. Error: {type(e).__name__}"
+            )
             return data
 
         total_files = len(all_files)
@@ -106,13 +114,17 @@ class DataLoader:
                     current_data = json.load(f)
                     validate(current_data, data_schema)
             except FileNotFoundError as e:
-                logger.error(f"File not found: {json_file_path}. Error: {e}")
+                logger.error(
+                    f"File not found: {json_file_path}. Error: {type(e).__name__}"
+                )
                 continue
             except json.JSONDecodeError as e:
-                logger.error(f"Error decoding JSON from {json_file_path}. Error: {e}")
+                logger.error(
+                    f"Error decoding JSON from {json_file_path}. Error: {type(e).__name__}"
+                )
                 continue
             except Exception as e:
-                logger.error(f"An error occurred: {str(e)}", exc_info=True)
+                logger.error(f"An error occurred: {type(e).__name__}", exc_info=True)
                 continue
 
             logger.debug(f"Read {len(current_data)} items from {json_file_path}")

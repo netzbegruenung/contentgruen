@@ -130,7 +130,9 @@ async def aufraeumen(limiters: Iterable[RateLimiter]) -> None:
         try:
             await limiter.cleanup()
         except Exception as e:
-            logger.error(f"Error in rate limiter cleanup: {e}", exc_info=True)
+            logger.error(
+                f"Error in rate limiter cleanup: {type(e).__name__}", exc_info=True
+            )
 
 
 async def aufraeumen_im_takt(

@@ -318,8 +318,9 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warn- und Fehlerzeilen nennen den Pfad
-    unverändert; seit #284 trägt kein Pfad, den das Frontend aufruft, eine Kennung (die
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warnzeilen nennen den Pfad unverändert
+    (Fehlerzeilen seit #422 nicht mehr, `BFF/Program.cs`); seit #284 trägt kein Pfad,
+    den das Frontend aufruft, eine Kennung (die
     Nutzungsstatistik unter „Meine Beiträge“ heißt `/api/v1/usage/users/me/usage-stats`,
     die Rückmeldung beim Anmelden `/api/v1/usage/users/me/besuch`, die Person kommt aus
     der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
@@ -347,9 +348,27 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     eingespielten Beiträge (`services/orchestration/content_orchestrator.py`), kuratierte
     Daten aus dem Repo. Die Zugriffszeilen von uvicorn sind unterdrückt
     (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
-  - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
-    (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
-    eine Validierungsmeldung, stehen diese mit darin.
+  - **Fehlerzeilen (BFF und Semantic-Service):** Seit #422 nennen sie von einer Ausnahme
+    nur Typ und Stack, nicht ihren Fehlertext, der oft Eingabewerte trägt (eine
+    Validierungsmeldung den abgelehnten Wert, ein Datenbankfehler die Parameter der
+    Abfrage). Im Semantic-Service schreibt der Formatter Tracebacks so
+    (`ausnahme_ohne_fehlertext()` in `app/core/logging.py`, auch für unbehandelte Ausnahmen,
+    die uvicorn meldet), und die Log-Aufrufe setzen statt der Ausnahme nur
+    `type(e).__name__` in den Text. Für Aufrufe im `except`-Block, die die Ausnahme
+    direkt verwenden, prüft das `tests/unit/core/test_kein_fehlertext_im_log.py`
+    am Quelltext; einen Fehlertext, der erst über eine Variable ins Log geht, sieht der
+    Test nicht. Ebenso seit #422 ohne Eingabe: abgelehnte und bereinigte Herkunfts-Adressen
+    (`utils/url_validator.py`, `services/content/reference_service.py`), ein unbekannter
+    Meldegrund und ungültige IDs von Beiträgen und Meldungen
+    (`services/moderation_service.py`, `services/usage_tracking_service.py`, Test
+    `tests/unit/services/test_ungueltige_id_nicht_im_log.py`). Die Skripte für
+    Sicherung und Wiederherstellung von Qdrant (`scripts/backup_qdrant.py`,
+    `scripts/restore_qdrant.py`) schreiben mit demselben Formatter. Im BFF schreibt die
+    Konsole mit `AusnahmeOhneFehlertextFormatter`
+    (`BFF/Logging/`), im Code gesetzt, sodass ein `Logging__Console__FormatterName` von
+    außen ihn nicht ersetzt; Fehlerzeilen zu einer Anfrage nennen den Pfad nicht.
+    **Altbestand:** Zeilen von vor #422 können Fehlertexte samt Eingabewerten tragen,
+    bis sie aus dem `json-file`-Strom rotiert sind (Frist unten).
   - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
     (`mvp/frontend/gutgesagt-frontend/nginx.protokoll.conf`, für `nginx.conf` und
     `nginx.docker.conf` gemeinsam) nach stdout: Absenderadresse, Zeitpunkt,
@@ -361,10 +380,13 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     schreibt es keine Zeile: Ihre genaue Uhrzeit ließe sich, je Tag durchgezählt, mit dem
     Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Ins Fehlerprotokoll
     (stderr, im selben `json-file`-Strom) schreibt es für fehlende Dateien keine Zeile
-    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. **Nicht
-    abgedeckt:** Andere Fehlerzeilen tragen Adresse und Referrer weiter, etwa im Dev-Stack
-    `connect() failed … request: "POST /api/v1/search/searchByText …"`, wenn das BFF
-    nicht antwortet. Belegt mit
+    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. Seit #422
+    schreibt es überhaupt keine Fehlerzeile zu einer Anfrage mehr (`error_log … emerg` im
+    http-Block): nginx kennt für Fehlerzeilen kein eigenes Format, und jede trüge Adresse,
+    Anfrage samt Adresszusatz und Referrer, etwa im Dev-Stack `connect() failed …`, wenn
+    das BFF nicht antwortet. Den Ausgang einer solchen Anfrage zeigt das Zugriffsprotokoll
+    mit dem Status (413, 502 …). Zeilen außerhalb einer Anfrage (Start, Konfiguration,
+    Worker) schreibt nginx weiter. Belegt mit
     `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
     `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
     Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem
@@ -392,7 +414,16 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     Referrer, wie im Frontend-nginx.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
-    Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als
+    Produktionskonfiguration liegt nicht im Repo.
+    - **Ziel (#422): höchstens 14 Tage** für alles im `json-file`-Strom (Anwendung,
+      Frontend-nginx) und für die Protokolle des vorgelagerten Reverse Proxy. Der
+      `json-file`-Treiber rotiert nur nach Größe; im Betrieb ist dafür eine Grenze von
+      10 MB × 3 Dateien je Container vorgesehen, vorläufig, bis das Wachstum je Tag
+      gemessen ist. Die Grenze hält die Frist nur, solange drei Dateien höchstens
+      14 Tage Protokoll fassen; wächst ein Container langsamer, bleiben seine Zeilen
+      länger stehen. **Noch nicht ausgerollt** (Stand 30.10.2026); bis dahin gilt der
+      Stand darunter, und die Datenschutzerklärung nennt noch keine Frist
+      (`docs/RECHTSTEXTE_LUECKEN.md`, P7). Im Repo nicht belegbar, deshalb nur als
     Stand der Bestandsaufnahme (`docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.4):
     - **Stand 04.09.2026, vom Maintainer am Host geprüft:** Die Zugriffsprotokolle des
       vorgelagerten Reverse Proxy, die als einzige die volle Client-IP enthalten, löscht

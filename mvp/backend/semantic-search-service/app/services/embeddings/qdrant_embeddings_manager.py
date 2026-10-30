@@ -155,7 +155,8 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
         except Exception as e:
             logger.error(
-                f"❌ Failed to start QdrantEmbeddingsManager: {e}", exc_info=True
+                f"❌ Failed to start QdrantEmbeddingsManager: {type(e).__name__}",
+                exc_info=True,
             )
             raise
 
@@ -192,7 +193,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                     logger.info("✅ Created payload index for content_type field")
                 except Exception as e:
                     logger.warning(
-                        f"⚠️ Could not create payload index for content_type: {e}"
+                        f"⚠️ Could not create payload index for content_type: {type(e).__name__}"
                     )
                     logger.info(
                         "Continuing without index - filtering will still work but may be slower"
@@ -207,7 +208,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                     )
                     logger.info("✅ Created payload index for status field")
                 except Exception as e:
-                    logger.warning(f"⚠️ Could not create payload index for status: {e}")
+                    logger.warning(
+                        f"⚠️ Could not create payload index for status: {type(e).__name__}"
+                    )
 
                 logger.info(
                     f"✅ Collection {self.collection_name} created successfully"
@@ -222,7 +225,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             await self._text_normalisiert_index_sicherstellen()
 
         except Exception as e:
-            logger.error(f"❌ Failed to ensure collection: {e}", exc_info=True)
+            logger.error(
+                f"❌ Failed to ensure collection: {type(e).__name__}", exc_info=True
+            )
             raise
 
     async def _text_normalisiert_index_sicherstellen(self) -> None:
@@ -245,7 +250,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             logger.info(f"✅ Created payload index for {FELD_TEXT_NORMALISIERT}")
         except Exception as e:
             logger.warning(
-                f"⚠️ Could not create payload index for {FELD_TEXT_NORMALISIERT}: {e}"
+                f"⚠️ Could not create payload index for {FELD_TEXT_NORMALISIERT}: {type(e).__name__}"
             )
 
     async def shutdown(self) -> None:
@@ -267,7 +272,8 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             logger.info("✅ QdrantEmbeddingsManager shutdown complete")
         except Exception as e:
             logger.error(
-                f"❌ Error during QdrantEmbeddingsManager shutdown: {e}", exc_info=True
+                f"❌ Error during QdrantEmbeddingsManager shutdown: {type(e).__name__}",
+                exc_info=True,
             )
 
     @property
@@ -419,11 +425,15 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
         except (UnexpectedResponse, ResponseHandlingException) as e:
             logger.error(
-                f"❌ Qdrant client error during upsert batch: {e}", exc_info=True
+                f"❌ Qdrant client error during upsert batch: {type(e).__name__}",
+                exc_info=True,
             )
             raise RuntimeError(f"Vector database upsert failed: {e}") from e
         except Exception as e:
-            logger.error(f"❌ Unexpected error during upsert batch: {e}", exc_info=True)
+            logger.error(
+                f"❌ Unexpected error during upsert batch: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     async def search(
@@ -468,10 +478,15 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             return self._treffer(results)
 
         except (UnexpectedResponse, ResponseHandlingException) as e:
-            logger.error(f"❌ Qdrant client error during search: {e}", exc_info=True)
+            logger.error(
+                f"❌ Qdrant client error during search: {type(e).__name__}",
+                exc_info=True,
+            )
             raise RuntimeError(f"Vector database search failed: {e}") from e
         except Exception as e:
-            logger.error(f"❌ Unexpected error during search: {e}", exc_info=True)
+            logger.error(
+                f"❌ Unexpected error during search: {type(e).__name__}", exc_info=True
+            )
             raise
 
     async def search_batch(
@@ -518,11 +533,15 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
         except (UnexpectedResponse, ResponseHandlingException) as e:
             logger.error(
-                f"❌ Qdrant client error during batch search: {e}", exc_info=True
+                f"❌ Qdrant client error during batch search: {type(e).__name__}",
+                exc_info=True,
             )
             raise RuntimeError(f"Vector database search failed: {e}") from e
         except Exception as e:
-            logger.error(f"❌ Unexpected error during batch search: {e}", exc_info=True)
+            logger.error(
+                f"❌ Unexpected error during batch search: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     def _suchvektor(
@@ -594,11 +613,15 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
         except (UnexpectedResponse, ResponseHandlingException) as e:
             logger.error(
-                f"❌ Qdrant client error getting point by ID: {e}", exc_info=True
+                f"❌ Qdrant client error getting point by ID: {type(e).__name__}",
+                exc_info=True,
             )
             raise RuntimeError(f"Vector database retrieval failed: {e}") from e
         except Exception as e:
-            logger.error(f"❌ Unexpected error getting point by ID: {e}", exc_info=True)
+            logger.error(
+                f"❌ Unexpected error getting point by ID: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     async def delete_by_id(self, point_id: str) -> bool:
@@ -610,7 +633,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             return result.status == UpdateStatus.COMPLETED
 
         except Exception as e:
-            logger.error(f"❌ Failed to delete point: {e}", exc_info=True)
+            logger.error(
+                f"❌ Failed to delete point: {type(e).__name__}", exc_info=True
+            )
             raise
 
     async def delete_by_filter(self, filter_condition: Filter) -> bool:
@@ -634,7 +659,10 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             return result.status == UpdateStatus.COMPLETED
 
         except Exception as e:
-            logger.error(f"❌ Failed to delete points by filter: {e}", exc_info=True)
+            logger.error(
+                f"❌ Failed to delete points by filter: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     async def count(self, content_type: Optional[str] = None) -> int:
@@ -664,7 +692,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                 return info.points_count
 
         except Exception as e:
-            logger.error(f"❌ Failed to count points: {e}", exc_info=True)
+            logger.error(
+                f"❌ Failed to count points: {type(e).__name__}", exc_info=True
+            )
             return 0
 
     async def get_content_types(self) -> List[str]:
@@ -698,7 +728,9 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             return list(content_types)
 
         except Exception as e:
-            logger.error(f"❌ Failed to get content types: {e}", exc_info=True)
+            logger.error(
+                f"❌ Failed to get content types: {type(e).__name__}", exc_info=True
+            )
             return []
 
     async def health_check(self) -> Dict[str, Any]:
@@ -736,10 +768,13 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             error_msg = str(e)
             if "connection" in error_msg.lower() or "connect" in error_msg.lower():
                 logger.warning(
-                    f"⚠️ Qdrant health check failed - connection unavailable: {error_msg}"
+                    "⚠️ Qdrant health check failed - connection unavailable: "
+                    f"{type(e).__name__}"
                 )
             else:
-                logger.error(f"❌ Qdrant health check failed: {e}", exc_info=True)
+                logger.error(
+                    f"❌ Qdrant health check failed: {type(e).__name__}", exc_info=True
+                )
             return {"status": "unhealthy", "error": error_msg}
 
 
@@ -783,7 +818,8 @@ async def qdrant_lifespan(app: FastAPI):
                 logger.info("✅ QdrantEmbeddingsManager shutdown successfully")
         except Exception as e:
             logger.error(
-                f"❌ Error during QdrantEmbeddingsManager shutdown: {e}", exc_info=True
+                f"❌ Error during QdrantEmbeddingsManager shutdown: {type(e).__name__}",
+                exc_info=True,
             )
 
 

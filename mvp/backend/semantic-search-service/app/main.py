@@ -186,7 +186,7 @@ async def lifespan(app: FastAPI):
             close_app_database()
             logger.info("✅ Application shutdown complete")
         except Exception as e:
-            logger.error(f"❌ Error during shutdown: {e}", exc_info=True)
+            logger.error(f"❌ Error during shutdown: {type(e).__name__}", exc_info=True)
 
 
 async def _gegenlesen_vorladen() -> None:

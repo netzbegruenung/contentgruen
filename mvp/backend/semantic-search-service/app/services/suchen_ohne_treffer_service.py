@@ -171,7 +171,8 @@ async def loeschen_im_takt(
             logger.info(f"Deleted {geloescht} old searches-without-hits weeks")
         except Exception as e:
             logger.error(
-                f"Error during searches-without-hits cleanup: {e}", exc_info=True
+                f"Error during searches-without-hits cleanup: {type(e).__name__}",
+                exc_info=True,
             )
         # Eine Sekunde Puffer, damit der Lauf sicher im neuen Tag liegt.
         await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))

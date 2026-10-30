@@ -135,7 +135,8 @@ async def get_by_id(
 
     except Exception as e:
         logger.error(
-            f"Error fetching generic text with id {generic_text_id}: {e}", exc_info=True
+            f"Error fetching generic text with id {generic_text_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -167,7 +168,7 @@ async def get_all(
 
         return response
     except Exception as e:
-        logger.error(f"Error in /getAll: {e}", exc_info=True)
+        logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -196,7 +197,7 @@ async def search_generic_text(
 
         return response
     except Exception as e:
-        logger.error(f"Error in search_generic_text: {e}", exc_info=True)
+        logger.error(f"Error in search_generic_text: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -309,7 +310,7 @@ async def add_generic_text(
                 verknuepft = False
             except Exception as e:
                 logger.error(
-                    f"Generic text {generic_text_id} saved, but not linked to its statement: {e}",
+                    f"Generic text {generic_text_id} saved, but not linked to its statement: {type(e).__name__}",
                     exc_info=True,
                 )
                 verknuepft = False
@@ -328,10 +329,12 @@ async def add_generic_text(
     except HTTPException:
         raise
     except ValueError as e:
-        logger.warning(f"Validation error in add_generic_text: {e}")
+        logger.warning(f"Validation error in add_generic_text: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in add_generic_text: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error in add_generic_text: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while adding generic text. Please try again later.",

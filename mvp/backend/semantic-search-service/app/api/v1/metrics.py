@@ -228,7 +228,7 @@ async def get_metrics(
             _metrics_cache = (time.monotonic(), metrics)
             return metrics
     except Exception as e:
-        logger.error(f"Error in getMetrics: {e}", exc_info=True)
+        logger.error(f"Error in getMetrics: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -259,7 +259,9 @@ async def get_mvp_dashboard_metrics(
         metrics = metrics_service.get_mvp_dashboard_metrics()
         return MVPMetricsResponse(**metrics)
     except Exception as e:
-        logger.error(f"Error fetching MVP dashboard metrics: {e}", exc_info=True)
+        logger.error(
+            f"Error fetching MVP dashboard metrics: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail=f"Failed to fetch MVP metrics: {e}")
 
 
@@ -286,7 +288,9 @@ async def get_daily_active_users(
             date=(target_date or date.today()).isoformat(), active_users=dau
         )
     except Exception as e:
-        logger.error(f"Error fetching daily active users: {e}", exc_info=True)
+        logger.error(
+            f"Error fetching daily active users: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch daily active users: {e}"
         )
@@ -313,7 +317,9 @@ async def get_searches_per_user(
 
         return SearchesPerUserResponse(period_days=days, **stats)
     except Exception as e:
-        logger.error(f"Error fetching searches per user: {e}", exc_info=True)
+        logger.error(
+            f"Error fetching searches per user: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch searches per user: {e}"
         )
@@ -340,7 +346,9 @@ async def get_content_created(
 
         return ContentCreatedResponse(weeks_analyzed=weeks, weekly_stats=weekly_stats)
     except Exception as e:
-        logger.error(f"Error fetching content created: {e}", exc_info=True)
+        logger.error(
+            f"Error fetching content created: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch content created: {e}"
         )
@@ -381,7 +389,7 @@ async def get_usage_trend(
             trend_direction=trend_direction,
         )
     except Exception as e:
-        logger.error(f"Error fetching usage trend: {e}", exc_info=True)
+        logger.error(f"Error fetching usage trend: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch usage trend: {e}")
 
 
@@ -406,7 +414,7 @@ async def get_helpful_rate(
 
         return HelpfulRateResponse(period_days=days, **stats)
     except Exception as e:
-        logger.error(f"Error fetching helpful rate: {e}", exc_info=True)
+        logger.error(f"Error fetching helpful rate: {type(e).__name__}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to fetch helpful rate: {e}"
         )
@@ -437,7 +445,7 @@ def get_bilanz(
             ],
         )
     except Exception as e:
-        logger.error(f"Error fetching Bilanz: {e}", exc_info=True)
+        logger.error(f"Error fetching Bilanz: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch Bilanz")
 
 
@@ -469,7 +477,9 @@ async def get_suchen_ohne_treffer(
             ],
         )
     except Exception as e:
-        logger.error(f"Error fetching searches without hits: {e}", exc_info=True)
+        logger.error(
+            f"Error fetching searches without hits: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500, detail="Failed to fetch searches without hits"
         )

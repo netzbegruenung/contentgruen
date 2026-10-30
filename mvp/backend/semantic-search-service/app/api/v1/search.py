@@ -143,7 +143,9 @@ async def search_by_text(
                 derive_client_key(http_request),
             )
         except Exception as e:
-            logger.warning(f"Failed to auto-create statement during search: {e}")
+            logger.warning(
+                f"Failed to auto-create statement during search: {type(e).__name__}"
+            )
             # Continue with search even if auto-creation fails
 
         # Business logic: Query most similar statements that do contain replysuggestions from the statement index
@@ -309,7 +311,7 @@ async def search_by_text(
             )
         except Exception as e:
             # Don't fail the search if tracking fails
-            logger.warning(f"Failed to track search event: {e}")
+            logger.warning(f"Failed to track search event: {type(e).__name__}")
 
         # Kennzahl "Suchen ohne Treffer": gezaehlt an der Aussage zur Suchanfrage,
         # getrennt vom Suchereignis. Das Tagespseudonym dient nur dazu, Personen zu
@@ -335,7 +337,7 @@ async def search_by_text(
         # status code, not be re-wrapped as a 500 by the catch-all below.
         raise
     except Exception as e:
-        logger.error(f"❌ Error in searchByText: {e}", exc_info=True)
+        logger.error(f"❌ Error in searchByText: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

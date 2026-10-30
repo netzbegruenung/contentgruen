@@ -82,7 +82,7 @@ class ReferenceService(
 
             return None
         except Exception as e:
-            logger.warning(f"Error in find_exact_match: {e}")
+            logger.warning(f"Error in find_exact_match: {type(e).__name__}")
             return None
 
     async def add_reference(
@@ -109,7 +109,8 @@ class ReferenceService(
         # Validate URL security
         is_valid, error_msg = validate_url_security(reference.reference_string)
         if not is_valid:
-            logger.warning(f"Rejected reference URL for security: {error_msg}")
+            # error_msg kann Teile der Adresse tragen, etwa das Schema (#422).
+            logger.warning("Rejected reference URL for security")
             raise ValueError(f"Invalid reference URL: {error_msg}")
 
         # Sanitize the URL
@@ -151,7 +152,9 @@ class ReferenceService(
             try:
                 herkunft = await self.get(ref.reference_id)
             except Exception as e:
-                logger.warning(f"Failed to fetch reference {ref.reference_id}: {e}")
+                logger.warning(
+                    f"Failed to fetch reference {ref.reference_id}: {type(e).__name__}"
+                )
                 continue
             if herkunft:
                 ref.reference_text = herkunft.reference_string
@@ -168,5 +171,5 @@ class ReferenceService(
                 await super()._upsert(reference)
         except Exception as e:
             logger.warning(
-                f"Error incrementing usage count for reference {reference_id}: {e}"
+                f"Error incrementing usage count for reference {reference_id}: {type(e).__name__}"
             )

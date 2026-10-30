@@ -157,7 +157,10 @@ class RawInputRepository:
                 )
                 return self._to_dict(raw_input)
         except Exception as e:
-            logger.error(f"Fehler beim Anlegen eines Rohinputs: {e}", exc_info=True)
+            logger.error(
+                f"Fehler beim Anlegen eines Einwurfs: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     def get_all(
@@ -203,7 +206,9 @@ class RawInputRepository:
                 rows = query.order_by(*reihenfolge).limit(limit).offset(offset).all()
                 return self._mit_saetzen_und_verknuepfungen(session, rows, current_user)
         except Exception as e:
-            logger.error(f"Fehler beim Lesen der Rohinputs: {e}", exc_info=True)
+            logger.error(
+                f"Fehler beim Lesen der Einwürfe: {type(e).__name__}", exc_info=True
+            )
             raise
 
     def get_by_id(
@@ -223,7 +228,9 @@ class RawInputRepository:
                     session, [row], current_user
                 )[0]
         except Exception as e:
-            logger.error(f"Fehler beim Lesen eines Rohinputs: {e}", exc_info=True)
+            logger.error(
+                f"Fehler beim Lesen eines Einwurfs: {type(e).__name__}", exc_info=True
+            )
             raise
 
     def mit_gleichem_link(
@@ -272,7 +279,10 @@ class RawInputRepository:
                     session, treffer[:GLEICHER_LINK_TREFFER], current_user
                 )
         except Exception as e:
-            logger.error(f"Fehler bei der Suche nach gleichem Link: {e}", exc_info=True)
+            logger.error(
+                f"Fehler bei der Suche nach gleichem Link: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     def count(
@@ -288,7 +298,9 @@ class RawInputRepository:
                     query = query.filter(RawInput.submitted_by == submitted_by)
                 return query.count()
         except Exception as e:
-            logger.error(f"Fehler beim Zaehlen der Rohinputs: {e}", exc_info=True)
+            logger.error(
+                f"Fehler beim Zaehlen der Einwürfe: {type(e).__name__}", exc_info=True
+            )
             raise
 
     def save_draft(
@@ -369,7 +381,10 @@ class RawInputRepository:
         except EinwurfNichtGefunden:
             raise
         except Exception as e:
-            logger.error(f"Fehler beim Speichern eines Entwurfs: {e}", exc_info=True)
+            logger.error(
+                f"Fehler beim Speichern eines Entwurfs: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     def set_status(
@@ -433,7 +448,9 @@ class RawInputRepository:
         except (EinwurfNichtGefunden, AktionNichtErlaubt, UebergangNichtErlaubt):
             raise
         except Exception as e:
-            logger.error(f"Fehler beim Statuswechsel: {e}", exc_info=True)
+            logger.error(
+                f"Fehler beim Statuswechsel: {type(e).__name__}", exc_info=True
+            )
             raise
 
     def statuswechsel_vorpruefen(

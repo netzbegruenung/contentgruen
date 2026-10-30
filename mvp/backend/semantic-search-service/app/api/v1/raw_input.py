@@ -133,7 +133,7 @@ async def add_raw_input(
         )
         return AddRawInputResponse(id=raw_input["id"])
     except Exception as e:
-        logger.error(f"Fehler in /addRawInput: {e}", exc_info=True)
+        logger.error(f"Fehler in /addRawInput: {type(e).__name__}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail="Der Einwurf konnte nicht gespeichert werden. Bitte versuche es erneut.",
@@ -165,7 +165,7 @@ async def get_raw_inputs(
         )
         return _seite(rows, repository.count(), aufrufer)
     except Exception as e:
-        logger.error(f"Fehler in /getRawInputs: {e}", exc_info=True)
+        logger.error(f"Fehler in /getRawInputs: {type(e).__name__}", exc_info=True)
         raise HTTPException(
             status_code=500, detail="Der Fangkorb konnte nicht geladen werden."
         )
@@ -196,7 +196,7 @@ async def einwuerfe_mit_gleichem_link(
             results=_einwuerfe_fuer_aufrufer(rows, aufrufer, mit_namen=False)
         )
     except Exception as e:
-        logger.error(f"Fehler in /gleicherLink: {e}", exc_info=True)
+        logger.error(f"Fehler in /gleicherLink: {type(e).__name__}", exc_info=True)
         raise HTTPException(
             status_code=500, detail="Der Fangkorb konnte nicht geprüft werden."
         )
@@ -226,7 +226,7 @@ async def get_own_raw_inputs(
         )
         return _seite(rows, repository.count(submitted_by=person), aufrufer)
     except Exception as e:
-        logger.error(f"Fehler in /getOwnRawInputs: {e}", exc_info=True)
+        logger.error(f"Fehler in /getOwnRawInputs: {type(e).__name__}", exc_info=True)
         raise HTTPException(
             status_code=500, detail="Deine Einwürfe konnten nicht geladen werden."
         )
@@ -247,7 +247,9 @@ async def get_raw_input(
     try:
         row = repository.get_by_id(raw_input_id, _einwerfende_person(aufrufer.kennung))
     except Exception as e:
-        logger.error(f"Fehler in GET /rawinput/{{id}}: {e}", exc_info=True)
+        logger.error(
+            f"Fehler in GET /rawinput/{{id}}: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500, detail="Der Einwurf konnte nicht geladen werden."
         )
@@ -280,7 +282,9 @@ async def save_draft(
     except EinwurfNichtGefunden:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)
     except Exception as e:
-        logger.error(f"Fehler in PUT /rawinput/{{id}}/draft: {e}", exc_info=True)
+        logger.error(
+            f"Fehler in PUT /rawinput/{{id}}/draft: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500, detail="Der Satz konnte nicht gespeichert werden."
         )
@@ -383,7 +387,10 @@ async def update_status(
     except UebergangNichtErlaubt as e:
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
-        logger.error(f"Fehler in PATCH /rawinput/{{id}}/status: {e}", exc_info=True)
+        logger.error(
+            f"Fehler in PATCH /rawinput/{{id}}/status: {type(e).__name__}",
+            exc_info=True,
+        )
         raise HTTPException(
             status_code=500, detail="Der Status konnte nicht geändert werden."
         )

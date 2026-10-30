@@ -103,7 +103,10 @@ class SeedingService:
                 return False
 
         except Exception as e:
-            logger.error(f"❌ Error checking if seeding needed: {e}", exc_info=True)
+            logger.error(
+                f"❌ Error checking if seeding needed: {type(e).__name__}",
+                exc_info=True,
+            )
             # If we can't check, assume we need seeding to be safe
             return True
 
@@ -149,7 +152,7 @@ class SeedingService:
                 logger.info(f"🔓 Removing stale PID file for dead process {pid}")
                 os.remove(pid_file)
             except (ValueError, IOError) as e:
-                logger.error(f"Error reading PID file: {e}")
+                logger.error(f"Error reading PID file: {type(e).__name__}")
                 # Remove corrupted PID file
                 os.remove(pid_file)
 
@@ -170,7 +173,7 @@ class SeedingService:
                 os.remove(pid_file)
                 logger.info("🔓 Removed PID lock file")
             except Exception as e:
-                logger.error(f"Error removing PID file: {e}")
+                logger.error(f"Error removing PID file: {type(e).__name__}")
 
     async def start_seeding(self) -> None:
         """
@@ -252,7 +255,7 @@ class SeedingService:
             logger.info(f"🌱 Background seeding completed successfully! {summary}")
 
         except Exception as e:
-            logger.error(f"❌ Error during seeding: {e}", exc_info=True)
+            logger.error(f"❌ Error during seeding: {type(e).__name__}", exc_info=True)
 
             # Mark as failed with better error handling
             try:
@@ -266,7 +269,7 @@ class SeedingService:
                 await self.metadata.save_progress(progress)
             except Exception as save_error:
                 logger.error(
-                    f"❌ Additional error saving failed status: {save_error}",
+                    f"❌ Additional error saving failed status: {type(save_error).__name__}",
                     exc_info=True,
                 )
         finally:
@@ -385,7 +388,9 @@ class SeedingService:
                 coordinator.initial_data_path = original_path
 
         except Exception as e:
-            logger.error(f"❌ Error during file processing: {e}", exc_info=True)
+            logger.error(
+                f"❌ Error during file processing: {type(e).__name__}", exc_info=True
+            )
 
             # Mark remaining files as failed
             if "file_statuses" in locals():
@@ -566,7 +571,9 @@ class SeedingService:
                 progress.last_updated = datetime.now()
 
             except Exception as e:
-                logger.error(f"Error in progress callback: {e}", exc_info=True)
+                logger.error(
+                    f"Error in progress callback: {type(e).__name__}", exc_info=True
+                )
 
         logger.info("🌱 Running coordinator with REAL progress tracking...")
 

@@ -42,13 +42,13 @@ class VotingService:
             )
 
         except IntegrityError as e:
-            logger.error(f"Database integrity error setting like: {e}")
+            logger.error(f"Database integrity error setting like: {type(e).__name__}")
             raise ValueError("Vote conflict detected. Please try again.")
         except OperationalError as e:
-            logger.error(f"Database connection error setting like: {e}")
+            logger.error(f"Database connection error setting like: {type(e).__name__}")
             raise ConnectionError("Database temporarily unavailable.")
         except Exception as e:
-            logger.error(f"Unexpected error setting like: {e}")
+            logger.error(f"Unexpected error setting like: {type(e).__name__}")
             raise RuntimeError(f"Failed to set like: {str(e)}")
 
     def remove_like(self, user_id: str, content_id: uuid.UUID) -> VoteResponse:
@@ -72,10 +72,10 @@ class VotingService:
             )
 
         except OperationalError as e:
-            logger.error(f"Database connection error removing like: {e}")
+            logger.error(f"Database connection error removing like: {type(e).__name__}")
             raise ConnectionError("Database temporarily unavailable.")
         except Exception as e:
-            logger.error(f"Unexpected error removing like: {e}")
+            logger.error(f"Unexpected error removing like: {type(e).__name__}")
             raise RuntimeError(f"Failed to remove like: {str(e)}")
 
     def set_dislike(self, user_id: str, content_id: uuid.UUID) -> VoteResponse:
@@ -103,13 +103,17 @@ class VotingService:
             )
 
         except IntegrityError as e:
-            logger.error(f"Database integrity error setting dislike: {e}")
+            logger.error(
+                f"Database integrity error setting dislike: {type(e).__name__}"
+            )
             raise ValueError("Vote conflict detected. Please try again.")
         except OperationalError as e:
-            logger.error(f"Database connection error setting dislike: {e}")
+            logger.error(
+                f"Database connection error setting dislike: {type(e).__name__}"
+            )
             raise ConnectionError("Database temporarily unavailable.")
         except Exception as e:
-            logger.error(f"Unexpected error setting dislike: {e}")
+            logger.error(f"Unexpected error setting dislike: {type(e).__name__}")
             raise RuntimeError(f"Failed to set dislike: {str(e)}")
 
     def remove_dislike(self, user_id: str, content_id: uuid.UUID) -> VoteResponse:
@@ -133,10 +137,12 @@ class VotingService:
             )
 
         except OperationalError as e:
-            logger.error(f"Database connection error removing dislike: {e}")
+            logger.error(
+                f"Database connection error removing dislike: {type(e).__name__}"
+            )
             raise ConnectionError("Database temporarily unavailable.")
         except Exception as e:
-            logger.error(f"Unexpected error removing dislike: {e}")
+            logger.error(f"Unexpected error removing dislike: {type(e).__name__}")
             raise RuntimeError(f"Failed to remove dislike: {str(e)}")
 
     def get_user_vote(self, user_id: str, content_id: uuid.UUID) -> Optional[str]:
@@ -145,10 +151,10 @@ class VotingService:
             vote = self.vote_repository.get_user_vote(user_id, content_id)
             return vote.vote_type if vote else None
         except OperationalError as e:
-            logger.error(f"Database error getting user vote: {e}")
+            logger.error(f"Database error getting user vote: {type(e).__name__}")
             return None  # Return None on error to allow graceful degradation
         except Exception as e:
-            logger.error(f"Unexpected error getting user vote: {e}")
+            logger.error(f"Unexpected error getting user vote: {type(e).__name__}")
             return None
 
     def get_user_votes_for_contents(
@@ -162,10 +168,12 @@ class VotingService:
             votes = self.vote_repository.get_user_votes(user_id, content_ids)
             return {str(vote.content_id): vote.vote_type for vote in votes}
         except OperationalError as e:
-            logger.error(f"Database error getting user votes batch: {e}")
+            logger.error(f"Database error getting user votes batch: {type(e).__name__}")
             return {}  # Return empty dict on error to allow graceful degradation
         except Exception as e:
-            logger.error(f"Unexpected error getting user votes batch: {e}")
+            logger.error(
+                f"Unexpected error getting user votes batch: {type(e).__name__}"
+            )
             return {}
 
     def get_content_vote_stats(self, content_id: uuid.UUID) -> dict:
@@ -181,7 +189,7 @@ class VotingService:
                 "score": score,
             }
         except OperationalError as e:
-            logger.error(f"Database error getting vote stats: {e}")
+            logger.error(f"Database error getting vote stats: {type(e).__name__}")
             # Return default stats on error
             return {
                 "content_id": str(content_id),
@@ -190,7 +198,7 @@ class VotingService:
                 "score": 0.5,
             }
         except Exception as e:
-            logger.error(f"Unexpected error getting vote stats: {e}")
+            logger.error(f"Unexpected error getting vote stats: {type(e).__name__}")
             return {
                 "content_id": str(content_id),
                 "likes": 0,
@@ -203,10 +211,10 @@ class VotingService:
         try:
             return self.vote_repository.delete_vote(user_id, content_id)
         except OperationalError as e:
-            logger.error(f"Database error removing vote: {e}")
+            logger.error(f"Database error removing vote: {type(e).__name__}")
             raise ConnectionError(
                 "Database temporarily unavailable. Please try again later."
             )
         except Exception as e:
-            logger.error(f"Unexpected error removing vote: {e}")
+            logger.error(f"Unexpected error removing vote: {type(e).__name__}")
             raise RuntimeError(f"Failed to remove vote: {str(e)}")

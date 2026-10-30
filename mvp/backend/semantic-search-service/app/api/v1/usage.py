@@ -145,7 +145,10 @@ async def beitrag_laden(content_id: uuid.UUID, settings: Settings):
         # Zweig gaelte ein kaputter Datensatz als "nicht vorhanden": Der Aufruf
         # bekaeme 404, die Kopie fiele unter den Tisch und niemand erfuehre, dass
         # da etwas im Bestand nicht stimmt.
-        logger.error(f"Content {content_id} is not readable: {fehler}", exc_info=True)
+        logger.error(
+            f"Content {content_id} is not readable: {type(fehler).__name__}",
+            exc_info=True,
+        )
         raise BeitragUnlesbar(str(content_id)) from fehler
     except ValueError:
         # Nicht vorhanden - erwartbar bei einem alten Link, kein Fehlerfall.
@@ -257,7 +260,8 @@ async def track_content_usage(
         raise
     except Exception as e:
         logger.error(
-            f"Error tracking usage for content {content_id}: {e}", exc_info=True
+            f"Error tracking usage for content {content_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -285,7 +289,8 @@ async def get_content_usage(
         raise
     except Exception as e:
         logger.error(
-            f"Error getting usage for content {content_id}: {e}", exc_info=True
+            f"Error getting usage for content {content_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -308,7 +313,7 @@ async def eigene_nutzungsstatistik(
 
     except Exception as e:
         logger.error(
-            f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {e}",
+            f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -331,7 +336,7 @@ async def besuch(
         return BesuchResponse(nutzung_seit_letztem_besuch=anzahl)
     except Exception as e:
         logger.error(
-            f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {e}",
+            f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -358,7 +363,9 @@ async def get_trending_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting trending content: {e}", exc_info=True)
+        logger.error(
+            f"Error getting trending content: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -414,7 +421,7 @@ async def oft_genutzt(
         )
 
     except Exception as e:
-        logger.error(f"Error getting oft genutzt: {e}", exc_info=True)
+        logger.error(f"Error getting oft genutzt: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -440,7 +447,7 @@ async def get_cleanup_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting cleanup status: {e}", exc_info=True)
+        logger.error(f"Error getting cleanup status: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -485,5 +492,5 @@ async def run_cleanup_manually(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error running manual cleanup: {e}", exc_info=True)
+        logger.error(f"Error running manual cleanup: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
