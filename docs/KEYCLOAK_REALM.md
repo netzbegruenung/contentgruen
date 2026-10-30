@@ -14,7 +14,8 @@ Konto:
 
 Die **Kennung** in Gut gesagt ist in beiden Fällen der `sub` des Kontos im Realm, nicht der
 im Realm der Netzbegrünung. Passwort vergessen, Mail-Bestätigung und der Schutz gegen
-Durchprobieren von Passwörtern liegen bei Keycloak.
+Durchprobieren von Passwörtern liegen bei Keycloak. Warum so: ADR 0006
+(`docs/adr/0006-eigener-realm-zaehler-statt-zuordnung.md`).
 
 ## Vorlage
 
