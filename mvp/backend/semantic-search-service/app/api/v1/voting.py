@@ -42,13 +42,13 @@ def set_like(
         logger.debug("Like set successfully")
         return result
     except ValueError as e:
-        logger.warning(f"Like validation error: {e}")
+        logger.warning(f"Like validation error: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=str(e))
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
+        logger.error(f"Database connection error: {type(e).__name__}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.error(f"Error setting like: {e}", exc_info=True)
+        logger.error(f"Error setting like: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to set like")
 
 
@@ -72,10 +72,10 @@ def remove_like(
         logger.debug("Like removed successfully")
         return result
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
+        logger.error(f"Database connection error: {type(e).__name__}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.error(f"Error removing like: {e}", exc_info=True)
+        logger.error(f"Error removing like: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to remove like")
 
 
@@ -100,13 +100,13 @@ def set_dislike(
         logger.debug("Dislike set successfully")
         return result
     except ValueError as e:
-        logger.warning(f"Dislike validation error: {e}")
+        logger.warning(f"Dislike validation error: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=str(e))
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
+        logger.error(f"Database connection error: {type(e).__name__}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.error(f"Error setting dislike: {e}", exc_info=True)
+        logger.error(f"Error setting dislike: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to set dislike")
 
 
@@ -130,10 +130,10 @@ def remove_dislike(
         logger.debug("Dislike removed successfully")
         return result
     except ConnectionError as e:
-        logger.error(f"Database connection error: {e}")
+        logger.error(f"Database connection error: {type(e).__name__}")
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.error(f"Error removing dislike: {e}", exc_info=True)
+        logger.error(f"Error removing dislike: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to remove dislike")
 
 
@@ -151,7 +151,7 @@ def get_user_vote(
             "vote_type": vote_type,  # Can be "like", "dislike", or None
         }
     except Exception as e:
-        logger.error(f"Error getting user vote: {e}")
+        logger.error(f"Error getting user vote: {type(e).__name__}")
         # Return None vote_type if error occurs
         return {"content_id": str(content_id), "vote_type": None}
 

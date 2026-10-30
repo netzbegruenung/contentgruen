@@ -78,7 +78,9 @@ class UsageCleanupService:
             return deleted_count
 
         except Exception as e:
-            logger.error(f"Error during usage data cleanup: {e}", exc_info=True)
+            logger.error(
+                f"Error during usage data cleanup: {type(e).__name__}", exc_info=True
+            )
             return 0
 
     def _verdichte_suchereignisse(self) -> None:
@@ -91,7 +93,9 @@ class UsageCleanupService:
                 self.search_event_retention_days
             )
         except Exception as e:
-            logger.error(f"Error compacting old search events: {e}", exc_info=True)
+            logger.error(
+                f"Error compacting old search events: {type(e).__name__}", exc_info=True
+            )
 
     def _mische_suchereignisse(self) -> None:
         """Suchereignisse abgeschlossener Tage gemischt neu schreiben.
@@ -103,7 +107,8 @@ class UsageCleanupService:
             self.search_repository.mische_abgeschlossene_tage()
         except Exception as e:
             logger.error(
-                f"Error rewriting search events of closed days: {e}", exc_info=True
+                f"Error rewriting search events of closed days: {type(e).__name__}",
+                exc_info=True,
             )
 
     def _run_scheduled_jobs(self):

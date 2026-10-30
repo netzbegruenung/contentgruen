@@ -42,12 +42,12 @@ async def get_by_id(
     except HTTPException:
         raise
     except ValueError as e:
-        logger.info(f"Image with id {image_id} not found: {e}")
+        logger.info(f"Image with id {image_id} not found: {type(e).__name__}")
         raise HTTPException(
             status_code=404, detail=f"Image with id {image_id} not found"
         )
     except Exception as e:
-        logger.error(f"Error fetching image with id {image_id}: {e}")
+        logger.error(f"Error fetching image with id {image_id}: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -69,7 +69,7 @@ async def get_all(
             total_records_count=await image_service.count(),
         )
     except Exception as e:
-        logger.error(f"Error in /getAll: {e}")
+        logger.error(f"Error in /getAll: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -111,10 +111,10 @@ async def add_image(
     except HTTPException:
         raise
     except ValueError as e:
-        logger.error(f"Validation error in add_image: {e}")
+        logger.error(f"Validation error in add_image: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in add_image: {e}")
+        logger.error(f"Unexpected error in add_image: {type(e).__name__}")
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while adding the image. Please try again later.",
@@ -135,7 +135,9 @@ async def suggest_caption(
         caption = await caption_service.suggest_caption(request.image_url)
         return SuggestCaptionResponse(suggested_caption=caption)
     except Exception as e:
-        logger.error(f"Caption suggestion failed for URL {request.image_url[:80]}: {e}")
+        logger.error(
+            f"Caption suggestion failed for URL {request.image_url[:80]}: {type(e).__name__}"
+        )
         raise HTTPException(
             status_code=502,
             detail="Vorschlag konnte nicht erstellt werden. Bitte gib eine Beschriftung manuell ein.",

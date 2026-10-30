@@ -124,7 +124,10 @@ class MetricsService:
 
             return results
         except Exception as e:
-            logger.error(f"Error getting content created per week: {e}", exc_info=True)
+            logger.error(
+                f"Error getting content created per week: {type(e).__name__}",
+                exc_info=True,
+            )
             return []
 
     def get_usage_counter_trend(self, weeks: int = 4) -> List[Dict[str, Any]]:
@@ -172,7 +175,9 @@ class MetricsService:
 
             return results
         except Exception as e:
-            logger.error(f"Error getting usage counter trend: {e}", exc_info=True)
+            logger.error(
+                f"Error getting usage counter trend: {type(e).__name__}", exc_info=True
+            )
             return []
 
     def get_helpful_rate(self, days: int = 7) -> Dict[str, Any]:
@@ -225,7 +230,9 @@ class MetricsService:
                         "helpful_rate": 0.0,
                     }
         except Exception as e:
-            logger.error(f"Error getting helpful rate: {e}", exc_info=True)
+            logger.error(
+                f"Error getting helpful rate: {type(e).__name__}", exc_info=True
+            )
             return {
                 "like_count": 0,
                 "dislike_count": 0,
@@ -307,7 +314,10 @@ class MetricsService:
                 "helpful_total_votes": helpful_stats.get("total_votes", 0),
             }
         except Exception as e:
-            logger.error(f"Error getting MVP dashboard metrics: {e}", exc_info=True)
+            logger.error(
+                f"Error getting MVP dashboard metrics: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     def get_content_creation_stats(self, days: int = 30) -> Dict[str, Any]:
@@ -346,7 +356,10 @@ class MetricsService:
                     ),
                 }
         except Exception as e:
-            logger.error(f"Error getting content creation stats: {e}", exc_info=True)
+            logger.error(
+                f"Error getting content creation stats: {type(e).__name__}",
+                exc_info=True,
+            )
             return {
                 "period_days": days,
                 "total_content_created": 0,

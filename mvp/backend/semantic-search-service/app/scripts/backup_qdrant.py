@@ -56,10 +56,10 @@ class QdrantBackup:
             return snapshot_name
 
         except UnexpectedResponse as e:
-            logger.error(f"Failed to create snapshot: {e}")
+            logger.error(f"Failed to create snapshot: {type(e).__name__}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error creating snapshot: {e}")
+            logger.error(f"Unexpected error creating snapshot: {type(e).__name__}")
             raise
 
     def download_snapshot(self, snapshot_name: str, output_path: str):
@@ -98,10 +98,10 @@ class QdrantBackup:
             logger.info(f"Snapshot downloaded successfully ({file_size:,} bytes)")
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to download snapshot: {e}")
+            logger.error(f"Failed to download snapshot: {type(e).__name__}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error downloading snapshot: {e}")
+            logger.error(f"Unexpected error downloading snapshot: {type(e).__name__}")
             raise
 
     def list_snapshots(self):
@@ -115,7 +115,7 @@ class QdrantBackup:
                 )
             return snapshots
         except Exception as e:
-            logger.error(f"Failed to list snapshots: {e}")
+            logger.error(f"Failed to list snapshots: {type(e).__name__}")
             raise
 
     def delete_snapshot(self, snapshot_name: str):
@@ -126,7 +126,7 @@ class QdrantBackup:
             )
             logger.info(f"Deleted snapshot: {snapshot_name}")
         except Exception as e:
-            logger.error(f"Failed to delete snapshot: {e}")
+            logger.error(f"Failed to delete snapshot: {type(e).__name__}")
             raise
 
     def run(self, output_path: str, cleanup: bool = True):
@@ -163,7 +163,7 @@ class QdrantBackup:
             logger.info("=" * 50)
 
         except Exception as e:
-            logger.error(f"Backup failed: {e}", exc_info=True)
+            logger.error(f"Backup failed: {type(e).__name__}", exc_info=True)
             sys.exit(1)
 
 

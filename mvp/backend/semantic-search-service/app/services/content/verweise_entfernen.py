@@ -31,7 +31,7 @@ async def verweise_entfernen(
         geaendert = await moderation_repo.aus_aussagen_entfernen(beitrag_id)
     except Exception as e:
         logger.error(
-            f"Removing reply suggestions for {beitrag_id} failed: {e}",
+            f"Removing reply suggestions for {beitrag_id} failed: {type(e).__name__}",
             exc_info=True,
         )
         raise VerweiseNichtEntfernt(beitrag_id) from e

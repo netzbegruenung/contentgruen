@@ -82,7 +82,7 @@ async def feedback_senden(
     try:
         service.senden(request.text, request.kontakt)
     except Exception as e:
-        logger.error(f"Error storing feedback: {e}", exc_info=True)
+        logger.error(f"Error storing feedback: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to store feedback")
     return FeedbackSendenResponse(success=True)
 
@@ -97,7 +97,7 @@ async def feedback_liste(
     try:
         eintraege = service.neueste(limit)
     except Exception as e:
-        logger.error(f"Error fetching feedback: {e}", exc_info=True)
+        logger.error(f"Error fetching feedback: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch feedback")
     return FeedbackListeResponse(
         aufbewahrung_tage=AUFBEWAHRUNG_TAGE,

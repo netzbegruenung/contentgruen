@@ -73,7 +73,9 @@ def sichtbaren_beitrag_laden(settings, repository_factory, reference_service):
             )
         except ValidationError as fehler:
             # Vor ValueError, denn Pydantics ValidationError ist einer.
-            logger.error(f"Content {beitrag_id} is not readable: {fehler}")
+            logger.error(
+                f"Content {beitrag_id} is not readable: {type(fehler).__name__}"
+            )
             return None
         except ValueError:
             return None

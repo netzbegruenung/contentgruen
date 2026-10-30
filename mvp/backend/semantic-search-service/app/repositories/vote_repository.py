@@ -87,7 +87,7 @@ class VoteRepository:
                     raise Exception("Failed to create or update vote")
             except Exception as e:
                 trans.rollback()
-                logger.error(f"Transaction failed in upsert_vote: {e}")
+                logger.error(f"Transaction failed in upsert_vote: {type(e).__name__}")
                 raise
 
     def delete_vote(self, user_id: str, content_id: uuid.UUID) -> bool:

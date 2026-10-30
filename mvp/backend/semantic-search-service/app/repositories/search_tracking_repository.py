@@ -136,7 +136,9 @@ class SearchTrackingRepository:
                 # No log line: its exact time would undo the coarsening above.
                 return True
         except Exception as e:
-            logger.error(f"Error tracking search event: {e}", exc_info=True)
+            logger.error(
+                f"Error tracking search event: {type(e).__name__}", exc_info=True
+            )
             return False
 
     def get_unique_active_users(
@@ -184,7 +186,9 @@ class SearchTrackingRepository:
                 logger.debug(f"Active actors {start_date} to {end_date}: {total}")
                 return total
         except Exception as e:
-            logger.error(f"Error getting unique active users: {e}", exc_info=True)
+            logger.error(
+                f"Error getting unique active users: {type(e).__name__}", exc_info=True
+            )
             return 0
 
     def get_searches_per_user(self, days: int = 7) -> Dict[str, Any]:
@@ -242,7 +246,9 @@ class SearchTrackingRepository:
                     "total_searches": total_searches,
                 }
         except Exception as e:
-            logger.error(f"Error getting searches per user: {e}", exc_info=True)
+            logger.error(
+                f"Error getting searches per user: {type(e).__name__}", exc_info=True
+            )
             return {"average": 0.0, "median": 0, "total_users": 0, "total_searches": 0}
 
     def get_search_count_by_period(
@@ -281,7 +287,9 @@ class SearchTrackingRepository:
                     end_date,
                 )
         except Exception as e:
-            logger.error(f"Error getting search count: {e}", exc_info=True)
+            logger.error(
+                f"Error getting search count: {type(e).__name__}", exc_info=True
+            )
             return 0
 
     @staticmethod

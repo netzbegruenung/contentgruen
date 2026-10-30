@@ -64,7 +64,9 @@ async def meine_sperren(user_id: str = Depends(require_user)):
             sperren=await get_moderation_service().meine_sperren(user_id)
         )
     except Exception as e:
-        logger.error(f"Error in meine_sperren endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in meine_sperren endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -84,7 +86,9 @@ async def widersprechen(
             str(sperre_id), user_id, anfrage.text
         )
     except Exception as e:
-        logger.error(f"Error in widersprechen endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in widersprechen endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
     if ergebnis is Widerspruchsergebnis.NICHT_GEFUNDEN:

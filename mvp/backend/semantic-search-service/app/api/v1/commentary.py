@@ -85,7 +85,8 @@ async def get_by_id(
 
     except Exception as e:
         logger.error(
-            f"Error fetching commentary with id {commentary_id}: {e}", exc_info=True
+            f"Error fetching commentary with id {commentary_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -111,7 +112,7 @@ async def search_commentaries(
 
         return response
     except Exception as e:
-        logger.error(f"Error in search_commentaries: {e}", exc_info=True)
+        logger.error(f"Error in search_commentaries: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -285,7 +286,7 @@ async def add_commentary(
                 verknuepft = False
             except Exception as e:
                 logger.error(
-                    f"Commentary {commentary_id} stored, but not linked to its statement: {e}",
+                    f"Commentary {commentary_id} stored, but not linked to its statement: {type(e).__name__}",
                     exc_info=True,
                 )
                 verknuepft = False
@@ -304,10 +305,12 @@ async def add_commentary(
     except HTTPException:
         raise
     except ValueError as e:
-        logger.warning(f"Validation error in add_commentary: {e}")
+        logger.warning(f"Validation error in add_commentary: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in add_commentary: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error in add_commentary: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while adding commentary. Please try again later.",

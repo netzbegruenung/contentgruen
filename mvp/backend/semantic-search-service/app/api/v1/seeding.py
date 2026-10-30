@@ -148,7 +148,7 @@ async def start_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
             try:
                 await seeding_service.start_seeding()
             except Exception as e:
-                logger.error(f"Seeding failed: {e}", exc_info=True)
+                logger.error(f"Seeding failed: {type(e).__name__}", exc_info=True)
                 raise
 
         background_tasks.add_task(run_seeding)

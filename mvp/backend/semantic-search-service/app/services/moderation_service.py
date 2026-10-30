@@ -171,7 +171,7 @@ class ModerationService:
             logger.error(f"Invalid content_id format: {content_id}")
             return False
         except Exception as e:
-            logger.error(f"Error reporting content: {e}", exc_info=True)
+            logger.error(f"Error reporting content: {type(e).__name__}", exc_info=True)
             return False
 
     async def content_exists(self, content_id: str) -> bool:
@@ -192,7 +192,9 @@ class ModerationService:
         try:
             return await self._beitrag_laden(content_id) is not None
         except Exception as e:
-            logger.error(f"Error checking content existence: {e}", exc_info=True)
+            logger.error(
+                f"Error checking content existence: {type(e).__name__}", exc_info=True
+            )
             # Im Zweifel durchlassen: eine Meldung zu verlieren waere schlimmer
             # als eine ins Leere zeigende anzunehmen.
             return True
@@ -241,12 +243,17 @@ class ModerationService:
                         report["content"] = content
                     except Exception as e:
                         # Content might be deleted for reviewed reports
-                        logger.debug(f"Could not fetch content {content_id}: {e}")
+                        logger.debug(
+                            f"Could not fetch content {content_id}: {type(e).__name__}"
+                        )
                         report["content"] = None
 
             return reports
         except Exception as e:
-            logger.error(f"Error getting reports (status={status}): {e}", exc_info=True)
+            logger.error(
+                f"Error getting reports (status={status}): {type(e).__name__}",
+                exc_info=True,
+            )
             return []
 
     async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
@@ -616,7 +623,7 @@ class ModerationService:
             logger.error(f"Invalid report_id format: {report_id}")
             return False
         except Exception as e:
-            logger.error(f"Error dismissing report: {e}", exc_info=True)
+            logger.error(f"Error dismissing report: {type(e).__name__}", exc_info=True)
             return False
 
     def get_report_stats(self) -> Dict[str, Any]:
@@ -636,7 +643,9 @@ class ModerationService:
                 "dismissed": counts.get("dismissed", 0),
             }
         except Exception as e:
-            logger.error(f"Error getting report stats: {e}", exc_info=True)
+            logger.error(
+                f"Error getting report stats: {type(e).__name__}", exc_info=True
+            )
             return {
                 "total": 0,
                 "by_status": {},

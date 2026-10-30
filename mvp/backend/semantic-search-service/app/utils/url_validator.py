@@ -69,7 +69,7 @@ def validate_url_security(url: str) -> Tuple[bool, str]:
         return True, ""
 
     except Exception as e:
-        logger.warning(f"Error validating URL '{url}': {e}")
+        logger.warning(f"Error validating URL '{url}': {type(e).__name__}")
         return False, f"Invalid URL format: {str(e)}"
 
 
@@ -112,6 +112,6 @@ def sanitize_url(url: str) -> str:
         return sanitized
 
     except Exception as e:
-        logger.error(f"Error sanitizing URL '{url}': {e}")
+        logger.error(f"Error sanitizing URL '{url}': {type(e).__name__}")
         # Raise exception instead of silently returning original URL
         raise ValueError(f"Failed to sanitize URL: {str(e)}")

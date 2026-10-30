@@ -154,7 +154,9 @@ class StatementRepository(
             )
             return result.count
         except Exception as e:
-            logger.error(f"Failed to count curated statements: {e}", exc_info=True)
+            logger.error(
+                f"Failed to count curated statements: {type(e).__name__}", exc_info=True
+            )
             return 0
 
     async def get_all_curated(
@@ -288,7 +290,7 @@ class StatementRepository(
         except Exception as e:
             # Suchtext nicht ins Log, siehe _async_search_with_replies.
             logger.error(
-                f"Error during curated statement search: {e} (limit={limit})",
+                f"Error during curated statement search: {type(e).__name__} (limit={limit})",
                 exc_info=True,
             )
             raise
@@ -348,7 +350,7 @@ class StatementRepository(
             # nicht steht, wonach jemand gesucht hat. Zum Einordnen des Fehlers
             # genuegen die Fehlerklasse und die Suchparameter.
             logger.error(
-                f"Error during search: {e} "
+                f"Error during search: {type(e).__name__} "
                 f"(content_type={self.content_type}, limit={limit}, "
                 f"min_replysuggestions_count={min_replysuggestions_count})",
                 exc_info=True,
