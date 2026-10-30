@@ -6,9 +6,9 @@ Provides comprehensive statistics for MVP goals tracking.
 import logging
 from datetime import datetime, timedelta, date
 from typing import Dict, Any, List, Optional
-from sqlalchemy import bindparam, text, func, distinct, and_, or_
+from sqlalchemy import text, func, distinct, and_, or_
 
-from repositories.vote_repository import ausgenommen_werte
+from repositories.vote_repository import OHNE_AUSGENOMMENE, ohne_ausgenommene
 from repositories.search_tracking_repository import get_search_tracking_repository
 from repositories.usage_tracking_repository import get_usage_repository
 from infrastructure.database.connection import get_app_database
@@ -192,24 +192,21 @@ class MetricsService:
             start_date = datetime.utcnow() - timedelta(days=days)
 
             with self.db.get_session() as session:
-                result = session.execute(
-                    text(
-                        """
+                # Stimmen von Startkonten zaehlen nicht (#352).
+                abfrage, werte = ohne_ausgenommene(
+                    f"""
                     SELECT
                         COUNT(CASE WHEN vote_type = 'like' THEN 1 END) as like_count,
                         COUNT(CASE WHEN vote_type = 'dislike' THEN 1 END) as dislike_count,
                         COUNT(*) as total_votes
                     FROM votes
                     WHERE created >= :start_date
-                        AND NOT (user_id IN :ausgenommen)
-                    """
-                    ).bindparams(bindparam("ausgenommen", expanding=True)),
-                    {
-                        "start_date": start_date,
-                        # Stimmen von Startkonten zaehlen nicht (#352).
-                        "ausgenommen": ausgenommen_werte(self._startkonten),
-                    },
-                ).fetchone()
+                        AND {OHNE_AUSGENOMMENE}
+                    """,
+                    self._startkonten,
+                    start_date=start_date,
+                )
+                result = session.execute(abfrage, werte).fetchone()
 
                 if result and result[2] > 0:  # total_votes > 0
                     like_count = result[0] or 0

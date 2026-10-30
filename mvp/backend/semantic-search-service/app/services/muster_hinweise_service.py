@@ -11,9 +11,8 @@ Konten merkt sich der Dienst einen Paar-Pruefwert mit dem letzten Tag dieser Ric
 der Gegenrichtung im Fenster liegt, entsteht eine Zeile mit beiden Kennungen. Nutzung
 durch Besucher hat kein Konto und zaehlt hier nicht.
 
-Fristen, angewendet von loeschen_im_takt, einem eigenen Hintergrund-Task aus main.py:
-- Pruefwerte der entdoppelten Nutzung (nutzung_heute) gelten nur ihren Tag; der Lauf
-  nach Mitternacht (UTC) verwirft alle vergangener Tage.
+Fristen, angewendet von loeschen_im_takt, einem eigenen Hintergrund-Task aus main.py
+(die Pruefwerte der entdoppelten Nutzung verwirft ein eigener, services/entdoppelung.py):
 - Paar-Pruefwerte bleiben MUSTER_FENSTER_TAGE: der Lauf verwirft alle, deren letzter
   Tag davor liegt.
 - Muster-Hinweise bleiben MUSTER_FRIST_TAGE nach dem letzten auffaelligen Tag (DSFA
@@ -34,7 +33,6 @@ from repositories.muster_hinweis_repository import (
     MusterHinweis,
     MusterHinweisRepository,
 )
-from repositories.usage_tracking_repository import UsageTrackingRepository
 from services.entdoppelung import ANONYM, paar_pruefwert
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
@@ -53,13 +51,8 @@ LOESCH_TAKT_SEKUNDEN = 24 * 60 * 60
 
 
 class MusterHinweiseService:
-    def __init__(
-        self,
-        repository: MusterHinweisRepository,
-        nutzung: UsageTrackingRepository,
-    ):
+    def __init__(self, repository: MusterHinweisRepository):
         self._repository = repository
-        self._nutzung = nutzung
 
     def nutzung_melden(
         self,
@@ -88,15 +81,13 @@ class MusterHinweiseService:
 
     def fristen_anwenden(self, heute: Optional[date] = None) -> None:
         heute = heute or heute_utc()
-        verworfen = self._nutzung.vergangene_tage_verwerfen(heute)
         paare = self._repository.paare_verwerfen_vor(_fenster_ab(heute))
         geloescht = self._repository.loeschen_vor(
             heute - timedelta(days=MUSTER_FRIST_TAGE)
         )
         logger.info(
-            f"Discarded {verworfen} check values of past days and {paare} pair "
-            f"check values past the window, deleted {geloescht} pattern notes past "
-            "their Loeschfrist"
+            f"Discarded {paare} pair check values past the window, "
+            f"deleted {geloescht} pattern notes past their Loeschfrist"
         )
 
 

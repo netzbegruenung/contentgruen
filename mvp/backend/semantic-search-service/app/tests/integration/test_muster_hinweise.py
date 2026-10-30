@@ -10,7 +10,6 @@ from datetime import date, datetime, time, timedelta, timezone
 import pytest
 
 from repositories.muster_hinweis_repository import MusterHinweisRepository
-from repositories.usage_tracking_repository import UsageTrackingRepository
 from services.muster_hinweise_service import (
     MUSTER_FENSTER_TAGE,
     MUSTER_FRIST_TAGE,
@@ -29,10 +28,7 @@ def _um(tag: date) -> datetime:
 
 @pytest.fixture
 def dienst(datenbank):  # noqa: F811
-    return MusterHinweiseService(
-        MusterHinweisRepository(datenbank),
-        UsageTrackingRepository(datenbank),
-    )
+    return MusterHinweiseService(MusterHinweisRepository(datenbank))
 
 
 class TestMusterHinweise:

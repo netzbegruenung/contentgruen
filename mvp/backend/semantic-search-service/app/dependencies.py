@@ -193,11 +193,8 @@ def get_punkte_service(
 
 def get_muster_hinweise_service() -> MusterHinweiseService:
     from repositories.muster_hinweis_repository import get_muster_hinweis_repository
-    from repositories.usage_tracking_repository import get_usage_repository
 
-    return MusterHinweiseService(
-        get_muster_hinweis_repository(), get_usage_repository()
-    )
+    return MusterHinweiseService(get_muster_hinweis_repository())
 
 
 _gegenlesen_service: Optional[GegenlesenService] = None

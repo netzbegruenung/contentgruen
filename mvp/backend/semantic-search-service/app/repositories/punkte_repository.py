@@ -7,11 +7,11 @@ import uuid
 from datetime import date, datetime
 from typing import Dict, List, Optional, Set
 
-from sqlalchemy import bindparam, func, select, text
+from sqlalchemy import bindparam, func, select
 
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import RawInput, RawInputContentLink, Sperre
-from repositories.vote_repository import ausgenommen_werte
+from repositories.vote_repository import OHNE_AUSGENOMMENE, ohne_ausgenommene
 
 
 class PunkteRepository:
@@ -24,21 +24,15 @@ class PunkteRepository:
         if not content_ids:
             return 0
         # votes legt vote_repository.py per Hand an; content_id ist dort UUID.
-        abfrage = text(
+        abfrage, werte = ohne_ausgenommene(
             "SELECT count(*) FROM votes WHERE vote_type = 'like'"
-            " AND content_id IN :ids AND NOT (user_id IN :ausgenommen)"
-        ).bindparams(
-            bindparam("ids", expanding=True),
-            bindparam("ausgenommen", expanding=True),
+            f" AND content_id IN :ids AND {OHNE_AUSGENOMMENE}",
+            ausgenommen,
+            ids=[str(i) for i in content_ids],
         )
+        abfrage = abfrage.bindparams(bindparam("ids", expanding=True))
         with self.db.get_session() as session:
-            return session.execute(
-                abfrage,
-                {
-                    "ids": [str(i) for i in content_ids],
-                    "ausgenommen": ausgenommen_werte(ausgenommen),
-                },
-            ).scalar_one()
+            return session.execute(abfrage, werte).scalar_one()
 
     def einwuerfe_ausformuliert_je_tag(
         self, user_id: str, bis: datetime

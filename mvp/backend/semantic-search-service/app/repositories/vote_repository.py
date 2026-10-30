@@ -1,7 +1,7 @@
 import uuid
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 from datetime import datetime
-from sqlalchemy import bindparam, text
+from sqlalchemy import TextClause, bindparam, text
 
 from core.logging import get_logger
 from domain.models.vote import Vote, VoteType
@@ -10,13 +10,22 @@ from infrastructure.database.connection import get_app_database
 logger = get_logger(__name__)
 
 
-def ausgenommen_werte(kennungen: Iterable[str]) -> List[str]:
+OHNE_AUSGENOMMENE = "NOT (user_id IN :ausgenommen)"
+"""Bedingung fuer Abfragen auf votes: ohne die Stimmen ausgenommener Kennungen."""
+
+
+def ohne_ausgenommene(
+    sql: str, ausgenommen: Iterable[str], **werte
+) -> Tuple[TextClause, Dict]:
     """
-    Werte fuer einen expandierenden Parameter ``:ausgenommen`` in
-    ``NOT (user_id IN :ausgenommen)``, etwa die Startkonten (#352). Nie leer: Eine leere
-    Liste ergaebe "IN ()", und "" ist keine Kennung.
+    Eine Abfrage auf votes, deren ``sql`` OHNE_AUSGENOMMENE enthaelt, samt Werten.
+    Die eine Stelle fuer jede Stimmen-Abfrage, die Kennungen auslaesst, etwa die
+    Startkonten (#352): Ein Startkonto vergibt keine Stimmen, die andere sehen.
+    Ohne Ausnahmen nie leer: Eine leere Liste ergaebe "IN ()", und "" ist keine
+    Kennung.
     """
-    return sorted(kennungen) or [""]
+    abfrage = text(sql).bindparams(bindparam("ausgenommen", expanding=True))
+    return abfrage, {**werte, "ausgenommen": sorted(ausgenommen) or [""]}
 
 
 class VoteRepository:
@@ -194,25 +203,21 @@ class VoteRepository:
         ``ausgenommen``: Kennungen, deren Stimmen nicht zaehlen - die Startkonten
         (#352): Ein Startkonto vergibt keine Stimmen, die andere sehen.
         """
-        query = text(
-            """
+        query, werte = ohne_ausgenommene(
+            f"""
         SELECT
             vote_type,
             COUNT(*) as count
         FROM votes
-        WHERE content_id = :content_id AND NOT (user_id IN :ausgenommen)
+        WHERE content_id = :content_id AND {OHNE_AUSGENOMMENE}
         GROUP BY vote_type
-        """
-        ).bindparams(bindparam("ausgenommen", expanding=True))
+        """,
+            ausgenommen,
+            content_id=str(content_id),
+        )
 
         with self.db.get_session() as session:
-            result = session.execute(
-                query,
-                {
-                    "content_id": str(content_id),
-                    "ausgenommen": ausgenommen_werte(ausgenommen),
-                },
-            )
+            result = session.execute(query, werte)
 
             counts = {"likes": 0, "dislikes": 0}
             for row in result:
