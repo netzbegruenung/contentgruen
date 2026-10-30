@@ -292,7 +292,7 @@ class ContentReport(Base):
     resolution_notes = Column(Text, nullable=True)
     # Angaben nach Art. 16 Abs. 2 DSA (#438): Name und E-Mail-Adresse freiwillig,
     # die Erklaerung guten Glaubens Pflicht. NULL bei Meldungen von vor #438.
-    # ANNAHME (#438): Der DSA gilt fuer Gut gesagt (offen in #296).
+    # Der DSA gilt fuer Gut gesagt (entschieden in #438).
     melder_name = Column(String(MELDER_NAME_MAX), nullable=True)
     melder_email = Column(String(MELDER_EMAIL_MAX), nullable=True)
     guter_glaube = Column(Boolean, nullable=True)

@@ -46,6 +46,9 @@ class TestMeldegruende:
         # Gespeicherte Meldungen tragen diese Werte; sie muessen gueltig bleiben.
         assert {"spam", "inappropriate", "duplicate", "other"} <= set(MELDEGRUENDE)
 
+    def test_meldegruende_kennen_rechtswidrigen_inhalt(self):
+        assert "illegal_content" in MELDEGRUENDE
+
     @pytest.mark.skipif(
         not FRONTEND_MELDEGRUENDE.exists(), reason="Frontend nicht im Checkout"
     )
@@ -64,10 +67,31 @@ class TestReportContent:
         self, service, report_repo, grund
     ):
         assert await service.report_content(
-            CONTENT_ID, "commentary", grund, user_id="person-1", guter_glaube=True
+            CONTENT_ID,
+            "commentary",
+            grund,
+            user_id="person-1",
+            description="Verstoesst gegen § 130 StGB",
+            guter_glaube=True,
         )
 
         assert report_repo.create_report.call_args.kwargs["reason"] == grund
+
+    @pytest.mark.parametrize("beschreibung", [None, "", "   "])
+    async def test_report_content_rechtswidriger_inhalt_ohne_beschreibung_wird_abgewiesen(
+        self, service, report_repo, beschreibung
+    ):
+        """Art. 16 Abs. 2 lit. a DSA (#438): die Begruendung ist Pflicht."""
+        assert not await service.report_content(
+            CONTENT_ID,
+            "commentary",
+            "illegal_content",
+            user_id="person-1",
+            description=beschreibung,
+            guter_glaube=True,
+        )
+
+        report_repo.create_report.assert_not_called()
 
     async def test_report_content_unbekannter_grund_wird_abgewiesen(
         self, service, report_repo

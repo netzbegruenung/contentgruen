@@ -24,7 +24,7 @@ from repositories.raw_input_repository import (
 from repositories.sperre_repository import SperreRepository, get_sperre_repository
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
-from domain.models.meldegrund import MELDEGRUENDE, Meldegrund
+from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
@@ -152,10 +152,13 @@ class ModerationService:
             return False
 
         # Art. 16 Abs. 2 lit. d DSA (#438): keine neue Meldung ohne die Erklaerung
-        # guten Glaubens, auch nicht an der API vorbei. ANNAHME (#438): Der DSA
-        # gilt fuer Gut gesagt (offen in #296); gilt er nicht, entfaellt die Pflicht.
+        # guten Glaubens, auch nicht an der API vorbei; fuer jeden Meldegrund.
         if guter_glaube is not True:
             logger.warning("Invalid report submission: no Erklaerung guten Glaubens")
+            return False
+
+        if beschreibung_fehlt(reason, description):
+            logger.warning("Invalid report submission: illegal_content without reason")
             return False
 
         try:

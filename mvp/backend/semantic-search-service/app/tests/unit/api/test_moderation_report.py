@@ -187,8 +187,36 @@ class TestRequestValidation:
 
     @pytest.mark.parametrize("reason", MELDEGRUENDE)
     def test_documented_reasons_are_accepted(self, client, service, reason):
-        assert client.post(REPORT_URL, json=_payload(reason=reason)).status_code == 200
+        body = _payload(reason=reason, description="Verstoesst gegen § 130 StGB")
+
+        assert client.post(REPORT_URL, json=body).status_code == 200
         assert service.report_content.await_args.kwargs["reason"] == reason
+
+
+class TestRechtswidrigerInhalt:
+    """Art. 16 Abs. 2 lit. a DSA (#438): bei rechtswidrigen Inhalten eine Begruendung."""
+
+    @pytest.mark.parametrize("beschreibung", [None, "", "   "])
+    def test_rechtswidriger_inhalt_ohne_beschreibung_wird_abgewiesen(
+        self, client, service, beschreibung
+    ):
+        body = _payload(reason="illegal_content", description=beschreibung)
+
+        assert client.post(REPORT_URL, json=body).status_code == 422
+        service.report_content.assert_not_awaited()
+
+    def test_rechtswidriger_inhalt_mit_beschreibung_wird_angenommen(
+        self, client, service
+    ):
+        body = _payload(reason="illegal_content", description="Volksverhetzung")
+
+        assert client.post(REPORT_URL, json=body).status_code == 200
+        assert service.report_content.await_args.kwargs["description"] == (
+            "Volksverhetzung"
+        )
+
+    def test_andere_gruende_brauchen_keine_beschreibung(self, client):
+        assert client.post(REPORT_URL, json=_payload(reason="spam")).status_code == 200
 
 
 class TestClientKeyDerivation:

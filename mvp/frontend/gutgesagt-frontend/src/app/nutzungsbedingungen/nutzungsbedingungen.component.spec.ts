@@ -90,9 +90,9 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('teilen wir dir unsere Entscheidung über die Meldung per E-Mail mit');
     // Art. 16 Abs. 5 DSA: mit der Entscheidung die Rechtsbehelfe.
     expect(text).toContain('zusammen mit deinen Möglichkeiten, dagegen vorzugehen');
-    // Die Beschreibung ist freiwillig, einen Meldegrund „rechtswidrig“ gibt es nicht.
-    expect(text).toContain('Was nicht stimmt, kannst du beschreiben');
-    expect(text).not.toContain('auch als rechtswidrig');
+    // Art. 16 Abs. 2 lit. a DSA: beim Meldegrund „Rechtswidriger Inhalt“ ist die Begründung Pflicht.
+    expect(text).toContain('Wählst du „Rechtswidriger Inhalt“, schreibst du dazu, warum der Beitrag rechtswidrig ist');
+    expect(text).toContain('bei den anderen Gründen kannst du beschreiben, was nicht stimmt');
     // Die Meldefunktion ist selbst der Weg nach Art. 16 DSA, nicht nur die Mail.
     expect(text).not.toContain('richtest du bitte per E-Mail an');
   });

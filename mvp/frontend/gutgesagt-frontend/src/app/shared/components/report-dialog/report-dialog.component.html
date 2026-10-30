@@ -16,13 +16,14 @@
     </mat-form-field>
 
     <mat-form-field appearance="fill" class="full-width">
-      <mat-label>Beschreibung (optional)</mat-label>
+      <mat-label>{{ begruendungPflicht ? 'Warum ist der Beitrag rechtswidrig?' : 'Beschreibung (optional)' }}</mat-label>
       <textarea
         matInput
         name="beschreibung"
         [(ngModel)]="description"
+        [required]="begruendungPflicht"
         rows="4"
-        placeholder="Was genau stimmt nicht? Bei rechtswidrigen Inhalten: warum?"></textarea>
+        [placeholder]="begruendungPflicht ? 'Welches Gesetz verletzt er, und wodurch?' : 'Was genau stimmt nicht?'"></textarea>
     </mat-form-field>
 
     <mat-form-field appearance="fill" class="full-width">

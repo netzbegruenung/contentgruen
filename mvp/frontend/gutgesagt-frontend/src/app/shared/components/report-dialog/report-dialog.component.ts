@@ -10,7 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { ModerationService } from '../../../services/moderation.service';
-import { MELDEGRUENDE, MeldegrundWert } from '../../meldegruende';
+import { MELDEGRUENDE, MeldegrundWert, brauchtBegruendung } from '../../meldegruende';
 
 export interface ReportDialogData {
   contentId: string;
@@ -25,7 +25,7 @@ export const MELDER_EMAIL_MAX = 254;
 const EMAIL_MUSTER = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Der Meldedialog. ANNAHME (#438): Der DSA gilt fuer Gut gesagt (offen in #296).
+ * Der Meldedialog. Der DSA gilt fuer Gut gesagt (#438).
  * Deshalb fragt er die Angaben nach Art. 16 Abs. 2 DSA ab: Name und E-Mail-Adresse
  * freiwillig, die Erklaerung guten Glaubens als Pflicht. Eine Eingangsbestaetigung
  * per Mail gibt es nicht (kein Mailversand); bestaetigt wird der Eingang hier.
@@ -87,8 +87,18 @@ export class ReportDialogComponent {
     return this.emailVerlassen && this.emailUngueltig;
   }
 
+  get begruendungPflicht(): boolean {
+    return brauchtBegruendung(this.selectedReason);
+  }
+
   get kannMelden(): boolean {
-    return !this.submitting && !!this.selectedReason && this.guterGlaube && !this.emailUngueltig;
+    return (
+      !this.submitting &&
+      !!this.selectedReason &&
+      this.guterGlaube &&
+      !this.emailUngueltig &&
+      (!this.begruendungPflicht || this.description.trim() !== '')
+    );
   }
 
   submitReport() {

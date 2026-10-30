@@ -6,9 +6,9 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
-from domain.models.meldegrund import Meldegrund
+from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
 from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX
 from domain.models.sperrgrund import Sperrgrund
 from services.moderation_service import (
@@ -49,10 +49,10 @@ class ReportContentRequest(BaseModel):
     description: Optional[str] = Field(
         None,
         max_length=1000,
-        description="Optional detailed description (max 1000 characters)",
+        description="Description (max 1000 characters); required for illegal_content",
     )
-    # Angaben nach Art. 16 Abs. 2 DSA (#438). ANNAHME (#438): Der DSA gilt fuer
-    # Gut gesagt (offen in #296). Name und E-Mail-Adresse sind freiwillig
+    # Angaben nach Art. 16 Abs. 2 DSA (#438); der DSA gilt fuer Gut gesagt.
+    # Name und E-Mail-Adresse sind freiwillig
     # (lit. c); nur wer sie angibt, kann die Entscheidung erfahren (Abs. 5).
     # Beides sehen nur Admins, und keins von beiden landet im Log.
     melder_name: Optional[str] = Field(
@@ -86,6 +86,14 @@ class ReportContentRequest(BaseModel):
         if wert is not True:
             raise ValueError("Die Erklaerung guten Glaubens fehlt")
         return wert
+
+    @model_validator(mode="after")
+    def _rechtswidriges_begruendet(self):
+        # Art. 16 Abs. 2 lit. a DSA (#438): wer einen Inhalt als rechtswidrig
+        # meldet, erklaert, warum.
+        if beschreibung_fehlt(self.reason, self.description):
+            raise ValueError("Bei rechtswidrigem Inhalt fehlt die Begruendung")
+        return self
 
 
 class ReportContentResponse(BaseModel):

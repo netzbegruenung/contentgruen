@@ -77,6 +77,31 @@ describe('ReportDialogComponent', () => {
     expect(ERFUNDENES_MELDEN).not.toContain('„Andere“');
   });
 
+  it('verlangt bei „Rechtswidriger Inhalt“ eine Begründung', async () => {
+    const grund = fixture.componentInstance.reasons.find((g) => g.value === 'illegal_content')!;
+    expect(grund.label).toBe('Rechtswidriger Inhalt');
+
+    fixture.componentInstance.selectedReason = 'illegal_content';
+    await gutenGlaubenErklaeren();
+
+    expect(meldenKnopf().disabled).toBeTrue();
+    expect(element().textContent).toContain('Warum ist der Beitrag rechtswidrig?');
+
+    await eingeben('textarea[name="beschreibung"]', '   ');
+    expect(meldenKnopf().disabled).toBeTrue();
+
+    await eingeben('textarea[name="beschreibung"]', 'Volksverhetzung nach § 130 StGB');
+    expect(meldenKnopf().disabled).toBeFalse();
+  });
+
+  it('lässt die Beschreibung bei anderen Gründen freiwillig', async () => {
+    fixture.componentInstance.selectedReason = 'spam';
+    await gutenGlaubenErklaeren();
+
+    expect(meldenKnopf().disabled).toBeFalse();
+    expect(element().textContent).toContain('Beschreibung (optional)');
+  });
+
   it('meldet erst, wenn die Person ihren guten Glauben erklärt hat', async () => {
     expect(meldenKnopf().disabled).toBeTrue();
 

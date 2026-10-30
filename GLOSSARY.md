@@ -291,7 +291,7 @@ Was jede Person beim Melden ankreuzt: dass sie in gutem Glauben davon überzeugt
 _Avoid_: Bestätigung, Einverständnis, Zustimmung (das ist der CC0-Hinweis)
 
 **Meldegrund**:
-Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder unerwünschte Werbung, Unangemessener Inhalt, Erfunden oder sachlich falsch, Dublette, Andere. „Erfunden oder sachlich falsch“ ist der Grund für erfundene Erlebnisse oder Zahlen; „Dublette“ heißt, dass der gemeldete Beitrag einem vorhandenen fast gleicht. Was genau nicht stimmt, schreibt die Person in die Beschreibung der Meldung.
+Warum jemand einen Beitrag meldet, gewählt aus einer festen Liste: Spam oder unerwünschte Werbung, Unangemessener Inhalt, Erfunden oder sachlich falsch, Dublette, Rechtswidriger Inhalt, Andere. „Erfunden oder sachlich falsch“ ist der Grund für erfundene Erlebnisse oder Zahlen; „Dublette“ heißt, dass der gemeldete Beitrag einem vorhandenen fast gleicht. Was genau nicht stimmt, schreibt die Person in die Beschreibung der Meldung; bei „Rechtswidriger Inhalt“ muss sie dort begründen, warum (Art. 16 Abs. 2 lit. a DSA), bei den anderen Gründen ist die Beschreibung freiwillig. Der Meldegrund „Rechtswidriger Inhalt“ ist nicht der gleichnamige Sperrgrund: Ob ein Beitrag wirklich rechtswidrig ist, entscheidet erst ein Admin.
 _Avoid_: Kategorie, Report-Grund
 
 **Feedback**:
