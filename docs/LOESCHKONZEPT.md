@@ -336,9 +336,17 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     eingespielten Beiträge (`services/orchestration/content_orchestrator.py`), kuratierte
     Daten aus dem Repo. Die Zugriffszeilen von uvicorn sind unterdrückt
     (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
-  - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
-    (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
-    eine Validierungsmeldung, stehen diese mit darin.
+  - **Fehlerzeilen (BFF und Semantic-Service):** Seit #422 nennen sie von einer Ausnahme
+    nur Typ und Stack, nicht ihre Meldung, die oft Eingabewerte trägt (eine
+    Validierungsmeldung den abgelehnten Wert, ein Datenbankfehler die Parameter der
+    Abfrage). Im Semantic-Service schreibt der Formatter Tracebacks so
+    (`ausnahme_ohne_meldung()` in `app/core/logging.py`, auch für unbehandelte Ausnahmen,
+    die uvicorn meldet), und kein Log-Aufruf setzt die Ausnahme selbst in den Text, nur
+    `type(e).__name__`; das prüft `tests/unit/core/test_keine_ausnahmemeldung_im_log.py`
+    am Quelltext. Im BFF schreibt die Konsole mit `AusnahmeOhneMeldungFormatter`
+    (`BFF/Logging/`), im Code gesetzt, sodass ein `Logging__Console__FormatterName` von
+    außen ihn nicht ersetzt. **Altbestand:** Zeilen von vor #422 können Meldungen samt
+    Eingabewerten tragen, bis sie aus dem `json-file`-Strom rotiert sind (Frist unten).
   - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
     (`mvp/frontend/gutgesagt-frontend/nginx.protokoll.conf`, für `nginx.conf` und
     `nginx.docker.conf` gemeinsam) nach stdout: Absenderadresse, Zeitpunkt,
@@ -350,10 +358,13 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     schreibt es keine Zeile: Ihre genaue Uhrzeit ließe sich, je Tag durchgezählt, mit dem
     Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Ins Fehlerprotokoll
     (stderr, im selben `json-file`-Strom) schreibt es für fehlende Dateien keine Zeile
-    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. **Nicht
-    abgedeckt:** Andere Fehlerzeilen tragen Adresse und Referrer weiter, etwa im Dev-Stack
-    `connect() failed … request: "POST /api/v1/search/searchByText …"`, wenn das BFF
-    nicht antwortet. Belegt mit
+    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. Seit #422
+    schreibt es überhaupt keine Fehlerzeile zu einer Anfrage mehr (`error_log … emerg` im
+    http-Block): nginx kennt für Fehlerzeilen kein eigenes Format, und jede trüge Adresse,
+    Anfrage samt Adresszusatz und Referrer, etwa im Dev-Stack `connect() failed …`, wenn
+    das BFF nicht antwortet. Den Ausgang einer solchen Anfrage zeigt das Zugriffsprotokoll
+    mit dem Status (413, 502 …). Meldungen außerhalb einer Anfrage (Start, Konfiguration,
+    Worker) schreibt nginx weiter. Belegt mit
     `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
     `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
     Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem
@@ -381,7 +392,16 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     Referrer, wie im Frontend-nginx.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
-    Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als
+    Produktionskonfiguration liegt nicht im Repo.
+    - **Ziel (#422): höchstens 14 Tage** für alles im `json-file`-Strom (Anwendung,
+      Frontend-nginx) und für die Protokolle des vorgelagerten Reverse Proxy. Der
+      `json-file`-Treiber rotiert nur nach Größe; im Betrieb ist dafür eine Grenze von
+      10 MB × 3 Dateien je Container vorgesehen, vorläufig, bis das Wachstum je Tag
+      gemessen ist. Die Grenze hält die Frist nur, solange drei Dateien höchstens
+      14 Tage Protokoll fassen; wächst ein Container langsamer, bleiben seine Zeilen
+      länger stehen. **Noch nicht ausgerollt** (Stand 30.10.2026); bis dahin gilt der
+      Stand darunter, und die Datenschutzerklärung nennt noch keine Frist
+      (`docs/RECHTSTEXTE_LUECKEN.md`, P7). Im Repo nicht belegbar, deshalb nur als
     Stand der Bestandsaufnahme (`docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.4):
     - **Stand 04.09.2026, vom Maintainer am Host geprüft:** Die Zugriffsprotokolle des
       vorgelagerten Reverse Proxy, die als einzige die volle Client-IP enthalten, löscht
