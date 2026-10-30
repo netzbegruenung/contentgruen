@@ -151,7 +151,7 @@
             <!-- Angaben nach Art. 16 Abs. 2 DSA (#438): Die Entscheidung teilt ein Admin per Mail mit. -->
             <div *ngIf="report.melder_name" class="melder-angabe">{{ report.melder_name }}</div>
             <div *ngIf="report.melder_email" class="melder-angabe">
-              <a [href]="'mailto:' + report.melder_email">{{ report.melder_email }}</a>
+              <a [href]="mailtoLink(report.melder_email)">{{ report.melder_email }}</a>
             </div>
             <div class="melder-angabe guter-glaube">
               {{ report.guter_glaube ? 'in gutem Glauben erklärt' : 'ohne Erklärung guten Glaubens' }}

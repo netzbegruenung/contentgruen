@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -58,7 +58,15 @@ export class ReportDialogComponent {
   submitted = false;
   /** Ob die abgeschickte Meldung eine E-Mail-Adresse trug: davon haengt die Bestaetigung ab. */
   mitEmail = false;
+  /** Erst nach dem Verlassen des Feldes zeigt der Dialog, dass die Adresse nicht stimmt. */
+  emailVerlassen = false;
   error: string | null = null;
+
+  @ViewChild('bestaetigung') set bestaetigung(element: ElementRef<HTMLElement> | undefined) {
+    // Das Formular samt fokussiertem „Melden“ verschwindet; der Fokus geht auf die
+    // Eingangsbestaetigung, damit ein Screenreader sie vorliest.
+    element?.nativeElement.focus();
+  }
 
   readonly reasons = MELDEGRUENDE;
   readonly nameMax = MELDER_NAME_MAX;
@@ -73,6 +81,10 @@ export class ReportDialogComponent {
   get emailUngueltig(): boolean {
     const email = this.melderEmail.trim();
     return email !== '' && !EMAIL_MUSTER.test(email);
+  }
+
+  get emailFehlerZeigen(): boolean {
+    return this.emailVerlassen && this.emailUngueltig;
   }
 
   get kannMelden(): boolean {
@@ -112,7 +124,8 @@ export class ReportDialogComponent {
           this.error = 'Fehler beim Senden der Meldung. Bitte versuche es erneut.';
         }
 
-        console.error('Error reporting content:', error);
+        // Nur der Status: Der Fehlertext des Suchdienstes kann die eingegebene Adresse enthalten.
+        console.error('Error reporting content:', error.status);
       }
     });
   }

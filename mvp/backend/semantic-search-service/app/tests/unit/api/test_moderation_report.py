@@ -18,6 +18,7 @@ from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
 from domain.models.meldegrund import MELDEGRUENDE
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX
 from utils import client_identity
 from utils.client_identity import normalize_session_id
 from utils.rate_limiter import RateLimiter
@@ -379,3 +380,21 @@ class TestAngabenNachArtikel16:
             client.post(REPORT_URL, json=_payload(melder_name="X" * 201)).status_code
             == 422
         )
+
+    def test_name_mit_hoechstlaenge_wird_angenommen(self, client, service):
+        name = "X" * MELDER_NAME_MAX
+
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_name=name)).status_code == 200
+        )
+        assert service.report_content.await_args.kwargs["melder_name"] == name
+
+    def test_zu_lange_email_wird_abgewiesen(self, client, service):
+        email = "a" * 64 + "@" + ".".join(["b" * 63] * 3) + ".de"
+        assert len(email) > MELDER_EMAIL_MAX
+
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_email=email)).status_code
+            == 422
+        )
+        service.report_content.assert_not_awaited()

@@ -3,7 +3,7 @@
 
   <div mat-dialog-content *ngIf="!submitted">
     <p class="description">
-      Warum meldest du diesen Inhalt? Menschen aus unserem Team prüfen die Meldung.
+      Warum meldest du diesen Beitrag? Menschen aus unserem Team prüfen die Meldung.
     </p>
 
     <mat-form-field appearance="fill" class="full-width">
@@ -41,14 +41,25 @@
              name="melder_email"
              [(ngModel)]="melderEmail"
              [maxlength]="emailMax"
-             autocomplete="email" />
-      <mat-hint *ngIf="!emailUngueltig">Nur wenn du unsere Entscheidung erfahren willst.</mat-hint>
+             autocomplete="email"
+             (blur)="emailVerlassen = true"
+             [attr.aria-invalid]="emailFehlerZeigen"
+             [attr.aria-describedby]="emailFehlerZeigen ? 'melder-email-fehler' : null" />
+      <mat-hint *ngIf="!emailFehlerZeigen">Nur wenn du unsere Entscheidung erfahren willst.</mat-hint>
     </mat-form-field>
-    <p *ngIf="emailUngueltig" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
+    <!-- Erst nach dem Verlassen des Feldes, sonst kündigt ein Screenreader den Fehler bei jedem Zeichen an. -->
+    <p *ngIf="emailFehlerZeigen" id="melder-email-fehler" class="feld-fehler" role="alert">Das ist keine E-Mail-Adresse.</p>
 
-    <mat-checkbox data-testid="melden-guter-glaube" [(ngModel)]="guterGlaube" class="guter-glaube">
+    <mat-checkbox data-testid="melden-guter-glaube"
+                  [(ngModel)]="guterGlaube"
+                  required
+                  aria-describedby="guter-glaube-hinweis"
+                  class="guter-glaube">
       Ich bin in gutem Glauben davon überzeugt, dass meine Angaben richtig und vollständig sind.
     </mat-checkbox>
+    <p id="guter-glaube-hinweis" class="hinweis" *ngIf="!guterGlaube">
+      Ohne diese Erklärung lässt sich nicht melden.
+    </p>
 
     <p class="hinweis">
       Name und E-Mail-Adresse sehen nur Admins. Mehr dazu in der
@@ -60,7 +71,7 @@
     </div>
   </div>
 
-  <div mat-dialog-content *ngIf="submitted" class="success-message" role="status">
+  <div mat-dialog-content *ngIf="submitted" class="success-message" role="status" tabindex="-1" #bestaetigung>
     <mat-icon class="success-icon">check_circle</mat-icon>
     <p>Deine Meldung ist eingegangen.</p>
     <p class="sub-message">

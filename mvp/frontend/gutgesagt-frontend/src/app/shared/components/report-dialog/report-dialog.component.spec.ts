@@ -119,12 +119,44 @@ describe('ReportDialogComponent', () => {
     anfrage.flush({ success: true, message: '' });
   });
 
-  it('meldet nicht mit einer E-Mail-Adresse, die keine ist', async () => {
+  it('meldet erst, wenn die Person ihren guten Glauben erklärt hat, und sagt warum', async () => {
+    expect(element().textContent).toContain('Ohne diese Erklärung lässt sich nicht melden.');
+
+    await gutenGlaubenErklaeren();
+
+    expect(element().textContent).not.toContain('Ohne diese Erklärung lässt sich nicht melden.');
+  });
+
+  it('meldet nicht mit einer E-Mail-Adresse, die keine ist, und sagt es nach dem Verlassen des Feldes', async () => {
     await gutenGlaubenErklaeren();
     await eingeben('input[name="melder_email"]', 'anna@');
 
     expect(meldenKnopf().disabled).toBeTrue();
+    expect(element().textContent).not.toContain('Das ist keine E-Mail-Adresse.');
+
+    const feld = element().querySelector('input[name="melder_email"]') as HTMLInputElement;
+    feld.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
     expect(element().textContent).toContain('Das ist keine E-Mail-Adresse.');
+    expect(feld.getAttribute('aria-invalid')).toBe('true');
+    expect(feld.getAttribute('aria-describedby')).toBe('melder-email-fehler');
+  });
+
+  it('bittet bei 422 darum, die Angaben zu prüfen, und schreibt keine Antwort ins Log', async () => {
+    const log = spyOn(console, 'error');
+    await eingeben('input[name="melder_email"]', 'anna@example.test');
+    await gutenGlaubenErklaeren();
+    await melden();
+
+    http.expectOne(URL).flush(
+      { detail: [{ input: 'anna@example.test' }] },
+      { status: 422, statusText: 'Unprocessable Entity' },
+    );
+    fixture.detectChanges();
+
+    expect(element().textContent).toContain('Bitte prüfe deine Angaben, etwa die E-Mail-Adresse.');
+    expect(JSON.stringify(log.calls.allArgs())).not.toContain('anna@example.test');
   });
 
   it('bestätigt den Eingang in der App und bleibt offen, bis die Person schließt', async () => {
@@ -136,6 +168,7 @@ describe('ReportDialogComponent', () => {
 
     const bestaetigung = element().querySelector('[role="status"]')!;
     expect(bestaetigung.textContent).toContain('Deine Meldung ist eingegangen.');
+    expect(document.activeElement).toBe(bestaetigung);
     expect(bestaetigung.textContent).not.toContain('per E-Mail');
     expect(TestBed.inject(MatDialogRef).close).not.toHaveBeenCalled();
   });

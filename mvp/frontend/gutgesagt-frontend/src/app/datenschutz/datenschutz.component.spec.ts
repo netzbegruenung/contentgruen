@@ -277,7 +277,7 @@ describe('DatenschutzComponent', () => {
 
   describe('Weitere Korrekturen am Ist-Stand', () => {
     it('Meldungen: Kennung und Sitzungskennung stehen bei angemeldeten Meldungen nebeneinander', () => {
-      expect(abschnitt('Meldungen von Beiträgen')).toContain('stehen also beide nebeneinander');
+      expect(abschnitt('Meldungen von Beiträgen')).toContain('stehen also Kennung und Sitzungskennung nebeneinander');
       expect(abschnitt('Verwendung von Beiträgen')).toContain(
         'es sei denn, du hast aus demselben Browser angemeldet eine Meldung abgegeben',
       );
@@ -328,6 +328,9 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Name und E-Mail-Adresse sind freiwillig');
       expect(text).toContain('um dir unsere Entscheidung über die Meldung mitzuteilen');
       expect(text).toContain('Artikel 16 Absatz 5 DSA');
+      // Der Satz zu Name und E-Mail-Adresse steht hinter dem zu den Kennungen, damit
+      // sich „beide“ nicht auf sie beziehen lässt.
+      expect(text).not.toContain('stehen also beide nebeneinander');
     });
   });
 });

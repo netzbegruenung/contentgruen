@@ -243,6 +243,13 @@ describe('ContentModerationComponent', () => {
     expect(zelle.textContent).toContain('in gutem Glauben');
   });
 
+  it('hängt über die E-Mail-Adresse keine weiteren Empfänger an den mailto-Link', () => {
+    mitMeldungen([meldung({ melder_email: 'anna?cc=b@example.org', guter_glaube: true })]);
+
+    const link = fixture.nativeElement.querySelector('.reporter-cell a') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('mailto:anna%3Fcc%3Db@example.org');
+  });
+
   it('vermerkt bei alten Meldungen, dass die Erklärung guten Glaubens fehlt', () => {
     mitMeldungen([meldung({ guter_glaube: null })]);
 

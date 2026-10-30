@@ -8,6 +8,8 @@
 -- Neue Datenbanken brauchen dieses Skript nicht: create_all legt die Tabelle mit
 -- den Spalten an. Bestehende brauchen es, weil create_all keine Spalten ergaenzt.
 --
+-- ANNAHME (#438): Der DSA gilt fuer Gut gesagt (offen in #296).
+--
 -- Vorhandene Meldungen behalten NULL: Sie wurden ohne diese Angaben abgegeben.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.

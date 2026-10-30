@@ -88,6 +88,11 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('Name und E-Mail-Adresse kannst du angeben, musst es aber nicht');
     expect(text).toContain('Den Eingang bestätigen wir dir sofort in der App');
     expect(text).toContain('teilen wir dir unsere Entscheidung über die Meldung per E-Mail mit');
+    // Art. 16 Abs. 5 DSA: mit der Entscheidung die Rechtsbehelfe.
+    expect(text).toContain('zusammen mit deinen Möglichkeiten, dagegen vorzugehen');
+    // Die Beschreibung ist freiwillig, einen Meldegrund „rechtswidrig“ gibt es nicht.
+    expect(text).toContain('Was nicht stimmt, kannst du beschreiben');
+    expect(text).not.toContain('auch als rechtswidrig');
     // Die Meldefunktion ist selbst der Weg nach Art. 16 DSA, nicht nur die Mail.
     expect(text).not.toContain('richtest du bitte per E-Mail an');
   });

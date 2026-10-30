@@ -26,12 +26,13 @@ class ContentReportRepository:
         content_id: UUID,
         content_type: str,
         reason: str,
+        *,
+        guter_glaube: bool,
         reported_by_user_id: Optional[str] = None,
         reported_by_session_id: Optional[str] = None,
         description: Optional[str] = None,
         melder_name: Optional[str] = None,
         melder_email: Optional[str] = None,
-        guter_glaube: Optional[bool] = None,
     ) -> ContentReport:
         """
         Create a new content report.

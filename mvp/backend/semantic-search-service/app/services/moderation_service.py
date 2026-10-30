@@ -113,12 +113,13 @@ class ModerationService:
         content_id: str,
         content_type: str,
         reason: Meldegrund,
+        *,
+        guter_glaube: bool,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         description: Optional[str] = None,
         melder_name: Optional[str] = None,
         melder_email: Optional[str] = None,
-        guter_glaube: Optional[bool] = None,
     ) -> bool:
         """
         Report a content item.
@@ -151,7 +152,8 @@ class ModerationService:
             return False
 
         # Art. 16 Abs. 2 lit. d DSA (#438): keine neue Meldung ohne die Erklaerung
-        # guten Glaubens, auch nicht an der API vorbei.
+        # guten Glaubens, auch nicht an der API vorbei. ANNAHME (#438): Der DSA
+        # gilt fuer Gut gesagt (offen in #296); gilt er nicht, entfaellt die Pflicht.
         if guter_glaube is not True:
             logger.warning("Invalid report submission: no Erklaerung guten Glaubens")
             return False

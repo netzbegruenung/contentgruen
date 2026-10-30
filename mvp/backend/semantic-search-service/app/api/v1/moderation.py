@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from domain.models.meldegrund import Meldegrund
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX
 from domain.models.sperrgrund import Sperrgrund
 from services.moderation_service import (
     SchonGesperrt,
@@ -25,11 +26,6 @@ from utils.client_identity import derive_client_key, normalize_session_id
 logger = get_logger(__name__)
 
 router = APIRouter()
-
-# Grenzen wie im Meldedialog (shared/components/report-dialog). 254 ist die
-# laengste zulaessige E-Mail-Adresse (RFC 5321).
-MELDER_NAME_MAX = 200
-MELDER_EMAIL_MAX = 254
 
 
 # Request/Response Models

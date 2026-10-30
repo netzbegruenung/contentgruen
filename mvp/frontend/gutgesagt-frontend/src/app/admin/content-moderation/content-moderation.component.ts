@@ -237,6 +237,15 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
+  /**
+   * mailto-Link an die meldende Person (#438). Die Adresse kommt von aussen: `?` oder `&`
+   * im lokalen Teil wuerden sonst Empfaenger oder Betreff anhaengen.
+   */
+  mailtoLink(email: string): string {
+    const at = email.lastIndexOf('@');
+    return `mailto:${encodeURIComponent(email.slice(0, at))}@${encodeURIComponent(email.slice(at + 1))}`;
+  }
+
   getReasonLabel(reason: string): string {
     return meldegrundLabel(reason);
   }

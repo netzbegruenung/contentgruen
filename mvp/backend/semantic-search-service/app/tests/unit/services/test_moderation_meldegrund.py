@@ -78,6 +78,24 @@ class TestReportContent:
 
         report_repo.create_report.assert_not_called()
 
+    async def test_report_content_angaben_der_meldenden_person_gehen_ans_repository(
+        self, service, report_repo
+    ):
+        assert await service.report_content(
+            CONTENT_ID,
+            "commentary",
+            "other",
+            session_id="sitzung-1",
+            melder_name="Anna Beispiel",
+            melder_email="anna@example.org",
+            guter_glaube=True,
+        )
+
+        kwargs = report_repo.create_report.call_args.kwargs
+        assert kwargs["melder_name"] == "Anna Beispiel"
+        assert kwargs["melder_email"] == "anna@example.org"
+        assert kwargs["guter_glaube"] is True
+
     @pytest.mark.parametrize("guter_glaube", [None, False])
     async def test_report_content_ohne_erklaerung_guten_glaubens_wird_abgewiesen(
         self, service, report_repo, guter_glaube
