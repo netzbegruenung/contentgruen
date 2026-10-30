@@ -333,4 +333,22 @@ describe('DatenschutzComponent', () => {
       expect(text).not.toContain('stehen also beide nebeneinander');
     });
   });
+
+  describe('Bilder von fremden Servern (#447)', () => {
+    it('sagt, dass der Browser ein fremdes Bild erst auf Klick lädt und ohne Klick nichts an den Server geht', () => {
+      const text = abschnitt('Bilder von fremden Servern');
+
+      expect(text).toContain('Platzhalter „Bild laden“');
+      expect(text).toContain('Erst wenn du darauf klickst, lädt dein Browser dieses eine Bild');
+      expect(text).toContain('Ohne deinen Klick erfährt der fremde Server nichts von dir');
+      expect(text).toContain('Den Klick merken wir uns nicht');
+      expect(text).toContain('ohne Konto');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
+      expect(text).not.toContain('Dein Browser lädt sie direkt von dem fremden Server');
+    });
+
+    it('nennt den Klick auch beim Abruf außerhalb der EU', () => {
+      expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('erst nach deinem Klick auf „Bild laden“');
+    });
+  });
 });
