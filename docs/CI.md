@@ -59,18 +59,33 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 ## CI report
 
 Woodpecker logs need a Woodpecker login, which agents do not have. If a pull-request run is
-red, the last step `ci-bericht` writes one comment into the pull request: the red steps with
-the last 80 lines of their output, and the steps that did not run.
+red, the last step `ci-bericht` writes one comment into the pull request: per red step the
+exit code and its error lines (the `FAILED`/`ERROR` lines of the pytest short summary, not
+the `ERROR` lines of captured logs; or else the last non-empty line, the summary of Karma,
+dotnet or Ruff), the last 80 lines of its output folded in
+`<details>` ("Log <step>"), and the steps that did not run.
 
+- **Same error, one line.** Each report ends with an invisible HTML comment
+  `<!-- ci-bericht fingerabdruck=… -->`: a hash of the red steps, their exit codes and their
+  `FAILED`/`ERROR` lines (for a step without such lines its last 20 non-empty lines, since a
+  summary like "Found 1 error." alone looks the same for different errors), without
+  timestamps, clock times, durations and memory addresses. Before posting, the step reads
+  the comments of the pull request. If the most recent comment with such a marker has the
+  same fingerprint, it posts only one line ("Unverändert rot", commit, pipeline, link to the
+  last full report) carrying the marker again. If the comments cannot be read (refused, connection
+  broken, unexpected answer), the full report is posted. The marker is not signed: whoever can comment on the pull
+  request can fake one, at worst turning a report into the one line.
+- A green run writes nothing: the step only runs on red runs, the last report stays.
 - Each step runs its commands through `scripts/ci-protokoll.sh`: output to the Woodpecker
   log and appended to `.ci/<step>.log`, exit code to `.ci/<step>.status`. A log without a
   status counts as aborted.
 - `scripts/ci_bericht.py` builds the comment (standard library only, so it also reports a
   failed installation). The output is stripped of ANSI codes and control characters, the
   token value is replaced if it shows up, the comment stays below 60 000 characters.
-- One attempt, at most 30 seconds. If Forgejo refuses, the step turns red and logs only the
-  HTTP status, never the response body (Forgejo echoes an invalid token in it). Without a
-  token value the step logs a line and ends green.
+- One attempt per request (reading the comments, posting), at most 30 seconds each. If
+  Forgejo refuses the post, the step turns red and logs only the HTTP status, never the
+  response body (Forgejo echoes an invalid token in it). Without a token value the step
+  logs a line and ends green.
 - **Known limit:** the step runs `ci.yaml` and `scripts/` from the pull-request branch with
   the token. Anyone who can push a branch, or whose fork pull request is approved, can read
   the token through a changed pipeline. It must therefore never be able to do more than the
@@ -109,3 +124,14 @@ Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` sho
 `integration` with Qdrant and PostgreSQL as described in the
 [testing guide](../mvp/backend/semantic-search-service/app/tests/TESTING_GUIDE.md)).
 `bash scripts/check.sh --integration` runs all of them.
+
+For checks in between, `bash scripts/check.sh --geaendert` runs only the steps the files changed
+since the branch left `origin/main` (`CHECK_BASE`) reach, the working tree included; for the
+frontend only the specs of the changed components and services and the specs that import them.
+`integration` runs when migrations, repositories or Python modules the integration tests import
+directly or indirectly changed, without `--integration`, and then needs Qdrant and PostgreSQL like
+`--schritt integration`. It prints the chosen steps and why (`scripts/geaendert.py`, tests in
+`scripts/tests/test_geaendert.py`). When in doubt it runs more: changes under `scripts/` or
+`.woodpecker/` and paths it does not know run everything, documentation runs only
+`retired-words`. The pipeline does not use `--geaendert`; it always runs every step, and so does
+the full check before the merge.
