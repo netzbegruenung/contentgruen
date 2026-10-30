@@ -13,8 +13,7 @@ By contributing, you agree that your contributions will be licensed under the [G
 Development happens on Forgejo:
 [git.verdigado.com/Netzbegruenung/gutgesagt](https://git.verdigado.com/Netzbegruenung/gutgesagt).
 Issues and pull requests are managed there. Access is for people working on the project
-(Netzbegrünung, verdigado); ask for it at
-[gutgesagt@netzbegruenung.de](mailto:gutgesagt@netzbegruenung.de).
+(Netzbegrünung, verdigado).
 
 [github.com/netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen) is a
 read-only mirror: you can read and clone the code there, but issues and pull requests opened
@@ -97,10 +96,6 @@ End-to-end tests (Playwright) run against the dev stack, not in CI: see
 2. Create a branch in the Forgejo repository: `feature/<your-feature>`
 3. Make your changes and run the tests (`scripts/check.sh`)
 4. Open a pull request on Forgejo with a clear description of what and why
-
-Without access to Forgejo, write to
-[gutgesagt@netzbegruenung.de](mailto:gutgesagt@netzbegruenung.de) with what you want to change;
-a patch against the GitHub mirror (`git format-patch`) is welcome.
 
 Before starting significant work, please get in touch first to avoid duplication.
 

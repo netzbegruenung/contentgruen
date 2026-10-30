@@ -13,7 +13,7 @@ export const ORGANISATION = {
   url: 'https://netzbegruenung.de/',
   /**
    * Fragen und Hinweise zu Gut gesagt, neben dem Knopf „Feedback“ (Kontaktwege, #290).
-   * ANNAHME (#430): dieselbe Adresse wie für Beta-Zugänge; eine eigene Adresse gibt es noch nicht.
+   * Dieselbe Adresse gilt für Beta-Zugänge und Sicherheitslücken (SECURITY.md, security.txt; #430).
    */
   gutgesagtMail: 'gutgesagt@netzbegruenung.de',
   /** Der Kanal zum Mitmachen. Kein Kontaktweg für Nutzende: Fragen und Fehler gehen über Feedback oder Mail (#290). */
