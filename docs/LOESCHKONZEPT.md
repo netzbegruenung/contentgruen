@@ -271,9 +271,10 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   `SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP=true` (Standard); abgeschaltet gilt auch diese
   Frist nicht. Physisch verschwinden die gelöschten Zeilen erst, wenn PostgreSQL den
   Platz wiederverwendet (Autovacuum); in Backups stehen sie bis zu 28 Tage weiter.
-- **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen
-  und die Zahl der Personen (verschiedene Tagespseudonyme), kein Pseudonym: nichts, was
-  sich einer Person zuordnen ließe. Keine Frist.
+- **`suchen_je_tag`** (Tageszähler der Suchen) trägt je UTC-Tag nur die Zahl der Suchen,
+  die Zahl der Suchen ohne Treffer (seit #467, für die Bilanz) und die Zahl der Personen
+  (verschiedene Tagespseudonyme), kein Pseudonym: nichts, was sich einer Person zuordnen
+  ließe. Keine Frist.
 - **`suchen_ohne_treffer`** trägt nur Aussage-ID, Montag der Woche, Anzahl der Suchen
   und Anzahl der Personen, weder Kennung noch Pseudonym: nichts, was sich einer Person
   zuordnen ließe. Welche Tagespseudonyme (dieselben wie in `search_events`) eine Aussage

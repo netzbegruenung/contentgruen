@@ -4,7 +4,7 @@ Handles all database operations for usage statistics.
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 import uuid
 import asyncio
@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import AppDatabase, get_app_database
+from utils.utc_tag import utc_zeitraum
 from infrastructure.database.models import (
     NutzungJeFassung,
     UsageTracking,
@@ -185,6 +186,26 @@ class UsageTrackingRepository:
             for content_id, anzahl in zeilen:
                 result[str(content_id)] = anzahl
         return result
+
+    def get_nutzungen_je_tag(self, erster: date, letzter: date) -> Dict[date, int]:
+        """
+        Nutzungen je UTC-Tag, beide Grenzen eingeschlossen, fuer K2 der Bilanz (#467).
+
+        Aus usage_events, nicht aus usage_tracking: Die Gesamtzaehler sagen nicht,
+        in welcher Woche genutzt wurde. Vor der Frist der usage_events (90 Tage)
+        fehlen die Tage; das weiss services/bilanz_service.py. Tage ohne Nutzung
+        fehlen ebenfalls. Wirft bei Datenbankfehlern, damit kein Fehler als 0 gilt.
+        """
+        tag = func.date(func.timezone("UTC", UsageEvent.timestamp))
+        von, bis = utc_zeitraum(erster, letzter)
+        with self.db.get_session() as session:
+            zeilen = (
+                session.query(tag, func.count(UsageEvent.id))
+                .filter(UsageEvent.timestamp >= von, UsageEvent.timestamp < bis)
+                .group_by(tag)
+                .all()
+            )
+        return {t: anzahl for t, anzahl in zeilen}
 
     def get_nutzung_je_fassung_batch(
         self, content_ids: List[uuid.UUID]

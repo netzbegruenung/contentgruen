@@ -57,7 +57,7 @@ from core.logging import get_logger
 from domain.models.content_status import ContentStatus
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
 from services.content.statement_service import StatementService
-from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
+from utils.utc_tag import heute_utc, sekunden_bis_mitternacht, wochenbeginn
 
 logger = get_logger(__name__)
 
@@ -85,11 +85,6 @@ class SucheOhneTreffer:
     text: str
     anzahl: int
     personen: int
-
-
-def wochenbeginn(tag: date) -> date:
-    """Der Montag der Woche, in die der Tag faellt."""
-    return tag - timedelta(days=tag.weekday())
 
 
 def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:

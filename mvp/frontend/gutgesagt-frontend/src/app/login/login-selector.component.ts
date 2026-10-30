@@ -5,6 +5,7 @@ import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { rueckkehrzielLesen, rueckkehrzielMerken } from './rueckkehrziel';
+import { ORGANISATION } from '../shared/organisation';
 
 interface AuthModes {
   keycloakEnabled: boolean;
@@ -26,6 +27,7 @@ export class LoginSelectorComponent implements OnInit {
   isLoading = true;
   returnUrl: string = '/';
   isRegistrationInfoExpanded = false;
+  readonly gutgesagtMail = ORGANISATION.gutgesagtMail;
 
   constructor(
     private authService: AuthService,
@@ -88,7 +90,7 @@ export class LoginSelectorComponent implements OnInit {
   }
 
   getMailtoLink(): string {
-    const email = 'gutgesagt@netzbegruenung.de';
+    const email = this.gutgesagtMail;
     const subject = 'Beta-Account Anfrage';
     return `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   }
