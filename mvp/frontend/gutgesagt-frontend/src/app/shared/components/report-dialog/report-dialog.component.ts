@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { ModerationService } from '../../../services/moderation.service';
 import { MELDEGRUENDE, MeldegrundWert, brauchtBegruendung } from '../../meldegruende';
+import { istEmailAdresse } from '../../email-adresse';
 
 export interface ReportDialogData {
   contentId: string;
@@ -21,8 +22,6 @@ export interface ReportDialogData {
 export const MELDER_NAME_MAX = 200;
 export const MELDER_EMAIL_MAX = 254;
 
-// Grob wie eine Adresse aussehen; die genaue Pruefung macht der Suchdienst.
-const EMAIL_MUSTER = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Der Meldedialog. Der DSA gilt fuer Gut gesagt (#438).
@@ -80,7 +79,7 @@ export class ReportDialogComponent {
 
   get emailUngueltig(): boolean {
     const email = this.melderEmail.trim();
-    return email !== '' && !EMAIL_MUSTER.test(email);
+    return email !== '' && !istEmailAdresse(email);
   }
 
   get emailFehlerZeigen(): boolean {

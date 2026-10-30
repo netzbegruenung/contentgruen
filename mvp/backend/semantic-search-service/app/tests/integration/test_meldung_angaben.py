@@ -14,6 +14,7 @@ import pytest
 
 from sqlalchemy.orm import sessionmaker
 
+from domain.models.meldung import MelderAngaben
 from infrastructure.database.connection import AppDatabase
 from infrastructure.database.models import Base, ContentReport
 from repositories.content_report_repository import ContentReportRepository
@@ -51,9 +52,11 @@ async def test_report_content_name_und_email_stehen_in_der_admin_liste(service):
         "other",
         session_id="sitzung",
         description="Der Beitrag nennt meine Adresse",
-        melder_name="Anna Beispiel",
-        melder_email="anna@example.org",
-        guter_glaube=True,
+        melder=MelderAngaben(
+            guter_glaube=True,
+            name="Anna Beispiel",
+            email="anna@example.org",
+        ),
     )
 
     [meldung] = await service.get_pending_reports()
@@ -65,7 +68,11 @@ async def test_report_content_name_und_email_stehen_in_der_admin_liste(service):
 
 async def test_report_content_ohne_name_und_email(service):
     assert await service.report_content(
-        str(uuid.uuid4()), "commentary", "spam", user_id="person-1", guter_glaube=True
+        str(uuid.uuid4()),
+        "commentary",
+        "spam",
+        user_id="person-1",
+        melder=MelderAngaben(guter_glaube=True),
     )
 
     [meldung] = await service.get_pending_reports()

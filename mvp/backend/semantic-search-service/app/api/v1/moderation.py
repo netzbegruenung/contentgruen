@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
-from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
 from domain.models.sperrgrund import Sperrgrund
 from services.moderation_service import (
     SchonGesperrt,
@@ -240,9 +240,11 @@ async def report_content(
             user_id=x_user_id if is_authenticated else None,
             session_id=reporter_session,
             description=request.description,
-            melder_name=request.melder_name,
-            melder_email=request.melder_email,
-            guter_glaube=request.guter_glaube,
+            melder=MelderAngaben(
+                guter_glaube=request.guter_glaube,
+                name=request.melder_name,
+                email=request.melder_email,
+            ),
         )
 
         if success:

@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from domain.models.meldegrund import MELDEGRUENDE
+from domain.models.meldung import MelderAngaben
 from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
 from services.moderation_service import ModerationService
@@ -23,6 +24,10 @@ FRONTEND_MELDEGRUENDE = (
     Path(__file__).resolve().parents[6]
     / "frontend/gutgesagt-frontend/src/app/shared/meldegruende.ts"
 )
+
+
+ERKLAERT = MelderAngaben(guter_glaube=True)
+ANNA = MelderAngaben(guter_glaube=True, name="Anna Beispiel", email="anna@example.org")
 
 
 @pytest.fixture
@@ -72,7 +77,7 @@ class TestReportContent:
             grund,
             user_id="person-1",
             description="Verstoesst gegen § 130 StGB",
-            guter_glaube=True,
+            melder=ERKLAERT,
         )
 
         assert report_repo.create_report.call_args.kwargs["reason"] == grund
@@ -88,7 +93,7 @@ class TestReportContent:
             "illegal_content",
             user_id="person-1",
             description=beschreibung,
-            guter_glaube=True,
+            melder=ERKLAERT,
         )
 
         report_repo.create_report.assert_not_called()
@@ -97,7 +102,7 @@ class TestReportContent:
         self, service, report_repo
     ):
         assert not await service.report_content(
-            CONTENT_ID, "commentary", "fake_news", user_id="person-1", guter_glaube=True
+            CONTENT_ID, "commentary", "fake_news", user_id="person-1", melder=ERKLAERT
         )
 
         report_repo.create_report.assert_not_called()
@@ -110,15 +115,10 @@ class TestReportContent:
             "commentary",
             "other",
             session_id="sitzung-1",
-            melder_name="Anna Beispiel",
-            melder_email="anna@example.org",
-            guter_glaube=True,
+            melder=ANNA,
         )
 
-        kwargs = report_repo.create_report.call_args.kwargs
-        assert kwargs["melder_name"] == "Anna Beispiel"
-        assert kwargs["melder_email"] == "anna@example.org"
-        assert kwargs["guter_glaube"] is True
+        assert report_repo.create_report.call_args.kwargs["melder"] == ANNA
 
     @pytest.mark.parametrize("guter_glaube", [None, False])
     async def test_report_content_ohne_erklaerung_guten_glaubens_wird_abgewiesen(
@@ -130,7 +130,7 @@ class TestReportContent:
             "commentary",
             "spam",
             user_id="person-1",
-            guter_glaube=guter_glaube,
+            melder=MelderAngaben(guter_glaube=guter_glaube),
         )
 
         report_repo.create_report.assert_not_called()

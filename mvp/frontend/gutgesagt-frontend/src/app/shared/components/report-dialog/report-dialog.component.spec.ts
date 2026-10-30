@@ -152,6 +152,13 @@ describe('ReportDialogComponent', () => {
     expect(element().textContent).not.toContain('Ohne diese Erklärung lässt sich nicht melden.');
   });
 
+  it('prüft die E-Mail-Adresse wie der Suchdienst, etwa ohne .local', async () => {
+    await gutenGlaubenErklaeren();
+    await eingeben('input[name="melder_email"]', 'anna@rechner.local');
+
+    expect(meldenKnopf().disabled).toBeTrue();
+  });
+
   it('meldet nicht mit einer E-Mail-Adresse, die keine ist, und sagt es nach dem Verlassen des Feldes', async () => {
     await gutenGlaubenErklaeren();
     await eingeben('input[name="melder_email"]', 'anna@');
@@ -170,18 +177,18 @@ describe('ReportDialogComponent', () => {
 
   it('bittet bei 422 darum, die Angaben zu prüfen, und schreibt keine Antwort ins Log', async () => {
     const log = spyOn(console, 'error');
-    await eingeben('input[name="melder_email"]', 'anna@example.test');
+    await eingeben('input[name="melder_email"]', 'anna@beispiel.org');
     await gutenGlaubenErklaeren();
     await melden();
 
     http.expectOne(URL).flush(
-      { detail: [{ input: 'anna@example.test' }] },
+      { detail: [{ input: 'anna@beispiel.org' }] },
       { status: 422, statusText: 'Unprocessable Entity' },
     );
     fixture.detectChanges();
 
     expect(element().textContent).toContain('Bitte prüfe deine Angaben, etwa die E-Mail-Adresse.');
-    expect(JSON.stringify(log.calls.allArgs())).not.toContain('anna@example.test');
+    expect(JSON.stringify(log.calls.allArgs())).not.toContain('anna@beispiel.org');
   });
 
   it('bestätigt den Eingang in der App und bleibt offen, bis die Person schließt', async () => {

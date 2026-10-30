@@ -25,6 +25,7 @@ from repositories.sperre_repository import SperreRepository, get_sperre_reposito
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
+from domain.models.meldung import MelderAngaben
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
@@ -114,12 +115,10 @@ class ModerationService:
         content_type: str,
         reason: Meldegrund,
         *,
-        guter_glaube: bool,
+        melder: MelderAngaben,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         description: Optional[str] = None,
-        melder_name: Optional[str] = None,
-        melder_email: Optional[str] = None,
     ) -> bool:
         """
         Report a content item.
@@ -131,9 +130,7 @@ class ModerationService:
             user_id: Optional user ID of reporter
             session_id: Optional session ID of reporter
             description: Optional detailed description
-            melder_name: Optional name of the reporter (Art. 16 Abs. 2 lit. c DSA)
-            melder_email: Optional e-mail address of the reporter (same)
-            guter_glaube: Erklaerung guten Glaubens (Art. 16 Abs. 2 lit. d DSA)
+            melder: Angaben der meldenden Person nach Art. 16 Abs. 2 DSA
 
         Returns:
             bool: True if report was created successfully
@@ -153,7 +150,7 @@ class ModerationService:
 
         # Art. 16 Abs. 2 lit. d DSA (#438): keine neue Meldung ohne die Erklaerung
         # guten Glaubens, auch nicht an der API vorbei; fuer jeden Meldegrund.
-        if guter_glaube is not True:
+        if melder.guter_glaube is not True:
             logger.warning("Invalid report submission: no Erklaerung guten Glaubens")
             return False
 
@@ -181,9 +178,7 @@ class ModerationService:
                 reported_by_user_id=user_id,
                 reported_by_session_id=session_id,
                 description=description,
-                melder_name=melder_name,
-                melder_email=melder_email,
-                guter_glaube=guter_glaube,
+                melder=melder,
             )
             logger.info(f"Content {content_id} reported: {reason}")
             return report is not None
