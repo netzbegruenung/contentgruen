@@ -28,6 +28,7 @@
       <mat-form-field appearance="outline" class="tag">
         <mat-label>Gültig bis einschließlich</mat-label>
         <input matInput type="date" name="gueltigBis" [(ngModel)]="gueltigBis" required />
+        <mat-hint>Der Tag zählt nach UTC: Der Link gilt bis 1 Uhr (Sommerzeit 2 Uhr) am Tag danach.</mat-hint>
       </mat-form-field>
       <button mat-raised-button color="primary" type="submit" [disabled]="!notiz.trim() || speichert">
         Einladung anlegen
@@ -59,7 +60,7 @@
             <td class="text">{{ e.notiz }}</td>
             <td class="eng">{{ e.einloesungen }} von {{ e.erlaubte_einloesungen }}</td>
             <td class="eng">{{ tag(e.gueltig_bis) }}</td>
-            <td class="eng">{{ e.zustand }}</td>
+            <td class="eng">{{ e.zustand | titlecase }}</td>
             <td class="link">
               <code>{{ link(e) }}</code>
               <button mat-icon-button type="button" (click)="kopieren(e)"

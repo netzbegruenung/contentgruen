@@ -1,7 +1,9 @@
 # Keycloak-Realm „Gut gesagt“
 
-Seit #429 meldet sich jede Person über einen eigenen Realm von Gut gesagt an. Darin gibt es
-zwei Wege zu einem Konto:
+Mit #429 bekommt Gut gesagt einen eigenen Realm. Sobald die App darauf umgestellt ist
+(Reihenfolge unten), meldet sich jede Person darüber an; bis dahin läuft die Anmeldung wie
+bisher direkt gegen den Realm der Netzbegrünung. Im eigenen Realm gibt es zwei Wege zu einem
+Konto:
 
 - **Netzbegrünung-Login:** Die Netzbegrünung ist Identity Provider im Realm („Mit
   Netzbegrünung anmelden“ auf der Anmeldeseite von Keycloak). Beim ersten Anmelden legt
@@ -25,7 +27,6 @@ Durchprobieren von Passwörtern liegen bei Keycloak.
 | Client `gutgesagt` | Anmeldung der App (BFF, Authorization Code mit PKCE) |
 | Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an; engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
-| Gültigkeit des Mail-Links, von Admins ausgelöst: 3 Tage | wie `MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py` |
 
 Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
 Standardliste von Keycloak, und was fehlt, gäbe es danach im Realm nicht. Nach dem Import
@@ -45,15 +46,39 @@ Platzhalter, vor dem Import ersetzen:
   `<keycloak>/realms/gutgesagt/broker/netzbegruenung/endpoint` ist. Das Secret danach in der
   Oberfläche beim Identity Provider eintragen.
 - Die Adressen von App und BFF in den Redirect-URIs von `gutgesagt`, falls nicht die
-  Produktion gemeint ist.
+  Produktion gemeint ist. Die Vorlage erlaubt genau zwei: `/signin-oidc` der BFF und die
+  App-Adresse, auf die der Link in der Mail zurückführt (`SEMANTIC_SEARCH_APP_URL`, mit `/`
+  am Ende).
 
 Keycloak erzeugt die Client-Secrets beim Import; sie stehen danach unter *Clients →
 Credentials*.
 
-Der Text der Nutzungsbedingungen (`localizationTexts.de.termsText`) verweist nur auf die
-Seite `/nutzungsbedingungen`. Den endgültigen Text samt der Einwilligung nach Art. 9 DSGVO
-klärt #415. Keycloak speichert bei der Zustimmung nur einen Zeitstempel, keine Fassung;
-die Fassungen deshalb archivieren.
+Der Text der Nutzungsbedingungen (`localizationTexts.de.termsText`) ist ein Platzhalter, der
+nur auf die Seite `/nutzungsbedingungen` verweist; den endgültigen Text liefert #415, über ein
+Rechtstext-Ticket. Die ausdrückliche Einwilligung nach Art. 9 DSGVO als eigenes Häkchen
+(Entscheidung in #429) ist in der Vorlage noch nicht enthalten. Keycloak speichert bei der
+Zustimmung nur einen Zeitstempel, keine Fassung; die Fassungen deshalb archivieren.
+
+Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semantic-Service bei
+jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);
+die Einlöseseite nennt dieselbe Frist.
+
+## Reihenfolge beim Umstellen
+
+Die Kennung ist der `sub` des Kontos im Realm von Gut gesagt. Für jedes Mitglied der
+Netzbegrünung ist das eine **neue** Kennung: Beiträge, Stimmen, Nutzung, Admin-Kennungen
+(`ADMIN_USER_IDS`, `SEMANTIC_SEARCH_ADMIN_USERS`) und die Löschliste hängen an der alten.
+Deshalb in dieser Reihenfolge, nicht anders:
+
+1. Die Datenschutzerklärung beschreibt Selbstregistrierung über eine Einladung und die
+   Anmeldung über den eigenen Realm (eigenes Rechtstext-Ticket). Heute sagt sie, eine
+   Selbstregistrierung gebe es nicht.
+2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (Skript mit
+   Trockenlauf, Teil von #429, noch offen).
+3. Erst dann, gemeinsam: BFF auf den neuen Realm (`Keycloak__*`) und Einlösen im
+   Semantic-Service einschalten (`SEMANTIC_SEARCH_KEYCLOAK_*`). Wer nur Einlösen einschaltet,
+   verteilt Links für Konten, mit denen sich niemand in der App anmelden kann; das Dashboard
+   warnt dann nicht mehr.
 
 ## Konfiguration der App
 
@@ -66,7 +91,8 @@ BFF (`Keycloak`-Abschnitt, in Umgebungsvariablen mit `__`):
 | `Keycloak__ClientSecret` | Secret des Clients `gutgesagt` |
 
 Semantic-Service (Einladungen einlösen; ohne die ersten drei lassen sich Einladungen nur
-verwalten, das Admin-Dashboard sagt dann, dass Links ins Leere führen):
+verwalten, das Admin-Dashboard sagt dann, dass Links ins Leere führen). Erst zusammen mit
+der BFF setzen, siehe „Reihenfolge beim Umstellen“:
 
 | Variable | Wert |
 |---|---|
@@ -90,7 +116,8 @@ Der Semantic-Service muss `<keycloak>` erreichen können.
   welche Einladung es entstand, und an der Einladung keine Mail-Adresse (Art. 9 DSGVO: Eine
   Einladung für eine bestimmte Gruppe verriete sonst die Zugehörigkeit). Ganz ausschließen
   lässt sich der Bezug nicht: Wer Keycloak-Admin ist, sieht, wann ein Konto entstand, und
-  kann das bei einem persönlichen Link mit dem Zähler vergleichen.
+  kann das bei einem persönlichen Link mit dem Zähler vergleichen; ebenso, wer den Zeitpunkt
+  der Anfrage an `/api/v1/einladungen/einloesen` im Access-Log sieht.
 - Gibt es zur Adresse schon ein Konto, antwortet die Seite wie bei einem neuen und zählt
   genauso mit; Keycloak schickt dann keine Mail, die Person meldet sich an oder nutzt
   „Passwort vergessen“. So erfährt niemand, ob eine Adresse ein Konto hat, auch nicht über

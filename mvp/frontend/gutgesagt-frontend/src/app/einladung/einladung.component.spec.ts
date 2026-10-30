@@ -95,4 +95,32 @@ describe('EinladungComponent', () => {
     expect(el().textContent).toContain('hat nicht geklappt');
     expect(el().querySelector('input[type="email"]')).not.toBeNull();
   });
+
+  for (const [status, text] of [
+    [422, 'nicht wie eine Mail-Adresse'],
+    [429, 'Viertelstunde'],
+    [503, 'noch nicht anlegen'],
+  ] as const) {
+    it(`sagt bei ${status}, woran es liegt`, () => {
+      starten('Code123');
+      pruefen(true);
+
+      absenden('neu@example.org').flush('nein', { status, statusText: 'Fehler' });
+      fixture.detectChanges();
+
+      expect(el().textContent).toContain(text);
+      expect(el().textContent).not.toContain('hat nicht geklappt');
+    });
+  }
+
+  it('sagt den Stand in einer Live-Region an, die immer da ist', () => {
+    starten('Code123');
+    const region = el().querySelector('[role="status"]');
+    expect(region?.textContent).toContain('wird geprüft');
+
+    pruefen(false);
+
+    expect(el().querySelector('[role="status"]')).toBe(region);
+    expect(region?.textContent).toContain('gilt nicht');
+  });
 });

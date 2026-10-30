@@ -4,12 +4,14 @@ erlaubter Einloesungen, letzter gueltiger Tag), und wer den Link hat, legt damit
 Konto im Realm von Gut gesagt an. Gruppenlink und persoenlicher Link sind derselbe
 Mechanismus, nur mit anderen Zahlen.
 
-Ablauf beim Einloesen: einen Platz der Einladung belegen (atomar in der Datenbank),
-dann das Konto ueber die Keycloak-Admin-Schnittstelle anlegen; Keycloak schickt die
-Mail "Passwort festlegen". Scheitert Keycloak, wird der Platz wieder frei. Gibt es zur
-Adresse schon ein Konto, bleibt er belegt: Der Zaehler zaehlt Einloesungen, nicht
-angelegte Konten. Wuerde der Platz frei, verriete /pruefen danach, dass die Adresse ein
-Konto hat (etwa bei einem persoenlichen Link mit einer fremden Adresse).
+Ablauf beim Einloesen: die Einloesung zaehlen (atomar in der Datenbank, nur solange
+die Einladung aktiv ist), dann das Konto ueber die Keycloak-Admin-Schnittstelle
+anlegen; Keycloak schickt die Mail "Passwort festlegen". Scheitert Keycloak, wird die
+Einloesung zurueckgenommen. Gibt es zur Adresse schon ein Konto, bleibt sie gezaehlt:
+Der Zaehler zaehlt Einloesungen, nicht angelegte Konten. Wuerde sie zurueckgenommen,
+verriete /pruefen danach, dass die Adresse ein Konto hat (etwa bei einem persoenlichen
+Link mit einer fremden Adresse). Auch eine Adresse mit Tippfehler zaehlt; das Konto
+entsteht dann fuer sie, und die Mail geht dorthin.
 
 Datenschutz: Am Konto steht nicht, ueber welche Einladung es entstand, und an der
 Einladung keine Mail-Adresse, nur der Zaehler. Sonst liesse sich aus einer Einladung
@@ -23,9 +25,10 @@ import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Optional, Protocol
+from typing import List, Optional
 
 from core.logging import get_logger
+from domain.interfaces.konten_im_realm import IKontenImRealm, KontoErgebnis
 from repositories.einladung_repository import EinladungRepository
 from utils.utc_tag import heute_utc
 
@@ -51,21 +54,11 @@ class KontoAnlegenFehlgeschlagen(Exception):
     """Keycloak hat das Konto nicht angelegt oder die Mail nicht verschickt."""
 
 
-class KontoAnlegen(enum.Enum):
-    ANGELEGT = "angelegt"
-    # Zu der Mail-Adresse gibt es schon ein Konto; es wird nichts geaendert.
-    VORHANDEN = "vorhanden"
-
-
 class EinladungZustand(str, enum.Enum):
     AKTIV = "aktiv"
     ABGESCHALTET = "abgeschaltet"
     ABGELAUFEN = "abgelaufen"
     AUFGEBRAUCHT = "aufgebraucht"
-
-
-class KontenImRealm(Protocol):
-    def konto_anlegen(self, email: str) -> KontoAnlegen: ...
 
 
 @dataclass(frozen=True)
@@ -82,14 +75,14 @@ class Einladung:
     @classmethod
     def aus_zeile(cls, z) -> "Einladung":
         return cls(
-            z.id,
-            z.code,
-            z.notiz,
-            z.erlaubte_einloesungen,
-            z.einloesungen,
-            z.gueltig_bis,
-            z.abgeschaltet,
-            z.angelegt_am,
+            id=z.id,
+            code=z.code,
+            notiz=z.notiz,
+            erlaubte_einloesungen=z.erlaubte_einloesungen,
+            einloesungen=z.einloesungen,
+            gueltig_bis=z.gueltig_bis,
+            abgeschaltet=z.abgeschaltet,
+            angelegt_am=z.angelegt_am,
         )
 
     def zustand(self, heute: Optional[date] = None) -> EinladungZustand:
@@ -105,7 +98,7 @@ class Einladung:
 
 class EinladungService:
     def __init__(
-        self, repository: EinladungRepository, konten: Optional[KontenImRealm]
+        self, repository: EinladungRepository, konten: Optional[IKontenImRealm]
     ):
         self._repository = repository
         self._konten = konten
@@ -155,16 +148,16 @@ class EinladungService:
         """
         if self._konten is None:
             raise EinloesenNichtEingerichtet()
-        if not self._repository.platz_belegen(code, heute or heute_utc()):
+        if not self._repository.einloesung_zaehlen(code, heute or heute_utc()):
             raise EinladungUngueltig()
         try:
             ergebnis = self._konten.konto_anlegen(email)
         except Exception as e:
-            self._repository.platz_freigeben(code)
+            self._repository.einloesung_zuruecknehmen(code)
             # Ohne Adresse und Code, nur die Art des Fehlers.
             logger.error(f"Creating account via invitation failed: {type(e).__name__}")
             raise KontoAnlegenFehlgeschlagen() from e
-        if ergebnis is KontoAnlegen.VORHANDEN:
+        if ergebnis is KontoErgebnis.VORHANDEN:
             logger.info("Invitation redeemed for an existing account")
         else:
             logger.info("Account created via invitation")

@@ -75,11 +75,11 @@ class EinladungRepository:
             session.expunge(zeile)
             return zeile
 
-    def platz_belegen(self, code: str, heute: date) -> bool:
+    def einloesung_zaehlen(self, code: str, heute: date) -> bool:
         """
         Zaehlt eine Einloesung, wenn die Einladung noch aktiv ist. In einer einzigen
-        UPDATE-Anweisung, damit zwei gleichzeitige Anfragen den letzten Platz nicht
-        beide bekommen.
+        UPDATE-Anweisung, damit zwei gleichzeitige Anfragen die letzte erlaubte
+        Einloesung nicht beide bekommen.
         """
         with self.db.get_session() as session:
             ergebnis = session.execute(
@@ -94,8 +94,8 @@ class EinladungRepository:
             )
             return ergebnis.rowcount == 1
 
-    def platz_freigeben(self, code: str) -> None:
-        """Nimmt einen belegten Platz zurueck, wenn Keycloak scheiterte."""
+    def einloesung_zuruecknehmen(self, code: str) -> None:
+        """Nimmt eine gezaehlte Einloesung zurueck, wenn Keycloak scheiterte."""
         with self.db.get_session() as session:
             session.execute(
                 update(EinladungZeile)

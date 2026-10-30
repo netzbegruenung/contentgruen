@@ -81,9 +81,15 @@ start. If the container has a memory limit, raise it accordingly.
 
 ### 🔑 Login (Keycloak)
 
-Since #429 the app signs in against its own realm „Gut gesagt“; the BFF takes the realm from
-`Keycloak__Authority`. The semantic service creates accounts from Einladungen through the
-Keycloak admin API. Realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
+#429 prepares an own realm „Gut gesagt“; the BFF takes the realm from `Keycloak__Authority`,
+and the semantic service creates accounts from Einladungen through the Keycloak admin API.
+Until the switch, sign-in stays on the Netzbegrünung realm.
+
+**Do not switch `Keycloak__Authority` to the new realm before the Kennungen are migrated:**
+every member gets a new `sub` there, and their contributions, votes, admin rights and the
+deletion list still hold the old one. Switch the BFF and enable redemption
+(`SEMANTIC_SEARCH_KEYCLOAK_*`) together, after the privacy policy covers self-registration.
+Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
 
 ### 🚧 Updating Production
 

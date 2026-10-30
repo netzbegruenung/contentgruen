@@ -10,6 +10,25 @@ import { MatInputModule } from '@angular/material/input';
 import { EinladungService } from '../shared/einladung/einladung.service';
 
 type Stand = 'pruefe' | 'ungueltig' | 'formular' | 'sendet' | 'gesendet' | 'fehler';
+/** Warum Einloesen scheiterte, nach dem Status der Antwort (api/v1/einladungen.py). */
+type Fehler = 'adresse' | 'zu_oft' | 'nicht_eingerichtet' | 'unbekannt';
+
+const FEHLER_NACH_STATUS: Record<number, Fehler> = {
+  422: 'adresse',
+  429: 'zu_oft',
+  503: 'nicht_eingerichtet',
+};
+
+/** Was der Screenreader beim Wechsel des Stands ansagt; die sichtbaren Texte stehen im Template. */
+const ANSAGE: Record<Stand, string> = {
+  pruefe: 'Einladung wird geprüft …',
+  ungueltig: 'Diese Einladung gilt nicht (mehr).',
+  formular: '',
+  sendet: 'Konto wird angelegt …',
+  gesendet: 'Schau in dein Postfach.',
+  // Die Fehlertexte stehen mit role="alert" im Template.
+  fehler: '',
+};
 
 /**
  * Eine Einladung einloesen (#429): Mail-Adresse eingeben, Gut gesagt legt das Konto
@@ -25,6 +44,7 @@ type Stand = 'pruefe' | 'ungueltig' | 'formular' | 'sendet' | 'gesendet' | 'fehl
 })
 export class EinladungComponent implements OnInit {
   stand: Stand = 'pruefe';
+  fehler: Fehler = 'unbekannt';
   email = '';
   private code = '';
 
@@ -54,7 +74,18 @@ export class EinladungComponent implements OnInit {
     this.stand = 'sendet';
     this.einladungService.einloesen(this.code, email).subscribe({
       next: () => (this.stand = 'gesendet'),
-      error: (e: HttpErrorResponse) => (this.stand = e.status === 410 ? 'ungueltig' : 'fehler'),
+      error: (e: HttpErrorResponse) => {
+        if (e.status === 410) {
+          this.stand = 'ungueltig';
+          return;
+        }
+        this.fehler = FEHLER_NACH_STATUS[e.status] ?? 'unbekannt';
+        this.stand = 'fehler';
+      },
     });
+  }
+
+  get ansage(): string {
+    return ANSAGE[this.stand];
   }
 }

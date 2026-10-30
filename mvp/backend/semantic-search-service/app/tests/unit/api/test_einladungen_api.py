@@ -242,8 +242,13 @@ class TestEinloesen:
 
         assert response.status_code == 503
 
+    def test_gruppenlink_hinter_einer_adresse_bekommt_mehr_als_fuenf(self):
+        # Gruppenlink in einem Raum hinter NAT (#429, Review 472 Befund 6).
+        assert einladung_rate_limiter.max_requests >= 20
+
     def test_rate_limit(self, client, service):
-        for _ in range(5):
+        erlaubt = einladung_rate_limiter.max_requests
+        for _ in range(erlaubt):
             client.post(
                 f"{BASIS}/einloesen",
                 json={"code": EINLADUNG.code, "email": "neu@example.org"},
@@ -255,4 +260,4 @@ class TestEinloesen:
         )
 
         assert response.status_code == 429
-        assert service.einloesen.call_count == 5
+        assert service.einloesen.call_count == erlaubt

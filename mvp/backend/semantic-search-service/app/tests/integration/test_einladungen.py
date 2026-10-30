@@ -19,11 +19,11 @@ from sqlalchemy import inspect, text
 
 from infrastructure.database.models import Base, EinladungZeile
 from repositories.einladung_repository import EinladungRepository
+from domain.interfaces.konten_im_realm import KontoErgebnis
 from services.einladung_service import (
     EinladungService,
     EinladungUngueltig,
     EinladungZustand,
-    KontoAnlegen,
     KontoAnlegenFehlgeschlagen,
 )
 from tests.integration import postgres
@@ -38,7 +38,7 @@ pytestmark = pytest.mark.integration
 
 
 class KontenAttrappe:
-    def __init__(self, ergebnis=KontoAnlegen.ANGELEGT, fehler=False):
+    def __init__(self, ergebnis=KontoErgebnis.ANGELEGT, fehler=False):
         self.ergebnis = ergebnis
         self.fehler = fehler
         self.adressen = []
@@ -85,16 +85,16 @@ def test_einladung_laesst_genau_so_viele_konten_anlegen_wie_erlaubt(neue_datenba
     assert einladung.zustand(HEUTE) is EinladungZustand.AUFGEBRAUCHT
 
 
-def test_gleichzeitige_anfragen_bekommen_den_letzten_platz_nur_einmal(
+def test_gleichzeitige_anfragen_bekommen_die_letzte_einloesung_nur_einmal(
     neue_datenbank,
 ):
     repository = _repository(neue_datenbank)
     service = EinladungService(repository, KontenAttrappe())
-    code = service.anlegen("Ein Platz", 1, LETZTER_TAG, heute=HEUTE).code
+    code = service.anlegen("Eine Einloesung", 1, LETZTER_TAG, heute=HEUTE).code
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         belegt = list(
-            pool.map(lambda _: repository.platz_belegen(code, HEUTE), range(8))
+            pool.map(lambda _: repository.einloesung_zaehlen(code, HEUTE), range(8))
         )
 
     assert belegt.count(True) == 1
@@ -119,9 +119,9 @@ def test_abgeschaltet_und_abgelaufen_legen_kein_konto_an(neue_datenbank):
     assert konten.adressen == ["a@example.org"]
 
 
-def test_vorhandenes_konto_belegt_einen_platz_wie_ein_neues(neue_datenbank):
-    service = _service(neue_datenbank, KontenAttrappe(KontoAnlegen.VORHANDEN))
-    code = service.anlegen("Ein Platz", 1, LETZTER_TAG, heute=HEUTE).code
+def test_vorhandenes_konto_zaehlt_wie_ein_neues(neue_datenbank):
+    service = _service(neue_datenbank, KontenAttrappe(KontoErgebnis.VORHANDEN))
+    code = service.anlegen("Eine Einloesung", 1, LETZTER_TAG, heute=HEUTE).code
 
     service.einloesen(code, "alt@example.org", heute=HEUTE)
 
@@ -129,9 +129,9 @@ def test_vorhandenes_konto_belegt_einen_platz_wie_ein_neues(neue_datenbank):
     assert not service.ist_einloesbar(code, heute=HEUTE)
 
 
-def test_gescheitertes_anlegen_gibt_den_platz_frei(neue_datenbank):
+def test_gescheitertes_anlegen_nimmt_die_einloesung_zurueck(neue_datenbank):
     service = _service(neue_datenbank, KontenAttrappe(fehler=True))
-    code = service.anlegen("Ein Platz", 1, LETZTER_TAG, heute=HEUTE).code
+    code = service.anlegen("Eine Einloesung", 1, LETZTER_TAG, heute=HEUTE).code
 
     with pytest.raises(KontoAnlegenFehlgeschlagen):
         service.einloesen(code, "neu@example.org", heute=HEUTE)

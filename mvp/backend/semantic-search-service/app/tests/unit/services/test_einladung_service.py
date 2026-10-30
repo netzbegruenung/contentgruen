@@ -13,12 +13,12 @@ from unittest.mock import Mock
 
 import pytest
 
+from domain.interfaces.konten_im_realm import KontoErgebnis
 from services.einladung_service import (
     Einladung,
     EinladungZustand,
     EinladungService,
     EinladungUngueltig,
-    KontoAnlegen,
     KontoAnlegenFehlgeschlagen,
     EinloesenNichtEingerichtet,
 )
@@ -47,14 +47,14 @@ def _zeile(**werte):
 @pytest.fixture
 def repository():
     repository = Mock()
-    repository.platz_belegen.return_value = True
+    repository.einloesung_zaehlen.return_value = True
     return repository
 
 
 @pytest.fixture
 def konten():
     konten = Mock()
-    konten.konto_anlegen.return_value = KontoAnlegen.ANGELEGT
+    konten.konto_anlegen.return_value = KontoErgebnis.ANGELEGT
     return konten
 
 
@@ -107,12 +107,12 @@ class TestEinloesen:
             CODE, "neu@example.org", heute=HEUTE
         )
 
-        repository.platz_belegen.assert_called_once_with(CODE, HEUTE)
+        repository.einloesung_zaehlen.assert_called_once_with(CODE, HEUTE)
         konten.konto_anlegen.assert_called_once_with("neu@example.org")
-        repository.platz_freigeben.assert_not_called()
+        repository.einloesung_zuruecknehmen.assert_not_called()
 
     def test_ungueltiger_code_legt_kein_konto_an(self, repository, konten):
-        repository.platz_belegen.return_value = False
+        repository.einloesung_zaehlen.return_value = False
 
         with pytest.raises(EinladungUngueltig):
             EinladungService(repository, konten).einloesen(
@@ -123,15 +123,15 @@ class TestEinloesen:
 
     def test_vorhandenes_konto_zaehlt_wie_ein_neues(self, repository, konten):
         # Sonst verriete /pruefen danach, dass die Adresse ein Konto hat.
-        konten.konto_anlegen.return_value = KontoAnlegen.VORHANDEN
+        konten.konto_anlegen.return_value = KontoErgebnis.VORHANDEN
 
         EinladungService(repository, konten).einloesen(
             CODE, "alt@example.org", heute=HEUTE
         )
 
-        repository.platz_freigeben.assert_not_called()
+        repository.einloesung_zuruecknehmen.assert_not_called()
 
-    def test_fehler_bei_keycloak_gibt_den_platz_frei(self, repository, konten):
+    def test_fehler_bei_keycloak_nimmt_die_einloesung_zurueck(self, repository, konten):
         konten.konto_anlegen.side_effect = RuntimeError("Keycloak weg")
 
         with pytest.raises(KontoAnlegenFehlgeschlagen):
@@ -139,7 +139,7 @@ class TestEinloesen:
                 CODE, "neu@example.org", heute=HEUTE
             )
 
-        repository.platz_freigeben.assert_called_once_with(CODE)
+        repository.einloesung_zuruecknehmen.assert_called_once_with(CODE)
 
     def test_ohne_keycloak_ist_registrierung_nicht_eingerichtet(self, repository):
         with pytest.raises(EinloesenNichtEingerichtet):
@@ -147,7 +147,7 @@ class TestEinloesen:
                 CODE, "neu@example.org", heute=HEUTE
             )
 
-        repository.platz_belegen.assert_not_called()
+        repository.einloesung_zaehlen.assert_not_called()
 
     def test_kein_bezug_zwischen_einladung_und_konto(self, repository, konten):
         EinladungService(repository, konten).einloesen(

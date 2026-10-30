@@ -111,11 +111,13 @@ search_query_statement_rate_limiter = RateLimiter(max_requests=60, window_minute
 # erreichbar; mehr schreibt niemand in einer Viertelstunde an das Team.
 feedback_rate_limiter = RateLimiter(max_requests=5, window_minutes=15)
 
-# Einladungen (#429), beide Routen ohne Anmeldung. Einloesen: 5 je Adresse in 15
-# Minuten wie Feedback; jeder Aufruf kann eine Mail ausloesen. Pruefen: 30, die Seite
-# fragt einmal beim Oeffnen; mehr braucht nur, wer Codes durchprobiert.
-einladung_rate_limiter = RateLimiter(max_requests=5, window_minutes=15)
-einladung_pruefen_rate_limiter = RateLimiter(max_requests=30, window_minutes=15)
+# Einladungen (#429), beide Routen ohne Anmeldung. Ein Gruppenlink wird oft in einem
+# Raum hinter einer gemeinsamen Adresse (NAT) eingeloest; die Zahl der Einloesungen
+# begrenzt schon die Einladung selbst. Einloesen: 30 je Adresse in 15 Minuten, jeder
+# Aufruf kann eine Mail ausloesen. Pruefen: 60, die Seite fragt einmal beim Oeffnen;
+# mehr braucht nur, wer Codes durchprobiert (22 Zeichen Zufall, aussichtslos).
+einladung_rate_limiter = RateLimiter(max_requests=30, window_minutes=15)
+einladung_pruefen_rate_limiter = RateLimiter(max_requests=60, window_minutes=15)
 
 # Gegenlesen beim Schreiben (#358): 300 je Person in 10 Minuten. Das Formular fragt
 # etwa eine Sekunde nach jeder Eingabepause nach; das sind beim zuegigen Schreiben

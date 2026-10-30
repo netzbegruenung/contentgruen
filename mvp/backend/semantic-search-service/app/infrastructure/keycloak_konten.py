@@ -15,7 +15,7 @@ from typing import Optional
 import httpx
 
 from core.logging import get_logger
-from services.einladung_service import KontoAnlegen
+from domain.interfaces.konten_im_realm import KontoErgebnis
 
 logger = get_logger(__name__)
 
@@ -64,7 +64,7 @@ class KeycloakKonten:
         antwort.raise_for_status()
         return antwort.json()["access_token"]
 
-    def konto_anlegen(self, email: str) -> KontoAnlegen:
+    def konto_anlegen(self, email: str) -> KontoErgebnis:
         admin = f"{self._basis}/admin/realms/{self._realm}/users"
         with self._client() as http:
             kopf = {"Authorization": f"Bearer {self._token(http)}"}
@@ -80,7 +80,7 @@ class KeycloakKonten:
                 },
             )
             if antwort.status_code == 409:
-                return KontoAnlegen.VORHANDEN
+                return KontoErgebnis.VORHANDEN
             antwort.raise_for_status()
             konto_id = antwort.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
 
@@ -107,4 +107,4 @@ class KeycloakKonten:
                         f"Removing account after failed mail failed: {type(e).__name__}"
                     )
                 raise
-        return KontoAnlegen.ANGELEGT
+        return KontoErgebnis.ANGELEGT

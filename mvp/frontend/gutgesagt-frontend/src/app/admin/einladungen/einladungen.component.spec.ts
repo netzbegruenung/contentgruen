@@ -53,7 +53,7 @@ describe('EinladungenComponent', () => {
     expect(zeile.textContent).toContain('Kreisverband, Herbsttreffen');
     expect(zeile.textContent).toContain('3 von 50');
     expect(zeile.textContent).toContain('27.11.2026');
-    expect(zeile.textContent).toContain('aktiv');
+    expect(zeile.textContent).toContain('Aktiv');
     expect(zeile.textContent).toContain(`${window.location.origin}/einladung#GruppenCode123`);
   });
 
@@ -90,7 +90,7 @@ describe('EinladungenComponent', () => {
     anfrage.flush({ ...GRUPPE, abgeschaltet: true, zustand: 'abgeschaltet' });
     fixture.detectChanges();
 
-    expect(el().querySelector('[data-testid="einladung"]')!.textContent).toContain('abgeschaltet');
+    expect(el().querySelector('[data-testid="einladung"]')!.textContent).toContain('Abgeschaltet');
     expect(el().querySelector('[data-testid="schalten"]')!.textContent).toContain('Einschalten');
   });
 

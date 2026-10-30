@@ -3,12 +3,14 @@
     <mat-card-title>Einladung zu Gut gesagt</mat-card-title>
   </mat-card-header>
   <mat-card-content>
-    <p *ngIf="stand === 'pruefe'" role="status">Einladung wird geprüft …</p>
+    <!-- Immer im DOM, damit Screenreader den Wechsel ansagen; per *ngIf eingefuegte Live-Regionen gehen oft unter. -->
+    <p class="unsichtbar" role="status">{{ ansage }}</p>
+    <p *ngIf="stand === 'pruefe'">Einladung wird geprüft …</p>
 
     <ng-container *ngIf="stand === 'ungueltig'">
       <p>
-        Diese Einladung gilt nicht (mehr): Sie ist abgelaufen, abgeschaltet oder alle Plätze sind
-        vergeben. Frag die Person, von der du den Link hast, nach einem neuen.
+        Diese Einladung gilt nicht (mehr): Sie ist abgelaufen, abgeschaltet oder schon so oft
+        eingelöst, wie sie erlaubt. Frag die Person, von der du den Link hast, nach einem neuen.
       </p>
       <p>Hast du schon ein Konto? Dann <a routerLink="/login">melde dich an</a>.</p>
     </ng-container>
@@ -22,9 +24,20 @@
         <mat-label>Mail-Adresse</mat-label>
         <input matInput type="email" name="email" autocomplete="email" [(ngModel)]="email" required />
       </mat-form-field>
-      <p *ngIf="stand === 'fehler'" class="warnung" role="alert">
-        Das hat nicht geklappt. Bitte versuch es in ein paar Minuten noch einmal.
-      </p>
+      <ng-container *ngIf="stand === 'fehler'" [ngSwitch]="fehler">
+        <p *ngSwitchCase="'adresse'" class="warnung" role="alert">
+          Das sieht nicht wie eine Mail-Adresse aus. Bitte prüf sie noch einmal.
+        </p>
+        <p *ngSwitchCase="'zu_oft'" class="warnung" role="alert">
+          Von hier kamen gerade sehr viele Versuche. Bitte versuch es in einer Viertelstunde noch einmal.
+        </p>
+        <p *ngSwitchCase="'nicht_eingerichtet'" class="warnung" role="alert">
+          Konten lassen sich gerade noch nicht anlegen. Frag die Person, von der du den Link hast.
+        </p>
+        <p *ngSwitchDefault class="warnung" role="alert">
+          Das hat nicht geklappt. Bitte versuch es in ein paar Minuten noch einmal.
+        </p>
+      </ng-container>
       <p class="fussnote">
         Mit dem Konto gelten die <a routerLink="/nutzungsbedingungen">Nutzungsbedingungen</a>; mehr
         zum Umgang mit deinen Daten steht in der <a routerLink="/datenschutz">Datenschutzerklärung</a>.
@@ -35,7 +48,8 @@
     </form>
 
     <ng-container *ngIf="stand === 'gesendet'">
-      <p role="status">
+      <!-- "drei Tage": MAIL_GUELTIG_SEKUNDEN in infrastructure/keycloak_konten.py -->
+      <p>
         Schau in dein Postfach: Dort ist eine Mail, mit der du dein Passwort festlegst. Der Link darin
         gilt drei Tage.
       </p>

@@ -194,9 +194,9 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
 
 ## Einladungen
 
-Die Tabelle `einladungen` (#429) trägt eine Notiz, die Zahl erlaubter und angelegter Konten,
+Die Tabelle `einladungen` (#429) trägt eine Notiz, die Zahl erlaubter und erfolgter Einlösungen,
 den letzten gültigen Tag und ob die Einladung abgeschaltet ist. Sie enthält **keine
-Mail-Adresse und keine Kennung**: Wer über eine Einladung ein Konto anlegt, erhöht nur den
+Mail-Adresse und keine Kennung**: Wer eine Einladung einlöst, erhöht nur den
 Zähler. Die Mail-Adresse geht beim Einlösen an Keycloak und wird in Gut gesagt weder
 gespeichert noch geloggt. Über die Kennung aus „Ausgangspunkt“ ist deshalb nichts zu finden,
 und der Ablauf oben erfasst die Tabelle nicht.
@@ -208,7 +208,8 @@ und der Ablauf oben erfasst die Tabelle nicht.
   Personenbezug.
 - **Konto im Realm:** Löschen wie bisher in Keycloak; dass es über eine Einladung entstand,
   steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
-  Zeitpunkt der Kontoanlage mit dem Zähler vergleichen.
+  Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
+  Zähler vergleichen.
 
 ## Vier Fallen
 

@@ -13,7 +13,7 @@ import httpx
 import pytest
 
 from infrastructure.keycloak_konten import KeycloakKonten
-from services.einladung_service import KontoAnlegen
+from domain.interfaces.konten_im_realm import KontoErgebnis
 
 pytestmark = pytest.mark.unit
 
@@ -63,7 +63,7 @@ def test_legt_konto_an_und_loest_passwort_mail_aus():
 
     ergebnis = _konten(keycloak).konto_anlegen("neu@example.org")
 
-    assert ergebnis is KontoAnlegen.ANGELEGT
+    assert ergebnis is KontoErgebnis.ANGELEGT
     assert keycloak.pfade() == [
         ("POST", "/realms/gutgesagt/protocol/openid-connect/token"),
         ("POST", "/admin/realms/gutgesagt/users"),
@@ -97,7 +97,7 @@ def test_vorhandenes_konto_bleibt_unberuehrt():
 
     ergebnis = _konten(keycloak).konto_anlegen("alt@example.org")
 
-    assert ergebnis is KontoAnlegen.VORHANDEN
+    assert ergebnis is KontoErgebnis.VORHANDEN
     assert [p for p in keycloak.pfade() if "execute-actions" in p[1]] == []
 
 
