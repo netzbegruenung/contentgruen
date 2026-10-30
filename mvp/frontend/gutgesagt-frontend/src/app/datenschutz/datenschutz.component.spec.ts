@@ -331,5 +331,9 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
       expect(text).not.toContain('Dein Browser lädt sie direkt von dem fremden Server');
     });
+
+    it('nennt den Klick auch beim Abruf außerhalb der EU', () => {
+      expect(abschnitt('Keine Übermittlung außerhalb der EU')).toContain('erst nach deinem Klick auf „Bild laden“');
+    });
   });
 });
