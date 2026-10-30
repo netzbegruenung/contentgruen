@@ -1,4 +1,4 @@
-"""scripts/changelog.sh: Änderungsliste für das Forgejo-Release aus der Merge-Historie."""
+"""scripts/changelog.sh: Änderungsliste eines Release (CHANGELOG.md) aus der Merge-Historie."""
 
 import pathlib
 import subprocess

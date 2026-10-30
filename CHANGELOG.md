@@ -8,17 +8,23 @@ der Text des Forgejo-Release zu seinem Tag. Wie er entsteht: [docs/DEPLOYMENT.md
 
 Erstes Release nach dem Abräumen der alten Tags `v1.0.0` bis `v1.1.0` (#295). Die Liste
 beginnt beim Commit von `v1.1.0` (`fae44b4b`, laut Release-Lauf auf dem GitHub-Spiegel) und
-reicht bis zum Tag; nur die Release-Vorbereitung selbst fehlt darin.
+reicht bis zum Tag; nur die Release-Vorbereitung selbst fehlt darin. Die Version im Footer
+sinkt dadurch von `1.1.0` auf `0.9.0`: bis zum Launch gibt es `v0.x`-Releases, zum Launch `v1.0.0`.
 
 ### Ablauf beim Ausrollen
 
 Von Hand ergänzt, das Skript kennt sie nicht. Reihenfolge von oben nach unten.
 
-1. **Backup ziehen**, bevor die neue Version startet (`mvp/scripts/backup/backup.sh`).
+1. **Backup ziehen**, bevor die neue Version startet (`mvp/scripts/backup/backup.sh`). Es läuft
+   noch gegen die alten Container, das Skript kennt aber nur die neuen Namen; die alten deshalb
+   mitgeben:
+   `BACKUP_ROOT=/opt/contentgruen-backups POSTGRES_CONTAINER=contentgruen-app-postgres APP_CONTAINER=contentgruen-semantic-search QDRANT_CONTAINER=contentgruen-qdrant DB_NAME=contentgruen_app ./backup.sh`
 2. **Umbenennung (#204, #207):** Images, Container, Datenbank und Pfade heißen jetzt
    `gutgesagt-*`, `gutgesagt_app` und `/opt/gutgesagt*`. Unter den alten `contentgruen-*`-Namen
    erscheinen keine neuen Images mehr; Produktion muss beim Umzug auf `:latest` der neuen Namen
-   wechseln. Die Übernahme der Daten und der Umzug selbst laufen nach #206.
+   wechseln. Die Übernahme der Daten und der Umzug selbst laufen nach #206. Login-Cookie und
+   Schlüsselname des BFF sind mit umbenannt: Alle Angemeldeten werden einmal abgemeldet und
+   melden sich neu an.
 3. **Migrationen** laufen beim ersten Start des Suchdienstes von selbst. Beim ersten Start
    mit diesem Mechanismus (#331) erkennt er die drei nicht wiederholbaren, früher von Hand
    eingespielten Migrationen an ihrer Wirkung (`erkannt`); Stand danach mit
@@ -26,12 +32,16 @@ Von Hand ergänzt, das Skript kennt sie nicht. Reihenfolge von oben nach unten.
 4. **Zustände umstellen (#214, einmalig):** nach dem Ausrollen `zustaende_umstellen.py`
    erst ohne, dann mit `--ausfuehren` (`mvp/scripts/manual/README.md`, „Zustaende umstellen“).
 5. **`text_normalisiert` nachtragen (#301):** nach dem Ausrollen
-   `text_normalisiert_nachtragen.py --ausfuehren` (`mvp/scripts/manual/README.md`, „Bestand in Qdrant“).
+   `text_normalisiert_nachtragen.py` erst ohne, dann mit `--ausfuehren`
+   (`mvp/scripts/manual/README.md`, „Bestand in Qdrant“).
 6. **Alten Platzhalter umstellen (#236, einmalig):** `beitraege_anonymisieren.py geloeschter-nutzer`
    wie in `docs/LOESCHKONZEPT.md` beschrieben, falls es Beiträge mit dem alten Platzhalter gibt.
 7. **Arbeitsspeicher:** Der Suchdienst braucht seit #358 (PR #452) etwa 0,5 GB mehr
    (docs/DEPLOYMENT.md, „Operation“); ein Speicherlimit des Containers entsprechend anheben.
-8. **Neue optionale Einstellung:** `SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS` (Default 90).
+8. **Einstellungen:** neu und optional `SEMANTIC_SEARCH_SEARCH_EVENT_RETENTION_DAYS` (Default 90).
+   Geänderte Defaults der Dublettenschwellen (`statement_similarity_threshold` 0,9 → 0,98,
+   `commentary_similarity_threshold` 0,97 → 0,975, neu `generic_text_similarity_threshold` 0,975);
+   nur zu prüfen, wo eine Umgebung sie überschreibt.
 9. **Einwürfe importieren (#372, bei Bedarf):** nach dem Umzug, wenn eine Liste vorliegt,
    `einwuerfe_importieren.py` erst mit `--trockenlauf` (`mvp/SCRIPTS.md`). Für den Umzug selbst
    nicht nötig.
@@ -129,7 +139,7 @@ Stand: 51a78985 (2026-10-29), seit fae44b4b (2026-08-31)
 - Beitragsformulare Kommentar und Hintergrundinfo: Antwort auf, feste Leiste, Ergebnisseite ([GitHub #52](https://github.com/netzbegruenung/contentgruen/pull/52))
 - Ähnlichkeit kalibrieren: stille Wiederverwendung nur bei derselben Aussage, Kommentar-Dubletten passage/passage ([GitHub #53](https://github.com/netzbegruenung/contentgruen/pull/53))
 - Handy-Nachlese: Icons, Zurück-Wege, Destillier-Schritt, eigener Beitrag ([GitHub #54](https://github.com/netzbegruenung/contentgruen/pull/54))
-- Haertung Oktober: Backup-Kette, Cleanup-Settings, CLAUDE.md gegen den CodeFix/haertung oktober ([GitHub #55](https://github.com/netzbegruenung/contentgruen/pull/55))
+- Haertung Oktober: Backup-Kette, Cleanup-Settings, CLAUDE.md gegen den Code ([GitHub #55](https://github.com/netzbegruenung/contentgruen/pull/55))
 - Anzeigenamen statt Kennung an Beiträgen und Einwürfen ([GitHub #56](https://github.com/netzbegruenung/contentgruen/pull/56))
 - ci: push images only from main ([GitHub #58](https://github.com/netzbegruenung/contentgruen/pull/58))
 - docs: CLAUDE.md auf Forgejo als führendes Repo umstellen ([#205](https://git.verdigado.com/Netzbegruenung/gutgesagt/pulls/205))

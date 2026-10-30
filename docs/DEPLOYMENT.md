@@ -140,7 +140,8 @@ deploy anything by itself.
    that the run is green and `:latest` moved before announcing the release.
 5. **Forgejo release:** publish the `vX.Y.Z` section of `CHANGELOG.md` as the Forgejo release
    to the tag (Releases on the Forgejo repository). `scripts/changelog.sh vX.Y.Z` shows the
-   tagged range for a last comparison.
+   tagged range for a last comparison; for the first release give the start as well
+   (`scripts/changelog.sh v0.9.0 fae44b4b`, the commit of the former `v1.1.0`).
 
 For urgent deployments, ask in the project channel (see below).
 

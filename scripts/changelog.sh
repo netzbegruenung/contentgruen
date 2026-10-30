@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Draft of the change list for a release: the Forgejo release to a tag (docs/DEPLOYMENT.md,
-# "Updating Production"). Reads the first-parent history of main, changes nothing.
+# Draft of the change list for a release: its section in CHANGELOG.md, published as the
+# Forgejo release to the tag (docs/DEPLOYMENT.md, "Releases"). Reads the first-parent history
+# of main, changes nothing. Writes to stdout; the section headings move one level down:
 #
-#   scripts/changelog.sh [BIS] [VON] > changelog.md
+#   scripts/changelog.sh [BIS] [VON] | sed 's/^## /### /'
 #
 # BIS: tag or commit of the new release. Default: origin/main.
 # VON: tag or commit of the previous release. Default: the last v* tag before BIS, so
