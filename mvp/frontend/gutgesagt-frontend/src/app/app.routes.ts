@@ -187,6 +187,13 @@ export const routes: Routes = [
         data: { parent: '/login' }
     },
     {
+        // Einladung einloesen (#429); der Code steht hinter #, siehe einladungslink.
+        path: 'einladung',
+        loadComponent: () => import('./einladung/einladung.component').then(m => m.EinladungComponent),
+        canActivate: [PublicGuard],
+        data: { parent: '/search' }
+    },
+    {
         path: 'about',
         loadComponent: () => import('./about/about.component').then(m => m.AboutComponent),
         canActivate: [PublicGuard],

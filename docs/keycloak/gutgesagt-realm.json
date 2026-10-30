@@ -1,0 +1,109 @@
+{
+  "realm": "gutgesagt",
+  "displayName": "Gut gesagt",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "verifyEmail": true,
+  "rememberMe": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 10,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "minimumQuickLoginWaitSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "passwordPolicy": "length(12) and notUsername and notEmail",
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "de"
+  ],
+  "defaultLocale": "de",
+  "localizationTexts": {
+    "de": {
+      "termsTitle": "Nutzungsbedingungen",
+      "termsText": "<p>Für Gut gesagt gelten die <a href=\"https://gutgesagt.netzbegruenung.de/nutzungsbedingungen\" target=\"_blank\" rel=\"noopener\">Nutzungsbedingungen</a> (Stand: 30. Oktober 2026). Mit „Annehmen“ stimmst du ihnen zu.</p>"
+    }
+  },
+  "clients": [
+    {
+      "clientId": "gutgesagt",
+      "name": "Gut gesagt",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://bff.gutgesagt.netzbegruenung.de/signin-oidc",
+        "https://gutgesagt.netzbegruenung.de/"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://gutgesagt.netzbegruenung.de/*"
+      }
+    },
+    {
+      "clientId": "gutgesagt-einladungen",
+      "name": "Gut gesagt: Konten aus Einladungen anlegen",
+      "protocol": "openid-connect",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-gutgesagt-einladungen",
+      "enabled": true,
+      "serviceAccountClientId": "gutgesagt-einladungen",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users"
+        ]
+      }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "netzbegruenung",
+      "displayName": "Mit Netzbegrünung anmelden",
+      "providerId": "keycloak-oidc",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "issuer": "NETZBEGRUENUNG_REALM_URL",
+        "authorizationUrl": "NETZBEGRUENUNG_REALM_URL/protocol/openid-connect/auth",
+        "tokenUrl": "NETZBEGRUENUNG_REALM_URL/protocol/openid-connect/token",
+        "logoutUrl": "NETZBEGRUENUNG_REALM_URL/protocol/openid-connect/logout",
+        "userInfoUrl": "NETZBEGRUENUNG_REALM_URL/protocol/openid-connect/userinfo",
+        "jwksUrl": "NETZBEGRUENUNG_REALM_URL/protocol/openid-connect/certs",
+        "useJwksUrl": "true",
+        "validateSignature": "true",
+        "pkceEnabled": "true",
+        "pkceMethod": "S256",
+        "clientAuthMethod": "client_secret_post",
+        "clientId": "NETZBEGRUENUNG_CLIENT_ID",
+        "defaultScope": "openid profile email",
+        "syncMode": "IMPORT"
+      }
+    }
+  ]
+}

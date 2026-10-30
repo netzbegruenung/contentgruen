@@ -96,7 +96,7 @@ public class KeycloakLoginCookieTests
         }
     }
 
-    private static (WebApplicationFactory<Program> Factory, FakeTokenEndpoint Endpoint) CreateHost()
+    private static (WebApplicationFactory<Program> Factory, FakeTokenEndpoint Endpoint) CreateHost(string authority = Authority)
     {
         var key = new RsaSecurityKey(RSA.Create(2048)) { KeyId = "test-key" };
         var endpoint = new FakeTokenEndpoint
@@ -120,7 +120,7 @@ public class KeycloakLoginCookieTests
             builder.UseSetting("USE_KEYCLOAK", "true");
             builder.UseSetting("FRONTEND_URL", FrontendUrl);
             builder.UseSetting("BACKEND_URL", "http://127.0.0.1:1");
-            builder.UseSetting("Keycloak:Authority", Authority);
+            builder.UseSetting("Keycloak:Authority", authority);
             builder.UseSetting("Keycloak:ClientId", ClientId);
             builder.UseSetting("Keycloak:ClientSecret", "test-secret");
             builder.UseSetting("DATAPROTECTION_KEYS_PATH", SchluesselringPfad);
@@ -143,9 +143,9 @@ public class KeycloakLoginCookieTests
     /// Spielt die Anmeldung durch und gibt die Antwort von /signin-oidc zurueck. Auch fuer
     /// SitzungNachKontoloeschungTests, die ein echtes Keycloak-Cookie brauchen.
     /// </summary>
-    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl)
+    internal static async Task<HttpResponseMessage> LoginAsync(string? returnUrl, string authority = Authority)
     {
-        var (host, endpoint) = CreateHost();
+        var (host, endpoint) = CreateHost(authority);
         using var factory = host;
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -209,6 +209,20 @@ public class KeycloakLoginCookieTests
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal(FrontendUrl + "/einwerfen?quelle=teilen", response.Headers.Location!.OriginalString);
+        AuthCookie(response);
+    }
+
+    /// <summary>
+    /// Die Authority kommt aus der Konfiguration (#429, eigener Realm). Keycloak stellt den
+    /// Issuer ohne Schraegstrich am Ende aus; ein Schraegstrich in der Konfiguration darf die
+    /// Pruefung des Issuers nicht scheitern lassen.
+    /// </summary>
+    [Fact]
+    public async Task KeycloakLogin_AuthorityWithTrailingSlash_StillSignsIn()
+    {
+        using var response = await LoginAsync(returnUrl: null, authority: Authority + "/");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         AuthCookie(response);
     }
 

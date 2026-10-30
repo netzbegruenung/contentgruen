@@ -414,7 +414,7 @@ Alle Personen, die Gut gesagt verwenden, angemeldet oder nicht. Sie sind entwede
 _Avoid_: User, Nutzer, Anwender
 
 **Mitwirkende**:
-Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen. Heute sind das Mitglieder der Netzbegrünung und Personen mit Beta-Zugang.
+Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und bewerten dürfen. Heute sind das Mitglieder der Netzbegrünung, Personen mit Beta-Zugang und Personen, die über eine Einladung ein Konto angelegt haben.
 _Avoid_: User, Mitglieder
 
 **Beta-Zugang**:
@@ -422,8 +422,16 @@ Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mit
 _Avoid_: Beta-Account, manueller User, Managed User
 
 **Netzbegrünung-Login**:
-Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung; die andere Kontoart ist der Beta-Zugang. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
+Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Mit dem eigenen Realm von Gut gesagt (#429) läuft sie, sobald die App darauf umgestellt ist, über diesen Realm, in dem die Netzbegrünung Identity Provider ist; die Kennung ist dann die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
+
+**Einladung**:
+Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends.
+_Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein
+
+**Einlösung**:
+Ein Aufruf einer Einladung mit einer Mail-Adresse, solange sie gilt. Sie zählt, auch wenn es zur Adresse schon ein Konto gibt oder die Adresse einen Tippfehler hat; nur wenn Keycloak das Konto nicht anlegen konnte, wird sie zurückgenommen. Die Zahl erlaubter Einlösungen begrenzt eine Einladung.
+_Avoid_: Platz, Anmeldung (für den Zähler), Registrierung
 
 **Startkonto**:
 Ein Beta-Zugang, unter dem das Gründungsteam den Startbestand schreibt, damit er nicht von einer einzigen Person zu kommen scheint. Admins kennen die Person dahinter. Ein Startkonto vergibt keine Stimmen und keine Nutzung und sammelt keine Punkte.
@@ -458,5 +466,5 @@ Wie lange eine Datenart gespeichert bleibt, bevor ein täglicher Task sie von se
 _Avoid_: Retention, Aufbewahrungszeit
 
 **Admin**:
-Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
+Eine Person, die Meldungen bearbeitet, Beiträge sperrt, Widersprüche prüft, Einwürfe verwirft, Einladungen verwaltet und Kennzahlen sieht. Endgültig entfernt ein Admin einen Beitrag nur nach dem Löschkonzept; sonst geschieht das nur mit einem gelöschten Beitrag nach seiner Löschfrist. Moderation ist keine eigene Rolle.
 _Avoid_: Moderator, Redaktion

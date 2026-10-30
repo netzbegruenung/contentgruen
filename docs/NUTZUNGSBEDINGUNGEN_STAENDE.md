@@ -33,8 +33,9 @@ diesem Zeitpunkt live war.
 Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer):
 
 4. Den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen Stand bringen; ohne das
-   stimmen die Personen dem alten Stand-Datum zu. Das Theme aus #429 zeigt dafür Link und
-   Stand-Datum der Nutzungsbedingungen (Anforderung in PR #472).
+   stimmen die Personen dem alten Stand-Datum zu. Diesen Text (`termsText`) liefert die
+   Realm-Vorlage aus #429 mit Link und Stand-Datum, ein eigenes Theme gibt es nicht; ändern in
+   Vorlage und Realm wie in `docs/KEYCLOAK_REALM.md` beschrieben.
 5. Die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm von Gut gesagt erneut
    auslösen (siehe unten). Der Realm gehört nur zu Gut gesagt (#429); in einem geteilten Realm
    träfe das auch Konten, die Gut gesagt nie nutzen.

@@ -91,6 +91,18 @@ from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two 
 - **One uvicorn worker.** The daily key lives in the memory of the process. With several
   workers a visitor would count once per worker; a restart counts visitors again on that day.
 
+### 🔑 Login (Keycloak)
+
+#429 prepares an own realm „Gut gesagt“; the BFF takes the realm from `Keycloak__Authority`,
+and the semantic service creates accounts from Einladungen through the Keycloak admin API.
+Until the switch, sign-in stays on the Netzbegrünung realm.
+
+**Do not switch `Keycloak__Authority` to the new realm before the Kennungen are migrated:**
+every member gets a new `sub` there, and their contributions, votes, admin rights and the
+deletion list still hold the old one. Switch the BFF and enable redemption
+(`SEMANTIC_SEARCH_KEYCLOAK_*`) together, after the privacy policy covers self-registration.
+Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

@@ -75,6 +75,13 @@ if (useKeycloak)
         throw new InvalidOperationException("Keycloak configuration is missing required values.");
     }
 
+    // Die Authority ist die Adresse des Realms, etwa https://<keycloak>/realms/gutgesagt
+    // (#429: eigener Realm statt dem der Netzbegruenung; docs/KEYCLOAK_REALM.md). Ohne
+    // Schraegstrich am Ende, so wie Keycloak den Issuer ausstellt; sonst schluege die
+    // Pruefung des Issuers unten bei jeder Anmeldung fehl.
+    var keycloakAuthority = keycloakSettings["Authority"]!.TrimEnd('/');
+    startupLogger.LogInformation("Keycloak authority: {Authority}", keycloakAuthority);
+
     // Configure Keycloak OpenID Connect with Cookie Authentication
     builder.Services.AddAuthentication(options =>
     {
@@ -108,7 +115,7 @@ if (useKeycloak)
     ) // Cookie for session handling
     .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
     {
-        options.Authority = keycloakSettings["Authority"];
+        options.Authority = keycloakAuthority;
         options.ClientId = keycloakSettings["ClientId"];
         options.ClientSecret = keycloakSettings["ClientSecret"];
         options.ResponseType = "code";  // Authorization Code flow
@@ -141,7 +148,7 @@ if (useKeycloak)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = keycloakSettings["Authority"],
+            ValidIssuer = keycloakAuthority,
             ValidateAudience = true,
             ValidAudience = keycloakSettings["ClientId"],
             ValidateLifetime = true
