@@ -79,6 +79,30 @@ for the Gegenlesen, about 0.5 GB more RAM than before (measured on the dev VM: ~
 model, ~350 MB for CharSplit's n-gram table), loaded in the background about two seconds after
 start. If the container has a memory limit, raise it accordingly.
 
+Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
+from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:
+
+- **`X-Real-IP` reaches the semantic service.** nginx sets it, YARP in the BFF passes it on
+  (`IdentityHeaderTransformTests` checks that it is not stripped). Without it the service only
+  sees its peer, and all visitors with the same User-Agent count as one person. The header is
+  only trustworthy while the BFF and the semantic service are reachable through nginx alone;
+  a client that reaches them directly can choose its own address and inflate the person
+  counts (the report rate limit relies on the same header).
+- **One uvicorn worker.** The daily key lives in the memory of the process. With several
+  workers a visitor would count once per worker; a restart counts visitors again on that day.
+
+### 🔑 Login (Keycloak)
+
+#429 prepares an own realm „Gut gesagt“; the BFF takes the realm from `Keycloak__Authority`,
+and the semantic service creates accounts from Einladungen through the Keycloak admin API.
+Until the switch, sign-in stays on the Netzbegrünung realm.
+
+**Do not switch `Keycloak__Authority` to the new realm before the Kennungen are migrated:**
+every member gets a new `sub` there, and their contributions, votes, admin rights and the
+deletion list still hold the old one. Switch the BFF and enable redemption
+(`SEMANTIC_SEARCH_KEYCLOAK_*`) together, after the privacy policy covers self-registration.
+Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status
@@ -154,10 +178,11 @@ What this means for a rollout:
   its own `lock_timeout`. The container exits; with a restart policy (the dev stack uses
   `restart: unless-stopped`) Docker starts it again, which retries the migration. Without one,
   start it again by hand. A migration that failed on a lock succeeds on a later attempt once
-  the lock is free. If it keeps failing, the service log names the migration and the first
-  line of the error. The failed migration leaves no trace in the database; migrations committed
-  before it in the same start stay in. Before rolling back to the previous image, check that it
-  works with them.
+  the lock is free. If it keeps failing, the service log names the migration and the type
+  of the error (not its message, which can carry values, #422); the first line of the
+  message is in `migrationsprotokoll.fehler`. The failed migration leaves no trace in the
+  database; migrations committed before it in the same start stay in. Before rolling back
+  to the previous image, check that it works with them.
 - **`VACUUM FULL` after the `COMMIT`** of three older migrations runs separately and waits at
   most 30 s for its lock. If it fails, the migration stays committed (`nachlauf_offen`), the
   service starts anyway and retries only the `VACUUM FULL` on its next start.

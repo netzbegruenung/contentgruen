@@ -3,9 +3,10 @@ Missbrauchsschutz auf POST /api/v1/moderation/report.
 
 Die Route bleibt bewusst ohne Anmeldung erreichbar (DSA Art. 16). Genau deshalb
 muss die Begrenzung an etwas haengen, das der Aufrufer nicht frei waehlen kann:
-das Rate-Limit lag auf X-Session-Id, einem Wert, den die SPA selbst erzeugt und
-in localStorage haelt. Zwoelf Meldungen mit zwoelf verschiedenen Session-Werten
-gingen alle durch.
+das Rate-Limit lag auf X-Session-Id, einem Wert, den die SPA bis #446 selbst
+erzeugte und in localStorage hielt. Zwoelf Meldungen mit zwoelf verschiedenen
+Session-Werten gingen alle durch. Alte Clients und direkte Aufrufe schicken den
+Header weiter mit, deshalb bleiben die Tests dazu.
 """
 
 from unittest.mock import AsyncMock, Mock, patch
@@ -18,8 +19,8 @@ from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
 from domain.models.meldegrund import MELDEGRUENDE
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
 from utils import client_identity
-from utils.client_identity import normalize_session_id
 from utils.rate_limiter import RateLimiter
 
 REPORT_URL = "/api/v1/moderation/report"
@@ -31,6 +32,7 @@ def _payload(**overrides):
         "content_id": CONTENT_ID,
         "content_type": "commentary",
         "reason": "spam",
+        "guter_glaube": True,
     }
     body.update(overrides)
     return body
@@ -185,8 +187,36 @@ class TestRequestValidation:
 
     @pytest.mark.parametrize("reason", MELDEGRUENDE)
     def test_documented_reasons_are_accepted(self, client, service, reason):
-        assert client.post(REPORT_URL, json=_payload(reason=reason)).status_code == 200
+        body = _payload(reason=reason, description="Verstoesst gegen § 130 StGB")
+
+        assert client.post(REPORT_URL, json=body).status_code == 200
         assert service.report_content.await_args.kwargs["reason"] == reason
+
+
+class TestRechtswidrigerInhalt:
+    """Art. 16 Abs. 2 lit. a DSA (#438): bei rechtswidrigen Inhalten eine Begruendung."""
+
+    @pytest.mark.parametrize("beschreibung", [None, "", "   "])
+    def test_report_content_rechtswidriger_inhalt_ohne_beschreibung_wird_abgewiesen(
+        self, client, service, beschreibung
+    ):
+        body = _payload(reason="illegal_content", description=beschreibung)
+
+        assert client.post(REPORT_URL, json=body).status_code == 422
+        service.report_content.assert_not_awaited()
+
+    def test_report_content_rechtswidriger_inhalt_mit_beschreibung_wird_angenommen(
+        self, client, service
+    ):
+        body = _payload(reason="illegal_content", description="Volksverhetzung")
+
+        assert client.post(REPORT_URL, json=body).status_code == 200
+        assert service.report_content.await_args.kwargs["description"] == (
+            "Volksverhetzung"
+        )
+
+    def test_report_content_andere_gruende_brauchen_keine_beschreibung(self, client):
+        assert client.post(REPORT_URL, json=_payload(reason="spam")).status_code == 200
 
 
 class TestClientKeyDerivation:
@@ -271,55 +301,147 @@ class TestClientKeyDerivation:
         assert client_identity.derive_client_key(request) == "ip:unknown"
 
 
-class TestSessionIdNormalisation:
+class TestKeineKennungAusDemBrowser:
     """
-    Formatpruefung der clientseitigen Session-Kennung.
-
-    Bewusst Hygiene und keine Sicherheitsmassnahme: der Wert kommt vom Client,
-    und wer ihn wechseln will, erzeugt gueltige UUIDs. Er darf deshalb auch
-    keine Meldung kosten, wenn er unpassend ist.
+    Seit #446 schickt der Browser keine Sitzungskennung mehr. Ein X-Session-Id,
+    den ein alter Client oder jemand direkt gegen die API mitschickt, wird nicht
+    gespeichert. Anonyme Meldungen tragen das Tagespseudonym des Besuchers, damit
+    Admins sehen, ob offene Meldungen aus derselben Quelle kommen; beim
+    Abschliessen loescht das Repository es (test_loeschfristen.py).
     """
 
-    def test_uuid_is_accepted(self):
+    def test_mitgeschickte_sitzungskennung_wird_nicht_gespeichert(
+        self, client, service
+    ):
         value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
 
-        assert normalize_session_id(value) == value
-
-    def test_surrounding_whitespace_is_trimmed(self):
-        assert (
-            normalize_session_id("  3f2504e0-4f89-41d3-9a0c-0305e82c3301  ")
-            == "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
-        )
-
-    @pytest.mark.parametrize(
-        "value",
-        ["A", "", "   ", "sess-1", "<script>alert(1)</script>", "X" * 255],
-    )
-    def test_non_uuid_values_are_discarded(self, value):
-        assert normalize_session_id(value) is None
-
-    def test_none_stays_none(self):
-        assert normalize_session_id(None) is None
-
-    def test_malformed_header_does_not_reject_the_report(self, client):
-        """Eine kaputte Kennung darf die Meldung nicht kosten."""
         response = client.post(
-            REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"}
+            REPORT_URL, json=_payload(), headers={"X-Session-Id": value}
         )
 
         assert response.status_code == 200
+        stored = service.report_content.await_args.kwargs["session_id"]
+        assert value not in stored
+        assert stored.startswith("besucher:")
 
-    def test_malformed_header_is_not_stored(self, client, service):
-        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": "A"})
+    def test_meldungen_derselben_quelle_tragen_dasselbe_pseudonym(
+        self, client, service
+    ):
+        kopf = {"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"}
+        client.post(REPORT_URL, json=_payload(), headers=kopf)
+        client.post(REPORT_URL, json=_payload(), headers=kopf)
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={"X-Real-IP": "198.51.100.6", "User-Agent": "Firefox"},
+        )
+
+        eins, zwei, andere = [
+            aufruf.kwargs["session_id"]
+            for aufruf in service.report_content.await_args_list
+        ]
+        assert eins == zwei
+        assert andere != eins
+
+    def test_pseudonym_enthaelt_weder_adresse_noch_user_agent(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"},
+        )
 
         stored = service.report_content.await_args.kwargs["session_id"]
-        assert stored != "A"
-        # Stattdessen ein Zufallstoken, damit der CHECK der Tabelle erfuellt ist.
-        assert stored.startswith("anon:")
+        assert len(stored) == len("besucher:") + 64
+        assert "198.51.100.5" not in stored and "Firefox" not in stored
 
-    def test_valid_header_is_stored_unchanged(self, client, service):
-        value = "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+    def test_angemeldete_meldung_traegt_nur_die_kennung(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={
+                "X-User": "user-1",
+                "X-Session-Id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+            },
+        )
 
-        client.post(REPORT_URL, json=_payload(), headers={"X-Session-Id": value})
+        kwargs = service.report_content.await_args.kwargs
+        assert kwargs["user_id"] == "user-1"
+        assert kwargs["session_id"] is None
 
-        assert service.report_content.await_args.kwargs["session_id"] == value
+
+class TestAngabenNachArtikel16:
+    """Name, E-Mail-Adresse und Erklaerung guten Glaubens (Art. 16 Abs. 2 DSA, #438)."""
+
+    def test_report_content_name_und_email_gehen_an_den_service(self, client, service):
+        response = client.post(
+            REPORT_URL,
+            json=_payload(melder_name="Anna Beispiel", melder_email="anna@example.org"),
+        )
+
+        assert response.status_code == 200
+        assert service.report_content.await_args.kwargs["melder"] == MelderAngaben(
+            guter_glaube=True, name="Anna Beispiel", email="anna@example.org"
+        )
+
+    def test_report_content_ohne_name_und_email_wird_gemeldet(self, client, service):
+        assert client.post(REPORT_URL, json=_payload()).status_code == 200
+
+        assert service.report_content.await_args.kwargs["melder"] == MelderAngaben(
+            guter_glaube=True
+        )
+
+    def test_report_content_leere_angaben_zaehlen_als_nicht_angegeben(
+        self, client, service
+    ):
+        client.post(REPORT_URL, json=_payload(melder_name="  ", melder_email=""))
+
+        assert service.report_content.await_args.kwargs["melder"] == MelderAngaben(
+            guter_glaube=True
+        )
+
+    @pytest.mark.parametrize("guter_glaube", [False, None])
+    def test_report_content_ohne_erklaerung_guten_glaubens_wird_abgewiesen(
+        self, client, service, guter_glaube
+    ):
+        body = _payload(guter_glaube=guter_glaube)
+        if guter_glaube is None:
+            del body["guter_glaube"]
+
+        assert client.post(REPORT_URL, json=body).status_code == 422
+        service.report_content.assert_not_awaited()
+
+    @pytest.mark.parametrize("email", ["anna", "anna@", "@example.org", "a b@c.de"])
+    def test_report_content_ungueltige_email_wird_abgewiesen(
+        self, client, service, email
+    ):
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_email=email)).status_code
+            == 422
+        )
+        service.report_content.assert_not_awaited()
+
+    def test_report_content_zu_langer_name_wird_abgewiesen(self, client):
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_name="X" * 201)).status_code
+            == 422
+        )
+
+    def test_report_content_name_mit_hoechstlaenge_wird_angenommen(
+        self, client, service
+    ):
+        name = "X" * MELDER_NAME_MAX
+
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_name=name)).status_code == 200
+        )
+        assert service.report_content.await_args.kwargs["melder"].name == name
+
+    def test_report_content_zu_lange_email_wird_abgewiesen(self, client, service):
+        email = "a" * 64 + "@" + ".".join(["b" * 63] * 3) + ".de"
+        assert len(email) > MELDER_EMAIL_MAX
+
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_email=email)).status_code
+            == 422
+        )
+        service.report_content.assert_not_awaited()

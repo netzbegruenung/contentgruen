@@ -33,8 +33,9 @@ diesem Zeitpunkt live war.
 Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer):
 
 4. Den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen Stand bringen; ohne das
-   stimmen die Personen dem alten Stand-Datum zu. Das Theme aus #429 zeigt dafür Link und
-   Stand-Datum der Nutzungsbedingungen (Anforderung in PR #472).
+   stimmen die Personen dem alten Stand-Datum zu. Diesen Text (`termsText`) liefert die
+   Realm-Vorlage aus #429 mit Link und Stand-Datum, ein eigenes Theme gibt es nicht; ändern in
+   Vorlage und Realm wie in `docs/KEYCLOAK_REALM.md` beschrieben.
 5. Die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm von Gut gesagt erneut
    auslösen (siehe unten). Der Realm gehört nur zu Gut gesagt (#429); in einem geteilten Realm
    träfe das auch Konten, die Gut gesagt nie nutzen.
@@ -63,7 +64,7 @@ aktiviert und für neue Konten als Standard gesetzt sein.
 
 | Stand | Was sich geändert hat | Zustimmung | Release | gültig |
 |-------|-----------------------|------------|---------|--------|
-| 30. Oktober 2026 | §10: Änderungen gelten erst nach ausdrücklicher Zustimmung beim Anmelden statt durch Schweigen, reine Korrekturen ohne (#466). §4: Ersatzlizenz, wo der CC0-Verzicht nicht wirkt (#466). §1: Hinweis auf den abgeschalteten KI-Vorschlag für die Unterschrift gestrichen, die Unterschrift schreibt ein Mensch (#393) | ja | offen | offen; frühestens nach der Freigabe in #296 und mit der Pflichtaktion aus #429 |
+| 30. Oktober 2026 | §10: Änderungen gelten erst nach ausdrücklicher Zustimmung beim Anmelden statt durch Schweigen, reine Korrekturen ohne (#466). §4: Ersatzlizenz, wo der CC0-Verzicht nicht wirkt (#466). §1: Hinweis auf den abgeschalteten KI-Vorschlag für die Unterschrift gestrichen, die Unterschrift schreibt ein Mensch (#393). §7: Meldungen nach Art. 16 DSA mit Name und E-Mail-Adresse freiwillig, Erklärung guten Glaubens, Begründung bei „Rechtswidriger Inhalt“, Entscheidung per E-Mail (#438) | ja | offen | offen; frühestens nach der Freigabe in #296 und mit der Pflichtaktion aus #429 |
 
 Frühere Stände hatten nur einen Monat in der Stand-Zeile und waren nie Gegenstand einer
 Zustimmung beim Anmelden. Ein Monat benennt dort nicht genau einen Text: „Oktober 2026“ wurde

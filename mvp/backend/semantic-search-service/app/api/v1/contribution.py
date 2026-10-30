@@ -72,7 +72,9 @@ async def search_content(
                         ref.reference_text = referenz.reference_string
                         ref.reference_description = ref.description or referenz.text
                 except Exception as e:
-                    logger.warning(f"Herkunft {ref.reference_id} nicht lesbar: {e}")
+                    logger.warning(
+                        f"Herkunft {ref.reference_id} nicht lesbar: {type(e).__name__}"
+                    )
 
         # Die Nutzung liegt in PostgreSQL; nachgetragen wie bei /content/recent, dazu
         # der Zuwachs der letzten 7 Tage (#349). Faellt PostgreSQL aus, fehlen nur die
@@ -82,14 +84,18 @@ async def search_content(
         try:
             mit_nutzung = get_usage_service().enrich_content_with_usage(mit_nutzung)
         except Exception as e:
-            logger.warning(f"Nutzung fuer Meine Beitraege nicht lesbar, zeige 0: {e}")
+            logger.warning(
+                f"Nutzung fuer Meine Beitraege nicht lesbar, zeige 0: {type(e).__name__}"
+            )
             mit_nutzung = [{**eintrag, "usage_count": 0} for eintrag in mit_nutzung]
         try:
             mit_nutzung = get_usage_service().nutzung_letzte_7_tage_nachtragen(
                 mit_nutzung
             )
         except Exception as e:
-            logger.warning(f"Zuwachs fuer Meine Beitraege nicht lesbar, zeige 0: {e}")
+            logger.warning(
+                f"Zuwachs fuer Meine Beitraege nicht lesbar, zeige 0: {type(e).__name__}"
+            )
             mit_nutzung = [
                 {**eintrag, "nutzung_letzte_7_tage": 0} for eintrag in mit_nutzung
             ]
@@ -97,7 +103,9 @@ async def search_content(
         try:
             mit_nutzung = get_usage_service().nutzung_je_fassung_nachtragen(mit_nutzung)
         except Exception as e:
-            logger.warning(f"Nutzung je Fassung nicht lesbar, zeige keine: {e}")
+            logger.warning(
+                f"Nutzung je Fassung nicht lesbar, zeige keine: {type(e).__name__}"
+            )
             mit_nutzung = [
                 {**eintrag, "nutzung_je_fassung": None} for eintrag in mit_nutzung
             ]
@@ -113,7 +121,9 @@ async def search_content(
 
         return response
     except Exception as e:
-        logger.error(f"Error in /getContributionsOfUser: {e}", exc_info=True)
+        logger.error(
+            f"Error in /getContributionsOfUser: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 

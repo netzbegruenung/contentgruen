@@ -5,7 +5,7 @@ API endpoints for usage tracking functionality.
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, ValidationError, validator
+from pydantic import BaseModel, ValidationError
 import uuid
 from datetime import datetime, timedelta
 
@@ -50,18 +50,16 @@ OFT_GENUTZT = {
 
 
 class TrackUsageRequest(BaseModel):
-    """Request model for tracking usage."""
+    """
+    Request model for tracking usage.
 
-    session_id: Optional[str] = Field(None, max_length=255)
+    Ohne Sitzungskennung (#446): Ein session_id, den ein alter Client noch
+    mitschickt, ist ein unbekanntes Feld und wird verworfen.
+    """
+
     # Die kopierte Fassung eines Kommentars (#355); bei anderen Beitragstypen
     # ohne Bedeutung und nicht gespeichert.
     fassung: Optional[Fassung] = None
-
-    @validator("session_id")
-    def validate_session_id(cls, v):
-        if v and len(v) > 255:
-            raise ValueError("Session ID must be less than 255 characters")
-        return v
 
 
 class TrackUsageResponse(BaseModel):
@@ -147,7 +145,10 @@ async def beitrag_laden(content_id: uuid.UUID, settings: Settings):
         # Zweig gaelte ein kaputter Datensatz als "nicht vorhanden": Der Aufruf
         # bekaeme 404, die Kopie fiele unter den Tisch und niemand erfuehre, dass
         # da etwas im Bestand nicht stimmt.
-        logger.error(f"Content {content_id} is not readable: {fehler}", exc_info=True)
+        logger.error(
+            f"Content {content_id} is not readable: {type(fehler).__name__}",
+            exc_info=True,
+        )
         raise BeitragUnlesbar(str(content_id)) from fehler
     except ValueError:
         # Nicht vorhanden - erwartbar bei einem alten Link, kein Fehlerfall.
@@ -177,7 +178,8 @@ async def track_content_usage(
 
     Der User-Agent wird sofort zu einer groben Geraetekategorie verdichtet; der
     Rohwert wird nicht weitergereicht und nicht gespeichert. Die IP-Adresse wird
-    gar nicht mehr angefasst.
+    gar nicht mehr angefasst, und eine Kennung der Person oder des Browsers haelt
+    das Ereignis seit #446 auch nicht mehr fest.
     """
     logger.debug(f"Tracking usage for content {content_id}")
     try:
@@ -218,11 +220,6 @@ async def track_content_usage(
                 usage_count=service.get_content_usage(content_id),
             )
 
-        # Sanitize session_id if provided
-        if body.session_id:
-            # Remove any potentially malicious characters
-            body.session_id = body.session_id[:255]  # Truncate to max length
-
         # User-Agent hier verdichten, nicht weiter unten: ab dieser Zeile
         # existiert der Rohwert im weiteren Ablauf nicht mehr.
         device_category = derive_device_category(user_agent)
@@ -241,7 +238,6 @@ async def track_content_usage(
         logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
             content_id=str(content_uuid),
-            session_id=body.session_id,
             device_category=device_category,
             fassung=fassung,
         )
@@ -264,7 +260,8 @@ async def track_content_usage(
         raise
     except Exception as e:
         logger.error(
-            f"Error tracking usage for content {content_id}: {e}", exc_info=True
+            f"Error tracking usage for content {content_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -292,7 +289,8 @@ async def get_content_usage(
         raise
     except Exception as e:
         logger.error(
-            f"Error getting usage for content {content_id}: {e}", exc_info=True
+            f"Error getting usage for content {content_id}: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -315,7 +313,7 @@ async def eigene_nutzungsstatistik(
 
     except Exception as e:
         logger.error(
-            f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {e}",
+            f"Nutzungsstatistik fuer {log_pseudonym(current_user)} nicht geladen: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -338,7 +336,7 @@ async def besuch(
         return BesuchResponse(nutzung_seit_letztem_besuch=anzahl)
     except Exception as e:
         logger.error(
-            f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {e}",
+            f"Besuch von {log_pseudonym(current_user)} nicht erfasst: {type(e).__name__}",
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -365,7 +363,9 @@ async def get_trending_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting trending content: {e}", exc_info=True)
+        logger.error(
+            f"Error getting trending content: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -421,7 +421,7 @@ async def oft_genutzt(
         )
 
     except Exception as e:
-        logger.error(f"Error getting oft genutzt: {e}", exc_info=True)
+        logger.error(f"Error getting oft genutzt: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -447,7 +447,7 @@ async def get_cleanup_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting cleanup status: {e}", exc_info=True)
+        logger.error(f"Error getting cleanup status: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -492,5 +492,5 @@ async def run_cleanup_manually(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error running manual cleanup: {e}", exc_info=True)
+        logger.error(f"Error running manual cleanup: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")

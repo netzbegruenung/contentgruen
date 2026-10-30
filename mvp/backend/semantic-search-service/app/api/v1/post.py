@@ -47,10 +47,10 @@ async def get_by_id(
     except HTTPException:
         raise
     except ValueError as e:
-        logger.info(f"Post with id {post_id} not found: {e}")
+        logger.info(f"Post with id {post_id} not found: {type(e).__name__}")
         raise HTTPException(status_code=404, detail=f"Post with id {post_id} not found")
     except Exception as e:
-        logger.error(f"Error fetching post with id {post_id}: {e}")
+        logger.error(f"Error fetching post with id {post_id}: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -73,7 +73,7 @@ async def get_all(
             total_records_count=await post_service.count(),
         )
     except Exception as e:
-        logger.error(f"Error in /getAll: {e}")
+        logger.error(f"Error in /getAll: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -88,7 +88,7 @@ async def search_post(
         results = await post_service.search(request.query_text, request.limit)
         return PostSearchResponse(results=als_responses(PostTreffer, results, aufrufer))
     except Exception as e:
-        logger.error(f"Error in search_post: {e}")
+        logger.error(f"Error in search_post: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -129,10 +129,10 @@ async def add_post(
     except HTTPException:
         raise
     except ValueError as e:
-        logger.error(f"Validation error in add_post: {e}")
+        logger.error(f"Validation error in add_post: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in add_post: {e}")
+        logger.error(f"Unexpected error in add_post: {type(e).__name__}")
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while adding the post. Please try again later.",

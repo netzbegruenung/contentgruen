@@ -108,4 +108,20 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('wenn du dort widersprochen hast');
     expect(text).toContain('auf einen Widerspruch per E-Mail antworten wir per E-Mail');
   });
+
+  it('nennt in Abschnitt 7 die Angaben einer Meldung nach Art. 16 DSA und die Bestätigung in der App (#438)', () => {
+    const text = abschnittNummer('7.');
+
+    expect(text).toContain('in gutem Glauben davon überzeugt bist, dass deine Angaben richtig und vollständig sind');
+    expect(text).toContain('Name und E-Mail-Adresse kannst du angeben, musst es aber nicht');
+    expect(text).toContain('Den Eingang bestätigen wir dir sofort in der App');
+    expect(text).toContain('teilen wir dir unsere Entscheidung über die Meldung per E-Mail mit');
+    // Art. 16 Abs. 5 DSA: mit der Entscheidung die Rechtsbehelfe.
+    expect(text).toContain('zusammen mit deinen Möglichkeiten, dagegen vorzugehen');
+    // Art. 16 Abs. 2 lit. a DSA: beim Meldegrund „Rechtswidriger Inhalt“ ist die Begründung Pflicht.
+    expect(text).toContain('Wählst du „Rechtswidriger Inhalt“, schreibst du dazu, warum der Beitrag rechtswidrig ist');
+    expect(text).toContain('bei den anderen Gründen kannst du beschreiben, was nicht stimmt');
+    // Die Meldefunktion ist selbst der Weg nach Art. 16 DSA, nicht nur die Mail.
+    expect(text).not.toContain('richtest du bitte per E-Mail an');
+  });
 });

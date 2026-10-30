@@ -34,7 +34,9 @@ export class PublicEndpoints {
                                 // Besucher wurde deshalb auf /login umgeleitet
     '/api/v1/voting/',      // Voting endpoints - handle auth errors in components, don't redirect
     '/api/v1/moderation/report',  // Allow anonymous content reporting with session ID
-    '/api/v1/feedback/senden'     // Feedback auch von Besuchern (#343)
+    '/api/v1/feedback/senden',    // Feedback auch von Besuchern (#343)
+    '/api/v1/einladungen/pruefen',   // Einladung oeffnen, noch ohne Konto (#429)
+    '/api/v1/einladungen/einloesen'
   ];
 
   /**

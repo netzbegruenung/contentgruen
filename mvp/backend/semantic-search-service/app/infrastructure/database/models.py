@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     String,
     Integer,
@@ -24,6 +25,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX
 
 Base = declarative_base()
 
@@ -108,7 +111,7 @@ class UsageEvent(Base):
       (siehe utils/device_category.py).
 
     Was bleibt, traegt die Nutzungszaehlung: welcher Inhalt, welche Art
-    Ereignis, wann, und eine Sitzungskennung fuer die Abgrenzung.
+    Ereignis und wann. Die Sitzungskennung schreibt seit #446 niemand mehr.
     """
 
     __tablename__ = "usage_events"
@@ -125,6 +128,9 @@ class UsageEvent(Base):
     timestamp = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Seit #446 nicht mehr geschrieben: Es gibt keine Sitzungskennung im Browser
+    # mehr. Aeltere Zeilen tragen sie noch, bis sie nach ihrer Frist geloescht
+    # sind; bis dahin braucht sie scripts/manual/person_loeschen.sql.
     session_id = Column(String(255), nullable=True)
     device_category = Column(String(20), nullable=True)
     # Welche Fassung eines Kommentars kopiert wurde ("kurz", "mittel", "lang",
@@ -252,6 +258,27 @@ class FeedbackZeile(Base):
     __table_args__ = (Index("idx_feedback_eingegangen_am", "eingegangen_am"),)
 
 
+class EinladungZeile(Base):
+    """Eine Einladung (#429): Wer den Code hat, legt damit ein Konto an.
+
+    Haelt nur den Zaehler der Einloesungen, keine Mail-Adresse und keine
+    Kennung: Am Konto steht nicht, ueber welche Einladung es entstand, und hier
+    nicht, wer sie genutzt hat (services/einladung_service.py).
+    """
+
+    __tablename__ = "einladungen"
+
+    id = Column(SQLUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code = Column(String(64), nullable=False, unique=True)
+    notiz = Column(Text, nullable=False)
+    erlaubte_einloesungen = Column(Integer, nullable=False)
+    einloesungen = Column(Integer, nullable=False, server_default=text("0"))
+    # Letzter Tag (UTC), an dem die Einladung gilt.
+    gueltig_bis = Column(Date, nullable=False)
+    abgeschaltet = Column(Boolean, nullable=False, server_default=text("false"))
+    angelegt_am = Column(Date, nullable=False)
+
+
 class AussageThemaZeile(Base):
     """Ein Thema an einer Aussage, aus der festen Liste (domain/themen.py).
 
@@ -292,6 +319,12 @@ class ContentReport(Base):
     reviewed_by = Column(String(255), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
     resolution_notes = Column(Text, nullable=True)
+    # Angaben nach Art. 16 Abs. 2 DSA (#438): Name und E-Mail-Adresse freiwillig,
+    # die Erklaerung guten Glaubens Pflicht. NULL bei Meldungen von vor #438.
+    # Der DSA gilt fuer Gut gesagt (entschieden in #438).
+    melder_name = Column(String(MELDER_NAME_MAX), nullable=True)
+    melder_email = Column(String(MELDER_EMAIL_MAX), nullable=True)
+    guter_glaube = Column(Boolean, nullable=True)
 
     # Indexes and constraints
     __table_args__ = (

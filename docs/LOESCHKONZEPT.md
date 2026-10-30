@@ -72,9 +72,12 @@ Solange das Keycloak-Konto besteht, kann sich die Person neu anmelden; die Liste
 dann jede folgende Anfrage ab, nach dem Entfernen nicht mehr.
 
 1. **Sitzungskennung sichern.** `content_reports` ist die einzige Zeile im System,
-   die `reported_by_user_id` und `reported_by_session_id` nebeneinander führt
-   (`api/v1/moderation.py:169-174`). Nur über sie sind die `usage_events` einer Person
-   erreichbar.
+   die `reported_by_user_id` und `reported_by_session_id` nebeneinander führen kann
+   (geschrieben bis #446). Nur über sie sind die `usage_events` einer Person
+   erreichbar. Seit #446 gibt es keine Sitzungskennung mehr: Neue Meldungen und neue
+   `usage_events` tragen keine, der Schritt findet also nur noch ältere Zeilen.
+   Anonyme offene Meldungen tragen stattdessen ein Tagespseudonym; es hat keinen
+   Bezug zu einem Konto und wird beim Abschluss der Meldung gelöscht.
 2. **PostgreSQL.** `usage_events` (über die Sitzungen aus Schritt 1), `votes` und
    `content_reports` löschen (ein von der Person gemeldeter, inzwischen gesperrter
    Beitrag bleibt über die Moderationsansicht „Gesperrt“ erreichbar);
@@ -135,6 +138,7 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 | Datenart | Frist | Gerechnet ab |
 |---|---|---|
 | Meldungen (`content_reports`), bearbeitet oder abgewiesen | 180 Tage | Bearbeitung (`reviewed_at`; ohne sie, im Altbestand, der Eingang) |
+| Tagespseudonym an anonymen Meldungen (`reported_by_session_id`, `besucher:…`) | bis zum Abschluss der Meldung | Bearbeiten oder Abweisen ersetzt es durch einen Zufallswert (`anon:…`), angemeldete Meldungen verlieren den Wert (#446, `repositories/content_report_repository.py`) |
 | Meldungen, offen | keine | — sie sind Arbeit und bleiben, bis ein Admin sie bearbeitet oder ihr Beitrag endgültig entfernt wird (dann bearbeitet, Frist wie oben) |
 | Einwürfe (`raw_inputs`), die in keinem Beitrag ausformuliert sind, samt Sätzen | 365 Tage | letzte Arbeit daran: Einwerfen oder zuletzt gespeicherter Satz |
 | Einwürfe, die in einem Beitrag ausformuliert sind | solange dieser Beitrag besteht | — danach wie die anderen |
@@ -145,7 +149,13 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
-  meldende Person, ihre Sitzungskennung oder den Freitext. Der Zähler am Beitrag
+  meldende Person, ihre Sitzungskennung, ihren Namen und ihre E-Mail-Adresse (freiwillig,
+  seit #438) oder den Freitext. Verlangt jemand ohne Konto die Löschung dieser Angaben,
+  finden sich seine Meldungen nur über `content_reports.melder_email` oder `melder_name`,
+  per Hand in der Datenbank; ein Werkzeug dafür gibt es nicht. Die Adresse ohne Rücksicht
+  auf Groß- und Kleinschreibung suchen (`ILIKE`): Gespeichert ist sie, wie sie eingegeben
+  wurde, nur die Domain klein. Offene Meldungen haben keine
+  Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung bearbeitet ist. Der Zähler am Beitrag
   (`report_count`) bleibt; er trägt keinen Personenbezug. Das gilt auch für Meldungen zu
   gesperrten Beiträgen: Die Sperre selbst hat keine Frist, ihr Anlass in der Meldung
   (samt `resolution_notes`) geht nach 180 Tagen.
@@ -191,6 +201,25 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
   Ohne Kontaktangabe ist Feedback keiner Person zuzuordnen. Nennt der Freitext selbst
   die Person, ist das wie bei Beiträgen eine Einzelfallprüfung.
 - Backups: wie unten unter „Was nicht gelöscht wird“, bis zu 28 Tage.
+
+## Einladungen
+
+Die Tabelle `einladungen` (#429) trägt eine Notiz, die Zahl erlaubter und erfolgter Einlösungen,
+den letzten gültigen Tag und ob die Einladung abgeschaltet ist. Sie enthält **keine
+Mail-Adresse und keine Kennung**: Wer eine Einladung einlöst, erhöht nur den
+Zähler. Die Mail-Adresse geht beim Einlösen an Keycloak und wird in Gut gesagt weder
+gespeichert noch geloggt. Über die Kennung aus „Ausgangspunkt“ ist deshalb nichts zu finden,
+und der Ablauf oben erfasst die Tabelle nicht.
+
+- **Notiz:** Das Dashboard bittet, keine Namen oder Mail-Adressen einzutragen. Steht doch
+  einer darin, ist das eine Einzelfallprüfung; die Notiz lässt sich in der Datenbank
+  ändern.
+- **Frist:** keine. Einladungen bleiben stehen, auch abgelaufene; sie tragen keinen
+  Personenbezug.
+- **Konto im Realm:** Löschen wie bisher in Keycloak; dass es über eine Einladung entstand,
+  steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
+  Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
+  Zähler vergleichen.
 
 ## Vier Fallen
 
@@ -308,8 +337,9 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     `managed-users.json` ist die `UserId` einer Adresse zugeordnet; wer die Datei hat,
     rechnet das Pseudonym durch Ausprobieren der wenigen `UserId`s zurück. Auf
     Debug steht das Pseudonym bei jeder angemeldeten Anfrage
-    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warn- und Fehlerzeilen nennen den Pfad
-    unverändert; seit #284 trägt kein Pfad, den das Frontend aufruft, eine Kennung (die
+    (`BFF/Proxy/IdentityHeaderTransform.cs`). Warnzeilen nennen den Pfad unverändert
+    (Fehlerzeilen seit #422 nicht mehr, `BFF/Program.cs`); seit #284 trägt kein Pfad,
+    den das Frontend aufruft, eine Kennung (die
     Nutzungsstatistik unter „Meine Beiträge“ heißt `/api/v1/usage/users/me/usage-stats`,
     die Rückmeldung beim Anmelden `/api/v1/usage/users/me/besuch`, die Person kommt aus
     der Anmeldung). Unabhängig davon sind die Zeilen unterdrückt, in
@@ -337,9 +367,27 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     eingespielten Beiträge (`services/orchestration/content_orchestrator.py`), kuratierte
     Daten aus dem Repo. Die Zugriffszeilen von uvicorn sind unterdrückt
     (`uvicorn.access` auf `WARNING`, `app/core/logging.py`).
-  - **Nicht abgedeckt:** Fehlerzeilen geben die Meldung der Ausnahme mit aus
-    (`logger.error(f"...: {e}", exc_info=True)`). Enthält eine Ausnahme Eingabewerte, etwa
-    eine Validierungsmeldung, stehen diese mit darin.
+  - **Fehlerzeilen (BFF und Semantic-Service):** Seit #422 nennen sie von einer Ausnahme
+    nur Typ und Stack, nicht ihren Fehlertext, der oft Eingabewerte trägt (eine
+    Validierungsmeldung den abgelehnten Wert, ein Datenbankfehler die Parameter der
+    Abfrage). Im Semantic-Service schreibt der Formatter Tracebacks so
+    (`ausnahme_ohne_fehlertext()` in `app/core/logging.py`, auch für unbehandelte Ausnahmen,
+    die uvicorn meldet), und die Log-Aufrufe setzen statt der Ausnahme nur
+    `type(e).__name__` in den Text. Für Aufrufe im `except`-Block, die die Ausnahme
+    direkt verwenden, prüft das `tests/unit/core/test_kein_fehlertext_im_log.py`
+    am Quelltext; einen Fehlertext, der erst über eine Variable ins Log geht, sieht der
+    Test nicht. Ebenso seit #422 ohne Eingabe: abgelehnte und bereinigte Herkunfts-Adressen
+    (`utils/url_validator.py`, `services/content/reference_service.py`), ein unbekannter
+    Meldegrund und ungültige IDs von Beiträgen und Meldungen
+    (`services/moderation_service.py`, `services/usage_tracking_service.py`, Test
+    `tests/unit/services/test_ungueltige_id_nicht_im_log.py`). Die Skripte für
+    Sicherung und Wiederherstellung von Qdrant (`scripts/backup_qdrant.py`,
+    `scripts/restore_qdrant.py`) schreiben mit demselben Formatter. Im BFF schreibt die
+    Konsole mit `AusnahmeOhneFehlertextFormatter`
+    (`BFF/Logging/`), im Code gesetzt, sodass ein `Logging__Console__FormatterName` von
+    außen ihn nicht ersetzt; Fehlerzeilen zu einer Anfrage nennen den Pfad nicht.
+    **Altbestand:** Zeilen von vor #422 können Fehlertexte samt Eingabewerten tragen,
+    bis sie aus dem `json-file`-Strom rotiert sind (Frist unten).
   - **Frontend-nginx:** schreibt seit #275 das Format `ohne_suchtext`
     (`mvp/frontend/gutgesagt-frontend/nginx.protokoll.conf`, für `nginx.conf` und
     `nginx.docker.conf` gemeinsam) nach stdout: Absenderadresse, Zeitpunkt,
@@ -351,10 +399,13 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     schreibt es keine Zeile: Ihre genaue Uhrzeit ließe sich, je Tag durchgezählt, mit dem
     Anlagezeitpunkt der Aussage aus derselben Suche verbinden. Ins Fehlerprotokoll
     (stderr, im selben `json-file`-Strom) schreibt es für fehlende Dateien keine Zeile
-    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. **Nicht
-    abgedeckt:** Andere Fehlerzeilen tragen Adresse und Referrer weiter, etwa im Dev-Stack
-    `connect() failed … request: "POST /api/v1/search/searchByText …"`, wenn das BFF
-    nicht antwortet. Belegt mit
+    (`log_not_found off`); die trug Adresse samt Adresszusatz und Referrer. Seit #422
+    schreibt es überhaupt keine Fehlerzeile zu einer Anfrage mehr (`error_log … emerg` im
+    http-Block): nginx kennt für Fehlerzeilen kein eigenes Format, und jede trüge Adresse,
+    Anfrage samt Adresszusatz und Referrer, etwa im Dev-Stack `connect() failed …`, wenn
+    das BFF nicht antwortet. Den Ausgang einer solchen Anfrage zeigt das Zugriffsprotokoll
+    mit dem Status (413, 502 …). Zeilen außerhalb einer Anfrage (Start, Konfiguration,
+    Worker) schreibt nginx weiter. Belegt mit
     `app/tests/integration/test_webserver_protokoll.py` gegen das Image aus
     `mvp/frontend/gutgesagt-frontend/Dockerfile`. **Altbestand:** Bis #275 stehen
     Suchtexte in Adresse und Referrer im `json-file`-Strom (Frist siehe unten). Hinter dem
@@ -382,7 +433,16 @@ nicht zu finden, und der Ablauf oben erfasst es nicht.
     Referrer, wie im Frontend-nginx.
   - **Fristen:** Im Repo begrenzt nur der Dev-Stack die Größe der `json-file`-Logs
     (`mvp/docker-compose.dev.yml`, 20 MB × 3) — eine Größe, keine Frist. Die
-    Produktionskonfiguration liegt nicht im Repo. Im Repo nicht belegbar, deshalb nur als
+    Produktionskonfiguration liegt nicht im Repo.
+    - **Ziel (#422): höchstens 14 Tage** für alles im `json-file`-Strom (Anwendung,
+      Frontend-nginx) und für die Protokolle des vorgelagerten Reverse Proxy. Der
+      `json-file`-Treiber rotiert nur nach Größe; im Betrieb ist dafür eine Grenze von
+      10 MB × 3 Dateien je Container vorgesehen, vorläufig, bis das Wachstum je Tag
+      gemessen ist. Die Grenze hält die Frist nur, solange drei Dateien höchstens
+      14 Tage Protokoll fassen; wächst ein Container langsamer, bleiben seine Zeilen
+      länger stehen. **Noch nicht ausgerollt** (Stand 30.10.2026); bis dahin gilt der
+      Stand darunter, und die Datenschutzerklärung nennt noch keine Frist
+      (`docs/RECHTSTEXTE_LUECKEN.md`, P7). Im Repo nicht belegbar, deshalb nur als
     Stand der Bestandsaufnahme (`docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.4):
     - **Stand 04.09.2026, vom Maintainer am Host geprüft:** Die Zugriffsprotokolle des
       vorgelagerten Reverse Proxy, die als einzige die volle Client-IP enthalten, löscht

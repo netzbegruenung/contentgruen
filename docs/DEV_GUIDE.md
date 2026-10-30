@@ -288,12 +288,14 @@ curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
   -d '{"query_text": "Windräder verschandeln die Landschaft", "limit": 3}'
 ```
 
-Anonymous requests should send a session header so usage and reporting can be tracked:
+Anonymous requests need no session header (#446): the service recognises a visitor by a daily
+pseudonym built from `X-Real-IP` (set by nginx; without it the peer address) and `User-Agent`.
+Two visitors are simulated by sending different values:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/search/searchByText \
   -H "Content-Type: application/json" \
-  -H "X-Session-Id: 8cb492b4-d226-4cfc-904a-830946cefc36" \
+  -H "X-Real-IP: 198.51.100.7" -H "User-Agent: Beispielbrowser" \
   -d '{"query_text": "Solarenergie macht unsere Umwelt kaputt", "limit": 3}'
 ```
 

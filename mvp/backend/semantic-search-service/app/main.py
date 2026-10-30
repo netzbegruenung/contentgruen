@@ -42,6 +42,7 @@ from api.v1.moderation import router as moderation_router
 from api.v1.sperren import router as sperren_router
 from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
+from api.v1.einladungen import router as einladungen_router
 from api.v1.gegenlesen import router as gegenlesen_router
 from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
 from services.suchen_ohne_treffer_service import (
@@ -59,6 +60,8 @@ from services.loeschfristen_service import (
 )
 from utils.rate_limiter import (
     aufraeumen_im_takt,
+    einladung_pruefen_rate_limiter,
+    einladung_rate_limiter,
     feedback_rate_limiter,
     gegenlesen_rate_limiter,
     report_rate_limiter,
@@ -125,6 +128,8 @@ async def lifespan(app: FastAPI):
                     report_rate_limiter,
                     search_query_statement_rate_limiter,
                     feedback_rate_limiter,
+                    einladung_rate_limiter,
+                    einladung_pruefen_rate_limiter,
                     gegenlesen_rate_limiter,
                 ]
             )
@@ -186,7 +191,7 @@ async def lifespan(app: FastAPI):
             close_app_database()
             logger.info("✅ Application shutdown complete")
         except Exception as e:
-            logger.error(f"❌ Error during shutdown: {e}", exc_info=True)
+            logger.error(f"❌ Error during shutdown: {type(e).__name__}", exc_info=True)
 
 
 async def _gegenlesen_vorladen() -> None:
@@ -260,6 +265,9 @@ app.include_router(moderation_router, prefix="/api/v1/moderation", tags=["modera
 app.include_router(sperren_router, prefix="/api/v1/sperren", tags=["moderation"])
 app.include_router(health_router, prefix="/api/v1", tags=["monitoring"])
 app.include_router(feedback_router, prefix="/api/v1/feedback", tags=["feedback"])
+app.include_router(
+    einladungen_router, prefix="/api/v1/einladungen", tags=["einladungen"]
+)
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
 
 # Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die

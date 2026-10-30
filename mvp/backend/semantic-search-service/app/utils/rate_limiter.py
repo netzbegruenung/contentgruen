@@ -111,6 +111,14 @@ search_query_statement_rate_limiter = RateLimiter(max_requests=60, window_minute
 # erreichbar; mehr schreibt niemand in einer Viertelstunde an das Team.
 feedback_rate_limiter = RateLimiter(max_requests=5, window_minutes=15)
 
+# Einladungen (#429), beide Routen ohne Anmeldung. Ein Gruppenlink wird oft in einem
+# Raum hinter einer gemeinsamen Adresse (NAT) eingeloest; die Zahl der Einloesungen
+# begrenzt schon die Einladung selbst. Einloesen: 30 je Adresse in 15 Minuten, jeder
+# Aufruf kann eine Mail ausloesen. Pruefen: 60, die Seite fragt einmal beim Oeffnen;
+# mehr braucht nur, wer Codes durchprobiert (22 Zeichen Zufall, aussichtslos).
+einladung_rate_limiter = RateLimiter(max_requests=30, window_minutes=15)
+einladung_pruefen_rate_limiter = RateLimiter(max_requests=60, window_minutes=15)
+
 # Gegenlesen beim Schreiben (#358): 300 je Person in 10 Minuten. Das Formular fragt
 # etwa eine Sekunde nach jeder Eingabepause nach; das sind beim zuegigen Schreiben
 # weniger als 30 in der Minute.
@@ -130,7 +138,9 @@ async def aufraeumen(limiters: Iterable[RateLimiter]) -> None:
         try:
             await limiter.cleanup()
         except Exception as e:
-            logger.error(f"Error in rate limiter cleanup: {e}", exc_info=True)
+            logger.error(
+                f"Error in rate limiter cleanup: {type(e).__name__}", exc_info=True
+            )
 
 
 async def aufraeumen_im_takt(

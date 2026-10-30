@@ -43,7 +43,9 @@ public static class IdentityHeaderTransform
     /// Wiedereinfuehren des Headers nicht erneut zur Luecke wird.
     ///
     /// Wer einen neuen Identitaets- oder Rechte-Header einfuehrt, traegt ihn hier ein.
-    /// Nicht enthalten ist X-Session-Id: das ist bewusst clientseitig (siehe unten).
+    /// X-Session-Id steht seit #446 auch hier: Die SPA erzeugt keine Sitzungskennung mehr,
+    /// Besucher erkennt der Suchdienst an einem Tagespseudonym aus Adresse und User-Agent.
+    /// Ein alter Client oder ein direkter Aufruf soll ihn nicht wieder einschleusen.
     /// </summary>
     public static readonly string[] ClientControlledIdentityHeaders =
     {
@@ -53,7 +55,8 @@ public static class IdentityHeaderTransform
         "X-User-Name",
         DisplayNameHeader,
         "X-Roles",
-        "X-Is-Authenticated"
+        "X-Is-Authenticated",
+        SessionHeader
     };
 
     /// <param name="adminUserIds">
@@ -67,7 +70,6 @@ public static class IdentityHeaderTransform
         HttpRequestMessage proxyRequest,
         ClaimsPrincipal user,
         string? path,
-        IHeaderDictionary incomingHeaders,
         IReadOnlyCollection<string> adminUserIds,
         ILogger logger)
     {
@@ -109,15 +111,6 @@ public static class IdentityHeaderTransform
         else
         {
             logger.LogWarning("No user identifier found for protected endpoint: {Path}", path);
-        }
-
-        // X-Session-Id ist bewusst clientseitig (anonyme Votes und Meldungen) und traegt keine
-        // Rechte. Es wird trotzdem ersetzt statt angehaengt, damit nicht zwei Werte ankommen.
-        var sessionId = incomingHeaders[SessionHeader].FirstOrDefault();
-        if (!string.IsNullOrEmpty(sessionId))
-        {
-            SetSingleValue(proxyRequest, SessionHeader, sessionId);
-            logger.LogDebug("Forwarded X-Session-Id header");
         }
     }
 

@@ -37,6 +37,7 @@ from repositories.vote_repository import VoteRepository
 from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import ModerationService
 from tests.integration.beitrag_helfer import post_beitrag
+from tests.integration import postgres
 from tests.integration.conftest import requires_qdrant
 
 pytestmark = pytest.mark.integration
@@ -119,6 +120,92 @@ class TestMeldungen:
             assert s.get(ContentReport, offen).status == "reviewed"
             alt = s.get(ContentReport, abgewiesen)
             assert (alt.status, alt.reviewed_at) == ("dismissed", ALT)
+
+
+class TestTagespseudonymAnDerMeldung:
+    """
+    Anonyme Meldungen tragen das Tagespseudonym nur, solange sie offen sind (#446):
+    Abschliessen ersetzt es durch einen Zufallswert, angemeldete verlieren den Wert.
+    """
+
+    PSEUDONYM = "besucher:" + "a" * 64
+
+    def _meldung(self, session, user_id=None, status="pending") -> uuid.UUID:
+        meldung = ContentReport(
+            content_id=uuid.uuid4(),
+            content_type="post",
+            reported_by_user_id=user_id,
+            reported_by_session_id=self.PSEUDONYM,
+            reason="spam",
+            status=status,
+        )
+        session.add(meldung)
+        session.flush()
+        return meldung.id
+
+    def test_abschliessen_einer_meldung_loescht_das_pseudonym(self, datenbank):
+        with datenbank.get_session() as s:
+            meldung = self._meldung(s)
+
+        repo = _mit(datenbank, "content_report_repository", ContentReportRepository)
+        repo.update_report_status(meldung, status="dismissed", reviewed_by="admin")
+
+        with datenbank.get_session() as s:
+            melder = s.get(ContentReport, meldung).reported_by_session_id
+        assert melder.startswith("anon:")
+        assert "a" * 8 not in melder
+
+    def test_abschliessen_je_beitrag_loescht_es_bei_allen(self, datenbank):
+        with datenbank.get_session() as s:
+            anonym = self._meldung(s)
+            angemeldet = self._meldung(s, user_id="user-1")
+            beitrag = s.get(ContentReport, anonym).content_id
+            s.get(ContentReport, angemeldet).content_id = beitrag
+
+        repo = _mit(datenbank, "content_report_repository", ContentReportRepository)
+        assert repo.update_reports_by_content_id(beitrag, status="reviewed") == 2
+
+        with datenbank.get_session() as s:
+            assert s.get(ContentReport, anonym).reported_by_session_id.startswith(
+                "anon:"
+            )
+            assert s.get(ContentReport, angemeldet).reported_by_session_id is None
+
+    def test_offene_meldungen_behalten_es(self, datenbank):
+        """Admins sehen so, ob offene Meldungen aus derselben Quelle kommen."""
+        with datenbank.get_session() as s:
+            offen = self._meldung(s)
+            erledigt = self._meldung(s)
+
+        repo = _mit(datenbank, "content_report_repository", ContentReportRepository)
+        repo.update_report_status(erledigt, status="reviewed")
+
+        with datenbank.get_session() as s:
+            assert s.get(ContentReport, offen).reported_by_session_id == (
+                self.PSEUDONYM
+            )
+
+    def test_migration_bereinigt_vor_446_erledigte_meldungen(self, datenbank):
+        """Erledigte Altmeldungen verlieren die Sitzungskennung, offene nicht."""
+        with datenbank.get_session() as s:
+            offen = self._meldung(s)
+            anonym = self._meldung(s, status="dismissed")
+            angemeldet = self._meldung(s, user_id="user-1", status="reviewed")
+
+        postgres.migration(
+            datenbank,
+            postgres.MIGRATIONEN
+            / "2026-10-30-446-erledigte-meldungen-ohne-melderwert.sql",
+        )
+
+        with datenbank.get_session() as s:
+            assert s.get(ContentReport, offen).reported_by_session_id == (
+                self.PSEUDONYM
+            )
+            assert s.get(ContentReport, anonym).reported_by_session_id.startswith(
+                "anon:"
+            )
+            assert s.get(ContentReport, angemeldet).reported_by_session_id is None
 
 
 class TestEinwuerfe:

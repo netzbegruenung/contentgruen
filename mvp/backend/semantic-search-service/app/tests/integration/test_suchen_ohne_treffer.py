@@ -27,6 +27,7 @@ from services.suchen_ohne_treffer_service import (
 )
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
+from utils.besucher_pseudonym import besucher_tagespseudonym
 
 TABELLE = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer.sql"
 PERSONEN = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer-personen.sql"
@@ -227,6 +228,22 @@ class TestMindestanzahlZaehltPersonen:
         service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
 
         assert await _liste(service) == [(AUSSAGE, 3, 2)]
+
+    async def test_zwei_besucher_erreichen_die_schwelle_einer_nicht(
+        self, neue_datenbank
+    ):
+        """Mit Tagespseudonymen der Besucher (#446): Anschluss und User-Agent."""
+        service = _service(neue_datenbank)
+        eins = besucher_tagespseudonym("198.51.100.5|Firefox", MITTWOCH)
+        zwei = besucher_tagespseudonym("198.51.100.6|Firefox", MITTWOCH)
+        andere = _aussage(9)
+
+        service.erfassen(AUSSAGE, 0, eins, heute=MITTWOCH)
+        service.erfassen(AUSSAGE, 0, zwei, heute=MITTWOCH)
+        for _ in range(2):
+            service.erfassen(andere, 0, eins, heute=MITTWOCH)
+
+        assert await _liste(service) == [(AUSSAGE, 2, 2)]
 
     async def test_ohne_pseudonym_zaehlt_keine_person(self, neue_datenbank):
         service = _service(neue_datenbank)

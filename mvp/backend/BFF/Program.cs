@@ -14,7 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure logging
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+// Ausnahmen ohne ihren Fehlertext, der Eingabewerte tragen kann (#422).
+builder.Logging.AddKonsoleOhneFehlertext();
+// Schreibt Ausnahmen samt Fehlertext, aber nur an einen angehaengten Debugger, nie ins Log.
 builder.Logging.AddDebug();
 // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information, ASP.NET Core jede Anfrage
 // samt Pfad ("Request starting ..."). Seit #284 traegt kein Pfad des Frontends mehr eine
@@ -27,7 +29,7 @@ builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 var useKeycloak = builder.Configuration.GetValue<bool>("USE_KEYCLOAK", defaultValue: true);
 
 // Create a logger for startup
-using var loggerFactory = LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConsole());
+using var loggerFactory = LoggerFactory.Create(loggingBuilder => loggingBuilder.AddKonsoleOhneFehlertext());
 var startupLogger = loggerFactory.CreateLogger("Startup");
 startupLogger.LogInformation("USE_KEYCLOAK is set to: {UseKeycloak}", useKeycloak);
 
@@ -73,6 +75,13 @@ if (useKeycloak)
         throw new InvalidOperationException("Keycloak configuration is missing required values.");
     }
 
+    // Die Authority ist die Adresse des Realms, etwa https://<keycloak>/realms/gutgesagt
+    // (#429: eigener Realm statt dem der Netzbegruenung; docs/KEYCLOAK_REALM.md). Ohne
+    // Schraegstrich am Ende, so wie Keycloak den Issuer ausstellt; sonst schluege die
+    // Pruefung des Issuers unten bei jeder Anmeldung fehl.
+    var keycloakAuthority = keycloakSettings["Authority"]!.TrimEnd('/');
+    startupLogger.LogInformation("Keycloak authority: {Authority}", keycloakAuthority);
+
     // Configure Keycloak OpenID Connect with Cookie Authentication
     builder.Services.AddAuthentication(options =>
     {
@@ -106,7 +115,7 @@ if (useKeycloak)
     ) // Cookie for session handling
     .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
     {
-        options.Authority = keycloakSettings["Authority"];
+        options.Authority = keycloakAuthority;
         options.ClientId = keycloakSettings["ClientId"];
         options.ClientSecret = keycloakSettings["ClientSecret"];
         options.ResponseType = "code";  // Authorization Code flow
@@ -139,7 +148,7 @@ if (useKeycloak)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = keycloakSettings["Authority"],
+            ValidIssuer = keycloakAuthority,
             ValidateAudience = true,
             ValidAudience = keycloakSettings["ClientId"],
             ValidateLifetime = true
@@ -268,14 +277,14 @@ builder.Services.AddReverseProxy()
                         transformContext.ProxyRequest,
                         httpContext.User,
                         httpContext.Request.Path.Value,
-                        httpContext.Request.Headers,
                         adminUserIds,
                         logger);
                 }
                 catch (Exception ex)
                 {
                     var logger = transformContext.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "Request transform error for path: {Path}", transformContext.HttpContext.Request.Path.Value);
+                    // Ohne Pfad: er ist Eingabe, oft genau die, die den Fehler ausloeste (#422).
+                    logger.LogError(ex, "Request transform error");
                     throw;
                 }
 
@@ -388,7 +397,8 @@ app.Use(async (context, next) =>
     catch (UriFormatException ex)
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "UriFormatException caught for {Method} {Path}", context.Request.Method, context.Request.Path.Value);
+        // Ohne Pfad: er ist Eingabe, oft genau die, die den Fehler ausloeste (#422).
+        logger.LogError(ex, "UriFormatException caught for {Method}", context.Request.Method);
 
         context.Response.StatusCode = 502;
         await context.Response.WriteAsync($"Proxy configuration error: {ex.Message}");

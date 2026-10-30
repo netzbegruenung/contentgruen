@@ -133,6 +133,18 @@ class Settings(BaseSettings):
     statement_search_limit: int = 5
     min_reply_suggestions_for_search: int = 1
 
+    # Konten im Realm von Gut gesagt anlegen, wenn jemand eine Einladung einloest (#429).
+    # Ohne URL, Client und Secret lassen sich Einladungen nur verwalten, nicht einloesen.
+    # Einrichten: docs/KEYCLOAK_REALM.md. keycloak_url ist die Basis ohne /realms/...
+    keycloak_url: Optional[str] = None
+    keycloak_realm: str = "gutgesagt"
+    keycloak_admin_client_id: Optional[str] = None
+    keycloak_admin_client_secret: Optional[str] = None
+    # Wohin der Link in der Mail "Passwort festlegen" danach fuehrt: Client der App und
+    # ihre Adresse. Ohne beide endet er auf der Kontoseite von Keycloak.
+    keycloak_app_client_id: Optional[str] = None
+    app_url: Optional[str] = None
+
     # Admin users (comma-separated list)
     admin_users: str = ""
 

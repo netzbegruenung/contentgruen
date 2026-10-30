@@ -160,7 +160,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 
 ### Keycloak (Production)
 - SSO integration with Netzbegrünung
-- Configured outside this repository
+- Own realm „Gut gesagt“ prepared in #429 (sign-in switches over only after the Kennungen are migrated); template, order and setup in `docs/KEYCLOAK_REALM.md`, the realm itself is configured outside this repository
 
 ## Claude Custom Commands
 
