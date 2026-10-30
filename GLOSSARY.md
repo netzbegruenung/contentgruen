@@ -319,7 +319,7 @@ Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die 
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Besuchermerkmal**:
@@ -335,7 +335,7 @@ Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 di
 _Avoid_: IP, Netz
 
 **Sitzungskennung**:
-Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Browser ablegte und bei Suche, Meldung und Nutzung mitschickte. Seit #446 gibt es sie nicht mehr; ältere Nutzungsereignisse und Meldungen tragen sie bis zu ihrer Frist (Spalten `session_id`, `reported_by_session_id`). Für Besucher heute: Tagespseudonym.
+Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Browser ablegte und bei Suche, Meldung und Nutzung mitschickte. Seit #446 gibt es sie nicht mehr; ältere Nutzungsereignisse tragen sie bis zu ihrer Frist, ältere Meldungen bis zu ihrem Abschluss (Spalten `session_id`, `reported_by_session_id`). Für Besucher heute: Tagespseudonym.
 _Avoid_: Session-ID
 
 **Meine Beiträge**:

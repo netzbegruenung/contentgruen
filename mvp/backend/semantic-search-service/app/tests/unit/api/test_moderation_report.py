@@ -275,8 +275,9 @@ class TestKeineKennungAusDemBrowser:
     """
     Seit #446 schickt der Browser keine Sitzungskennung mehr. Ein X-Session-Id,
     den ein alter Client oder jemand direkt gegen die API mitschickt, wird nicht
-    gespeichert. Anonyme Meldungen tragen einen Zufallswert je Meldung, der nichts
-    ueber den Melder sagt und nur den CHECK der Tabelle erfuellt.
+    gespeichert. Anonyme Meldungen tragen das Tagespseudonym des Besuchers, damit
+    Admins sehen, ob offene Meldungen aus derselben Quelle kommen; beim
+    Abschliessen loescht das Repository es (test_loeschfristen.py).
     """
 
     def test_mitgeschickte_sitzungskennung_wird_nicht_gespeichert(
@@ -290,23 +291,38 @@ class TestKeineKennungAusDemBrowser:
 
         assert response.status_code == 200
         stored = service.report_content.await_args.kwargs["session_id"]
-        assert stored != value
-        assert stored.startswith("anon:")
+        assert value not in stored
+        assert stored.startswith("besucher:")
 
-    def test_jede_anonyme_meldung_bekommt_einen_eigenen_zufallswert(
+    def test_meldungen_derselben_quelle_tragen_dasselbe_pseudonym(
         self, client, service
     ):
-        """Nicht aus Adresse oder Browser abgeleitet: zwei Meldungen, zwei Werte."""
         kopf = {"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"}
         client.post(REPORT_URL, json=_payload(), headers=kopf)
         client.post(REPORT_URL, json=_payload(), headers=kopf)
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={"X-Real-IP": "198.51.100.6", "User-Agent": "Firefox"},
+        )
 
-        eins, zwei = [
+        eins, zwei, andere = [
             aufruf.kwargs["session_id"]
             for aufruf in service.report_content.await_args_list
         ]
-        assert eins.startswith("anon:") and zwei.startswith("anon:")
-        assert eins != zwei
+        assert eins == zwei
+        assert andere != eins
+
+    def test_pseudonym_enthaelt_weder_adresse_noch_user_agent(self, client, service):
+        client.post(
+            REPORT_URL,
+            json=_payload(),
+            headers={"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"},
+        )
+
+        stored = service.report_content.await_args.kwargs["session_id"]
+        assert len(stored) == len("besucher:") + 64
+        assert "198.51.100.5" not in stored and "Firefox" not in stored
 
     def test_angemeldete_meldung_traegt_nur_die_kennung(self, client, service):
         client.post(

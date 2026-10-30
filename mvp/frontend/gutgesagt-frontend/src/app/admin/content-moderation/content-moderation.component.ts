@@ -237,6 +237,22 @@ export class ContentModerationComponent implements OnInit {
     });
   }
 
+  /**
+   * Was hinter „Anonym“ steht. Offene anonyme Meldungen tragen das Tagespseudonym
+   * („besucher:…“, #446): gleicher Anfang heißt dieselbe Quelle am selben Tag.
+   * Erledigte tragen einen Zufallswert („anon:…“) und zeigen nichts; alte Meldungen
+   * den Anfang ihrer Sitzungskennung.
+   */
+  melderQuelle(kennung: string): string | null {
+    if (kennung.startsWith('anon:')) {
+      return null;
+    }
+    if (kennung.startsWith('besucher:')) {
+      return `Quelle ${kennung.substring('besucher:'.length, 'besucher:'.length + 8)}`;
+    }
+    return kennung.substring(0, 8);
+  }
+
   getReasonLabel(reason: string): string {
     return meldegrundLabel(reason);
   }

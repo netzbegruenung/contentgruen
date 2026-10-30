@@ -3,6 +3,7 @@ API endpoints for content moderation and reporting.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
@@ -20,7 +21,9 @@ from core.config import Settings
 from core.logging import get_logger
 from dependencies import get_settings, get_current_user_optional, require_admin
 from utils.rate_limiter import report_rate_limiter
+from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
+from repositories.content_report_repository import melder_pseudonym
 
 logger = get_logger(__name__)
 
@@ -172,13 +175,19 @@ async def report_content(
 
         logger.info(f"Content report received: {request.content_id} - {request.reason}")
 
-        # Meldungen brauchen eine Melder-Kennung: der Service verlangt sie, und die
-        # Tabelle hat einen CHECK darauf. Anonyme Meldungen bekommen deshalb ein
-        # Zufallstoken je Meldung. Es sagt nichts ueber den Melder aus; insbesondere
-        # ist es weder aus der Adresse noch aus dem Browser abgeleitet. Eine
-        # Sitzungskennung aus dem Browser gibt es seit #446 nicht mehr, auch nicht
-        # neben der Kennung angemeldeter Melder.
-        reporter_session = None if is_authenticated else f"anon:{uuid.uuid4()}"
+        # Anonyme Meldungen tragen das Tagespseudonym des Besuchers: Admins sehen
+        # so, ob offene Meldungen am selben Tag aus derselben Quelle kommen. Es
+        # bleibt nur, bis die Meldung erledigt ist; dann ersetzt das Repository es
+        # durch einen Zufallswert (repositories/content_report_repository.py).
+        # Eine Sitzungskennung aus dem Browser gibt es seit #446 nicht mehr, auch
+        # nicht neben der Kennung angemeldeter Melder.
+        reporter_session = (
+            None
+            if is_authenticated
+            else melder_pseudonym(
+                besucher_merkmal(http_request), datetime.now(timezone.utc).date()
+            )
+        )
 
         success = await moderation_service.report_content(
             content_id=request.content_id,

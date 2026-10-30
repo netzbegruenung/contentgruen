@@ -231,10 +231,12 @@ describe('DatenschutzComponent', () => {
       expect(text).not.toContain('höchstens 30 Tage');
     });
 
-    it('Meldungen: ohne Konto ein Zufallswert je Meldung, keine Sitzungskennung mehr neben der Kennung', () => {
+    it('Meldungen: ohne Konto das Tagespseudonym, nur bis zum Abschluss', () => {
       const text = abschnitt('Meldungen von Beiträgen');
 
-      expect(text).toContain('jede Meldung bekommt einen eigenen');
+      expect(text).toContain('tritt an ihre Stelle dein Tagespseudonym');
+      expect(text).toContain('Es bleibt nur, solange die Meldung offen ist');
+      expect(text).toContain('mit dem Abschluss der Bearbeitung löschen wir es');
       expect(text).not.toContain('stehen also beide nebeneinander');
     });
 
