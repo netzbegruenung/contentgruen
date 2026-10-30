@@ -18,8 +18,6 @@ SEITE = (
     / "mvp/frontend/gutgesagt-frontend/src/app/nutzungsbedingungen"
     / "nutzungsbedingungen.component.html"
 )
-VERZEICHNIS = uebersicht.STAENDE
-
 TAG = r"\d{1,2}\. [A-ZÄÖÜ][a-zäöü]+ \d{4}"
 
 
@@ -35,13 +33,13 @@ def test_der_stand_der_seite_ist_ein_tag():
 
 def test_der_stand_der_seite_steht_im_verzeichnis():
     stand = _stand_der_seite()
-    ordner = VERZEICHNIS / uebersicht.stand_als_ordner(stand)
+    ordner = uebersicht.STAENDE / uebersicht.stand_als_ordner(stand)
 
     assert uebersicht.stand(ordner)[0] == stand
 
 
 @pytest.mark.parametrize(
-    "ordner", uebersicht.staende_ordner(VERZEICHNIS), ids=lambda o: o.name
+    "ordner", uebersicht.staende_ordner(uebersicht.STAENDE), ids=lambda o: o.name
 )
 def test_jeder_ordner_ist_nach_seinem_stand_benannt_und_nennt_aenderungen(ordner):
     """Der Ordnername ist das Datum: Damit steht jeder Stand nur einmal im Verzeichnis."""

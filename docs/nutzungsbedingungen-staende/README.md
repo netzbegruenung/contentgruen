@@ -25,11 +25,12 @@ diesem Zeitpunkt live war.
    nach einem Release, den nächsten Tag nehmen.
 2. Hier einen Ordner für den Stand anlegen, benannt nach seinem Datum (`2027-03-01/`), darin
    `stand.md` wie beim vorigen Stand, mit „Zustimmung“ ja (wesentlich) oder nein (reine
-   Korrektur); „Release“ und „gültig“ bleiben offen. Jede Änderung ist eine eigene Datei im
-   Ordner des Stands, benannt nach dem Ticket (`512.md`), mit Paragraf und Änderung in einem
-   Absatz. So kollidieren zwei PRs nicht, die am selben Stand ändern (#500). Die alten Ordner
-   bleiben. `scripts/tests/test_rechtstexte_uebersicht.py` prüft, dass der Stand der Seite
-   hier steht und dass Ordner und Stand zusammenpassen.
+   Korrektur); „Release“ und „gültig“ bleiben offen. Jedes Ticket, das am Text ändert, legt
+   im Ordner des Stands eine eigene Datei an, benannt nach dem Ticket (`512.md`), mit
+   Paragraf und Änderung in einem Absatz (bei mehreren Änderungen je ein Satz). So
+   kollidieren zwei PRs nicht, die am selben Stand ändern (#500). Die alten Ordner bleiben.
+   `scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass der Stand der Seite hier
+   steht und dass Ordner und Stand zusammenpassen.
 3. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum in `stand.md` eintragen, beim
    vorigen Stand das „bis“-Datum. Bei einer reinen Korrektur ist der Ablauf hier zu Ende.
 

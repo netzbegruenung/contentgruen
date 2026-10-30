@@ -73,9 +73,13 @@ def abschnitte(wurzel: pathlib.Path = LUECKEN) -> list[pathlib.Path]:
     return sorted(d for d in wurzel.iterdir() if d.is_dir())
 
 
-def eintraege(abschnitt: pathlib.Path) -> list[pathlib.Path]:
-    dateien = [d for d in abschnitt.glob("*.md") if d.name != "README.md"]
+def _dateien_nach_nummer(ordner: pathlib.Path, ausser: str) -> list[pathlib.Path]:
+    dateien = [d for d in ordner.glob("*.md") if d.name != ausser]
     return sorted(dateien, key=lambda d: _nach_nummer(d.stem))
+
+
+def eintraege(abschnitt: pathlib.Path) -> list[pathlib.Path]:
+    return _dateien_nach_nummer(abschnitt, ausser="README.md")
 
 
 def luecken(wurzel: pathlib.Path = LUECKEN) -> str:
@@ -112,11 +116,7 @@ def staende_ordner(wurzel: pathlib.Path = STAENDE) -> list[pathlib.Path]:
 def stand(ordner: pathlib.Path) -> tuple[str, dict[str, str], list[str]]:
     """Stand, seine Felder und seine Aenderungen (eine je Datei, nach Ticket sortiert)."""
     name, felder = eintrag(ordner / "stand.md")
-    aenderungen = [
-        d
-        for d in sorted(ordner.glob("*.md"), key=lambda d: _nach_nummer(d.stem))
-        if d.name != "stand.md"
-    ]
+    aenderungen = _dateien_nach_nummer(ordner, ausser="stand.md")
     return name, felder, [" ".join(d.read_text().split()) for d in aenderungen]
 
 
@@ -134,7 +134,8 @@ def staende(wurzel: pathlib.Path = STAENDE) -> str:
 
 
 if __name__ == "__main__":
-    liste = sys.argv[1] if len(sys.argv) == 2 else ""
-    if liste not in ("luecken", "staende"):
+    uebersichten = {"luecken": luecken, "staende": staende}
+    art = sys.argv[1] if len(sys.argv) == 2 else ""
+    if art not in uebersichten:
         sys.exit("Aufruf: rechtstexte_uebersicht.py luecken|staende")
-    print(luecken() if liste == "luecken" else staende(), end="")
+    print(uebersichten[art](), end="")

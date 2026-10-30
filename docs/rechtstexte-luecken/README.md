@@ -1,8 +1,8 @@
 # Gut gesagt — Rechtstexte: Lückenliste
 
 Arbeitsdokument zur Überarbeitung von Impressum, Datenschutzerklärung und
-Nutzungsbedingungen. Die Tabellen haben eine Eintrag-Spalte und sind zum Ausfüllen
-gedacht — wer eine Angabe klärt, trägt sie hier ein.
+Nutzungsbedingungen. Die Einträge haben ein Eintrag-Feld und sind zum Ausfüllen
+gedacht — wer eine Angabe klärt, trägt sie in der Datei des Eintrags ein.
 
 **Ablage (#500):** Jeder nummerierte Eintrag ist eine eigene Datei im Ordner seines
 Abschnitts, benannt nach seiner Nummer (`4-fehlende-vorgaenge/D-N5.md`); die Felder der Datei
