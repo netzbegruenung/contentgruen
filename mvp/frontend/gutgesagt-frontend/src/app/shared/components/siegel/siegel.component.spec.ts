@@ -2,20 +2,11 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 
 import { SiegelComponent } from './siegel.component';
 import { HAND, SCHATTEN } from '../../marke/hand';
+import { aufgeloest, themaFarbe } from '../../../testing/farben';
 
 /** Tannengrün der Seite (`--primary-dark` in `custom-theme.scss`), gelesen aus dem geladenen Theme. */
 function tannengruen(): string {
-  return getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim().toLowerCase();
-}
-
-/** Eine CSS-Farbe so, wie der Browser sie auflöst: `rgb(r, g, b)`. */
-function aufgeloest(farbe: string): string {
-  const probe = document.createElement('span');
-  probe.style.color = farbe;
-  document.body.appendChild(probe);
-  const rgb = getComputedStyle(probe).color;
-  probe.remove();
-  return rgb;
+  return themaFarbe('--primary-dark').toLowerCase();
 }
 
 /**
