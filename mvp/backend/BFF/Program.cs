@@ -14,7 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure logging
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+// Ausnahmen ohne ihre Meldung, die Eingabewerte tragen kann (#422).
+builder.Logging.AddKonsoleOhneAusnahmemeldung();
 builder.Logging.AddDebug();
 // YARP schreibt jede Weiterleitung samt Ziel-URL auf Information, ASP.NET Core jede Anfrage
 // samt Pfad ("Request starting ..."). Seit #284 traegt kein Pfad des Frontends mehr eine
@@ -27,7 +28,7 @@ builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
 var useKeycloak = builder.Configuration.GetValue<bool>("USE_KEYCLOAK", defaultValue: true);
 
 // Create a logger for startup
-using var loggerFactory = LoggerFactory.Create(loggingBuilder => loggingBuilder.AddConsole());
+using var loggerFactory = LoggerFactory.Create(loggingBuilder => loggingBuilder.AddKonsoleOhneAusnahmemeldung());
 var startupLogger = loggerFactory.CreateLogger("Startup");
 startupLogger.LogInformation("USE_KEYCLOAK is set to: {UseKeycloak}", useKeycloak);
 
