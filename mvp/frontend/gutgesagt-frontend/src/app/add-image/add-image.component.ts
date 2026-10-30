@@ -89,7 +89,6 @@ export class AddImageComponent implements OnDestroy {
         title: values.title || 'Titel eingeben...',
         text: values.caption || 'Bildunterschrift eingeben...',
         image_url: values.image_url || '',
-        description_model: null,
         references: [],
         created: new Date().toISOString(),
         last_modified: new Date().toISOString(),
