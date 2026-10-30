@@ -4,11 +4,14 @@ check.sh --geaendert: welche Schritte eine Aenderung braucht (scripts/geaendert.
 Jeder Test legt einen kleinen Baum mit den Pfaden des Repos unter tmp_path an.
 """
 
+import re
+
 import pytest
 
 import geaendert
 
-FE = "mvp/frontend/gutgesagt-frontend"
+FE = geaendert.FE
+PY = geaendert.PY
 
 
 @pytest.fixture
@@ -87,15 +90,15 @@ def test_waehlen_frontend_ohne_erreichte_spec_alle_specs(baum):
     assert geaendert.waehlen([f"{FE}/src/app/a/a.ts"], wurzel).specs is None
 
 
-PY = "mvp/backend/semantic-search-service"
-
-
 @pytest.mark.parametrize(
     "pfad, schritte",
     [
         (f"{PY}/app/services/x.py", ["retired-words", "lint", "unit"]),
         (f"{PY}/app/tests/unit/test_x.py", ["retired-words", "lint", "unit"]),
-        (f"{PY}/app/repositories/x.py", ["retired-words", "lint", "unit", "integration"]),
+        (
+            f"{PY}/app/repositories/x.py",
+            ["retired-words", "lint", "unit", "integration"],
+        ),
         (
             f"{PY}/app/infrastructure/database/models.py",
             ["retired-words", "lint", "unit", "integration"],
@@ -121,7 +124,7 @@ PY = "mvp/backend/semantic-search-service"
     ],
 )
 def test_waehlen_schritte_nach_pfad(baum, pfad, schritte):
-    auswahl = geaendert.waehlen([pfad], baum({}))
+    auswahl = geaendert.waehlen([pfad], baum({pfad: ""}))
 
     assert auswahl.schritte == schritte
     assert all(auswahl.gruende[s] for s in schritte)
@@ -138,7 +141,14 @@ def test_waehlen_skripte_pipeline_und_unbekanntes_alles(baum, pfad):
     assert pfad in auswahl.gruende["bff"][0]
 
 
-def test_waehlen_frontend_datei_die_ein_python_test_liest_auch_unit(baum):
+@pytest.mark.parametrize(
+    "pfad, test",
+    [
+        (f"{FE}/src/app/shared/meldegruende.ts", "test_m.py"),
+        (f"{FE}/public/avatars/a.png", "test_b.py"),
+    ],
+)
+def test_waehlen_frontend_datei_die_ein_python_test_liest_auch_unit(baum, pfad, test):
     wurzel = baum(
         {
             f"{FE}/src/app/shared/meldegruende.ts": "export const M = [];\n",
@@ -148,14 +158,10 @@ def test_waehlen_frontend_datei_die_ein_python_test_liest_auch_unit(baum):
         }
     )
 
-    for pfad, test in [
-        (f"{FE}/src/app/shared/meldegruende.ts", "test_m.py"),
-        (f"{FE}/public/avatars/a.png", "test_b.py"),
-    ]:
-        auswahl = geaendert.waehlen([pfad], wurzel)
+    auswahl = geaendert.waehlen([pfad], wurzel)
 
-        assert auswahl.schritte == ["retired-words", "unit", "frontend"]
-        assert test in auswahl.gruende["unit"][0]
+    assert auswahl.schritte == ["retired-words", "unit", "frontend"]
+    assert test in auswahl.gruende["unit"][0]
 
 
 def test_waehlen_doku_die_ein_integrationstest_liest_auch_integration(baum):
@@ -202,7 +208,10 @@ def test_main_ohne_aenderung_nur_retired_words(monkeypatch, capsys):
     assert capsys.readouterr().out == "schritte retired-words\n"
 
 
-def test_waehlen_erwaehnung_ohne_zeichenkette_ist_kein_lesen(baum):
+@pytest.mark.parametrize(
+    "pfad", [f"{FE}/src/app/shared/x.ts", f"{FE}/src/core/config.py"]
+)
+def test_waehlen_erwaehnung_ohne_zeichenkette_ist_kein_lesen(baum, pfad):
     wurzel = baum(
         {
             f"{PY}/app/tests/unit/test_m.py": (
@@ -211,15 +220,87 @@ def test_waehlen_erwaehnung_ohne_zeichenkette_ist_kein_lesen(baum):
         }
     )
 
-    for pfad in [f"{FE}/src/app/shared/x.ts", f"{FE}/src/core/config.py"]:
-        assert "unit" not in geaendert.waehlen([pfad], wurzel).schritte
+    assert "unit" not in geaendert.waehlen([pfad], wurzel).schritte
 
 
 def test_waehlen_wartungsskript_unit_und_wer_es_liest(baum):
     wurzel = baum(
-        {f"{PY}/app/tests/integration/test_l.py": 'S = M / "manual/person_loeschen.sql"\n'}
+        {
+            f"{PY}/app/tests/integration/test_l.py": 'S = M / "manual/person_loeschen.sql"\n'
+        }
     )
 
     auswahl = geaendert.waehlen(["mvp/scripts/manual/person_loeschen.sql"], wurzel)
 
     assert auswahl.schritte == ["retired-words", "unit", "integration"]
+
+
+@pytest.mark.parametrize(
+    "pfad",
+    [
+        f"{PY}/app/utils/tief.py",
+        f"{PY}/app/services/mitte.py",
+        f"{PY}/app/tests/fixtures/helfer.py",
+    ],
+)
+def test_waehlen_python_modul_das_integrationstests_erreichen_auch_integration(
+    baum, pfad
+):
+    wurzel = baum(
+        {
+            f"{PY}/app/utils/tief.py": "X = 1\n",
+            f"{PY}/app/services/mitte.py": "from utils.tief import X\n",
+            f"{PY}/app/tests/fixtures/helfer.py": "H = 1\n",
+            f"{PY}/app/tests/integration/test_i.py": (
+                "import services.mitte\nfrom tests.fixtures import helfer\n"
+            ),
+            f"{PY}/app/api/fern.py": "import utils.tief\n",
+        }
+    )
+
+    auswahl = geaendert.waehlen([pfad], wurzel)
+
+    assert auswahl.schritte == ["retired-words", "lint", "unit", "integration"]
+    assert "tests/integration erreicht" in auswahl.gruende["integration"][0]
+
+
+def test_waehlen_python_modul_ohne_integrationstest_nur_unit(baum):
+    wurzel = baum(
+        {
+            f"{PY}/app/api/fern.py": "import utils.tief\n",
+            f"{PY}/app/utils/tief.py": "X = 1\n",
+            f"{PY}/app/tests/integration/test_i.py": "import utils.tief\n",
+        }
+    )
+
+    auswahl = geaendert.waehlen([f"{PY}/app/api/fern.py"], wurzel)
+
+    assert auswahl.schritte == ["retired-words", "lint", "unit"]
+
+
+def test_schritte_wie_in_check_sh():
+    check = (geaendert.WURZEL / "scripts" / "check.sh").read_text()
+    in_check = re.search(r'^SCHRITTE="([^"]+)"', check, re.MULTILINE).group(1).split()
+
+    assert geaendert.SCHRITTE == in_check
+
+
+def test_waehlen_geloeschtes_python_modul_auch_integration(baum):
+    auswahl = geaendert.waehlen([f"{PY}/app/services/weg.py"], baum({}))
+
+    assert "integration" in auswahl.schritte
+
+
+def test_waehlen_frontend_mit_pfad_aliasen_alle_specs(baum):
+    wurzel = baum(
+        {
+            f"{FE}/tsconfig.json": '{"compilerOptions": {"paths": {"@app/*": ["x"]}}}',
+            f"{FE}/src/app/a/a.ts": "export const a = 1;\n",
+            f"{FE}/src/app/a/a.spec.ts": "import { a } from './a';\n",
+        }
+    )
+
+    auswahl = geaendert.waehlen([f"{FE}/src/app/a/a.ts"], wurzel)
+
+    assert auswahl.specs is None
+    assert "Pfad-Aliase" in auswahl.gruende["frontend"][0]

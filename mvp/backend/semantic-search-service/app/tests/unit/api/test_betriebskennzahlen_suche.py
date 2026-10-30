@@ -56,7 +56,7 @@ UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 
 @pytest_asyncio.fixture
 async def dienst(test_settings, repository_factory):
-    """Suchdienst-App mit Betriebskennzahlen und Suche auf echten Diensten."""
+    """Suchdienst-App mit Betriebskennzahlen und Suche auf echten Diensten, Suchindex ersetzt."""
     factory = repository_factory
     statements = StatementService(test_settings, factory)
     commentaries = CommentaryService(test_settings, factory)

@@ -7,6 +7,7 @@ Im Zweifel laeuft mehr, nicht weniger. Nur fuer lokale Zwischenpruefungen, die C
 """
 
 import argparse
+import ast
 import pathlib
 import re
 import subprocess
@@ -17,24 +18,26 @@ WURZEL = pathlib.Path(__file__).resolve().parent.parent
 SCHRITTE = ["retired-words", "lint", "unit", "integration", "frontend", "bff"]
 FE = "mvp/frontend/gutgesagt-frontend"
 PY = "mvp/backend/semantic-search-service"
-ALLES = "alle Schritte"
+ALLES = SCHRITTE[1:]
+PYTHON = ["lint", "unit"]
+PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
 
 # Pfad-Praefix -> Schritte; der erste passende Eintrag gilt. Was keiner trifft und keine
-# Doku ist, waehlt alles.
+# Doku ist, waehlt alles. Python-Module, die die Integrationstests importieren, waehlen
+# zusaetzlich integration (_python_fuer_integration).
 REGELN = [
     ("scripts/", ALLES),
     (".woodpecker/", ALLES),
     (FE + "/", ["frontend"]),
-    (PY + "/requirements.txt", ["lint", "unit", "integration"]),
-    (PY + "/app/repositories/", ["lint", "unit", "integration"]),
-    (PY + "/app/infrastructure/database/", ["lint", "unit", "integration"]),
-    (PY + "/app/services/embeddings/", ["lint", "unit", "integration"]),
-    (PY + "/app/tests/integration/", ["lint", "unit", "integration"]),
+    (PY + "/requirements.txt", PYTHON_MIT_DIENSTEN),
+    (PY + "/app/repositories/", PYTHON_MIT_DIENSTEN),
+    (PY + "/app/infrastructure/database/", PYTHON_MIT_DIENSTEN),
+    (PY + "/app/tests/integration/", PYTHON_MIT_DIENSTEN),
     # Gemeinsam fuer Unit- und Integrationstests
-    (PY + "/app/tests/conftest.py", ["lint", "unit", "integration"]),
-    (PY + "/app/pytest.ini", ["lint", "unit", "integration"]),
-    (PY + "/", ["lint", "unit"]),
-    ("mvp/backend/postgres-app/", ["lint", "unit", "integration"]),
+    (PY + "/app/tests/conftest.py", PYTHON_MIT_DIENSTEN),
+    (PY + "/app/pytest.ini", PYTHON_MIT_DIENSTEN),
+    (PY + "/", PYTHON),
+    ("mvp/backend/postgres-app/", PYTHON_MIT_DIENSTEN),
     ("mvp/backend/BFF/", ["bff"]),
     ("mvp/backend/BFF.Tests/", ["bff"]),
     ("mvp/backend/GutGesagt.sln", ["bff"]),
@@ -53,7 +56,9 @@ LESENDE_TESTS = {
 }
 
 # import ... from './x', export ... from './x', import('./x'), import './x'
-_IMPORT = re.compile(r"""(?:from\s+|import\s*\(\s*|import\s+)['"](\.{1,2}/[^'"]+)['"]""")
+_IMPORT = re.compile(
+    r"""(?:from\s+|import\s*\(\s*|import\s+)['"](\.{1,2}/[^'"]+)['"]"""
+)
 
 
 @dataclass
@@ -75,7 +80,11 @@ def _importe(datei: pathlib.Path) -> set[pathlib.Path]:
     ziele = set()
     for ziel in _IMPORT.findall(datei.read_text(errors="replace")):
         basis = (datei.parent / ziel).resolve()
-        for kandidat in (basis.with_name(basis.name + ".ts"), basis / "index.ts", basis):
+        for kandidat in (
+            basis.with_name(basis.name + ".ts"),
+            basis / "index.ts",
+            basis,
+        ):
             if kandidat.is_file() and kandidat.suffix == ".ts":
                 ziele.add(kandidat)
                 break
@@ -100,7 +109,11 @@ def _specs_zu(geaenderte_ts: set[pathlib.Path], src: pathlib.Path) -> set[pathli
 def _frontend(pfade: list[str], wurzel: pathlib.Path, auswahl: Auswahl) -> None:
     fe = (wurzel / FE).resolve()
     src = fe / "src" / "app"
-    ts, alle = set(), None
+    if '"paths"' in _lesen(fe / "tsconfig.json"):
+        # Importe ueber Aliase verfolgt _importe nicht
+        auswahl.dazu("frontend", "tsconfig.json kennt Pfad-Aliase, alle Specs")
+        return
+    ts, unzuordenbar = set(), None
     for pfad in pfade:
         datei = (wurzel / pfad).resolve()
         # Template und Styles gehoeren zur gleichnamigen Komponente
@@ -108,16 +121,73 @@ def _frontend(pfade: list[str], wurzel: pathlib.Path, auswahl: Auswahl) -> None:
         if datei.is_relative_to(src) and komponente.is_file():
             ts.add(komponente)
         else:
-            alle = pfad
-    if alle:
-        auswahl.dazu("frontend", f"{alle}: nicht einer Komponente zuzuordnen, alle Specs")
+            unzuordenbar = pfad
+    if unzuordenbar:
+        auswahl.dazu(
+            "frontend", f"{unzuordenbar}: nicht einer Komponente zuzuordnen, alle Specs"
+        )
         return
     specs = _specs_zu(ts, src)
     if not specs:
-        auswahl.dazu("frontend", "keine Spec erreicht die geaenderten Dateien, alle Specs")
+        auswahl.dazu(
+            "frontend", "keine Spec erreicht die geaenderten Dateien, alle Specs"
+        )
         return
     auswahl.dazu("frontend", f"{len(specs)} Specs zu {len(ts)} geaenderten Dateien")
     auswahl.specs = sorted(str(s.relative_to(fe)) for s in specs)
+
+
+def _lesen(datei: pathlib.Path) -> str:
+    return datei.read_text(errors="replace") if datei.is_file() else ""
+
+
+def _python_module(app: pathlib.Path) -> dict[str, pathlib.Path]:
+    """Modulname (wie ihn pytest mit pythonpath=app importiert) -> Datei."""
+    module = {}
+    for datei in app.rglob("*.py"):
+        teile = datei.relative_to(app).with_suffix("").parts
+        if "venv" in teile or "__pycache__" in teile:
+            continue
+        if teile[-1] == "__init__":
+            teile = teile[:-1]
+        if teile:
+            module[".".join(teile)] = datei
+    return module
+
+
+def _python_importe(name: str, datei: pathlib.Path, module: dict) -> set[str]:
+    try:
+        baum = ast.parse(_lesen(datei))
+    except SyntaxError:
+        return set()
+    paket = name.split(".") if datei.name == "__init__.py" else name.split(".")[:-1]
+    namen = set()
+    for knoten in ast.walk(baum):
+        if isinstance(knoten, ast.Import):
+            namen |= {a.name for a in knoten.names}
+        elif isinstance(knoten, ast.ImportFrom):
+            basis = paket[: len(paket) - knoten.level + 1] if knoten.level else []
+            modul = ".".join(basis + ([knoten.module] if knoten.module else []))
+            namen |= {modul} | {f"{modul}.{a.name}" for a in knoten.names}
+    # "import a.b.c" laedt auch a und a.b
+    mit_paketen = {
+        ".".join(n.split(".")[:i]) for n in namen for i in range(1, n.count(".") + 2)
+    }
+    return {n for n in mit_paketen if n in module}
+
+
+def _python_fuer_integration(wurzel: pathlib.Path) -> set[pathlib.Path]:
+    """Die Python-Dateien, die die Integrationstests direkt oder ueber andere importieren."""
+    module = _python_module(wurzel / PY / "app")
+    erreicht = {n for n in module if n.startswith("tests.integration")}
+    offen = list(erreicht)
+    while offen:
+        name = offen.pop()
+        for ziel in _python_importe(name, module[name], module):
+            if ziel not in erreicht:
+                erreicht.add(ziel)
+                offen.append(ziel)
+    return {module[n].resolve() for n in erreicht}
 
 
 def _doku(pfad: str) -> bool:
@@ -144,7 +214,8 @@ def _lesende_tests(wurzel: pathlib.Path) -> dict[str, dict[pathlib.Path, str]]:
 
 def _merkmale(pfad: str) -> set[str]:
     """Woran ein Test erkennbar ist, der die Datei liest: eine Zeichenkette, die mit dem
-    Dateinamen oder den letzten zwei Ordnern endet ("src/app/shared/x.ts", "public/avatars")."""
+    Dateinamen oder den letzten zwei Ordnern endet ("src/app/shared/x.ts", "public/avatars").
+    """
     teile = pathlib.PurePosixPath(pfad).parts
     return {teile[-1]} | ({"/".join(teile[-3:-1])} if len(teile) > 2 else set())
 
@@ -163,8 +234,18 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
             if schritt != "frontend":
                 auswahl.dazu(schritt, pfad)
     if alles:
-        for schritt in SCHRITTE[1:]:
-            auswahl.dazu(schritt, f"{alles[0]}: wirkt auf alles")
+        for schritt in ALLES:
+            if schritt != "frontend":
+                auswahl.dazu(schritt, f"{alles[0]}: wirkt auf alles")
+    python = [p for p in pfade if p.startswith(PY + "/app/") and p.endswith(".py")]
+    if python:
+        erreicht = _python_fuer_integration(wurzel)
+        for pfad in python:
+            datei = (wurzel / pfad).resolve()
+            if datei in erreicht:
+                auswahl.dazu("integration", f"tests/integration erreicht {pfad}")
+            elif not datei.exists():
+                auswahl.dazu("integration", f"{pfad} geloescht, Importe unbekannt")
     tests = _lesende_tests(wurzel)
     for pfad in pfade:
         for schritt, inhalte in tests.items():
@@ -177,15 +258,19 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
                     break
     fe = [p for p in pfade if p.startswith(FE + "/")]
     if alles:
-        auswahl.gruende["frontend"] = [f"{alles[0]}: wirkt auf alles, alle Specs"]
+        auswahl.dazu("frontend", f"{alles[0]}: wirkt auf alles, alle Specs")
     elif fe:
         _frontend(fe, wurzel, auswahl)
     return auswahl
 
 
 def _git(*argumente: str) -> list[str]:
+    # quotePath aus: Pfade mit Umlauten kommen sonst in Anfuehrungszeichen
     aus = subprocess.run(
-        ["git", "-C", str(WURZEL), *argumente], capture_output=True, text=True, check=True
+        ["git", "-C", str(WURZEL), "-c", "core.quotePath=false", *argumente],
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return aus.stdout.splitlines()
 

@@ -455,7 +455,7 @@ helpers automate the retry.
 - `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests and
   `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container; `--integration` adds the
   integration tests, `--schritt <name>` runs one step, `--include <pfad>` only the frontend specs under
-  that path, `--geaendert` only what the changes since `origin/main` reach). For checks in between use
+  that path, `--geaendert` only what the changes since `origin/main` reach, integration included if they reach it). For checks in between use
   `--geaendert`; run the full `--integration` check before opening a PR. Woodpecker runs
   the same steps on every PR (`docs/CI.md`); a red run gets a comment with the red steps.
 - Replaced names are listed in `scripts/retired-words.txt`; the check and a pre-commit hook reject

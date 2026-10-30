@@ -19,7 +19,6 @@ import uuid
 
 import pytest
 import pytest_asyncio
-
 import torch
 from sentence_transformers import SentenceTransformer
 
@@ -87,6 +86,7 @@ def einbettungsmodell():
     Das Modell haelt keinen Zustand zwischen Aufrufen, geteilt bettet es dasselbe ein.
     Zwei Threads: Mit einem je Kern bremsen sie sich auf einem ausgelasteten Rechner
     gegenseitig aus, eine kurze Einbettung dauerte dann Sekunden statt Zehntelsekunden.
+    Die Zahl gilt fuer den ganzen Testprozess; die Integrationssuite laeuft allein in ihm.
     """
     torch.set_num_threads(EINBETTUNG_THREADS)
     return SentenceTransformer(EMBEDDING_MODELL)
@@ -103,7 +103,9 @@ async def real_embeddings_manager(integration_settings, einbettungsmodell, monke
     comes from ``einbettungsmodell``.
     """
     monkeypatch.setattr(
-        qdrant_embeddings_manager, "SentenceTransformer", lambda _: einbettungsmodell
+        qdrant_embeddings_manager,
+        "SentenceTransformer",
+        lambda *_, **__: einbettungsmodell,
     )
     QdrantEmbeddingsManager._instance = None
     manager = QdrantEmbeddingsManager(integration_settings)

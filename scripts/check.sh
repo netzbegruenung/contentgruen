@@ -14,8 +14,8 @@
 # `ng test --include`; repeatable); implies --schritt frontend.
 # --geaendert: only the steps the files changed since the branch left CHECK_BASE (default origin/main)
 # need, the working tree included, and for the frontend only the specs that reach them
-# (scripts/geaendert.py prints the choice and why). For checks in between; CI and the check
-# before the merge run everything.
+# (scripts/geaendert.py prints the choice and why). Includes integration whenever the changes reach
+# it, without --integration. For checks in between; CI and the check before the merge run everything.
 # CHECK_VOLL=1 shows the full output instead of the summary lines; CHECK_OHNE_DOCKER=1 runs the
 # BFF tests with the local dotnet instead of the .NET SDK container.
 set -e
