@@ -1,12 +1,16 @@
 """
 Keycloak speichert bei der Zustimmung zu den Nutzungsbedingungen nur einen
 Zeitstempel (#429). Welchem Text jemand zugestimmt hat, ergibt sich erst über das
-Verzeichnis der Stände (#466). Trägt die Seite einen Stand, der dort fehlt, ist eine
-Zustimmung nicht mehr zuzuordnen.
+Verzeichnis der Stände (#466), seit #500 ein Ordner je Stand. Trägt die Seite einen
+Stand, der dort fehlt, ist eine Zustimmung nicht mehr zuzuordnen.
 """
 
 import pathlib
 import re
+
+import pytest
+
+import rechtstexte_uebersicht as uebersicht
 
 WURZEL = pathlib.Path(__file__).resolve().parents[2]
 SEITE = (
@@ -14,11 +18,9 @@ SEITE = (
     / "mvp/frontend/gutgesagt-frontend/src/app/nutzungsbedingungen"
     / "nutzungsbedingungen.component.html"
 )
-VERZEICHNIS = WURZEL / "docs/NUTZUNGSBEDINGUNGEN_STAENDE.md"
+VERZEICHNIS = uebersicht.STAENDE
 
 TAG = r"\d{1,2}\. [A-ZÄÖÜ][a-zäöü]+ \d{4}"
-# Frühere Stände tragen nur Monat und Jahr („Oktober 2026“).
-STAND = rf"(?:{TAG}|[A-ZÄÖÜ][a-zäöü]+ \d{{4}})"
 
 
 def _stand_der_seite() -> str:
@@ -27,20 +29,23 @@ def _stand_der_seite() -> str:
     return treffer.group(1).strip()
 
 
-def _staende_im_verzeichnis() -> list[str]:
-    """Erste Spalte aller Tabellenzeilen, die ein Stand ist: aktuelle und alte Stände."""
-    erste_spalten = re.findall(r"^\| ([^|]+?) \|", VERZEICHNIS.read_text(), re.M)
-    return [s for s in erste_spalten if re.fullmatch(STAND, s)]
-
-
 def test_der_stand_der_seite_ist_ein_tag():
     assert re.fullmatch(TAG, _stand_der_seite())
 
 
 def test_der_stand_der_seite_steht_im_verzeichnis():
-    assert _stand_der_seite() in _staende_im_verzeichnis()
+    stand = _stand_der_seite()
+    ordner = VERZEICHNIS / uebersicht.stand_als_ordner(stand)
+
+    assert uebersicht.stand(ordner)[0] == stand
 
 
-def test_jeder_stand_steht_nur_einmal_im_verzeichnis():
-    staende = _staende_im_verzeichnis()
-    assert len(staende) == len(set(staende))
+@pytest.mark.parametrize(
+    "ordner", uebersicht.staende_ordner(VERZEICHNIS), ids=lambda o: o.name
+)
+def test_jeder_ordner_ist_nach_seinem_stand_benannt_und_nennt_aenderungen(ordner):
+    """Der Ordnername ist das Datum: Damit steht jeder Stand nur einmal im Verzeichnis."""
+    name, _, aenderungen = uebersicht.stand(ordner)
+
+    assert uebersicht.stand_als_ordner(name) == ordner.name
+    assert aenderungen

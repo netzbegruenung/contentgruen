@@ -1,0 +1,6 @@
+# D-N5
+
+- **Vorgang:** **Melde-/Moderationsfunktion**
+- **Fundstelle im Code:** `infrastructure/database/models.py:122–139` (`content_reports`), `shared/components/report-dialog/`
+- **Was in den Text muss:** Freitext-Meldung + meldende Person + Moderationsentscheidung + Prüfer werden gespeichert
+- **Eintrag / Entscheidung:** ✓ Eigener Abschnitt. **Löschfrist: keine**, im Text so benannt, auch für abgeschlossene Bearbeitungen. **Überholt durch #421:** bearbeitete und abgewiesene Meldungen 180 Tage nach der Bearbeitung, offene ohne Frist. **Erledigt mit #222:** Frist im Text, mit Art. 20 DSA als Begründung und dem Hinweis, dass offene Meldungen beim endgültigen Entfernen des Beitrags als bearbeitet gelten. Ergänzt um den anonymen Meldeweg (Art. 16 DSA) und die flüchtige IP-Verarbeitung für das Rate-Limit. **Seit #438 (der DSA gilt):** zusätzlich gespeichert Name und E-Mail-Adresse (freiwillig) und die Erklärung guten Glaubens; Zweck ergänzt um die Mitteilung der Entscheidung (Art. 16 Abs. 5 DSA). Nutzungsbedingungen Abschnitt 7 sagen diese Mitteilung samt Rechtsbehelfen per E-Mail zu; ein Admin schreibt sie per Hand, die App verschickt keine Mails. Meldegrund „Rechtswidriger Inhalt“ mit Pflicht-Begründung (Art. 16 Abs. 2 lit. a DSA). **Juristische Durchsicht mit #296**

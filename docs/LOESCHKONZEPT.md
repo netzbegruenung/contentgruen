@@ -442,7 +442,7 @@ und der Ablauf oben erfasst die Tabelle nicht.
       14 Tage Protokoll fassen; wächst ein Container langsamer, bleiben seine Zeilen
       länger stehen. **Noch nicht ausgerollt** (Stand 30.10.2026); bis dahin gilt der
       Stand darunter, und die Datenschutzerklärung nennt noch keine Frist
-      (`docs/RECHTSTEXTE_LUECKEN.md`, P7). Im Repo nicht belegbar, deshalb nur als
+      (`docs/rechtstexte-luecken/pruefliste/P7.md`). Im Repo nicht belegbar, deshalb nur als
     Stand der Bestandsaufnahme (`docs/archiv/DATENSCHUTZ_BESTANDSAUFNAHME.md`, 1.10.4):
     - **Stand 04.09.2026, vom Maintainer am Host geprüft:** Die Zugriffsprotokolle des
       vorgelagerten Reverse Proxy, die als einzige die volle Client-IP enthalten, löscht

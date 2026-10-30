@@ -23,12 +23,15 @@ diesem Zeitpunkt live war.
 1. Stand-Zeile auf das Tagesdatum der Änderung setzen, z. B. „Stand: 1. März 2027“. Ein Datum
    nie für einen anderen Text wiederverwenden; ändert sich der Text am selben Tag noch einmal
    nach einem Release, den nächsten Tag nehmen.
-2. Hier eine Zeile ergänzen, mit „Zustimmung“ ja (wesentlich) oder nein (reine Korrektur);
-   „Release“ und „gültig“ bleiben offen. Die alten Zeilen bleiben.
-   `scripts/tests/test_nutzungsbedingungen_staende.py` prüft, dass der Stand der Seite hier
-   steht.
-3. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum eintragen, beim vorigen Stand
-   das „bis“-Datum. Bei einer reinen Korrektur ist der Ablauf hier zu Ende.
+2. Hier einen Ordner für den Stand anlegen, benannt nach seinem Datum (`2027-03-01/`), darin
+   `stand.md` wie beim vorigen Stand, mit „Zustimmung“ ja (wesentlich) oder nein (reine
+   Korrektur); „Release“ und „gültig“ bleiben offen. Jede Änderung ist eine eigene Datei im
+   Ordner des Stands, benannt nach dem Ticket (`512.md`), mit Paragraf und Änderung in einem
+   Absatz. So kollidieren zwei PRs nicht, die am selben Stand ändern (#500). Die alten Ordner
+   bleiben. `scripts/tests/test_rechtstexte_uebersicht.py` prüft, dass der Stand der Seite
+   hier steht und dass Ordner und Stand zusammenpassen.
+3. Nach dem Produktiv-Deploy (Maintainer): Release-Tag und Datum in `stand.md` eintragen, beim
+   vorigen Stand das „bis“-Datum. Bei einer reinen Korrektur ist der Ablauf hier zu Ende.
 
 Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer):
 
@@ -62,17 +65,12 @@ aktiviert und für neue Konten als Standard gesetzt sein.
 
 ## Stände
 
-| Stand | Was sich geändert hat | Zustimmung | Release | gültig |
-|-------|-----------------------|------------|---------|--------|
-| 30. Oktober 2026 | §10: Änderungen gelten erst nach ausdrücklicher Zustimmung beim Anmelden statt durch Schweigen, reine Korrekturen ohne (#466). §4: Ersatzlizenz, wo der CC0-Verzicht nicht wirkt (#466). §1: Hinweis auf den abgeschalteten KI-Vorschlag für die Unterschrift gestrichen, die Unterschrift schreibt ein Mensch (#393). §7: Meldungen nach Art. 16 DSA mit Name und E-Mail-Adresse freiwillig, Erklärung guten Glaubens, Begründung bei „Rechtswidriger Inhalt“, Entscheidung per E-Mail (#438) | ja | offen | offen; frühestens nach der Freigabe in #296 und mit der Pflichtaktion aus #429 |
+Ein Ordner je Stand in diesem Verzeichnis, benannt nach seinem Datum. Als Tabelle, der neueste
+zuerst: `python3 scripts/rechtstexte_uebersicht.py staende`. Hier keine Liste der Stände
+pflegen: Sie wäre wieder die Stelle, an der jeder PR anhängt.
 
 Frühere Stände hatten nur einen Monat in der Stand-Zeile und waren nie Gegenstand einer
 Zustimmung beim Anmelden. Ein Monat benennt dort nicht genau einen Text: „Oktober 2026“ wurde
-mehrfach geändert. Die Zeilen nennen deshalb den Zeitraum im Repository (Commit und Datum), nicht,
+mehrfach geändert. Ihre Ordner nennen deshalb den Zeitraum im Repository (Commit und Datum), nicht,
 wann ein Text live war; das Versprechen in §10, jeden Stand mit seinem Zeitraum aufzubewahren,
 gilt ab dem Stand vom 30. Oktober 2026.
-
-| Stand (alt) | Was sich geändert hat | im Repository |
-|-------------|-----------------------|---------------|
-| Oktober 2026 | Glossarbegriffe, Moderation nach dem Funktionsumfang, Sperrgrund und Widerspruch (#222, #448) | bb0235b5 (29.10.2026), mehrfach geändert bis 6b7f9cdf (29.10.2026), bis zum Merge von #466 |
-| September 2026 | Neufassung | 20c1b06b (30.08.2026) bis bb0235b5 (29.10.2026) |
