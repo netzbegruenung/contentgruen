@@ -39,7 +39,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 "/addPost",
                 # Aussage vorab anlegen ("Hier fehlt eine Antwort").
                 "/statement/vorab",
-                "/suggestCaption",
                 # Der Fangkorb ist per Konstruktion schnell zu bedienen und
                 # damit auch schnell zu fluten.
                 "/addRawInput",

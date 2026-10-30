@@ -129,7 +129,7 @@ Eine Umwandlung, die mehrere Inhalte zu einem neuen zusammenführt.
 _Avoid_: Zusammenfassung, Merge, Aggregation
 
 **KI-Vorschlag**:
-Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa eine Unterschrift für ein Bild oder ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
+Ein Text, den ein Sprachmodell auf Klick einer Person vorschlägt, etwa ein Zuschnitt für die eigene Verwendung. Die Person übernimmt, bearbeitet oder verwirft ihn; wer ihn übernimmt und speichert, ist Autor (ADR 0003).
 _Avoid_: Entwurf, KI-Entwurf, Draft, generierte Antwort
 
 ## Schreiben
@@ -183,7 +183,7 @@ Ein Bild mit Unterschrift, das für sich spricht.
 _Avoid_: Grafik, Image
 
 **Unterschrift**:
-Der Text zu einem Bild, über den es gefunden wird. Die Person schreibt ihn beim Einstellen oder übernimmt einen Vorschlag der KI; ohne Unterschrift wird kein Bild gespeichert (ADR 0003).
+Der Text zu einem Bild, über den es gefunden wird. Die Person schreibt ihn beim Einstellen selbst; ohne Unterschrift wird kein Bild gespeichert (ADR 0003).
 _Avoid_: Caption, Bildtext
 
 **Bild von einem fremden Server**:

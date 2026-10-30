@@ -29,7 +29,7 @@ class Image(BaseContent):
         Unterschrift, the embedded search text. None only for entries from before #281.
     description_model: Optional[str]
         Identifier of the AI model that generated 'text'. Only the former background
-        worker set it; whether a taken-over suggestion is labelled is open (#223).
+        worker set it; since #393 nothing suggests an Unterschrift, so nothing sets it.
     """
 
     content_type: ContentType = ContentType.IMAGE

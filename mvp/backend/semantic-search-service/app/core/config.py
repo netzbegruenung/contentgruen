@@ -2,7 +2,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic_settings import BaseSettings
-from pydantic import AliasChoices, Field
+from pydantic import Field
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -132,24 +132,6 @@ class Settings(BaseSettings):
     max_reply_suggestions: int = 50
     statement_search_limit: int = 5
     min_reply_suggestions_for_search: int = 1
-
-    # OpenAI vision API (suggested Unterschrift in the image form)
-    # Accepts bare OPENAI_API_KEY (SDK default) or the prefixed SEMANTIC_SEARCH_OPENAI_API_KEY.
-    #
-    # PRIVACY WARNING -- setting this key enables a transfer to a third country.
-    # The key is the only switch: with it set, POST /api/v1/image/suggestCaption sends the
-    # image URL to OpenAI in the USA when a person asks for a suggested Unterschrift.
-    # Nothing is sent without that click; there is no background description (#281).
-    # The privacy policy assumes this transfer does not take place. Before setting the key
-    # anywhere it must be extended with a section on third-country transfer (Art. 44 ff.
-    # GDPR), which also requires a data processing agreement and Art. 46 safeguards.
-    openai_api_key: Optional[str] = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "OPENAI_API_KEY", "SEMANTIC_SEARCH_OPENAI_API_KEY"
-        ),
-    )
-    openai_vision_model: str = "gpt-4o-mini"
 
     # Admin users (comma-separated list)
     admin_users: str = ""

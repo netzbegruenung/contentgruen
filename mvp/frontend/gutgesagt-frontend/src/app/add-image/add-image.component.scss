@@ -102,50 +102,6 @@
   color: #424242;
 }
 
-.ai-suggestion-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.ai-suggest-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.vorschlag-hinweis {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  color: rgba(0, 0, 0, 0.7);
-  font-size: 13px;
-  margin: 4px 0 0;
-
-  mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-  }
-}
-
-.caption-error-message {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #e53935;
-  font-size: 13px;
-  margin-top: 4px;
-
-  mat-icon {
-    font-size: 16px;
-    height: 16px;
-    width: 16px;
-  }
-}
-
 // Schrift und Farbe kommen aus der globalen .submit-hint (styles.css).
 .submit-hint {
   margin: 24px 0 12px;

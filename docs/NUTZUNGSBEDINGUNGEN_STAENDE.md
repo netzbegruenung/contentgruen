@@ -63,7 +63,7 @@ aktiviert und für neue Konten als Standard gesetzt sein.
 
 | Stand | Was sich geändert hat | Zustimmung | Release | gültig |
 |-------|-----------------------|------------|---------|--------|
-| 30. Oktober 2026 | §10: Änderungen gelten erst nach ausdrücklicher Zustimmung beim Anmelden statt durch Schweigen, reine Korrekturen ohne (#466). §4: Ersatzlizenz, wo der CC0-Verzicht nicht wirkt (#466) | ja | offen | offen; frühestens nach der Freigabe in #296 und mit der Pflichtaktion aus #429 |
+| 30. Oktober 2026 | §10: Änderungen gelten erst nach ausdrücklicher Zustimmung beim Anmelden statt durch Schweigen, reine Korrekturen ohne (#466). §4: Ersatzlizenz, wo der CC0-Verzicht nicht wirkt (#466). §1: Hinweis auf den abgeschalteten KI-Vorschlag für die Unterschrift gestrichen, die Unterschrift schreibt ein Mensch (#393) | ja | offen | offen; frühestens nach der Freigabe in #296 und mit der Pflichtaktion aus #429 |
 
 Frühere Stände hatten nur einen Monat in der Stand-Zeile und waren nie Gegenstand einer
 Zustimmung beim Anmelden. Ein Monat benennt dort nicht genau einen Text: „Oktober 2026“ wurde

@@ -57,12 +57,6 @@ export class AddImageComponent implements OnDestroy {
   imageLoading = false;
   imageSaved = false;
   imageError: string | null = null;
-  captionLoading = false;
-  captionError: string | null = null;
-  /** Die Unterschrift kam als KI-Vorschlag; gespeichert wird sie erst mit „Bild speichern“ (ADR 0003). */
-  vorschlagEingesetzt = false;
-  /** Der eingesetzte Vorschlag, um ihn beim Wechsel der Bild-URL zu erkennen. */
-  private vorschlag: string | null = null;
   responseId: string = '';
 
   constructor(
@@ -81,27 +75,7 @@ export class AddImageComponent implements OnDestroy {
       this.updatePreview(values);
     });
 
-    // Ein Vorschlag beschreibt das Bild, fuer das er geholt wurde. Wechselt die URL und
-    // steht er noch unbearbeitet im Feld, kommt er heraus, statt beim neuen Bild zu landen.
-    this.imageForm
-      .get('image_url')!
-      .valueChanges.pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        if (this.vorschlag === null) return;
-        const unterschrift = this.imageForm.get('caption')!;
-        if (unterschrift.value === this.vorschlag) {
-          unterschrift.setValue('');
-          this.vorschlagEingesetzt = false;
-        }
-        this.vorschlag = null;
-      });
-
     this.updatePreview(this.imageForm.value);
-  }
-
-  get imageUrlInvalid(): boolean {
-    const ctrl = this.imageForm.get('image_url');
-    return !ctrl || ctrl.invalid || !ctrl.value?.trim();
   }
 
   updatePreview(values: any): void {
@@ -115,7 +89,6 @@ export class AddImageComponent implements OnDestroy {
         title: values.title || 'Titel eingeben...',
         text: values.caption || 'Bildunterschrift eingeben...',
         image_url: values.image_url || '',
-        description_model: null,
         references: [],
         created: new Date().toISOString(),
         last_modified: new Date().toISOString(),
@@ -140,36 +113,10 @@ export class AddImageComponent implements OnDestroy {
     } as ImageSearchResult;
   }
 
-  suggestCaption(): void {
-    const imageUrl = this.imageForm.get('image_url')?.value?.trim();
-    if (!imageUrl) return;
-
-    this.captionLoading = true;
-    this.captionError = null;
-
-    this.imageService.suggestCaption({ image_url: imageUrl }).subscribe({
-      next: (response) => {
-        this.imageForm.get('caption')?.setValue(response.suggested_caption);
-        this.vorschlag = response.suggested_caption;
-        this.vorschlagEingesetzt = true;
-        this.captionLoading = false;
-      },
-      error: (error) => {
-        this.logger.error('Caption suggestion failed', error);
-        this.captionError =
-          'Vorschlag konnte nicht erstellt werden. Bitte gib eine Beschriftung manuell ein.';
-        this.captionLoading = false;
-      },
-    });
-  }
-
   reset(): void {
     this.responseId = '';
     this.imageSaved = false;
     this.imageError = null;
-    this.captionError = null;
-    this.vorschlagEingesetzt = false;
-    this.vorschlag = null;
     this.imageForm.reset();
     this.updatePreview(this.imageForm.value);
   }
