@@ -2,26 +2,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { FremdesBildComponent, istFremdeAdresse } from './fremdes-bild.component';
 import { aufgeloest, themaFarbe } from '../../testing/farben';
+import { Anfragen, bildFertig, fremdeAdresse } from '../../testing/anfragen';
 
-/**
- * Bilder fremder Server laedt der Browser erst auf Klick (#447). Ob eine Anfrage rausgeht,
- * pruefen die Specs an den Anfragen selbst: ein PerformanceObserver faengt jede Ressource ab,
- * die der Browser laedt. Als "fremder Server" dient der Karma-Server unter dem anderen
- * Hostnamen (localhost <-> 127.0.0.1): anderer Origin, aber erreichbar, sodass der Klick
- * nachweislich eine Anfrage ausloest.
- */
+/** Bilder von fremden Servern laedt der Browser erst auf Klick (#447); belegt an den Anfragen selbst. */
 describe('FremdesBildComponent', () => {
   let fixture: ComponentFixture<FremdesBildComponent>;
   let element: HTMLElement;
-  let beobachter: PerformanceObserver;
-  let angefragt: string[];
-  let zaehler = 0;
-
-  function fremdeAdresse(): string {
-    const host = location.hostname === '127.0.0.1' ? 'localhost' : '127.0.0.1';
-    zaehler += 1;
-    return `${location.protocol}//${host}:${location.port}/fremd-447.png?n=${Date.now()}-${zaehler}`;
-  }
+  let anfragen: Anfragen;
 
   function zeigen(src: string, alt = 'Solardach auf dem Rathaus'): void {
     fixture = TestBed.createComponent(FremdesBildComponent);
@@ -31,30 +18,13 @@ describe('FremdesBildComponent', () => {
     element = fixture.nativeElement as HTMLElement;
   }
 
-  /** Wartet, bis das Bild geladen oder gescheitert ist; beides heisst: die Anfrage ist raus. */
-  function bildFertig(bild: HTMLImageElement): Promise<void> {
-    if (bild.complete && bild.src) return Promise.resolve();
-    return new Promise((fertig) => {
-      bild.addEventListener('load', () => fertig(), { once: true });
-      bild.addEventListener('error', () => fertig(), { once: true });
-    });
-  }
-
-  /** Gibt dem Browser Zeit fuer Anfragen, die er ausloesen wuerde, und sammelt sie ein. */
-  async function anfragenAbwarten(): Promise<string[]> {
-    await new Promise((weiter) => setTimeout(weiter, 300));
-    angefragt.push(...beobachter.takeRecords().map((e) => e.name));
-    return angefragt;
-  }
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({ imports: [FremdesBildComponent] }).compileComponents();
-    angefragt = [];
-    beobachter = new PerformanceObserver((liste) => angefragt.push(...liste.getEntries().map((e) => e.name)));
-    beobachter.observe({ type: 'resource' });
+    anfragen = new Anfragen();
+    anfragen.starten();
   });
 
-  afterEach(() => beobachter.disconnect());
+  afterEach(() => anfragen.beenden());
 
   it('stellt ohne Klick keine Anfrage an den fremden Server und zeigt "Bild laden"', async () => {
     const adresse = fremdeAdresse();
@@ -63,7 +33,7 @@ describe('FremdesBildComponent', () => {
     expect(element.querySelector('img')).toBeNull();
     const knopf = element.querySelector<HTMLButtonElement>('button.bild-laden')!;
     expect(knopf.textContent).toContain('Bild laden');
-    expect(await anfragenAbwarten()).not.toContain(adresse);
+    expect(await anfragen.abwarten()).not.toContain(adresse);
   });
 
   it('laedt auf Klick genau dieses Bild, mit Alternativtext', async () => {
@@ -84,13 +54,13 @@ describe('FremdesBildComponent', () => {
     expect(element.querySelector('button.bild-laden')).toBeNull();
     await bildFertig(bild);
 
-    const anfragen = await anfragenAbwarten();
-    expect(anfragen).toContain(adresse);
-    expect(anfragen).not.toContain(andere);
+    const angefragt = await anfragen.abwarten();
+    expect(angefragt).toContain(adresse);
+    expect(angefragt).not.toContain(andere);
     expect((zweite.nativeElement as HTMLElement).querySelector('img')).toBeNull();
   });
 
-  it('ist mit der Tastatur bedienbar und nennt den Alternativtext', () => {
+  it('ist ein fokussierbarer Knopf, der den Alternativtext nennt', () => {
     zeigen(fremdeAdresse());
     const knopf = element.querySelector<HTMLButtonElement>('button.bild-laden')!;
 
@@ -150,6 +120,32 @@ describe('FremdesBildComponent', () => {
 
     expect(element.querySelector('img')).toBeNull();
     expect(element.querySelector('button.bild-laden')).not.toBeNull();
+  });
+
+  it('nennt ohne Alternativtext nach dem Laden wenigstens den Server, auf dem der Fokus landet', () => {
+    const adresse = fremdeAdresse();
+    zeigen(adresse, '');
+    const knopf = element.querySelector<HTMLButtonElement>('button.bild-laden')!;
+    expect(knopf.getAttribute('aria-label')).toBe('Bild laden');
+
+    knopf.focus();
+    knopf.click();
+    fixture.detectChanges();
+
+    const bild = element.querySelector<HTMLImageElement>('img')!;
+    expect(document.activeElement).toBe(bild);
+    expect(bild.alt).toBe(`Bild von ${new URL(adresse).hostname}`);
+  });
+
+  it('behaelt das geladene Bild, wenn sich nur der Alternativtext aendert', () => {
+    zeigen(fremdeAdresse());
+    element.querySelector<HTMLButtonElement>('button.bild-laden')!.click();
+    fixture.detectChanges();
+
+    fixture.componentRef.setInput('alt', 'anderer Text');
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLImageElement>('img')!.alt).toBe('anderer Text');
   });
 
   it('zeigt Bilder vom eigenen Server sofort', () => {

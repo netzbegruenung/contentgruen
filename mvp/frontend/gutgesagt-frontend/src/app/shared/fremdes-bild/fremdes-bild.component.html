@@ -1,5 +1,5 @@
 <!-- Nach dem Klick sofort laden; was ohne Klick sichtbar ist, darf warten -->
-<img *ngIf="zeigen; else platzhalter" [src]="src" [alt]="alt"
+<img *ngIf="zeigen; else platzhalter" [src]="src" [alt]="bildAlt"
      [attr.loading]="geladen ? 'eager' : 'lazy'" tabindex="-1" />
 
 <ng-template #platzhalter>

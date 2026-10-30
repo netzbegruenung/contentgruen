@@ -15,6 +15,7 @@ import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
 import { Einwurf } from '../services/einwurf.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
+import { Anfragen, bildFertig, fremdeAdresse } from '../testing/anfragen';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -794,6 +795,30 @@ describe('BeitragskarteComponent', () => {
 
       zeigen(daten, { variante: 'kompakt' });
       expect(fixture.nativeElement.querySelectorAll('img').length).toBe(0);
+    });
+
+    it('stellt in voller und kompakter Karte ohne Klick keine Anfrage an den fremden Server (#447)', async () => {
+      const anfragen = new Anfragen();
+      anfragen.starten();
+      try {
+        const voll = fremdeAdresse();
+        const kompakt = fremdeAdresse();
+        zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', title: 'Dach', image_url: voll })));
+        zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', title: 'Dach', image_url: kompakt })), {
+          variante: 'kompakt',
+        });
+
+        const angefragt = await anfragen.abwarten();
+        expect(angefragt).not.toContain(voll);
+        expect(angefragt).not.toContain(kompakt);
+
+        element<HTMLButtonElement>('.karte-kopf button.bild-laden').click();
+        fixture.detectChanges();
+        await bildFertig(element<HTMLImageElement>('.karte-kopf img'));
+        expect(await anfragen.abwarten()).toContain(kompakt);
+      } finally {
+        anfragen.beenden();
+      }
     });
 
     it('laesst das Kopfband ohne Bild wie bisher und aendert die volle Karte nicht', () => {

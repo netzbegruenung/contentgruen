@@ -32,11 +32,15 @@ export function istFremdeAdresse(adresse: string, eigenerOrigin: string = locati
 }
 
 /**
- * Ein Bild, das von einem fremden Server kommt, laedt erst auf Klick (#447): Bis dahin
- * steht ein Platzhalter "Bild laden", und der fremde Server erfaehrt nichts von der Person.
- * Der Klick laedt nur dieses Bild; gemerkt wird er nicht. Bilder vom eigenen Server zeigt
- * die Komponente sofort. Das Bild fuellt den Host; Groesse und Zuschnitt bestimmt die
- * Stelle, die sie einbindet.
+ * Ein Bild von einem fremden Server laedt erst auf Klick (#447): Bis dahin steht ein
+ * Platzhalter "Bild laden", und der fremde Server erfaehrt nichts von der Person. Der Klick
+ * laedt nur dieses Bild; gemerkt wird er nicht. Bilder vom eigenen Server zeigt die
+ * Komponente sofort.
+ *
+ * Das Bild fuellt den Host und erbt von ihm ``object-fit``, ``max-height``,
+ * ``border-radius`` und ``background``; Groesse und Zuschnitt bestimmt also die Stelle,
+ * die die Komponente einbindet. Die Mindesthoehe des Platzhalters setzt sie ueber
+ * ``--fremdes-bild-hoehe`` (Standard 96px, ``0`` fuer ein Band fester Hoehe).
  */
 @Component({
   selector: 'app-fremdes-bild',
@@ -53,6 +57,9 @@ export class FremdesBildComponent implements OnChanges {
   @Input() mitSymbol = true;
 
   protected geladen = false;
+  protected fremd = true;
+  /** Nur der Hostname, damit der Hinweis kurz bleibt. */
+  protected server = '';
 
   constructor(
     private readonly host: ElementRef<HTMLElement>,
@@ -60,18 +67,23 @@ export class FremdesBildComponent implements OnChanges {
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['src']) {
-      this.geladen = false;
-    }
+    if (!changes['src']) return;
+    // Jede neue Adresse fragt wieder nach; die Adresse wird nur hier gelesen.
+    this.geladen = false;
+    this.fremd = istFremdeAdresse(this.src);
+    this.server = alsUrl(this.src, location.origin)?.hostname || 'einem fremden Server';
   }
 
   get zeigen(): boolean {
-    return this.geladen || !istFremdeAdresse(this.src);
+    return this.geladen || !this.fremd;
   }
 
-  /** Nur der Hostname, damit der Hinweis kurz bleibt. */
-  get server(): string {
-    return alsUrl(this.src, location.origin)?.hostname || 'einem fremden Server';
+  /**
+   * Nach dem Klick liegt der Fokus auf dem Bild. Ohne eigenen Alternativtext saehe ein
+   * Screenreader dort nichts; dann nennt er wenigstens, woher das Bild kommt.
+   */
+  get bildAlt(): string {
+    return this.alt || (this.fremd ? `Bild von ${this.server}` : '');
   }
 
   /**

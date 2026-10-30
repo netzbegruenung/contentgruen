@@ -184,7 +184,8 @@ _Avoid_: Caption, Bildtext
 
 **Bild von einem fremden Server**:
 Ein Bild, das ein Beitrag über eine Adresse einbindet und das nicht bei Gut gesagt liegt. Der Browser lädt es erst, wenn die Person auf den Platzhalter „Bild laden“ klickt; gemerkt wird der Klick nicht. Bilder, die Gut gesagt selbst ausliefert (Logo, Profilbilder), laden sofort.
-_Avoid_: externes Bild (und „fremd“ allein: das ist ein Paar-Label)
+Im Code heißt es kurz „fremdes Bild“ (`app-fremdes-bild`, `istFremdeAdresse`).
+_Avoid_: externes Bild; „fremd“ ohne Bezug auf Bild oder Server (das ist ein Paar-Label)
 
 **Post**:
 Ein Beitrag, der einen gelungenen Beitrag aus einem sozialen Netzwerk als Vorbild zum Teilen festhält. Er ist fertig und wird so verwendet; ein Einwurf mit demselben Link ist dagegen Material, aus dem erst ein Beitrag werden soll. Sein Link ist Pflicht und ersetzt die Herkunft.
