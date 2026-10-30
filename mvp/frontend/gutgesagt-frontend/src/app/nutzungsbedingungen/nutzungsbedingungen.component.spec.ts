@@ -60,6 +60,33 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('beim Satz, den du beim Destillieren festhältst, schon mit dem Speichern beim Tippen');
   });
 
+  it('räumt in Abschnitt 4 ein Nutzungsrecht ein, wo der CC0-Verzicht nicht wirkt (#466)', () => {
+    const text = abschnittNummer('4.');
+
+    expect(text).toContain('Soweit der Verzicht nicht wirkt, räumst du mit derselben Erklärung jeder Person');
+    expect(text).toContain('zeitlich, räumlich und inhaltlich unbeschränktes Nutzungsrecht');
+    expect(text).toContain('Ersatzlizenz in Abschnitt 3 der CC0-Erklärung');
+  });
+
+  it('lässt geänderte Bedingungen in Abschnitt 10 erst mit ausdrücklicher Zustimmung gelten (#466)', () => {
+    const text = abschnittNummer('10.');
+
+    expect(text).not.toContain('Widersprichst du nicht');
+    expect(text).toContain('erst, wenn du ihnen ausdrücklich zustimmst');
+    expect(text).toContain('Bei deiner nächsten Anmeldung');
+    expect(text).toContain('Bis dahin gilt für dich der Stand, der vorher für dich galt');
+    expect(text).toContain('Schweigen oder bloßes Weiternutzen gilt nicht als Zustimmung');
+    expect(text).toContain('Ab diesem Stand bewahren wir jeden Stand dieser Bedingungen');
+  });
+
+  it('nimmt in Abschnitt 10 reine Korrekturen von der Zustimmung aus und meldet beim Wechsel alle ab (#466)', () => {
+    const text = abschnittNummer('10.');
+
+    expect(text).toContain('Reine Korrekturen, die deine Rechte und Pflichten nicht ändern');
+    expect(text).toContain('gelten ohne erneute Zustimmung');
+    expect(text).toContain('melden wir beim Wechsel alle ab');
+  });
+
   it('beschreibt Sperren als Regelweg der Moderation und behält die Mitteilung an die Person', () => {
     const text = abschnittNummer('7.');
 

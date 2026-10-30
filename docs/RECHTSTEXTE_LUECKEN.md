@@ -210,15 +210,24 @@ Eine vorab angelegte Aussage trägt keine, weil sie kein Beitrag ist.
 Datenschutzerklärung und Nutzungsbedingungen beschreiben das seit #222 (Kennung unter „Beiträge,
 die du einstellst“, Freigabe beim Absenden und beim Satz beim Tippen in Abschnitt 4).
 
+**Änderungen und Ersatzlizenz (#466):** Seit dem Stand vom 30. Oktober 2026 gelten geänderte
+Nutzungsbedingungen erst nach ausdrücklicher Zustimmung beim Anmelden (§10, statt der früheren
+Zustimmung durch Schweigen und Weiternutzen; BGH XI ZR 26/20). Dafür wird die Pflichtaktion aus
+#429 je wesentlich geändertem Stand für alle Konten erneut ausgelöst, und alle werden abgemeldet;
+reine Korrekturen gelten ohne erneute Zustimmung (Entscheidung Maintainer, 30.10.2026).
+§4 räumt ein Nutzungsrecht ein, wo der CC0-Verzicht nach deutschem Recht nicht wirkt (Ersatzlizenz nach Abschnitt 3 der CC0-Erklärung).
+Stände und Ablauf: `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`. Die Juristin prüft beide Stellen und die
+Ausnahme für Korrekturen mit (#296); live erst danach.
+
 **Offen:**
-- Juristische Prüfung beider Wortlaute: #296.
+- Juristische Prüfung beider Wortlaute und der geänderten §4/§10: #296.
 - Zustimmung beim ersten Anmelden mit persistentem Feld pro Person: #429.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.
 
 Der frühere Zusatzbefund (Platzhalter-Hinweis, `[Datum]`, Verweis auf „Community-Richtlinien“)
-ist mit der Neufassung erledigt; die Seite trägt „Stand: September 2026“.
+ist mit der Neufassung erledigt; seit #466 trägt die Stand-Zeile ein Tagesdatum (`docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`).
 
 ---
 
