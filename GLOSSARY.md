@@ -259,8 +259,12 @@ Ein Kopiervorgang oder das Teilen eines Beitrags durch eine andere Person als se
 _Avoid_: Usage, Aufruf, Klick
 
 **Entdoppelte Nutzung**:
-Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Sitzung), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus dem Tagespseudonym und dem Beitrag, nicht, wer welchen Beitrag genutzt hat.
+Die Nutzung, wie sie für Punkte und „Diese Woche oft genutzt“ zählt: höchstens eine je Person (bei Besuchern je Sitzung), Beitrag und Tag. Der Zähler an der Karte zählt weiter jede Nutzung. Dafür merkt sich Gut gesagt bis zum Tagesende nur einen Prüfwert aus dem Tagespseudonym und dem Beitrag, keinen Eintrag, wer welchen Beitrag genutzt hat.
 _Avoid_: eindeutige Nutzung, Unique Usage
+
+**Prüfwert**:
+Ein Wert, an dem Gut gesagt bis zum Tagesende wiedererkennt, dass dieselbe Person (bei Besuchern dieselbe Sitzung) denselben Beitrag schon genutzt hat: aus dem Tagespseudonym und dem Beitrag mit dem geheimen Schlüssel berechnet. Ohne den Schlüssel lässt er sich weder auf die Person noch auf den Beitrag zurückführen. Wer den Schlüssel hat, kann ihn für eine bekannte Kennung und einen bekannten Beitrag am selben Tag nachrechnen, wie beim Tagespseudonym. Nach seinem Tag wird er verworfen. Der Paar-Prüfwert für Muster-Hinweise entsteht ebenso aus den Tagespseudonymen zweier Konten.
+_Avoid_: Hash, Fingerabdruck
 
 **Oft genutzt**:
 Ein Beitrag, der in den letzten sieben Tagen (nicht der Kalenderwoche) mehrfach genutzt wurde, gezählt als entdoppelte Nutzung. „Diese Woche oft genutzt“ auf der Startseite zeigt die meistgenutzten zuerst und nur, wenn genug Beiträge oft genutzt wurden; sonst gibt es den Bereich nicht. Gesperrte und gelöschte Beiträge stehen dort nie. Die Schwellen (Mindestnutzung, Mindestzahl, Höchstzahl) sind Stellschrauben und stehen in `services/oft_genutzt_service.py`, nicht hier.

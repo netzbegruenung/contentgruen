@@ -9,6 +9,7 @@ faelschen kann.
 
 import asyncio
 import uuid
+from datetime import datetime, time, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -21,6 +22,7 @@ from api.v1 import usage as usage_module
 from api.v1.usage import BeitragUnlesbar, beitrag_laden, router as usage_router
 from core.config import Settings
 from dependencies import get_settings
+from services.entdoppelung import pruefwert
 
 BEITRAG_ID = "11111111-1111-4111-8111-111111111111"
 AUTORIN = "kim-1"
@@ -131,10 +133,22 @@ class TestEntdoppelung:
         assert pruefwerte[0] and pruefwerte[1] and pruefwerte[0] != pruefwerte[1]
         assert pruefwerte[2] is None
 
+    def test_pruefwert_und_tag_gehoeren_zum_selben_tag(self, client, dienst):
+        zaehlen(client, "bo-2")
+
+        aufruf = dienst.track_content_usage.call_args
+        mittag = datetime.combine(aufruf.kwargs["tag"], time(12), timezone.utc)
+        assert aufruf.kwargs["pruefwert"] == pruefwert(
+            "bo-2", None, uuid.UUID(BEITRAG_ID), mittag
+        )
+
     def test_nutzung_wird_fuer_muster_gemeldet(self, client, muster):
         zaehlen(client, "bo-2")
 
-        muster.nutzung_melden.assert_called_once_with("bo-2", AUTORIN)
+        muster.nutzung_melden.assert_called_once()
+        nutzende, autor, moment = muster.nutzung_melden.call_args.args
+        assert (nutzende, autor) == ("bo-2", AUTORIN)
+        assert moment.tzinfo is not None
 
     def test_ohne_punkte_keine_meldung_fuer_muster(self, client, muster):
         client.app.dependency_overrides[get_settings] = lambda: Settings()

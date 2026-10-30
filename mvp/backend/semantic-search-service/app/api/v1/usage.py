@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, ValidationError, validator
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dependencies import (
     get_aufrufer,
@@ -20,7 +20,7 @@ from dependencies import (
     require_user,
 )
 from utils.device_category import derive_device_category
-from services.entdoppelung import pruefwert
+from services.entdoppelung import ANONYM, pruefwert
 from services.punkte_service import PunkteService
 from services.usage_tracking_service import get_usage_service
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
@@ -222,7 +222,7 @@ async def track_content_usage(
         if (
             beitrag is not None
             and aufrufer
-            and aufrufer != "anonymous"
+            and aufrufer != ANONYM
             and beitrag.original_author == aufrufer
         ):
             logger.debug(f"Own content {content_id} copied by its author, not counted")
@@ -264,6 +264,10 @@ async def track_content_usage(
             else None
         )
 
+        # Ein Zeitpunkt fuer Pruefwert, seinen Tag und die Muster-Hinweise: Sonst
+        # gehoerten sie kurz vor Mitternacht (UTC) zu verschiedenen Tagen.
+        jetzt = datetime.now(timezone.utc)
+
         # Track usage
         logger.debug(f"Calling usage service for content {content_id}")
         success = service.track_content_usage(
@@ -273,7 +277,8 @@ async def track_content_usage(
             fassung=fassung,
             # Entdoppelung fuer Punkte und "oft genutzt" (#352): angemeldet je Kennung,
             # sonst je Sitzung, je Beitrag und UTC-Tag.
-            pruefwert=pruefwert(aufrufer, body.session_id, content_uuid),
+            pruefwert=pruefwert(aufrufer, body.session_id, content_uuid, jetzt),
+            tag=jetzt.date(),
         )
 
         if not success:
@@ -291,6 +296,7 @@ async def track_content_usage(
                     get_muster_hinweise_service().nutzung_melden,
                     aufrufer,
                     beitrag.original_author,
+                    jetzt,
                 )
             except Exception as e:
                 logger.error(f"Pattern check for content {content_id} failed: {e}")

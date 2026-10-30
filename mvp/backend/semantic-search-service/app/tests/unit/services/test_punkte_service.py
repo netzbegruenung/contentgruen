@@ -7,6 +7,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Dict, List
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -115,4 +116,33 @@ async def test_punkte_ohne_beitraege_keine_wirkung():
     """Gesperrte und entfernte Beitraege liefert die Quelle nicht: keine Punkte."""
     stand = await _service(_Quellen([])).punkte(KIM)
 
+    assert stand.gesamt == 0
+
+
+async def test_get_punkte_service_liest_nur_sichtbare_beitraege_der_person():
+    """
+    Gesperrte und geloeschte Beitraege verlieren ihre Punkte, weil die Verdrahtung
+    get_by_author nutzt; dass get_by_author sie auslaesst, prueft
+    tests/unit/repositories/test_base_repository.py.
+    """
+    from dependencies import get_punkte_service
+    from domain.content_registry import BEITRAGSTYPEN_WERTE
+
+    with patch(
+        "repositories.aggregated.content_repository.ContentRepository"
+    ) as inhalte, patch(
+        "repositories.usage_tracking_repository.get_usage_repository"
+    ) as nutzung, patch(
+        "repositories.punkte_repository.get_punkte_repository"
+    ) as stimmen:
+        inhalte.return_value.get_by_author = AsyncMock(return_value=[])
+        nutzung.return_value.get_nutzung_entdoppelt_batch.return_value = {}
+        stimmen.return_value.zustimmungen.return_value = 0
+        stimmen.return_value.einwuerfe_ausformuliert_je_tag.return_value = {}
+
+        stand = await get_punkte_service(Settings()).punkte(KIM)
+
+    inhalte.return_value.get_by_author.assert_awaited_once_with(
+        KIM, limit=10000, offset=0, content_types=BEITRAGSTYPEN_WERTE
+    )
     assert stand.gesamt == 0

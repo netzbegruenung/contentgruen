@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, date
 from typing import Dict, Any, List, Optional
 from sqlalchemy import bindparam, text, func, distinct, and_, or_
 
-from core.config import settings
 from repositories.vote_repository import ausgenommen_werte
 from repositories.search_tracking_repository import get_search_tracking_repository
 from repositories.usage_tracking_repository import get_usage_repository
@@ -20,7 +19,9 @@ logger = logging.getLogger(__name__)
 class MetricsService:
     """Service for managing application metrics and analytics."""
 
-    def __init__(self):
+    def __init__(self, startkonten: frozenset = frozenset()):
+        """``startkonten``: Kennungen, deren Stimmen nicht zaehlen (#352)."""
+        self._startkonten = startkonten
         self.search_repo = get_search_tracking_repository()
         self.usage_repo = get_usage_repository()
         self.db = get_app_database()
@@ -206,9 +207,7 @@ class MetricsService:
                     {
                         "start_date": start_date,
                         # Stimmen von Startkonten zaehlen nicht (#352).
-                        "ausgenommen": ausgenommen_werte(
-                            settings.startkonto_kennungen()
-                        ),
+                        "ausgenommen": ausgenommen_werte(self._startkonten),
                     },
                 ).fetchone()
 
@@ -371,5 +370,7 @@ def get_metrics_service() -> MetricsService:
     """Get or create the global metrics service instance."""
     global _metrics_service
     if _metrics_service is None:
-        _metrics_service = MetricsService()
+        from core.config import settings
+
+        _metrics_service = MetricsService(settings.startkonto_kennungen())
     return _metrics_service

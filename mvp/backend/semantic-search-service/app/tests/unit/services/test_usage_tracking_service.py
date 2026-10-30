@@ -79,6 +79,8 @@ class TestUsageTrackingService:
             # HMAC ueber Tagespseudonym und Beitrag (#352), ohne Schluessel nicht
             # auf die Person zurueckzufuehren.
             "pruefwert",
+            # Nur der UTC-Tag des Pruefwerts, keine Uhrzeit.
+            "tag",
         }
 
     def test_track_content_usage_invalid_uuid(self, service, mock_repository):
