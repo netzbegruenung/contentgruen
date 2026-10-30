@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from api.v1.search import router as search_router
 from dependencies import (
@@ -33,6 +34,7 @@ from services.search.search_query_statement import (
 )
 from services.search_tracking_service import tagespseudonym
 from tests.fixtures.direktsuche import direktsuche_ueber_dienste
+from utils.besucher_pseudonym import besucher_merkmal
 from utils.rate_limiter import RateLimiter
 
 
@@ -98,7 +100,25 @@ class TestRecorder:
 SEARCH_URL = "/api/v1/search/searchByText"
 # Ein Besucher hinter nginx: Adresse aus X-Real-IP, dazu der User-Agent.
 BESUCHER = {"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"}
-MERKMAL = "198.51.100.5|Firefox"
+
+
+def _merkmal_von(headers: dict) -> str:
+    """Das Besuchermerkmal, das der Server aus diesen Koepfen bildet."""
+    return besucher_merkmal(
+        Request(
+            {
+                "type": "http",
+                "headers": [
+                    (k.lower().encode("latin-1"), v.encode("latin-1"))
+                    for k, v in headers.items()
+                ],
+                "client": ("10.0.0.2", 12345),
+            }
+        )
+    )
+
+
+MERKMAL = _merkmal_von(BESUCHER)
 
 
 def _mittag(tag):
