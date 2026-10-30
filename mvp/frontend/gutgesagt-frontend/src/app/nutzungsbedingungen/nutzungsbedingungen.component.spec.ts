@@ -74,9 +74,9 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).not.toContain('Widersprichst du nicht');
     expect(text).toContain('erst, wenn du ihnen ausdrücklich zustimmst');
     expect(text).toContain('Bei deiner nächsten Anmeldung');
-    expect(text).toContain('Bis dahin gilt der Stand, dem du zugestimmt hast');
+    expect(text).toContain('Bis dahin gilt für dich der Stand, der vorher für dich galt');
     expect(text).toContain('Schweigen oder bloßes Weiternutzen gilt nicht als Zustimmung');
-    expect(text).toContain('Jeden Stand dieser Bedingungen bewahren wir');
+    expect(text).toContain('Ab diesem Stand bewahren wir jeden Stand dieser Bedingungen');
   });
 
   it('beschreibt Sperren als Regelweg der Moderation und behält die Mitteilung an die Person', () => {

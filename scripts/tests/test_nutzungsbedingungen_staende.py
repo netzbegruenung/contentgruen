@@ -17,6 +17,8 @@ SEITE = (
 VERZEICHNIS = WURZEL / "docs/NUTZUNGSBEDINGUNGEN_STAENDE.md"
 
 TAG = r"\d{1,2}\. [A-ZÄÖÜ][a-zäöü]+ \d{4}"
+# Frühere Stände tragen nur Monat und Jahr („Oktober 2026“).
+STAND = rf"(?:{TAG}|[A-ZÄÖÜ][a-zäöü]+ \d{{4}})"
 
 
 def _stand_der_seite() -> str:
@@ -26,9 +28,9 @@ def _stand_der_seite() -> str:
 
 
 def _staende_im_verzeichnis() -> list[str]:
-    """Erste Spalte aller Tabellenzeilen ohne Kopfzeilen: aktuelle und alte Stände."""
+    """Erste Spalte aller Tabellenzeilen, die ein Stand ist: aktuelle und alte Stände."""
     erste_spalten = re.findall(r"^\| ([^|]+?) \|", VERZEICHNIS.read_text(), re.M)
-    return [s for s in erste_spalten if not s.startswith("Stand")]
+    return [s for s in erste_spalten if re.fullmatch(STAND, s)]
 
 
 def test_der_stand_der_seite_ist_ein_tag():

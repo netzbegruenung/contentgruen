@@ -45,9 +45,12 @@ Die Pflichtaktion muss dort aktiviert und für neue Konten als Standard gesetzt 
 | 30. Oktober 2026 | §10: Änderungen gelten erst nach ausdrücklicher Zustimmung beim Anmelden statt durch Schweigen (#466). §4: Ersatzlizenz, wo der CC0-Verzicht nicht wirkt (#466) | offen | offen; frühestens nach der Freigabe in #296 und mit der Pflichtaktion aus #429 |
 
 Frühere Stände hatten nur einen Monat in der Stand-Zeile und waren nie Gegenstand einer
-Zustimmung beim Anmelden; sie stehen hier, damit die Reihe vollständig ist.
+Zustimmung beim Anmelden. Ein Monat benennt dort nicht genau einen Text: „Oktober 2026“ wurde
+mehrfach geändert. Die Zeilen nennen deshalb den Zeitraum im Repository (Commit und Datum), nicht,
+wann ein Text live war; das Versprechen in §10, jeden Stand mit seinem Zeitraum aufzubewahren,
+gilt ab dem Stand vom 30. Oktober 2026.
 
-| Stand (alt) | Was sich geändert hat | bis |
-|-------------|-----------------------|-----|
-| Oktober 2026 | Glossarbegriffe, Moderation nach dem Funktionsumfang, Sperrgrund und Widerspruch (#222, #448; ab bb0235b5, mehrfach geändert bis 6b7f9cdf) | 30. Oktober 2026 |
-| September 2026 | Neufassung (20c1b06b) | bb0235b5 |
+| Stand (alt) | Was sich geändert hat | im Repository |
+|-------------|-----------------------|---------------|
+| Oktober 2026 | Glossarbegriffe, Moderation nach dem Funktionsumfang, Sperrgrund und Widerspruch (#222, #448) | bb0235b5 (29.10.2026), mehrfach geändert bis 6b7f9cdf (29.10.2026), bis zum Merge von #466 |
+| September 2026 | Neufassung | 20c1b06b (30.08.2026) bis bb0235b5 (29.10.2026) |
