@@ -33,14 +33,14 @@ diesem Zeitpunkt live war.
 Bei einem wesentlichen Stand gleich nach dem Deploy (Maintainer):
 
 4. Den Text, den Keycloak bei der Pflichtaktion zeigt, auf den neuen Stand bringen; ohne das
-   stimmen die Personen dem alten Stand-Datum zu. ANNAHME (#466): Das Theme aus #429 zeigt Link
-   und Stand-Datum der Nutzungsbedingungen.
-5. Die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm „Gut gesagt“ erneut
+   stimmen die Personen dem alten Stand-Datum zu. Das Theme aus #429 zeigt dafür Link und
+   Stand-Datum der Nutzungsbedingungen (Anforderung in PR #472).
+5. Die Pflichtaktion „Terms and Conditions“ für alle Konten im Realm von Gut gesagt erneut
    auslösen (siehe unten). Der Realm gehört nur zu Gut gesagt (#429); in einem geteilten Realm
    träfe das auch Konten, die Gut gesagt nie nutzen.
 6. Alle abmelden, damit niemand mit einer laufenden Sitzung unter dem neuen Stand weiterarbeitet,
    ohne zugestimmt zu haben (§10; Entscheidung Maintainer, 30.10.2026). Dazu gehören zwei Dinge:
-   - In Keycloak: Admin-Konsole → Realm „Gut gesagt“ → Sessions → „Sign out all active
+   - In Keycloak: Admin-Konsole → Realm von Gut gesagt → Sessions → „Sign out all active
      sessions“. Das beendet die Sitzungen bei Keycloak, sodass die nächste Anmeldung über die
      Pflichtaktion läuft.
    - Im BFF: Das Anmelde-Cookie lebt 14 Tage gleitend und wird nicht gegen Keycloak geprüft
