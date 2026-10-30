@@ -123,7 +123,8 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 1. Use `run-local.sh/bat` for development
 2. Make changes (hot-reload enabled)
 3. Test locally
-4. Run tests: `pytest` (Python), `scripts/check.sh --schritt frontend` (Angular; single specs: `--include <pfad>`)
+4. Run tests: `scripts/check.sh --geaendert` while working (only the steps and frontend specs your
+   changes reach), `pytest` (Python), `scripts/check.sh --schritt frontend` (Angular; single specs: `--include <pfad>`)
 5. Commit changes (pre-commit hooks will format code)
 
 ### Testing in Docker
@@ -449,7 +450,8 @@ helpers automate the retry.
 - `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests and
   `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container; `--integration` adds the
   integration tests, `--schritt <name>` runs one step, `--include <pfad>` only the frontend specs under
-  that path). Run it before opening a PR. Woodpecker runs
+  that path, `--geaendert` only what the changes since `origin/main` reach, integration included if they reach it). For checks in between use
+  `--geaendert`; run the full `--integration` check before opening a PR. Woodpecker runs
   the same steps on every PR (`docs/CI.md`); a red run gets a comment with the red steps.
 - Replaced names are listed in `scripts/retired-words.txt`; the check and a pre-commit hook reject
   them in added lines.
