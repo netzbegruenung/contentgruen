@@ -19,6 +19,7 @@ from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_settings
 from domain.models.meldegrund import MELDEGRUENDE
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
 from utils import client_identity
 from utils.rate_limiter import RateLimiter
 
@@ -31,6 +32,7 @@ def _payload(**overrides):
         "content_id": CONTENT_ID,
         "content_type": "commentary",
         "reason": "spam",
+        "guter_glaube": True,
     }
     body.update(overrides)
     return body
@@ -185,8 +187,36 @@ class TestRequestValidation:
 
     @pytest.mark.parametrize("reason", MELDEGRUENDE)
     def test_documented_reasons_are_accepted(self, client, service, reason):
-        assert client.post(REPORT_URL, json=_payload(reason=reason)).status_code == 200
+        body = _payload(reason=reason, description="Verstoesst gegen § 130 StGB")
+
+        assert client.post(REPORT_URL, json=body).status_code == 200
         assert service.report_content.await_args.kwargs["reason"] == reason
+
+
+class TestRechtswidrigerInhalt:
+    """Art. 16 Abs. 2 lit. a DSA (#438): bei rechtswidrigen Inhalten eine Begruendung."""
+
+    @pytest.mark.parametrize("beschreibung", [None, "", "   "])
+    def test_report_content_rechtswidriger_inhalt_ohne_beschreibung_wird_abgewiesen(
+        self, client, service, beschreibung
+    ):
+        body = _payload(reason="illegal_content", description=beschreibung)
+
+        assert client.post(REPORT_URL, json=body).status_code == 422
+        service.report_content.assert_not_awaited()
+
+    def test_report_content_rechtswidriger_inhalt_mit_beschreibung_wird_angenommen(
+        self, client, service
+    ):
+        body = _payload(reason="illegal_content", description="Volksverhetzung")
+
+        assert client.post(REPORT_URL, json=body).status_code == 200
+        assert service.report_content.await_args.kwargs["description"] == (
+            "Volksverhetzung"
+        )
+
+    def test_report_content_andere_gruende_brauchen_keine_beschreibung(self, client):
+        assert client.post(REPORT_URL, json=_payload(reason="spam")).status_code == 200
 
 
 class TestClientKeyDerivation:
@@ -337,3 +367,81 @@ class TestKeineKennungAusDemBrowser:
         kwargs = service.report_content.await_args.kwargs
         assert kwargs["user_id"] == "user-1"
         assert kwargs["session_id"] is None
+
+
+class TestAngabenNachArtikel16:
+    """Name, E-Mail-Adresse und Erklaerung guten Glaubens (Art. 16 Abs. 2 DSA, #438)."""
+
+    def test_report_content_name_und_email_gehen_an_den_service(self, client, service):
+        response = client.post(
+            REPORT_URL,
+            json=_payload(melder_name="Anna Beispiel", melder_email="anna@example.org"),
+        )
+
+        assert response.status_code == 200
+        assert service.report_content.await_args.kwargs["melder"] == MelderAngaben(
+            guter_glaube=True, name="Anna Beispiel", email="anna@example.org"
+        )
+
+    def test_report_content_ohne_name_und_email_wird_gemeldet(self, client, service):
+        assert client.post(REPORT_URL, json=_payload()).status_code == 200
+
+        assert service.report_content.await_args.kwargs["melder"] == MelderAngaben(
+            guter_glaube=True
+        )
+
+    def test_report_content_leere_angaben_zaehlen_als_nicht_angegeben(
+        self, client, service
+    ):
+        client.post(REPORT_URL, json=_payload(melder_name="  ", melder_email=""))
+
+        assert service.report_content.await_args.kwargs["melder"] == MelderAngaben(
+            guter_glaube=True
+        )
+
+    @pytest.mark.parametrize("guter_glaube", [False, None])
+    def test_report_content_ohne_erklaerung_guten_glaubens_wird_abgewiesen(
+        self, client, service, guter_glaube
+    ):
+        body = _payload(guter_glaube=guter_glaube)
+        if guter_glaube is None:
+            del body["guter_glaube"]
+
+        assert client.post(REPORT_URL, json=body).status_code == 422
+        service.report_content.assert_not_awaited()
+
+    @pytest.mark.parametrize("email", ["anna", "anna@", "@example.org", "a b@c.de"])
+    def test_report_content_ungueltige_email_wird_abgewiesen(
+        self, client, service, email
+    ):
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_email=email)).status_code
+            == 422
+        )
+        service.report_content.assert_not_awaited()
+
+    def test_report_content_zu_langer_name_wird_abgewiesen(self, client):
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_name="X" * 201)).status_code
+            == 422
+        )
+
+    def test_report_content_name_mit_hoechstlaenge_wird_angenommen(
+        self, client, service
+    ):
+        name = "X" * MELDER_NAME_MAX
+
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_name=name)).status_code == 200
+        )
+        assert service.report_content.await_args.kwargs["melder"].name == name
+
+    def test_report_content_zu_lange_email_wird_abgewiesen(self, client, service):
+        email = "a" * 64 + "@" + ".".join(["b" * 63] * 3) + ".de"
+        assert len(email) > MELDER_EMAIL_MAX
+
+        assert (
+            client.post(REPORT_URL, json=_payload(melder_email=email)).status_code
+            == 422
+        )
+        service.report_content.assert_not_awaited()

@@ -8,6 +8,7 @@ from typing import Optional
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     String,
     Integer,
@@ -24,6 +25,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX
 
 Base = declarative_base()
 
@@ -295,6 +298,12 @@ class ContentReport(Base):
     reviewed_by = Column(String(255), nullable=True)
     reviewed_at = Column(DateTime(timezone=True), nullable=True)
     resolution_notes = Column(Text, nullable=True)
+    # Angaben nach Art. 16 Abs. 2 DSA (#438): Name und E-Mail-Adresse freiwillig,
+    # die Erklaerung guten Glaubens Pflicht. NULL bei Meldungen von vor #438.
+    # Der DSA gilt fuer Gut gesagt (entschieden in #438).
+    melder_name = Column(String(MELDER_NAME_MAX), nullable=True)
+    melder_email = Column(String(MELDER_EMAIL_MAX), nullable=True)
+    guter_glaube = Column(Boolean, nullable=True)
 
     # Indexes and constraints
     __table_args__ = (

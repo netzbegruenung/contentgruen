@@ -149,7 +149,13 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
 
 - **Meldungen:** Sechs Monate, weil eine Entscheidung über eine Meldung so lange
   angefochten werden kann (Art. 20 Abs. 1 DSA). Danach braucht niemand mehr die
-  meldende Person, ihre Sitzungskennung oder den Freitext. Der Zähler am Beitrag
+  meldende Person, ihre Sitzungskennung, ihren Namen und ihre E-Mail-Adresse (freiwillig,
+  seit #438) oder den Freitext. Verlangt jemand ohne Konto die Löschung dieser Angaben,
+  finden sich seine Meldungen nur über `content_reports.melder_email` oder `melder_name`,
+  per Hand in der Datenbank; ein Werkzeug dafür gibt es nicht. Die Adresse ohne Rücksicht
+  auf Groß- und Kleinschreibung suchen (`ILIKE`): Gespeichert ist sie, wie sie eingegeben
+  wurde, nur die Domain klein. Offene Meldungen haben keine
+  Frist, Name und E-Mail-Adresse bleiben also, bis die Meldung bearbeitet ist. Der Zähler am Beitrag
   (`report_count`) bleibt; er trägt keinen Personenbezug. Das gilt auch für Meldungen zu
   gesperrten Beiträgen: Die Sperre selbst hat keine Frist, ihr Anlass in der Meldung
   (samt `resolution_notes`) geht nach 180 Tagen.

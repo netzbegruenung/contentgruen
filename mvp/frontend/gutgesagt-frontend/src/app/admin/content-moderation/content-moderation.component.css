@@ -184,6 +184,14 @@ table {
   font-style: italic;
 }
 
+.melder-angabe {
+  font-size: 13px;
+}
+
+.melder-angabe.guter-glaube {
+  color: #666;
+}
+
 .action-buttons {
   display: flex;
   gap: 8px;

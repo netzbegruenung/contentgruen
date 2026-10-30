@@ -9,6 +9,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from sqlalchemy import and_, desc, or_
 
+from domain.models.meldung import MelderAngaben
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import ContentReport
 from utils.besucher_pseudonym import besucher_tagespseudonym
@@ -52,6 +53,8 @@ class ContentReportRepository:
         content_id: UUID,
         content_type: str,
         reason: str,
+        *,
+        melder: MelderAngaben,
         reported_by_user_id: Optional[str] = None,
         reported_by_session_id: Optional[str] = None,
         description: Optional[str] = None,
@@ -66,6 +69,7 @@ class ContentReportRepository:
             reported_by_user_id: Optional user ID of reporter
             reported_by_session_id: Optional session ID of reporter
             description: Optional detailed description
+            melder: Name, E-Mail-Adresse und Erklaerung guten Glaubens (#438)
 
         Returns:
             ContentReport: Created report object
@@ -79,6 +83,9 @@ class ContentReportRepository:
                     reported_by_user_id=reported_by_user_id,
                     reported_by_session_id=reported_by_session_id,
                     description=description,
+                    melder_name=melder.name,
+                    melder_email=melder.email,
+                    guter_glaube=melder.guter_glaube,
                     status="pending",
                 )
                 session.add(report)
@@ -189,6 +196,9 @@ class ContentReportRepository:
                             else None
                         ),
                         "resolution_notes": report.resolution_notes,
+                        "melder_name": report.melder_name,
+                        "melder_email": report.melder_email,
+                        "guter_glaube": report.guter_glaube,
                     }
                     for report in reports
                 ]

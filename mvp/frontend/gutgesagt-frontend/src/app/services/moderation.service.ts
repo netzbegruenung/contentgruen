@@ -10,6 +10,23 @@ export interface ReportContentRequest {
   content_type: string;
   reason: MeldegrundWert;
   description?: string;
+  melder_name: string | null;
+  melder_email: string | null;
+  guter_glaube: true;
+}
+
+/**
+ * Eine neue Meldung, wie der Meldedialog sie abschickt. Name und E-Mail-Adresse
+ * sind freiwillig, die Erklaerung guten Glaubens Pflicht (Art. 16 Abs. 2 DSA, #438).
+ */
+export interface NeueMeldung {
+  contentId: string;
+  contentType: string;
+  reason: MeldegrundWert;
+  description?: string;
+  melderName: string | null;
+  melderEmail: string | null;
+  guterGlaube: true;
 }
 
 export interface ReportContentResponse {
@@ -30,6 +47,10 @@ export interface ContentReport {
   reviewed_by?: string | null;
   reviewed_at?: string | null;
   resolution_notes?: string | null;
+  /** Angaben der meldenden Person (#438); null, wenn keine oder vor #438. */
+  melder_name?: string | null;
+  melder_email?: string | null;
+  guter_glaube?: boolean | null;
   // Der gemeldete Beitrag, wie die Moderation ihn liest -- auch gesperrt.
   // null, wenn er nicht mehr existiert.
   content?: GemeldeterBeitrag | null;
@@ -87,17 +108,15 @@ export class ModerationService {
     private http: HttpClient
   ) {}
 
-  reportContent(
-    contentId: string,
-    contentType: string,
-    reason: MeldegrundWert,
-    description?: string
-  ): Observable<ReportContentResponse> {
+  reportContent(meldung: NeueMeldung): Observable<ReportContentResponse> {
     const request: ReportContentRequest = {
-      content_id: contentId,
-      content_type: contentType,
-      reason: reason,
-      description: description
+      content_id: meldung.contentId,
+      content_type: meldung.contentType,
+      reason: meldung.reason,
+      description: meldung.description,
+      melder_name: meldung.melderName,
+      melder_email: meldung.melderEmail,
+      guter_glaube: meldung.guterGlaube,
     };
 
     return this.http.post<ReportContentResponse>(`${this.baseUrl}/report`, request);

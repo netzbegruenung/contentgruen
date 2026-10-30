@@ -363,6 +363,21 @@ describe('DatenschutzComponent', () => {
     });
   });
 
+  describe('Meldungen nach Art. 16 DSA (#438)', () => {
+    it('nennt Name, E-Mail-Adresse und Erklärung guten Glaubens und wofür die Adresse dient', () => {
+      const text = abschnitt('Meldungen von Beiträgen');
+
+      expect(text).toContain('deine Erklärung, in gutem Glauben zu melden');
+      expect(text).toContain('dein Name und deine E-Mail-Adresse, falls du sie angibst');
+      expect(text).toContain('Name und E-Mail-Adresse sind freiwillig');
+      expect(text).toContain('um dir unsere Entscheidung über die Meldung mitzuteilen');
+      expect(text).toContain('Artikel 16 Absatz 5 DSA');
+      // Der Satz zu Name und E-Mail-Adresse steht hinter dem zu den Kennungen, damit
+      // sich „beide“ nicht auf sie beziehen lässt.
+      expect(text).not.toContain('stehen also beide nebeneinander');
+    });
+  });
+
   describe('Bilder von fremden Servern (#447)', () => {
     it('sagt, dass der Browser ein fremdes Bild erst auf Klick lädt und ohne Klick nichts an den Server geht', () => {
       const text = abschnitt('Bilder von fremden Servern');
