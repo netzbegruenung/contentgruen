@@ -1,5 +1,7 @@
 """Unit-Tests fuer das Tagespseudonym der Besucher (utils/besucher_pseudonym.py)."""
 
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 import pytest
@@ -54,6 +56,21 @@ class TestTagesschluessel:
         # Der Nachzuegler verdraengt den laufenden Tag nicht.
         assert schluessel.fuer(MORGEN) == heute
 
+    def test_gleichzeitiger_tageswechsel_ergibt_einen_schluessel(self):
+        """Fragen mehrere Threads zugleich nach dem neuen Tag, gibt es nur einen."""
+        schluessel = Tagesschluessel()
+        schluessel.fuer(HEUTE)
+        start = threading.Barrier(8)
+
+        def morgen(_):
+            start.wait()
+            return schluessel.fuer(MORGEN)
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            ergebnisse = set(pool.map(morgen, range(8)))
+
+        assert ergebnisse == {schluessel.fuer(MORGEN)}
+
     def test_ein_neuer_prozess_hat_einen_anderen_schluessel(self):
         """Nicht gespeichert: nach einem Neustart ist der Schluessel ein anderer."""
         assert Tagesschluessel().fuer(HEUTE) != Tagesschluessel().fuer(HEUTE)
@@ -77,7 +94,7 @@ class TestBesucherTagespseudonym:
             "198.51.100.6|Firefox", HEUTE
         )
 
-    def test_enthaelt_weder_adresse_noch_browserkennung(self):
+    def test_enthaelt_weder_adresse_noch_user_agent(self):
         pseudonym = besucher_tagespseudonym(MERKMAL, HEUTE)
 
         assert len(pseudonym) == 64

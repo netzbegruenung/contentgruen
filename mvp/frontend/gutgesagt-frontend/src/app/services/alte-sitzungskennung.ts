@@ -1,8 +1,8 @@
 /**
  * Schluessel, unter denen die SPA bis #446 eine Sitzungskennung fuer 30 Tage im
  * localStorage ablegte. Besucher erkennt seitdem der Server an einem
- * Tagespseudonym; im Browser liegt keine Kennung mehr. Das Aufraeumen kann
- * entfallen, wenn die letzte so abgelegte Kennung abgelaufen waere (30 Tage nach
+ * Tagespseudonym; im Browser liegt keine Sitzungskennung mehr. Das Aufraeumen kann
+ * entfallen, wenn die letzte so abgelegte Sitzungskennung abgelaufen waere (30 Tage nach
  * dem Ausrollen von #446).
  */
 const ALTE_SCHLUESSEL: readonly string[] = [

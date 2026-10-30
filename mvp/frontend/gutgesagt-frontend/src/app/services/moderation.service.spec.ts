@@ -24,7 +24,7 @@ describe('ModerationService', () => {
   });
 
   describe('reportContent', () => {
-    it('sendet die Meldung ohne Kennung des Browsers (#446)', () => {
+    it('sendet die Meldung ohne Sitzungskennung (#446)', () => {
       const contentId = 'content-123';
       const contentType = 'commentary';
       const reason = 'spam';

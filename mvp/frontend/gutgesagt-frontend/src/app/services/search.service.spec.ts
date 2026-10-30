@@ -39,7 +39,7 @@ describe('SearchService', () => {
     expect(zustand.currentState.loading).toBeFalse();
   });
 
-  it('sendet keine Kennung des Browsers mit (#446)', () => {
+  it('sendet keine Sitzungskennung mit (#446)', () => {
     service.search('klima', 10).subscribe({ next: () => {}, error: () => {} });
 
     const req = httpMock.expectOne(searchUrl);

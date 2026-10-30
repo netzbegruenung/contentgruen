@@ -1,6 +1,6 @@
 """
 Tagespseudonym der Besucher: wer nicht angemeldet ist, wird am Server erkannt,
-nicht ueber eine Kennung im Browser (#446).
+nicht ueber eine Sitzungskennung im Browser (#446).
 
 Bis #446 erzeugte die SPA eine Sitzungskennung, legte sie fuer 30 Tage in
 localStorage ab und schickte sie als X-Session-Id mit. Daraus wurde das
@@ -8,7 +8,7 @@ Tagespseudonym der Besucher gebildet. Jetzt bildet es der Server aus dem, was
 jede Anfrage ohnehin mitbringt:
 
 - der Adresse (X-Real-IP hinter nginx, siehe utils/client_identity.py), bei IPv6
-  ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln;
+  ihr /64 (der Anschluss), weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln;
 - dem User-Agent;
 - dem UTC-Tag.
 
@@ -33,6 +33,7 @@ Merkmal existiert nur innerhalb der Anfrage.
 import hashlib
 import hmac
 import secrets
+import threading
 from datetime import date
 from typing import Optional
 
@@ -42,11 +43,18 @@ from utils.client_identity import anschluss, get_client_address
 
 
 class Tagesschluessel:
-    """Ein zufaelliger Schluessel je UTC-Tag, nur im Prozessspeicher."""
+    """
+    Ein zufaelliger Schluessel je UTC-Tag, nur im Prozessspeicher.
+
+    Heute fragen nur die Suchroute im Event-Loop nach dem Schluessel. Das Lock
+    haelt den Tageswechsel trotzdem atomar, damit ein kuenftiger Aufruf aus dem
+    Threadpool am selben Tag nicht einen zweiten Schluessel erzeugt.
+    """
 
     def __init__(self):
         self._tag: Optional[date] = None
         self._schluessel = b""
+        self._lock = threading.Lock()
 
     def fuer(self, tag: date) -> bytes:
         """
@@ -56,12 +64,13 @@ class Tagesschluessel:
         vergangenen Tag (eine Anfrage, die vor Mitternacht begann), bekommt er einen
         Einmalschluessel: Der alte kommt nicht zurueck, und der laufende Tag bleibt.
         """
-        if self._tag is None or tag > self._tag:
-            self._tag = tag
-            self._schluessel = secrets.token_bytes(32)
-        elif tag < self._tag:
-            return secrets.token_bytes(32)
-        return self._schluessel
+        with self._lock:
+            if self._tag is None or tag > self._tag:
+                self._tag = tag
+                self._schluessel = secrets.token_bytes(32)
+            elif tag < self._tag:
+                return secrets.token_bytes(32)
+            return self._schluessel
 
 
 _TAGESSCHLUESSEL = Tagesschluessel()

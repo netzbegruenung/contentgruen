@@ -289,7 +289,7 @@ class TestSuchenOhneTreffer:
             )
         return [a.args[2] for a in suchen_ohne_treffer.erfassen.call_args_list]
 
-    def test_besucher_ist_ohne_kennung_im_browser_dieselbe_person(
+    def test_besucher_ist_ohne_sitzungskennung_dieselbe_person(
         self, suchapp, suchen_ohne_treffer
     ):
         """Eine wechselnde X-Session-Id macht keine weitere Person mehr (#446)."""

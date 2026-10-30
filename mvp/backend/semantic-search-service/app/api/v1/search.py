@@ -287,7 +287,7 @@ async def search_by_text(
         # derselben Kennung und demselben Zeitpunkt: So ist es fuer beide dasselbe,
         # und Pseudonym und Tag gehoeren zusammen, auch kurz vor Mitternacht.
         # Besucher erkennt der Server an Adresse und User-Agent, nicht mehr an einer
-        # Kennung aus dem Browser (#446); Angemeldete an ihrer Kennung allein.
+        # Sitzungskennung aus dem Browser (#446); Angemeldete an ihrer Kennung allein.
         user_id = validated_user if angemeldet(validated_user) else None
         merkmal = None if user_id else besucher_merkmal(http_request)
         jetzt = datetime.now(timezone.utc)
@@ -298,8 +298,9 @@ async def search_by_text(
 
             # Neither the query text nor the client IP is handed on: the search
             # text was stored in full without ever being read back, and the IP
-            # hash was written but never evaluated. The user id or the visitor
-            # feature is turned into a daily pseudonym inside the tracking service.
+            # hash was written but never evaluated. The user id or the
+            # Besuchermerkmal is turned into a daily pseudonym inside the
+            # tracking service.
             search_tracking_service.track_search(
                 results_count=total_results,
                 besucher_merkmal=merkmal,

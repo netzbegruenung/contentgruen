@@ -3,7 +3,7 @@ Service layer for search tracking functionality.
 Provides business logic for tracking and analyzing search behavior.
 
 No personally identifiable data is persisted. Callers hand in the user id or, for
-visitors, the visitor feature (address and User-Agent, utils/besucher_pseudonym.py);
+visitors, the Besuchermerkmal (address and User-Agent, utils/besucher_pseudonym.py);
 this layer turns it into a daily rotating pseudonym, and only that pseudonym
 reaches the database.
 
@@ -63,7 +63,7 @@ class SearchTrackingService:
 
         Args:
             user_id: Identifier of the authenticated user, if any
-            besucher_merkmal: Visitor feature (utils.besucher_pseudonym.besucher_merkmal),
+            besucher_merkmal: Besuchermerkmal (utils.besucher_pseudonym.besucher_merkmal),
                 used when there is no user
             moment: Point in time the pseudonym belongs to (defaults to now, UTC)
 
@@ -101,7 +101,7 @@ class SearchTrackingService:
 
         Args:
             results_count: Number of results returned
-            besucher_merkmal: Optional visitor feature, hashed before storage
+            besucher_merkmal: Optional Besuchermerkmal, hashed before storage
             user_id: Optional user identifier, hashed before storage
             moment: Point in time of the search (defaults to now, UTC). The
                 caller passes the moment it also uses for "Suchen ohne Treffer",

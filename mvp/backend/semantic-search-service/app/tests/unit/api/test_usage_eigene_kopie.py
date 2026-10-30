@@ -161,7 +161,7 @@ class TestUnlesbarerBeitrag:
 
 
 class TestKeineSitzungskennung:
-    """Seit #446 haelt eine Kopie keine Kennung aus dem Browser mehr fest."""
+    """Seit #446 haelt eine Kopie keine Sitzungskennung mehr fest."""
 
     def test_mitgeschickte_sitzungskennung_wird_nicht_weitergegeben(
         self, client, dienst

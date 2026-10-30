@@ -79,6 +79,18 @@ for the Gegenlesen, about 0.5 GB more RAM than before (measured on the dev VM: ~
 model, ~350 MB for CharSplit's n-gram table), loaded in the background about two seconds after
 start. If the container has a memory limit, raise it accordingly.
 
+Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
+from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:
+
+- **`X-Real-IP` reaches the semantic service.** nginx sets it, YARP in the BFF passes it on
+  (`IdentityHeaderTransformTests` checks that it is not stripped). Without it the service only
+  sees its peer, and all visitors with the same User-Agent count as one person. The header is
+  only trustworthy while the BFF and the semantic service are reachable through nginx alone;
+  a client that reaches them directly can choose its own address and inflate the person
+  counts (the report rate limit relies on the same header).
+- **One uvicorn worker.** The daily key lives in the memory of the process. With several
+  workers a visitor would count once per worker; a restart counts visitors again on that day.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

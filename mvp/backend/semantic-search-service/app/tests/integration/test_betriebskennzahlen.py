@@ -2,9 +2,11 @@
 GET /metrics nach einer echten Suche: keine Personendaten in den Betriebskennzahlen (#420).
 
 Eine angemeldete Testperson sucht mit einem Merkmal im Suchtext, das sonst nirgends
-vorkommt; Kennung, Anzeigename und Sitzungskennung gehen in den Kopfzeilen mit, so wie
-das BFF sie setzt. Danach ruft sie einen Pfad mit ihrer Kennung darin auf, den es nicht
-gibt. In /metrics darf keiner dieser Werte stehen, und jeder Label-Wert der Route muss
+vorkommt; Kennung, Anzeigename, Adresse (X-Real-IP) und User-Agent gehen in den
+Kopfzeilen mit, so wie nginx und das BFF sie setzen. Dieselbe Suche laeuft danach noch
+einmal als Besucher, dessen Tagespseudonym aus Adresse und User-Agent entsteht (#446).
+Zuletzt ruft die Testperson einen Pfad mit ihrer Kennung darin auf, den es nicht gibt.
+In /metrics darf keiner dieser Werte stehen, und jeder Label-Wert der Route muss
 eine registrierte Routen-Vorlage sein, kein Pfad mit ID.
 
 Die Suche laeuft durch den echten Router mit echten Diensten auf einer
@@ -51,7 +53,8 @@ pytestmark = [pytest.mark.integration, requires_qdrant, pytest.mark.asyncio]
 MERKMAL = "Merkmal420xq"
 KENNUNG = "testperson-kennung-420"
 ANZEIGENAME = "Testperson Vierhundertzwanzig"
-SITZUNG = "sitzung-420-a1b2c3"
+ADRESSE = "198.51.100.42"
+BROWSER = "Testbrowser-420/1.0"
 UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
@@ -117,26 +120,24 @@ async def dienst(integration_settings, real_repository_factory):
             yield app, client
 
 
-async def test_metrics_nach_suche_ohne_merkmal_kennung_und_sitzung(dienst):
+async def test_metrics_nach_suche_ohne_merkmal_kennung_adresse_und_browser(dienst):
     app, client = dienst
-    kopf = {
-        "X-User": KENNUNG,
-        "X-User-Display-Name": ANZEIGENAME,
-        "X-Session-Id": SITZUNG,
-    }
+    besucher = {"X-Real-IP": ADRESSE, "User-Agent": BROWSER}
+    kopf = {"X-User": KENNUNG, "X-User-Display-Name": ANZEIGENAME, **besucher}
 
-    suche = await client.post(
-        SUCHE_VORLAGE,
-        json={"query_text": f"Lohnt sich die Wärmepumpe im Altbau {MERKMAL}?"},
-        headers=kopf,
-    )
-    assert suche.status_code == 200, suche.text
+    for headers in (kopf, besucher):
+        suche = await client.post(
+            SUCHE_VORLAGE,
+            json={"query_text": f"Lohnt sich die Wärmepumpe im Altbau {MERKMAL}?"},
+            headers=headers,
+        )
+        assert suche.status_code == 200, suche.text
     fehlt = await client.get(f"/api/v1/nutzer/{KENNUNG}/{uuid.uuid4()}", headers=kopf)
     assert fehlt.status_code == 404
 
     text = (await client.get("/metrics")).text
 
-    for wert in (MERKMAL, KENNUNG, ANZEIGENAME, SITZUNG, "Wärmepumpe"):
+    for wert in (MERKMAL, KENNUNG, ANZEIGENAME, ADRESSE, BROWSER, "Wärmepumpe"):
         assert wert not in text
     assert not UUID.search(text)
 
@@ -147,4 +148,4 @@ async def test_metrics_nach_suche_ohne_merkmal_kennung_und_sitzung(dienst):
     assert set(routen) <= vorlagen
     # Ausser method, route und status (Zaehler) und le (Histogramm) gibt es kein Label.
     assert set(re.findall(r'[{,](\w+)="', text)) == {"method", "route", "status", "le"}
-    assert "gutgesagt_search_duration_seconds_count 1.0" in text
+    assert "gutgesagt_search_duration_seconds_count 2.0" in text

@@ -18,7 +18,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     provideHttpClient(withInterceptors([AuthInterceptor, cacheInterceptor])),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
-    // Keine Kennung im Browser (#446): was fruehere Versionen ablegten, kommt weg.
+    // Keine Sitzungskennung im Browser (#446): was fruehere Versionen ablegten, kommt weg.
     provideAppInitializer(() => alteSitzungskennungEntfernen())
   ]
 };

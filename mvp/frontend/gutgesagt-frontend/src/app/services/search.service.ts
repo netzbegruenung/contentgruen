@@ -32,7 +32,7 @@ export class SearchService {
       limit: limit
     };
 
-    // Ohne Kennung des Browsers: Besucher erkennt der Server an einem
+    // Ohne Sitzungskennung: Besucher erkennt der Server an einem
     // Tagespseudonym (#446).
     return this.http.post<SearchResponse>(this.searchApiUrl, requestPayload).pipe(
       tap(response => {

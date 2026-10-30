@@ -208,6 +208,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends speichert');
       expect(text).toContain('IP-Adresse und User-Agent werden dabei weder gespeichert noch protokolliert');
       expect(text).not.toContain('Sitzungskennung');
+      // Der Schlüssel wechselt mit der ersten Suche des neuen Tages, nicht um Mitternacht.
+      expect(text).toContain('Mit der ersten Suche eines neuen Tages ersetzt er ihn');
+      expect(text).not.toContain('mit dem Tag ist auch der Schlüssel weg');
+      // "Kennung" ist im Glossar die Kontokennung, nicht der User-Agent.
+      expect(text).not.toContain('Kennung deines Browsers');
+      expect(text).toContain('siehe „Protokolldateien“');
     });
 
     it('Suchen ohne Treffer: Netzwechsel zählt neu, gleicher Anschluss und Browser zählt als eine Person', () => {

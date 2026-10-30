@@ -328,13 +328,15 @@
         Bist du nicht angemeldet, legen wir dafür <strong>nichts in deinem Browser
         ab</strong>. Der Server berechnet das Pseudonym stattdessen aus dem heutigen Datum,
         deiner IP-Adresse (bei IPv6 nur aus ihrem vorderen Teil, der deinen Anschluss
-        bezeichnet) und der Kennung deines Browsers, die jeder Browser bei jedem Aufruf
+        bezeichnet) und der Bezeichnung deines Browsers, die jeder Browser bei jedem Aufruf
         ohnehin mitschickt (User-Agent). Dazu verwendet er einen geheimen Schlüssel, den er
         <strong>jeden Tag neu zufällig erzeugt, nur im Arbeitsspeicher hält und nirgends
-        speichert</strong>; mit dem Tag ist auch der Schlüssel weg. Deshalb kann auch
-        niemand, der die gespeicherten Daten hat, das Pseudonym auf deine IP-Adresse
-        zurückführen oder Pseudonyme verschiedener Tage einander zuordnen. IP-Adresse und
-        User-Agent werden dabei weder gespeichert noch protokolliert.
+        speichert</strong>. Mit der ersten Suche eines neuen Tages ersetzt er ihn durch einen
+        neuen; der alte ist dann weg. Deshalb kann auch niemand, der die gespeicherten Daten
+        hat, das Pseudonym auf deine IP-Adresse zurückführen oder Pseudonyme verschiedener
+        Tage einander zuordnen. IP-Adresse und User-Agent werden dabei weder gespeichert noch
+        protokolliert. Davon unabhängig hält der vorgelagerte Webserver beides für kurze Zeit
+        in seinen Zugriffsprotokollen fest (siehe „Protokolldateien“).
       </p>
       <p>
         <strong>Zweck:</strong> zu erkennen, wie viele Menschen die Suche an einem Tag

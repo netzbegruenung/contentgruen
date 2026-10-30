@@ -367,6 +367,27 @@ public class IdentityHeaderTransformTests
     }
 
     [Fact]
+    public void Apply_RealIpAndUserAgent_AreForwardedUnchanged()
+    {
+        // Aus beiden bildet der Suchdienst das Tagespseudonym der Besucher (#446). Nimmt die
+        // Transformation sie weg, zaehlen alle Besucher mit gleichem Browser als eine Person.
+        var proxyRequest = ProxyRequestCarrying(
+            ("X-Real-IP", "198.51.100.5"),
+            ("User-Agent", "Firefox/131.0"),
+            (IdentityHeaderTransform.SessionHeader, "session-abc"));
+
+        IdentityHeaderTransform.Apply(
+            proxyRequest,
+            AnonymousUser(),
+            PublicPath,
+            NoAllowlist,
+            Logger);
+
+        Assert.Equal(new[] { "198.51.100.5" }, ValuesOf(proxyRequest, "X-Real-IP"));
+        Assert.Equal(new[] { "Firefox/131.0" }, ValuesOf(proxyRequest, "User-Agent"));
+    }
+
+    [Fact]
     public void Apply_AdminUser_LogsOnlyThePseudonym()
     {
         // Auch auf Debug: der Dev-Stack laeuft auf Debug, und die Zeile entsteht bei jeder

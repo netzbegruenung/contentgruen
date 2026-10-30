@@ -35,7 +35,7 @@ describe('UsageTrackingService', () => {
     http.expectOne(ADRESSE(id)).flush({ success: true, message: 'ok', usage_count: count });
   }
 
-  it('meldet jede Kopie sofort, ohne Kennung des Browsers (#446)', () => {
+  it('meldet jede Kopie sofort, ohne Sitzungskennung (#446)', () => {
     service.trackContentUsage('k-1');
 
     const anfrage = http.expectOne(ADRESSE('k-1'));
