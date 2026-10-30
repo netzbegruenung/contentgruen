@@ -10,9 +10,14 @@ By contributing, you agree that your contributions will be licensed under the [G
 
 ## Repository
 
-[https://github.com/netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen)
+Development happens on Forgejo:
+[git.verdigado.com/Netzbegruenung/gutgesagt](https://git.verdigado.com/Netzbegruenung/gutgesagt).
+Issues and pull requests are managed there. Access is for people working on the project
+(Netzbegrünung, verdigado).
 
-Issues and pull requests are managed there.
+[github.com/netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen) is a
+read-only mirror: you can read and clone the code there, but issues and pull requests opened
+there are not processed.
 
 ## Quickstart (Docker)
 
@@ -87,17 +92,18 @@ End-to-end tests (Playwright) run against the dev stack, not in CI: see
 
 ## Contribution Flow
 
-1. Open an issue or comment on an existing one to coordinate
-2. Fork the repository on [GitHub](https://github.com/netzbegruenung/contentgruen)
-3. Create a feature branch: `feature/<your-feature>`
-4. Make your changes and run the tests
-5. Open a pull request with a clear description of what and why
+1. Open an issue on Forgejo or comment on an existing one to coordinate
+2. Create a branch in the Forgejo repository: `feature/<your-feature>`
+3. Make your changes and run the tests (`scripts/check.sh`)
+4. Open a pull request on Forgejo with a clear description of what and why
 
 Before starting significant work, please get in touch first to avoid duplication.
 
-## Community
+## Feedback and security
 
-Questions and discussion go in the [issue tracker](https://github.com/netzbegruenung/contentgruen/issues).
+Questions and bug reports from people using Gut gesagt go through the "Feedback" button in the
+app or to [gutgesagt@netzbegruenung.de](mailto:gutgesagt@netzbegruenung.de). Security
+vulnerabilities: see [SECURITY.md](./SECURITY.md), never in a public issue.
 
 ## Project Structure
 

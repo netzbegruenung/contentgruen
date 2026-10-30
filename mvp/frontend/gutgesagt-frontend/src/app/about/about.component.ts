@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
+import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 import { NICHT_JEDE_AUSSAGE } from '../shared/schreibregeln';
 import { ORGANISATION } from '../shared/organisation';
 
@@ -31,5 +32,9 @@ export class AboutComponent {
       maxWidth: '80vw',
       maxHeight: '80vh'
     });
+  }
+
+  openFeedbackDialog(): void {
+    feedbackDialogOeffnen(this.dialog);
   }
 }

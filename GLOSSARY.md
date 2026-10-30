@@ -324,7 +324,7 @@ Die gespeicherte Spur einer Suche für die Reichweitenmessung: der Tag, die Zahl
 _Avoid_: Search Event, Suchprotokoll, Suchlog
 
 **Tageszähler der Suchen**:
-Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen und die Zahl der Personen, aber kein Tagespseudonym. Kennzahlen über längere Zeiträume zählen ihn mit.
+Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die Zahl der Suchen, die Zahl der Suchen ohne Treffer und die Zahl der Personen, aber kein Tagespseudonym. Tage, die vor dieser Spalte verdichtet wurden, kennen die Suchen ohne Treffer nicht. Kennzahlen über längere Zeiträume zählen ihn mit.
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
@@ -390,6 +390,14 @@ _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 **Nutzungsstatistik**:
 Wie oft die Beiträge einer Person genutzt wurden, insgesamt und je Beitrag; unter Meine Beiträge steht die Gesamtzahl. Jede Person sieht nur die eigene; wessen Statistik gemeint ist, ergibt sich aus der Anmeldung, nie aus einer Kennung in der Adresse.
 _Avoid_: Usage Stats, Nutzerstatistik
+
+**Bilanz**:
+Der Abgleich der Kennzahlen nach dem öffentlichen Launch mit der Basislinie aus dem internen Launch (#417). Admins sehen die Kennzahlen dafür je Kalenderwoche: Personen pro Tag, die suchen (Wochenmittel der Tagespseudonyme), Nutzungen pro Woche, Anteil der Suchen ohne Treffer und Nutzungen je Suche. Feste Zielwerte gibt es nicht; ein Signal ist eine Abweichung von der Basislinie.
+_Avoid_: Zielerreichung, KPI, MVP-Ziele
+
+**Basislinie**:
+Die Werte der Kennzahlen aus dem internen Launch, an denen die Bilanz misst: je Kennzahl der Median der Wochen 2 bis 4. Sie wird in #348 festgehalten, solange die Nutzungen dieser Wochen noch nicht gelöscht sind. Keine Zielvorgabe, sondern der Vergleichswert.
+_Avoid_: Zielwert, Benchmark
 
 **Betriebskennzahlen**:
 Zahlen über den Betrieb der Anwendung, nicht über Inhalte oder Personen: wie viele Anfragen mit welchem Ergebnis eingehen und wie lange die Suche dauert. Der Betrieb liest sie für Alarme; sie tragen keine Kennung, keine Suchanfrage und keine Sitzung. Die Kennzahlen, die Admins sehen, sind etwas anderes.

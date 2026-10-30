@@ -171,3 +171,89 @@ class TestKennzahlenUeberDieFrist:
             )
             == 2
         )
+
+
+def _ohne_treffer_je_tag(datenbank: Datenbank):
+    with datenbank.engine.connect() as c:
+        return c.execute(
+            text("SELECT tag, ohne_treffer FROM suchen_je_tag ORDER BY tag")
+        ).all()
+
+
+class TestSuchenOhneTrefferImTageszaehler:
+    """K3 der Bilanz (#467) muss die Frist der Einzelzeilen ueberleben."""
+
+    def test_verdichte_alte_suchereignisse_zaehlt_suchen_ohne_treffer(self, db):
+        _suche(db, ALT, PERSON_A, treffer=0)
+        _suche(db, ALT, PERSON_B, treffer=0)
+        _suche(db, ALT, PERSON_B, treffer=4)
+
+        _repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
+
+        assert _ohne_treffer_je_tag(db) == [(ALT, 2)]
+
+    def test_verdichte_alte_suchereignisse_unbekannte_bleiben_unbekannt(self, db):
+        """Ein Tageszaehler von vor #467 hat keinen Wert; addiert wird nicht auf 0."""
+        with db.engine.begin() as c:
+            c.execute(
+                text(
+                    "INSERT INTO suchen_je_tag (tag, suchen, personen)"
+                    " VALUES (:tag, 5, 2)"
+                ),
+                {"tag": ALT},
+            )
+        _suche(db, ALT, PERSON_A, treffer=0)
+
+        _repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
+
+        assert _ohne_treffer_je_tag(db) == [(ALT, None)]
+
+
+class TestTageswerte:
+    """Tageswerte fuer die Bilanz: Einzelzeilen und Tageszaehler zusammen."""
+
+    def test_get_tageswerte_verbindet_einzelzeilen_und_tageszaehler(self, db):
+        for actor, treffer in ((PERSON_A, 0), (PERSON_B, 2), (PERSON_B, 0)):
+            _suche(db, ALT, actor, treffer=treffer)
+        repository = _repository(db)
+        repository.verdichte_alte_suchereignisse(90, heute=HEUTE)
+        for actor, treffer in ((PERSON_A, 1), (PERSON_A, 0)):
+            _suche(db, NOCH_IN_FRIST, actor, treffer=treffer)
+
+        tage = repository.get_tageswerte(date(2026, 7, 1), date(2026, 8, 1))
+
+        assert [(t.tag, t.suchen, t.personen, t.ohne_treffer) for t in tage] == [
+            (ALT, 3, 2, 2),
+            (NOCH_IN_FRIST, 2, 1, 1),
+        ]
+
+    def test_get_tageswerte_grenzen_eingeschlossen_ausserhalb_nicht(self, db):
+        for tag in (date(2026, 7, 27), ALT, NOCH_IN_FRIST, date(2026, 7, 30)):
+            _suche(db, tag, PERSON_A)
+
+        tage = _repository(db).get_tageswerte(ALT, NOCH_IN_FRIST)
+
+        assert [t.tag for t in tage] == [ALT, NOCH_IN_FRIST]
+
+    def test_get_tageswerte_unbekannte_ohne_treffer_bleiben_none(self, db):
+        with db.engine.begin() as c:
+            c.execute(
+                text(
+                    "INSERT INTO suchen_je_tag (tag, suchen, personen)"
+                    " VALUES (:tag, 5, 2)"
+                ),
+                {"tag": ALT},
+            )
+
+        (tag,) = _repository(db).get_tageswerte(ALT, ALT)
+
+        assert (tag.suchen, tag.personen, tag.ohne_treffer) == (5, 2, None)
+
+    @pytest.mark.parametrize("zeitzone", ["Pacific/Kiritimati", "Pacific/Pago_Pago"])
+    def test_get_tageswerte_unabhaengig_von_der_zeitzone(self, db, zeitzone):
+        _suche(db, NOCH_IN_FRIST, PERSON_A)
+
+        with db.mit_zeitzone(zeitzone) as in_zone:
+            tage = _repository(in_zone).get_tageswerte(NOCH_IN_FRIST, NOCH_IN_FRIST)
+
+        assert [t.tag for t in tage] == [NOCH_IN_FRIST]

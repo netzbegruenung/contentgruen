@@ -4,6 +4,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
+import { ORGANISATION } from '../shared/organisation';
 
 describe('LoginSelectorComponent', () => {
   let component: LoginSelectorComponent;
@@ -94,6 +95,15 @@ describe('LoginSelectorComponent', () => {
       // Note: In a real test environment with Angular Material properly configured,
       // we would check the expanded attribute. Here we just verify the component has the property
       expect(component.hasOwnProperty('isRegistrationInfoExpanded')).toBeTruthy();
+    });
+
+    it('nennt für den Beta-Zugang die Kontaktadresse aus der Organisationskonstante (#430)', () => {
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.email-link');
+
+      expect(link.textContent?.trim()).toBe(ORGANISATION.gutgesagtMail);
+      expect(link.getAttribute('href')).toBe(
+        `mailto:${ORGANISATION.gutgesagtMail}?subject=${encodeURIComponent('Beta-Account Anfrage')}`
+      );
     });
   });
 });

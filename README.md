@@ -50,6 +50,13 @@ Access the app at [http://localhost](http://localhost). See [CONTRIBUTING.md](./
 | [`docs/VISION.md`](./docs/VISION.md) | Purpose, audience and limits of the product (German) |
 | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Long-term direction |
 
-## Community
+## Feedback, questions and bug reports
 
-Questions, ideas, and bug reports go in the [issue tracker](https://github.com/netzbegruenung/contentgruen/issues).
+- **Using Gut gesagt:** use the "Feedback" button in the app, or write to
+  [gutgesagt@netzbegruenung.de](mailto:gutgesagt@netzbegruenung.de).
+- **Security vulnerabilities:** do not report them publicly, see [SECURITY.md](./SECURITY.md).
+- **Development:** issues and pull requests live on Forgejo
+  ([git.verdigado.com/Netzbegruenung/gutgesagt](https://git.verdigado.com/Netzbegruenung/gutgesagt)),
+  see [CONTRIBUTING.md](./CONTRIBUTING.md).
+- **GitHub** ([netzbegruenung/contentgruen](https://github.com/netzbegruenung/contentgruen))
+  is a read-only mirror, see [CONTRIBUTING.md](./CONTRIBUTING.md#repository).

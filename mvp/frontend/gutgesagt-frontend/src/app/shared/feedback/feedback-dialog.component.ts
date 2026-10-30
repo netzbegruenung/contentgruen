@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -14,7 +14,8 @@ import {
 
 /**
  * Das kurze Formular hinter dem Knopf "Feedback" im Kopf: Freitext, optional ein
- * Kontakt. Ersetzt die Mail-Adresse am Ende der Ueber-Seite (#343).
+ * Kontakt. Der Hauptweg fuer Fragen und Fehler von Nutzenden; die Kontaktadresse
+ * (`ORGANISATION.gutgesagtMail`) ist der zweite (#343, #290).
  */
 @Component({
   selector: 'app-feedback-dialog',
@@ -67,4 +68,12 @@ export class FeedbackDialogComponent {
   schliessen(): void {
     this.dialogRef.close();
   }
+}
+
+/** Öffnet das Feedback-Formular, aus dem Kopf wie von der Über-Seite gleich groß. */
+export function feedbackDialogOeffnen(dialog: MatDialog): MatDialogRef<FeedbackDialogComponent> {
+  return dialog.open(FeedbackDialogComponent, {
+    width: '560px',
+    maxWidth: '95vw',
+  });
 }

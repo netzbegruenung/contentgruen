@@ -346,11 +346,10 @@ semantic search container.
 
 ## 🤝 Need help?
 
-Talk to us in the Chatbegrünung channel:
-- 📢 `#GutGesagt`
-- 🔗 [chatbegruenung.de](https://chatbegruenung.de/channel/GutGesagt)
-
-Ask in the channel for test-system or production access — the maintainers are reachable there.
+Questions about deployment and requests for test-system or production access go in an issue on
+[Forgejo](https://git.verdigado.com/Netzbegruenung/gutgesagt/issues); without Forgejo access,
+see [CONTRIBUTING.md](../CONTRIBUTING.md#repository). Security vulnerabilities: see
+[SECURITY.md](../SECURITY.md).
 
 ---
 
