@@ -36,5 +36,4 @@ describe('ImpressumComponent', () => {
     expect(kontakt).toContain('„Feedback“');
     expect(mail).not.toBeNull();
   });
-
 });
