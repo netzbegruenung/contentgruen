@@ -23,8 +23,7 @@ from datetime import date, timedelta
 from typing import Dict, Iterable, List, Optional, Protocol
 
 from repositories.search_tracking_repository import Tageswert
-from services.suchen_ohne_treffer_service import wochenbeginn
-from utils.utc_tag import heute_utc
+from utils.utc_tag import heute_utc, wochenbeginn
 
 
 @dataclass(frozen=True)

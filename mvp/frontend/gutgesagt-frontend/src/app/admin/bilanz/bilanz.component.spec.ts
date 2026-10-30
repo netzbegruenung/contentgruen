@@ -104,6 +104,46 @@ describe('BilanzComponent', () => {
     expect(element().textContent).toContain('die letzten 52');
   });
 
+  it('verwirft die Antwort eines vorher gewählten Zeitraums', () => {
+    http.expectOne(URL).flush(ANTWORT);
+    fixture.detectChanges();
+
+    const auswahl = element().querySelector('select') as HTMLSelectElement;
+    auswahl.value = '52';
+    auswahl.dispatchEvent(new Event('change'));
+    const alt = http.expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=52`);
+    auswahl.value = '13';
+    auswahl.dispatchEvent(new Event('change'));
+
+    expect(alt.cancelled).toBeTrue();
+    http.expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=13`).flush({ ...ANTWORT, wochen: 13 });
+    fixture.detectChanges();
+    expect(element().textContent).toContain('die letzten 13');
+  });
+
+  it('zeigt nach einem Ladefehler keine Tabelle eines anderen Zeitraums', () => {
+    http.expectOne(URL).flush(ANTWORT);
+    fixture.detectChanges();
+
+    const auswahl = element().querySelector('select') as HTMLSelectElement;
+    auswahl.value = '52';
+    auswahl.dispatchEvent(new Event('change'));
+    http
+      .expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=52`)
+      .flush('kaputt', { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(element().textContent).toContain('konnte nicht geladen werden');
+    expect(zeilen()).toEqual([]);
+  });
+
+  it('nennt die laufende Woche vorläufig', () => {
+    http.expectOne(URL).flush(ANTWORT);
+    fixture.detectChanges();
+
+    expect(element().textContent).toContain('Die laufende Woche ist vorläufig');
+  });
+
   it('meldet einen Ladefehler', () => {
     http.expectOne(URL).flush('kaputt', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();

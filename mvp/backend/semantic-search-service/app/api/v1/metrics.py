@@ -131,10 +131,19 @@ class BilanzWocheResponse(BaseModel):
     woche_ab: date = Field(description="Montag der Woche (UTC)")
     tage: int = Field(description="Tage der Woche bis heute, 7 ausser in der laufenden")
     suchen: int
-    personen_pro_tag: float = Field(description="K1, Wochenmittel")
-    nutzungen: Optional[int] = Field(description="K2")
-    anteil_ohne_treffer: Optional[float] = Field(description="K3, in Prozent")
-    nutzungen_je_suche: Optional[float] = Field(description="H")
+    personen_pro_tag: float = Field(
+        description="K1 Personen pro Tag, die suchen: verschiedene Tagespseudonyme "
+        "je Tag, gemittelt ueber die Tage der Woche"
+    )
+    nutzungen: Optional[int] = Field(
+        description="K2 Nutzungen der Woche (Nutzungsereignisse)"
+    )
+    anteil_ohne_treffer: Optional[float] = Field(
+        description="K3 Anteil der Suchen ohne Treffer, in Prozent"
+    )
+    nutzungen_je_suche: Optional[float] = Field(
+        description="H Nutzungen je Suche: Nutzungen geteilt durch Suchen der Woche"
+    )
 
 
 class BilanzResponse(BaseModel):

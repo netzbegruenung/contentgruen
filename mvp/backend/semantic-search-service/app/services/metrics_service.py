@@ -278,7 +278,7 @@ class MetricsService:
             # Bewusst ohne Zielwerte (#417): Die Bilanz vergleicht mit der Basislinie
             # aus dem internen Launch, nicht mit festen Zahlen.
             return {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "period_days": 7,
                 "daily_active_users": dau,
                 "searches_per_user": searches_stats.get("average", 0),

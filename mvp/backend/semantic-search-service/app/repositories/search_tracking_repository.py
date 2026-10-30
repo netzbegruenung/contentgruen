@@ -24,6 +24,7 @@ from sqlalchemy.sql.selectable import ScalarSelect
 
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import SearchEvent, SuchenJeTagZeile
+from utils.utc_tag import utc_zeitraum
 
 logger = logging.getLogger(__name__)
 
@@ -336,14 +337,13 @@ class SearchTrackingRepository:
         Wirft bei Datenbankfehlern: Leere Tage sind in der Bilanz ein Wert (0),
         ein Fehler darf nicht so aussehen.
         """
+        von, bis = utc_zeitraum(erster, letzter)
         with self.db.get_session() as session:
             zeilen = session.execute(
                 _TAGESWERTE,
                 {
-                    "von": datetime.combine(erster, time.min, tzinfo=timezone.utc),
-                    "bis": datetime.combine(
-                        letzter + timedelta(days=1), time.min, tzinfo=timezone.utc
-                    ),
+                    "von": von,
+                    "bis": bis,
                     "erster": erster,
                     "letzter": letzter,
                 },

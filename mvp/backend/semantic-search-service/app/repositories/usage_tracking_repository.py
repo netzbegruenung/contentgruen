@@ -4,7 +4,7 @@ Handles all database operations for usage statistics.
 """
 
 import logging
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 import uuid
 import asyncio
@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import AppDatabase, get_app_database
+from utils.utc_tag import utc_zeitraum
 from infrastructure.database.models import (
     NutzungJeFassung,
     UsageTracking,
@@ -196,10 +197,7 @@ class UsageTrackingRepository:
         fehlen ebenfalls. Wirft bei Datenbankfehlern, damit kein Fehler als 0 gilt.
         """
         tag = func.date(func.timezone("UTC", UsageEvent.timestamp))
-        von = datetime.combine(erster, time.min, tzinfo=timezone.utc)
-        bis = datetime.combine(
-            letzter + timedelta(days=1), time.min, tzinfo=timezone.utc
-        )
+        von, bis = utc_zeitraum(erster, letzter)
         with self.db.get_session() as session:
             zeilen = (
                 session.query(tag, func.count(UsageEvent.id))

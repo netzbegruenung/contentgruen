@@ -67,6 +67,23 @@ class TestNutzungenJeTag:
 
         assert je_tag == {date(2026, 10, 19): 1, date(2026, 10, 25): 1}
 
+    @pytest.mark.parametrize("zeitzone", ["Pacific/Kiritimati", "Pacific/Pago_Pago"])
+    def test_get_nutzungen_je_tag_unabhaengig_von_der_zeitzone(
+        self, datenbank, zeitzone
+    ):  # noqa: F811
+        beitrag = uuid.uuid4()
+        UsageTrackingRepository(datenbank).track_usage(beitrag)
+        # 10:30 UTC ist in Kiritimati (UTC+14) schon der 21., in Pago Pago (UTC-11)
+        # noch der 19.; zaehlen soll in beiden der UTC-Tag.
+        _am(datenbank, beitrag, datetime(2026, 10, 20, 10, 30, tzinfo=timezone.utc))
+
+        with datenbank.mit_zeitzone(zeitzone) as in_zone:
+            je_tag = UsageTrackingRepository(in_zone).get_nutzungen_je_tag(
+                date(2026, 10, 20), date(2026, 10, 20)
+            )
+
+        assert je_tag == {date(2026, 10, 20): 1}
+
 
 def _metrics_service(datenbank):  # noqa: F811
     from services.metrics_service import MetricsService

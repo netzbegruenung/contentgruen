@@ -39,13 +39,13 @@ export interface BilanzWoche {
     /** Tage der Woche bis heute; unter 7 nur in der laufenden. */
     tage: number;
     suchen: number;
-    /** K1, Wochenmittel. */
+    /** K1 Personen pro Tag, die suchen: verschiedene Tagespseudonyme je Tag, Wochenmittel. */
     personen_pro_tag: number;
-    /** K2. */
+    /** K2 Nutzungen der Woche (Nutzungsereignisse). */
     nutzungen: number | null;
-    /** K3, in Prozent. */
+    /** K3 Anteil der Suchen ohne Treffer, in Prozent. */
     anteil_ohne_treffer: number | null;
-    /** H. */
+    /** H Nutzungen je Suche: Nutzungen geteilt durch Suchen der Woche. */
     nutzungen_je_suche: number | null;
 }
 
