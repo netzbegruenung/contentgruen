@@ -23,6 +23,7 @@ die Stelle, an der jeder PR anhaengt. Die Tests in scripts/tests/ pruefen die Ab
 import pathlib
 import re
 import sys
+from typing import NamedTuple
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 LUECKEN = WURZEL / "docs/rechtstexte-luecken"
@@ -113,11 +114,17 @@ def staende_ordner(wurzel: pathlib.Path = STAENDE) -> list[pathlib.Path]:
     return sorted((d for d in wurzel.iterdir() if d.is_dir()), reverse=True)
 
 
-def stand(ordner: pathlib.Path) -> tuple[str, dict[str, str], list[str]]:
+class Stand(NamedTuple):
+    name: str
+    felder: dict[str, str]
+    aenderungen: list[str]
+
+
+def stand(ordner: pathlib.Path) -> Stand:
     """Stand, seine Felder und seine Aenderungen (eine je Datei, nach Ticket sortiert)."""
     name, felder = eintrag(ordner / "stand.md")
     aenderungen = _dateien_nach_nummer(ordner, ausser="stand.md")
-    return name, felder, [" ".join(d.read_text().split()) for d in aenderungen]
+    return Stand(name, felder, [" ".join(d.read_text().split()) for d in aenderungen])
 
 
 def staende(wurzel: pathlib.Path = STAENDE) -> str:
@@ -133,9 +140,15 @@ def staende(wurzel: pathlib.Path = STAENDE) -> str:
     )
 
 
-if __name__ == "__main__":
+def main(argv: list[str]) -> int:
     uebersichten = {"luecken": luecken, "staende": staende}
-    art = sys.argv[1] if len(sys.argv) == 2 else ""
+    art = argv[0] if len(argv) == 1 else ""
     if art not in uebersichten:
-        sys.exit("Aufruf: rechtstexte_uebersicht.py luecken|staende")
+        print("Aufruf: rechtstexte_uebersicht.py luecken|staende", file=sys.stderr)
+        return 2
     print(uebersichten[art](), end="")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

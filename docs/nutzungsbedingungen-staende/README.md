@@ -68,10 +68,13 @@ aktiviert und für neue Konten als Standard gesetzt sein.
 
 Ein Ordner je Stand in diesem Verzeichnis, benannt nach seinem Datum. Als Tabelle, der neueste
 zuerst: `python3 scripts/rechtstexte_uebersicht.py staende`. Hier keine Liste der Stände
-pflegen: Sie wäre wieder die Stelle, an der jeder PR anhängt.
+pflegen: Sie wäre wieder die Stelle, an der jeder PR anhängt. Bis #500 stand das Verzeichnis
+in einer Datei, `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`; Verweise in `docs/archiv/` nennen noch
+diesen Namen.
 
 Frühere Stände hatten nur einen Monat in der Stand-Zeile und waren nie Gegenstand einer
 Zustimmung beim Anmelden. Ein Monat benennt dort nicht genau einen Text: „Oktober 2026“ wurde
 mehrfach geändert. Ihre Ordner nennen deshalb den Zeitraum im Repository (Commit und Datum), nicht,
 wann ein Text live war; das Versprechen in §10, jeden Stand mit seinem Zeitraum aufzubewahren,
-gilt ab dem Stand vom 30. Oktober 2026.
+gilt ab dem Stand vom 30. Oktober 2026. Ihre Änderungen sind nicht nach einem Ticket benannt:
+`2026-09/neufassung.md` hatte keins, `2026-10/222.md` deckt auch #448 ab.

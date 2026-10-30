@@ -147,6 +147,17 @@ def test_stand_als_ordner_lehnt_anderes_ab(stand):
         uebersicht.stand_als_ordner(stand)
 
 
+def test_main_gibt_die_uebersicht_aus(capsys):
+    assert uebersicht.main(["staende"]) == 0
+    assert capsys.readouterr().out == uebersicht.staende()
+
+
+@pytest.mark.parametrize("argv", [[], ["tabelle"], ["luecken", "staende"]])
+def test_main_ohne_bekannte_art_meldet_den_aufruf(argv, capsys):
+    assert uebersicht.main(argv) == 2
+    assert "luecken|staende" in capsys.readouterr().err
+
+
 def test_eintrag_ohne_feldzeile_ist_ein_fehler(baum):
     wurzel = baum({"I1.md": "# I1\n\nFreitext statt Feld\n"})
 

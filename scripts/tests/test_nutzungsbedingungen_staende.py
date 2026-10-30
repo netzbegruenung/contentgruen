@@ -35,7 +35,7 @@ def test_der_stand_der_seite_steht_im_verzeichnis():
     stand = _stand_der_seite()
     ordner = uebersicht.STAENDE / uebersicht.stand_als_ordner(stand)
 
-    assert uebersicht.stand(ordner)[0] == stand
+    assert uebersicht.stand(ordner).name == stand
 
 
 @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ def test_der_stand_der_seite_steht_im_verzeichnis():
 )
 def test_jeder_ordner_ist_nach_seinem_stand_benannt_und_nennt_aenderungen(ordner):
     """Der Ordnername ist das Datum: Damit steht jeder Stand nur einmal im Verzeichnis."""
-    name, _, aenderungen = uebersicht.stand(ordner)
+    stand = uebersicht.stand(ordner)
 
-    assert uebersicht.stand_als_ordner(name) == ordner.name
-    assert aenderungen
+    assert uebersicht.stand_als_ordner(stand.name) == ordner.name
+    assert stand.aenderungen

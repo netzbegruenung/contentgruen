@@ -244,7 +244,7 @@ eigenen, sichtbar getrennten Schritt planen — und im UI nicht so tun, als ging
 Ein Fangkorb sammelt fremde Inhalte (Posts namentlich bekannter Personen) wörtlich und
 dauerhaft. Der `post`-Typ tut das heute schon, der Fangkorb würde es in größerem Volumen und
 ohne Kuratierung tun. Das berührt die offenen Punkte in
-[rechtstexte-luecken/](../rechtstexte-luecken/) (Urheberrecht, personenbezogene Daten,
+[RECHTSTEXTE_LUECKEN.md](../RECHTSTEXTE_LUECKEN.md) (Urheberrecht, personenbezogene Daten,
 Löschkonzept). Kein Grund, nicht zu bauen — aber der interne Charakter des Fangkorbs
 (`ContentVisibility.INTERNAL` ist Default) sollte eine bewusste Zusage bleiben, keine
 Voreinstellung, die irgendwann jemand umstellt.

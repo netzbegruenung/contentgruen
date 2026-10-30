@@ -9,6 +9,8 @@ Abschnitts, benannt nach seiner Nummer (`4-fehlende-vorgaenge/D-N5.md`); die Fel
 sind die Spalten der früheren Tabelle. Text und Überschrift eines Abschnitts stehen in
 seiner `README.md`. Ein neuer Eintrag ist eine neue Datei mit derselben Felderfolge wie die
 anderen im Ordner, nichts sonst; so kollidieren zwei PRs mit je einem neuen Eintrag nicht.
+Bis #500 stand alles in einer Datei, `docs/RECHTSTEXTE_LUECKEN.md`; Verweise in `docs/archiv/`
+nennen noch diesen Namen.
 Die Tabellen als Übersicht: `python3 scripts/rechtstexte_uebersicht.py luecken`.
 `scripts/tests/test_rechtstexte_uebersicht.py` prüft die Ablage.
 
@@ -26,7 +28,7 @@ Geprüfte Dateien:
 
 Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner davon ist
 mehr offen** — alle drei Texte sind ausformuliert, die Datenschutzerklärung zuletzt. Die
-Tabellen bleiben stehen, weil in der Eintrag-Spalte steht, wie der jeweilige Punkt gelöst
+Einträge bleiben stehen, weil in ihrem Eintrag-Feld steht, wie der jeweilige Punkt gelöst
 wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Zustimmung beim
 Anmelden (Abschnitt 5, #429), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende.
 
