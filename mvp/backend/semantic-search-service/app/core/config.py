@@ -155,7 +155,6 @@ class Settings(BaseSettings):
     # Ohne URL, Client und Secret lassen sich Einladungen nur verwalten, nicht einloesen.
     # Einrichten: docs/KEYCLOAK_REALM.md. keycloak_url ist die Basis ohne /realms/...
     keycloak_url: Optional[str] = None
-    # ANNAHME (#429): Der Realm heisst "gutgesagt".
     keycloak_realm: str = "gutgesagt"
     keycloak_admin_client_id: Optional[str] = None
     keycloak_admin_client_secret: Optional[str] = None

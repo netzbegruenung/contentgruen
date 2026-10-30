@@ -19,9 +19,9 @@ from domain.interfaces.konten_im_realm import KontoErgebnis
 
 logger = get_logger(__name__)
 
-# ANNAHME (#429): Die Pflichtaktion "Terms and Conditions" ist im Realm eingeschaltet
-# (Schritt in docs/KEYCLOAK_REALM.md). Keycloak weist ein Konto mit einer
-# unbekannten Pflichtaktion ab; dann schlaegt jedes Einloesen fehl.
+# Die Pflichtaktion "Terms and Conditions" muss im Realm eingeschaltet sein (Schritt in
+# docs/KEYCLOAK_REALM.md). Keycloak weist ein Konto mit einer unbekannten
+# Pflichtaktion ab; dann schlaegt jedes Einloesen fehl.
 PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
 # Was der Link in der Mail tut. Keycloak bestaetigt dabei auch die Mail-Adresse.
 MAIL_AKTIONEN = ["UPDATE_PASSWORD"]

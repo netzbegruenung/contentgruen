@@ -53,11 +53,20 @@ Platzhalter, vor dem Import ersetzen:
 Keycloak erzeugt die Client-Secrets beim Import; sie stehen danach unter *Clients →
 Credentials*.
 
-Der Text der Nutzungsbedingungen (`localizationTexts.de.termsText`) ist ein Platzhalter, der
-nur auf die Seite `/nutzungsbedingungen` verweist; den endgültigen Text liefert #415, über ein
-Rechtstext-Ticket. Die ausdrückliche Einwilligung nach Art. 9 DSGVO als eigenes Häkchen
-(Entscheidung in #429) ist in der Vorlage noch nicht enthalten. Keycloak speichert bei der
-Zustimmung nur einen Zeitstempel, keine Fassung; die Fassungen deshalb archivieren.
+Bei der Pflichtaktion zeigt Keycloak den Text `localizationTexts.de.termsText` aus der Vorlage.
+Ein eigenes Theme gibt es nicht: Keycloak gibt diesen Text als HTML aus (`terms.ftl`,
+`kcSanitize`), Link und Stand-Datum stehen also direkt darin. Er verlinkt die Seite
+`/nutzungsbedingungen` und nennt ihren Stand, etwa „(Stand: Oktober 2026)“;
+`scripts/tests/test_keycloak_nutzungsbedingungen.py` prüft, dass der Stand mit der Stand-Zeile
+der Seite übereinstimmt. Keycloak speichert bei der Zustimmung nur den Zeitpunkt; welchem Text
+jemand zugestimmt hat, sagt nur dieses Datum.
+
+Bei einem neuen Stand der Nutzungsbedingungen deshalb Vorlage und Realm nachziehen: in der
+Vorlage `termsText` (der Test schlägt sonst fehl), im laufenden Realm *Realm settings →
+Localization → Realm overrides → de → termsText*; ein erneuter Import ändert einen bestehenden
+Realm nicht. Den Zustimmungssatz „Mit „Annehmen“ stimmst du ihnen zu.“ prüft die Juristin mit
+#296. Die ausdrückliche Einwilligung nach Art. 9 DSGVO als eigenes Häkchen ist in der Vorlage
+noch nicht enthalten (Folgeticket).
 
 Wie lange der Link in der Mail „Passwort festlegen“ gilt, schickt der Semantic-Service bei
 jedem Aufruf mit (`MAIL_GUELTIG_SEKUNDEN` in `infrastructure/keycloak_konten.py`, drei Tage);
