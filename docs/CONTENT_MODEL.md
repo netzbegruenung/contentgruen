@@ -118,10 +118,11 @@ class DirectText:        # comment, generic_text, speech transcript, paper abstr
     async def derive_text(self, raw): return DerivedContent(text=raw.text)
 ```
 
-An AI-derived ingestion (e.g. describing an image) is not a strategy here: by ADR 0003 an AI text
-reaches the Vorrat only after a person takes it over. A future KI-Vorschlag for the Unterschrift
-therefore belongs in the image form: fetched on click, edited or discarded by the person, saved only
-with the form (#281, #393).
+An AI text that is shown to people is not a strategy here: by ADR 0003 it reaches the Vorrat only
+after a person takes it over. A future KI-Vorschlag for the Unterschrift therefore belongs in the
+image form: fetched on click, edited or discarded by the person, saved only with the form (#281,
+#393). Texts that only serve indexing and search (text in the image, an image description) may be
+derived in the background and are never shown (ADR 0003, Ergänzung 28.10.2026).
 
 **3. Per-type models (Seam 2)** stay tiny — just the extra fields:
 

@@ -314,7 +314,7 @@ entfernt. Die beiden früher hier geführten inhaltlichen Blocker sind aufgelös
 
 Die Code- und Produkttickets, die sich aus dem Schreiben der Erklärung ergeben haben —
 fehlende Löschfristen, der Retention-Bug, die Sichtbarkeit im Fangkorb, der
-KI-Vorschlagsbutton ohne Key — sind **keine** Launch-Blocker: die Erklärung beschreibt
+KI-Vorschlagsbutton ohne Key (mit #393 entfernt) — sind **keine** Launch-Blocker: die Erklärung beschreibt
 den Ist-Zustand zutreffend. Sie stehen im Beschreibungstext des Datenschutz-PR.
 
 ---

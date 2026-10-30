@@ -80,10 +80,11 @@ describe('AddImageComponent', () => {
   it('bietet keinen KI-Vorschlag fuer die Unterschrift an (#393)', () => {
     const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('form button'));
 
-    expect(knoepfe.map((k) => k.className)).toEqual([
-      jasmine.stringContaining('cancel-btn'),
-      jasmine.stringContaining('submit-btn'),
-    ]);
+    expect(knoepfe.length).toBeGreaterThan(0);
+    for (const knopf of knoepfe) {
+      expect(knopf.textContent).not.toMatch(/KI|Vorschlag/);
+      expect(knopf.querySelector('mat-icon')?.textContent?.trim()).not.toBe('auto_awesome');
+    }
   });
 
   it('speichert erst mit einer selbst geschriebenen Unterschrift', () => {

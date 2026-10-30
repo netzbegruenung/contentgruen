@@ -19,7 +19,7 @@ use existing comments/background info, and contribute their own.
 * [x] Semantic search using Qdrant v1.18.2 and E5 multilingual embeddings
 * [x] Content-type-aware encoding, polarity filtering, and keyword-overlap score boosting
 * [x] Content contribution workflows (commentaries, background info / generic text, statements, images, posts)
-* [x] Image content type; the person writes the Unterschrift (ADR 0003). The AI suggestion via OpenAI and its `openai` dependency were removed (#393); nothing is sent to an AI provider
+* [x] Image content type; the person writes the Unterschrift (ADR 0003). The AI suggestion via OpenAI and its `openai` dependency were removed (#393); no service sends anything to an AI provider
 * [x] Post content type (social media posts: Facebook / Instagram / TikTok)
 * [x] `ContentTypeSpec` registry — adding a new content type is a spec + model + frontend fragment, not a 500-line clone
 * [x] Content reporting and moderation system (incl. anonymous reporting with session tracking)
