@@ -102,6 +102,9 @@ async def real_embeddings_manager(integration_settings, einbettungsmodell, monke
     drive it via the injected factory rather than the global getter). The model
     comes from ``einbettungsmodell``.
     """
+    # Der Manager laedt das Modell in start() ueber diesen Importnamen, eine andere
+    # Naht hat er nicht. Benennt jemand den Import um, schlaegt die Pruefung unten fehl,
+    # statt dass jeder Test das Modell still neu laedt.
     monkeypatch.setattr(
         qdrant_embeddings_manager,
         "SentenceTransformer",
@@ -111,6 +114,9 @@ async def real_embeddings_manager(integration_settings, einbettungsmodell, monke
     manager = QdrantEmbeddingsManager(integration_settings)
     await manager.start()
     try:
+        assert (
+            manager.model is einbettungsmodell
+        ), "Modell nicht geteilt: laedt QdrantEmbeddingsManager.start() es anders?"
         yield manager
     finally:
         try:

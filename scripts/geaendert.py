@@ -107,35 +107,28 @@ def _specs_zu(geaenderte_ts: set[pathlib.Path], src: pathlib.Path) -> set[pathli
     return {d for d in erreicht if d.name.endswith(".spec.ts")}
 
 
-def _frontend(pfade: list[str], wurzel: pathlib.Path, auswahl: Auswahl) -> None:
+def _frontend(pfade: list[str], wurzel: pathlib.Path) -> tuple[str, list[str] | None]:
+    """Grund und Specs (relativ zum Frontend; None: alle) fuer die geaenderten Frontend-Dateien."""
     fe = (wurzel / FE).resolve()
     src = fe / "src" / "app"
     if '"paths"' in _lesen(fe / "tsconfig.json"):
         # Importe ueber Aliase verfolgt _importe nicht
-        auswahl.dazu("frontend", "tsconfig.json kennt Pfad-Aliase, alle Specs")
-        return
-    ts, unzuordenbar = set(), None
+        return "tsconfig.json kennt Pfad-Aliase, alle Specs", None
+    ts = set()
     for pfad in pfade:
         datei = (wurzel / pfad).resolve()
         # Template und Styles gehoeren zur gleichnamigen Komponente
         komponente = datei.with_suffix(".ts")
-        if datei.is_relative_to(src) and komponente.is_file():
-            ts.add(komponente)
-        else:
-            unzuordenbar = pfad
-    if unzuordenbar:
-        auswahl.dazu(
-            "frontend", f"{unzuordenbar}: nicht einer Komponente zuzuordnen, alle Specs"
-        )
-        return
+        if not (datei.is_relative_to(src) and komponente.is_file()):
+            return f"{pfad}: nicht einer Komponente zuzuordnen, alle Specs", None
+        ts.add(komponente)
     specs = _specs_zu(ts, src)
     if not specs:
-        auswahl.dazu(
-            "frontend", "keine Spec erreicht die geaenderten Dateien, alle Specs"
-        )
-        return
-    auswahl.dazu("frontend", f"{len(specs)} Specs zu {len(ts)} geaenderten Dateien")
-    auswahl.specs = sorted(str(s.relative_to(fe)) for s in specs)
+        return "keine Spec erreicht die geaenderten Dateien, alle Specs", None
+    return (
+        f"{len(specs)} Specs zu {len(ts)} geaenderten Dateien",
+        sorted(str(s.relative_to(fe)) for s in specs),
+    )
 
 
 def _lesen(datei: pathlib.Path) -> str:
@@ -230,14 +223,9 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
         schritte = _regel(pfad)
         if schritte is ALLES:
             alles.append(pfad)
-            continue
+        grund = f"{pfad}: wirkt auf alles" if schritte is ALLES else pfad
         for schritt in schritte:
-            if schritt != "frontend":
-                auswahl.dazu(schritt, pfad)
-    if alles:
-        for schritt in ALLES:
-            if schritt != "frontend":
-                auswahl.dazu(schritt, f"{alles[0]}: wirkt auf alles")
+            auswahl.dazu(schritt, grund)
     app = [p for p in pfade if p.startswith(PY + "/app/") and not _doku(p)]
     if app:
         erreicht = _python_fuer_integration(wurzel)
@@ -264,11 +252,11 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
                 ):
                     auswahl.dazu(schritt, f"{datei.name} liest {pfad}")
                     break
-    fe = [p for p in pfade if p.startswith(FE + "/")]
-    if alles:
-        auswahl.dazu("frontend", f"{alles[0]}: wirkt auf alles, alle Specs")
-    elif fe:
-        _frontend(fe, wurzel, auswahl)
+    # Nur der Frontend-Schritt kann auf einzelne Specs eingegrenzt werden
+    if "frontend" in auswahl.gruende and not alles:
+        fe = [p for p in pfade if p.startswith(FE + "/")]
+        grund, auswahl.specs = _frontend(fe, wurzel)
+        auswahl.gruende["frontend"].insert(0, grund)
     return auswahl
 
 
