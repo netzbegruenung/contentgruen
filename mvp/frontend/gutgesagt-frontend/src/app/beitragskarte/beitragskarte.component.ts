@@ -38,6 +38,7 @@ import { AuthService } from '../auth/auth.service';
 import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
 import { FASSUNGEN, FASSUNG_LABEL, Fassung } from '../shared/fassung';
 import { STIL_LABEL, ZWECK_LABEL } from '../shared/zweck-stil';
+import { FremdesBildComponent } from '../shared/fremdes-bild/fremdes-bild.component';
 
 const NEU_STUNDEN = 24;
 const BELIEBT_AB = 5;
@@ -90,6 +91,7 @@ function nutzungsZeile(label: string, nutzung: number, zuwachs: number): Nutzung
     MatTooltipModule,
     RelativeTimePipe,
     KartenAktionenComponent,
+    FremdesBildComponent,
   ],
   templateUrl: './beitragskarte.component.html',
   styleUrls: ['./beitragskarte.component.scss'],
