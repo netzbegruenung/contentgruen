@@ -33,10 +33,11 @@ describe('NutzungsbedingungenComponent', () => {
     expect(abschnittNummer('3.')).toContain('Dein Text');
   });
 
-  it('nennt in Abschnitt 1 den KI-Vorschlag auf Klick statt einer automatischen Bildbeschreibung (#281)', () => {
+  it('nennt in Abschnitt 1 keinen KI-Vorschlag für die Unterschrift mehr (#393) und keine automatische Bildbeschreibung (#281)', () => {
     const text = abschnittNummer('1.');
 
-    expect(text).toContain('auf Klick einen Vorschlag für die Unterschrift');
+    expect(text).toContain('Auch die Unterschrift eines Bildes schreibt ein Mensch.');
+    expect(text).not.toContain('Vorschlag für die Unterschrift');
     expect(text).not.toContain('automatisiert beschreibt');
   });
 

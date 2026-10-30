@@ -63,7 +63,6 @@ export interface ImageSearchResult extends BaseSearchResult {
 
 export interface ImageResult extends BaseContentResult {
     image_url: string;
-    description_model?: string | null;
 }
 
 // Backwards-compatible aliases: references are structurally identical across types,

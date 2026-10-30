@@ -33,9 +33,6 @@ pydantic-settings==2.10.1
 python-dotenv==1.1.1
 PyYAML==6.0.2
 
-# OpenAI vision API (caption suggestion + async image description)
-openai>=1.35.0
-
 # HTTP clients
 httpx==0.28.1
 httpcore==1.0.9

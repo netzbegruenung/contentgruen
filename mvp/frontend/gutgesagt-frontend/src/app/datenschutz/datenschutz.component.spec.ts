@@ -354,11 +354,12 @@ describe('DatenschutzComponent', () => {
       );
     });
 
-    it('KI-Vorschlag für Bildunterschriften: abgeschaltet, vor dem Einschalten wird die Erklärung ergänzt', () => {
+    it('kein KI-Vorschlag für Bildunterschriften mehr, also auch kein Anbieter in den USA (#393)', () => {
       const text = abschnitt('Keine Übermittlung außerhalb der EU');
 
-      expect(text).toContain('Unterschrift');
-      expect(text).toContain('ist auf dieser Plattform abgeschaltet');
+      expect(text).toContain('Wir setzen keinen Sprach- oder Bilderkennungsdienst eines Anbieters außerhalb der EU ein.');
+      expect(text).not.toContain('Vorschlag für die Unterschrift');
+      expect(text).not.toContain('KI-Anbieter');
     });
   });
 

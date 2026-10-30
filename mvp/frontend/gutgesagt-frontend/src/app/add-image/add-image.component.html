@@ -71,30 +71,6 @@
                                 Bildunterschrift muss mindestens 10 Zeichen lang sein
                             </mat-error>
                         </mat-form-field>
-
-                        <!-- AI caption suggestion button -->
-                        <div class="ai-suggestion-row">
-                            <button mat-stroked-button type="button"
-                                    [disabled]="imageUrlInvalid || captionLoading"
-                                    (click)="suggestCaption()"
-                                    class="ai-suggest-btn">
-                                <mat-icon>auto_awesome</mat-icon>
-                                <span *ngIf="!captionLoading">KI-Bildunterschrift vorschlagen</span>
-                                <span *ngIf="captionLoading">Vorschlag wird erstellt...</span>
-                            </button>
-                            <mat-spinner *ngIf="captionLoading" diameter="20"></mat-spinner>
-                        </div>
-
-                        <p *ngIf="vorschlagEingesetzt" class="vorschlag-hinweis">
-                            <mat-icon>info</mat-icon>
-                            Das ist ein Vorschlag der KI. Prüfe und bearbeite ihn; gespeichert wird erst
-                            mit „Bild speichern“, und dann stehst du als Autor dafür ein.
-                        </p>
-
-                        <div *ngIf="captionError" class="caption-error-message">
-                            <mat-icon>warning</mat-icon>
-                            {{ captionError }}
-                        </div>
                     </div>
                 </div>
 

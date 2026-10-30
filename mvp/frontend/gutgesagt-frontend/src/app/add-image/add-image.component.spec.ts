@@ -77,51 +77,39 @@ describe('AddImageComponent', () => {
     flush();
   }));
 
-  it('setzt den KI-Vorschlag als bearbeitbare Unterschrift ein und speichert nichts von selbst', () => {
+  it('bietet keinen KI-Vorschlag fuer die Unterschrift an (#393)', () => {
+    const knoepfe: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('form button'));
+
+    expect(knoepfe.length).toBeGreaterThan(0);
+    for (const knopf of knoepfe) {
+      expect(knopf.textContent).not.toMatch(/KI|Vorschlag/);
+      expect(knopf.querySelector('mat-icon')?.textContent?.trim()).not.toBe('auto_awesome');
+    }
+  });
+
+  it('speichert erst mit einer selbst geschriebenen Unterschrift', () => {
     const component = fixture.componentInstance;
-    const imageService = TestBed.inject(ImageService);
-    spyOn(imageService, 'suggestCaption').and.returnValue(
-      of({ suggested_caption: 'Solarmodule auf einem Schuldach in Freiburg.' }),
+    const senden = spyOn(TestBed.inject(ImageService), 'addImage').and.returnValue(
+      of({ id: 'b-1' } as any),
     );
-    const senden = spyOn(imageService, 'addImage');
-    component.imageForm.patchValue({ image_url: 'https://example.org/bild.jpg' });
-
-    component.suggestCaption();
+    component.imageForm.patchValue({
+      title: 'Solardach in Freiburg',
+      image_url: 'https://example.org/bild.jpg',
+    });
     fixture.detectChanges();
+    const speichern: HTMLButtonElement = fixture.nativeElement.querySelector('.submit-btn');
 
-    expect(component.imageForm.value.caption).toBe('Solarmodule auf einem Schuldach in Freiburg.');
-    const hinweis: HTMLElement | null = fixture.nativeElement.querySelector('.vorschlag-hinweis');
-    expect(hinweis?.textContent).toContain('Vorschlag');
+    expect(speichern.disabled).toBeTrue();
+    component.saveImageForm();
     expect(senden).not.toHaveBeenCalled();
-  });
 
-  it('nimmt einen unbearbeiteten Vorschlag zurueck, wenn die Bild-URL wechselt', () => {
-    const component = fixture.componentInstance;
-    spyOn(TestBed.inject(ImageService), 'suggestCaption').and.returnValue(
-      of({ suggested_caption: 'Solarmodule auf einem Schuldach in Freiburg.' }),
-    );
-    component.imageForm.patchValue({ image_url: 'https://example.org/bild.jpg' });
-    component.suggestCaption();
-
-    component.imageForm.patchValue({ image_url: 'https://example.org/anderes-bild.jpg' });
-    fixture.detectChanges();
-
-    expect(component.imageForm.value.caption).toBe('');
-    expect(fixture.nativeElement.querySelector('.vorschlag-hinweis')).toBeNull();
-  });
-
-  it('behaelt einen bearbeiteten Vorschlag, wenn die Bild-URL wechselt', () => {
-    const component = fixture.componentInstance;
-    spyOn(TestBed.inject(ImageService), 'suggestCaption').and.returnValue(
-      of({ suggested_caption: 'Solarmodule auf einem Schuldach in Freiburg.' }),
-    );
-    component.imageForm.patchValue({ image_url: 'https://example.org/bild.jpg' });
-    component.suggestCaption();
     component.imageForm.patchValue({ caption: 'Solarmodule auf dem Dach der Grundschule.' });
-
-    component.imageForm.patchValue({ image_url: 'https://example.org/anderes-bild.jpg' });
-
-    expect(component.imageForm.value.caption).toBe('Solarmodule auf dem Dach der Grundschule.');
+    fixture.detectChanges();
+    expect(speichern.disabled).toBeFalse();
+    component.saveImageForm();
+    expect(senden.calls.mostRecent().args[0].image.text).toBe(
+      'Solarmodule auf dem Dach der Grundschule.',
+    );
   });
 
   it('beschreibt den Typ mit dem Satz aus der Registry', () => {
