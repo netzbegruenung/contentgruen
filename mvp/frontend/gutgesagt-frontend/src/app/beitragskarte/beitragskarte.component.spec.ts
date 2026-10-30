@@ -15,6 +15,7 @@ import { UsageTrackingService } from '../services/usage-tracking.service';
 import { VotingService } from '../services/voting.service';
 import { Einwurf } from '../services/einwurf.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
+import { Anfragen, bildFertig, fremdeAdresse } from '../testing/anfragen';
 
 /**
  * Portiert aus den Specs der vier alten Karten (commentary-, generictext- und
@@ -172,6 +173,9 @@ describe('BeitragskarteComponent', () => {
       zeigen(
         ausSuchergebnis(paket('image_result', { content_type: 'image', image_url: 'https://example.org/dach.jpg', text: 'Solardach' })),
       );
+      expect(element('.karte-bild img')).toBeNull();
+      element<HTMLButtonElement>('.karte-bild button.bild-laden').click();
+      fixture.detectChanges();
       const bild = element<HTMLImageElement>('.karte-bild img');
 
       expect(bild.getAttribute('src')).toBe('https://example.org/dach.jpg');
@@ -754,20 +758,67 @@ describe('BeitragskarteComponent', () => {
       expect(element('app-karten-aktionen')).toBeNull();
     });
 
-    it('zeigt ein Bild im Kopfband, das Symbol darauf, und laedt es lazy mit dem Titel als alt', () => {
+    it('zeigt ein Bild im Kopfband erst auf Klick, das Symbol darauf, mit dem Titel als alt (#447)', () => {
       const daten = ausSuchergebnis(
         paket('image_result', { content_type: 'image', title: 'Solardach der Schule', image_url: 'https://example.org/dach.jpg' }),
       );
 
       zeigen(daten, { variante: 'kompakt' });
-      const bild = element<HTMLImageElement>('.karte-kopf .kopf-bild');
+      const angetippt = jasmine.createSpy('angetippt');
+      component.angetippt.subscribe(angetippt);
 
       expect(element('.karte-kopf').classList).toContain('karte-kopf--bild');
+      expect(element('.karte-kopf img')).toBeNull();
+      const knopf = element<HTMLButtonElement>('.karte-kopf .kopf-bild button.bild-laden');
+      expect(knopf.getAttribute('aria-label')).toBe('Bild laden: Solardach der Schule');
+      expect(knopf.querySelector('.bild-laden-symbol')).toBeNull();
+
+      knopf.click();
+      fixture.detectChanges();
+      const bild = element<HTMLImageElement>('.karte-kopf .kopf-bild img');
+
+      expect(angetippt).not.toHaveBeenCalled();
       expect(bild.getAttribute('src')).toBe('https://example.org/dach.jpg');
-      expect(bild.getAttribute('loading')).toBe('lazy');
       expect(bild.alt).toBe('Solardach der Schule');
       expect(getComputedStyle(bild).objectFit).toBe('cover');
       expect(element('.karte-kopf .karte-icon').textContent!.trim()).toBe('🖼️');
+    });
+
+    it('laedt kein fremdes Bild, bevor jemand "Bild laden" waehlt, auch nicht im Kopfband (#447)', () => {
+      const daten = ausSuchergebnis(
+        paket('image_result', { content_type: 'image', title: 'Dach', image_url: 'https://example.org/dach.jpg' }),
+      );
+
+      zeigen(daten);
+      expect(fixture.nativeElement.querySelectorAll('img').length).toBe(0);
+      expect(element('.karte-bild button.bild-laden').textContent).toContain('Bild laden');
+
+      zeigen(daten, { variante: 'kompakt' });
+      expect(fixture.nativeElement.querySelectorAll('img').length).toBe(0);
+    });
+
+    it('stellt in voller und kompakter Karte ohne Klick keine Anfrage an den fremden Server (#447)', async () => {
+      const anfragen = new Anfragen();
+      anfragen.starten();
+      try {
+        const voll = fremdeAdresse();
+        const kompakt = fremdeAdresse();
+        zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', title: 'Dach', image_url: voll })));
+        zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', title: 'Dach', image_url: kompakt })), {
+          variante: 'kompakt',
+        });
+
+        const angefragt = await anfragen.abwarten();
+        expect(angefragt).not.toContain(voll);
+        expect(angefragt).not.toContain(kompakt);
+
+        element<HTMLButtonElement>('.karte-kopf button.bild-laden').click();
+        fixture.detectChanges();
+        await bildFertig(element<HTMLImageElement>('.karte-kopf img'));
+        expect(await anfragen.abwarten()).toContain(kompakt);
+      } finally {
+        anfragen.beenden();
+      }
     });
 
     it('laesst das Kopfband ohne Bild wie bisher und aendert die volle Karte nicht', () => {
@@ -777,7 +828,7 @@ describe('BeitragskarteComponent', () => {
 
       zeigen(ausSuchergebnis(paket('image_result', { content_type: 'image', image_url: 'https://example.org/dach.jpg' })));
       expect(element('.kopf-bild')).toBeNull();
-      expect(element('.karte-bild img')).not.toBeNull();
+      expect(element('.karte-bild app-fremdes-bild')).not.toBeNull();
     });
 
     it('zeigt ohne oder mit unbekannter Nutzung eine dezente 0', () => {
