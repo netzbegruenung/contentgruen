@@ -142,6 +142,10 @@ _Avoid_: Tooltip, Anleitung, Hilfetext
 Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und bestätigt die verlinkten Nutzungsbedingungen. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
+**Stand der Nutzungsbedingungen**:
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm beim Anmelden zugestimmt hat; eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+_Avoid_: Fassung (eine Länge eines Kommentars), Version
+
 **Schreibregel**:
 Eine der sechs Regeln für Kommentare und Posts: für Unentschiedene schreiben; den Vorwurf nicht wiederholen; erst die Gemeinsamkeit; wofür statt wogegen; nichts erfinden, eigene Erlebnisse nur als Platzhalter; kurz, ohne Belehrung, ohne Häme. Sie stehen in der Formularhilfe und im Hilfe-Dialog.
 _Avoid_: Richtlinien, Policy, Netiquette
