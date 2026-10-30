@@ -5,8 +5,8 @@
          (click)="antippen()" (keyup.enter)="antippen()">
 
     <header class="karte-kopf" *ngIf="!einwurfAngaben" [class.karte-kopf--bild]="kopfBild">
-        <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf -->
-        <img *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || ''" loading="lazy">
+        <!-- Album mit Bild: das Bild fuellt das Kopfband, das Symbol liegt darauf; fremde Bilder erst auf Klick (#447) -->
+        <app-fremdes-bild *ngIf="kopfBild as bild" class="kopf-bild" [src]="bild" [alt]="daten.titel || daten.text || ''" [mitSymbol]="false"></app-fremdes-bild>
         <span class="karte-icon" role="img"
               [attr.aria-label]="typName"
               [matTooltip]="typName" matTooltipPosition="below">{{ emoji }}</span>
@@ -191,7 +191,7 @@
             <p class="post-herkunft" *ngIf="postHerkunft">{{ postHerkunft }}</p>
 
             <div class="karte-bild" *ngIf="daten.bildUrl">
-                <img [src]="daten.bildUrl" [alt]="daten.text || daten.titel || ''" loading="lazy">
+                <app-fremdes-bild [src]="daten.bildUrl" [alt]="daten.text || daten.titel || ''"></app-fremdes-bild>
             </div>
 
             <p #textElement class="karte-text" *ngIf="angezeigterText"
