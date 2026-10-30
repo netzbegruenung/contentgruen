@@ -79,6 +79,14 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('Ab diesem Stand bewahren wir jeden Stand dieser Bedingungen');
   });
 
+  it('nimmt in Abschnitt 10 reine Korrekturen von der Zustimmung aus und meldet beim Wechsel alle ab (#466)', () => {
+    const text = abschnittNummer('10.');
+
+    expect(text).toContain('Reine Korrekturen, die deine Rechte und Pflichten nicht ändern');
+    expect(text).toContain('gelten ohne erneute Zustimmung');
+    expect(text).toContain('melden wir beim Wechsel alle ab');
+  });
+
   it('beschreibt Sperren als Regelweg der Moderation und behält die Mitteilung an die Person', () => {
     const text = abschnittNummer('7.');
 

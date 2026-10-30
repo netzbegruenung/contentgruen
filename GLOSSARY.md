@@ -143,7 +143,7 @@ Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
 **Stand der Nutzungsbedingungen**:
-Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand; für eine Person gilt er erst, wenn sie ihm beim Anmelden zugestimmt hat. Verzeichnis und Ablauf: `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm beim Anmelden zugestimmt hat; eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Schreibregel**:

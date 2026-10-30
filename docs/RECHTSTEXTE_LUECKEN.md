@@ -213,10 +213,11 @@ die du einstellst“, Freigabe beim Absenden und beim Satz beim Tippen in Abschn
 **Änderungen und Ersatzlizenz (#466):** Seit dem Stand vom 30. Oktober 2026 gelten geänderte
 Nutzungsbedingungen erst nach ausdrücklicher Zustimmung beim Anmelden (§10, statt der früheren
 Zustimmung durch Schweigen und Weiternutzen; BGH XI ZR 26/20). Dafür wird die Pflichtaktion aus
-#429 je neuem Stand für alle Konten erneut ausgelöst. §4 räumt ein Nutzungsrecht ein, wo der
-CC0-Verzicht nach deutschem Recht nicht wirkt (Ersatzlizenz nach Abschnitt 3 der CC0-Erklärung).
-Stände und Ablauf: `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`. Die Juristin prüft beide Stellen mit
-(#296, Kommentar vom 30.10.2026); live erst danach.
+#429 je wesentlich geändertem Stand für alle Konten erneut ausgelöst, und alle werden abgemeldet;
+reine Korrekturen gelten ohne erneute Zustimmung (Entscheidung Maintainer, 30.10.2026).
+§4 räumt ein Nutzungsrecht ein, wo der CC0-Verzicht nach deutschem Recht nicht wirkt (Ersatzlizenz nach Abschnitt 3 der CC0-Erklärung).
+Stände und Ablauf: `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`. Die Juristin prüft beide Stellen und die
+Ausnahme für Korrekturen mit (#296); live erst danach.
 
 **Offen:**
 - Juristische Prüfung beider Wortlaute und der geänderten §4/§10: #296.
