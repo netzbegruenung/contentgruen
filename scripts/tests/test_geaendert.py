@@ -5,6 +5,7 @@ Jeder Test legt einen kleinen Baum mit den Pfaden des Repos unter tmp_path an.
 """
 
 import re
+import subprocess
 
 import pytest
 
@@ -278,11 +279,13 @@ def test_waehlen_python_modul_ohne_integrationstest_nur_unit(baum):
     assert auswahl.schritte == ["retired-words", "lint", "unit"]
 
 
-def test_schritte_wie_in_check_sh():
+def test_schritte_und_pfade_wie_in_check_sh():
     check = (geaendert.WURZEL / "scripts" / "check.sh").read_text()
     in_check = re.search(r'^SCHRITTE="([^"]+)"', check, re.MULTILINE).group(1).split()
 
     assert geaendert.SCHRITTE == in_check
+    assert f"PY=$ROOT/{PY};" in check
+    assert f"FE=$ROOT/{FE}\n" in check
 
 
 def test_waehlen_geloeschtes_python_modul_auch_integration(baum):
@@ -304,3 +307,55 @@ def test_waehlen_frontend_mit_pfad_aliasen_alle_specs(baum):
 
     assert auswahl.specs is None
     assert "Pfad-Aliase" in auswahl.gruende["frontend"][0]
+
+
+def test_waehlen_datendatei_neben_modul_das_integrationstests_erreichen_auch_integration(
+    baum,
+):
+    # wie domain/themen.json, das domain/themen.py per Path(__file__).with_name laedt
+    wurzel = baum(
+        {
+            f"{PY}/app/domain/themen.py": "LISTE = []\n",
+            f"{PY}/app/domain/themen.json": "[]\n",
+            f"{PY}/app/tests/integration/test_i.py": "import domain.themen\n",
+        }
+    )
+
+    auswahl = geaendert.waehlen([f"{PY}/app/domain/themen.json"], wurzel)
+
+    assert auswahl.schritte == ["retired-words", "lint", "unit", "integration"]
+    assert "domain/themen.json" in auswahl.gruende["integration"][0]
+
+
+def test_waehlen_datendatei_ohne_erreichtes_modul_nur_unit(baum):
+    wurzel = baum(
+        {
+            f"{PY}/app/api/fern.py": "X = 1\n",
+            f"{PY}/app/api/fern.yaml": "x: 1\n",
+            f"{PY}/app/tests/integration/test_i.py": "X = 1\n",
+        }
+    )
+
+    auswahl = geaendert.waehlen([f"{PY}/app/api/fern.yaml"], wurzel)
+
+    assert auswahl.schritte == ["retired-words", "lint", "unit"]
+
+
+@pytest.mark.parametrize(
+    "optionen",
+    [
+        ["--geaendert", "--integration"],
+        ["--integration", "--geaendert"],
+        ["--geaendert", "--schritt", "unit"],
+        ["--include", "src/app", "--geaendert"],
+    ],
+)
+def test_check_sh_geaendert_mit_eigener_schrittwahl_abgelehnt(optionen):
+    lauf = subprocess.run(
+        ["bash", str(geaendert.WURZEL / "scripts" / "check.sh"), *optionen],
+        capture_output=True,
+        text=True,
+    )
+
+    assert lauf.returncode == 2
+    assert "--geaendert chooses the steps itself" in lauf.stderr

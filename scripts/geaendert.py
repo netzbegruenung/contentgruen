@@ -18,6 +18,7 @@ WURZEL = pathlib.Path(__file__).resolve().parent.parent
 SCHRITTE = ["retired-words", "lint", "unit", "integration", "frontend", "bff"]
 FE = "mvp/frontend/gutgesagt-frontend"
 PY = "mvp/backend/semantic-search-service"
+# Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is
 ALLES = SCHRITTE[1:]
 PYTHON = ["lint", "unit"]
 PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
@@ -78,7 +79,7 @@ class Auswahl:
 def _importe(datei: pathlib.Path) -> set[pathlib.Path]:
     """Die relativ importierten .ts-Dateien von ``datei``."""
     ziele = set()
-    for ziel in _IMPORT.findall(datei.read_text(errors="replace")):
+    for ziel in _IMPORT.findall(_lesen(datei)):
         basis = (datei.parent / ziel).resolve()
         for kandidat in (
             basis.with_name(basis.name + ".ts"),
@@ -204,7 +205,7 @@ def _regel(pfad: str):
 def _lesende_tests(wurzel: pathlib.Path) -> dict[str, dict[pathlib.Path, str]]:
     return {
         schritt: {
-            datei: datei.read_text(errors="replace")
+            datei: _lesen(datei)
             for muster in muster_liste
             for datei in wurzel.glob(muster)
         }
@@ -227,7 +228,7 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
     alles = []
     for pfad in pfade:
         schritte = _regel(pfad)
-        if schritte == ALLES:
+        if schritte is ALLES:
             alles.append(pfad)
             continue
         for schritt in schritte:
@@ -237,12 +238,19 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
         for schritt in ALLES:
             if schritt != "frontend":
                 auswahl.dazu(schritt, f"{alles[0]}: wirkt auf alles")
-    python = [p for p in pfade if p.startswith(PY + "/app/") and p.endswith(".py")]
-    if python:
+    app = [p for p in pfade if p.startswith(PY + "/app/") and not _doku(p)]
+    if app:
         erreicht = _python_fuer_integration(wurzel)
-        for pfad in python:
+        ordner = {d.parent for d in erreicht}
+        for pfad in app:
             datei = (wurzel / pfad).resolve()
-            if datei in erreicht:
+            if not pfad.endswith(".py"):
+                # Datendateien laedt ein Modul daneben (Path(__file__).with_name)
+                if datei.parent in ordner:
+                    auswahl.dazu(
+                        "integration", f"{pfad} liegt neben Modulen der Integrationstests"
+                    )
+            elif datei in erreicht:
                 auswahl.dazu("integration", f"tests/integration erreicht {pfad}")
             elif not datei.exists():
                 auswahl.dazu("integration", f"{pfad} geloescht, Importe unbekannt")

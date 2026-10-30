@@ -39,7 +39,7 @@ done
 # Not git rev-parse: the CI images for Python and the BFF have no git
 ROOT=$(cd "$(dirname "$0")/.." && pwd); PY=$ROOT/mvp/backend/semantic-search-service; FE=$ROOT/mvp/frontend/gutgesagt-frontend
 if [ -n "$GEAENDERT" ]; then
-  [ -z "$SCHRITT" ] || { echo "--geaendert chooses the steps itself, not with --schritt/--include" >&2; exit 2; }
+  [ -z "$SCHRITT$INTEGRATION" ] || { echo "--geaendert chooses the steps itself, not with --schritt/--include/--integration" >&2; exit 2; }
   echo "== Geaendert"
   auswahl=$(python3 "$ROOT/scripts/geaendert.py" --base "${CHECK_BASE:-origin/main}")
   SCHRITT=$(sed -n 's/^schritte //p' <<<"$auswahl")

@@ -1,5 +1,5 @@
 """
-GET /metrics nach einer echten Suche: keine Personendaten in den Betriebskennzahlen (#420).
+GET /metrics nach einer Suche durch den echten Router: keine Personendaten in den Betriebskennzahlen (#420).
 
 Eine angemeldete Testperson sucht mit einem Merkmal im Suchtext, das sonst nirgends
 vorkommt; Kennung, Anzeigename und Sitzungskennung gehen in den Kopfzeilen mit, so wie
