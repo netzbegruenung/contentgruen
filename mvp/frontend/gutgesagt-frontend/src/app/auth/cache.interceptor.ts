@@ -40,7 +40,7 @@ class CacheService {
 const cacheService = new CacheService();
 
 /**
- * POST-Anfragen, die nur lesen (Aussagen- und Herkunftssuche, Bildvorschlag, Stimmen
+ * POST-Anfragen, die nur lesen (Aussagen- und Herkunftssuche, Stimmen
  * mehrerer Beitraege). Sie lassen den Cache stehen. Fehlt hier eine, wird der Cache nur
  * unnoetig geleert. Steht hier eine, die schreibt, bleibt ein veralteter Stand stehen.
  * Die Suche (searchByText) gehoert nicht hierher: Sie legt eine Aussage an und zaehlt
@@ -49,7 +49,6 @@ const cacheService = new CacheService();
 const LESENDE_POSTS = [
   '/api/v1/statement/searchStatements',
   '/api/v1/reference/search',
-  '/api/v1/image/suggestCaption',
   '/api/v1/voting/votes/batch',
 ];
 

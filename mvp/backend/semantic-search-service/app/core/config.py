@@ -2,7 +2,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic_settings import BaseSettings
-from pydantic import AliasChoices, Field
+from pydantic import Field
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -133,23 +133,17 @@ class Settings(BaseSettings):
     statement_search_limit: int = 5
     min_reply_suggestions_for_search: int = 1
 
-    # OpenAI vision API (suggested Unterschrift in the image form)
-    # Accepts bare OPENAI_API_KEY (SDK default) or the prefixed SEMANTIC_SEARCH_OPENAI_API_KEY.
-    #
-    # PRIVACY WARNING -- setting this key enables a transfer to a third country.
-    # The key is the only switch: with it set, POST /api/v1/image/suggestCaption sends the
-    # image URL to OpenAI in the USA when a person asks for a suggested Unterschrift.
-    # Nothing is sent without that click; there is no background description (#281).
-    # The privacy policy assumes this transfer does not take place. Before setting the key
-    # anywhere it must be extended with a section on third-country transfer (Art. 44 ff.
-    # GDPR), which also requires a data processing agreement and Art. 46 safeguards.
-    openai_api_key: Optional[str] = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "OPENAI_API_KEY", "SEMANTIC_SEARCH_OPENAI_API_KEY"
-        ),
-    )
-    openai_vision_model: str = "gpt-4o-mini"
+    # Konten im Realm von Gut gesagt anlegen, wenn jemand eine Einladung einloest (#429).
+    # Ohne URL, Client und Secret lassen sich Einladungen nur verwalten, nicht einloesen.
+    # Einrichten: docs/KEYCLOAK_REALM.md. keycloak_url ist die Basis ohne /realms/...
+    keycloak_url: Optional[str] = None
+    keycloak_realm: str = "gutgesagt"
+    keycloak_admin_client_id: Optional[str] = None
+    keycloak_admin_client_secret: Optional[str] = None
+    # Wohin der Link in der Mail "Passwort festlegen" danach fuehrt: Client der App und
+    # ihre Adresse. Ohne beide endet er auf der Kontoseite von Keycloak.
+    keycloak_app_client_id: Optional[str] = None
+    app_url: Optional[str] = None
 
     # Admin users (comma-separated list)
     admin_users: str = ""

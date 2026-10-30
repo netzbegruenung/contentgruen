@@ -23,8 +23,10 @@ Tagespseudonym (SearchTrackingService), und das hat Grenzen:
 - dieselbe Person an zwei Tagen zaehlt zweimal, denn ein tagesuebergreifendes
   Merkmal gibt es bewusst nicht;
 - wer sich am selben Tag anmeldet, zaehlt danach unter der Nutzerkennung als
-  weitere Person; Sitzung und Konto zu verbinden waere neuer Personenbezug;
-- die Sitzungskennung setzt der Browser. Wer sie wechselt, ist eine neue Person.
+  weitere Person; Besucher und Konto zu verbinden waere neuer Personenbezug;
+- Besucher erkennt der Server an Anschluss und User-Agent (#446). Wer Browser
+  oder Netz wechselt, ist eine neue Person; wer am selben Anschluss denselben
+  Browser nutzt, zaehlt mit den anderen dort als eine.
 
 Welche Personen eine Aussage heute schon gezaehlt haben, haelt PersonenDesTages
 nur im Speicher und nur fuer den laufenden UTC-Tag; um Mitternacht verwirft
@@ -57,7 +59,7 @@ from core.logging import get_logger
 from domain.models.content_status import ContentStatus
 from repositories.suchen_ohne_treffer_repository import SuchenOhneTrefferRepository
 from services.content.statement_service import StatementService
-from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
+from utils.utc_tag import heute_utc, sekunden_bis_mitternacht, wochenbeginn
 
 logger = get_logger(__name__)
 
@@ -85,11 +87,6 @@ class SucheOhneTreffer:
     text: str
     anzahl: int
     personen: int
-
-
-def wochenbeginn(tag: date) -> date:
-    """Der Montag der Woche, in die der Tag faellt."""
-    return tag - timedelta(days=tag.weekday())
 
 
 def _seit_woche(wochen: int, heute: Optional[date] = None) -> date:
@@ -174,7 +171,8 @@ async def loeschen_im_takt(
             logger.info(f"Deleted {geloescht} old searches-without-hits weeks")
         except Exception as e:
             logger.error(
-                f"Error during searches-without-hits cleanup: {e}", exc_info=True
+                f"Error during searches-without-hits cleanup: {type(e).__name__}",
+                exc_info=True,
             )
         # Eine Sekunde Puffer, damit der Lauf sicher im neuen Tag liegt.
         await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))
@@ -211,8 +209,8 @@ class SuchenOhneTrefferService:
         wenn sie die Aussage heute noch nicht gezaehlt hat.
 
         pseudonym ist das Tagespseudonym aus SearchTrackingService und heute der
-        Tag, zu dem es gehoert. Ohne Pseudonym (weder Nutzer- noch
-        Sitzungskennung) zaehlt die Suche, aber keine Person.
+        Tag, zu dem es gehoert. Ohne Pseudonym zaehlt die Suche, aber keine
+        Person.
         Ohne Aussage (das Rate-Limit hat das Anlegen ausgelassen) gibt es nichts,
         woran sich zaehlen liesse; die Suche faellt dann aus der Kennzahl.
         Datenbankfehler gehen an den Aufrufer.

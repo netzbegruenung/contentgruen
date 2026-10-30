@@ -4,15 +4,42 @@ Handles database operations for content moderation.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import List, Optional, Dict, Any
-from uuid import UUID
+from uuid import UUID, uuid4
 from sqlalchemy import and_, desc, or_
 
+from domain.models.meldung import MelderAngaben
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import ContentReport
+from utils.besucher_pseudonym import besucher_tagespseudonym
 
 logger = logging.getLogger(__name__)
+
+# Melder-Kennung anonymer Meldungen (#446). Solange eine Meldung offen ist, steht
+# dort das Tagespseudonym des Besuchers; Admins erkennen daran Meldungen aus
+# derselben Quelle am selben Tag. Erledigte Meldungen brauchen das nicht mehr.
+# Sie bekommen einen Zufallswert, der nur den CHECK der Tabelle erfuellt.
+PRAEFIX_PSEUDONYM = "besucher:"
+PRAEFIX_OHNE_PSEUDONYM = "anon:"
+
+
+def melder_pseudonym(besucher_merkmal: str, tag: date) -> str:
+    """Die Melder-Kennung einer offenen anonymen Meldung."""
+    return PRAEFIX_PSEUDONYM + besucher_tagespseudonym(besucher_merkmal, tag)
+
+
+def _melder_pseudonym_loeschen(report: ContentReport) -> None:
+    """
+    Beim Abschliessen: Pseudonym und Sitzungskennungen aus der Zeit vor #446 weg.
+    Angemeldete Melder behalten nur ihre Kennung, anonyme einen Zufallswert.
+    """
+    if report.status == "pending":
+        return
+    if report.reported_by_user_id:
+        report.reported_by_session_id = None
+    elif not (report.reported_by_session_id or "").startswith(PRAEFIX_OHNE_PSEUDONYM):
+        report.reported_by_session_id = f"{PRAEFIX_OHNE_PSEUDONYM}{uuid4()}"
 
 
 class ContentReportRepository:
@@ -26,6 +53,8 @@ class ContentReportRepository:
         content_id: UUID,
         content_type: str,
         reason: str,
+        *,
+        melder: MelderAngaben,
         reported_by_user_id: Optional[str] = None,
         reported_by_session_id: Optional[str] = None,
         description: Optional[str] = None,
@@ -40,6 +69,7 @@ class ContentReportRepository:
             reported_by_user_id: Optional user ID of reporter
             reported_by_session_id: Optional session ID of reporter
             description: Optional detailed description
+            melder: Name, E-Mail-Adresse und Erklaerung guten Glaubens (#438)
 
         Returns:
             ContentReport: Created report object
@@ -53,6 +83,9 @@ class ContentReportRepository:
                     reported_by_user_id=reported_by_user_id,
                     reported_by_session_id=reported_by_session_id,
                     description=description,
+                    melder_name=melder.name,
+                    melder_email=melder.email,
+                    guter_glaube=melder.guter_glaube,
                     status="pending",
                 )
                 session.add(report)
@@ -62,7 +95,9 @@ class ContentReportRepository:
                 logger.info(f"Created report {report.id} for content {content_id}")
                 return report
         except Exception as e:
-            logger.error(f"Error creating content report: {e}", exc_info=True)
+            logger.error(
+                f"Error creating content report: {type(e).__name__}", exc_info=True
+            )
             raise
 
     def has_report_from_user(self, content_id: UUID, user_id: str) -> bool:
@@ -93,7 +128,9 @@ class ContentReportRepository:
                 )
                 return existing is not None
         except Exception as e:
-            logger.error(f"Error checking existing report: {e}", exc_info=True)
+            logger.error(
+                f"Error checking existing report: {type(e).__name__}", exc_info=True
+            )
             # Im Zweifel nicht deduplizieren: eine doppelte Meldung ist harmloser
             # als eine verschluckte.
             return False
@@ -163,11 +200,17 @@ class ContentReportRepository:
                             else None
                         ),
                         "resolution_notes": report.resolution_notes,
+                        "melder_name": report.melder_name,
+                        "melder_email": report.melder_email,
+                        "guter_glaube": report.guter_glaube,
                     }
                     for report in reports
                 ]
         except Exception as e:
-            logger.error(f"Error getting reports (status={status}): {e}", exc_info=True)
+            logger.error(
+                f"Error getting reports (status={status}): {type(e).__name__}",
+                exc_info=True,
+            )
             return []
 
     def get_reports_by_content_id(self, content_id: UUID) -> List[ContentReport]:
@@ -191,7 +234,8 @@ class ContentReportRepository:
                 return reports
         except Exception as e:
             logger.error(
-                f"Error getting reports for content {content_id}: {e}", exc_info=True
+                f"Error getting reports for content {content_id}: {type(e).__name__}",
+                exc_info=True,
             )
             return []
 
@@ -223,6 +267,7 @@ class ContentReportRepository:
                 )
                 if report:
                     report.status = status
+                    _melder_pseudonym_loeschen(report)
                     report.reviewed_by = reviewed_by
                     report.reviewed_at = datetime.now(timezone.utc)
                     report.resolution_notes = resolution_notes
@@ -234,7 +279,9 @@ class ContentReportRepository:
                     logger.warning(f"Report {report_id} not found")
                     return None
         except Exception as e:
-            logger.error(f"Error updating report status: {e}", exc_info=True)
+            logger.error(
+                f"Error updating report status: {type(e).__name__}", exc_info=True
+            )
             return None
 
     def update_reports_by_content_id(
@@ -275,6 +322,7 @@ class ContentReportRepository:
                 count = 0
                 for report in reports:
                     report.status = status
+                    _melder_pseudonym_loeschen(report)
                     report.reviewed_by = reviewed_by
                     report.reviewed_at = datetime.now(timezone.utc)
                     report.resolution_notes = resolution_notes
@@ -287,7 +335,8 @@ class ContentReportRepository:
                 return count
         except Exception as e:
             logger.error(
-                f"Error updating reports for content {content_id}: {e}", exc_info=True
+                f"Error updating reports for content {content_id}: {type(e).__name__}",
+                exc_info=True,
             )
             raise
 
@@ -336,7 +385,9 @@ class ContentReportRepository:
                 )
                 return {status: count for status, count in results}
         except Exception as e:
-            logger.error(f"Error getting report counts: {e}", exc_info=True)
+            logger.error(
+                f"Error getting report counts: {type(e).__name__}", exc_info=True
+            )
             return {}
 
 

@@ -1,0 +1,73 @@
+.einladungen {
+  margin-top: 24px;
+}
+
+.anlegen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: baseline;
+  margin-top: 12px;
+}
+
+.notiz {
+  flex: 1 1 260px;
+}
+
+.zahl {
+  width: 140px;
+}
+
+.tag {
+  width: 200px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+th,
+td {
+  text-align: left;
+  vertical-align: middle;
+  padding: 8px;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-wrap: anywhere;
+}
+
+.eng {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.link code {
+  font-size: 12px;
+}
+
+tr.inaktiv td {
+  color: #888;
+}
+
+.unsichtbar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.warnung {
+  color: #b00020;
+}
+
+.hinweis {
+  color: #666;
+}
+
+.fussnote {
+  font-size: 12px;
+  color: #666;
+  margin-top: 12px;
+}

@@ -33,6 +33,12 @@ from repositories.suchen_ohne_treffer_repository import (
 )
 from repositories.feedback_repository import get_feedback_repository
 from services.feedback_service import FeedbackService
+from repositories.einladung_repository import get_einladung_repository
+from services.einladung_service import EinladungService
+from infrastructure.keycloak_konten import KeycloakKonten
+from services.bilanz_service import BilanzService
+from repositories.search_tracking_repository import get_search_tracking_repository
+from repositories.usage_tracking_repository import get_usage_repository
 from services.gegenlesen.gegenlesen_service import (
     SPRACHWERKZEUGE,
     GegenlesenService,
@@ -58,7 +64,6 @@ generic_text_service_instance: Optional[GenericTextService] = None
 post_service_instance: Optional["BaseContentService"] = None
 # Registry-driven content type (Image): same pattern as Post.
 image_service_instance: Optional["BaseContentService"] = None
-caption_suggestion_service_instance: Optional["CaptionSuggestionService"] = None
 content_orchestrator_instance: Optional[ContentOrchestrator] = None
 voting_service_instance: Optional[VotingService] = None
 
@@ -144,6 +149,17 @@ def get_suchen_ohne_treffer_service(
     )
 
 
+def get_bilanz_service(
+    settings: Settings = Depends(get_settings),
+) -> BilanzService:
+    # Ohne Bereinigungsjob bleiben die Nutzungsereignisse, eine Frist gilt dann nicht.
+    return BilanzService(
+        get_search_tracking_repository(),
+        get_usage_repository(),
+        settings.usage_retention_days if settings.enable_usage_cleanup else None,
+    )
+
+
 def get_aussage_themen_service(
     statement_service: StatementService = Depends(get_statement_service),
 ) -> AussageThemenService:
@@ -162,6 +178,28 @@ def get_unbeantwortete_aussagen_service(
 
 def get_feedback_service() -> FeedbackService:
     return FeedbackService(get_feedback_repository())
+
+
+def get_einladung_service() -> EinladungService:
+    """
+    Ohne Zugang zur Keycloak-Admin-Schnittstelle lassen sich Einladungen verwalten,
+    aber nicht einloesen (503); so laeuft es im Dev-Stack.
+    """
+    konten = None
+    if (
+        settings.keycloak_url
+        and settings.keycloak_admin_client_id
+        and settings.keycloak_admin_client_secret
+    ):
+        konten = KeycloakKonten(
+            basis_url=settings.keycloak_url,
+            realm=settings.keycloak_realm,
+            client_id=settings.keycloak_admin_client_id,
+            client_secret=settings.keycloak_admin_client_secret,
+            app_client_id=settings.keycloak_app_client_id,
+            app_url=settings.app_url,
+        )
+    return EinladungService(get_einladung_repository(), konten)
 
 
 _gegenlesen_service: Optional[GegenlesenService] = None
@@ -274,31 +312,6 @@ def get_image_service():
             REGISTRY[ContentType.IMAGE], get_settings(), QdrantRepositoryFactory()
         )
     return image_service_instance
-
-
-def get_caption_suggestion_service():
-    """
-    Dependency for the CaptionSuggestionService (singleton).
-
-    Raises ValueError if OPENAI_API_KEY / SEMANTIC_SEARCH_OPENAI_API_KEY is unset,
-    so misconfiguration is caught at the first request rather than at startup.
-    The singleton avoids creating a new AsyncOpenAI connection pool per request.
-    """
-    global caption_suggestion_service_instance
-    if caption_suggestion_service_instance is None:
-        from services.vision.caption_suggestion_service import CaptionSuggestionService
-
-        s = get_settings()
-        if not s.openai_api_key:
-            raise ValueError(
-                "openai_api_key is not configured. "
-                "Set OPENAI_API_KEY or SEMANTIC_SEARCH_OPENAI_API_KEY."
-            )
-        caption_suggestion_service_instance = CaptionSuggestionService(
-            api_key=s.openai_api_key,
-            model=s.openai_vision_model,
-        )
-    return caption_suggestion_service_instance
 
 
 def get_voting_service() -> VotingService:

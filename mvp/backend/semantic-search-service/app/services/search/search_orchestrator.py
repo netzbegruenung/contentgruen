@@ -156,7 +156,9 @@ class SearchOrchestrator:
                         getattr(ref, "description", None) or reference_data.text
                     )
             except Exception as e:
-                logger.warning(f"Failed to fetch reference {ref.reference_id}: {e}")
+                logger.warning(
+                    f"Failed to fetch reference {ref.reference_id}: {type(e).__name__}"
+                )
 
     # ------------------------------------------------------------------ #
     # Phase 1: statement-based reply-suggestion retrieval
@@ -198,7 +200,7 @@ class SearchOrchestrator:
                     logger.warning(
                         f"⚠️ Skipping orphaned reply suggestion: {spec.content_type.value} "
                         f"{replysuggestion.id} not found (referenced by statement "
-                        f"{statement_result.id}). Error: {e}"
+                        f"{statement_result.id}). Error: {type(e).__name__}"
                     )
                     continue
 

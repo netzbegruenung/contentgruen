@@ -1,10 +1,11 @@
 """
 Metrics service for aggregating and analyzing application metrics.
-Provides comprehensive statistics for MVP goals tracking.
+Provides the statistics behind the admin dashboard; the Bilanz is in
+services/bilanz_service.py.
 """
 
 import logging
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy import text, func, distinct, and_, or_
 
@@ -124,37 +125,43 @@ class MetricsService:
 
             return results
         except Exception as e:
-            logger.error(f"Error getting content created per week: {e}", exc_info=True)
+            logger.error(
+                f"Error getting content created per week: {type(e).__name__}",
+                exc_info=True,
+            )
             return []
 
     def get_usage_counter_trend(self, weeks: int = 4) -> List[Dict[str, Any]]:
         """
         Get usage counter trend by week.
 
+        Counts usage events in each 7-day window. Until #467 this summed the total
+        counters of the content last used in the window, which is no weekly figure.
+        Calendar weeks for the Bilanz: services/bilanz_service.py.
+
         Args:
             weeks: Number of weeks to analyze
 
         Returns:
-            List of dicts with week and total usage count
+            List of dicts with week and usage count, the latest window first
         """
         try:
             results = []
-            end_date = datetime.utcnow()
+            end_date = datetime.now(timezone.utc)
 
             for week_offset in range(weeks):
                 week_end = end_date - timedelta(weeks=week_offset)
                 week_start = week_end - timedelta(days=7)
 
-                # Get total usage count for this week
                 with self.db.get_session() as session:
                     count = (
                         session.execute(
                             text(
                                 """
-                        SELECT COALESCE(SUM(usage_count), 0)
-                        FROM usage_tracking
-                        WHERE last_used >= :start_date
-                        AND last_used < :end_date
+                        SELECT COUNT(*)
+                        FROM usage_events
+                        WHERE timestamp >= :start_date
+                        AND timestamp < :end_date
                         """
                             ),
                             {"start_date": week_start, "end_date": week_end},
@@ -172,7 +179,9 @@ class MetricsService:
 
             return results
         except Exception as e:
-            logger.error(f"Error getting usage counter trend: {e}", exc_info=True)
+            logger.error(
+                f"Error getting usage counter trend: {type(e).__name__}", exc_info=True
+            )
             return []
 
     def get_helpful_rate(self, days: int = 7) -> Dict[str, Any]:
@@ -225,7 +234,9 @@ class MetricsService:
                         "helpful_rate": 0.0,
                     }
         except Exception as e:
-            logger.error(f"Error getting helpful rate: {e}", exc_info=True)
+            logger.error(
+                f"Error getting helpful rate: {type(e).__name__}", exc_info=True
+            )
             return {
                 "like_count": 0,
                 "dislike_count": 0,
@@ -235,7 +246,7 @@ class MetricsService:
 
     def get_mvp_dashboard_metrics(self) -> Dict[str, Any]:
         """
-        Get all MVP metrics in one comprehensive call.
+        Get all MVP metrics in one comprehensive call, without goals.
 
         Returns:
             Dict with all key metrics for the dashboard
@@ -271,43 +282,30 @@ class MetricsService:
                     or 0
                 )
 
+            # Bewusst ohne Zielwerte (#417): Die Bilanz vergleicht mit der Basislinie
+            # aus dem internen Launch, nicht mit festen Zahlen.
             return {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "period_days": 7,
-                # Metric 1: Daily Active Users
                 "daily_active_users": dau,
-                "daily_active_users_goal": 10,
-                "daily_active_users_met": dau >= 10,
-                # Metric 2: Searches per User
                 "searches_per_user": searches_stats.get("average", 0),
-                "searches_per_user_goal": 3.0,
-                "searches_per_user_met": searches_stats.get("average", 0) >= 3.0,
-                # Metric 3: Content Created per Week
                 "content_created_this_week": (
                     content_created[0]["content_created"] if content_created else 0
                 ),
-                "content_created_goal": 20,
-                "content_created_met": (
-                    content_created[0]["content_created"] >= 20
-                    if content_created
-                    else False
-                ),
-                # Metric 4: Usage Counter Sum and Trend
                 "usage_counter_total": usage_counter_total,
                 "usage_counter_current_week": current_week_usage,
                 "usage_counter_previous_week": previous_week_usage,
                 "usage_counter_trend": trend_direction,
-                "usage_counter_met": trend_direction == "increasing",
-                # Metric 5: "War hilfreich" Rate
                 "helpful_rate": helpful_stats.get("helpful_rate", 0),
-                "helpful_rate_goal": 60.0,
-                "helpful_rate_met": helpful_stats.get("helpful_rate", 0) >= 60.0,
                 "helpful_like_count": helpful_stats.get("like_count", 0),
                 "helpful_dislike_count": helpful_stats.get("dislike_count", 0),
                 "helpful_total_votes": helpful_stats.get("total_votes", 0),
             }
         except Exception as e:
-            logger.error(f"Error getting MVP dashboard metrics: {e}", exc_info=True)
+            logger.error(
+                f"Error getting MVP dashboard metrics: {type(e).__name__}",
+                exc_info=True,
+            )
             raise
 
     def get_content_creation_stats(self, days: int = 30) -> Dict[str, Any]:
@@ -346,7 +344,10 @@ class MetricsService:
                     ),
                 }
         except Exception as e:
-            logger.error(f"Error getting content creation stats: {e}", exc_info=True)
+            logger.error(
+                f"Error getting content creation stats: {type(e).__name__}",
+                exc_info=True,
+            )
             return {
                 "period_days": days,
                 "total_content_created": 0,

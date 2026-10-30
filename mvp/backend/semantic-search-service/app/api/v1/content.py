@@ -83,7 +83,7 @@ async def get_all(
 
         return response
     except Exception as e:
-        logger.error(f"Error in /getAll: {e}", exc_info=True)
+        logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -115,7 +115,7 @@ async def search_content(
 
         return response
     except Exception as e:
-        logger.error(f"Error in search_content: {e}", exc_info=True)
+        logger.error(f"Error in search_content: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -219,7 +219,7 @@ async def get_recent_content(
         return {"results_count": len(enriched_results), "results": enriched_results}
 
     except Exception as e:
-        logger.error(f"Error in /recent endpoint: {e}", exc_info=True)
+        logger.error(f"Error in /recent endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -211,7 +211,7 @@ class QdrantBaseRepository(
             return self._suchergebnisse(search_results)
 
         except Exception as e:
-            logger.error(f"Search failed: {e}", exc_info=True)
+            logger.error(f"Search failed: {type(e).__name__}", exc_info=True)
             raise
 
     @classmethod
@@ -243,7 +243,7 @@ class QdrantBaseRepository(
             return [r._suchergebnisse(t) for r, t in zip(repositories, treffer)]
 
         except Exception as e:
-            logger.error(f"Batch search failed: {e}", exc_info=True)
+            logger.error(f"Batch search failed: {type(e).__name__}", exc_info=True)
             raise
 
     def _suchparameter(self, limit: int) -> Suchparameter:
@@ -324,7 +324,7 @@ class QdrantBaseRepository(
         try:
             result = await self._shared_manager.get_by_id(str(item_id))
         except Exception as e:
-            logger.error(f"Failed to get item by ID: {e}", exc_info=True)
+            logger.error(f"Failed to get item by ID: {type(e).__name__}", exc_info=True)
             raise
 
         if result is None:
@@ -357,7 +357,9 @@ class QdrantBaseRepository(
         try:
             entry = self.content_db_entry_model_class.model_validate(result)
         except Exception as e:
-            logger.error(f"Failed to read item {item_id}: {e}", exc_info=True)
+            logger.error(
+                f"Failed to read item {item_id}: {type(e).__name__}", exc_info=True
+            )
             raise
 
         # DEBUG: Die Suche laedt so jeden Treffer nach (#239).
@@ -417,7 +419,7 @@ class QdrantBaseRepository(
             return item_id
 
         except Exception as e:
-            logger.error(f"Failed to upsert item: {e}", exc_info=True)
+            logger.error(f"Failed to upsert item: {type(e).__name__}", exc_info=True)
             raise
 
     async def count(self) -> int:
@@ -432,7 +434,7 @@ class QdrantBaseRepository(
             )
             return result.count
         except Exception as e:
-            logger.error(f"Failed to count items: {e}", exc_info=True)
+            logger.error(f"Failed to count items: {type(e).__name__}", exc_info=True)
             return 0
 
     async def get_all(self, limit: int, offset: int) -> List[TContentDbEntry]:
@@ -498,7 +500,7 @@ class QdrantBaseRepository(
             return all_results
 
         except Exception as e:
-            logger.error(f"Failed to get all items: {e}", exc_info=True)
+            logger.error(f"Failed to get all items: {type(e).__name__}", exc_info=True)
             raise
 
     def _sichtbar_filter(self):
@@ -626,7 +628,9 @@ class QdrantBaseRepository(
             return all_results
 
         except Exception as e:
-            logger.error(f"Failed to get items by author: {e}", exc_info=True)
+            logger.error(
+                f"Failed to get items by author: {type(e).__name__}", exc_info=True
+            )
             raise
 
     async def get_count_by_author(
@@ -645,7 +649,9 @@ class QdrantBaseRepository(
             return result.count
 
         except Exception as e:
-            logger.error(f"Failed to count items by author: {e}", exc_info=True)
+            logger.error(
+                f"Failed to count items by author: {type(e).__name__}", exc_info=True
+            )
             return 0
 
     async def has_content(self) -> bool:
@@ -669,7 +675,9 @@ class QdrantBaseRepository(
             logger.info(f"{self.repository_name} ({content_desc}) has {count} items")
             return has_content
         except Exception as e:
-            logger.error(f"Error checking content for {self.repository_name}: {e}")
+            logger.error(
+                f"Error checking content for {self.repository_name}: {type(e).__name__}"
+            )
             return False
 
     async def get_recent(self, limit: int = 10) -> List[TContentDbEntry]:
@@ -737,7 +745,9 @@ class QdrantBaseRepository(
             ]
 
         except Exception as e:
-            logger.error(f"Failed to get recent items: {e}", exc_info=True)
+            logger.error(
+                f"Failed to get recent items: {type(e).__name__}", exc_info=True
+            )
             return []
 
     async def count_last_week(self) -> int:
@@ -815,7 +825,10 @@ class QdrantBaseRepository(
             return count
 
         except Exception as e:
-            logger.error(f"Error counting items from last week: {e}", exc_info=True)
+            logger.error(
+                f"Error counting items from last week: {type(e).__name__}",
+                exc_info=True,
+            )
             return 0
 
     async def update_status(
@@ -858,7 +871,7 @@ class QdrantBaseRepository(
             logger.debug(f"Updated status of {item_id} to {new_status.value}")
         except Exception as e:
             logger.error(
-                f"Failed to update status of {item_id} to {new_status}: {e}",
+                f"Failed to update status of {item_id} to {new_status}: {type(e).__name__}",
                 exc_info=True,
             )
             raise

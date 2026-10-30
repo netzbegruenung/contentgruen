@@ -24,7 +24,8 @@ from repositories.raw_input_repository import (
 from repositories.sperre_repository import SperreRepository, get_sperre_repository
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
-from domain.models.meldegrund import MELDEGRUENDE, Meldegrund
+from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
+from domain.models.meldung import MelderAngaben
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
@@ -113,6 +114,8 @@ class ModerationService:
         content_id: str,
         content_type: str,
         reason: Meldegrund,
+        *,
+        melder: MelderAngaben,
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
         description: Optional[str] = None,
@@ -127,6 +130,7 @@ class ModerationService:
             user_id: Optional user ID of reporter
             session_id: Optional session ID of reporter
             description: Optional detailed description
+            melder: Angaben der meldenden Person nach Art. 16 Abs. 2 DSA
 
         Returns:
             bool: True if report was created successfully
@@ -141,7 +145,18 @@ class ModerationService:
             return False
 
         if reason not in MELDEGRUENDE:
-            logger.warning(f"Invalid report reason: {reason}")
+            # Der Grund ist hier freier Text von aussen (#422).
+            logger.warning("Invalid report reason")
+            return False
+
+        # Art. 16 Abs. 2 lit. d DSA (#438): keine neue Meldung ohne die Erklaerung
+        # guten Glaubens, auch nicht an der API vorbei; fuer jeden Meldegrund.
+        if melder.guter_glaube is not True:
+            logger.warning("Invalid report submission: no Erklaerung guten Glaubens")
+            return False
+
+        if beschreibung_fehlt(reason, description):
+            logger.warning("Invalid report submission: illegal_content without reason")
             return False
 
         try:
@@ -164,14 +179,15 @@ class ModerationService:
                 reported_by_user_id=user_id,
                 reported_by_session_id=session_id,
                 description=description,
+                melder=melder,
             )
             logger.info(f"Content {content_id} reported: {reason}")
             return report is not None
         except ValueError as e:
-            logger.error(f"Invalid content_id format: {content_id}")
+            logger.error("Invalid content_id format")
             return False
         except Exception as e:
-            logger.error(f"Error reporting content: {e}", exc_info=True)
+            logger.error(f"Error reporting content: {type(e).__name__}", exc_info=True)
             return False
 
     async def content_exists(self, content_id: str) -> bool:
@@ -192,7 +208,9 @@ class ModerationService:
         try:
             return await self._beitrag_laden(content_id) is not None
         except Exception as e:
-            logger.error(f"Error checking content existence: {e}", exc_info=True)
+            logger.error(
+                f"Error checking content existence: {type(e).__name__}", exc_info=True
+            )
             # Im Zweifel durchlassen: eine Meldung zu verlieren waere schlimmer
             # als eine ins Leere zeigende anzunehmen.
             return True
@@ -241,12 +259,17 @@ class ModerationService:
                         report["content"] = content
                     except Exception as e:
                         # Content might be deleted for reviewed reports
-                        logger.debug(f"Could not fetch content {content_id}: {e}")
+                        logger.debug(
+                            f"Could not fetch content {content_id}: {type(e).__name__}"
+                        )
                         report["content"] = None
 
             return reports
         except Exception as e:
-            logger.error(f"Error getting reports (status={status}): {e}", exc_info=True)
+            logger.error(
+                f"Error getting reports (status={status}): {type(e).__name__}",
+                exc_info=True,
+            )
             return []
 
     async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
@@ -254,7 +277,7 @@ class ModerationService:
         try:
             UUID(content_id)
         except ValueError:
-            logger.warning(f"Invalid content_id format: {content_id}")
+            logger.warning("Invalid content_id format")
             return None
 
         return await self.moderation_repo.laden(content_id)
@@ -613,10 +636,10 @@ class ModerationService:
                 logger.warning(f"Report {report_id} not found")
                 return False
         except ValueError as e:
-            logger.error(f"Invalid report_id format: {report_id}")
+            logger.error("Invalid report_id format")
             return False
         except Exception as e:
-            logger.error(f"Error dismissing report: {e}", exc_info=True)
+            logger.error(f"Error dismissing report: {type(e).__name__}", exc_info=True)
             return False
 
     def get_report_stats(self) -> Dict[str, Any]:
@@ -636,7 +659,9 @@ class ModerationService:
                 "dismissed": counts.get("dismissed", 0),
             }
         except Exception as e:
-            logger.error(f"Error getting report stats: {e}", exc_info=True)
+            logger.error(
+                f"Error getting report stats: {type(e).__name__}", exc_info=True
+            )
             return {
                 "total": 0,
                 "by_status": {},

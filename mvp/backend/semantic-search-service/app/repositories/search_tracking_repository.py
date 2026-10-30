@@ -15,6 +15,7 @@ abgeschlossenen Tag in zufaelliger Reihenfolge und in einer Transaktion neu
 """
 
 import logging
+from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional, Dict, Any, List
 from sqlalchemy import func, distinct, and_, select, text
@@ -23,8 +24,22 @@ from sqlalchemy.sql.selectable import ScalarSelect
 
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import SearchEvent, SuchenJeTagZeile
+from utils.utc_tag import utc_zeitraum
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class Tageswert:
+    """Suchen eines UTC-Tages: aus Suchereignissen und dem Tageszaehler.
+
+    ohne_treffer ist None, wenn der Tageszaehler es nicht kennt (vor #467).
+    """
+
+    tag: date
+    suchen: int
+    personen: int
+    ohne_treffer: Optional[int]
 
 
 # Verdichtet in einer Anweisung: Was DELETE entfernt, landet im selben Schritt im
@@ -32,22 +47,25 @@ logger = logging.getLogger(__name__)
 # also wird ein Tag immer ganz verdichtet. Einen Konflikt gibt es nur, wenn ein
 # schon verdichteter Tag spaeter noch Suchereignisse bekommt; neue tragen aber
 # immer den laufenden Tag. Fuer diesen Fall addiert ON CONFLICT, statt Zeilen zu
-# verlieren; personen kann dann eine Person doppelt zaehlen.
+# verlieren; personen kann dann eine Person doppelt zaehlen. Ein ohne_treffer, das
+# ein vor #467 verdichteter Tag nicht kennt (NULL), bleibt dabei unbekannt.
 _VERDICHTEN = text(
     """
     WITH weg AS (
         DELETE FROM search_events
         WHERE timestamp < :grenze
-        RETURNING timestamp, actor_hash
+        RETURNING timestamp, actor_hash, results_count
     ), tage AS (
-        INSERT INTO suchen_je_tag (tag, suchen, personen)
+        INSERT INTO suchen_je_tag (tag, suchen, personen, ohne_treffer)
         SELECT (timestamp AT TIME ZONE 'UTC')::date, count(*),
-               count(DISTINCT actor_hash)
+               count(DISTINCT actor_hash),
+               count(*) FILTER (WHERE results_count = 0)
         FROM weg
         GROUP BY 1
         ON CONFLICT (tag) DO UPDATE
         SET suchen = suchen_je_tag.suchen + EXCLUDED.suchen,
-            personen = suchen_je_tag.personen + EXCLUDED.personen
+            personen = suchen_je_tag.personen + EXCLUDED.personen,
+            ohne_treffer = suchen_je_tag.ohne_treffer + EXCLUDED.ohne_treffer
     )
     SELECT count(*) FROM weg
     """
@@ -75,6 +93,33 @@ _MISCHEN = text(
         RETURNING 1
     )
     SELECT count(*) FROM neu
+    """
+)
+
+
+# Tageswerte fuer die Bilanz (#467): Einzelzeilen je Tag und Tageszaehler in einer
+# Anweisung, also einem Snapshot, wie in _mit_tageszaehlern. Ein Tag kann in beiden
+# stehen (siehe _VERDICHTEN), deshalb wird je Tag summiert. ohne_treffer bleibt
+# unbekannt, sobald ein Teil es nicht kennt.
+_TAGESWERTE = text(
+    """
+    SELECT tag, sum(suchen), sum(personen),
+           CASE WHEN bool_or(ohne_treffer IS NULL) THEN NULL
+                ELSE sum(ohne_treffer) END
+    FROM (
+        SELECT (timestamp AT TIME ZONE 'UTC')::date AS tag, count(*) AS suchen,
+               count(DISTINCT actor_hash) AS personen,
+               count(*) FILTER (WHERE results_count = 0) AS ohne_treffer
+        FROM search_events
+        WHERE timestamp >= :von AND timestamp < :bis
+        GROUP BY 1
+        UNION ALL
+        SELECT tag, suchen, personen, ohne_treffer
+        FROM suchen_je_tag
+        WHERE tag >= :erster AND tag <= :letzter
+    ) AS beide
+    GROUP BY tag
+    ORDER BY tag
     """
 )
 
@@ -136,7 +181,9 @@ class SearchTrackingRepository:
                 # No log line: its exact time would undo the coarsening above.
                 return True
         except Exception as e:
-            logger.error(f"Error tracking search event: {e}", exc_info=True)
+            logger.error(
+                f"Error tracking search event: {type(e).__name__}", exc_info=True
+            )
             return False
 
     def get_unique_active_users(
@@ -184,7 +231,9 @@ class SearchTrackingRepository:
                 logger.debug(f"Active actors {start_date} to {end_date}: {total}")
                 return total
         except Exception as e:
-            logger.error(f"Error getting unique active users: {e}", exc_info=True)
+            logger.error(
+                f"Error getting unique active users: {type(e).__name__}", exc_info=True
+            )
             return 0
 
     def get_searches_per_user(self, days: int = 7) -> Dict[str, Any]:
@@ -242,7 +291,9 @@ class SearchTrackingRepository:
                     "total_searches": total_searches,
                 }
         except Exception as e:
-            logger.error(f"Error getting searches per user: {e}", exc_info=True)
+            logger.error(
+                f"Error getting searches per user: {type(e).__name__}", exc_info=True
+            )
             return {"average": 0.0, "median": 0, "total_users": 0, "total_searches": 0}
 
     def get_search_count_by_period(
@@ -281,8 +332,39 @@ class SearchTrackingRepository:
                     end_date,
                 )
         except Exception as e:
-            logger.error(f"Error getting search count: {e}", exc_info=True)
+            logger.error(
+                f"Error getting search count: {type(e).__name__}", exc_info=True
+            )
             return 0
+
+    def get_tageswerte(self, erster: date, letzter: date) -> List[Tageswert]:
+        """
+        Suchen, Personen und Suchen ohne Treffer je UTC-Tag, beide Grenzen
+        eingeschlossen; Tage ohne Suche fehlen.
+
+        Wirft bei Datenbankfehlern: Leere Tage sind in der Bilanz ein Wert (0),
+        ein Fehler darf nicht so aussehen.
+        """
+        von, bis = utc_zeitraum(erster, letzter)
+        with self.db.get_session() as session:
+            zeilen = session.execute(
+                _TAGESWERTE,
+                {
+                    "von": von,
+                    "bis": bis,
+                    "erster": erster,
+                    "letzter": letzter,
+                },
+            ).all()
+        return [
+            Tageswert(
+                tag=tag,
+                suchen=int(suchen),
+                personen=int(personen),
+                ohne_treffer=None if ohne_treffer is None else int(ohne_treffer),
+            )
+            for tag, suchen, personen, ohne_treffer in zeilen
+        ]
 
     @staticmethod
     def _mit_tageszaehlern(

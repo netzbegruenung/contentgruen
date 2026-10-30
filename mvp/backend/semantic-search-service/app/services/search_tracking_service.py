@@ -2,8 +2,9 @@
 Service layer for search tracking functionality.
 Provides business logic for tracking and analyzing search behavior.
 
-No personally identifiable data is persisted. Callers hand in the user or session
-id, this layer turns it into a daily rotating pseudonym, and only that pseudonym
+No personally identifiable data is persisted. Callers hand in the user id or, for
+visitors, the Besuchermerkmal (address and User-Agent, utils/besucher_pseudonym.py);
+this layer turns it into a daily rotating pseudonym, and only that pseudonym
 reaches the database.
 
 A search event carries only its UTC day, not the time of day. A search can
@@ -22,6 +23,7 @@ from typing import Optional, Dict, Any
 
 from core.config import settings
 from repositories.search_tracking_repository import get_search_tracking_repository
+from utils.besucher_pseudonym import besucher_tagespseudonym
 
 logger = logging.getLogger(__name__)
 
@@ -40,47 +42,54 @@ class SearchTrackingService:
     @staticmethod
     def _derive_actor_hash(
         user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        besucher_merkmal: Optional[str] = None,
         moment: Optional[datetime] = None,
     ) -> Optional[str]:
         """
         Derive the daily pseudonym for a searching actor.
 
-        The pseudonym is HMAC-SHA256 over "<actor id>|<UTC date>" keyed with the
-        configured secret. Two properties matter:
+        For an authenticated user the pseudonym is HMAC-SHA256 over
+        "<user id>|<UTC date>" keyed with the configured secret. Two properties
+        matter:
 
-        - It cannot be reversed to a user or session id without the secret, so the
-          stored value is not personally identifiable.
+        - It cannot be reversed to a user id without the secret, so the stored
+          value is not personally identifiable.
         - The UTC date is part of the message, so the same person gets a different
           pseudonym every day and search activity cannot be linked across days.
 
+        For a visitor it is the visitor's daily pseudonym (#446): keyed with a
+        random key per day that is held in memory only, so not even the configured
+        secret links two days.
+
         Args:
             user_id: Identifier of the authenticated user, if any
-            session_id: Anonymous session identifier, if any
+            besucher_merkmal: Besuchermerkmal (utils.besucher_pseudonym.besucher_merkmal),
+                used when there is no user
             moment: Point in time the pseudonym belongs to (defaults to now, UTC)
 
         Returns:
             64-character hex digest, or None if there is no actor to identify
         """
-        actor_id = user_id or session_id
-        if not actor_id:
+        if not user_id and not besucher_merkmal:
             return None
 
         if moment is None:
             moment = datetime.now(timezone.utc)
+        if not user_id:
+            return besucher_tagespseudonym(besucher_merkmal, moment.date())
         day = moment.strftime("%Y-%m-%d")
 
         secret = settings.actor_hash_secret or _FALLBACK_SECRET
         return hmac.new(
             secret.encode("utf-8"),
-            f"{actor_id}|{day}".encode("utf-8"),
+            f"{user_id}|{day}".encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
 
     def track_search(
         self,
         results_count: int,
-        session_id: Optional[str] = None,
+        besucher_merkmal: Optional[str] = None,
         user_id: Optional[str] = None,
         moment: Optional[datetime] = None,
     ) -> bool:
@@ -92,7 +101,7 @@ class SearchTrackingService:
 
         Args:
             results_count: Number of results returned
-            session_id: Optional session identifier, hashed before storage
+            besucher_merkmal: Optional Besuchermerkmal, hashed before storage
             user_id: Optional user identifier, hashed before storage
             moment: Point in time of the search (defaults to now, UTC). The
                 caller passes the moment it also uses for "Suchen ohne Treffer",
@@ -109,7 +118,7 @@ class SearchTrackingService:
         if moment is None:
             moment = datetime.now(timezone.utc)
         actor_hash = self._derive_actor_hash(
-            user_id=user_id, session_id=session_id, moment=moment
+            user_id=user_id, besucher_merkmal=besucher_merkmal, moment=moment
         )
 
         # No log line per search: it would carry the exact time again, and
@@ -132,7 +141,7 @@ class SearchTrackingService:
             date: The date to check
 
         Returns:
-            int: Count of unique users/sessions
+            int: Count of unique daily pseudonyms
         """
         start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_of_day = date.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -141,7 +150,7 @@ class SearchTrackingService:
 
     def get_searches_per_user_stats(self, days: int = 7) -> Dict[str, Any]:
         """
-        Get search statistics per user/session.
+        Get search statistics per daily pseudonym.
 
         Counted per active user-day, not per person: an actor searching on three
         days of the window counts three times, because the pseudonyms rotate daily.
@@ -157,12 +166,12 @@ class SearchTrackingService:
 
 def tagespseudonym(
     user_id: Optional[str] = None,
-    session_id: Optional[str] = None,
+    besucher_merkmal: Optional[str] = None,
     moment: Optional[datetime] = None,
 ) -> Optional[str]:
     """Das Tagespseudonym zum Zeitpunkt (Standard: jetzt), wie in search_events."""
     return SearchTrackingService._derive_actor_hash(
-        user_id=user_id, session_id=session_id, moment=moment
+        user_id=user_id, besucher_merkmal=besucher_merkmal, moment=moment
     )
 
 

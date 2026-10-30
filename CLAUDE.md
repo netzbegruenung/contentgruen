@@ -145,16 +145,11 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 - **API**: `SEMANTIC_SEARCH_APP_DATABASE_URL` (PostgreSQL), `SEMANTIC_SEARCH_QDRANT_URL` (Qdrant)
 - **Frontend**: `baseUrl` empty for Docker, `http://localhost:5054` for local
 
-> **Datenschutz-Warnung — `OPENAI_API_KEY` / `SEMANTIC_SEARCH_OPENAI_API_KEY`.**
-> Ein gesetzter Key aktiviert einen **Transfer von Bild-URLs an OpenAI in den USA**,
-> sobald jemand im Bild-Formular einen Unterschrift-Vorschlag anfordert
-> (`POST /api/v1/image/suggestCaption`). Einen Hintergrunddienst, der ungefragt Bilder
-> beschreibt, gibt es seit #281 nicht mehr. Der Key ist die einzige Weiche
-> (`get_caption_suggestion_service` in `dependencies.py`).
-> **Die Datenschutzerklärung geht davon aus, dass dieser Transfer nicht stattfindet.**
-> Bevor der Key irgendwo gesetzt wird, muss sie um einen Abschnitt zum Drittlandtransfer
-> (Art. 44 ff. DSGVO) erweitert werden; zusätzlich sind ein AV-Vertrag und Garantien nach
-> Art. 46 DSGVO nötig. Siehe auch den Hinweis an der Stelle selbst in `core/config.py`.
+> **Datenschutz — keine KI-Anbieter.** Die Dienste schicken nichts an einen KI-Anbieter; den
+> Unterschrift-Vorschlag über OpenAI gibt es seit #393 nicht mehr, die Unterschrift schreibt
+> die Person. Die Datenschutzerklärung sagt, dass nichts außerhalb der EU verarbeitet wird.
+> Jede KI-Funktion, die Daten an einen externen Dienst schickt, braucht vorher eine Erweiterung
+> der Erklärung (ADR 0003); Modelle laufen auf eigener Infrastruktur (ADR 0005).
 
 ## Authentication Modes
 
@@ -165,7 +160,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 
 ### Keycloak (Production)
 - SSO integration with Netzbegrünung
-- Configured outside this repository
+- Own realm „Gut gesagt“ prepared in #429 (sign-in switches over only after the Kennungen are migrated); template, order and setup in `docs/KEYCLOAK_REALM.md`, the realm itself is configured outside this repository
 
 ## Claude Custom Commands
 

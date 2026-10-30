@@ -4,7 +4,7 @@ Handles all database operations for usage statistics.
 """
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 import uuid
 import asyncio
@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from infrastructure.database.connection import AppDatabase, get_app_database
+from utils.utc_tag import utc_zeitraum
 from infrastructure.database.models import (
     NutzungJeFassung,
     UsageTracking,
@@ -38,7 +39,6 @@ class UsageTrackingRepository:
         self,
         content_id: uuid.UUID,
         event_type: str = "copy",
-        session_id: Optional[str] = None,
         device_category: Optional[str] = None,
         fassung: Optional[str] = None,
     ) -> bool:
@@ -48,7 +48,6 @@ class UsageTrackingRepository:
         Args:
             content_id: UUID of the content item
             event_type: Type of usage event (default: "copy")
-            session_id: Optional session identifier
             device_category: Grobe Geraetekategorie, bereits vom Aufrufer
                 abgeleitet (utils.device_category). Der User-Agent-Rohwert
                 kommt hier nicht mehr an.
@@ -84,7 +83,6 @@ class UsageTrackingRepository:
                 event = UsageEvent(
                     content_id=content_id,
                     event_type=event_type,
-                    session_id=session_id,
                     device_category=device_category,
                     fassung=fassung,
                 )
@@ -112,7 +110,8 @@ class UsageTrackingRepository:
 
         except Exception as e:
             logger.error(
-                f"Error tracking usage for content {content_id}: {e}", exc_info=True
+                f"Error tracking usage for content {content_id}: {type(e).__name__}",
+                exc_info=True,
             )
             return False
 
@@ -185,6 +184,26 @@ class UsageTrackingRepository:
             for content_id, anzahl in zeilen:
                 result[str(content_id)] = anzahl
         return result
+
+    def get_nutzungen_je_tag(self, erster: date, letzter: date) -> Dict[date, int]:
+        """
+        Nutzungen je UTC-Tag, beide Grenzen eingeschlossen, fuer K2 der Bilanz (#467).
+
+        Aus usage_events, nicht aus usage_tracking: Die Gesamtzaehler sagen nicht,
+        in welcher Woche genutzt wurde. Vor der Frist der usage_events (90 Tage)
+        fehlen die Tage; das weiss services/bilanz_service.py. Tage ohne Nutzung
+        fehlen ebenfalls. Wirft bei Datenbankfehlern, damit kein Fehler als 0 gilt.
+        """
+        tag = func.date(func.timezone("UTC", UsageEvent.timestamp))
+        von, bis = utc_zeitraum(erster, letzter)
+        with self.db.get_session() as session:
+            zeilen = (
+                session.query(tag, func.count(UsageEvent.id))
+                .filter(UsageEvent.timestamp >= von, UsageEvent.timestamp < bis)
+                .group_by(tag)
+                .all()
+            )
+        return {t: anzahl for t, anzahl in zeilen}
 
     def get_nutzung_je_fassung_batch(
         self, content_ids: List[uuid.UUID]
@@ -400,7 +419,9 @@ class UsageTrackingRepository:
                 return deleted_count
 
         except Exception as e:
-            logger.error(f"Error during cleanup of old events: {e}", exc_info=True)
+            logger.error(
+                f"Error during cleanup of old events: {type(e).__name__}", exc_info=True
+            )
             raise
 
 

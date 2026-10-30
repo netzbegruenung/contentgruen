@@ -43,3 +43,20 @@ button mat-spinner {
   display: inline-block;
   margin: 0;
 }
+
+.feld-fehler {
+  color: #d32f2f;
+  font-size: 12px;
+  margin: -12px 0 12px;
+}
+
+.guter-glaube {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.hinweis {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
+}

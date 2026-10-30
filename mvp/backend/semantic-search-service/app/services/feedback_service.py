@@ -79,5 +79,7 @@ async def loeschen_im_takt(
             geloescht = await asyncio.to_thread(service.alte_loeschen)
             logger.info(f"Deleted {geloescht} old feedback entries")
         except Exception as e:
-            logger.error(f"Error during feedback cleanup: {e}", exc_info=True)
+            logger.error(
+                f"Error during feedback cleanup: {type(e).__name__}", exc_info=True
+            )
         await asyncio.sleep(min(takt_sekunden, sekunden_bis_mitternacht() + 1))

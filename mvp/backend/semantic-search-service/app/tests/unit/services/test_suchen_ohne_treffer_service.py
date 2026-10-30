@@ -145,7 +145,7 @@ class TestErfassen:
         ]
 
     def test_erfassen_ohne_pseudonym_zaehlt_die_suche_aber_keine_person(self):
-        """Ohne Nutzer- und Sitzungskennung laesst sich keine Person unterscheiden."""
+        """Ohne Tagespseudonym laesst sich keine Person unterscheiden."""
         repo = FakeRepository()
 
         _service(repo).erfassen(AUSSAGE, 0, None, heute=MITTWOCH)

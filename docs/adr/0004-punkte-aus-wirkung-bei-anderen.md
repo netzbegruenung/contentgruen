@@ -18,6 +18,10 @@ Damit auch Neue sofort eine Rückmeldung sehen, gibt es Punkte in drei Stufen:
 
 Unterstützungsarbeit ohne eigene Nutzung (Einwerfen, Destillieren, Fangkorb) erkennen zusätzlich Meilensteine an. Gewichte und Deckel stehen in der Konfiguration.
 
+## Besucher ohne Sitzung (Ergänzung 30.10.2026, #446)
+
+Die Sitzung, über die oben Nutzungen von Besuchern entdoppelt werden, gibt es seit #446 nicht mehr: Der Browser trägt keine Kennung, und Nutzungsereignisse halten keine fest. Wie Nutzungen von Besuchern für Punkte entdoppelt werden, ist damit offen und wird mit der Punktezählung entschieden. Das Tagespseudonym wäre ein Kandidat; es müsste dann an der Nutzung gespeichert werden, was die Datenschutzerklärung heute ausschließt.
+
 ## Considered Options
 
 - Punkte für jede Tätigkeit in voller Höhe (Schreiben, Einwerfen, Bewerten): am einfachsten, belohnt aber Menge statt Qualität. Übernommen ist nur die gedeckelte Form (siehe „Drei Stufen“).

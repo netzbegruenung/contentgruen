@@ -3,12 +3,14 @@ API endpoints for content moderation and reporting.
 """
 
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Query, Request
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
-from domain.models.meldegrund import Meldegrund
+from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
+from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
 from domain.models.sperrgrund import Sperrgrund
 from services.moderation_service import (
     SchonGesperrt,
@@ -20,7 +22,9 @@ from core.config import Settings
 from core.logging import get_logger
 from dependencies import get_settings, get_current_user_optional, require_admin
 from utils.rate_limiter import report_rate_limiter
-from utils.client_identity import derive_client_key, normalize_session_id
+from utils.besucher_pseudonym import besucher_merkmal
+from utils.client_identity import derive_client_key
+from repositories.content_report_repository import melder_pseudonym
 
 logger = get_logger(__name__)
 
@@ -48,8 +52,51 @@ class ReportContentRequest(BaseModel):
     description: Optional[str] = Field(
         None,
         max_length=1000,
-        description="Optional detailed description (max 1000 characters)",
+        description="Description (max 1000 characters); required for illegal_content",
     )
+    # Angaben nach Art. 16 Abs. 2 DSA (#438); der DSA gilt fuer Gut gesagt.
+    # Name und E-Mail-Adresse sind freiwillig
+    # (lit. c); nur wer sie angibt, kann die Entscheidung erfahren (Abs. 5).
+    # Beides sehen nur Admins, und keins von beiden landet im Log.
+    melder_name: Optional[str] = Field(
+        None,
+        max_length=MELDER_NAME_MAX,
+        description="Optional: Name der meldenden Person",
+    )
+    melder_email: Optional[EmailStr] = Field(
+        None,
+        max_length=MELDER_EMAIL_MAX,
+        description="Optional: E-Mail-Adresse fuer die Mitteilung der Entscheidung",
+    )
+    # Die Erklaerung guten Glaubens (lit. d) ist Pflicht: Ohne sie ist eine
+    # Meldung nach Abs. 3 nicht vollstaendig.
+    guter_glaube: bool = Field(
+        ...,
+        description="Die meldende Person erklaert, in gutem Glauben zu melden",
+    )
+
+    @field_validator("melder_name", "melder_email", mode="before")
+    @classmethod
+    def _leer_ist_nicht_angegeben(cls, wert):
+        if isinstance(wert, str):
+            wert = wert.strip()
+            return wert or None
+        return wert
+
+    @field_validator("guter_glaube")
+    @classmethod
+    def _guter_glaube_erklaert(cls, wert: bool) -> bool:
+        if wert is not True:
+            raise ValueError("Die Erklaerung guten Glaubens fehlt")
+        return wert
+
+    @model_validator(mode="after")
+    def _rechtswidriges_begruendet(self):
+        # Art. 16 Abs. 2 lit. a DSA (#438): wer einen Inhalt als rechtswidrig
+        # meldet, erklaert, warum.
+        if beschreibung_fehlt(self.reason, self.description):
+            raise ValueError("Bei rechtswidrigem Inhalt fehlt die Begruendung")
+        return self
 
 
 class ReportContentResponse(BaseModel):
@@ -128,7 +175,6 @@ async def report_content(
     request: ReportContentRequest,
     http_request: Request,
     x_user_id: Optional[str] = Header(None, alias="X-User"),
-    x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
     settings: Settings = Depends(get_settings),
 ):
     """
@@ -139,10 +185,9 @@ async def report_content(
     verletzung meldet, ist typischerweise kein Nutzer der Plattform.
 
     Das Rate-Limit haengt deshalb an der Adresse des Aufrufers, nicht mehr an
-    X-Session-Id. Der Session-Header wird von der SPA selbst erzeugt und in
-    localStorage gehalten; wer je Anfrage einen neuen Wert schickt, hatte damit
-    gar kein Limit. Er dient weiterhin der Zuordnung anonymer Meldungen, aber
-    keiner Sicherheitsentscheidung mehr.
+    X-Session-Id. Den Session-Header erzeugte die SPA selbst; wer je Anfrage
+    einen neuen Wert schickte, hatte damit gar kein Limit. Seit #446 gibt es ihn
+    nicht mehr, und ein mitgeschickter Wert wird auch nicht gespeichert.
 
     Fuer angemeldete Melder gilt zusaetzlich ein Limit auf der Nutzerkennung und
     eine Deduplizierung auf (Nutzer, Inhalt).
@@ -174,20 +219,19 @@ async def report_content(
 
         logger.info(f"Content report received: {request.content_id} - {request.reason}")
 
-        # Meldungen brauchen eine Melder-Kennung: der Service verlangt sie, und die
-        # Tabelle hat einen CHECK darauf. Wer ohne Anmeldung und ohne
-        # X-Session-Id meldet -- etwa direkt gegen die API statt ueber die SPA --
-        # bekam deshalb 400, obwohl die Route ausdruecklich ohne Anmeldung
-        # erreichbar sein soll. Ein Zufallstoken je Meldung erfuellt die
-        # Bedingung, ohne irgendetwas ueber den Melder auszusagen; insbesondere
-        # ist er nicht aus der Adresse abgeleitet.
-        # Nur eine wohlgeformte Kennung uebernehmen. Das ist Hygiene, keine
-        # Sicherheitsmassnahme -- an diesem Wert haengt seit dem Umbau des
-        # Rate-Limits keine Entscheidung mehr. Ein unpassender Wert wird
-        # verworfen statt die Meldung abzuweisen.
-        reporter_session = normalize_session_id(x_session_id)
-        if not is_authenticated and not reporter_session:
-            reporter_session = f"anon:{uuid.uuid4()}"
+        # Anonyme Meldungen tragen das Tagespseudonym des Besuchers: Admins sehen
+        # so, ob offene Meldungen am selben Tag aus derselben Quelle kommen. Es
+        # bleibt nur, bis die Meldung erledigt ist; dann ersetzt das Repository es
+        # durch einen Zufallswert (repositories/content_report_repository.py).
+        # Eine Sitzungskennung aus dem Browser gibt es seit #446 nicht mehr, auch
+        # nicht neben der Kennung angemeldeter Melder.
+        reporter_session = (
+            None
+            if is_authenticated
+            else melder_pseudonym(
+                besucher_merkmal(http_request), datetime.now(timezone.utc).date()
+            )
+        )
 
         success = await moderation_service.report_content(
             content_id=request.content_id,
@@ -196,6 +240,11 @@ async def report_content(
             user_id=x_user_id if is_authenticated else None,
             session_id=reporter_session,
             description=request.description,
+            melder=MelderAngaben(
+                guter_glaube=request.guter_glaube,
+                name=request.melder_name,
+                email=request.melder_email,
+            ),
         )
 
         if success:
@@ -211,7 +260,9 @@ async def report_content(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in report_content endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in report_content endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -250,7 +301,9 @@ async def get_reports(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_reports endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in get_reports endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -289,7 +342,7 @@ async def sperren(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in sperren endpoint: {e}", exc_info=True)
+        logger.error(f"Error in sperren endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -316,7 +369,7 @@ async def entsperren(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in entsperren endpoint: {e}", exc_info=True)
+        logger.error(f"Error in entsperren endpoint: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -348,7 +401,9 @@ async def sperre_bestaetigen(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in sperre_bestaetigen endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in sperre_bestaetigen endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -365,7 +420,9 @@ async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
         return GesperrteResponse(total=len(beitraege), beitraege=beitraege)
 
     except Exception as e:
-        logger.error(f"Error in gesperrte_beitraege endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in gesperrte_beitraege endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -422,7 +479,9 @@ async def delete_content(
             ),
         )
     except Exception as e:
-        logger.error(f"Error in delete_content endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in delete_content endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -457,7 +516,9 @@ async def dismiss_report(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in dismiss_report endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in dismiss_report endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -483,5 +544,7 @@ async def get_report_stats(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_report_stats endpoint: {e}", exc_info=True)
+        logger.error(
+            f"Error in get_report_stats endpoint: {type(e).__name__}", exc_info=True
+        )
         raise HTTPException(status_code=500, detail="Internal server error")

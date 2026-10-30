@@ -8,8 +8,8 @@ Protokoll: in der Adresse (``/result?searchQuery=...``) bei jedem direkten Aufru
 der Ergebnisseite und als verweisende Seite bei jeder Anfrage, die diese Seite
 ausloest. Der Webserver schreibt deshalb keine Zeile fuer die Suche und fuer die
 Ergebnisseite, von jeder anderen Anfrage nur den Pfad, ohne Adresszusatz und ohne
-verweisende Seite, und ins Fehlerprotokoll keine Zeile fuer fehlende Dateien (sie
-truege Adresse und verweisende Seite).
+verweisende Seite, und ins Fehlerprotokoll keine Zeile zu einer Anfrage (sie
+truege Adresse, Adresszusatz und verweisende Seite; #422).
 
 Startet nginx aus dem Image des Frontend-Dockerfiles mit beiden Konfigurationen
 (``nginx.conf`` fuer Test und Produktion, ``nginx.docker.conf`` fuer den Dev-Stack)
@@ -138,9 +138,7 @@ def test_keine_zeile_je_suche():
         zugriffe = _zugriffe(name)
 
     assert any("/api/v1/metrics/getMetrics" in zeile for zeile in zugriffe), zugriffe
-    # Fehlerprotokoll ausgenommen: Antwortet das BFF nicht, schreibt nginx dort die
-    # Anfrage (nur Dev-Stack, nur im Fehlerfall; docs/LOESCHKONZEPT.md).
-    zugriffe = [zeile for zeile in zugriffe if "[error]" not in zeile]
+    # Auch das Fehlerprotokoll nicht, obwohl das BFF hier nicht antwortet (#422).
     assert not [zeile for zeile in zugriffe if "searchbytext" in zeile.lower()]
 
 
@@ -155,3 +153,43 @@ def test_browser_schickt_den_suchtext_nicht_als_verweisende_seite():
     kopf = index[: index.index("<link")]
 
     assert re.search(r'<meta name="referrer" content="strict-origin">', kopf)
+
+
+def _zu_grosse_anfrage(adresse: str, referer: str) -> None:
+    """Mehr als die 1 MB, die nginx annimmt: Antwort 413 und eine Zeile im
+    Fehlerprotokoll ("client intended to send too large body")."""
+    anfrage = urllib.request.Request(
+        adresse, method="POST", data=b"x" * (2 * 1024 * 1024)
+    )
+    anfrage.add_header("Referer", referer)
+    try:
+        urllib.request.urlopen(anfrage, timeout=5).close()
+    except urllib.error.HTTPError as fehler:
+        fehler.close()
+    except OSError:
+        pass  # nginx schliesst die Verbindung, bevor der Rumpf ganz gesendet ist.
+
+
+@pytest.mark.usefixtures("docker_noetig")
+@pytest.mark.parametrize("konfiguration", ["nginx.conf", "nginx.docker.conf"])
+def test_fehlerprotokoll_ohne_adresse_und_verweisende_seite(konfiguration):
+    """Fehlerzeilen einer Anfrage tragen bei nginx die Absenderadresse
+    ("client: ..."), die Anfrage samt Adresszusatz und die verweisende Seite; ein
+    eigenes Format dafuer gibt es nicht (#422)."""
+    verweis = f"http://verweis.invalid/result?searchQuery={SUCHTEXT}"
+    with _nginx(konfiguration) as (basis, name):
+        _zu_grosse_anfrage(f"{basis}/hilfe?von={SUCHTEXT}", verweis)
+        if konfiguration == "nginx.docker.conf":
+            # Das BFF antwortet nicht: "connect() failed ... upstream: ..."
+            _anfrage(
+                f"{basis}/api/v1/metrics/getMetrics?von={SUCHTEXT}", referer=verweis
+            )
+
+        zeilen = _zugriffe(name)
+
+    assert any(" 413 " in zeile for zeile in zeilen), zeilen
+    # Was nicht zu einer Anfrage gehoert, schreibt nginx weiter.
+    assert any("start worker process" in zeile for zeile in zeilen), zeilen
+    assert not [zeile for zeile in zeilen if "client:" in zeile], zeilen
+    assert not [zeile for zeile in zeilen if "referrer:" in zeile], zeilen
+    assert not [zeile for zeile in zeilen if SUCHTEXT in zeile], zeilen

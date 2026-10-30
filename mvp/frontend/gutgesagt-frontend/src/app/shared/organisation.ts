@@ -11,7 +11,13 @@ export const ORGANISATION = {
   name: 'Netzbegrünung',
   vereinsname: 'Netzbegrünung e.V.',
   url: 'https://netzbegruenung.de/',
-  kontakt: {
+  /**
+   * Fragen und Hinweise zu Gut gesagt, neben dem Knopf „Feedback“ (Kontaktwege, #290).
+   * Dieselbe Adresse gilt für Beta-Zugänge und Sicherheitslücken (SECURITY.md, security.txt; #430).
+   */
+  gutgesagtMail: 'gutgesagt@netzbegruenung.de',
+  /** Der Kanal zum Mitmachen. Kein Kontaktweg für Nutzende: Fragen und Fehler gehen über Feedback oder Mail (#290). */
+  chat: {
     name: 'Chatbegrünung',
     url: 'https://chatbegruenung.de/channel/GutGesagt',
   },

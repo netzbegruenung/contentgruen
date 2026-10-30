@@ -58,7 +58,9 @@ async def get_by_id(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching reference with id {reference_id}: {e}")
+        logger.error(
+            f"Error fetching reference with id {reference_id}: {type(e).__name__}"
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -107,7 +109,7 @@ async def search_references(
         )
 
     except Exception as e:
-        logger.error(f"Error in search_references: {e}")
+        logger.error(f"Error in search_references: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -160,7 +162,7 @@ async def add_reference(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in add_reference: {e}")
+        logger.error(f"Error in add_reference: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

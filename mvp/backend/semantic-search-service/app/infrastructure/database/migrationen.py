@@ -215,7 +215,7 @@ def _transaktion(cur, name: str, anweisungen: list[str], mit_nachlauf: bool) -> 
         )
         cur.execute("COMMIT")
     except Exception as fehler:
-        logger.error("Migration %s fehlgeschlagen: %s", name, _erste_zeile(fehler))
+        logger.error("Migration %s fehlgeschlagen: %s", name, type(fehler).__name__)
         _vermerken_trotz_fehler(cur, name, FEHLGESCHLAGEN, fehler, "ROLLBACK")
         raise MigrationFehlgeschlagen(
             f"Migration {name} fehlgeschlagen, zurueckgerollt: {_erste_zeile(fehler)}"
@@ -236,7 +236,7 @@ def _nachlauf(cur, name: str, anweisungen: list[str]) -> None:
         logger.error(
             "Nachlauf von Migration %s fehlgeschlagen, folgt beim naechsten Start: %s",
             name,
-            _erste_zeile(fehler),
+            type(fehler).__name__,
         )
         _vermerken_trotz_fehler(cur, name, NACHLAUF_OFFEN, fehler)
         return

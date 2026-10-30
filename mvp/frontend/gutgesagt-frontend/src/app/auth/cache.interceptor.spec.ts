@@ -89,7 +89,6 @@ describe('cacheInterceptor', () => {
     for (const pfad of [
       'statement/searchStatements',
       'reference/search',
-      'image/suggestCaption',
       'voting/votes/batch',
     ]) {
       http.post(`${api}/${pfad}`, {}).subscribe();
