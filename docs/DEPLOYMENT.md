@@ -133,8 +133,9 @@ deploy anything by itself.
 #### Releases
 
 1. **Only the maintainer sets tags.** Agents and contributors propose, they do not tag.
-2. **Version scheme:** `v0.x` releases until the launch (`v0.9.0` first), `v1.0.0` at the
-   launch, [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
+2. **Version scheme:** `v0.x` releases until the public launch: `v0.8.0` first, for the move
+   of production, `v0.9.0` at the internal launch, `v1.0.0` at the public launch,
+   [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
    not move `:latest` (see above), and production only follows `:latest`.
 3. **Release pull request:** before tagging, one pull request prepares the release:
    - **Version in the footer:** the footer shows the `version` from
@@ -166,7 +167,7 @@ deploy anything by itself.
 5. **Forgejo release:** create the release to the tag on Forgejo (Releases on the Forgejo
    repository) and paste the reviewed draft from the release pull request. `scripts/changelog.sh
    vX.Y.Z` shows the tagged range for a last comparison; for the first release give the start
-   as well (`scripts/changelog.sh v0.9.0 fae44b4b`, the commit of the former `v1.1.0`).
+   as well (`scripts/changelog.sh v0.8.0 fae44b4b`, the commit of the former `v1.1.0`).
 
 For urgent deployments, ask in the project channel (see below).
 
