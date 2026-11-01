@@ -14,7 +14,7 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
 
 ### 2. Docker Development
 - **Purpose**: Testing containerized deployment locally
-- **Access**: http://localhost (frontend via nginx proxy)
+- **Access**: http://localhost:8080 (frontend via nginx proxy; `docker-compose.dev.yml` publishes container port 80 on host port 8080)
 - **Infrastructure**: All services in Docker containers
 - **Authentication**: E-mail login against `managed-users.json` (`test.user@example.com`/`Liebe>Hass!`)
 
@@ -50,7 +50,7 @@ Gut gesagt is a progressive content platform with semantic search capabilities f
                 ▼               ▼               ▼
 ┌─────────────────────┐ ┌─────────────┐ ┌──────────────────┐
 │  Frontend (Angular) │ │  BFF (.NET) │ │ Semantic Search  │
-│    Port: 80/4200    │ │ Port: 5054  │ │   (FastAPI)      │
+│  Port: 8080/4200    │ │ Port: 5054  │ │   (FastAPI)      │
 │                     │ │             │ │  Port: 8000      │
 │  Container nginx    │ │   YARP      │ │                  │
 │  serves static      │ │   Proxy     │ │  E5 embeddings   │
