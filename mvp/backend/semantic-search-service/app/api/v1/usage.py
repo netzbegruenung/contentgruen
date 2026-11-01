@@ -5,7 +5,7 @@ API endpoints for usage tracking functionality.
 import logging
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 import uuid
 from datetime import datetime, timedelta
 
@@ -18,6 +18,7 @@ from dependencies import (
 )
 from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
+from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from domain.models.commentary import Fassung
@@ -114,45 +115,6 @@ class CleanupResultResponse(BaseModel):
     success: bool
     deleted_count: int
     message: str
-
-
-class BeitragUnlesbar(Exception):
-    """
-    Der Datensatz ist da, aber er laesst sich nicht lesen. Das ist kaputt, nicht
-    abwesend - also kein 404, und die Nutzung wird trotzdem gezaehlt.
-    """
-
-
-async def beitrag_laden(content_id: uuid.UUID, settings: Settings):
-    """
-    Den Beitrag zu dieser ID, oder None, wenn es ihn nicht gibt.
-
-    Eigene Funktion, weil der Zaehl-Endpunkt sie fuer zwei Dinge braucht: die
-    Existenzpruefung und den Vergleich mit der zaehlenden Person.
-
-    Raises:
-    - BeitragUnlesbar, wenn der Datensatz existiert, aber nicht validiert.
-    """
-    from repositories.implementations.qdrant.qdrant_repository_factory import (
-        QdrantRepositoryFactory,
-    )
-
-    repository = QdrantRepositoryFactory().create_content_repository(settings)
-    try:
-        return await repository.get(content_id)
-    except ValidationError as fehler:
-        # Vor ValueError, denn Pydantics ValidationError ist einer. Ohne diesen
-        # Zweig gaelte ein kaputter Datensatz als "nicht vorhanden": Der Aufruf
-        # bekaeme 404, die Kopie fiele unter den Tisch und niemand erfuehre, dass
-        # da etwas im Bestand nicht stimmt.
-        logger.error(
-            f"Content {content_id} is not readable: {type(fehler).__name__}",
-            exc_info=True,
-        )
-        raise BeitragUnlesbar(str(content_id)) from fehler
-    except ValueError:
-        # Nicht vorhanden - erwartbar bei einem alten Link, kein Fehlerfall.
-        return None
 
 
 @router.post("/content/{content_id}/usage", response_model=TrackUsageResponse)

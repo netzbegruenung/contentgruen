@@ -25,7 +25,6 @@ from services.suchen_ohne_treffer_service import (
 from services.unbeantwortete_aussagen_service import UnbeantworteteAussagenService
 from services.aussage_themen_service import AussageThemenService
 from repositories.aussage_themen_repository import get_aussage_themen_repository
-from repositories.interfaces.content_repository import IContentRepository
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
@@ -236,13 +235,6 @@ def get_loeschfristen_service() -> LoeschfristenService:
         get_moderation_service(),
         get_sperre_repository(),
     )
-
-
-def get_content_repository(
-    settings: Settings = Depends(get_settings),
-) -> IContentRepository:
-    """Das aggregierte Repository ueber alle Beitragstypen; liest nur Sichtbares."""
-    return QdrantRepositoryFactory().create_content_repository(settings)
 
 
 def get_beitrag_loeschen_service(

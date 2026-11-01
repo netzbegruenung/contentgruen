@@ -7,7 +7,7 @@ gemockt wie in test_raw_input_repository.py.
 """
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy.dialects import postgresql

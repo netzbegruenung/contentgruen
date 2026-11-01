@@ -7,13 +7,12 @@ test_moderation_service.py).
 """
 
 import uuid
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_moderation_service, get_settings
 

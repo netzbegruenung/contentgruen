@@ -8,13 +8,12 @@ Aus tests/integration/api/v1/test_moderation_api.py, dort ohne die Fixture
 """
 
 import uuid
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
 from dependencies import get_moderation_service, get_settings
 

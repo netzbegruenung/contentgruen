@@ -6,7 +6,7 @@ daraus macht, pruefen tests/unit/services/test_sperre_mit_grund.py.
 """
 
 import uuid
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import FastAPI

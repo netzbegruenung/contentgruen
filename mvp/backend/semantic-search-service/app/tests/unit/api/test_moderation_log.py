@@ -8,7 +8,7 @@ den Meldungen in PostgreSQL (reviewed_by); das Log braucht es nicht.
 
 import logging
 import uuid
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import FastAPI

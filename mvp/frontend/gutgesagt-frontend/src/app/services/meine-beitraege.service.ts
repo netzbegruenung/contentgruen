@@ -9,12 +9,12 @@ import { GetContributionsOfUserResponse } from './dtos/contributionDtos';
   providedIn: 'root'
 })
 export class MeineBeitraegeService {
-  private contributionsApiUrl = `${environment.baseUrl}/api/v1/contribution/getContributionsOfUser`;
+  private apiUrl = `${environment.baseUrl}/api/v1/contribution/getContributionsOfUser`;
 
   constructor(private http: HttpClient) {}
 
   meineBeitraege(page: number, pageSize: number): Observable<GetContributionsOfUserResponse> {
-    const url = `${this.contributionsApiUrl}?page=${page}&page_size=${pageSize}`;
+    const url = `${this.apiUrl}?page=${page}&page_size=${pageSize}`;
 
     return this.http.get<GetContributionsOfUserResponse>(url);
   }
