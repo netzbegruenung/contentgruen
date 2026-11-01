@@ -100,7 +100,8 @@ test('Hintergrundinfo aus dem Fangkorb: Kopfband, vorbelegt, Ergebnisseite', asy
 
   await page.locator('textarea#text').fill(`${TESTDATEN_PRAEFIX} Laut Studie im Link rechnet sich die Anlage nach sechs Jahren.`);
   await speichernUndErgebnis(page);
-  expect.soft(await ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+  // Der eigene Einwurf; der Knopf steht, sobald das Kennzeichen vom Server da ist (F1 in #511).
+  await expect.poll(() => ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Meine Beiträge']);
   expect.soft((await einwurfStand(page, einwurf.id)).status).toBe('processed');
   await bild('86-hintergrundinfo-ergebnis-fangkorb');
 });

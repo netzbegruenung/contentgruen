@@ -42,7 +42,8 @@ async function ausformulieren(page: Page, bild: Bild, einwurf: Einwurf, satz: st
     .fill(`${TESTDATEN_PRAEFIX} Aus dem Fangkorb ausformuliert: ${satz} – die Herkunft steht im Link.`);
   const id = await speichernUndErgebnis(page);
   await expect.soft(page.locator('.verknuepfen-fehlgeschlagen')).toHaveCount(0);
-  expect.soft(await ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zum Fangkorb', 'Meine Beiträge']);
+  // Der eigene Einwurf; der Knopf steht, sobald das Kennzeichen vom Server da ist (F1 in #511).
+  await expect.poll(() => ergebnisKnoepfe(page)).toEqual(['Nächster Einwurf', 'Zu meinen Einwürfen', 'Meine Beiträge']);
   expect.soft(new URL(page.url()).search).toContain(einwurf.id);
   await bild(`4${nr}c-ergebnis-fangkorb`);
 
@@ -135,9 +136,10 @@ test('Fangkorb: zwei Einwuerfe ausformulieren, naechster Einwurf, Meine Einwuerf
     await bild('76-fangkorb-pfeil');
   });
 
-  await test.step('Zum Fangkorb: Meine Einwuerfe (#508)', async () => {
+  await test.step('Zu meinen Einwuerfen: Meine Einwuerfe (#508)', async () => {
     await page.goto(ergebnis);
-    await page.locator('.zum-fangkorb').click();
+    // Der eigene Einwurf: Der Knopf heisst danach, wohin er fuehrt (F1 in #511).
+    await page.locator('.zu-meinen-einwuerfen').click();
     await page.waitForURL(/\/contributions/);
     // Ausformuliertes liegt in keiner Arbeitsliste, sondern in "Meine Einwuerfe".
     await expect.soft(page.getByRole('tab', { name: 'Meine Einwürfe' })).toHaveAttribute('aria-selected', 'true');
