@@ -6,13 +6,13 @@ import { Subject, of, throwError } from 'rxjs';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 
 import {
-  AddRawInputComponent,
+  EinwerfenComponent,
   LINK_PRUEFEN_NACH_MS,
   SEITENTITEL_PRAEFIX,
   hinweisVorschlag,
-} from './add-raw-input.component';
+} from './einwerfen.component';
 import { Einwurf, EinwurfService } from '../services/einwurf.service';
-import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
+import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
 import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
@@ -36,9 +36,9 @@ describe('hinweisVorschlag', () => {
   });
 });
 
-describe('AddRawInputComponent', () => {
-  let component: AddRawInputComponent;
-  let fixture: ComponentFixture<AddRawInputComponent>;
+describe('EinwerfenComponent', () => {
+  let component: EinwerfenComponent;
+  let fixture: ComponentFixture<EinwerfenComponent>;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
 
   /**
@@ -57,7 +57,7 @@ describe('AddRawInputComponent', () => {
     serviceSpy.mitGleichemLink.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
-      imports: [AddRawInputComponent, NoopAnimationsModule],
+      imports: [EinwerfenComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
         { provide: EinwurfService, useValue: serviceSpy },
@@ -68,7 +68,7 @@ describe('AddRawInputComponent', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AddRawInputComponent);
+    fixture = TestBed.createComponent(EinwerfenComponent);
     component = fixture.componentInstance;
     einwurfService = TestBed.inject(EinwurfService) as jasmine.SpyObj<EinwurfService>;
     fixture.detectChanges();

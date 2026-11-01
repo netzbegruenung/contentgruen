@@ -13,13 +13,11 @@ Mitternacht UTC.
 """
 
 from datetime import date, datetime, time, timezone
-from unittest.mock import patch
 
 import pytest
 from sqlalchemy import text
 
-from infrastructure.database.models import Base, SearchEvent
-from repositories.search_tracking_repository import SearchTrackingRepository
+from tests.integration.suchereignis_helfer import suchtracking_repository
 from tests.integration import postgres
 
 pytestmark = pytest.mark.integration
@@ -29,20 +27,12 @@ NUR_TAG = postgres.MIGRATIONEN / "2026-10-26-search-events-nur-tag.sql"
 
 
 @pytest.fixture
-def neue_datenbank(wegwerf_schema):
-    """search_events, wie create_all es anlegt."""
-    Base.metadata.create_all(wegwerf_schema.engine, tables=[SearchEvent.__table__])
-    return wegwerf_schema
-
-
-@pytest.fixture
-def migrierte_datenbank(wegwerf_schema):
+def migrierte_datenbank(suchereignisse_db):
     """search_events mit dem Default vor #256, dann die Migration darauf."""
-    Base.metadata.create_all(wegwerf_schema.engine, tables=[SearchEvent.__table__])
-    with wegwerf_schema.engine.begin() as c:
+    with suchereignisse_db.engine.begin() as c:
         c.execute(text(postgres.SUCHEREIGNIS_DEFAULT_VOR_256))
-    postgres.migration(wegwerf_schema, NUR_TAG)
-    return wegwerf_schema
+    postgres.migration(suchereignisse_db, NUR_TAG)
+    return suchereignisse_db
 
 
 def _ohne_zeitstempel_einfuegen(db) -> tuple:
@@ -61,7 +51,7 @@ def _ohne_zeitstempel_einfuegen(db) -> tuple:
 
 
 @pytest.mark.parametrize("zeitzone", ZEITZONEN)
-@pytest.mark.parametrize("herkunft", ["neue_datenbank", "migrierte_datenbank"])
+@pytest.mark.parametrize("herkunft", ["suchereignisse_db", "migrierte_datenbank"])
 def test_default_ist_mitternacht_utc_des_utc_tages(herkunft, zeitzone, request):
     with request.getfixturevalue(herkunft).mit_zeitzone(zeitzone) as db:
         with db.engine.connect() as c:
@@ -73,13 +63,9 @@ def test_default_ist_mitternacht_utc_des_utc_tages(herkunft, zeitzone, request):
 
 
 @pytest.mark.parametrize("zeitzone", ZEITZONEN)
-def test_repository_speichert_mitternacht_utc(neue_datenbank, zeitzone):
-    with neue_datenbank.mit_zeitzone(zeitzone) as db:
-        with patch(
-            "repositories.search_tracking_repository.get_app_database",
-            return_value=db,
-        ):
-            repository = SearchTrackingRepository()
+def test_repository_speichert_mitternacht_utc(suchereignisse_db, zeitzone):
+    with suchereignisse_db.mit_zeitzone(zeitzone) as db:
+        repository = suchtracking_repository(db)
 
         assert repository.track_search(results_count=3, day=date(2026, 10, 28))
 

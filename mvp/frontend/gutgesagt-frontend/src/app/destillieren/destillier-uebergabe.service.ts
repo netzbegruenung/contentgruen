@@ -5,7 +5,7 @@ import { catchError, map } from 'rxjs/operators';
 
 import { BeitragsTyp, EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
-import { FangkorbTab } from '../raw-input-list/fangkorb-filter';
+import { FangkorbTab } from '../fangkorb/fangkorb-filter';
 import { trackingParameterEntfernen } from '../shared/url-bereinigen';
 import { KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
 

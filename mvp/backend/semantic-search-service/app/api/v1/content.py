@@ -11,20 +11,17 @@ from dependencies import (
 )
 from dtos.content import (
     ContentGetAllResponse,
-    SearchContentByTextRequest,
-    ContentSearchResponse,
 )
 from repositories.implementations.qdrant.qdrant_repository_factory import (
     QdrantRepositoryFactory,
 )
-from domain.models.content import ContentDbEntry, ContentSearchResult
+from domain.models.content import ContentDbEntry
 from core.config import Settings
 from services.usage_tracking_service import get_usage_service
 from services.anzeigename_service import angemeldet
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses, fuer_aufrufer
 from dtos.beitrag import (
     BeitragResponse,
-    BeitragTreffer,
     HintergrundinfoResponse,
     KommentarResponse,
 )
@@ -41,12 +38,6 @@ logger = logging.getLogger(__name__)
 # Was /recent liefert, je result_type; ein Typ ohne Eintrag bekommt die allgemeine
 # Auswahl (BeitragResponse), statt die Route abzubrechen.
 NEUESTE = {"commentary": KommentarResponse, "generictext": HintergrundinfoResponse}
-
-
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
 
 
 # Retrieves all content from the index
@@ -84,38 +75,6 @@ async def get_all(
         return response
     except Exception as e:
         logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Searches for content in the content_index using similarity search
-@router.post("/searchContent", response_model=ContentSearchResponse)
-async def search_content(
-    request: SearchContentByTextRequest,
-    settings: Settings = Depends(get_settings),
-    aufrufer: Aufrufer = Depends(get_aufrufer),
-) -> ContentSearchResponse:
-    try:
-        logger.debug("/searchContent was called")
-
-        repository_factory = QdrantRepositoryFactory()
-        content_repository = repository_factory.create_content_repository(settings)
-        content_index_results: List[ContentSearchResult] = (
-            await content_repository.search(request.query_text, request.limit)
-        )
-        logger.debug(f"/searchContent got {len(content_index_results)} results")
-
-        # Enrich results with usage statistics
-        usage_service = get_usage_service()
-        results_dict = [item.model_dump() for item in content_index_results]
-        enriched_results = usage_service.enrich_content_with_usage(results_dict)
-
-        response: ContentSearchResponse = ContentSearchResponse(
-            results=als_responses(BeitragTreffer, enriched_results, aufrufer)
-        )
-
-        return response
-    except Exception as e:
-        logger.error(f"Error in search_content: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

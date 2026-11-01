@@ -195,13 +195,10 @@ SUCHE = {"query_text": "Wärmepumpe", "limit": 3}
 # (Methode, URL) - jede lesende Route, die Beitraege ausliefert; POST schickt SUCHE.
 ROUTEN = {
     "commentary/getById": (GET, f"/api/v1/commentary/getById?commentary_id={ID}"),
-    "commentary/searchCommentaries": (POST, "/api/v1/commentary/searchCommentaries"),
     "generic_text/getById": (
         GET,
         f"/api/v1/generic_text/getById?generic_text_id={ID}",
     ),
-    "generic_text/getAll": (GET, "/api/v1/generic_text/getAll"),
-    "generic_text/searchGenericText": (POST, "/api/v1/generic_text/searchGenericText"),
     "post/getById": (GET, f"/api/v1/post/getById?post_id={ID}"),
     "post/getAll": (GET, "/api/v1/post/getAll"),
     "post/searchPost": (POST, "/api/v1/post/searchPost"),
@@ -209,7 +206,6 @@ ROUTEN = {
     "image/getAll": (GET, "/api/v1/image/getAll"),
     "content/recent": (GET, "/api/v1/content/recent"),
     "content/getAll": (GET, "/api/v1/content/getAll"),
-    "content/searchContent": (POST, "/api/v1/content/searchContent"),
 }
 
 
@@ -439,9 +435,7 @@ def _zweck_und_stil(antwort):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "route", ["commentary/getById", "commentary/searchCommentaries", "content/recent"]
-)
+@pytest.mark.parametrize("route", ["commentary/getById", "content/recent"])
 def test_kommentar_traegt_zweck_und_stil(lese_client, route):
     """Die Karte zeigt den Stil und markiert Beitraege fuer die eigenen Leute (#357)."""
     assert _zweck_und_stil(lese_client(route, FREMD)) == {

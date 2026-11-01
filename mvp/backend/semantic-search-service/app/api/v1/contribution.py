@@ -23,12 +23,6 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
-
-
 # getContributionsOfUser(): wessen Beitraege, sagt allein die Anmeldung, nie die Adresse.
 @router.get("/getContributionsOfUser", response_model=GetContributionsOfUserResponse)
 async def search_content(

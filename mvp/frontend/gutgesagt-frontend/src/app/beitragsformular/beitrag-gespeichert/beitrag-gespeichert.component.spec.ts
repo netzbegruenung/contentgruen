@@ -12,7 +12,7 @@ import { NavigationService } from '../../services/navigation.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../../beitragskarte/beitragskarte.stub';
-import { FILTER_SCHLUESSEL, filterLaden } from '../../raw-input-list/fangkorb-filter';
+import { FILTER_SCHLUESSEL, filterLaden } from '../../fangkorb/fangkorb-filter';
 
 describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;

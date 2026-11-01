@@ -10,7 +10,7 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { Einwurf, EinwurfService, EinwurfSeite } from '../services/einwurf.service';
-import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
+import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
 import { VotingService } from '../services/voting.service';

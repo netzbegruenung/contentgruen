@@ -1,0 +1,26 @@
+/* Removed .loading-container - using global styles */
+
+.mat-spinner-color::ng-deep circle {
+  stroke: rgb(0, 84, 55) !important;
+}
+
+.album-statistik {
+  margin: var(--spacing-md) 0 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.beitraege-leer {
+  color: var(--text-secondary);
+}
+
+/* Tabs: shared/tabs.css. Hier ohne Zaehler, der Name wird notfalls gekuerzt. */
+.tabs {
+  margin-bottom: var(--spacing-md);
+}
+
+.tab {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

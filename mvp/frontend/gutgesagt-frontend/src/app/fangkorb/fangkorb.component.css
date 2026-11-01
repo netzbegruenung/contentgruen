@@ -11,22 +11,11 @@
   gap: 8px;
 }
 
-/*
- * Zwei gleich breite Segmente auf einer grauen Schiene; der aktive ist eine gefuellte
- * Pille in der Primaerfarbe. So heben sich die Tabs klar von den Filter-Chips darunter
- * ab (die sind umrandet und hell gefuellt).
- */
+/* Tabs: shared/tabs.css. Hier nur, was im Kopf neben dem Hilfe-Icon anders ist. */
 .tabs {
   flex: 1;
-  display: grid;
-  /* Halb und halb: "Ausformulieren" passt auch bei 320 px ungekuerzt hinein. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
-  gap: 2px;
   min-width: 0;
-  padding: 3px;
-  border-radius: 14px;
-  background: var(--disabled-bg, #f0f0f0);
 }
 
 .tab {
@@ -35,16 +24,6 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  min-width: 0;
-  min-height: 48px;
-  padding: 4px 4px;
-  border: 0;
-  border-radius: 11px;
-  background: none;
-  color: var(--text-primary, rgba(0, 0, 0, 0.87));
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
 }
 
 .tab-wort {
@@ -58,22 +37,6 @@
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
-}
-
-.tab.aktiv {
-  background: var(--primary-main, #008939);
-  color: #fff;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.tab:not(.aktiv):hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.tab:focus-visible {
-  outline: 2px solid var(--primary-dark, #005437);
-  outline-offset: 2px;
 }
 
 /* Das ?-Icon selbst: app-hilfe-umschalter */

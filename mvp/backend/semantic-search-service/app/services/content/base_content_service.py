@@ -194,10 +194,6 @@ class BaseContentService(
             most_similar_similarity_score=input_db_entry.most_similar_similarity_score,
             most_similar_content_id=input_db_entry.most_similar_content_id,
             report_count=input_db_entry.report_count,
-            is_archived=input_db_entry.is_archived,
-            report_flagged=input_db_entry.report_flagged,
-            rejection_reason=input_db_entry.rejection_reason,
-            block_reason=input_db_entry.block_reason,
             cc0_wortlaut=input_db_entry.cc0_wortlaut,
         )
 
@@ -263,15 +259,6 @@ class BaseContentService(
             f"BaseContentService ({self._repository_class.__name__}): Getting count"
         )
         return await self._repository.count()
-
-    async def count_last_week(self) -> int:
-        """
-        Get the number of items in the repository that were created or updated in the last week.
-        """
-        logger.debug(
-            f"BaseContentService ({self._repository_class.__name__}): Getting count last week"
-        )
-        return await self._repository.count_last_week()
 
     async def get_all(self, limit: int, offset: int) -> List[TContentDbEntry]:
         """

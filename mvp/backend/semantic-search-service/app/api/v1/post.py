@@ -26,12 +26,6 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
-
-
 # Retrieve a single post by its UUID
 @router.get("/getById", response_model=PostResponse)
 async def get_by_id(

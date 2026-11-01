@@ -71,12 +71,6 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
-
-
 # Searches for content in various indexes using similarity search
 # later to probably be split up in specific seach operations
 # returns analysis of input content (=identified statement), topics (TBD), commentaries & generictext snippets

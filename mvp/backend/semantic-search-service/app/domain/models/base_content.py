@@ -69,14 +69,6 @@ class BaseContentDbEntry(BaseContent):
         ID of the most similar content item.
     report_count: int
         Number of reports received for this content.
-    is_archived: bool
-        Whether the content is archived.
-    report_flagged: bool
-        Whether the content has been flagged due to user reports.
-    rejection_reason: Optional[str]
-        Reason for rejection if the content was rejected.
-    block_reason: Optional[str]
-        Reason for blocking if the content was blocked.
     cc0_wortlaut: Optional[str]
         Kennung des CC0-Hinweises, dem die Person beim Speichern zugestimmt hat
         (domain/cc0_hinweis.py); None bei Bestand von vor #431 und bei Eintraegen,
@@ -95,10 +87,6 @@ class BaseContentDbEntry(BaseContent):
     most_similar_similarity_score: Optional[float] = None
     most_similar_content_id: Optional[uuid.UUID] = None
     report_count: int = 0
-    is_archived: bool = False
-    report_flagged: bool = False
-    rejection_reason: Optional[str] = None
-    block_reason: Optional[str] = None
     cc0_wortlaut: Optional[str] = None
 
     @model_validator(mode="before")
