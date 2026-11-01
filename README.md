@@ -9,7 +9,8 @@ The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji 
 ## Live Systems
 
 - **Test System**: https://gutgesagt-test.netzbegruenung.de
-  Login: `testuser` / Password: `Liebe>Hass!`
+  Login: Netzbegrünung-Login and/or Beta-Zugang (button "Anmelden", "Direktanmeldung"), depending
+  on the configuration; the accounts are not part of this repository.
 
 - **Production**: [https://gutgesagt.netzbegruenung.de](https://gutgesagt.netzbegruenung.de)
   Uses Netzbegruenung Keycloak for authentication.
@@ -28,20 +29,21 @@ See `architecture.png` for a system overview.
 ## Getting Started
 
 ```bash
-git clone https://github.com/netzbegruenung/contentgruen.git
-cd contentgruen/mvp
+git clone https://github.com/netzbegruenung/contentgruen.git gutgesagt
+cd gutgesagt/mvp
 docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
 ```
 
-Access the app at [http://localhost](http://localhost). See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup.
+Access the app at [http://localhost:8080](http://localhost:8080). How to sign in with the test
+account and how to develop locally: [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Documentation
 
 | File | Description |
 |------|-------------|
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Setup and contribution guide |
-| [`STATUS.md`](./STATUS.md) | Current status and priorities |
+| [`STATUS.md`](./STATUS.md) | Current state of the project; planning is on the [Forgejo milestones](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestones) |
 | [`docs/DEV_GUIDE.md`](./docs/DEV_GUIDE.md) | Development and testing guide |
 | [`docs/DEV-SETUP.md`](./docs/DEV-SETUP.md) | `ng serve` against the Docker dev stack (proxy, no frontend container) |
 | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) | Deployment instructions |

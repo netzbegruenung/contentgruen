@@ -229,7 +229,7 @@ docker compose -f docker-compose.dev.yml up
 
 Then access:
 
-* Frontend: [http://localhost](http://localhost)
+* Frontend: [http://localhost:8080](http://localhost:8080)
 * BFF (.NET): [http://localhost:5054](http://localhost:5054)
 * Semantic Search: [http://localhost:8000/docs](http://localhost:8000/docs)
 
