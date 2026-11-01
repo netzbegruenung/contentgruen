@@ -44,6 +44,9 @@ REGELN = [
     ("mvp/backend/GutGesagt.sln", ["bff"]),
     # Wartungsskripte: ihre Tests findet die Suche nach lesenden Tests unten
     ("mvp/scripts/", ["unit"]),
+    # Eine Datei je Eintrag; scripts/tests/ prueft die Ablage (rechtstexte_uebersicht.py)
+    ("docs/rechtstexte-luecken/", ["unit"]),
+    ("docs/nutzungsbedingungen-staende/", ["unit"]),
 ]
 # Tests, die Dateien ausserhalb ihres Dienstes lesen (Wortlaute, Profilbilder, nginx), je Schritt
 LESENDE_TESTS = {

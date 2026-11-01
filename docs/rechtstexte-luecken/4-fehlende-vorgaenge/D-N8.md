@@ -1,0 +1,6 @@
+# D-N8
+
+- **Vorgang:** **Embedding-Verarbeitung**
+- **Fundstelle im Code:** `services/embeddings/qdrant_embeddings_manager.py` — `SentenceTransformer`
+- **Was in den Text muss:** **Entlastend**: läuft lokal im eigenen Container, keine Übermittlung an Dritte
+- **Eintrag / Entscheidung:** ✓ Im Abschnitt „Deine Suchanfragen" in einem Satz erklärt (rechnet die Eingabe in Zahlenfolgen um, die inhaltliche Ähnlichkeit abbilden) und in „Keine Übermittlung außerhalb der EU" als tragendes Argument aufgegriffen. **Nachtrag #358:** Für das Gegenlesen läuft ein weiteres lokales Modell im selben Container (spaCy `de_core_news_sm` und CharSplit, beide MIT). Es bekommt nur Titel, Text und Aussage des Beitrags, den die Person gerade schreibt; nichts davon wird gespeichert oder übermittelt. Die Kennung der Person hält nur das Rate-Limit flüchtig im Arbeitsspeicher, höchstens etwa elf Minuten (`utils/rate_limiter.py`, wie die IP beim Melden, D-N5). Am Argument ändert das nichts. **Erledigt mit #222:** statt eines Halbsatzes am Satz zur Umrechnung ein eigener Unterabschnitt „Gegenlesen beim Schreiben“ unter „Beiträge, die du einstellst“ (feste Regeln ohne KI, keine Speicherung, flüchtige Zählung, lit. b)

@@ -1,0 +1,6 @@
+# D-N4
+
+- **Vorgang:** **Nutzungsprotokollierung** (`usage_events`) — ⚠️ **Beschreibung überholt**
+- **Fundstelle im Code:** `infrastructure/database/models.py:83–96`
+- **Was in den Text muss:** **Die obige Beschreibung galt für den Stand vom 19.08.2026 und trifft nicht mehr zu.** PR #27 hat `user_id`, `ip_hash` und `user_agent` entfernt; an die Stelle des User-Agent tritt `device_category` mit vier möglichen Werten. Festgehalten wird jetzt: welcher Beitrag, welche Art Ereignis, wann, aus welcher Geräteklasse und unter welcher Sitzungskennung — also **welches Gerät, nicht welches Konto und nicht welche Adresse**
+- **Eintrag / Entscheidung:** ✓ Zweck: erkennen, welche Beiträge gebraucht werden · Rechtsgrundlage: Art. 6 Abs. 1 lit. f · Löschfrist: **90 Tage**, danach bleibt nur ein Zähler je Beitrag. **Nachtrag #355:** außerdem, welche Fassung eines Kommentars kopiert wurde (Kurz, Mittel oder Lang), und ein Zähler je Beitrag und Fassung (`nutzung_je_fassung`), der wie der Zähler je Beitrag nach der Frist bleibt. **Erledigt mit #222:** Fassung und Zähler je Fassung im Abschnitt „Verwendung von Beiträgen“ **Nachtrag #446:** auch die Sitzungskennung entfällt; neue Zeilen sagen nichts mehr darüber, ob Vorgänge vom selben Gerät kamen.

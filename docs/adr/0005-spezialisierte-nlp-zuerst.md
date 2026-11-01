@@ -23,4 +23,4 @@ Ursprünglich war der Grünerator der Weg zu generischen Modellen. Er rechnet se
 
 ## Consequences
 
-Neue Funktionen, die Texte vergleichen, gruppieren, verschlagworten oder verknüpfen, nehmen ein spezialisiertes Modell und erweitern das Messset um ihre Fälle. Jedes Modell muss heute auf CPU laufen oder als eigener Dienst auf einem Inference-Server. Ein weiteres lokales Modell braucht eine Prüfung der Datenschutzerklärung (D-N8 in `docs/RECHTSTEXTE_LUECKEN.md`), aber keine neue Übermittlung. Erster Schritt ist #387.
+Neue Funktionen, die Texte vergleichen, gruppieren, verschlagworten oder verknüpfen, nehmen ein spezialisiertes Modell und erweitern das Messset um ihre Fälle. Jedes Modell muss heute auf CPU laufen oder als eigener Dienst auf einem Inference-Server. Ein weiteres lokales Modell braucht eine Prüfung der Datenschutzerklärung (`docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N8.md`), aber keine neue Übermittlung. Erster Schritt ist #387.
