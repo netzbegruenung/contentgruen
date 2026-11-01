@@ -32,13 +32,13 @@ This will:
 - Qdrant on port 6333 and PostgreSQL on port 5433
 - Semantic Search Service on port 8000
 - BFF (.NET) on port 5054
-- Frontend (Angular) on port 80
+- Frontend (Angular) on port 8080 (container port 80)
 
 **Access points:**
-- Frontend: http://localhost/
+- Frontend: http://localhost:8080/
 - BFF API: http://localhost:5054/
 - Semantic Search API Docs: http://localhost:8000/docs
-- PostgreSQL: localhost:5432
+- PostgreSQL: localhost:5433
 
 ### 2. Local Development Mode (Recommended for Development)
 
@@ -66,7 +66,7 @@ This will:
 - Frontend: http://localhost:4200/
 - BFF API: http://localhost:5054/
 - Semantic Search API Docs: http://localhost:8000/docs
-- PostgreSQL: localhost:5432
+- PostgreSQL: localhost:5433
 
 ### 3. Manual Setup
 
@@ -110,7 +110,10 @@ npm start
 
 ## Default Credentials
 
-- Username: `testuser`
+Sign in with "Anmelden" → Direktanmeldung (by e-mail, from `mvp/config/managed-users.example.json`;
+copy it to `mvp/config/managed-users.json` first):
+
+- E-mail: `test.user@example.com`
 - Password: `Liebe>Hass!`
 
 ## Switching Between Modes
@@ -151,7 +154,7 @@ Environment files:
 - Check Node.js version: `node --version`
 
 ### Login Issues
-- In Docker mode: Frontend should be accessed via `http://localhost/`
+- In Docker mode: Frontend should be accessed via `http://localhost:8080/`
 - In local mode: Frontend should be accessed via `http://localhost:4200/`
 - Check BFF logs for authentication errors
 - Ensure `USE_KEYCLOAK=false` is set
