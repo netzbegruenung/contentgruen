@@ -90,11 +90,8 @@ def _bild(**overrides) -> ImageDbEntry:
                 )
             ],
             report_count=2,
-            report_flagged=True,
             most_similar_similarity_score=0.9,
             most_similar_content_id=uuid.uuid4(),
-            rejection_reason="intern",
-            block_reason="intern",
         ),
         **create_image_data(
             title=TITEL,
