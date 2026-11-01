@@ -139,6 +139,29 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 (`feat: …`, `fix: …`, `docs: …`, `chore: …`), without emojis. The pre-commit hooks format Python
 code and run the unit tests; if they reformat a file, commit again.
 
+### Developer Certificate of Origin
+
+Contributions to the code come under the
+[Developer Certificate of Origin 1.1](https://developercertificate.org/) (DCO). Read it before your
+first commit: by signing off a commit you state that you may contribute it under the project's
+license. Sign off every commit with your own name and address:
+
+```bash
+git commit -s -m "fix: …"
+```
+
+`-s` adds a trailer `Signed-off-by: Your Name <you@example.org>`, taken from `user.name` and
+`user.email`; it must name the commit's author. To sign off commits you have already made on your
+branch, run `git rebase --signoff origin/main` and push the rewritten branch again (with
+`--force-with-lease`).
+
+Woodpecker checks every pull request (step `sign-off`, [docs/CI.md](docs/CI.md)) and names the
+commits without the author's sign-off. Not checked:
+
+- merge commits, which bring no change of their own;
+- commits a coding agent wrote, recognised by a `Co-Authored-By` trailer with the agent's address
+  (listed in `scripts/sign_off.py`); the person who commissioned the agent answers for them.
+
 ## Pull requests
 
 1. Open an issue on Forgejo or comment on an existing one to coordinate

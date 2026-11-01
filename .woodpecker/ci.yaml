@@ -1,4 +1,4 @@
-# Was ein PR bestehen muss, wie scripts/check.sh --integration: Retired words, Ruff, Black,
+# Was ein PR bestehen muss, wie scripts/check.sh --integration: Retired words, Sign-off, Ruff, Black,
 # Python-Unit- und Integrationstests (Qdrant und PostgreSQL als Dienste), Frontend und BFF.
 # Jeder Schritt ruft check.sh mit --schritt auf, die Befehle stehen also nur dort.
 # Status ci/woodpecker/pr/ci ist Pflicht fuer main. Ist ein PR-Lauf rot, schreibt
@@ -16,7 +16,7 @@ clone:
   - name: clone
     image: docker.io/woodpeckerci/plugin-git:2.10.1
     settings:
-      # Ganze Historie und main dazu: retired-words prueft die Zeilen seit der Abzweigung.
+      # Ganze Historie und main dazu: retired-words und sign-off pruefen ab der Abzweigung.
       partial: false
       depth: 0
       fetch-target-branch: true
@@ -43,6 +43,16 @@ steps:
     commands:
       - export CHECK_BASE=origin/$${CI_COMMIT_TARGET_BRANCH}
       - sh scripts/ci-protokoll.sh retired-words bash scripts/check.sh --schritt retired-words
+
+  # Signed-off-by (DCO) in den Commits des PRs, ausser Merge- und Agenten-Commits (CONTRIBUTING.md)
+  - name: sign-off
+    image: node:22@sha256:3218f0d1b9e4b63def322e9ae362d581fbeac1ef21b51fc502ef91386667ce92
+    depends_on: []
+    when:
+      - event: pull_request
+    commands:
+      - export CHECK_BASE=origin/$${CI_COMMIT_TARGET_BRANCH}
+      - sh scripts/ci-protokoll.sh sign-off bash scripts/check.sh --schritt sign-off
 
   - name: python-installieren
     image: python:3.13-slim
@@ -106,6 +116,7 @@ steps:
     # je Schritt eine Zeile, in Pipeline-Reihenfolge (auch in der Argumentliste unten)
     depends_on:
       - retired-words
+      - sign-off
       - python-installieren
       - lint
       - unit
@@ -122,6 +133,7 @@ steps:
       - >-
         python3 scripts/ci_bericht.py
         retired-words
+        sign-off
         python-installieren
         lint
         unit

@@ -15,10 +15,11 @@ import sys
 from dataclasses import dataclass, field
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
-SCHRITTE = ["retired-words", "lint", "unit", "integration", "frontend", "bff"]
+SCHRITTE = ["retired-words", "sign-off", "lint", "unit", "integration", "frontend", "bff"]
 FE = "mvp/frontend/gutgesagt-frontend"
 PY = "mvp/backend/semantic-search-service"
-# Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is
+# Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is.
+# sign-off prueft Commits, nicht Dateien: es laeuft nur mit allem anderen.
 ALLES = SCHRITTE[1:]
 PYTHON = ["lint", "unit"]
 PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]

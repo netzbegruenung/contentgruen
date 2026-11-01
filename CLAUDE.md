@@ -447,7 +447,7 @@ intentional. Don't bypass with `--no-verify` except in emergencies. The `safe-co
 helpers automate the retry.
 
 ### Full check and review rules
-- `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests and
+- `scripts/check.sh` runs everything a PR must pass (retired words, Signed-off-by in the branch's commits, Ruff, Black, Python unit tests and
   `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container; `--integration` adds the
   integration tests, `--schritt <name>` runs one step, `--include <pfad>` only the frontend specs under
   that path, `--geaendert` only what the changes since `origin/main` reach, integration included if they reach it). For checks in between use

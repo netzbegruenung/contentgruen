@@ -1,5 +1,6 @@
 #!/bin/bash
-# Full check for a working tree: retired words, Python lint + format + unit tests (and scripts/tests/),
+# Full check for a working tree: retired words, Signed-off-by in the commits since CHECK_BASE (DCO,
+# scripts/sign_off.py), Python lint + format + unit tests (and scripts/tests/),
 # frontend tests, BFF tests. The same command for people, agents and CI. Runs from any directory.
 # Images: the BFF SDK image is the one of mvp/backend/BFF/Dockerfile (scripts/tests/test_woodpecker_ci.py).
 # Frontend tests need a Chrome/Chromium: set CHROME_BIN, otherwise the Playwright Chromium is used if present.
@@ -8,7 +9,7 @@
 # tests/integration/api/ additionally needs the running dev-stack BFF (GUTGESAGT_BFF_URL, default
 # localhost:5054, `mvp/run-local.sh up`); without it those tests fail in this mode, except in CI (`CI` set),
 # which starts no BFF: there they are skipped.
-# --schritt <name>: run only that step (retired-words, lint, unit, integration, frontend, bff);
+# --schritt <name>: run only that step (retired-words, sign-off, lint, unit, integration, frontend, bff);
 # the Woodpecker pipeline (.woodpecker/ci.yaml) runs each step this way, see docs/CI.md.
 # --include <pfad>: only the frontend specs under <pfad> (relative to the frontend directory, as for
 # `ng test --include`; repeatable); implies --schritt frontend.
@@ -23,7 +24,7 @@ INTEGRATION=
 SCHRITT=
 GEAENDERT=
 INCLUDE=()
-SCHRITTE="retired-words lint unit integration frontend bff"
+SCHRITTE="retired-words sign-off lint unit integration frontend bff"
 while [ $# -gt 0 ]; do
   case "$1" in
     --integration) INTEGRATION=1 ;;
@@ -53,6 +54,9 @@ if [ -z "$CHROME_BIN" ]; then CHROME_BIN=$(ls -d "$HOME"/.cache/ms-playwright/ch
 
 if laeuft retired-words; then
   echo "== Retired words"; python3 "$ROOT/scripts/retired_words.py" --base "${CHECK_BASE:-origin/main}"
+fi
+if laeuft sign-off; then
+  echo "== Sign-off"; python3 "$ROOT/scripts/sign_off.py" --base "${CHECK_BASE:-origin/main}"
 fi
 
 cd "$PY"
