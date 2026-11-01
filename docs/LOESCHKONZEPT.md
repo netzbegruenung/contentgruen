@@ -246,7 +246,7 @@ und der Ablauf oben erfasst die Tabelle nicht.
 
 - **`search_events`** trägt seit der Migration vom 19.08.2026 (unten) nur `actor_hash`,
   ein täglich rotierendes HMAC-SHA256 über Kennung + UTC-Datum
-  (`services/search_tracking_service.py:35`, `_derive_actor_hash`).
+  (`services/search_tracking_service.py`, `tagespseudonym`).
   Ohne Geheimnis nicht umkehrbar, mit Geheimnis nur tageweise nachrechenbar: Löschen
   auf Antrag ist unmöglich und mangels Personenbezug auch nicht geschuldet.
   **Vorher prüfen, ob die Zielumgebung migriert ist** — auf einem Stand ohne
