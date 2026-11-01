@@ -6,7 +6,6 @@ from domain.cc0_hinweis import Cc0Wortlaut
 from domain.themen import ThemenDerAussage
 from dtos.statement import ThemaDto
 from domain.models.commentary import Commentary
-from dtos.beitrag import KommentarTreffer
 
 
 ### AddCommentary ###
@@ -137,17 +136,3 @@ class AddCommentaryResponse(BaseModel):
     # Der vorhandene Kommentar ist von derselben Person: Zustimmen saehe sich selbst
     # eine Stimme geben. Ohne Dublette False.
     vorhanden_eigen: bool = False
-
-
-### SearchCommentary ###
-
-
-class SearchCommentaryByTextRequest(BaseModel):
-    query_text: str
-    limit: int = 10
-    # TODO: Add a field to specify the search type (content, commentary, etc.)
-    # TODO: Add a field to specify minimum score
-
-
-class CommentarySearchResponse(BaseModel):
-    results: List[KommentarTreffer]

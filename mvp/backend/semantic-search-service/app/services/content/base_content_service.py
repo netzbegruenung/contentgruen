@@ -264,15 +264,6 @@ class BaseContentService(
         )
         return await self._repository.count()
 
-    async def count_last_week(self) -> int:
-        """
-        Get the number of items in the repository that were created or updated in the last week.
-        """
-        logger.debug(
-            f"BaseContentService ({self._repository_class.__name__}): Getting count last week"
-        )
-        return await self._repository.count_last_week()
-
     async def get_all(self, limit: int, offset: int) -> List[TContentDbEntry]:
         """
         Get all items in the repository.

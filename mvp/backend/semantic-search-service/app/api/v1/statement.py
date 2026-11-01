@@ -78,12 +78,6 @@ async def _ueber_der_schwelle_fuer(
     return await suchen_ohne_treffer.ueber_der_schwelle()
 
 
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
-
-
 # Alle Aussagen, seitenweise; was Nicht-Admins sehen: _ueber_der_schwelle_fuer.
 @router.get("/getAll", response_model=StatementGetAllResponse)
 async def get_all(

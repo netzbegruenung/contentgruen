@@ -265,17 +265,6 @@ class IBaseContentRepository(ABC, Generic[TContentDbEntry, TContentSearchResult]
         """
         pass
 
-    async def count_last_week(self) -> int:
-        """
-        Get the count of items created or modified in the last week.
-        Default implementation returns 0.
-        Override in repositories that support date-based queries.
-
-        Returns:
-            Count of recent items
-        """
-        return 0
-
     async def get_recent(self, limit: int = 10) -> List[TContentDbEntry]:
         """
         Get the most recently created content items.
