@@ -70,20 +70,9 @@ def _verknuepfung(created_by, einwurf=None, draft_id=None, content_type="comment
 
 
 @pytest.fixture
-def session():
-    """Eine gemockte SQLAlchemy-Session als Context-Manager."""
-    session = MagicMock()
-    session.__enter__ = MagicMock(return_value=session)
-    session.__exit__ = MagicMock(return_value=False)
-    return session
-
-
-@pytest.fixture
-def repository(session):
-    datenbank = MagicMock()
-    datenbank.get_session.return_value = session
+def repository(app_datenbank):
     with patch(
-        "repositories.raw_input_repository.get_app_database", return_value=datenbank
+        "repositories.raw_input_repository.get_app_database", return_value=app_datenbank
     ):
         return RawInputRepository()
 

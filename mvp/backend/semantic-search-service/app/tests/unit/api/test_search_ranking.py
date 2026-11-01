@@ -73,8 +73,6 @@ def _base_fields(**overrides):
         status=ContentStatus.VISIBLE,
         origin=ContentOrigin.INITIAL_DATA,
         report_count=0,
-        is_archived=False,
-        report_flagged=False,
     )
     fields.update(overrides)
     return fields

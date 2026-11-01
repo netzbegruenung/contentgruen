@@ -6,7 +6,7 @@
      Verfassen - auf Desktop und Handy gleich -->
 <div class="typ-zeilen">
     <h3 class="typ-zwischenueberschrift">Einwerfen</h3>
-    <button type="button" class="typ-zeile rahmen-kachel einwerfen-block" (click)="navigateToRawInput()">
+    <button type="button" class="typ-zeile rahmen-kachel einwerfen-block" (click)="navigateToEinwerfen()">
         <span class="typ-icon" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
         <span class="typ-text">
             <span class="typ-titel">{{ einwerfenTitel }}</span>
@@ -16,7 +16,7 @@
     </button>
 
     <h3 class="typ-zwischenueberschrift">Weiterarbeiten</h3>
-    <button type="button" class="typ-zeile rahmen-kachel fangkorb-block" (click)="navigateToRawInputList()">
+    <button type="button" class="typ-zeile rahmen-kachel fangkorb-block" (click)="navigateToFangkorb()">
         <span class="typ-icon" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
         <span class="typ-text">
             <span class="typ-titel">Fangkorb</span>
@@ -24,7 +24,7 @@
         </span>
         <mat-icon class="typ-pfeil" aria-hidden="true">arrow_forward</mat-icon>
     </button>
-    <button type="button" class="typ-zeile rahmen-kachel beitraege-block" (click)="navigateToContributions()">
+    <button type="button" class="typ-zeile rahmen-kachel beitraege-block" (click)="navigateToMeineBeitraege()">
         <span class="typ-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
         <span class="typ-text">
             <span class="typ-titel">Meine Beiträge</span>

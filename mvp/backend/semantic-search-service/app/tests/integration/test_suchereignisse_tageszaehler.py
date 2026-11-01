@@ -9,13 +9,12 @@ dasselbe Schema anlegt wie create_all, prueft ``test_migrationen.py``.
 """
 
 from datetime import date, datetime, time, timezone
-from unittest.mock import patch
 
 import pytest
 from sqlalchemy import text
 
-from infrastructure.database.models import Base, SearchEvent, SuchenJeTagZeile
-from repositories.search_tracking_repository import SearchTrackingRepository
+from infrastructure.database.models import Base, SuchenJeTagZeile
+from tests.integration.suchereignis_helfer import suchtracking_repository
 from tests.integration.postgres import Datenbank
 
 pytestmark = pytest.mark.integration
@@ -29,20 +28,12 @@ PERSON_B = "b" * 64
 
 
 @pytest.fixture
-def db(wegwerf_schema):
+def db(suchereignisse_db):
+    """Dazu die Tageszaehler (suchen_je_tag)."""
     Base.metadata.create_all(
-        wegwerf_schema.engine,
-        tables=[SearchEvent.__table__, SuchenJeTagZeile.__table__],
+        suchereignisse_db.engine, tables=[SuchenJeTagZeile.__table__]
     )
-    return wegwerf_schema
-
-
-def _repository(datenbank: Datenbank) -> SearchTrackingRepository:
-    with patch(
-        "repositories.search_tracking_repository.get_app_database",
-        return_value=datenbank,
-    ):
-        return SearchTrackingRepository()
+    return suchereignisse_db
 
 
 def _suche(datenbank: Datenbank, tag: date, actor_hash, treffer: int = 3) -> None:
@@ -85,7 +76,9 @@ class TestVerdichteAlteSuchereignisse:
             _suche(db, ALT, actor)
         _suche(db, NOCH_IN_FRIST, PERSON_A)
 
-        geloescht = _repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
+        geloescht = suchtracking_repository(db).verdichte_alte_suchereignisse(
+            90, heute=HEUTE
+        )
 
         assert geloescht == 4
         assert _tageszaehler(db) == [(ALT, 4, 2)]
@@ -93,7 +86,7 @@ class TestVerdichteAlteSuchereignisse:
 
     def test_verdichte_alte_suchereignisse_zweiter_lauf_aendert_nichts(self, db):
         _suche(db, ALT, PERSON_A)
-        repository = _repository(db)
+        repository = suchtracking_repository(db)
         repository.verdichte_alte_suchereignisse(90, heute=HEUTE)
 
         assert repository.verdichte_alte_suchereignisse(90, heute=HEUTE) == 0
@@ -107,7 +100,7 @@ class TestVerdichteAlteSuchereignisse:
         _suche(db, NOCH_IN_FRIST, PERSON_A)
 
         with db.mit_zeitzone(zeitzone) as in_zone:
-            geloescht = _repository(in_zone).verdichte_alte_suchereignisse(
+            geloescht = suchtracking_repository(in_zone).verdichte_alte_suchereignisse(
                 90, heute=HEUTE
             )
 
@@ -118,7 +111,10 @@ class TestVerdichteAlteSuchereignisse:
     def test_verdichte_alte_suchereignisse_ohne_alte_kein_tageszaehler(self, db):
         _suche(db, NOCH_IN_FRIST, PERSON_A)
 
-        assert _repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE) == 0
+        assert (
+            suchtracking_repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
+            == 0
+        )
         assert _tageszaehler(db) == []
 
 
@@ -130,7 +126,7 @@ class TestKennzahlenUeberDieFrist:
             _suche(db, ALT, actor)
         for actor in (PERSON_A, PERSON_A):
             _suche(db, NOCH_IN_FRIST, actor)
-        repository = _repository(db)
+        repository = suchtracking_repository(db)
         repository.verdichte_alte_suchereignisse(90, heute=HEUTE)
         return repository
 
@@ -188,7 +184,7 @@ class TestSuchenOhneTrefferImTageszaehler:
         _suche(db, ALT, PERSON_B, treffer=0)
         _suche(db, ALT, PERSON_B, treffer=4)
 
-        _repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
+        suchtracking_repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
 
         assert _ohne_treffer_je_tag(db) == [(ALT, 2)]
 
@@ -204,7 +200,7 @@ class TestSuchenOhneTrefferImTageszaehler:
             )
         _suche(db, ALT, PERSON_A, treffer=0)
 
-        _repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
+        suchtracking_repository(db).verdichte_alte_suchereignisse(90, heute=HEUTE)
 
         assert _ohne_treffer_je_tag(db) == [(ALT, None)]
 
@@ -215,7 +211,7 @@ class TestTageswerte:
     def test_get_tageswerte_verbindet_einzelzeilen_und_tageszaehler(self, db):
         for actor, treffer in ((PERSON_A, 0), (PERSON_B, 2), (PERSON_B, 0)):
             _suche(db, ALT, actor, treffer=treffer)
-        repository = _repository(db)
+        repository = suchtracking_repository(db)
         repository.verdichte_alte_suchereignisse(90, heute=HEUTE)
         for actor, treffer in ((PERSON_A, 1), (PERSON_A, 0)):
             _suche(db, NOCH_IN_FRIST, actor, treffer=treffer)
@@ -231,7 +227,7 @@ class TestTageswerte:
         for tag in (date(2026, 7, 27), ALT, NOCH_IN_FRIST, date(2026, 7, 30)):
             _suche(db, tag, PERSON_A)
 
-        tage = _repository(db).get_tageswerte(ALT, NOCH_IN_FRIST)
+        tage = suchtracking_repository(db).get_tageswerte(ALT, NOCH_IN_FRIST)
 
         assert [t.tag for t in tage] == [ALT, NOCH_IN_FRIST]
 
@@ -245,7 +241,7 @@ class TestTageswerte:
                 {"tag": ALT},
             )
 
-        (tag,) = _repository(db).get_tageswerte(ALT, ALT)
+        (tag,) = suchtracking_repository(db).get_tageswerte(ALT, ALT)
 
         assert (tag.suchen, tag.personen, tag.ohne_treffer) == (5, 2, None)
 
@@ -254,6 +250,8 @@ class TestTageswerte:
         _suche(db, NOCH_IN_FRIST, PERSON_A)
 
         with db.mit_zeitzone(zeitzone) as in_zone:
-            tage = _repository(in_zone).get_tageswerte(NOCH_IN_FRIST, NOCH_IN_FRIST)
+            tage = suchtracking_repository(in_zone).get_tageswerte(
+                NOCH_IN_FRIST, NOCH_IN_FRIST
+            )
 
         assert [t.tag for t in tage] == [NOCH_IN_FRIST]

@@ -13,7 +13,7 @@ import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
-import { NACH_DEM_AUSFORMULIEREN, tabMerken } from '../../raw-input-list/fangkorb-filter';
+import { NACH_DEM_AUSFORMULIEREN, tabMerken } from '../../fangkorb/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,

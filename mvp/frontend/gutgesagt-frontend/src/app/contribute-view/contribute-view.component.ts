@@ -69,17 +69,17 @@ export class ContributeViewComponent implements OnInit {
    * Der Fangkorb ist kein vierter Beitragstyp, sondern der Weg daran vorbei:
    * er fuehrt aus dieser Auswahl heraus statt in ein weiteres Formular.
    */
-  navigateToRawInput(): void {
+  navigateToEinwerfen(): void {
     this.router.navigate(['/einwerfen']);
   }
 
   /** Weiterarbeiten: zur Liste, in der Einwuerfe destilliert und Saetze ausformuliert werden. */
-  navigateToRawInputList(): void {
+  navigateToFangkorb(): void {
     this.router.navigate(['/fangkorb']);
   }
 
   /** Weiterarbeiten: die eigenen Beitraege - frueher das Ordner-Icon in der Kopfzeile. */
-  navigateToContributions(): void {
+  navigateToMeineBeitraege(): void {
     this.router.navigate(['/contributions']);
   }
 

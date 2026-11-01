@@ -22,7 +22,7 @@ namespace BFF.Tests.Controllers;
 public class AuthControllerTests : IDisposable
 {
     private const string KnownEmail = "test@example.com";
-    private const string KnownPassword = "Test123!";
+    private const string KnownPassword = BetaZugangsliste.Passwort;
     private const string KnownUserId = "user-001";
 
     private readonly Mock<ILogger<ManagedUserService>> _mockUserServiceLogger;
@@ -39,22 +39,10 @@ public class AuthControllerTests : IDisposable
 
         // Eine echte Nutzerdatei, damit die Login-Tests bis zur Passwortpruefung
         // kommen und nicht schon an "unbekannte E-Mail" haengenbleiben.
-        _usersFilePath = WriteUsersFile(new
-        {
-            users = new[]
-            {
-                new
-                {
-                    email = KnownEmail,
-                    passwordHash = BCrypt.Net.BCrypt.HashPassword(KnownPassword),
-                    displayName = "Test User",
-                    userId = KnownUserId,
-                    isAdmin = false
-                }
-            }
-        });
+        _usersFilePath = BetaZugangsliste.Schreiben(
+            BetaZugangsliste.Zugang(KnownEmail, KnownUserId, displayName: "Test User"));
 
-        _userService = BuildUserService(_usersFilePath, managedAuthEnabled: true);
+        _userService = BetaZugangsliste.Dienst(_mockUserServiceLogger.Object, _usersFilePath, managedAuthEnabled: true);
 
         var configBuilder = new ConfigurationBuilder();
         configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
@@ -82,24 +70,6 @@ public class AuthControllerTests : IDisposable
         {
             File.Delete(_usersFilePath);
         }
-    }
-
-    private static string WriteUsersFile(object config)
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"managed-users-{Guid.NewGuid():N}.json");
-        File.WriteAllText(path, JsonSerializer.Serialize(config));
-        return path;
-    }
-
-    private ManagedUserService BuildUserService(string usersPath, bool managedAuthEnabled)
-    {
-        var builder = new ConfigurationBuilder();
-        builder.AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            { "MANAGED_USERS_PATH", usersPath },
-            { "ENABLE_MANAGED_AUTH", managedAuthEnabled ? "true" : "false" }
-        });
-        return new ManagedUserService(_mockUserServiceLogger.Object, builder.Build());
     }
 
     private AuthController BuildController(ManagedUserService userService, IConfiguration configuration) =>
@@ -148,7 +118,7 @@ public class AuthControllerTests : IDisposable
     [Fact]
     public async Task GetAuthModes_ReportsManagedDisabled_WhenNoUsersConfigured()
     {
-        var emptyService = BuildUserService("non-existent.json", managedAuthEnabled: true);
+        var emptyService = BetaZugangsliste.Dienst(_mockUserServiceLogger.Object, "non-existent.json", managedAuthEnabled: true);
         _controller = BuildController(emptyService, ControllerConfig(useKeycloak: true));
 
         var result = await _controller.GetAuthModes();
@@ -222,7 +192,7 @@ public class AuthControllerTests : IDisposable
         // Der Kern der Aenderung: ENABLE_MANAGED_AUTH=false wurde bisher nur in
         // GetAuthModes() ausgewertet. Ein direkter POST auf diese Route lieferte
         // trotzdem ein gueltiges Auth-Cookie -- abgeschaltet war nur der Button.
-        var disabledService = BuildUserService(_usersFilePath, managedAuthEnabled: false);
+        var disabledService = BetaZugangsliste.Dienst(_mockUserServiceLogger.Object, _usersFilePath, managedAuthEnabled: false);
         _controller = BuildController(disabledService, ControllerConfig(useKeycloak: true));
 
         var request = new LoginRequest { Email = KnownEmail, Password = KnownPassword };
@@ -238,7 +208,7 @@ public class AuthControllerTests : IDisposable
         // Der Diagnosefehler: fehlende Nutzerdatei ist kein abgeschaltetes Feature.
         // 404 hiesse "diesen Anmeldeweg gibt es nicht" und schickte die Fehlersuche
         // zum Schalter statt zum Mount. 401 sagt, was wirklich los ist.
-        var serviceWithoutFile = BuildUserService("non-existent.json", managedAuthEnabled: true);
+        var serviceWithoutFile = BetaZugangsliste.Dienst(_mockUserServiceLogger.Object, "non-existent.json", managedAuthEnabled: true);
         _controller = BuildController(serviceWithoutFile, ControllerConfig(useKeycloak: true));
 
         var request = new LoginRequest { Email = KnownEmail, Password = KnownPassword };
@@ -251,7 +221,7 @@ public class AuthControllerTests : IDisposable
     [Fact]
     public async Task GetAuthModes_ReportsManagedDisabled_WhenFlagIsFalse()
     {
-        var disabledService = BuildUserService(_usersFilePath, managedAuthEnabled: false);
+        var disabledService = BetaZugangsliste.Dienst(_mockUserServiceLogger.Object, _usersFilePath, managedAuthEnabled: false);
         _controller = BuildController(disabledService, ControllerConfig(useKeycloak: true));
 
         var result = await _controller.GetAuthModes();

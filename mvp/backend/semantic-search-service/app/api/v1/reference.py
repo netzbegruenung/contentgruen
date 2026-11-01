@@ -28,11 +28,6 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/")
-async def read_test():
-    return {"message": "Reference API is running"}
-
-
 @router.get("/getById", response_model=GetReferenceResponse)
 async def get_by_id(
     reference_id: UUID = Query(

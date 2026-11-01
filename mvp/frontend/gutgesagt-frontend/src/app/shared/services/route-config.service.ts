@@ -60,9 +60,9 @@ export class RouteConfigService {
       case FORMULAR_PFAD.post:
         return this.getFormularConfig(PAGE_TITLES.POST_FORM, typLabel('post'));
 
-      case ROUTES.CONTRIBUTIONS:
+      case ROUTES.MEINE_BEITRAEGE:
         return {
-          pageTitle: PAGE_TITLES.CONTRIBUTIONS,
+          pageTitle: PAGE_TITLES.MEINE_BEITRAEGE,
           showBackButton: true,
           showContributeButton: true
         };

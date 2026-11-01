@@ -27,7 +27,7 @@ namespace BFF.Tests.Controllers;
 public class SitzungNachKontoloeschungTests : IDisposable
 {
     private const string Email = "beta@example.org";
-    private const string Passwort = "Test123!";
+    private const string Passwort = BetaZugangsliste.Passwort;
     private const string BetaKennung = "beta-001";
     // Schreibend und nicht anonym erlaubt (EndpointPolicy). Das Backend ist unerreichbar:
     // Mit gueltigem Cookie kommt die Anfrage am Auth-Gate vorbei und scheitert erst am Proxy.
@@ -48,20 +48,15 @@ public class SitzungNachKontoloeschungTests : IDisposable
 
     private void SchreibeNutzerDatei(bool mitBetaZugang)
     {
-        var users = mitBetaZugang
-            ? new[]
-            {
-                new
-                {
-                    email = Email,
-                    passwordHash = BCrypt.Net.BCrypt.HashPassword(Passwort),
-                    displayName = "Beta Person",
-                    userId = BetaKennung,
-                    isAdmin = false
-                }
-            }
-            : [];
-        File.WriteAllText(NutzerDatei, JsonSerializer.Serialize(new { users }));
+        if (mitBetaZugang)
+        {
+            BetaZugangsliste.SchreibenNach(
+                NutzerDatei, BetaZugangsliste.Zugang(Email, BetaKennung, displayName: "Beta Person"));
+        }
+        else
+        {
+            BetaZugangsliste.SchreibenNach(NutzerDatei);
+        }
     }
 
     private WebApplicationFactory<Program> CreateHost(bool useKeycloak) =>

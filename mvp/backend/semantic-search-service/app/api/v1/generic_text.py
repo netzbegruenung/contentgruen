@@ -1,7 +1,6 @@
 from typing import List, Optional
 from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header
-import datetime
 import logging
 from uuid import UUID
 
@@ -15,9 +14,6 @@ from dependencies import (
 from dtos.generic_text import (
     AddGenericTextRequest,
     AddGenericTextResponse,
-    GenericTextGetAllResponse,
-    GenericTextSearchResponse,
-    SearchGenericTextByTextRequest,
 )
 from domain.models.base_content import BaseContentSearchResult
 from services.content.base_content_service import Dublettenpruefung
@@ -26,13 +22,13 @@ from services.content.generic_text_service import (
     zu_pruefender_text,
 )
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
-from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
+from dtos.beitrag import HintergrundinfoResponse
 from services.content.reference_service import ReferenceService
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from dtos.statement import themen_dtos
 from domain.models.content_type import ContentType
-from domain.models.generic_text import GenericTextDbEntry, GenericTextReference
+from domain.models.generic_text import GenericTextReference
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
@@ -102,12 +98,6 @@ async def _herkunft_anlegen(
     return verknuepfungen
 
 
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
-
-
 from fastapi import Query
 
 
@@ -138,66 +128,6 @@ async def get_by_id(
             f"Error fetching generic text with id {generic_text_id}: {type(e).__name__}",
             exc_info=True,
         )
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Retrieves all generic text from the index
-@router.get("/getAll")
-async def get_all(
-    generic_text_service: GenericTextService = Depends(get_generic_text_service),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
-    aufrufer: Aufrufer = Depends(get_aufrufer),
-) -> GenericTextGetAllResponse:
-    try:
-        logger.debug("/getAll was called")
-
-        offset = (page - 1) * page_size
-        generic_text_index_results: List[GenericTextDbEntry] = (
-            await generic_text_service.get_all(limit=page_size, offset=offset)
-        )
-        logger.debug(f"/getAll got {len(generic_text_index_results)} results")
-
-        response: GenericTextGetAllResponse = GenericTextGetAllResponse(
-            results_count=len(generic_text_index_results),
-            results=als_responses(
-                HintergrundinfoResponse, generic_text_index_results, aufrufer
-            ),
-            total_records_count=await generic_text_service.count(),
-        )
-
-        return response
-    except Exception as e:
-        logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Searches for generic texts in the generic_text_index using similarity search
-@router.post("/searchGenericText", response_model=GenericTextSearchResponse)
-async def search_generic_text(
-    request: SearchGenericTextByTextRequest,
-    generic_text_service: GenericTextService = Depends(get_generic_text_service),
-    aufrufer: Aufrufer = Depends(get_aufrufer),
-) -> GenericTextSearchResponse:
-    try:
-        logger.debug("/searchGenericText was called")
-
-        generic_text_index_results = await generic_text_service.search(
-            request.query_text, request.limit
-        )
-        logger.debug(
-            f"/searchGenericText got {len(generic_text_index_results)} results"
-        )
-
-        response: GenericTextSearchResponse = GenericTextSearchResponse(
-            results=als_responses(
-                HintergrundinfoTreffer, generic_text_index_results, aufrufer
-            )
-        )
-
-        return response
-    except Exception as e:
-        logger.error(f"Error in search_generic_text: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

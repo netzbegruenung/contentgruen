@@ -21,7 +21,7 @@ import {
   TAB_PARAM,
 } from './destillier-uebergabe.service';
 import { EINWURF_PARAM } from './einwurf-adresse';
-import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../raw-input-list/fangkorb-filter';
+import { FangkorbTab, tabAus, tabMerken, verworfenEinblenden } from '../fangkorb/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';

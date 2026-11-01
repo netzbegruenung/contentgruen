@@ -3,11 +3,11 @@ Die Tabelle users und ihr Repository.
 
 Schema festnageln (create_all legt die Tabelle nur an, wenn sie am selben Base
 haengt) und das SQL pruefen, das das Repository schickt - die Session ist
-gemockt wie in test_raw_input_repository.py.
+gemockt (Fixtures in tests/unit/repositories/conftest.py).
 """
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy.dialects import postgresql
@@ -21,18 +21,10 @@ def _sql(statement) -> str:
 
 
 @pytest.fixture
-def session():
-    session = MagicMock()
-    session.__enter__ = MagicMock(return_value=session)
-    session.__exit__ = MagicMock(return_value=False)
-    return session
-
-
-@pytest.fixture
-def repository(session):
-    db = MagicMock()
-    db.get_session.return_value = session
-    with patch("repositories.user_repository.get_app_database", return_value=db):
+def repository(app_datenbank):
+    with patch(
+        "repositories.user_repository.get_app_database", return_value=app_datenbank
+    ):
         yield UserRepository()
 
 

@@ -28,7 +28,7 @@ describe('AppComponent - Anonymous User Functionality', () => {
     );
 
     const navigationServiceSpy = jasmine.createSpyObj('NavigationService',
-      ['navigateToLogin', 'navigateToContribute', 'navigateToContributions']
+      ['navigateToLogin', 'navigateToContribute', 'navigateToMeineBeitraege']
     );
 
     const routerSpy = jasmine.createSpyObj('Router', ['navigate', 'createUrlTree', 'serializeUrl'], {
@@ -211,7 +211,7 @@ describe('AppComponent - Anonymous User Functionality', () => {
       expect(compiled.textContent).toContain('Meine Beiträge');
     });
 
-    it('should navigate to contributions when "Meine Beiträge" is clicked', () => {
+    it('should navigate to Meine Beiträge when "Meine Beiträge" is clicked', () => {
       userInfoSubject.next({
         isAuthenticated: true,
         userId: 'user123',
@@ -229,7 +229,7 @@ describe('AppComponent - Anonymous User Functionality', () => {
 
       if (myContribLink) {
         (myContribLink as HTMLElement).click();
-        expect(navigationService.navigateToContributions).toHaveBeenCalled();
+        expect(navigationService.navigateToMeineBeitraege).toHaveBeenCalled();
       } else {
         // If link not found, might be in mobile menu or not visible
         pending('Link element not found in current view');

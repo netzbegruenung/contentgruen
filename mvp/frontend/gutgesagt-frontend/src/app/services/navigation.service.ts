@@ -34,15 +34,15 @@ export class NavigationService {
     this.router.navigate(['/contribute']);
   }
 
-  navigateToContributions(): void {
+  navigateToMeineBeitraege(): void {
     this.router.navigate(['/contributions']);
   }
 
-  navigateToRawInput(): void {
+  navigateToEinwerfen(): void {
     this.router.navigate(['/einwerfen']);
   }
 
-  navigateToRawInputList(): void {
+  navigateToFangkorb(): void {
     this.router.navigate(['/fangkorb']);
   }
 

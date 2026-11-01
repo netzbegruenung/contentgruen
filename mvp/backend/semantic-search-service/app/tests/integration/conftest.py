@@ -23,6 +23,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 
 from core.config import EMBEDDING_MODELL, Settings
+from infrastructure.database.models import Base, SearchEvent
 from tests.integration import postgres, stack
 from services.embeddings import qdrant_embeddings_manager
 from services.embeddings.qdrant_embeddings_manager import QdrantEmbeddingsManager
@@ -159,3 +160,13 @@ def wegwerf_schema(postgres_url):
     """Ein leeres Schema je Test; wird danach mit allem Inhalt geloescht."""
     with postgres.schema(postgres_url) as db:
         yield db
+
+
+@pytest.fixture
+def suchereignisse_db(wegwerf_schema):
+    """Wegwerf-Schema mit ``search_events``, wie create_all die Tabelle anlegt.
+
+    Das Repository dazu: ``suchtracking_repository`` in ``suchereignis_helfer.py``.
+    """
+    Base.metadata.create_all(wegwerf_schema.engine, tables=[SearchEvent.__table__])
+    return wegwerf_schema
