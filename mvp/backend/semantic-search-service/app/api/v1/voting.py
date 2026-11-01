@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
+from pydantic import ValidationError
 from typing import Optional, Dict, List
 import uuid
 
@@ -6,7 +7,8 @@ from core.logging import get_logger
 from auth.authorization import validate_user_id, require_auth
 from domain.models.vote import VoteCreate, VoteResponse
 from services.voting_service import VotingService
-from dependencies import get_voting_service
+from dependencies import get_content_repository, get_voting_service
+from repositories.interfaces.content_repository import IContentRepository
 from middleware.rate_limiter import check_voting_rate_limit
 
 logger = get_logger(__name__)
@@ -21,6 +23,27 @@ def get_current_user(x_user: Optional[str] = Header(None)) -> str:
     return require_auth(x_user, operation="write")
 
 
+async def sichtbarer_beitrag(
+    content_id: uuid.UUID,
+    repository: IContentRepository = Depends(get_content_repository),
+) -> None:
+    """
+    Abstimmen nur auf einen Beitrag, den die Person sehen kann: Gesperrt, geloescht
+    oder nie vorhanden gibt 404 und keine Stimme. Zuruecknehmen prueft das nicht,
+    eine alte Stimme an einem inzwischen gesperrten Beitrag bleibt loszuwerden.
+
+    Ein Datensatz, der da ist, sich aber nicht lesen laesst, ist kaputt und nicht
+    abwesend; die Stimme zaehlt dann wie die Nutzung (api/v1/usage.py).
+    """
+    try:
+        await repository.get(content_id)
+    except ValidationError:
+        # Vor ValueError, denn Pydantics ValidationError ist einer.
+        logger.error(f"Content {content_id} is not readable", exc_info=True)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+
 @router.put(
     "/content/{content_id}/like",
     response_model=VoteResponse,
@@ -29,6 +52,7 @@ def get_current_user(x_user: Optional[str] = Header(None)) -> str:
 def set_like(
     content_id: uuid.UUID,
     user_id: str = Depends(get_current_user),
+    _sichtbar: None = Depends(sichtbarer_beitrag),
     voting_service: VotingService = Depends(get_voting_service),
 ) -> VoteResponse:
     """
@@ -87,6 +111,7 @@ def remove_like(
 def set_dislike(
     content_id: uuid.UUID,
     user_id: str = Depends(get_current_user),
+    _sichtbar: None = Depends(sichtbarer_beitrag),
     voting_service: VotingService = Depends(get_voting_service),
 ) -> VoteResponse:
     """
