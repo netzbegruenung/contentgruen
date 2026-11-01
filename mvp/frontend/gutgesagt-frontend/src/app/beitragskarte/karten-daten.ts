@@ -1,6 +1,6 @@
 import { BaseContentResult, BaseSearchResult, ContentReference } from '../services/dtos/commonDtos';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { Einwurf, Verknuepfung } from '../services/einwurf.service';
+import { BeitragZustand, Einwurf, Verknuepfung } from '../services/einwurf.service';
 import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-type-registry';
 import { plattformAusUrl, plattformName } from '../shared/plattform';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
@@ -314,11 +314,11 @@ export const STUFEN: Record<EinwurfStufe, StufenAnzeige> = {
 };
 
 /** Was aus den Beitraegen eines Einwurfs wurde, wenn keiner mehr sichtbar ist. */
-export type NichtSichtbar = 'gesperrt' | 'geloescht';
+export type NichtSichtbar = Exclude<BeitragZustand, 'sichtbar'>;
 
 /**
  * Die Beschriftung statt "Ausformuliert", wenn niemand die Beitraege mehr findet
- * (#507). Die Stufe bleibt ausformuliert - verknuepft ist der Einwurf ja -, aber
+ * (#507). Die Stufe bleibt ausformuliert - das ist der Einwurf ja -, aber
  * "Ausformuliert" und "Ansehen" versprechen einen Beitrag, den es nicht mehr gibt.
  */
 export const NICHT_SICHTBAR: Record<NichtSichtbar, StufenAnzeige> = {
@@ -326,14 +326,14 @@ export const NICHT_SICHTBAR: Record<NichtSichtbar, StufenAnzeige> = {
   geloescht: { emoji: KETTEN_ICONS.verfassen, name: 'Beitrag gelöscht' },
 };
 
-/** Ob sich ein verknuepfter Beitrag ansehen laesst; ohne Angabe vom Server: ja. */
+/** Ob sich ein Beitrag, in dem der Einwurf ausformuliert ist, ansehen laesst; ohne Angabe vom Server: ja. */
 export function istSichtbar(link: Verknuepfung): boolean {
   return link.zustand !== 'gesperrt' && link.zustand !== 'geloescht';
 }
 
 /**
- * Gesperrt oder geloescht, wenn ein Einwurf verknuepft ist, aber keiner seiner
- * Beitraege mehr sichtbar; sonst null. Solange einer sichtbar ist, bleibt alles
+ * Gesperrt oder geloescht, wenn ein Einwurf ausformuliert ist, aber keiner der
+ * Beitraege, in denen er ausformuliert ist, mehr sichtbar; sonst null. Solange einer sichtbar ist, bleibt alles
  * wie bisher. Sind die Beitraege teils gesperrt, teils geloescht, steht
  * "gesperrt": Eine Sperre laesst sich aufheben, ein Loeschen nicht.
  */

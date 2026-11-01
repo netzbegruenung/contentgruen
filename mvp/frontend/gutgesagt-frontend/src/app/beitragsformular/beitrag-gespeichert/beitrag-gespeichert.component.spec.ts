@@ -9,6 +9,7 @@ import { GenericTextService } from '../../services/generic-text.service';
 import { PostService } from '../../services/post.service';
 import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
+import { FILTER_SCHLUESSEL, filterLaden } from '../../fangkorb/fangkorb-filter';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../../beitragskarte/beitragskarte.stub';
@@ -133,6 +134,18 @@ describe('BeitragGespeichertComponent', () => {
       expect(seite().querySelector('.verknuepfen-fehlgeschlagen')!.textContent).toContain(EINWURF_NICHT_MIT_NEUEM_VERKNUEPFT);
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
       expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
+    });
+
+    it('Fangkorb: nicht verknuepft fuehrt "Zum Fangkorb" nach Ausformulieren, wo der Einwurf noch liegt', async () => {
+      await oeffnen({ einwurf: 'e-1' }, { einwurfVerknuepft: false });
+      const navigieren = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+
+      (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
+
+      expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
+      expect(navigation.navigateToMeineEinwuerfe).not.toHaveBeenCalled();
+      expect(filterLaden().tab).toBe('ausformulieren');
+      sessionStorage.removeItem(FILTER_SCHLUESSEL);
     });
 
     it('Suche: zurueck zur Suche mit der urspruenglichen Anfrage', async () => {

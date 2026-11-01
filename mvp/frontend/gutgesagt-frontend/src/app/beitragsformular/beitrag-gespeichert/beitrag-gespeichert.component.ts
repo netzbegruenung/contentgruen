@@ -13,7 +13,7 @@ import { LoggingService } from '../../services/logging.service';
 import { NavigationService } from '../../services/navigation.service';
 import { VERKNUEPFUNG_FEHLGESCHLAGEN } from '../../services/statement.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
-import { NACH_DEM_AUSFORMULIEREN } from '../../fangkorb/fangkorb-filter';
+import { NACH_DEM_AUSFORMULIEREN, tabMerken } from '../../fangkorb/fangkorb-filter';
 import { FORMULAR_PFAD, FormularTyp } from '../../shared/formular-adresse';
 import {
   GespeichertZustand,
@@ -142,9 +142,15 @@ export class BeitragGespeichertComponent implements OnInit {
 
   /**
    * Der ausformulierte Einwurf liegt in keiner Arbeitsliste des Fangkorbs mehr; er
-   * steht unter "Meine Einwuerfe" (#508).
+   * steht unter "Meine Einwuerfe" (#508). Ist die Verknuepfung gescheitert, ist er
+   * noch destilliert und liegt unter "Ausformulieren" - dorthin geht es dann.
    */
   zumFangkorb(): void {
+    if (this.zustand.einwurfVerknuepft === false) {
+      tabMerken(NACH_DEM_AUSFORMULIEREN);
+      this.router.navigate(['/fangkorb']);
+      return;
+    }
     this.navigationService.navigateToMeineEinwuerfe();
   }
 

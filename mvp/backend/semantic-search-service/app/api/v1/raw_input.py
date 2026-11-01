@@ -21,6 +21,7 @@ from dependencies import (
     get_aufrufer,
     get_commentary_service,
     get_generic_text_service,
+    get_moderation_repository,
     get_post_service,
 )
 from domain.models.content_status import zustand_am_einwurf
@@ -51,9 +52,6 @@ from services.beitrag_fuer_aufrufer import (
     SATZ,
     Aufrufer,
     personen_fuer_aufrufer,
-)
-from repositories.implementations.qdrant.moderation_repository import (
-    get_moderation_repository,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
 from repositories.raw_input_repository import (
@@ -93,8 +91,8 @@ async def _zustaende_eintragen(
     einwuerfe: List[RawInputResponse], suchindex: IModerationRepository
 ) -> None:
     """
-    Den Zustand jedes verknuepften Beitrags eintragen (#507), mit einer Abfrage fuer
-    die ganze Seite. Die Einwuerfe liegen in PostgreSQL, der Zustand der Beitraege im
+    Den Zustand jedes Beitrags eintragen, in dem ein Einwurf ausformuliert ist
+    (#507), mit einer Abfrage fuer die ganze Seite. Die Einwuerfe liegen in PostgreSQL, der Zustand der Beitraege im
     Suchindex. Antwortet der nicht, bleibt der Zustand offen und die Einwuerfe laden
     trotzdem: Der Fangkorb haengt nicht an der Beschriftung.
     """

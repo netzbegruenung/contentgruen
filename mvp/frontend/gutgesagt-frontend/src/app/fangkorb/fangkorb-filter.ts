@@ -160,8 +160,10 @@ export function filterLaden(): FangkorbFilter {
  * Den Tab merken, den der Fangkorb beim naechsten Oeffnen zeigen soll.
  *
  * Gebraucht am Ende des Destillier-Ablaufs: Wer den letzten offenen Einwurf
- * destilliert, ausformuliert oder verworfen hat, landet wieder im Fangkorb - und
- * zwar dort, wo das Ergebnis liegt, nicht in einem leeren "Destillieren".
+ * destilliert oder verworfen hat, landet wieder im Fangkorb - und zwar dort, wo das
+ * Ergebnis liegt, nicht in einem leeren "Destillieren". Nach dem Ausformulieren
+ * liegt das Ergebnis in keinem Tab; dann geht es in die Arbeitsliste, aus der der
+ * Einwurf kam (``NACH_DEM_AUSFORMULIEREN``).
  */
 export function tabMerken(tab: FangkorbTab): void {
   filterSpeichern({ ...filterLaden(), tab });
