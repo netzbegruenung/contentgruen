@@ -34,7 +34,7 @@ export class NavigationService {
     this.router.navigate(['/contribute']);
   }
 
-  navigateToContributions(): void {
+  navigateToMeineBeitraege(): void {
     this.router.navigate(['/contributions']);
   }
 

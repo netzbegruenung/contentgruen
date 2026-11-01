@@ -7,7 +7,7 @@
                 (closeMenu)="sidenav.close()"
                 (home)="navigateToHome()"
                 (contribute)="navigateToContributeView()"
-                (contributions)="navigateToContributionsView()"
+                (meineBeitraege)="navigateToMeineBeitraege()"
                 (einwerfen)="navigateToEinwerfenView()"
                 (fangkorb)="navigateToFangkorbView()"
                 (login)="login()"
@@ -95,7 +95,7 @@
                     </ng-template>
                     <mat-menu #profilmenue="matMenu">
                         <button mat-menu-item type="button" class="profilmenue-eintrag"
-                            (click)="navigateToContributionsView()">
+                            (click)="navigateToMeineBeitraege()">
                             <span><span aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span> Meine Beiträge</span>
                         </button>
                         <button mat-menu-item type="button" class="profilmenue-eintrag" (click)="openProfilbildDialog()">

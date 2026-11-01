@@ -50,12 +50,12 @@ public class SitzungNachKontoloeschungTests : IDisposable
     {
         if (mitBetaZugang)
         {
-            BetaZugangsliste.Schreiben(
+            BetaZugangsliste.SchreibenNach(
                 NutzerDatei, BetaZugangsliste.Zugang(Email, BetaKennung, displayName: "Beta Person"));
         }
         else
         {
-            BetaZugangsliste.Schreiben(NutzerDatei);
+            BetaZugangsliste.SchreibenNach(NutzerDatei);
         }
     }
 

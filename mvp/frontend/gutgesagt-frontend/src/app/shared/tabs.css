@@ -6,7 +6,8 @@
  */
 .tabs {
   display: grid;
-  /* Halb und halb: "Ausformulieren" passt auch bei 320 px ungekuerzt hinein. */
+  /* Halb und halb; minmax(0, ...) laesst einen langen Namen nicht ueber die Spalte
+     hinauswachsen (im Fangkorb passt "Ausformulieren" auch bei 320 px ungekuerzt). */
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2px;
   padding: 3px;

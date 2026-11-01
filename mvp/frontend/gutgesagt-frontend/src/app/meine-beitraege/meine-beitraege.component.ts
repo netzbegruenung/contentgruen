@@ -37,7 +37,7 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
  * Einwuerfen geworden ist. Er laedt erst beim ersten Oeffnen.
  */
 @Component({
-  selector: 'app-contributions-view',
+  selector: 'app-meine-beitraege',
   standalone: true,
   imports: [
     CommonModule,
@@ -47,14 +47,14 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     MeineEinwuerfeComponent,
     SperrnachrichtenComponent
   ],
-  templateUrl: './contributions-view.component.html',
-  styleUrls: ['../shared/tabs.css', './contributions-view.component.css'],
+  templateUrl: './meine-beitraege.component.html',
+  styleUrls: ['../shared/tabs.css', './meine-beitraege.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Hier und nicht in app.config.ts: dort zoege der Import den Paginator samt
   // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
   providers: [{ provide: MatPaginatorIntl, useClass: DeutscherPaginatorIntl }]
 })
-export class ContributionsViewComponent implements OnInit, OnDestroy {
+export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   readonly tabs = TABS;
   tab: MeineTab = 'beitraege';
   /** Ab dem ersten Oeffnen bleibt der Einwurf-Tab stehen, damit Wechseln nicht neu laedt. */
@@ -139,8 +139,8 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
     return `${this.totalRecords} ${beitraege} · ${nutzung}× genutzt`;
   }
 
-  calculateTotalUsage(contributions: ContentResult[]) {
-    this.totalUsageCount = contributions.reduce((sum, item) => {
+  calculateTotalUsage(beitraege: ContentResult[]) {
+    this.totalUsageCount = beitraege.reduce((sum, item) => {
       return sum + (item.usage_count || 0);
     }, 0);
   }

@@ -104,7 +104,7 @@ export const routes: Routes = [
     },
     {
         path: 'contributions',
-        loadComponent: () => import('./contributions-view/contributions-view.component').then(m => m.ContributionsViewComponent),
+        loadComponent: () => import('./meine-beitraege/meine-beitraege.component').then(m => m.MeineBeitraegeComponent),
         canActivate: [AuthGuard],
         data: { parent: '/search' }
     },

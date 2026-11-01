@@ -42,7 +42,10 @@ async def nur_sichtbarer_beitrag(
     except BeitragUnlesbar:
         return
     except Exception as fehler:
-        logger.warning(f"Visibility check for vote skipped: {type(fehler).__name__}")
+        # Mit Stacktrace: Auch ein Programmierfehler landet hier und soll auffallen.
+        logger.warning(
+            f"Visibility check for vote skipped: {type(fehler).__name__}", exc_info=True
+        )
         return
     if beitrag is None:
         raise HTTPException(status_code=404, detail="Content not found")

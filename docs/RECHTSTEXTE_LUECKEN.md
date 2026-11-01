@@ -188,7 +188,7 @@ zurückgenommen werden kann, steht in den Nutzungsbedingungen, nicht im Hinweis 
 
 | Ort | Formular | Seit |
 |-----|----------|------|
-| `add-raw-input/` | Einwurf | 55bb5cb8 |
+| `einwerfen/` (bis #272 `add-raw-input/`) | Einwurf | 55bb5cb8 |
 | `add-commentary/`, `add-generictext/`, `add-image/` | Kommentar, Hintergrundinfo, Bild (auch im Ablauf Ausformulieren) | 55bb5cb8 |
 | `add-post/` | Post (auch im Ablauf Ausformulieren) | cc52f2e1 |
 | `hier-fehlt-eine-antwort/` | Aussage vorab anlegen („Aussage anlegen“) | #431 |

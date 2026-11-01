@@ -37,7 +37,7 @@ internal static class BetaZugangsliste
     public static string Schreiben(params ManagedUser[] zugaenge)
     {
         var pfad = Path.Combine(Path.GetTempPath(), $"managed-users-{Guid.NewGuid():N}.json");
-        Schreiben(pfad, zugaenge);
+        SchreibenNach(pfad, zugaenge);
         return pfad;
     }
 
@@ -46,10 +46,11 @@ internal static class BetaZugangsliste
         Schreiben(zugaenge.Select(z => Zugang(z.Email, z.UserId)).ToArray());
 
     /// <summary>Schreibt die Liste an diesen Pfad; ohne Zugaenge eine leere Liste.</summary>
-    public static void Schreiben(string pfad, params ManagedUser[] zugaenge) =>
+    public static void SchreibenNach(string pfad, params ManagedUser[] zugaenge) =>
         File.WriteAllText(
             pfad, JsonSerializer.Serialize(new ManagedUsersConfig { Users = zugaenge.ToList() }));
 
+    /// <summary>Der ManagedUserService auf die Liste unter diesem Pfad.</summary>
     public static ManagedUserService Dienst(
         ILogger<ManagedUserService> logger,
         string pfad,

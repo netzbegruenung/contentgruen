@@ -31,7 +31,7 @@ export class MobileMenuComponent {
   @Output() closeMenu = new EventEmitter<void>();
   @Output() home = new EventEmitter<void>();
   @Output() contribute = new EventEmitter<void>();
-  @Output() contributions = new EventEmitter<void>();
+  @Output() meineBeitraege = new EventEmitter<void>();
   @Output() einwerfen = new EventEmitter<void>();
   @Output() fangkorb = new EventEmitter<void>();
   @Output() login = new EventEmitter<void>();
@@ -55,8 +55,8 @@ export class MobileMenuComponent {
     this.close();
   }
 
-  onContributionsClick(): void {
-    this.contributions.emit();
+  onMeineBeitraegeClick(): void {
+    this.meineBeitraege.emit();
     this.close();
   }
 

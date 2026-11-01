@@ -3,7 +3,7 @@ Die Tabelle users und ihr Repository.
 
 Schema festnageln (create_all legt die Tabelle nur an, wenn sie am selben Base
 haengt) und das SQL pruefen, das das Repository schickt - die Session ist
-gemockt wie in test_raw_input_repository.py.
+gemockt (Fixtures in tests/unit/repositories/conftest.py).
 """
 
 from types import SimpleNamespace

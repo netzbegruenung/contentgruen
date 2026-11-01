@@ -11,13 +11,11 @@ keiner Reihenfolge, die etwas ueber ihren Zeitpunkt sagt.
 
 from datetime import date
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from sqlalchemy import text
 
-from infrastructure.database.models import Base, SearchEvent
-from repositories.search_tracking_repository import SearchTrackingRepository
+from tests.integration.suchereignis_helfer import suchtracking_repository
 from tests.integration import postgres
 
 pytestmark = pytest.mark.integration
@@ -28,14 +26,6 @@ ANZAHL = 40
 
 # search_events, wie sie vor #275 aussahen: id aus einer Sequenz.
 VOR_275 = Path(__file__).with_name("search_events_vor_275.sql")
-
-
-def _repository(db) -> SearchTrackingRepository:
-    with patch(
-        "repositories.search_tracking_repository.get_app_database",
-        return_value=db,
-    ):
-        return SearchTrackingRepository()
 
 
 def _pseudonym(nummer: int) -> str:
@@ -64,12 +54,6 @@ def _sequenzen(db) -> list:
 
 
 @pytest.fixture
-def neue_datenbank(wegwerf_schema):
-    Base.metadata.create_all(wegwerf_schema.engine, tables=[SearchEvent.__table__])
-    return wegwerf_schema
-
-
-@pytest.fixture
 def datenbank_vor_275(wegwerf_schema):
     """search_events mit fortlaufender id und Suchen eines Tages darin."""
     postgres.migration(wegwerf_schema, VOR_275)
@@ -85,13 +69,13 @@ def datenbank_vor_275(wegwerf_schema):
     return wegwerf_schema
 
 
-def test_id_ergibt_keine_reihenfolge_der_suchen(neue_datenbank):
-    repository = _repository(neue_datenbank)
+def test_id_ergibt_keine_reihenfolge_der_suchen(suchereignisse_db):
+    repository = suchtracking_repository(suchereignisse_db)
     gesucht = [_pseudonym(nummer) for nummer in range(ANZAHL)]
     for pseudonym in gesucht:
         assert repository.track_search(results_count=0, day=TAG, actor_hash=pseudonym)
 
-    nach_id = _nach_id(neue_datenbank)
+    nach_id = _nach_id(suchereignisse_db)
 
     assert sorted(nach_id) == gesucht
     # Bei 40 zufaelligen ids ist jede der beiden Reihenfolgen 1 zu 40!.
@@ -99,8 +83,8 @@ def test_id_ergibt_keine_reihenfolge_der_suchen(neue_datenbank):
     assert nach_id != gesucht[::-1]
 
 
-def test_neue_datenbank_hat_keine_sequenz(neue_datenbank):
-    assert _sequenzen(neue_datenbank) == []
+def test_neue_datenbank_hat_keine_sequenz(suchereignisse_db):
+    assert _sequenzen(suchereignisse_db) == []
 
 
 def test_gegenprobe_vor_275_ergibt_die_reihenfolge(datenbank_vor_275):
@@ -147,7 +131,7 @@ def test_migration_ersetzt_die_fortlaufende_id(datenbank_vor_275):
 def test_nach_migration_schreibt_das_repository_weiter(datenbank_vor_275):
     postgres.migration(datenbank_vor_275, REIHENFOLGE)
 
-    assert _repository(datenbank_vor_275).track_search(
+    assert suchtracking_repository(datenbank_vor_275).track_search(
         results_count=1, day=TAG, actor_hash=_pseudonym(ANZAHL)
     )
 

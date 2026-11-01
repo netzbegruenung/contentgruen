@@ -79,7 +79,7 @@ export class ContributeViewComponent implements OnInit {
   }
 
   /** Weiterarbeiten: die eigenen Beitraege - frueher das Ordner-Icon in der Kopfzeile. */
-  navigateToContributions(): void {
+  navigateToMeineBeitraege(): void {
     this.router.navigate(['/contributions']);
   }
 

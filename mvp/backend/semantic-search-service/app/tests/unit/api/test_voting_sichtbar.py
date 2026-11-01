@@ -80,7 +80,7 @@ class TestAbstimmen:
         assert antwort.status_code == 200
         getattr(dienst, f"set_{art}").assert_called_once_with("kennung-1", BEITRAG)
 
-    def test_ausgeblendeter_beitrag_gibt_404_ohne_stimme(
+    def test_nicht_sichtbarer_beitrag_gibt_404_ohne_stimme(
         self, client, repository, dienst, art
     ):
         repository.get.side_effect = ValueError("nicht da")
@@ -116,13 +116,26 @@ class TestAbstimmen:
         assert antwort.status_code == 200
         getattr(dienst, f"set_{art}").assert_called_once()
 
+    def test_uebersprungene_pruefung_loggt_den_stacktrace(
+        self, client, repository, art, caplog
+    ):
+        repository.get.side_effect = ConnectionError("Qdrant weg")
+
+        with caplog.at_level("WARNING"):
+            client.put(f"/api/v1/voting/content/{BEITRAG}/{art}", headers=ANGEMELDET)
+
+        eintrag = next(
+            r for r in caplog.records if "Visibility check" in r.getMessage()
+        )
+        assert eintrag.exc_info is not None
+
     def test_ohne_anmeldung_401_vor_der_pruefung(self, client, repository, art):
         antwort = client.put(f"/api/v1/voting/content/{BEITRAG}/{art}")
 
         assert antwort.status_code == 401
         repository.get.assert_not_awaited()
 
-    def test_zuruecknehmen_geht_auch_am_ausgeblendeten(
+    def test_zuruecknehmen_geht_auch_am_nicht_sichtbaren(
         self, client, repository, dienst, art
     ):
         repository.get.side_effect = ValueError("nicht da")

@@ -6,7 +6,7 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Observable, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
-import { ContributionsViewComponent } from './contributions-view.component';
+import { MeineBeitraegeComponent } from './meine-beitraege.component';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
@@ -14,8 +14,8 @@ import { BeitragSheetComponent, GELOESCHT } from '../beitragskarte/beitrag-sheet
 import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 
-describe('ContributionsViewComponent', () => {
-  let fixture: ComponentFixture<ContributionsViewComponent>;
+describe('MeineBeitraegeComponent', () => {
+  let fixture: ComponentFixture<MeineBeitraegeComponent>;
   let router: Router;
   let bottomSheet: MatBottomSheet;
   let eigeneLaden: jasmine.Spy;
@@ -51,7 +51,7 @@ describe('ContributionsViewComponent', () => {
       .createSpy('eigeneLaden')
       .and.returnValue(of({ results_count: 0, results: [], total_records_count: 0 }));
     TestBed.configureTestingModule({
-      imports: [ContributionsViewComponent],
+      imports: [MeineBeitraegeComponent],
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
@@ -80,7 +80,7 @@ describe('ContributionsViewComponent', () => {
       mobil,
     );
     await TestBed.compileComponents();
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
   }
 
@@ -195,7 +195,7 @@ describe('ContributionsViewComponent', () => {
       const results = Array.from({ length: 24 }, (_, i) => beitrag({ id: `s${seite}-${i}` }));
       return of({ results_count: 24, total_records_count: 60, results }).pipe(delay(50));
     });
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
 
     const laden = () => {
       fixture.detectChanges();
@@ -349,7 +349,7 @@ describe('ContributionsViewComponent', () => {
     konfigurieren(laden);
     sheetErgebnis = of(GELOESCHT);
     await TestBed.compileComponents();
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
 
     karten()[0].click();
@@ -373,7 +373,7 @@ describe('ContributionsViewComponent', () => {
       );
     konfigurieren(laden);
     await TestBed.compileComponents();
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
     fixture.componentInstance.onPageChange({ pageIndex: 1, pageSize: 24, length: 25 } as any);
     fixture.detectChanges();
