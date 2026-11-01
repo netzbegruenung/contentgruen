@@ -207,12 +207,12 @@ public class ManagedUserServiceTests
     [InlineData("ehemalige-person-6f1c2d3e-0000-4000-8000-000000000000")]
     public async Task ValidateUserAsync_ReturnsNull_WhenUserIdIsReserved(string reservedId)
     {
-        var path = WriteUsersFile(
+        var path = BetaZugangsliste.Schreiben(
             ("ok@example.com", "user-001"),
             ("reserved@example.com", reservedId));
         try
         {
-            var service = ServiceFor(path);
+            var service = BetaZugangsliste.Dienst(_mockLogger.Object, path);
 
             Assert.Null(await service.GetUserByIdAsync(reservedId));
             Assert.Null(await service.GetUserByEmailAsync("reserved@example.com"));
@@ -243,10 +243,10 @@ public class ManagedUserServiceTests
     [InlineData("Ehemalige-Person")]
     public async Task GetUserByIdAsync_ReturnsUser_WhenUserIdOnlyResemblesReservedId(string userId)
     {
-        var path = WriteUsersFile(("someone@example.com", userId));
+        var path = BetaZugangsliste.Schreiben(("someone@example.com", userId));
         try
         {
-            Assert.NotNull(await ServiceFor(path).GetUserByIdAsync(userId));
+            Assert.NotNull(await BetaZugangsliste.Dienst(_mockLogger.Object, path).GetUserByIdAsync(userId));
         }
         finally
         {
@@ -271,18 +271,11 @@ public class ManagedUserServiceTests
     [Fact]
     public async Task ValidateUserAsync_LogsOnlyThePseudonym_OnSuccessAndWrongPassword()
     {
-        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        var path = BetaZugangsliste.Schreiben(("ok@example.com", "user-001"));
         try
         {
             var logger = new CapturingLogger<ManagedUserService>();
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    { "MANAGED_USERS_PATH", path },
-                    { "ENABLE_MANAGED_AUTH", "true" }
-                })
-                .Build();
-            var service = new ManagedUserService(logger, configuration);
+            var service = BetaZugangsliste.Dienst(logger, path);
 
             Assert.NotNull(await service.ValidateUserAsync("ok@example.com", KnownPassword));
             Assert.Null(await service.ValidateUserAsync("ok@example.com", "falsch"));
@@ -296,18 +289,18 @@ public class ManagedUserServiceTests
         }
     }
 
-    private const string KnownPassword = "Passwort1!";
+    private const string KnownPassword = BetaZugangsliste.Passwort;
 
     // KontoPruefung meldet jeden Beta-Zugang ab, der nicht in der Liste steht (#278). Eine
     // kaputte Datei darf deshalb nicht als leere Liste gelten.
     [Fact]
     public async Task GetUserByIdAsync_KeepsLastLoadedUsers_WhenFileBecomesUnreadable()
     {
-        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        var path = BetaZugangsliste.Schreiben(("ok@example.com", "user-001"));
         var uhr = new StellbareUhr();
         try
         {
-            var service = ServiceFor(path, uhr);
+            var service = BetaZugangsliste.Dienst(_mockLogger.Object, path, uhr: uhr);
             Assert.NotNull(await service.GetUserByIdAsync("user-001"));
 
             File.WriteAllText(path, "{ \"users\": [ halb geschrieben");
@@ -326,11 +319,11 @@ public class ManagedUserServiceTests
     [Fact]
     public async Task GetUserByIdAsync_UnreadableFile_LogsErrorOncePerCachePeriod()
     {
-        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        var path = BetaZugangsliste.Schreiben(("ok@example.com", "user-001"));
         var uhr = new StellbareUhr();
         try
         {
-            var service = ServiceFor(path, uhr);
+            var service = BetaZugangsliste.Dienst(_mockLogger.Object, path, uhr: uhr);
             File.WriteAllText(path, "{ \"users\": [ halb geschrieben");
 
             await service.GetUserByIdAsync("user-001");
@@ -356,9 +349,9 @@ public class ManagedUserServiceTests
     [Fact]
     public async Task GetUserByIdAsync_KeepsLastLoadedUsers_WhenFileIsMissingForAMoment()
     {
-        var path = WriteUsersFile(("ok@example.com", "user-001"));
+        var path = BetaZugangsliste.Schreiben(("ok@example.com", "user-001"));
         var uhr = new StellbareUhr();
-        var service = ServiceFor(path, uhr);
+        var service = BetaZugangsliste.Dienst(_mockLogger.Object, path, uhr: uhr);
         Assert.NotNull(await service.GetUserByIdAsync("user-001"));
 
         File.Delete(path);
@@ -370,14 +363,14 @@ public class ManagedUserServiceTests
     [Fact]
     public async Task GetUserByIdAsync_ReturnsNull_AfterUserRemovedAndCacheExpired()
     {
-        var path = WriteUsersFile(("ok@example.com", "user-001"), ("weg@example.com", "user-002"));
+        var path = BetaZugangsliste.Schreiben(("ok@example.com", "user-001"), ("weg@example.com", "user-002"));
         var uhr = new StellbareUhr();
         try
         {
-            var service = ServiceFor(path, uhr);
+            var service = BetaZugangsliste.Dienst(_mockLogger.Object, path, uhr: uhr);
             Assert.NotNull(await service.GetUserByIdAsync("user-002"));
 
-            File.Move(WriteUsersFile(("ok@example.com", "user-001")), path, overwrite: true);
+            File.Move(BetaZugangsliste.Schreiben(("ok@example.com", "user-001")), path, overwrite: true);
             uhr.Vorstellen(TimeSpan.FromMinutes(5));
 
             Assert.Null(await service.GetUserByIdAsync("user-002"));
@@ -387,36 +380,5 @@ public class ManagedUserServiceTests
         {
             File.Delete(path);
         }
-    }
-
-    private ManagedUserService ServiceFor(string path, TimeProvider? uhr = null)
-    {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                { "MANAGED_USERS_PATH", path },
-                { "ENABLE_MANAGED_AUTH", "true" }
-            })
-            .Build();
-        return new ManagedUserService(_mockLogger.Object, configuration, uhr);
-    }
-
-    private static string WriteUsersFile(params (string Email, string UserId)[] users)
-    {
-        // Ein Hash fuer alle: BCrypt mit niedrigem Work-Factor haelt den Test schnell.
-        var hash = BCrypt.Net.BCrypt.HashPassword(KnownPassword, 4);
-        var config = new ManagedUsersConfig
-        {
-            Users = users.Select(u => new ManagedUser
-            {
-                Email = u.Email,
-                PasswordHash = hash,
-                DisplayName = "Test",
-                UserId = u.UserId
-            }).ToList()
-        };
-        var path = Path.Combine(Path.GetTempPath(), $"managed-users-{Guid.NewGuid():N}.json");
-        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(config));
-        return path;
     }
 }
