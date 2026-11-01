@@ -12,8 +12,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.v1 import sperren as sperren_module
 from api.v1.sperren import router as sperren_router
+from dependencies import get_moderation_service
 from domain.models.widerspruch import Widerspruchsergebnis
 
 AUTORIN = {"X-User": "autorin-1"}
@@ -47,8 +47,8 @@ def service():
 def client(service):
     app = FastAPI()
     app.include_router(sperren_router, prefix="/api/v1/sperren")
-    with patch.object(sperren_module, "get_moderation_service", lambda: service):
-        yield TestClient(app)
+    app.dependency_overrides[get_moderation_service] = lambda: service
+    return TestClient(app)
 
 
 @pytest.mark.unit

@@ -63,9 +63,9 @@ mode too, because the pipeline starts no BFF (`stack.pflicht_ausser_in_ci`).
 `tests/integration/` holds only tests that talk to a real Qdrant or PostgreSQL, or,
 under `api/`, to the running BFF.
 A test that mocks the services belongs in `tests/unit/api/`: `TestClient` with
-`dependency_overrides` for services the router takes via `Depends`; where the router
-calls the getter directly (moderation: `get_moderation_service()`), patch that name in
-the router module instead, an override would not take effect. With a running stack no integration test is skipped; a new skip
+`dependency_overrides` for services the router takes via `Depends`. Where a router still
+calls a getter directly, patch that name in the router module instead, an override would
+not take effect. With a running stack no integration test is skipped; a new skip
 needs a reason that names what is missing.
 
 ### Integration Tests Against PostgreSQL

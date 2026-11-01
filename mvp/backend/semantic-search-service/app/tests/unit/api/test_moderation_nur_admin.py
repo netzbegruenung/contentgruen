@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
-from dependencies import get_settings
+from dependencies import get_moderation_service, get_settings
 
 MITWIRKENDE = {"X-User": "user-1", "X-Is-Admin": "false"}
 
@@ -38,8 +38,8 @@ def client(service):
     app = FastAPI()
     app.include_router(moderation_router, prefix="/api/v1/moderation")
     app.dependency_overrides[get_settings] = lambda: Mock()
-    with patch.object(moderation_module, "get_moderation_service", lambda: service):
-        yield TestClient(app)
+    app.dependency_overrides[get_moderation_service] = lambda: service
+    return TestClient(app)
 
 
 @pytest.mark.api

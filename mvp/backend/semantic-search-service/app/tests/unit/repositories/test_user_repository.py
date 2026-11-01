@@ -21,18 +21,10 @@ def _sql(statement) -> str:
 
 
 @pytest.fixture
-def session():
-    session = MagicMock()
-    session.__enter__ = MagicMock(return_value=session)
-    session.__exit__ = MagicMock(return_value=False)
-    return session
-
-
-@pytest.fixture
-def repository(session):
-    db = MagicMock()
-    db.get_session.return_value = session
-    with patch("repositories.user_repository.get_app_database", return_value=db):
+def repository(app_datenbank):
+    with patch(
+        "repositories.user_repository.get_app_database", return_value=app_datenbank
+    ):
         yield UserRepository()
 
 

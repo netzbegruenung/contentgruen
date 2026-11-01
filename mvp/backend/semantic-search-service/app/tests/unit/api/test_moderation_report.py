@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from api.v1 import moderation as moderation_module
 from api.v1.moderation import router as moderation_router
-from dependencies import get_settings
+from dependencies import get_moderation_service, get_settings
 from domain.models.meldegrund import MELDEGRUENDE
 from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
 from utils import client_identity
@@ -52,12 +52,11 @@ def client(service):
     app = FastAPI()
     app.include_router(moderation_router, prefix="/api/v1/moderation")
     app.dependency_overrides[get_settings] = lambda: Mock()
+    app.dependency_overrides[get_moderation_service] = lambda: service
 
     # Frischer Limiter je Test, sonst tragen die Fenster ineinander.
     limiter = RateLimiter(max_requests=5, window_minutes=15)
-    with patch.object(
-        moderation_module, "get_moderation_service", lambda: service
-    ), patch.object(moderation_module, "report_rate_limiter", limiter):
+    with patch.object(moderation_module, "report_rate_limiter", limiter):
         yield TestClient(app)
 
 
