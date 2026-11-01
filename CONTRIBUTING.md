@@ -139,6 +139,11 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 (`feat: …`, `fix: …`, `docs: …`, `chore: …`), without emojis. The pre-commit hooks format Python
 code and run the unit tests; if they reformat a file, commit again.
 
+### License of contributions
+
+By opening a pull request you license your contribution under the AGPL, like the rest of the code,
+and confirm that you have the right to do so.
+
 ## Pull requests
 
 1. Open an issue on Forgejo or comment on an existing one to coordinate
