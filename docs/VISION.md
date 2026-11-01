@@ -25,7 +25,7 @@ Stufe 3 und 4 sind langfristig; dafür gibt es noch keine Tickets. Was nichts ko
 ## Rechte und Geld
 
 - Der Code steht unter der AGPL; Urheber des heutigen Codes ist der Maintainer. Die Netzbegrünung ist Diensteanbieterin der Instanz.
-- Beiträge Dritter zum Code laufen über das Developer Certificate of Origin (DCO); `CONTRIBUTING.md` erklärt es, die CI prüft den Sign-off (#365).
+- Beiträge Dritter zum Code stehen unter der AGPL; wer einen PR öffnet, sichert zu, dazu berechtigt zu sein (`CONTRIBUTING.md`). Kein Sign-off je Commit (#365).
 - Geld kommt, wenn überhaupt, später über Dienstleistungen: Betrieb, Anpassung, Schnittstellen, Support. Premium-Funktionen werden getrennt gebaut und sind tendenziell ebenfalls Open Source.
 - Heute betreibt die Netzbegrünung die Instanz ehrenamtlich. Wer einen professionellen Betrieb mit Support übernimmt, etwa verdigado oder eine eigene Ausgründung, bleibt offen; für parteiferne Organisationen kann ein neutrales Dach nötig werden. Ein Betreiber verarbeitet Daten im Auftrag (AVV).
 - **Kein Geld und keine Sachleistung für Posts, Teilen oder Nutzung**, auch nicht als Preis für Quests oder Ranglisten: Das wäre politische Werbung (TTPA, Medienstaatsvertrag, Plattformregeln) und für eine Partei womöglich eine Sachspende. Erlaubt sind Honorare für die Herstellung von Beiträgen für den Bestand, Kostenerstattung und Stipendien ohne Pflicht zu posten, mit öffentlich genannten Geldgebern. Abweichen nur nach Rechtsgutachten und öffentlich begründet.

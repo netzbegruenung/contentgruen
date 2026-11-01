@@ -37,7 +37,7 @@ def test_waehlen_reine_frontend_aenderung_nur_frontend(baum):
 
     auswahl = geaendert.waehlen([f"{FE}/src/app/a/a.component.ts"], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "frontend"]
+    assert auswahl.schritte == ["retired-words", "frontend"]
     assert auswahl.specs == ["src/app/a/a.component.spec.ts"]
 
 
@@ -80,7 +80,7 @@ def test_waehlen_frontend_ausserhalb_der_komponenten_alle_specs(baum, pfad):
 
     auswahl = geaendert.waehlen([pfad], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "frontend"]
+    assert auswahl.schritte == ["retired-words", "frontend"]
     assert auswahl.specs is None
     assert "alle Specs" in auswahl.gruende["frontend"][0]
 
@@ -94,34 +94,34 @@ def test_waehlen_frontend_ohne_erreichte_spec_alle_specs(baum):
 @pytest.mark.parametrize(
     "pfad, schritte",
     [
-        (f"{PY}/app/services/x.py", ["retired-words", "sign-off", "lint", "unit"]),
-        (f"{PY}/app/tests/unit/test_x.py", ["retired-words", "sign-off", "lint", "unit"]),
+        (f"{PY}/app/services/x.py", ["retired-words", "lint", "unit"]),
+        (f"{PY}/app/tests/unit/test_x.py", ["retired-words", "lint", "unit"]),
         (
             f"{PY}/app/repositories/x.py",
-            ["retired-words", "sign-off", "lint", "unit", "integration"],
+            ["retired-words", "lint", "unit", "integration"],
         ),
         (
             f"{PY}/app/infrastructure/database/models.py",
-            ["retired-words", "sign-off", "lint", "unit", "integration"],
+            ["retired-words", "lint", "unit", "integration"],
         ),
         (
             f"{PY}/app/tests/integration/test_x.py",
-            ["retired-words", "sign-off", "lint", "unit", "integration"],
+            ["retired-words", "lint", "unit", "integration"],
         ),
-        (f"{PY}/requirements.txt", ["retired-words", "sign-off", "lint", "unit", "integration"]),
+        (f"{PY}/requirements.txt", ["retired-words", "lint", "unit", "integration"]),
         (
             f"{PY}/app/tests/conftest.py",
-            ["retired-words", "sign-off", "lint", "unit", "integration"],
+            ["retired-words", "lint", "unit", "integration"],
         ),
         (
             "mvp/backend/postgres-app/migrations/2026-10-30-x.sql",
-            ["retired-words", "sign-off", "lint", "unit", "integration"],
+            ["retired-words", "lint", "unit", "integration"],
         ),
-        ("mvp/backend/BFF/Program.cs", ["retired-words", "sign-off", "bff"]),
-        ("mvp/backend/BFF.Tests/XTests.cs", ["retired-words", "sign-off", "bff"]),
-        ("docs/CI.md", ["retired-words", "sign-off"]),
-        ("GLOSSARY.md", ["retired-words", "sign-off"]),
-        ("docs/adr/0001-x.md", ["retired-words", "sign-off"]),
+        ("mvp/backend/BFF/Program.cs", ["retired-words", "bff"]),
+        ("mvp/backend/BFF.Tests/XTests.cs", ["retired-words", "bff"]),
+        ("docs/CI.md", ["retired-words"]),
+        ("GLOSSARY.md", ["retired-words"]),
+        ("docs/adr/0001-x.md", ["retired-words"]),
     ],
 )
 def test_waehlen_schritte_nach_pfad(baum, pfad, schritte):
@@ -161,7 +161,7 @@ def test_waehlen_frontend_datei_die_ein_python_test_liest_auch_unit(baum, pfad, 
 
     auswahl = geaendert.waehlen([pfad], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "unit", "frontend"]
+    assert auswahl.schritte == ["retired-words", "unit", "frontend"]
     assert test in auswahl.gruende["unit"][0]
 
 
@@ -193,7 +193,7 @@ def test_main_gibt_schritte_und_specs_fuer_check_sh_aus(baum, monkeypatch, capsy
 
     ausgabe = capsys.readouterr()
     assert ausgabe.out.splitlines() == [
-        "schritte retired-words sign-off frontend",
+        "schritte retired-words frontend",
         "spec src/app/a/a.component.spec.ts",
     ]
     assert "2 geaenderte Dateien gegenueber origin/main" in ausgabe.err
@@ -201,12 +201,12 @@ def test_main_gibt_schritte_und_specs_fuer_check_sh_aus(baum, monkeypatch, capsy
     assert "lint: ausgelassen" in ausgabe.err
 
 
-def test_main_ohne_aenderung_nur_zeilen_und_commits(monkeypatch, capsys):
+def test_main_ohne_aenderung_nur_retired_words(monkeypatch, capsys):
     monkeypatch.setattr(geaendert, "geaenderte_pfade", lambda basis: [])
 
     assert geaendert.main([]) == 0
 
-    assert capsys.readouterr().out == "schritte retired-words sign-off\n"
+    assert capsys.readouterr().out == "schritte retired-words\n"
 
 
 @pytest.mark.parametrize(
@@ -233,7 +233,7 @@ def test_waehlen_wartungsskript_unit_und_wer_es_liest(baum):
 
     auswahl = geaendert.waehlen(["mvp/scripts/manual/person_loeschen.sql"], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "unit", "integration"]
+    assert auswahl.schritte == ["retired-words", "unit", "integration"]
 
 
 @pytest.mark.parametrize(
@@ -261,7 +261,7 @@ def test_waehlen_python_modul_das_integrationstests_erreichen_auch_integration(
 
     auswahl = geaendert.waehlen([pfad], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "lint", "unit", "integration"]
+    assert auswahl.schritte == ["retired-words", "lint", "unit", "integration"]
     assert "tests/integration erreicht" in auswahl.gruende["integration"][0]
 
 
@@ -276,7 +276,7 @@ def test_waehlen_python_modul_ohne_integrationstest_nur_unit(baum):
 
     auswahl = geaendert.waehlen([f"{PY}/app/api/fern.py"], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "lint", "unit"]
+    assert auswahl.schritte == ["retired-words", "lint", "unit"]
 
 
 def test_schritte_und_pfade_wie_in_check_sh():
@@ -323,7 +323,7 @@ def test_waehlen_datendatei_neben_modul_das_integrationstests_erreichen_auch_int
 
     auswahl = geaendert.waehlen([f"{PY}/app/domain/themen.json"], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "lint", "unit", "integration"]
+    assert auswahl.schritte == ["retired-words", "lint", "unit", "integration"]
     assert "domain/themen.json" in auswahl.gruende["integration"][0]
 
 
@@ -338,7 +338,7 @@ def test_waehlen_datendatei_ohne_erreichtes_modul_nur_unit(baum):
 
     auswahl = geaendert.waehlen([f"{PY}/app/api/fern.yaml"], wurzel)
 
-    assert auswahl.schritte == ["retired-words", "sign-off", "lint", "unit"]
+    assert auswahl.schritte == ["retired-words", "lint", "unit"]
 
 
 @pytest.mark.parametrize(

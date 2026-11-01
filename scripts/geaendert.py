@@ -15,12 +15,11 @@ import sys
 from dataclasses import dataclass, field
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
-SCHRITTE = ["retired-words", "sign-off", "lint", "unit", "integration", "frontend", "bff"]
+SCHRITTE = ["retired-words", "lint", "unit", "integration", "frontend", "bff"]
 FE = "mvp/frontend/gutgesagt-frontend"
 PY = "mvp/backend/semantic-search-service"
-# Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is.
-# retired-words und sign-off laufen immer (waehlen), sie pruefen Zeilen und Commits seit der Basis.
-ALLES = SCHRITTE[2:]
+# Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is
+ALLES = SCHRITTE[1:]
 PYTHON = ["lint", "unit"]
 PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
 
@@ -219,7 +218,6 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
     """Die Schritte fuer die geaenderten ``pfade`` (relativ zu ``wurzel``) und warum."""
     auswahl = Auswahl()
     auswahl.dazu("retired-words", "immer")
-    auswahl.dazu("sign-off", "immer, prueft die Commits")
     alles = []
     for pfad in pfade:
         schritte = _regel(pfad)

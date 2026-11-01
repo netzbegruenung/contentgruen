@@ -139,27 +139,10 @@ Commit messages follow [Conventional Commits](https://www.conventionalcommits.or
 (`feat: …`, `fix: …`, `docs: …`, `chore: …`), without emojis. The pre-commit hooks format Python
 code and run the unit tests; if they reformat a file, commit again.
 
-### Developer Certificate of Origin
+### License of contributions
 
-Contributions to the code come under the
-[Developer Certificate of Origin 1.1](https://developercertificate.org/) (DCO). Read it before your
-first commit. Sign off every commit with your own name and address:
-
-```bash
-git commit -s -m "fix: …"
-```
-
-`-s` adds a trailer `Signed-off-by: Your Name <you@example.org>`, taken from `user.name` and
-`user.email`; it must name the commit's author. `bash scripts/check.sh --schritt sign-off` lists
-the commits on your branch that lack it. Sign them off before you open the pull request:
-`git rebase --signoff origin/main` rewrites the branch, which is fine as long as no pull request
-refers to it. Once the pull request is open, its branch is not rewritten (see "Merge, don't rebase"
-in [CODING_STANDARDS.md](CODING_STANDARDS.md)); ask in the pull request how to proceed.
-
-Woodpecker checks every pull request (step `sign-off`, [docs/CI.md](docs/CI.md)) and names the
-commits without the author's sign-off. For now it does not check merge commits, nor commits a
-coding agent wrote, recognised by a `Co-Authored-By` trailer with an agent's address (listed in
-`scripts/sign_off.py`). Whether these exceptions stay is still open.
+By opening a pull request you license your contribution under the AGPL, like the rest of the code,
+and confirm that you have the right to do so.
 
 ## Pull requests
 

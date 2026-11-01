@@ -71,7 +71,6 @@ def test_ci_hat_keinen_pfadfilter_auf_workflow_ebene():
         ("integration", PYTHON),
         ("ci-bericht", PYTHON),
         ("retired-words", NODE),
-        ("sign-off", NODE),
         ("frontend", NODE),
         ("bff", from_zeile("mvp/backend/BFF/Dockerfile", "build")),
     ],
@@ -112,15 +111,6 @@ def test_integration_laeuft_im_pflichtmodus_gegen_die_dienste():
         f"postgresql+psycopg2://{pg['POSTGRES_USER']}:{pg['POSTGRES_PASSWORD']}"
         f"@postgres:5432/{pg['POSTGRES_DB']}"
     )
-
-
-@pytest.mark.parametrize("schritt", ["retired-words", "sign-off"])
-def test_pruefung_ab_abzweigung_nur_bei_pull_request_gegen_das_ziel(schritt):
-    # Push-, Tag- und manuelle Laeufe haben keinen Zielbranch, ab dem sie pruefen koennten.
-    s = SCHRITTE[schritt]
-
-    assert s["when"] == [{"event": "pull_request"}]
-    assert s["commands"][0] == "export CHECK_BASE=origin/$${CI_COMMIT_TARGET_BRANCH}"
 
 
 def test_jeder_schritt_protokolliert_fuer_den_ci_bericht():

@@ -13,7 +13,6 @@ merge and build the images.
 | Step | Image | Runs |
 |---|---|---|
 | `retired-words` | `node:22` (frontend Dockerfile; has git and python3) | `check.sh --schritt retired-words`, lines added since the branch left the target branch; pull requests only (push, tag and manual runs have no target branch) |
-| `sign-off` | `node:22` (has git and python3) | `check.sh --schritt sign-off`, the commits since the branch left the target branch carry their author's `Signed-off-by`, except merge and agent commits ([CONTRIBUTING.md](../CONTRIBUTING.md#developer-certificate-of-origin)); pull requests only |
 | `python-installieren` | `python:3.13-slim` (semantic-search Dockerfile) | venv at `mvp/backend/semantic-search-service/venv`, `requirements.txt` |
 | `lint` | same | `check.sh --schritt lint`: Ruff and Black with the versions pinned in `requirements.txt` |
 | `unit` | same | `check.sh --schritt unit`: Python unit tests and `scripts/tests/` |
@@ -55,7 +54,7 @@ Rules the pipeline keeps, checked by `scripts/tests/test_woodpecker_ci.py` (part
 - **Events:** `pull_request`, `push` on `main`, `tag` and `manual`. Without `manual`,
   "Run pipeline" in the Woodpecker UI filters the workflow out.
 - The clone step fetches the full history and the target branch (`fetch-target-branch`),
-  so `retired-words` and `sign-off` can find where the branch started.
+  so `retired-words` can find where the branch started.
 
 ## CI report
 
@@ -129,11 +128,10 @@ Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` sho
 For checks in between, `bash scripts/check.sh --geaendert` runs only the steps the files changed
 since the branch left `origin/main` (`CHECK_BASE`) reach, the working tree included; for the
 frontend only the specs of the changed components and services and the specs that import them.
-`retired-words` and `sign-off` always run: they check the lines and commits since `CHECK_BASE`.
 `integration` runs when migrations, repositories or Python modules the integration tests import
 directly or indirectly changed, without `--integration`, and then needs Qdrant and PostgreSQL like
 `--schritt integration`. It prints the chosen steps and why (`scripts/geaendert.py`, tests in
 `scripts/tests/test_geaendert.py`). When in doubt it runs more: changes under `scripts/` or
 `.woodpecker/` and paths it does not know run everything, documentation runs only
-`retired-words` and `sign-off`. The pipeline does not use `--geaendert`; it always runs every step, and so does
+`retired-words`. The pipeline does not use `--geaendert`; it always runs every step, and so does
 the full check before the merge.
