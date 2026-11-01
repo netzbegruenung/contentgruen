@@ -23,6 +23,7 @@ from dependencies import (
     get_generic_text_service,
     get_post_service,
 )
+from domain.models.content_status import zustand_am_einwurf
 from domain.link_vergleich import links_im_text_ohne_tracking, ohne_tracking
 from domain.models.content_type import ContentType
 from domain.models.raw_input import (
@@ -51,6 +52,10 @@ from services.beitrag_fuer_aufrufer import (
     Aufrufer,
     personen_fuer_aufrufer,
 )
+from repositories.implementations.qdrant.moderation_repository import (
+    get_moderation_repository,
+)
+from repositories.interfaces.moderation_repository import IModerationRepository
 from repositories.raw_input_repository import (
     RawInputRepository,
     get_raw_input_repository,
@@ -84,8 +89,39 @@ def _angemeldete_person(x_user: Optional[str]) -> str:
     return person
 
 
-def _einwuerfe_fuer_aufrufer(
-    rows: List[dict], aufrufer: Aufrufer, mit_namen: bool = True
+async def _zustaende_eintragen(
+    einwuerfe: List[RawInputResponse], suchindex: IModerationRepository
+) -> None:
+    """
+    Den Zustand jedes verknuepften Beitrags eintragen (#507), mit einer Abfrage fuer
+    die ganze Seite. Die Einwuerfe liegen in PostgreSQL, der Zustand der Beitraege im
+    Suchindex. Antwortet der nicht, bleibt der Zustand offen und die Einwuerfe laden
+    trotzdem: Der Fangkorb haengt nicht an der Beschriftung.
+    """
+    links = [link for einwurf in einwuerfe for link in einwurf.links]
+    if not links:
+        return
+    try:
+        gespeichert = await suchindex.zustaende_laden(
+            list({link.content_id for link in links})
+        )
+    except Exception as e:
+        logger.error(
+            f"Zustand der verknuepften Beitraege nicht lesbar: {type(e).__name__}",
+            exc_info=True,
+        )
+        return
+    for link in links:
+        link.zustand = zustand_am_einwurf(
+            gespeichert.get(link.content_id), link.content_id in gespeichert
+        )
+
+
+async def _einwuerfe_fuer_aufrufer(
+    rows: List[dict],
+    aufrufer: Aufrufer,
+    suchindex: IModerationRepository,
+    mit_namen: bool = True,
 ) -> List[RawInputResponse]:
     """
     Die Einwuerfe, wie der Aufrufer sie sieht (#385, Regel aus #333): Anzeigenamen
@@ -104,12 +140,18 @@ def _einwuerfe_fuer_aufrufer(
     if not mit_namen:
         gruppen = [(objekte, bezug.nur_kennung()) for objekte, bezug in gruppen]
     personen_fuer_aufrufer(aufrufer, *gruppen)
+    await _zustaende_eintragen(einwuerfe, suchindex)
     return einwuerfe
 
 
-def _seite(rows: List[dict], gesamt: int, aufrufer: Aufrufer) -> GetRawInputsResponse:
+async def _seite(
+    rows: List[dict],
+    gesamt: int,
+    aufrufer: Aufrufer,
+    suchindex: IModerationRepository,
+) -> GetRawInputsResponse:
     """Eine Seite Einwuerfe fuer den Aufrufer, wie Fangkorb und Meine Einwuerfe sie liefern."""
-    results = _einwuerfe_fuer_aufrufer(rows, aufrufer)
+    results = await _einwuerfe_fuer_aufrufer(rows, aufrufer, suchindex)
     return GetRawInputsResponse(
         results_count=len(results), results=results, total_records_count=gesamt
     )
@@ -146,6 +188,7 @@ async def get_raw_inputs(
     page_size: int = Query(default=20, ge=1, le=100),
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
+    suchindex: IModerationRepository = Depends(get_moderation_repository),
 ) -> GetRawInputsResponse:
     """
     Den Fangkorb auflisten: eigene Einwuerfe zuerst, dann neueste zuerst.
@@ -163,7 +206,7 @@ async def get_raw_inputs(
             offset=offset,
             current_user=_einwerfende_person(aufrufer.kennung),
         )
-        return _seite(rows, repository.count(), aufrufer)
+        return await _seite(rows, repository.count(), aufrufer, suchindex)
     except Exception as e:
         logger.error(f"Fehler in /getRawInputs: {type(e).__name__}", exc_info=True)
         raise HTTPException(
@@ -176,6 +219,7 @@ async def einwuerfe_mit_gleichem_link(
     request: GleicherLinkRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
+    suchindex: IModerationRepository = Depends(get_moderation_repository),
 ) -> GleicherLinkResponse:
     """
     Einwuerfe mit gleichem Link, fuer die Anzeige beim Einwerfen (#263).
@@ -193,7 +237,9 @@ async def einwuerfe_mit_gleichem_link(
     try:
         rows = repository.mit_gleichem_link(request.url, person)
         return GleicherLinkResponse(
-            results=_einwuerfe_fuer_aufrufer(rows, aufrufer, mit_namen=False)
+            results=await _einwuerfe_fuer_aufrufer(
+                rows, aufrufer, suchindex, mit_namen=False
+            )
         )
     except Exception as e:
         logger.error(f"Fehler in /gleicherLink: {type(e).__name__}", exc_info=True)
@@ -208,6 +254,7 @@ async def get_own_raw_inputs(
     page_size: int = Query(default=20, ge=1, le=100),
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
+    suchindex: IModerationRepository = Depends(get_moderation_repository),
 ) -> GetRawInputsResponse:
     """
     Meine Einwuerfe: nur, was die anfragende Person eingeworfen hat, neueste zuerst.
@@ -224,7 +271,9 @@ async def get_own_raw_inputs(
             current_user=person,
             submitted_by=person,
         )
-        return _seite(rows, repository.count(submitted_by=person), aufrufer)
+        return await _seite(
+            rows, repository.count(submitted_by=person), aufrufer, suchindex
+        )
     except Exception as e:
         logger.error(f"Fehler in /getOwnRawInputs: {type(e).__name__}", exc_info=True)
         raise HTTPException(
@@ -237,6 +286,7 @@ async def get_raw_input(
     raw_input_id: uuid.UUID,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
+    suchindex: IModerationRepository = Depends(get_moderation_repository),
 ) -> RawInputResponse:
     """
     Einen Einwurf lesen, mit allen Saetzen und dem eigenen als ``own_draft``.
@@ -255,7 +305,7 @@ async def get_raw_input(
         )
     if row is None:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)
-    return _einwuerfe_fuer_aufrufer([row], aufrufer)[0]
+    return (await _einwuerfe_fuer_aufrufer([row], aufrufer, suchindex))[0]
 
 
 @router.put("/{raw_input_id}/draft", response_model=DraftResponse)
@@ -328,6 +378,7 @@ async def update_status(
     request: UpdateRawInputStatusRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
+    suchindex: IModerationRepository = Depends(get_moderation_repository),
     commentary_service=Depends(get_commentary_service),
     generic_text_service=Depends(get_generic_text_service),
     post_service=Depends(get_post_service),
@@ -374,7 +425,7 @@ async def update_status(
             request.content_type.value if request.content_type else None,
             ist_admin=aufrufer.ist_admin,
         )
-        return _einwuerfe_fuer_aufrufer([row], aufrufer)[0]
+        return (await _einwuerfe_fuer_aufrufer([row], aufrufer, suchindex))[0]
     except HTTPException:
         raise
     except EinwurfNichtGefunden:

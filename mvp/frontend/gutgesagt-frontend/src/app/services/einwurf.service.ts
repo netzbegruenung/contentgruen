@@ -55,6 +55,9 @@ export interface Satz {
   updated_at: string;
 }
 
+/** Die Zustaende eines Beitrags (Glossar), wie die Einwurf-Antwort sie nennt (#507). */
+export type BeitragZustand = 'sichtbar' | 'gesperrt' | 'geloescht';
+
 /** Die Verknuepfung eines Einwurfs mit einem Beitrag, neu entstanden oder vorhanden. */
 export interface Verknuepfung {
   content_id: string;
@@ -65,6 +68,11 @@ export interface Verknuepfung {
   /** Der Ausformulierer, nicht zwingend der Autor des Beitrags; nur fuer Admins. */
   processed_by: string | null;
   processed_at: string;
+  /**
+   * Der Zustand des Beitrags; null oder fehlend, wenn der Server ihn nicht kannte
+   * (dann gilt er wie sichtbar).
+   */
+  zustand?: BeitragZustand | null;
 }
 
 export interface Einwurf {

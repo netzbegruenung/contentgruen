@@ -75,6 +75,26 @@ async def test_loeschen_beitrag_fehlt_ueberall_bleibt_gespeichert(
     assert punkt["text"] == post_beitrag(post_id).text
 
 
+async def test_zustaende_laden_liest_den_zustand_in_einer_abfrage(
+    post_service, loeschen, real_embeddings_manager
+):
+    """Die Einwurf-Antwort beschriftet so Einwuerfe zu geloeschten Beitraegen (#507)."""
+    sichtbar, geloescht, nie_da = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    await post_service._upsert(post_beitrag(sichtbar))
+    await post_service._upsert(post_beitrag(geloescht))
+    assert await loeschen.loeschen(geloescht, AUTOR) is LoeschErgebnis.GELOESCHT
+    suchindex = QdrantModerationRepository(embeddings_manager=real_embeddings_manager)
+
+    zustaende = await suchindex.zustaende_laden(
+        [str(sichtbar), str(geloescht), str(nie_da)]
+    )
+
+    assert zustaende == {
+        str(sichtbar): ContentStatus.VISIBLE.value,
+        str(geloescht): ContentStatus.DELETED.value,
+    }
+
+
 async def test_loeschen_fremder_beitrag_bleibt_sichtbar(post_service, loeschen):
     post_id = uuid.uuid4()
     await post_service._upsert(post_beitrag(post_id))

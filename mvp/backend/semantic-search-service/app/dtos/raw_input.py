@@ -13,6 +13,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from domain.cc0_hinweis import Cc0Wortlaut
+from domain.models.content_status import ZustandAmEinwurf
 from domain.models.content_type import ContentType
 from domain.models.raw_input import RawInputSource, RawInputStatus
 from utils.url_validator import validate_url_security
@@ -208,6 +209,8 @@ class RawInputLinkResponse(BaseModel):
     ``draft_id`` ist der ausformulierte Satz; None, wenn die Person ihren Satz
     spaeter geleert hat. ``content_type`` ist None bei Verknuepfungen aus der Zeit
     vor Fangkorb v2.
+    ``zustand`` ist der Zustand des Beitrags (#507); None, wenn der Suchindex ihn
+    nicht liefern konnte.
     """
 
     content_id: str
@@ -215,6 +218,7 @@ class RawInputLinkResponse(BaseModel):
     draft_id: Optional[str] = None
     processed_by: Optional[str] = None
     processed_at: datetime.datetime
+    zustand: Optional[ZustandAmEinwurf] = None
 
 
 class RawInputResponse(BaseModel):

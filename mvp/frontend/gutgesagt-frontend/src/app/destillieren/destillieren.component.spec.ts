@@ -479,6 +479,16 @@ describe('DestillierenComponent', () => {
       expect(beitragAnsehen.oeffnen).toHaveBeenCalledOnceWith('k-1', 'commentary');
     });
 
+    it('zeigt keinen Hinweis, wenn der verknuepfte Beitrag gesperrt oder geloescht ist (#507)', async () => {
+      queryParams = convertToParamMap({ schritt: 'typwahl' });
+      const weg = ausformuliert();
+      weg.links = weg.links!.map((link) => ({ ...link, zustand: 'gesperrt' as const }));
+
+      await erstellen('id-1', weg);
+
+      expect(fixture.nativeElement.querySelector('.schon-verknuepft')).toBeNull();
+    });
+
     it('zeigt ohne verknuepften Beitrag keinen Hinweis', async () => {
       queryParams = convertToParamMap({ schritt: 'typwahl' });
 

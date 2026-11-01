@@ -26,7 +26,7 @@ import { NavigationService } from '../services/navigation.service';
 import { FORMULAR_PFAD } from '../shared/formular-adresse';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
-import { KartenDaten, ausEinwurf, istVerwerfbar } from '../beitragskarte/karten-daten';
+import { KartenDaten, ausEinwurf, istSichtbar, istVerwerfbar } from '../beitragskarte/karten-daten';
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 
@@ -181,12 +181,13 @@ export class DestillierenComponent implements OnInit, OnDestroy {
   private kopfCache?: { einwurf: Einwurf; satz: string; karte: KartenDaten };
 
   /**
-   * Ein schon verknuepfter Beitrag dieses Einwurfs (der erste), fuer den Hinweis
-   * in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur sehen, dass
-   * es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
+   * Ein schon verknuepfter Beitrag dieses Einwurfs (der erste sichtbare), fuer den
+   * Hinweis in der Typwahl. Ein weiterer Beitrag bleibt moeglich - man soll nur
+   * sehen, dass es schon einen gibt, etwa nach dem Zurueck von der Ergebnisseite.
+   * Gesperrte und geloeschte zaehlen nicht: Die findet niemand mehr (#507).
    */
   get verknuepfterBeitrag(): { contentId: string; contentType: string | null } | null {
-    const link = this.einwurf?.links?.[0];
+    const link = this.einwurf?.links?.find((verknuepfung) => istSichtbar(verknuepfung));
     return link ? { contentId: link.content_id, contentType: link.content_type } : null;
   }
 

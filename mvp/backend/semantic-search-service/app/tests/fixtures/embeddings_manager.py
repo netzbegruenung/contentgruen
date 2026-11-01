@@ -139,6 +139,21 @@ class TestEmbeddingsManager(IEmbeddingsManager):
                 for key in keys:
                     self._data.get(str(point_id), {}).pop(key, None)
 
+        async def mock_retrieve(collection_name, ids, with_payload=True, **kwargs):
+            """Mock retrieve: die gespeicherten Punkte zu den IDs, unbekannte fehlen."""
+            punkte = []
+            for point_id in ids:
+                item_data = self._data.get(str(point_id))
+                if item_data is None:
+                    continue
+                if isinstance(with_payload, list):
+                    payload = {k: item_data[k] for k in with_payload if k in item_data}
+                else:
+                    payload = item_data if with_payload else None
+                punkte.append(MagicMock(id=str(point_id), payload=payload))
+            return punkte
+
+        self._async_client.retrieve = AsyncMock(side_effect=mock_retrieve)
         self._async_client.set_payload = AsyncMock(side_effect=mock_set_payload)
         self._async_client.delete_payload = AsyncMock(side_effect=mock_delete_payload)
 

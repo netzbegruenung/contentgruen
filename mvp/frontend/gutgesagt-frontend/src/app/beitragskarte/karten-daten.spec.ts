@@ -314,6 +314,7 @@ describe('karten-daten', () => {
         linkText: 'instagram.com/reel/ABC',
         saetze: [],
         beitraege: [],
+        beitragZustand: null,
         verwerfbar: true,
       });
     });
@@ -386,6 +387,66 @@ describe('karten-daten', () => {
         { contentId: 'c-1', typ: 'commentary', satz: 'Genommen' },
         { contentId: 'c-alt', typ: null, satz: null },
       ]);
+    });
+
+    // #507: Einwuerfe, deren Beitrag gesperrt oder geloescht ist, werden beschriftet.
+    it('beschriftet einen Einwurf, dessen Beitrag gesperrt ist, und bietet ihn nicht an', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'processed', links: [{ ...link(null, 'commentary', 'c-1'), zustand: 'gesperrt' }] }),
+      );
+
+      expect(karte.einwurfAngaben!.stufe).toBe('ausformuliert');
+      expect(karte.einwurfAngaben!.beitragZustand).toBe('gesperrt');
+      expect(karte.einwurfAngaben!.beitraege).toEqual([]);
+      expect(karte.typ).toBeNull();
+    });
+
+    it('beschriftet einen Einwurf, dessen Beitrag geloescht ist', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'processed', links: [{ ...link(null, 'commentary', 'c-1'), zustand: 'geloescht' }] }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBe('geloescht');
+      expect(karte.einwurfAngaben!.beitraege).toEqual([]);
+    });
+
+    it('nennt gesperrt vor geloescht, wenn keiner seiner Beitraege mehr sichtbar ist', () => {
+      const karte = ausEinwurf(
+        einwurf({
+          status: 'processed',
+          links: [
+            { ...link(null, 'commentary', 'c-1'), zustand: 'geloescht' },
+            { ...link(null, 'commentary', 'c-2'), zustand: 'gesperrt' },
+          ],
+        }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBe('gesperrt');
+    });
+
+    it('bleibt ausformuliert, solange einer seiner Beitraege sichtbar ist, und bietet nur den an', () => {
+      const karte = ausEinwurf(
+        einwurf({
+          status: 'processed',
+          links: [
+            { ...link(null, 'commentary', 'c-weg'), zustand: 'gesperrt' },
+            { ...link(null, 'generic_text', 'c-da'), zustand: 'sichtbar' },
+          ],
+        }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBeNull();
+      expect(karte.einwurfAngaben!.beitraege).toEqual([{ contentId: 'c-da', typ: 'generictext', satz: null }]);
+      expect(karte.typ).toBe('generictext');
+    });
+
+    it('behandelt einen unbekannten Zustand wie sichtbar', () => {
+      const karte = ausEinwurf(
+        einwurf({ status: 'processed', links: [{ ...link(null, 'commentary', 'c-1'), zustand: null }] }),
+      );
+
+      expect(karte.einwurfAngaben!.beitragZustand).toBeNull();
+      expect(karte.einwurfAngaben!.beitraege.length).toBe(1);
     });
 
     it('nimmt fuer Farbe und Zeichen die erste Verknuepfung mit Typ', () => {

@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal, Optional
 
 
 class ContentStatus(Enum):
@@ -64,6 +65,31 @@ und seit #281 holt es nichts mehr aus diesem Zustand.
 """
 
 AUSGEBLENDET_WERTE = frozenset(status.value for status in AUSGEBLENDET)
+
+
+ZustandAmEinwurf = Literal["sichtbar", "gesperrt", "geloescht"]
+"""
+Der Zustand eines verknuepften Beitrags, wie die Einwurf-Antwort ihn nennt (#507):
+die drei Zustaende des Glossars. Daran beschriftet das Frontend Einwuerfe, deren
+Beitrag niemand mehr findet, statt "Ausformuliert" und "Ansehen" zu zeigen.
+"""
+
+
+def zustand_am_einwurf(status: Optional[str], vorhanden: bool) -> ZustandAmEinwurf:
+    """
+    Der Zustand aus dem gespeicherten Status. Ein Beitrag ohne Eintrag im Suchindex
+    ist endgueltig entfernt und gilt als geloescht; ebenso die Altwerte fuer Bilder
+    ohne Unterschrift, die niemand finden kann (aus dem Fangkorb entstehen ohnehin
+    keine Bilder). Altwerte von vor #214 lesen sich wie ueberall als sichtbar.
+    """
+    if not vorhanden:
+        return "geloescht"
+    wert = zustand_aus_altwert(status)
+    if wert == ContentStatus.BLOCKED.value:
+        return "gesperrt"
+    if wert in AUSGEBLENDET_WERTE:
+        return "geloescht"
+    return "sichtbar"
 
 
 # --- Uebergang bis zur Umstellung der Altwerte (#214) -------------------------------

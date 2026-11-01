@@ -907,6 +907,7 @@ describe('BeitragskarteComponent', () => {
           linkText: 'instagram.com/reel/ABC',
           saetze: [{ id: 's-1', text: 'Erster Satz', beitraege: 0 } as any, { id: 's-2', text: 'Zweiter', beitraege: 1 } as any],
           beitraege: [],
+          beitragZustand: null,
           verwerfbar: true,
           kopfSatz: 'Wärmepumpen lohnen sich im Altbau',
         },
