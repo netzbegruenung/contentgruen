@@ -5,10 +5,9 @@ Exit code 1 if a commit lacks a Signed-off-by trailer with its author's address,
 base cannot be read, else 0. Output names commit and subject only, no addresses: the CI
 report posts it into the pull request.
 
-Not checked (CONTRIBUTING.md, "Developer Certificate of Origin"):
-- merge commits: they bring no change of their own;
-- commits a coding agent wrote, recognised by a Co-Authored-By trailer with an address in
-  AGENTEN. An agent cannot certify the DCO; whoever commissioned it answers for the commit.
+Not checked for now, whether that stays is open (CONTRIBUTING.md, "Developer Certificate of
+Origin"): merge commits, and commits a coding agent wrote, recognised by a Co-Authored-By
+trailer with an address in AGENTEN_ADRESSEN.
 """
 
 import argparse
@@ -17,7 +16,7 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-AGENTEN = {"noreply@anthropic.com"}
+AGENTEN_ADRESSEN = {"noreply@anthropic.com"}
 # Fields: hash, author address, subject, sign-off values, co-author values; one record per commit
 _FORMAT = (
     "%h%x1f%ae%x1f%s"
@@ -47,7 +46,7 @@ def ohne_sign_off(repo, base):
     ).stdout
     for satz in filter(str.strip, out.split("\x1e")):
         sha, autor, betreff, sign_offs, co_autoren = satz.strip("\n").split("\x1f")
-        if _adressen(co_autoren) & AGENTEN:
+        if _adressen(co_autoren) & AGENTEN_ADRESSEN:
             continue
         if autor.lower() not in _adressen(sign_offs):
             yield sha, betreff

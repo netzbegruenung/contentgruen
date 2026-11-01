@@ -61,6 +61,12 @@ def test_commit_mit_sign_off_des_autors_besteht(repo):
     assert (ergebnis.returncode, ergebnis.stdout) == (0, "")
 
 
+def test_adresse_im_sign_off_ohne_ruecksicht_auf_gross_und_klein(repo):
+    commit(repo, "feat: gross\n\nSigned-off-by: Erika Muster <Erika@Example.ORG>")
+
+    assert pruefen(repo).returncode == 0
+
+
 def test_sign_off_einer_anderen_person_reicht_nicht(repo):
     commit(repo, "feat: fremd\n\nSigned-off-by: Max Muster <max@example.org>")
 

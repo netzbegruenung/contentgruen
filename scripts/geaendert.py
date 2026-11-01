@@ -20,7 +20,7 @@ FE = "mvp/frontend/gutgesagt-frontend"
 PY = "mvp/backend/semantic-search-service"
 # Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is.
 # sign-off prueft Commits, nicht Dateien: es laeuft nur mit allem anderen.
-ALLES = SCHRITTE[1:]
+ALLES = [s for s in SCHRITTE if s != "retired-words"]
 PYTHON = ["lint", "unit"]
 PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
 
