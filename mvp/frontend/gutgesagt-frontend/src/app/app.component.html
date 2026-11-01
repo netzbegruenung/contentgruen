@@ -8,8 +8,8 @@
                 (home)="navigateToHome()"
                 (contribute)="navigateToContributeView()"
                 (contributions)="navigateToContributionsView()"
-                (rawInput)="navigateToRawInputView()"
-                (rawInputList)="navigateToRawInputListView()"
+                (einwerfen)="navigateToEinwerfenView()"
+                (fangkorb)="navigateToFangkorbView()"
                 (login)="login()"
                 (loginToContribute)="loginWithReturnUrl('/contribute')"
                 (logout)="logout()"
@@ -126,9 +126,9 @@
 
                             <span class="header-link text-emphasis"
                             role="button" tabindex="0" aria-label="Fangkorb anzeigen"
-                            (click)="navigateToRawInputListView()"
-                            (keydown.enter)="navigateToRawInputListView()"
-                            (keydown.space)="navigateToRawInputListView()">{{ kettenIcons.fangkorb }} Fangkorb</span>
+                            (click)="navigateToFangkorbView()"
+                            (keydown.enter)="navigateToFangkorbView()"
+                            (keydown.space)="navigateToFangkorbView()">{{ kettenIcons.fangkorb }} Fangkorb</span>
 
                             <a class="header-link text-emphasis" [routerLink]="hierFehltEineAntwortPfad">Hier fehlt eine Antwort</a>
 
@@ -149,7 +149,7 @@
                          durch die Beitragsauswahl. -->
                     <button mat-icon-button
                         *ngIf="userInfo?.isAuthenticated"
-                        (click)="navigateToRawInputView()"
+                        (click)="navigateToEinwerfenView()"
                         class="mat-elevation-z1"
                         aria-label="Schnell einwerfen">
                         <span class="header-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>

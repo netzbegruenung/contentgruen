@@ -50,7 +50,7 @@ function formularEltern(snapshot: ActivatedRouteSnapshot): string | unknown[] {
  *
  * Ausnahme ist der FAB im Fangkorb: Wer dort einwirft, will zurueck in die Liste, in
  * der der Einwurf gleich liegt. Der FAB sagt das ueber ``?von=fangkorb``
- * (zumEinwerfen in raw-input-list.component.ts).
+ * (zumEinwerfen in fangkorb.component.ts).
  */
 function einwerfenEltern(snapshot: ActivatedRouteSnapshot): string {
   return snapshot.queryParamMap.get('von') === 'fangkorb' ? '/fangkorb' : '/contribute';
@@ -79,13 +79,13 @@ export const routes: Routes = [
     },
     {
         path: 'einwerfen',
-        loadComponent: () => import('./add-raw-input/add-raw-input.component').then(m => m.AddRawInputComponent),
+        loadComponent: () => import('./einwerfen/einwerfen.component').then(m => m.EinwerfenComponent),
         canActivate: [AuthGuard],
         data: { parent: einwerfenEltern }
     },
     {
         path: 'fangkorb',
-        loadComponent: () => import('./raw-input-list/raw-input-list.component').then(m => m.RawInputListComponent),
+        loadComponent: () => import('./fangkorb/fangkorb.component').then(m => m.FangkorbComponent),
         canActivate: [AuthGuard],
         data: { parent: '/search' }
     },

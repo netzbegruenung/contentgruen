@@ -58,7 +58,7 @@ describe('Routentabelle', () => {
   /**
    * Der Pfeil auf /einwerfen: ohne Parameter auf die Beitragen-Seite, mit
    * ?von=fangkorb zurueck in die Liste. Den Parameter setzt der FAB im Fangkorb
-   * (raw-input-list.component.ts, zumEinwerfen).
+   * (fangkorb.component.ts, zumEinwerfen).
    */
   it('fuehrt von /einwerfen nach /contribute, aus dem Fangkorb aber zurueck', () => {
     const eltern = elternFunktion('einwerfen');

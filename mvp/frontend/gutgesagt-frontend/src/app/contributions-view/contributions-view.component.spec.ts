@@ -7,7 +7,7 @@ import { Observable, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
 import { ContributionsViewComponent } from './contributions-view.component';
-import { ContributionsService } from '../services/contributions.service';
+import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
 import { BeitragSheetComponent, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
@@ -46,7 +46,7 @@ describe('ContributionsViewComponent', () => {
     };
   }
 
-  function konfigurieren(getContributions: (seite: number, groesse: number) => Observable<any>, mobil = false): void {
+  function konfigurieren(meineBeitraege: (seite: number, groesse: number) => Observable<any>, mobil = false): void {
     eigeneLaden = jasmine
       .createSpy('eigeneLaden')
       .and.returnValue(of({ results_count: 0, results: [], total_records_count: 0 }));
@@ -56,7 +56,7 @@ describe('ContributionsViewComponent', () => {
         provideRouter([]),
         provideNoopAnimations(),
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
-        { provide: ContributionsService, useValue: { getContributions } },
+        { provide: MeineBeitraegeService, useValue: { meineBeitraege } },
         { provide: UsageTrackingService, useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik) } },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },
@@ -341,7 +341,7 @@ describe('ContributionsViewComponent', () => {
     const vorher = [beitrag(), beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
     const nachher = [beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
     const laden = jasmine
-      .createSpy('getContributions')
+      .createSpy('meineBeitraege')
       .and.returnValues(
         of({ results_count: 2, total_records_count: 2, results: vorher }),
         of({ results_count: 1, total_records_count: 1, results: nachher }),
@@ -365,7 +365,7 @@ describe('ContributionsViewComponent', () => {
     const seite = (n: number) =>
       Array.from({ length: n }, (_, i) => beitrag({ id: `b${i}`, title: `Beitrag Nummer ${i}` }));
     const laden = jasmine
-      .createSpy('getContributions')
+      .createSpy('meineBeitraege')
       .and.returnValues(
         of({ results_count: 24, total_records_count: 25, results: seite(24) }),
         of({ results_count: 1, total_records_count: 25, results: seite(1) }),

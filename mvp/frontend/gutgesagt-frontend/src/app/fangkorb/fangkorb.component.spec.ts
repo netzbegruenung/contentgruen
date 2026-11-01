@@ -7,7 +7,7 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
 
-import { LADE_GROESSE, RawInputListComponent } from './raw-input-list.component';
+import { LADE_GROESSE, FangkorbComponent } from './fangkorb.component';
 import { FILTER_SCHLUESSEL } from './fangkorb-filter';
 import { EinwurfBeitragSheetComponent } from './einwurf-beitrag-sheet.component';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
@@ -75,9 +75,9 @@ function antwort(results: Einwurf[], gesamt = results.length): EinwurfSeite {
   return { results_count: results.length, results, total_records_count: gesamt };
 }
 
-describe('RawInputListComponent', () => {
-  let fixture: ComponentFixture<RawInputListComponent>;
-  let component: RawInputListComponent;
+describe('FangkorbComponent', () => {
+  let fixture: ComponentFixture<FangkorbComponent>;
+  let component: FangkorbComponent;
   let einwurfService: jasmine.SpyObj<EinwurfService>;
   let router: Router;
   let bottomSheet: MatBottomSheet;
@@ -87,7 +87,7 @@ describe('RawInputListComponent', () => {
 
   function erstellen(results: Einwurf[], gesamt?: number): void {
     einwurfService.fangkorbLaden.and.returnValue(of(antwort(results, gesamt)));
-    fixture = TestBed.createComponent(RawInputListComponent);
+    fixture = TestBed.createComponent(FangkorbComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   }
@@ -132,7 +132,7 @@ describe('RawInputListComponent', () => {
     snackBar = jasmine.createSpyObj('MatSnackBar', ['open']);
 
     await TestBed.configureTestingModule({
-      imports: [RawInputListComponent, NoopAnimationsModule],
+      imports: [FangkorbComponent, NoopAnimationsModule],
       providers: [
         provideRouter([]),
         { provide: EinwurfService, useValue: einwurfService },
@@ -414,7 +414,7 @@ describe('RawInputListComponent', () => {
 
     it('meldet einen Ladefehler statt still leer zu bleiben', () => {
       einwurfService.fangkorbLaden.and.returnValue(throwError(() => new Error('kaputt')));
-      fixture = TestBed.createComponent(RawInputListComponent);
+      fixture = TestBed.createComponent(FangkorbComponent);
       fixture.detectChanges();
 
       expect(fixture.componentInstance.ladefehler).toBeTrue();

@@ -180,12 +180,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.navigationService.navigateToContributions();
   }
 
-  navigateToRawInputView(): void {
-    this.navigationService.navigateToRawInput();
+  navigateToEinwerfenView(): void {
+    this.navigationService.navigateToEinwerfen();
   }
 
-  navigateToRawInputListView(): void {
-    this.navigationService.navigateToRawInputList();
+  navigateToFangkorbView(): void {
+    this.navigationService.navigateToFangkorb();
   }
 
   /**

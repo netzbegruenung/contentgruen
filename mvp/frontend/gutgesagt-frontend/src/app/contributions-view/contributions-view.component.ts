@@ -6,7 +6,7 @@ import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/pag
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ContributionsService } from '../services/contributions.service';
+import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
@@ -48,7 +48,7 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     SperrnachrichtenComponent
   ],
   templateUrl: './contributions-view.component.html',
-  styleUrls: ['./contributions-view.component.css'],
+  styleUrls: ['../shared/tabs.css', './contributions-view.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Hier und nicht in app.config.ts: dort zoege der Import den Paginator samt
   // Abhaengigkeiten ins initiale Bundle, obwohl nur diese Route ihn nutzt.
@@ -74,7 +74,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
   nutzungsstatistik: UserUsageStats | null = null;
 
   constructor(
-    private contributionsService: ContributionsService,
+    private meineBeitraegeService: MeineBeitraegeService,
     private router: Router,
     private usageTrackingService: UsageTrackingService,
     private authService: AuthService,
@@ -103,7 +103,7 @@ export class ContributionsViewComponent implements OnInit, OnDestroy {
 
   fetchData(page: number, pageSize: number) {
     this.isLoading = true;
-    this.contributionsService.getContributions(page, pageSize).subscribe((data) => {
+    this.meineBeitraegeService.meineBeitraege(page, pageSize).subscribe((data) => {
       this.karten = data.results.map((eintrag) => ausBeitrag(eintrag));
       this.totalRecords = data.total_records_count;
       this.calculateTotalUsage(data.results);

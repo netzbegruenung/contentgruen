@@ -38,11 +38,11 @@ export class NavigationService {
     this.router.navigate(['/contributions']);
   }
 
-  navigateToRawInput(): void {
+  navigateToEinwerfen(): void {
     this.router.navigate(['/einwerfen']);
   }
 
-  navigateToRawInputList(): void {
+  navigateToFangkorb(): void {
     this.router.navigate(['/fangkorb']);
   }
 

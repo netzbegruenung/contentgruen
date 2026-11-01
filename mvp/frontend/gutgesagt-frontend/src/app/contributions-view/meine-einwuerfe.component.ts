@@ -10,7 +10,7 @@ import { EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { EinwurfAktion, KartenDaten, ausEinwurf } from '../beitragskarte/karten-daten';
-import { EinwurfAktionenService } from '../raw-input-list/einwurf-aktionen.service';
+import { EinwurfAktionenService } from '../fangkorb/einwurf-aktionen.service';
 import { DeutscherPaginatorIntl } from '../shared/paginator-intl-de';
 
 /**

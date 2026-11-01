@@ -4,15 +4,16 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { GetContributionsOfUserResponse } from './dtos/contributionDtos';
 
+/** "Meine Beiträge": die eigenen Beiträge der angemeldeten Person, seitenweise. */
 @Injectable({
   providedIn: 'root'
 })
-export class ContributionsService {
+export class MeineBeitraegeService {
   private contributionsApiUrl = `${environment.baseUrl}/api/v1/contribution/getContributionsOfUser`;
 
   constructor(private http: HttpClient) {}
 
-  getContributions(page: number, pageSize: number): Observable<GetContributionsOfUserResponse> {
+  meineBeitraege(page: number, pageSize: number): Observable<GetContributionsOfUserResponse> {
     const url = `${this.contributionsApiUrl}?page=${page}&page_size=${pageSize}`;
 
     return this.http.get<GetContributionsOfUserResponse>(url);

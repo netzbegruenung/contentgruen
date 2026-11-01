@@ -28,7 +28,7 @@ import {
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
 import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
-import { NACH_DEM_AUSFORMULIEREN } from '../raw-input-list/fangkorb-filter';
+import { NACH_DEM_AUSFORMULIEREN } from '../fangkorb/fangkorb-filter';
 
 /** Den vorhandenen Kommentar aus dem Fangkorb gewaehlt: gespeichert wurde nichts, verknuepft schon. */
 export const EINWURF_MIT_VORHANDENEM_VERKNUEPFT = 'Der Einwurf ist jetzt mit dem vorhandenen Kommentar verknüpft.';

@@ -9,7 +9,7 @@ import { DestillierUebergabeService } from './destillier-uebergabe.service';
 import { SatzResponse, Einwurf, EinwurfService } from '../services/einwurf.service';
 import { AuthService, UserInfo } from '../auth/auth.service';
 import { LoggingService } from '../services/logging.service';
-import { FILTER_SCHLUESSEL, filterLaden } from '../raw-input-list/fangkorb-filter';
+import { FILTER_SCHLUESSEL, filterLaden } from '../fangkorb/fangkorb-filter';
 import { NavigationService } from '../services/navigation.service';
 import { CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
 
