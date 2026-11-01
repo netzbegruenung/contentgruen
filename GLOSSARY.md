@@ -388,7 +388,7 @@ Eine erreichte Schwelle bei der Wirkung der eigenen Beiträge, etwa die erste Nu
 _Avoid_: Achievement, Badge, Erfolg
 
 **Meine Einwürfe**:
-Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Ist keiner der Beiträge eines ausformulierten Einwurfs mehr sichtbar, steht statt „Ausformuliert“ „Beitrag gesperrt“ oder „Beitrag gelöscht“, und es gibt nichts anzusehen; so auch im Fangkorb und beim Einwerfen. Nach dem Ausformulieren führt „Zum Fangkorb“ hierher. Hier erfährt der Einwerfer, was aus seinen Fundstücken geworden ist. Die Karten bieten dieselben Griffe wie im Fangkorb; ein offener Einwurf lässt sich von hier aus gleich destillieren.
+Der Tab in „Meine Beiträge“, in dem eine Person ihre eigenen Einwürfe mit ihrer Stufe sieht: Ausformulierte führen zu ihren Beiträgen, verworfene sind als solche erkennbar. Ist keiner der Beiträge eines ausformulierten Einwurfs mehr sichtbar, steht statt „Ausformuliert“ „Beitrag gesperrt“ oder „Beitrag gelöscht“, und es gibt nichts anzusehen; so auch beim Einwerfen. Im Fangkorb steht Ausformuliertes nicht. Nach dem Ausformulieren führt „Zum Fangkorb“ hierher. Hier erfährt der Einwerfer, was aus seinen Fundstücken geworden ist. Die Karten bieten dieselben Griffe wie im Fangkorb; ein offener Einwurf lässt sich von hier aus gleich destillieren.
 _Avoid_: Meine Funde, Mein Fangkorb, Eingereichtes
 
 **Nutzungsstatistik**:

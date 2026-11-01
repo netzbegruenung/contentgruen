@@ -138,7 +138,7 @@ test('Fangkorb: zwei Einwuerfe ausformulieren, naechster Einwurf, Meine Einwuerf
   await test.step('Zum Fangkorb: Meine Einwuerfe (#508)', async () => {
     await page.goto(ergebnis);
     await page.locator('.zum-fangkorb').click();
-    await page.waitForURL(/\/contributions\?tab=einwuerfe/);
+    await page.waitForURL(/\/contributions/);
     // Ausformuliertes liegt in keiner Arbeitsliste, sondern in "Meine Einwuerfe".
     await expect.soft(page.getByRole('tab', { name: 'Meine Einwürfe' })).toHaveAttribute('aria-selected', 'true');
     const karte = page.locator('#meine-bereich-einwuerfe app-beitragskarte', { hasText: zweiter.hinweis });

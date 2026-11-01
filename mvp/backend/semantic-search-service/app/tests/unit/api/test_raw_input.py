@@ -419,7 +419,7 @@ class TestFangkorbListe:
         assert daten["results"][1]["processed_at"].startswith("2026-09-13T18:00")
 
     def test_liste_liefert_alle_saetze_und_verknuepften_beitraege(
-        self, client, repository
+        self, client, repository, zustaende
     ):
         """Spec Fangkorb v2, Abschnitt A: alles, was die Karte braucht."""
         am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
@@ -466,9 +466,12 @@ class TestFangkorbListe:
                 "draft_id": satz_id,
                 "processed_by": "carol",
                 "processed_at": eintrag["links"][0]["processed_at"],
-                "zustand": "sichtbar",
+                # Ausformuliertes steht in keiner Arbeitsliste; der Zustand des
+                # Beitrags (#507) kostete hier nur eine Abfrage im Suchindex.
+                "zustand": None,
             }
         ]
+        zustaende.zustaende_laden.assert_not_called()
 
 
 @pytest.mark.unit

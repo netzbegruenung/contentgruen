@@ -92,9 +92,10 @@ async def _zustaende_eintragen(
 ) -> None:
     """
     Den Zustand jedes Beitrags eintragen, in dem ein Einwurf ausformuliert ist
-    (#507), mit einer Abfrage fuer die ganze Seite. Die Einwuerfe liegen in PostgreSQL, der Zustand der Beitraege im
-    Suchindex. Antwortet der nicht, bleibt der Zustand offen und die Einwuerfe laden
-    trotzdem: Der Fangkorb haengt nicht an der Beschriftung.
+    (#507), mit einer Abfrage fuer die ganze Seite. Die Einwuerfe liegen in
+    PostgreSQL, der Zustand der Beitraege im Suchindex. Antwortet der nicht, bleibt
+    der Zustand offen und die Einwuerfe laden trotzdem: "Meine Einwuerfe" haengt
+    nicht an der Beschriftung.
     """
     links = [link for einwurf in einwuerfe for link in einwurf.links]
     if not links:
@@ -118,7 +119,7 @@ async def _zustaende_eintragen(
 async def _einwuerfe_fuer_aufrufer(
     rows: List[dict],
     aufrufer: Aufrufer,
-    suchindex: IModerationRepository,
+    suchindex: Optional[IModerationRepository] = None,
     mit_namen: bool = True,
 ) -> List[RawInputResponse]:
     """
@@ -138,7 +139,10 @@ async def _einwuerfe_fuer_aufrufer(
     if not mit_namen:
         gruppen = [(objekte, bezug.nur_kennung()) for objekte, bezug in gruppen]
     personen_fuer_aufrufer(aufrufer, *gruppen)
-    await _zustaende_eintragen(einwuerfe, suchindex)
+    # Ohne Suchindex bleibt der Zustand offen: wo die Antwort keine ausformulierten
+    # Einwuerfe zeigt (Fangkorb-Liste, Statuswechsel), spart das die Abfrage.
+    if suchindex is not None:
+        await _zustaende_eintragen(einwuerfe, suchindex)
     return einwuerfe
 
 
@@ -146,7 +150,7 @@ async def _seite(
     rows: List[dict],
     gesamt: int,
     aufrufer: Aufrufer,
-    suchindex: IModerationRepository,
+    suchindex: Optional[IModerationRepository] = None,
 ) -> GetRawInputsResponse:
     """Eine Seite Einwuerfe fuer den Aufrufer, wie Fangkorb und Meine Einwuerfe sie liefern."""
     results = await _einwuerfe_fuer_aufrufer(rows, aufrufer, suchindex)
@@ -186,7 +190,6 @@ async def get_raw_inputs(
     page_size: int = Query(default=20, ge=1, le=100),
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
-    suchindex: IModerationRepository = Depends(get_moderation_repository),
 ) -> GetRawInputsResponse:
     """
     Den Fangkorb auflisten: eigene Einwuerfe zuerst, dann neueste zuerst.
@@ -204,7 +207,8 @@ async def get_raw_inputs(
             offset=offset,
             current_user=_einwerfende_person(aufrufer.kennung),
         )
-        return await _seite(rows, repository.count(), aufrufer, suchindex)
+        # Ohne Zustand der Beitraege (#507): Ausformuliertes steht in keiner Arbeitsliste.
+        return await _seite(rows, repository.count(), aufrufer)
     except Exception as e:
         logger.error(f"Fehler in /getRawInputs: {type(e).__name__}", exc_info=True)
         raise HTTPException(
@@ -376,7 +380,6 @@ async def update_status(
     request: UpdateRawInputStatusRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: RawInputRepository = Depends(get_raw_input_repository),
-    suchindex: IModerationRepository = Depends(get_moderation_repository),
     commentary_service=Depends(get_commentary_service),
     generic_text_service=Depends(get_generic_text_service),
     post_service=Depends(get_post_service),
@@ -423,7 +426,8 @@ async def update_status(
             request.content_type.value if request.content_type else None,
             ist_admin=aufrufer.ist_admin,
         )
-        return (await _einwuerfe_fuer_aufrufer([row], aufrufer, suchindex))[0]
+        # Ohne Zustand (#507): Der Beitrag ist eben geprueft, und die Liste laedt neu.
+        return (await _einwuerfe_fuer_aufrufer([row], aufrufer))[0]
     except HTTPException:
         raise
     except EinwurfNichtGefunden:

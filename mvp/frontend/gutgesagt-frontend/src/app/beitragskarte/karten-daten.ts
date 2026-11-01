@@ -418,7 +418,9 @@ export function ausEinwurf(einwurf: Einwurf): KartenDaten {
   const saetze: EinwurfSatz[] = (einwurf.drafts ?? []).map((satz) => ({
     id: satz.id,
     text: satz.sentence,
-    beitraege: links.filter((link) => link.draft_id === satz.id).length,
+    // Nur sichtbare zaehlen, wie unter ``beitraege`` (#507): Sonst truege der Satz
+    // einen Haken, waehrend der Kopf "Beitrag geloescht" sagt.
+    beitraege: links.filter((link) => link.draft_id === satz.id && istSichtbar(link)).length,
   }));
 
   return {

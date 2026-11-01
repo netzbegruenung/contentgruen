@@ -90,6 +90,14 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
     const tab = TABS.find((eintrag) => eintrag.wert === this.route.snapshot.queryParamMap.get(MEINE_TAB_PARAM));
     if (tab) {
       this.tabWaehlen(tab.wert);
+      // Der Tab gilt nur fuer diesen Sprung: Bliebe er in der Adresse, oeffnete ein
+      // Neuladen nach dem Wechsel zu "Meine Beitraege" wieder "Meine Einwuerfe".
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { [MEINE_TAB_PARAM]: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
     }
     this.breakpointObserver
       .observe('(max-width: 599px)')

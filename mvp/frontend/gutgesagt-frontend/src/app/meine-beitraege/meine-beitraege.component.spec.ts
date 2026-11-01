@@ -142,9 +142,12 @@ describe('MeineBeitraegeComponent', () => {
       TestBed.inject(NavigationService).navigateToMeineEinwuerfe();
       await harness.fixture.whenStable();
       harness.detectChanges();
+      // Die Komponente nimmt den Tab aus der Adresse und raeumt sie danach auf.
+      await harness.fixture.whenStable();
       fixture = harness.fixture as unknown as typeof fixture;
 
-      expect(router.url).toBe('/contributions?tab=einwuerfe');
+      // Der Tab gilt nur fuer den Sprung; ein Neuladen zeigt wieder den ersten.
+      expect(router.url).toBe('/contributions');
       expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
       expect(sichtbar('app-meine-einwuerfe')).toBeTrue();
       expect(eigeneLaden).toHaveBeenCalledTimes(1);

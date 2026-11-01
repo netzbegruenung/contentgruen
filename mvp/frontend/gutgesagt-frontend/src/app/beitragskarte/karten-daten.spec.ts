@@ -440,6 +440,21 @@ describe('karten-daten', () => {
       expect(karte.typ).toBe('generictext');
     });
 
+    it('zaehlt am Satz nur sichtbare Beitraege', () => {
+      const karte = ausEinwurf(
+        einwurf({
+          status: 'processed',
+          drafts: [{ id: 's-1', user_id: 'u', sentence: 'Ein Satz', updated_at: '2026-09-13T18:00:00Z' } as any],
+          links: [
+            { ...link('s-1', 'commentary', 'c-weg'), zustand: 'geloescht' },
+            { ...link('s-1', 'commentary', 'c-da'), zustand: 'sichtbar' },
+          ],
+        }),
+      );
+
+      expect(karte.einwurfAngaben!.saetze.map((satz) => satz.beitraege)).toEqual([1]);
+    });
+
     it('behandelt einen unbekannten Zustand wie sichtbar', () => {
       const karte = ausEinwurf(
         einwurf({ status: 'processed', links: [{ ...link(null, 'commentary', 'c-1'), zustand: null }] }),
