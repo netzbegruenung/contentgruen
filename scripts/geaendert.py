@@ -19,8 +19,8 @@ SCHRITTE = ["retired-words", "sign-off", "lint", "unit", "integration", "fronten
 FE = "mvp/frontend/gutgesagt-frontend"
 PY = "mvp/backend/semantic-search-service"
 # Steht fuer "wirkt auf alles"; _regel gibt genau diese Liste zurueck, verglichen wird mit is.
-# sign-off prueft Commits, nicht Dateien: es laeuft nur mit allem anderen.
-ALLES = [s for s in SCHRITTE if s != "retired-words"]
+# retired-words und sign-off laufen immer (waehlen), sie pruefen Zeilen und Commits seit der Basis.
+ALLES = SCHRITTE[2:]
 PYTHON = ["lint", "unit"]
 PYTHON_MIT_DIENSTEN = ["lint", "unit", "integration"]
 
@@ -219,6 +219,7 @@ def waehlen(pfade: list[str], wurzel: pathlib.Path) -> Auswahl:
     """Die Schritte fuer die geaenderten ``pfade`` (relativ zu ``wurzel``) und warum."""
     auswahl = Auswahl()
     auswahl.dazu("retired-words", "immer")
+    auswahl.dazu("sign-off", "immer, prueft die Commits")
     alles = []
     for pfad in pfade:
         schritte = _regel(pfad)

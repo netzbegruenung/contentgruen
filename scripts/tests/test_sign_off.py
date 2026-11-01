@@ -34,9 +34,9 @@ def commit(repo, nachricht, *optionen):
     git(repo, "commit", "-q", "--allow-empty", *optionen, "-m", nachricht)
 
 
-def pruefen(repo):
+def pruefen(repo, base="main"):
     return subprocess.run(
-        [sys.executable, str(SKRIPT), "--base", "main", "--repo", str(repo)],
+        [sys.executable, str(SKRIPT), "--base", base, "--repo", str(repo)],
         capture_output=True,
         text=True,
     )
@@ -100,11 +100,7 @@ def test_menschliche_co_autoren_ersetzen_den_sign_off_nicht(repo):
 def test_unbekannte_basis_ist_ein_aufruffehler(repo):
     commit(repo, "feat: mit Sign-off", "-s")
 
-    ergebnis = subprocess.run(
-        [sys.executable, str(SKRIPT), "--base", "origin/fehlt", "--repo", str(repo)],
-        capture_output=True,
-        text=True,
-    )
+    ergebnis = pruefen(repo, base="origin/fehlt")
 
     assert ergebnis.returncode == 2
     assert "origin/fehlt" in ergebnis.stderr

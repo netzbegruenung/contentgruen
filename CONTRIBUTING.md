@@ -150,9 +150,11 @@ git commit -s -m "fix: …"
 ```
 
 `-s` adds a trailer `Signed-off-by: Your Name <you@example.org>`, taken from `user.name` and
-`user.email`; it must name the commit's author. To sign off commits you have already made on your
-branch, run `git rebase --signoff origin/main` and push the rewritten branch again (with
-`--force-with-lease`).
+`user.email`; it must name the commit's author. `bash scripts/check.sh --schritt sign-off` lists
+the commits on your branch that lack it. Sign them off before you open the pull request:
+`git rebase --signoff origin/main` rewrites the branch, which is fine as long as no pull request
+refers to it. Once the pull request is open, its branch is not rewritten (see "Merge, don't rebase"
+in [CODING_STANDARDS.md](CODING_STANDARDS.md)); ask in the pull request how to proceed.
 
 Woodpecker checks every pull request (step `sign-off`, [docs/CI.md](docs/CI.md)) and names the
 commits without the author's sign-off. For now it does not check merge commits, nor commits a

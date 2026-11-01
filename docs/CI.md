@@ -129,11 +129,11 @@ Check without admin rights: `GET /api/v1/repos/<owner>/<repo>/branches/main` sho
 For checks in between, `bash scripts/check.sh --geaendert` runs only the steps the files changed
 since the branch left `origin/main` (`CHECK_BASE`) reach, the working tree included; for the
 frontend only the specs of the changed components and services and the specs that import them.
-`sign-off` checks commits, not files: it runs only when a change runs everything.
+`retired-words` and `sign-off` always run: they check the lines and commits since `CHECK_BASE`.
 `integration` runs when migrations, repositories or Python modules the integration tests import
 directly or indirectly changed, without `--integration`, and then needs Qdrant and PostgreSQL like
 `--schritt integration`. It prints the chosen steps and why (`scripts/geaendert.py`, tests in
 `scripts/tests/test_geaendert.py`). When in doubt it runs more: changes under `scripts/` or
 `.woodpecker/` and paths it does not know run everything, documentation runs only
-`retired-words`. The pipeline does not use `--geaendert`; it always runs every step, and so does
+`retired-words` and `sign-off`. The pipeline does not use `--geaendert`; it always runs every step, and so does
 the full check before the merge.
