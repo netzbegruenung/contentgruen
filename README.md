@@ -9,7 +9,7 @@ The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji 
 ## Live Systems
 
 - **Test System**: https://gutgesagt-test.netzbegruenung.de
-  Login: Netzbegrünung-Anmeldung (Keycloak) and/or Direktanmeldung for a Beta-Zugang, depending
+  Login: Netzbegrünung-Login and/or Beta-Zugang (button "Anmelden", "Direktanmeldung"), depending
   on the configuration; the accounts are not part of this repository.
 
 - **Production**: [https://gutgesagt.netzbegruenung.de](https://gutgesagt.netzbegruenung.de)
@@ -35,10 +35,8 @@ docker compose -f docker-compose.dev.yml build
 docker compose -f docker-compose.dev.yml up
 ```
 
-Access the app at [http://localhost:8080](http://localhost:8080) and sign in with "Anmelden" →
-Direktanmeldung (Beta-Zugang): `test.user@example.com` / `Liebe>Hass!` (copy
-`mvp/config/managed-users.example.json` to `mvp/config/managed-users.json` first, see
-[docs/DEV-SETUP.md](./docs/DEV-SETUP.md)). See [CONTRIBUTING.md](./CONTRIBUTING.md) for local development setup.
+Access the app at [http://localhost:8080](http://localhost:8080). How to sign in with the test
+account and how to develop locally: [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Documentation
 

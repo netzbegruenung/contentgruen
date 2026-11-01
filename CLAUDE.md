@@ -377,7 +377,7 @@ docker-compose -f docker-compose.local-dbs.yml down -v  # Reset databases (Qdran
 
 ## Project Status
 
-See [STATUS.md](./STATUS.md) for current development status and roadmap.
+See [STATUS.md](./STATUS.md) for the current state; planning is on the Forgejo milestones.
 
 ## Contributing
 

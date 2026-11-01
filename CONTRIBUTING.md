@@ -32,11 +32,13 @@ docker compose -f docker-compose.dev.yml up
   Docker cannot bind ports below 1024)
 - **BFF** (.NET): [http://localhost:5054](http://localhost:5054)
 - **Semantic Search Service**: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
-- **Sign in**: "Anmelden" → Direktanmeldung (Beta-Zugang) with `test.user@example.com` / `Liebe>Hass!`
-  (from `mvp/config/managed-users.example.json`; copy it to `mvp/config/managed-users.json`
-  first, see [docs/DEV-SETUP.md](docs/DEV-SETUP.md))
+- **Sign in**: button "Anmelden" ("Direktanmeldung"), Beta-Zugang `test.user@example.com` /
+  `Liebe>Hass!` from `mvp/config/managed-users.example.json`. With plain `docker compose`, copy
+  that file to `mvp/config/managed-users.json` before starting, otherwise this sign-in is off
+  (see [docs/DEV-SETUP.md](docs/DEV-SETUP.md)).
 
-On Linux, `mvp/run-local.sh up` does the same in the background (`status`, `reset`, `logs`, `down`).
+On Linux, `mvp/run-local.sh up` does the same in the background and creates
+`managed-users.json` itself (`status`, `reset`, `logs`, `down`).
 
 ## Local Setup (component-based development)
 
@@ -101,7 +103,7 @@ End-to-end tests (Playwright) run against the dev stack, not in CI: see
 Issues live on Forgejo. Before you open one, search whether it already exists. Describe what you
 expected, what happened and how to reproduce it; for a new feature, what problem it solves.
 
-Every issue carries a type label and, while it is being worked out, a triage label:
+Issues are labelled with a type and, while they are being worked out, a triage label:
 
 | Label             | Meaning                                                      |
 | ----------------- | ------------------------------------------------------------ |
@@ -113,8 +115,8 @@ Every issue carries a type label and, while it is being worked out, a triage lab
 | `ready-for-human` | Fully specified, but needs a person to implement it          |
 | `wontfix`         | Will not be done                                             |
 
-The triage labels follow [docs/agents/triage-labels.md](docs/agents/triage-labels.md). New issues
-start with `needs-triage`. Planning happens on the
+The triage labels follow [docs/agents/triage-labels.md](docs/agents/triage-labels.md); a maintainer
+sets them. Planning happens on the
 [Forgejo milestones](https://git.verdigado.com/Netzbegruenung/gutgesagt/milestones), not in a file.
 
 ## Branches
