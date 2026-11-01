@@ -12,7 +12,6 @@ import { NavigationService } from '../../services/navigation.service';
 import { DestillierUebergabeService } from '../../destillieren/destillier-uebergabe.service';
 import { BeitragskarteComponent } from '../../beitragskarte/beitragskarte.component';
 import { BeitragskarteStubComponent } from '../../beitragskarte/beitragskarte.stub';
-import { FILTER_SCHLUESSEL, filterLaden } from '../../fangkorb/fangkorb-filter';
 
 describe('BeitragGespeichertComponent', () => {
   let fixture: ComponentFixture<BeitragGespeichertComponent>;
@@ -38,7 +37,7 @@ describe('BeitragGespeichertComponent', () => {
       of({ id: 'k-1', title: 'Ein Reel zur Wärmepumpe', text: 'Text', content_type: 'post', platform: 'Instagram', author: '@konto' } as any),
     );
     uebergabe = jasmine.createSpyObj('DestillierUebergabeService', ['zumNaechsten']);
-    navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult']);
+    navigation = jasmine.createSpyObj('NavigationService', ['navigateToResult', 'navigateToMeineEinwuerfe']);
 
     await TestBed.configureTestingModule({
       imports: [BeitragGespeichertComponent],
@@ -122,11 +121,10 @@ describe('BeitragGespeichertComponent', () => {
       (seite().querySelector('.naechster-einwurf') as HTMLButtonElement).click();
       expect(uebergabe.zumNaechsten).toHaveBeenCalledOnceWith('e-1', 'ausformulieren');
 
+      // Ausformuliertes liegt in keinem Tab, sondern unter "Meine Einwuerfe" (#508).
       (seite().querySelector('.zum-fangkorb') as HTMLButtonElement).click();
-      expect(navigieren).toHaveBeenCalledOnceWith(['/fangkorb']);
-      // Ausformuliertes liegt in keinem Tab; zurueck in die Arbeitsliste, aus der es kam.
-      expect(filterLaden().tab).toBe('ausformulieren');
-      sessionStorage.removeItem(FILTER_SCHLUESSEL);
+      expect(navigation.navigateToMeineEinwuerfe).toHaveBeenCalledOnceWith();
+      expect(navigieren).not.toHaveBeenCalled();
     });
 
     it('Fangkorb: nicht verknuepft fuehrt nach Ausformulieren und sagt es', async () => {

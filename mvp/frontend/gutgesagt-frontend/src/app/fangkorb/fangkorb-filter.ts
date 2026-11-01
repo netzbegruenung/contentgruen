@@ -31,8 +31,10 @@ export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string
 ];
 
 /**
- * Wo der Fangkorb nach dem Ausformulieren aufgeht. Ausformuliertes liegt in keinem
- * Tab; zurueck geht es in die Arbeitsliste, aus der der Einwurf kam.
+ * Wo der Fangkorb nach dem Ausformulieren aufgeht, wenn "Naechster Einwurf" keinen
+ * offenen mehr findet: in der Arbeitsliste, aus der der Einwurf kam, denn dort kann
+ * noch Arbeit liegen. Der ausformulierte Einwurf selbst liegt in keinem Tab; "Zum
+ * Fangkorb" fuehrt deshalb nach "Meine Einwuerfe", wo er steht (#508).
  */
 export const NACH_DEM_AUSFORMULIEREN: FangkorbTab = 'ausformulieren';
 

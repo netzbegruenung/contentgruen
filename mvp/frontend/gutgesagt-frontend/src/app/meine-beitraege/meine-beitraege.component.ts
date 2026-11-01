@@ -5,7 +5,8 @@ import { filter, takeUntil } from 'rxjs/operators';
 import { MatPaginator, MatPaginatorIntl, PageEvent } from '@angular/material/paginator';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MEINE_TAB_PARAM } from '../services/navigation.service';
 import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { ContentResult } from '../services/dtos/contributionDtos';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -76,6 +77,7 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   constructor(
     private meineBeitraegeService: MeineBeitraegeService,
     private router: Router,
+    private route: ActivatedRoute,
     private usageTrackingService: UsageTrackingService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
@@ -84,6 +86,11 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    // Ein Tab in der Adresse, etwa nach dem Ausformulieren "Meine Einwuerfe" (#508).
+    const tab = TABS.find((eintrag) => eintrag.wert === this.route.snapshot.queryParamMap.get(MEINE_TAB_PARAM));
+    if (tab) {
+      this.tabWaehlen(tab.wert);
+    }
     this.breakpointObserver
       .observe('(max-width: 599px)')
       .pipe(takeUntil(this.destroy$))

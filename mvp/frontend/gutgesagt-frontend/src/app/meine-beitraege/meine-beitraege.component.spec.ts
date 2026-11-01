@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Observable, of } from 'rxjs';
@@ -13,6 +14,7 @@ import { AuthService } from '../auth/auth.service';
 import { BeitragSheetComponent, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
+import { NavigationService } from '../services/navigation.service';
 
 describe('MeineBeitraegeComponent', () => {
   let fixture: ComponentFixture<MeineBeitraegeComponent>;
@@ -127,6 +129,24 @@ describe('MeineBeitraegeComponent', () => {
       expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
       expect(sichtbar('app-meine-einwuerfe')).toBeTrue();
       expect(sichtbar('app-kartenliste')).toBeFalse();
+      expect(eigeneLaden).toHaveBeenCalledTimes(1);
+    });
+
+    // #508: Nach dem Ausformulieren geht es hierher, wo der Einwurf als ausformuliert steht.
+    it('oeffnet "Meine Einwürfe" auf dem Ruecksprung nach dem Ausformulieren', async () => {
+      konfigurieren(() => of({ results_count: 0, total_records_count: 0, results: [] }));
+      TestBed.inject(Router).resetConfig([{ path: 'contributions', component: MeineBeitraegeComponent }]);
+      (router.navigate as jasmine.Spy).and.callThrough();
+      const harness = await RouterTestingHarness.create();
+
+      TestBed.inject(NavigationService).navigateToMeineEinwuerfe();
+      await harness.fixture.whenStable();
+      harness.detectChanges();
+      fixture = harness.fixture as unknown as typeof fixture;
+
+      expect(router.url).toBe('/contributions?tab=einwuerfe');
+      expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
+      expect(sichtbar('app-meine-einwuerfe')).toBeTrue();
       expect(eigeneLaden).toHaveBeenCalledTimes(1);
     });
 

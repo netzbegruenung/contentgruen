@@ -135,14 +135,15 @@ test('Fangkorb: zwei Einwuerfe ausformulieren, naechster Einwurf, Meine Einwuerf
     await bild('76-fangkorb-pfeil');
   });
 
-  await test.step('Zum Fangkorb: Tab Ausformulieren', async () => {
+  await test.step('Zum Fangkorb: Meine Einwuerfe (#508)', async () => {
     await page.goto(ergebnis);
     await page.locator('.zum-fangkorb').click();
-    await page.waitForURL(/\/fangkorb/);
-    await expect.soft(page.locator('.tab.aktiv .tab-wort')).toHaveText('Ausformulieren');
+    await page.waitForURL(/\/contributions\?tab=einwuerfe/);
     // Ausformuliertes liegt in keiner Arbeitsliste, sondern in "Meine Einwuerfe".
-    await expect.soft(page.locator('app-beitragskarte', { hasText: zweiter.hinweis })).toHaveCount(0);
-    await bild('47-fangkorb-ausformulieren');
+    await expect.soft(page.getByRole('tab', { name: 'Meine Einwürfe' })).toHaveAttribute('aria-selected', 'true');
+    const karte = page.locator('#meine-bereich-einwuerfe app-beitragskarte', { hasText: zweiter.hinweis });
+    await expect.soft(karte.locator('.einwurf-stufe')).toContainText('Ausformuliert');
+    await bild('47-meine-einwuerfe-nach-ausformulieren');
   });
 
   await test.step('Meine Einwuerfe: Weiter destillieren, Formular, System-Zurueck: Typwahl mit Hinweis', async () => {
