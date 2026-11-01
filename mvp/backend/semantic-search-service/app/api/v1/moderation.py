@@ -13,14 +13,19 @@ from domain.models.meldegrund import Meldegrund, beschreibung_fehlt
 from domain.models.meldung import MELDER_EMAIL_MAX, MELDER_NAME_MAX, MelderAngaben
 from domain.models.sperrgrund import Sperrgrund
 from services.moderation_service import (
+    ModerationService,
     SchonGesperrt,
     SperreUngueltig,
-    get_moderation_service,
 )
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.config import Settings
 from core.logging import get_logger
-from dependencies import get_settings, get_current_user_optional, require_admin
+from dependencies import (
+    get_current_user_optional,
+    get_moderation_service,
+    get_settings,
+    require_admin,
+)
 from utils.rate_limiter import report_rate_limiter
 from utils.besucher_pseudonym import besucher_merkmal
 from utils.client_identity import derive_client_key
@@ -176,6 +181,7 @@ async def report_content(
     http_request: Request,
     x_user_id: Optional[str] = Header(None, alias="X-User"),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Report a content item.
@@ -208,8 +214,6 @@ async def report_content(
                     status_code=429,
                     detail="Too many reports. Please wait before submitting another report.",
                 )
-
-        moderation_service = get_moderation_service()
 
         # Existenz pruefen, bevor irgendetwas angelegt wird. Vorher genuegte ein
         # gueltiges UUID-Format, sodass Meldungen zu nie existierenden Kennungen
@@ -278,6 +282,7 @@ async def get_reports(
     offset: int = Query(0, ge=0, description="Number of reports to skip"),
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Get content reports filtered by status (Admin only).
@@ -290,8 +295,6 @@ async def get_reports(
     """
     try:
         logger.info(f"Admin fetching {status} reports (limit={limit}, offset={offset})")
-
-        moderation_service = get_moderation_service()
         reports = await moderation_service.get_reports(
             status=status, limit=limit, offset=offset
         )
@@ -313,6 +316,7 @@ async def sperren(
     content_id: uuid.UUID,
     anfrage: SperrenRequest,
     admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Einen gemeldeten Beitrag sperren (Admin only), mit Sperrgrund und Begruendung.
@@ -323,8 +327,6 @@ async def sperren(
     """
     try:
         logger.info(f"Admin blocking (sperren) content: {content_id}")
-
-        moderation_service = get_moderation_service()
         if not await moderation_service.sperren(
             str(content_id),
             gesperrt_von=admin_user,
@@ -350,6 +352,7 @@ async def sperren(
 async def entsperren(
     content_id: uuid.UUID,
     admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Eine Sperre aufheben (Admin only). Der Beitrag ist danach wieder so sichtbar
@@ -357,8 +360,6 @@ async def entsperren(
     """
     try:
         logger.info(f"Admin unblocking (entsperren) content: {content_id}")
-
-        moderation_service = get_moderation_service()
         if not await moderation_service.entsperren(
             str(content_id), entsperrt_von=admin_user
         ):
@@ -378,6 +379,7 @@ async def sperre_bestaetigen(
     sperre_id: uuid.UUID,
     anfrage: SperreBestaetigenRequest,
     admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Nach einem Widerspruch erneut geprueft: Die Sperre bleibt (Admin only). Die
@@ -387,7 +389,7 @@ async def sperre_bestaetigen(
     try:
         logger.info(f"Admin confirming Sperre {sperre_id} after Widerspruch")
 
-        if not await get_moderation_service().sperre_bestaetigen(
+        if not await moderation_service.sperre_bestaetigen(
             str(sperre_id), admin_user, anfrage.begruendung
         ):
             raise HTTPException(
@@ -408,7 +410,10 @@ async def sperre_bestaetigen(
 
 
 @router.get("/gesperrt", response_model=GesperrteResponse)
-async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
+async def gesperrte_beitraege(
+    admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
     """
     Alle gesperrten Beitraege (Admin only), auch solche ohne Meldung, jeder mit
     seiner Sperre unter "sperre" (Sperrgrund, Widerspruch, Pruefung).
@@ -416,7 +421,7 @@ async def gesperrte_beitraege(admin_user: str = Depends(require_admin)):
     try:
         logger.info("Admin fetching gesperrte Beitraege")
 
-        beitraege = await get_moderation_service().gesperrte_beitraege()
+        beitraege = await moderation_service.gesperrte_beitraege()
         return GesperrteResponse(total=len(beitraege), beitraege=beitraege)
 
     except Exception as e:
@@ -435,6 +440,7 @@ async def delete_content(
     content_id: str,
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Delete content from the system (Admin only).
@@ -451,8 +457,6 @@ async def delete_content(
     """
     try:
         logger.info(f"Admin deleting content: {content_type}/{content_id}")
-
-        moderation_service = get_moderation_service()
         success = await moderation_service.delete_content(
             content_id=content_id, content_type=content_type, deleted_by=admin_user
         )
@@ -492,6 +496,7 @@ async def dismiss_report(
     notes: Optional[str] = None,
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Dismiss a content report without taking action (Admin only).
@@ -500,8 +505,6 @@ async def dismiss_report(
     """
     try:
         logger.info(f"Admin dismissing report: {report_id}")
-
-        moderation_service = get_moderation_service()
         success = await moderation_service.dismiss_report(
             report_id=report_id, dismissed_by=admin_user, notes=notes
         )
@@ -527,6 +530,7 @@ async def dismiss_report(
 async def get_report_stats(
     admin_user: str = Depends(require_admin),
     settings: Settings = Depends(get_settings),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Get report statistics (Admin only).
@@ -535,8 +539,6 @@ async def get_report_stats(
     """
     try:
         logger.info("Admin fetching report stats")
-
-        moderation_service = get_moderation_service()
         stats = moderation_service.get_report_stats()
 
         return ReportStatsResponse(**stats)

@@ -186,10 +186,6 @@ def create_base_content_fields(**overrides):
         "most_similar_similarity_score": None,
         "most_similar_content_id": None,
         "report_count": 0,
-        "is_archived": False,
-        "report_flagged": False,
-        "rejection_reason": None,
-        "block_reason": None,
     }
     base_fields.update(overrides)
     return base_fields

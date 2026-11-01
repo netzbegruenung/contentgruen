@@ -6,7 +6,6 @@ from domain.cc0_hinweis import Cc0Wortlaut
 from domain.themen import ThemenDerAussage
 from dtos.statement import ThemaDto
 from domain.models.generic_text import GenericText
-from dtos.beitrag import HintergrundinfoResponse, HintergrundinfoTreffer
 
 
 ### AddGenericText ###
@@ -105,26 +104,3 @@ class AddGenericTextResponse(BaseModel):
     vorhanden_titel: Optional[str] = None
     # Die vorhandene ist von derselben Person. Ohne Dublette False.
     vorhanden_eigen: bool = False
-
-
-### GetAll ###
-
-
-class GenericTextGetAllResponse(BaseModel):
-    results_count: int
-    results: List[HintergrundinfoResponse]
-    total_records_count: int
-
-
-### SearchGenericText ###
-
-
-class SearchGenericTextByTextRequest(BaseModel):
-    query_text: str
-    limit: int = 10
-    # TODO: Add a field to specify the search type (content, commentary, etc.)
-    # TODO: Add a field to specify minimum score
-
-
-class GenericTextSearchResponse(BaseModel):
-    results: List[HintergrundinfoTreffer]

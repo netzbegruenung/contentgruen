@@ -65,7 +65,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       url: '/search',
     });
     navigation = jasmine.createSpyObj('NavigationService', [
-      'navigateToContributions',
+      'navigateToMeineBeitraege',
       'navigateToContribute',
       'navigateHome',
       'goBack',
@@ -156,7 +156,7 @@ describe('AppComponent - Desktop-Kopf', () => {
         jasmine.stringContaining('Profilbild wählen'),
         jasmine.stringContaining('Abmelden'),
       ]);
-      expect(navigation.navigateToContributions).not.toHaveBeenCalled();
+      expect(navigation.navigateToMeineBeitraege).not.toHaveBeenCalled();
       expect(fixture.componentInstance.selectedProfilePictureUrl).toBe(vorher);
       expect(sessionStorage.getItem('profilePicture')).toBeNull();
     });
@@ -171,7 +171,7 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(document.activeElement).toBe(profilmenue()[0]);
       profilmenue()[0].click();
 
-      expect(navigation.navigateToContributions).toHaveBeenCalledTimes(1);
+      expect(navigation.navigateToMeineBeitraege).toHaveBeenCalledTimes(1);
     });
 
     it('meldet ueber das Profilmenue ab', async () => {

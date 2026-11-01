@@ -176,16 +176,16 @@ export class AppComponent implements OnInit, OnDestroy {
     this.navigationService.navigateToContribute();
   }
 
-  navigateToContributionsView(): void {
-    this.navigationService.navigateToContributions();
+  navigateToMeineBeitraege(): void {
+    this.navigationService.navigateToMeineBeitraege();
   }
 
-  navigateToRawInputView(): void {
-    this.navigationService.navigateToRawInput();
+  navigateToEinwerfenView(): void {
+    this.navigationService.navigateToEinwerfen();
   }
 
-  navigateToRawInputListView(): void {
-    this.navigationService.navigateToRawInputList();
+  navigateToFangkorbView(): void {
+    this.navigationService.navigateToFangkorb();
   }
 
   /**

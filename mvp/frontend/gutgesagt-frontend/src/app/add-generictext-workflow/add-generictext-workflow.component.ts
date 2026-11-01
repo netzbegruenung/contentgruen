@@ -14,7 +14,7 @@ import { StatementService } from '../services/statement.service';
 import { LoggingService } from '../services/logging.service';
 import { ContentRefreshService } from '../services/content-refresh.service';
 import { AUSSAGE_PARAM, SUCHTEXT_PARAM, gespeichertPfad } from '../shared/formular-adresse';
-import { NACH_DEM_AUSFORMULIEREN } from '../raw-input-list/fangkorb-filter';
+import { NACH_DEM_AUSFORMULIEREN } from '../fangkorb/fangkorb-filter';
 import { StateManagementService } from '../services/state-management.service';
 import {
   BeitragGespeichert,

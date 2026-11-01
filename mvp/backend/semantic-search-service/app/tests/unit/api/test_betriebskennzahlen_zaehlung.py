@@ -6,6 +6,8 @@ Histogramm. Geprueft an einer kleinen App, in die ``einbinden`` aus api/betriebs
 Middleware und Endpunkt haengt, ueber HTTP wie der Prometheus-Scraper.
 """
 
+from unittest.mock import patch
+
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
@@ -129,13 +131,14 @@ def test_main_app_liefert_metrics_ausserhalb_von_api():
     # es nach einer Umbenennung von Prefix oder Route still leer.
     assert SUCHE_VORLAGE in {route.path for route in app.routes}
     client = TestClient(app)
-    client.get("/api/v1/content/")
+    with patch("api.v1.health.get_app_database"):
+        client.get("/api/v1/health")
 
     antwort = client.get("/metrics")
 
     assert antwort.status_code == 200
     assert antwort.headers["content-type"].startswith("text/plain; version=0.0.4")
     assert (
-        'gutgesagt_http_requests_total{method="GET",route="/api/v1/content/",'
+        'gutgesagt_http_requests_total{method="GET",route="/api/v1/health",'
         'status="2xx"}'
     ) in antwort.text

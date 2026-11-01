@@ -317,7 +317,7 @@ body {
 
 /*
  * Hinweisbox: grauer Grund, gruener Balken links. Werte wie .info-message in
- * contributions-view; genutzt fuer den Erstnutzer-Satz auf Beitragen-Seite und
+ * meine-beitraege; genutzt fuer den Erstnutzer-Satz auf Beitragen-Seite und
  * im Fangkorb. Abstaende nach aussen setzt die jeweilige Stelle.
  */
 .hinweis-box {

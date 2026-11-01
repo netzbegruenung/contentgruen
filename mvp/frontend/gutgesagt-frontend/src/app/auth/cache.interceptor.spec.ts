@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, HttpContext, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { cacheInterceptor, cacheService } from './cache.interceptor';
+import { cacheInterceptor, cacheService, NUR_LESEND, nurLesend } from './cache.interceptor';
 import { EinwurfService } from '../services/einwurf.service';
 import { environment } from '../../environments/environment';
 
@@ -82,21 +82,31 @@ describe('cacheInterceptor', () => {
     expect(danach).toEqual([{ stand: 'neu' }]);
   });
 
-  it('laesst den Cache bei lesenden POST-Anfragen wie der Suche stehen', () => {
+  it('laesst den Cache bei einer als nur lesend markierten POST-Anfrage stehen', () => {
     holen(`${api}/content/recent`);
     httpMock.expectOne(`${api}/content/recent`).flush({ stand: 'alt' });
 
-    for (const pfad of [
-      'statement/searchStatements',
-      'reference/search',
-      'voting/votes/batch',
-    ]) {
-      http.post(`${api}/${pfad}`, {}).subscribe();
-      httpMock.expectOne(`${api}/${pfad}`).flush({});
-    }
+    http.post(`${api}/statement/searchStatements`, {}, nurLesend()).subscribe();
+    httpMock.expectOne(`${api}/statement/searchStatements`).flush({});
 
     holen(`${api}/content/recent`);
     httpMock.expectNone(`${api}/content/recent`);
+  });
+
+  it('nimmt eine POST-Anfrage ohne Markierung als Aenderung, auch an einem lesenden Pfad', () => {
+    holen(`${api}/content/recent`);
+    httpMock.expectOne(`${api}/content/recent`).flush({ stand: 'alt' });
+
+    http.post(`${api}/statement/searchStatements`, {}).subscribe();
+    httpMock.expectOne(`${api}/statement/searchStatements`).flush({});
+
+    holen(`${api}/content/recent`);
+    httpMock.expectOne(`${api}/content/recent`).flush({ stand: 'neu' });
+  });
+
+  it('markiert ueber nurLesend() genau den Kontext', () => {
+    expect(nurLesend().context.get(NUR_LESEND)).toBeTrue();
+    expect(new HttpContext().get(NUR_LESEND)).toBeFalse();
   });
 
   it('leert den Cache nach einer Suche, weil sie eine Aussage anlegt und Kennzahlen zaehlt', () => {

@@ -11,7 +11,7 @@ import {
   beitraegeVonEinwurf,
   stufeVonEinwurf,
 } from '../beitragskarte/karten-daten';
-import { EinwurfBeitragSheetComponent } from '../raw-input-list/einwurf-beitrag-sheet.component';
+import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import {
   GeteilteFelder,
   SHARE_FELDER_SCHLUESSEL,
@@ -87,13 +87,13 @@ export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
  * (#263). Sie haelt nicht auf: Einwerfen geht trotzdem.
  */
 @Component({
-  selector: 'app-add-raw-input',
+  selector: 'app-einwerfen',
   standalone: true,
   imports: [...SHARED_IMPORTS, CommonModule, RouterLink, TextFieldModule],
-  templateUrl: './add-raw-input.component.html',
-  styleUrls: ['./add-raw-input.component.css'],
+  templateUrl: './einwerfen.component.html',
+  styleUrls: ['./einwerfen.component.css'],
 })
-export class AddRawInputComponent implements OnInit, OnDestroy {
+export class EinwerfenComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   readonly hinweisLimit = HINWEIS_LIMIT;

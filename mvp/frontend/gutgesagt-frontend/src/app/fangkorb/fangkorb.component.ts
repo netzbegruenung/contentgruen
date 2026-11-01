@@ -56,14 +56,14 @@ export const LADE_GROESSE = 100;
  * (eigene zuerst): im Fangkorb zaehlt das Alter, nicht die Person.
  */
 @Component({
-  selector: 'app-raw-input-list',
+  selector: 'app-fangkorb',
   standalone: true,
   imports: [CommonModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule, BeitragskarteComponent, HilfeUmschalterComponent],
-  templateUrl: './raw-input-list.component.html',
-  styleUrls: ['./raw-input-list.component.css'],
+  templateUrl: './fangkorb.component.html',
+  styleUrls: ['../shared/tabs.css', './fangkorb.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RawInputListComponent implements OnInit, OnDestroy {
+export class FangkorbComponent implements OnInit, OnDestroy {
   readonly plattformen = PLATTFORMEN;
   readonly tabs = TABS;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;

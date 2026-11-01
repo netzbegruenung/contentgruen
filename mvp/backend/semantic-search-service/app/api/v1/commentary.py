@@ -1,4 +1,3 @@
-import datetime
 from domain.models.zeit import utc_jetzt
 import logging
 from typing import List, Optional
@@ -15,14 +14,12 @@ from dependencies import (
 from dtos.commentary import (
     AddCommentaryRequest,
     AddCommentaryResponse,
-    CommentarySearchResponse,
-    SearchCommentaryByTextRequest,
 )
 from domain.models.base_content import BaseContentSearchResult
 from services.content.base_content_service import Dublettenpruefung
 from services.content.commentary_service import CommentaryService
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
-from dtos.beitrag import KommentarResponse, KommentarTreffer
+from dtos.beitrag import KommentarResponse
 from services.content.statement_service import AussageNichtGefunden, StatementService
 from services.aussage_themen_service import AussageThemenService, themen_beim_anlegen
 from dtos.statement import themen_dtos
@@ -51,12 +48,6 @@ def _ist_gezeigter(
         and angefragt is not None
         and str(vorhanden.id) == str(angefragt)
     )
-
-
-# Test endpoint to check if the API is running
-@router.get("/")
-async def read_test():
-    return {"message": "This is a test endpoint"}
 
 
 from fastapi import Query
@@ -88,31 +79,6 @@ async def get_by_id(
             f"Error fetching commentary with id {commentary_id}: {type(e).__name__}",
             exc_info=True,
         )
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Searches for commentaries in the commentary_index using similarity search
-@router.post("/searchCommentaries", response_model=CommentarySearchResponse)
-async def search_commentaries(
-    request: SearchCommentaryByTextRequest,
-    commentary_service: CommentaryService = Depends(get_commentary_service),
-    aufrufer: Aufrufer = Depends(get_aufrufer),
-) -> CommentarySearchResponse:
-    try:
-        logger.debug("/searchCommentaries was called")
-
-        commentary_index_results = await commentary_service.search(
-            request.query_text, request.limit
-        )
-        logger.debug(f"/searchCommentaries got {len(commentary_index_results)} results")
-
-        response: CommentarySearchResponse = CommentarySearchResponse(
-            results=als_responses(KommentarTreffer, commentary_index_results, aufrufer)
-        )
-
-        return response
-    except Exception as e:
-        logger.error(f"Error in search_commentaries: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -58,3 +58,19 @@ def test_status_unbekannter_wert_scheitert():
 def test_status_altes_visibility_feld_wird_ignoriert():
     beitrag = CommentaryDbEntry.model_validate(_daten(visibility="internal"))
     assert "visibility" not in beitrag.model_dump()
+
+
+# Bis #272 hatte jeder Beitrag diese CMS-Felder, gelesen hat sie nie jemand. Der
+# Bestand im Suchindex traegt sie weiter; sie fallen beim Lesen weg.
+ALTE_CMS_FELDER = {
+    "is_archived": True,
+    "report_flagged": True,
+    "rejection_reason": "alt",
+    "block_reason": "alt",
+}
+
+
+def test_alte_cms_felder_werden_ignoriert():
+    beitrag = CommentaryDbEntry.model_validate(_daten(**ALTE_CMS_FELDER))
+
+    assert ALTE_CMS_FELDER.keys().isdisjoint(beitrag.model_dump())

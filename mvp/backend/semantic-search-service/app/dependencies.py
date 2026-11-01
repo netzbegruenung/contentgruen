@@ -45,7 +45,7 @@ from services.gegenlesen.gegenlesen_service import (
     lade_statt_sag_liste,
 )
 from services.loeschfristen_service import LoeschfristenService
-from services.moderation_service import get_moderation_service
+from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
 from repositories.raw_input_repository import get_raw_input_repository
 from repositories.sperre_repository import get_sperre_repository
@@ -213,6 +213,18 @@ def get_gegenlesen_service() -> GegenlesenService:
             statt_sag=lade_statt_sag_liste(), werkzeuge=SPRACHWERKZEUGE
         )
     return _gegenlesen_service
+
+
+def get_moderation_service() -> ModerationService:
+    """
+    Der Moderationsdienst ueber die Repository-Singletons. Die Repositories, die erst
+    das endgueltige Entfernen braucht (Stimmen, Einwuerfe, Sperren), holt der Dienst
+    selbst, wenn es so weit ist; vorher oeffnet er keine Verbindung dafuer.
+    """
+    return ModerationService(
+        report_repo=get_content_report_repository(),
+        moderation_repo=get_moderation_repository(),
+    )
 
 
 def get_loeschfristen_service() -> LoeschfristenService:

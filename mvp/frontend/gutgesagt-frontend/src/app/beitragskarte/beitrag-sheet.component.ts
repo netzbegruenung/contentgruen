@@ -9,7 +9,7 @@ import { filter, finalize, switchMap } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from './beitragskarte.component';
 import { KartenDaten } from './karten-daten';
-import { ContributionsService } from '../services/contributions.service';
+import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import {
   BestaetigungsDialogComponent,
   BestaetigungsDialogDaten,
@@ -122,7 +122,7 @@ export class BeitragSheetComponent {
     private element: ElementRef<HTMLElement>,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private beitraege: ContributionsService,
+    private beitraege: MeineBeitraegeService,
   ) {}
 
   /** Ein 404 heisst: schon geloescht oder gesperrt. Fuer die Liste ist er so oder so weg. */

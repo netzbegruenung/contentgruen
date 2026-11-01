@@ -669,15 +669,3 @@ class ModerationService:
                 "reviewed": 0,
                 "dismissed": 0,
             }
-
-
-# Global service instance
-_moderation_service: Optional[ModerationService] = None
-
-
-def get_moderation_service() -> ModerationService:
-    """Get or create the global moderation service instance."""
-    global _moderation_service
-    if _moderation_service is None:
-        _moderation_service = ModerationService()
-    return _moderation_service

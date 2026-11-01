@@ -303,8 +303,8 @@ export class ResultViewComponent implements OnInit, OnDestroy {
     this.navigationService.navigateToContribute();
   }
 
-  navigateToContributionsView(): void {
-    this.navigationService.navigateToContributions();
+  navigateToMeineBeitraege(): void {
+    this.navigationService.navigateToMeineBeitraege();
   }
 
   login(): void {

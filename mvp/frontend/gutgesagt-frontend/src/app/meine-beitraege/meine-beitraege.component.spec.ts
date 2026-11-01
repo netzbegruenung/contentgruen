@@ -6,16 +6,16 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Observable, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
-import { ContributionsViewComponent } from './contributions-view.component';
-import { ContributionsService } from '../services/contributions.service';
+import { MeineBeitraegeComponent } from './meine-beitraege.component';
+import { MeineBeitraegeService } from '../services/meine-beitraege.service';
 import { UsageTrackingService, UserUsageStats } from '../services/usage-tracking.service';
 import { AuthService } from '../auth/auth.service';
 import { BeitragSheetComponent, GELOESCHT } from '../beitragskarte/beitrag-sheet.component';
 import { EinwurfService } from '../services/einwurf.service';
 import { SperrnachrichtService } from '../services/sperrnachricht.service';
 
-describe('ContributionsViewComponent', () => {
-  let fixture: ComponentFixture<ContributionsViewComponent>;
+describe('MeineBeitraegeComponent', () => {
+  let fixture: ComponentFixture<MeineBeitraegeComponent>;
   let router: Router;
   let bottomSheet: MatBottomSheet;
   let eigeneLaden: jasmine.Spy;
@@ -46,17 +46,17 @@ describe('ContributionsViewComponent', () => {
     };
   }
 
-  function konfigurieren(getContributions: (seite: number, groesse: number) => Observable<any>, mobil = false): void {
+  function konfigurieren(meineBeitraege: (seite: number, groesse: number) => Observable<any>, mobil = false): void {
     eigeneLaden = jasmine
       .createSpy('eigeneLaden')
       .and.returnValue(of({ results_count: 0, results: [], total_records_count: 0 }));
     TestBed.configureTestingModule({
-      imports: [ContributionsViewComponent],
+      imports: [MeineBeitraegeComponent],
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
         { provide: BreakpointObserver, useValue: { observe: () => of({ matches: mobil, breakpoints: {} }) } },
-        { provide: ContributionsService, useValue: { getContributions } },
+        { provide: MeineBeitraegeService, useValue: { meineBeitraege } },
         { provide: UsageTrackingService, useValue: { getEigeneNutzungsstatistik: () => of(nutzungsstatistik) } },
         { provide: EinwurfService, useValue: { eigeneLaden } },
         { provide: SperrnachrichtService, useValue: { meine: () => of([]) } },
@@ -80,7 +80,7 @@ describe('ContributionsViewComponent', () => {
       mobil,
     );
     await TestBed.compileComponents();
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
   }
 
@@ -195,7 +195,7 @@ describe('ContributionsViewComponent', () => {
       const results = Array.from({ length: 24 }, (_, i) => beitrag({ id: `s${seite}-${i}` }));
       return of({ results_count: 24, total_records_count: 60, results }).pipe(delay(50));
     });
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
 
     const laden = () => {
       fixture.detectChanges();
@@ -341,7 +341,7 @@ describe('ContributionsViewComponent', () => {
     const vorher = [beitrag(), beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
     const nachher = [beitrag({ id: 'b2', title: 'Tempolimit spart sofort CO2' })];
     const laden = jasmine
-      .createSpy('getContributions')
+      .createSpy('meineBeitraege')
       .and.returnValues(
         of({ results_count: 2, total_records_count: 2, results: vorher }),
         of({ results_count: 1, total_records_count: 1, results: nachher }),
@@ -349,7 +349,7 @@ describe('ContributionsViewComponent', () => {
     konfigurieren(laden);
     sheetErgebnis = of(GELOESCHT);
     await TestBed.compileComponents();
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
 
     karten()[0].click();
@@ -365,7 +365,7 @@ describe('ContributionsViewComponent', () => {
     const seite = (n: number) =>
       Array.from({ length: n }, (_, i) => beitrag({ id: `b${i}`, title: `Beitrag Nummer ${i}` }));
     const laden = jasmine
-      .createSpy('getContributions')
+      .createSpy('meineBeitraege')
       .and.returnValues(
         of({ results_count: 24, total_records_count: 25, results: seite(24) }),
         of({ results_count: 1, total_records_count: 25, results: seite(1) }),
@@ -373,7 +373,7 @@ describe('ContributionsViewComponent', () => {
       );
     konfigurieren(laden);
     await TestBed.compileComponents();
-    fixture = TestBed.createComponent(ContributionsViewComponent);
+    fixture = TestBed.createComponent(MeineBeitraegeComponent);
     fixture.detectChanges();
     fixture.componentInstance.onPageChange({ pageIndex: 1, pageSize: 24, length: 25 } as any);
     fixture.detectChanges();

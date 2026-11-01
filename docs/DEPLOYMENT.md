@@ -133,29 +133,41 @@ deploy anything by itself.
 #### Releases
 
 1. **Only the maintainer sets tags.** Agents and contributors propose, they do not tag.
-2. **Version scheme:** `v0.x` releases until the launch (`v0.9.0` first), `v1.0.0` at the
-   launch, [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
+2. **Version scheme:** `v0.x` releases until the public launch: `v0.8.0` first, for the move
+   of production, `v0.9.0` at the internal launch, `v1.0.0` at the public launch,
+   [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
    not move `:latest` (see above), and production only follows `:latest`.
-3. **Version in the footer:** the footer shows the `version` from
-   `mvp/frontend/gutgesagt-frontend/package.json`. Before tagging, a pull request sets it to
-   `X.Y.Z` (without the `v`); otherwise the new images show the old number.
-   `npm version X.Y.Z --no-git-tag-version` in that directory also updates `package-lock.json`.
-4. **Tag on Forgejo:** set the tag on a commit of `main` on Forgejo. The push mirror carries it
-   to GitHub, where `release.yml` tests and builds the images. Check that the run is green
-   and `:latest` moved before announcing the release.
-5. **Change list:** the change list of a release is the Forgejo release to its tag (Releases on
-   the Forgejo repository). Draft it with
-   ```bash
-   git fetch origin --tags
-   scripts/changelog.sh vX.Y.Z > changelog.md   # since the previous v* tag
-   scripts/changelog.sh vX.Y.Z <commit>         # first release, or a different start
-   ```
-   The script lists the merged pull requests on `main` (linked, grouped by their Conventional
-   Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the new
-   scripts in `mvp/scripts/manual/`. It recognises a breaking change only by the `!` in the PR
-   title (`feat!:`), not by a `BREAKING CHANGE:` footer, and links any commit on `main` whose
-   subject ends in `(#N)` as pull request N. Review the draft, add operational steps it cannot
-   know (for example a rename that needs action per environment), and publish it as the release.
+3. **Release pull request:** before tagging, one pull request prepares the release:
+   - **Version in the footer:** the footer shows the `version` from
+     `mvp/frontend/gutgesagt-frontend/package.json`. Set it to `X.Y.Z` (without the `v`),
+     otherwise the new images show the old number. `npm version X.Y.Z --no-git-tag-version`
+     in that directory also updates `package-lock.json`.
+   - **Change list:** draft the text of the Forgejo release and show it in the description of
+     the release pull request, so it is reviewed with it. The change list lives only in the
+     Forgejo release, not in a file in the repository. Draft it with
+     ```bash
+     git fetch origin --tags
+     scripts/changelog.sh origin/main             # since the previous v* tag
+     scripts/changelog.sh origin/main <commit>    # first release, or a different start
+     ```
+     The script lists the merged pull requests on `main` (linked, grouped by their Conventional
+     Commits prefix into Breaking Changes, Neu, Behoben, Sonstiges), the new migrations and the
+     new scripts in `mvp/scripts/manual/`. It recognises a breaking change only by the `!` in the
+     PR title (`feat!:`), not by a `BREAKING CHANGE:` footer, and links any commit on `main`
+     whose subject ends in `(#N)` as pull request N. Review the draft and add, in a section
+     „Ablauf beim Ausrollen“ above the generated list, the operational steps it cannot know: which
+     scripts in `mvp/scripts/manual/` must run and in which order, renames that need action per
+     environment, new settings, more memory.
+   If `main` moves while the pull request is open, merge it in and draft the list again, so
+   that it covers everything up to the tag except the release pull request itself.
+4. **Tag on Forgejo:** set the tag on the merge commit of the release pull request on `main`
+   on Forgejo, not on a later commit: later pull requests belong to the next release. The push
+   mirror carries the tag to GitHub, where `release.yml` tests and builds the images. Check
+   that the run is green and `:latest` moved before announcing the release.
+5. **Forgejo release:** create the release to the tag on Forgejo (Releases on the Forgejo
+   repository) and paste the reviewed draft from the release pull request. `scripts/changelog.sh
+   vX.Y.Z` shows the tagged range for a last comparison; for the first release give the start
+   as well (`scripts/changelog.sh v0.8.0 fae44b4b`, the commit of the former `v1.1.0`).
 
 For urgent deployments, ask in the project channel (see below).
 

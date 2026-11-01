@@ -13,9 +13,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.logging import get_logger
-from dependencies import require_user
+from dependencies import get_moderation_service, require_user
 from domain.models.widerspruch import Widerspruchsergebnis
-from services.moderation_service import get_moderation_service
+from services.moderation_service import ModerationService
 
 logger = get_logger(__name__)
 
@@ -57,11 +57,14 @@ class WiderspruchResponse(BaseModel):
 
 
 @router.get("/meine", response_model=MeineSperrenResponse)
-async def meine_sperren(user_id: str = Depends(require_user)):
+async def meine_sperren(
+    user_id: str = Depends(require_user),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
     """Die Sperrnachrichten der angemeldeten Person, die neueste zuerst (auch nach erfolgreichem Widerspruch)."""
     try:
         return MeineSperrenResponse(
-            sperren=await get_moderation_service().meine_sperren(user_id)
+            sperren=await moderation_service.meine_sperren(user_id)
         )
     except Exception as e:
         logger.error(
@@ -75,6 +78,7 @@ async def widersprechen(
     sperre_id: uuid.UUID,
     anfrage: WiderspruchRequest,
     user_id: str = Depends(require_user),
+    moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Einer Sperre an einem eigenen Beitrag widersprechen; die Admins pruefen erneut.
@@ -82,7 +86,7 @@ async def widersprechen(
     erraten kann; 409, wenn schon widersprochen ist.
     """
     try:
-        ergebnis = await get_moderation_service().widersprechen(
+        ergebnis = await moderation_service.widersprechen(
             str(sperre_id), user_id, anfrage.text
         )
     except Exception as e:

@@ -31,7 +31,8 @@ MAX_LAENGE = 100
 # Saetze im Fangkorb tragen stattdessen je einen eigenen "ehemalige-person-<UUID>"
 # mit Zeile in users (mvp/scripts/manual/person_loeschen.sql). Kennung und Praefix
 # sind reserviert: Das BFF lehnt Beta-Zugaenge damit ab (ManagedUserService.cs,
-# EhemaligePersonKennung) - wer sie hier aendert, aendert sie dort mit.
+# EhemaligePersonKennung) - wer sie hier aendert, aendert sie dort mit
+# (scripts/tests/test_platzhalter_kennung.py prueft das).
 EHEMALIGE_PERSON_KENNUNG = "ehemalige-person"
 EHEMALIGE_PERSON_NAME = "ehemalige Person"
 
