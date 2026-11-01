@@ -3,6 +3,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { VotingService, VoteResponse, VoteStats } from './voting.service';
 import { LoggingService } from './logging.service';
 import { environment } from '../../environments/environment';
+import { NUR_LESEND } from '../auth/cache.interceptor';
 
 describe('VotingService', () => {
   let service: VotingService;
@@ -296,6 +297,8 @@ describe('VotingService', () => {
       const req = httpMock.expectOne(`${environment.baseUrl}/api/v1/voting/votes/batch`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(contentIds);
+      // Liest nur: laesst den Cache stehen (cache.interceptor.ts)
+      expect(req.request.context.get(NUR_LESEND)).toBeTrue();
       req.flush(mockResponse);
     });
 

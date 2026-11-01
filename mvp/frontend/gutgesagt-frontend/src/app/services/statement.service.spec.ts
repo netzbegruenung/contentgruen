@@ -6,6 +6,7 @@ import { convertToParamMap } from '@angular/router';
 
 import { StatementService, VORSCHLAG_ANZAHL, VORSCHLAG_MIN_AEHNLICHKEIT } from './statement.service';
 import { environment } from '../../environments/environment';
+import { NUR_LESEND } from '../auth/cache.interceptor';
 
 describe('StatementService: Aussage eines Beitragsformulars', () => {
   let service: StatementService;
@@ -89,6 +90,14 @@ describe('StatementService: Vorschlaege im Antwort-auf-Feld', () => {
 
     const anfrage = httpMock.expectOne(`${environment.baseUrl}/api/v1/statement/searchStatements`);
     expect(anfrage.request.body).toEqual({ query_text: 'klimaschutz', limit: 1 });
+    anfrage.flush({ results: [] });
+  });
+
+  it('markiert die Aussagensuche als nur lesend, damit sie den Cache stehen laesst', () => {
+    service.searchStatements('klimaschutz', 1).subscribe();
+
+    const anfrage = httpMock.expectOne(`${environment.baseUrl}/api/v1/statement/searchStatements`);
+    expect(anfrage.request.context.get(NUR_LESEND)).toBeTrue();
     anfrage.flush({ results: [] });
   });
 });

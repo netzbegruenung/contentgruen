@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { nurLesend } from '../auth/cache.interceptor';
 import { LoggingService } from './logging.service';
 import {
     SearchReferencesRequest,
@@ -44,7 +45,7 @@ export class ReferenceService {
         return this.http.post<SearchReferencesResponse>(
             `${this.apiUrl}/search`,
             request,
-            { headers }
+            { headers, ...nurLesend() }
         ).pipe(
             catchError(error => this.handleError(error, 'searchReferences'))
         );
