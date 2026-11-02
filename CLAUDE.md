@@ -58,8 +58,10 @@ nur wenig:
 ## Checks before a PR
 - `scripts/check.sh` runs everything a PR must pass (retired words, Ruff, Black, Python unit tests
   and `scripts/tests/`, frontend tests, BFF tests in the .NET SDK container). While working:
-  `--geaendert` (only what the changes since `origin/main` reach) or `--schritt <name>`
-  (frontend single specs: `--include <pfad>`). Before opening a PR: the full `--integration` run.
+  `--geaendert` (only the steps the changes since `origin/main` reach, integration tests included
+  when reached) or `--schritt <name>`; single frontend specs with `--include <pfad>` (implies
+  `--schritt frontend`, not combinable with `--geaendert`). Before opening a PR: the full
+  `--integration` run.
   Woodpecker runs the same steps on every PR (`docs/CI.md`).
 - Pre-commit hooks format Python (Black) and run the backend unit tests; a commit can fail once
   after reformatting and pass on the second try. Commit again; `--no-verify` only in emergencies.
@@ -71,7 +73,8 @@ nur wenig:
 ## Review
 - "Review PR" reviews the current branch against `main` (`git fetch origin main`, then
   `git log origin/main..HEAD` and `git diff origin/main...HEAD`; dump a large diff to a file and
-  read it in sections). Check the judgement rules in `CODING_STANDARDS.md`, among them severities
+  read it in sections). Cover correctness, security, test coverage, performance, logging and
+  architecture fit, and check the judgement rules in `CODING_STANDARDS.md`, among them severities
   and Scope: behaviour beyond the ticket is a blocking Fachfrage under the heading `## Fachfrage`
   in the PR description.
 - Summary: strengths, areas to consider, risk, recommendation (Approve/Request Changes).

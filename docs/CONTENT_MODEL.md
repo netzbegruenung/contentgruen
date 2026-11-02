@@ -229,7 +229,7 @@ recognised server-side by their daily pseudonym.
 | **Display** | — | Seam 3 (adapter fields + body block in the card) |
 | Special behavior (e.g. dedup) | — | optional behavior strategy |
 
-**Adding a new type =** one registry entry + a model/DTO with its extra fields (ingestion defaults
+**Adding a new type =** (in short; step by step in the checklist below) one registry entry + a model/DTO with its extra fields (ingestion defaults
 to `DirectText`) + a response DTO that selects what goes out (`<Type>Response`/`<Type>Treffer` in
 `dtos/beitrag.py`, without Kennung, #333) + its fields in the card adapter and, only if it needs its own body,
 a block in `app-beitragskarte`. No engine changes, no cloning.

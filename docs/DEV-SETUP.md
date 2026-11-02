@@ -18,8 +18,11 @@ Ein älteres lokales `environment.ts` mit `baseUrl: 'http://localhost:5054'` auf
 
 Auf der Linux-Dev-VM läuft der ganze Stack in Docker Compose (`mvp/docker-compose.dev.yml`, Projekt
 `gutgesagt-dev`) und wird über `mvp/run-local.sh` gesteuert: aus jedem Verzeichnis aufrufbar, nichts
-im Vordergrund, Exit != 0 bei Fehler. Unterbefehle, Laufzeiten und Exit-Codes stehen im Kopf von
+im Vordergrund, Exit != 0 bei Fehler. Unterbefehle und Exit-Codes stehen im Kopf von
 `mvp/scripts/dev/run-local.sh`.
+
+- `reset` (etwa 30 s, Volumes bleiben) ist der Standard nach Code-Änderungen; `wipe` (etwa 2 min,
+  `down -v`, Neubau und Seeding) nur bei Schema- oder Seed-Problemen.
 
 - Ports: Frontend 8080, BFF 5054, Semantic Search 8000, Qdrant 6333/6334, PostgreSQL 5433.
   Rootless Docker kann keine Ports < 1024 binden, daher 8080 statt 80.

@@ -196,7 +196,7 @@ frontend no longer has a form for it.
 - **docker-compose.prd.yml**: Placeholder; the production compose file is managed outside this repository
 
 Container names are the same in dev, test and production: `gutgesagt-app-postgres`,
-`gutgesagt-semantic-search`, `gutgesagt-qdrant` (plus `gutgesagt-bff`, `gutgesagt-frontend`).
+`gutgesagt-semantic-search`, `gutgesagt-qdrant`.
 
 ### Container Registry
 - Test/Prod images: `git.verdigado.com/netzbegruenung-images/*`
