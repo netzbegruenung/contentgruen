@@ -28,7 +28,7 @@ from services.suchen_ohne_treffer_service import (
 )
 from tests.integration import postgres
 from tests.integration.postgres import Datenbank
-from utils.besucher_pseudonym import anschluss_tagespseudonym, besucher_tagespseudonym
+from utils.besucher_pseudonym import anschluss_pruefwert, besucher_tagespseudonym
 
 TABELLE = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer.sql"
 PERSONEN = postgres.MIGRATIONEN / "2026-10-26-suchen-ohne-treffer-personen.sql"
@@ -261,7 +261,7 @@ class TestMindestanzahlZaehltPersonen:
     ):
         """Je Anschluss und Aussage hoechstens eine Person am Tag (#496)."""
         service = _service(neue_datenbank)
-        anschluss = anschluss_tagespseudonym(
+        anschluss = anschluss_pruefwert(
             _anfrage({"X-Real-IP": "198.51.100.5"}), MITTWOCH
         )
 
@@ -271,7 +271,7 @@ class TestMindestanzahlZaehltPersonen:
                 0,
                 besucher_tagespseudonym(f"198.51.100.5|{user_agent}", MITTWOCH),
                 heute=MITTWOCH,
-                anschluss_pseudonym=anschluss,
+                anschluss_pruefwert=anschluss,
             )
 
         assert await _liste(service) == []

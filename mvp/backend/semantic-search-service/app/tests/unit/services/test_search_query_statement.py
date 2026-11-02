@@ -327,7 +327,7 @@ class TestSuchenOhneTreffer:
         assert eins is not None
         assert eins == zwei
 
-    def test_anderer_browser_am_selben_anschluss_ist_eine_weitere_person(
+    def test_anderer_browser_am_selben_anschluss_hat_ein_anderes_tagespseudonym(
         self, suchapp, suchen_ohne_treffer
     ):
         app, service = suchapp
@@ -358,7 +358,7 @@ class TestSuchenOhneTreffer:
             )
 
         eins, zwei = (
-            a.kwargs["anschluss_pseudonym"]
+            a.kwargs["anschluss_pruefwert"]
             for a in suchen_ohne_treffer.erfassen.call_args_list
         )
         assert eins is not None
@@ -377,7 +377,7 @@ class TestSuchenOhneTreffer:
         )
 
         assert (
-            suchen_ohne_treffer.erfassen.call_args.kwargs["anschluss_pseudonym"] is None
+            suchen_ohne_treffer.erfassen.call_args.kwargs["anschluss_pruefwert"] is None
         )
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(

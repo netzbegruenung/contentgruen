@@ -27,7 +27,9 @@ voraus wie die Merkliste der Suchen ohne Treffer; mit mehreren Workern zaehlte
 ein Besucher je Worker.
 
 Adresse und User-Agent werden dabei weder gespeichert noch geloggt; das
-Merkmal existiert nur innerhalb der Anfrage.
+Merkmal existiert nur innerhalb der Anfrage. Laenger lebt nur, was daraus mit dem
+Tagesschluessel berechnet ist: bei Suchen ohne Treffer ein Pruefwert aus Pseudonym
+bzw. Anschluss-Pruefwert und Aussage, im Speicher bis Mitternacht (#496).
 """
 
 import hashlib
@@ -106,13 +108,15 @@ def besucher_tagespseudonym(merkmal: str, tag: date) -> str:
     ).hexdigest()
 
 
-def anschluss_tagespseudonym(request: Request, tag: date) -> str:
+def anschluss_pruefwert(request: Request, tag: date) -> str:
     """
-    Tagespseudonym des Anschlusses allein, ohne User-Agent (#496).
+    Anschluss-Pruefwert: der Anschluss allein, ohne User-Agent (#496).
 
     Fuer "Suchen ohne Treffer": Ein Besucher, der den User-Agent wechselt, hat ein
-    neues Tagespseudonym, aber denselben Anschluss. Gebildet wie das Tagespseudonym
-    mit dem Schluessel des Tages; das Praefix trennt es von jedem Besuchermerkmal.
-    Es wird nicht gespeichert, nur im Speicher fuer den laufenden Tag gemerkt.
+    neues Tagespseudonym, aber denselben Anschluss. Kein Tagespseudonym, denn er
+    steht fuer einen Anschluss, nicht fuer eine Person; gebildet aber wie eines,
+    mit dem Schluessel des Tages, und das Praefix trennt ihn von jedem
+    Besuchermerkmal. Er wird nicht gespeichert, nur im Speicher fuer den laufenden
+    Tag gemerkt.
     """
     return besucher_tagespseudonym(f"anschluss:{_anschluss_teil(request)}", tag)

@@ -340,12 +340,16 @@ Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Prüfwert, mit dem Suchen ohne Treffer je Anschluss höchstens eine Person zählen). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Anschluss-Prüfwert). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
 _Avoid_: Salt, Secret
 
 **Anschluss**:
 Die Einheit, die der Server einem Aufrufer ohne Anmeldung zurechnet: bei IPv4 die Adresse, bei IPv6 ihr /64, weil Datenschutz-Erweiterungen die Adresse darin laufend wechseln. Mehrere Geräte hinter demselben Router teilen sich einen Anschluss. Er geht in das Besuchermerkmal und in das Rate-Limit ein und begrenzt bei Suchen ohne Treffer die Personen: je Anschluss und Aussage höchstens eine am Tag.
 _Avoid_: IP, Netz
+
+**Anschluss-Prüfwert**:
+Ein Wert, der bei Suchen ohne Treffer den Anschluss eines Besuchers an einem Tag wiedererkennbar macht: aus dem Anschluss allein (ohne User-Agent) und dem Datum mit dem Tagesschlüssel berechnet. Kein Tagespseudonym, denn er steht für einen Anschluss, nicht für eine Person. Er liegt nur im Arbeitsspeicher, in der Merkliste des Tages, und wird um Mitternacht verworfen; gespeichert oder protokolliert wird er nie. Angemeldete haben keinen.
+_Avoid_: Anschluss-Pseudonym, Anschluss-Tagespseudonym
 
 **Sitzungskennung**:
 Nur noch historisch: die Zufallskennung, die die SPA bis #446 für 30 Tage im Browser ablegte und bei Suche, Meldung und Nutzung mitschickte. Seit #446 gibt es sie nicht mehr; ältere Nutzungsereignisse tragen sie bis zu ihrer Frist, ältere Meldungen bis zu ihrem Abschluss (Spalten `session_id`, `reported_by_session_id`). Für Besucher heute: Tagespseudonym.

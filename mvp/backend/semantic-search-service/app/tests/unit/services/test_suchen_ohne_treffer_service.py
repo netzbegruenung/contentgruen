@@ -39,7 +39,7 @@ MONTAG = date(2026, 10, 26)
 # Tagespseudonyme zweier Personen, wie sie SearchTrackingService bildet.
 PERSON_A = "a" * 64
 PERSON_B = "b" * 64
-# Anschluss-Tagespseudonyme zweier Anschluesse (utils/besucher_pseudonym.py).
+# Anschluss-Pruefwerte zweier Anschluesse (utils/besucher_pseudonym.py).
 ANSCHLUSS_1 = "1" * 64
 ANSCHLUSS_2 = "2" * 64
 
@@ -156,10 +156,10 @@ class TestErfassen:
         service = _service(repo)
 
         service.erfassen(
-            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
         service.erfassen(
-            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, False]
@@ -169,10 +169,10 @@ class TestErfassen:
         service = _service(repo)
 
         service.erfassen(
-            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
         service.erfassen(
-            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_2
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_2
         )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, True]
@@ -182,10 +182,10 @@ class TestErfassen:
         service = _service(repo)
 
         service.erfassen(
-            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
         service.erfassen(
-            ANDERE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            ANDERE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, True]
@@ -195,10 +195,10 @@ class TestErfassen:
         service = _service(repo)
 
         service.erfassen(
-            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
         service.erfassen(
-            AUSSAGE, 0, PERSON_B, heute=DONNERSTAG, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_B, heute=DONNERSTAG, anschluss_pruefwert=ANSCHLUSS_1
         )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, True]
@@ -209,7 +209,7 @@ class TestErfassen:
         service = _service(repo)
 
         service.erfassen(
-            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
         service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
 
@@ -267,10 +267,10 @@ class TestErfassen:
 
         with pytest.raises(RuntimeError):
             service.erfassen(
-                AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+                AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
             )
         service.erfassen(
-            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pruefwert=ANSCHLUSS_1
         )
 
         assert repo.zaehlen.call_args.args == (AUSSAGE, MONTAG, True)

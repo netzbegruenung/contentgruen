@@ -46,7 +46,7 @@ from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
 )
-from utils.besucher_pseudonym import anschluss_tagespseudonym, besucher_merkmal
+from utils.besucher_pseudonym import anschluss_pruefwert, besucher_merkmal
 from utils.client_identity import derive_client_key
 from services.polarity_filter_service import get_polarity_filter_service
 from services.keyword_overlap_service import get_keyword_overlap_service
@@ -287,14 +287,10 @@ async def search_by_text(
         # Sitzungskennung aus dem Browser (#446); Angemeldete an ihrer Kennung allein.
         user_id = validated_user if angemeldet(validated_user) else None
         jetzt = datetime.now(timezone.utc)
-        merkmal, anschluss = (
-            (None, None)
-            if user_id
-            else (
-                besucher_merkmal(http_request),
-                anschluss_tagespseudonym(http_request, jetzt.date()),
-            )
-        )
+        merkmal = None if user_id else besucher_merkmal(http_request)
+        # Besucher: je Anschluss hoechstens eine Person bei Suchen ohne Treffer,
+        # auch wenn der User-Agent wechselt (#496). Angemeldete haben keinen.
+        pruefwert = None if user_id else anschluss_pruefwert(http_request, jetzt.date())
 
         # Track search event for metrics (fire-and-forget, don't block response)
         try:
@@ -325,9 +321,7 @@ async def search_by_text(
                 total_results,
                 tagespseudonym(user_id=user_id, besucher_merkmal=merkmal, moment=jetzt),
                 heute=jetzt.date(),
-                # Besucher: je Anschluss hoechstens eine Person, auch wenn der
-                # User-Agent wechselt (#496).
-                anschluss_pseudonym=anschluss,
+                anschluss_pruefwert=pruefwert,
             )
         except Exception as e:
             # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und

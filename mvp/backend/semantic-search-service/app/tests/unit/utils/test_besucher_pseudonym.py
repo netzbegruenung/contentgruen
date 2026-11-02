@@ -9,7 +9,7 @@ from starlette.requests import Request
 
 from utils.besucher_pseudonym import (
     Tagesschluessel,
-    anschluss_tagespseudonym,
+    anschluss_pruefwert,
     besucher_merkmal,
     besucher_tagespseudonym,
 )
@@ -103,37 +103,31 @@ class TestBesucherTagespseudonym:
         assert "Firefox" not in pseudonym
 
 
-class TestAnschlussTagespseudonym:
+class TestAnschlussPruefwert:
     """Unterscheidet Anschluesse, nicht Browser (#496)."""
 
     def test_anderer_user_agent_ist_derselbe_anschluss(self):
         eins = _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": "Firefox"})
         zwei = _anfrage({"X-Real-IP": "198.51.100.5", "User-Agent": "Chrome"})
 
-        assert anschluss_tagespseudonym(eins, HEUTE) == anschluss_tagespseudonym(
-            zwei, HEUTE
-        )
+        assert anschluss_pruefwert(eins, HEUTE) == anschluss_pruefwert(zwei, HEUTE)
 
     def test_andere_adresse_ist_ein_anderer_anschluss(self):
         eins = _anfrage({"X-Real-IP": "198.51.100.5"})
         zwei = _anfrage({"X-Real-IP": "198.51.100.6"})
 
-        assert anschluss_tagespseudonym(eins, HEUTE) != anschluss_tagespseudonym(
-            zwei, HEUTE
-        )
+        assert anschluss_pruefwert(eins, HEUTE) != anschluss_pruefwert(zwei, HEUTE)
 
     def test_ipv6_zaehlt_mit_seinem_64(self):
         eins = _anfrage({"X-Real-IP": "2001:db8:1:2::a"})
         zwei = _anfrage({"X-Real-IP": "2001:db8:1:2::b"})
 
-        assert anschluss_tagespseudonym(eins, HEUTE) == anschluss_tagespseudonym(
-            zwei, HEUTE
-        )
+        assert anschluss_pruefwert(eins, HEUTE) == anschluss_pruefwert(zwei, HEUTE)
 
     def test_am_naechsten_tag_ist_es_ein_anderes(self):
         anfrage = _anfrage({"X-Real-IP": "198.51.100.5"})
 
-        assert anschluss_tagespseudonym(anfrage, HEUTE) != anschluss_tagespseudonym(
+        assert anschluss_pruefwert(anfrage, HEUTE) != anschluss_pruefwert(
             anfrage, MORGEN
         )
 
@@ -141,14 +135,12 @@ class TestAnschlussTagespseudonym:
         """Auch nicht das eines Besuchers ohne User-Agent."""
         anfrage = _anfrage({"X-Real-IP": "198.51.100.5"})
 
-        assert anschluss_tagespseudonym(anfrage, HEUTE) != besucher_tagespseudonym(
+        assert anschluss_pruefwert(anfrage, HEUTE) != besucher_tagespseudonym(
             besucher_merkmal(anfrage), HEUTE
         )
 
     def test_enthaelt_die_adresse_nicht(self):
-        pseudonym = anschluss_tagespseudonym(
-            _anfrage({"X-Real-IP": "198.51.100.5"}), HEUTE
-        )
+        pseudonym = anschluss_pruefwert(_anfrage({"X-Real-IP": "198.51.100.5"}), HEUTE)
 
         assert len(pseudonym) == 64
         assert "198.51.100.5" not in pseudonym
