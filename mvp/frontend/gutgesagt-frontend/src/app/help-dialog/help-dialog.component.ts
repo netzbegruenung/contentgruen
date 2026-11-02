@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { NgFor } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
@@ -42,4 +42,21 @@ export class HelpDialogComponent {
     this.dialogRef.close();
     this.router.navigate(['/about']);
   }
+}
+
+/**
+ * Oeffnet die Hilfe als Seitenleiste rechts in voller Hoehe, 560 px breit; schmaler
+ * als 560 px wird daraus ein Vollbild (#512). Fokus auf dem Dialog selbst: Sonst
+ * fokussierte Material den ersten Link und scrollte ans Ende.
+ */
+export function hilfeOeffnen(dialog: MatDialog): MatDialogRef<HelpDialogComponent> {
+  return dialog.open(HelpDialogComponent, {
+    autoFocus: 'dialog',
+    position: { top: '0', right: '0' },
+    width: '560px',
+    maxWidth: '100vw',
+    height: '100%',
+    maxHeight: '100%',
+    panelClass: 'hilfe-seitenleiste',
+  });
 }

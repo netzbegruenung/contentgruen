@@ -18,7 +18,7 @@ import { RueckmeldungService } from './services/rueckmeldung.service';
 import { ProfilbildService } from './services/profilbild.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
-import { HelpDialogComponent } from './help-dialog/help-dialog.component';
+import { hilfeOeffnen } from './help-dialog/help-dialog.component';
 import { feedbackDialogOeffnen } from './shared/feedback/feedback-dialog.component';
 import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
@@ -157,11 +157,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openHelpDialog() {
-    this.dialog.open(HelpDialogComponent, {
-      width: '80vw',
-      maxWidth: '80vw',
-      data: {} // Pass any data you need here
-    });
+    hilfeOeffnen(this.dialog);
   }
 
   openProfilbildDialog(): void {

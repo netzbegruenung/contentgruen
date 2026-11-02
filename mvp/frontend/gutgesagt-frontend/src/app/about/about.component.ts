@@ -3,7 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { HelpDialogComponent } from '../help-dialog/help-dialog.component';
+import { hilfeOeffnen } from '../help-dialog/help-dialog.component';
 import { feedbackDialogOeffnen } from '../shared/feedback/feedback-dialog.component';
 import { NICHT_JEDE_AUSSAGE } from '../shared/schreibregeln';
 import { ORGANISATION } from '../shared/organisation';
@@ -27,11 +27,7 @@ export class AboutComponent {
   constructor(private dialog: MatDialog) {}
 
   openHelpDialog(): void {
-    this.dialog.open(HelpDialogComponent, {
-      width: '80vw',
-      maxWidth: '80vw',
-      maxHeight: '80vh'
-    });
+    hilfeOeffnen(this.dialog);
   }
 
   openFeedbackDialog(): void {
