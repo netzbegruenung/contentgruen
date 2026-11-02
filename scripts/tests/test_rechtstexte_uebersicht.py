@@ -147,6 +147,38 @@ def test_stand_als_ordner_lehnt_anderes_ab(stand):
         uebersicht.stand_als_ordner(stand)
 
 
+# Beide Listen auf einer Seite (Wiki, #503)
+
+
+def test_seite_lueckenliste_und_staende_unter_je_einer_ueberschrift(baum):
+    wurzel = baum(
+        {
+            "luecken/1-impressum/README.md": "## 1. Impressum\n",
+            "luecken/1-impressum/I1.md": "# I1\n\n- **Eintrag:** ✓\n",
+            "staende/2026-10/stand.md": "# Oktober 2026\n\n- **im Repository:** bb0235b5\n",
+            "staende/2026-10/222.md": "Glossarbegriffe (#222)\n",
+        }
+    )
+
+    assert uebersicht.seite(wurzel / "luecken", wurzel / "staende") == textwrap.dedent(
+        """\
+        # Lückenliste
+
+        ## 1. Impressum
+
+        | # | Eintrag |
+        |---|---|
+        | I1 | ✓ |
+
+        # Stände der Nutzungsbedingungen
+
+        | Stand | Was sich geändert hat | im Repository |
+        |---|---|---|
+        | Oktober 2026 | Glossarbegriffe (#222) | bb0235b5 |
+        """
+    )
+
+
 def test_main_gibt_die_uebersicht_aus(capsys):
     assert uebersicht.main(["staende"]) == 0
     assert capsys.readouterr().out == uebersicht.staende()

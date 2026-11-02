@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { abschnitt as abschnittIn, normalisiert } from '../testing/rechtstext';
+import { abschnitt as abschnittIn, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
 
 /**
@@ -36,6 +36,19 @@ describe('DatenschutzComponent', () => {
       expect(ganzerText()).not.toMatch(/\b(Ihr|Ihre|Ihren|Ihrem|Ihrer|Ihres|Ihnen)\b/);
       expect(ganzerText()).not.toMatch(/\b(können|möchten|haben) Sie\b/);
       expect(abschnitt('Deine Rechte')).toContain('Wende dich dafür an');
+    });
+  });
+
+  describe('Stand (#498)', () => {
+    it('trägt das Tagesdatum der letzten Änderung, nicht nur den Monat', () => {
+      const text = stand(seite);
+      expect(istTagesdatum(text)).withContext(text).toBeTrue();
+    });
+
+    it('lässt Monat ohne Tag und einen Tag, den es nicht gibt, nicht gelten', () => {
+      expect(istTagesdatum('November 2026')).toBeFalse();
+      expect(istTagesdatum('31. September 2026')).toBeFalse();
+      expect(istTagesdatum('29. Februar 2028')).toBeTrue();
     });
   });
 
