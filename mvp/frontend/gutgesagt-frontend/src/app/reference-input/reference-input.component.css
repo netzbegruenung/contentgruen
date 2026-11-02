@@ -162,9 +162,9 @@
 }
 
 .reference-item.new-reference {
-    background-color: rgba(76, 175, 80, 0.08);
-    border-color: #4CAF50;
-    border-left: 3px solid #4CAF50;
+    background-color: var(--success-bg);
+    border-color: var(--primary-main);
+    border-left: 3px solid var(--primary-main);
 }
 
 .reference-item.existing-reference {

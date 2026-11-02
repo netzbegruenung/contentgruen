@@ -18,15 +18,15 @@ import { MatIconModule } from '@angular/material/icon';
   template: `
     <div class="admin-container">
       <nav class="admin-nav" aria-label="Admin-Bereich">
-        <a routerLink="/admin/dashboard" routerLinkActive="aktiv">
+        <a routerLink="/admin/dashboard" routerLinkActive="aktiv" ariaCurrentWhenActive="page">
           <mat-icon aria-hidden="true">dashboard</mat-icon>
           <span>Übersicht</span>
         </a>
-        <a routerLink="/admin/moderation" routerLinkActive="aktiv">
+        <a routerLink="/admin/moderation" routerLinkActive="aktiv" ariaCurrentWhenActive="page">
           <mat-icon aria-hidden="true">flag</mat-icon>
           <span>Moderation</span>
         </a>
-        <a routerLink="/admin/themen" routerLinkActive="aktiv">
+        <a routerLink="/admin/themen" routerLinkActive="aktiv" ariaCurrentWhenActive="page">
           <mat-icon aria-hidden="true">label</mat-icon>
           <span>Themen</span>
         </a>

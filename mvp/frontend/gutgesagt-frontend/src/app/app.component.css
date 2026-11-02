@@ -94,7 +94,7 @@ main * {
 
 /* Neben einem langen Titel ist fuer die Begruessung erst ab 1440 px Platz */
 @media (max-width: 1439px) {
-    .header--titel-lang .user-info-compact {
+    .header--titel-lang .right-header-box > .user-info-compact {
         display: none;
     }
 }
@@ -139,7 +139,7 @@ main * {
  * unter 1100 px zeigt Beitragen nur das Plus. Die Namen bleiben fuer Screenreader.
  */
 @media (max-width: 1199px) {
-    .user-info-compact {
+    .right-header-box > .user-info-compact {
         display: none;
     }
 
@@ -160,6 +160,7 @@ main * {
         display: inline-block;
     }
 
+    /* Nur noch fuer Screenreader, wie .cdk-visually-hidden */
     .header-link .kopf-text {
         position: absolute;
         width: 1px;

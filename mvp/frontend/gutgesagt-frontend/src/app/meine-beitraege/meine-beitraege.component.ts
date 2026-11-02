@@ -192,14 +192,14 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
       });
   }
 
-  /**
-   * Navigate back to the start/home page.
-   */
   /** Aus dem leeren Zustand ein Weg weiter (#512). */
   zumBeitragen(): void {
     this.router.navigate([ROUTES.CONTRIBUTE]);
   }
 
+  /**
+   * Navigate back to the start/home page.
+   */
   navigateToStart(): void {
     this.router.navigate(['/']);
   }

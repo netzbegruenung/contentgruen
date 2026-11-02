@@ -4,7 +4,8 @@ Jede CSS-Variable, die das Frontend mit var(--name) liest, ist auch irgendwo def
 leerer Kreis, Radien und Farben verschwanden. Der Fallback in var(--x, wert) zaehlt
 nicht als Definition: Er verdeckt den Tippfehler nur.
 
-Die Variablen von Angular Material (--mat-*, --mdc-*) setzt Material selbst.
+Die Komponenten-Tokens von Angular Material (--mat-*, --mdc-*) setzt das M2-Theme selbst,
+die System-Tokens --mat-sys-* gibt es nur mit einem M3-Theme und zaehlen deshalb nicht.
 """
 
 import pathlib
@@ -16,10 +17,11 @@ ENDUNGEN = {".css", ".scss", ".ts", ".html"}
 VON_MATERIAL = ("--mat-", "--mdc-")
 
 GELESEN = re.compile(r"var\(\s*(--[A-Za-z0-9_-]+)")
-# Definition in CSS (--x: …), als Bindung [style.--x] im Template oder als Name im Code
-# ('--x', etwa fuer style.setProperty)
+# Definition in CSS (--x: …), als Bindung [style.--x] im Template oder im Code als
+# Konstante (= '--x') bzw. per setProperty('--x', …)
 DEFINIERT = re.compile(
-    r"(--[A-Za-z0-9_-]+)\s*:|\[style\.(--[A-Za-z0-9_-]+)\]|['\"](--[A-Za-z0-9_-]+)['\"]"
+    r"(--[A-Za-z0-9_-]+)\s*:|\[style\.(--[A-Za-z0-9_-]+)\]"
+    r"|(?:=|setProperty\()\s*['\"](--[A-Za-z0-9_-]+)['\"]"
 )
 
 
@@ -46,7 +48,10 @@ def undefinierte(quelle: pathlib.Path) -> list[str]:
         for datei, text in texte.items()
         for treffer in GELESEN.finditer(text)
         if treffer.group(1) not in definiert
-        and not treffer.group(1).startswith(VON_MATERIAL)
+        and not (
+            treffer.group(1).startswith(VON_MATERIAL)
+            and not treffer.group(1).startswith("--mat-sys-")
+        )
     )
 
 
@@ -62,7 +67,15 @@ def test_findet_undefinierte_auch_mit_fallback(tmp_path):
         '<i [style.--gebunden]="x" style="top: var(--gebunden)"></i>'
     )
     (tmp_path / "c.ts").write_text(
-        "const X = '--im-code'; const y = 'var(--im-code) var(--mat-sys-primary)';"
+        "const X = '--im-code'; const y = 'var(--im-code) var(--mat-button-x) var(--mat-sys-primary)';"
     )
 
-    assert undefinierte(tmp_path) == ["a.css:1 --tippfehler"]
+    (tmp_path / "d.ts").write_text(
+        "const z = { name: '--nur-erwaehnt' }; const w = 'var(--nur-erwaehnt)';"
+    )
+
+    assert undefinierte(tmp_path) == [
+        "a.css:1 --tippfehler",
+        "c.ts:1 --mat-sys-primary",
+        "d.ts:1 --nur-erwaehnt",
+    ]

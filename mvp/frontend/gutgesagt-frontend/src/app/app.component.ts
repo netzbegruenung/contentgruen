@@ -66,8 +66,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isMobile: boolean = false;
   isTablet: boolean = false;
 
-  /** Kommt aus dem ProfilbildService: abgeleitet oder selbst gewaehlt (#437). */
-  /** Ab dieser Laenge setzt der Desktop-Kopf den Titel kleiner, damit er in eine Zeile passt. */
+  /** Laengere Titel setzt der Desktop-Kopf kleiner, damit sie in eine Zeile passen. */
   static readonly LANGER_TITEL = 16;
 
   get titelLang(): boolean {
@@ -77,6 +76,7 @@ export class AppComponent implements OnInit, OnDestroy {
   /** Unter 1200 px zeigt der Kopf die Textlinks als Icons; dann helfen Tooltips. */
   kopfSchmal = false;
 
+  /** Kommt aus dem ProfilbildService: abgeleitet oder selbst gewaehlt (#437). */
   get selectedProfilePictureUrl(): string {
     return this.profilbild.bild();
   }
