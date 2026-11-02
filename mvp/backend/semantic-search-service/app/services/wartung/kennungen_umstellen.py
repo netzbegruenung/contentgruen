@@ -20,7 +20,7 @@ Aufruf: mvp/scripts/manual/kennungen_umstellen.py
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Mapping, Set
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Set
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -195,7 +195,9 @@ def kennungen_in_postgres(verbindung: Connection) -> Set[str]:
         for tabelle, spalten in SPALTEN.items()
         for spalte in spalten
     ]
-    werte = verbindung.execute(text(" UNION ".join(teile))).scalars()
+    # Eigene Transaktion, damit postgres_umschreiben danach seine beginnen kann.
+    with verbindung.begin():
+        werte = verbindung.execute(text(" UNION ".join(teile))).scalars().all()
     return {k for k in werte if _person(k)}
 
 
@@ -299,3 +301,85 @@ def qdrant_umschreiben(
                 wait=True,
             )
     return len(neu_je_punkt)
+
+
+# --- Ablauf ---------------------------------------------------------------
+
+
+class IKennungenImRealm(Protocol):
+    """infrastructure/keycloak_konten.py"""
+
+    def kennungen_zuordnen(
+        self, identity_provider: str, kennungen: Iterable[str]
+    ) -> Dict[str, str]: ...
+
+    def konten_verknuepft_anlegen(
+        self, identity_provider: str, konten: Mapping[str, str]
+    ) -> Any: ...
+
+
+@dataclass
+class Umstellung:
+    ausgefuehrt: bool
+    # alte Kennung -> Kennung im Realm, fuer alle, die umgeschrieben werden
+    zuordnung: Dict[str, str]
+    postgres: PostgresBericht
+    # Collection -> Beitraege mit einer alten Kennung
+    qdrant: Dict[str, int]
+    # Name der Liste -> neue Werte (Admins, Loeschliste)
+    listen: Dict[str, List[str]]
+    # Kennungen ohne verknuepftes Konto im Realm: bleiben, wie sie sind (Beta-Zugaenge,
+    # Konten aus Einladungen, Mitglieder, fuer die noch kein Konto angelegt ist)
+    ohne_konto: List[str]
+    # Mit Mail-Adresse genannt und ohne Konto: wird beim Lauf angelegt (Trockenlauf)
+    anzulegen: List[str] = field(default_factory=list)
+    # Konto sollte angelegt werden, die Adresse hat im Realm aber schon eins
+    vergeben: List[str] = field(default_factory=list)
+
+
+def umstellen(
+    verbindung: Connection,
+    qdrant: QdrantClient,
+    collection: str,
+    realm: IKennungenImRealm,
+    identity_provider: str,
+    listen: Optional[Mapping[str, List[str]]] = None,
+    anzulegen: Optional[Mapping[str, str]] = None,
+    ausfuehren: bool = False,
+) -> Umstellung:
+    """
+    Sucht alle Kennungen in PostgreSQL, Qdrant und den Listen, ordnet sie ueber den
+    Realm zu und schreibt sie um. ``anzulegen`` (alte Kennung -> Mail-Adresse) legt
+    beim Lauf vorher die fehlenden Konten im Realm an, mit dem Identity Provider
+    verknuepft.
+    """
+    listen = dict(listen or {})
+    alte = (
+        kennungen_in_postgres(verbindung)
+        | kennungen_in_qdrant(qdrant, collection)
+        | {k for werte in listen.values() for k in werte if _person(k)}
+    )
+    zuordnung = realm.kennungen_zuordnen(identity_provider, sorted(alte))
+    fehlend = sorted(k for k in (anzulegen or {}) if k in alte and k not in zuordnung)
+    vergeben: List[str] = []
+    if ausfuehren and fehlend:
+        angelegt = realm.konten_verknuepft_anlegen(
+            identity_provider, {k: anzulegen[k] for k in fehlend}
+        )
+        zuordnung.update(angelegt.angelegt)
+        vergeben = list(angelegt.vergeben)
+        fehlend = []
+    # Vor jedem Schreiben, auch fuer die Listen.
+    zuordnung_pruefen(zuordnung)
+    return Umstellung(
+        ausgefuehrt=ausfuehren,
+        zuordnung=zuordnung,
+        postgres=postgres_umschreiben(verbindung, zuordnung, ausfuehren),
+        qdrant={
+            collection: qdrant_umschreiben(qdrant, collection, zuordnung, ausfuehren)
+        },
+        listen={name: liste_umschreiben(w, zuordnung) for name, w in listen.items()},
+        ohne_konto=sorted(alte - set(zuordnung)),
+        anzulegen=fehlend,
+        vergeben=vergeben,
+    )

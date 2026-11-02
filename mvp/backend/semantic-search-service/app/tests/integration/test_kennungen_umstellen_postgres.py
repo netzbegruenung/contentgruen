@@ -10,12 +10,16 @@ wird, wird hier auf die neue Kennung umgeschrieben.
 import uuid
 
 import pytest
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, PointStruct, VectorParams
 from sqlalchemy import text
 
 from infrastructure.database.models import GeseheneNutzung, RawInputDraft, User
+from infrastructure.keycloak_konten import VerknuepfteKonten
 from services.wartung.kennungen_umstellen import (
     kennungen_in_postgres,
     postgres_umschreiben,
+    umstellen,
 )
 from tests.integration.test_loeschkommando import (  # noqa: F401 (Fixtures)
     ANDERE,
@@ -30,6 +34,8 @@ from tests.integration.test_loeschkommando import (  # noqa: F401 (Fixtures)
 pytestmark = pytest.mark.integration
 
 NEU = "neu-im-realm-gutgesagt"
+ANDERE_NEU = "andere-neu-im-realm"
+COLLECTION = "beitraege"
 
 # Je Spalte genau eine Spur der Person (Fixture spuren).
 JE_SPALTE_EINE = {
@@ -134,6 +140,97 @@ class TestPostgresUmschreiben:
         with datenbank.get_session() as s:
             saetze = s.query(RawInputDraft).filter_by(raw_input_id=einwuerfe.fremd)
             assert {d.user_id for d in saetze} == {PERSON, NEU, ANDERE}
+
+
+class Realm:
+    """Attrappe des Realms: verknuepfte Konten, legt auf Wunsch eins an."""
+
+    def __init__(self, verknuepft):
+        self.verknuepft = dict(verknuepft)
+        self.angelegt_fuer = []
+
+    def kennungen_zuordnen(self, identity_provider, kennungen):
+        assert identity_provider == "netzbegruenung"
+        return {k: self.verknuepft[k] for k in kennungen if k in self.verknuepft}
+
+    def konten_verknuepft_anlegen(self, identity_provider, konten):
+        self.angelegt_fuer.extend(konten)
+        ergebnis = VerknuepfteKonten()
+        for kennung in konten:
+            ergebnis.angelegt[kennung] = self.verknuepft[kennung] = f"{kennung}-neu"
+        return ergebnis
+
+
+@pytest.fixture
+def qdrant():
+    client = QdrantClient(":memory:")
+    client.create_collection(
+        COLLECTION, vectors_config=VectorParams(size=2, distance=Distance.COSINE)
+    )
+    payload = {"original_author": PERSON, "last_modified_by": PERSON}
+    client.upsert(COLLECTION, [PointStruct(id=1, vector=[1.0, 0.0], payload=payload)])
+    return client
+
+
+def _umstellen(datenbank, qdrant, realm, **kwargs):
+    with datenbank.engine.connect() as verbindung:
+        return umstellen(
+            verbindung, qdrant, COLLECTION, realm, "netzbegruenung", **kwargs
+        )
+
+
+class TestUmstellen:
+    def test_trockenlauf_zaehlt_je_tabelle_und_collection(
+        self, datenbank, spuren, qdrant
+    ):
+        ergebnis = _umstellen(datenbank, qdrant, Realm({PERSON: NEU}))
+
+        assert ergebnis.postgres.geaendert == JE_SPALTE_EINE
+        assert ergebnis.qdrant == {COLLECTION: 1}
+        assert ergebnis.ohne_konto == [ANDERE]
+        assert _kennung_irgendwo(datenbank, NEU) == []
+
+    def test_lauf_schreibt_ueberall_und_der_zweite_findet_nichts(
+        self, datenbank, spuren, qdrant
+    ):
+        realm = Realm({PERSON: NEU, ANDERE: ANDERE_NEU})
+        _umstellen(datenbank, qdrant, realm, ausfuehren=True)
+
+        zweiter = _umstellen(datenbank, qdrant, realm, ausfuehren=True)
+
+        assert _kennung_irgendwo(datenbank, PERSON) == []
+        payload = qdrant.retrieve(COLLECTION, [1], with_payload=True)[0].payload
+        assert payload["original_author"] == NEU
+        assert set(zweiter.postgres.geaendert.values()) == {0}
+        assert zweiter.qdrant == {COLLECTION: 0}
+        assert zweiter.zuordnung == {}
+
+    def test_listen_aus_der_konfiguration_bekommen_die_neuen_kennungen(
+        self, datenbank, spuren, qdrant
+    ):
+        ergebnis = _umstellen(
+            datenbank,
+            qdrant,
+            Realm({PERSON: NEU, "nur-admin": "nur-admin-neu"}),
+            listen={"ADMIN_USER_IDS": ["user-001", PERSON, "nur-admin"]},
+        )
+
+        assert ergebnis.listen == {"ADMIN_USER_IDS": ["user-001", NEU, "nur-admin-neu"]}
+
+    def test_konten_werden_nur_beim_lauf_und_nur_fuer_fehlende_angelegt(
+        self, datenbank, spuren, qdrant
+    ):
+        realm = Realm({PERSON: NEU})
+        mails = {PERSON: "anna@example.org", ANDERE: "ben@example.org"}
+
+        trocken = _umstellen(datenbank, qdrant, realm, anzulegen=mails)
+        assert realm.angelegt_fuer == []
+        assert trocken.anzulegen == [ANDERE]
+
+        lauf = _umstellen(datenbank, qdrant, realm, anzulegen=mails, ausfuehren=True)
+        assert realm.angelegt_fuer == [ANDERE]
+        assert lauf.zuordnung == {PERSON: NEU, ANDERE: f"{ANDERE}-neu"}
+        assert lauf.ohne_konto == []
 
 
 class TestKennungenInPostgres:
