@@ -83,12 +83,89 @@ Deshalb in dieser Reihenfolge, nicht anders:
 1. Die Datenschutzerklärung beschreibt Selbstregistrierung über eine Einladung und die
    Anmeldung über den eigenen Realm (eigenes Rechtstext-Ticket). Heute sagt sie, eine
    Selbstregistrierung gebe es nicht.
-2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (Skript mit
-   Trockenlauf, Teil von #429, noch offen).
+2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (unten,
+   „Kennungen umstellen“).
 3. Erst dann, gemeinsam: BFF auf den neuen Realm (`Keycloak__*`) und Einlösen im
    Semantic-Service einschalten (`SEMANTIC_SEARCH_KEYCLOAK_*`). Wer nur Einlösen einschaltet,
    verteilt Links für Konten, mit denen sich niemand in der App anmelden kann; das Dashboard
    warnt dann nicht mehr.
+
+## Kennungen umstellen
+
+`mvp/scripts/manual/kennungen_umstellen.py` (#487) schreibt jede Kennung eines Mitglieds
+der Netzbegrünung auf die seines Kontos im Realm um: in PostgreSQL dieselben Spalten wie
+das Löschkommando (`person_loeschen.sql`), in Qdrant die vier Felder an Beiträgen. Für die
+Admin-Listen gibt es die neuen Werte aus. Die Löschliste ergänzt es nur: Ein Cookie mit der
+alten Kennung gilt bis zu 14 Tage weiter (Löschkonzept), die alte Zeile muss also bleiben.
+Die Zuordnung kommt aus dem Realm: Ein Konto, das mit dem Identity Provider
+`netzbegruenung` verknüpft ist, trägt dort die alte Kennung. Ohne `--ausfuehren` zählt es
+nur, je Tabelle und Spalte und je Collection. Ein zweiter Lauf zählt null; nur einen Satz,
+der stehen bleibt, weil die neue Kennung am selben Einwurf schon einen hat, nennt er
+wieder.
+
+Ein Konto im Realm entsteht für ein Mitglied sonst erst bei der ersten Anmeldung über den
+Realm. Vor dem Umstellen der BFF legt das Skript es deshalb an (`--konten-anlegen`):
+verknüpft mit der alten Kennung, ohne Mail, mit der Pflichtaktion für die
+Nutzungsbedingungen. Wer sich danach mit der Netzbegrünung anmeldet, landet in genau
+diesem Konto. Dafür braucht es die Mail-Adresse, denn im Realm ist sie der
+Benutzername. Ist eine Adresse im Realm schon vergeben, etwa über eine Einladung,
+verknüpft das Skript nichts und nennt die Kennung. Ob diese Person ihr Konto aus der
+Einladung behält oder das verknüpfte bekommt, entscheidet ein Admin; ein zweiter Lauf
+stellt sie dann um. Für Kennungen aus der Löschliste legt das Skript nie ein Konto an.
+
+Was ohne Konto bleibt, behält seine Kennung: Beta-Zugänge (#488), Konten aus Einladungen
+(die haben schon die Kennung im Realm), Autor-Werte, die keine Person bezeichnen
+(`system:suchanfrage`, „Gut gesagt Team“), und Mitglieder, für die keine Adresse
+angegeben ist.
+
+Die Ausgabe nennt zuerst nur Zahlen; nur die gehören in einen PR oder ein Issue. Nach der
+Zeile „Ab hier Kennungen“ folgen Kennungen (Personendaten, bleiben auf dem Host) und die
+neuen Werte der Listen; im Trockenlauf sind die nur eine Vorschau, weil die erst
+anzulegenden Konten fehlen.
+
+Das Image des Semantic-Service muss diesen Stand schon enthalten; ein älteres bricht mit
+`ModuleNotFoundError` ab, bevor es etwas schreibt. Auf dem Host, in einer ruhigen Zeit
+(eine Änderung an einem Beitrag während des Laufs kann verloren gehen), in dieser
+Reihenfolge:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/kennungen_umstellen.py
+# Zugang zum Realm, falls im Container noch nicht gesetzt (Secret nicht in die History):
+export SEMANTIC_SEARCH_KEYCLOAK_URL=<keycloak> SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID=gutgesagt-einladungen
+read -rs SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET
+KC=(-e SEMANTIC_SEARCH_KEYCLOAK_URL -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID
+    -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET)
+# ADMIN_USER_IDS der BFF und die Löschliste
+LISTEN=(--liste "ADMIN_USER_IDS=<Wert aus der BFF>"
+        --loeschliste "$(grep -v '^#' <pfad>/geloeschte-konten.txt | paste -sd, -)")
+
+# 1. Trockenlauf: welche Kennungen haben kein Konto?
+docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
+  --ohne-konto-zeigen < kennungen_umstellen.py
+```
+
+2. Zu jeder Kennung eines Mitglieds aus dieser Liste die Mail-Adresse aus dem Realm der
+   Netzbegrünung holen (Admin-Konsole, *Users*, Suche nach der ID) und in eine Datei
+   `konten.csv` schreiben, je Zeile `kennung,mail-adresse`. Die Datei enthält
+   Personendaten: nur auf dem Host, nach dem Lauf löschen.
+
+```bash
+docker cp konten.csv gutgesagt-semantic-search:/tmp/konten.csv
+# 3. Trockenlauf mit den anzulegenden Konten. Deren Zeilen und Beiträge zählt er noch
+#    nicht mit, er nennt nur, wie viele Konten der Lauf anlegt.
+docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
+  --konten-anlegen /tmp/konten.csv < kennungen_umstellen.py
+# 4. Backup (mvp/scripts/backup/backup.sh), dann umstellen; Ausgabe protokollieren
+docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
+  --konten-anlegen /tmp/konten.csv --ausfuehren < kennungen_umstellen.py
+docker exec gutgesagt-semantic-search rm /tmp/konten.csv; rm konten.csv
+```
+
+5. Die neuen Werte aus dem Lauf (Schritt 4, nicht aus einem Trockenlauf) setzen:
+   `SEMANTIC_SEARCH_ADMIN_USERS`, `ADMIN_USER_IDS` und `geloeschte-konten.txt`.
+6. Gleich danach Schritt 3 der Reihenfolge oben (BFF auf den Realm). Bis dahin melden sich
+   Mitglieder noch mit der alten Kennung an, und was sie dann anlegen, trägt sie; ein
+   Lauf nach dem Umstellen holt das nach, die Zuordnung bleibt im Realm.
 
 ## Konfiguration der App
 
