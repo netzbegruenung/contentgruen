@@ -11,7 +11,9 @@ seiner `README.md`. Ein neuer Eintrag ist eine neue Datei mit derselben Felderfo
 anderen im Ordner, nichts sonst; so kollidieren zwei PRs mit je einem neuen Eintrag nicht.
 Bis #500 stand alles in einer Datei, `docs/RECHTSTEXTE_LUECKEN.md`; Verweise in `docs/archiv/`
 nennen noch diesen Namen.
-Die Tabellen als Übersicht: `python3 scripts/rechtstexte_uebersicht.py luecken`.
+Die Tabellen als Übersicht: im Wiki des Repositorys auf Forgejo, Seite
+„Rechtstexte Übersicht“, nach jedem Merge auf `main` neu erzeugt (#503); lokal
+`python3 scripts/rechtstexte_uebersicht.py luecken`.
 `scripts/tests/test_rechtstexte_uebersicht.py` prüft die Ablage.
 
 **Dies ist keine Rechtsberatung.** Die Zuordnung Pflicht/optional ist eine

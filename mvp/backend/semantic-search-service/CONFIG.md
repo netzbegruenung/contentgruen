@@ -59,6 +59,7 @@ nano .env
 | `SEMANTIC_SEARCH_METADATA_PATH` | Path for seeding metadata | Auto-detected |
 | `SEMANTIC_SEARCH_QDRANT_URL` | Qdrant endpoint | `http://localhost:6333` |
 | `SEMANTIC_SEARCH_QDRANT_COLLECTION` | Qdrant collection name | `content_collection` |
+| `SEMANTIC_SEARCH_EMBEDDING_THREADS` | Torch threads for computing embeddings, set once at startup for the whole process. Limits CPU contention on a busy host (#480); whether and which value production uses is the maintainer's call | unset (one per visible core) |
 | `SEMANTIC_SEARCH_APP_DATABASE_URL` | App database connection string | localhost:5433 |
 | `SEMANTIC_SEARCH_LOG_LEVEL` | Logging level (DEBUG, INFO, etc.) | INFO |
 | `SEMANTIC_SEARCH_KEYCLOAK_URL`, `…_KEYCLOAK_ADMIN_CLIENT_ID`, `…_KEYCLOAK_ADMIN_CLIENT_SECRET` | Keycloak admin API for redeeming Einladungen; without them Einladungen can only be managed. Set only together with the BFF switch to the new realm (`docs/KEYCLOAK_REALM.md`, order) | unset |

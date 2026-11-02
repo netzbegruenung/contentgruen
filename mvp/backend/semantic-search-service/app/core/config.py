@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "content_collection"
 
+    # Threads, die Torch fuer Einbettungen nutzt (#480). Ohne Angabe so viele wie
+    # Kerne sichtbar sind. Auf einem ausgelasteten Host bremsen sich viele Threads
+    # gegenseitig aus; in #478 dauerte eine kurze Einbettung mit 8 Threads Sekunden,
+    # mit 2 Zehntelsekunden. Gilt fuer den ganzen Prozess.
+    embedding_threads: Optional[int] = Field(default=None, ge=1)
+
     # Application database configuration (PostgreSQL for usage tracking, votes, etc.)
     app_database_url: str = (
         "postgresql+psycopg2://app_user:changeme@localhost:5433/gutgesagt_app"
