@@ -228,7 +228,7 @@ describe('ReportDialogComponent', () => {
     expect(TestBed.inject(MatDialogRef).close).not.toHaveBeenCalled();
   });
 
-  it('sagt nach dem Eingang, dass die Entscheidung per E-Mail kommt, wenn eine Adresse dasteht', async () => {
+  it('sagt nach dem Eingang, dass Bestätigung und Entscheidung per E-Mail kommen, wenn eine Adresse dasteht', async () => {
     await eingeben('input[name="melder_email"]', 'anna@example.org');
     await gutenGlaubenErklaeren();
     await melden();
@@ -237,7 +237,7 @@ describe('ReportDialogComponent', () => {
     fixture.detectChanges();
 
     expect(element().querySelector('[role="status"]')!.textContent).toContain(
-      'Unsere Entscheidung teilen wir dir per E-Mail mit.',
+      'Eine Bestätigung und später unsere Entscheidung schicken wir dir per E-Mail.',
     );
   });
 });

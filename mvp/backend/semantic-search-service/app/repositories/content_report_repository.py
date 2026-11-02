@@ -5,7 +5,7 @@ Handles database operations for content moderation.
 
 import logging
 from datetime import date, datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
 from sqlalchemy import and_, desc, or_
 
@@ -134,6 +134,38 @@ class ContentReportRepository:
             # Im Zweifel nicht deduplizieren: eine doppelte Meldung ist harmloser
             # als eine verschluckte.
             return False
+
+    def offene_melder_adressen(
+        self,
+        *,
+        content_id: Optional[UUID] = None,
+        report_id: Optional[UUID] = None,
+    ) -> List[Tuple[UUID, str]]:
+        """
+        Beitrag und E-Mail-Adresse der offenen Meldungen zu einem Beitrag oder der
+        einen Meldung, sofern die meldende Person eine Adresse angegeben hat (#493).
+
+        Der ModerationService liest sie, bevor er die Meldungen erledigt, und teilt
+        ihnen die Entscheidung mit. Schon erledigte Meldungen fehlen: Ihre Person hat
+        ihre Entscheidung. Genau einer der beiden Filter; Fehler gehen an den Aufrufer.
+        """
+        if (content_id is None) == (report_id is None):
+            raise ValueError("Genau content_id oder report_id angeben")
+        with self.db.get_session() as session:
+            abfrage = session.query(
+                ContentReport.content_id, ContentReport.melder_email
+            ).filter(
+                ContentReport.status == "pending",
+                ContentReport.melder_email.isnot(None),
+            )
+            if content_id is not None:
+                abfrage = abfrage.filter(ContentReport.content_id == content_id)
+            else:
+                abfrage = abfrage.filter(ContentReport.id == report_id)
+            return [
+                (beitrag, email)
+                for beitrag, email in abfrage.order_by(ContentReport.created).all()
+            ]
 
     def get_pending_reports(
         self, limit: int = 50, offset: int = 0

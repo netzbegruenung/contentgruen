@@ -103,6 +103,29 @@ deletion list still hold the old one. Switch the BFF and enable redemption
 (`SEMANTIC_SEARCH_KEYCLOAK_*`) together, after the privacy policy covers self-registration.
 Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
 
+### ✉️ Mail (Meldungen)
+
+#493: Who gives an e-mail address when reporting a Beitrag gets two mails from the semantic
+service (Art. 16 (4) and (5) DSA): the Eingangsbestätigung right away, and the decision with the
+available remedies once an admin sperrt the Beitrag, dismisses the Meldung or removes the
+Beitrag. Texts: `services/meldung_mitteilen.py`; sending: `infrastructure/mail/versand.py`
+(plain SMTP, one connection per mail, 10 s timeout). The mails carry no text from the Meldung
+itself, only the Beitrag's title.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `SEMANTIC_SEARCH_SMTP_HOST` | unset | SMTP server. Unset: no mail goes out, admins inform by hand (mailto link in the moderation) |
+| `SEMANTIC_SEARCH_SMTP_PORT` | `587` | |
+| `SEMANTIC_SEARCH_SMTP_VERSCHLUESSELUNG` | `starttls` | `starttls`, `ssl` (port 465) or `keine` (only for a relay on the same network) |
+| `SEMANTIC_SEARCH_SMTP_BENUTZER` / `_PASSWORT` | unset | SMTP login; without a user no login. The password is a secret |
+| `SEMANTIC_SEARCH_MAIL_ABSENDER` | unset | `From` address; required, without it no mail goes out |
+| `SEMANTIC_SEARCH_MAIL_ANTWORT_AN` | unset | `Reply-To`; the mails ask people to reply for questions and complaints, so this should be the contact address of the legal notice |
+
+The sender domain needs SPF/DKIM for the SMTP server, otherwise the mails land in spam. A failed
+mail never undoes a Meldung or decision; the log says `SMTP delivery failed (<error type>)`
+without the address. Check after setting the variables: report a Beitrag on the test system with
+your own address, then dismiss the Meldung in the moderation; both mails must arrive.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

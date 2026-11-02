@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import Field
-from typing import Optional
+from typing import Literal, Optional
 from dotenv import load_dotenv
 
 # Set up logger for module
@@ -150,6 +150,20 @@ class Settings(BaseSettings):
     # ihre Adresse. Ohne beide endet er auf der Kontoseite von Keycloak.
     keycloak_app_client_id: Optional[str] = None
     app_url: Optional[str] = None
+
+    # Mailversand an meldende Personen (#493): Eingangsbestaetigung und Entscheidung
+    # nach Art. 16 Abs. 4 und 5 DSA (infrastructure/mail/versand.py). Ohne Host und
+    # Absender geht keine Mail hinaus; die Entscheidung teilt dann ein Admin per Hand
+    # mit. Einrichten: docs/DEPLOYMENT.md, "Mail".
+    smtp_host: Optional[str] = None
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_benutzer: Optional[str] = None
+    smtp_passwort: Optional[str] = None
+    # starttls (Port 587), ssl (Port 465) oder keine (nur fuer ein Relay im selben Netz)
+    smtp_verschluesselung: Literal["starttls", "ssl", "keine"] = "starttls"
+    mail_absender: Optional[str] = None
+    # Wohin Antworten gehen; ohne Angabe an den Absender.
+    mail_antwort_an: Optional[str] = None
 
     # Admin users (comma-separated list)
     admin_users: str = ""

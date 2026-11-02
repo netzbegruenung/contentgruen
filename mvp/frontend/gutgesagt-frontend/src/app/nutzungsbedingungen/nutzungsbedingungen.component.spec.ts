@@ -128,6 +128,8 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('in gutem Glauben davon überzeugt bist, dass deine Angaben richtig und vollständig sind');
     expect(text).toContain('Name und E-Mail-Adresse kannst du angeben, musst es aber nicht');
     expect(text).toContain('Den Eingang bestätigen wir dir sofort in der App');
+    // Art. 16 Abs. 4 DSA (#493): mit Adresse auch per E-Mail.
+    expect(text).toContain('Hast du eine E-Mail-Adresse angegeben, bestätigen wir ihn dir auch per E-Mail');
     expect(text).toContain('teilen wir dir unsere Entscheidung über die Meldung per E-Mail mit');
     // Art. 16 Abs. 5 DSA: mit der Entscheidung die Rechtsbehelfe.
     expect(text).toContain('zusammen mit deinen Möglichkeiten, dagegen vorzugehen');
