@@ -15,7 +15,9 @@ export const CC0_ERKLAERUNG_URL = 'https://creativecommons.org/publicdomain/zero
 export const CONSENT_HINWEIS = {
   kennung: '2026-10-29-formular',
   vorCc0: 'Mit dem Absenden stellst du deine eigene Formulierung unter ',
+  cc0: 'CC0',
   nachCc0: ' und bestätigst die ',
+  nutzungsbedingungen: 'Nutzungsbedingungen',
   nachNutzungsbedingungen: ' – keine personenbezogenen Daten Dritter.',
 } as const;
 
@@ -30,7 +32,7 @@ export type ConsentHinweis = typeof CONSENT_HINWEIS | typeof CONSENT_HINWEIS_SAT
 
 /** Der Hinweis als ein Satz, so wie er auf der Seite steht. */
 export function hinweisText(hinweis: ConsentHinweis): string {
-  return `${hinweis.vorCc0}CC0${hinweis.nachCc0}Nutzungsbedingungen${hinweis.nachNutzungsbedingungen}`;
+  return `${hinweis.vorCc0}${hinweis.cc0}${hinweis.nachCc0}${hinweis.nutzungsbedingungen}${hinweis.nachNutzungsbedingungen}`;
 }
 
 /** Eine Anfrage mit der Kennung des Hinweises, den das Formular gezeigt hat. */

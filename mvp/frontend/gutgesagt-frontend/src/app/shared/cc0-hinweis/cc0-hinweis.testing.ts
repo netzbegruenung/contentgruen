@@ -14,12 +14,12 @@ export function erwarteCc0Hinweis(
 
   const cc0: HTMLAnchorElement | null = absatz!.querySelector(`a[href="${CC0_ERKLAERUNG_URL}"]`);
   expect(cc0).withContext('Link auf die CC0-Erklaerung').toBeTruthy();
-  expect(cc0!.textContent).toBe('CC0');
+  expect(cc0!.textContent).toBe(hinweis.cc0);
   expect(cc0!.target).toBe('_blank');
 
   const nb: HTMLAnchorElement | null = absatz!.querySelector('a[href="/nutzungsbedingungen"]');
   expect(nb).withContext('Link auf die Nutzungsbedingungen').toBeTruthy();
-  expect(nb!.textContent).toBe('Nutzungsbedingungen');
+  expect(nb!.textContent).toBe(hinweis.nutzungsbedingungen);
   expect(nb!.target).toBe('_blank');
 
   return absatz!;

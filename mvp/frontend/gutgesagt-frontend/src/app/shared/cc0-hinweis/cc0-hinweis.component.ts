@@ -17,8 +17,8 @@ import { CC0_ERKLAERUNG_URL, CONSENT_HINWEIS, ConsentHinweis } from '../consent-
   host: { class: 'submit-hint' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template:
-    `{{ hinweis.vorCc0 }}<a [href]="cc0Url" target="_blank" rel="noopener">CC0</a>` +
-    `{{ hinweis.nachCc0 }}<a routerLink="/nutzungsbedingungen" target="_blank" rel="noopener">Nutzungsbedingungen</a>` +
+    `{{ hinweis.vorCc0 }}<a [href]="cc0Url" target="_blank" rel="noopener">{{ hinweis.cc0 }}</a>` +
+    `{{ hinweis.nachCc0 }}<a routerLink="/nutzungsbedingungen" target="_blank" rel="noopener">{{ hinweis.nutzungsbedingungen }}</a>` +
     `{{ hinweis.nachNutzungsbedingungen }}`,
 })
 export class Cc0HinweisComponent {
