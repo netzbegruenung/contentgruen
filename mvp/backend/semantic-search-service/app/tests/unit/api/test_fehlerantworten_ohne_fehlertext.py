@@ -4,11 +4,11 @@ Fehlerantworten der API tragen keinen Fehlertext einer Ausnahme (#486).
 Ein 500er aus Datenbank, Qdrant oder einer Bibliothek bekommt einen festen Text; sonst
 stuenden Interna und oft Eingabewerte in der Antwort. Hinaus geht nur der Text eines
 eigenen Validierungsfehlers (core/fehler.py), der fuer Aufrufer formuliert ist, und
-zwar ueber ``e.meldung``. Ein beliebiger ValueError ist kein solcher Fehler.
+zwar ueber ``e.antworttext``. Ein beliebiger ValueError ist kein solcher Fehler.
 
 Der Waechter ist das Gegenstueck zu tests/unit/core/test_kein_fehlertext_im_log.py, fuer
 Antworten statt Logzeilen: In einem ``except``-Block unter api/ darf die Ausnahme nur als
-``type(e)``, ``e.meldung`` oder ``raise ... from e`` vorkommen (Log-Aufrufe prueft der
+``type(e)``, ``e.antworttext`` oder ``raise ... from e`` vorkommen (Log-Aufrufe prueft der
 andere Waechter). Ein Fehlertext, der erst gespeichert und spaeter ausgeliefert wird, den
 sieht er nicht.
 """
@@ -26,7 +26,12 @@ from fastapi.testclient import TestClient
 from api.v1.image import router as image_router
 from api.v1.statement import router as statement_router
 from api.v1.voting import router as voting_router
-from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
+from core.fehler import (
+    INTERNER_FEHLER,
+    NICHT_ERREICHBAR,
+    UNGUELTIGE_ANFRAGE,
+    Validierungsfehler,
+)
 from dependencies import (
     get_aussage_themen_service,
     get_image_service,
@@ -39,7 +44,16 @@ from services.content.base_content_service import BaseContentService
 pytestmark = pytest.mark.unit
 
 API = Path(__file__).resolve().parents[3] / "api"
-ERLAUBTE_ATTRIBUTE = {"meldung"}
+LOG_METHODEN = {
+    "debug",
+    "info",
+    "warning",
+    "warn",
+    "error",
+    "exception",
+    "critical",
+    "log",
+}
 GEHEIM = "host=db-intern password=geheim eingabe=Solardach"
 
 
@@ -47,12 +61,13 @@ def _ist_log_aufruf(knoten: ast.AST) -> bool:
     return (
         isinstance(knoten, ast.Call)
         and isinstance(knoten.func, ast.Attribute)
+        and knoten.func.attr in LOG_METHODEN
         and "log" in ast.unparse(knoten.func.value).lower()
     )
 
 
 def _verwendungen(knoten: ast.AST, name: str) -> list[ast.Name]:
-    """``name`` in ``knoten``, ausser in type(name), name.meldung und Log-Aufrufen."""
+    """``name`` in ``knoten``, ausser in type(name), name.antworttext und Log-Aufrufen."""
     if _ist_log_aufruf(knoten):
         return []
     if (
@@ -63,8 +78,9 @@ def _verwendungen(knoten: ast.AST, name: str) -> list[ast.Name]:
         return []
     if (
         isinstance(knoten, ast.Attribute)
-        and knoten.attr in ERLAUBTE_ATTRIBUTE
+        and knoten.attr == "antworttext"
         and isinstance(knoten.value, ast.Name)
+        and knoten.value.id == name
     ):
         return []
     if isinstance(knoten, ast.Raise):
@@ -108,19 +124,28 @@ class TestWaechter:
             "        raise HTTPException(500, detail=f'kaputt: {e}')\n"
             "    except KeyError as e:\n"
             "        return {'error': e}\n"
+            "    except OSError as e:\n"
+            "        catalog.add(e)\n"
             "    except Validierungsfehler as e:\n"
             "        logger.warning(f'{type(e).__name__}', exc_info=e)\n"
-            "        raise HTTPException(status_code=422, detail=e.meldung) from e\n",
+            "        raise HTTPException(status_code=422, detail=e.antworttext) from e\n",
             encoding="utf-8",
         )
         monkeypatch.setattr(sys.modules[__name__], "API", tmp_path)
 
-        assert _fundstellen() == ["beispiel.py:5", "beispiel.py:7", "beispiel.py:9"]
+        assert _fundstellen() == [
+            "beispiel.py:11",
+            "beispiel.py:5",
+            "beispiel.py:7",
+            "beispiel.py:9",
+        ]
 
 
 class TestValidierungsfehler:
-    def test_meldung_ist_der_formulierte_text(self):
-        assert Validierungsfehler("Begruendung fehlt").meldung == "Begruendung fehlt"
+    def test_antworttext_ist_der_formulierte_text(self):
+        assert (
+            Validierungsfehler("Begruendung fehlt").antworttext == "Begruendung fehlt"
+        )
 
     def test_ist_ein_value_error(self):
         """Bestehende ``except ValueError`` fangen ihn weiter."""
@@ -198,7 +223,7 @@ class TestFehlerantworten:
         )
 
         assert antwort.status_code == 503
-        assert GEHEIM not in antwort.text
+        assert antwort.json() == {"detail": NICHT_ERREICHBAR}
 
     def test_422_aus_eigenem_validierungsfehler_traegt_seinen_text(self):
         dienst = MagicMock()

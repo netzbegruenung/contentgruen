@@ -244,7 +244,7 @@ async def themen_zuordnen(
     try:
         themen = await themen_service.zuordnen(request.statement_id, request.themen)
     except ThemaUngueltig as e:
-        raise HTTPException(status_code=422, detail=e.meldung)
+        raise HTTPException(status_code=422, detail=e.antworttext)
     except AussageNichtGefunden:
         raise HTTPException(status_code=404, detail="Statement not found")
     except Exception as e:

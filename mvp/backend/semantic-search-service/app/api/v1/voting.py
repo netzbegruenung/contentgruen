@@ -75,7 +75,7 @@ def set_like(
         return result
     except Validierungsfehler as e:
         logger.warning(f"Like validation error: {type(e).__name__}")
-        raise HTTPException(status_code=400, detail=e.meldung)
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.warning(f"Like validation error: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
@@ -137,7 +137,7 @@ def set_dislike(
         return result
     except Validierungsfehler as e:
         logger.warning(f"Dislike validation error: {type(e).__name__}")
-        raise HTTPException(status_code=400, detail=e.meldung)
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.warning(f"Dislike validation error: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)

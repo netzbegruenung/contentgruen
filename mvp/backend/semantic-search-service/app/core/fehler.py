@@ -3,9 +3,9 @@ Fehler, deren Text an Aufrufer hinausgehen darf, und die festen Texte fuer alle 
 
 Der Text einer beliebigen Ausnahme gehoert nicht in eine Antwort: Aus Datenbank, Qdrant
 oder einer Bibliothek traegt er Interna und oft Eingabewerte. Ein eigener
-Validierungsfehler ist dagegen fuer Aufrufer formuliert; sein Text steht in ``meldung``.
+Validierungsfehler ist dagegen fuer Aufrufer formuliert; sein Text steht in ``antworttext``.
 Der Waechter tests/unit/api/test_fehlerantworten_ohne_fehlertext.py laesst in
-Fehlerantworten nur ``e.meldung`` zu.
+Fehlerantworten nur ``e.antworttext`` zu.
 """
 
 INTERNER_FEHLER = "Interner Fehler"
@@ -17,5 +17,5 @@ class Validierungsfehler(ValueError):
     """Eine Eingabe oder ein Zustand ist ungueltig; der Text ist fuer Aufrufer formuliert."""
 
     @property
-    def meldung(self) -> str:
+    def antworttext(self) -> str:
         return str(self)
