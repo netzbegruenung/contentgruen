@@ -32,7 +32,9 @@ Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner da
 mehr offen** — alle drei Texte sind ausformuliert, die Datenschutzerklärung zuletzt. Die
 Einträge bleiben stehen, weil in ihrem Eintrag-Feld steht, wie der jeweilige Punkt gelöst
 wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Zustimmung beim
-Anmelden (Abschnitt 5, #429; seit #415 offen, ob sie bleibt), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende.
+Anmelden (Abschnitt 5, #429; bleibt vorerst, Ablösung über #521), die USt-IdNr. im Impressum
+(I11) und die Prüfliste am Ende; die Fragen an die Datenschutzbeauftragte stehen in
+`docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md`.
 
 Legende Pflicht-Spalte:
 - PFLICHT = gesetzlich zwingend
@@ -81,8 +83,8 @@ Einträge und Text des Abschnitts: [`4-fehlende-vorgaenge/`](4-fehlende-vorgaeng
 **Entschieden (#415, 02.11.2026):** Die Nutzungsbedingungen sind über den Hinweis über dem
 Absende-Knopf jedes Beitragsformulars einbezogen; keine Checkbox beim Anmelden, kein neues Feld
 je Konto. Umgesetzt mit #415: NB §2 sagt das (Stand 2. November 2026), der Hinweis verlinkt
-CC0 und die Nutzungsbedingungen. Ob die Keycloak-Pflichtaktion aus #429 daneben bleibt, ist
-offen (siehe unten).
+CC0 und die Nutzungsbedingungen. Die Keycloak-Pflichtaktion aus #429 bleibt vorerst daneben;
+ihre Ablösung läuft über #521 (Entscheidung Maintainer, 02.11.2026).
 
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
 von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
@@ -131,8 +133,8 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 
 **Offen:**
 - Juristische Prüfung beider Wortlaute und der geänderten §4/§10: #296.
-- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): Nach der Entscheidung vom 02.11.2026
-  (keine Checkbox beim Anmelden) ist offen, ob sie bleibt. NB §10 holt die Zustimmung zu
+- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Ablösung über #521
+  (Entscheidung Maintainer, 02.11.2026). NB §10 holt die Zustimmung zu
   geänderten Bedingungen heute über sie ein; fällt sie weg, braucht §10 einen anderen Weg.
   Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr, ebenso die
   Zustimmung von Personen, die nur bewerten.
@@ -226,8 +228,8 @@ entfernt. Die beiden früher hier geführten inhaltlichen Blocker sind aufgelös
 1. **Juristische Prüfung** der Datenschutzerklärung — die Punkte stehen unten in der
    Prüfliste. Diese Liste ist keine Rechtsberatung und ersetzt sie nicht.
 2. **Die Consent-Frage aus Abschnitt 5** ist entschieden; der Hinweis in den Formularen
-   steht (#431) und bezieht die Nutzungsbedingungen ein (#415). Offen ist, ob die Zustimmung
-   beim Anmelden (#429) daneben bleibt. Sie berührt den
+   steht (#431) und bezieht die Nutzungsbedingungen ein (#415). Die Zustimmung
+   beim Anmelden (#429) bleibt vorerst daneben, Ablösung über #521. Sie berührt den
    Datenschutz an einer Stelle mit: § 25 TDDDG (Prüfliste, Punkt 3).
 3. **Eine USt-IdNr.-Rückfrage** im Impressum (I11).
 

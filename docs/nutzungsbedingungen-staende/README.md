@@ -5,8 +5,8 @@ Tagesdatum. Dieses Datum ist der **Stand der Nutzungsbedingungen** (`GLOSSARY.md
 genau einen Text. Geänderte Bedingungen gelten für eine Person erst, wenn sie ihnen zugestimmt hat
 (NB §10, #466); die Zustimmung holt die Keycloak-Pflichtaktion „Terms and Conditions“ beim
 Anmelden ein (#429). Erstmals einbezogen sind sie über den CC0-Hinweis beim Absenden (NB §2,
-#415). Nach der Entscheidung vom 02.11.2026 (keine Checkbox beim Anmelden) ist offen, ob die
-Pflichtaktion bleibt; fällt sie weg, ändern sich §10 und die Schritte 4 bis 6 unten
+#415). Die Pflichtaktion bleibt vorerst (Entscheidung Maintainer, 02.11.2026); ihre Ablösung läuft
+über #521. Fällt sie weg, ändern sich §10 und die Schritte 4 bis 6 unten
 (`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
 
 Keycloak speichert dabei nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
