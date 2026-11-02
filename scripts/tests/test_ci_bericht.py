@@ -523,6 +523,40 @@ def test_main_ohne_konto_postet_den_vollen_bericht(
     assert "CI_BERICHT_KONTO" in capsys.readouterr().out
 
 
+def test_letzter_bericht_ignoriert_einen_zitierten_bericht_desselben_kontos():
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")])
+    zitat = f"*Beauftragt von jemandem*\n\nDer Bericht lautete:\n\n{voll}"
+
+    assert ci_bericht.letzter_bericht([_kommentar(2, zitat)], BOT) is None
+
+
+def test_main_meldet_markierungen_nur_von_anderen_konten(
+    tmp_path, capsys, forgejo_mit_status
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
+    forgejo = forgejo_mit_status(
+        201, kommentare=[_kommentar(2, voll, konto="altes-konto")]
+    )
+
+    ci_bericht.main(["unit"], forgejo.env(), tmp_path)
+
+    assert "<details><summary>Log unit</summary>" in _gesendet(forgejo)
+    assert "anderer Konten als ci-bot" in capsys.readouterr().out
+
+
+def test_main_konto_mit_leerzeichen_vergleicht_trotzdem(tmp_path, forgejo_mit_status):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
+    forgejo = forgejo_mit_status(201, kommentare=[_kommentar(2, voll)])
+    env = forgejo.env()
+    env["CI_BERICHT_KONTO"] = f" {BOT}\n"
+
+    ci_bericht.main(["unit"], env, tmp_path)
+
+    assert "Unverändert rot" in _gesendet(forgejo)
+
+
 def test_main_folgt_auf_einen_einzeiler_wieder_ein_einzeiler(
     tmp_path, forgejo_mit_status
 ):

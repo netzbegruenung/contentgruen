@@ -119,7 +119,7 @@ steps:
       FORGEJO_TOKEN:
         from_secret: forgejo_ci_bericht_token
       # Konto, dem der Token gehoert: nur dessen Kommentare zaehlen als voriger Bericht.
-      # Gehoert der Token einem anderen Konto, hier mitaendern (docs/CI.md).
+      # Gehoert der Token einem anderen Konto, nur hier mitaendern (docs/CI.md).
       CI_BERICHT_KONTO: verdigado-bot
     commands:
       - >-

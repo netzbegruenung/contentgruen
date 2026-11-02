@@ -70,13 +70,18 @@ dotnet or Ruff), the last 80 lines of its output folded in
   `FAILED`/`ERROR` lines (for a step without such lines its last 20 non-empty lines, since a
   summary like "Found 1 error." alone looks the same for different errors), without
   timestamps, clock times, durations and memory addresses. Before posting, the step reads
-  the comments of the pull request. If the most recent comment of the bot account (below) with
-  such a marker has the same fingerprint, it posts only one line ("Unverändert rot", commit, pipeline, link to the
-  last full report) carrying the marker again. If the comments cannot be read (refused, connection
-  broken, unexpected answer), the full report is posted. Only comments of the account that owns
-  the token count, `CI_BERICHT_KONTO` in `ci.yaml`: a marker someone else writes into the pull
-  request is ignored. Without `CI_BERICHT_KONTO` the full report is posted without comparing;
-  if the token moves to another account and the variable stays, every run posts the full report.
+  the comments of the pull request. If the most recent earlier report has the same
+  fingerprint, it posts only one line ("Unverändert rot", commit, pipeline, link to the last
+  full report) carrying the marker again. If the comments cannot be read (refused,
+  connection broken, unexpected answer), the full report is posted.
+- **Which comments count as a report.** Only comments of the account that owns the token
+  (`CI_BERICHT_KONTO` in `ci.yaml`) that start with the report header. A marker in a new
+  comment of another account, or in an agent comment of the same account that quotes a
+  report, is ignored. Whoever can write to the repository can still edit a report's marker,
+  at worst turning the next report into the one line; they could change `ci.yaml` anyway.
+  Without `CI_BERICHT_KONTO` the full report is posted without comparing. If the token moves
+  to another account and the variable stays, every run posts the full report and the log
+  says that markers exist only in comments of other accounts.
 - A green run writes nothing: the step only runs on red runs, the last report stays.
 - Each step runs its commands through `scripts/ci-protokoll.sh`: output to the Woodpecker
   log and appended to `.ci/<step>.log`, exit code to `.ci/<step>.status`. A log without a
