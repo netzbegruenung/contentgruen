@@ -25,6 +25,7 @@ from qdrant_client.models import (
     FilterSelector,
 )
 from qdrant_client.http.exceptions import UnexpectedResponse, ResponseHandlingException
+import torch
 from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
 
@@ -88,21 +89,38 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
     _instance: Optional["QdrantEmbeddingsManager"] = None
     _lock = threading.Lock()
 
-    def __new__(cls, settings: Optional[Settings] = None):
+    def __new__(
+        cls,
+        settings: Optional[Settings] = None,
+        einbettungsmodell: Optional[SentenceTransformer] = None,
+    ):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
-                    cls._instance._init_instance(settings)
+                    cls._instance._init_instance(settings, einbettungsmodell)
         return cls._instance
 
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(
+        self,
+        settings: Optional[Settings] = None,
+        einbettungsmodell: Optional[SentenceTransformer] = None,
+    ):
         # __init__ is now a no-op since initialization happens in __new__
         pass
 
-    def _init_instance(self, settings: Optional[Settings] = None):
-        """Initialize the singleton instance. Called only once within the lock."""
+    def _init_instance(
+        self,
+        settings: Optional[Settings] = None,
+        einbettungsmodell: Optional[SentenceTransformer] = None,
+    ):
+        """Initialize the singleton instance. Called only once within the lock.
+
+        einbettungsmodell: ein fertig geladenes Modell, das start() nutzt, statt
+        EMBEDDING_MODELL selbst zu laden (#480). Wie settings nur beim ersten
+        Aufruf wirksam.
+        """
         if self._initialized:
             return
 
@@ -113,6 +131,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
         self._client: Optional[QdrantClient] = None
         self._async_client: Optional[AsyncQdrantClient] = None
         self._model: Optional[SentenceTransformer] = None
+        self._einbettungsmodell = einbettungsmodell
         self._is_started = False
         self._initialized = True
         self.collection_name = (
@@ -139,11 +158,19 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             self._client = QdrantClient(url=qdrant_url, timeout=30)
             self._async_client = AsyncQdrantClient(url=qdrant_url, timeout=30)
 
-            # Load E5 multilingual model
-            logger.info(
-                "📥 Loading multilingual E5 model (this may take a while on first startup)..."
-            )
-            self._model = SentenceTransformer(EMBEDDING_MODELL)
+            # Prozessweit: begrenzt auch andere Torch-Nutzer im selben Prozess.
+            threads = self.settings.embedding_threads
+            if threads is not None:
+                torch.set_num_threads(threads)
+                logger.info(f"🧵 Torch threads for embeddings: {threads}")
+
+            if self._einbettungsmodell is not None:
+                self._model = self._einbettungsmodell
+            else:
+                logger.info(
+                    "📥 Loading multilingual E5 model (this may take a while on first startup)..."
+                )
+                self._model = SentenceTransformer(EMBEDDING_MODELL)
 
             # Create collection if it doesn't exist
             await self._ensure_collection()
