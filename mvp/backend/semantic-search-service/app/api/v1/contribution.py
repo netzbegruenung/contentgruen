@@ -16,6 +16,7 @@ from domain.content_registry import BEITRAGSTYPEN_WERTE
 from services.usage_tracking_service import get_usage_service
 from core.config import Settings
 from core.logging import get_logger
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -118,7 +119,7 @@ async def search_content(
         logger.error(
             f"Error in /getContributionsOfUser: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # getPendingContributions()

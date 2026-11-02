@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple
 import uuid
 
 from core.config import Settings
+from core.fehler import Validierungsfehler
 from utils.url_validator import validate_url_security, sanitize_url
 from services.content.base_content_service import BaseContentService
 from repositories.interfaces.reference_repository import (
@@ -21,6 +22,10 @@ from domain.models.content_status import ContentStatus
 from domain.models.content_origin import ContentOrigin
 
 logger = logging.getLogger(__name__)
+
+
+class HerkunftsadresseUngueltig(Validierungsfehler):
+    """Die Adresse einer Herkunft ist nicht erlaubt; der Text nennt keine Adressteile (#422)."""
 
 
 class ReferenceService(
@@ -111,7 +116,7 @@ class ReferenceService(
         if not is_valid:
             # error_msg kann Teile der Adresse tragen, etwa das Schema (#422).
             logger.warning("Rejected reference URL for security")
-            raise ValueError(f"Invalid reference URL: {error_msg}")
+            raise HerkunftsadresseUngueltig("Ungültige Adresse")
 
         # Sanitize the URL
         reference.reference_string = sanitize_url(reference.reference_string)

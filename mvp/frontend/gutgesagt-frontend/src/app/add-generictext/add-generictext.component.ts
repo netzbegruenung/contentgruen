@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewC
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatDialog } from '@angular/material/dialog';
 import { filter } from 'rxjs/operators';
@@ -17,7 +16,7 @@ import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { typFarbe } from '../shared/content-type-registry';
 import { einzeilig } from '../beitragsformular/einzeilig';
 import { validierungsMeldung } from '../beitragsformular/speicherfehler';
@@ -123,7 +122,6 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     CommonModule,
     ReactiveFormsModule,
     TextFieldModule,
-    RouterLink,
     BeitragskarteComponent,
     ReferenceInputComponent,
     AntwortAufComponent,
@@ -131,10 +129,10 @@ function zuruecksetzenFrage(mitThemen: boolean): BestaetigungsDialogDaten {
     GegenlesenComponent,
     FormularLeisteComponent,
     ThemenAuswahlComponent,
+    Cc0HinweisComponent,
   ],
 })
 export class AddGenerictextComponent implements OnChanges {
-  readonly consentHinweis = CONSENT_HINWEIS;
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('generictext');
   readonly titelMax = TITEL_MAX;

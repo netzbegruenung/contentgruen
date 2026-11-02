@@ -14,6 +14,8 @@ Kanal soll eine Code-Aenderung sein, keine Migration.
 
 from enum import Enum
 
+from core.fehler import Validierungsfehler
+
 
 class RawInputStatus(str, Enum):
     """
@@ -139,7 +141,7 @@ class AktionNichtErlaubt(PermissionError):
     """Die Person darf diese Aktion an diesem Einwurf nicht ausfuehren."""
 
 
-class UebergangNichtErlaubt(ValueError):
+class UebergangNichtErlaubt(Validierungsfehler):
     """Der Statuswechsel ist aus dem aktuellen Status nicht erlaubt."""
 
     def __init__(self, von: RawInputStatus, nach: RawInputStatus):

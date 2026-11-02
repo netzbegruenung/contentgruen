@@ -340,7 +340,7 @@ async def sperren(
     except SchonGesperrt:
         raise HTTPException(status_code=409, detail="Beitrag ist schon gesperrt")
     except SperreUngueltig as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=e.antworttext)
     except HTTPException:
         raise
     except Exception as e:
@@ -399,7 +399,7 @@ async def sperre_bestaetigen(
         return SperreResponse(success=True, message="Sperre bestaetigt")
 
     except SperreUngueltig as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=e.antworttext)
     except HTTPException:
         raise
     except Exception as e:

@@ -809,7 +809,7 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
                 logger.error(
                     f"❌ Qdrant health check failed: {type(e).__name__}", exc_info=True
                 )
-            return {"status": "unhealthy", "error": error_msg}
+            return {"status": "unhealthy", "error": type(e).__name__}
 
 
 # Global shared manager instance

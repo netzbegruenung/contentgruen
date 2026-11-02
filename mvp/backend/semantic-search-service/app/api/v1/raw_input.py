@@ -438,7 +438,7 @@ async def update_status(
             detail="Verwerfen können nur der Einwerfer und Admins.",
         )
     except UebergangNichtErlaubt as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail=e.antworttext)
     except Exception as e:
         logger.error(
             f"Fehler in PATCH /rawinput/{{id}}/status: {type(e).__name__}",
