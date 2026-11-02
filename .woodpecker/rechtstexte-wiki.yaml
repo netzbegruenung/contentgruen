@@ -1,5 +1,5 @@
 # Schreibt nach einem Merge auf main, der die Rechtstext-Ablage beruehrt, die Uebersicht
-# ins Wiki (Seite Rechtstexte-Uebersicht, #503): lesbar ohne Python, eingecheckt wird sie
+# ins Wiki (Seite "Rechtstexte Übersicht", #503): lesbar ohne Python, eingecheckt wird sie
 # nicht (docs/CI.md, "Wiki-Seite der Rechtstext-Ablage").
 # Nur push auf main: Das Secret ist nur fuer push freigegeben, PR-Laeufe sehen es nicht.
 # Eigener Workflow, damit ein Fehler hier den Status von ci nicht beruehrt; der Pfadfilter

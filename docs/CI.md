@@ -98,13 +98,18 @@ The gap list and the Stände der Nutzungsbedingungen are stored as one file per 
 checked-in overview would again be the file every pull request appends to. So the workflow
 `.woodpecker/rechtstexte-wiki.yaml` renders both tables after every push to `main` that touches
 `docs/rechtstexte-luecken/`, `docs/nutzungsbedingungen-staende/` or the two scripts, and
-overwrites the wiki page `Rechtstexte-Uebersicht` (#503). Readers without Python find the
+overwrites the wiki page „Rechtstexte Übersicht“ (#503). Readers without Python find the
 overview there; the head of the page names the commit and says to change the entry files,
 not the page.
 
 - `scripts/rechtstexte_wiki.py` (standard library only) reads the page, then updates it
   (`PATCH`) or, on 404, creates it (`POST /wiki/new`). Errors log the HTTP status only, like
   `ci-bericht`. Without a token the step is red: its only job is the page.
+- The title has no hyphen: Forgejo stores a title with "-" under a path ending in `.-`, and
+  reading the page by its title would then never find it again (`seitenpfad`).
+- After a red run the page stays at the commit its head names until the next run. To refresh
+  it without a change, restart the last push pipeline on `main` in Woodpecker; there is no
+  manual or cron trigger, so the secret stays out of branch runs.
 - Own workflow, not a step in `ci`: a red run here leaves the status of `ci` alone, and the
   path filter is allowed because no status of this workflow is required.
 - `push` on `main` only, and the secret is released for `push` only: pull-request and manual

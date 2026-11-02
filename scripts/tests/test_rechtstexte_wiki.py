@@ -11,7 +11,7 @@ import pytest
 import rechtstexte_uebersicht as uebersicht
 import rechtstexte_wiki as wiki
 
-SEITE = "/api/v1/repos/Org/repo/wiki/page/Rechtstexte-Uebersicht"
+SEITE = "/api/v1/repos/Org/repo/wiki/page/Rechtstexte-%C3%9Cbersicht"
 NEU = "/api/v1/repos/Org/repo/wiki/new"
 
 
@@ -88,6 +88,24 @@ def _inhalt(daten):
     return base64.b64decode(daten["content_base64"]).decode()
 
 
+@pytest.mark.parametrize(
+    "titel, pfad",
+    [
+        # So legt Forgejo 17 die Seite an und so findet GET sie wieder (wiki_path.go)
+        ("Rechtstexte Übersicht", "Rechtstexte-%C3%9Cbersicht"),
+        ("Home", "Home"),
+    ],
+)
+def test_seitenpfad_wie_forgejo_ihn_aus_dem_titel_bildet(titel, pfad):
+    assert wiki.seitenpfad(titel) == pfad
+
+
+def test_seitenpfad_lehnt_titel_mit_bindestrich_ab():
+    # Forgejo haengte ".-" an; GET mit dem Titel faende die Seite nie wieder.
+    with pytest.raises(ValueError):
+        wiki.seitenpfad("Rechtstexte-Uebersicht")
+
+
 def test_main_vorhandene_seite_wird_mit_der_uebersicht_ueberschrieben(forgejo, capsys):
     f = forgejo(get_status=200, status=200)
 
@@ -96,7 +114,7 @@ def test_main_vorhandene_seite_wird_mit_der_uebersicht_ueberschrieben(forgejo, c
     assert f.abrufe == [(SEITE, "token geheim123")]
     ((methode, pfad, auth, daten),) = f.schreiben
     assert (methode, pfad, auth) == ("PATCH", SEITE, "token geheim123")
-    assert daten["title"] == "Rechtstexte-Uebersicht"
+    assert daten["title"] == "Rechtstexte Übersicht"
     assert "abc1234" in daten["message"]
     inhalt = _inhalt(daten)
     assert inhalt.endswith(uebersicht.seite())
@@ -115,7 +133,7 @@ def test_main_fehlende_seite_wird_angelegt(forgejo):
 
     ((methode, pfad, _, daten),) = f.schreiben
     assert (methode, pfad) == ("POST", NEU)
-    assert daten["title"] == "Rechtstexte-Uebersicht"
+    assert daten["title"] == "Rechtstexte Übersicht"
     assert _inhalt(daten).endswith(uebersicht.seite())
 
 

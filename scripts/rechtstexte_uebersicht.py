@@ -18,7 +18,7 @@ Ueberschrift und seinen Feldern, daneben eine Datei je Aenderung, benannt nach d
 
 seite: beide untereinander. Die Uebersicht wird nicht eingecheckt: Eine Datei, die jeden
 Eintrag nennt, waere wieder die Stelle, an der jeder PR anhaengt. Lesbar ist sie im Wiki
-(Seite Rechtstexte-Uebersicht), das scripts/rechtstexte_wiki.py nach jedem Merge auf main
+(Seite "Rechtstexte Übersicht"), das scripts/rechtstexte_wiki.py nach jedem Merge auf main
 neu schreibt (#503). Die Tests in scripts/tests/ pruefen die Ablage.
 """
 

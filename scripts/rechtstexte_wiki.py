@@ -1,8 +1,8 @@
 """Schreibt die Uebersicht der Rechtstext-Ablage ins Wiki des Repositorys (#503).
 
 Die Ablage liegt als eine Datei je Eintrag (#500); die Tabellen erzeugt
-scripts/rechtstexte_uebersicht.py. Eingecheckt wird die Uebersicht nicht, damit lesen sie
-Menschen ohne Python im Wiki, Seite Rechtstexte-Uebersicht. Der Workflow
+scripts/rechtstexte_uebersicht.py. Eingecheckt wird die Uebersicht nicht; Menschen ohne
+Python lesen sie im Wiki, Seite "Rechtstexte Übersicht". Der Workflow
 .woodpecker/rechtstexte-wiki.yaml ruft das Skript nach jedem Merge auf main auf, der die
 Ablage beruehrt; jeder Lauf ueberschreibt die ganze Seite.
 
@@ -14,17 +14,24 @@ FORGEJO_TOKEN (Secret forgejo_wiki_token).
 """
 
 import base64
-import json
 import os
 import sys
 import urllib.error
-import urllib.request
-from typing import Optional
+import urllib.parse
 
 import rechtstexte_uebersicht as uebersicht
-from ci_bericht import _NETZFEHLER, ZEITLIMIT_S, _fehler_melden, _pflicht
+from ci_bericht import NETZFEHLER, anfrage, fehler_melden, pflicht
 
-TITEL = "Rechtstexte-Uebersicht"
+TITEL = "Rechtstexte Übersicht"
+
+
+def seitenpfad(titel: str) -> str:
+    """Pfad der Seite in der Wiki-API, wie Forgejo ihn aus dem Titel bildet
+    (services/wiki/wiki_path.go, escapeSegToWeb): Leerzeichen werden zu "-", dann
+    URL-kodiert. Ein Titel mit "-" bekaeme die Marke ".-" angehaengt; deshalb keiner."""
+    if "-" in titel:
+        raise ValueError(f"Titel ohne '-' waehlen: {titel}")
+    return urllib.parse.quote_plus(titel.replace(" ", "-"))
 
 
 def kopf(quelle: str, commit: str) -> str:
@@ -40,23 +47,6 @@ def kopf(quelle: str, commit: str) -> str:
     )
 
 
-def _anfrage(
-    methode: str, url: str, token: str, daten: Optional[dict] = None
-) -> int:
-    anfrage = urllib.request.Request(
-        url,
-        data=None if daten is None else json.dumps(daten).encode(),
-        method=methode,
-        headers={
-            "Authorization": f"token {token}",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        },
-    )
-    with urllib.request.urlopen(anfrage, timeout=ZEITLIMIT_S) as antwort:
-        return antwort.status
-
-
 def main(env=os.environ) -> int:
     token = env.get("FORGEJO_TOKEN")
     if not token:
@@ -66,34 +56,35 @@ def main(env=os.environ) -> int:
             file=sys.stderr,
         )
         return 1
-    forge = _pflicht(env, "CI_FORGE_URL").rstrip("/")
-    repo = f"{_pflicht(env, 'CI_REPO_OWNER')}/{_pflicht(env, 'CI_REPO_NAME')}"
-    commit = _pflicht(env, "CI_COMMIT_SHA")
+    forge = pflicht(env, "CI_FORGE_URL").rstrip("/")
+    repo = f"{pflicht(env, 'CI_REPO_OWNER')}/{pflicht(env, 'CI_REPO_NAME')}"
+    commit = pflicht(env, "CI_COMMIT_SHA")
     api = f"{forge}/api/v1/repos/{repo}/wiki"
+    seite = f"{api}/page/{seitenpfad(TITEL)}"
     inhalt = kopf(f"{forge}/{repo}/src/commit/{commit}", commit) + uebersicht.seite()
     daten = {
         "title": TITEL,
         "content_base64": base64.b64encode(inhalt.encode()).decode(),
-        "message": f"Rechtstexte-Übersicht aus {commit[:7]}",
+        "message": f"Rechtstexte Übersicht aus {commit[:7]}",
     }
 
     # Gibt es die Seite schon, wird sie ueberschrieben, sonst angelegt.
     try:
-        _anfrage("GET", f"{api}/page/{TITEL}", token)
-        methode, ziel = "PATCH", f"{api}/page/{TITEL}"
+        anfrage(seite, token)
+        methode, ziel = "PATCH", seite
     except urllib.error.HTTPError as fehler:
         if fehler.code != 404:
-            _fehler_melden(f"Wiki-Seite {TITEL} lesen", fehler)
+            fehler_melden(f"Wiki-Seite {TITEL} lesen", fehler)
             return 1
         methode, ziel = "POST", f"{api}/new"
-    except _NETZFEHLER as fehler:
-        _fehler_melden(f"Wiki-Seite {TITEL} lesen", fehler)
+    except NETZFEHLER as fehler:
+        fehler_melden(f"Wiki-Seite {TITEL} lesen", fehler)
         return 1
 
     try:
-        status = _anfrage(methode, ziel, token, daten)
-    except _NETZFEHLER as fehler:
-        _fehler_melden(f"Wiki-Seite {TITEL} schreiben", fehler)
+        status, _ = anfrage(ziel, token, daten, methode)
+    except NETZFEHLER as fehler:
+        fehler_melden(f"Wiki-Seite {TITEL} schreiben", fehler)
         return 1
     print(f"Wiki-Seite {TITEL} ({methode}): HTTP {status}")
     return 0

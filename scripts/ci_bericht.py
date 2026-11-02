@@ -261,30 +261,36 @@ def schritte_lesen(namen: Sequence[str], verzeichnis: pathlib.Path) -> list[Schr
     return schritte
 
 
-def _pflicht(env, name: str) -> str:
+def pflicht(env, name: str) -> str:
     wert = env.get(name)
     if not wert:
         raise SystemExit(f"{name} ist nicht gesetzt")
     return wert
 
 
-def _anfrage(url: str, token: str, daten: Optional[dict] = None) -> tuple[int, bytes]:
-    """GET (ohne ``daten``) oder POST an die Forgejo-API; wirft wie urlopen."""
-    anfrage = urllib.request.Request(
+def anfrage(
+    url: str,
+    token: str,
+    daten: Optional[dict] = None,
+    methode: Optional[str] = None,
+) -> tuple[int, bytes]:
+    """GET (ohne ``daten``) oder POST an die Forgejo-API, ``methode`` ueberschreibt das
+    (PATCH fuer scripts/rechtstexte_wiki.py); wirft wie urlopen."""
+    aufruf = urllib.request.Request(
         url,
         data=None if daten is None else json.dumps(daten).encode(),
-        method="GET" if daten is None else "POST",
+        method=methode or ("GET" if daten is None else "POST"),
         headers={
             "Authorization": f"token {token}",
             "Accept": "application/json",
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(anfrage, timeout=ZEITLIMIT_S) as antwort:
+    with urllib.request.urlopen(aufruf, timeout=ZEITLIMIT_S) as antwort:
         return antwort.status, antwort.read()
 
 
-def _fehler_melden(was: str, fehler: Exception) -> None:
+def fehler_melden(was: str, fehler: Exception) -> None:
     """Nur den Status melden, nie den Antworttext: Forgejo gibt bei ungueltigem Token
     den Token zurueck."""
     if isinstance(fehler, urllib.error.HTTPError):
@@ -296,7 +302,7 @@ def _fehler_melden(was: str, fehler: Exception) -> None:
 
 # OSError umfasst URLError, Zeitueberschreitung und abgerissene Verbindungen beim Lesen
 # der Antwort, HTTPException etwa IncompleteRead
-_NETZFEHLER = (OSError, http.client.HTTPException)
+NETZFEHLER = (OSError, http.client.HTTPException)
 
 
 @dataclass
@@ -340,16 +346,16 @@ def main(
             "kein CI-Bericht im PR."
         )
         return 0
-    forge = _pflicht(env, "CI_FORGE_URL").rstrip("/")
-    repo = f"{_pflicht(env, 'CI_REPO_OWNER')}/{_pflicht(env, 'CI_REPO_NAME')}"
-    pr = _pflicht(env, "CI_COMMIT_PULL_REQUEST")
+    forge = pflicht(env, "CI_FORGE_URL").rstrip("/")
+    repo = f"{pflicht(env, 'CI_REPO_OWNER')}/{pflicht(env, 'CI_REPO_NAME')}"
+    pr = pflicht(env, "CI_COMMIT_PULL_REQUEST")
     kommentare_url = (
         f"{forge}/api/v1/repos/{repo}/issues/{urllib.parse.quote(pr)}/comments"
     )
     lauf = Lauf(
-        pipeline=_pflicht(env, "CI_PIPELINE_NUMBER"),
-        pipeline_url=_pflicht(env, "CI_PIPELINE_URL"),
-        commit=_pflicht(env, "CI_COMMIT_SHA"),
+        pipeline=pflicht(env, "CI_PIPELINE_NUMBER"),
+        pipeline_url=pflicht(env, "CI_PIPELINE_URL"),
+        commit=pflicht(env, "CI_COMMIT_SHA"),
     )
     schritte = schritte_lesen(argv, verzeichnis)
     abdruck = fingerabdruck(schritte, [token])
@@ -358,10 +364,10 @@ def main(
     # als ein roter Lauf ohne Bericht.
     voriger = None
     try:
-        _, antwort = _anfrage(kommentare_url, token)
+        _, antwort = anfrage(kommentare_url, token)
         voriger = letzter_bericht(json.loads(antwort))
-    except (*_NETZFEHLER, ValueError) as fehler:
-        _fehler_melden(f"Kommentare in PR #{pr} lesen", fehler)
+    except (*NETZFEHLER, ValueError) as fehler:
+        fehler_melden(f"Kommentare in PR #{pr} lesen", fehler)
 
     if voriger and voriger.fingerabdruck == abdruck:
         art = "unverändert, Einzeiler"
@@ -372,9 +378,9 @@ def main(
 
     # Ein Versuch, keine Wiederholung: lieber kein Bericht als zwei.
     try:
-        status, _ = _anfrage(kommentare_url, token, {"body": body})
-    except _NETZFEHLER as fehler:
-        _fehler_melden(f"CI-Bericht in PR #{pr}", fehler)
+        status, _ = anfrage(kommentare_url, token, {"body": body})
+    except NETZFEHLER as fehler:
+        fehler_melden(f"CI-Bericht in PR #{pr}", fehler)
         return 1
     print(f"CI-Bericht in PR #{pr} ({art}): HTTP {status}")
     return 0
