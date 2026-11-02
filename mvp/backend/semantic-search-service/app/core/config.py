@@ -2,7 +2,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing import Literal, Optional
 from dotenv import load_dotenv
 
@@ -18,6 +18,9 @@ if env_file.exists():
 # Das Einbettungsmodell. Die Aehnlichkeitsschwellen in Settings sind dafuer gemessen;
 # das Dockerfile laedt es beim Bauen vor und muss mitgezogen werden.
 EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
+
+# Wie der Mailversand mit dem SMTP-Server spricht (infrastructure/mail/versand.py).
+SmtpVerschluesselung = Literal["starttls", "ssl", "keine"]
 
 
 class Settings(BaseSettings):
@@ -160,10 +163,20 @@ class Settings(BaseSettings):
     smtp_benutzer: Optional[str] = None
     smtp_passwort: Optional[str] = None
     # starttls (Port 587), ssl (Port 465) oder keine (nur fuer ein Relay im selben Netz)
-    smtp_verschluesselung: Literal["starttls", "ssl", "keine"] = "starttls"
+    smtp_verschluesselung: SmtpVerschluesselung = "starttls"
     mail_absender: Optional[str] = None
-    # Wohin Antworten gehen; ohne Angabe an den Absender.
+    # Wohin Antworten gehen; ohne Angabe an den Absender. Die Mail der Entscheidung
+    # nennt die Antwort als Weg, gegen sie vorzugehen: keine Adresse, die nichts annimmt.
     mail_antwort_an: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _kein_passwort_im_klartext(self):
+        # Ohne Verschluesselung ginge die SMTP-Anmeldung lesbar ueber das Netz.
+        if self.smtp_verschluesselung == "keine" and self.smtp_benutzer:
+            raise ValueError(
+                "SMTP-Anmeldung nur mit starttls oder ssl, nicht mit keine"
+            )
+        return self
 
     # Admin users (comma-separated list)
     admin_users: str = ""

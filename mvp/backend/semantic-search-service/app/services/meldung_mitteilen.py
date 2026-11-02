@@ -133,20 +133,20 @@ class MeldungMitteilung:
             zeilen.append(self.app_url)
         return "\n".join(zeilen)
 
-    def _senden(self, mail: Mail, was: str) -> bool:
+    def _senden(self, mail: Mail, anlass: str) -> bool:
         if self.versand is None:
-            logger.info(f"{was} nicht verschickt: Mailversand nicht eingerichtet")
+            logger.info(f"{anlass} nicht verschickt: Mailversand nicht eingerichtet")
             return False
         try:
             self.versand.senden(mail)
         except MailNichtVerschickt:
             # Den Fehlertyp hat der Versand schon ins Log geschrieben.
-            logger.warning(f"{was} nicht verschickt")
+            logger.warning(f"{anlass} nicht verschickt")
             return False
         except Exception as e:
-            logger.warning(f"{was} nicht verschickt ({type(e).__name__})")
+            logger.warning(f"{anlass} nicht verschickt ({type(e).__name__})")
             return False
-        logger.info(f"{was} verschickt")
+        logger.info(f"{anlass} verschickt")
         return True
 
     def eingang_bestaetigen(

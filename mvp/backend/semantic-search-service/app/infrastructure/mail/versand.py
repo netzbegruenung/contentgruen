@@ -18,9 +18,9 @@ import ssl
 from dataclasses import dataclass
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid
-from typing import Optional, Protocol
+from typing import Optional, Protocol, get_args
 
-from core.config import Settings, settings as standard_settings
+from core.config import Settings, SmtpVerschluesselung, settings as standard_settings
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # die meldet oder entscheidet; ein haengender Server soll sie nicht lange warten lassen.
 SMTP_TIMEOUT = 10
 
-VERSCHLUESSELUNGEN = ("starttls", "ssl", "keine")
+VERSCHLUESSELUNGEN = get_args(SmtpVerschluesselung)
 
 
 @dataclass(frozen=True)
@@ -60,11 +60,13 @@ class SmtpVersand:
         port: int = 587,
         benutzer: Optional[str] = None,
         passwort: Optional[str] = None,
-        verschluesselung: str = "starttls",
+        verschluesselung: SmtpVerschluesselung = "starttls",
         antwort_an: Optional[str] = None,
     ):
         if verschluesselung not in VERSCHLUESSELUNGEN:
             raise ValueError(f"Unbekannte Verschluesselung: {verschluesselung}")
+        if verschluesselung == "keine" and benutzer:
+            raise ValueError("SMTP-Anmeldung nur mit starttls oder ssl")
         self.host = host
         self.port = port
         self.absender = absender

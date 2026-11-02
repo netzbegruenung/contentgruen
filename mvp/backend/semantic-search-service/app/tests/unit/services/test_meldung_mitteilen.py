@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from domain.models.meldung import MelderAngaben
+from domain.models.meldung import MelderAdresse, MelderAngaben
 from infrastructure.mail.versand import Mail, MailNichtVerschickt
 from repositories.content_report_repository import ContentReportRepository
 from repositories.implementations.qdrant.moderation_repository import (
@@ -74,8 +74,8 @@ def report_repo():
     repo.update_reports_by_content_id.return_value = 2
     repo.update_report_status.return_value = MagicMock()
     repo.offene_melder_adressen.return_value = [
-        (uuid.UUID(CONTENT_ID), ANNA),
-        (uuid.UUID(CONTENT_ID), BEN),
+        MelderAdresse(uuid.UUID(CONTENT_ID), ANNA),
+        MelderAdresse(uuid.UUID(CONTENT_ID), BEN),
     ]
     return repo
 
@@ -141,6 +141,19 @@ class TestEingangsbestaetigung:
         assert ANNA not in caplog.text
         assert "Eingangsbestaetigung" in caplog.text
 
+    async def test_gesperrter_beitrag_bleibt_ohne_titel(
+        self, service, postausgang, speicher
+    ):
+        # Die Melde-Route findet auch gesperrte Beitraege; ihr Titel soll nicht
+        # per Mail an jemanden gehen, der nur die Kennung kennt.
+        speicher.get_data()[CONTENT_ID]["status"] = "blocked"
+
+        await _melden(service)
+
+        [mail] = postausgang.an(ANNA)
+        assert "Wärmepumpen" not in mail.text
+        assert "einem Beitrag" in mail.text
+
     async def test_bestaetigung_enthaelt_keinen_text_der_meldung(
         self, service, postausgang
     ):
@@ -198,7 +211,7 @@ class TestEntscheidungMitteilen:
     ):
         report_id = uuid.uuid4()
         report_repo.offene_melder_adressen.return_value = [
-            (uuid.UUID(CONTENT_ID), ANNA)
+            MelderAdresse(uuid.UUID(CONTENT_ID), ANNA)
         ]
 
         assert await service.dismiss_report(str(report_id), "admin-1") is True
@@ -235,6 +248,18 @@ class TestEntscheidungMitteilen:
         [mail] = postausgang.an(ANNA)
         assert "nicht mehr" in mail.text
         assert "Menschen" not in mail.text
+
+    async def test_gleiche_adresse_bekommt_eine_mail(
+        self, service, postausgang, report_repo
+    ):
+        report_repo.offene_melder_adressen.return_value = [
+            MelderAdresse(uuid.UUID(CONTENT_ID), ANNA),
+            MelderAdresse(uuid.UUID(CONTENT_ID), ANNA.upper()),
+        ]
+
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
+
+        assert len(postausgang.mails) == 1
 
     async def test_jede_entscheidung_nennt_die_rechtsbehelfe(
         self, service, postausgang

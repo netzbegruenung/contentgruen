@@ -5,11 +5,11 @@ Handles database operations for content moderation.
 
 import logging
 from datetime import date, datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 from sqlalchemy import and_, desc, or_
 
-from domain.models.meldung import MelderAngaben
+from domain.models.meldung import MelderAdresse, MelderAngaben
 from infrastructure.database.connection import get_app_database
 from infrastructure.database.models import ContentReport
 from utils.besucher_pseudonym import besucher_tagespseudonym
@@ -140,7 +140,7 @@ class ContentReportRepository:
         *,
         content_id: Optional[UUID] = None,
         report_id: Optional[UUID] = None,
-    ) -> List[Tuple[UUID, str]]:
+    ) -> List[MelderAdresse]:
         """
         Beitrag und E-Mail-Adresse der offenen Meldungen zu einem Beitrag oder der
         einen Meldung, sofern die meldende Person eine Adresse angegeben hat (#493).
@@ -163,7 +163,7 @@ class ContentReportRepository:
             else:
                 abfrage = abfrage.filter(ContentReport.id == report_id)
             return [
-                (beitrag, email)
+                MelderAdresse(beitrag, email)
                 for beitrag, email in abfrage.order_by(ContentReport.created).all()
             ]
 

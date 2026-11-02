@@ -8,7 +8,8 @@ E-Mail-Adresse (RFC 5321).
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import NamedTuple, Optional
+from uuid import UUID
 
 MELDER_NAME_MAX = 200
 MELDER_EMAIL_MAX = 254
@@ -26,3 +27,10 @@ class MelderAngaben:
     guter_glaube: bool
     name: Optional[str] = None
     email: Optional[str] = None
+
+
+class MelderAdresse(NamedTuple):
+    """E-Mail-Adresse einer offenen Meldung und der gemeldete Beitrag (#493)."""
+
+    content_id: UUID
+    email: str

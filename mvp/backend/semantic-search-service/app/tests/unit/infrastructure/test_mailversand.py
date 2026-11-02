@@ -84,6 +84,12 @@ class TestSmtpVersand:
         verbindung.starttls.assert_not_called()
         verbindung.send_message.assert_called_once()
 
+    def test_anmeldung_ohne_verschluesselung_abgelehnt(self):
+        with pytest.raises(ValueError):
+            SmtpVersand(
+                "relay", "a@example.org", benutzer="konto", verschluesselung="keine"
+            )
+
     def test_fehler_nennt_nur_den_typ_nicht_die_adresse(self, smtp):
         verbindung, _, _ = smtp
         verbindung.send_message.side_effect = smtplib.SMTPRecipientsRefused(
@@ -113,6 +119,10 @@ class TestEinrichtung:
 
     def test_ohne_absender_kein_versand(self):
         assert get_mailversand(Settings(smtp_host="smtp.example.org")) is None
+
+    def test_einstellungen_lehnen_anmeldung_im_klartext_ab(self):
+        with pytest.raises(ValueError):
+            Settings(smtp_verschluesselung="keine", smtp_benutzer="konto")
 
     def test_mit_host_und_absender(self):
         versand = get_mailversand(

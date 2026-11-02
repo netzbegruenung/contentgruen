@@ -110,16 +110,16 @@ service (Art. 16 (4) and (5) DSA): the Eingangsbestätigung right away, and the 
 available remedies once an admin sperrt the Beitrag, dismisses the Meldung or removes the
 Beitrag. Texts: `services/meldung_mitteilen.py`; sending: `infrastructure/mail/versand.py`
 (plain SMTP, one connection per mail, 10 s timeout). The mails carry no text from the Meldung
-itself, only the Beitrag's title.
+itself, only the title of a visible Beitrag.
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `SEMANTIC_SEARCH_SMTP_HOST` | unset | SMTP server. Unset: no mail goes out, admins inform by hand (mailto link in the moderation) |
 | `SEMANTIC_SEARCH_SMTP_PORT` | `587` | |
-| `SEMANTIC_SEARCH_SMTP_VERSCHLUESSELUNG` | `starttls` | `starttls`, `ssl` (port 465) or `keine` (only for a relay on the same network) |
+| `SEMANTIC_SEARCH_SMTP_VERSCHLUESSELUNG` | `starttls` | `starttls`, `ssl` (port 465) or `keine` (only for a relay on the same network; the service refuses to start with `keine` and a login) |
 | `SEMANTIC_SEARCH_SMTP_BENUTZER` / `_PASSWORT` | unset | SMTP login; without a user no login. The password is a secret |
 | `SEMANTIC_SEARCH_MAIL_ABSENDER` | unset | `From` address; required, without it no mail goes out |
-| `SEMANTIC_SEARCH_MAIL_ANTWORT_AN` | unset | `Reply-To`; the mails ask people to reply for questions and complaints, so this should be the contact address of the legal notice |
+| `SEMANTIC_SEARCH_MAIL_ANTWORT_AN` | unset | `Reply-To`; unset, replies go to the sender. The decision mail names a reply as the way to challenge the decision (Art. 20 DSA): set this to the contact address of the legal notice whenever the sender accepts no mail |
 
 The sender domain needs SPF/DKIM for the SMTP server, otherwise the mails land in spam. A failed
 mail never undoes a Meldung or decision; the log says `SMTP delivery failed (<error type>)`
