@@ -162,6 +162,19 @@ describe('ContentModerationComponent', () => {
     expect(moderation.getGesperrte).toHaveBeenCalledTimes(3);
   });
 
+  it('zeigt unter „Nach Person“ die Suche nach Name oder E-Mail-Adresse statt der Meldungsliste (#494)', () => {
+    mitMeldungen([meldung()]);
+    moderation.getReports.calls.reset();
+
+    fixture.componentInstance.onStatusFilterChange('person');
+    fixture.detectChanges();
+
+    expect(moderation.getReports).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('app-meldungen-einer-person')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.reports-table')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Keine Meldungen');
+  });
+
   it('zeigt Sperrgrund, Begründung und einen offenen Widerspruch zuerst', () => {
     moderation.getGesperrte.and.returnValue(of({
       total: 2,

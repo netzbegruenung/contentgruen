@@ -17,8 +17,10 @@ import { typLabel } from '../../shared/content-type-registry';
 import { meldegrundLabel } from '../../shared/meldegruende';
 import { sperrgrundLabel } from '../../shared/sperrgruende';
 import { SperrenDialogComponent, SperrenDialogDaten, SperrenDialogErgebnis } from './sperren-dialog.component';
+import { MeldungenEinerPersonComponent } from './meldungen-einer-person.component';
 
-type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
+// 'person': Meldungen einer Person nach Name oder E-Mail-Adresse (#494).
+type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt' | 'person';
 
 @Component({
   selector: 'app-content-moderation',
@@ -34,7 +36,8 @@ type Ansicht = 'pending' | 'reviewed' | 'dismissed' | 'all' | 'gesperrt';
     MatSnackBarModule,
     MatTooltipModule,
     MatButtonToggleModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MeldungenEinerPersonComponent
   ],
   templateUrl: './content-moderation.component.html',
   styleUrls: ['./content-moderation.component.css'],
@@ -80,6 +83,12 @@ export class ContentModerationComponent implements OnInit {
   }
 
   loadReports() {
+    if (this.selectedStatus === 'person') {
+      // Die Suche lädt selbst, erst wenn Angaben eingegeben sind.
+      this.loading = false;
+      this.error = null;
+      return;
+    }
     this.loading = true;
     this.error = null;
     this.expandedReports.clear(); // Reset expanded rows on refresh

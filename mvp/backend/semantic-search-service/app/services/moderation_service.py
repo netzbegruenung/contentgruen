@@ -25,7 +25,7 @@ from repositories.sperre_repository import SperreRepository, get_sperre_reposito
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
-from domain.models.meldung import MelderAngaben
+from domain.models.meldung import AngabenGeloescht, MelderAngaben, MelderSuche
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
@@ -272,6 +272,32 @@ class ModerationService:
                 exc_info=True,
             )
             return []
+
+    async def meldungen_einer_person(
+        self, email: Optional[str] = None, name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Alle Meldungen mit diesen Angaben der meldenden Person, fuer die Auskunft
+        an Personen ohne Konto (Art. 15 DSGVO, #494). Regeln der Suche: MelderSuche.
+
+        Raises:
+            ValueError: weder Name noch E-Mail-Adresse angegeben
+        """
+        suche = MelderSuche(email=email, name=name)
+        return await asyncio.to_thread(self.report_repo.von_melder, suche)
+
+    async def angaben_der_person_loeschen(
+        self, email: Optional[str] = None, name: Optional[str] = None
+    ) -> AngabenGeloescht:
+        """
+        Die Angaben einer Person an ihren Meldungen loeschen (Art. 17 DSGVO, #494):
+        erledigte Meldungen ganz, offene nur Name und E-Mail-Adresse.
+
+        Raises:
+            ValueError: weder Name noch E-Mail-Adresse angegeben
+        """
+        suche = MelderSuche(email=email, name=name)
+        return await asyncio.to_thread(self.report_repo.angaben_loeschen, suche)
 
     async def _beitrag_laden(self, content_id: str) -> Optional[Dict[str, Any]]:
         """Payload eines Beitrags, auch gesperrt; None, wenn es ihn nicht gibt."""

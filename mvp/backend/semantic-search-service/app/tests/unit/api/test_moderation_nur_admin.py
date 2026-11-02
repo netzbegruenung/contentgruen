@@ -1,6 +1,7 @@
 """
 Die Admin-Endpunkte der Moderation ohne eigene Testdatei: Meldungen lesen,
-Statistik, Beitrag endgueltig entfernen, Meldung abweisen. Sperren, Entsperren und die Liste
+Statistik, Beitrag endgueltig entfernen, Meldung abweisen, Meldungen einer
+Person finden und ihre Angaben loeschen (Fachliches in test_moderation_melder.py). Sperren, Entsperren und die Liste
 der gesperrten Beitraege prueft test_moderation_sperren.py.
 
 Aus tests/integration/api/v1/test_moderation_api.py, dort ohne die Fixture
@@ -24,6 +25,8 @@ ENDPUNKTE = [
     ("get", "/stats"),
     ("delete", f"/content/commentary/{uuid.uuid4()}"),
     ("put", f"/reports/{uuid.uuid4()}/dismiss"),
+    ("post", "/melder/meldungen"),
+    ("post", "/melder/angaben-loeschen"),
 ]
 
 

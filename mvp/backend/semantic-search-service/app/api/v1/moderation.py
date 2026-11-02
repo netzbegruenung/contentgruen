@@ -157,6 +157,38 @@ class GesperrteResponse(BaseModel):
     beitraege: List[Dict[str, Any]]
 
 
+class MelderSucheRequest(BaseModel):
+    """Angaben, nach denen ein Admin die Meldungen einer Person sucht (#494).
+
+    Im Koerper statt in der Adresse, weil Pfade in Logs stehen. Gesucht wird die
+    ganze Angabe ohne Ruecksicht auf Gross- und Kleinschreibung; sind beide
+    angegeben, muessen beide passen (domain/models/meldung.py, MelderSuche).
+    """
+
+    email: Optional[str] = Field(None, max_length=MELDER_EMAIL_MAX)
+    name: Optional[str] = Field(None, max_length=MELDER_NAME_MAX)
+
+    @field_validator("email", "name", mode="before")
+    @classmethod
+    def _leer_ist_nicht_angegeben(cls, wert):
+        if isinstance(wert, str):
+            return wert.strip() or None
+        return wert
+
+    @model_validator(mode="after")
+    def _eine_angabe_noetig(self):
+        if self.email is None and self.name is None:
+            raise ValueError("Name oder E-Mail-Adresse fehlt")
+        return self
+
+
+class AngabenGeloeschtResponse(BaseModel):
+    """Bearbeitete und abgewiesene Meldungen sind geloescht, offene ohne Angaben."""
+
+    geloescht: int
+    angaben_entfernt: int
+
+
 class DismissReportResponse(BaseModel):
     """Response model for report dismissal."""
 
@@ -306,6 +338,63 @@ async def get_reports(
     except Exception as e:
         logger.error(
             f"Error in get_reports endpoint: {type(e).__name__}", exc_info=True
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Admin Endpoints - Meldungen einer Person (#494)
+@router.post("/melder/meldungen", response_model=PendingReportsResponse)
+async def meldungen_einer_person(
+    anfrage: MelderSucheRequest,
+    admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
+    """
+    Alle Meldungen mit diesem Namen oder dieser E-Mail-Adresse der meldenden
+    Person, in jedem Status (Admin only). Fuer die Auskunft an Personen ohne
+    Konto (Art. 15 DSGVO): Nur ueber diese Angaben sind ihre Meldungen zu finden.
+    Die Angaben stehen nicht im Log.
+    """
+    try:
+        logger.info("Admin searching reports by Melder-Angaben")
+        meldungen = await moderation_service.meldungen_einer_person(
+            email=anfrage.email, name=anfrage.name
+        )
+        return PendingReportsResponse(total=len(meldungen), reports=meldungen)
+
+    except Exception as e:
+        logger.error(
+            f"Error in meldungen_einer_person endpoint: {type(e).__name__}",
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/melder/angaben-loeschen", response_model=AngabenGeloeschtResponse)
+async def angaben_der_person_loeschen(
+    anfrage: MelderSucheRequest,
+    admin_user: str = Depends(require_admin),
+    moderation_service: ModerationService = Depends(get_moderation_service),
+):
+    """
+    Die Angaben einer Person an ihren Meldungen loeschen, die es verlangt
+    (Admin only, Art. 17 DSGVO). Dieselben Treffer wie die Suche: Bearbeitete
+    und abgewiesene Meldungen gehen ganz; offene bleiben fuer die Moderation
+    stehen (Art. 16 DSA) und verlieren nur Name und E-Mail-Adresse.
+    """
+    try:
+        logger.info("Admin deleting Melder-Angaben")
+        ergebnis = await moderation_service.angaben_der_person_loeschen(
+            email=anfrage.email, name=anfrage.name
+        )
+        return AngabenGeloeschtResponse(
+            geloescht=ergebnis.geloescht, angaben_entfernt=ergebnis.angaben_entfernt
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error in angaben_der_person_loeschen endpoint: {type(e).__name__}",
+            exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 

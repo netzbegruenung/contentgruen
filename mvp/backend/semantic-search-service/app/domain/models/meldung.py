@@ -26,3 +26,39 @@ class MelderAngaben:
     guter_glaube: bool
     name: Optional[str] = None
     email: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class MelderSuche:
+    """Name und/oder E-Mail-Adresse, nach denen ein Admin die Meldungen einer
+    Person sucht, um Auskunft zu geben oder ihre Angaben zu loeschen (#494).
+
+    Gesucht wird nur die ganze Angabe, ohne Ruecksicht auf Gross- und
+    Kleinschreibung: Ein Teiltreffer zeigte Meldungen anderer Personen. Sind
+    beide angegeben, muessen beide passen. Leere Angaben zaehlen als nicht
+    angegeben; ohne jede Angabe gibt es keine Suche.
+    """
+
+    email: Optional[str] = None
+    name: Optional[str] = None
+
+    def __post_init__(self):
+        email = (self.email or "").strip().lower() or None
+        name = (self.name or "").strip().lower() or None
+        if email is None and name is None:
+            raise ValueError("Name oder E-Mail-Adresse fehlt")
+        object.__setattr__(self, "email", email)
+        object.__setattr__(self, "name", name)
+
+
+@dataclass(frozen=True)
+class AngabenGeloescht:
+    """Was das Loeschen der Angaben einer Person getan hat (#494).
+
+    Bearbeitete und abgewiesene Meldungen sind ganz geloescht; offene bleiben
+    als Arbeit fuer die Moderation stehen und haben nur Name und E-Mail-Adresse
+    verloren.
+    """
+
+    geloescht: int
+    angaben_entfernt: int
