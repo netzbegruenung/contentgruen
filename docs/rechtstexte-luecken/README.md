@@ -32,7 +32,8 @@ Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner da
 mehr offen** — alle drei Texte sind ausformuliert, die Datenschutzerklärung zuletzt. Die
 Einträge bleiben stehen, weil in ihrem Eintrag-Feld steht, wie der jeweilige Punkt gelöst
 wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Zustimmung beim
-Anmelden (Abschnitt 5, #429), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende.
+Anmelden (Abschnitt 5, #429), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende;
+die Fragen an die Datenschutzbeauftragte stehen in `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md`.
 
 Legende Pflicht-Spalte:
 - PFLICHT = gesetzlich zwingend
