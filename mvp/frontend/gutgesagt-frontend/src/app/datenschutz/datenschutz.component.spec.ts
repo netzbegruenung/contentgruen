@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { abschnitt as abschnittIn, normalisiert } from '../testing/rechtstext';
+import { abschnitt as abschnittIn, normalisiert, stand, TAGESDATUM } from '../testing/rechtstext';
 import { DatenschutzComponent } from './datenschutz.component';
 
 /**
@@ -36,6 +36,12 @@ describe('DatenschutzComponent', () => {
       expect(ganzerText()).not.toMatch(/\b(Ihr|Ihre|Ihren|Ihrem|Ihrer|Ihres|Ihnen)\b/);
       expect(ganzerText()).not.toMatch(/\b(können|möchten|haben) Sie\b/);
       expect(abschnitt('Deine Rechte')).toContain('Wende dich dafür an');
+    });
+  });
+
+  describe('Stand (#498)', () => {
+    it('trägt das Tagesdatum der letzten Änderung, nicht nur den Monat', () => {
+      expect(stand(seite)).toMatch(TAGESDATUM);
     });
   });
 

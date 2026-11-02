@@ -25,3 +25,18 @@ export function abschnitt(seite: HTMLElement, titel: string | RegExp): string {
   }
   return normalisiert(teile.join(' '));
 }
+
+/** Ein Tagesdatum, wie es in der Stand-Zeile eines Rechtstexts steht: „2. November 2026“. */
+export const TAGESDATUM =
+  /^([1-9]|[12]\d|3[01])\. (Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember) \d{4}$/;
+
+/** Der Text hinter „Stand:“ eines Rechtstexts, etwa ``2. November 2026`` (#498). */
+export function stand(seite: HTMLElement): string {
+  const zeile = Array.from(seite.querySelectorAll('p')).find((p) =>
+    normalisiert(p.textContent).startsWith('Stand:'),
+  );
+  if (!zeile) {
+    throw new Error('Keine Stand-Zeile');
+  }
+  return normalisiert(zeile.textContent).replace(/^Stand:\s*/, '');
+}
