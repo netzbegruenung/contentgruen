@@ -275,6 +275,10 @@ def test_unveraendert_erstellen_ohne_adresse_ohne_leeren_link():
     assert "]()" not in text and "letzten Bericht." in text
 
 
+# Das Konto des Tokens; nur seine Kommentare zaehlen als voriger Bericht
+BOT = "ci-bot"
+
+
 class _Forgejo:
     """Lokaler Stand-in fuer die Kommentar-API: liefert ``kommentare`` auf GET (oder
     ``get_status``), merkt sich POSTs und antwortet darauf mit ``status``. Fuer die
@@ -328,6 +332,7 @@ class _Forgejo:
             "CI_COMMIT_SHA": "abc123",
             "CI_PIPELINE_NUMBER": "42",
             "CI_PIPELINE_URL": "https://ci.example/42",
+            "CI_BERICHT_KONTO": BOT,
         }
 
 
@@ -392,10 +397,11 @@ def test_main_ohne_token_sendet_nichts(tmp_path, capsys, forgejo_mit_status):
     assert "kein CI-Bericht" in capsys.readouterr().out
 
 
-def _kommentar(nr, body):
+def _kommentar(nr, body, konto=BOT):
     return {
         "id": nr,
         "body": body,
+        "user": {"login": konto},
         "html_url": f"https://forge.example/pr/7#issuecomment-{nr}",
     }
 
@@ -451,6 +457,58 @@ def test_main_vergleicht_nur_mit_dem_letzten_bericht(tmp_path, forgejo_mit_statu
 
     text = _gesendet(forgejo)
     assert "<details><summary>Log unit</summary>" in text
+
+
+def test_main_ignoriert_die_markierung_in_kommentaren_anderer_konten(
+    tmp_path, forgejo_mit_status
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    nachgemacht = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
+    forgejo = forgejo_mit_status(
+        201, kommentare=[_kommentar(1, nachgemacht, konto="jemand")]
+    )
+
+    ci_bericht.main(["unit"], forgejo.env(), tmp_path)
+
+    assert "<details><summary>Log unit</summary>" in _gesendet(forgejo)
+
+
+def test_main_verweist_am_kommentar_eines_anderen_kontos_vorbei(
+    tmp_path, forgejo_mit_status
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
+    forgejo = forgejo_mit_status(
+        201,
+        kommentare=[
+            _kommentar(2, voll, konto=BOT.upper()),
+            _kommentar(3, voll, konto="jemand"),
+            {"id": 4, "body": voll, "html_url": "https://x/4"},
+        ],
+    )
+
+    ci_bericht.main(["unit"], forgejo.env(), tmp_path)
+
+    text = _gesendet(forgejo)
+    assert "Unverändert rot" in text
+    assert "issuecomment-2" in text and "issuecomment-3" not in text
+
+
+def test_main_ohne_konto_postet_den_vollen_bericht(
+    tmp_path, capsys, forgejo_mit_status
+):
+    _protokoll(tmp_path, "unit", 1, "FAILED test_x\n")
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
+    forgejo = forgejo_mit_status(201, kommentare=[_kommentar(2, voll)])
+    env = forgejo.env()
+    del env["CI_BERICHT_KONTO"]
+
+    code = ci_bericht.main(["unit"], env, tmp_path)
+
+    assert code == 0
+    assert "<details><summary>Log unit</summary>" in _gesendet(forgejo)
+    assert forgejo.abrufe == []
+    assert "CI_BERICHT_KONTO" in capsys.readouterr().out
 
 
 def test_main_folgt_auf_einen_einzeiler_wieder_ein_einzeiler(

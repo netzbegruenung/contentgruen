@@ -137,6 +137,8 @@ def test_ci_bericht_nur_bei_rotem_pull_request_mit_dem_secret():
     assert bericht["environment"]["FORGEJO_TOKEN"] == {
         "from_secret": "forgejo_ci_bericht_token"
     }
+    # Das Konto des Tokens: nur dessen Kommentare zaehlen als voriger Bericht
+    assert bericht["environment"]["CI_BERICHT_KONTO"] == "verdigado-bot"
 
 
 WIKI = yaml.safe_load((WURZEL / ".woodpecker" / "rechtstexte-wiki.yaml").read_text())
