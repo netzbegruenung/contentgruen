@@ -23,17 +23,22 @@ ANGELEGT = "8a0c6f6e-0000-4000-8000-000000000002"
 
 
 class Keycloak:
-    def __init__(self, verknuepft=None, vergeben=()):
+    def __init__(self, verknuepft=None, vergeben=(), abgelaufen=0):
         # (Identity Provider, Kennung dort) -> Konto im Realm
         self.verknuepft = dict(verknuepft or {})
         self.vergeben = set(vergeben)
         self.anfragen: list[httpx.Request] = []
+        # So viele Admin-Anfragen antworten 401, als sei das Token abgelaufen.
+        self.abgelaufen = abgelaufen
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         self.anfragen.append(request)
         pfad = request.url.path
         if pfad.endswith("/protocol/openid-connect/token"):
             return httpx.Response(200, json={"access_token": "tok"})
+        if pfad == ADMIN and self.abgelaufen:
+            self.abgelaufen -= 1
+            return httpx.Response(401)
         if pfad == ADMIN and request.method == "GET":
             p = request.url.params
             konto = self.verknuepft.get((p.get("idpAlias"), p.get("idpUserId")))
@@ -91,6 +96,21 @@ class TestKennungenZuordnen:
             for r in keycloak.anfragen
             if r.url.path == ADMIN
         )
+
+    def test_abgelaufenes_token_wird_einmal_erneuert(self):
+        keycloak = Keycloak(verknuepft={("netzbegruenung", ALT): NEU}, abgelaufen=1)
+
+        zuordnung = _konten(keycloak).kennungen_zuordnen("netzbegruenung", [ALT])
+
+        assert zuordnung == {ALT: NEU}
+        tokens = [r for r in keycloak.anfragen if r.url.path.endswith("/token")]
+        assert len(tokens) == 2
+
+    def test_bleibt_es_bei_401_bricht_der_lauf_ab(self):
+        keycloak = Keycloak(abgelaufen=2)
+
+        with pytest.raises(httpx.HTTPStatusError):
+            _konten(keycloak).kennungen_zuordnen("netzbegruenung", [ALT])
 
 
 class TestKontenVerknuepftAnlegen:

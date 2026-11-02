@@ -36,6 +36,7 @@ def skript(monkeypatch):
                 n: ["neu" if w == "alt" else w for w in v]
                 for n, v in kwargs["listen"].items()
             },
+            loeschliste=[*kwargs["loeschliste"], "neu-geloescht"],
             ohne_konto=["user-001"],
         )
 
@@ -89,6 +90,13 @@ class TestSkript:
         ausgabe = capsys.readouterr().out
         assert "  SEMANTIC_SEARCH_ADMIN_USERS=neu,user-001" in ausgabe
         assert "  ADMIN_USER_IDS=neu,andere" in ausgabe
+
+    def test_loeschliste_wird_ergaenzt_ausgegeben(self, skript, capsys):
+        skript("--loeschliste", "alt-geloescht")
+
+        assert skript.aufrufe[0]["loeschliste"] == ["alt-geloescht"]
+        ausgabe = capsys.readouterr().out
+        assert "  alt-geloescht\n  neu-geloescht\n" in ausgabe
 
     def test_konten_aus_datei(self, skript, tmp_path):
         datei = tmp_path / "konten.csv"

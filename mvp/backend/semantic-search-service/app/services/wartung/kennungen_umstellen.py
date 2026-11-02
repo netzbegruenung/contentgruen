@@ -9,18 +9,21 @@ alte (infrastructure/keycloak_konten.py, ``kennungen_zuordnen``).
 
 Umgeschrieben wird ueberall, wo eine Kennung steht: die Spalten in PostgreSQL
 (``SPALTEN``, dieselben wie im Loeschkommando mvp/scripts/manual/person_loeschen.sql),
-die vier Felder an Beitraegen in Qdrant und Listen aus der Konfiguration (Admins,
-Loeschliste), deren neue Werte der Lauf ausgibt.
+die vier Felder an Beitraegen in Qdrant und Listen aus der Konfiguration (Admins), deren
+neue Werte der Lauf ausgibt; die Loeschliste bekommt die neuen Kennungen dazu.
 
 Ohne ausfuehren=True wird nur gezaehlt (Trockenlauf). Idempotent: Nach einem Lauf
-steht keine alte Kennung mehr da, ein zweiter zaehlt null. Bricht ein Lauf zwischen
-PostgreSQL und Qdrant ab, holt ein zweiter den Rest nach.
+steht keine alte Kennung mit Konto im Realm mehr da, ein zweiter zaehlt null; nur Saetze,
+die wegen eines Satzes der neuen Kennung am selben Einwurf stehen bleiben, nennt er
+wieder. Bricht ein Lauf zwischen PostgreSQL und Qdrant ab, holt ein zweiter den Rest
+nach. Laeuft die App waehrenddessen, kann eine Aenderung an einem Beitrag zwischen
+Lesen und Schreiben verloren gehen; deshalb in einer ruhigen Zeit laufen lassen.
 
 Aufruf: mvp/scripts/manual/kennungen_umstellen.py
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Set
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Set
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -33,6 +36,7 @@ from qdrant_client.models import (
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from domain.interfaces.konten_im_realm import IKennungenImRealm
 from services.anzeigename_service import (
     EHEMALIGE_PERSON_KENNUNG,
     KENNUNGSFELDER,
@@ -88,7 +92,7 @@ def zuordnung_pruefen(zuordnung: Zuordnung) -> None:
 
 
 def liste_umschreiben(werte: Iterable[str], zuordnung: Zuordnung) -> List[str]:
-    """Admins, Loeschliste: zugeordnete Kennungen ersetzt, Reihenfolge wie vorher."""
+    """Admins: zugeordnete Kennungen ersetzt, Reihenfolge wie vorher."""
     return [zuordnung.get(w, w) for w in werte]
 
 
@@ -124,7 +128,8 @@ def postgres_umschreiben(
 ) -> PostgresBericht:
     """
     Alles in einer Transaktion; der Trockenlauf fuehrt dieselben Anweisungen aus und
-    rollt zurueck, die Zahlen sind also dieselben wie beim echten Lauf.
+    rollt zurueck, die Zahlen sind also dieselben wie beim echten Lauf mit derselben
+    Zuordnung.
     """
     zuordnung_pruefen(zuordnung)
     bericht = PostgresBericht()
@@ -213,6 +218,11 @@ def _felder(payload: Dict[str, Any]) -> Iterable[Any]:
                 yield eintrag.get(schluessel)
 
 
+def _traegt(eintrag: Any, schluessel: str, zuordnung: Zuordnung) -> bool:
+    # Eintraege, die kein Objekt sind, ueberspringt auch _felder.
+    return isinstance(eintrag, dict) and eintrag.get(schluessel) in zuordnung
+
+
 def felder_ersetzt(payload: Dict[str, Any], zuordnung: Zuordnung) -> Dict[str, Any]:
     """Nur die Felder, in denen eine zugeordnete Kennung vorkommt, mit der neuen."""
     neu: Dict[str, Any] = {
@@ -222,11 +232,11 @@ def felder_ersetzt(payload: Dict[str, Any], zuordnung: Zuordnung) -> Dict[str, A
     }
     for feld, schluessel in KENNUNGSLISTEN:
         eintraege = payload.get(feld) or []
-        if any(e.get(schluessel) in zuordnung for e in eintraege):
+        if any(_traegt(e, schluessel, zuordnung) for e in eintraege):
             neu[feld] = [
                 (
                     {**e, schluessel: zuordnung[e[schluessel]]}
-                    if e.get(schluessel) in zuordnung
+                    if _traegt(e, schluessel, zuordnung)
                     else e
                 )
                 for e in eintraege
@@ -306,18 +316,6 @@ def qdrant_umschreiben(
 # --- Ablauf ---------------------------------------------------------------
 
 
-class IKennungenImRealm(Protocol):
-    """infrastructure/keycloak_konten.py"""
-
-    def kennungen_zuordnen(
-        self, identity_provider: str, kennungen: Iterable[str]
-    ) -> Dict[str, str]: ...
-
-    def konten_verknuepft_anlegen(
-        self, identity_provider: str, konten: Mapping[str, str]
-    ) -> Any: ...
-
-
 @dataclass
 class Umstellung:
     ausgefuehrt: bool
@@ -326,12 +324,16 @@ class Umstellung:
     postgres: PostgresBericht
     # Collection -> Beitraege mit einer alten Kennung
     qdrant: Dict[str, int]
-    # Name der Liste -> neue Werte (Admins, Loeschliste)
+    # Name der Liste -> neue Werte (Admins)
     listen: Dict[str, List[str]]
+    # Loeschliste mit den neuen Kennungen dazu (die alten bleiben)
+    loeschliste: List[str]
     # Kennungen ohne verknuepftes Konto im Realm: bleiben, wie sie sind (Beta-Zugaenge,
-    # Konten aus Einladungen, Mitglieder, fuer die noch kein Konto angelegt ist)
+    # Konten aus Einladungen, Mitglieder, fuer die noch kein Konto angelegt ist).
+    # Ohne Geloeschte: Fuer sie wird kein Konto angelegt.
     ohne_konto: List[str]
-    # Mit Mail-Adresse genannt und ohne Konto: wird beim Lauf angelegt (Trockenlauf)
+    # Mit Mail-Adresse genannt und ohne Konto: wird beim Lauf angelegt (Trockenlauf).
+    # Der Trockenlauf zaehlt ihre Zeilen und Beitraege noch nicht mit.
     anzulegen: List[str] = field(default_factory=list)
     # Konto sollte angelegt werden, die Adresse hat im Realm aber schon eins
     vergeben: List[str] = field(default_factory=list)
@@ -344,6 +346,7 @@ def umstellen(
     realm: IKennungenImRealm,
     identity_provider: str,
     listen: Optional[Mapping[str, List[str]]] = None,
+    loeschliste: Optional[List[str]] = None,
     anzulegen: Optional[Mapping[str, str]] = None,
     ausfuehren: bool = False,
 ) -> Umstellung:
@@ -352,15 +355,25 @@ def umstellen(
     Realm zu und schreibt sie um. ``anzulegen`` (alte Kennung -> Mail-Adresse) legt
     beim Lauf vorher die fehlenden Konten im Realm an, mit dem Identity Provider
     verknuepft.
+
+    Die Loeschliste wird ergaenzt, nicht umgeschrieben: Ein Cookie mit der alten
+    Kennung gilt bis zu 14 Tage weiter (docs/LOESCHKONZEPT.md), die BFF muss es also
+    weiter abweisen. Fuer Geloeschte wird nie ein Konto angelegt.
     """
     listen = dict(listen or {})
+    geloescht = [k for k in (loeschliste or []) if _person(k)]
     alte = (
         kennungen_in_postgres(verbindung)
         | kennungen_in_qdrant(qdrant, collection)
         | {k for werte in listen.values() for k in werte if _person(k)}
+        | set(geloescht)
     )
     zuordnung = realm.kennungen_zuordnen(identity_provider, sorted(alte))
-    fehlend = sorted(k for k in (anzulegen or {}) if k in alte and k not in zuordnung)
+    fehlend = sorted(
+        k
+        for k in (anzulegen or {})
+        if k in alte and k not in zuordnung and k not in geloescht
+    )
     vergeben: List[str] = []
     if ausfuehren and fehlend:
         angelegt = realm.konten_verknuepft_anlegen(
@@ -379,7 +392,9 @@ def umstellen(
             collection: qdrant_umschreiben(qdrant, collection, zuordnung, ausfuehren)
         },
         listen={name: liste_umschreiben(w, zuordnung) for name, w in listen.items()},
-        ohne_konto=sorted(alte - set(zuordnung)),
+        loeschliste=list(loeschliste or [])
+        + [zuordnung[k] for k in geloescht if k in zuordnung],
+        ohne_konto=sorted(alte - set(zuordnung) - set(geloescht)),
         anzulegen=fehlend,
         vergeben=vergeben,
     )

@@ -6,7 +6,11 @@ Ablauf und Reihenfolge: docs/KEYCLOAK_REALM.md, "Kennungen umstellen". Die Zuord
 alt -> neu kommt aus dem Realm: Ein Konto dort, das mit dem Identity Provider
 netzbegruenung verknuepft ist, traegt die alte Kennung als Kennung beim Identity
 Provider. Umgeschrieben werden PostgreSQL und Qdrant; fuer Listen aus der
-Konfiguration (Admins, Loeschliste) gibt der Lauf die neuen Werte aus.
+Konfiguration (Admins) gibt der Lauf die neuen Werte aus, die Loeschliste bekommt die
+neuen Kennungen dazu (die alten bleiben, ihre Cookies gelten noch bis zu 14 Tage).
+
+Das Image des Containers muss diesen Stand schon enthalten; ein aelteres bricht mit
+ModuleNotFoundError ab, bevor es etwas schreibt.
 
 Die Logik liegt im Dienst (services/wartung/kennungen_umstellen.py); das Skript
 laeuft im semantic-search-Container mit dessen Code und Umgebung:
@@ -22,14 +26,17 @@ und SEMANTIC_SEARCH_KEYCLOAK_URL, _REALM, _ADMIN_CLIENT_ID, _ADMIN_CLIENT_SECRET
     docker exec -i gutgesagt-semantic-search python - --ausfuehren < kennungen_umstellen.py
 
 Optionen:
-    --liste NAME=K1,K2       weitere Liste umstellen, etwa ADMIN_USER_IDS der BFF
-                             oder die Loeschliste; mehrfach moeglich
+    --liste NAME=K1,K2       weitere Liste umstellen, etwa ADMIN_USER_IDS der BFF;
+                             mehrfach moeglich
+    --loeschliste K1,K2      die Kennungen aus geloeschte-konten.txt: werden
+                             ergaenzt, nie als Konto angelegt
     --konten-anlegen DATEI   Zeilen "alte-kennung,mail-adresse": legt beim Lauf
                              fuer jede, die noch kein Konto hat, eins im Realm an,
-                             mit dem Identity Provider verknuepft, ohne Mail
+                             mit dem Identity Provider verknuepft, ohne Mail.
+                             Der Trockenlauf zaehlt ihre Zeilen noch nicht mit.
     --ohne-konto-zeigen      die Kennungen ohne Konto im Realm einzeln ausgeben
 
-Idempotent: Ein zweiter Lauf zaehlt null.
+Idempotent: Ein zweiter Lauf zaehlt null (bis auf stehen gebliebene Saetze).
 """
 
 import argparse
@@ -91,8 +98,8 @@ def main() -> int:
     )
     parser.add_argument("--liste", type=_liste, action="append", default=[])
     parser.add_argument("--konten-anlegen", metavar="DATEI")
+    parser.add_argument("--loeschliste", type=_kennungen, default=[])
     parser.add_argument("--ohne-konto-zeigen", action="store_true")
-    parser.add_argument("--identity-provider", default=IDENTITY_PROVIDER)
     args = parser.parse_args()
 
     fehlt = [name for name in KEYCLOAK if not os.environ.get(name)]
@@ -130,8 +137,9 @@ def main() -> int:
                 qdrant,
                 collection,
                 realm,
-                args.identity_provider,
+                IDENTITY_PROVIDER,
                 listen=listen,
+                loeschliste=args.loeschliste,
                 anzulegen=anzulegen,
                 ausfuehren=args.ausfuehren,
             )
@@ -155,7 +163,10 @@ def main() -> int:
         for kennung in ergebnis.ohne_konto:
             print(f"  {kennung}")
     if anzulegen is not None:
-        print(f"Konten anzulegen beim Lauf: {len(ergebnis.anzulegen)}")
+        print(
+            f"Konten anzulegen beim Lauf: {len(ergebnis.anzulegen)}"
+            " (ihre Zeilen und Beitraege zaehlt erst der Lauf)"
+        )
         print(f"Adresse im Realm schon vergeben: {len(ergebnis.vergeben)}")
         for kennung in ergebnis.vergeben:
             print(f"  {kennung}")
@@ -163,6 +174,10 @@ def main() -> int:
         print("Listen, neue Werte (von Hand setzen):")
         for name, werte in ergebnis.listen.items():
             print(f"  {name}={','.join(werte)}")
+    if args.loeschliste:
+        print("geloeschte-konten.txt, neuer Inhalt (eine Kennung je Zeile):")
+        for kennung in ergebnis.loeschliste:
+            print(f"  {kennung}")
     return 0
 
 

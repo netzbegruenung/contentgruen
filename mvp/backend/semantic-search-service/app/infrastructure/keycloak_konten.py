@@ -10,13 +10,12 @@ Was hinausgeht, ist nur die Mail-Adresse. Den Code der Einladung erfaehrt Keyclo
 nicht (services/einladung_service.py).
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Mapping, Optional
+from typing import Dict, Iterable, Mapping, Optional
 
 import httpx
 
 from core.logging import get_logger
-from domain.interfaces.konten_im_realm import KontoErgebnis
+from domain.interfaces.konten_im_realm import KontoErgebnis, VerknuepfteKonten
 
 logger = get_logger(__name__)
 
@@ -29,14 +28,6 @@ MAIL_AKTIONEN = ["UPDATE_PASSWORD"]
 # So lange gilt der Link in der Mail; danach hilft "Passwort vergessen".
 MAIL_GUELTIG_SEKUNDEN = 3 * 24 * 60 * 60
 ZEITLIMIT_SEKUNDEN = 10.0
-
-
-@dataclass
-class VerknuepfteKonten:
-    # alte Kennung -> Kennung des neu angelegten Kontos
-    angelegt: Dict[str, str] = field(default_factory=dict)
-    # alte Kennungen, deren Mail-Adresse im Realm schon ein Konto hat
-    vergeben: List[str] = field(default_factory=list)
 
 
 class KeycloakKonten:
@@ -73,8 +64,16 @@ class KeycloakKonten:
         antwort.raise_for_status()
         return antwort.json()["access_token"]
 
+    @property
+    def _admin(self) -> str:
+        return f"{self._basis}/admin/realms/{self._realm}/users"
+
+    @staticmethod
+    def _konto_id(angelegt: httpx.Response) -> str:
+        return angelegt.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
+
     def konto_anlegen(self, email: str) -> KontoErgebnis:
-        admin = f"{self._basis}/admin/realms/{self._realm}/users"
+        admin = self._admin
         with self._client() as http:
             kopf = {"Authorization": f"Bearer {self._token(http)}"}
             antwort = http.post(
@@ -91,7 +90,7 @@ class KeycloakKonten:
             if antwort.status_code == 409:
                 return KontoErgebnis.VORHANDEN
             antwort.raise_for_status()
-            konto_id = antwort.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
+            konto_id = self._konto_id(antwort)
 
             parameter = {"lifespan": str(MAIL_GUELTIG_SEKUNDEN)}
             if self._app_client_id and self._app_url:
@@ -119,6 +118,8 @@ class KeycloakKonten:
         return KontoErgebnis.ANGELEGT
 
     # --- Kennungen umstellen (#487) ---------------------------------------
+    # Viele Anfragen hintereinander: Laeuft das Token ab (Standard 5 Minuten), holt
+    # _anfrage ein neues und wiederholt die Anfrage einmal.
 
     def kennungen_zuordnen(
         self, identity_provider: str, kennungen: Iterable[str]
@@ -129,9 +130,11 @@ class KeycloakKonten:
         """
         zuordnung: Dict[str, str] = {}
         with self._client() as http:
-            kopf = {"Authorization": f"Bearer {self._token(http)}"}
+            token = [self._token(http)]
             for kennung in kennungen:
-                konto = self._verknuepftes_konto(http, kopf, identity_provider, kennung)
+                konto = self._verknuepftes_konto(
+                    http, token, identity_provider, kennung
+                )
                 if konto:
                     zuordnung[kennung] = konto
         return zuordnung
@@ -146,15 +149,16 @@ class KeycloakKonten:
         Ist die Adresse im Realm schon vergeben, wird nichts verknuepft.
         """
         ergebnis = VerknuepfteKonten()
-        admin = f"{self._basis}/admin/realms/{self._realm}/users"
         with self._client() as http:
-            kopf = {"Authorization": f"Bearer {self._token(http)}"}
+            token = [self._token(http)]
             for kennung, email in konten.items():
-                if self._verknuepftes_konto(http, kopf, identity_provider, kennung):
+                if self._verknuepftes_konto(http, token, identity_provider, kennung):
                     continue
-                antwort = http.post(
-                    admin,
-                    headers=kopf,
+                antwort = self._anfrage(
+                    http,
+                    token,
+                    "POST",
+                    self._admin,
                     json={
                         "username": email,
                         "email": email,
@@ -175,17 +179,29 @@ class KeycloakKonten:
                     ergebnis.vergeben.append(kennung)
                     continue
                 antwort.raise_for_status()
-                ergebnis.angelegt[kennung] = (
-                    antwort.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
-                )
+                ergebnis.angelegt[kennung] = self._konto_id(antwort)
         return ergebnis
 
+    def _anfrage(
+        self, http: httpx.Client, token: list, methode: str, url: str, **kwargs
+    ) -> httpx.Response:
+        """token ist eine Liste mit einem Eintrag, damit ein neues Token bleibt."""
+        for versuch in range(2):
+            kopf = {"Authorization": f"Bearer {token[0]}"}
+            antwort = http.request(methode, url, headers=kopf, **kwargs)
+            if antwort.status_code != 401 or versuch:
+                return antwort
+            token[0] = self._token(http)
+        return antwort
+
     def _verknuepftes_konto(
-        self, http: httpx.Client, kopf: dict, identity_provider: str, kennung: str
+        self, http: httpx.Client, token: list, identity_provider: str, kennung: str
     ) -> Optional[str]:
-        antwort = http.get(
-            f"{self._basis}/admin/realms/{self._realm}/users",
-            headers=kopf,
+        antwort = self._anfrage(
+            http,
+            token,
+            "GET",
+            self._admin,
             params={
                 "idpAlias": identity_provider,
                 "idpUserId": kennung,

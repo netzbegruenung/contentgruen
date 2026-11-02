@@ -15,7 +15,7 @@ from qdrant_client.models import Distance, PointStruct, VectorParams
 from sqlalchemy import text
 
 from infrastructure.database.models import GeseheneNutzung, RawInputDraft, User
-from infrastructure.keycloak_konten import VerknuepfteKonten
+from domain.interfaces.konten_im_realm import VerknuepfteKonten
 from services.wartung.kennungen_umstellen import (
     kennungen_in_postgres,
     postgres_umschreiben,
@@ -231,6 +231,26 @@ class TestUmstellen:
         assert realm.angelegt_fuer == [ANDERE]
         assert lauf.zuordnung == {PERSON: NEU, ANDERE: f"{ANDERE}-neu"}
         assert lauf.ohne_konto == []
+
+    def test_loeschliste_behaelt_die_alte_und_bekommt_die_neue_dazu(
+        self, datenbank, spuren, qdrant
+    ):
+        """Ein Cookie mit der alten Kennung gilt bis zu 14 Tage; die BFF muss es abweisen."""
+        realm = Realm({PERSON: NEU})
+
+        ergebnis = _umstellen(
+            datenbank,
+            qdrant,
+            realm,
+            loeschliste=[PERSON, "geloescht-ohne-konto"],
+            anzulegen={"geloescht-ohne-konto": "weg@example.org"},
+            ausfuehren=True,
+        )
+
+        assert ergebnis.loeschliste == [PERSON, "geloescht-ohne-konto", NEU]
+        # Fuer Geloeschte kein Konto, und sie stehen nicht unter "ohne Konto".
+        assert realm.angelegt_fuer == []
+        assert "geloescht-ohne-konto" not in ergebnis.ohne_konto
 
 
 class TestKennungenInPostgres:

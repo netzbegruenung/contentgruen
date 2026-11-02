@@ -94,11 +94,14 @@ Deshalb in dieser Reihenfolge, nicht anders:
 
 `mvp/scripts/manual/kennungen_umstellen.py` (#487) schreibt jede Kennung eines Mitglieds
 der Netzbegrünung auf die seines Kontos im Realm um: in PostgreSQL dieselben Spalten wie
-das Löschkommando (`person_loeschen.sql`), in Qdrant die vier Felder an Beiträgen, dazu
-die Admin-Listen und die Löschliste, deren neue Werte es ausgibt. Die Zuordnung kommt aus
-dem Realm: Ein Konto, das mit dem Identity Provider `netzbegruenung` verknüpft ist, trägt
-dort die alte Kennung. Ohne `--ausfuehren` zählt es nur, je Tabelle und Spalte und je
-Collection. Ein zweiter Lauf zählt null.
+das Löschkommando (`person_loeschen.sql`), in Qdrant die vier Felder an Beiträgen. Für die
+Admin-Listen gibt es die neuen Werte aus. Die Löschliste ergänzt es nur: Ein Cookie mit der
+alten Kennung gilt bis zu 14 Tage weiter (Löschkonzept), die alte Zeile muss also bleiben.
+Die Zuordnung kommt aus dem Realm: Ein Konto, das mit dem Identity Provider
+`netzbegruenung` verknüpft ist, trägt dort die alte Kennung. Ohne `--ausfuehren` zählt es
+nur, je Tabelle und Spalte und je Collection. Ein zweiter Lauf zählt null; nur einen Satz,
+der stehen bleibt, weil die neue Kennung am selben Einwurf schon einen hat, nennt er
+wieder.
 
 Ein Konto im Realm entsteht für ein Mitglied sonst erst bei der ersten Anmeldung über den
 Realm. Vor dem Umstellen der BFF legt das Skript es deshalb an (`--konten-anlegen`):
@@ -108,41 +111,47 @@ diesem Konto. Dafür braucht es die Mail-Adresse, denn im Realm ist sie der
 Benutzername. Ist eine Adresse im Realm schon vergeben, etwa über eine Einladung,
 verknüpft das Skript nichts und nennt die Kennung. Ob diese Person ihr Konto aus der
 Einladung behält oder das verknüpfte bekommt, entscheidet ein Admin; ein zweiter Lauf
-stellt sie dann um.
+stellt sie dann um. Für Kennungen aus der Löschliste legt das Skript nie ein Konto an.
 
 Was ohne Konto bleibt, behält seine Kennung: Beta-Zugänge (#488), Konten aus Einladungen
-(die haben schon die Kennung im Realm), Autor-Werte, die keine Person bezeichnen (`system:suchanfrage`, „Gut gesagt Team“), und
-Mitglieder, für die keine Adresse angegeben ist.
+(die haben schon die Kennung im Realm), Autor-Werte, die keine Person bezeichnen
+(`system:suchanfrage`, „Gut gesagt Team“), und Mitglieder, für die keine Adresse
+angegeben ist.
 
-Auf dem Host, im Container des Semantic-Service, in dieser Reihenfolge:
+Das Image des Semantic-Service muss diesen Stand schon enthalten; ein älteres bricht mit
+`ModuleNotFoundError` ab, bevor es etwas schreibt. Auf dem Host, in einer ruhigen Zeit
+(eine Änderung an einem Beitrag während des Laufs kann verloren gehen), in dieser
+Reihenfolge:
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/netzbegruenung/contentgruen/main/mvp/scripts/manual/kennungen_umstellen.py
 # Zugang zum Realm, falls im Container noch nicht gesetzt (Secret nicht in die History):
 export SEMANTIC_SEARCH_KEYCLOAK_URL=<keycloak> SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID=gutgesagt-einladungen
 read -rs SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET; export SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET
-KC="-e SEMANTIC_SEARCH_KEYCLOAK_URL -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET"
-# Weitere Listen: ADMIN_USER_IDS der BFF und die Löschliste
+KC=(-e SEMANTIC_SEARCH_KEYCLOAK_URL -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID
+    -e SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET)
+# ADMIN_USER_IDS der BFF und die Löschliste
 LISTEN=(--liste "ADMIN_USER_IDS=<Wert aus der BFF>"
-        --liste "geloeschte-konten=$(grep -v '^#' <pfad>/geloeschte-konten.txt | paste -sd,)")
+        --loeschliste "$(grep -v '^#' <pfad>/geloeschte-konten.txt | paste -sd, -)")
 
 # 1. Trockenlauf: welche Kennungen haben kein Konto?
-docker exec -i $KC gutgesagt-semantic-search python - "${LISTEN[@]}" --ohne-konto-zeigen \
-  < kennungen_umstellen.py
+docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
+  --ohne-konto-zeigen < kennungen_umstellen.py
 ```
 
-2. Zu jeder Kennung eines Mitglieds aus der Liste die Mail-Adresse aus dem Realm der
+2. Zu jeder Kennung eines Mitglieds aus dieser Liste die Mail-Adresse aus dem Realm der
    Netzbegrünung holen (Admin-Konsole, *Users*, Suche nach der ID) und in eine Datei
    `konten.csv` schreiben, je Zeile `kennung,mail-adresse`. Die Datei enthält
    Personendaten: nur auf dem Host, nach dem Lauf löschen.
 
 ```bash
 docker cp konten.csv gutgesagt-semantic-search:/tmp/konten.csv
-# 3. Trockenlauf mit den anzulegenden Konten; Zahlen prüfen
-docker exec -i $KC gutgesagt-semantic-search python - "${LISTEN[@]}" \
+# 3. Trockenlauf mit den anzulegenden Konten. Deren Zeilen und Beiträge zählt er noch
+#    nicht mit, er nennt nur, wie viele Konten der Lauf anlegt.
+docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
   --konten-anlegen /tmp/konten.csv < kennungen_umstellen.py
 # 4. Backup (mvp/scripts/backup/backup.sh), dann umstellen; Ausgabe protokollieren
-docker exec -i $KC gutgesagt-semantic-search python - "${LISTEN[@]}" \
+docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
   --konten-anlegen /tmp/konten.csv --ausfuehren < kennungen_umstellen.py
 docker exec gutgesagt-semantic-search rm /tmp/konten.csv; rm konten.csv
 ```

@@ -119,6 +119,15 @@ class TestQdrantUmschreiben:
 
         assert qdrant_umschreiben(client, COLLECTION, zuordnung, ausfuehren=True) == 0
 
+    def test_eintrag_ohne_objekt_in_einer_liste_bleibt_stehen(self, client):
+        client.set_payload(
+            COLLECTION, {"authors": ["Altbestand", {"name": ALT}]}, points=[1]
+        )
+
+        qdrant_umschreiben(client, COLLECTION, {ALT: NEU}, ausfuehren=True)
+
+        assert _gelesen(client, 1)["authors"] == ["Altbestand", {"name": NEU}]
+
     def test_leere_zuordnung_aendert_nichts(self, client):
         assert qdrant_umschreiben(client, COLLECTION, {}, ausfuehren=True) == 0
 
