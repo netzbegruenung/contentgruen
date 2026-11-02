@@ -128,7 +128,7 @@ describe('RundgangComponent', () => {
       expect(blase()?.textContent).toContain('Ohne Ziel');
       expect(kegel()).toBeNull();
       expect(fixture.nativeElement.querySelector('.schleier')).not.toBeNull();
-      flush();
+      flush(200); // sucht das fehlende Ziel noch eine Weile nach
     }));
 
     it('beschriftet den letzten Schritt mit „Fertig“, den ersten ohne „Zurück“', fakeAsync(() => {
@@ -141,7 +141,7 @@ describe('RundgangComponent', () => {
       fixture.detectChanges();
       expect(blase()?.querySelector('.weiter')?.textContent?.trim()).toBe('Fertig');
       expect(blase()?.querySelector('.zurueck')).not.toBeNull();
-      flush();
+      flush(200);
     }));
   });
 
