@@ -21,7 +21,7 @@ from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
 from services.beitrag_fuer_aufrufer import Aufrufer, als_responses
 from dtos.beitrag import PostResponse, PostTreffer
-from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE
+from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -123,6 +123,9 @@ async def add_post(
 
     except HTTPException:
         raise
+    except Validierungsfehler as e:
+        logger.error(f"Validation error in add_post: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.error(f"Validation error in add_post: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)

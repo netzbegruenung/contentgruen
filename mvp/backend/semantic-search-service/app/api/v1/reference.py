@@ -14,7 +14,10 @@ from dtos.reference import (
     GetReferenceResponse,
 )
 from services.beitrag_fuer_aufrufer import HERKUNFT, Aufrufer, als_responses
-from services.content.reference_service import ReferenceService
+from services.content.reference_service import (
+    HerkunftsadresseUngueltig,
+    ReferenceService,
+)
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
@@ -157,6 +160,9 @@ async def add_reference(
 
     except HTTPException:
         raise
+    except HerkunftsadresseUngueltig as e:
+        logger.warning(f"Validation error in add_reference: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except Exception as e:
         logger.error(f"Error in add_reference: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

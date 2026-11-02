@@ -18,7 +18,7 @@ from domain.models.image import ImageDbEntry
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
-from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE
+from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -103,6 +103,9 @@ async def add_image(
 
     except HTTPException:
         raise
+    except Validierungsfehler as e:
+        logger.error(f"Validation error in add_image: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.error(f"Validation error in add_image: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)

@@ -13,6 +13,7 @@ from sqlalchemy import text
 
 from core.config import settings
 from core.logging import get_logger
+from core.fehler import INTERNER_FEHLER
 from infrastructure.database.connection import get_app_database
 from services.embeddings.qdrant_embeddings_manager import get_embeddings_manager
 
@@ -295,4 +296,4 @@ async def get_statistics():
 
     except Exception as e:
         logger.error(f"Failed to fetch statistics: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch statistics")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

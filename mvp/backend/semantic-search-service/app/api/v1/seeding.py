@@ -5,6 +5,7 @@ from typing import Dict, Any
 from services.seeding.seeding_service import get_seeding_service
 from services.seeding.seeding_status import SeedingStatus
 from core.logging import get_logger
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -103,7 +104,7 @@ async def get_seeding_status(health_check: bool = False) -> Dict[str, Any]:
                 "error": type(e).__name__,
             }
         # Normal mode: raise HTTP exception
-        raise HTTPException(status_code=500, detail="Error getting seeding status")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/health")
@@ -156,7 +157,7 @@ async def start_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error starting seeding")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.post("/reset")
@@ -174,7 +175,7 @@ async def reset_seeding() -> Dict[str, str]:
         return {"message": "Seeding status reset successfully", "status": "reset"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error resetting seeding")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/needs-seeding")
@@ -246,7 +247,7 @@ async def resume_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error resuming seeding")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.post("/stop")
@@ -277,7 +278,7 @@ async def stop_seeding() -> Dict[str, str]:
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error stopping seeding")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/files")
@@ -346,4 +347,4 @@ async def get_seeding_files() -> Dict[str, Any]:
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error getting file information")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

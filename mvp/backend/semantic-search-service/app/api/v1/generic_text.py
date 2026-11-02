@@ -32,7 +32,7 @@ from domain.models.generic_text import GenericTextReference
 from domain.models.reference import Reference
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
-from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE
+from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 
 router = APIRouter()
@@ -259,6 +259,9 @@ async def add_generic_text(
 
     except HTTPException:
         raise
+    except Validierungsfehler as e:
+        logger.warning(f"Validation error in add_generic_text: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.warning(f"Validation error in add_generic_text: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)

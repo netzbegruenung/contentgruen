@@ -51,7 +51,7 @@ def _ist_gezeigter(
 
 
 from fastapi import Query
-from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE
+from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
 
 # Endpoint to search commentary by UUID
@@ -271,6 +271,9 @@ async def add_commentary(
 
     except HTTPException:
         raise
+    except Validierungsfehler as e:
+        logger.warning(f"Validation error in add_commentary: {type(e).__name__}")
+        raise HTTPException(status_code=400, detail=e.antworttext)
     except ValueError as e:
         logger.warning(f"Validation error in add_commentary: {type(e).__name__}")
         raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
