@@ -25,7 +25,19 @@ describe('ImpressumComponent', () => {
 
     expect(text).not.toMatch(/\b(Sie|Ihr|Ihre|Ihnen)\b/);
     expect(text).not.toContain('Nutzerinnen und Nutzer');
-    expect(abschnitt(seite, 'Kontaktstelle nach Art. 11 und 12 DSA')).toContain('kannst du uns');
+    expect(abschnitt(seite, 'Kontaktstelle nach Art. 11 und 12 DSA')).toContain('auch ohne Konto nutzen kannst');
+  });
+
+  it('nennt für Meldungen nach Art. 16 DSA die Meldefunktion und die E-Mail-Adresse als gleichwertige Wege (#521)', () => {
+    const text = abschnitt(seite, 'Kontaktstelle nach Art. 11 und 12 DSA');
+
+    expect(text).toContain('Meldungen nach Artikel 16 DSA gehen über die Meldefunktion an jedem Beitrag');
+    expect(text).toContain('oder per E-Mail an');
+    expect(text).not.toContain('richtest du bitte per E-Mail an');
+  });
+
+  it('nennt keine Verantwortliche nach § 18 Abs. 2 MStV, weil Gut gesagt kein journalistisch-redaktionelles Angebot ist (#521)', () => {
+    expect(normalisiert(seite.textContent)).not.toContain('MStV');
   });
 
   it('trägt das Tagesdatum der letzten Änderung als Stand, nicht nur den Monat (#498)', () => {

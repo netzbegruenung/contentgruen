@@ -32,7 +32,7 @@ Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner da
 mehr offen** — alle drei Texte sind ausformuliert, die Datenschutzerklärung zuletzt. Die
 Einträge bleiben stehen, weil in ihrem Eintrag-Feld steht, wie der jeweilige Punkt gelöst
 wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Zustimmung beim
-Anmelden (Abschnitt 5, #429; bleibt vorerst, Ablösung über #521), die USt-IdNr. im Impressum
+Anmelden (Abschnitt 5, #429; bleibt vorerst, NB §10 hängt seit #521 nicht mehr daran), die USt-IdNr. im Impressum
 (I11) und die Prüfliste am Ende; die Fragen an die Datenschutzbeauftragte stehen in
 `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md`.
 
@@ -84,7 +84,9 @@ Einträge und Text des Abschnitts: [`4-fehlende-vorgaenge/`](4-fehlende-vorgaeng
 Absende-Knopf jedes Beitragsformulars einbezogen; keine Checkbox beim Anmelden, kein neues Feld
 je Konto. Umgesetzt mit #415: NB §2 sagt das (Stand 2. November 2026), der Hinweis verlinkt
 CC0 und die Nutzungsbedingungen. Die Keycloak-Pflichtaktion aus #429 bleibt vorerst daneben;
-ihre Ablösung läuft über #521 (Entscheidung Maintainer, 02.11.2026).
+ihre Ablösung läuft über #521 (Entscheidung Maintainer, 02.11.2026). Seit #521 holt §10 die
+Zustimmung zu geänderten Bedingungen ebenfalls über den Hinweis ein; die Pflichtaktion nennt er
+nur noch als Möglichkeit.
 
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
 von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
@@ -126,7 +128,9 @@ die du einstellst“, Freigabe beim Absenden und beim Satz beim Tippen in Abschn
 Nutzungsbedingungen erst nach ausdrücklicher Zustimmung beim Anmelden (§10, statt der früheren
 Zustimmung durch Schweigen und Weiternutzen; BGH XI ZR 26/20). Dafür wird die Pflichtaktion aus
 #429 je wesentlich geändertem Stand für alle Konten erneut ausgelöst, und alle werden abgemeldet;
-reine Korrekturen gelten ohne erneute Zustimmung (Entscheidung Maintainer, 30.10.2026).
+reine Korrekturen gelten ohne erneute Zustimmung (Entscheidung Maintainer, 30.10.2026). Seit #521
+gilt ein geänderter Stand mit dem nächsten Absenden unter dem Hinweis, der immer den aktuellen
+Stand verlinkt; die Pflichtaktion fragt vorerst daneben, das Abmelden aller entfällt.
 §4 räumt ein Nutzungsrecht ein, wo der CC0-Verzicht nach deutschem Recht nicht wirkt (Ersatzlizenz nach Abschnitt 3 der CC0-Erklärung).
 Stände und Ablauf: `docs/nutzungsbedingungen-staende/`. Die Juristin prüft beide Stellen und die
 Ausnahme für Korrekturen mit (#296); live erst danach.
@@ -134,8 +138,8 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 **Offen:**
 - Juristische Prüfung beider Wortlaute und der geänderten §4/§10: #296.
 - Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Ablösung über #521
-  (Entscheidung Maintainer, 02.11.2026). NB §10 holt die Zustimmung zu
-  geänderten Bedingungen heute über sie ein; fällt sie weg, braucht §10 einen anderen Weg.
+  (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
+  Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem Hinweis.
   Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr, ebenso die
   Zustimmung von Personen, die nur bewerten.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
