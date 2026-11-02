@@ -72,8 +72,9 @@ $gutgesagt-light-green-palette: (
   )
 );
 
-// Define Material palettes using M3 syntax
-$gutgesagt-primary: mat.m2-define-palette($gutgesagt-green-palette, 500, 300, 800);
+// Ein Primaergruen: color="primary" ist Tanne (800), wie die Knoepfe mit
+// .dark-green-button. Vorher zog es Klee (500), und beide standen nebeneinander (#512).
+$gutgesagt-primary: mat.m2-define-palette($gutgesagt-green-palette, 800, 300, 900);
 $gutgesagt-accent: mat.m2-define-palette($gutgesagt-light-green-palette, 500, 300, 700);
 $gutgesagt-warn: mat.m2-define-palette(mat.$m2-red-palette);
 
@@ -179,6 +180,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --post-bg: #fde3cf; // Apricot for social-media posts
   --statement-bg: #f5f5f5; // Light gray: statements, Einwuerfe ohne Beitrag
   --kartenliste-bg: #f4f4f2; // Grund unter Kartenlisten, damit Karten als Karten lesbar sind
+  --such-band: #f6ff7c; // Gelbes Band hinter der Suche auf der Startseite; bewusst nicht Sonne (#512)
   --einwurf-grund: #faf6ec; // Papier/Sand: offene und destillierte Einwuerfe im Fangkorb, Saetze darin bleiben weiss
 
   // Neutral colors
@@ -186,6 +188,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --border-color: #ccc;
   --hover-bg: #f5f5f5;
   --selected-bg: #e6f0d2; // Keep for backward compatibility
+  --auswahl-grund: rgba(0, 84, 55, 0.07); // Tanne-Hauch: gewaehlter Ansichts-Umschalter, aktiver Admin-Link
   --disabled-bg: #f5f5f5;
   --disabled-color: rgba(0, 0, 0, 0.38);
 
@@ -199,9 +202,27 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+// Dialogtitel wie die Seitentitel: GrueneType in Tanne, Groesse der mobilen h2.
+// Vorher PT Sans bold schwarz (Melden, Feedback, Profilbild), nur die Hilfe gruen (#512).
+.mat-mdc-dialog-container {
+  --mat-dialog-subhead-font: GrueneType, Roboto, sans-serif;
+  --mat-dialog-subhead-size: 28px;
+  --mat-dialog-subhead-line-height: 1.1;
+  --mat-dialog-subhead-weight: 400;
+  --mat-dialog-subhead-tracking: 0.00735em;
+  --mat-dialog-subhead-color: var(--primary-dark);
+}
+
+// Hilfe als Seitenleiste rechts (hilfeOeffnen): ohne runde Ecken, randlos an der Kante.
+// panelClass liegt im Overlay ausserhalb der Komponente, deshalb hier.
+.hilfe-seitenleiste {
+  --mat-dialog-container-shape: 0;
+  --mat-dialog-supporting-text-color: var(--text-primary);
+}
+
 // Utility classes for common patterns
 .gutgesagt-primary-bg {
-  background-color: var(--primary-main) !important;
+  background-color: var(--primary-dark) !important;
   color: white !important;
 }
 
@@ -223,7 +244,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
 // Material button customizations
 .mat-mdc-raised-button {
   &.gutgesagt-primary {
-    background-color: var(--primary-main) !important;
+    background-color: var(--primary-dark) !important;
     color: white !important;
   }
 
@@ -243,10 +264,12 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   }
 }
 
-// Consistent button border radius
+// Consistent button border radius. Outlined heisst seit Material 17
+// .mat-mdc-outlined-button; mit dem alten Namen allein bekamen Outlined-Knoepfe 4 px (#512).
 .mat-mdc-raised-button,
 .mat-mdc-flat-button,
-.mat-mdc-stroked-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-outlined-button,
 .mat-mdc-button {
   border-radius: var(--border-radius-medium) !important; // 8px for all standard buttons
 }

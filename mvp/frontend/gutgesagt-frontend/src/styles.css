@@ -232,9 +232,9 @@ body {
 .card-section {
     padding: var(--spacing-lg) var(--page-margin);
     margin-bottom: var(--section-gap);
-    background: var(--surface);
+    background: var(--bg-surface);
     box-shadow: var(--elevation-2);
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-medium);
     margin-left: var(--page-margin);
     margin-right: var(--page-margin);
 }
@@ -421,7 +421,7 @@ a:hover {
 }
 
 .primary-button {
-    background-color: var(--primary-main) !important;
+    background-color: var(--primary-dark) !important;
     color: white !important;
 }
 
@@ -626,7 +626,7 @@ a:hover {
     left: -9999px;
     z-index: var(--z-index-dropdown);
     padding: var(--spacing-sm) var(--spacing-md);
-    background-color: var(--primary-main);
+    background-color: var(--primary-dark);
     color: white;
     text-decoration: none;
 }
@@ -679,13 +679,16 @@ a:hover {
     overflow-y: auto;
 }
 
-/* Fix for dialog container height issues */
-.mat-mdc-dialog-container {
+/*
+ * Fix for dialog container height issues. Nicht fuer die Hilfe als Seitenleiste
+ * (hilfeOeffnen): Sie fuellt die volle Hoehe und laesst nur ihren Inhalt scrollen (#512).
+ */
+.cdk-overlay-pane:not(.hilfe-seitenleiste) .mat-mdc-dialog-container {
     display: block !important;
     position: relative !important;
 }
 
-.mat-mdc-dialog-surface {
+.cdk-overlay-pane:not(.hilfe-seitenleiste) .mat-mdc-dialog-surface {
     display: block !important;
     background: white !important;
     max-height: 90vh !important;
@@ -702,7 +705,7 @@ body.cdk-global-scrollblock {
 
 /* Success Snackbar Styling for Contribution Feedback */
 .mat-mdc-snack-bar-container.success-snackbar {
-    --mdc-snackbar-container-color: #4caf50;
+    --mdc-snackbar-container-color: var(--primary-dark);
     --mdc-snackbar-supporting-text-color: white;
     --mat-snack-bar-button-color: white;
 }

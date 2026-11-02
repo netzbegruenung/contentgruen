@@ -2,7 +2,7 @@
 // This module contains common styles to reduce duplication
 //
 // Optik fuer alle Formulare: durchgehend weiss, keine nummerierten Schrittkoepfe
-// und keine Trennlinien zwischen den Abschnitten, Knoepfe in --primary-main.
+// und keine Trennlinien zwischen den Abschnitten, Knoepfe in --primary-dark (Tanne).
 
 @use 'breakpoints' as bp;
 
@@ -83,7 +83,7 @@
 
   .context-section {
     background: white;
-    border-radius: 16px;
+    border-radius: var(--border-radius-large);
     padding: 32px;
     border: 2px solid #e8f5e9;
     position: relative;
@@ -151,7 +151,7 @@
   .toggle-icon {
     font-size: 22px;
     vertical-align: middle;
-    color: var(--primary-color);
+    color: var(--primary-dark);
   }
 }
 
@@ -280,7 +280,7 @@
     }
 
     mat-icon {
-      color: var(--primary-color);
+      color: var(--primary-dark);
       font-size: 20px;
       width: 20px;
       height: 20px;
@@ -342,7 +342,7 @@
     padding: 10px 20px;
     background: #f8f9fa;
     border-radius: 20px;
-    border: 1px solid var(--primary-color);
+    border: 1px solid var(--primary-dark);
     animation: fadeInScale 0.4s ease-out;
 
     @include bp.mobile-only {
@@ -362,7 +362,7 @@
   }
 
   .reply-arrow {
-    color: var(--primary-color);
+    color: var(--primary-dark);
     font-size: 28px;
     animation: bounce 2s infinite;
 
@@ -393,7 +393,9 @@
 @mixin content-wrapper {
   .content-wrapper {
     display: grid;
-    grid-template-columns: 3fr 2fr; // More space for form, less for preview
+    // minmax(0, …): Ohne Untergrenze 0 setzt sich die Breite der Vorschaukarte gegen
+    // die Spalte durch und die Vorschau ragt aus dem Rahmen (#512).
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: var(--spacing-lg);
     align-items: start;
     width: 100%;
@@ -402,7 +404,7 @@
     background: white;
     padding: 32px;
     border: 2px solid #e8f5e9;
-    border-radius: 16px;
+    border-radius: var(--border-radius-large);
 
     &.connected-sections {
       margin-top: -24px;
@@ -477,7 +479,7 @@
 
     h3 {
       margin: 0;
-      color: #666;
+      color: var(--primary-dark);
       font-size: 1.1rem;
       font-weight: 500;
       flex: 1;
@@ -606,7 +608,7 @@
 
   .submit-btn {
     min-width: 200px;
-    background-color: var(--primary-main) !important;
+    background-color: var(--primary-dark) !important;
     color: white !important;
 
     &:hover:not([disabled]) {
@@ -658,7 +660,7 @@
     font-size: 64px;
     width: 64px;
     height: 64px;
-    color: var(--success);
+    color: var(--success-color);
     margin-bottom: var(--spacing-md);
   }
 
@@ -666,15 +668,15 @@
     font-size: 64px;
     width: 64px;
     height: 64px;
-    color: var(--error);
+    color: var(--error-color);
     margin-bottom: var(--spacing-md);
   }
 
   .error-message {
-    color: var(--error);
+    color: var(--error-color);
     background: rgba(211, 47, 47, 0.1);
     padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-small);
     margin-bottom: var(--spacing-lg);
   }
 
@@ -684,7 +686,7 @@
     justify-content: center;
 
     button[mat-raised-button] {
-      background-color: var(--primary-main) !important;
+      background-color: var(--primary-dark) !important;
       color: white !important;
 
       &:hover {
@@ -711,7 +713,7 @@
     }
 
     .mat-mdc-text-field-wrapper {
-      background-color: var(--surface) !important;
+      background-color: var(--bg-surface) !important;
     }
 
     .mat-mdc-form-field-focus-overlay {
@@ -730,12 +732,12 @@
       .mdc-notched-outline__leading,
       .mdc-notched-outline__notch,
       .mdc-notched-outline__trailing {
-        border-color: var(--primary) !important;
+        border-color: var(--primary-dark) !important;
       }
     }
 
     .mat-mdc-progress-spinner circle {
-      stroke: var(--primary) !important;
+      stroke: var(--primary-dark) !important;
     }
   }
 }

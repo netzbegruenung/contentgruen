@@ -1,7 +1,7 @@
 import { Component, ElementRef, Inject, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -142,4 +142,15 @@ export class ReportDialogComponent {
   close(gemeldet: boolean) {
     this.dialogRef.close(gemeldet);
   }
+}
+
+/**
+ * Oeffnet den Melde-Dialog: 500 px breit, auf dem Handy hoechstens 95 % der
+ * Fensterbreite wie Feedback und Profilbild (#512).
+ */
+export function meldeDialogOeffnen(
+  dialog: MatDialog,
+  data: ReportDialogData,
+): MatDialogRef<ReportDialogComponent> {
+  return dialog.open(ReportDialogComponent, { width: '500px', maxWidth: '95vw', data });
 }

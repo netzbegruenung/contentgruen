@@ -1,3 +1,66 @@
+/* Seitenleiste: Kopf fest, Inhalt fuellt den Rest und scrollt (#512) */
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.hilfe-kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: 20px 12px 16px 24px;
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.hilfe-kopf h2 {
+    margin: 0;
+    padding: 0;
+    font-size: var(--font-size-h2-desktop);
+}
+
+/* Material setzt vor den Titel eine Zeile Abstand; der Kopf hat eigenes Padding */
+.hilfe-kopf h2::before {
+    display: none;
+}
+
+.hilfe-schliessen {
+    flex-shrink: 0;
+    min-height: 44px;
+    color: var(--primary-dark);
+}
+
+.hilfe-inhalt {
+    flex: 1 1 auto;
+    max-height: none;
+    overflow-y: auto;
+    padding: 16px 24px 32px;
+}
+
+/* Zwischenueberschriften eine Stufe kleiner, damit die Seitenleiste ruhig bleibt */
+.hilfe-inhalt h3 {
+    color: var(--primary-dark);
+    font-size: 24px;
+    line-height: 1.15;
+    margin: 24px 0 8px;
+}
+
+@media (max-width: 599px) {
+    .hilfe-kopf {
+        padding: 12px 4px 12px 16px;
+    }
+
+    .hilfe-kopf h2 {
+        font-size: var(--font-size-h2-mobile);
+    }
+
+    .hilfe-inhalt {
+        padding: 12px 16px 24px;
+    }
+}
+
 .about-link-section {
     margin-top: 30px;
     padding: 20px;

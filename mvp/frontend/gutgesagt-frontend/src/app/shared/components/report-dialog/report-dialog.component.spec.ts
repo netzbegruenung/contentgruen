@@ -4,7 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-import { ReportDialogComponent } from './report-dialog.component';
+import { ReportDialogComponent, meldeDialogOeffnen } from './report-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 import { ERFUNDENES_MELDEN } from '../../schreibregeln';
 import { environment } from '../../../../environments/environment';
 
@@ -56,6 +57,28 @@ describe('ReportDialogComponent', () => {
   function meldenKnopf(): HTMLButtonElement {
     return element().querySelector('[data-testid="melden-senden"]') as HTMLButtonElement;
   }
+
+  // Design-Audit A3/B8 (#512): Auf dem Handy war der Dialog rechts abgeschnitten
+  // (min-width 400 px in einem 312 px breiten Dialog), die Felder grau hinterlegt.
+  describe('auf dem Handy', () => {
+    it('oeffnet hoechstens 95 % der Fensterbreite breit', () => {
+      const dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
+
+      meldeDialogOeffnen(dialog, { contentId: 'id', contentType: 'commentary' });
+
+      expect(dialog.open).toHaveBeenCalledWith(
+        ReportDialogComponent,
+        jasmine.objectContaining({ maxWidth: '95vw', data: { contentId: 'id', contentType: 'commentary' } }),
+      );
+    });
+
+    it('erzwingt keine Mindestbreite und nutzt Felder mit Kontur wie ueberall', () => {
+      expect(getComputedStyle(element().querySelector('.report-dialog')!).minWidth).toBe('0px');
+      const felder = Array.from(element().querySelectorAll('mat-form-field'));
+      expect(felder.length).toBeGreaterThan(0);
+      felder.forEach((f) => expect(f.classList).toContain('mat-form-field-appearance-outline'));
+    });
+  });
 
   async function melden() {
     meldenKnopf().click();

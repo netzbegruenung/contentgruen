@@ -41,7 +41,7 @@
 .such-band {
   margin-top: 16px;
   padding: 16px;
-  background-color: rgb(246, 255, 124);
+  background-color: var(--such-band);
 
   @media (max-width: 599px) {
     margin-top: 12px;

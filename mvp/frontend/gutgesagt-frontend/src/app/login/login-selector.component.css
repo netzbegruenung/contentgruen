@@ -9,7 +9,7 @@
 
 .welcome-section h1 {
     margin-bottom: 20px;
-    color: #43a047;
+    color: var(--primary-dark);
 }
 
 .welcome-text {
@@ -20,9 +20,9 @@
 }
 
 .emphasis {
-    color: #43a047;
+    color: var(--primary-dark);
     font-weight: 500;
-    border-bottom: 2px dotted #43a047;
+    border-bottom: 2px dotted var(--primary-main);
     cursor: help;
 }
 
@@ -48,7 +48,7 @@
 
 .registration-expansion-panel {
     background: #f8f9fa;
-    border-left: 4px solid #43a047;
+    border-left: 4px solid var(--primary-main);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -65,14 +65,14 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #43a047;
+    color: var(--primary-dark);
     font-size: 16px;
     font-weight: 500;
     width: 100%;
 }
 
 .registration-panel-title .info-icon {
-    color: #43a047;
+    color: var(--primary-dark);
     font-size: 24px;
     width: 24px;
     height: 24px;
@@ -116,7 +116,7 @@
 }
 
 .registration-option .option-icon {
-    color: #66bb6a;
+    color: var(--primary-dark);
     font-size: 24px;
     width: 24px;
     height: 24px;
@@ -130,7 +130,7 @@
 
 .registration-option .option-text strong {
     display: block;
-    color: #2e7d32;
+    color: var(--primary-dark);
     font-size: 16px;
     margin-bottom: 6px;
 }
@@ -143,16 +143,16 @@
 }
 
 .registration-option .email-link {
-    color: #43a047;
+    color: var(--primary-dark);
     text-decoration: none;
     font-weight: 500;
-    border-bottom: 1px dotted #43a047;
+    border-bottom: 1px dotted var(--primary-main);
     transition: all 0.2s ease;
 }
 
 .registration-option .email-link:hover {
-    color: #2e7d32;
-    border-bottom-color: #2e7d32;
+    color: var(--primary-dark);
+    border-bottom-color: var(--primary-main);
 }
 
 .login-selector-container {
@@ -223,24 +223,17 @@
     text-transform: none;
 }
 
-.keycloak-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.keycloak-button:disabled {
-    background: linear-gradient(135deg, #b0b0b0 0%, #9e9e9e 100%);
-    color: rgba(255, 255, 255, 0.7);
-}
-
+/* Beide Anmeldewege im einen Primaergruen, ohne Verlaeufe (#512) */
+.keycloak-button,
 .gutgesagt-button {
-    background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+    background: var(--primary-dark);
     color: white;
 }
 
+.keycloak-button:disabled,
 .gutgesagt-button:disabled {
-    background: linear-gradient(135deg, #b0b0b0 0%, #9e9e9e 100%);
-    color: rgba(255, 255, 255, 0.7);
+    background: var(--disabled-bg);
+    color: var(--disabled-color);
 }
 
 .login-icon {

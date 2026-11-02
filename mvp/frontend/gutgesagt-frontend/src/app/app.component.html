@@ -35,9 +35,9 @@
 
                 <!-- Desktop Header - Hidden on mobile -->
                 <div class="component-box" *ngIf="!isMobile && !isTablet">
-                    <div class="header">
+                    <div class="header" [class.header--titel-lang]="titelLang">
                 <div class="left-header-box">
-                    <h1 class="desktop-header-title">
+                    <h1 class="desktop-header-title" [class.desktop-header-title--lang]="titelLang">
                         <button mat-icon-button
                                 *ngIf="showBackButton"
                                 (click)="zurueck()"
@@ -96,7 +96,8 @@
                     <mat-menu #profilmenue="matMenu">
                         <button mat-menu-item type="button" class="profilmenue-eintrag"
                             (click)="navigateToMeineBeitraege()">
-                            <span><span aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span> Meine Beiträge</span>
+                            <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
+                            <span>Meine Beiträge</span>
                         </button>
                         <button mat-menu-item type="button" class="profilmenue-eintrag" (click)="openProfilbildDialog()">
                             <mat-icon>face</mat-icon>
@@ -108,42 +109,46 @@
                         </button>
                     </mat-menu>
 
-                    <!-- Desktop buttons -->
-                    <ng-container *ngIf="!isMobile && !isTablet">
-                        <ng-container *ngIf="userInfo?.isAuthenticated">
-                            <span class="header-link text-emphasis"
-                            *ngIf="userInfo?.isAdmin"
-                            role="button" tabindex="0" aria-label="Admin Dashboard"
-                            (click)="navigateToAdminDashboard()"
-                            (keydown.enter)="navigateToAdminDashboard()"
-                            (keydown.space)="navigateToAdminDashboard()">📊 Admin</span>
-
-                            <span class="header-link text-emphasis"
-                            role="button" tabindex="0" aria-label="Abmelden"
-                            (click)="logout()"
-                            (keydown.enter)="logout()"
-                            (keydown.space)="logout()">Abmelden</span>
-
-                            <span class="header-link text-emphasis"
-                            role="button" tabindex="0" aria-label="Fangkorb anzeigen"
+                    <!--
+                        Desktop-Kopf in einer Zeile mit zwei Stilen: Textlinks (Admin,
+                        Hier fehlt eine Antwort) und runde Icon-Knoepfe a 44 px; dazu der
+                        eine Primaerknopf. Abmelden steht nur im Profilmenue, Fangkorb und
+                        Feedback sind Icon-Knoepfe mit Text fuer Screenreader (#512).
+                    -->
+                    <ng-container *ngIf="userInfo?.isAuthenticated">
+                        <button mat-icon-button type="button"
                             (click)="navigateToFangkorbView()"
-                            (keydown.enter)="navigateToFangkorbView()"
-                            (keydown.space)="navigateToFangkorbView()">{{ kettenIcons.fangkorb }} Fangkorb</span>
+                            class="mat-elevation-z1"
+                            matTooltip="Fangkorb"
+                            data-testid="fangkorb-knopf">
+                            <span class="header-emoji" aria-hidden="true">{{ kettenIcons.fangkorb }}</span>
+                            <span class="cdk-visually-hidden">Fangkorb</span>
+                        </button>
 
-                            <a class="header-link text-emphasis" [routerLink]="hierFehltEineAntwortPfad">Hier fehlt eine Antwort</a>
+                        <!-- Unter 1200 px werden die Textlinks zu runden Icon-Knoepfen, der
+                             Text bleibt fuer Screenreader (kopf-text). -->
+                        <a class="header-link" *ngIf="userInfo?.isAdmin" routerLink="/admin/dashboard" matTooltip="Admin"
+                           [matTooltipDisabled]="!kopfSchmal">
+                            <mat-icon class="kopf-icon" aria-hidden="true">admin_panel_settings</mat-icon>
+                            <span class="kopf-text">Admin</span>
+                        </a>
 
-                            <button mat-raised-button class="dark-green-button" (click)="navigateToContributeView()">
-                                <mat-icon>add</mat-icon> Beitragen
-                            </button>
-                        </ng-container>
-                        <ng-container *ngIf="!userInfo?.isAuthenticated">
-                            <button mat-raised-button class="dark-green-button" (click)="login()">
-                                Anmelden
-                            </button>
-                        </ng-container>
+                        <a class="header-link" [routerLink]="hierFehltEineAntwortPfad" matTooltip="Hier fehlt eine Antwort"
+                           [matTooltipDisabled]="!kopfSchmal">
+                            <mat-icon class="kopf-icon" aria-hidden="true">contact_support</mat-icon>
+                            <span class="kopf-text">Hier fehlt eine Antwort</span>
+                        </a>
+
+                        <button mat-raised-button class="dark-green-button beitragen-knopf" (click)="navigateToContributeView()">
+                            <mat-icon>add</mat-icon> <span class="beitragen-text">Beitragen</span>
+                        </button>
+                    </ng-container>
+                    <ng-container *ngIf="!userInfo?.isAuthenticated">
+                        <button mat-raised-button class="dark-green-button" (click)="login()">
+                            Anmelden
+                        </button>
                     </ng-container>
 
-                    <!-- Always visible buttons - Hide help button on mobile since it's in burger menu -->
                     <!-- Schnell einwerfen: der Fangkorb lebt davon, immer einen Klick
                          entfernt zu sein - deshalb ein eigener Knopf statt eines Wegs
                          durch die Beitragsauswahl. -->
@@ -151,12 +156,15 @@
                         *ngIf="userInfo?.isAuthenticated"
                         (click)="navigateToEinwerfenView()"
                         class="mat-elevation-z1"
+                        matTooltip="Schnell einwerfen"
                         aria-label="Schnell einwerfen">
                         <span class="header-emoji" aria-hidden="true">{{ kettenIcons.einwerfen }}</span>
                     </button>
 
-                    <button mat-button (click)="openFeedbackDialog()" data-testid="feedback-knopf">
-                        <mat-icon>feedback</mat-icon> Feedback
+                    <button mat-icon-button type="button" (click)="openFeedbackDialog()" class="mat-elevation-z1"
+                        matTooltip="Feedback" data-testid="feedback-knopf">
+                        <mat-icon aria-hidden="true">feedback</mat-icon>
+                        <span class="cdk-visually-hidden">Feedback</span>
                     </button>
 
                     <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button"

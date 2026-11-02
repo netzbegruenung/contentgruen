@@ -57,7 +57,7 @@
 }
 
 .stimme-knopf.active-button {
-  background-color: var(--primary-main) !important;
+  background-color: var(--primary-dark) !important;
   color: white !important;
 }
 
@@ -94,7 +94,7 @@
 
   &.copy-success {
     @include animations.copy-success-animation;
-    background-color: var(--primary-main) !important;
+    background-color: var(--primary-dark) !important;
     color: white !important;
   }
 }

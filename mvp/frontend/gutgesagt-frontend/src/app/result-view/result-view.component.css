@@ -196,7 +196,7 @@ mat-sidenav-content {
 }
 
 .mobile-menu-about a {
-  color: var(--primary-color);
+  color: var(--primary-dark);
   text-decoration: none;
 }
 
@@ -239,16 +239,19 @@ mat-sidenav-content {
   width: 100%;
 }
 
+/* Ansichts-Umschalter wie Fangkorb-Tabs und Kurz/Mittel/Lang: graue Kontur,
+   gewaehlt Tanne-Hauch mit Tanne-Text und Unterstrich (#512). */
 .mobile-tab-bar {
   display: flex;
-  width: 100%;
-  background: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  width: calc(100% - 2 * var(--spacing-md));
+  margin: var(--spacing-xs) var(--spacing-md) var(--spacing-sm);
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--border-radius-medium);
   position: sticky;
   top: 0;
   z-index: 10;
-  margin-top: var(--spacing-xs); /* Small gap between search and tabs */
 }
 
 .tab-button {
@@ -262,28 +265,32 @@ mat-sidenav-content {
   align-items: center;
   justify-content: center;
   gap: 0 6px;
-  padding: 12px 4px;
+  padding: 8px 4px;
   background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--transition-fast);
   font-family: inherit;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.6);
+  font-weight: 500;
+  color: var(--text-secondary);
   position: relative;
-  min-height: 48px;
+  min-height: 44px;
+}
+
+.tab-button + .tab-button {
+  border-left: 1px solid var(--divider-color);
 }
 
 .tab-button:hover:not(:disabled) {
-  background: rgba(0, 137, 57, 0.04);
+  background: var(--hover-bg);
 }
 
 .tab-button.active {
   color: var(--primary-dark);
-  font-weight: 500;
-  border-bottom-color: var(--primary-dark);
-  background: rgba(0, 137, 57, 0.08);
+  font-weight: 700;
+  background: var(--auswahl-grund);
+  box-shadow: inset 0 -2px 0 var(--primary-dark);
 }
 
 .tab-button:disabled {
@@ -454,7 +461,7 @@ mat-sidenav-content {
 
 .unified-empty-state .suggestions li:before {
   content: "•";
-  color: var(--primary);
+  color: var(--primary-dark);
   font-weight: bold;
   position: absolute;
   left: 0;
@@ -495,7 +502,7 @@ mat-sidenav-content {
 }
 
 .action-section-unified .motivation {
-  color: var(--primary);
+  color: var(--primary-dark);
   font-style: italic;
   margin: 0 auto 2rem;
   max-width: 500px;

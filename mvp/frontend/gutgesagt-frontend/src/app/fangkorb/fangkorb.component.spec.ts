@@ -248,6 +248,18 @@ describe('FangkorbComponent', () => {
       fixture.detectChanges();
     }
 
+    // Design-Audit B3 (#512): Ansichts-Umschalter sind sekundaer, gefuelltes Gruen
+    // bleibt Aktionen vorbehalten.
+    it('zeichnet den gewaehlten Tab als Tanne-Hauch mit Tanne-Text, nicht gefuellt', () => {
+      erstellen(jeTab());
+      const [gewaehlt, anderer] = tabs().map((tab) => getComputedStyle(tab));
+
+      expect(gewaehlt.color).toBe('rgb(0, 84, 55)');
+      expect(gewaehlt.backgroundColor).toBe('rgba(0, 84, 55, 0.07)');
+      expect(gewaehlt.boxShadow).toContain('inset');
+      expect(anderer.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    });
+
     it('gibt jedem Tab seinen Bereich, zeigt nur den gewaehlten und hat nur einen Tab-Stopp', () => {
       erstellen(jeTab());
       const bereich = (tab: HTMLButtonElement): HTMLElement =>

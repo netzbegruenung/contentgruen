@@ -6,7 +6,7 @@
       Warum meldest du diesen Beitrag? Menschen aus unserem Team prüfen die Meldung.
     </p>
 
-    <mat-form-field appearance="fill" class="full-width">
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Grund</mat-label>
       <mat-select [(ngModel)]="selectedReason">
         <mat-option *ngFor="let reason of reasons" [value]="reason.value">
@@ -15,7 +15,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="full-width">
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ begruendungPflicht ? 'Warum ist der Beitrag rechtswidrig?' : 'Beschreibung (optional)' }}</mat-label>
       <textarea
         matInput
@@ -26,7 +26,7 @@
         [placeholder]="begruendungPflicht ? 'Welches Gesetz verletzt er, und wodurch?' : 'Was genau stimmt nicht?'"></textarea>
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="full-width">
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Dein Name (optional)</mat-label>
       <input matInput
              name="melder_name"
@@ -35,7 +35,7 @@
              autocomplete="name" />
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="full-width">
+    <mat-form-field appearance="outline" class="full-width">
       <mat-label>Deine E-Mail-Adresse (optional)</mat-label>
       <input matInput
              type="email"

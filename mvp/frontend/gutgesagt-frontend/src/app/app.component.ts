@@ -18,7 +18,7 @@ import { RueckmeldungService } from './services/rueckmeldung.service';
 import { ProfilbildService } from './services/profilbild.service';
 import { rueckkehrzielLesen, rueckkehrzielLoeschen } from './login/rueckkehrziel';
 import { MatDialog } from '@angular/material/dialog';
-import { HelpDialogComponent } from './help-dialog/help-dialog.component';
+import { hilfeOeffnen } from './help-dialog/help-dialog.component';
 import { feedbackDialogOeffnen } from './shared/feedback/feedback-dialog.component';
 import { profilbildDialogOeffnen } from './shared/profilbild/profilbild-dialog.component';
 import { FooterComponent } from "./footer/footer.component";
@@ -66,6 +66,16 @@ export class AppComponent implements OnInit, OnDestroy {
   isMobile: boolean = false;
   isTablet: boolean = false;
 
+  /** Laengere Titel setzt der Desktop-Kopf kleiner, damit sie in eine Zeile passen. */
+  static readonly LANGER_TITEL = 16;
+
+  get titelLang(): boolean {
+    return this.pageTitle.length > AppComponent.LANGER_TITEL;
+  }
+
+  /** Unter 1200 px zeigt der Kopf die Textlinks als Icons; dann helfen Tooltips. */
+  kopfSchmal = false;
+
   /** Kommt aus dem ProfilbildService: abgeleitet oder selbst gewaehlt (#437). */
   get selectedProfilePictureUrl(): string {
     return this.profilbild.bild();
@@ -91,9 +101,11 @@ export class AppComponent implements OnInit, OnDestroy {
     // Set up responsive breakpoint detection
     this.breakpointObserver.observe([
       '(max-width: 599px)',
-      '(min-width: 600px) and (max-width: 959px)'
+      '(min-width: 600px) and (max-width: 959px)',
+      '(max-width: 1199px)'
     ]).pipe(takeUntil(this.destroy$))
       .subscribe(result => {
+        this.kopfSchmal = !!result.breakpoints['(max-width: 1199px)'];
         this.isMobile = result.breakpoints['(max-width: 599px)'];
         this.isTablet = result.breakpoints['(min-width: 600px) and (max-width: 959px)'];
         this.logger.debug(`Device type - Mobile: ${this.isMobile}, Tablet: ${this.isTablet}`);
@@ -157,11 +169,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   openHelpDialog() {
-    this.dialog.open(HelpDialogComponent, {
-      width: '80vw',
-      maxWidth: '80vw',
-      data: {} // Pass any data you need here
-    });
+    hilfeOeffnen(this.dialog);
   }
 
   openProfilbildDialog(): void {
@@ -208,10 +216,6 @@ export class AppComponent implements OnInit, OnDestroy {
    */
   zurStartseite(): void {
     this.navigationService.navigateHome();
-  }
-
-  navigateToAdminDashboard(): void {
-    this.router.navigate(['/admin/dashboard']);
   }
 
   login() {

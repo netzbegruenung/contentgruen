@@ -62,4 +62,13 @@ describe('ResultCarouselComponent', () => {
     expect(links.getAttribute('aria-label')).toBe('Vorherige Karte');
     expect(rechts.getAttribute('aria-label')).toBe('Nächste Karte');
   });
+
+  // Design-Audit A9 (#512): Gesperrt blieb vom Pfeil ein leerer weisser Kreis.
+  it('blendet den gesperrten Pfeil aus und zeichnet den freien in Tanne', () => {
+    const links: HTMLButtonElement = fixture.nativeElement.querySelector('.scroll-button.left');
+    const rechts: HTMLButtonElement = fixture.nativeElement.querySelector('.scroll-button.right');
+
+    expect(getComputedStyle(links).visibility).toBe('hidden');
+    expect(getComputedStyle(rechts).backgroundColor).toBe('rgb(0, 84, 55)');
+  });
 });

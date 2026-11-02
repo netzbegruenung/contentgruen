@@ -9,6 +9,18 @@
   /* Uses global h2 styles for green color and larger font */
 }
 
+/* Desktop: dieselbe 720er-Spalte wie Suche, Kacheln und Geschichte, damit die
+   linken Kanten auf der Startseite nicht springen (#512). Das Karussell bleibt breit. */
+@media (min-width: 960px) {
+  .recent-content-header {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 .empty-state {
   text-align: center;
   padding: 2rem;

@@ -19,6 +19,8 @@ import { KartenDaten, ausBeitrag } from '../beitragskarte/karten-daten';
 import { MeineEinwuerfeComponent } from './meine-einwuerfe.component';
 import { SperrnachrichtenComponent } from './sperrnachrichten.component';
 import { tabMitTasteWaehlen } from '../shared/tab-tasten';
+import { MatButtonModule } from '@angular/material/button';
+import { ROUTES } from '../shared/constants/app.constants';
 
 /** Die beiden Tabs: eigene Beitraege und "Meine Einwuerfe". */
 export type MeineTab = 'beitraege' | 'einwuerfe';
@@ -44,6 +46,7 @@ const TABS: ReadonlyArray<{ wert: MeineTab; name: string }> = [
     CommonModule,
     MatPaginator,
     MatProgressSpinnerModule,
+    MatButtonModule,
     KartenlisteComponent,
     MeineEinwuerfeComponent,
     SperrnachrichtenComponent
@@ -187,6 +190,11 @@ export class MeineBeitraegeComponent implements OnInit, OnDestroy {
         this.fetchData(this.pageIndex + 1, this.pageSize);
         this.nutzungsstatistikLaden();
       });
+  }
+
+  /** Aus dem leeren Zustand ein Weg weiter (#512). */
+  zumBeitragen(): void {
+    this.router.navigate([ROUTES.CONTRIBUTE]);
   }
 
   /**

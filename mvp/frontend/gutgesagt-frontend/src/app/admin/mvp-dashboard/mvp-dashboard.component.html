@@ -1,8 +1,8 @@
 <div class="dashboard-container">
   <div class="dashboard-header">
-    <h1>MVP Metrics Dashboard</h1>
+    <h2>Kennzahlen</h2>
     <p class="last-updated" *ngIf="lastUpdated">
-      Letzte Aktualisierung: {{ lastUpdated | date:'short' }}
+      Letzte Aktualisierung: {{ lastUpdated | date:'dd.MM.yyyy, HH:mm' }}
     </p>
   </div>
 
@@ -23,7 +23,7 @@
       <mat-card-header>
         <mat-card-title>
           <mat-icon>people</mat-icon>
-          Daily Active Users
+          Aktive Personen pro Tag
           <mat-icon
             class="info-icon"
             matTooltip="Anzahl eindeutiger Nutzer (eingeloggt) und anonymer Sessions, die heute mindestens eine Suche durchgeführt haben. Gezählt werden alle Einträge in der search_tracking-Tabelle für den heutigen Tag."
@@ -44,7 +44,7 @@
       <mat-card-header>
         <mat-card-title>
           <mat-icon>search</mat-icon>
-          Searches per User
+          Suchen pro Person
           <mat-icon
             class="info-icon"
             matTooltip="Durchschnittliche Anzahl an Suchanfragen pro Nutzer/Session in den letzten 7 Tagen. Berechnet als: Gesamtanzahl aller Suchen geteilt durch Anzahl eindeutiger Nutzer/Sessions im Zeitraum."
@@ -65,7 +65,7 @@
       <mat-card-header>
         <mat-card-title>
           <mat-icon>edit</mat-icon>
-          Content This Week
+          Neue Inhalte diese Woche
           <mat-icon
             class="info-icon"
             matTooltip="Anzahl neuer Inhalte (Kommentare, Statements, etc.), die in dieser Woche erstellt wurden. Gezählt werden Einträge in usage_tracking, deren first_used-Timestamp in den letzten 7 Tagen liegt."
@@ -122,7 +122,7 @@
       <mat-card-header>
         <mat-card-title>
           <mat-icon>thumb_up</mat-icon>
-          "War hilfreich" Rate
+          Anteil „War hilfreich“
           <mat-icon
             class="info-icon"
             matTooltip="Prozentsatz der positiven Bewertungen (Likes) an allen abgegebenen Votes der letzten 7 Tage. Berechnet als: (Anzahl Likes / Gesamtanzahl Votes) × 100. Daten aus der votes-Tabelle."

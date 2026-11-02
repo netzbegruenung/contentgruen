@@ -70,7 +70,13 @@ export const PAGE_TITLES = {
   POST_FORM: `${typLabel('post')} verfassen`,
   GESPEICHERT: 'Gespeichert',
   LOGIN: 'Anmelden',
-  HELP: 'Hilfe'
+  HELP: 'Hilfe',
+  IMPRESSUM: 'Impressum',
+  DATENSCHUTZ: 'Datenschutz',
+  NUTZUNGSBEDINGUNGEN: 'Nutzungsbedingungen',
+  UEBER: 'Über Gut gesagt',
+  EINLADUNG: 'Einladung',
+  ADMIN: 'Admin'
 };
 
 export const ROUTES = {

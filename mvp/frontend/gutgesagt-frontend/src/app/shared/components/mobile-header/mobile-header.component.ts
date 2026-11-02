@@ -37,6 +37,13 @@ export class MobileHeaderComponent implements OnInit, OnDestroy {
   currentRoute: string = '';
   private destroy$ = new Subject<void>();
 
+  /** Ab dieser Laenge passt der Titel in 28 px nicht neben drei runde Knoepfe. */
+  static readonly LANGER_TITEL = 12;
+
+  get titelLang(): boolean {
+    return this.pageTitle.length > MobileHeaderComponent.LANGER_TITEL;
+  }
+
   constructor(
     private router: Router,
     private navigationService: NavigationService,

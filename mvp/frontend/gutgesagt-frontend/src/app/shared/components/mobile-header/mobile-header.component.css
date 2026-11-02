@@ -5,7 +5,7 @@
   height: 56px;
   padding: 0 4px;
   background-color: white;
-  border-bottom: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider-color);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -67,6 +67,20 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* Lange Titel: kleiner und hoechstens zwei Zeilen, erst dann Auslassung */
+.mobile-header-title--lang {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.mobile-header-title--lang .mobile-header-title-text {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .mobile-header-actions {

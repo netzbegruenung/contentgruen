@@ -100,6 +100,26 @@ describe('MobileMenuComponent', () => {
     expect(link('.mobile-menu-fehlt-antwort')).toBeNull();
   });
 
+  // Design-Audit A4 (#512): Mobil fuehrte kein Weg in den Admin-Bereich.
+  it('verlinkt Admins auf den Admin-Bereich und schliesst danach das Menue', () => {
+    component.userInfo = { isAuthenticated: true, isAdmin: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+
+    const eintrag = link('.mobile-menu-admin');
+    expect(eintrag.getAttribute('href')).toBe('/admin/dashboard');
+    expect(eintrag.textContent).toContain('Admin');
+
+    spyOn(component.closeMenu, 'emit');
+    eintrag.click();
+    expect(component.closeMenu.emit).toHaveBeenCalled();
+  });
+
+  it('zeigt den Admin-Bereich nur Admins', () => {
+    component.userInfo = { isAuthenticated: true, isAdmin: false, userId: 'u-1', userName: 'Anna B.', claims: null };
+    fixture.detectChanges();
+    expect(link('.mobile-menu-admin')).toBeNull();
+  });
+
   it('bietet Angemeldeten "Profilbild wählen" an und schliesst danach das Menue', () => {
     component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
     fixture.detectChanges();

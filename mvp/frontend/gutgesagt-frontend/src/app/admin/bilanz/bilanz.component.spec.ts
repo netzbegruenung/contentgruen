@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { BilanzComponent } from './bilanz.component';
 import { BilanzResponse } from '../../services/dtos/metricsDtos';
 import { environment } from '../../../environments/environment';
@@ -38,7 +39,7 @@ describe('BilanzComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [BilanzComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideNoopAnimations()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BilanzComponent);
@@ -47,6 +48,18 @@ describe('BilanzComponent', () => {
   });
 
   afterEach(() => http.verify());
+
+  // Zeitraum ueber das Auswahlfeld (mat-select wie ueberall, kein Browser-<select>, #512)
+  function optionen(): HTMLElement[] {
+    (element().querySelector('mat-select .mat-mdc-select-trigger') as HTMLElement).click();
+    fixture.detectChanges();
+    return Array.from(document.querySelectorAll('mat-option')) as HTMLElement[];
+  }
+
+  function waehlen(wochen: number): void {
+    optionen().find((o) => o.textContent!.trim() === `${wochen} Wochen`)!.click();
+    fixture.detectChanges();
+  }
 
   function element(): HTMLElement {
     return fixture.nativeElement as HTMLElement;
@@ -93,10 +106,9 @@ describe('BilanzComponent', () => {
     http.expectOne(URL).flush(ANTWORT);
     fixture.detectChanges();
 
-    const auswahl = element().querySelector('select') as HTMLSelectElement;
-    expect(Array.from(auswahl.options).map((o) => o.value)).toEqual(['8', '13', '26', '52']);
-    auswahl.value = '52';
-    auswahl.dispatchEvent(new Event('change'));
+    const angebot = optionen();
+    expect(angebot.map((o) => o.textContent!.trim())).toEqual(['8 Wochen', '13 Wochen', '26 Wochen', '52 Wochen']);
+    angebot[3].click();
     fixture.detectChanges();
 
     http.expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=52`).flush({ ...ANTWORT, wochen: 52 });
@@ -108,12 +120,9 @@ describe('BilanzComponent', () => {
     http.expectOne(URL).flush(ANTWORT);
     fixture.detectChanges();
 
-    const auswahl = element().querySelector('select') as HTMLSelectElement;
-    auswahl.value = '52';
-    auswahl.dispatchEvent(new Event('change'));
+    waehlen(52);
     const alt = http.expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=52`);
-    auswahl.value = '13';
-    auswahl.dispatchEvent(new Event('change'));
+    waehlen(13);
 
     expect(alt.cancelled).toBeTrue();
     http.expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=13`).flush({ ...ANTWORT, wochen: 13 });
@@ -125,9 +134,7 @@ describe('BilanzComponent', () => {
     http.expectOne(URL).flush(ANTWORT);
     fixture.detectChanges();
 
-    const auswahl = element().querySelector('select') as HTMLSelectElement;
-    auswahl.value = '52';
-    auswahl.dispatchEvent(new Event('change'));
+    waehlen(52);
     http
       .expectOne(`${environment.baseUrl}/api/v1/metrics/bilanz?wochen=52`)
       .flush('kaputt', { status: 500, statusText: 'Server Error' });

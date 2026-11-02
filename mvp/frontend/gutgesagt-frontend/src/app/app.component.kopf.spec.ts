@@ -214,6 +214,56 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(links.length).toBe(0);
     });
 
+    // Design-Audit A1/B4 (#512): Abmelden nur im Profilmenue, Fangkorb und Feedback
+    // als runde Icon-Knoepfe mit Text fuer Screenreader.
+    it('hat Abmelden nur im Profilmenue, nicht als eigenen Link im Kopf', () => {
+      const abmelden = Array.from(kopf().querySelectorAll('button, a, [role="button"]')).filter((e) =>
+        e.textContent?.includes('Abmelden')
+      );
+      expect(abmelden.length).toBe(0);
+    });
+
+    it('zeigt Fangkorb und Feedback als runde Icon-Knoepfe mit Namen fuer Screenreader', () => {
+      for (const [testid, name] of [
+        ['fangkorb-knopf', 'Fangkorb'],
+        ['feedback-knopf', 'Feedback'],
+      ]) {
+        const knopf = kopf().querySelector(`[data-testid="${testid}"]`) as HTMLElement;
+        expect(knopf.tagName).withContext(testid).toBe('BUTTON');
+        expect(knopf.hasAttribute('mat-icon-button')).withContext(testid).toBeTrue();
+        expect(knopf.querySelector('.cdk-visually-hidden')?.textContent?.trim()).withContext(testid).toBe(name);
+      }
+    });
+
+    it('setzt lange Titel kleiner und laesst die Begruessung weichen, kurze nicht', () => {
+      const komponente = fixture.componentInstance;
+      komponente.pageTitle = 'Hintergrundinfo verfassen';
+      fixture.detectChanges();
+      expect(kopf().classList).toContain('header--titel-lang');
+      expect(kopf().querySelector('.desktop-header-title')!.classList).toContain('desktop-header-title--lang');
+
+      komponente.pageTitle = 'Fangkorb';
+      fixture.detectChanges();
+      expect(kopf().classList).not.toContain('header--titel-lang');
+    });
+
+    it('behaelt fuer Screenreader den Namen der Textlinks, auch wenn sie als Icon erscheinen', () => {
+      const link = Array.from(kopf().querySelectorAll('a.header-link')).find((a) =>
+        a.textContent!.includes('Hier fehlt eine Antwort'),
+      )!;
+      expect(link.querySelector('.kopf-text')!.textContent!.trim()).toBe('Hier fehlt eine Antwort');
+      expect(link.querySelector('mat-icon')!.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('fuehrt mit dem Fangkorb-Knopf in den Fangkorb', () => {
+      const komponente = fixture.componentInstance;
+      const fangkorb = spyOn(komponente, 'navigateToFangkorbView');
+
+      (kopf().querySelector('[data-testid="fangkorb-knopf"]') as HTMLElement).click();
+
+      expect(fangkorb).toHaveBeenCalledTimes(1);
+    });
+
     it('sieht den Knopf Feedback ebenfalls', () => {
       (kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement).click();
 

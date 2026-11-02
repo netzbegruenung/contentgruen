@@ -10,12 +10,12 @@
     </mat-card-subtitle>
   </mat-card-header>
   <mat-card-content>
-    <label class="zeitraum">
-      Zeitraum
-      <select [value]="wochen" (change)="zeitraumWaehlen($any($event.target).value)">
-        <option *ngFor="let z of zeitraeume" [value]="z" [selected]="z === wochen">{{ z }} Wochen</option>
-      </select>
-    </label>
+    <mat-form-field appearance="outline" class="zeitraum" subscriptSizing="dynamic">
+      <mat-label>Zeitraum</mat-label>
+      <mat-select [value]="wochen" (selectionChange)="zeitraumWaehlen($event.value)">
+        <mat-option *ngFor="let z of zeitraeume" [value]="z">{{ z }} Wochen</mat-option>
+      </mat-select>
+    </mat-form-field>
 
     <p *ngIf="fehler" class="hinweis">Die Bilanz konnte nicht geladen werden.</p>
 

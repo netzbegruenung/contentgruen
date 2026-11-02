@@ -49,6 +49,10 @@
                 Meine Beiträge
             </button>
         </div>
+        <a mat-button *ngIf="userInfo?.isAdmin" routerLink="/admin/dashboard" (click)="close()" class="mobile-menu-item mobile-menu-admin">
+            <mat-icon>admin_panel_settings</mat-icon>
+            Admin
+        </a>
         <button mat-button (click)="onProfilbildClick()" class="mobile-menu-item mobile-menu-profilbild">
             <mat-icon>face</mat-icon>
             Profilbild wählen
