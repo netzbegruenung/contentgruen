@@ -44,8 +44,11 @@ describe('LoginSelectorComponent', () => {
   });
 
   describe('Texte zum eigenen Realm (#492)', () => {
-    const text = (selector: string): string =>
-      (fixture.nativeElement.querySelector(selector)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const text = (selector: string): string => {
+      const element: HTMLElement | null = fixture.nativeElement.querySelector(selector);
+      expect(element).withContext(selector).not.toBeNull();
+      return (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    };
 
     beforeEach(() => {
       component.isLoading = false;
@@ -67,22 +70,23 @@ describe('LoginSelectorComponent', () => {
       expect(inhalt).toContain('Mail-Adresse und Passwort');
     });
 
-    it('beschriftet die Anmeldung über den Realm als Netzbegrünung-Login oder Konto aus einer Einladung', () => {
-      expect(text('.keycloak-button .button-title')).toBe('Netzbegrünung-Login');
-      expect(text('.keycloak-button .button-subtitle')).toBe('oder Konto aus einer Einladung');
-      expect(text('.login-option-card:first-child .login-description')).toContain('„Mit Netzbegrünung anmelden“');
+    it('beschriftet die Anmeldung über den Realm mit Netzbegrünung-Login und Einladung', () => {
+      expect(text('.keycloak-button .button-title')).toBe('Anmelden');
+      expect(text('.keycloak-button .button-subtitle')).toBe('Netzbegrünung-Login oder Einladung');
+      expect(text('.realm-card .login-description')).toContain('„Mit Netzbegrünung anmelden“');
     });
 
-    it('ordnet die Direktanmeldung dem Beta-Zugang zu', () => {
-      expect(text('.gutgesagt-button .button-subtitle')).toBe('Direktanmeldung');
-      expect(text('.login-option-card:last-child .login-description'))
-        .toContain('Beta-Zugang');
+    it('beschriftet die Direktanmeldung als Beta-Zugang', () => {
+      expect(text('.gutgesagt-button .button-title')).toBe('Beta-Zugang');
+      expect(text('.beta-zugang-card .login-description')).toContain('Beta-Zugang');
     });
 
-    it('verwendet keine Begriffe, die das Glossar meidet', () => {
-      const alles = fixture.nativeElement.textContent as string;
+    it('verwendet keine Begriffe, die das Glossar für die Anmeldung meidet', () => {
+      const alles = text('.component-box');
 
-      for (const gemieden of ['Keycloak', 'SSO', 'Beta-Account', 'Netzbegrünung Login']) {
+      for (const gemieden of [
+        'Keycloak', 'SSO', 'Vereinslogin', 'Beta-Account', 'manueller User', 'Managed User', 'Netzbegrünung Login'
+      ]) {
         expect(alles).not.toContain(gemieden);
       }
     });

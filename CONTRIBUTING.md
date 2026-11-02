@@ -32,7 +32,7 @@ docker compose -f docker-compose.dev.yml up
   Docker cannot bind ports below 1024)
 - **BFF** (.NET): [http://localhost:5054](http://localhost:5054)
 - **Semantic Search Service**: [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
-- **Sign in**: button "Anmelden" ("Direktanmeldung"), Beta-Zugang `test.user@example.com` /
+- **Sign in**: button "Beta-Zugang" ("Direktanmeldung"), Beta-Zugang `test.user@example.com` /
   `Liebe>Hass!` from `mvp/config/managed-users.example.json`. With plain `docker compose`, copy
   that file to `mvp/config/managed-users.json` before starting, otherwise this sign-in is off
   (see [docs/DEV-SETUP.md](docs/DEV-SETUP.md)).

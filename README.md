@@ -9,7 +9,7 @@ The hand in the logo, favicon, Siegel and vote buttons is the "Thumbs up" emoji 
 ## Live Systems
 
 - **Test System**: https://gutgesagt-test.netzbegruenung.de
-  Login: Netzbegrünung-Login and/or Beta-Zugang (button "Anmelden", "Direktanmeldung"), depending
+  Login: Netzbegrünung-Login and/or Beta-Zugang (button "Beta-Zugang", "Direktanmeldung"), depending
   on the configuration; the accounts are not part of this repository.
 
 - **Production**: [https://gutgesagt.netzbegruenung.de](https://gutgesagt.netzbegruenung.de)

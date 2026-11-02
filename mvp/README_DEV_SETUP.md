@@ -110,7 +110,7 @@ npm start
 
 ## Default Credentials
 
-Sign in with the button "Anmelden" ("Direktanmeldung") as a Beta-Zugang, by e-mail, from
+Sign in with the button "Beta-Zugang" ("Direktanmeldung") as a Beta-Zugang, by e-mail, from
 `mvp/config/managed-users.example.json` (`run-local.sh` copies it to `mvp/config/managed-users.json`;
 otherwise copy it yourself):
 
