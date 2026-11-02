@@ -81,7 +81,7 @@ Netzbegrünung ist das eine **neue** Kennung: Beiträge, Stimmen, Nutzung, Admin
 Deshalb in dieser Reihenfolge, nicht anders:
 
 1. Die Datenschutzerklärung beschreibt Selbstregistrierung über eine Einladung und die
-   Anmeldung über den eigenen Realm (#490) und ist ausgerollt. Nach dem Umstellen den Satz
+   Anmeldung über den eigenen Realm (#490); diese Fassung muss ausgerollt sein. Nach dem Umstellen den Satz
    „Bis wir die Anmeldung umgestellt haben …“ unter „Anmeldung und Zugang“ entfernen.
 2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (Skript mit
    Trockenlauf, Teil von #429, noch offen).
