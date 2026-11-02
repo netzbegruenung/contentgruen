@@ -22,8 +22,8 @@ Entities are modeled as pydantic models in `app/domain/models/`.
   `repositories/interfaces/`, other interfaces (embeddings, Keycloak realm) in
   `domain/interfaces/`; services in `services/` by concern, repositories in `repositories/` by
   type; tests mirror the source structure.
-- **New content types** go through the registry, not through a new service/repository class:
-  checklist in [`docs/CONTENT_MODEL.md`](../../../docs/CONTENT_MODEL.md#adding-a-content-type-checklist).
+- **New Beitragstypen** go through the registry, not through a new service/repository class:
+  checklist in [`docs/CONTENT_MODEL.md`](../../../docs/CONTENT_MODEL.md#adding-a-beitragstyp-checklist).
 - **Schema changes** for existing databases: a dated SQL script in
   `mvp/backend/postgres-app/migrations/`, convention in its `README.md`.
 

@@ -19,7 +19,7 @@ the rules every agent needs and points to the docs for everything else.
   merge. Work on a branch (agents: `sb/` prefix), push it, open a PR.
 - **Opening PRs and comments**: via the Forgejo API (`https://git.verdigado.com/api/v1/`),
   not `tea` and not `gh` (`gh` is not authenticated on the dev VM). Note that
-  `/issues` also returns PRs; filter with `type=issues`. Details: `docs/agents/issue-tracker.md`.
+  `/issues` also returns PRs; filter with `type=issues`.
 - `.github/workflows/` changes reach GitHub CI directly through the mirror: agents change
   them only after asking the maintainer, and flag them explicitly in the PR.
 - Don't push to a PR that is already approved without telling the maintainer first.
@@ -84,9 +84,8 @@ nur wenig:
 |------|------|
 | Domain terms (use them in code, UI, tests, commits, PR texts; new term → `GLOSSARY.md` in the same PR) | `GLOSSARY.md`, `docs/agents/domain.md` |
 | Decisions that are hard to reverse | `docs/adr/` |
-| Issues, labels, tracker conventions | `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md` |
 | Review rules: severities, Scope/Fachfrage, Titel of a Beitrag, public repo, legal texts | `CODING_STANDARDS.md` |
-| Setup, local development without Docker, tests per component, Windows scripts | `CONTRIBUTING.md`, `docs/DEV_GUIDE.md`, `mvp/SCRIPTS.md` |
+| Setup, local development, `ng serve` against the dev stack, tests per component, Windows scripts | `CONTRIBUTING.md`, `docs/DEV-SETUP.md`, `docs/DEV_GUIDE.md`, `mvp/README_DEV_SETUP.md`, `mvp/SCRIPTS.md` |
 | Architecture, environment variables, auth modes, container names | `docs/ARCHITECTURE.md` |
 | Adding a Beitragstyp (registry, not a new service class) | `docs/CONTENT_MODEL.md`, ADR 0002 |
 | Python backend conventions, interface locations | `mvp/backend/semantic-search-service/README.md` |

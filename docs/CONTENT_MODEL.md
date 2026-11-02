@@ -234,7 +234,7 @@ to `DirectText`) + a response DTO that selects what goes out (`<Type>Response`/`
 `dtos/beitrag.py`, without Kennung, #333) + its fields in the card adapter and, only if it needs its own body,
 a block in `app-beitragskarte`. No engine changes, no cloning.
 
-### Adding a content type: checklist
+### Adding a Beitragstyp: checklist
 
 Paths below `app/` are in `mvp/backend/semantic-search-service/app/`, frontend paths in
 `mvp/frontend/gutgesagt-frontend/src/app/`.
