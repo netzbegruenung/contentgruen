@@ -2,6 +2,7 @@ import uuid
 from typing import List, Optional, Dict
 from sqlalchemy.exc import IntegrityError, OperationalError
 
+from core.fehler import Validierungsfehler
 from core.logging import get_logger, log_pseudonym
 from domain.models.vote import Vote, VoteCreate, VoteResponse, VoteType
 from repositories.vote_repository import VoteRepository
@@ -43,7 +44,7 @@ class VotingService:
 
         except IntegrityError as e:
             logger.error(f"Database integrity error setting like: {type(e).__name__}")
-            raise ValueError("Vote conflict detected. Please try again.")
+            raise Validierungsfehler("Vote conflict detected. Please try again.")
         except OperationalError as e:
             logger.error(f"Database connection error setting like: {type(e).__name__}")
             raise ConnectionError("Database temporarily unavailable.")
@@ -106,7 +107,7 @@ class VotingService:
             logger.error(
                 f"Database integrity error setting dislike: {type(e).__name__}"
             )
-            raise ValueError("Vote conflict detected. Please try again.")
+            raise Validierungsfehler("Vote conflict detected. Please try again.")
         except OperationalError as e:
             logger.error(
                 f"Database connection error setting dislike: {type(e).__name__}"

@@ -100,12 +100,10 @@ async def get_seeding_status(health_check: bool = False) -> Dict[str, Any]:
                 "progress": {"files_processed": 0, "total_files": 0, "percentage": 0},
                 "seeding_needed": True,
                 "is_healthy": False,
-                "error": str(e),
+                "error": type(e).__name__,
             }
         # Normal mode: raise HTTP exception
-        raise HTTPException(
-            status_code=500, detail=f"Error getting seeding status: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail="Error getting seeding status")
 
 
 @router.get("/health")
@@ -158,7 +156,7 @@ async def start_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error starting seeding: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error starting seeding")
 
 
 @router.post("/reset")
@@ -176,9 +174,7 @@ async def reset_seeding() -> Dict[str, str]:
         return {"message": "Seeding status reset successfully", "status": "reset"}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error resetting seeding: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail="Error resetting seeding")
 
 
 @router.get("/needs-seeding")
@@ -215,7 +211,7 @@ async def check_needs_seeding() -> Dict[str, Any]:
         return {
             "needs_seeding": True,
             "content_count": 0,
-            "reason": f"Error checking content: {str(e)}",
+            "reason": f"Error checking content: {type(e).__name__}",
         }
 
 
@@ -250,7 +246,7 @@ async def resume_seeding(background_tasks: BackgroundTasks) -> Dict[str, str]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error resuming seeding: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error resuming seeding")
 
 
 @router.post("/stop")
@@ -281,7 +277,7 @@ async def stop_seeding() -> Dict[str, str]:
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error stopping seeding: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error stopping seeding")
 
 
 @router.get("/files")
@@ -350,6 +346,4 @@ async def get_seeding_files() -> Dict[str, Any]:
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error getting file information: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail="Error getting file information")

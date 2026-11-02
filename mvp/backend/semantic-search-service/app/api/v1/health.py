@@ -295,4 +295,4 @@ async def get_statistics():
 
     except Exception as e:
         logger.error(f"Failed to fetch statistics: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to fetch statistics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch statistics")

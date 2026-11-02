@@ -65,6 +65,7 @@ from services.content.commentary_service import CommentaryService
 from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -332,7 +333,7 @@ async def search_by_text(
         raise
     except Exception as e:
         logger.error(f"❌ Error in searchByText: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # searchByTopic(topic)

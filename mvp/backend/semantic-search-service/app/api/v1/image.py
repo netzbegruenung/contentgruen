@@ -18,6 +18,7 @@ from domain.models.image import ImageDbEntry
 from domain.models.author_entry import AuthorEntry
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.content_origin import ContentOrigin
+from core.fehler import INTERNER_FEHLER, UNGUELTIGE_ANFRAGE
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ async def get_by_id(
         )
     except Exception as e:
         logger.error(f"Error fetching image with id {image_id}: {type(e).__name__}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/getAll", response_model=ImageGetAllResponse)
@@ -63,7 +64,7 @@ async def get_all(
         )
     except Exception as e:
         logger.error(f"Error in /getAll: {type(e).__name__}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.post(
@@ -104,7 +105,7 @@ async def add_image(
         raise
     except ValueError as e:
         logger.error(f"Validation error in add_image: {type(e).__name__}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=UNGUELTIGE_ANFRAGE)
     except Exception as e:
         logger.error(f"Unexpected error in add_image: {type(e).__name__}")
         raise HTTPException(

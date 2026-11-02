@@ -31,6 +31,7 @@ from services.content.beitrag_loeschen_service import (
     LoeschErgebnis,
 )
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
+from core.fehler import INTERNER_FEHLER
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ async def get_all(
         return response
     except Exception as e:
         logger.error(f"Error in /getAll: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # Get recent content
@@ -179,7 +180,7 @@ async def get_recent_content(
 
     except Exception as e:
         logger.error(f"Error in /recent endpoint: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.delete("/{beitrag_id}", status_code=204)
