@@ -71,12 +71,23 @@ def report_repo():
     repo = MagicMock(spec=ContentReportRepository)
     repo.has_report_from_user.return_value = False
     repo.create_report.return_value = MagicMock(id=uuid.uuid4())
-    repo.update_reports_by_content_id.return_value = 2
-    repo.update_report_status.return_value = MagicMock()
-    repo.offene_melder_adressen.return_value = [
+    # Die offenen Meldungen mit Adresse; die Erledigen-Methoden geben sie wie das
+    # echte Repository in melder_adressen zurueck.
+    repo.offene = [
         MelderAdresse(uuid.UUID(CONTENT_ID), ANNA),
         MelderAdresse(uuid.UUID(CONTENT_ID), BEN),
     ]
+
+    def erledigen(ergebnis):
+        def methode(*args, melder_adressen=None, **kwargs):
+            if melder_adressen is not None:
+                melder_adressen.extend(repo.offene)
+            return ergebnis
+
+        return methode
+
+    repo.update_reports_by_content_id.side_effect = erledigen(2)
+    repo.update_report_status.side_effect = erledigen(MagicMock())
     return repo
 
 
@@ -141,6 +152,27 @@ class TestEingangsbestaetigung:
         assert ANNA not in caplog.text
         assert "Eingangsbestaetigung" in caplog.text
 
+    async def test_haengender_versand_haelt_die_meldung_nicht_auf(
+        self, service, postausgang, monkeypatch, caplog
+    ):
+        # Das Timeout von smtplib gilt je Schritt; die Anfrage wartet hoechstens
+        # MAIL_FRIST, danach laeuft der Versand im Thread zu Ende.
+        import threading
+
+        from services import moderation_service
+
+        monkeypatch.setattr(moderation_service, "MAIL_FRIST", 0.05)
+        frei = threading.Event()
+        postausgang.senden = lambda mail: frei.wait(5)
+
+        try:
+            with caplog.at_level(logging.WARNING):
+                assert await _melden(service) is True
+            assert "deadline" in caplog.text
+            assert ANNA not in caplog.text
+        finally:
+            frei.set()
+
     async def test_gesperrter_beitrag_bleibt_ohne_titel(
         self, service, postausgang, speicher
     ):
@@ -186,45 +218,50 @@ class TestEntscheidungMitteilen:
             assert "gesperrt" in mail.text
             assert "Wärmepumpen lohnen sich auch im Altbau" in mail.text
 
-    async def test_sperren_liest_die_adressen_vor_dem_bearbeiten(
+    async def test_sperren_liest_die_adressen_beim_bearbeiten(
         self, service, report_repo
     ):
-        # Danach stehen die Meldungen auf bearbeitet; wer schon eine Entscheidung
-        # bekommen hat, bekaeme sonst beim erneuten Sperren eine zweite.
-        aufrufe = []
-        report_repo.offene_melder_adressen.side_effect = lambda **_: (
-            aufrufe.append("lesen") or []
-        )
-        report_repo.update_reports_by_content_id.side_effect = lambda **_: (
-            aufrufe.append("bearbeiten") or 0
-        )
-
+        # In derselben Transaktion: Eine Meldung, die zwischen Lesen und Bearbeiten
+        # eingeht, wuerde sonst ohne Mail erledigt.
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
-        assert aufrufe == ["lesen", "bearbeiten"]
-        report_repo.offene_melder_adressen.assert_called_once_with(
-            content_id=uuid.UUID(CONTENT_ID)
-        )
+        aufruf = report_repo.update_reports_by_content_id.call_args.kwargs
+        assert aufruf["content_id"] == uuid.UUID(CONTENT_ID)
+        assert "melder_adressen" in aufruf
 
     async def test_abweisen_teilt_der_meldenden_person_die_abweisung_mit(
         self, service, postausgang, report_repo
     ):
         report_id = uuid.uuid4()
-        report_repo.offene_melder_adressen.return_value = [
-            MelderAdresse(uuid.UUID(CONTENT_ID), ANNA)
-        ]
+        report_repo.offene = [MelderAdresse(uuid.UUID(CONTENT_ID), ANNA)]
 
         assert await service.dismiss_report(str(report_id), "admin-1") is True
 
-        report_repo.offene_melder_adressen.assert_called_once_with(report_id=report_id)
+        assert report_repo.update_report_status.call_args.kwargs["report_id"] == (
+            report_id
+        )
         [mail] = postausgang.mails
         assert mail.an == ANNA
-        assert "nicht gesperrt" in mail.text
+        assert "abgewiesen" in mail.text
+        assert "Wärmepumpen lohnen sich auch im Altbau" in mail.text
+
+    async def test_abweisen_behauptet_nicht_dass_der_beitrag_sichtbar_bleibt(
+        self, service, postausgang, report_repo, speicher
+    ):
+        # Auch ein schon gesperrter Beitrag kann gemeldet und die Meldung abgewiesen werden.
+        speicher.get_data()[CONTENT_ID]["status"] = "blocked"
+        report_repo.offene = [MelderAdresse(uuid.UUID(CONTENT_ID), ANNA)]
+
+        await service.dismiss_report(str(uuid.uuid4()), "admin-1")
+
+        [mail] = postausgang.mails
+        assert "sichtbar" not in mail.text
+        assert "Wärmepumpen" not in mail.text
 
     async def test_abweisen_einer_erledigten_meldung_schickt_nichts(
         self, service, postausgang, report_repo
     ):
-        report_repo.offene_melder_adressen.return_value = []
+        report_repo.offene = []
 
         await service.dismiss_report(str(uuid.uuid4()), "admin-1")
 
@@ -252,7 +289,7 @@ class TestEntscheidungMitteilen:
     async def test_gleiche_adresse_bekommt_eine_mail(
         self, service, postausgang, report_repo
     ):
-        report_repo.offene_melder_adressen.return_value = [
+        report_repo.offene = [
             MelderAdresse(uuid.UUID(CONTENT_ID), ANNA),
             MelderAdresse(uuid.UUID(CONTENT_ID), ANNA.upper()),
         ]
@@ -260,6 +297,27 @@ class TestEntscheidungMitteilen:
         await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
 
         assert len(postausgang.mails) == 1
+
+    async def test_viele_adressen_gehen_nacheinander_in_einem_thread(
+        self, service, postausgang, report_repo
+    ):
+        # Nicht je Adresse ein Thread: 30 Meldungen belegten sonst den Thread-Pool.
+        import threading
+
+        report_repo.offene = [
+            MelderAdresse(uuid.UUID(CONTENT_ID), f"person{i}@example.org")
+            for i in range(30)
+        ]
+        threads = set()
+        senden = postausgang.senden
+        postausgang.senden = lambda mail: (
+            threads.add(threading.get_ident()) or senden(mail)
+        )
+
+        await service.sperren(CONTENT_ID, gesperrt_von="admin-1", **GRUND_FUER_SPERRE)
+
+        assert len(postausgang.mails) == 30
+        assert len(threads) == 1
 
     async def test_jede_entscheidung_nennt_die_rechtsbehelfe(
         self, service, postausgang

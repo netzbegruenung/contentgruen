@@ -17,15 +17,15 @@ import smtplib
 import ssl
 from dataclasses import dataclass
 from email.message import EmailMessage
-from email.utils import formatdate, make_msgid
+from email.utils import formatdate, make_msgid, parseaddr
 from typing import Optional, Protocol, get_args
 
 from core.config import Settings, SmtpVerschluesselung, settings as standard_settings
 
 logger = logging.getLogger(__name__)
 
-# Sekunden je SMTP-Verbindung. Der Versand haelt die Antwort an die Person auf,
-# die meldet oder entscheidet; ein haengender Server soll sie nicht lange warten lassen.
+# Sekunden je Schritt auf der SMTP-Verbindung (Verbinden, Lesen, Schreiben). Wie lange
+# eine Anfrage insgesamt auf den Versand wartet, begrenzt MAIL_FRIST im ModerationService.
 SMTP_TIMEOUT = 10
 
 VERSCHLUESSELUNGEN = get_args(SmtpVerschluesselung)
@@ -65,8 +65,6 @@ class SmtpVersand:
     ):
         if verschluesselung not in VERSCHLUESSELUNGEN:
             raise ValueError(f"Unbekannte Verschluesselung: {verschluesselung}")
-        if verschluesselung == "keine" and benutzer:
-            raise ValueError("SMTP-Anmeldung nur mit starttls oder ssl")
         self.host = host
         self.port = port
         self.absender = absender
@@ -83,9 +81,9 @@ class SmtpVersand:
             nachricht["Reply-To"] = self.antwort_an
         nachricht["Subject"] = mail.betreff
         nachricht["Date"] = formatdate(localtime=False)
-        nachricht["Message-ID"] = make_msgid(
-            domain=self.absender.rpartition("@")[2] or None
-        )
+        # parseaddr: Der Absender darf einen Namen tragen ("Gut gesagt <a@example.org>").
+        domain = parseaddr(self.absender)[1].rpartition("@")[2]
+        nachricht["Message-ID"] = make_msgid(domain=domain or None)
         # RFC 3834: Abwesenheitsnotizen antworten nicht auf automatische Mails.
         nachricht["Auto-Submitted"] = "auto-generated"
         nachricht.set_content(mail.text)
@@ -103,6 +101,7 @@ class SmtpVersand:
                 verbindung = smtplib.SMTP(self.host, self.port, timeout=SMTP_TIMEOUT)
             with verbindung as smtp:
                 if self.verschluesselung == "starttls":
+                    # Ohne STARTTLS beim Server wirft starttls(); kein Rueckfall auf Klartext.
                     smtp.starttls(context=kontext)
                 if self.benutzer:
                     smtp.login(self.benutzer, self.passwort or "")

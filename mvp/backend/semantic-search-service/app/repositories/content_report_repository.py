@@ -29,6 +29,20 @@ def melder_pseudonym(besucher_merkmal: str, tag: date) -> str:
     return PRAEFIX_PSEUDONYM + besucher_tagespseudonym(besucher_merkmal, tag)
 
 
+def _offene_adressen_merken(reports) -> List[MelderAdresse]:
+    """
+    Die E-Mail-Adressen der Meldungen, die noch offen sind, bevor sie erledigt werden
+    (#493): Nur wer noch keine Entscheidung hat, bekommt eine Mail. Die Zeilen sind
+    dabei gesperrt (FOR UPDATE); zwei gleichzeitige Entscheidungen lesen eine offene
+    Meldung so nicht beide, und eine Meldung, die dazwischen eingeht, bleibt offen.
+    """
+    return [
+        MelderAdresse(report.content_id, report.melder_email)
+        for report in reports
+        if report.status == "pending" and report.melder_email
+    ]
+
+
 def _melder_pseudonym_loeschen(report: ContentReport) -> None:
     """
     Beim Abschliessen: Pseudonym und Sitzungskennungen aus der Zeit vor #446 weg.
@@ -134,38 +148,6 @@ class ContentReportRepository:
             # Im Zweifel nicht deduplizieren: eine doppelte Meldung ist harmloser
             # als eine verschluckte.
             return False
-
-    def offene_melder_adressen(
-        self,
-        *,
-        content_id: Optional[UUID] = None,
-        report_id: Optional[UUID] = None,
-    ) -> List[MelderAdresse]:
-        """
-        Beitrag und E-Mail-Adresse der offenen Meldungen zu einem Beitrag oder der
-        einen Meldung, sofern die meldende Person eine Adresse angegeben hat (#493).
-
-        Der ModerationService liest sie, bevor er die Meldungen erledigt, und teilt
-        ihnen die Entscheidung mit. Schon erledigte Meldungen fehlen: Ihre Person hat
-        ihre Entscheidung. Genau einer der beiden Filter; Fehler gehen an den Aufrufer.
-        """
-        if (content_id is None) == (report_id is None):
-            raise ValueError("Genau content_id oder report_id angeben")
-        with self.db.get_session() as session:
-            abfrage = session.query(
-                ContentReport.content_id, ContentReport.melder_email
-            ).filter(
-                ContentReport.status == "pending",
-                ContentReport.melder_email.isnot(None),
-            )
-            if content_id is not None:
-                abfrage = abfrage.filter(ContentReport.content_id == content_id)
-            else:
-                abfrage = abfrage.filter(ContentReport.id == report_id)
-            return [
-                MelderAdresse(beitrag, email)
-                for beitrag, email in abfrage.order_by(ContentReport.created).all()
-            ]
 
     def get_pending_reports(
         self, limit: int = 50, offset: int = 0
@@ -277,6 +259,8 @@ class ContentReportRepository:
         status: str,
         reviewed_by: Optional[str] = None,
         resolution_notes: Optional[str] = None,
+        *,
+        melder_adressen: Optional[List[MelderAdresse]] = None,
     ) -> Optional[ContentReport]:
         """
         Update the status of a content report.
@@ -286,6 +270,8 @@ class ContentReportRepository:
             status: New status (reviewed, dismissed)
             reviewed_by: User ID of reviewer
             resolution_notes: Optional notes about resolution
+            melder_adressen: bekommt die E-Mail-Adresse, wenn die Meldung bis eben
+                offen war (#493, _offene_adressen_merken)
 
         Returns:
             ContentReport: Updated report or None if not found
@@ -295,9 +281,11 @@ class ContentReportRepository:
                 report = (
                     session.query(ContentReport)
                     .filter(ContentReport.id == report_id)
+                    .with_for_update()
                     .first()
                 )
                 if report:
+                    adressen = _offene_adressen_merken([report])
                     report.status = status
                     _melder_pseudonym_loeschen(report)
                     report.reviewed_by = reviewed_by
@@ -305,6 +293,8 @@ class ContentReportRepository:
                     report.resolution_notes = resolution_notes
                     session.commit()
                     session.refresh(report)
+                    if melder_adressen is not None:
+                        melder_adressen.extend(adressen)
                     logger.info(f"Updated report {report_id} status to {status}")
                     return report
                 else:
@@ -323,11 +313,15 @@ class ContentReportRepository:
         reviewed_by: Optional[str] = None,
         resolution_notes: Optional[str] = None,
         nur_offene: bool = False,
+        *,
+        melder_adressen: Optional[List[MelderAdresse]] = None,
     ) -> int:
         """
         Update all reports for a specific content item.
 
         Mit nur_offene bleiben bearbeitete und abgewiesene Meldungen, wie sie sind.
+        melder_adressen bekommt die E-Mail-Adressen der Meldungen, die bis eben offen
+        waren (#493, _offene_adressen_merken).
 
         Args:
             content_id: UUID of the content
@@ -349,7 +343,8 @@ class ContentReportRepository:
                 )
                 if nur_offene:
                     abfrage = abfrage.filter(ContentReport.status == "pending")
-                reports = abfrage.all()
+                reports = abfrage.with_for_update().all()
+                adressen = _offene_adressen_merken(reports)
 
                 count = 0
                 for report in reports:
@@ -361,6 +356,8 @@ class ContentReportRepository:
                     count += 1
 
                 session.commit()
+                if melder_adressen is not None:
+                    melder_adressen.extend(adressen)
                 logger.info(
                     f"Updated {count} reports for content {content_id} to status {status}"
                 )

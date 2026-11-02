@@ -61,6 +61,14 @@ class TestSmtpVersand:
         assert nachricht["Message-ID"].endswith("@example.org>")
         assert nachricht.get_content().strip() == "Grüße aus dem Test"
 
+    def test_absender_mit_namen_gibt_eine_gueltige_message_id(self, smtp):
+        verbindung, _, _ = smtp
+
+        SmtpVersand("smtp.example.org", "Gut gesagt <a@example.org>").senden(MAIL)
+
+        assert _gesendet(verbindung)["Message-ID"].endswith("@example.org>")
+        assert not _gesendet(verbindung)["Message-ID"].endswith(">>")
+
     def test_ssl_ohne_anmeldung(self, smtp):
         verbindung, klasse, ssl_klasse = smtp
 
@@ -74,21 +82,18 @@ class TestSmtpVersand:
         verbindung.login.assert_not_called()
         assert "Reply-To" not in _gesendet(verbindung)
 
-    def test_keine_verschluesselung_fuer_ein_relay(self, smtp):
-        verbindung, _, _ = smtp
-
-        SmtpVersand("relay", "a@example.org", port=25, verschluesselung="keine").senden(
-            MAIL
-        )
-
-        verbindung.starttls.assert_not_called()
-        verbindung.send_message.assert_called_once()
-
-    def test_anmeldung_ohne_verschluesselung_abgelehnt(self):
+    def test_ohne_verschluesselung_abgelehnt(self):
         with pytest.raises(ValueError):
-            SmtpVersand(
-                "relay", "a@example.org", benutzer="konto", verschluesselung="keine"
-            )
+            SmtpVersand("relay", "a@example.org", port=25, verschluesselung="keine")
+
+    def test_server_ohne_starttls_bekommt_keine_mail(self, smtp):
+        verbindung, _, _ = smtp
+        verbindung.starttls.side_effect = smtplib.SMTPNotSupportedError()
+
+        with pytest.raises(MailNichtVerschickt):
+            SmtpVersand("smtp.example.org", "a@example.org").senden(MAIL)
+
+        verbindung.send_message.assert_not_called()
 
     def test_fehler_nennt_nur_den_typ_nicht_die_adresse(self, smtp):
         verbindung, _, _ = smtp
@@ -120,9 +125,9 @@ class TestEinrichtung:
     def test_ohne_absender_kein_versand(self):
         assert get_mailversand(Settings(smtp_host="smtp.example.org")) is None
 
-    def test_einstellungen_lehnen_anmeldung_im_klartext_ab(self):
+    def test_einstellungen_lehnen_klartext_ab(self):
         with pytest.raises(ValueError):
-            Settings(smtp_verschluesselung="keine", smtp_benutzer="konto")
+            Settings(smtp_verschluesselung="keine")
 
     def test_mit_host_und_absender(self):
         versand = get_mailversand(

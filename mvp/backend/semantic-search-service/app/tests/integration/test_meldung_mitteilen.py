@@ -56,7 +56,7 @@ def _melden(repo, email=None, beitrag=BEITRAG) -> uuid.UUID:
     return uuid.UUID(neu)
 
 
-class TestOffeneMelderAdressen:
+class TestAdressenBeimErledigen:
     async def test_nur_offene_meldungen_mit_adresse_zum_beitrag(self, repo):
         _melden(repo, "anna@example.org")
         _melden(repo, None)
@@ -64,20 +64,32 @@ class TestOffeneMelderAdressen:
         repo.update_report_status(erledigt, "dismissed", reviewed_by="admin-1")
         _melden(repo, "carla@example.org", beitrag=uuid.uuid4())
 
-        assert repo.offene_melder_adressen(content_id=BEITRAG) == [
-            (BEITRAG, "anna@example.org")
-        ]
+        adressen = []
+        repo.update_reports_by_content_id(
+            BEITRAG, status="reviewed", melder_adressen=adressen
+        )
+
+        assert adressen == [(BEITRAG, "anna@example.org")]
 
     async def test_eine_meldung_nach_ihrer_kennung(self, repo):
         meldung = _melden(repo, "anna@example.org")
 
-        assert repo.offene_melder_adressen(report_id=meldung) == [
-            (BEITRAG, "anna@example.org")
-        ]
+        adressen = []
+        repo.update_report_status(meldung, "dismissed", melder_adressen=adressen)
 
-    async def test_genau_ein_filter(self, repo):
-        with pytest.raises(ValueError):
-            repo.offene_melder_adressen()
+        assert adressen == [(BEITRAG, "anna@example.org")]
+
+    async def test_erledigte_meldung_gibt_keine_adresse_mehr(self, repo):
+        meldung = _melden(repo, "anna@example.org")
+        repo.update_report_status(meldung, "dismissed")
+
+        adressen = []
+        repo.update_report_status(meldung, "dismissed", melder_adressen=adressen)
+        repo.update_reports_by_content_id(
+            BEITRAG, status="reviewed", melder_adressen=adressen
+        )
+
+        assert adressen == []
 
 
 class TestAbweisenTeiltMit:

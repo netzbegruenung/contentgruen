@@ -30,6 +30,9 @@ from core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Wie die Mails den Dienst nennen; an einer Stelle, falls eine andere Instanz ihn umbenennt.
+DIENST = "Gut gesagt"
+
 # Laenger wird der Titel in der Mail nicht; Titel von Kommentaren haben hoechstens
 # 120 Zeichen, Bildtitel 200 und Posts gar keinen (dann der Anfang des Texts).
 TITEL_HOECHSTENS = 120
@@ -67,16 +70,18 @@ ERGEBNIS = {
         "wir haben den Beitrag geprüft und gesperrt. Er ist in Suche und Ansicht "
         "nicht mehr zu sehen."
     ),
+    # Ohne "bleibt sichtbar": Die Melde-Route nimmt auch Meldungen zu gesperrten und
+    # geloeschten Beitraegen an, und deren Abweisung aendert daran nichts.
     Entscheidung.ABGEWIESEN: (
-        "wir haben den Beitrag geprüft und nicht gesperrt: Wir sehen darin weder einen "
-        "Verstoß gegen unsere Nutzungsbedingungen noch einen rechtswidrigen Inhalt. "
-        "Der Beitrag bleibt sichtbar."
+        "wir haben deine Meldung geprüft und abgewiesen: Wir sehen in dem Beitrag weder "
+        "einen Verstoß gegen unsere Nutzungsbedingungen noch einen rechtswidrigen "
+        "Inhalt. Wegen deiner Meldung ändert sich am Beitrag nichts."
     ),
     Entscheidung.ENTFERNT: (
-        "wir haben den Beitrag geprüft und endgültig von Gut gesagt entfernt."
+        f"wir haben den Beitrag geprüft und endgültig von {DIENST} entfernt."
     ),
     Entscheidung.NICHT_MEHR_DA: (
-        "der Beitrag ist inzwischen nicht mehr auf Gut gesagt; er wurde gelöscht, "
+        f"der Beitrag ist inzwischen nicht mehr auf {DIENST}; er wurde gelöscht, "
         "bevor wir über deine Meldung entschieden haben. Deine Meldung ist damit "
         "erledigt."
     ),
@@ -128,7 +133,7 @@ class MeldungMitteilung:
         self.app_url = (app_url or "").rstrip("/") or None
 
     def _gruss(self) -> str:
-        zeilen = ["Viele Grüße", "Gut gesagt"]
+        zeilen = ["Viele Grüße", DIENST]
         if self.app_url:
             zeilen.append(self.app_url)
         return "\n".join(zeilen)
@@ -169,7 +174,7 @@ class MeldungMitteilung:
             ]
         )
         return self._senden(
-            Mail(an=an, betreff="Gut gesagt: Deine Meldung ist eingegangen", text=text),
+            Mail(an=an, betreff=f"{DIENST}: Deine Meldung ist eingegangen", text=text),
             "Eingangsbestaetigung",
         )
 
@@ -188,7 +193,7 @@ class MeldungMitteilung:
         return self._senden(
             Mail(
                 an=an,
-                betreff="Gut gesagt: Entscheidung über deine Meldung",
+                betreff=f"{DIENST}: Entscheidung über deine Meldung",
                 text="\n\n".join(absaetze),
             ),
             f"Entscheidung ({entscheidung.value})",

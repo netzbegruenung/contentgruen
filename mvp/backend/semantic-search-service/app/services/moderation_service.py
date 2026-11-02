@@ -40,6 +40,11 @@ from services.meldung_mitteilen import (
 
 logger = logging.getLogger(__name__)
 
+# Hoechstens so viele Sekunden wartet eine Anfrage auf den Mailversand (#493). Das
+# Timeout von smtplib gilt je Schritt, ein langsamer Server kaeme mit vielen Schritten
+# weit darueber; danach antwortet die Anfrage, und der Versand laeuft im Thread zu Ende.
+MAIL_FRIST = 15
+
 
 # Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
 GESPERRTE_HOECHSTENS = 500
@@ -85,6 +90,14 @@ def _titel(beitrag: Optional[Dict[str, Any]]) -> Optional[str]:
     ):
         return None
     return beitrag.get("title") or beitrag.get("text")
+
+
+async def _hoechstens_mail_frist(funktion, *args) -> None:
+    """Fuehrt den Versand im Thread aus und wartet hoechstens MAIL_FRIST darauf."""
+    try:
+        await asyncio.wait_for(asyncio.to_thread(funktion, *args), timeout=MAIL_FRIST)
+    except asyncio.TimeoutError:
+        logger.warning("Mail not sent within the deadline, sending continues")
 
 
 def _iso(zeitpunkt) -> Optional[str]:
@@ -252,7 +265,7 @@ class ModerationService:
     async def _eingang_bestaetigen(self, content_id: str, email: str) -> None:
         """Eingangsbestaetigung; MeldungMitteilung faengt jeden Fehler beim Versand."""
         beitrag = await self._beitrag_fuer_mail(content_id)
-        await asyncio.to_thread(
+        await _hoechstens_mail_frist(
             self._mitteilung_holen().eingang_bestaetigen, email, _titel(beitrag)
         )
 
@@ -264,25 +277,6 @@ class ModerationService:
             logger.warning(f"Loading content for the mail failed ({type(e).__name__})")
             return None
 
-    def _offene_adressen(
-        self,
-        *,
-        content_id: Optional[UUID] = None,
-        report_id: Optional[UUID] = None,
-    ) -> List[MelderAdresse]:
-        """
-        Die E-Mail-Adressen offener Meldungen, bevor sie erledigt werden: Nur wer
-        noch keine Entscheidung hat, bekommt eine. Ein Fehler beim Lesen haelt die
-        Entscheidung nicht auf; die Mail fehlt dann.
-        """
-        try:
-            if content_id is not None:
-                return self.report_repo.offene_melder_adressen(content_id=content_id)
-            return self.report_repo.offene_melder_adressen(report_id=report_id)
-        except Exception as e:
-            logger.warning(f"Reading reporter addresses failed ({type(e).__name__})")
-            return []
-
     async def _entscheidung_mitteilen(
         self,
         adressen: List[MelderAdresse],
@@ -291,22 +285,19 @@ class ModerationService:
     ) -> None:
         """
         Art. 16 Abs. 5 DSA (#493): je Adresse eine Mail, auch bei mehreren Meldungen.
-        Gleichzeitig, damit der Admin nicht auf jede Mail einzeln wartet;
-        MeldungMitteilung faengt jeden Fehler beim Versand.
+        Nacheinander in einem Thread: Viele Meldungen belegen so nicht den ganzen
+        Thread-Pool des Dienstes. MeldungMitteilung faengt jeden Fehler beim Versand.
         """
+        if not adressen:
+            return
         empfaenger = {adresse.email.lower(): adresse.email for adresse in adressen}
         mitteilung = self._mitteilung_holen()
-        await asyncio.gather(
-            *(
-                asyncio.to_thread(
-                    mitteilung.entscheidung_mitteilen,
-                    email,
-                    entscheidung,
-                    titel,
-                )
-                for email in empfaenger.values()
-            )
-        )
+
+        def alle_verschicken() -> None:
+            for email in empfaenger.values():
+                mitteilung.entscheidung_mitteilen(email, entscheidung, titel)
+
+        await _hoechstens_mail_frist(alle_verschicken)
 
     async def get_pending_reports(
         self, limit: int = 50, offset: int = 0
@@ -438,12 +429,13 @@ class ModerationService:
                 autor=_autor(beitrag),
             )
 
-        adressen = self._offene_adressen(content_id=UUID(content_id))
+        adressen: List[MelderAdresse] = []
         updated_count = self.report_repo.update_reports_by_content_id(
             content_id=UUID(content_id),
             status="reviewed",
             reviewed_by=gesperrt_von,
             resolution_notes="Beitrag gesperrt",
+            melder_adressen=adressen,
         )
         logger.info(
             f"Content {content_id} gesperrt, "
@@ -670,7 +662,7 @@ class ModerationService:
 
         # Offene Meldungen als bearbeitet markieren. Der Beitrag ist schon weg;
         # ein Fehler hier macht die Loeschung nicht rueckgaengig.
-        adressen = self._offene_adressen(content_id=UUID(content_id))
+        adressen: List[MelderAdresse] = []
         try:
             updated_count = self.report_repo.update_reports_by_content_id(
                 content_id=UUID(content_id),
@@ -678,6 +670,7 @@ class ModerationService:
                 reviewed_by=deleted_by,
                 resolution_notes="Content deleted",
                 nur_offene=True,
+                melder_adressen=adressen,
             )
         except Exception as e:
             # Nur der Typ: Die Meldung einer Datenbank kann reviewed_by enthalten.
@@ -729,12 +722,13 @@ class ModerationService:
         """
         try:
             report_uuid = UUID(report_id)
-            adressen = self._offene_adressen(report_id=report_uuid)
+            adressen: List[MelderAdresse] = []
             updated_report = self.report_repo.update_report_status(
                 report_id=report_uuid,
                 status="dismissed",
                 reviewed_by=dismissed_by,
                 resolution_notes=notes or "Report dismissed",
+                melder_adressen=adressen,
             )
             if updated_report:
                 logger.info(f"Report {report_id} dismissed")
