@@ -393,7 +393,9 @@
 @mixin content-wrapper {
   .content-wrapper {
     display: grid;
-    grid-template-columns: 3fr 2fr; // More space for form, less for preview
+    // minmax(0, …): Ohne Untergrenze 0 setzt sich die Breite der Vorschaukarte gegen
+    // die Spalte durch und die Vorschau ragt aus dem Rahmen (#512).
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: var(--spacing-lg);
     align-items: start;
     width: 100%;
@@ -477,7 +479,7 @@
 
     h3 {
       margin: 0;
-      color: #666;
+      color: var(--primary-dark);
       font-size: 1.1rem;
       font-weight: 500;
       flex: 1;

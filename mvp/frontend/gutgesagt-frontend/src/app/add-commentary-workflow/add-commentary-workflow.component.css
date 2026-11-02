@@ -11,8 +11,17 @@
     margin-left: 60px;
 }
 
-/* Formularseite: auf breiten Schirmen schmal und mittig, am Handy volle Breite. */
+/*
+ * Formularseite: mittig, am Handy volle Breite. Ab 960 px so breit wie Kopf und
+ * Ergebnisse (1080 px), damit Formular und Vorschaukarte nebeneinander passen (#512).
+ */
 .workflow-container {
     max-width: 720px;
     margin: 0 auto;
+}
+
+@media (min-width: 960px) {
+    .workflow-container {
+        max-width: 1080px;
+    }
 }

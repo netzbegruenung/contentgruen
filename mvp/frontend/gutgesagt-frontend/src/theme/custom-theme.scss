@@ -186,6 +186,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --border-color: #ccc;
   --hover-bg: #f5f5f5;
   --selected-bg: #e6f0d2; // Keep for backward compatibility
+  --auswahl-grund: rgba(0, 84, 55, 0.07); // Tanne-Hauch: gewaehlter Ansichts-Umschalter, aktiver Admin-Link
   --disabled-bg: #f5f5f5;
   --disabled-color: rgba(0, 0, 0, 0.38);
 

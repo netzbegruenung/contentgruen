@@ -10,15 +10,23 @@
   margin-bottom: 24px;
 }
 
-.header h1 {
+/* Titel wie die Seitentitel (globales h2: GrueneType in Tanne), #512 */
+.header h2 {
   margin: 0;
-  color: #333;
 }
 
+/* Mobil scrollt die Filterleiste seitlich statt abgeschnitten zu werden (#512) */
 .filter-section {
   margin-bottom: 24px;
   display: flex;
   justify-content: center;
+  overflow-x: auto;
+}
+
+@media (max-width: 599px) {
+  .filter-section {
+    justify-content: flex-start;
+  }
 }
 
 .filter-section mat-button-toggle-group {
@@ -45,8 +53,8 @@
 }
 
 .status-reviewed {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+  background-color: var(--success-bg);
+  color: var(--primary-dark);
 }
 
 .status-dismissed {
@@ -134,7 +142,7 @@
   font-size: 80px;
   width: 80px;
   height: 80px;
-  color: #4caf50;
+  color: var(--primary-dark);
   margin-bottom: 16px;
 }
 
@@ -294,7 +302,7 @@ table {
 
 .statement-text {
   font-style: italic;
-  border-left: 3px solid #4caf50;
+  border-left: 3px solid var(--primary-dark);
   background-color: #f1f8f4;
 }
 

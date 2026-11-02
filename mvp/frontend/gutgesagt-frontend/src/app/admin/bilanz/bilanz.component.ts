@@ -2,6 +2,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { Subscription } from 'rxjs';
 import { MetricsService } from '../../services/metrics.service';
 import { BilanzResponse, BilanzWoche } from '../../services/dtos/metricsDtos';
@@ -13,7 +15,7 @@ import { BilanzResponse, BilanzWoche } from '../../services/dtos/metricsDtos';
 @Component({
   selector: 'app-bilanz',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, MatFormFieldModule, MatSelectModule],
   templateUrl: './bilanz.component.html',
   styleUrls: ['./bilanz.component.css'],
 })
@@ -36,8 +38,8 @@ export class BilanzComponent implements OnInit, OnDestroy {
     this.anfrage?.unsubscribe();
   }
 
-  zeitraumWaehlen(wert: string) {
-    this.wochen = Number(wert);
+  zeitraumWaehlen(wert: number) {
+    this.wochen = wert;
     this.laden();
   }
 

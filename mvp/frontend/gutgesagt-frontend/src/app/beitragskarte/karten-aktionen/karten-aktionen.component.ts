@@ -25,7 +25,7 @@ import { AuthService } from '../../auth/auth.service';
 import { LoggingService } from '../../services/logging.service';
 import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
-import { ReportDialogComponent } from '../../shared/components/report-dialog/report-dialog.component';
+import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
 import { HAND_UMRISS } from '../../shared/marke/hand';
 import type { Fassung } from '../../shared/fassung';
 
@@ -168,10 +168,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     if (this.vorschau) {
       return;
     }
-    this.dialog.open(ReportDialogComponent, {
-      width: '500px',
-      data: { contentId: this.inhaltId, contentType: this.typ ?? '' },
-    });
+    meldeDialogOeffnen(this.dialog, { contentId: this.inhaltId, contentType: this.typ ?? '' });
   }
 
   private initializeVoteState(): void {

@@ -1,107 +1,110 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { MatToolbarModule } from '@angular/material/toolbar';
 
+/**
+ * Rahmen des Admin-Bereichs: Navigation links, mobil als Zeile ueber dem Inhalt.
+ *
+ * Keine eigene Leiste und keine Seitenleiste mehr (#512): Den Titel traegt der
+ * App-Kopf wie auf jeder Seite, und die fest offene Seitenleiste liess auf dem Handy
+ * fuer den Inhalt rund 150 px. Kein eigener Zurueck-Knopf: Der Pfeil im Kopf fuehrt
+ * von hier auf die Startseite (data.parent an der Route /admin).
+ */
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    MatSidenavModule,
-    MatListModule,
-    MatIconModule,
-    MatToolbarModule
-  ],
+  imports: [CommonModule, RouterModule, MatIconModule],
   template: `
     <div class="admin-container">
-      <!--
-        Kein eigener Zurueck-Knopf: Der Pfeil im Kopf der App fuehrt von hier auf
-        die Startseite (data.parent an der Route /admin). Zwei Pfeile nebeneinander
-        mit demselben Ziel waren einer zu viel.
-      -->
-      <mat-toolbar color="primary" class="admin-toolbar">
-        <!-- Die weisse Kontur im Logo haelt die Blase im gruenen Kopf lesbar (#416) -->
-        <img class="admin-logo" src="marke/logo.svg" alt="" width="32" height="32">
-        <span>Gut gesagt – Admin</span>
-      </mat-toolbar>
+      <nav class="admin-nav" aria-label="Admin-Bereich">
+        <a routerLink="/admin/dashboard" routerLinkActive="aktiv">
+          <mat-icon aria-hidden="true">dashboard</mat-icon>
+          <span>Übersicht</span>
+        </a>
+        <a routerLink="/admin/moderation" routerLinkActive="aktiv">
+          <mat-icon aria-hidden="true">flag</mat-icon>
+          <span>Moderation</span>
+        </a>
+        <a routerLink="/admin/themen" routerLinkActive="aktiv">
+          <mat-icon aria-hidden="true">label</mat-icon>
+          <span>Themen</span>
+        </a>
+      </nav>
 
-      <mat-sidenav-container class="admin-sidenav-container">
-        <mat-sidenav mode="side" opened class="admin-sidenav">
-          <mat-nav-list>
-            <a mat-list-item routerLink="/admin/dashboard" routerLinkActive="active">
-              <mat-icon>dashboard</mat-icon>
-              <span>MVP Dashboard</span>
-            </a>
-            <a mat-list-item routerLink="/admin/moderation" routerLinkActive="active">
-              <mat-icon>flag</mat-icon>
-              <span>Moderation</span>
-            </a>
-            <a mat-list-item routerLink="/admin/themen" routerLinkActive="active">
-              <mat-icon>label</mat-icon>
-              <span>Themen</span>
-            </a>
-          </mat-nav-list>
-        </mat-sidenav>
-
-        <mat-sidenav-content class="admin-content">
-          <router-outlet></router-outlet>
-        </mat-sidenav-content>
-      </mat-sidenav-container>
+      <div class="admin-content">
+        <router-outlet></router-outlet>
+      </div>
     </div>
   `,
   styles: [`
+    /* Container-Abfrage: Massgeblich ist die Breite des Rahmens, nicht des Fensters. */
+    :host {
+      display: block;
+      container-type: inline-size;
+    }
+
     .admin-container {
-      height: 100vh;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: var(--spacing-lg);
+      padding: var(--spacing-md) var(--spacing-lg) var(--spacing-xl);
+    }
+
+    .admin-nav {
       display: flex;
       flex-direction: column;
+      gap: var(--spacing-xs);
+      align-self: start;
     }
 
-    .admin-toolbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    .admin-nav a {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      min-height: 44px;
+      padding: 0 var(--spacing-md);
+      border-radius: var(--border-radius-medium);
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-decoration: none;
+      white-space: nowrap;
     }
 
-    .admin-logo {
-      width: 32px;
-      height: 32px;
-      margin-right: 12px;
+    .admin-nav a:hover {
+      background-color: var(--hover-bg);
     }
 
-    .spacer {
-      flex: 1 1 auto;
-    }
-
-    .admin-sidenav-container {
-      flex: 1;
-    }
-
-    .admin-sidenav {
-      width: 250px;
-      padding-top: 20px;
-    }
-
-    .admin-sidenav mat-icon {
-      margin-right: 12px;
-    }
-
-    .admin-sidenav .active {
-      background-color: rgba(0, 0, 0, 0.04);
+    /* Gewaehlt wie bei den Ansichts-Umschaltern: Tanne-Hauch, Tanne-Text */
+    .admin-nav a.aktiv {
+      background-color: var(--auswahl-grund);
+      color: var(--primary-dark);
+      font-weight: 700;
     }
 
     .admin-content {
-      padding: 20px;
-      background-color: #f5f5f5;
+      min-width: 0;
     }
 
-    @media (max-width: 768px) {
-      .admin-sidenav {
-        width: 200px;
+    @container (max-width: 959px) {
+      .admin-container {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md) var(--spacing-xl);
+      }
+
+      .admin-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--divider-color);
+      }
+
+      .admin-nav a {
+        border-radius: var(--border-radius-medium) var(--border-radius-medium) 0 0;
+      }
+
+      .admin-nav a.aktiv {
+        box-shadow: inset 0 -2px 0 var(--primary-dark);
       }
     }
   `]

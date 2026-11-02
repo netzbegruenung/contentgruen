@@ -14,12 +14,13 @@
   flex: 1 1 260px;
 }
 
+/* Breit genug, dass die Beschriftungen nicht abgeschnitten werden (#512) */
 .zahl {
-  width: 140px;
+  width: 200px;
 }
 
 .tag {
-  width: 200px;
+  width: 260px;
 }
 
 table {

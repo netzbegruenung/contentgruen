@@ -730,6 +730,22 @@ describe('BeitragskarteComponent', () => {
         'ist-vorschau',
       );
     });
+
+    // Design-Audit A2 (#512): Die feste Breite von 450 px liess die Vorschau aus dem
+    // Formularrahmen ragen; als Vorschau fuellt die Karte ihre Spalte, hoechstens 450 px.
+    it('fuellt als Vorschau ihre Spalte statt fester 450 px', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result')), { vorschau: true });
+      const spalte = document.createElement('div');
+      spalte.style.width = '400px';
+      spalte.appendChild(fixture.nativeElement);
+      document.body.appendChild(spalte);
+
+      expect(element('.karte').classList).toContain('karte--vorschau');
+      expect(element('.karte').getBoundingClientRect().width).toBe(400);
+      spalte.style.width = '600px';
+      expect(element('.karte').getBoundingClientRect().width).toBe(450);
+      spalte.remove();
+    });
   });
   describe('Kompakt', () => {
     it('zeigt als Album Symbol im Kopf, Titel und Anriss auf zwei Zeilen, Datum und Nutzung im Fuss', () => {

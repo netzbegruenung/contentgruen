@@ -63,6 +63,16 @@ describe('AuthInterceptor', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  // Design-Audit A6 (#512): Ein falsches Passwort warf aus dem Formular zurueck
+  // auf die Login-Auswahl. Ein 401 der Anmeldung ist eine Antwort, kein Anlass.
+  it('bleibt bei einem 401 der Anmeldung selbst auf der Seite', () => {
+    httpClient.post('/api/auth/login/managed', {}).subscribe({ error: () => {} });
+
+    httpMock.expectOne('/api/auth/login/managed').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
   it('should redirect to login for 401 on protected endpoints', () => {
     httpClient.get('/api/v1/content/mycontents').subscribe({
       error: (error: HttpErrorResponse) => {

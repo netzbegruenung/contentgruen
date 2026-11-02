@@ -51,6 +51,12 @@
   max-width: 100%;
 }
 
+// Vorschau im Formular: so breit wie die Spalte, hoechstens wie im Karussell (#512)
+.karte--vorschau {
+  width: 100%;
+  max-width: 450px;
+}
+
 // Kopf: nur das Band, so breit wie sein Platz, der Titel ohne Mindesthoehe
 .karte--kopf {
   height: auto;

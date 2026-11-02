@@ -235,6 +235,10 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
     if (this.eigeneLeuteAnzeige) {
       klassen.push('karte--eigene-leute');
     }
+    // Im Formular fuellt die Vorschau ihre Spalte statt fester 450 px (#512).
+    if (this.vorschau) {
+      klassen.push('karte--vorschau');
+    }
     return klassen;
   }
 
