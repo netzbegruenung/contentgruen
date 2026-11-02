@@ -37,6 +37,7 @@ describe('RundgangService', () => {
       const q = new URLSearchParams(baum.query ?? {}).toString();
       return q ? `${baum.pfad}?${q}` : baum.pfad;
     }) as never);
+    router.navigateByUrl.and.resolveTo(true);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     dialog.open.and.returnValue({ afterClosed: () => geschlossen } as never);
 
@@ -121,40 +122,50 @@ describe('RundgangService', () => {
   });
 
   describe('Rundgang', () => {
-    it('führt für die Treffer-Schritte über die Beispielsuche', () => {
-      service.starten('antwort-finden');
-      service.weiter();
+    it('führt für die Treffer-Schritte über die Beispielsuche, Schritt erst nach dem Laden', async () => {
+      await service.starten('antwort-finden');
+      const weiter = service.weiter();
+      expect(service.aktiv()?.index).toBe(0);
+      await weiter;
       expect(router.navigateByUrl).toHaveBeenCalledWith(
         jasmine.objectContaining({ pfad: '/result', query: { searchQuery: BEISPIEL_AUSSAGE } }) as never,
       );
       expect(service.aktiv()?.index).toBe(1);
     });
 
-    it('blättert zurück, aber nicht vor den ersten Schritt', () => {
-      service.starten('antwort-finden');
-      service.zurueck();
+    it('blättert zurück, aber nicht vor den ersten Schritt', async () => {
+      await service.starten('antwort-finden');
+      await service.zurueck();
       expect(service.aktiv()?.index).toBe(0);
-      service.weiter();
-      service.zurueck();
+      await service.weiter();
+      await service.zurueck();
       expect(service.aktiv()?.index).toBe(0);
     });
 
-    it('endet nach dem letzten Schritt mit Weiter', () => {
-      service.starten('mitmachen');
-      for (let i = 0; i < 4; i++) service.weiter();
+    it('endet nach dem letzten Schritt mit Weiter', async () => {
+      await service.starten('mitmachen');
+      for (let i = 0; i < 4; i++) await service.weiter();
       expect(service.aktiv()).toBeNull();
     });
 
-    it('lässt sich jederzeit beenden', () => {
-      service.starten('antwort-finden');
-      service.weiter();
+    it('lässt sich jederzeit beenden', async () => {
+      await service.starten('antwort-finden');
+      await service.weiter();
       service.beenden();
       expect(service.aktiv()).toBeNull();
     });
 
-    it('lässt sich wieder aufrufen, auch wenn das Willkommen schon gesehen ist', () => {
+    it('zeigt einen Schritt nicht mehr, wenn während des Ladens beendet wurde', async () => {
+      await service.starten('antwort-finden');
+      const weiter = service.weiter();
+      service.beenden();
+      await weiter;
+      expect(service.aktiv()).toBeNull();
+    });
+
+    it('lässt sich wieder aufrufen, auch wenn das Willkommen schon gesehen ist', async () => {
       localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
-      service.starten('antwort-finden');
+      await service.starten('antwort-finden');
       expect(service.aktiv()?.rundgang.id).toBe('antwort-finden');
     });
   });

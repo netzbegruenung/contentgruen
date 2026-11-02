@@ -35,6 +35,8 @@ export class RundgangService {
   readonly aktiv = this.stand.asReadonly();
 
   private angebotOffen = false;
+  /** Zaehlt Schrittwechsel; ein ueberholter Wechsel setzt nach dem Laden nichts mehr. */
+  private wechsel = 0;
   private mitmachenAusstehend = false;
 
   /**
@@ -62,42 +64,49 @@ export class RundgangService {
     });
   }
 
-  starten(id: RundgangId): void {
+  starten(id: RundgangId): Promise<void> {
     this.mitmachenAusstehend = this.mitmachenAusstehend && id !== 'mitmachen';
-    this.zuSchritt(RUNDGAENGE[id], 0);
+    return this.zuSchritt(RUNDGAENGE[id], 0);
   }
 
-  weiter(): void {
+  async weiter(): Promise<void> {
     const s = this.stand();
     if (!s) return;
     if (s.index < s.rundgang.schritte.length - 1) {
-      this.zuSchritt(s.rundgang, s.index + 1);
+      await this.zuSchritt(s.rundgang, s.index + 1);
     } else {
       this.beenden();
     }
   }
 
-  zurueck(): void {
+  async zurueck(): Promise<void> {
     const s = this.stand();
     if (s && s.index > 0) {
-      this.zuSchritt(s.rundgang, s.index - 1);
+      await this.zuSchritt(s.rundgang, s.index - 1);
     }
   }
 
   beenden(): void {
+    this.wechsel++; // ein Schritt, dessen Seite noch laedt, erscheint nicht mehr
     if (!this.stand()) return;
     this.stand.set(null);
     this.naechstesAngebot();
   }
 
-  private zuSchritt(rundgang: Rundgang, index: number): void {
+  /**
+   * Erst die Seite, dann der Schritt: Sonst faende der Schritt sein Ziel noch auf der
+   * alten Seite (eine Karte unter „Neueste Inhalte“ statt eines Treffers).
+   */
+  private async zuSchritt(rundgang: Rundgang, index: number): Promise<void> {
+    const wechsel = ++this.wechsel;
     const seite = rundgang.schritte[index].seite;
     if (seite) {
       const ziel = this.router.createUrlTree([seite.pfad], { queryParams: seite.query ?? {} });
       if (this.router.serializeUrl(ziel) !== this.router.url) {
-        this.router.navigateByUrl(ziel);
+        await this.router.navigateByUrl(ziel).catch(() => false);
       }
     }
+    if (wechsel !== this.wechsel) return; // inzwischen beendet oder weitergeklickt
     this.stand.set({ rundgang, index });
   }
 
@@ -127,7 +136,7 @@ export class RundgangService {
         // Auch Escape und „Später“ zählen als gesehen: Das Angebot kommt nicht wieder.
         merken(schluessel);
         if (wahl === 'starten') {
-          this.starten(angebot.rundgang);
+          void this.starten(angebot.rundgang);
         } else {
           this.naechstesAngebot();
         }

@@ -75,6 +75,7 @@ export class RundgangComponent implements OnDestroy {
   private ziel: HTMLElement | null = null;
   private vorher: HTMLElement | null = null;
   private lauf = 0;
+  private nachsuchen = 0;
   private readonly beimScrollen = () => this.ausrichten();
 
   constructor() {
@@ -142,6 +143,7 @@ export class RundgangComponent implements OnDestroy {
 
   private async zeigen(s: RundgangStand | null): Promise<void> {
     const lauf = ++this.lauf;
+    this.nachsuchen = 0;
     if (!s) {
       if (this.stand()) {
         this.stand.set(null);
@@ -200,6 +202,16 @@ export class RundgangComponent implements OnDestroy {
     ziel.style.scrollMarginTop = alt;
   }
 
+  /** Versucht es kurz darauf erneut, solange derselbe Schritt steht und die Wartezeit reicht. */
+  private spaeterAusrichten(): void {
+    const lauf = this.lauf;
+    if (this.nachsuchen >= ZIEL_WARTEZEIT_MS / ZIEL_TAKT_MS) return;
+    this.nachsuchen++;
+    setTimeout(() => {
+      if (lauf === this.lauf) this.ausrichten();
+    }, ZIEL_TAKT_MS);
+  }
+
   /** Setzt Lichtkegel, Sprechblase und Pfeil an das Ziel, wie es gerade im Fenster steht. */
   private ausrichten(): void {
     const blase = this.blase?.nativeElement;
@@ -208,7 +220,12 @@ export class RundgangComponent implements OnDestroy {
     const vw = document.documentElement.clientWidth;
     const vh = document.documentElement.clientHeight;
 
-    if (!this.ziel?.isConnected) {
+    if (!this.ziel?.isConnected && this.schritt) {
+      // Die Seite hat das Element neu gezeichnet (etwa nach dem Laden der Treffer)
+      this.ziel = sichtbaresElement(this.schritt.ziel);
+      if (!this.ziel) this.spaeterAusrichten();
+    }
+    if (!this.ziel) {
       this.kegel.set(null);
       this.pfeil.set(null);
       this.blasenOrt.set(this.schmal ? {} : { left: (vw - b.w) / 2, top: (vh - b.h) / 2 });

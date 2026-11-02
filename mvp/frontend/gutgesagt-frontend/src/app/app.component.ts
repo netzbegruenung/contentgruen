@@ -184,7 +184,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /** Aus dem mobilen Menue; aus der Hilfe startet der Dialog selbst. */
   rundgangStarten(id: RundgangId): void {
-    this.rundgang.starten(id);
+    void this.rundgang.starten(id);
   }
 
   openProfilbildDialog(): void {

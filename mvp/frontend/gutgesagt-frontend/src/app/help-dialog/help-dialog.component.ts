@@ -49,7 +49,7 @@ export class HelpDialogComponent {
    * Schliessen den Fokus zurueck auf ihren Knopf, weg von der Sprechblase.
    */
   rundgangStarten(id: RundgangId): void {
-    this.dialogRef.afterClosed().subscribe(() => this.rundgang.starten(id));
+    this.dialogRef.afterClosed().subscribe(() => void this.rundgang.starten(id));
     this.dialogRef.close();
   }
 
