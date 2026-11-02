@@ -348,6 +348,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Ohne eigene Wahl speichern wir nichts');
     });
 
+    it('Gerätespeicher: Willkommen und Rundgang „Mitmachen“ als zwei Vermerke ohne Übertragung (#516)', () => {
+      const text = abschnitt('Weitere Einträge');
+
+      expect(text).toContain('Willkommen beim ersten Besuch');
+      expect(text).toContain('Rundgangs „Mitmachen“');
+      expect(text).toContain('zwei Vermerke ohne Angaben über dich');
+      expect(text).toContain('bis du die Websitedaten dieser Seite löschst');
+      expect(text).toContain('Sie gehen nicht an uns und werden nicht gezählt.');
+    });
+
     it('Anmelde-Cookie: Angaben des Identitätsdienstes nur bei der Anmeldung über die Netzbegrünung', () => {
       expect(abschnitt('Anmelde-Cookie')).toContain(
         'bei der Anmeldung über die Netzbegrünung dazu die übrigen Angaben, die ihr Identitätsdienst übermittelt',
