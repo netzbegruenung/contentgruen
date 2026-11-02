@@ -1,8 +1,9 @@
 # Datenschutz-Folgenabschätzung: Punkte, Quests und Ranglisten
 
 > **Entwurf zur Prüfung, nicht beschlossen.** Keine Rechtsberatung. Entscheiden müssen der
-> Vorstand der Netzbegrünung als Verantwortlicher und die Datenschutzbeauftragte; Fragen an sie
-> stehen in #296. Bis dahin bleiben die Punkte aus (`SEMANTIC_SEARCH_PUNKTE_AKTIV`, Standard aus).
+> Vorstand der Netzbegrünung als Verantwortlicher und die Datenschutzbeauftragte, am besten in
+> derselben Runde wie #296; die Fragen an sie stehen in Abschnitt 6. Bis dahin bleiben die Punkte
+> aus (`SEMANTIC_SEARCH_PUNKTE_AKTIV`, Standard aus).
 
 Stand 02.11.2026; Code `main` @ `2c28931a` und PR #476 @ `5b19ef32` (offen). `ss/` =
 `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
@@ -23,13 +24,15 @@ Paar-Prüfwert und Muster-Hinweis kommen mit PR #476 dorthin, Ausbaustufe steht 
   nur mit Zustimmung), Quests, Meilenstein-Abzeichen, Krone, Wochenthema
   (`docs/VISION.md:99-103`).
 - **Fristen** (`docs/LOESCHKONZEPT.md:146-148` (#476)): Prüfwert 1 Tag, Paar-Prüfwert 7 Tage,
-  Muster-Hinweis 56 Tage und mit dem Konto gelöscht (`mvp/scripts/manual/person_loeschen.sql:55` (#476)).
+  Muster-Hinweis 56 Tage und mit dem Konto gelöscht
+  (`mvp/scripts/manual/person_loeschen.sql:55` (#476)).
 
 ## 2. Ist eine DSFA Pflicht?
 
-**Ja, nach Art. 35 Abs. 1** (voraussichtlich hohes Risiko). Die Regelbeispiele aus Abs. 3 treffen nicht zu: Es gibt keine Entscheidung mit Rechtswirkung (lit. a), die
-Zahl der Mitwirkenden ist nicht „umfangreich“ (lit. b), und Gut gesagt beobachtet nichts
-Öffentliches (lit. c). Auch die DSK-Mussliste (Art. 35 Abs. 4) nennt den Fall nicht ausdrücklich;
+**Ja, nach Art. 35 Abs. 1** (voraussichtlich hohes Risiko). Die Regelbeispiele aus Abs. 3
+treffen nicht zu: Es gibt keine Entscheidung mit Rechtswirkung (lit. a), die Zahl der
+Mitwirkenden ist nicht „umfangreich“ (lit. b), und Gut gesagt beobachtet nichts Öffentliches
+(lit. c). Auch die DSK-Mussliste (Art. 35 Abs. 4) nennt den Fall nicht ausdrücklich;
 sie ist aber nicht abschließend. Nach den Leitlinien WP 248, die der EDSA übernommen hat, reichen
 in der Regel zwei von neun Kriterien, und zwei treffen sicher zu:
 
@@ -60,7 +63,7 @@ nicht konsultiert werden (Art. 36).
 
 1. **Beim ersten Login** gibt es die Art. 9-Einwilligung schon als Entscheidung (Lückenliste
    D-N15, `docs/rechtstexte-luecken/4-fehlende-vorgaenge/D-N15.md`). Sie nennt zusätzlich als
-   Zwecke: Punkte, Aufgaben und Meilensteine, und den Schutz der Punkte durch Muster-Hinweise. Für
+   Zwecke: Punkte, Quests und Meilensteine, und den Schutz der Punkte durch Muster-Hinweise. Für
    die Muster-Hinweise reicht Art. 6 Abs. 1 lit. f allein nicht, weil sie Art. 9-Daten betreffen.
 2. **Beim ersten Punkt** fragt die App nach dem Opt-in aus Risiko 1, das ist eine eigene
    Einwilligung für die Sichtbarkeit.
@@ -79,7 +82,25 @@ aus #470 um, das mit einem Tagesschlüssel nur im Speicher entsteht
 Besucher. Für diesen Stand trägt Art. 6 Abs. 1 lit. f wie bei der bestehenden Nutzungsmessung
 (DSE:425-430); zu prüfen mit #495.
 
-## 5. Vor dem Einschalten der Punkte
+## 5. Notwendigkeit und Verhältnismäßigkeit (Art. 35 Abs. 7 lit. b)
+
+Zweck ist, Wirkung bei anderen sichtbar zu machen und zum Mitmachen zu motivieren
+(ADR 0004); ohne Zuordnung zu einer Person gibt es keine Punkte. Darüber hinaus entsteht nichts:
+Punkte werden beim Abruf berechnet, nicht gespeichert (`ss/services/punkte_service.py:4-7`
+(#476)); statt eines Protokolls, wer was genutzt hat, gibt es nur Prüfwerte mit kurzen Fristen
+(Abschnitt 1); andere sehen etwas nur mit Opt-in. **Widerruf** (Vorschlag): Wer das Opt-in
+zurücknimmt, verschwindet sofort aus Ranglisten und Abzeichen; die eigenen Punkte sieht die
+Person weiter. Was der Widerruf der Login-Einwilligung bewirkt, legt #429 fest (D-N15). Geht
+dabei das Konto, gehen die Muster-Hinweise mit, die Paar-Prüfwerte laufen nach 7 Tagen aus.
+
+## 6. Fragen an Vorstand und Datenschutzbeauftragte
+
+1. Ist eine DSFA nach Art. 35 Abs. 1 nötig, und genügt dieser Umfang (Abschnitt 2)?
+2. Trägt Art. 9 Abs. 2 lit. a in zwei Stufen, auch für die Muster-Hinweise (Abschnitt 4)?
+3. Trägt Art. 6 Abs. 1 lit. f den Prüfwert der Besucher (Abschnitt 4, mit #495)?
+4. Muss der Schlüssel der Prüfwerte vor dem Einschalten nur im Speicher liegen (Risiko 2)?
+
+## 7. Vor dem Einschalten der Punkte
 
 DSFA übernommen, Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt,
 Datenschutzerklärung angepasst (#499; dabei werden „kein Profiling“, DSE:864-870, und „kein
