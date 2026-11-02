@@ -139,6 +139,25 @@ def test_ci_bericht_nur_bei_rotem_pull_request_mit_dem_secret():
     }
 
 
+WIKI = yaml.safe_load((WURZEL / ".woodpecker" / "rechtstexte-wiki.yaml").read_text())
+
+
+def test_wiki_seite_nach_jedem_push_auf_main():
+    # Das Secret darf in keinem PR-Lauf und keinem manuellen Lauf eines Branches stehen.
+    # Kein Pfadfilter: Ob sich etwas geaendert hat, prueft das Skript (rechtstexte_wiki.py).
+    ((bedingung,),) = [WIKI["when"]]
+    assert bedingung == {"event": "push", "branch": "main"}
+
+
+def test_wiki_seite_mit_eigenem_secret_im_python_image():
+    ((schritt,),) = [WIKI["steps"]]
+    assert schritt["image"] == PYTHON
+    assert schritt["environment"]["FORGEJO_TOKEN"] == {
+        "from_secret": "forgejo_wiki_token"
+    }
+    assert schritt["commands"] == ["python3 scripts/rechtstexte_wiki.py"]
+
+
 def test_schritte_rufen_check_sh_mit_ihrem_namen_auf():
     # Die Schritte von check.sh (SCHRITTE=...) laufen in der Pipeline je als eigener Schritt.
     check = (WURZEL / "scripts" / "check.sh").read_text()
