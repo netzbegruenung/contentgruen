@@ -1,0 +1,46 @@
+@if (stand(); as s) {
+    <!-- Sperrt die Seite: Während des Rundgangs zählt nur die Sprechblase -->
+    <div class="sperre" aria-hidden="true"></div>
+
+    @if (kegel(); as k) {
+        <div class="kegel" aria-hidden="true"
+             [style.left.px]="k.x" [style.top.px]="k.y" [style.width.px]="k.w" [style.height.px]="k.h"></div>
+    } @else {
+        <div class="schleier" aria-hidden="true"></div>
+    }
+
+    <div #blase class="blase" role="dialog" aria-modal="true" tabindex="-1"
+         [attr.aria-label]="s.rundgang.name + ': ' + schritt?.titel"
+         aria-describedby="rundgang-text"
+         aria-roledescription="Rundgang-Schritt"
+         cdkTrapFocus
+         [style.left.px]="blasenOrt().left" [style.top.px]="blasenOrt().top">
+        <div class="kopf">
+            <img src="marke/daumen.svg" alt="" width="40" height="40">
+            <div class="fortschritt">
+                <div class="balken" aria-hidden="true">
+                    @for (x of s.rundgang.schritte; track $index) {
+                        <i [class.an]="$index <= s.index"></i>
+                    }
+                </div>
+                <span class="stand">Schritt {{ s.index + 1 }} von {{ s.rundgang.schritte.length }}</span>
+            </div>
+        </div>
+        <h3 id="rundgang-titel">{{ schritt?.titel }}</h3>
+        <p id="rundgang-text">{{ text }}</p>
+        <div class="zeile">
+            <button type="button" class="rundgang-knopf text beenden" (click)="beenden()">Beenden</button>
+            <span class="platz"></span>
+            @if (s.index > 0) {
+                <button type="button" class="rundgang-knopf umriss zurueck" (click)="zurueck()">Zurück</button>
+            }
+            <button type="button" class="rundgang-knopf voll weiter" (click)="weiter()">{{ letzter ? 'Fertig' : 'Weiter' }}</button>
+        </div>
+        @if (pfeil(); as p) {
+            <span [class]="'pfeil pfeil-' + p.seite" aria-hidden="true"
+                  [style.left.px]="p.seite === 'links' ? null : p.versatz"
+                  [style.top.px]="p.seite === 'links' ? p.versatz : null"></span>
+        }
+    </div>
+}
+<div class="cdk-visually-hidden" aria-live="polite">{{ ansage() }}</div>

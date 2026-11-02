@@ -695,6 +695,16 @@ a:hover {
     overflow-y: auto !important;
 }
 
+/* Willkommen und Mitmachen-Angebot (#389): runde Ecken, Schleier im Ton des Rundgangs */
+.angebot-fenster .mat-mdc-dialog-surface {
+    border-radius: var(--border-radius-large) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25) !important;
+}
+
+.angebot-schleier {
+    background: var(--rundgang-schleier);
+}
+
 /* Ensure body doesn't get height restricted when dialog opens */
 body.cdk-global-scrollblock {
     position: fixed !important;

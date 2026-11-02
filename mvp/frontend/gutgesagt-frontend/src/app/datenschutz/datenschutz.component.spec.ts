@@ -348,6 +348,14 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Ohne eigene Wahl speichern wir nichts');
     });
 
+    it('Gerätespeicher: Willkommen und Rundgang merken sich nur, dass sie gesehen wurden (#389)', () => {
+      const text = abschnitt('Weitere Einträge');
+
+      expect(text).toContain('dass du sie schon gesehen hast');
+      expect(text).toContain('zwei Vermerke ohne Angaben über dich');
+      expect(text).toContain('Sie werden nicht an uns übertragen');
+    });
+
     it('Anmelde-Cookie: Angaben des Identitätsdienstes nur bei der Anmeldung über die Netzbegrünung', () => {
       expect(abschnitt('Anmelde-Cookie')).toContain(
         'bei der Anmeldung über die Netzbegrünung dazu die übrigen Angaben, die ihr Identitätsdienst übermittelt',

@@ -39,6 +39,32 @@ describe('MobileMenuComponent', () => {
     expect(schliessen).toHaveBeenCalled();
   });
 
+  // Rundgaenge wieder aufrufen (#389)
+  describe('Rundgang', () => {
+    it('bietet „Rundgang starten“ auch ohne Anmeldung an und schliesst danach das Menue', () => {
+      const rundgang = spyOn(component.rundgang, 'emit');
+      const schliessen = spyOn(component.closeMenu, 'emit');
+
+      const eintrag = fixture.nativeElement.querySelector('.mobile-menu-rundgang') as HTMLButtonElement;
+      expect(eintrag.textContent).toContain('Rundgang starten');
+      eintrag.click();
+
+      expect(rundgang).toHaveBeenCalledWith('antwort-finden');
+      expect(schliessen).toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen')).toBeNull();
+    });
+
+    it('bietet Angemeldeten zusaetzlich den Rundgang Mitmachen an', () => {
+      component.userInfo = { isAuthenticated: true, userId: 'u-1', userName: 'Anna B.', claims: null };
+      fixture.detectChanges();
+      const rundgang = spyOn(component.rundgang, 'emit');
+
+      (fixture.nativeElement.querySelector('.mobile-menu-rundgang-mitmachen') as HTMLButtonElement).click();
+
+      expect(rundgang).toHaveBeenCalledWith('mitmachen');
+    });
+  });
+
   describe('Rechtstexte', () => {
     const eintraege: Array<[string, string]> = [
       ['.legal-impressum', '/impressum'],

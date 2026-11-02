@@ -14,6 +14,7 @@
                 (loginToContribute)="loginWithReturnUrl('/contribute')"
                 (logout)="logout()"
                 (help)="openHelpDialog()"
+                (rundgang)="rundgangStarten($event)"
                 (profilbild)="openProfilbildDialog()"
                 (feedback)="openFeedbackDialog()">
             </app-mobile-menu>
@@ -167,7 +168,7 @@
                         <span class="cdk-visually-hidden">Feedback</span>
                     </button>
 
-                    <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button"
+                    <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button hilfe-knopf"
                         aria-label="Hilfe öffnen">
                         <mat-icon>help_outline</mat-icon>
                     </button>
@@ -206,3 +207,6 @@
         </mat-sidenav-content>
     </mat-sidenav-container>
 </div>
+
+<!-- Willkommen-Rundgang und Mitmachen (#389); die Schritte stehen in rundgang-daten.ts -->
+<app-rundgang></app-rundgang>

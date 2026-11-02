@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +30,9 @@ import { takeUntil, filter } from 'rxjs/operators';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { KETTEN_ICONS } from './shared/fangkorb-texte';
 import { ROUTES } from './shared/constants/app.constants';
+import { RundgangComponent } from './rundgang/rundgang.component';
+import { RundgangService } from './rundgang/rundgang.service';
+import { RundgangId } from './rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-root',
@@ -49,7 +52,8 @@ import { ROUTES } from './shared/constants/app.constants';
     RouterLink,
     FooterComponent,
     MobileMenuComponent,
-    MobileHeaderComponent
+    MobileHeaderComponent,
+    RundgangComponent
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
@@ -82,6 +86,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   userInfo: UserInfo | null = null;
+
+  private readonly rundgang = inject(RundgangService);
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor(
     private router: Router,
@@ -135,6 +142,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.profilbild.setzePerson(userInfo);
       });
 
+    // Willkommen beim ersten Besuch, Mitmachen nach der ersten Anmeldung (#389)
+    this.rundgang.beobachten(this.destroyRef);
+
     // Rueckmeldung beim Anmelden, wie oft die eigenen Beitraege genutzt wurden (#349)
     this.rueckmeldung.starten();
 
@@ -170,6 +180,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   openHelpDialog() {
     hilfeOeffnen(this.dialog);
+  }
+
+  /** Aus dem mobilen Menue; aus der Hilfe startet der Dialog selbst. */
+  rundgangStarten(id: RundgangId): void {
+    this.rundgang.starten(id);
   }
 
   openProfilbildDialog(): void {
