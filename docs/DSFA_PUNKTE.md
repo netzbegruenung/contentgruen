@@ -7,7 +7,9 @@
 Stand 02.11.2026; Code `main` @ `2c28931a` und PR #476 @ `5b19ef32` (offen). `ss/` =
 `mvp/backend/semantic-search-service/app/`, `DSE` = die Datenschutzerklärung
 (`mvp/frontend/gutgesagt-frontend/src/app/datenschutz/datenschutz.component.html`), **(#476)** =
-Stand auf dem Branch von PR #476. Begriffe wie in [`GLOSSARY.md`](../GLOSSARY.md).
+Stand auf dem Branch von PR #476. Begriffe wie in [`GLOSSARY.md`](../GLOSSARY.md); Prüfwert,
+Paar-Prüfwert und Muster-Hinweis kommen mit PR #476 dorthin, Ausbaustufe steht in
+`docs/VISION.md:14-23`, die Krone unter „Siegel“ (`GLOSSARY.md:278-279`).
 
 ## 1. Worum es geht
 
@@ -25,7 +27,7 @@ Stand auf dem Branch von PR #476. Begriffe wie in [`GLOSSARY.md`](../GLOSSARY.md
 
 ## 2. Ist eine DSFA Pflicht?
 
-**Ja.** Art. 35 Abs. 3 trifft nicht zu: Es gibt keine Entscheidung mit Rechtswirkung (lit. a), die
+**Ja, nach Art. 35 Abs. 1** (voraussichtlich hohes Risiko). Die Regelbeispiele aus Abs. 3 treffen nicht zu: Es gibt keine Entscheidung mit Rechtswirkung (lit. a), die
 Zahl der Mitwirkenden ist nicht „umfangreich“ (lit. b), und Gut gesagt beobachtet nichts
 Öffentliches (lit. c). Auch die DSK-Mussliste (Art. 35 Abs. 4) nennt den Fall nicht ausdrücklich;
 sie ist aber nicht abschließend. Nach den Leitlinien WP 248, die der EDSA übernommen hat, reichen
@@ -36,15 +38,17 @@ in der Regel zwei von neun Kriterien, und zwei treffen sicher zu:
 - **Besondere Kategorien:** Schon die Mitwirkung lässt auf eine politische Meinung schließen
   (Art. 9 Abs. 1; DSE:876-889; `docs/VISION.md:101`).
 
-Die DSFA muss stehen, **bevor die Punkte eingeschaltet werden**, nicht erst vor den Ranglisten.
+Die DSFA muss stehen, **bevor die Punkte eingeschaltet werden**, nicht erst vor den Ranglisten,
+wie `docs/VISION.md:134` es vorsieht: Schon der eigene Punktestand ist eine Bewertung von
+Personen. Das ist eine Empfehlung; ändern sollte VISION erst, wer die DSFA übernimmt.
 Neu zu prüfen ist sie vor Ausbaustufe 2 (Grünes Netz), weil dann lit. b anders aussehen kann.
 
 ## 3. Die drei wichtigsten Risiken und die Maßnahmen
 
 | Risiko | Maßnahmen | Rest |
 |---|---|---|
-| **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:423-424`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete, keine Linkvorschau. Eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | gering |
-| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Die werden aber mit dem **konfigurierten** Schlüssel gebildet (`ss/services/entdoppelung.py:37-43,65-67` (#476); `ss/services/search_tracking_service.py:82`). Wer Datenbank und Schlüssel hat, kann für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | Die Entdoppelung über Prüfwerte statt Protokoll ist **umgesetzt**. **Neu:** Prüfwerte und Paar-Prüfwerte mit einem Schlüssel bilden, der nur im Speicher liegt, wie der Tagesschlüssel der Besucher (`ss/utils/besucher_pseudonym.py:45-73`). Nach einem Neustart beginnt dann ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering (ohne den Speicherschlüssel: mittel) |
+| **1. Politische Aktivität wird sichtbar.** Rangliste, Abzeichen, Krone und Wochenthema zeigen anderen, wer wie aktiv ist. Unter den Angemeldeten sind auch Nicht-Mitglieder (Beta-Zugänge, Einladungen; `GLOSSARY.md:423-424`), und Screenshots können nach außen gehen. | **Ein eigenes Opt-in** für alles, was andere an der Person sehen. Zwei gleichwertige Knöpfe, nichts vorbelegt, jederzeit widerrufbar (`docs/VISION.md:101`). Gezeigt wird nur der Anzeigename, nur die ersten 10 und der eigene Platz, nur für Angemeldete. Vorschlag zusätzlich: keine Linkvorschau für Ranglisten und eine Rangliste erst ab etwa 5 Personen mit Opt-in. Ohne Opt-in sieht nur die Person selbst ihre Punkte. | gering |
+| **2. Ein Netz, wer wessen Beiträge nutzt.** PR #476 speichert kein Protokoll, nur Prüfwerte als HMAC. Die werden aber mit dem **konfigurierten** Schlüssel gebildet (`ss/services/entdoppelung.py:37-43,65-67` (#476), `ss/services/search_tracking_service.py:34-36` (#476)). Wer Datenbank und Schlüssel hat, kann für jedes Kontenpaar 7 Tage lang nachrechnen, wer einen Beitrag von wem genutzt hat (#499). | Die Entdoppelung über Prüfwerte statt Protokoll ist **umgesetzt**. **Neu:** Prüfwerte und Paar-Prüfwerte mit einem Schlüssel bilden, der nur im Speicher liegt, wie der Tagesschlüssel der Besucher (`ss/utils/besucher_pseudonym.py:45-73`). Nach einem Neustart beginnt dann ein Muster neu, und eine Nutzung zählt am selben Tag ein zweites Mal; das ist hinnehmbar. Muster-Hinweise lösen nichts automatisch aus; ein Admin prüft und hört die Personen an. | gering (ohne den Speicherschlüssel: mittel) |
 | **3. Zweckentfremdung und Druck.** Punkte könnten als Maßstab für Ämter, Listen oder Kampagnen dienen oder Masse und Schärfe belohnen. | Zweckbindung in Datenschutzerklärung und Nutzungsbedingungen: keine Weitergabe, keine Auswahl nach Punkten. Kein Geld und keine Sachleistung (`docs/VISION.md:31`). Punkte vor allem für Wirkung, Tagesdeckel, kein Abzug, keine Punkte fürs Bewerten (`docs/adr/0004-punkte-aus-wirkung-bei-anderen.md:9-19`). | gering bis mittel; in der Acht-Wochen-Bilanz ansehen |
 
 Mit diesen Maßnahmen ist das Restrisiko gering bis mittel. Die Aufsichtsbehörde muss deshalb
@@ -67,17 +71,17 @@ Eingeladene sind keine Mitglieder, und spätestens mit Ausbaustufe 2 geht der Kr
 Ob die Netzbegrünung überhaupt unter lit. d fällt, ist offen (`docs/VISION.md:134`). Lit. d bleibt
 deshalb höchstens eine interne Hilfsbegründung und gehört nicht in die Datenschutzerklärung.
 
-**Besucher** haben nicht eingewilligt. Ihre Kopie erzeugt nur für einen Tag einen Prüfwert aus
-ihrem flüchtigen Tagespseudonym (`ss/utils/besucher_pseudonym.py:15-30`). Dafür trägt Art. 6
-Abs. 1 lit. f wie bei der bestehenden Nutzungsmessung (DSE:425-430); zu prüfen mit #495.
+**Besucher** haben nicht eingewilligt. Ihre Kopie erzeugt für einen Tag einen Prüfwert. Heute
+bildet PR #476 ihn noch aus der alten Sitzungskennung mit dem konfigurierten Schlüssel
+(`ss/services/entdoppelung.py:58-62` (#476)); vor dem Merge stellt er auf das Tagespseudonym
+aus #470 um, das mit einem Tagesschlüssel nur im Speicher entsteht
+(`ss/utils/besucher_pseudonym.py:15-30`). Danach verweist nach dem Tag nichts mehr auf den
+Besucher. Für diesen Stand trägt Art. 6 Abs. 1 lit. f wie bei der bestehenden Nutzungsmessung
+(DSE:425-430); zu prüfen mit #495.
 
 ## 5. Vor dem Einschalten der Punkte
 
-- Vorstand und Datenschutzbeauftragte übernehmen diese DSFA, gegebenenfalls geändert.
-- Die Login-Einwilligung nennt die Zwecke aus Abschnitt 4.
-- Die Datenschutzerklärung bekommt einen Abschnitt zu Punkten (#499). Zwei Stellen dort werden
-  dann falsch und müssen ersetzt werden: „Ein Profiling … findet nicht statt“ (DSE:864-870) und
-  „kein Pseudonym“ beim Kopieren (DSE:419-421).
-- PR #476 nutzt das Tagespseudonym aus #470 statt der alten Sitzungskennung
-  (`ss/api/v1/usage.py:292` (#476)), und der Schlüssel im Speicher aus Risiko 2 ist umgesetzt
-  oder bewusst verschoben.
+DSFA übernommen, Login-Einwilligung um die Zwecke aus Abschnitt 4 ergänzt,
+Datenschutzerklärung angepasst (#499; dabei werden „kein Profiling“, DSE:864-870, und „kein
+Pseudonym“ beim Kopieren, DSE:419-421, falsch), PR #476 auf #470 umgestellt und der Schlüssel im
+Speicher aus Risiko 2 umgesetzt oder bewusst verschoben.
