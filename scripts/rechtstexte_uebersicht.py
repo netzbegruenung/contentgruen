@@ -1,6 +1,6 @@
 """Uebersicht der Rechtstext-Listen, erzeugt aus einer Datei je Eintrag (#500).
 
-Aufruf: python3 scripts/rechtstexte_uebersicht.py luecken|staende
+Aufruf: python3 scripts/rechtstexte_uebersicht.py luecken|staende|seite
 
 luecken: docs/rechtstexte-luecken/, je Abschnitt ein Ordner mit README.md (Ueberschrift und
 Text des Abschnitts) und einer Datei je Eintrag, benannt nach seiner Nummer (D-N5.md):
@@ -16,8 +16,10 @@ staende: docs/nutzungsbedingungen-staende/, je Stand ein Ordner, benannt nach se
 (2026-10-30, fruehere Staende mit Monat: 2026-10). Darin stand.md mit dem Stand als
 Ueberschrift und seinen Feldern, daneben eine Datei je Aenderung, benannt nach dem Ticket.
 
-Die Uebersicht wird nicht eingecheckt: Eine Datei, die jeden Eintrag nennt, waere wieder
-die Stelle, an der jeder PR anhaengt. Die Tests in scripts/tests/ pruefen die Ablage.
+seite: beide untereinander. Die Uebersicht wird nicht eingecheckt: Eine Datei, die jeden
+Eintrag nennt, waere wieder die Stelle, an der jeder PR anhaengt. Lesbar ist sie im Wiki
+(Seite Rechtstexte-Uebersicht), das scripts/rechtstexte_wiki.py nach jedem Merge auf main
+neu schreibt (#503). Die Tests in scripts/tests/ pruefen die Ablage.
 """
 
 import pathlib
@@ -140,11 +142,23 @@ def staende(wurzel: pathlib.Path = STAENDE) -> str:
     )
 
 
+def seite(
+    luecken_wurzel: pathlib.Path = LUECKEN, staende_wurzel: pathlib.Path = STAENDE
+) -> str:
+    """Beide Listen untereinander, fuer die Wiki-Seite (scripts/rechtstexte_wiki.py)."""
+    return (
+        "# Lückenliste\n\n"
+        + luecken(luecken_wurzel)
+        + "\n# Stände der Nutzungsbedingungen\n\n"
+        + staende(staende_wurzel)
+    )
+
+
 def main(argv: list[str]) -> int:
-    uebersichten = {"luecken": luecken, "staende": staende}
+    uebersichten = {"luecken": luecken, "staende": staende, "seite": seite}
     art = argv[0] if len(argv) == 1 else ""
     if art not in uebersichten:
-        print("Aufruf: rechtstexte_uebersicht.py luecken|staende", file=sys.stderr)
+        print("Aufruf: rechtstexte_uebersicht.py luecken|staende|seite", file=sys.stderr)
         return 2
     print(uebersichten[art](), end="")
     return 0

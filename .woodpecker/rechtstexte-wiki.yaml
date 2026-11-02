@@ -1,0 +1,25 @@
+# Schreibt nach einem Merge auf main, der die Rechtstext-Ablage beruehrt, die Uebersicht
+# ins Wiki (Seite Rechtstexte-Uebersicht, #503): lesbar ohne Python, eingecheckt wird sie
+# nicht (docs/CI.md, "Wiki-Seite der Rechtstext-Ablage").
+# Nur push auf main: Das Secret ist nur fuer push freigegeben, PR-Laeufe sehen es nicht.
+# Eigener Workflow, damit ein Fehler hier den Status von ci nicht beruehrt; der Pfadfilter
+# ist hier erlaubt, weil kein Status von diesem Workflow Pflicht ist.
+when:
+  - event: push
+    branch: main
+    path:
+      - docs/rechtstexte-luecken/**
+      - docs/nutzungsbedingungen-staende/**
+      - scripts/rechtstexte_uebersicht.py
+      - scripts/rechtstexte_wiki.py
+      - .woodpecker/rechtstexte-wiki.yaml
+
+steps:
+  # Nur Standardbibliothek, kein venv noetig
+  - name: wiki-seite
+    image: python:3.13-slim
+    environment:
+      FORGEJO_TOKEN:
+        from_secret: forgejo_wiki_token
+    commands:
+      - python3 scripts/rechtstexte_wiki.py
