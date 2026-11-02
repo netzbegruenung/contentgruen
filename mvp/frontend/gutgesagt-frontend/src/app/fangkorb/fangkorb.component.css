@@ -181,4 +181,9 @@
     overflow-x: visible;
     padding-right: 0;
   }
+
+  /* Bricht die Leiste um, trennt die Zeile die Gruppen; ein Strich bliebe allein stehen */
+  .filter-trenner {
+    display: none;
+  }
 }

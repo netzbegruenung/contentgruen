@@ -235,6 +235,26 @@ describe('AppComponent - Desktop-Kopf', () => {
       }
     });
 
+    it('setzt lange Titel kleiner und laesst die Begruessung weichen, kurze nicht', () => {
+      const komponente = fixture.componentInstance;
+      komponente.pageTitle = 'Hintergrundinfo verfassen';
+      fixture.detectChanges();
+      expect(kopf().classList).toContain('header--titel-lang');
+      expect(kopf().querySelector('.desktop-header-title')!.classList).toContain('desktop-header-title--lang');
+
+      komponente.pageTitle = 'Fangkorb';
+      fixture.detectChanges();
+      expect(kopf().classList).not.toContain('header--titel-lang');
+    });
+
+    it('behaelt fuer Screenreader den Namen der Textlinks, auch wenn sie als Icon erscheinen', () => {
+      const link = Array.from(kopf().querySelectorAll('a.header-link')).find((a) =>
+        a.textContent!.includes('Hier fehlt eine Antwort'),
+      )!;
+      expect(link.querySelector('.kopf-text')!.textContent!.trim()).toBe('Hier fehlt eine Antwort');
+      expect(link.querySelector('mat-icon')!.getAttribute('aria-hidden')).toBe('true');
+    });
+
     it('fuehrt mit dem Fangkorb-Knopf in den Fangkorb', () => {
       const komponente = fixture.componentInstance;
       const fangkorb = spyOn(komponente, 'navigateToFangkorbView');

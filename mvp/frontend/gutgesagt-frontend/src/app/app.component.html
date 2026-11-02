@@ -35,9 +35,9 @@
 
                 <!-- Desktop Header - Hidden on mobile -->
                 <div class="component-box" *ngIf="!isMobile && !isTablet">
-                    <div class="header">
+                    <div class="header" [class.header--titel-lang]="titelLang">
                 <div class="left-header-box">
-                    <h1 class="desktop-header-title">
+                    <h1 class="desktop-header-title" [class.desktop-header-title--lang]="titelLang">
                         <button mat-icon-button
                                 *ngIf="showBackButton"
                                 (click)="zurueck()"
@@ -125,12 +125,22 @@
                             <span class="cdk-visually-hidden">Fangkorb</span>
                         </button>
 
-                        <a class="header-link" *ngIf="userInfo?.isAdmin" routerLink="/admin/dashboard">Admin</a>
+                        <!-- Unter 1200 px werden die Textlinks zu runden Icon-Knoepfen, der
+                             Text bleibt fuer Screenreader (kopf-text). -->
+                        <a class="header-link" *ngIf="userInfo?.isAdmin" routerLink="/admin/dashboard" matTooltip="Admin"
+                           [matTooltipDisabled]="!kopfSchmal">
+                            <mat-icon class="kopf-icon" aria-hidden="true">admin_panel_settings</mat-icon>
+                            <span class="kopf-text">Admin</span>
+                        </a>
 
-                        <a class="header-link" [routerLink]="hierFehltEineAntwortPfad">Hier fehlt eine Antwort</a>
+                        <a class="header-link" [routerLink]="hierFehltEineAntwortPfad" matTooltip="Hier fehlt eine Antwort"
+                           [matTooltipDisabled]="!kopfSchmal">
+                            <mat-icon class="kopf-icon" aria-hidden="true">contact_support</mat-icon>
+                            <span class="kopf-text">Hier fehlt eine Antwort</span>
+                        </a>
 
-                        <button mat-raised-button class="dark-green-button" (click)="navigateToContributeView()">
-                            <mat-icon>add</mat-icon> Beitragen
+                        <button mat-raised-button class="dark-green-button beitragen-knopf" (click)="navigateToContributeView()">
+                            <mat-icon>add</mat-icon> <span class="beitragen-text">Beitragen</span>
                         </button>
                     </ng-container>
                     <ng-container *ngIf="!userInfo?.isAuthenticated">

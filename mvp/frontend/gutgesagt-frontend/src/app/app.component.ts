@@ -67,6 +67,16 @@ export class AppComponent implements OnInit, OnDestroy {
   isTablet: boolean = false;
 
   /** Kommt aus dem ProfilbildService: abgeleitet oder selbst gewaehlt (#437). */
+  /** Ab dieser Laenge setzt der Desktop-Kopf den Titel kleiner, damit er in eine Zeile passt. */
+  static readonly LANGER_TITEL = 16;
+
+  get titelLang(): boolean {
+    return this.pageTitle.length > AppComponent.LANGER_TITEL;
+  }
+
+  /** Unter 1200 px zeigt der Kopf die Textlinks als Icons; dann helfen Tooltips. */
+  kopfSchmal = false;
+
   get selectedProfilePictureUrl(): string {
     return this.profilbild.bild();
   }
@@ -91,9 +101,11 @@ export class AppComponent implements OnInit, OnDestroy {
     // Set up responsive breakpoint detection
     this.breakpointObserver.observe([
       '(max-width: 599px)',
-      '(min-width: 600px) and (max-width: 959px)'
+      '(min-width: 600px) and (max-width: 959px)',
+      '(max-width: 1199px)'
     ]).pipe(takeUntil(this.destroy$))
       .subscribe(result => {
+        this.kopfSchmal = !!result.breakpoints['(max-width: 1199px)'];
         this.isMobile = result.breakpoints['(max-width: 599px)'];
         this.isTablet = result.breakpoints['(min-width: 600px) and (max-width: 959px)'];
         this.logger.debug(`Device type - Mobile: ${this.isMobile}, Tablet: ${this.isTablet}`);

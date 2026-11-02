@@ -217,6 +217,7 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
 // panelClass liegt im Overlay ausserhalb der Komponente, deshalb hier.
 .hilfe-seitenleiste {
   --mat-dialog-container-shape: 0;
+  --mat-dialog-supporting-text-color: var(--text-primary);
 }
 
 // Utility classes for common patterns

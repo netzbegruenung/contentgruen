@@ -679,13 +679,16 @@ a:hover {
     overflow-y: auto;
 }
 
-/* Fix for dialog container height issues */
-.mat-mdc-dialog-container {
+/*
+ * Fix for dialog container height issues. Nicht fuer die Hilfe als Seitenleiste
+ * (hilfeOeffnen): Sie fuellt die volle Hoehe und laesst nur ihren Inhalt scrollen (#512).
+ */
+.cdk-overlay-pane:not(.hilfe-seitenleiste) .mat-mdc-dialog-container {
     display: block !important;
     position: relative !important;
 }
 
-.mat-mdc-dialog-surface {
+.cdk-overlay-pane:not(.hilfe-seitenleiste) .mat-mdc-dialog-surface {
     display: block !important;
     background: white !important;
     max-height: 90vh !important;
