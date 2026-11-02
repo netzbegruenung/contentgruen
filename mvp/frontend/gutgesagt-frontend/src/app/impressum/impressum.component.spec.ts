@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { abschnitt, normalisiert } from '../testing/rechtstext';
+import { abschnitt, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { ORGANISATION } from '../shared/organisation';
 import { ImpressumComponent } from './impressum.component';
 
@@ -26,6 +26,11 @@ describe('ImpressumComponent', () => {
     expect(text).not.toMatch(/\b(Sie|Ihr|Ihre|Ihnen)\b/);
     expect(text).not.toContain('Nutzerinnen und Nutzer');
     expect(abschnitt(seite, 'Kontaktstelle nach Art. 11 und 12 DSA')).toContain('kannst du uns');
+  });
+
+  it('trägt das Tagesdatum der letzten Änderung als Stand, nicht nur den Monat (#498)', () => {
+    const text = stand(seite);
+    expect(istTagesdatum(text)).withContext(text).toBeTrue();
   });
 
   it('nennt die Kontaktadresse von Gut gesagt und den Feedback-Knopf (#430)', () => {
