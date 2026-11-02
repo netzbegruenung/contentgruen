@@ -172,7 +172,8 @@ class TestBetaZugaengeUmziehen:
         ]
         assert json.loads(mail.content) == MAIL_AKTIONEN
 
-    def test_ein_wort_als_name_ergibt_nur_den_vornamen(self):
+    def test_ein_wort_als_name_ergibt_wie_bisher_keinen_namen(self):
+        """Die BFF zeigte dafuer keinen Anzeigenamen; mit Vorname allein zeigte sie ihn."""
         keycloak = Keycloak()
 
         _konten(keycloak).konten_mit_passwort_anlegen(
@@ -180,7 +181,7 @@ class TestBetaZugaengeUmziehen:
         )
 
         (konto,) = keycloak.angelegt()
-        assert konto["firstName"] == "Kim"
+        assert "firstName" not in konto
         assert "lastName" not in konto
 
     def test_scheitert_die_mail_bleibt_das_konto_und_wird_genannt(self):
@@ -194,6 +195,33 @@ class TestBetaZugaengeUmziehen:
         assert ergebnis.angelegt == {"user-001": ANGELEGT}
         assert ergebnis.ohne_mail == ["user-001"]
         assert not any(r.method == "DELETE" for r in keycloak.anfragen)
+
+    def test_netzfehler_bei_der_mail_bricht_den_lauf_nicht_ab(self):
+        def keycloak(request):
+            if request.url.path.endswith("/execute-actions-email"):
+                raise httpx.ConnectTimeout("zu langsam")
+            return Keycloak()(request)
+
+        ergebnis = _konten(keycloak).konten_mit_passwort_anlegen(
+            {"user-001": BetaZugang("anna@example.org", "Anna Beispiel")}
+        )
+
+        assert ergebnis.angelegt == {"user-001": ANGELEGT}
+        assert ergebnis.ohne_mail == ["user-001"]
+
+    def test_konflikt_ohne_konto_zur_adresse_wird_gemeldet(self):
+        """Etwa ein Benutzername, der zu einem Konto mit anderer Adresse gehoert."""
+        keycloak = Keycloak(vergeben={"anna@example.org"})
+
+        ergebnis = _konten(keycloak).konten_mit_passwort_anlegen(
+            {
+                "user-001": BetaZugang("anna@example.org", "Anna Beispiel"),
+                "user-002": BetaZugang("ben@example.org", "Ben Beispiel"),
+            }
+        )
+
+        assert ergebnis.vergeben == ["user-001"]
+        assert ergebnis.angelegt == {"user-002": ANGELEGT}
 
     def test_vergebene_adresse_nimmt_das_vorhandene_konto(self):
         """Zwischen Trockenlauf und Lauf angelegt, etwa ueber eine Einladung."""

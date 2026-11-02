@@ -43,6 +43,7 @@ def skript(monkeypatch):
             beta_anzulegen=["user-002"] if kwargs["beta_zugaenge"] else [],
             beta_ohne_mail=["user-003"] if kwargs["beta_zugaenge"] else [],
             beta_admins=["neu-admin"] if kwargs["beta_zugaenge"] else [],
+            beta_vergeben=["user-004"] if kwargs["beta_zugaenge"] else [],
         )
 
     monkeypatch.setattr(modul, "umstellen", umstellen)
@@ -167,11 +168,13 @@ class TestSkript:
             "--- Ab hier Kennungen"
         )
         assert "Beta-Zugaenge: 2, mit Konto im Realm: 1" in zahlen
-        assert "Beta-Zugaenge anzulegen beim Lauf: 1" in zahlen
+        assert "Beta-Zugaenge anzulegen beim Lauf: 1 (ihre Zeilen" in zahlen
+        assert "Beta-Zugaenge nicht umgezogen, Adresse gehoert" in zahlen
         assert "ohne Mail" in zahlen and "user-003" not in zahlen
         assert "neu-admin" not in zahlen and "anna@example.org" not in zahlen
         assert "  neu-admin\n" in kennungen
         assert "  user-003\n" in kennungen
+        assert "  user-004\n" in kennungen
 
     def test_ohne_beta_zugaenge_keine_zeilen_dazu(self, skript, capsys):
         skript()

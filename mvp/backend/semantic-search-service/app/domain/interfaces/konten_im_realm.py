@@ -43,6 +43,9 @@ class KontenMitPasswort:
     angelegt: Dict[str, str] = field(default_factory=dict)
     # alte Kennungen, deren Mail "Passwort festlegen" nicht hinausging
     ohne_mail: List[str] = field(default_factory=list)
+    # alte Kennungen, fuer die Keycloak kein Konto anlegt (Konflikt) und es auch zur
+    # Adresse keins gibt, etwa ein Benutzername mit anderer Adresse
+    vergeben: List[str] = field(default_factory=list)
 
 
 class IKennungenImRealm(Protocol):

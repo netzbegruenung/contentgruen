@@ -219,17 +219,20 @@ class KeycloakKonten:
                     vorhanden = self._konto_zur_adresse(sitzung, zugang.email)
                     if vorhanden:
                         ergebnis.angelegt[kennung] = vorhanden
-                        continue
+                    else:
+                        ergebnis.vergeben.append(kennung)
+                    continue
                 antwort.raise_for_status()
                 konto_id = self._konto_id(antwort)
                 ergebnis.angelegt[kennung] = konto_id
-                mail = sitzung.anfrage(
-                    "PUT",
-                    f"{self._admin}/{konto_id}/execute-actions-email",
-                    params=self._mail_parameter(),
-                    json=MAIL_AKTIONEN,
-                )
-                if mail.is_error:
+                try:
+                    sitzung.anfrage(
+                        "PUT",
+                        f"{self._admin}/{konto_id}/execute-actions-email",
+                        params=self._mail_parameter(),
+                        json=MAIL_AKTIONEN,
+                    ).raise_for_status()
+                except httpx.HTTPError:
                     ergebnis.ohne_mail.append(kennung)
         return ergebnis
 
@@ -276,7 +279,9 @@ class KeycloakKonten:
 
 def _konto_mit_namen(zugang: BetaZugang) -> Dict[str, object]:
     # Die BFF bildet den Anzeigenamen aus Vorname und dem letzten Wort des Nachnamens
-    # (DisplayNamePolicy); "Anna Maria Beispiel" ergibt so wie bisher "Anna B.".
+    # (DisplayNamePolicy); "Anna Maria Beispiel" ergibt so wie bisher "Anna B.". Aus
+    # einem einzelnen Wort machte sie keinen Namen; als Vorname allein zeigte sie es,
+    # deshalb dann keiner von beiden.
     vorname, _, nachname = " ".join(zugang.name.split()).partition(" ")
     konto: Dict[str, object] = {
         "username": zugang.email,
@@ -285,9 +290,8 @@ def _konto_mit_namen(zugang: BetaZugang) -> Dict[str, object]:
         "emailVerified": False,
         "requiredActions": PFLICHTAKTIONEN,
     }
-    if vorname:
-        konto["firstName"] = vorname
     if nachname:
+        konto["firstName"] = vorname
         konto["lastName"] = nachname
     return konto
 

@@ -370,6 +370,10 @@ class Umstellung:
     beta_ohne_mail: List[str] = field(default_factory=list)
     # Neue Kennungen der Beta-Zugaenge mit isAdmin: in die Admin-Listen eintragen
     beta_admins: List[str] = field(default_factory=list)
+    # Beta-Zugaenge, die bleiben: Ihre Adresse gehoert im Realm schon zu einer anderen
+    # alten Kennung (Mitglied, zweiter Beta-Zugang) oder ist dort sonst vergeben.
+    # Zusammenlegen entscheidet ein Admin.
+    beta_vergeben: List[str] = field(default_factory=list)
 
 
 def umstellen(
@@ -426,7 +430,9 @@ def umstellen(
         for k, z in (beta_zugaenge or {}).items()
         if _person(k) and k not in zuordnung and k not in geloescht
     }
-    beta_fehlend, beta_ohne_mail = _beta_zuordnen(realm, beta, zuordnung, ausfuehren)
+    beta_fehlend, beta_ohne_mail, beta_vergeben = _beta_zuordnen(
+        realm, beta, zuordnung, ausfuehren
+    )
     # Vor jedem Schreiben, auch fuer die Listen.
     zuordnung_pruefen(zuordnung)
     return Umstellung(
@@ -451,6 +457,7 @@ def umstellen(
         vergeben=vergeben,
         beta_anzulegen=beta_fehlend,
         beta_ohne_mail=beta_ohne_mail,
+        beta_vergeben=beta_vergeben,
         beta_admins=[
             zuordnung[k] for k, z in beta.items() if z.admin and k in zuordnung
         ],
@@ -462,18 +469,48 @@ def _beta_zuordnen(
     beta: Mapping[str, BetaZugang],
     zuordnung: Dict[str, str],
     ausfuehren: bool,
-) -> "tuple[List[str], List[str]]":
-    """Ergaenzt ``zuordnung``; gibt die noch fehlenden und die ohne Mail zurueck."""
+) -> "tuple[List[str], List[str], List[str]]":
+    """
+    Ergaenzt ``zuordnung``; gibt die noch fehlenden, die ohne Mail und die vergebenen
+    zurueck. Ein Konto, das schon einer anderen alten Kennung zugeordnet ist, bekommt
+    keinen Beta-Zugang dazu: Zwei alte Kennungen auf dieselbe neue weist
+    zuordnung_pruefen ab, und das erst nach dem Anlegen der Konten.
+    """
     if not beta:
-        return [], []
-    konten = realm.konten_nach_adresse(sorted({z.email for z in beta.values()}))
-    for kennung, zugang in beta.items():
-        konto = konten.get(zugang.email.lower())
-        if konto:
+        return [], [], []
+    vergeben: List[str] = []
+
+    def zuordnen(kennung: str, konto: str) -> None:
+        if konto in zuordnung.values():
+            vergeben.append(kennung)
+        else:
             zuordnung[kennung] = konto
-    fehlend = sorted(k for k in beta if k not in zuordnung)
+
+    konten = realm.konten_nach_adresse(sorted({z.email for z in beta.values()}))
+    for kennung in sorted(beta):
+        konto = konten.get(beta[kennung].email.lower())
+        if konto:
+            zuordnen(kennung, konto)
+    # Je Adresse hoechstens ein Konto anlegen; der zweite Beta-Zugang ist vergeben.
+    fehlend: List[str] = []
+    adressen: Set[str] = set()
+    for kennung in sorted(beta):
+        if kennung in zuordnung or kennung in vergeben:
+            continue
+        adresse = beta[kennung].email.lower()
+        if adresse in adressen:
+            vergeben.append(kennung)
+        else:
+            adressen.add(adresse)
+            fehlend.append(kennung)
     if not (ausfuehren and fehlend):
-        return fehlend, []
+        return fehlend, [], sorted(vergeben)
     angelegt = realm.konten_mit_passwort_anlegen({k: beta[k] for k in fehlend})
-    zuordnung.update(angelegt.angelegt)
-    return [k for k in fehlend if k not in zuordnung], list(angelegt.ohne_mail)
+    for kennung, konto in angelegt.angelegt.items():
+        zuordnen(kennung, konto)
+    vergeben.extend(angelegt.vergeben)
+    return (
+        [k for k in fehlend if k not in zuordnung and k not in vergeben],
+        list(angelegt.ohne_mail),
+        sorted(vergeben),
+    )

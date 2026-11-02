@@ -185,7 +185,11 @@ class Realm:
         return ergebnis
 
     def konten_nach_adresse(self, adressen):
-        return {a: self.adressen[a] for a in adressen if a in self.adressen}
+        return {
+            a.lower(): self.adressen[a.lower()]
+            for a in adressen
+            if a.lower() in self.adressen
+        }
 
     def konten_mit_passwort_anlegen(self, zugaenge):
         self.mit_passwort_fuer.extend(zugaenge)
@@ -291,6 +295,36 @@ class TestUmstellen:
         )
         assert realm.mit_passwort_fuer == [ANDERE]
         assert set(zweiter.postgres.geaendert.values()) == {0}
+
+    def test_beta_zugang_mit_adresse_eines_anderen_kontos_bleibt_und_wird_genannt(
+        self, datenbank, spuren, qdrant
+    ):
+        """
+        Dieselbe Adresse wie ein Mitglied mit verknuepftem Konto: Zwei alte Kennungen
+        auf eine neue liessen den Lauf erst nach dem Anlegen abbrechen.
+        """
+        realm = Realm({PERSON: NEU}, adressen={"anna@example.org": NEU})
+        beta = {ANDERE: BetaZugang("anna@example.org", "Anna Beispiel")}
+
+        lauf = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta, ausfuehren=True)
+
+        assert lauf.zuordnung == {PERSON: NEU}
+        assert lauf.beta_vergeben == [ANDERE]
+        assert lauf.beta_anzulegen == []
+        assert realm.mit_passwort_fuer == []
+
+    def test_zwei_beta_zugaenge_mit_derselben_adresse(self, datenbank, spuren, qdrant):
+        realm = Realm({}, adressen={"anna@example.org": NEU})
+        beta = {
+            PERSON: BetaZugang("anna@example.org", "Anna Beispiel"),
+            ANDERE: BetaZugang("Anna@example.org", "Anna Beispiel"),
+        }
+
+        lauf = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta)
+
+        # Der erste in der Sortierung bekommt das Konto, der zweite wird genannt.
+        assert lauf.zuordnung == {ANDERE: NEU}
+        assert lauf.beta_vergeben == [PERSON]
 
     def test_beta_zugang_ohne_spuren_bekommt_trotzdem_ein_konto(
         self, datenbank, spuren, qdrant

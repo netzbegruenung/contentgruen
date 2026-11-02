@@ -121,7 +121,14 @@ def _beta_zugaenge_lesen(pfad: str):
 def _beta_zahlen_ausgeben(ergebnis, beta) -> None:
     mit_konto = sum(1 for k in beta if k in ergebnis.zuordnung)
     print(f"Beta-Zugaenge: {len(beta)}, mit Konto im Realm: {mit_konto}")
-    print(f"Beta-Zugaenge anzulegen beim Lauf: {len(ergebnis.beta_anzulegen)}")
+    print(
+        f"Beta-Zugaenge anzulegen beim Lauf: {len(ergebnis.beta_anzulegen)}"
+        " (ihre Zeilen und Beitraege zaehlt erst der Lauf)"
+    )
+    print(
+        "Beta-Zugaenge nicht umgezogen, Adresse gehoert im Realm schon zu einer"
+        f" anderen Kennung: {len(ergebnis.beta_vergeben)}"
+    )
     print(
         "Beta-Zugaenge ohne Mail \"Passwort festlegen\":"
         f" {len(ergebnis.beta_ohne_mail)}"
@@ -160,6 +167,14 @@ def _kennungen_ausgeben(ergebnis, args) -> None:
         abschnitte.append(("Ohne Konto im Realm:", ergebnis.ohne_konto))
     if ergebnis.vergeben:
         abschnitte.append(("Adresse im Realm schon vergeben:", ergebnis.vergeben))
+    if ergebnis.beta_vergeben:
+        abschnitte.append(
+            (
+                "Beta-Zugaenge nicht umgezogen (Admin entscheidet, wessen Konto"
+                " bleibt):",
+                ergebnis.beta_vergeben,
+            )
+        )
     if ergebnis.beta_ohne_mail:
         abschnitte.append(
             (
