@@ -43,6 +43,51 @@ describe('LoginSelectorComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  describe('Texte zum eigenen Realm (#492)', () => {
+    const text = (selector: string): string =>
+      (fixture.nativeElement.querySelector(selector)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+
+    beforeEach(() => {
+      component.isLoading = false;
+      fixture.detectChanges();
+    });
+
+    it('nennt im Hinweis Netzbegrünung-Login und Einladung statt „keine Selbstregistrierung“', () => {
+      const titel = text('.registration-panel-title');
+
+      expect(titel).toContain('Netzbegrünung-Login');
+      expect(titel).toContain('Einladung');
+      expect(fixture.nativeElement.textContent).not.toContain('Selbstregistrierung');
+    });
+
+    it('erklärt den Weg über einen Einladungslink', () => {
+      const inhalt = text('.registration-content');
+
+      expect(inhalt).toContain('Einladungslink');
+      expect(inhalt).toContain('Mail-Adresse und Passwort');
+    });
+
+    it('beschriftet die Anmeldung über den Realm als Netzbegrünung-Login oder Konto aus einer Einladung', () => {
+      expect(text('.keycloak-button .button-title')).toBe('Netzbegrünung-Login');
+      expect(text('.keycloak-button .button-subtitle')).toBe('oder Konto aus einer Einladung');
+      expect(text('.login-option-card:first-child .login-description')).toContain('„Mit Netzbegrünung anmelden“');
+    });
+
+    it('ordnet die Direktanmeldung dem Beta-Zugang zu', () => {
+      expect(text('.gutgesagt-button .button-subtitle')).toBe('Direktanmeldung');
+      expect(text('.login-option-card:last-child .login-description'))
+        .toContain('Beta-Zugang');
+    });
+
+    it('verwendet keine Begriffe, die das Glossar meidet', () => {
+      const alles = fixture.nativeElement.textContent as string;
+
+      for (const gemieden of ['Keycloak', 'SSO', 'Beta-Account', 'Netzbegrünung Login']) {
+        expect(alles).not.toContain(gemieden);
+      }
+    });
+  });
+
   describe('Expandable Registration Info', () => {
     it('should initialize with registration info collapsed', () => {
       expect(component.isRegistrationInfoExpanded).toBeFalsy();
@@ -97,12 +142,12 @@ describe('LoginSelectorComponent', () => {
       expect(component.hasOwnProperty('isRegistrationInfoExpanded')).toBeTruthy();
     });
 
-    it('nennt für den Beta-Zugang die Kontaktadresse aus der Organisationskonstante (#430)', () => {
+    it('nennt für die Bitte um eine Einladung die Kontaktadresse aus der Organisationskonstante (#430, #492)', () => {
       const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.email-link');
 
       expect(link.textContent?.trim()).toBe(ORGANISATION.gutgesagtMail);
       expect(link.getAttribute('href')).toBe(
-        `mailto:${ORGANISATION.gutgesagtMail}?subject=${encodeURIComponent('Beta-Account Anfrage')}`
+        `mailto:${ORGANISATION.gutgesagtMail}?subject=${encodeURIComponent('Einladung zu Gut gesagt')}`
       );
     });
   });

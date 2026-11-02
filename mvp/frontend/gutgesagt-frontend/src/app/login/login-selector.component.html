@@ -6,28 +6,29 @@
                 <mat-expansion-panel-header>
                     <mat-panel-title class="registration-panel-title">
                         <mat-icon class="info-icon">info</mat-icon>
-                        <span>Aktuell ist keine Selbstregistrierung möglich</span>
+                        <span>Konto über den Netzbegrünung-Login oder eine Einladung</span>
                         <span class="expansion-hint">{{ isRegistrationInfoExpanded ? 'Weniger anzeigen' : 'Mehr Informationen' }}</span>
                     </mat-panel-title>
                 </mat-expansion-panel-header>
 
                 <div class="registration-content">
                     <p class="registration-intro">
-                        Du hast folgende Möglichkeiten, Zugang zu Gut gesagt zu erhalten:
+                        So bekommst du ein Konto bei Gut gesagt:
                     </p>
                     <div class="registration-options">
                         <div class="registration-option">
                             <mat-icon class="option-icon">group</mat-icon>
                             <div class="option-text">
-                                <strong>Mitgliedschaft bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a></strong>
-                                <p>Werde Mitglied bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a> und nutze deinen Account zur Anmeldung bei Gut gesagt über Keycloak.</p>
+                                <strong>Netzbegrünung-Login</strong>
+                                <p>Bist du Mitglied bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a>, melde dich mit deinem Konto bei der Netzbegrünung an: „Netzbegrünung-Login“ und dann „Mit Netzbegrünung anmelden“. Beim ersten Mal entsteht dabei dein Konto bei Gut gesagt.</p>
                             </div>
                         </div>
                         <div class="registration-option">
                             <mat-icon class="option-icon">email</mat-icon>
                             <div class="option-text">
-                                <strong>Beta-Account für Grüne Mitglieder</strong>
-                                <p>Falls eine Mitgliedschaft für dich nicht umsetzbar ist, du aber gerne mitwirken möchtest, beantrage manuell einen Beta-Zugang für Gut gesagt: Kontaktiere uns per Mail an <a [href]="getMailtoLink()" class="email-link">{{ gutgesagtMail }}</a> und nenne uns dabei den Grünen Kreisverband, in dem du Mitglied bist.</p>
+                                <strong>Einladung</strong>
+                                <p>Hast du einen Einladungslink bekommen, öffne ihn und leg dort dein Konto an. Danach meldest du dich über „Netzbegrünung-Login“ mit Mail-Adresse und Passwort an.</p>
+                                <p>Noch keine Einladung, aber du möchtest als Grünes Mitglied mitwirken? Schreib uns an <a [href]="getMailtoLink()" class="email-link">{{ gutgesagtMail }}</a> und nenn uns den Grünen Kreisverband, in dem du Mitglied bist.</p>
                             </div>
                         </div>
                     </div>
@@ -41,7 +42,7 @@
         <!-- Always show both login options -->
         <div class="login-options">
 
-            <!-- Keycloak Login Option -->
+            <!-- Login over the own Keycloak realm: Netzbegrünung as identity provider, or an account from an Einladung -->
             <div class="login-option-card mat-elevation-z2" [class.disabled-option]="!authModes.keycloakEnabled">
                 <button mat-raised-button
                         class="login-option-button keycloak-button"
@@ -49,13 +50,13 @@
                         (click)="loginWithKeycloak()">
                     <mat-icon class="login-icon">vpn_key</mat-icon>
                     <div class="button-content">
-                        <span class="button-title">Netzbegrünung Login</span>
-                        <span class="button-subtitle">SSO über Keycloak</span>
+                        <span class="button-title">Netzbegrünung-Login</span>
+                        <span class="button-subtitle">oder Konto aus einer Einladung</span>
                     </div>
                 </button>
                 <p class="login-description">
-                    Melde dich mit deinem Netzbegrünung-Account an.
-                    Verwende deine bestehenden Zugangsdaten.
+                    Auf der nächsten Seite wählst du „Mit Netzbegrünung anmelden“
+                    oder gibst Mail-Adresse und Passwort deines Kontos aus einer Einladung ein.
                 </p>
                 <p class="disabled-notice" *ngIf="!authModes.keycloakEnabled">
                     <mat-icon class="notice-icon">info_outline</mat-icon>
@@ -80,8 +81,8 @@
                     </div>
                 </button>
                 <p class="login-description">
-                    Melde dich direkt mit deinem Account bei Gut gesagt an.
-                    Verwende deine E-Mail-Adresse und dein Passwort.
+                    Für einen Beta-Zugang: Melde dich direkt bei Gut gesagt
+                    mit deiner E-Mail-Adresse und deinem Passwort an.
                 </p>
                 <p class="disabled-notice" *ngIf="!authModes.managedAuthEnabled">
                     <mat-icon class="notice-icon">info_outline</mat-icon>

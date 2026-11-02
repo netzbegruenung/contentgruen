@@ -91,7 +91,7 @@ export class LoginSelectorComponent implements OnInit {
 
   getMailtoLink(): string {
     const email = this.gutgesagtMail;
-    const subject = 'Beta-Account Anfrage';
+    const subject = 'Einladung zu Gut gesagt';
     return `mailto:${email}?subject=${encodeURIComponent(subject)}`;
   }
 }
