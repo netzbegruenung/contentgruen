@@ -239,8 +239,37 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Eine E-Mail bekommst du dabei nicht');
     });
 
-    it('Pflichtangaben: E-Mail-Adresse auch für ein Konto aus einer Einladung', () => {
-      expect(abschnitt('Was du angeben musst und was freiwillig ist')).toContain('bei einem Konto aus einer Einladung');
+    it('Pflichtangaben: E-Mail-Adresse bei jeder Kontoart', () => {
+      expect(abschnitt('Was du angeben musst und was freiwillig ist')).toContain(
+        'Kennung und eine E-Mail-Adresse, bei jeder Kontoart',
+      );
+    });
+
+    it('Einladung: Kennung und Mail-Adresse beim Anmelden, kein Anzeigename aus der Adresse', () => {
+      const text = abschnitt('Konto aus einer Einladung');
+
+      expect(text).toContain('erhält die Plattform vom Anmeldedienst deine Kennung und deine E-Mail-Adresse');
+      expect(text).toContain('aus deiner E-Mail-Adresse bilden wir keinen Anzeigenamen');
+    });
+
+    it('Einladung: Konto bleibt, bis wir es löschen, auch wenn der Link nie benutzt wurde', () => {
+      const text = abschnitt('Konto aus einer Einladung');
+
+      expect(text).toContain('Das Konto im Anmeldedienst bleibt, bis wir es löschen');
+      expect(text).toContain('dessen Link nie benutzt wurde');
+      expect(text).not.toContain('bis du oder wir es löschen');
+    });
+
+    it('Netzbegrünung: Dauer für das vorab angelegte Konto, Angaben vom Anmeldedienst', () => {
+      const text = abschnitt('Anmeldung über die Netzbegrünung');
+
+      expect(text).toContain('Das Konto bleibt danach wie jedes andere, bis wir es löschen');
+      expect(text).toContain('erhält diese Plattform vom Anmeldedienst');
+      expect(text).toContain('Das gilt für alle Anmeldewege');
+    });
+
+    it('Anmelde-Cookie: alle drei Kontoarten', () => {
+      expect(abschnitt('Anmelde-Cookie')).toContain('mit einem Konto aus einer Einladung und mit einem Zugang');
     });
   });
 
@@ -417,9 +446,9 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Sie gehen nicht an uns und werden nicht gezählt.');
     });
 
-    it('Anmelde-Cookie: Angaben des Identitätsdienstes nur bei der Anmeldung über die Netzbegrünung', () => {
+    it('Anmelde-Cookie: Angaben des Dienstes nur bei der Anmeldung über Anmeldedienst oder Netzbegrünung', () => {
       expect(abschnitt('Anmelde-Cookie')).toContain(
-        'bei der Anmeldung über die Netzbegrünung dazu die übrigen Angaben, die ihr Identitätsdienst übermittelt',
+        'bei der Anmeldung über den Anmeldedienst oder die Netzbegrünung dazu die übrigen Angaben, die der Dienst übermittelt',
       );
     });
 

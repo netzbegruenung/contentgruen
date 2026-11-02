@@ -81,8 +81,10 @@ Netzbegrünung ist das eine **neue** Kennung: Beiträge, Stimmen, Nutzung, Admin
 Deshalb in dieser Reihenfolge, nicht anders:
 
 1. Die Datenschutzerklärung beschreibt Selbstregistrierung über eine Einladung und die
-   Anmeldung über den eigenen Realm (#490); diese Fassung muss ausgerollt sein. Nach dem Umstellen den Satz
-   „Bis wir die Anmeldung umgestellt haben …“ unter „Anmeldung und Zugang“ entfernen.
+   Anmeldung über den eigenen Realm (#490); diese Fassung muss ausgerollt sein. Nach dem
+   Umstellen den Satz „Bis wir die Anmeldung umgestellt haben …“ unter „Anmeldung und
+   Zugang“ und den Einschub „(bis zur Umstellung vom Identitätsdienst der Netzbegrünung)“
+   unter „Anmeldung über die Netzbegrünung“ entfernen.
 2. Die vorhandenen Kennungen sind auf die des neuen Realms umgeschrieben (Skript mit
    Trockenlauf, Teil von #429, noch offen).
 3. Erst dann, gemeinsam: BFF auf den neuen Realm (`Keycloak__*`) und Einlösen im
