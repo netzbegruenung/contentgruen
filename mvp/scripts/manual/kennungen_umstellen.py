@@ -110,10 +110,15 @@ def _beta_zugaenge_lesen(pfad: str):
         email = str(eintrag.get("email") or "").strip()
         if not kennung or "@" not in email:
             raise SystemExit("--beta-zugaenge: Eintrag ohne userId oder email")
+        if kennung in zugaenge:
+            raise SystemExit("--beta-zugaenge: userId doppelt")
+        admin = eintrag.get("isAdmin", False)
+        if not isinstance(admin, bool):
+            raise SystemExit("--beta-zugaenge: isAdmin ist nicht true oder false")
         zugaenge[kennung] = BetaZugang(
             email=email,
             name=str(eintrag.get("displayName") or ""),
-            admin=bool(eintrag.get("isAdmin", False)),
+            admin=admin,
         )
     return zugaenge
 
@@ -132,6 +137,10 @@ def _beta_zahlen_ausgeben(ergebnis, beta) -> None:
     print(
         "Beta-Zugaenge ohne Mail \"Passwort festlegen\":"
         f" {len(ergebnis.beta_ohne_mail)}"
+    )
+    print(
+        "Beta-Zugaenge, deren Konto Keycloak abwies:"
+        f" {len(ergebnis.beta_abgewiesen)}"
     )
 
 
@@ -173,6 +182,14 @@ def _kennungen_ausgeben(ergebnis, args) -> None:
                 "Beta-Zugaenge nicht umgezogen (Admin entscheidet, wessen Konto"
                 " bleibt):",
                 ergebnis.beta_vergeben,
+            )
+        )
+    if ergebnis.beta_abgewiesen:
+        abschnitte.append(
+            (
+                "Beta-Zugaenge ohne Konto, von Keycloak abgewiesen (Adresse in der"
+                " Datei pruefen, dann erneut laufen lassen):",
+                ergebnis.beta_abgewiesen,
             )
         )
     if ergebnis.beta_ohne_mail:

@@ -27,7 +27,7 @@ Aufruf: mvp/scripts/manual/kennungen_umstellen.py
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Set
+from typing import Any, Dict, Iterable, List, Mapping, NamedTuple, Optional, Set
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -355,9 +355,9 @@ class Umstellung:
     listen: Dict[str, List[str]]
     # Loeschliste mit den neuen Kennungen dazu (die alten bleiben)
     loeschliste: List[str]
-    # Kennungen ohne verknuepftes Konto im Realm: bleiben, wie sie sind (Beta-Zugaenge,
-    # Konten aus Einladungen, Mitglieder, fuer die noch kein Konto angelegt ist).
-    # Ohne Geloeschte: Fuer sie wird kein Konto angelegt.
+    # Kennungen ohne verknuepftes Konto im Realm: bleiben, wie sie sind (Konten aus
+    # Einladungen, Mitglieder, fuer die noch kein Konto angelegt ist). Ohne Geloeschte
+    # (fuer sie wird kein Konto angelegt) und ohne Beta-Zugaenge (eigene Felder unten).
     ohne_konto: List[str]
     # Mit Mail-Adresse genannt und ohne Konto: wird beim Lauf angelegt (Trockenlauf).
     # Der Trockenlauf zaehlt ihre Zeilen und Beitraege noch nicht mit.
@@ -368,6 +368,8 @@ class Umstellung:
     beta_anzulegen: List[str] = field(default_factory=list)
     # Beta-Zugaenge, deren Mail "Passwort festlegen" beim Lauf nicht hinausging
     beta_ohne_mail: List[str] = field(default_factory=list)
+    # Beta-Zugaenge, deren Konto Keycloak beim Lauf abwies (etwa ungueltige Adresse)
+    beta_abgewiesen: List[str] = field(default_factory=list)
     # Neue Kennungen der Beta-Zugaenge mit isAdmin: in die Admin-Listen eintragen
     beta_admins: List[str] = field(default_factory=list)
     # Beta-Zugaenge, die bleiben: Ihre Adresse gehoert im Realm schon zu einer anderen
@@ -412,6 +414,9 @@ def umstellen(
         | set(geloescht)
     )
     zuordnung = realm.kennungen_zuordnen(identity_provider, sorted(alte))
+    # Erst pruefen, dann Konten anlegen und Mails schicken: Bricht die Pruefung erst
+    # danach ab, stehen Konten im Realm und Mails sind draussen, umgeschrieben ist nichts.
+    zuordnung_pruefen(zuordnung)
     fehlend = sorted(
         k
         for k in (anzulegen or {})
@@ -430,10 +435,11 @@ def umstellen(
         for k, z in (beta_zugaenge or {}).items()
         if _person(k) and k not in zuordnung and k not in geloescht
     }
-    beta_fehlend, beta_ohne_mail, beta_vergeben = _beta_zuordnen(
-        realm, beta, zuordnung, ausfuehren
-    )
-    # Vor jedem Schreiben, auch fuer die Listen.
+    # Im Trockenlauf gibt es die Konten aus ``anzulegen`` noch nicht; der Lauf legt sie
+    # vor den Beta-Zugaengen an, und deren Adressen sind dann vergeben.
+    kommende = {anzulegen[k].lower() for k in fehlend} if anzulegen else set()
+    beta_ergebnis = _beta_zuordnen(realm, beta, zuordnung, ausfuehren, kommende)
+    # Noch einmal mit den angelegten Konten, vor jedem Schreiben, auch fuer die Listen.
     zuordnung_pruefen(zuordnung)
     return Umstellung(
         ausgefuehrt=ausfuehren,
@@ -452,16 +458,31 @@ def umstellen(
                 ]
             )
         ),
-        ohne_konto=sorted(alte - set(zuordnung) - set(geloescht)),
+        ohne_konto=sorted(
+            alte - set(zuordnung) - set(geloescht) - set(beta_zugaenge or {})
+        ),
         anzulegen=fehlend,
         vergeben=vergeben,
-        beta_anzulegen=beta_fehlend,
-        beta_ohne_mail=beta_ohne_mail,
-        beta_vergeben=beta_vergeben,
+        beta_anzulegen=beta_ergebnis.fehlend,
+        beta_ohne_mail=beta_ergebnis.ohne_mail,
+        beta_abgewiesen=beta_ergebnis.abgewiesen,
+        beta_vergeben=beta_ergebnis.vergeben,
+        # Alle Admins der Datei, auch die schon ueber den Identity Provider zugeordneten:
+        # isAdmin gibt es im Realm nicht, ohne Eintrag in den Listen waeren sie keine mehr.
         beta_admins=[
-            zuordnung[k] for k, z in beta.items() if z.admin and k in zuordnung
+            zuordnung[k]
+            for k, z in sorted((beta_zugaenge or {}).items())
+            if z.admin and k in zuordnung
         ],
     )
+
+
+class _BetaErgebnis(NamedTuple):
+    # noch ohne Konto (Trockenlauf) bzw. ohne Zuordnung nach dem Anlegen
+    fehlend: List[str]
+    ohne_mail: List[str]
+    abgewiesen: List[str]
+    vergeben: List[str]
 
 
 def _beta_zuordnen(
@@ -469,15 +490,17 @@ def _beta_zuordnen(
     beta: Mapping[str, BetaZugang],
     zuordnung: Dict[str, str],
     ausfuehren: bool,
-) -> "tuple[List[str], List[str], List[str]]":
+    kommende_adressen: Set[str],
+) -> _BetaErgebnis:
     """
-    Ergaenzt ``zuordnung``; gibt die noch fehlenden, die ohne Mail und die vergebenen
-    zurueck. Ein Konto, das schon einer anderen alten Kennung zugeordnet ist, bekommt
+    Ergaenzt ``zuordnung``. ``kommende_adressen``: Adressen der Konten, die der Lauf
+    vorher ueber ``anzulegen`` anlegt; der Trockenlauf zeigt so denselben Konflikt wie
+    der Lauf. Ein Konto, das schon einer anderen alten Kennung zugeordnet ist, bekommt
     keinen Beta-Zugang dazu: Zwei alte Kennungen auf dieselbe neue weist
     zuordnung_pruefen ab, und das erst nach dem Anlegen der Konten.
     """
     if not beta:
-        return [], [], []
+        return _BetaErgebnis([], [], [], [])
     vergeben: List[str] = []
 
     def zuordnen(kennung: str, konto: str) -> None:
@@ -498,19 +521,24 @@ def _beta_zuordnen(
         if kennung in zuordnung or kennung in vergeben:
             continue
         adresse = beta[kennung].email.lower()
-        if adresse in adressen:
+        if adresse in adressen or adresse in kommende_adressen:
             vergeben.append(kennung)
         else:
             adressen.add(adresse)
             fehlend.append(kennung)
     if not (ausfuehren and fehlend):
-        return fehlend, [], sorted(vergeben)
+        return _BetaErgebnis(fehlend, [], [], sorted(vergeben))
     angelegt = realm.konten_mit_passwort_anlegen({k: beta[k] for k in fehlend})
     for kennung, konto in angelegt.angelegt.items():
         zuordnen(kennung, konto)
     vergeben.extend(angelegt.vergeben)
-    return (
-        [k for k in fehlend if k not in zuordnung and k not in vergeben],
+    return _BetaErgebnis(
+        [
+            k
+            for k in fehlend
+            if k not in zuordnung and k not in vergeben and k not in angelegt.abgewiesen
+        ],
         list(angelegt.ohne_mail),
+        list(angelegt.abgewiesen),
         sorted(vergeben),
     )

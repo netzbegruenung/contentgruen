@@ -44,6 +44,7 @@ def skript(monkeypatch):
             beta_ohne_mail=["user-003"] if kwargs["beta_zugaenge"] else [],
             beta_admins=["neu-admin"] if kwargs["beta_zugaenge"] else [],
             beta_vergeben=["user-004"] if kwargs["beta_zugaenge"] else [],
+            beta_abgewiesen=["user-005"] if kwargs["beta_zugaenge"] else [],
         )
 
     monkeypatch.setattr(modul, "umstellen", umstellen)
@@ -175,6 +176,8 @@ class TestSkript:
         assert "  neu-admin\n" in kennungen
         assert "  user-003\n" in kennungen
         assert "  user-004\n" in kennungen
+        assert "Konto Keycloak abwies: 1" in zahlen
+        assert "  user-005\n" in kennungen
 
     def test_ohne_beta_zugaenge_keine_zeilen_dazu(self, skript, capsys):
         skript()
@@ -182,11 +185,24 @@ class TestSkript:
         assert skript.aufrufe[0]["beta_zugaenge"] is None
         assert "Beta-Zugaenge" not in capsys.readouterr().out
 
+    @pytest.mark.parametrize(
+        "eintraege",
+        [
+            [{"userId": "alt"}],
+            # Doppelte userId: Der zweite Eintrag ueberschriebe still den ersten.
+            [
+                {"userId": "alt", "email": "anna@example.org"},
+                {"userId": "alt", "email": "ben@example.org"},
+            ],
+            # "false" als Text waere sonst ein Admin.
+            [{"userId": "alt", "email": "anna@example.org", "isAdmin": "false"}],
+        ],
+    )
     def test_kaputte_managed_users_json_bricht_ab_ohne_zu_schreiben(
-        self, skript, tmp_path
+        self, skript, tmp_path, eintraege
     ):
         datei = tmp_path / "managed-users.json"
-        datei.write_text('{"users": [{"userId": "alt"}]}')
+        datei.write_text(json.dumps({"users": eintraege}))
 
         with pytest.raises(SystemExit):
             skript("--beta-zugaenge", str(datei))

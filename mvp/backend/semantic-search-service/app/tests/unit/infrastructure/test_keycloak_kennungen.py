@@ -149,6 +149,15 @@ class TestBetaZugaengeUmziehen:
 
         assert konten == {"anna@example.org": NEU}
 
+    def test_fehler_bei_der_suche_nennt_die_adresse_nicht(self):
+        keycloak = Keycloak(abgelaufen=2)
+
+        with pytest.raises(httpx.HTTPStatusError) as fehler:
+            _konten(keycloak).konten_nach_adresse(["anna@example.org"])
+
+        assert "anna" not in str(fehler.value)
+        assert "401" in str(fehler.value)
+
     def test_legt_konto_mit_namen_an_und_schickt_passwort_festlegen(self):
         keycloak = Keycloak()
 
@@ -195,6 +204,24 @@ class TestBetaZugaengeUmziehen:
         assert ergebnis.angelegt == {"user-001": ANGELEGT}
         assert ergebnis.ohne_mail == ["user-001"]
         assert not any(r.method == "DELETE" for r in keycloak.anfragen)
+
+    def test_abgewiesener_eintrag_wird_genannt_und_die_anderen_laufen_weiter(self):
+        """Ein Abbruch mitten in der Schleife liesse Konten und Mails ohne Umstellung."""
+
+        def keycloak(request):
+            if request.method == "POST" and b"kaputt@example" in request.content:
+                return httpx.Response(400)
+            return Keycloak()(request)
+
+        ergebnis = _konten(keycloak).konten_mit_passwort_anlegen(
+            {
+                "user-001": BetaZugang("kaputt@example", "Anna Beispiel"),
+                "user-002": BetaZugang("ben@example.org", "Ben Beispiel"),
+            }
+        )
+
+        assert ergebnis.abgewiesen == ["user-001"]
+        assert ergebnis.angelegt == {"user-002": ANGELEGT}
 
     def test_netzfehler_bei_der_mail_bricht_den_lauf_nicht_ab(self):
         def keycloak(request):

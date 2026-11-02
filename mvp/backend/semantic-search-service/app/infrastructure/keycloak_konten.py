@@ -84,13 +84,7 @@ class KeycloakKonten:
             antwort = http.post(
                 admin,
                 headers=kopf,
-                json={
-                    "username": email,
-                    "email": email,
-                    "enabled": True,
-                    "emailVerified": False,
-                    "requiredActions": PFLICHTAKTIONEN,
-                },
+                json=_konto(email, email_bestaetigt=False),
             )
             if antwort.status_code == 409:
                 return KontoErgebnis.VORHANDEN
@@ -159,12 +153,8 @@ class KeycloakKonten:
                     "POST",
                     self._admin,
                     json={
-                        "username": email,
-                        "email": email,
-                        "enabled": True,
                         # Der Identity Provider hat sie bestaetigt (Trust Email).
-                        "emailVerified": True,
-                        "requiredActions": PFLICHTAKTIONEN,
+                        **_konto(email, email_bestaetigt=True),
                         "federatedIdentities": [
                             {
                                 "identityProvider": identity_provider,
@@ -215,6 +205,12 @@ class KeycloakKonten:
                 antwort = sitzung.anfrage(
                     "POST", self._admin, json=_konto_mit_namen(zugang)
                 )
+                if antwort.status_code == 400:
+                    # Keycloak weist den Eintrag ab (etwa eine ungueltige Adresse). Nur
+                    # dieser bleibt ohne Konto; ein Abbruch mitten in der Schleife liesse
+                    # angelegte Konten und verschickte Mails ohne Umstellung zurueck.
+                    ergebnis.abgewiesen.append(kennung)
+                    continue
                 if antwort.status_code == 409:
                     vorhanden = self._konto_zur_adresse(sitzung, zugang.email)
                     if vorhanden:
@@ -249,7 +245,13 @@ class KeycloakKonten:
             self._admin,
             params={"email": adresse, "exact": "true", "briefRepresentation": "true"},
         )
-        antwort.raise_for_status()
+        if antwort.is_error:
+            # Nicht raise_for_status: Dessen Meldung nennt die URL und damit die Adresse.
+            raise httpx.HTTPStatusError(
+                f"Konto zur Adresse suchen: HTTP {antwort.status_code}",
+                request=antwort.request,
+                response=antwort,
+            )
         # exact vergleicht ohne Gross und Klein; Keycloak speichert Adressen klein.
         treffer = [
             k
@@ -277,19 +279,24 @@ class KeycloakKonten:
         return treffer[0]["id"] if treffer else None
 
 
+def _konto(email: str, email_bestaetigt: bool) -> Dict[str, object]:
+    """Ein Konto im Realm: die Adresse als Benutzername, Pflichtaktion Nutzungsbedingungen."""
+    return {
+        "username": email,
+        "email": email,
+        "enabled": True,
+        "emailVerified": email_bestaetigt,
+        "requiredActions": PFLICHTAKTIONEN,
+    }
+
+
 def _konto_mit_namen(zugang: BetaZugang) -> Dict[str, object]:
     # Die BFF bildet den Anzeigenamen aus Vorname und dem letzten Wort des Nachnamens
     # (DisplayNamePolicy); "Anna Maria Beispiel" ergibt so wie bisher "Anna B.". Aus
     # einem einzelnen Wort machte sie keinen Namen; als Vorname allein zeigte sie es,
     # deshalb dann keiner von beiden.
     vorname, _, nachname = " ".join(zugang.name.split()).partition(" ")
-    konto: Dict[str, object] = {
-        "username": zugang.email,
-        "email": zugang.email,
-        "enabled": True,
-        "emailVerified": False,
-        "requiredActions": PFLICHTAKTIONEN,
-    }
+    konto = _konto(zugang.email, email_bestaetigt=False)
     if nachname:
         konto["firstName"] = vorname
         konto["lastName"] = nachname

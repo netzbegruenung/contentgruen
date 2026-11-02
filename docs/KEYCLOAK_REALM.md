@@ -205,6 +205,17 @@ in das Konto im Realm mit seiner Mail-Adresse um:
 - Gehört die Adresse im Realm schon zu einer anderen alten Kennung (ein Mitglied, ein
   zweiter Beta-Zugang mit derselben Adresse), zieht der Beta-Zugang nicht um; der Lauf
   nennt ihn. Ob die beiden zusammengehören, entscheidet ein Admin.
+- Der Lauf prüft die Zuordnung, bevor er ein Konto anlegt; ist sie nicht eindeutig, bricht
+  er ab, ohne dass ein Konto entsteht oder eine Mail hinausgeht. Bricht er später ab (etwa
+  beim Schreiben in PostgreSQL), denselben Aufruf wiederholen: Er findet die schon
+  angelegten Konten über die Adresse und schickt keine zweite Mail. Welche Mails beim
+  abgebrochenen Lauf scheiterten, nennt er dann nicht mehr; in der Admin-Konsole haben diese
+  Konten dann noch kein Passwort (*Users → Credentials* leer), für sie „Passwort vergessen“.
+- Zurück auf die Datei: Bis Schritt 6 meldet sich jeder Beta-Zugang weiter mit der Datei an.
+  Vor dem Lauf (Schritt 4) ändert nichts die Daten, angelegte Konten kann ein Admin löschen.
+  Nach dem Lauf tragen die Beiträge die neuen Kennungen; zurück geht es dann nur mit dem
+  Backup aus Schritt 4 (`mvp/scripts/backup/restore.sh`), und was seitdem entstand, geht
+  verloren.
 - `isAdmin` aus der Datei gibt es im Realm nicht: Der Lauf nennt die neuen Kennungen dieser
   Admins, sie gehören in `ADMIN_USER_IDS` und `SEMANTIC_SEARCH_ADMIN_USERS`.
 

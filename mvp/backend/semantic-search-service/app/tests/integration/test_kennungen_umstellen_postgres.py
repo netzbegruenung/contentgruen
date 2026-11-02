@@ -172,6 +172,8 @@ class Realm:
         # Mail-Adresse -> Konto im Realm (Beta-Zugaenge, #488)
         self.adressen = dict(adressen or {})
         self.mit_passwort_fuer = []
+        # Adressen, deren Konto Keycloak abweist (400)
+        self.abweisen = set()
 
     def kennungen_zuordnen(self, identity_provider, kennungen):
         assert identity_provider == "netzbegruenung"
@@ -195,6 +197,9 @@ class Realm:
         self.mit_passwort_fuer.extend(zugaenge)
         ergebnis = KontenMitPasswort()
         for kennung, zugang in zugaenge.items():
+            if zugang.email in self.abweisen:
+                ergebnis.abgewiesen.append(kennung)
+                continue
             ergebnis.angelegt[kennung] = self.adressen[zugang.email] = f"{kennung}-neu"
         return ergebnis
 
@@ -350,6 +355,68 @@ class TestUmstellen:
 
         assert ergebnis.beta_admins == [NEU]
 
+    def test_admin_schon_ueber_den_identity_provider_zugeordnet_wird_genannt(
+        self, datenbank, spuren, qdrant
+    ):
+        """isAdmin gibt es im Realm nicht: Ohne Nennung verloere er die Admin-Rechte."""
+        realm = Realm({PERSON: NEU})
+        beta = {PERSON: BetaZugang("anna@example.org", "Anna Beispiel", admin=True)}
+
+        ergebnis = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta)
+
+        assert ergebnis.beta_admins == [NEU]
+
+    def test_trockenlauf_zeigt_den_konflikt_mit_anzulegenden_konten(
+        self, datenbank, spuren, qdrant
+    ):
+        """Wie der Lauf: Das Konto aus --konten-anlegen entsteht vor dem Beta-Zugang."""
+        beta = {"user-009": BetaZugang("Ben@example.org", "Ben Beispiel")}
+        mails = {ANDERE: "ben@example.org"}
+
+        trocken = _umstellen(
+            datenbank, qdrant, Realm({}), anzulegen=mails, beta_zugaenge=beta
+        )
+        realm = Realm({})
+        realm.adressen["ben@example.org"] = f"{ANDERE}-neu"
+        lauf = _umstellen(
+            datenbank,
+            qdrant,
+            realm,
+            anzulegen=mails,
+            beta_zugaenge=beta,
+            ausfuehren=True,
+        )
+
+        assert trocken.beta_vergeben == lauf.beta_vergeben == ["user-009"]
+        assert trocken.beta_anzulegen == lauf.beta_anzulegen == []
+
+    def test_beta_zugaenge_stehen_nicht_zusaetzlich_unter_ohne_konto(
+        self, datenbank, spuren, qdrant
+    ):
+        beta = {ANDERE: BetaZugang("ben@example.org", "Ben Beispiel")}
+
+        trocken = _umstellen(datenbank, qdrant, Realm({}), beta_zugaenge=beta)
+
+        assert trocken.beta_anzulegen == [ANDERE]
+        assert ANDERE not in trocken.ohne_konto
+
+    def test_abgewiesener_beta_zugang_haelt_die_anderen_nicht_auf(
+        self, datenbank, spuren, qdrant
+    ):
+        realm = Realm({})
+        realm.abweisen = {"kaputt@example"}
+        beta = {
+            PERSON: BetaZugang("kaputt@example", "Anna Beispiel"),
+            ANDERE: BetaZugang("ben@example.org", "Ben Beispiel"),
+        }
+
+        lauf = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta, ausfuehren=True)
+
+        assert lauf.beta_abgewiesen == [PERSON]
+        assert lauf.beta_anzulegen == []
+        assert lauf.zuordnung == {ANDERE: f"{ANDERE}-neu"}
+        assert _kennung_irgendwo(datenbank, ANDERE) == []
+
     def test_geloeschter_beta_zugang_bekommt_kein_konto(
         self, datenbank, spuren, qdrant
     ):
@@ -367,6 +434,27 @@ class TestUmstellen:
 
         assert realm.mit_passwort_fuer == []
         assert ANDERE not in ergebnis.zuordnung
+
+    def test_unstimmige_zuordnung_bricht_ab_bevor_ein_konto_entsteht(
+        self, datenbank, spuren, qdrant
+    ):
+        """Erst alles pruefen, dann Konten anlegen und Mails schicken."""
+        realm = Realm({PERSON: NEU, "noch-wer": NEU})
+        beta = {ANDERE: BetaZugang("ben@example.org", "Ben Beispiel")}
+
+        with pytest.raises(ValueError):
+            _umstellen(
+                datenbank,
+                qdrant,
+                realm,
+                listen={"ADMIN_USER_IDS": ["noch-wer"]},
+                anzulegen={ANDERE: "ben@example.org"},
+                beta_zugaenge=beta,
+                ausfuehren=True,
+            )
+
+        assert realm.angelegt_fuer == []
+        assert realm.mit_passwort_fuer == []
 
     def test_loeschliste_behaelt_die_alte_und_bekommt_die_neue_dazu(
         self, datenbank, spuren, qdrant

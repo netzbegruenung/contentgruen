@@ -38,14 +38,15 @@ class BetaZugang:
 
 
 @dataclass
-class KontenMitPasswort:
-    # alte Kennung -> Kennung des Kontos im Realm (neu angelegt oder schon da)
-    angelegt: Dict[str, str] = field(default_factory=dict)
+class KontenMitPasswort(VerknuepfteKonten):
+    """Wie VerknuepfteKonten; ``vergeben``: Keycloak legt kein Konto an (Konflikt), und
+    zur Adresse gibt es auch keins, etwa ein Benutzername mit anderer Adresse."""
+
     # alte Kennungen, deren Mail "Passwort festlegen" nicht hinausging
     ohne_mail: List[str] = field(default_factory=list)
-    # alte Kennungen, fuer die Keycloak kein Konto anlegt (Konflikt) und es auch zur
-    # Adresse keins gibt, etwa ein Benutzername mit anderer Adresse
-    vergeben: List[str] = field(default_factory=list)
+    # alte Kennungen, deren Konto Keycloak abwies (etwa eine ungueltige Adresse); der Lauf
+    # geht weiter, sie bleiben ohne Konto
+    abgewiesen: List[str] = field(default_factory=list)
 
 
 class IKennungenImRealm(Protocol):
