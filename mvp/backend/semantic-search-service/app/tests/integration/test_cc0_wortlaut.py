@@ -23,8 +23,8 @@ from repositories.raw_input_repository import RawInputRepository
 from tests.integration.conftest import requires_qdrant
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
 
-FORMULAR = "2026-10-29-formular"
-SATZ = "2026-10-29-satz"
+FORMULAR = "2026-11-02-formular"
+SATZ = "2026-11-02-satz"
 
 pytestmark = pytest.mark.integration
 

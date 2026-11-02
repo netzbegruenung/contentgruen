@@ -89,7 +89,7 @@ export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
 @Component({
   selector: 'app-einwerfen',
   standalone: true,
-  imports: [Cc0HinweisComponent, ...SHARED_IMPORTS, CommonModule, TextFieldModule],
+  imports: [...SHARED_IMPORTS, CommonModule, TextFieldModule, Cc0HinweisComponent],
   templateUrl: './einwerfen.component.html',
   styleUrls: ['./einwerfen.component.css'],
 })

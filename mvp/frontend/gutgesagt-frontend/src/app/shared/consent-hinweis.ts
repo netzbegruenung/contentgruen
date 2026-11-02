@@ -1,4 +1,4 @@
-/** Die CC0-Erklaerung, auf die das Wort "CC0" im Hinweis verlinkt (wie NB §4). */
+/** Die CC0-Erklaerung, auf die das Wort "CC0" im Hinweis und NB §4 verlinken. */
 export const CC0_ERKLAERUNG_URL = 'https://creativecommons.org/publicdomain/zero/1.0/deed.de';
 
 /**
@@ -28,7 +28,15 @@ export const CONSENT_HINWEIS_SATZ = {
   vorCc0: 'Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter ',
 } as const;
 
-export type ConsentHinweis = typeof CONSENT_HINWEIS | typeof CONSENT_HINWEIS_SATZ;
+/** Ein Wortlaut des CC0-Hinweises, in den Teilen, die das Template braucht. */
+export interface ConsentHinweis {
+  readonly kennung: string;
+  readonly vorCc0: string;
+  readonly cc0: string;
+  readonly nachCc0: string;
+  readonly nutzungsbedingungen: string;
+  readonly nachNutzungsbedingungen: string;
+}
 
 /** Der Hinweis als ein Satz, so wie er auf der Seite steht. */
 export function hinweisText(hinweis: ConsentHinweis): string {

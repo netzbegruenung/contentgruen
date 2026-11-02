@@ -108,7 +108,8 @@ einbezogen sind: mit dem Absenden unter dem Hinweis, beim Satz mit dem Speichern
 Unsere Einschätzung, nicht geprüft: Das trägt die Einbeziehung (§ 305 Abs. 2 BGB: ausdrücklicher
 Hinweis bei Vertragsschluss), die Rechteeinräumung unter CC0 das Absenden als bewusste Handlung.
 Ob das trägt, klärt #296. Wer nie etwas absendet, hat nicht zugestimmt; zum Lesen und Suchen
-braucht es kein Konto (NB §2).
+braucht es kein Konto (NB §2). Wer angemeldet nur bewertet, sieht den Hinweis aber nie und hat
+ebenfalls nicht zugestimmt; das deckt bis jetzt nur die Pflichtaktion aus #429 ab.
 
 **Nachweis:** Jeder Wortlaut hat eine Kennung; sie wird mit jedem neuen Beitrag (Qdrant-Payload),
 Satz und Einwurf (PostgreSQL, `cc0_wortlaut`) gespeichert (Entscheidung 29.10.2026 in #439).
@@ -131,7 +132,8 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 - Keycloak-Pflichtaktion „Terms and Conditions“ (#429): Nach der Entscheidung vom 02.11.2026
   (keine Checkbox beim Anmelden) ist offen, ob sie bleibt. NB §10 holt die Zustimmung zu
   geänderten Bedingungen heute über sie ein; fällt sie weg, braucht §10 einen anderen Weg.
-  Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr.
+  Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr, ebenso die
+  Zustimmung von Personen, die nur bewerten.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.

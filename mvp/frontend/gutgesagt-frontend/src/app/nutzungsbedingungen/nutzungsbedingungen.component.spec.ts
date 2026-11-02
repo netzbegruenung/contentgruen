@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ, hinweisText } from '../shared/consent-hinweis';
+import { CC0_ERKLAERUNG_URL, CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ, hinweisText } from '../shared/consent-hinweis';
 import { abschnitt, normalisiert } from '../testing/rechtstext';
 import { NutzungsbedingungenComponent } from './nutzungsbedingungen.component';
 
@@ -54,6 +54,10 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('mit dem Absenden stimmst du ihnen zu');
     expect(text).toContain('schon mit dem Speichern beim Tippen');
     expect(normalisiert(seite.textContent)).not.toMatch(/mit der Nutzung|durch die Nutzung/);
+  });
+
+  it('verlinkt in Abschnitt 4 dieselbe CC0-Erklärung wie der CC0-Hinweis (#415)', () => {
+    expect(seite.querySelector(`a[href="${CC0_ERKLAERUNG_URL}"]`)).toBeTruthy();
   });
 
   it('sagt nirgends „unwiderruflich“, weder im Text noch im CC0-Hinweis (Entscheidung 29.10.2026)', () => {

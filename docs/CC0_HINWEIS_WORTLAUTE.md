@@ -31,10 +31,10 @@ Kennungen. Gezeigt wird der Hinweis von `shared/cc0-hinweis/` in allen Formulare
 
 | Kennung | Wo | Wortlaut | gültig |
 |---------|----|----------|--------|
-| `2026-11-02-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit #415 |
-| `2026-11-02-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit #415 |
-| `2026-10-29-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis #415 |
-| `2026-10-29-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis #415 |
+| `2026-11-02-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von #415 (Datum nach dem Ausrollen eintragen) |
+| `2026-11-02-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit dem Produktiv-Deploy von #415 (Datum nach dem Ausrollen eintragen) |
+| `2026-10-29-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis zum Produktiv-Deploy von #415 |
+| `2026-10-29-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis zum Produktiv-Deploy von #415 |
 
 Vorher (55bb5cb8 bis #431) stand im Formular „… deine eigene Formulierung unwiderruflich unter
 CC0 …“, ohne Kennung; Beiträge, Sätze und Einwürfe aus dieser Zeit haben keine.

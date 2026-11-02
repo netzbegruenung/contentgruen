@@ -59,7 +59,7 @@ export const TYPEN: ReadonlyArray<{ wert: Beitragstyp; name: string; erlaeuterun
 @Component({
   selector: 'app-destillieren',
   standalone: true,
-  imports: [Cc0HinweisComponent, ...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent],
+  imports: [...SHARED_IMPORTS, MatRadioModule, RouterLink, BeitragskarteComponent, Cc0HinweisComponent],
   templateUrl: './destillieren.component.html',
   styleUrls: ['./destillieren.component.css'],
 })

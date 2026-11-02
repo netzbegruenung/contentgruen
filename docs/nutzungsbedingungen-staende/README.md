@@ -11,7 +11,9 @@ Pflichtaktion bleibt; fällt sie weg, ändern sich §10 und die Schritte 4 bis 6
 
 Keycloak speichert dabei nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
 zugestimmt hat, ergibt sich deshalb aus diesem Verzeichnis: der Stand, der zu diesem Zeitpunkt
-live war. Den Text eines Stands liefert der Release-Tag, mit dem er live ging
+live war. Wer über den CC0-Hinweis zugestimmt hat (NB §2, #415), dem gehört der Stand, der beim
+Absenden live war; den Zeitpunkt liefert der Beitrag, der Satz oder der Einwurf (Erstellungszeit),
+die Kennung des Hinweises steht daneben (`docs/CC0_HINWEIS_WORTLAUTE.md`). Den Text eines Stands liefert der Release-Tag, mit dem er live ging
 (`git show <tag>:mvp/frontend/gutgesagt-frontend/src/app/nutzungsbedingungen/nutzungsbedingungen.component.html`).
 
 ## Einen neuen Stand einführen
