@@ -480,11 +480,7 @@ def test_main_verweist_am_kommentar_eines_anderen_kontos_vorbei(
     voll = bericht([schritt("unit", 1, "FAILED test_x\n")], pipeline="40")
     forgejo = forgejo_mit_status(
         201,
-        kommentare=[
-            _kommentar(2, voll, konto=BOT.upper()),
-            _kommentar(3, voll, konto="jemand"),
-            {"id": 4, "body": voll, "html_url": "https://x/4"},
-        ],
+        kommentare=[_kommentar(2, voll), _kommentar(3, voll, konto="jemand")],
     )
 
     ci_bericht.main(["unit"], forgejo.env(), tmp_path)
@@ -492,6 +488,22 @@ def test_main_verweist_am_kommentar_eines_anderen_kontos_vorbei(
     text = _gesendet(forgejo)
     assert "Unverändert rot" in text
     assert "issuecomment-2" in text and "issuecomment-3" not in text
+
+
+def test_letzter_bericht_login_ohne_gross_und_kleinschreibung():
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")])
+
+    voriger = ci_bericht.letzter_bericht([_kommentar(2, voll, konto=BOT.upper())], BOT)
+
+    assert voriger and voriger.url.endswith("issuecomment-2")
+
+
+@pytest.mark.parametrize("autor", [{}, {"user": None}, {"user": {"login": 5}}])
+def test_letzter_bericht_ohne_autor_zaehlt_nicht(autor):
+    voll = bericht([schritt("unit", 1, "FAILED test_x\n")])
+    kommentar = {"id": 4, "body": voll, "html_url": "https://x/4", **autor}
+
+    assert ci_bericht.letzter_bericht([kommentar], BOT) is None
 
 
 def test_main_ohne_konto_postet_den_vollen_bericht(
