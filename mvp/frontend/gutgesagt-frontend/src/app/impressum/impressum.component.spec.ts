@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { abschnitt, normalisiert, stand, TAGESDATUM } from '../testing/rechtstext';
+import { abschnitt, istTagesdatum, normalisiert, stand } from '../testing/rechtstext';
 import { ORGANISATION } from '../shared/organisation';
 import { ImpressumComponent } from './impressum.component';
 
@@ -29,7 +29,8 @@ describe('ImpressumComponent', () => {
   });
 
   it('trägt das Tagesdatum der letzten Änderung als Stand, nicht nur den Monat (#498)', () => {
-    expect(stand(seite)).toMatch(TAGESDATUM);
+    const text = stand(seite);
+    expect(istTagesdatum(text)).withContext(text).toBeTrue();
   });
 
   it('nennt die Kontaktadresse von Gut gesagt und den Feedback-Knopf (#430)', () => {

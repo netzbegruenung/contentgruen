@@ -26,17 +26,41 @@ export function abschnitt(seite: HTMLElement, titel: string | RegExp): string {
   return normalisiert(teile.join(' '));
 }
 
-/** Ein Tagesdatum, wie es in der Stand-Zeile eines Rechtstexts steht: „2. November 2026“. */
-export const TAGESDATUM =
-  /^([1-9]|[12]\d|3[01])\. (Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember) \d{4}$/;
+const MONATE = [
+  'Januar',
+  'Februar',
+  'März',
+  'April',
+  'Mai',
+  'Juni',
+  'Juli',
+  'August',
+  'September',
+  'Oktober',
+  'November',
+  'Dezember',
+];
 
-/** Der Text hinter „Stand:“ eines Rechtstexts, etwa ``2. November 2026`` (#498). */
-export function stand(seite: HTMLElement): string {
-  const zeile = Array.from(seite.querySelectorAll('p')).find((p) =>
-    normalisiert(p.textContent).startsWith('Stand:'),
-  );
-  if (!zeile) {
-    throw new Error('Keine Stand-Zeile');
+/**
+ * Ob ``text`` ein Tagesdatum ist, wie es in der Stand-Zeile eines Rechtstexts steht:
+ * „2. November 2026“, und ob es diesen Tag gibt („31. September 2026“ nicht).
+ */
+export function istTagesdatum(text: string): boolean {
+  const treffer = /^([1-9]|[12]\d|3[01])\. (\S+) (\d{4})$/.exec(text);
+  const monat = treffer ? MONATE.indexOf(treffer[2]) : -1;
+  if (!treffer || monat < 0) {
+    return false;
   }
-  return normalisiert(zeile.textContent).replace(/^Stand:\s*/, '');
+  const tag = new Date(Number(treffer[3]), monat, Number(treffer[1]));
+  return tag.getMonth() === monat;
+}
+
+/** Der Text hinter „Stand:“ im Update-Hinweis am Ende eines Rechtstexts (#498). */
+export function stand(seite: HTMLElement): string {
+  const zeile = seite.querySelector('.update-notice p');
+  const text = normalisiert(zeile?.textContent ?? null);
+  if (!text.startsWith('Stand:')) {
+    throw new Error('Keine Stand-Zeile im Update-Hinweis');
+  }
+  return text.replace(/^Stand:\s*/, '');
 }
