@@ -84,7 +84,7 @@ export const LEISTEN_HOEHE_VARIABLE = '--feste-leiste-hoehe';
         flex-basis: 100%;
         margin: 0;
         padding: 8px 12px;
-        border-left: 4px solid var(--error, #d32f2f);
+        border-left: 4px solid var(--error-color, #d32f2f);
         border-radius: 4px;
         background: rgba(211, 47, 47, 0.08);
         font-size: 0.9rem;

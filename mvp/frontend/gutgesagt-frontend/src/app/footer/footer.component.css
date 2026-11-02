@@ -1,38 +1,45 @@
 
 .footer {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: var(--spacing-sm);
     padding: 20px;
-    color: darkgreen;
+    color: var(--primary-dark);
     margin-top: 50px;
-}
-
-.footer span {
+    text-align: center;
     font-size: 16px;
 }
 
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-sm) 28px;
+}
+
 /*
- * Mobil steht jede Angabe auf einer eigenen Zeile; die Trennstriche entfallen.
+ * Mobil steht jeder Link auf einer eigenen Zeile und ist 44 px hoch (Tippziel).
  * Der Satz "Ein Projekt von ..." darf umbrechen, sonst laeuft er bei 360 px
  * ueber den Rand.
  */
 @media (max-width: 599px) {
-    .footer {
+    .footer-links {
         flex-direction: column;
-        gap: 8px;
-        text-align: center;
+        align-items: center;
+        gap: 0;
     }
 
-    .footer .trenner {
-        display: none;
+    .footer-links > a,
+    .footer-links > button {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
     }
 }
 
 .footer a {
-    color: darkgreen;
+    color: var(--primary-dark);
     text-decoration: none;
     cursor: pointer;
 }
@@ -47,7 +54,13 @@
     font-weight: 500;
 }
 
+/* Knopf, aussehend wie die Links daneben */
 .footer .help-button {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: var(--primary-dark);
     cursor: pointer;
 }
 

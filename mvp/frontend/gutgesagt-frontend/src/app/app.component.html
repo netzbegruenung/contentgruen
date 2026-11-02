@@ -96,7 +96,8 @@
                     <mat-menu #profilmenue="matMenu">
                         <button mat-menu-item type="button" class="profilmenue-eintrag"
                             (click)="navigateToMeineBeitraege()">
-                            <span><span aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span> Meine Beiträge</span>
+                            <span class="profilmenue-emoji mat-icon" aria-hidden="true">{{ kettenIcons.meineBeitraege }}</span>
+                            <span>Meine Beiträge</span>
                         </button>
                         <button mat-menu-item type="button" class="profilmenue-eintrag" (click)="openProfilbildDialog()">
                             <mat-icon>face</mat-icon>

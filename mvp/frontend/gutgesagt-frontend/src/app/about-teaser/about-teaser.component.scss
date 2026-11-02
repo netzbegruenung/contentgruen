@@ -38,7 +38,6 @@
     height: 48px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--primary);
   }
 
   .profile-info {
@@ -52,7 +51,7 @@
   }
 
   .role {
-    color: var(--primary);
+    color: var(--primary-dark);
     font-size: 0.9rem;
   }
 

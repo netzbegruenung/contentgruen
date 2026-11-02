@@ -414,4 +414,17 @@ describe('MeineBeitraegeComponent', () => {
     expect(text('.beitraege-leer')).toBe('Du hast noch keine Beiträge.');
     expect(karten().length).toBe(0);
   });
+
+  // Design-Audit C8 (#512): Der leere Zustand war nur ein Satz, ohne Weg weiter.
+  it('fuehrt aus dem leeren Zustand zum Beitragen', async () => {
+    await erstellen([]);
+    const navigieren = TestBed.inject(Router).navigate as jasmine.Spy;
+    navigieren.calls.reset();
+
+    const knopf = fixture.nativeElement.querySelector('.beitraege-leer-knopf') as HTMLButtonElement;
+    expect(knopf.textContent!.trim()).toBe('Beitragen');
+    knopf.click();
+
+    expect(navigieren).toHaveBeenCalledWith(['/contribute']);
+  });
 });

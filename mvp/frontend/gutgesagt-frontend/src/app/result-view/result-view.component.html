@@ -122,7 +122,7 @@
 
         <!-- Mobile Empty State when no results in any category -->
         <div *ngIf="!hatTreffer" class="mobile-empty-state">
-            <p class="search-query-info">Zu "{{searchQuery}}" haben wir noch keine passenden Inhalte</p>
+            <p class="search-query-info">Zu „{{searchQuery}}“ haben wir noch keine passenden Inhalte</p>
             <h3>Hilf der Community!</h3>
             <div class="mobile-action-buttons">
                 <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
@@ -143,15 +143,15 @@
     <!-- Unified Empty State when both searches return no results -->
     <section class="content-section" *ngIf="!hatTreffer">
         <div class="unified-empty-state">
-            <p class="search-query-info">Zu "{{searchQuery}}" haben wir noch keine passenden Inhalte</p>
+            <p class="search-query-info">Zu „{{searchQuery}}“ haben wir noch keine passenden Inhalte</p>
             <h2>Hilf der Community und teile dein Wissen!</h2>
 
             <div class="action-buttons-top">
                 <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('commentary')">
-                    <mat-icon>add</mat-icon>💬 Fertigen Kommentar hinzufügen
+                    💬 Fertigen Kommentar hinzufügen
                 </button>
                 <button mat-raised-button class="gutgesagt-primary-dark" (click)="navigateToContribute('generictext')">
-                    <mat-icon>add</mat-icon>📄 Hintergrundinfo hinzufügen
+                    📄 Hintergrundinfo hinzufügen
                 </button>
             </div>
 

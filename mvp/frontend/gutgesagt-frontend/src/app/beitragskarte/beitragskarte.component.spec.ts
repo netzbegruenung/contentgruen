@@ -678,6 +678,14 @@ describe('BeitragskarteComponent', () => {
       expect(beschriftungen).toEqual(['Kurz', 'Mittel', 'Lang']);
     });
 
+    it('zeichnet die gewaehlte Fassung wie die Tabs: Tanne-Text auf Tanne-Hauch (#512)', () => {
+      zeigen(ausSuchergebnis(paket('commentary_result', { short_text: 'Kurzfassung', long_text: 'Langfassung' })));
+      const gewaehlt = element('.textlaenge .mat-button-toggle-checked');
+
+      expect(getComputedStyle(gewaehlt).color).toBe('rgb(0, 84, 55)');
+      expect(getComputedStyle(gewaehlt).backgroundColor).toBe('rgba(0, 84, 55, 0.07)');
+    });
+
     it('zeigt ohne Kurz- und Langfassung keinen Umschalter', () => {
       zeigen(ausSuchergebnis(paket('generictext_result')));
 

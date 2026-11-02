@@ -23,7 +23,11 @@
         </div>
 
         <div *ngIf="!isLoading">
-            <p *ngIf="!karten.length" class="beitraege-leer">Du hast noch keine Beiträge.</p>
+            <ng-container *ngIf="!karten.length">
+                <p class="beitraege-leer">Du hast noch keine Beiträge.</p>
+                <button mat-raised-button type="button" class="dark-green-button beitraege-leer-knopf"
+                        (click)="zumBeitragen()">Beitragen</button>
+            </ng-container>
 
             <p *ngIf="karten.length" class="album-statistik">{{ statistik }}</p>
 

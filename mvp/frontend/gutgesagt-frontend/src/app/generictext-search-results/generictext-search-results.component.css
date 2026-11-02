@@ -106,7 +106,7 @@
 
 .suggestions li:before {
     content: "•";
-    color: var(--primary);
+    color: var(--primary-dark);
     font-weight: bold;
     position: absolute;
     left: 0;
@@ -146,7 +146,7 @@
 }
 
 .motivation {
-    color: var(--primary);
+    color: var(--primary-dark);
     font-style: italic;
     margin: 0 auto 1.5rem;
     max-width: 500px;

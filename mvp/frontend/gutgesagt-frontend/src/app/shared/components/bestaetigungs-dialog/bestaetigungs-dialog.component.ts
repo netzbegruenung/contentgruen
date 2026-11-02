@@ -26,7 +26,7 @@ export interface BestaetigungsDialogDaten {
   `,
   styles: [`
     .bestaetigen {
-      background-color: var(--primary-main);
+      background-color: var(--primary-dark);
       color: white;
     }
   `],
