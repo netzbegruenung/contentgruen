@@ -25,8 +25,8 @@ class BeitragUnlesbar(Exception):
     """
 
 
-# Was die Endpunkte per Depends(get_beitrag_laden) bekommen: beitrag_laden mit
-# dem aggregierten Repository schon eingesetzt.
+# Was die Endpunkte per Depends(get_beitrag_laden) bekommen: beitrag_laden, das
+# sich das aggregierte Repository erst beim Aufruf holt.
 BeitragLader = Callable[[uuid.UUID], Awaitable[Optional[ContentDbEntry]]]
 
 

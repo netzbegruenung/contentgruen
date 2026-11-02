@@ -10,7 +10,8 @@ der Suchindex nicht antwortet: Stimmen liegen in PostgreSQL.
 """
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock
+from functools import partial
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -18,8 +19,9 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
 
 from api.v1.voting import router as voting_router
-from dependencies import get_content_repository, get_voting_service
+from dependencies import get_beitrag_laden, get_voting_service
 from domain.models.vote import VoteResponse
+from services.beitrag_laden import beitrag_laden
 
 pytestmark = pytest.mark.unit
 
@@ -59,7 +61,9 @@ def client(repository, dienst):
     """Echtes beitrag_laden (services/beitrag_laden.py) ueber ein gemocktes Repository."""
     app = FastAPI()
     app.include_router(voting_router, prefix="/api/v1/voting")
-    app.dependency_overrides[get_content_repository] = lambda: repository
+    app.dependency_overrides[get_beitrag_laden] = lambda: partial(
+        beitrag_laden, repository=repository
+    )
     app.dependency_overrides[get_voting_service] = lambda: dienst
     return TestClient(app)
 
@@ -106,6 +110,23 @@ class TestAbstimmen:
         antwort = client.put(
             f"/api/v1/voting/content/{BEITRAG}/{art}", headers=ANGEMELDET
         )
+
+        assert antwort.status_code == 200
+        getattr(dienst, f"set_{art}").assert_called_once()
+
+    def test_ohne_repository_bekommt_der_beitrag_die_stimme(self, dienst, art):
+        """Scheitert schon das Repository, zaehlt die Stimme wie ohne Suchindex."""
+        app = FastAPI()
+        app.include_router(voting_router, prefix="/api/v1/voting")
+        app.dependency_overrides[get_voting_service] = lambda: dienst
+
+        with patch(
+            "dependencies.get_content_repository",
+            side_effect=RuntimeError("Embeddings nicht gestartet"),
+        ):
+            antwort = TestClient(app).put(
+                f"/api/v1/voting/content/{BEITRAG}/{art}", headers=ANGEMELDET
+            )
 
         assert antwort.status_code == 200
         getattr(dienst, f"set_{art}").assert_called_once()

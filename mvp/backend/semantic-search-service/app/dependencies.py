@@ -247,13 +247,17 @@ def get_content_repository(
     return QdrantRepositoryFactory().create_content_repository(settings)
 
 
-def get_beitrag_laden(
-    repository: IContentRepository = Depends(get_content_repository),
-) -> BeitragLader:
-    """``beitrag_laden`` ueber das aggregierte Repository, fuer Nutzung und Stimmen."""
+def get_beitrag_laden(settings: Settings = Depends(get_settings)) -> BeitragLader:
+    """
+    ``beitrag_laden`` ueber das aggregierte Repository, fuer Nutzung und Stimmen.
+
+    Das Repository entsteht erst beim Laden, nicht beim Aufloesen der Dependency:
+    Scheitert es, faengt das ``try`` des Endpunkts den Fehler wie einen Ausfall des
+    Suchindex (die Stimme zaehlt trotzdem, die Nutzung antwortet mit ihrem 500).
+    """
 
     async def laden(content_id: uuid.UUID):
-        return await beitrag_laden(content_id, repository)
+        return await beitrag_laden(content_id, get_content_repository(settings))
 
     return laden
 
