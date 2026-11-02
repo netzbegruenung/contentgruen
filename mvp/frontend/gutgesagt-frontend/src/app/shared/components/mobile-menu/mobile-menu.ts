@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { UserInfo } from '../../../auth/auth.service';
 import { EINWERFEN_TITEL, KETTEN_ICONS } from '../../fangkorb-texte';
 import { ROUTES } from '../../constants/app.constants';
+import { RundgangId } from '../../../rundgang/rundgang-daten';
 
 @Component({
   selector: 'app-mobile-menu',
@@ -40,6 +41,7 @@ export class MobileMenuComponent {
   @Output() profilbild = new EventEmitter<void>();
   @Output() help = new EventEmitter<void>();
   @Output() feedback = new EventEmitter<void>();
+  @Output() rundgang = new EventEmitter<RundgangId>();
 
   close(): void {
     this.closeMenu.emit();
@@ -92,6 +94,11 @@ export class MobileMenuComponent {
 
   onHelpClick(): void {
     this.help.emit();
+    this.close();
+  }
+
+  onRundgangClick(id: RundgangId): void {
+    this.rundgang.emit(id);
     this.close();
   }
 

@@ -5,6 +5,22 @@
 </div>
 <mat-dialog-content class="hilfe-inhalt">
 
+    <!-- Rundgang wieder aufrufen (#389, Variante B: gelber Kasten mit Daumen) -->
+    <section class="rundgang-kasten" aria-labelledby="rundgang-kasten-titel">
+        <img src="marke/daumen.svg" alt="" width="56" height="56">
+        <div>
+            <h3 id="rundgang-kasten-titel">Lieber zeigen lassen?</h3>
+            <div class="rundgang-kasten-knoepfe">
+                <button type="button" class="rundgang-knopf umriss rundgang-starten"
+                        (click)="rundgangStarten('antwort-finden')">Rundgang starten</button>
+                @if (angemeldet) {
+                    <button type="button" class="rundgang-knopf umriss rundgang-mitmachen"
+                            (click)="rundgangStarten('mitmachen')">Rundgang Mitmachen</button>
+                }
+            </div>
+        </div>
+    </section>
+
     <p>
         Das hier ist KEIN KI-Generator! <br>
         Gut gesagt ist eine Tauschbörse für bewährte Argumente. Alles was du hier findest, wurde von anderen Grünen in echten Diskussionen erprobt und geteilt.

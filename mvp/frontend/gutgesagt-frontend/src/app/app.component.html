@@ -14,6 +14,7 @@
                 (loginToContribute)="loginWithReturnUrl('/contribute')"
                 (logout)="logout()"
                 (help)="openHelpDialog()"
+                (rundgang)="rundgangStarten($event)"
                 (profilbild)="openProfilbildDialog()"
                 (feedback)="openFeedbackDialog()">
             </app-mobile-menu>
@@ -167,7 +168,7 @@
                         <span class="cdk-visually-hidden">Feedback</span>
                     </button>
 
-                    <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button"
+                    <button mat-icon-button (click)="openHelpDialog()" class="mat-elevation-z1 desktop-only-button hilfe-knopf"
                         aria-label="Hilfe öffnen">
                         <mat-icon>help_outline</mat-icon>
                     </button>
@@ -206,3 +207,9 @@
         </mat-sidenav-content>
     </mat-sidenav-container>
 </div>
+
+<!-- Rundgaenge (#389); die Schritte stehen in rundgang-daten.ts. Erst geladen, wenn einer
+     laeuft: Die meisten Besuche brauchen ihn nie, das Start-Bundle bleibt schlank. -->
+@defer (when rundgang.aktiv()) {
+    <app-rundgang></app-rundgang>
+}

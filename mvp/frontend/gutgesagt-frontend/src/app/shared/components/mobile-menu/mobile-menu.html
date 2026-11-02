@@ -80,6 +80,17 @@
             Hilfe
         </button>
 
+        <!-- Rundgaenge wieder aufrufen (#389); Mitmachen nur fuer Angemeldete -->
+        <button mat-button (click)="onRundgangClick('antwort-finden')" class="mobile-menu-item mobile-menu-rundgang">
+            <mat-icon>tour</mat-icon>
+            Rundgang starten
+        </button>
+        <button mat-button *ngIf="userInfo?.isAuthenticated" (click)="onRundgangClick('mitmachen')"
+                class="mobile-menu-item mobile-menu-rundgang-mitmachen">
+            <mat-icon>tour</mat-icon>
+            Rundgang Mitmachen
+        </button>
+
         <button mat-button (click)="onFeedbackClick()" class="mobile-menu-item mobile-menu-feedback">
             <mat-icon>feedback</mat-icon>
             Feedback

@@ -39,6 +39,40 @@
     padding: 16px 24px 32px;
 }
 
+/* Rundgang wieder aufrufen (#389) */
+.rundgang-kasten {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    background: var(--rundgang-gelb);
+    border-radius: 12px;
+}
+
+.rundgang-kasten img {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.hilfe-inhalt .rundgang-kasten h3 {
+    font-size: 26px;
+    margin: 0 0 8px;
+}
+
+.rundgang-kasten-knoepfe {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 599px) {
+    .rundgang-kasten {
+        align-items: flex-start;
+    }
+}
+
 /* Zwischenueberschriften eine Stufe kleiner, damit die Seitenleiste ruhig bleibt */
 .hilfe-inhalt h3 {
     color: var(--primary-dark);

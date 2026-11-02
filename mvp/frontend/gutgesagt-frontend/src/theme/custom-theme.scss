@@ -181,6 +181,10 @@ $gutgesagt-light-theme: mat.m2-define-light-theme((
   --statement-bg: #f5f5f5; // Light gray: statements, Einwuerfe ohne Beitrag
   --kartenliste-bg: #f4f4f2; // Grund unter Kartenlisten, damit Karten als Karten lesbar sind
   --such-band: #f6ff7c; // Gelbes Band hinter der Suche auf der Startseite; bewusst nicht Sonne (#512)
+  --rundgang-gelb: var(--such-band); // Band im Willkommen, Rahmen des Lichtkegels, Hilfe-Kasten (#389)
+  --rundgang-balken: #ecefd0; // Fortschrittsbalken im Rundgang, noch offene Schritte
+  --rundgang-schleier: rgba(0, 25, 15, 0.55); // Abdunklung um den Lichtkegel
+  --rundgang-fokus: #0ba1dd; // Fokusring der Rundgang-Knoepfe, hebt sich von Gelb und Tanne ab
   --einwurf-grund: #faf6ec; // Papier/Sand: offene und destillierte Einwuerfe im Fangkorb, Saetze darin bleiben weiss
 
   // Neutral colors

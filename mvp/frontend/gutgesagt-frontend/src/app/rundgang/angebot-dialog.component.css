@@ -1,0 +1,59 @@
+:host {
+    display: block;
+    overflow: hidden;
+    border-radius: var(--border-radius-large);
+    background: white;
+}
+
+.band {
+    display: flex;
+    justify-content: center;
+    padding: 28px 0 20px;
+    background: var(--rundgang-gelb);
+}
+
+.band img {
+    width: 104px;
+    height: 104px;
+}
+
+.koerper {
+    padding: 24px 32px 32px;
+    text-align: center;
+}
+
+h2 {
+    margin: 0 0 14px;
+    font-family: GrueneType, Roboto, sans-serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 1.05;
+    color: var(--primary-dark);
+}
+
+.satz {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.knoepfe {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.knoepfe .rundgang-knopf {
+    flex: 1;
+}
+
+@media (max-width: 599px) {
+    .koerper {
+        padding: 20px 24px 24px;
+    }
+
+    .knoepfe {
+        flex-direction: column;
+    }
+}

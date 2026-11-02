@@ -359,6 +359,13 @@ _Avoid_: Contributions, Profil
 Was eine Person über die Nutzung ihrer Beiträge erfährt, ohne danach zu suchen: in Meine Beiträge je Beitrag der Zuwachs der letzten 7 Tage, am Kommentar auch je Fassung, beim Anmelden einmal „Seit deinem letzten Besuch wurden deine Beiträge N-mal genutzt“, nur wenn N größer als 0 ist. Nur in der App, keine Mail und keine Push-Nachricht. Ein Besuch ist jedes Öffnen der App als angemeldete Person; als gezeigt gilt der Stand der Nutzung beim letzten Besuch, nicht dessen Zeitpunkt.
 _Avoid_: Hinweis (das ist der Freitext an einem Einwurf), Benachrichtigung, Notification
 
+**Willkommen**:
+Das Fenster beim ersten Besuch: ein Satz, wofür Gut gesagt da ist, und das Angebot des Rundgangs „Antwort finden“, gleichwertig mit „Später“. Ob es gezeigt wurde, merkt sich nur der Browser; ein zweiter Besuch zeigt es nicht mehr.
+
+**Rundgang**:
+Eine kurze Folge von Schritten durch die echte Oberfläche: Ein Lichtkegel hebt je Schritt ein Element hervor, daneben steht eine Sprechblase. „Antwort finden“ zeigt allen Suche, Treffer, Kopieren und Abstimmen; „Mitmachen“ wird nach der ersten Anmeldung einmal angeboten und zeigt Beitragen, Einwerfen, Fangkorb und Meine Beiträge. Beide lassen sich über Hilfe und Menü jederzeit wieder starten. Angeboten, nie erzwungen.
+_Avoid_: Tour, Onboarding, Tutorial
+
 **Punkte**:
 Was eine Person sammelt, in drei Stufen (ADR 0004): wenige, gedeckelte Punkte fürs Tun (Beitrag gespeichert, Einwurf ausformuliert), mehr für abgeschlossene Quests, die meisten für die Wirkung bei anderen (Nutzung und Zustimmung durch andere). Bewerten bringt keine Punkte.
 _Avoid_: XP, Score, Karma
