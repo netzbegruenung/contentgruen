@@ -18,7 +18,7 @@ from domain.models.content_type import ContentType
 from domain.models.einwurf import EinwurfWeg, EinwurfStatus
 from utils.url_validator import validate_url_security
 
-# Der Entwurfssatz wird der Titel des Beitrags und hat deshalb dasselbe Limit
+# Der Satz wird der Titel des Beitrags und hat deshalb dasselbe Limit
 # wie der Titel von Kommentar und Hintergrundinfo.
 SATZ_LIMIT = 120
 
@@ -113,11 +113,11 @@ class GleicherLinkRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2000)
 
 
-class SaveDraftRequest(BaseModel):
+class SatzSpeichernRequest(BaseModel):
     """
-    Der Entwurfssatz: "Was ist der Punkt? Ein Satz."
+    Der Satz: "Was ist der Punkt? Ein Satz."
 
-    Leer (oder nur Leerraum) loescht den eigenen Entwurf.
+    Leer (oder nur Leerraum) loescht den eigenen Satz.
     """
 
     sentence: Optional[str] = Field(
@@ -275,8 +275,8 @@ class GleicherLinkResponse(BaseModel):
     results: List[EinwurfResponse]
 
 
-class DraftResponse(BaseModel):
-    """Der gespeicherte Entwurf; ``sentence`` ist None, wenn er geloescht wurde."""
+class SatzResponse(BaseModel):
+    """Der gespeicherte Satz; ``sentence`` ist None, wenn er geloescht wurde."""
 
     raw_input_id: str
     sentence: Optional[str] = None

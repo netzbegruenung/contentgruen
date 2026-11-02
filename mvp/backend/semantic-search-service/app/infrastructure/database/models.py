@@ -507,7 +507,7 @@ class Verknuepfung(Base):
 
 class Satz(Base):
     """
-    Der Entwurfssatz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
+    Der Satz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
 
     Gehoert zu (Einwurf, Person) und nicht zum Einwurf allein: mehrere Leute
     duerfen denselben Einwurf gleichzeitig destillieren, jede Person mit ihrem
@@ -515,8 +515,8 @@ class Satz(Base):
     (120 Zeichen, wie der Titel) prueft das DTO, nicht die Datenbank.
 
     Gespeichert wird per Upsert auf den eindeutigen Index (raw_input_id, user_id).
-    Ein leerer Satz ist kein Entwurf: dann wird die Zeile geloescht statt ""
-    abzulegen, damit "hat einen eigenen Entwurf" genau eine Bedeutung hat.
+    Ein leerer Satz wird nicht abgelegt: dann wird die Zeile geloescht statt ""
+    abzulegen, damit "hat einen eigenen Satz" genau eine Bedeutung hat.
     """
 
     __tablename__ = "raw_input_drafts"
@@ -542,7 +542,7 @@ class Satz(Base):
 
     __table_args__ = (
         Index("idx_raw_input_drafts_user_id", "user_id"),
-        # Genau ein Entwurf je Person und Einwurf - der Upsert haengt daran.
+        # Genau ein Satz je Person und Einwurf - der Upsert haengt daran.
         Index(
             "idx_raw_input_drafts_unique",
             "raw_input_id",

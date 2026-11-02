@@ -81,10 +81,12 @@ class TestPostgres:
     ):
         einwurf_id = uuid.UUID(repository.create(content="Fundstueck")["id"])
 
-        repository.save_draft(einwurf_id, "alice", "Erster Satz")
+        repository.satz_speichern(einwurf_id, "alice", "Erster Satz")
         assert _spalte(datenbank, Satz, raw_input_id=einwurf_id) is None
 
-        repository.save_draft(einwurf_id, "alice", "Zweiter Satz", cc0_wortlaut=SATZ)
+        repository.satz_speichern(
+            einwurf_id, "alice", "Zweiter Satz", cc0_wortlaut=SATZ
+        )
         assert _spalte(datenbank, Satz, raw_input_id=einwurf_id) == SATZ
 
 

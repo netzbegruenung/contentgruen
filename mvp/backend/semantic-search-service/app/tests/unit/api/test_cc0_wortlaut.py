@@ -107,7 +107,7 @@ def repository():
         "status": EinwurfStatus.OPEN.value,
         "created_at": datetime(2026, 10, 29, tzinfo=timezone.utc),
     }
-    repo.save_draft.side_effect = lambda id, person, satz, **_: {
+    repo.satz_speichern.side_effect = lambda id, person, satz, **_: {
         "raw_input_id": str(id),
         "sentence": satz,
         "updated_at": None,
@@ -284,7 +284,7 @@ class TestEinwurfUndSatz:
         )
 
         assert resp.status_code == 200, resp.text
-        assert repository.save_draft.call_args.kwargs["cc0_wortlaut"] == SATZ
+        assert repository.satz_speichern.call_args.kwargs["cc0_wortlaut"] == SATZ
 
     @pytest.mark.parametrize(
         "methode, url, body",
@@ -302,4 +302,4 @@ class TestEinwurfUndSatz:
 
         assert resp.status_code == 422
         repository.create.assert_not_called()
-        repository.save_draft.assert_not_called()
+        repository.satz_speichern.assert_not_called()

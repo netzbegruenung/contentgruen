@@ -125,9 +125,9 @@ class TestVerknuepfungstabelle:
 
 
 @pytest.mark.unit
-class TestEntwurfstabelle:
+class TestSatztabelle:
     """
-    Der Entwurfssatz gehoert zu (Einwurf, Person). Der Upsert haengt am eindeutigen
+    Der Satz gehoert zu (Einwurf, Person). Der Upsert haengt am eindeutigen
     Index; ohne ihn wuerde ON CONFLICT in PostgreSQL mit einem Fehler abbrechen.
     """
 
@@ -141,7 +141,7 @@ class TestEntwurfstabelle:
             "cc0_wortlaut",
         }
 
-    def test_genau_ein_entwurf_je_person_und_einwurf(self):
+    def test_genau_ein_satz_je_person_und_einwurf(self):
         eindeutige_indizes = {
             tuple(spalte.name for spalte in index.columns)
             for index in Satz.__table__.indexes

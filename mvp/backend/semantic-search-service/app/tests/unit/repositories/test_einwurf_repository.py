@@ -48,7 +48,7 @@ def _zeile(**overrides):
     return zeile
 
 
-def _entwurf(user_id, sentence, einwurf=None):
+def _satz(user_id, sentence, einwurf=None):
     return SimpleNamespace(
         id=uuid.uuid4(),
         raw_input_id=einwurf or uuid.uuid4(),
@@ -258,7 +258,7 @@ class TestSaetzeUndVerknuepfungen:
             },
         ]
 
-    def test_to_dict_ohne_verknuepfung_und_entwurf(self):
+    def test_to_dict_ohne_verknuepfung_und_satz(self):
         eintrag = EinwurfRepository._to_dict(_zeile())
 
         assert eintrag["own_draft"] is None
@@ -271,8 +271,8 @@ class TestSaetzeUndVerknuepfungen:
 
     def test_to_dict_liefert_alle_saetze_und_den_eigenen(self):
         """Alle Saetze sind fuer alle sichtbar; own_draft ist der eigene daraus."""
-        von_bob = _entwurf("bob", "Satz von Bob")
-        von_alice = _entwurf("alice", "Satz von Alice")
+        von_bob = _satz("bob", "Satz von Bob")
+        von_alice = _satz("alice", "Satz von Alice")
 
         eintrag = EinwurfRepository._to_dict(
             _zeile(destilled_by="bob"), [von_bob, von_alice], [], "alice"
@@ -296,9 +296,7 @@ class TestSaetzeUndVerknuepfungen:
         ]
 
     def test_ohne_person_kein_eigener_satz(self):
-        eintrag = EinwurfRepository._to_dict(
-            _zeile(), [_entwurf("bob", "Satz")], [], None
-        )
+        eintrag = EinwurfRepository._to_dict(_zeile(), [_satz("bob", "Satz")], [], None)
 
         assert eintrag["own_draft"] is None
         assert len(eintrag["drafts"]) == 1
@@ -320,14 +318,14 @@ class TestSaetzeUndVerknuepfungen:
 
     def test_saetze_aller_personen_werden_gelesen(self, session):
         einwurf = uuid.uuid4()
-        von_bob = _entwurf("bob", "Satz", einwurf=einwurf)
+        von_bob = _satz("bob", "Satz", einwurf=einwurf)
         query = MagicMock()
         session.query.return_value = query
         query.filter.return_value = query
         query.order_by.return_value = query
         query.all.return_value = [von_bob]
 
-        gruppiert = EinwurfRepository._entwuerfe(session, [einwurf])
+        gruppiert = EinwurfRepository._saetze(session, [einwurf])
 
         assert gruppiert == {einwurf: [von_bob]}
         bedingungen = " ".join(_sql(b) for b in query.filter.call_args.args)
@@ -367,14 +365,14 @@ class TestGetById:
 
 
 @pytest.mark.unit
-class TestEntwurfSpeichern:
+class TestSatzSpeichern:
     @pytest.fixture(autouse=True)
     def _zeitpunkt(self, session):
         session.execute.return_value.scalar_one.return_value = AM
 
     def test_upsert_sql_zielt_auf_den_eindeutigen_index(self):
         """Nur gegen echtes PostgreSQL pruefbar ist, ob der Index dazu passt."""
-        sql = _sql(EinwurfRepository._entwurf_upsert(uuid.uuid4(), "alice", "Satz"))
+        sql = _sql(EinwurfRepository._satz_upsert(uuid.uuid4(), "alice", "Satz"))
 
         assert sql.startswith("INSERT INTO raw_input_drafts")
         assert "ON CONFLICT (raw_input_id, user_id) DO UPDATE SET" in sql
@@ -388,7 +386,7 @@ class TestEntwurfSpeichern:
         zeile = _zeile()
         _gesperrte_zeile(session, zeile)
 
-        ergebnis = repository.save_draft(zeile.id, "alice", "Satz")
+        ergebnis = repository.satz_speichern(zeile.id, "alice", "Satz")
 
         assert ergebnis == {
             "raw_input_id": str(zeile.id),
@@ -403,7 +401,7 @@ class TestEntwurfSpeichern:
         zeile = _zeile(status=EinwurfStatus.OPEN.value)
         query = _gesperrte_zeile(session, zeile)
 
-        repository.save_draft(zeile.id, "alice", "Satz")
+        repository.satz_speichern(zeile.id, "alice", "Satz")
 
         assert zeile.status == EinwurfStatus.IN_PROGRESS.value
         assert zeile.destilled_by == "alice"
@@ -414,7 +412,7 @@ class TestEntwurfSpeichern:
         zeile = _zeile(status=EinwurfStatus.IN_PROGRESS.value, destilled_by="bob")
         _gesperrte_zeile(session, zeile)
 
-        repository.save_draft(zeile.id, "alice", "Mein Satz")
+        repository.satz_speichern(zeile.id, "alice", "Mein Satz")
 
         assert zeile.status == EinwurfStatus.IN_PROGRESS.value
         assert zeile.destilled_by == "bob"
@@ -428,7 +426,7 @@ class TestEntwurfSpeichern:
         zeile = _zeile(status=stand.value)
         _gesperrte_zeile(session, zeile)
 
-        repository.save_draft(zeile.id, "alice", "Satz")
+        repository.satz_speichern(zeile.id, "alice", "Satz")
 
         assert zeile.status == stand.value
         assert zeile.destilled_by == "alice"
@@ -437,7 +435,7 @@ class TestEntwurfSpeichern:
         zeile = _zeile(status=EinwurfStatus.OPEN.value)
         query = _gesperrte_zeile(session, zeile)
 
-        ergebnis = repository.save_draft(zeile.id, "alice", None)
+        ergebnis = repository.satz_speichern(zeile.id, "alice", None)
 
         assert ergebnis["sentence"] is None
         query.delete.assert_called_once_with(synchronize_session=False)
@@ -449,7 +447,7 @@ class TestEntwurfSpeichern:
         query = _gesperrte_zeile(session, zeile)
         query.first.return_value = None
 
-        repository.save_draft(zeile.id, "alice", None)
+        repository.satz_speichern(zeile.id, "alice", None)
 
         assert zeile.status == EinwurfStatus.OPEN.value
         assert zeile.destilled_by is None
@@ -461,7 +459,7 @@ class TestEntwurfSpeichern:
         query = _gesperrte_zeile(session, zeile)
         query.first.return_value = (uuid.uuid4(),)
 
-        repository.save_draft(zeile.id, "alice", None)
+        repository.satz_speichern(zeile.id, "alice", None)
 
         assert zeile.status == EinwurfStatus.IN_PROGRESS.value
         assert zeile.destilled_by == "alice"
@@ -476,7 +474,7 @@ class TestEntwurfSpeichern:
         query = _gesperrte_zeile(session, zeile)
         query.first.return_value = None
 
-        repository.save_draft(zeile.id, "alice", None)
+        repository.satz_speichern(zeile.id, "alice", None)
 
         assert zeile.status == stand.value
         assert zeile.destilled_by == "alice"
@@ -486,7 +484,7 @@ class TestEntwurfSpeichern:
         _gesperrte_zeile(session, None)
 
         with pytest.raises(EinwurfNichtGefunden):
-            repository.save_draft(uuid.uuid4(), "alice", "Satz")
+            repository.satz_speichern(uuid.uuid4(), "alice", "Satz")
 
         session.execute.assert_not_called()
         session.commit.assert_not_called()

@@ -37,12 +37,12 @@ from domain.models.einwurf import (
 from dtos.einwurf import (
     EinwerfenRequest,
     EinwerfenResponse,
-    DraftResponse,
+    SatzResponse,
     EinwurfSeiteResponse,
     GleicherLinkRequest,
     GleicherLinkResponse,
     EinwurfResponse,
-    SaveDraftRequest,
+    SatzSpeichernRequest,
     EinwurfStatusRequest,
 )
 from services.beitrag_fuer_aufrufer import (
@@ -310,13 +310,13 @@ async def einwurf_laden(
     return (await _einwuerfe_fuer_aufrufer([row], aufrufer, suchindex))[0]
 
 
-@router.put("/{raw_input_id}/draft", response_model=DraftResponse)
-async def save_draft(
+@router.put("/{raw_input_id}/draft", response_model=SatzResponse)
+async def satz_speichern(
     raw_input_id: uuid.UUID,
-    request: SaveDraftRequest,
+    request: SatzSpeichernRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
     repository: EinwurfRepository = Depends(get_einwurf_repository),
-) -> DraftResponse:
+) -> SatzResponse:
     """
     Den eigenen Satz speichern; ein leerer Satz loescht ihn.
 
@@ -327,10 +327,10 @@ async def save_draft(
     """
     person = _angemeldete_person(aufrufer.kennung)
     try:
-        gespeichert = repository.save_draft(
+        gespeichert = repository.satz_speichern(
             raw_input_id, person, request.sentence, cc0_wortlaut=request.cc0_wortlaut
         )
-        return DraftResponse(**gespeichert)
+        return SatzResponse(**gespeichert)
     except EinwurfNichtGefunden:
         raise HTTPException(status_code=404, detail=NICHT_GEFUNDEN)
     except Exception as e:

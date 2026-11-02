@@ -57,21 +57,21 @@ class EinwurfRepository:
     @staticmethod
     def _to_dict(
         einwurf: Einwurf,
-        entwuerfe: Sequence[Satz] = (),
+        saetze: Sequence[Satz] = (),
         verknuepfungen: Sequence[Verknuepfung] = (),
         current_user: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         In ein Dict uebersetzen, solange die Session noch offen ist.
 
-        ``entwuerfe`` und ``verknuepfungen`` kommen aelteste zuerst; die erste
+        ``saetze`` und ``verknuepfungen`` kommen aelteste zuerst; die erste
         Verknuepfung liefert die processed-Felder.
         """
         eigener_satz = next(
             (
-                entwurf.sentence
-                for entwurf in entwuerfe
-                if current_user is not None and entwurf.user_id == current_user
+                satz.sentence
+                for satz in saetze
+                if current_user is not None and satz.user_id == current_user
             ),
             None,
         )
@@ -94,12 +94,12 @@ class EinwurfRepository:
             "processed_at": erste.created_at if erste else None,
             "drafts": [
                 {
-                    "id": str(entwurf.id),
-                    "user_id": entwurf.user_id,
-                    "sentence": entwurf.sentence,
-                    "updated_at": entwurf.updated_at,
+                    "id": str(satz.id),
+                    "user_id": satz.user_id,
+                    "sentence": satz.sentence,
+                    "updated_at": satz.updated_at,
                 }
-                for entwurf in entwuerfe
+                for satz in saetze
             ],
             "links": [
                 {
@@ -301,7 +301,7 @@ class EinwurfRepository:
             )
             raise
 
-    def save_draft(
+    def satz_speichern(
         self,
         raw_input_id: uuid.UUID,
         user_id: str,
@@ -360,7 +360,7 @@ class EinwurfRepository:
                     }
 
                 updated_at = session.execute(
-                    self._entwurf_upsert(raw_input_id, user_id, sentence, cc0_wortlaut)
+                    self._satz_upsert(raw_input_id, user_id, sentence, cc0_wortlaut)
                 ).scalar_one()
                 neu = status_nach_satz(aktuell)
                 if neu != aktuell:
@@ -380,7 +380,7 @@ class EinwurfRepository:
             raise
         except Exception as e:
             logger.error(
-                f"Fehler beim Speichern eines Entwurfs: {type(e).__name__}",
+                f"Fehler beim Speichern eines Satzes: {type(e).__name__}",
                 exc_info=True,
             )
             raise
@@ -432,7 +432,7 @@ class EinwurfRepository:
 
                 row.status = neuer_status.value
                 if neuer_status == EinwurfStatus.PROCESSED:
-                    draft_id = self._eigener_entwurf_id(session, raw_input_id, user_id)
+                    draft_id = self._eigener_satz_id(session, raw_input_id, user_id)
                     session.execute(
                         self._verknuepfung_einfuegen(
                             raw_input_id, content_id, user_id, draft_id, content_type
@@ -521,7 +521,7 @@ class EinwurfRepository:
         return aktuell
 
     @staticmethod
-    def _entwurf_upsert(
+    def _satz_upsert(
         raw_input_id: uuid.UUID,
         user_id: str,
         sentence: str,
@@ -578,7 +578,7 @@ class EinwurfRepository:
         )
 
     @staticmethod
-    def _eigener_entwurf_id(
+    def _eigener_satz_id(
         session, raw_input_id: uuid.UUID, user_id: str
     ) -> Optional[uuid.UUID]:
         """Die Zeile des Satzes, den diese Person zu dem Einwurf gespeichert hat."""
@@ -598,12 +598,12 @@ class EinwurfRepository:
         if not rows:
             return []
         ids = [row.id for row in rows]
-        entwuerfe = self._entwuerfe(session, ids)
+        saetze = self._saetze(session, ids)
         verknuepfungen = self._verknuepfungen(session, ids)
         return [
             self._to_dict(
                 row,
-                entwuerfe.get(row.id, []),
+                saetze.get(row.id, []),
                 verknuepfungen.get(row.id, []),
                 current_user,
             )
@@ -611,17 +611,17 @@ class EinwurfRepository:
         ]
 
     @staticmethod
-    def _entwuerfe(session, ids: List[uuid.UUID]) -> Dict[uuid.UUID, List[Satz]]:
+    def _saetze(session, ids: List[uuid.UUID]) -> Dict[uuid.UUID, List[Satz]]:
         """Die Saetze aller Personen zu den Einwuerfen, aelteste Aenderung zuerst."""
-        entwuerfe = (
+        saetze = (
             session.query(Satz)
             .filter(Satz.raw_input_id.in_(ids))
             .order_by(Satz.updated_at)
             .all()
         )
         gruppiert: Dict[uuid.UUID, List[Satz]] = defaultdict(list)
-        for entwurf in entwuerfe:
-            gruppiert[entwurf.raw_input_id].append(entwurf)
+        for satz in saetze:
+            gruppiert[satz.raw_input_id].append(satz)
         return gruppiert
 
     def ohne_beitrag_loeschen_vor(self, grenze: datetime) -> int:

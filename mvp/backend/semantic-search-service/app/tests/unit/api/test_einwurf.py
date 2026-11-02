@@ -670,7 +670,7 @@ class TestMeineEinwuerfe:
 @pytest.mark.api
 class TestSatz:
     def test_satz_wird_fuer_die_person_gespeichert(self, client, repository):
-        repository.save_draft.return_value = {
+        repository.satz_speichern.return_value = {
             "raw_input_id": str(EINWURF_ID),
             "sentence": "Waermepumpe lohnt sich auch im Altbau",
             "updated_at": datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc),
@@ -684,7 +684,7 @@ class TestSatz:
 
         assert antwort.status_code == 200
         assert antwort.json()["sentence"] == "Waermepumpe lohnt sich auch im Altbau"
-        repository.save_draft.assert_called_once_with(
+        repository.satz_speichern.assert_called_once_with(
             EINWURF_ID,
             "alice",
             "Waermepumpe lohnt sich auch im Altbau",
@@ -692,7 +692,7 @@ class TestSatz:
         )
 
     def test_satz_120_zeichen_sind_erlaubt(self, client, repository):
-        repository.save_draft.return_value = {
+        repository.satz_speichern.return_value = {
             "raw_input_id": str(EINWURF_ID),
             "sentence": "a" * 120,
             "updated_at": None,
@@ -711,10 +711,10 @@ class TestSatz:
         )
 
         assert antwort.status_code == 422
-        repository.save_draft.assert_not_called()
+        repository.satz_speichern.assert_not_called()
 
     def test_leerer_satz_loescht_den_gespeicherten_satz(self, client, repository):
-        repository.save_draft.return_value = {
+        repository.satz_speichern.return_value = {
             "raw_input_id": str(EINWURF_ID),
             "sentence": None,
             "updated_at": None,
@@ -722,7 +722,7 @@ class TestSatz:
 
         client.put(SATZ_URL, json={"sentence": "   "}, headers={"X-User": "alice"})
 
-        repository.save_draft.assert_called_once_with(
+        repository.satz_speichern.assert_called_once_with(
             EINWURF_ID, "alice", None, cc0_wortlaut=None
         )
 
@@ -731,10 +731,10 @@ class TestSatz:
         antwort = client.put(SATZ_URL, json={"sentence": "x"}, headers=kopfzeilen)
 
         assert antwort.status_code == 401
-        repository.save_draft.assert_not_called()
+        repository.satz_speichern.assert_not_called()
 
     def test_satz_zu_unbekanntem_einwurf_ist_404(self, client, repository):
-        repository.save_draft.side_effect = EinwurfNichtGefunden(EINWURF_ID)
+        repository.satz_speichern.side_effect = EinwurfNichtGefunden(EINWURF_ID)
 
         antwort = client.put(
             SATZ_URL, json={"sentence": "x"}, headers={"X-User": "alice"}
