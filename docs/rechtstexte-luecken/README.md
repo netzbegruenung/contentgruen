@@ -32,7 +32,8 @@ Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner da
 mehr offen** — alle drei Texte sind ausformuliert, die Datenschutzerklärung zuletzt. Die
 Einträge bleiben stehen, weil in ihrem Eintrag-Feld steht, wie der jeweilige Punkt gelöst
 wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Zustimmung beim
-Anmelden (Abschnitt 5, #429; bleibt vorerst, NB §10 hängt seit #521 nicht mehr daran), die USt-IdNr. im Impressum
+Anmelden (Abschnitt 5, #429; bleibt vorerst, NB §10 hängt seit #521 nicht mehr daran), die
+USt-IdNr. im Impressum
 (I11) und die Prüfliste am Ende; die Fragen an die Datenschutzbeauftragte stehen in
 `docs/FRAGEN_DATENSCHUTZBEAUFTRAGTE.md`.
 
@@ -84,7 +85,7 @@ Einträge und Text des Abschnitts: [`4-fehlende-vorgaenge/`](4-fehlende-vorgaeng
 Absende-Knopf jedes Beitragsformulars einbezogen; keine Checkbox beim Anmelden, kein neues Feld
 je Konto. Umgesetzt mit #415: NB §2 sagt das (Stand 2. November 2026), der Hinweis verlinkt
 CC0 und die Nutzungsbedingungen. Die Keycloak-Pflichtaktion aus #429 bleibt vorerst daneben;
-ihre Ablösung läuft über #521 (Entscheidung Maintainer, 02.11.2026). Seit #521 holt §10 die
+ob sie ganz entfällt, ist offen (Entscheidung Maintainer, 02.11.2026). Seit #521 holt §10 die
 Zustimmung zu geänderten Bedingungen ebenfalls über den Hinweis ein; die Pflichtaktion nennt er
 nur noch als Möglichkeit.
 
@@ -137,7 +138,7 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 
 **Offen:**
 - Juristische Prüfung beider Wortlaute und der geänderten §4/§10: #296.
-- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Ablösung über #521
+- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Wegfall offen
   (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
   Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem Hinweis.
   Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr, ebenso die
@@ -233,7 +234,7 @@ entfernt. Die beiden früher hier geführten inhaltlichen Blocker sind aufgelös
    Prüfliste. Diese Liste ist keine Rechtsberatung und ersetzt sie nicht.
 2. **Die Consent-Frage aus Abschnitt 5** ist entschieden; der Hinweis in den Formularen
    steht (#431) und bezieht die Nutzungsbedingungen ein (#415). Die Zustimmung
-   beim Anmelden (#429) bleibt vorerst daneben, Ablösung über #521. Sie berührt den
+   beim Anmelden (#429) bleibt vorerst daneben, Wegfall offen. Sie berührt den
    Datenschutz an einer Stelle mit: § 25 TDDDG (Prüfliste, Punkt 3).
 3. **Eine USt-IdNr.-Rückfrage** im Impressum (I11).
 
