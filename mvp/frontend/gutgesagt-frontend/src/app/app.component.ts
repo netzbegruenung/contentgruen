@@ -210,10 +210,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.navigationService.navigateHome();
   }
 
-  navigateToAdminDashboard(): void {
-    this.router.navigate(['/admin/dashboard']);
-  }
-
   login() {
     // Use current URL as return URL (unless already on login page)
     const currentUrl = this.router.url;

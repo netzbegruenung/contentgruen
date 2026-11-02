@@ -214,6 +214,36 @@ describe('AppComponent - Desktop-Kopf', () => {
       expect(links.length).toBe(0);
     });
 
+    // Design-Audit A1/B4 (#512): Abmelden nur im Profilmenue, Fangkorb und Feedback
+    // als runde Icon-Knoepfe mit Text fuer Screenreader.
+    it('hat Abmelden nur im Profilmenue, nicht als eigenen Link im Kopf', () => {
+      const abmelden = Array.from(kopf().querySelectorAll('button, a, [role="button"]')).filter((e) =>
+        e.textContent?.includes('Abmelden')
+      );
+      expect(abmelden.length).toBe(0);
+    });
+
+    it('zeigt Fangkorb und Feedback als runde Icon-Knoepfe mit Namen fuer Screenreader', () => {
+      for (const [testid, name] of [
+        ['fangkorb-knopf', 'Fangkorb'],
+        ['feedback-knopf', 'Feedback'],
+      ]) {
+        const knopf = kopf().querySelector(`[data-testid="${testid}"]`) as HTMLElement;
+        expect(knopf.tagName).withContext(testid).toBe('BUTTON');
+        expect(knopf.hasAttribute('mat-icon-button')).withContext(testid).toBeTrue();
+        expect(knopf.querySelector('.cdk-visually-hidden')?.textContent?.trim()).withContext(testid).toBe(name);
+      }
+    });
+
+    it('fuehrt mit dem Fangkorb-Knopf in den Fangkorb', () => {
+      const komponente = fixture.componentInstance;
+      const fangkorb = spyOn(komponente, 'navigateToFangkorbView');
+
+      (kopf().querySelector('[data-testid="fangkorb-knopf"]') as HTMLElement).click();
+
+      expect(fangkorb).toHaveBeenCalledTimes(1);
+    });
+
     it('sieht den Knopf Feedback ebenfalls', () => {
       (kopf().querySelector('[data-testid="feedback-knopf"]') as HTMLElement).click();
 
