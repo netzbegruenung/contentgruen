@@ -84,9 +84,12 @@ def besucher_merkmal(request: Request) -> str:
     sich alle Aufrufer mit demselben User-Agent ein Merkmal; sie zaehlen dann als
     eine Person, was die sichere Richtung ist.
     """
+    return f"{_anschluss_teil(request)}|{request.headers.get('User-Agent', '')}"
+
+
+def _anschluss_teil(request: Request) -> str:
     adresse = get_client_address(request)
-    teil = anschluss(adresse) if adresse else "unknown"
-    return f"{teil}|{request.headers.get('User-Agent', '')}"
+    return anschluss(adresse) if adresse else "unknown"
 
 
 def besucher_tagespseudonym(merkmal: str, tag: date) -> str:
@@ -101,3 +104,15 @@ def besucher_tagespseudonym(merkmal: str, tag: date) -> str:
         f"{merkmal}|{tag.isoformat()}".encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
+
+
+def anschluss_tagespseudonym(request: Request, tag: date) -> str:
+    """
+    Tagespseudonym des Anschlusses allein, ohne User-Agent (#496).
+
+    Fuer "Suchen ohne Treffer": Ein Besucher, der den User-Agent wechselt, hat ein
+    neues Tagespseudonym, aber denselben Anschluss. Gebildet wie das Tagespseudonym
+    mit dem Schluessel des Tages; das Praefix trennt es von jedem Besuchermerkmal.
+    Es wird nicht gespeichert, nur im Speicher fuer den laufenden Tag gemerkt.
+    """
+    return besucher_tagespseudonym(f"anschluss:{_anschluss_teil(request)}", tag)

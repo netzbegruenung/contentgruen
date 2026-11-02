@@ -46,7 +46,7 @@ from services.search.search_query_statement import (
     SearchQueryStatementRecorder,
     get_search_query_statement_recorder,
 )
-from utils.besucher_pseudonym import besucher_merkmal
+from utils.besucher_pseudonym import anschluss_tagespseudonym, besucher_merkmal
 from utils.client_identity import derive_client_key
 from services.polarity_filter_service import get_polarity_filter_service
 from services.keyword_overlap_service import get_keyword_overlap_service
@@ -318,6 +318,13 @@ async def search_by_text(
                 total_results,
                 tagespseudonym(user_id=user_id, besucher_merkmal=merkmal, moment=jetzt),
                 heute=jetzt.date(),
+                # Besucher: je Anschluss hoechstens eine Person, auch wenn der
+                # User-Agent wechselt (#496).
+                anschluss=(
+                    None
+                    if user_id
+                    else anschluss_tagespseudonym(http_request, jetzt.date())
+                ),
             )
         except Exception as e:
             # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und
