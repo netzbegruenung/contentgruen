@@ -208,5 +208,8 @@
     </mat-sidenav-container>
 </div>
 
-<!-- Willkommen-Rundgang und Mitmachen (#389); die Schritte stehen in rundgang-daten.ts -->
-<app-rundgang></app-rundgang>
+<!-- Rundgaenge (#389); die Schritte stehen in rundgang-daten.ts. Erst geladen, wenn einer
+     laeuft: Die meisten Besuche brauchen ihn nie, das Start-Bundle bleibt schlank. -->
+@defer (when rundgang.aktiv()) {
+    <app-rundgang></app-rundgang>
+}

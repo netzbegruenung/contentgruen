@@ -87,7 +87,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   userInfo: UserInfo | null = null;
 
-  private readonly rundgang = inject(RundgangService);
+  protected readonly rundgang = inject(RundgangService);
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(
