@@ -30,8 +30,8 @@ from repositories.raw_input_repository import get_raw_input_repository
 from services.content.base_content_service import Dublettenpruefung
 from utils.text_normalisierung import SperreJeText
 
-FORMULAR = "2026-10-29-formular"
-SATZ = "2026-10-29-satz"
+FORMULAR = "2026-11-02-formular"
+SATZ = "2026-11-02-satz"
 HEADERS = {"X-User": "person-1"}
 EINWURF_ID = uuid.UUID("11111111-2222-3333-4444-555555555555")
 
@@ -207,6 +207,17 @@ class TestBeitraege:
 
         assert resp.status_code == 200, resp.text
         assert typ_dienst.add.await_args.args[0].cc0_wortlaut == FORMULAR
+
+    def test_fruehere_kennung_bleibt_gueltig(self, client, typ_dienst):
+        # Ein Frontend von vor #415 schickt noch den alten Wortlaut, solange es offen ist.
+        resp = client.post(
+            "/api/v1/post/addPost",
+            json=_post(cc0_wortlaut="2026-10-29-formular"),
+            headers=HEADERS,
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert typ_dienst.add.await_args.args[0].cc0_wortlaut == "2026-10-29-formular"
 
     def test_ohne_kennung_wird_ohne_gespeichert(self, client, typ_dienst):
         resp = client.post("/api/v1/post/addPost", json=_post(), headers=HEADERS)

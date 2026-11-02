@@ -15,7 +15,7 @@ import { Einwurf, EinwurfService } from '../services/einwurf.service';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import { SHARE_FELDER_SCHLUESSEL } from '../share-target/share-target.guard';
 import { LoggingService } from '../services/logging.service';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { FANGKORB_BESCHREIBUNG } from '../shared/fangkorb-texte';
 
 describe('hinweisVorschlag', () => {
@@ -99,17 +99,8 @@ describe('EinwerfenComponent', () => {
       expect(text()).not.toContain('Bild-Adresse');
     });
 
-    it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
-      const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
-        'a[href="/nutzungsbedingungen"]',
-      );
-
-      expect(link).toBeTruthy();
-      expect(link!.target).toBe('_blank');
-      expect(link!.closest('p')!.classList).toContain('submit-hint');
-      expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
-      );
+    it('zeigt über dem Absende-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
+      erwarteCc0Hinweis(fixture.nativeElement);
     });
 
     it('zeigt oben eine Hinweisbox mit der Fangkorb-Beschreibung, ohne eigenen Titel', () => {

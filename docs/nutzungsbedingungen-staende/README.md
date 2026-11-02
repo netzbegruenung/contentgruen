@@ -4,11 +4,16 @@ Die Nutzungsbedingungen (`nutzungsbedingungen.component.html`) tragen unten eine
 Tagesdatum. Dieses Datum ist der **Stand der Nutzungsbedingungen** (`GLOSSARY.md`): Es benennt
 genau einen Text. Geänderte Bedingungen gelten für eine Person erst, wenn sie ihnen zugestimmt hat
 (NB §10, #466); die Zustimmung holt die Keycloak-Pflichtaktion „Terms and Conditions“ beim
-Anmelden ein (#429).
+Anmelden ein (#429). Erstmals einbezogen sind sie über den CC0-Hinweis beim Absenden (NB §2,
+#415). Die Pflichtaktion bleibt vorerst (Entscheidung Maintainer, 02.11.2026); ihre Ablösung läuft
+über #521. Fällt sie weg, ändern sich §10 und die Schritte 4 bis 6 unten
+(`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
 
 Keycloak speichert dabei nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
 zugestimmt hat, ergibt sich deshalb aus diesem Verzeichnis: der Stand, der zu diesem Zeitpunkt
-live war. Den Text eines Stands liefert der Release-Tag, mit dem er live ging
+live war. Wer über den CC0-Hinweis zugestimmt hat (NB §2, #415), dem gehört der Stand, der beim
+Absenden live war; den Zeitpunkt liefert der Beitrag, der Satz oder der Einwurf (Erstellungszeit),
+die Kennung des Hinweises steht daneben (`docs/CC0_HINWEIS_WORTLAUTE.md`). Den Text eines Stands liefert der Release-Tag, mit dem er live ging
 (`git show <tag>:mvp/frontend/gutgesagt-frontend/src/app/nutzungsbedingungen/nutzungsbedingungen.component.html`).
 
 ## Einen neuen Stand einführen

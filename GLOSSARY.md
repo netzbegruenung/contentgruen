@@ -139,11 +139,11 @@ Die Erklärung oben in einem Beitragsformular: eine Zeile, worauf es beim Beitra
 _Avoid_: Tooltip, Anleitung, Hilfetext
 
 **CC0-Hinweis**:
-Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und bestätigt die verlinkten Nutzungsbedingungen. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
+Der Text über dem Absende-Knopf jedes Formulars, das etwas für andere sichtbar speichert: Mit dem Absenden stellt die Person ihre eigene Formulierung unter CC0 und stimmt den Nutzungsbedingungen zu; beide sind verlinkt. Über ihn sind die Nutzungsbedingungen einbezogen (#415), nicht durch bloße Nutzung. Beim Satz, der beim Tippen gespeichert wird, hat er einen eigenen Wortlaut. Jeder Wortlaut hat eine Kennung, die mit jedem neuen Beitrag, Satz und Einwurf gespeichert wird, damit nachvollziehbar bleibt, welchem Wortlaut jemand zugestimmt hat (Verzeichnis: `docs/CC0_HINWEIS_WORTLAUTE.md`). Nicht zu verwechseln mit dem Hinweis an einem Einwurf.
 _Avoid_: Consent-Text, Disclaimer, Einwilligung; Fassung für einen Wortlaut des Hinweises (Fassung ist eine Länge eines Kommentars)
 
 **Stand der Nutzungsbedingungen**:
-Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm beim Anmelden zugestimmt hat; eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
+Ein Text der Nutzungsbedingungen, benannt nach dem Tagesdatum in seiner Stand-Zeile. Jede Änderung am Text ergibt einen neuen Stand. Ein wesentlicher Stand gilt für eine Person erst, wenn sie ihm zugestimmt hat (beim Anmelden, NB §10; Ablösung über #521); eine reine Korrektur, die Rechte und Pflichten nicht ändert, gilt ohne erneute Zustimmung. Verzeichnis und Ablauf: `docs/nutzungsbedingungen-staende/`. Nicht zu verwechseln mit dem Stand der Nutzung in der Rückmeldung.
 _Avoid_: Fassung (eine Länge eines Kommentars), Version
 
 **Schreibregel**:

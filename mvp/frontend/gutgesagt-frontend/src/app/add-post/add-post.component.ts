@@ -1,7 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatSelectModule } from '@angular/material/select';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -12,7 +11,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { typFarbe } from '../shared/content-type-registry';
 import { PLATTFORMEN, Plattform, plattformAusUrl, plattformName } from '../shared/plattform';
 import { einzeilig } from '../beitragsformular/einzeilig';
@@ -56,15 +55,14 @@ export const SPEICHERN_FEHLGESCHLAGEN =
     ReactiveFormsModule,
     TextFieldModule,
     MatSelectModule,
-    RouterLink,
     BeitragskarteComponent,
     FormularHilfeComponent,
     GegenlesenComponent,
     FormularLeisteComponent,
+    Cc0HinweisComponent,
   ],
 })
 export class AddPostComponent implements OnChanges {
-  readonly consentHinweis = CONSENT_HINWEIS;
   /** Streifen ueber dem Formular in der Farbe des Kartenbands. */
   readonly typFarbe = typFarbe('post');
   readonly plattformen = PLATTFORMEN;

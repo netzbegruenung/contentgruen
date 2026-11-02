@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ } from '../shared/consent-hinweis';
+import { CC0_ERKLAERUNG_URL, CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ, hinweisText } from '../shared/consent-hinweis';
 import { abschnitt, normalisiert } from '../testing/rechtstext';
 import { NutzungsbedingungenComponent } from './nutzungsbedingungen.component';
 
@@ -47,10 +47,23 @@ describe('NutzungsbedingungenComponent', () => {
     );
   });
 
+  it('bezieht sich in Abschnitt 2 über den Hinweis über dem Absende-Knopf ein, nicht durch bloße Nutzung (#415)', () => {
+    const text = abschnittNummer('2.');
+
+    expect(text).toContain('Diesen Bedingungen stimmst du zu, wenn du etwas einstellst');
+    expect(text).toContain('mit dem Absenden stimmst du ihnen zu');
+    expect(text).toContain('schon mit dem Speichern beim Tippen');
+    expect(normalisiert(seite.textContent)).not.toMatch(/mit der Nutzung|durch die Nutzung/);
+  });
+
+  it('verlinkt in Abschnitt 4 dieselbe CC0-Erklärung wie der CC0-Hinweis (#415)', () => {
+    expect(seite.querySelector(`a[href="${CC0_ERKLAERUNG_URL}"]`)).toBeTruthy();
+  });
+
   it('sagt nirgends „unwiderruflich“, weder im Text noch im CC0-Hinweis (Entscheidung 29.10.2026)', () => {
     expect(normalisiert(seite.textContent)).not.toContain('unwiderruflich');
-    expect(CONSENT_HINWEIS.vorLink).not.toContain('unwiderruflich');
-    expect(CONSENT_HINWEIS_SATZ.vorLink).not.toContain('unwiderruflich');
+    expect(hinweisText(CONSENT_HINWEIS)).not.toContain('unwiderruflich');
+    expect(hinweisText(CONSENT_HINWEIS_SATZ)).not.toContain('unwiderruflich');
     expect(abschnittNummer('4.')).toContain('Was andere einmal übernommen haben');
   });
 
