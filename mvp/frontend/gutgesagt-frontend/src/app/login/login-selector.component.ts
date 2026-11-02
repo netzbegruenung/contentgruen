@@ -27,6 +27,7 @@ export class LoginSelectorComponent implements OnInit {
   isLoading = true;
   returnUrl: string = '/';
   isRegistrationInfoExpanded = false;
+  readonly organisation = ORGANISATION;
   readonly gutgesagtMail = ORGANISATION.gutgesagtMail;
 
   constructor(

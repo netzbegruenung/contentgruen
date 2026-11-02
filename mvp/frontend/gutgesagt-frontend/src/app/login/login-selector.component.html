@@ -20,15 +20,15 @@
                             <mat-icon class="option-icon">group</mat-icon>
                             <div class="option-text">
                                 <strong>Netzbegrünung-Login</strong>
-                                <p>Bist du Mitglied bei <a href="https://netzbegruenung.de/">Netzbegrünung e.V.</a>, melde dich mit deinem Konto bei der Netzbegrünung an: unten bei „Netzbegrünung-Login oder Einladung“, dort „Mit Netzbegrünung anmelden“. Beim ersten Mal entsteht dabei dein Konto bei Gut gesagt.</p>
+                                <p>Bist du Mitglied bei <a [href]="organisation.url">{{ organisation.vereinsname }}</a>, melde dich mit deinem Konto bei der Netzbegrünung an („Mit Netzbegrünung anmelden“). Beim ersten Mal entsteht dabei dein Konto bei Gut gesagt.</p>
                             </div>
                         </div>
                         <div class="registration-option">
                             <mat-icon class="option-icon">email</mat-icon>
                             <div class="option-text">
                                 <strong>Einladung</strong>
-                                <p>Hast du einen Einladungslink bekommen, öffne ihn, gib dort deine Mail-Adresse ein und leg über die Mail dein Passwort fest. Danach meldest du dich unten bei „Netzbegrünung-Login oder Einladung“ mit Mail-Adresse und Passwort an.</p>
-                                <p>Noch keine Einladung, aber du möchtest als Grünes Mitglied mitwirken? Schreib uns an <a [href]="getMailtoLink()" class="email-link">{{ gutgesagtMail }}</a> und nenn uns den Grünen Kreisverband, in dem du Mitglied bist.</p>
+                                <p>Hast du einen Einladungslink bekommen, öffne ihn, gib dort deine Mail-Adresse ein und leg über die Mail dein Passwort fest. Danach meldest du dich mit Mail-Adresse und Passwort an.</p>
+                                <p>Kein Mitglied bei der Netzbegrünung und noch keine Einladung, aber du möchtest als Grünes Mitglied mitwirken? Schreib uns an <a [href]="getMailtoLink()" class="email-link">{{ gutgesagtMail }}</a> und nenn uns den Grünen Kreisverband, in dem du Mitglied bist.</p>
                             </div>
                         </div>
                     </div>
@@ -43,7 +43,7 @@
         <div class="login-options">
 
             <!-- Login over the own Keycloak realm: Netzbegrünung as identity provider, or an account from an Einladung -->
-            <div class="login-option-card realm-card mat-elevation-z2" [class.disabled-option]="!authModes.keycloakEnabled">
+            <div class="login-option-card mat-elevation-z2" [class.disabled-option]="!authModes.keycloakEnabled">
                 <button mat-raised-button
                         class="login-option-button keycloak-button"
                         [disabled]="!authModes.keycloakEnabled"
@@ -56,7 +56,8 @@
                 </button>
                 <p class="login-description">
                     Auf der nächsten Seite wählst du „Mit Netzbegrünung anmelden“
-                    oder gibst Mail-Adresse und Passwort deines Kontos aus einer Einladung ein.
+                    oder gibst Mail-Adresse und Passwort deines Kontos aus einer Einladung ein;
+                    dort findest du auch „Passwort vergessen“.
                 </p>
                 <p class="disabled-notice" *ngIf="!authModes.keycloakEnabled">
                     <mat-icon class="notice-icon">info_outline</mat-icon>
@@ -69,7 +70,7 @@
             </div>
 
             <!-- Gut gesagt Login Option -->
-            <div class="login-option-card beta-zugang-card mat-elevation-z2" [class.disabled-option]="!authModes.managedAuthEnabled">
+            <div class="login-option-card mat-elevation-z2" [class.disabled-option]="!authModes.managedAuthEnabled">
                 <button mat-raised-button
                         class="login-option-button gutgesagt-button"
                         [disabled]="!authModes.managedAuthEnabled"

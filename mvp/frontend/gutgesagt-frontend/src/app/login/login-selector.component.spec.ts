@@ -70,19 +70,40 @@ describe('LoginSelectorComponent', () => {
       expect(inhalt).toContain('Mail-Adresse und Passwort');
     });
 
+    it('verweist im Hinweis nicht auf eine Karte, die abgeschaltet sein kann', () => {
+      expect(text('.registration-content')).not.toContain('unten bei');
+    });
+
+    it('bittet nur Personen ohne Netzbegrünung-Mitgliedschaft, um eine Einladung zu fragen', () => {
+      expect(text('.registration-content')).toContain('Kein Mitglied bei der Netzbegrünung und noch keine Einladung');
+    });
+
+    it('nimmt Vereinsname und Link der Netzbegrünung aus der Organisationskonstante', () => {
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('.registration-content .option-text a');
+
+      expect(link.textContent?.trim()).toBe(ORGANISATION.vereinsname);
+      expect(link.getAttribute('href')).toBe(ORGANISATION.url);
+    });
+
     it('beschriftet die Anmeldung über den Realm mit Netzbegrünung-Login und Einladung', () => {
       expect(text('.keycloak-button .button-title')).toBe('Anmelden');
       expect(text('.keycloak-button .button-subtitle')).toBe('Netzbegrünung-Login oder Einladung');
-      expect(text('.realm-card .login-description')).toContain('„Mit Netzbegrünung anmelden“');
+      expect(text('.keycloak-button ~ .login-description')).toContain('„Mit Netzbegrünung anmelden“');
+      expect(text('.keycloak-button ~ .login-description')).toContain('„Passwort vergessen“');
     });
 
     it('beschriftet die Direktanmeldung als Beta-Zugang', () => {
       expect(text('.gutgesagt-button .button-title')).toBe('Beta-Zugang');
-      expect(text('.beta-zugang-card .login-description')).toContain('Beta-Zugang');
+      expect(text('.gutgesagt-button ~ .login-description')).toContain('Beta-Zugang');
     });
 
-    it('verwendet keine Begriffe, die das Glossar für die Anmeldung meidet', () => {
-      const alles = text('.component-box');
+    it('verwendet keine Begriffe, die das Glossar für die Anmeldung meidet, auch nicht in Attributen', () => {
+      component.authModes = { keycloakEnabled: true, managedAuthEnabled: true };
+      fixture.detectChanges();
+      const box: HTMLElement = fixture.nativeElement.querySelector('.component-box');
+      const attribute = Array.from(box.querySelectorAll('*'))
+        .flatMap(element => ['aria-label', 'title', 'alt'].map(name => element.getAttribute(name) ?? ''));
+      const alles = [text('.component-box'), ...attribute].join(' ');
 
       for (const gemieden of [
         'Keycloak', 'SSO', 'Vereinslogin', 'Beta-Account', 'manueller User', 'Managed User', 'Netzbegrünung Login'
