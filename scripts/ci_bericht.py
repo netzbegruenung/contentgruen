@@ -15,17 +15,16 @@ FORGEJO_TOKEN (Secret forgejo_ci_bericht_token).
 """
 
 import hashlib
-import http.client
 import json
 import os
 import pathlib
 import re
 import sys
-import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from typing import Optional, Sequence
+
+from forgejo_api import NETZFEHLER, anfrage, fehler_melden, pflicht
 
 ZEILEN_JE_SCHRITT = 80
 # Sichtbare Fehlerzeilen je Schritt; der Fingerabdruck nimmt alle
@@ -34,7 +33,6 @@ FEHLERZEILEN_JE_SCHRITT = 20
 ZEICHEN_JE_ZEILE = 1000
 # Forgejo nimmt deutlich mehr an; so bleibt der Kommentar lesbar.
 MAX_ZEICHEN = 60_000
-ZEITLIMIT_S = 30
 ERSATZ = "[Secret entfernt]"
 PROTOKOLL = pathlib.Path(".ci")
 
@@ -259,50 +257,6 @@ def schritte_lesen(namen: Sequence[str], verzeichnis: pathlib.Path) -> list[Schr
             )
         )
     return schritte
-
-
-def pflicht(env, name: str) -> str:
-    wert = env.get(name)
-    if not wert:
-        raise SystemExit(f"{name} ist nicht gesetzt")
-    return wert
-
-
-def anfrage(
-    url: str,
-    token: str,
-    daten: Optional[dict] = None,
-    methode: Optional[str] = None,
-) -> tuple[int, bytes]:
-    """GET (ohne ``daten``) oder POST an die Forgejo-API, ``methode`` ueberschreibt das
-    (PATCH fuer scripts/rechtstexte_wiki.py); wirft wie urlopen."""
-    aufruf = urllib.request.Request(
-        url,
-        data=None if daten is None else json.dumps(daten).encode(),
-        method=methode or ("GET" if daten is None else "POST"),
-        headers={
-            "Authorization": f"token {token}",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        },
-    )
-    with urllib.request.urlopen(aufruf, timeout=ZEITLIMIT_S) as antwort:
-        return antwort.status, antwort.read()
-
-
-def fehler_melden(was: str, fehler: Exception) -> None:
-    """Nur den Status melden, nie den Antworttext: Forgejo gibt bei ungueltigem Token
-    den Token zurueck."""
-    if isinstance(fehler, urllib.error.HTTPError):
-        print(f"{was}: HTTP {fehler.code}", file=sys.stderr)
-    else:
-        grund = getattr(fehler, "reason", fehler)
-        print(f"{was}: fehlgeschlagen ({type(grund).__name__})", file=sys.stderr)
-
-
-# OSError umfasst URLError, Zeitueberschreitung und abgerissene Verbindungen beim Lesen
-# der Antwort, HTTPException etwa IncompleteRead
-NETZFEHLER = (OSError, http.client.HTTPException)
 
 
 @dataclass

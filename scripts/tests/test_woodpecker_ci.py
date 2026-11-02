@@ -142,17 +142,11 @@ def test_ci_bericht_nur_bei_rotem_pull_request_mit_dem_secret():
 WIKI = yaml.safe_load((WURZEL / ".woodpecker" / "rechtstexte-wiki.yaml").read_text())
 
 
-def test_wiki_seite_nur_nach_merge_auf_main_der_die_ablage_beruehrt():
+def test_wiki_seite_nach_jedem_push_auf_main():
     # Das Secret darf in keinem PR-Lauf und keinem manuellen Lauf eines Branches stehen.
+    # Kein Pfadfilter: Ob sich etwas geaendert hat, prueft das Skript (rechtstexte_wiki.py).
     ((bedingung,),) = [WIKI["when"]]
-    assert bedingung["event"] == "push" and bedingung["branch"] == "main"
-    assert set(bedingung["path"]) == {
-        "docs/rechtstexte-luecken/**",
-        "docs/nutzungsbedingungen-staende/**",
-        "scripts/rechtstexte_uebersicht.py",
-        "scripts/rechtstexte_wiki.py",
-        ".woodpecker/rechtstexte-wiki.yaml",
-    }
+    assert bedingung == {"event": "push", "branch": "main"}
 
 
 def test_wiki_seite_mit_eigenem_secret_im_python_image():

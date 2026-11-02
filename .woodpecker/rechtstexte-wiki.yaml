@@ -1,18 +1,13 @@
-# Schreibt nach einem Merge auf main, der die Rechtstext-Ablage beruehrt, die Uebersicht
-# ins Wiki (Seite "Rechtstexte Übersicht", #503): lesbar ohne Python, eingecheckt wird sie
-# nicht (docs/CI.md, "Wiki-Seite der Rechtstext-Ablage").
+# Schreibt nach jedem Push auf main die Uebersicht der Rechtstext-Ablage ins Wiki (Seite
+# "Rechtstexte Übersicht", #503): lesbar ohne Python, eingecheckt wird sie nicht
+# (docs/CI.md, "Wiki page of the legal-text files").
 # Nur push auf main: Das Secret ist nur fuer push freigegeben, PR-Laeufe sehen es nicht.
-# Eigener Workflow, damit ein Fehler hier den Status von ci nicht beruehrt; der Pfadfilter
-# ist hier erlaubt, weil kein Status von diesem Workflow Pflicht ist.
+# Eigener Workflow, damit ein Fehler hier den Status von ci nicht beruehrt. Kein
+# Pfadfilter: Das Skript schreibt nur, wenn sich die Tabellen geaendert haben, und so frischt
+# ein Neustart des letzten Push-Laufs die Seite immer auf.
 when:
   - event: push
     branch: main
-    path:
-      - docs/rechtstexte-luecken/**
-      - docs/nutzungsbedingungen-staende/**
-      - scripts/rechtstexte_uebersicht.py
-      - scripts/rechtstexte_wiki.py
-      - .woodpecker/rechtstexte-wiki.yaml
 
 steps:
   # Nur Standardbibliothek, kein venv noetig
