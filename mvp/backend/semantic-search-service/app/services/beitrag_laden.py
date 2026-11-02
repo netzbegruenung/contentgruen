@@ -8,9 +8,12 @@ einem alten Link; das zweite ist ein Fehler im Bestand und wird geloggt.
 
 import logging
 import uuid
-from typing import Any, Awaitable, Callable
+from typing import Awaitable, Callable, Optional
 
 from pydantic import ValidationError
+
+from domain.models.content import ContentDbEntry
+from repositories.interfaces.content_repository import IContentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +27,12 @@ class BeitragUnlesbar(Exception):
 
 # Was die Endpunkte per Depends(get_beitrag_laden) bekommen: beitrag_laden mit
 # dem aggregierten Repository schon eingesetzt.
-BeitragLader = Callable[[uuid.UUID], Awaitable[Any]]
+BeitragLader = Callable[[uuid.UUID], Awaitable[Optional[ContentDbEntry]]]
 
 
-async def beitrag_laden(content_id: uuid.UUID, repository):
+async def beitrag_laden(
+    content_id: uuid.UUID, repository: IContentRepository
+) -> Optional[ContentDbEntry]:
     """
     Den Beitrag zu dieser ID aus ``repository`` (dem aggregierten
     Content-Repository), oder None, wenn es ihn nicht gibt.

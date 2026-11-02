@@ -17,6 +17,7 @@ from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
 from services.beitrag_laden import BeitragLader, beitrag_laden
+from repositories.interfaces.content_repository import IContentRepository
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
@@ -239,12 +240,16 @@ def get_loeschfristen_service() -> LoeschfristenService:
     )
 
 
-def get_content_repository(settings: Settings = Depends(get_settings)):
+def get_content_repository(
+    settings: Settings = Depends(get_settings),
+) -> IContentRepository:
     """Das aggregierte Content-Repository: liest und loescht jeden Beitragstyp."""
     return QdrantRepositoryFactory().create_content_repository(settings)
 
 
-def get_beitrag_laden(repository=Depends(get_content_repository)) -> BeitragLader:
+def get_beitrag_laden(
+    repository: IContentRepository = Depends(get_content_repository),
+) -> BeitragLader:
     """``beitrag_laden`` ueber das aggregierte Repository, fuer Nutzung und Stimmen."""
 
     async def laden(content_id: uuid.UUID):
@@ -254,7 +259,7 @@ def get_beitrag_laden(repository=Depends(get_content_repository)) -> BeitragLade
 
 
 def get_beitrag_loeschen_service(
-    repository=Depends(get_content_repository),
+    repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
     return BeitragLoeschenService(repository, get_moderation_repository())
