@@ -27,23 +27,23 @@ from dependencies import (
 from domain.models.content_status import zustand_am_einwurf
 from domain.link_vergleich import links_im_text_ohne_tracking, ohne_tracking
 from domain.models.content_type import ContentType
-from domain.models.raw_input import (
+from domain.models.einwurf import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
-    RawInputSource,
-    RawInputStatus,
+    EinwurfWeg,
+    EinwurfStatus,
     UebergangNichtErlaubt,
 )
-from dtos.raw_input import (
-    AddRawInputRequest,
-    AddRawInputResponse,
+from dtos.einwurf import (
+    EinwerfenRequest,
+    EinwerfenResponse,
     DraftResponse,
-    GetRawInputsResponse,
+    EinwurfSeiteResponse,
     GleicherLinkRequest,
     GleicherLinkResponse,
-    RawInputResponse,
+    EinwurfResponse,
     SaveDraftRequest,
-    UpdateRawInputStatusRequest,
+    EinwurfStatusRequest,
 )
 from services.beitrag_fuer_aufrufer import (
     AUSFORMULIERER,
@@ -54,9 +54,9 @@ from services.beitrag_fuer_aufrufer import (
     personen_fuer_aufrufer,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
-from repositories.raw_input_repository import (
-    RawInputRepository,
-    get_raw_input_repository,
+from repositories.einwurf_repository import (
+    EinwurfRepository,
+    get_einwurf_repository,
 )
 
 router = APIRouter()
@@ -88,7 +88,7 @@ def _angemeldete_person(x_user: Optional[str]) -> str:
 
 
 async def _zustaende_eintragen(
-    einwuerfe: List[RawInputResponse], suchindex: IModerationRepository
+    einwuerfe: List[EinwurfResponse], suchindex: IModerationRepository
 ) -> None:
     """
     Den Zustand jedes Beitrags eintragen, in dem ein Einwurf ausformuliert ist
@@ -121,14 +121,14 @@ async def _einwuerfe_fuer_aufrufer(
     aufrufer: Aufrufer,
     suchindex: Optional[IModerationRepository] = None,
     mit_namen: bool = True,
-) -> List[RawInputResponse]:
+) -> List[EinwurfResponse]:
     """
     Die Einwuerfe, wie der Aufrufer sie sieht (#385, Regel aus #333): Anzeigenamen
     und Kennzeichen zu Einwerfer und Satz-Autoren aus einer Abfrage fuer die ganze
     Seite; die Kennungen, auch von Destillierer und Ausformulierer, nur fuer Admins.
     Ohne ``mit_namen`` nur die Kennungen, fuer Antworten, die keine Person zeigen.
     """
-    einwuerfe = [RawInputResponse(**row) for row in rows]
+    einwuerfe = [EinwurfResponse(**row) for row in rows]
     gruppen = [
         (einwuerfe, EINWURF),
         ([satz for einwurf in einwuerfe for satz in einwurf.drafts], SATZ),
@@ -151,31 +151,31 @@ async def _seite(
     gesamt: int,
     aufrufer: Aufrufer,
     suchindex: Optional[IModerationRepository] = None,
-) -> GetRawInputsResponse:
+) -> EinwurfSeiteResponse:
     """Eine Seite Einwuerfe fuer den Aufrufer, wie Fangkorb und Meine Einwuerfe sie liefern."""
     results = await _einwuerfe_fuer_aufrufer(rows, aufrufer, suchindex)
-    return GetRawInputsResponse(
+    return EinwurfSeiteResponse(
         results_count=len(results), results=results, total_records_count=gesamt
     )
 
 
-@router.post("/addRawInput", response_model=AddRawInputResponse, status_code=201)
-async def add_raw_input(
-    request: AddRawInputRequest,
+@router.post("/addRawInput", response_model=EinwerfenResponse, status_code=201)
+async def einwerfen(
+    request: EinwerfenRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    repository: RawInputRepository = Depends(get_raw_input_repository),
-) -> AddRawInputResponse:
+    repository: EinwurfRepository = Depends(get_einwurf_repository),
+) -> EinwerfenResponse:
     """Einen Einwurf in den Fangkorb legen."""
     try:
-        raw_input = repository.create(
+        einwurf = repository.create(
             content=links_im_text_ohne_tracking(request.content),
             url=ohne_tracking(request.url),
             image_url=request.image_url,
             submitted_by=_einwerfende_person(aufrufer.kennung),
-            source_channel=(request.source_channel or RawInputSource.WEB).value,
+            source_channel=(request.source_channel or EinwurfWeg.WEB).value,
             cc0_wortlaut=request.cc0_wortlaut,
         )
-        return AddRawInputResponse(id=raw_input["id"])
+        return EinwerfenResponse(id=einwurf["id"])
     except Exception as e:
         logger.error(f"Fehler in /addRawInput: {type(e).__name__}", exc_info=True)
         raise HTTPException(
@@ -184,13 +184,13 @@ async def add_raw_input(
         )
 
 
-@router.get("/getRawInputs", response_model=GetRawInputsResponse)
-async def get_raw_inputs(
+@router.get("/getRawInputs", response_model=EinwurfSeiteResponse)
+async def einwuerfe_laden(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    repository: RawInputRepository = Depends(get_raw_input_repository),
-) -> GetRawInputsResponse:
+    repository: EinwurfRepository = Depends(get_einwurf_repository),
+) -> EinwurfSeiteResponse:
     """
     Den Fangkorb auflisten: eigene Einwuerfe zuerst, dann neueste zuerst.
 
@@ -220,7 +220,7 @@ async def get_raw_inputs(
 async def einwuerfe_mit_gleichem_link(
     request: GleicherLinkRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    repository: RawInputRepository = Depends(get_raw_input_repository),
+    repository: EinwurfRepository = Depends(get_einwurf_repository),
     suchindex: IModerationRepository = Depends(get_moderation_repository),
 ) -> GleicherLinkResponse:
     """
@@ -250,14 +250,14 @@ async def einwuerfe_mit_gleichem_link(
         )
 
 
-@router.get("/getOwnRawInputs", response_model=GetRawInputsResponse)
-async def get_own_raw_inputs(
+@router.get("/getOwnRawInputs", response_model=EinwurfSeiteResponse)
+async def eigene_einwuerfe_laden(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    repository: RawInputRepository = Depends(get_raw_input_repository),
+    repository: EinwurfRepository = Depends(get_einwurf_repository),
     suchindex: IModerationRepository = Depends(get_moderation_repository),
-) -> GetRawInputsResponse:
+) -> EinwurfSeiteResponse:
     """
     Meine Einwuerfe: nur, was die anfragende Person eingeworfen hat, neueste zuerst.
 
@@ -283,13 +283,13 @@ async def get_own_raw_inputs(
         )
 
 
-@router.get("/{raw_input_id}", response_model=RawInputResponse)
-async def get_raw_input(
+@router.get("/{raw_input_id}", response_model=EinwurfResponse)
+async def einwurf_laden(
     raw_input_id: uuid.UUID,
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    repository: RawInputRepository = Depends(get_raw_input_repository),
+    repository: EinwurfRepository = Depends(get_einwurf_repository),
     suchindex: IModerationRepository = Depends(get_moderation_repository),
-) -> RawInputResponse:
+) -> EinwurfResponse:
     """
     Einen Einwurf lesen, mit allen Saetzen und dem eigenen als ``own_draft``.
 
@@ -315,7 +315,7 @@ async def save_draft(
     raw_input_id: uuid.UUID,
     request: SaveDraftRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    repository: RawInputRepository = Depends(get_raw_input_repository),
+    repository: EinwurfRepository = Depends(get_einwurf_repository),
 ) -> DraftResponse:
     """
     Den eigenen Satz speichern; ein leerer Satz loescht ihn.
@@ -374,16 +374,16 @@ async def _beitrag_pruefen(
     raise HTTPException(status_code=422, detail=BEITRAG_FEHLT)
 
 
-@router.patch("/{raw_input_id}/status", response_model=RawInputResponse)
+@router.patch("/{raw_input_id}/status", response_model=EinwurfResponse)
 async def update_status(
     raw_input_id: uuid.UUID,
-    request: UpdateRawInputStatusRequest,
+    request: EinwurfStatusRequest,
     aufrufer: Aufrufer = Depends(get_aufrufer),
-    repository: RawInputRepository = Depends(get_raw_input_repository),
+    repository: EinwurfRepository = Depends(get_einwurf_repository),
     commentary_service=Depends(get_commentary_service),
     generic_text_service=Depends(get_generic_text_service),
     post_service=Depends(get_post_service),
-) -> RawInputResponse:
+) -> EinwurfResponse:
     """
     Verwerfen (der Einwerfer oder ein Admin) oder als ausformuliert markieren.
 
@@ -399,7 +399,7 @@ async def update_status(
     """
     person = _angemeldete_person(aufrufer.kennung)
     try:
-        if request.status == RawInputStatus.PROCESSED:
+        if request.status == EinwurfStatus.PROCESSED:
             # Erst der Einwurf, dann der Beitrag: Ein unbekannter Einwurf bleibt
             # 404, ein unerlaubter Wechsel 409 - egal, was hinter content_id steht.
             # Eine Wiederholung mit derselben content_id prueft den Beitrag nicht

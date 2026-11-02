@@ -1,5 +1,5 @@
 """
-Unit-Tests fuer das RawInputRepository.
+Unit-Tests fuer das EinwurfRepository.
 
 Die Datenbanksitzung ist gemockt; gepruefte Sache ist, *was* das Repository in
 die Zeile schreibt und in welcher Reihenfolge es liest - nicht, ob PostgreSQL
@@ -14,14 +14,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy.dialects import postgresql
 
-from domain.models.raw_input import (
+from domain.models.einwurf import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
-    RawInputSource,
-    RawInputStatus,
+    EinwurfWeg,
+    EinwurfStatus,
     UebergangNichtErlaubt,
 )
-from repositories.raw_input_repository import GLEICHER_LINK_SEITE, RawInputRepository
+from repositories.einwurf_repository import GLEICHER_LINK_SEITE, EinwurfRepository
 
 AM = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
 
@@ -39,8 +39,8 @@ def _zeile(**overrides):
     zeile.url = overrides.get("url", None)
     zeile.image_url = overrides.get("image_url", None)
     zeile.submitted_by = overrides.get("submitted_by", "testuser")
-    zeile.source_channel = overrides.get("source_channel", RawInputSource.WEB.value)
-    zeile.status = overrides.get("status", RawInputStatus.OPEN.value)
+    zeile.source_channel = overrides.get("source_channel", EinwurfWeg.WEB.value)
+    zeile.status = overrides.get("status", EinwurfStatus.OPEN.value)
     zeile.created_at = overrides.get(
         "created_at", datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc)
     )
@@ -72,9 +72,9 @@ def _verknuepfung(created_by, einwurf=None, draft_id=None, content_type="comment
 @pytest.fixture
 def repository(app_datenbank):
     with patch(
-        "repositories.raw_input_repository.get_app_database", return_value=app_datenbank
+        "repositories.einwurf_repository.get_app_database", return_value=app_datenbank
     ):
-        return RawInputRepository()
+        return EinwurfRepository()
 
 
 def _gesperrte_zeile(session, zeile):
@@ -94,8 +94,8 @@ class TestCreate:
         repository.create(content="ein Satz", submitted_by="testuser")
 
         angelegt = session.add.call_args[0][0]
-        assert angelegt.status == RawInputStatus.OPEN.value
-        assert angelegt.source_channel == RawInputSource.WEB.value
+        assert angelegt.status == EinwurfStatus.OPEN.value
+        assert angelegt.source_channel == EinwurfWeg.WEB.value
         assert angelegt.content == "ein Satz"
         assert angelegt.submitted_by == "testuser"
         session.commit.assert_called_once()
@@ -112,7 +112,7 @@ class TestCreate:
         """Nach dem Schliessen der Session waere ein ORM-Objekt nicht mehr lesbar."""
         session.refresh.side_effect = lambda obj: None
         with patch.object(
-            RawInputRepository, "_to_dict", return_value={"id": "abc"}
+            EinwurfRepository, "_to_dict", return_value={"id": "abc"}
         ) as to_dict:
             ergebnis = repository.create(content="x")
 
@@ -137,16 +137,16 @@ class TestGetAll:
         self._query_kette(session, [_zeile(content="a"), _zeile(content="b")])
 
         with patch.object(
-            RawInputRepository,
+            EinwurfRepository,
             "_mit_saetzen_und_verknuepfungen",
             side_effect=lambda s, rows, user: [
-                RawInputRepository._to_dict(r) for r in rows
+                EinwurfRepository._to_dict(r) for r in rows
             ],
         ):
             ergebnis = repository.get_all(limit=10, offset=0)
 
         assert [e["content"] for e in ergebnis] == ["a", "b"]
-        assert ergebnis[0]["status"] == RawInputStatus.OPEN.value
+        assert ergebnis[0]["status"] == EinwurfStatus.OPEN.value
 
     def test_get_all_paginiert(self, repository, session):
         query = self._query_kette(session, [])
@@ -167,7 +167,7 @@ class TestGetAll:
     def test_get_all_filtert_mit_status(self, repository, session):
         query = self._query_kette(session, [])
 
-        repository.get_all(status=RawInputStatus.OPEN.value)
+        repository.get_all(status=EinwurfStatus.OPEN.value)
 
         query.filter.assert_called_once()
 
@@ -219,7 +219,7 @@ class TestGetAll:
         zeile = _zeile()
         self._query_kette(session, [zeile])
         with patch.object(
-            RawInputRepository,
+            EinwurfRepository,
             "_mit_saetzen_und_verknuepfungen",
             return_value=[{"id": "x"}],
         ) as anhaengen:
@@ -236,7 +236,7 @@ class TestSaetzeUndVerknuepfungen:
         zuerst = _verknuepfung("bob", draft_id=satz_id)
         danach = _verknuepfung("carol", content_type="generic_text")
 
-        eintrag = RawInputRepository._to_dict(_zeile(), [], [zuerst, danach])
+        eintrag = EinwurfRepository._to_dict(_zeile(), [], [zuerst, danach])
 
         assert eintrag["processed_content_id"] == str(zuerst.content_id)
         assert eintrag["processed_by"] == "bob"
@@ -259,7 +259,7 @@ class TestSaetzeUndVerknuepfungen:
         ]
 
     def test_to_dict_ohne_verknuepfung_und_entwurf(self):
-        eintrag = RawInputRepository._to_dict(_zeile())
+        eintrag = EinwurfRepository._to_dict(_zeile())
 
         assert eintrag["own_draft"] is None
         assert eintrag["destilled_by"] is None
@@ -274,7 +274,7 @@ class TestSaetzeUndVerknuepfungen:
         von_bob = _entwurf("bob", "Satz von Bob")
         von_alice = _entwurf("alice", "Satz von Alice")
 
-        eintrag = RawInputRepository._to_dict(
+        eintrag = EinwurfRepository._to_dict(
             _zeile(destilled_by="bob"), [von_bob, von_alice], [], "alice"
         )
 
@@ -296,7 +296,7 @@ class TestSaetzeUndVerknuepfungen:
         ]
 
     def test_ohne_person_kein_eigener_satz(self):
-        eintrag = RawInputRepository._to_dict(
+        eintrag = EinwurfRepository._to_dict(
             _zeile(), [_entwurf("bob", "Satz")], [], None
         )
 
@@ -313,7 +313,7 @@ class TestSaetzeUndVerknuepfungen:
         query.order_by.return_value = query
         query.all.return_value = [zuerst, danach]
 
-        gruppiert = RawInputRepository._verknuepfungen(session, [einwurf])
+        gruppiert = EinwurfRepository._verknuepfungen(session, [einwurf])
 
         assert gruppiert == {einwurf: [zuerst, danach]}
         assert "created_at" in _sql(query.order_by.call_args.args[0])
@@ -327,7 +327,7 @@ class TestSaetzeUndVerknuepfungen:
         query.order_by.return_value = query
         query.all.return_value = [von_bob]
 
-        gruppiert = RawInputRepository._entwuerfe(session, [einwurf])
+        gruppiert = EinwurfRepository._entwuerfe(session, [einwurf])
 
         assert gruppiert == {einwurf: [von_bob]}
         bedingungen = " ".join(_sql(b) for b in query.filter.call_args.args)
@@ -356,7 +356,7 @@ class TestGetById:
         zeile = _zeile()
         self._query_kette(session, zeile)
         with patch.object(
-            RawInputRepository,
+            EinwurfRepository,
             "_mit_saetzen_und_verknuepfungen",
             return_value=[{"id": "x"}],
         ) as anhaengen:
@@ -374,7 +374,7 @@ class TestEntwurfSpeichern:
 
     def test_upsert_sql_zielt_auf_den_eindeutigen_index(self):
         """Nur gegen echtes PostgreSQL pruefbar ist, ob der Index dazu passt."""
-        sql = _sql(RawInputRepository._entwurf_upsert(uuid.uuid4(), "alice", "Satz"))
+        sql = _sql(EinwurfRepository._entwurf_upsert(uuid.uuid4(), "alice", "Satz"))
 
         assert sql.startswith("INSERT INTO raw_input_drafts")
         assert "ON CONFLICT (raw_input_id, user_id) DO UPDATE SET" in sql
@@ -400,27 +400,27 @@ class TestEntwurfSpeichern:
         session.commit.assert_called_once()
 
     def test_erster_satz_macht_offenen_einwurf_destilliert(self, repository, session):
-        zeile = _zeile(status=RawInputStatus.OPEN.value)
+        zeile = _zeile(status=EinwurfStatus.OPEN.value)
         query = _gesperrte_zeile(session, zeile)
 
         repository.save_draft(zeile.id, "alice", "Satz")
 
-        assert zeile.status == RawInputStatus.IN_PROGRESS.value
+        assert zeile.status == EinwurfStatus.IN_PROGRESS.value
         assert zeile.destilled_by == "alice"
         query.with_for_update.assert_called_once()
 
     def test_weiterer_satz_aendert_destilled_by_nicht(self, repository, session):
         """destilled_by ist, wer als Erste/r einen Satz gespeichert hat."""
-        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value, destilled_by="bob")
+        zeile = _zeile(status=EinwurfStatus.IN_PROGRESS.value, destilled_by="bob")
         _gesperrte_zeile(session, zeile)
 
         repository.save_draft(zeile.id, "alice", "Mein Satz")
 
-        assert zeile.status == RawInputStatus.IN_PROGRESS.value
+        assert zeile.status == EinwurfStatus.IN_PROGRESS.value
         assert zeile.destilled_by == "bob"
 
     @pytest.mark.parametrize(
-        "stand", [RawInputStatus.DISCARDED, RawInputStatus.PROCESSED]
+        "stand", [EinwurfStatus.DISCARDED, EinwurfStatus.PROCESSED]
     )
     def test_satz_aendert_verworfenes_und_verarbeitetes_nicht(
         self, repository, session, stand
@@ -434,7 +434,7 @@ class TestEntwurfSpeichern:
         assert zeile.destilled_by == "alice"
 
     def test_leerer_satz_loescht_statt_zu_speichern(self, repository, session):
-        zeile = _zeile(status=RawInputStatus.OPEN.value)
+        zeile = _zeile(status=EinwurfStatus.OPEN.value)
         query = _gesperrte_zeile(session, zeile)
 
         ergebnis = repository.save_draft(zeile.id, "alice", None)
@@ -445,29 +445,29 @@ class TestEntwurfSpeichern:
         session.commit.assert_called_once()
 
     def test_letzter_satz_geloescht_macht_wieder_offen(self, repository, session):
-        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value, destilled_by="alice")
+        zeile = _zeile(status=EinwurfStatus.IN_PROGRESS.value, destilled_by="alice")
         query = _gesperrte_zeile(session, zeile)
         query.first.return_value = None
 
         repository.save_draft(zeile.id, "alice", None)
 
-        assert zeile.status == RawInputStatus.OPEN.value
+        assert zeile.status == EinwurfStatus.OPEN.value
         assert zeile.destilled_by is None
 
     def test_leerer_satz_laesst_stand_wenn_andere_saetze_bleiben(
         self, repository, session
     ):
-        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value, destilled_by="alice")
+        zeile = _zeile(status=EinwurfStatus.IN_PROGRESS.value, destilled_by="alice")
         query = _gesperrte_zeile(session, zeile)
         query.first.return_value = (uuid.uuid4(),)
 
         repository.save_draft(zeile.id, "alice", None)
 
-        assert zeile.status == RawInputStatus.IN_PROGRESS.value
+        assert zeile.status == EinwurfStatus.IN_PROGRESS.value
         assert zeile.destilled_by == "alice"
 
     @pytest.mark.parametrize(
-        "stand", [RawInputStatus.DISCARDED, RawInputStatus.PROCESSED]
+        "stand", [EinwurfStatus.DISCARDED, EinwurfStatus.PROCESSED]
     )
     def test_leerer_satz_setzt_verworfenes_und_verarbeitetes_nicht_zurueck(
         self, repository, session, stand
@@ -497,7 +497,7 @@ class TestStatusSetzen:
     @pytest.fixture(autouse=True)
     def _ohne_saetze_und_verknuepfungen(self):
         with patch.object(
-            RawInputRepository,
+            EinwurfRepository,
             "_mit_saetzen_und_verknuepfungen",
             return_value=[{"id": "x"}],
         ):
@@ -505,7 +505,7 @@ class TestStatusSetzen:
 
     def test_verknuepfung_sql_ist_idempotent(self):
         sql = _sql(
-            RawInputRepository._verknuepfung_einfuegen(
+            EinwurfRepository._verknuepfung_einfuegen(
                 uuid.uuid4(), uuid.uuid4(), "alice", uuid.uuid4(), "commentary"
             )
         )
@@ -518,90 +518,90 @@ class TestStatusSetzen:
         # bei einem Konflikt kommt dann schlicht keine Zeile zurueck.
         assert "ON CONFLICT (raw_input_id, content_id) DO NOTHING" in sql
 
-    @pytest.mark.parametrize("stand", [RawInputStatus.OPEN, RawInputStatus.IN_PROGRESS])
+    @pytest.mark.parametrize("stand", [EinwurfStatus.OPEN, EinwurfStatus.IN_PROGRESS])
     def test_einwerfer_verwirft_offenen_oder_destillierten_einwurf(
         self, repository, session, stand
     ):
         zeile = _zeile(submitted_by="alice", status=stand.value)
         query = _gesperrte_zeile(session, zeile)
 
-        repository.set_status(zeile.id, RawInputStatus.DISCARDED, "alice")
+        repository.set_status(zeile.id, EinwurfStatus.DISCARDED, "alice")
 
-        assert zeile.status == RawInputStatus.DISCARDED.value
+        assert zeile.status == EinwurfStatus.DISCARDED.value
         query.with_for_update.assert_called_once()
         session.execute.assert_not_called()
         session.commit.assert_called_once()
 
     def test_andere_duerfen_nicht_verwerfen(self, repository, session):
-        zeile = _zeile(submitted_by="alice", status=RawInputStatus.OPEN.value)
+        zeile = _zeile(submitted_by="alice", status=EinwurfStatus.OPEN.value)
         _gesperrte_zeile(session, zeile)
 
         with pytest.raises(AktionNichtErlaubt):
-            repository.set_status(zeile.id, RawInputStatus.DISCARDED, "bob")
+            repository.set_status(zeile.id, EinwurfStatus.DISCARDED, "bob")
 
-        assert zeile.status == RawInputStatus.OPEN.value
+        assert zeile.status == EinwurfStatus.OPEN.value
         session.commit.assert_not_called()
 
-    @pytest.mark.parametrize("stand", [RawInputStatus.OPEN, RawInputStatus.IN_PROGRESS])
+    @pytest.mark.parametrize("stand", [EinwurfStatus.OPEN, EinwurfStatus.IN_PROGRESS])
     def test_admin_verwirft_fremden_einwurf(self, repository, session, stand):
         zeile = _zeile(submitted_by="alice", status=stand.value)
         _gesperrte_zeile(session, zeile)
 
         repository.set_status(
-            zeile.id, RawInputStatus.DISCARDED, "admin", ist_admin=True
+            zeile.id, EinwurfStatus.DISCARDED, "admin", ist_admin=True
         )
 
-        assert zeile.status == RawInputStatus.DISCARDED.value
+        assert zeile.status == EinwurfStatus.DISCARDED.value
         session.commit.assert_called_once()
 
     def test_admin_verwirft_auch_einwurf_ohne_einwerfer(self, repository, session):
         """Einen Einwurf ohne Einwerfer kann nur ein Admin aus dem Fangkorb nehmen."""
-        zeile = _zeile(submitted_by=None, status=RawInputStatus.OPEN.value)
+        zeile = _zeile(submitted_by=None, status=EinwurfStatus.OPEN.value)
         _gesperrte_zeile(session, zeile)
 
         repository.set_status(
-            zeile.id, RawInputStatus.DISCARDED, "admin", ist_admin=True
+            zeile.id, EinwurfStatus.DISCARDED, "admin", ist_admin=True
         )
 
-        assert zeile.status == RawInputStatus.DISCARDED.value
+        assert zeile.status == EinwurfStatus.DISCARDED.value
 
     def test_admin_verwirft_kein_ausformuliertes(self, repository, session):
-        zeile = _zeile(submitted_by="alice", status=RawInputStatus.PROCESSED.value)
+        zeile = _zeile(submitted_by="alice", status=EinwurfStatus.PROCESSED.value)
         _gesperrte_zeile(session, zeile)
 
         with pytest.raises(UebergangNichtErlaubt):
             repository.set_status(
-                zeile.id, RawInputStatus.DISCARDED, "admin", ist_admin=True
+                zeile.id, EinwurfStatus.DISCARDED, "admin", ist_admin=True
             )
 
     def test_einwurf_ohne_einwerfer_verwirft_kein_mitwirkender_ohne_adminrechte(
         self, repository, session
     ):
-        zeile = _zeile(submitted_by=None, status=RawInputStatus.OPEN.value)
+        zeile = _zeile(submitted_by=None, status=EinwurfStatus.OPEN.value)
         _gesperrte_zeile(session, zeile)
 
         with pytest.raises(AktionNichtErlaubt):
-            repository.set_status(zeile.id, RawInputStatus.DISCARDED, "bob")
+            repository.set_status(zeile.id, EinwurfStatus.DISCARDED, "bob")
 
     def test_verarbeitetes_wird_nicht_verworfen(self, repository, session):
-        zeile = _zeile(submitted_by="alice", status=RawInputStatus.PROCESSED.value)
+        zeile = _zeile(submitted_by="alice", status=EinwurfStatus.PROCESSED.value)
         _gesperrte_zeile(session, zeile)
 
         with pytest.raises(UebergangNichtErlaubt):
-            repository.set_status(zeile.id, RawInputStatus.DISCARDED, "alice")
+            repository.set_status(zeile.id, EinwurfStatus.DISCARDED, "alice")
 
         session.commit.assert_not_called()
 
     def test_andere_verarbeiten_verworfenes_mit_verknuepfung(self, repository, session):
         """Verworfen heisst nicht gesperrt: andere duerfen trotzdem destillieren."""
-        zeile = _zeile(submitted_by="alice", status=RawInputStatus.DISCARDED.value)
+        zeile = _zeile(submitted_by="alice", status=EinwurfStatus.DISCARDED.value)
         query = _gesperrte_zeile(session, zeile)
         query.scalar.return_value = None
         inhalt_id = uuid.uuid4()
 
-        repository.set_status(zeile.id, RawInputStatus.PROCESSED, "bob", inhalt_id)
+        repository.set_status(zeile.id, EinwurfStatus.PROCESSED, "bob", inhalt_id)
 
-        assert zeile.status == RawInputStatus.PROCESSED.value
+        assert zeile.status == EinwurfStatus.PROCESSED.value
         (statement,) = session.execute.call_args.args
         assert "INSERT INTO raw_input_content_links" in _sql(statement)
         assert statement.compile().params["created_by"] == "bob"
@@ -610,16 +610,16 @@ class TestStatusSetzen:
 
     def test_verknuepfung_haelt_satz_und_beitragstyp_fest(self, repository, session):
         """draft_id ist der Satz der verarbeitenden Person - die Karte zeigt ihn."""
-        zeile = _zeile(status=RawInputStatus.IN_PROGRESS.value)
+        zeile = _zeile(status=EinwurfStatus.IN_PROGRESS.value)
         query = _gesperrte_zeile(session, zeile)
         satz_id = uuid.uuid4()
         query.scalar.return_value = satz_id
 
         repository.set_status(
-            zeile.id, RawInputStatus.PROCESSED, "bob", uuid.uuid4(), "generic_text"
+            zeile.id, EinwurfStatus.PROCESSED, "bob", uuid.uuid4(), "generic_text"
         )
 
-        assert zeile.status == RawInputStatus.PROCESSED.value
+        assert zeile.status == EinwurfStatus.PROCESSED.value
         (statement,) = session.execute.call_args.args
         parameter = statement.compile().params
         assert parameter["draft_id"] == satz_id
@@ -631,7 +631,7 @@ class TestStatusSetzen:
         self, repository, session
     ):
         with pytest.raises(ValueError):
-            repository.set_status(uuid.uuid4(), RawInputStatus.PROCESSED, "bob")
+            repository.set_status(uuid.uuid4(), EinwurfStatus.PROCESSED, "bob")
 
         session.query.assert_not_called()
 
@@ -639,7 +639,7 @@ class TestStatusSetzen:
         _gesperrte_zeile(session, None)
 
         with pytest.raises(EinwurfNichtGefunden):
-            repository.set_status(uuid.uuid4(), RawInputStatus.DISCARDED, "alice")
+            repository.set_status(uuid.uuid4(), EinwurfStatus.DISCARDED, "alice")
 
 
 class TestStatuswechselVorpruefen:
@@ -663,7 +663,7 @@ class TestStatuswechselVorpruefen:
 
         with pytest.raises(EinwurfNichtGefunden):
             repository.statuswechsel_vorpruefen(
-                uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+                uuid.uuid4(), EinwurfStatus.PROCESSED, "bob", uuid.uuid4()
             )
 
     def test_unerlaubter_uebergang_wirft(self, repository, session):
@@ -671,7 +671,7 @@ class TestStatuswechselVorpruefen:
 
         with pytest.raises(UebergangNichtErlaubt):
             repository.statuswechsel_vorpruefen(
-                uuid.uuid4(), RawInputStatus.DISCARDED, "alice"
+                uuid.uuid4(), EinwurfStatus.DISCARDED, "alice"
             )
 
     def test_fremdes_verwerfen_wirft(self, repository, session):
@@ -679,7 +679,7 @@ class TestStatuswechselVorpruefen:
 
         with pytest.raises(AktionNichtErlaubt):
             repository.statuswechsel_vorpruefen(
-                uuid.uuid4(), RawInputStatus.DISCARDED, "bob"
+                uuid.uuid4(), EinwurfStatus.DISCARDED, "bob"
             )
 
     def test_meldet_vorhandene_verknuepfung(self, repository, session):
@@ -689,7 +689,7 @@ class TestStatuswechselVorpruefen:
 
         assert (
             repository.statuswechsel_vorpruefen(
-                uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+                uuid.uuid4(), EinwurfStatus.PROCESSED, "bob", uuid.uuid4()
             )
             is True
         )
@@ -699,7 +699,7 @@ class TestStatuswechselVorpruefen:
 
         assert (
             repository.statuswechsel_vorpruefen(
-                uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+                uuid.uuid4(), EinwurfStatus.PROCESSED, "bob", uuid.uuid4()
             )
             is False
         )
@@ -708,7 +708,7 @@ class TestStatuswechselVorpruefen:
         query = self._abfragen(session, _zeile(), None)
 
         repository.statuswechsel_vorpruefen(
-            uuid.uuid4(), RawInputStatus.PROCESSED, "bob", uuid.uuid4()
+            uuid.uuid4(), EinwurfStatus.PROCESSED, "bob", uuid.uuid4()
         )
 
         query.with_for_update.assert_not_called()
@@ -733,10 +733,10 @@ class TestMitGleichemLink:
     @pytest.fixture(autouse=True)
     def _ohne_saetze(self):
         with patch.object(
-            RawInputRepository,
+            EinwurfRepository,
             "_mit_saetzen_und_verknuepfungen",
             side_effect=lambda s, rows, user: [
-                RawInputRepository._to_dict(r) for r in rows
+                EinwurfRepository._to_dict(r) for r in rows
             ],
         ):
             yield

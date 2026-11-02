@@ -1,5 +1,5 @@
 """
-Repository fuer den Fangkorb (Rohinput).
+Repository fuer den Fangkorb (Einwuerfe).
 
 Datenzugriff auf ``raw_inputs``, ``raw_input_drafts`` und
 ``raw_input_content_links``: anlegen, auflisten, einzeln lesen, Satz speichern,
@@ -19,11 +19,11 @@ from sqlalchemy import case, delete, desc, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from domain.link_vergleich import gleicher_link, vorfilter_teile
-from domain.models.raw_input import (
+from domain.models.einwurf import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
-    RawInputSource,
-    RawInputStatus,
+    EinwurfWeg,
+    EinwurfStatus,
     UebergangNichtErlaubt,
     status_nach_satz,
     status_ohne_saetze,
@@ -31,9 +31,9 @@ from domain.models.raw_input import (
 )
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import (
-    RawInput,
-    RawInputContentLink,
-    RawInputDraft,
+    Einwurf,
+    Verknuepfung,
+    Satz,
     User,
 )
 
@@ -47,7 +47,7 @@ GLEICHER_LINK_TREFFER = 5
 GLEICHER_LINK_SEITE = 200
 
 
-class RawInputRepository:
+class EinwurfRepository:
     """Repository fuer Einwuerfe im Fangkorb."""
 
     def __init__(self, db: Optional[AppDatabase] = None):
@@ -56,9 +56,9 @@ class RawInputRepository:
 
     @staticmethod
     def _to_dict(
-        raw_input: RawInput,
-        entwuerfe: Sequence[RawInputDraft] = (),
-        verknuepfungen: Sequence[RawInputContentLink] = (),
+        einwurf: Einwurf,
+        entwuerfe: Sequence[Satz] = (),
+        verknuepfungen: Sequence[Verknuepfung] = (),
         current_user: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
@@ -77,15 +77,15 @@ class RawInputRepository:
         )
         erste = verknuepfungen[0] if verknuepfungen else None
         return {
-            "id": str(raw_input.id),
-            "content": raw_input.content,
-            "url": raw_input.url,
-            "image_url": raw_input.image_url,
-            "submitted_by": raw_input.submitted_by,
-            "source_channel": raw_input.source_channel,
-            "status": raw_input.status,
-            "created_at": raw_input.created_at,
-            "destilled_by": raw_input.destilled_by,
+            "id": str(einwurf.id),
+            "content": einwurf.content,
+            "url": einwurf.url,
+            "image_url": einwurf.image_url,
+            "submitted_by": einwurf.submitted_by,
+            "source_channel": einwurf.source_channel,
+            "status": einwurf.status,
+            "created_at": einwurf.created_at,
+            "destilled_by": einwurf.destilled_by,
             "own_draft": eigener_satz,
             # Die erste Verknuepfung: in der Tabelle created_by/created_at, nach aussen
             # processed_*.
@@ -121,7 +121,7 @@ class RawInputRepository:
         url: Optional[str] = None,
         image_url: Optional[str] = None,
         submitted_by: Optional[str] = None,
-        source_channel: str = RawInputSource.WEB.value,
+        source_channel: str = EinwurfWeg.WEB.value,
         cc0_wortlaut: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
@@ -140,22 +140,20 @@ class RawInputRepository:
         """
         try:
             with self.db.get_session() as session:
-                raw_input = RawInput(
+                einwurf = Einwurf(
                     content=content,
                     url=url,
                     image_url=image_url,
                     submitted_by=submitted_by,
                     source_channel=source_channel,
-                    status=RawInputStatus.OPEN.value,
+                    status=EinwurfStatus.OPEN.value,
                     cc0_wortlaut=cc0_wortlaut,
                 )
-                session.add(raw_input)
+                session.add(einwurf)
                 session.commit()
-                session.refresh(raw_input)
-                logger.info(
-                    f"Rohinput {raw_input.id} angelegt (Kanal: {source_channel})"
-                )
-                return self._to_dict(raw_input)
+                session.refresh(einwurf)
+                logger.info(f"Einwurf {einwurf.id} angelegt (Kanal: {source_channel})")
+                return self._to_dict(einwurf)
         except Exception as e:
             logger.error(
                 f"Fehler beim Anlegen eines Einwurfs: {type(e).__name__}",
@@ -191,16 +189,16 @@ class RawInputRepository:
         """
         try:
             with self.db.get_session() as session:
-                query = session.query(RawInput)
+                query = session.query(Einwurf)
                 if status is not None:
-                    query = query.filter(RawInput.status == status)
+                    query = query.filter(Einwurf.status == status)
                 if submitted_by is not None:
-                    query = query.filter(RawInput.submitted_by == submitted_by)
+                    query = query.filter(Einwurf.submitted_by == submitted_by)
 
-                reihenfolge = [desc(RawInput.created_at)]
+                reihenfolge = [desc(Einwurf.created_at)]
                 if current_user is not None:
                     reihenfolge.insert(
-                        0, case((RawInput.submitted_by == current_user, 0), else_=1)
+                        0, case((Einwurf.submitted_by == current_user, 0), else_=1)
                     )
 
                 rows = query.order_by(*reihenfolge).limit(limit).offset(offset).all()
@@ -218,8 +216,8 @@ class RawInputRepository:
         try:
             with self.db.get_session() as session:
                 row = (
-                    session.query(RawInput)
-                    .filter(RawInput.id == raw_input_id)
+                    session.query(Einwurf)
+                    .filter(Einwurf.id == raw_input_id)
                     .one_or_none()
                 )
                 if row is None:
@@ -251,7 +249,7 @@ class RawInputRepository:
         if teile is None:
             return []
         vorfilter = [
-            RawInput.url.ilike(
+            Einwurf.url.ilike(
                 "%" + re.sub(r"([\\%_])", r"\\\1", teil) + "%", escape="\\"
             )
             for teil in teile
@@ -259,11 +257,11 @@ class RawInputRepository:
         try:
             with self.db.get_session() as session:
                 query = (
-                    session.query(RawInput)
+                    session.query(Einwurf)
                     .filter(*vorfilter)
-                    .order_by(desc(RawInput.created_at), desc(RawInput.id))
+                    .order_by(desc(Einwurf.created_at), desc(Einwurf.id))
                 )
-                treffer: List[RawInput] = []
+                treffer: List[Einwurf] = []
                 seite = 0
                 while len(treffer) < GLEICHER_LINK_TREFFER:
                     kandidaten = (
@@ -291,11 +289,11 @@ class RawInputRepository:
         """Anzahl der Einwuerfe, optional nach Bearbeitungsstand und Einwerfer."""
         try:
             with self.db.get_session() as session:
-                query = session.query(RawInput)
+                query = session.query(Einwurf)
                 if status is not None:
-                    query = query.filter(RawInput.status == status)
+                    query = query.filter(Einwurf.status == status)
                 if submitted_by is not None:
-                    query = query.filter(RawInput.submitted_by == submitted_by)
+                    query = query.filter(Einwurf.submitted_by == submitted_by)
                 return query.count()
         except Exception as e:
             logger.error(
@@ -330,19 +328,19 @@ class RawInputRepository:
         try:
             with self.db.get_session() as session:
                 row = (
-                    session.query(RawInput)
-                    .filter(RawInput.id == raw_input_id)
+                    session.query(Einwurf)
+                    .filter(Einwurf.id == raw_input_id)
                     .with_for_update()
                     .one_or_none()
                 )
                 if row is None:
                     raise EinwurfNichtGefunden(raw_input_id)
-                aktuell = RawInputStatus(row.status)
+                aktuell = EinwurfStatus(row.status)
 
                 if not sentence:
-                    session.query(RawInputDraft).filter(
-                        RawInputDraft.raw_input_id == raw_input_id,
-                        RawInputDraft.user_id == user_id,
+                    session.query(Satz).filter(
+                        Satz.raw_input_id == raw_input_id,
+                        Satz.user_id == user_id,
                     ).delete(synchronize_session=False)
                     zurueck = status_ohne_saetze(aktuell)
                     if zurueck != aktuell and not self._hat_saetze(
@@ -351,7 +349,7 @@ class RawInputRepository:
                         row.status = zurueck.value
                         row.destilled_by = None
                         logger.info(
-                            f"Rohinput {raw_input_id}: letzter Satz geloescht, "
+                            f"Einwurf {raw_input_id}: letzter Satz geloescht, "
                             f"{aktuell.value} -> {zurueck.value}"
                         )
                     session.commit()
@@ -368,7 +366,7 @@ class RawInputRepository:
                 if neu != aktuell:
                     row.status = neu.value
                     logger.info(
-                        f"Rohinput {raw_input_id}: {aktuell.value} -> {neu.value}"
+                        f"Einwurf {raw_input_id}: {aktuell.value} -> {neu.value}"
                     )
                 if row.destilled_by is None:
                     row.destilled_by = user_id
@@ -390,7 +388,7 @@ class RawInputRepository:
     def set_status(
         self,
         raw_input_id: uuid.UUID,
-        neuer_status: RawInputStatus,
+        neuer_status: EinwurfStatus,
         user_id: str,
         content_id: Optional[uuid.UUID] = None,
         content_type: Optional[str] = None,
@@ -417,14 +415,14 @@ class RawInputRepository:
             AktionNichtErlaubt: verwerfen will weder der Einwerfer noch ein Admin
             UebergangNichtErlaubt: der Wechsel ist aus dem aktuellen Status nicht erlaubt
         """
-        if neuer_status == RawInputStatus.PROCESSED and content_id is None:
+        if neuer_status == EinwurfStatus.PROCESSED and content_id is None:
             raise ValueError("processed braucht eine content_id")
 
         try:
             with self.db.get_session() as session:
                 row = (
-                    session.query(RawInput)
-                    .filter(RawInput.id == raw_input_id)
+                    session.query(Einwurf)
+                    .filter(Einwurf.id == raw_input_id)
                     .with_for_update()
                     .one_or_none()
                 )
@@ -433,7 +431,7 @@ class RawInputRepository:
                 )
 
                 row.status = neuer_status.value
-                if neuer_status == RawInputStatus.PROCESSED:
+                if neuer_status == EinwurfStatus.PROCESSED:
                     draft_id = self._eigener_entwurf_id(session, raw_input_id, user_id)
                     session.execute(
                         self._verknuepfung_einfuegen(
@@ -442,7 +440,7 @@ class RawInputRepository:
                     )
                 session.commit()
                 logger.info(
-                    f"Rohinput {raw_input_id}: {aktuell.value} -> {neuer_status.value}"
+                    f"Einwurf {raw_input_id}: {aktuell.value} -> {neuer_status.value}"
                 )
                 return self._mit_saetzen_und_verknuepfungen(session, [row], user_id)[0]
         except (EinwurfNichtGefunden, AktionNichtErlaubt, UebergangNichtErlaubt):
@@ -456,7 +454,7 @@ class RawInputRepository:
     def statuswechsel_vorpruefen(
         self,
         raw_input_id: uuid.UUID,
-        neuer_status: RawInputStatus,
+        neuer_status: EinwurfStatus,
         user_id: str,
         content_id: Optional[uuid.UUID] = None,
     ) -> bool:
@@ -477,9 +475,7 @@ class RawInputRepository:
         """
         with self.db.get_session() as session:
             row = (
-                session.query(RawInput)
-                .filter(RawInput.id == raw_input_id)
-                .one_or_none()
+                session.query(Einwurf).filter(Einwurf.id == raw_input_id).one_or_none()
             )
             # Nur der processed-Pfad ruft das; die Admin-Ausnahme gilt allein fuers
             # Verwerfen, das set_status unter der Sperre prueft.
@@ -489,10 +485,10 @@ class RawInputRepository:
             if content_id is None:
                 return False
             return (
-                session.query(RawInputContentLink.content_id)
+                session.query(Verknuepfung.content_id)
                 .filter(
-                    RawInputContentLink.raw_input_id == raw_input_id,
-                    RawInputContentLink.content_id == content_id,
+                    Verknuepfung.raw_input_id == raw_input_id,
+                    Verknuepfung.content_id == content_id,
                 )
                 .first()
                 is not None
@@ -502,24 +498,24 @@ class RawInputRepository:
 
     @staticmethod
     def _statuswechsel_pruefen(
-        row: Optional[RawInput],
+        row: Optional[Einwurf],
         raw_input_id: uuid.UUID,
-        neuer_status: RawInputStatus,
+        neuer_status: EinwurfStatus,
         user_id: str,
         ist_admin: bool,
-    ) -> RawInputStatus:
+    ) -> EinwurfStatus:
         """Existenz, Berechtigung und Uebergang; gibt den aktuellen Status zurueck."""
         if row is None:
             raise EinwurfNichtGefunden(raw_input_id)
 
         if (
-            neuer_status == RawInputStatus.DISCARDED
+            neuer_status == EinwurfStatus.DISCARDED
             and row.submitted_by != user_id
             and not ist_admin
         ):
             raise AktionNichtErlaubt("Verwerfen duerfen nur der Einwerfer und Admins")
 
-        aktuell = RawInputStatus(row.status)
+        aktuell = EinwurfStatus(row.status)
         if not uebergang_erlaubt(aktuell, neuer_status):
             raise UebergangNichtErlaubt(aktuell, neuer_status)
         return aktuell
@@ -532,20 +528,20 @@ class RawInputRepository:
         cc0_wortlaut: Optional[str] = None,
     ):
         """INSERT ... ON CONFLICT (raw_input_id, user_id) DO UPDATE."""
-        stmt = insert(RawInputDraft).values(
+        stmt = insert(Satz).values(
             raw_input_id=raw_input_id,
             user_id=user_id,
             sentence=sentence,
             cc0_wortlaut=cc0_wortlaut,
         )
         return stmt.on_conflict_do_update(
-            index_elements=[RawInputDraft.raw_input_id, RawInputDraft.user_id],
+            index_elements=[Satz.raw_input_id, Satz.user_id],
             set_={
                 "sentence": stmt.excluded.sentence,
                 "cc0_wortlaut": stmt.excluded.cc0_wortlaut,
                 "updated_at": func.now(),
             },
-        ).returning(RawInputDraft.updated_at)
+        ).returning(Satz.updated_at)
 
     @staticmethod
     def _verknuepfung_einfuegen(
@@ -557,7 +553,7 @@ class RawInputRepository:
     ):
         """INSERT ... ON CONFLICT (raw_input_id, content_id) DO NOTHING."""
         return (
-            insert(RawInputContentLink)
+            insert(Verknuepfung)
             .values(
                 raw_input_id=raw_input_id,
                 content_id=content_id,
@@ -567,8 +563,8 @@ class RawInputRepository:
             )
             .on_conflict_do_nothing(
                 index_elements=[
-                    RawInputContentLink.raw_input_id,
-                    RawInputContentLink.content_id,
+                    Verknuepfung.raw_input_id,
+                    Verknuepfung.content_id,
                 ]
             )
         )
@@ -577,9 +573,7 @@ class RawInputRepository:
     def _hat_saetze(session, raw_input_id: uuid.UUID) -> bool:
         """Ob zu dem Einwurf noch irgendein Satz gespeichert ist, von wem auch immer."""
         return (
-            session.query(RawInputDraft.id)
-            .filter(RawInputDraft.raw_input_id == raw_input_id)
-            .first()
+            session.query(Satz.id).filter(Satz.raw_input_id == raw_input_id).first()
             is not None
         )
 
@@ -589,16 +583,16 @@ class RawInputRepository:
     ) -> Optional[uuid.UUID]:
         """Die Zeile des Satzes, den diese Person zu dem Einwurf gespeichert hat."""
         return (
-            session.query(RawInputDraft.id)
+            session.query(Satz.id)
             .filter(
-                RawInputDraft.raw_input_id == raw_input_id,
-                RawInputDraft.user_id == user_id,
+                Satz.raw_input_id == raw_input_id,
+                Satz.user_id == user_id,
             )
             .scalar()
         )
 
     def _mit_saetzen_und_verknuepfungen(
-        self, session, rows: Sequence[RawInput], current_user: Optional[str]
+        self, session, rows: Sequence[Einwurf], current_user: Optional[str]
     ) -> List[Dict[str, Any]]:
         """Alle Saetze und Verknuepfungen an die Zeilen haengen."""
         if not rows:
@@ -617,17 +611,15 @@ class RawInputRepository:
         ]
 
     @staticmethod
-    def _entwuerfe(
-        session, ids: List[uuid.UUID]
-    ) -> Dict[uuid.UUID, List[RawInputDraft]]:
+    def _entwuerfe(session, ids: List[uuid.UUID]) -> Dict[uuid.UUID, List[Satz]]:
         """Die Saetze aller Personen zu den Einwuerfen, aelteste Aenderung zuerst."""
         entwuerfe = (
-            session.query(RawInputDraft)
-            .filter(RawInputDraft.raw_input_id.in_(ids))
-            .order_by(RawInputDraft.updated_at)
+            session.query(Satz)
+            .filter(Satz.raw_input_id.in_(ids))
+            .order_by(Satz.updated_at)
             .all()
         )
-        gruppiert: Dict[uuid.UUID, List[RawInputDraft]] = defaultdict(list)
+        gruppiert: Dict[uuid.UUID, List[Satz]] = defaultdict(list)
         for entwurf in entwuerfe:
             gruppiert[entwurf.raw_input_id].append(entwurf)
         return gruppiert
@@ -644,16 +636,16 @@ class RawInputRepository:
             int: Zahl der geloeschten Einwuerfe
         """
         letzter_satz = (
-            select(func.max(RawInputDraft.updated_at))
-            .where(RawInputDraft.raw_input_id == RawInput.id)
+            select(func.max(Satz.updated_at))
+            .where(Satz.raw_input_id == Einwurf.id)
             .scalar_subquery()
         )
         with self.db.get_session() as session:
             geloescht = (
-                session.query(RawInput)
+                session.query(Einwurf)
                 .filter(
-                    ~exists().where(RawInputContentLink.raw_input_id == RawInput.id),
-                    RawInput.created_at < grenze,
+                    ~exists().where(Verknuepfung.raw_input_id == Einwurf.id),
+                    Einwurf.created_at < grenze,
                     or_(letzter_satz.is_(None), letzter_satz < grenze),
                 )
                 .delete(synchronize_session=False)
@@ -661,7 +653,7 @@ class RawInputRepository:
             session.execute(
                 delete(User).where(
                     User.user_id.like("ehemalige-person-%"),
-                    ~exists().where(RawInputDraft.user_id == User.user_id),
+                    ~exists().where(Satz.user_id == User.user_id),
                 )
             )
             return geloescht
@@ -673,35 +665,35 @@ class RawInputRepository:
         """
         with self.db.get_session() as session:
             return (
-                session.query(RawInputContentLink)
-                .filter(RawInputContentLink.content_id == content_id)
+                session.query(Verknuepfung)
+                .filter(Verknuepfung.content_id == content_id)
                 .delete(synchronize_session=False)
             )
 
     @staticmethod
     def _verknuepfungen(
         session, ids: List[uuid.UUID]
-    ) -> Dict[uuid.UUID, List[RawInputContentLink]]:
+    ) -> Dict[uuid.UUID, List[Verknuepfung]]:
         """Die Verknuepfungen zu den Einwuerfen, aelteste zuerst."""
         verknuepfungen = (
-            session.query(RawInputContentLink)
-            .filter(RawInputContentLink.raw_input_id.in_(ids))
-            .order_by(RawInputContentLink.created_at)
+            session.query(Verknuepfung)
+            .filter(Verknuepfung.raw_input_id.in_(ids))
+            .order_by(Verknuepfung.created_at)
             .all()
         )
-        gruppiert: Dict[uuid.UUID, List[RawInputContentLink]] = defaultdict(list)
+        gruppiert: Dict[uuid.UUID, List[Verknuepfung]] = defaultdict(list)
         for verknuepfung in verknuepfungen:
             gruppiert[verknuepfung.raw_input_id].append(verknuepfung)
         return gruppiert
 
 
 # Globale Repository-Instanz
-_raw_input_repository: Optional[RawInputRepository] = None
+_einwurf_repository: Optional[EinwurfRepository] = None
 
 
-def get_raw_input_repository() -> RawInputRepository:
-    """Die globale RawInputRepository-Instanz holen oder anlegen."""
-    global _raw_input_repository
-    if _raw_input_repository is None:
-        _raw_input_repository = RawInputRepository()
-    return _raw_input_repository
+def get_einwurf_repository() -> EinwurfRepository:
+    """Die globale EinwurfRepository-Instanz holen oder anlegen."""
+    global _einwurf_repository
+    if _einwurf_repository is None:
+        _einwurf_repository = EinwurfRepository()
+    return _einwurf_repository

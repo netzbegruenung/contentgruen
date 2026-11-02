@@ -11,17 +11,17 @@ den gespeicherten Saetzen (``status_nach_satz``, ``status_ohne_saetze``).
 
 import pytest
 
-from domain.models.raw_input import (
-    RawInputStatus,
+from domain.models.einwurf import (
+    EinwurfStatus,
     status_nach_satz,
     status_ohne_saetze,
     uebergang_erlaubt,
 )
 
-OPEN = RawInputStatus.OPEN
-IN_PROGRESS = RawInputStatus.IN_PROGRESS
-PROCESSED = RawInputStatus.PROCESSED
-DISCARDED = RawInputStatus.DISCARDED
+OPEN = EinwurfStatus.OPEN
+IN_PROGRESS = EinwurfStatus.IN_PROGRESS
+PROCESSED = EinwurfStatus.PROCESSED
+DISCARDED = EinwurfStatus.DISCARDED
 
 
 @pytest.mark.unit

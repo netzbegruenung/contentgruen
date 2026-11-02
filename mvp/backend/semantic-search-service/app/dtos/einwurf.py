@@ -1,5 +1,5 @@
 """
-DTOs fuer den Fangkorb (Rohinput).
+DTOs fuer den Fangkorb (Einwuerfe).
 
 Die einzige inhaltliche Pflicht beim Einwerfen ist, dass ueberhaupt etwas
 dasteht. Kein Titel, keine Kategorie, kein Zieltyp - all das ist Destillieren
@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.content_status import ZustandAmEinwurf
 from domain.models.content_type import ContentType
-from domain.models.raw_input import RawInputSource, RawInputStatus
+from domain.models.einwurf import EinwurfWeg, EinwurfStatus
 from utils.url_validator import validate_url_security
 
 # Der Entwurfssatz wird der Titel des Beitrags und hat deshalb dasselbe Limit
@@ -53,7 +53,7 @@ def _url_pruefen(url: Optional[str], feldname: str) -> Optional[str]:
 ###   Requests   ###
 
 
-class AddRawInputRequest(BaseModel):
+class EinwerfenRequest(BaseModel):
     """
     Ein Einwurf. Mindestens eines von ``content``, ``url``, ``image_url``.
 
@@ -75,7 +75,7 @@ class AddRawInputRequest(BaseModel):
         description="URL eines bereits erreichbaren Bildes",
     )
 
-    source_channel: Optional[RawInputSource] = Field(
+    source_channel: Optional[EinwurfWeg] = Field(
         default=None,
         description="Weg, ueber den der Einwurf hereinkam. Ohne Angabe: web",
     )
@@ -135,7 +135,7 @@ class SaveDraftRequest(BaseModel):
         return _normalisieren(value) if isinstance(value, str) else value
 
 
-class UpdateRawInputStatusRequest(BaseModel):
+class EinwurfStatusRequest(BaseModel):
     """
     Statuswechsel aus dem Destillier-Ablauf.
 
@@ -148,7 +148,7 @@ class UpdateRawInputStatusRequest(BaseModel):
     aeltere App-Version nicht scheitert; ohne ihn bleibt die Karte ungefaerbt.
     """
 
-    status: RawInputStatus
+    status: EinwurfStatus
     content_id: Optional[uuid.UUID] = Field(
         default=None,
         description="Der verknuepfte Beitrag (neu oder vorhanden); Pflicht bei processed",
@@ -160,11 +160,11 @@ class UpdateRawInputStatusRequest(BaseModel):
 
     @model_validator(mode="after")
     def ziel_und_beitrag_passen(self):
-        if self.status not in (RawInputStatus.DISCARDED, RawInputStatus.PROCESSED):
+        if self.status not in (EinwurfStatus.DISCARDED, EinwurfStatus.PROCESSED):
             raise ValueError("status muss discarded oder processed sein")
-        if self.status == RawInputStatus.PROCESSED and self.content_id is None:
+        if self.status == EinwurfStatus.PROCESSED and self.content_id is None:
             raise ValueError("processed braucht die content_id des Beitrags")
-        if self.status == RawInputStatus.DISCARDED and (
+        if self.status == EinwurfStatus.DISCARDED and (
             self.content_id is not None or self.content_type is not None
         ):
             raise ValueError(
@@ -182,7 +182,7 @@ class UpdateRawInputStatusRequest(BaseModel):
 ###   Responses   ###
 
 
-class RawInputDraftResponse(BaseModel):
+class SatzAmEinwurfResponse(BaseModel):
     """
     Ein Satz zu einem Einwurf, mit Person und Zeitpunkt der letzten Aenderung.
 
@@ -200,7 +200,7 @@ class RawInputDraftResponse(BaseModel):
     updated_at: datetime.datetime
 
 
-class RawInputLinkResponse(BaseModel):
+class VerknuepfungResponse(BaseModel):
     """
     Ein Beitrag, mit dem der Einwurf verknuepft ist, neu entstanden oder vorhanden.
 
@@ -221,7 +221,7 @@ class RawInputLinkResponse(BaseModel):
     zustand: Optional[ZustandAmEinwurf] = None
 
 
-class RawInputResponse(BaseModel):
+class EinwurfResponse(BaseModel):
     """
     Ein Einwurf, wie ihn der Fangkorb ausliefert.
 
@@ -245,24 +245,24 @@ class RawInputResponse(BaseModel):
     # Ob die aufrufende Person den Einwurf eingeworfen hat; nur angemeldet, sonst None.
     ist_eigener_einwurf: Optional[bool] = None
     source_channel: str
-    status: RawInputStatus
+    status: EinwurfStatus
     created_at: datetime.datetime
     destilled_by: Optional[str] = None
     own_draft: Optional[str] = None
     processed_content_id: Optional[str] = None
     processed_by: Optional[str] = None
     processed_at: Optional[datetime.datetime] = None
-    drafts: List[RawInputDraftResponse] = Field(default_factory=list)
-    links: List[RawInputLinkResponse] = Field(default_factory=list)
+    drafts: List[SatzAmEinwurfResponse] = Field(default_factory=list)
+    links: List[VerknuepfungResponse] = Field(default_factory=list)
 
 
-class AddRawInputResponse(BaseModel):
+class EinwerfenResponse(BaseModel):
     id: str
 
 
-class GetRawInputsResponse(BaseModel):
+class EinwurfSeiteResponse(BaseModel):
     results_count: int
-    results: List[RawInputResponse]
+    results: List[EinwurfResponse]
     total_records_count: int
 
 
@@ -272,7 +272,7 @@ class GleicherLinkResponse(BaseModel):
     Einwurf-Formular die Stufe und, falls ausformuliert, die Beitraege.
     """
 
-    results: List[RawInputResponse]
+    results: List[EinwurfResponse]
 
 
 class DraftResponse(BaseModel):

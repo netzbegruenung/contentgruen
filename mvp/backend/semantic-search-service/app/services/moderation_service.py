@@ -17,9 +17,9 @@ from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
 from repositories.interfaces.moderation_repository import IModerationRepository
-from repositories.raw_input_repository import (
-    RawInputRepository,
-    get_raw_input_repository,
+from repositories.einwurf_repository import (
+    EinwurfRepository,
+    get_einwurf_repository,
 )
 from repositories.sperre_repository import SperreRepository, get_sperre_repository
 from repositories.vote_repository import VoteRepository
@@ -100,14 +100,14 @@ class ModerationService:
         report_repo: Optional[ContentReportRepository] = None,
         moderation_repo: Optional[IModerationRepository] = None,
         vote_repo: Optional[VoteRepository] = None,
-        raw_input_repo: Optional[RawInputRepository] = None,
+        einwurf_repo: Optional[EinwurfRepository] = None,
         sperre_repo: Optional[SperreRepository] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
         # Erst beim endgueltigen Entfernen gebraucht; vorher keine Verbindung.
         self._vote_repo = vote_repo
-        self._raw_input_repo = raw_input_repo
+        self._einwurf_repo = einwurf_repo
         self._sperre_repo = sperre_repo
 
     async def report_content(
@@ -598,10 +598,10 @@ class ModerationService:
             self._vote_repo = VoteRepository()
         return self._vote_repo
 
-    def _einwuerfe(self) -> RawInputRepository:
-        if self._raw_input_repo is None:
-            self._raw_input_repo = get_raw_input_repository()
-        return self._raw_input_repo
+    def _einwuerfe(self) -> EinwurfRepository:
+        if self._einwurf_repo is None:
+            self._einwurf_repo = get_einwurf_repository()
+        return self._einwurf_repo
 
     def _sperre_repository(self) -> SperreRepository:
         if self._sperre_repo is None:

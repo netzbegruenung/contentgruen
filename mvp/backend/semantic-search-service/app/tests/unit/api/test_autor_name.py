@@ -22,7 +22,7 @@ from api.v1.commentary import router as commentary_router
 from api.v1.content import router as content_router
 from api.v1.generic_text import router as generic_text_router
 from api.v1.post import router as post_router
-from api.v1.raw_input import router as raw_input_router
+from api.v1.einwurf import router as einwurf_router
 from dependencies import (
     get_commentary_service,
     get_generic_text_service,
@@ -35,11 +35,11 @@ from domain.models.content_type import ContentType
 from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.post import PostDbEntry
-from domain.models.raw_input import RawInputSource, RawInputStatus
+from domain.models.einwurf import EinwurfWeg, EinwurfStatus
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
-from repositories.raw_input_repository import get_raw_input_repository
+from repositories.einwurf_repository import get_einwurf_repository
 from tests.unit.api.test_search_ranking import (  # noqa: F401 - Fixture
     SEARCH_URL,
     _commentary,
@@ -57,7 +57,7 @@ app.include_router(commentary_router, prefix="/api/v1/commentary")
 app.include_router(generic_text_router, prefix="/api/v1/generic_text")
 app.include_router(post_router, prefix="/api/v1/post")
 app.include_router(content_router, prefix="/api/v1/content")
-app.include_router(raw_input_router, prefix="/api/v1/rawinput")
+app.include_router(einwurf_router, prefix="/api/v1/rawinput")
 
 
 def _post(post_id):
@@ -238,8 +238,8 @@ class TestFangkorb:
                 "id": str(uuid.uuid4()),
                 "content": "[anz-test] ein Satz",
                 "submitted_by": "einwerferin",
-                "source_channel": RawInputSource.WEB.value,
-                "status": RawInputStatus.IN_PROGRESS.value,
+                "source_channel": EinwurfWeg.WEB.value,
+                "status": EinwurfStatus.IN_PROGRESS.value,
                 "created_at": datetime(2026, 10, 11, 12, 0, tzinfo=timezone.utc),
                 "drafts": [
                     {
@@ -261,7 +261,7 @@ class TestFangkorb:
         repo.get_all.side_effect = lambda **_: [einwurf(), einwurf()]
         repo.get_by_id.side_effect = lambda *_: einwurf()
         repo.count.return_value = 2
-        app.dependency_overrides[get_raw_input_repository] = lambda: repo
+        app.dependency_overrides[get_einwurf_repository] = lambda: repo
         app.dependency_overrides[get_moderation_repository] = lambda: MagicMock(
             zustaende_laden=AsyncMock(return_value={})
         )

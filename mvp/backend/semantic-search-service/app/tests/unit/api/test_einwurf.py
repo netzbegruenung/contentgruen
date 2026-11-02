@@ -17,23 +17,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from pydantic import BaseModel, ValidationError
 
-from api.v1.raw_input import router as raw_input_router
+from api.v1.einwurf import router as einwurf_router
 from dependencies import (
     get_commentary_service,
     get_generic_text_service,
     get_post_service,
 )
-from domain.models.raw_input import (
+from domain.models.einwurf import (
     AktionNichtErlaubt,
     EinwurfNichtGefunden,
-    RawInputSource,
-    RawInputStatus,
+    EinwurfWeg,
+    EinwurfStatus,
     UebergangNichtErlaubt,
 )
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
-from repositories.raw_input_repository import get_raw_input_repository
+from repositories.einwurf_repository import get_einwurf_repository
 
 ADD_URL = "/api/v1/rawinput/addRawInput"
 LIST_URL = "/api/v1/rawinput/getRawInputs"
@@ -47,7 +47,7 @@ STATUS_URL = f"/api/v1/rawinput/{EINWURF_ID}/status"
 ALICE_ALS_ADMIN = {"X-User": "alice", "X-Is-Admin": "true"}
 
 app = FastAPI()
-app.include_router(raw_input_router, prefix="/api/v1/rawinput")
+app.include_router(einwurf_router, prefix="/api/v1/rawinput")
 
 
 def _gespeicherter_einwurf(**overrides):
@@ -57,8 +57,8 @@ def _gespeicherter_einwurf(**overrides):
         "url": None,
         "image_url": None,
         "submitted_by": "testuser",
-        "source_channel": RawInputSource.WEB.value,
-        "status": RawInputStatus.OPEN.value,
+        "source_channel": EinwurfWeg.WEB.value,
+        "status": EinwurfStatus.OPEN.value,
         "created_at": datetime(2026, 8, 19, 12, 0, tzinfo=timezone.utc),
     }
     eintrag.update(overrides)
@@ -75,7 +75,7 @@ def repository():
     # Beitragspruefung wuerde als Wiederholung uebersprungen.
     repo.statuswechsel_vorpruefen.return_value = False
     repo.mit_gleichem_link.return_value = []
-    app.dependency_overrides[get_raw_input_repository] = lambda: repo
+    app.dependency_overrides[get_einwurf_repository] = lambda: repo
     yield repo
     app.dependency_overrides.clear()
 
@@ -180,7 +180,7 @@ class TestEinwerfen:
         # Der Status wird im Repository gesetzt, nicht vom Router uebergeben.
         assert "status" not in repository.create.call_args.kwargs
         assert repository.create.call_args.kwargs["source_channel"] == (
-            RawInputSource.WEB.value
+            EinwurfWeg.WEB.value
         )
 
     def test_kein_titel_und_kein_zieltyp_noetig(self, client, repository):
@@ -299,7 +299,7 @@ class TestHerkunftskanal:
         client.post(ADD_URL, json={"content": "x"}, headers={"X-User": "testuser"})
 
         assert repository.create.call_args.kwargs["source_channel"] == (
-            RawInputSource.WEB.value
+            EinwurfWeg.WEB.value
         )
 
     def test_share_wird_uebernommen(self, client, repository):
@@ -312,7 +312,7 @@ class TestHerkunftskanal:
 
         assert antwort.status_code == 201
         assert repository.create.call_args.kwargs["source_channel"] == (
-            RawInputSource.SHARE.value
+            EinwurfWeg.SHARE.value
         )
 
     def test_import_wird_uebernommen(self, client, repository):
@@ -325,7 +325,7 @@ class TestHerkunftskanal:
 
         assert antwort.status_code == 201
         assert repository.create.call_args.kwargs["source_channel"] == (
-            RawInputSource.IMPORT.value
+            EinwurfWeg.IMPORT.value
         )
 
     def test_erfundener_kanal_wird_abgewiesen(self, client, repository):
@@ -399,7 +399,7 @@ class TestFangkorbListe:
         repository.get_all.return_value = [
             _gespeicherter_einwurf(own_draft="Mein Satz"),
             _gespeicherter_einwurf(
-                status=RawInputStatus.PROCESSED.value,
+                status=EinwurfStatus.PROCESSED.value,
                 processed_content_id=inhalt_id,
                 processed_by="bob",
                 processed_at=ausformuliert_am,
@@ -427,7 +427,7 @@ class TestFangkorbListe:
         inhalt_id = str(uuid.uuid4())
         repository.get_all.return_value = [
             _gespeicherter_einwurf(
-                status=RawInputStatus.PROCESSED.value,
+                status=EinwurfStatus.PROCESSED.value,
                 destilled_by="bob",
                 drafts=[
                     {
@@ -545,7 +545,7 @@ class TestMeineEinwuerfe:
         repository.get_all.return_value = [
             _gespeicherter_einwurf(
                 submitted_by="alice",
-                status=RawInputStatus.PROCESSED.value,
+                status=EinwurfStatus.PROCESSED.value,
                 links=[
                     {
                         "content_id": beitrag,
@@ -555,7 +555,7 @@ class TestMeineEinwuerfe:
                 ],
             ),
             _gespeicherter_einwurf(
-                submitted_by="alice", status=RawInputStatus.DISCARDED.value
+                submitted_by="alice", status=EinwurfStatus.DISCARDED.value
             ),
         ]
         repository.count.return_value = 2
@@ -590,7 +590,7 @@ class TestMeineEinwuerfe:
         repository.get_all.return_value = [
             _gespeicherter_einwurf(
                 submitted_by="alice",
-                status=RawInputStatus.PROCESSED.value,
+                status=EinwurfStatus.PROCESSED.value,
                 links=[
                     {
                         "content_id": beitrag,
@@ -748,7 +748,7 @@ class TestSatz:
 class TestStatuswechsel:
     def test_verwerfen_ruft_das_repository_ohne_beitrag(self, client, repository):
         repository.set_status.return_value = _gespeicherter_einwurf(
-            id=str(EINWURF_ID), status=RawInputStatus.DISCARDED.value
+            id=str(EINWURF_ID), status=EinwurfStatus.DISCARDED.value
         )
 
         antwort = client.patch(
@@ -758,7 +758,7 @@ class TestStatuswechsel:
         assert antwort.status_code == 200
         assert antwort.json()["status"] == "discarded"
         repository.set_status.assert_called_once_with(
-            EINWURF_ID, RawInputStatus.DISCARDED, "alice", None, None, ist_admin=False
+            EINWURF_ID, EinwurfStatus.DISCARDED, "alice", None, None, ist_admin=False
         )
 
     @pytest.mark.parametrize(
@@ -773,7 +773,7 @@ class TestStatuswechsel:
         jeder Client-Anfrage); dieselbe Grundlage wie require_admin.
         """
         repository.set_status.return_value = _gespeicherter_einwurf(
-            id=str(EINWURF_ID), status=RawInputStatus.DISCARDED.value
+            id=str(EINWURF_ID), status=EinwurfStatus.DISCARDED.value
         )
         kopfzeilen = {"X-User": "admin-1"}
         if admin_kopf is not None:
@@ -786,7 +786,7 @@ class TestStatuswechsel:
         assert antwort.status_code == 200
         repository.set_status.assert_called_once_with(
             EINWURF_ID,
-            RawInputStatus.DISCARDED,
+            EinwurfStatus.DISCARDED,
             "admin-1",
             None,
             None,
@@ -821,7 +821,7 @@ class TestStatuswechsel:
         inhalt_id = uuid.uuid4()
         repository.set_status.return_value = _gespeicherter_einwurf(
             id=str(EINWURF_ID),
-            status=RawInputStatus.PROCESSED.value,
+            status=EinwurfStatus.PROCESSED.value,
             processed_content_id=str(inhalt_id),
             processed_by="alice",
             processed_at=datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc),
@@ -843,7 +843,7 @@ class TestStatuswechsel:
         assert antwort.json()["processed_by"] is None
         repository.set_status.assert_called_once_with(
             EINWURF_ID,
-            RawInputStatus.PROCESSED,
+            EinwurfStatus.PROCESSED,
             "alice",
             inhalt_id,
             "commentary",
@@ -854,7 +854,7 @@ class TestStatuswechsel:
         """Beim Ausformulieren ist auch ein Post waehlbar (#297)."""
         inhalt_id = uuid.uuid4()
         repository.set_status.return_value = _gespeicherter_einwurf(
-            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+            id=str(EINWURF_ID), status=EinwurfStatus.PROCESSED.value
         )
 
         antwort = client.patch(
@@ -872,7 +872,7 @@ class TestStatuswechsel:
         beitraege["commentary"].get.assert_not_called()
         repository.set_status.assert_called_once_with(
             EINWURF_ID,
-            RawInputStatus.PROCESSED,
+            EinwurfStatus.PROCESSED,
             "alice",
             inhalt_id,
             "post",
@@ -883,7 +883,7 @@ class TestStatuswechsel:
         """Eine noch zwischengespeicherte aeltere App schickt keinen Typ mit."""
         inhalt_id = uuid.uuid4()
         repository.set_status.return_value = _gespeicherter_einwurf(
-            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+            id=str(EINWURF_ID), status=EinwurfStatus.PROCESSED.value
         )
 
         antwort = client.patch(
@@ -895,7 +895,7 @@ class TestStatuswechsel:
         assert antwort.status_code == 200
         repository.set_status.assert_called_once_with(
             EINWURF_ID,
-            RawInputStatus.PROCESSED,
+            EinwurfStatus.PROCESSED,
             "alice",
             inhalt_id,
             None,
@@ -978,7 +978,7 @@ class TestStatuswechsel:
     ):
         beitraege["commentary"].get.side_effect = ValueError("wrong content_type")
         repository.set_status.return_value = _gespeicherter_einwurf(
-            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+            id=str(EINWURF_ID), status=EinwurfStatus.PROCESSED.value
         )
 
         antwort = client.patch(
@@ -1052,7 +1052,7 @@ class TestStatuswechsel:
         self, client, repository, beitraege
     ):
         repository.statuswechsel_vorpruefen.side_effect = UebergangNichtErlaubt(
-            RawInputStatus.PROCESSED, RawInputStatus.PROCESSED
+            EinwurfStatus.PROCESSED, EinwurfStatus.PROCESSED
         )
         beitraege["commentary"].get.side_effect = ValueError("not found")
 
@@ -1080,7 +1080,7 @@ class TestStatuswechsel:
         repository.statuswechsel_vorpruefen.return_value = True
         beitraege["commentary"].get.side_effect = ValueError("not found")
         repository.set_status.return_value = _gespeicherter_einwurf(
-            id=str(EINWURF_ID), status=RawInputStatus.PROCESSED.value
+            id=str(EINWURF_ID), status=EinwurfStatus.PROCESSED.value
         )
 
         antwort = client.patch(
@@ -1095,7 +1095,7 @@ class TestStatuswechsel:
 
         assert antwort.status_code == 200
         repository.statuswechsel_vorpruefen.assert_called_once_with(
-            EINWURF_ID, RawInputStatus.PROCESSED, "alice", inhalt_id
+            EINWURF_ID, EinwurfStatus.PROCESSED, "alice", inhalt_id
         )
         beitraege["commentary"].get.assert_not_called()
         repository.set_status.assert_called_once()
@@ -1127,7 +1127,7 @@ class TestStatuswechsel:
 
     def test_verwerfen_prueft_keinen_beitrag(self, client, repository, beitraege):
         repository.set_status.return_value = _gespeicherter_einwurf(
-            id=str(EINWURF_ID), status=RawInputStatus.DISCARDED.value
+            id=str(EINWURF_ID), status=EinwurfStatus.DISCARDED.value
         )
 
         client.patch(
@@ -1152,9 +1152,7 @@ class TestStatuswechsel:
             (EinwurfNichtGefunden(EINWURF_ID), 404),
             (AktionNichtErlaubt("nur Einwerfer"), 403),
             (
-                UebergangNichtErlaubt(
-                    RawInputStatus.PROCESSED, RawInputStatus.DISCARDED
-                ),
+                UebergangNichtErlaubt(EinwurfStatus.PROCESSED, EinwurfStatus.DISCARDED),
                 409,
             ),
         ],
@@ -1183,7 +1181,7 @@ class TestGleicherLink:
         repository.mit_gleichem_link.return_value = [
             _gespeicherter_einwurf(
                 url="https://example.org/a",
-                status=RawInputStatus.PROCESSED.value,
+                status=EinwurfStatus.PROCESSED.value,
                 links=[
                     {
                         "content_id": str(beitrag),

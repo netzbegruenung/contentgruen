@@ -18,8 +18,8 @@ from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.post import PostDbEntry
-from infrastructure.database.models import RawInput, RawInputDraft
-from repositories.raw_input_repository import RawInputRepository
+from infrastructure.database.models import Einwurf, Satz
+from repositories.einwurf_repository import EinwurfRepository
 from tests.integration.conftest import requires_qdrant
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
 
@@ -53,7 +53,7 @@ class _SitzungWieImDienst:
 
 @pytest.fixture
 def repository(datenbank):  # noqa: F811
-    return RawInputRepository(_SitzungWieImDienst(datenbank))
+    return EinwurfRepository(_SitzungWieImDienst(datenbank))
 
 
 def _spalte(datenbank, modell, **filter):  # noqa: F811
@@ -67,14 +67,14 @@ class TestPostgres:
             content="Fundstueck", submitted_by="alice", cc0_wortlaut=FORMULAR
         )
 
-        assert _spalte(datenbank, RawInput, id=uuid.UUID(einwurf["id"])) == FORMULAR
+        assert _spalte(datenbank, Einwurf, id=uuid.UUID(einwurf["id"])) == FORMULAR
 
     def test_einwurf_ohne_kennung_bleibt_null(
         self, datenbank, repository  # noqa: F811
     ):
         einwurf = repository.create(content="Fundstueck", submitted_by="alice")
 
-        assert _spalte(datenbank, RawInput, id=uuid.UUID(einwurf["id"])) is None
+        assert _spalte(datenbank, Einwurf, id=uuid.UUID(einwurf["id"])) is None
 
     def test_satz_traegt_die_kennung_des_letzten_speicherns(
         self, datenbank, repository  # noqa: F811
@@ -82,10 +82,10 @@ class TestPostgres:
         einwurf_id = uuid.UUID(repository.create(content="Fundstueck")["id"])
 
         repository.save_draft(einwurf_id, "alice", "Erster Satz")
-        assert _spalte(datenbank, RawInputDraft, raw_input_id=einwurf_id) is None
+        assert _spalte(datenbank, Satz, raw_input_id=einwurf_id) is None
 
         repository.save_draft(einwurf_id, "alice", "Zweiter Satz", cc0_wortlaut=SATZ)
-        assert _spalte(datenbank, RawInputDraft, raw_input_id=einwurf_id) == SATZ
+        assert _spalte(datenbank, Satz, raw_input_id=einwurf_id) == SATZ
 
 
 @requires_qdrant

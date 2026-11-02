@@ -386,13 +386,13 @@ class Sperre(Base):
     )
 
 
-class RawInput(Base):
+class Einwurf(Base):
     """
     Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh, wie
     eingeworfen.
 
     Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/archiv/ROHINPUT.md):
-    Rohinput wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
+    Ein Einwurf wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
     eine spaetere Zuweisung ("ich nehm das") ist ein Wettlauf zweier Nutzer um
     dieselbe Zeile, den nur eine Transaktion entscheidet.
 
@@ -439,7 +439,7 @@ class RawInput(Base):
     )
 
 
-class RawInputContentLink(Base):
+class Verknuepfung(Base):
     """
     Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
     wurde: einem neu gespeicherten oder, bei einer Dublette, dem vorhandenen.
@@ -505,7 +505,7 @@ class RawInputContentLink(Base):
     )
 
 
-class RawInputDraft(Base):
+class Satz(Base):
     """
     Der Entwurfssatz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
 
