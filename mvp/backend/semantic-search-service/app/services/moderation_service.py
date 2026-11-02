@@ -29,6 +29,7 @@ from domain.models.meldung import MelderAngaben
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
+from core.fehler import Validierungsfehler
 from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG
 from services.content.verweise_entfernen import verweise_entfernen
 
@@ -39,7 +40,7 @@ logger = logging.getLogger(__name__)
 GESPERRTE_HOECHSTENS = 500
 
 
-class SperreUngueltig(ValueError):
+class SperreUngueltig(Validierungsfehler):
     """Sperren oder Bestaetigen ohne gueltigen Sperrgrund oder ohne Begruendung."""
 
 

@@ -32,6 +32,7 @@ from services.suchen_ohne_treffer_service import (
 )
 from core.config import Settings
 from core.logging import get_logger
+from core.fehler import INTERNER_FEHLER
 
 logger = get_logger(__name__)
 
@@ -229,7 +230,7 @@ async def get_metrics(
             return metrics
     except Exception as e:
         logger.error(f"Error in getMetrics: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 # MVP Metrics Endpoints -- alle admin-only.
@@ -262,7 +263,7 @@ async def get_mvp_dashboard_metrics(
         logger.error(
             f"Error fetching MVP dashboard metrics: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(status_code=500, detail=f"Failed to fetch MVP metrics: {e}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/daily-active-users", response_model=DailyActiveUsersResponse)
@@ -291,9 +292,7 @@ async def get_daily_active_users(
         logger.error(
             f"Error fetching daily active users: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch daily active users: {e}"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/searches-per-user", response_model=SearchesPerUserResponse)
@@ -320,9 +319,7 @@ async def get_searches_per_user(
         logger.error(
             f"Error fetching searches per user: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch searches per user: {e}"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/content-created", response_model=ContentCreatedResponse)
@@ -349,9 +346,7 @@ async def get_content_created(
         logger.error(
             f"Error fetching content created: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch content created: {e}"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/usage-trend", response_model=UsageTrendResponse)
@@ -390,7 +385,7 @@ async def get_usage_trend(
         )
     except Exception as e:
         logger.error(f"Error fetching usage trend: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to fetch usage trend: {e}")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/helpful-rate", response_model=HelpfulRateResponse)
@@ -415,9 +410,7 @@ async def get_helpful_rate(
         return HelpfulRateResponse(period_days=days, **stats)
     except Exception as e:
         logger.error(f"Error fetching helpful rate: {type(e).__name__}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch helpful rate: {e}"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/bilanz", response_model=BilanzResponse)
@@ -446,7 +439,7 @@ def get_bilanz(
         )
     except Exception as e:
         logger.error(f"Error fetching Bilanz: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch Bilanz")
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
 @router.get("/suchen-ohne-treffer", response_model=SuchenOhneTrefferResponse)
@@ -480,6 +473,4 @@ async def get_suchen_ohne_treffer(
         logger.error(
             f"Error fetching searches without hits: {type(e).__name__}", exc_info=True
         )
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch searches without hits"
-        )
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
