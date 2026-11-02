@@ -240,6 +240,7 @@ pytest -x              # Stop on first failure
 
 ### Do
 - Use dependency injection fixtures
+- In service tests, mock the repository interfaces (`repositories/interfaces/`)
 - Follow AAA pattern (Arrange, Act, Assert)
 - Test both success and failure scenarios
 - Use descriptive test names: `test_search_with_empty_query_returns_empty_list`

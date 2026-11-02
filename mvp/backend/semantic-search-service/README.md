@@ -10,6 +10,23 @@ Content and its vector embeddings are stored in Qdrant. PostgreSQL holds applica
 
 Entities are modeled as pydantic models in `app/domain/models/`.
 
+## Code Conventions
+
+- **Patterns**: repositories for data access, a service layer for business logic, dependencies
+  passed in through constructor parameters, a factory for creating repositories; composition
+  over inheritance.
+- **Naming**: classes `PascalCase` (`StatementService`), methods `snake_case`
+  (`get_by_author()`), private methods with a leading `_`, interfaces with an `I` prefix
+  (`IBaseContentRepository`).
+- **Where things live** (under `app/`): domain models in `domain/models/`; repository interfaces in
+  `repositories/interfaces/`, other interfaces (embeddings, Keycloak realm) in
+  `domain/interfaces/`; services in `services/` by concern, repositories in `repositories/` by
+  type; tests mirror the source structure.
+- **New content types** go through the registry, not through a new service/repository class:
+  checklist in [`docs/CONTENT_MODEL.md`](../../../docs/CONTENT_MODEL.md#adding-a-content-type-checklist).
+- **Schema changes** for existing databases: a dated SQL script in
+  `mvp/backend/postgres-app/migrations/`, convention in its `README.md`.
+
 ## Development Setup
 
 ### Prerequisites

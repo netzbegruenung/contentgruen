@@ -13,3 +13,15 @@
 Die App ruft das BFF relativ auf (`baseUrl: ''`). `ng serve` leitet `/api`, `/content`, `/recent`, `/getMetrics`,
 `/report` und `/reports` per `proxy.conf.json` an http://localhost:5054 weiter – kein CORS, Cookies same-origin.
 Ein älteres lokales `environment.ts` mit `baseUrl: 'http://localhost:5054'` auf `''` umstellen.
+
+## Dev-VM (Agenten-Sandbox): `mvp/run-local.sh`
+
+Auf der Linux-Dev-VM läuft der ganze Stack in Docker Compose (`mvp/docker-compose.dev.yml`, Projekt
+`gutgesagt-dev`) und wird über `mvp/run-local.sh` gesteuert: aus jedem Verzeichnis aufrufbar, nichts
+im Vordergrund, Exit != 0 bei Fehler. Unterbefehle, Laufzeiten und Exit-Codes stehen im Kopf von
+`mvp/scripts/dev/run-local.sh`.
+
+- Ports: Frontend 8080, BFF 5054, Semantic Search 8000, Qdrant 6333/6334, PostgreSQL 5433.
+  Rootless Docker kann keine Ports < 1024 binden, daher 8080 statt 80.
+- VM-Voraussetzung (nicht im Repo): `docker buildx` >= 0.17 in `~/.docker/cli-plugins/`; das
+  Debian-Paket 0.13 ist zu alt für Compose 2.40 und lässt jeden Build scheitern.

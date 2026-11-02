@@ -100,7 +100,7 @@ describe('FormularHilfeComponent', () => {
       expect(texte('.schreibregeln li').length).toBe(6);
       expect(texte('.schreibhilfen li').length).toBe(SCHREIBHILFEN.length);
       expect(seite().querySelector('.hilfe-panel')!.textContent).toContain('Nicht jede Aussage braucht eine Antwort');
-      // Post-Titel folgen der Behauptungsregel nicht (CLAUDE.md, "Titel von Beitraegen")
+      // Post-Titel folgen der Behauptungsregel nicht (CODING_STANDARDS.md, "A Titel is a claim")
       expect(seite().querySelector('.titel-beispiele')).toBeNull();
     });
   });
