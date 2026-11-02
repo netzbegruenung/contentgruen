@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional, TYPE_CHECKING
 from fastapi import Depends, Header, HTTPException
 
@@ -15,6 +16,7 @@ from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
+from services.beitrag_laden import BeitragLader, beitrag_laden
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
@@ -237,14 +239,25 @@ def get_loeschfristen_service() -> LoeschfristenService:
     )
 
 
+def get_content_repository(settings: Settings = Depends(get_settings)):
+    """Das aggregierte Content-Repository: liest und loescht jeden Beitragstyp."""
+    return QdrantRepositoryFactory().create_content_repository(settings)
+
+
+def get_beitrag_laden(repository=Depends(get_content_repository)) -> BeitragLader:
+    """``beitrag_laden`` ueber das aggregierte Repository, fuer Nutzung und Stimmen."""
+
+    async def laden(content_id: uuid.UUID):
+        return await beitrag_laden(content_id, repository)
+
+    return laden
+
+
 def get_beitrag_loeschen_service(
-    settings: Settings = Depends(get_settings),
+    repository=Depends(get_content_repository),
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
-    return BeitragLoeschenService(
-        QdrantRepositoryFactory().create_content_repository(settings),
-        get_moderation_repository(),
-    )
+    return BeitragLoeschenService(repository, get_moderation_repository())
 
 
 def get_commentary_service() -> CommentaryService:

@@ -37,9 +37,9 @@ from core.fehler import (
 )
 from dependencies import (
     get_aussage_themen_service,
+    get_content_repository,
     get_image_service,
     get_reference_service,
-    get_settings,
     get_voting_service,
 )
 from domain.themen import ThemaUngueltig
@@ -225,17 +225,11 @@ def stimm_dienst():
 def stimm_client(stimm_dienst):
     repository = MagicMock()
     repository.get = AsyncMock(return_value=object())
-    fabrik = Mock()
-    fabrik.return_value.create_content_repository.return_value = repository
     app = FastAPI()
     app.include_router(voting_router, prefix="/api/v1/voting")
-    app.dependency_overrides[get_settings] = lambda: Mock()
+    app.dependency_overrides[get_content_repository] = lambda: repository
     app.dependency_overrides[get_voting_service] = lambda: stimm_dienst
-    with patch(
-        "repositories.implementations.qdrant.qdrant_repository_factory.QdrantRepositoryFactory",
-        fabrik,
-    ):
-        yield TestClient(app)
+    return TestClient(app)
 
 
 class TestFehlerantworten:
