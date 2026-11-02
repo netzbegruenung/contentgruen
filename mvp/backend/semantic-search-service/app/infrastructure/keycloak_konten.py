@@ -10,12 +10,12 @@ Was hinausgeht, ist nur die Mail-Adresse. Den Code der Einladung erfaehrt Keyclo
 nicht (services/einladung_service.py).
 """
 
-from typing import Optional
+from typing import Dict, Iterable, Mapping, Optional
 
 import httpx
 
 from core.logging import get_logger
-from domain.interfaces.konten_im_realm import KontoErgebnis
+from domain.interfaces.konten_im_realm import KontoErgebnis, VerknuepfteKonten
 
 logger = get_logger(__name__)
 
@@ -64,8 +64,16 @@ class KeycloakKonten:
         antwort.raise_for_status()
         return antwort.json()["access_token"]
 
+    @property
+    def _admin(self) -> str:
+        return f"{self._basis}/admin/realms/{self._realm}/users"
+
+    @staticmethod
+    def _konto_id(angelegt: httpx.Response) -> str:
+        return angelegt.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
+
     def konto_anlegen(self, email: str) -> KontoErgebnis:
-        admin = f"{self._basis}/admin/realms/{self._realm}/users"
+        admin = self._admin
         with self._client() as http:
             kopf = {"Authorization": f"Bearer {self._token(http)}"}
             antwort = http.post(
@@ -82,7 +90,7 @@ class KeycloakKonten:
             if antwort.status_code == 409:
                 return KontoErgebnis.VORHANDEN
             antwort.raise_for_status()
-            konto_id = antwort.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
+            konto_id = self._konto_id(antwort)
 
             parameter = {"lifespan": str(MAIL_GUELTIG_SEKUNDEN)}
             if self._app_client_id and self._app_url:
@@ -108,3 +116,102 @@ class KeycloakKonten:
                     )
                 raise
         return KontoErgebnis.ANGELEGT
+
+    # --- Kennungen umstellen (#487) ---------------------------------------
+    # Viele Anfragen hintereinander: Laeuft das Token ab (Standard 5 Minuten), holt
+    # _Sitzung.anfrage ein neues und wiederholt die Anfrage einmal.
+
+    def kennungen_zuordnen(
+        self, identity_provider: str, kennungen: Iterable[str]
+    ) -> Dict[str, str]:
+        """
+        Alte Kennung -> Kennung im Realm. Alt ist die Kennung beim Identity Provider,
+        mit der das Konto im Realm verknuepft ist; ohne verknuepftes Konto fehlt sie.
+        """
+        zuordnung: Dict[str, str] = {}
+        with self._client() as http:
+            sitzung = _Sitzung(self, http)
+            for kennung in kennungen:
+                konto = self._verknuepftes_konto(sitzung, identity_provider, kennung)
+                if konto:
+                    zuordnung[kennung] = konto
+        return zuordnung
+
+    def konten_verknuepft_anlegen(
+        self, identity_provider: str, konten: Mapping[str, str]
+    ) -> VerknuepfteKonten:
+        """
+        Je alte Kennung (-> Mail-Adresse) ein Konto im Realm, mit dem Identity
+        Provider verknuepft. Keine Mail: Angemeldet wird weiter ueber den Identity
+        Provider, und Keycloak findet das Konto dann ueber die Verknuepfung.
+        Ist die Adresse im Realm schon vergeben, wird nichts verknuepft.
+        """
+        ergebnis = VerknuepfteKonten()
+        with self._client() as http:
+            sitzung = _Sitzung(self, http)
+            for kennung, email in konten.items():
+                # Nach einem abgebrochenen Lauf gibt es das Konto vielleicht schon; ein
+                # POST bekaeme dann 409 und stuende faelschlich unter "vergeben".
+                if self._verknuepftes_konto(sitzung, identity_provider, kennung):
+                    continue
+                antwort = sitzung.anfrage(
+                    "POST",
+                    self._admin,
+                    json={
+                        "username": email,
+                        "email": email,
+                        "enabled": True,
+                        # Der Identity Provider hat sie bestaetigt (Trust Email).
+                        "emailVerified": True,
+                        "requiredActions": PFLICHTAKTIONEN,
+                        "federatedIdentities": [
+                            {
+                                "identityProvider": identity_provider,
+                                "userId": kennung,
+                                "userName": email,
+                            }
+                        ],
+                    },
+                )
+                if antwort.status_code == 409:
+                    ergebnis.vergeben.append(kennung)
+                    continue
+                antwort.raise_for_status()
+                ergebnis.angelegt[kennung] = self._konto_id(antwort)
+        return ergebnis
+
+    def _verknuepftes_konto(
+        self, sitzung: "_Sitzung", identity_provider: str, kennung: str
+    ) -> Optional[str]:
+        antwort = sitzung.anfrage(
+            "GET",
+            self._admin,
+            params={
+                "idpAlias": identity_provider,
+                "idpUserId": kennung,
+                "briefRepresentation": "true",
+            },
+        )
+        antwort.raise_for_status()
+        treffer = antwort.json()
+        # Keycloak vergleicht beides exakt; eine Kennung beim Identity Provider ist
+        # hoechstens mit einem Konto verknuepft.
+        return treffer[0]["id"] if treffer else None
+
+
+class _Sitzung:
+    """Ein HTTP-Client mit dem aktuellen Token; bei 401 einmal ein neues holen."""
+
+    def __init__(self, konten: KeycloakKonten, http: httpx.Client) -> None:
+        self._konten = konten
+        self._http = http
+        self._token = konten._token(http)
+
+    def anfrage(self, methode: str, url: str, **kwargs) -> httpx.Response:
+        for versuch in range(2):
+            kopf = {"Authorization": f"Bearer {self._token}"}
+            antwort = self._http.request(methode, url, headers=kopf, **kwargs)
+            if antwort.status_code != 401 or versuch:
+                return antwort
+            self._token = self._konten._token(self._http)
+        return antwort
