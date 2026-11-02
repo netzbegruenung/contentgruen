@@ -170,6 +170,30 @@ describe('MeineEinwuerfeComponent', () => {
 
   // Ausformuliertes steht seit #265 nicht mehr im Fangkorb, sondern hier.
   describe('ausformulierte Einwuerfe', () => {
+    // #507: Statt "Ausformuliert" und "Ansehen" steht, was aus dem Beitrag wurde.
+    for (const [zustand, wort] of [
+      ['gesperrt', 'Beitrag gesperrt'],
+      ['geloescht', 'Beitrag gelöscht'],
+    ] as const) {
+      it(`zeigt "${wort}" ohne "Ansehen", wenn der Beitrag ${zustand} ist`, () => {
+        const links = ausformuliert.links!.map((verknuepfung) => ({ ...verknuepfung, zustand }));
+        einwurfService.eigeneLaden.and.returnValue(of(antwort([einwurf({ ...ausformuliert, links })])));
+        anzeigen();
+
+        expect(texte('.einwurf-stufe')).toEqual([wort]);
+        expect(texte('.einwurf-primaer')).toEqual([]);
+      });
+    }
+
+    it('zeigt einen sichtbaren Beitrag wie bisher', () => {
+      const links = ausformuliert.links!.map((verknuepfung) => ({ ...verknuepfung, zustand: 'sichtbar' as const }));
+      einwurfService.eigeneLaden.and.returnValue(of(antwort([einwurf({ ...ausformuliert, links })])));
+      anzeigen();
+
+      expect(texte('.einwurf-stufe')).toEqual(['Ausformuliert: Kommentar']);
+      expect(texte('.einwurf-primaer')).toEqual([jasmine.stringContaining('Ansehen') as unknown as string]);
+    });
+
     it('zeigt je Satz den Stand, mehrere Beitraege als Zahl, einen als Haken, ohne Beitrag nichts', () => {
       einwurfService.eigeneLaden.and.returnValue(
         of(

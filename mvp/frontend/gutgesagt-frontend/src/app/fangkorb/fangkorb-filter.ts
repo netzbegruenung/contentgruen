@@ -31,8 +31,10 @@ export const TABS: ReadonlyArray<{ wert: FangkorbTab; name: string; leer: string
 ];
 
 /**
- * Wo der Fangkorb nach dem Ausformulieren aufgeht. Ausformuliertes liegt in keinem
- * Tab; zurueck geht es in die Arbeitsliste, aus der der Einwurf kam.
+ * Wo der Fangkorb nach dem Ausformulieren aufgeht, wenn "Naechster Einwurf" keinen
+ * offenen mehr findet: in der Arbeitsliste, aus der der Einwurf kam, denn dort kann
+ * noch Arbeit liegen. Der ausformulierte Einwurf selbst liegt in keinem Tab; "Zum
+ * Fangkorb" fuehrt deshalb nach "Meine Einwuerfe", wo er steht (#508).
  */
 export const NACH_DEM_AUSFORMULIEREN: FangkorbTab = 'ausformulieren';
 
@@ -158,8 +160,10 @@ export function filterLaden(): FangkorbFilter {
  * Den Tab merken, den der Fangkorb beim naechsten Oeffnen zeigen soll.
  *
  * Gebraucht am Ende des Destillier-Ablaufs: Wer den letzten offenen Einwurf
- * destilliert, ausformuliert oder verworfen hat, landet wieder im Fangkorb - und
- * zwar dort, wo das Ergebnis liegt, nicht in einem leeren "Destillieren".
+ * destilliert oder verworfen hat, landet wieder im Fangkorb - und zwar dort, wo das
+ * Ergebnis liegt, nicht in einem leeren "Destillieren". Nach dem Ausformulieren
+ * liegt das Ergebnis in keinem Tab; dann geht es in die Arbeitsliste, aus der der
+ * Einwurf kam (``NACH_DEM_AUSFORMULIEREN``).
  */
 export function tabMerken(tab: FangkorbTab): void {
   filterSpeichern({ ...filterLaden(), tab });

@@ -415,6 +415,25 @@ describe('EinwerfenComponent', () => {
       });
     }));
 
+    // #507: statt "Ausformuliert" der Zustand des Beitrags, ohne "Beitrag ansehen".
+    for (const [zustand, wort] of [
+      ['gesperrt', 'Beitrag gesperrt'],
+      ['geloescht', 'Beitrag gelöscht'],
+    ] as const) {
+      it(`zeigt "${wort}" ohne Knopf, wenn der Beitrag ${zustand} ist`, fakeAsync(() => {
+        erstellen();
+        flushMicrotasks();
+        const links = ausformuliert.links!.map((link) => ({ ...link, zustand }));
+        einwurfService.mitGleichemLink.and.returnValue(of([{ ...ausformuliert, links }]));
+
+        linkTippen('https://example.org/a');
+
+        expect(gleicherLinkBox()?.querySelector('.gleicher-link-stufe')?.textContent).toContain(wort);
+        expect(gleicherLinkBox()?.textContent).not.toContain('Ausformuliert');
+        expect(gleicherLinkBox()?.querySelector('button.beitrag-ansehen')).toBeNull();
+      }));
+    }
+
     it('kuendigt die Anzeige in einer Live-Region an, die schon vorher dasteht', fakeAsync(() => {
       erstellen();
       flushMicrotasks();

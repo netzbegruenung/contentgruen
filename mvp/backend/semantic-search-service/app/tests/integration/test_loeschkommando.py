@@ -7,9 +7,10 @@ dieselbe Ersetzung, die psql mit ``-v uid=...`` vornimmt. Datenbank und Wegwerf-
 kommen aus ``conftest.py`` (siehe ``postgres.py``).
 """
 
+import asyncio
 import uuid
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from sqlalchemy import text
@@ -121,7 +122,11 @@ def _im_fangkorb(datenbank, einwurf: uuid.UUID, aufrufer: str = ANDERE):
     with patch(
         "services.beitrag_fuer_aufrufer.get_anzeigename_service", return_value=dienst
     ):
-        (sicht,) = _einwuerfe_fuer_aufrufer([zeile], Aufrufer(aufrufer))
+        # Der Zustand der Beitraege (#507) kommt aus dem Suchindex; hier ohne Belang.
+        suchindex = MagicMock(zustaende_laden=AsyncMock(return_value={}))
+        (sicht,) = asyncio.run(
+            _einwuerfe_fuer_aufrufer([zeile], Aufrufer(aufrufer), suchindex)
+        )
     return sicht.model_dump()
 
 

@@ -36,6 +36,9 @@ from domain.models.content_origin import ContentOrigin
 from domain.models.content_status import NEW_CONTENT_STATUS
 from domain.models.post import PostDbEntry
 from domain.models.raw_input import RawInputSource, RawInputStatus
+from repositories.implementations.qdrant.moderation_repository import (
+    get_moderation_repository,
+)
 from repositories.raw_input_repository import get_raw_input_repository
 from tests.unit.api.test_search_ranking import (  # noqa: F401 - Fixture
     SEARCH_URL,
@@ -259,6 +262,9 @@ class TestFangkorb:
         repo.get_by_id.side_effect = lambda *_: einwurf()
         repo.count.return_value = 2
         app.dependency_overrides[get_raw_input_repository] = lambda: repo
+        app.dependency_overrides[get_moderation_repository] = lambda: MagicMock(
+            zustaende_laden=AsyncMock(return_value={})
+        )
 
     def test_liste_mit_namen_aus_einer_abfrage(self, client, namen):
         response = client.get("/api/v1/rawinput/getRawInputs", headers=ANGEMELDET)

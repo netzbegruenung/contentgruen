@@ -38,6 +38,9 @@ from dtos.raw_input import RawInputDraftResponse, RawInputLinkResponse, RawInput
 from dtos.reference import GetReferenceResponse
 from dtos.statement import AussageResponse, AussageTreffer
 from services import beitrag_fuer_aufrufer as regel
+from repositories.implementations.qdrant.moderation_repository import (
+    get_moderation_repository,
+)
 from repositories.raw_input_repository import get_raw_input_repository
 from services.content.statement_service import StatementService
 from tests.unit.api.test_beitrag_responses import (
@@ -331,6 +334,9 @@ def einwurf_client(anzeigenamen_ohne_datenbank):
     repository.get_by_id.side_effect = lambda *_: _einwurf()
     repository.set_status.side_effect = lambda *_, **__: _einwurf()
     einwurf_app.dependency_overrides[get_raw_input_repository] = lambda: repository
+    einwurf_app.dependency_overrides[get_moderation_repository] = lambda: MagicMock(
+        zustaende_laden=AsyncMock(return_value={})
+    )
     # Verworfen wird ohne Beitragspruefung; die Dienste muessen nur aufloesbar sein.
     for dienst in (get_commentary_service, get_generic_text_service, get_post_service):
         einwurf_app.dependency_overrides[dienst] = lambda: MagicMock()

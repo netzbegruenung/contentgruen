@@ -30,6 +30,9 @@ from domain.models.raw_input import (
     RawInputStatus,
     UebergangNichtErlaubt,
 )
+from repositories.implementations.qdrant.moderation_repository import (
+    get_moderation_repository,
+)
 from repositories.raw_input_repository import get_raw_input_repository
 
 ADD_URL = "/api/v1/rawinput/addRawInput"
@@ -93,6 +96,20 @@ def beitraege():
     app.dependency_overrides[get_generic_text_service] = lambda: dienste["generic_text"]
     app.dependency_overrides[get_post_service] = lambda: dienste["post"]
     yield dienste
+
+
+@pytest.fixture(autouse=True)
+def zustaende():
+    """
+    Der Suchindex fuer den Zustand der verknuepften Beitraege (#507). Standard:
+    jeder verknuepfte Beitrag ist sichtbar.
+    """
+    suchindex = MagicMock()
+    suchindex.zustaende_laden = AsyncMock(
+        side_effect=lambda ids: {i: "visible" for i in ids}
+    )
+    app.dependency_overrides[get_moderation_repository] = lambda: suchindex
+    yield suchindex
 
 
 @pytest.fixture
@@ -402,7 +419,7 @@ class TestFangkorbListe:
         assert daten["results"][1]["processed_at"].startswith("2026-09-13T18:00")
 
     def test_liste_liefert_alle_saetze_und_verknuepften_beitraege(
-        self, client, repository
+        self, client, repository, zustaende
     ):
         """Spec Fangkorb v2, Abschnitt A: alles, was die Karte braucht."""
         am = datetime(2026, 9, 13, 18, 0, tzinfo=timezone.utc)
@@ -449,8 +466,12 @@ class TestFangkorbListe:
                 "draft_id": satz_id,
                 "processed_by": "carol",
                 "processed_at": eintrag["links"][0]["processed_at"],
+                # Ausformuliertes steht in keiner Arbeitsliste; der Zustand des
+                # Beitrags (#507) kostete hier nur eine Abfrage im Suchindex.
+                "zustand": None,
             }
         ]
+        zustaende.zustaende_laden.assert_not_called()
 
 
 @pytest.mark.unit
@@ -546,6 +567,96 @@ class TestMeineEinwuerfe:
         assert ausformuliert["status"] == "processed"
         assert ausformuliert["links"][0]["content_id"] == beitrag
         assert verworfen["status"] == "discarded"
+
+    @pytest.mark.parametrize(
+        "status, zustand",
+        [
+            ("visible", "sichtbar"),
+            ("blocked", "gesperrt"),
+            ("deleted", "geloescht"),
+            (None, "geloescht"),
+            # Altwert von vor #214: liest sich wie ueberall als sichtbar.
+            ("approved", "sichtbar"),
+            # Bild ohne Unterschrift: findet niemand, wie geloescht.
+            ("pending_description", "geloescht"),
+        ],
+    )
+    def test_verknuepfung_traegt_den_zustand_des_beitrags(
+        self, client, repository, zustaende, status, zustand
+    ):
+        """#507: Einwuerfe zu gesperrten oder geloeschten Beitraegen beschriften.
+        Ohne Eintrag im Suchindex ist der Beitrag endgueltig entfernt."""
+        beitrag = str(uuid.uuid4())
+        repository.get_all.return_value = [
+            _gespeicherter_einwurf(
+                submitted_by="alice",
+                status=RawInputStatus.PROCESSED.value,
+                links=[
+                    {
+                        "content_id": beitrag,
+                        "content_type": "commentary",
+                        "processed_at": datetime(2026, 9, 13, tzinfo=timezone.utc),
+                    }
+                ],
+            )
+        ]
+        zustaende.zustaende_laden.side_effect = lambda ids: (
+            {} if status is None else {i: status for i in ids}
+        )
+
+        daten = client.get(EIGENE_URL, headers={"X-User": "alice"}).json()
+
+        assert daten["results"][0]["links"][0]["zustand"] == zustand
+
+    def test_zustaende_einer_seite_in_einer_abfrage(
+        self, client, repository, zustaende
+    ):
+        am = datetime(2026, 9, 13, tzinfo=timezone.utc)
+        a, b, c = (str(uuid.uuid4()) for _ in range(3))
+        repository.get_all.return_value = [
+            _gespeicherter_einwurf(
+                links=[
+                    {"content_id": a, "processed_at": am},
+                    {"content_id": b, "processed_at": am},
+                ]
+            ),
+            _gespeicherter_einwurf(links=[{"content_id": c, "processed_at": am}]),
+            _gespeicherter_einwurf(),
+        ]
+
+        client.get(EIGENE_URL, headers={"X-User": "alice"})
+
+        zustaende.zustaende_laden.assert_awaited_once()
+        assert sorted(zustaende.zustaende_laden.call_args.args[0]) == sorted([a, b, c])
+
+    def test_ohne_suchindex_bleibt_der_zustand_offen(
+        self, client, repository, zustaende
+    ):
+        """Faellt der Suchindex aus, laden die Einwuerfe trotzdem; der Zustand ist
+        dann unbekannt und die Karte verhaelt sich wie bisher."""
+        repository.get_all.return_value = [
+            _gespeicherter_einwurf(
+                links=[
+                    {
+                        "content_id": str(uuid.uuid4()),
+                        "processed_at": datetime(2026, 9, 13, tzinfo=timezone.utc),
+                    }
+                ]
+            )
+        ]
+        zustaende.zustaende_laden.side_effect = RuntimeError("Qdrant weg")
+
+        antwort = client.get(EIGENE_URL, headers={"X-User": "alice"})
+
+        assert antwort.status_code == 200
+        assert antwort.json()["results"][0]["links"][0]["zustand"] is None
+
+    def test_ohne_verknuepfung_keine_abfrage(self, client, repository, zustaende):
+        repository.get_all.return_value = [_gespeicherter_einwurf()]
+
+        client.get(EIGENE_URL, headers={"X-User": "alice"})
+
+        zustaende.zustaende_laden.assert_not_called()
 
     def test_wird_nicht_als_einwurf_id_gelesen(self, client, repository):
         """/getOwnRawInputs steht vor /{id}; sonst kaeme 422 fuer eine ungueltige UUID."""
@@ -1093,6 +1204,7 @@ class TestGleicherLink:
         (einwurf,) = antwort.json()["results"]
         assert einwurf["status"] == "processed"
         assert einwurf["links"][0]["content_id"] == str(beitrag)
+        assert einwurf["links"][0]["zustand"] == "sichtbar"
         repository.mit_gleichem_link.assert_called_once_with(
             "http://www.example.org/a/", "alice"
         )

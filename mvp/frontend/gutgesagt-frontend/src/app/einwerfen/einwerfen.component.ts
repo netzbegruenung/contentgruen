@@ -6,10 +6,9 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Einwurf, EinwurfService, EinwerfenRequest } from '../services/einwurf.service';
 import {
   EinwurfBeitrag,
-  STUFEN,
   StufenAnzeige,
   beitraegeVonEinwurf,
-  stufeVonEinwurf,
+  stufenAnzeigeVonEinwurf,
 } from '../beitragskarte/karten-daten';
 import { EinwurfBeitragSheetComponent } from '../fangkorb/einwurf-beitrag-sheet.component';
 import {
@@ -39,14 +38,15 @@ export interface GleicherEinwurf {
    * Die verknuepften Beitraege; leer, solange er nicht ausformuliert ist. Auch ein
    * verworfener Einwurf kann welche haben, wenn ihn jemand vorher ausformuliert
    * hat - dann zeigt das Formular die Stufe "Verworfen" und trotzdem den Beitrag,
-   * denn den gibt es ja.
+   * denn den gibt es ja. Gesperrte und geloeschte Beitraege fehlen; ist keiner
+   * mehr sichtbar, steht statt "Ausformuliert" ihr Zustand (#507).
    */
   beitraege: EinwurfBeitrag[];
 }
 
 function alsGleicherEinwurf(einwurf: Einwurf): GleicherEinwurf {
   return {
-    stufe: STUFEN[stufeVonEinwurf(einwurf)],
+    stufe: stufenAnzeigeVonEinwurf(einwurf),
     beitraege: beitraegeVonEinwurf(einwurf),
   };
 }

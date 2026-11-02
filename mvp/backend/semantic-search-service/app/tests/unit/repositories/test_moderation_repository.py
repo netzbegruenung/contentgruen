@@ -60,6 +60,24 @@ class TestLaden:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+class TestZustaendeLaden:
+    """Der Zustand der mit Einwuerfen verknuepften Beitraege, in einer Abfrage (#507)."""
+
+    async def test_status_je_beitrag_unbekannte_fehlen(self, repo):
+        await repo.sperren(await repo.laden(BEITRAG_ID))
+        unbekannt = str(uuid.uuid4())
+
+        zustaende = await repo.zustaende_laden([BEITRAG_ID, unbekannt])
+
+        assert zustaende == {BEITRAG_ID: "blocked"}
+
+    async def test_ohne_ids_keine_abfrage(self, repo, speicher):
+        assert await repo.zustaende_laden([]) == {}
+        speicher.async_client.retrieve.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 class TestSperrenEntsperren:
     async def test_sperren_merkt_status_von_vorher(self, repo, speicher):
         await repo.sperren(await repo.laden(BEITRAG_ID))
