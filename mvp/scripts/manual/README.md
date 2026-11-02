@@ -114,6 +114,19 @@ Kennung an Saetzen in fremden Einwuerfen durch einen Platzhalter mit dem Anzeige
 „ehemalige Person“. Ablauf, Reihenfolge und Fallen stehen in `docs/LOESCHKONZEPT.md`;
 dort steht auch der Aufruf. Getestet in `tests/integration/test_loeschkommando.py`.
 
+## Kennungen auf den Realm umstellen (im semantic-search-Container)
+
+`kennungen_umstellen.py [--ausfuehren] [--konten-anlegen DATEI] [--liste NAME=K1,K2]` –
+**schreibend mit `--ausfuehren`.** Einmalig vor dem Umstellen der BFF auf den Realm
+„gutgesagt“ (#487): schreibt die Kennungen von Mitgliedern der Netzbegruenung in
+PostgreSQL und Qdrant auf die ihres Kontos im Realm um und gibt die neuen Werte der
+Admin-Listen und der Loeschliste aus; ohne `--ausfuehren` zaehlt es nur. Ablauf und
+Aufruf in `docs/KEYCLOAK_REALM.md`, „Kennungen umstellen“; getestet in
+`tests/unit/services/test_kennungen_umstellen.py` (Qdrant),
+`tests/unit/infrastructure/test_keycloak_kennungen.py` (Realm),
+`tests/integration/test_kennungen_umstellen_postgres.py` (PostgreSQL, Ablauf) und
+`test_kennungen_umstellen_skript.py` (Aufruf).
+
 ## Beitraege anonymisieren (im semantic-search-Container)
 
 `beitraege_anonymisieren.py <kennung> [--ausfuehren]` – **schreibend mit
