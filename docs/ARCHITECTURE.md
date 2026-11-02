@@ -85,7 +85,7 @@ listens on 5432 inside the container.
 ### BFF (Backend-for-Frontend)
 - **Technology**: .NET 9.0, YARP reverse proxy
 - **Purpose**:
-  - Authentication handling (Keycloak, Direktanmeldung, or the old dummy login)
+  - Authentication handling (Keycloak or Direktanmeldung)
   - API gateway/proxy to semantic search service
   - User context injection via headers
 - **Configuration**:
@@ -161,8 +161,9 @@ referrer, and no line for searches or the results page (#275, see
 ### Direktanmeldung (Beta-Zugang)
 Login with e-mail address and password, for Beta-Zugang accounts. It does not depend on the
 environment: it is on whenever `ENABLE_MANAGED_AUTH` is true (the default) and the BFF finds a
-non-empty users file, so production can offer it next to Keycloak. Local and Docker development
-log in this way.
+non-empty users file. Local and Docker development log in this way. In test and production the
+Beta-Zugänge move into the Keycloak realm and the file goes away (#488,
+`docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“).
 
 1. User enters e-mail address and password in frontend ("Direktanmeldung")
 2. Frontend POSTs to BFF `/api/auth/login/managed`
@@ -175,10 +176,8 @@ log in this way.
 the Docker dev stack; for the local mode copy it by hand (`docs/DEV-SETUP.md`). Without the
 file the Direktanmeldung is off.
 
-With `USE_KEYCLOAK=false` the BFF also still answers the old dummy `POST /login`
-(default `testuser`/`Liebe>Hass!`, overridable via `DUMMY_AUTH_USERNAME`/`DUMMY_AUTH_PASSWORD`;
-user id `test-user-id-1`, which must never be an admin, see `ADMIN_USER_IDS` below). The
-frontend no longer has a form for it.
+The old dummy login (`POST /login`, user id `test-user-id-1`) is gone since #488;
+`DUMMY_AUTH_USERNAME`/`DUMMY_AUTH_PASSWORD` have no effect any more.
 
 ### Keycloak (Production)
 1. User accesses protected resource
@@ -236,10 +235,9 @@ frontend no longer has a form for it.
   logged in: it is exactly the string this check compares, whereas reading a `sub` claim by
   hand is a detour - .NET's inbound claim mapping renames `sub` to `nameidentifier` before
   the application sees it. The list is parsed once at startup, so changing it only takes
-  effect after the BFF container is restarted. Never put `test-user-id-1` on the list: that
-  is the id handed out by the dummy login that is active whenever `USE_KEYCLOAK=false`, and
-  its password is documented in this repository (`mvp/backend/BFF/Program.cs:509-510`,
-  `:554`, `:575`).
+  effect after the BFF container is restarted. Never put an id from
+  `managed-users.example.json` on the list: their passwords are documented in this
+  repository.
 
   It exists because the claim route needs a Keycloak protocol mapper: `OnTokenValidated`
   copies token claims unchanged, so a flat `isAdmin`/`role` claim has to come from the realm
@@ -293,7 +291,6 @@ All settings use the `SEMANTIC_SEARCH_` prefix (see `app/core/config.py`):
 
 ### Local/Test
 - Direktanmeldung; locally with the example accounts from `managed-users.example.json`
-- The old dummy `POST /login` stays reachable while `USE_KEYCLOAK=false`
 - No TLS (HTTP only)
 - Open CORS for development
 

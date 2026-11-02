@@ -7,6 +7,10 @@ eine neue Kennung. Die Zuordnung alt -> neu kommt aus dem Realm: Das neue Konto 
 mit dem Identity Provider ``netzbegruenung`` verknuepft, und die Kennung dort ist die
 alte (infrastructure/keycloak_konten.py, ``kennungen_zuordnen``).
 
+Beta-Zugaenge aus managed-users.json (#488) ziehen im selben Lauf um: Ihr Konto im
+Realm ist das mit ihrer Mail-Adresse; fehlt es, legt der Lauf eins mit Passwort an,
+und Keycloak schickt "Passwort festlegen".
+
 Umgeschrieben wird ueberall, wo eine Kennung steht: die Spalten in PostgreSQL
 (``SPALTEN``, dieselben wie im Loeschkommando mvp/scripts/manual/person_loeschen.sql),
 die vier Felder an Beitraegen in Qdrant und Listen aus der Konfiguration (Admins), deren
@@ -36,7 +40,7 @@ from qdrant_client.models import (
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-from domain.interfaces.konten_im_realm import IKennungenImRealm
+from domain.interfaces.konten_im_realm import BetaZugang, IKennungenImRealm
 from services.anzeigename_service import (
     EHEMALIGE_PERSON_KENNUNG,
     KENNUNGSFELDER,
@@ -360,6 +364,12 @@ class Umstellung:
     anzulegen: List[str] = field(default_factory=list)
     # Konto sollte angelegt werden, die Adresse hat im Realm aber schon eins
     vergeben: List[str] = field(default_factory=list)
+    # Beta-Zugaenge ohne Konto im Realm: wird beim Lauf angelegt (Trockenlauf)
+    beta_anzulegen: List[str] = field(default_factory=list)
+    # Beta-Zugaenge, deren Mail "Passwort festlegen" beim Lauf nicht hinausging
+    beta_ohne_mail: List[str] = field(default_factory=list)
+    # Neue Kennungen der Beta-Zugaenge mit isAdmin: in die Admin-Listen eintragen
+    beta_admins: List[str] = field(default_factory=list)
 
 
 def umstellen(
@@ -371,6 +381,7 @@ def umstellen(
     listen: Optional[Mapping[str, List[str]]] = None,
     loeschliste: Optional[List[str]] = None,
     anzulegen: Optional[Mapping[str, str]] = None,
+    beta_zugaenge: Optional[Mapping[str, BetaZugang]] = None,
     ausfuehren: bool = False,
 ) -> Umstellung:
     """
@@ -382,6 +393,11 @@ def umstellen(
     Die Loeschliste wird ergaenzt, nicht umgeschrieben: Ein Cookie mit der alten
     Kennung gilt bis zu 14 Tage weiter (docs/LOESCHKONZEPT.md), die BFF muss es also
     weiter abweisen. Fuer Geloeschte wird nie ein Konto angelegt.
+
+    ``beta_zugaenge`` (alte Kennung -> Eintrag aus managed-users.json) ordnet jeden
+    Beta-Zugang dem Konto mit seiner Mail-Adresse zu, auch ohne Spuren in den Daten:
+    Ohne Konto im Realm koennte er sich nach dem Umstellen nicht mehr anmelden. Beim
+    Lauf legt es die fehlenden Konten an.
     """
     listen = dict(listen or {})
     geloescht = [k for k in (loeschliste or []) if _person(k)]
@@ -405,6 +421,12 @@ def umstellen(
         zuordnung.update(angelegt.angelegt)
         vergeben = list(angelegt.vergeben)
         fehlend = []
+    beta = {
+        k: z
+        for k, z in (beta_zugaenge or {}).items()
+        if _person(k) and k not in zuordnung and k not in geloescht
+    }
+    beta_fehlend, beta_ohne_mail = _beta_zuordnen(realm, beta, zuordnung, ausfuehren)
     # Vor jedem Schreiben, auch fuer die Listen.
     zuordnung_pruefen(zuordnung)
     return Umstellung(
@@ -427,4 +449,31 @@ def umstellen(
         ohne_konto=sorted(alte - set(zuordnung) - set(geloescht)),
         anzulegen=fehlend,
         vergeben=vergeben,
+        beta_anzulegen=beta_fehlend,
+        beta_ohne_mail=beta_ohne_mail,
+        beta_admins=[
+            zuordnung[k] for k, z in beta.items() if z.admin and k in zuordnung
+        ],
     )
+
+
+def _beta_zuordnen(
+    realm: IKennungenImRealm,
+    beta: Mapping[str, BetaZugang],
+    zuordnung: Dict[str, str],
+    ausfuehren: bool,
+) -> "tuple[List[str], List[str]]":
+    """Ergaenzt ``zuordnung``; gibt die noch fehlenden und die ohne Mail zurueck."""
+    if not beta:
+        return [], []
+    konten = realm.konten_nach_adresse(sorted({z.email for z in beta.values()}))
+    for kennung, zugang in beta.items():
+        konto = konten.get(zugang.email.lower())
+        if konto:
+            zuordnung[kennung] = konto
+    fehlend = sorted(k for k in beta if k not in zuordnung)
+    if not (ausfuehren and fehlend):
+        return fehlend, []
+    angelegt = realm.konten_mit_passwort_anlegen({k: beta[k] for k in fehlend})
+    zuordnung.update(angelegt.angelegt)
+    return [k for k in fehlend if k not in zuordnung], list(angelegt.ohne_mail)

@@ -425,7 +425,7 @@ Angemeldete Personen, die suchen, einwerfen, destillieren, ausformulieren und be
 _Avoid_: User, Mitglieder
 
 **Beta-Zugang**:
-Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll.
+Ein einzeln freigeschaltetes Konto für eine Person, die ohne Netzbegrünung-Mitgliedschaft mitwirken soll. Bis zum Umstellen auf den eigenen Realm steht es mit eigener Kennung und Passwort in einer Datei der BFF (Anmeldung über „Direktanmeldung“). Beim Umstellen zieht es in das Konto im Realm mit derselben Mail-Adresse um, samt Beiträgen; danach ist es ein Konto mit Mail und Passwort wie eines aus einer Einladung, und die Datei entfällt (#488). In der Entwicklung bleibt die Datei mit Beispielkonten.
 _Avoid_: Beta-Account, manueller User, Managed User
 
 **Netzbegrünung-Login**:

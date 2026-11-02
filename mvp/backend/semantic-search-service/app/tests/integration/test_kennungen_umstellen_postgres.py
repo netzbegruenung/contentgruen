@@ -15,7 +15,11 @@ from qdrant_client.models import Distance, PointStruct, VectorParams
 from sqlalchemy import text
 
 from infrastructure.database.models import GeseheneNutzung, RawInputDraft, User
-from domain.interfaces.konten_im_realm import VerknuepfteKonten
+from domain.interfaces.konten_im_realm import (
+    BetaZugang,
+    KontenMitPasswort,
+    VerknuepfteKonten,
+)
 from services.wartung.kennungen_umstellen import (
     kennungen_in_postgres,
     postgres_umschreiben,
@@ -162,9 +166,12 @@ class TestPostgresUmschreiben:
 class Realm:
     """Attrappe des Realms: verknuepfte Konten, legt auf Wunsch eins an."""
 
-    def __init__(self, verknuepft):
+    def __init__(self, verknuepft, adressen=None):
         self.verknuepft = dict(verknuepft)
         self.angelegt_fuer = []
+        # Mail-Adresse -> Konto im Realm (Beta-Zugaenge, #488)
+        self.adressen = dict(adressen or {})
+        self.mit_passwort_fuer = []
 
     def kennungen_zuordnen(self, identity_provider, kennungen):
         assert identity_provider == "netzbegruenung"
@@ -175,6 +182,16 @@ class Realm:
         ergebnis = VerknuepfteKonten()
         for kennung in konten:
             ergebnis.angelegt[kennung] = self.verknuepft[kennung] = f"{kennung}-neu"
+        return ergebnis
+
+    def konten_nach_adresse(self, adressen):
+        return {a: self.adressen[a] for a in adressen if a in self.adressen}
+
+    def konten_mit_passwort_anlegen(self, zugaenge):
+        self.mit_passwort_fuer.extend(zugaenge)
+        ergebnis = KontenMitPasswort()
+        for kennung, zugang in zugaenge.items():
+            ergebnis.angelegt[kennung] = self.adressen[zugang.email] = f"{kennung}-neu"
         return ergebnis
 
 
@@ -248,6 +265,74 @@ class TestUmstellen:
         assert realm.angelegt_fuer == [ANDERE]
         assert lauf.zuordnung == {PERSON: NEU, ANDERE: f"{ANDERE}-neu"}
         assert lauf.ohne_konto == []
+
+    def test_beta_zugaenge_ziehen_ueber_die_adresse_um(self, datenbank, spuren, qdrant):
+        """#488: ANDERE ist ein Beta-Zugang ohne Konto, PERSON hat schon eins."""
+        realm = Realm({}, adressen={"anna@example.org": NEU})
+        beta = {
+            PERSON: BetaZugang("anna@example.org", "Anna Beispiel"),
+            ANDERE: BetaZugang("ben@example.org", "Ben Beispiel"),
+        }
+
+        trocken = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta)
+        assert realm.mit_passwort_fuer == []
+        assert trocken.zuordnung == {PERSON: NEU}
+        assert trocken.beta_anzulegen == [ANDERE]
+
+        lauf = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta, ausfuehren=True)
+        assert realm.mit_passwort_fuer == [ANDERE]
+        assert lauf.zuordnung == {PERSON: NEU, ANDERE: f"{ANDERE}-neu"}
+        assert lauf.beta_anzulegen == []
+        assert _kennung_irgendwo(datenbank, PERSON) == []
+        assert _kennung_irgendwo(datenbank, ANDERE) == []
+
+        zweiter = _umstellen(
+            datenbank, qdrant, realm, beta_zugaenge=beta, ausfuehren=True
+        )
+        assert realm.mit_passwort_fuer == [ANDERE]
+        assert set(zweiter.postgres.geaendert.values()) == {0}
+
+    def test_beta_zugang_ohne_spuren_bekommt_trotzdem_ein_konto(
+        self, datenbank, spuren, qdrant
+    ):
+        realm = Realm({})
+        beta = {"user-009": BetaZugang("kim@example.org", "Kim Neu")}
+
+        lauf = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta, ausfuehren=True)
+
+        assert realm.mit_passwort_fuer == ["user-009"]
+        assert lauf.zuordnung["user-009"] == "user-009-neu"
+
+    def test_admins_unter_den_beta_zugaengen_mit_neuer_kennung(
+        self, datenbank, spuren, qdrant
+    ):
+        realm = Realm({}, adressen={"anna@example.org": NEU})
+        beta = {
+            PERSON: BetaZugang("anna@example.org", "Anna Beispiel", admin=True),
+            ANDERE: BetaZugang("ben@example.org", "Ben Beispiel"),
+        }
+
+        ergebnis = _umstellen(datenbank, qdrant, realm, beta_zugaenge=beta)
+
+        assert ergebnis.beta_admins == [NEU]
+
+    def test_geloeschter_beta_zugang_bekommt_kein_konto(
+        self, datenbank, spuren, qdrant
+    ):
+        realm = Realm({})
+        beta = {ANDERE: BetaZugang("ben@example.org", "Ben Beispiel")}
+
+        ergebnis = _umstellen(
+            datenbank,
+            qdrant,
+            realm,
+            beta_zugaenge=beta,
+            loeschliste=[ANDERE],
+            ausfuehren=True,
+        )
+
+        assert realm.mit_passwort_fuer == []
+        assert ANDERE not in ergebnis.zuordnung
 
     def test_loeschliste_behaelt_die_alte_und_bekommt_die_neue_dazu(
         self, datenbank, spuren, qdrant

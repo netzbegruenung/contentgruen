@@ -11,7 +11,12 @@ import json
 import httpx
 import pytest
 
-from infrastructure.keycloak_konten import PFLICHTAKTIONEN, KeycloakKonten
+from domain.interfaces.konten_im_realm import BetaZugang
+from infrastructure.keycloak_konten import (
+    MAIL_AKTIONEN,
+    PFLICHTAKTIONEN,
+    KeycloakKonten,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -23,10 +28,20 @@ ANGELEGT = "8a0c6f6e-0000-4000-8000-000000000002"
 
 
 class Keycloak:
-    def __init__(self, verknuepft=None, vergeben=(), abgelaufen=0):
+    def __init__(
+        self,
+        verknuepft=None,
+        vergeben=(),
+        abgelaufen=0,
+        adressen=None,
+        mail_fehler=False,
+    ):
         # (Identity Provider, Kennung dort) -> Konto im Realm
         self.verknuepft = dict(verknuepft or {})
         self.vergeben = set(vergeben)
+        # Mail-Adresse (klein, wie Keycloak sie speichert) -> Konto im Realm
+        self.adressen = dict(adressen or {})
+        self.mail_fehler = mail_fehler
         self.anfragen: list[httpx.Request] = []
         # So viele Admin-Anfragen antworten 401, als sei das Token abgelaufen.
         self.abgelaufen = abgelaufen
@@ -41,6 +56,13 @@ class Keycloak:
             return httpx.Response(401)
         if pfad == ADMIN and request.method == "GET":
             p = request.url.params
+            if "email" in p:
+                assert p.get("exact") == "true"
+                konto = self.adressen.get(p["email"].lower())
+                return httpx.Response(
+                    200,
+                    json=[{"id": konto, "email": p["email"].lower()}] if konto else [],
+                )
             konto = self.verknuepft.get((p.get("idpAlias"), p.get("idpUserId")))
             return httpx.Response(200, json=[{"id": konto}] if konto else [])
         if pfad == ADMIN and request.method == "POST":
@@ -49,6 +71,8 @@ class Keycloak:
             return httpx.Response(
                 201, headers={"Location": f"{BASIS}{ADMIN}/{ANGELEGT}"}
             )
+        if pfad == f"{ADMIN}/{ANGELEGT}/execute-actions-email":
+            return httpx.Response(500 if self.mail_fehler else 204)
         return httpx.Response(404)
 
     def angelegt(self):
@@ -111,6 +135,80 @@ class TestKennungenZuordnen:
 
         with pytest.raises(httpx.HTTPStatusError):
             _konten(keycloak).kennungen_zuordnen("netzbegruenung", [ALT])
+
+
+class TestBetaZugaengeUmziehen:
+    """#488: Beta-Zugaenge bekommen ein Konto mit Passwort, gefunden ueber die Adresse."""
+
+    def test_findet_konten_ueber_die_mail_adresse_ohne_gross_und_klein(self):
+        keycloak = Keycloak(adressen={"anna@example.org": NEU})
+
+        konten = _konten(keycloak).konten_nach_adresse(
+            ["Anna@Example.org", "niemand@example.org"]
+        )
+
+        assert konten == {"anna@example.org": NEU}
+
+    def test_legt_konto_mit_namen_an_und_schickt_passwort_festlegen(self):
+        keycloak = Keycloak()
+
+        ergebnis = _konten(keycloak).konten_mit_passwort_anlegen(
+            {"user-001": BetaZugang("anna@example.org", "Anna Maria von Beispiel")}
+        )
+
+        assert ergebnis.angelegt == {"user-001": ANGELEGT}
+        assert ergebnis.ohne_mail == []
+        (konto,) = keycloak.angelegt()
+        assert konto["username"] == konto["email"] == "anna@example.org"
+        # Daraus bildet die BFF wie bisher aus dem displayName "Anna B.".
+        assert konto["firstName"] == "Anna"
+        assert konto["lastName"] == "Maria von Beispiel"
+        assert konto["requiredActions"] == PFLICHTAKTIONEN
+        assert "federatedIdentities" not in konto
+        (mail,) = [
+            r
+            for r in keycloak.anfragen
+            if r.url.path.endswith("/execute-actions-email")
+        ]
+        assert json.loads(mail.content) == MAIL_AKTIONEN
+
+    def test_ein_wort_als_name_ergibt_nur_den_vornamen(self):
+        keycloak = Keycloak()
+
+        _konten(keycloak).konten_mit_passwort_anlegen(
+            {"user-001": BetaZugang("kim@example.org", "Kim")}
+        )
+
+        (konto,) = keycloak.angelegt()
+        assert konto["firstName"] == "Kim"
+        assert "lastName" not in konto
+
+    def test_scheitert_die_mail_bleibt_das_konto_und_wird_genannt(self):
+        """Anders als bei der Einladung: An dem Konto haengen gleich die Beitraege."""
+        keycloak = Keycloak(mail_fehler=True)
+
+        ergebnis = _konten(keycloak).konten_mit_passwort_anlegen(
+            {"user-001": BetaZugang("anna@example.org", "Anna Beispiel")}
+        )
+
+        assert ergebnis.angelegt == {"user-001": ANGELEGT}
+        assert ergebnis.ohne_mail == ["user-001"]
+        assert not any(r.method == "DELETE" for r in keycloak.anfragen)
+
+    def test_vergebene_adresse_nimmt_das_vorhandene_konto(self):
+        """Zwischen Trockenlauf und Lauf angelegt, etwa ueber eine Einladung."""
+        keycloak = Keycloak(
+            vergeben={"anna@example.org"}, adressen={"anna@example.org": NEU}
+        )
+
+        ergebnis = _konten(keycloak).konten_mit_passwort_anlegen(
+            {"user-001": BetaZugang("anna@example.org", "Anna Beispiel")}
+        )
+
+        assert ergebnis.angelegt == {"user-001": NEU}
+        assert not any(
+            r.url.path.endswith("/execute-actions-email") for r in keycloak.anfragen
+        )
 
 
 class TestKontenVerknuepftAnlegen:

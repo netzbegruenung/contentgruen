@@ -103,6 +103,11 @@ deletion list still hold the old one. Switch the BFF and enable redemption
 (`SEMANTIC_SEARCH_KEYCLOAK_*`) together, after the privacy policy covers self-registration.
 Order, realm template, variables and setup steps: `docs/KEYCLOAK_REALM.md`.
 
+Beta-Zugänge (`managed-users.json`, Direktanmeldung) move into the realm in the same run as
+the Kennungen (`--beta-zugaenge`, #488). Together with the BFF switch, remove the file and its
+mount from test and production and set `ENABLE_MANAGED_AUTH=false`; the Direktanmeldung stays
+for the dev stack only. Steps: `docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

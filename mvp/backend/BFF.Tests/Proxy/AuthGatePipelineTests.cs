@@ -248,11 +248,7 @@ public class AuthGatePipelineTests
     /// anderen Test gruen -- die Liste waere still leer, und das Frontend zeichnete seinen
     /// AdminGuard fuer niemanden.
     ///
-    /// USE_KEYCLOAK=true, obwohl die Betriebsart fuer /api/user-info nichts entscheidet:
-    /// nur im else-Zweig registriert Program.cs den DummyAuthStartupFilter, der context.User
-    /// bei jedem angemeldeten Request durch den Dummy-Nutzer (test-user-id-1) ersetzt. Der
-    /// liefe zwar vor dem TestUserStartupFilter und saehe noch keinen angemeldeten Nutzer --
-    /// aber an dieser Reihenfolge soll die Aussage des Tests nicht haengen.
+    /// USE_KEYCLOAK=true, obwohl die Betriebsart fuer /api/user-info nichts entscheidet.
     /// </summary>
     private static async Task<bool> UserInfoIsAdmin(string? adminUserIds)
     {

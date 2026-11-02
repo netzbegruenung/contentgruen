@@ -27,8 +27,26 @@ class VerknuepfteKonten:
     vergeben: List[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class BetaZugang:
+    """Ein Eintrag aus managed-users.json, der in den Realm umzieht (#488)."""
+
+    email: str
+    # displayName aus der Datei, etwa "Anna Beispiel"
+    name: str
+    admin: bool = False
+
+
+@dataclass
+class KontenMitPasswort:
+    # alte Kennung -> Kennung des Kontos im Realm (neu angelegt oder schon da)
+    angelegt: Dict[str, str] = field(default_factory=dict)
+    # alte Kennungen, deren Mail "Passwort festlegen" nicht hinausging
+    ohne_mail: List[str] = field(default_factory=list)
+
+
 class IKennungenImRealm(Protocol):
-    """Kennungen umstellen (#487): services/wartung/kennungen_umstellen.py."""
+    """Kennungen umstellen (#487, #488): services/wartung/kennungen_umstellen.py."""
 
     def kennungen_zuordnen(
         self, identity_provider: str, kennungen: Iterable[str]
@@ -37,3 +55,9 @@ class IKennungenImRealm(Protocol):
     def konten_verknuepft_anlegen(
         self, identity_provider: str, konten: Mapping[str, str]
     ) -> VerknuepfteKonten: ...
+
+    def konten_nach_adresse(self, adressen: Iterable[str]) -> Dict[str, str]: ...
+
+    def konten_mit_passwort_anlegen(
+        self, zugaenge: Mapping[str, BetaZugang]
+    ) -> KontenMitPasswort: ...

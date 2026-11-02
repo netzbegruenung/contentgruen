@@ -143,7 +143,7 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 - `environment.prod.ts` - Production
 
 ### Service Configuration
-- **BFF**: `USE_KEYCLOAK=false` for local/test
+- **BFF**: `USE_KEYCLOAK=false` for local development
 - **API**: `SEMANTIC_SEARCH_APP_DATABASE_URL` (PostgreSQL), `SEMANTIC_SEARCH_QDRANT_URL` (Qdrant)
 - **Frontend**: `baseUrl` empty for Docker, `http://localhost:5054` for local
 
@@ -155,10 +155,10 @@ Host ports shown. PostgreSQL is published on host 5433 (container port 5432).
 
 ## Authentication Modes
 
-### Dummy Auth (Development)
+### Direktanmeldung (Development)
 - E-Mail: `test.user@example.com` (login is by e-mail, not by user name)
 - Password: `Liebe>Hass!`
-- Used in local and test environments
+- Beta-Zugänge from `mvp/config/managed-users.json`; in test and production they move into the realm and the file goes away (#488, `docs/KEYCLOAK_REALM.md`)
 
 ### Keycloak (Production)
 - SSO integration with Netzbegrünung
