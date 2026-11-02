@@ -432,6 +432,10 @@ _Avoid_: Beta-Account, manueller User, Managed User
 Die Anmeldung mit dem Konto bei der Netzbegrünung, der Weg für Mitglieder der Netzbegrünung. Mit dem eigenen Realm von Gut gesagt (#429) läuft sie, sobald die App darauf umgestellt ist, über diesen Realm, in dem die Netzbegrünung Identity Provider ist; die Kennung ist dann die des Kontos in diesem Realm. Die anderen Kontoarten sind der Beta-Zugang und das Konto aus einer Einladung. Wird ein Konto gelöscht, endet seine Sitzung in Gut gesagt erst, wenn seine Kennung auch in Gut gesagt als gelöscht eingetragen ist (Löschkonzept).
 _Avoid_: Keycloak-Login, SSO-Login, Vereinslogin
 
+**Realm**:
+Der eigene Bereich von Gut gesagt im Identitätsdienst Keycloak, der Realm „gutgesagt“ (#429, ADR 0006). Darin liegen die Konten aus dem Netzbegrünung-Login und aus Einladungen, mit Mail-Adresse als Benutzername, Passwort, Mail-Bestätigung und Zustimmung zu den Nutzungsbedingungen; Gut gesagt selbst speichert davon nur die Kennung und den Anzeigenamen. In Texten für Nutzende, etwa der Datenschutzerklärung, heißt er Anmeldedienst.
+_Avoid_: Mandant, Tenant, Keycloak (für den Realm allein)
+
 **Einladung**:
 Ein Link, mit dem Personen ohne Netzbegrünung-Mitgliedschaft selbst ein Konto in Gut gesagt anlegen: Mail-Adresse eingeben, Passwort über die Mail von Keycloak festlegen. Ein Admin legt sie im Admin-Dashboard an, mit einer Notiz für Admins (wofür sie ist, ohne Namen; nicht zu verwechseln mit dem Hinweis an einem Einwurf), der Zahl erlaubter Einlösungen und dem letzten gültigen Tag, und kann sie ab- und wieder einschalten. Gruppenlink und persönlicher Link sind dieselbe Einladung mit anderen Zahlen. Gezählt wird nur, wie oft sie eingelöst wurde, auch für eine Adresse, die schon ein Konto hat; von wem, steht nirgends.
 _Avoid_: Einladungscode, Registrierungslink, Invite, Gutschein

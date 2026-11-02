@@ -52,7 +52,7 @@ besteht (`BFF/Services/KontoPruefung.cs`), und weist das Cookie sonst ab und lö
 
 - **Beta-Zugang:** Die `userId` notieren (Schritt 1 bis 3 brauchen sie als Kennung), dann
   den Eintrag aus `mvp/config/managed-users.json` entfernen (Details unter Schritt 4).
-- **Netzbegrünung-Login:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
+- **Netzbegrünung-Login und Konto aus einer Einladung:** Die Kennung als eigene Zeile in `geloeschte-konten.txt` im
   Konfigurationsverzeichnis des BFF eintragen (`GELOESCHTE_KONTEN_PATH`, Standard
   `/config/geloeschte-konten.txt`; im Dev-Stack `mvp/config/`, gitignoriert). Zeilen mit
   `#` und Leerzeilen zählen nicht. Das Cookie trägt keine Tokens, deshalb kann das BFF

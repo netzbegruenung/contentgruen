@@ -200,13 +200,59 @@ describe('DatenschutzComponent', () => {
     });
   });
 
+  describe('Eigener Realm und Einladungen (#490)', () => {
+    it('nennt den eigenen Realm als Anmeldedienst und keine Selbstregistrierung ohne Einladung', () => {
+      const text = abschnitt('Anmeldung und Zugang');
+
+      expect(text).toContain('Realm „gutgesagt“');
+      expect(text).toContain('Ohne Einladung kann niemand selbst ein Konto anlegen');
+      expect(text).not.toContain('eine Selbstregistrierung gibt es nicht');
+      // Bis zur Umstellung gilt noch die direkte Anmeldung bei der Netzbegrünung.
+      expect(text).toContain('Bis wir die Anmeldung umgestellt haben');
+    });
+
+    it('Einladung: Mail-Adresse an den Anmeldedienst, Mail über dessen Mailserver, keine Adresse an der Einladung', () => {
+      const text = abschnitt('Konto aus einer Einladung');
+
+      expect(text).toContain('gibst du eine E-Mail-Adresse ein');
+      expect(text).toContain('über seinen Mailserver');
+      expect(text).toContain('Die Plattform selbst speichert und protokolliert deine E-Mail-Adresse nicht');
+      expect(text).toContain('An der Einladung speichern wir nur, wie oft sie eingelöst wurde');
+      expect(text).toContain('Am Konto steht nicht, über welche Einladung es entstand');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe b DSGVO');
+    });
+
+    it('Einladung: IP-Adresse nur flüchtig für die Begrenzung der Aufrufe', () => {
+      const text = abschnitt('Konto aus einer Einladung');
+
+      expect(text).toContain('deine IP-Adresse');
+      expect(text).toContain('nur flüchtig im Arbeitsspeicher');
+      expect(text).toContain('spätestens 16 Minuten');
+      expect(text).toContain('Artikel 6 Absatz 1 Buchstabe f DSGVO');
+    });
+
+    it('Netzbegrünung: Konto vorab mit der Mail-Adresse aus dem Realm der Netzbegrünung, ohne Mail (#527)', () => {
+      const text = abschnitt('Anmeldung über die Netzbegrünung');
+
+      expect(text).toContain('legen wir das Konto im Anmeldedienst vorab an');
+      expect(text).toContain('mit deiner E-Mail-Adresse aus dem Identitätsdienst der Netzbegrünung');
+      expect(text).toContain('Eine E-Mail bekommst du dabei nicht');
+    });
+
+    it('Pflichtangaben: E-Mail-Adresse auch für ein Konto aus einer Einladung', () => {
+      expect(abschnitt('Was du angeben musst und was freiwillig ist')).toContain('bei einem Konto aus einer Einladung');
+    });
+  });
+
   describe('Suchvorgänge (#239, #289)', () => {
     it('nennt den Tag statt eines Zeitpunkts und die Frist von 90 Tagen mit Tageszähler', () => {
       const text = abschnitt('Suchvorgänge');
 
       expect(text).toContain('den Tag (keine Uhrzeit)');
       expect(text).toContain('nach 90 Tagen automatisch');
-      expect(text).toContain('je Tag nur, wie oft gesucht wurde und von wie vielen verschiedenen Pseudonymen');
+      expect(text).toContain(
+        'je Tag nur, wie oft gesucht wurde, wie oft davon ohne Treffer und von wie vielen verschiedenen Pseudonymen',
+      );
       expect(text).not.toContain('keine Löschfrist');
     });
   });
@@ -298,10 +344,10 @@ describe('DatenschutzComponent', () => {
   });
 
   describe('Kontolöschung (#278)', () => {
-    it('nennt die Liste gelöschter Konten nur für den Netzbegrünung-Login, von Hand gepflegt', () => {
+    it('nennt die Liste gelöschter Konten für Netzbegrünung-Login und Konto aus einer Einladung, von Hand gepflegt', () => {
       const text = abschnitt('Deine Rechte');
 
-      expect(text).toContain('Hast du dich über die Netzbegrünung angemeldet');
+      expect(text).toContain('Hast du dich über die Netzbegrünung oder mit einem Konto aus einer Einladung angemeldet');
       expect(text).toContain('Liste gelöschter Konten');
       expect(text).toContain('von Hand wieder aus');
       expect(text).toContain('in der Regel 14 Tage nach der Kontolöschung');
