@@ -28,7 +28,9 @@ Tagespseudonym (SearchTrackingService), und das hat Grenzen:
   wechselt, ist eine neue Person. Je Anschluss und Aussage zaehlt am Tag aber
   hoechstens ein Besucher als Person (#496): Den User-Agent bestimmt der Browser,
   ein Wechsel allein brachte sonst eine Aussage ueber die Schwelle. Mehrere
-  Besucher hinter demselben Anschluss (Buero, Familie) zaehlen deshalb als eine.
+  Besucher hinter demselben Anschluss (Buero, Familie) zaehlen deshalb als eine;
+  fehlt die Adresse ganz (X-Real-IP nicht gesetzt), teilen sich alle Besucher
+  einen Anschluss und erreichen die Schwelle allein nie.
 
 Welche Personen und Anschluesse eine Aussage heute schon gezaehlt haben, haelt
 PersonenDesTages nur im Speicher und nur fuer den laufenden UTC-Tag; um Mitternacht verwirft
@@ -134,18 +136,17 @@ class PersonenDesTages:
         pseudonym: str,
         statement_id: uuid.UUID,
         tag: date,
-        anschluss: Optional[str] = None,
+        anschluss_pseudonym: Optional[str] = None,
     ) -> bool:
         """
         True, wenn die Person die Aussage an diesem Tag noch nicht gezaehlt hat und,
-        bei Besuchern, auch niemand vom selben Anschluss (anschluss ist dessen
-        Tagespseudonym, #496). Ist die Merkliste voll, False: lieber eine Person zu
-        wenig als eine zu viel.
+        bei Besuchern, auch niemand vom selben Anschluss (anschluss_pseudonym, #496).
+        Ist die Merkliste voll, False: lieber eine Person zu wenig als eine zu viel.
         """
         if tag != self._tag:
             self._tag = tag
             self._gezaehlt = set()
-        kennungen = self._kennungen(pseudonym, statement_id, anschluss)
+        kennungen = self._kennungen(pseudonym, statement_id, anschluss_pseudonym)
         if (
             any(k in self._gezaehlt for k in kennungen)
             or len(self._gezaehlt) + len(kennungen) > self._obergrenze
@@ -158,22 +159,22 @@ class PersonenDesTages:
         self,
         pseudonym: str,
         statement_id: uuid.UUID,
-        anschluss: Optional[str] = None,
+        anschluss_pseudonym: Optional[str] = None,
     ) -> None:
         """Eine Person wieder streichen, deren Zaehlung nicht geschrieben wurde."""
         self._gezaehlt.difference_update(
-            self._kennungen(pseudonym, statement_id, anschluss)
+            self._kennungen(pseudonym, statement_id, anschluss_pseudonym)
         )
 
     @staticmethod
     def _kennungen(
-        pseudonym: str, statement_id: uuid.UUID, anschluss: Optional[str]
+        pseudonym: str, statement_id: uuid.UUID, anschluss_pseudonym: Optional[str]
     ) -> Tuple[bytes, ...]:
-        if anschluss is None:
+        if anschluss_pseudonym is None:
             return (_kennung(pseudonym, statement_id),)
         return (
             _kennung(pseudonym, statement_id),
-            _kennung(f"anschluss|{anschluss}", statement_id),
+            _kennung(anschluss_pseudonym, statement_id),
         )
 
     def verwerfen_vor(self, tag: date) -> None:
@@ -236,7 +237,7 @@ class SuchenOhneTrefferService:
         treffer: int,
         pseudonym: Optional[str],
         heute: Optional[date] = None,
-        anschluss: Optional[str] = None,
+        anschluss_pseudonym: Optional[str] = None,
     ) -> None:
         """
         Eine Suche zaehlen, wenn sie keinen Beitrag fand, und die suchende Person,
@@ -244,7 +245,7 @@ class SuchenOhneTrefferService:
 
         pseudonym ist das Tagespseudonym aus SearchTrackingService und heute der
         Tag, zu dem es gehoert. Ohne Pseudonym zaehlt die Suche, aber keine
-        Person. anschluss ist bei Besuchern das Tagespseudonym ihres Anschlusses
+        Person. anschluss_pseudonym ist bei Besuchern der Pruefwert ihres Anschlusses
         (utils/besucher_pseudonym.py): Je Anschluss und Aussage zaehlt am Tag
         hoechstens eine Person, sonst machte ein Wechsel des User-Agents allein aus
         einer Person zwei (#496). Angemeldete haben keinen.
@@ -256,7 +257,7 @@ class SuchenOhneTrefferService:
             return
         tag = heute or heute_utc()
         neue_person = pseudonym is not None and self._personen.neu(
-            pseudonym, statement_id, tag, anschluss
+            pseudonym, statement_id, tag, anschluss_pseudonym
         )
         try:
             self._repository.zaehlen(statement_id, wochenbeginn(tag), neue_person)
@@ -264,7 +265,7 @@ class SuchenOhneTrefferService:
             # Nicht geschrieben, also auch nicht gezaehlt: die naechste Suche der
             # Person soll sie nachtragen koennen.
             if neue_person:
-                self._personen.vergessen(pseudonym, statement_id, anschluss)
+                self._personen.vergessen(pseudonym, statement_id, anschluss_pseudonym)
             raise
 
     async def haeufigste(

@@ -332,7 +332,7 @@ Was von den Suchereignissen eines Tages nach ihrer Frist bleibt: das Datum, die 
 _Avoid_: Tagesstatistik, Aggregat
 
 **Tagespseudonym**:
-Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme.
+Ein Wert, der dasselbe Konto oder denselben Besucher an einem Tag wiedererkennbar macht, aber nicht über Tagesgrenzen hinweg: aus der Kennung und dem Datum berechnet, bei Besuchern am Server aus dem Besuchermerkmal und dem Datum mit dem Tagesschlüssel. Im Browser liegt dafür keine Kennung. Ohne den geheimen Schlüssel lässt er sich nicht auf die Kennung zurückführen. Er steht an Suchereignissen statt einer Kennung und an offenen anonymen Meldungen, bis sie abgeschlossen sind; bei Suchen ohne Treffer unterscheidet dasselbe Tagespseudonym die Personen, gespeichert wird es dort nicht. Wer an zwei Tagen sucht oder sich im Laufe des Tages anmeldet, hat zwei Tagespseudonyme; Kennzahlen, die Personen zählen, zählen Tagespseudonyme; bei Suchen ohne Treffer zählt je Anschluss höchstens ein Besucher.
 _Avoid_: Nutzer-ID, Actor-Hash, Hash, anonyme ID
 
 **Besuchermerkmal**:
@@ -340,7 +340,7 @@ Woraus der Server das Tagespseudonym eines Besuchers bildet: die IP-Adresse (bei
 _Avoid_: Fingerprint
 
 **Tagesschlüssel**:
-Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet. Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
+Der geheime Schlüssel, mit dem der Server aus dem Besuchermerkmal das Tagespseudonym bildet (und aus dem Anschluss allein den Prüfwert, mit dem Suchen ohne Treffer je Anschluss höchstens eine Person zählen). Er entsteht jeden Tag neu zufällig und liegt nur im Arbeitsspeicher; die erste Suche eines neuen Tages ersetzt ihn, ein Neustart verwirft ihn; deshalb lassen sich Tagespseudonyme von Besuchern verschiedener Tage auch mit Datenbank und Konfiguration nicht verknüpfen.
 _Avoid_: Salt, Secret
 
 **Anschluss**:

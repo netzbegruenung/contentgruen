@@ -155,8 +155,12 @@ class TestErfassen:
         repo = FakeRepository()
         service = _service(repo)
 
-        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
-        service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, False]
 
@@ -164,17 +168,25 @@ class TestErfassen:
         repo = FakeRepository()
         service = _service(repo)
 
-        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
-        service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss=ANSCHLUSS_2)
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_2
+        )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, True]
 
-    def test_erfassen_zaehlt_derselben_anschluss_je_aussage(self):
+    def test_erfassen_zaehlt_denselben_anschluss_je_aussage(self):
         repo = FakeRepository()
         service = _service(repo)
 
-        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
-        service.erfassen(ANDERE, 0, PERSON_B, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
+        service.erfassen(
+            ANDERE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, True]
 
@@ -182,8 +194,12 @@ class TestErfassen:
         repo = FakeRepository()
         service = _service(repo)
 
-        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
-        service.erfassen(AUSSAGE, 0, PERSON_B, heute=DONNERSTAG, anschluss=ANSCHLUSS_1)
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=DONNERSTAG, anschluss_pseudonym=ANSCHLUSS_1
+        )
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, True]
 
@@ -192,7 +208,9 @@ class TestErfassen:
         repo = FakeRepository()
         service = _service(repo)
 
-        service.erfassen(AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
+        service.erfassen(
+            AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
         service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH)
 
         assert [neu for *_, neu in repo.gezaehlt] == [True, True]
@@ -249,9 +267,11 @@ class TestErfassen:
 
         with pytest.raises(RuntimeError):
             service.erfassen(
-                AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss=ANSCHLUSS_1
+                AUSSAGE, 0, PERSON_A, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
             )
-        service.erfassen(AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss=ANSCHLUSS_1)
+        service.erfassen(
+            AUSSAGE, 0, PERSON_B, heute=MITTWOCH, anschluss_pseudonym=ANSCHLUSS_1
+        )
 
         assert repo.zaehlen.call_args.args == (AUSSAGE, MONTAG, True)
 

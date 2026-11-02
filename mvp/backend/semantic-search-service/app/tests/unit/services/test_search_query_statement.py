@@ -358,7 +358,8 @@ class TestSuchenOhneTreffer:
             )
 
         eins, zwei = (
-            a.kwargs["anschluss"] for a in suchen_ohne_treffer.erfassen.call_args_list
+            a.kwargs["anschluss_pseudonym"]
+            for a in suchen_ohne_treffer.erfassen.call_args_list
         )
         assert eins is not None
         assert eins == zwei
@@ -375,7 +376,9 @@ class TestSuchenOhneTreffer:
             headers={"X-User": "person-1", **BESUCHER},
         )
 
-        assert suchen_ohne_treffer.erfassen.call_args.kwargs["anschluss"] is None
+        assert (
+            suchen_ohne_treffer.erfassen.call_args.kwargs["anschluss_pseudonym"] is None
+        )
 
     def test_fehler_der_kennzahl_laesst_die_suche_nicht_scheitern(
         self, suchapp, suchen_ohne_treffer

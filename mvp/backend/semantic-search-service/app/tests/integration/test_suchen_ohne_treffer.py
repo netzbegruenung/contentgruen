@@ -271,7 +271,7 @@ class TestMindestanzahlZaehltPersonen:
                 0,
                 besucher_tagespseudonym(f"198.51.100.5|{user_agent}", MITTWOCH),
                 heute=MITTWOCH,
-                anschluss=anschluss,
+                anschluss_pseudonym=anschluss,
             )
 
         assert await _liste(service) == []

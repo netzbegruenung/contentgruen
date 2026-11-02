@@ -286,8 +286,15 @@ async def search_by_text(
         # Besucher erkennt der Server an Adresse und User-Agent, nicht mehr an einer
         # Sitzungskennung aus dem Browser (#446); Angemeldete an ihrer Kennung allein.
         user_id = validated_user if angemeldet(validated_user) else None
-        merkmal = None if user_id else besucher_merkmal(http_request)
         jetzt = datetime.now(timezone.utc)
+        merkmal, anschluss = (
+            (None, None)
+            if user_id
+            else (
+                besucher_merkmal(http_request),
+                anschluss_tagespseudonym(http_request, jetzt.date()),
+            )
+        )
 
         # Track search event for metrics (fire-and-forget, don't block response)
         try:
@@ -320,11 +327,7 @@ async def search_by_text(
                 heute=jetzt.date(),
                 # Besucher: je Anschluss hoechstens eine Person, auch wenn der
                 # User-Agent wechselt (#496).
-                anschluss=(
-                    None
-                    if user_id
-                    else anschluss_tagespseudonym(http_request, jetzt.date())
-                ),
+                anschluss_pseudonym=anschluss,
             )
         except Exception as e:
             # Nur der Fehlertyp: SQLAlchemy-Fehler tragen die Parameter, und
