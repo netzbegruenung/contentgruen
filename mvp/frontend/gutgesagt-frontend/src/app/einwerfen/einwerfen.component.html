@@ -73,8 +73,7 @@
             <mat-hint align="end">{{ hinweisFeld.value.length }}/{{ hinweisLimit }}</mat-hint>
         </mat-form-field>
 
-        <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
-               rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
+        <p appCc0Hinweis></p>
         <div class="einwurf-aktionen">
             <button mat-raised-button color="primary" type="submit"
                     class="einwerfen-knopf"

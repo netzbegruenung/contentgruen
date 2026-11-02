@@ -1,13 +1,9 @@
-import { CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ } from './consent-hinweis';
-
-function ganz(hinweis: { vorLink: string; link: string; nachLink: string }): string {
-  return `${hinweis.vorLink}${hinweis.link}${hinweis.nachLink}`;
-}
+import { CONSENT_HINWEIS, CONSENT_HINWEIS_SATZ, hinweisText } from './consent-hinweis';
 
 describe('CONSENT_HINWEIS', () => {
-  // Der Wortlaut ist eine Produktentscheidung (#431, #439): Aenderungen hier bewusst.
+  // Der Wortlaut ist eine Produktentscheidung (#431, #439, #415): Aenderungen hier bewusst.
   it('hat den beschlossenen Wortlaut, ohne "unwiderruflich"', () => {
-    expect(ganz(CONSENT_HINWEIS)).toBe(
+    expect(hinweisText(CONSENT_HINWEIS)).toBe(
       'Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und bestätigst die ' +
         'Nutzungsbedingungen – keine personenbezogenen Daten Dritter.',
     );
@@ -19,7 +15,7 @@ describe('CONSENT_HINWEIS', () => {
   });
 
   it('sagt beim Satz, dass er beim Tippen gespeichert wird, ebenfalls ohne "unwiderruflich"', () => {
-    expect(ganz(CONSENT_HINWEIS_SATZ)).toBe(
+    expect(hinweisText(CONSENT_HINWEIS_SATZ)).toBe(
       'Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 ' +
         'und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter.',
     );

@@ -14,7 +14,8 @@ Bestand von vor #431 hat keine Kennung (`NULL`/fehlt).
 3. Die Kennung in `CC0_WORTLAUTE` eintragen
    (`mvp/backend/semantic-search-service/app/domain/cc0_hinweis.py`); alte Kennungen bleiben
    dort, sonst sind gespeicherte Kennungen nicht mehr zuzuordnen.
-4. Wortlaut und Kennung im Frontend ändern (`shared/consent-hinweis.ts`) samt Spec.
+4. Wortlaut und Kennung im Frontend ändern (`shared/consent-hinweis.ts`) samt Spec; die Formulare
+   zeigen ihn über `shared/cc0-hinweis/` und brauchen keine Änderung.
 
 Der Dienst nimmt nur Kennungen aus `CC0_WORTLAUTE` an. Frontend und Semantic-Service deshalb
 zusammen ausrollen, den Dienst zuerst. `scripts/tests/test_cc0_wortlaute.py` prüft, dass
@@ -22,7 +23,10 @@ Dienst, Frontend und diese Liste dieselben Kennungen kennen.
 
 ## Wortlaute
 
-Der Link steht auf „Nutzungsbedingungen“ (`/nutzungsbedingungen`, neuer Tab).
+Links stehen auf „CC0“ (CC0-Erklärung von Creative Commons) und „Nutzungsbedingungen“
+(`/nutzungsbedingungen`), beide im neuen Tab. Den Link auf „CC0“ gibt es seit #415; der
+Wortlaut blieb gleich, deshalb keine neue Kennung. Gezeigt wird der Hinweis von
+`shared/cc0-hinweis/` in allen Formularen.
 
 | Kennung | Wo | Wortlaut | gültig |
 |---------|----|----------|--------|

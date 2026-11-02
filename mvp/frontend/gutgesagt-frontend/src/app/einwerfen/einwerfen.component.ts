@@ -18,10 +18,10 @@ import {
 } from '../share-target/share-target.guard';
 import { trackingParameterEntfernen, urlsInTextBereinigen } from '../shared/url-bereinigen';
 import { FANGKORB_BESCHREIBUNG, KETTEN_ICONS } from '../shared/fangkorb-texte';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 import { LoggingService } from '../services/logging.service';
 import { NavigationService } from '../services/navigation.service';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import { Subject, of, timer } from 'rxjs';
 import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
@@ -89,7 +89,7 @@ export function hinweisVorschlag(geteilt: GeteilteFelder): string | null {
 @Component({
   selector: 'app-einwerfen',
   standalone: true,
-  imports: [...SHARED_IMPORTS, CommonModule, RouterLink, TextFieldModule],
+  imports: [Cc0HinweisComponent, ...SHARED_IMPORTS, CommonModule, TextFieldModule],
   templateUrl: './einwerfen.component.html',
   styleUrls: ['./einwerfen.component.css'],
 })
@@ -98,7 +98,6 @@ export class EinwerfenComponent implements OnInit, OnDestroy {
 
   readonly hinweisLimit = HINWEIS_LIMIT;
   readonly fangkorbBeschreibung = FANGKORB_BESCHREIBUNG;
-  readonly consentHinweis = CONSENT_HINWEIS;
   readonly kettenIcons = KETTEN_ICONS;
 
   einwurfForm: FormGroup;

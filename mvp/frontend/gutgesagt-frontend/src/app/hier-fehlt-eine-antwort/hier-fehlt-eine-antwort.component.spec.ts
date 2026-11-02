@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { HierFehltEineAntwortComponent } from './hier-fehlt-eine-antwort.component';
 import { environment } from '../../environments/environment';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 
 const LISTE_URL = `${environment.baseUrl}/api/v1/statement/unbeantwortet`;
 const VORAB_URL = `${environment.baseUrl}/api/v1/statement/vorab`;
@@ -69,17 +69,10 @@ describe('HierFehltEineAntwortComponent', () => {
     return knoepfe.find((k) => k.textContent?.trim() === name)!;
   }
 
-  it('verlinkt die Nutzungsbedingungen ueber dem Knopf zum Anlegen einer Aussage', () => {
+  it('zeigt über dem Knopf zum Anlegen einer Aussage den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
     liefern([]);
 
-    const link: HTMLAnchorElement | null = element().querySelector('.vorab a[href="/nutzungsbedingungen"]');
-    expect(link).toBeTruthy();
-    expect(link!.target).toBe('_blank');
-    const hinweis = link!.closest('p')!;
-    expect(hinweis.classList).toContain('submit-hint');
-    expect(hinweis.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
-    );
+    const hinweis = erwarteCc0Hinweis(element().querySelector('.vorab')!);
     expect(hinweis.nextElementSibling!.classList).toContain('aussage-anlegen');
   });
 

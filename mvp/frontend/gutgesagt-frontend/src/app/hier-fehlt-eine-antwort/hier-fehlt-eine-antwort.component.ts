@@ -21,7 +21,7 @@ import {
   VON_HIER_FEHLT_EINE_ANTWORT,
   VON_PARAM,
 } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { Cc0HinweisComponent } from '../shared/cc0-hinweis/cc0-hinweis.component';
 
 /**
  * "Hier fehlt eine Antwort": Mitwirkende sehen die unbeantworteten Aussagen (ohne
@@ -62,6 +62,7 @@ export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean):
     MatInputModule,
     ThemenAuswahlComponent,
     ThemenFilterComponent,
+    Cc0HinweisComponent,
   ],
   templateUrl: './hier-fehlt-eine-antwort.component.html',
   styleUrls: ['./hier-fehlt-eine-antwort.component.css'],
@@ -69,7 +70,6 @@ export function vorabMeldung(antwort: AussageVorabResponse, mitThemen: boolean):
 export class HierFehltEineAntwortComponent implements OnInit, OnDestroy {
   readonly kommentarFormular = FORMULAR_PFAD.commentary;
   readonly maxZeichen = AUSSAGE_MAX_ZEICHEN;
-  readonly consentHinweis = CONSENT_HINWEIS;
 
   aussagen: UnbeantworteteAussage[] | null = null;
   ladefehler = false;

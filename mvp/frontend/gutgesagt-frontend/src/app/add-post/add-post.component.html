@@ -60,8 +60,7 @@
                     <mat-error *ngIf="postForm.get('text')?.hasError('maxlength')">Höchstens {{ textMax }} Zeichen.</mat-error>
                 </mat-form-field>
 
-                <p class="submit-hint">{{ consentHinweis.vorLink }}<a routerLink="/nutzungsbedingungen" target="_blank"
-                       rel="noopener">{{ consentHinweis.link }}</a>{{ consentHinweis.nachLink }}</p>
+                <p appCc0Hinweis></p>
 
                 <p *ngIf="fehler" class="speicher-fehler" role="alert">{{ fehler }}</p>
 

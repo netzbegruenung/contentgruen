@@ -25,7 +25,7 @@ import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub'
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { GegenlesenComponent } from '../beitragsformular/gegenlesen/gegenlesen.component';
-import { CONSENT_HINWEIS } from '../shared/consent-hinweis';
+import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
 import { environment } from '../../environments/environment';
 
 describe('AddCommentaryComponent', () => {
@@ -140,15 +140,8 @@ describe('AddCommentaryComponent', () => {
       expect(input.placeholder).toBe('Was ist der Punkt? Ein Satz.');
     });
 
-    it('verlinkt die Nutzungsbedingungen ueber dem Absenden-Knopf', () => {
-      const link: HTMLAnchorElement | null = seite().querySelector('a[href="/nutzungsbedingungen"]');
-
-      expect(link).toBeTruthy();
-      expect(link!.target).toBe('_blank');
-      expect(link!.closest('p')!.classList).toContain('submit-hint');
-      expect(link!.closest('p')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-        `${CONSENT_HINWEIS.vorLink}${CONSENT_HINWEIS.link}${CONSENT_HINWEIS.nachLink}`,
-      );
+    it('zeigt über dem Absende-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
+      erwarteCc0Hinweis(seite());
     });
 
     it('beschriftet den Knopf mit "Kommentar speichern" und zeigt kein Info-Icon an der Vorschau', () => {

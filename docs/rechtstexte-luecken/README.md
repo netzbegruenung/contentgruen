@@ -30,7 +30,7 @@ Gesamt: 26 Platzhalter in den beiden Hauptdateien. **Stand 04.09.2026: keiner da
 mehr offen** — alle drei Texte sind ausformuliert, die Datenschutzerklärung zuletzt. Die
 Einträge bleiben stehen, weil in ihrem Eintrag-Feld steht, wie der jeweilige Punkt gelöst
 wurde; sie sind jetzt Nachweis statt Arbeitsvorrat. Offen sind noch die Zustimmung beim
-Anmelden (Abschnitt 5, #429), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende.
+Anmelden (Abschnitt 5, #429; seit #415 offen, ob sie bleibt), die USt-IdNr. im Impressum (I11) und die Prüfliste am Ende.
 
 Legende Pflicht-Spalte:
 - PFLICHT = gesetzlich zwingend
@@ -76,8 +76,14 @@ Einträge und Text des Abschnitts: [`4-fehlende-vorgaenge/`](4-fehlende-vorgaeng
 **Entschieden (#415, 28.10.2026): beides.** Ein CC0-Hinweis über dem Absende-Knopf in jedem Formular
 (#431) und die Zustimmung zu den Nutzungsbedingungen beim ersten Anmelden (#429).
 
-**CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts` und verlinkt
-die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
+**Entschieden (#415, 02.11.2026):** Die Nutzungsbedingungen sind über den Hinweis über dem
+Absende-Knopf jedes Beitragsformulars einbezogen; keine Checkbox beim Anmelden, kein neues Feld
+je Konto. Umgesetzt mit #415: NB §2 sagt das (Stand 2. November 2026), der Hinweis verlinkt
+CC0 und die Nutzungsbedingungen. Ob die Keycloak-Pflichtaktion aus #429 daneben bleibt, ist
+offen (siehe unten).
+
+**CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
+von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
 unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter.“ Keine
 Checkbox; die bewusste Handlung ist das Absenden. Beim Satz, der beim Tippen gespeichert wird,
 ist die eigene Fassung so gewollt (Entscheidung 29.10.2026 in #439). Dass die Freigabe nicht
@@ -92,14 +98,16 @@ zurückgenommen werden kann, steht in den Nutzungsbedingungen, nicht im Hinweis 
 | `hier-fehlt-eine-antwort/` | Aussage vorab anlegen („Aussage anlegen“) | #431 |
 | `destillieren/` | Satz. Ohne Absende-Knopf, weil er beim Tippen gespeichert wird: eigener Wortlaut `CONSENT_HINWEIS_SATZ` („Dein Satz wird beim Tippen gespeichert. Damit stellst du …“) über den Knöpfen | #431 |
 
-Jedes dieser Formulare prüft den vollen Wortlaut samt Link im eigenen Komponententest (seit #431
-auch Kommentar, Hintergrundinfo, Bild und Post; vorher nur den Link).
+Jedes dieser Formulare prüft den vollen Wortlaut samt beiden Links im eigenen Komponententest
+(`erwarteCc0Hinweis`, seit #415; Wortlaut seit #431, vorher nur der Link).
 
 **Nutzungsbedingungen:** Die Behauptung, mit der Nutzung erkläre man sich einverstanden, ist
-seit der Neufassung (20c1b06b) nicht mehr im Text. Unsere Einschätzung, nicht geprüft: Die
-Einbeziehung soll der CC0-Hinweis im Formular tragen (§ 305 Abs. 2 BGB: ausdrücklicher Hinweis bei
-Vertragsschluss), die Rechteeinräumung unter CC0 das Absenden als bewusste Handlung. Ob das trägt,
-klärt #296; wer nie etwas absendet, sieht den Hinweis nicht, dafür ist #429 da.
+seit der Neufassung (20c1b06b) nicht mehr im Text. Seit #415 sagt §2 ausdrücklich, wie sie
+einbezogen sind: mit dem Absenden unter dem Hinweis, beim Satz mit dem Speichern beim Tippen.
+Unsere Einschätzung, nicht geprüft: Das trägt die Einbeziehung (§ 305 Abs. 2 BGB: ausdrücklicher
+Hinweis bei Vertragsschluss), die Rechteeinräumung unter CC0 das Absenden als bewusste Handlung.
+Ob das trägt, klärt #296. Wer nie etwas absendet, hat nicht zugestimmt; zum Lesen und Suchen
+braucht es kein Konto (NB §2).
 
 **Nachweis:** Jeder Wortlaut hat eine Kennung; sie wird mit jedem neuen Beitrag (Qdrant-Payload),
 Satz und Einwurf (PostgreSQL, `cc0_wortlaut`) gespeichert (Entscheidung 29.10.2026 in #439).
@@ -119,7 +127,10 @@ Ausnahme für Korrekturen mit (#296); live erst danach.
 
 **Offen:**
 - Juristische Prüfung beider Wortlaute und der geänderten §4/§10: #296.
-- Zustimmung beim ersten Anmelden mit persistentem Feld pro Person: #429.
+- Keycloak-Pflichtaktion „Terms and Conditions“ (#429): Nach der Entscheidung vom 02.11.2026
+  (keine Checkbox beim Anmelden) ist offen, ob sie bleibt. NB §10 holt die Zustimmung zu
+  geänderten Bedingungen heute über sie ein; fällt sie weg, braucht §10 einen anderen Weg.
+  Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
   Hinzufügen gespeichert (`reference-input.component.ts`, `POST /api/v1/references/add`), also vor
   dem Absenden, auf das sich der CC0-Hinweis bezieht. Nicht entschieden.
@@ -210,7 +221,8 @@ entfernt. Die beiden früher hier geführten inhaltlichen Blocker sind aufgelös
 1. **Juristische Prüfung** der Datenschutzerklärung — die Punkte stehen unten in der
    Prüfliste. Diese Liste ist keine Rechtsberatung und ersetzt sie nicht.
 2. **Die Consent-Frage aus Abschnitt 5** ist entschieden; der Hinweis in den Formularen
-   steht (#431), die Zustimmung beim Anmelden fehlt noch (#429). Sie berührt den
+   steht (#431) und bezieht die Nutzungsbedingungen ein (#415). Offen ist, ob die Zustimmung
+   beim Anmelden (#429) daneben bleibt. Sie berührt den
    Datenschutz an einer Stelle mit: § 25 TDDDG (Prüfliste, Punkt 3).
 3. **Eine USt-IdNr.-Rückfrage** im Impressum (I11).
 
