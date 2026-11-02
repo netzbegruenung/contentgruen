@@ -92,6 +92,35 @@ dotnet or Ruff), the last 80 lines of its output folded in
   bot in this repository: this repository only, `write:issue` and `read:repository`, event
   `pull_request` only.
 
+## Wiki page of the legal-text files
+
+The gap list and the Stände der Nutzungsbedingungen are stored as one file per entry (#500); a
+checked-in overview would again be the file every pull request appends to. So the workflow
+`.woodpecker/rechtstexte-wiki.yaml` renders both tables after every push to `main` and
+overwrites the wiki page „Rechtstexte Übersicht“ (#503). Readers without Python find the
+overview there; the head of the page names the commit and says to change the entry files,
+not the page.
+
+- `scripts/rechtstexte_wiki.py` (standard library only, Forgejo helpers shared with
+  `ci-bericht` in `scripts/forgejo_api.py`) writes only if its commit is still the head of
+  `main` and the tables changed: of two merges running in parallel only the newer one
+  writes, and most runs write nothing. Then it updates the page (`PATCH`) or, on 404,
+  creates it (`POST /wiki/new`). Errors log the HTTP status only. Without a token the step
+  is red: its only job is the page.
+- No path filter: whether the Ablage changed is the script's decision, not Woodpecker's
+  list of changed files, which is unverified for merge commits.
+- The title has no hyphen: Forgejo stores a title with "-" under a path ending in `.-`, and
+  reading the page by its title would then never find it again (`seitenpfad`).
+- After a red run, restart the last push pipeline on `main` in Woodpecker; there is no
+  manual or cron trigger, so the secret stays out of branch runs.
+- Own workflow, not a step in `ci`: a red run here leaves the status of `ci` alone.
+- `push` on `main` only, and the secret is released for `push` only: pull-request and manual
+  runs of a branch never see it. Whoever can push a branch to this repository could still
+  read it through a changed workflow; they have write access already. The scope
+  `write:repository` is wider than the wiki: the token could also push to unprotected
+  branches and create tags. Forgejo has no narrower scope for the wiki, so a leaked token
+  is revoked and replaced at once.
+
 ## Setup by a person
 
 The bot can write the pipeline, but cannot enable a repository, create secrets or change the
@@ -109,7 +138,13 @@ enabled, and the pull request that adds the pipeline already needs it):
    Request" only, no image filter. Woodpecker resolves secrets when it compiles a run: if
    the secret is missing or not released for pull requests, **every pull-request run fails
    with "secret not found"** before any step.
-3. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
+3. **Wiki secret, before merging the pull request that adds `rechtstexte-wiki.yaml`.** Create
+   a token `woodpecker-rechtstexte-wiki-gutgesagt` for the bot account: this repository only,
+   scope `write:repository` (the wiki needs it; what else it allows is above), no other
+   scope. Store it in the team's password manager and add it in Woodpecker as secret
+   `forgejo_wiki_token`, event "Push" only, no image filter. The wiki of the repository must
+   stay enabled.
+4. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
    required status check in the branch protection of `main`, and switch on "pull request
    must be up to date", so combinations of two pull requests run before the merge. A branch
    is brought up to date by merge ("Update branch"), not by rebase. Whoever wants a linear

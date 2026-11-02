@@ -67,7 +67,8 @@ aktiviert und für neue Konten als Standard gesetzt sein.
 ## Stände
 
 Ein Ordner je Stand in diesem Verzeichnis, benannt nach seinem Datum. Als Tabelle, der neueste
-zuerst: `python3 scripts/rechtstexte_uebersicht.py staende`. Hier keine Liste der Stände
+zuerst: im Wiki des Repositorys auf Forgejo, Seite „Rechtstexte Übersicht“ (#503), lokal
+`python3 scripts/rechtstexte_uebersicht.py staende`. Hier keine Liste der Stände
 pflegen: Sie wäre wieder die Stelle, an der jeder PR anhängt. Bis #500 stand das Verzeichnis
 in einer Datei, `docs/NUTZUNGSBEDINGUNGEN_STAENDE.md`; Verweise in `docs/archiv/` nennen noch
 diesen Namen.
