@@ -24,14 +24,17 @@ Dienst, Frontend und diese Liste dieselben Kennungen kennen.
 ## Wortlaute
 
 Links stehen auf „CC0“ (CC0-Erklärung von Creative Commons) und „Nutzungsbedingungen“
-(`/nutzungsbedingungen`), beide im neuen Tab. Den Link auf „CC0“ gibt es seit #415; der
-Wortlaut blieb gleich, deshalb keine neue Kennung. Gezeigt wird der Hinweis von
-`shared/cc0-hinweis/` in allen Formularen.
+(`/nutzungsbedingungen`), beide im neuen Tab; den Link auf „CC0“ gibt es seit #415. Mit #415
+heißt es außerdem „stimmst den Nutzungsbedingungen zu“ statt „bestätigst die
+Nutzungsbedingungen“, weil „bestätigen“ nur nach Kenntnisnahme klingt; daher die neuen
+Kennungen. Gezeigt wird der Hinweis von `shared/cc0-hinweis/` in allen Formularen.
 
 | Kennung | Wo | Wortlaut | gültig |
 |---------|----|----------|--------|
-| `2026-10-29-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | seit 29.10.2026 |
-| `2026-10-29-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | seit 29.10.2026 |
+| `2026-11-02-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit #415 |
+| `2026-11-02-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und stimmst den Nutzungsbedingungen zu – keine personenbezogenen Daten Dritter. | seit #415 |
+| `2026-10-29-formular` | Einwurf, Kommentar, Hintergrundinfo, Bild, Post, Aussage vorab anlegen | Mit dem Absenden stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis #415 |
+| `2026-10-29-satz` | Satz (Destillieren, wird beim Tippen gespeichert) | Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter CC0 und bestätigst die Nutzungsbedingungen – keine personenbezogenen Daten Dritter. | 29.10.2026 bis #415 |
 
 Vorher (55bb5cb8 bis #431) stand im Formular „… deine eigene Formulierung unwiderruflich unter
 CC0 …“, ohne Kennung; Beiträge, Sätze und Einwürfe aus dieser Zeit haben keine.

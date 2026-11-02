@@ -13,18 +13,18 @@ export const CC0_ERKLAERUNG_URL = 'https://creativecommons.org/publicdomain/zero
  * (#431). Wer den Wortlaut aendert, vergibt eine neue: docs/CC0_HINWEIS_WORTLAUTE.md.
  */
 export const CONSENT_HINWEIS = {
-  kennung: '2026-10-29-formular',
+  kennung: '2026-11-02-formular',
   vorCc0: 'Mit dem Absenden stellst du deine eigene Formulierung unter ',
   cc0: 'CC0',
-  nachCc0: ' und bestätigst die ',
+  nachCc0: ' und stimmst den ',
   nutzungsbedingungen: 'Nutzungsbedingungen',
-  nachNutzungsbedingungen: ' – keine personenbezogenen Daten Dritter.',
+  nachNutzungsbedingungen: ' zu – keine personenbezogenen Daten Dritter.',
 } as const;
 
 /** Beim Satz gibt es keinen Absenden-Knopf: Er wird beim Tippen gespeichert. */
 export const CONSENT_HINWEIS_SATZ = {
   ...CONSENT_HINWEIS,
-  kennung: '2026-10-29-satz',
+  kennung: '2026-11-02-satz',
   vorCc0: 'Dein Satz wird beim Tippen gespeichert. Damit stellst du deine eigene Formulierung unter ',
 } as const;
 
