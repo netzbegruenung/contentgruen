@@ -128,6 +128,20 @@ class TestQdrantUmschreiben:
 
         assert _gelesen(client, 1)["authors"] == ["Altbestand", {"name": NEU}]
 
+    def test_feld_mit_objekt_statt_kennung_bricht_nicht_ab(self, client):
+        """Ein Objekt oder eine Liste laesst sich nicht nachschlagen (unhashable)."""
+        client.set_payload(
+            COLLECTION,
+            {"last_modified_by": {"name": ALT}, "edit_history": [{"editor": [ALT]}]},
+            points=[1],
+        )
+
+        assert qdrant_umschreiben(client, COLLECTION, {ALT: NEU}, ausfuehren=True) == 1
+
+        payload = _gelesen(client, 1)
+        assert payload["original_author"] == NEU
+        assert payload["last_modified_by"] == {"name": ALT}
+
     def test_leere_zuordnung_aendert_nichts(self, client):
         assert qdrant_umschreiben(client, COLLECTION, {}, ausfuehren=True) == 0
 

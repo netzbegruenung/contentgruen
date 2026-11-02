@@ -13,11 +13,13 @@ Das Image des Containers muss diesen Stand schon enthalten; ein aelteres bricht 
 ModuleNotFoundError ab, bevor es etwas schreibt.
 
 Die Logik liegt im Dienst (services/wartung/kennungen_umstellen.py); das Skript
-laeuft im semantic-search-Container mit dessen Code und Umgebung:
-SEMANTIC_SEARCH_APP_DATABASE_URL, SEMANTIC_SEARCH_QDRANT_URL,
-SEMANTIC_SEARCH_QDRANT_COLLECTION, SEMANTIC_SEARCH_ADMIN_USERS (wird mit umgestellt)
-und SEMANTIC_SEARCH_KEYCLOAK_URL, _REALM, _ADMIN_CLIENT_ID, _ADMIN_CLIENT_SECRET
-(per docker exec -e, falls im Container noch nicht gesetzt).
+laeuft im semantic-search-Container mit dessen Code und Konfiguration (core.config):
+Datenbank, Qdrant, Collection, SEMANTIC_SEARCH_ADMIN_USERS (wird mit umgestellt) und
+SEMANTIC_SEARCH_KEYCLOAK_URL, _REALM, _ADMIN_CLIENT_ID, _ADMIN_CLIENT_SECRET (per
+docker exec -e, falls im Container noch nicht gesetzt).
+
+Die Ausgabe nennt zuerst nur Zahlen; nur die gehoeren in einen PR oder ein Issue.
+Was danach kommt, enthaelt Kennungen (Personendaten) und bleibt auf dem Host.
 
     # 1. Trockenlauf - zaehlt je Tabelle und Collection, aendert nichts
     docker exec -i gutgesagt-semantic-search python - < kennungen_umstellen.py
@@ -49,6 +51,7 @@ sys.path.insert(0, os.getcwd())
 from qdrant_client import QdrantClient  # noqa: E402
 from sqlalchemy import create_engine  # noqa: E402
 
+from core.config import Settings  # noqa: E402
 from core.logging import LoggingConfig, initialize_logging  # noqa: E402
 
 # keycloak_konten holt beim Import einen Logger; ausserhalb des Dienstes ist das
@@ -59,11 +62,12 @@ from infrastructure.keycloak_konten import KeycloakKonten  # noqa: E402
 from services.wartung.kennungen_umstellen import umstellen  # noqa: E402
 
 IDENTITY_PROVIDER = "netzbegruenung"
-KEYCLOAK = (
-    "SEMANTIC_SEARCH_KEYCLOAK_URL",
-    "SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID",
-    "SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET",
-)
+# Einstellung -> Umgebungsvariable, fuer die Meldung, was fehlt
+KEYCLOAK = {
+    "keycloak_url": "SEMANTIC_SEARCH_KEYCLOAK_URL",
+    "keycloak_admin_client_id": "SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID",
+    "keycloak_admin_client_secret": "SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET",
+}
 
 
 def _kennungen(werte: str):
@@ -91,62 +95,12 @@ def _konten_lesen(pfad: str):
     return konten
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    parser.add_argument(
-        "--ausfuehren", action="store_true", help="wirklich schreiben (sonst nur zaehlen)"
+def _zahlen_ausgeben(ergebnis, mit_anzulegenden: bool) -> None:
+    print(
+        "Trockenlauf: nichts geaendert"
+        if not ergebnis.ausgefuehrt
+        else "Lauf: geschrieben"
     )
-    parser.add_argument("--liste", type=_liste, action="append", default=[])
-    parser.add_argument("--konten-anlegen", metavar="DATEI")
-    parser.add_argument("--loeschliste", type=_kennungen, default=[])
-    parser.add_argument("--ohne-konto-zeigen", action="store_true")
-    args = parser.parse_args()
-
-    fehlt = [name for name in KEYCLOAK if not os.environ.get(name)]
-    if fehlt:
-        print(f"Es fehlt: {', '.join(fehlt)}", file=sys.stderr)
-        return 2
-
-    listen = {}
-    if os.environ.get("SEMANTIC_SEARCH_ADMIN_USERS"):
-        listen["SEMANTIC_SEARCH_ADMIN_USERS"] = _kennungen(
-            os.environ["SEMANTIC_SEARCH_ADMIN_USERS"]
-        )
-    listen.update(args.liste)
-    anzulegen = _konten_lesen(args.konten_anlegen) if args.konten_anlegen else None
-
-    realm = KeycloakKonten(
-        basis_url=os.environ["SEMANTIC_SEARCH_KEYCLOAK_URL"],
-        realm=os.environ.get("SEMANTIC_SEARCH_KEYCLOAK_REALM") or "gutgesagt",
-        client_id=os.environ["SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_ID"],
-        client_secret=os.environ["SEMANTIC_SEARCH_KEYCLOAK_ADMIN_CLIENT_SECRET"],
-    )
-    qdrant = QdrantClient(
-        url=os.environ.get("SEMANTIC_SEARCH_QDRANT_URL", "http://localhost:6333"),
-        timeout=60,
-        check_compatibility=False,
-    )
-    collection = os.environ.get(
-        "SEMANTIC_SEARCH_QDRANT_COLLECTION", "content_collection"
-    )
-    engine = create_engine(os.environ["SEMANTIC_SEARCH_APP_DATABASE_URL"])
-    try:
-        with engine.connect() as verbindung:
-            ergebnis = umstellen(
-                verbindung,
-                qdrant,
-                collection,
-                realm,
-                IDENTITY_PROVIDER,
-                listen=listen,
-                loeschliste=args.loeschliste,
-                anzulegen=anzulegen,
-                ausfuehren=args.ausfuehren,
-            )
-    finally:
-        engine.dispose()
-
-    print("Lauf: geschrieben" if ergebnis.ausgefuehrt else "Trockenlauf: nichts geaendert")
     print(f"Kennungen mit Konto im Realm: {len(ergebnis.zuordnung)}")
     print("PostgreSQL (Zeilen je Tabelle und Spalte):")
     for spalte, anzahl in ergebnis.postgres.geaendert.items():
@@ -159,25 +113,105 @@ def main() -> int:
     for name, anzahl in ergebnis.qdrant.items():
         print(f"  {name}: {anzahl}")
     print(f"Ohne Konto im Realm, bleiben: {len(ergebnis.ohne_konto)}")
-    if args.ohne_konto_zeigen:
-        for kennung in ergebnis.ohne_konto:
-            print(f"  {kennung}")
-    if anzulegen is not None:
+    if mit_anzulegenden:
         print(
             f"Konten anzulegen beim Lauf: {len(ergebnis.anzulegen)}"
             " (ihre Zeilen und Beitraege zaehlt erst der Lauf)"
         )
         print(f"Adresse im Realm schon vergeben: {len(ergebnis.vergeben)}")
-        for kennung in ergebnis.vergeben:
-            print(f"  {kennung}")
+
+
+def _kennungen_ausgeben(ergebnis, args) -> None:
+    abschnitte = []
+    if args.ohne_konto_zeigen and ergebnis.ohne_konto:
+        abschnitte.append(("Ohne Konto im Realm:", ergebnis.ohne_konto))
+    if ergebnis.vergeben:
+        abschnitte.append(("Adresse im Realm schon vergeben:", ergebnis.vergeben))
+    # Im Trockenlauf fehlen die erst anzulegenden Konten noch: nur eine Vorschau.
+    setzen = (
+        "(von Hand setzen)"
+        if ergebnis.ausgefuehrt
+        else "(Vorschau, nicht setzen: erst die Werte aus dem Lauf)"
+    )
     if ergebnis.listen:
-        print("Listen, neue Werte (von Hand setzen):")
-        for name, werte in ergebnis.listen.items():
-            print(f"  {name}={','.join(werte)}")
+        abschnitte.append(
+            (
+                f"Listen, neue Werte {setzen}:",
+                [f"{n}={','.join(w)}" for n, w in ergebnis.listen.items()],
+            )
+        )
     if args.loeschliste:
-        print("geloeschte-konten.txt, neuer Inhalt (eine Kennung je Zeile):")
-        for kennung in ergebnis.loeschliste:
-            print(f"  {kennung}")
+        abschnitte.append(
+            (
+                f"geloeschte-konten.txt, neuer Inhalt {setzen}, eine Kennung je Zeile:",
+                ergebnis.loeschliste,
+            )
+        )
+    if not abschnitte:
+        return
+    print()
+    print("--- Ab hier Kennungen (Personendaten): nicht in PR, Issue oder Chat ---")
+    for titel, zeilen in abschnitte:
+        print(titel)
+        for zeile in zeilen:
+            print(f"  {zeile}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument(
+        "--ausfuehren",
+        action="store_true",
+        help="wirklich schreiben (sonst nur zaehlen)",
+    )
+    parser.add_argument("--liste", type=_liste, action="append", default=[])
+    parser.add_argument("--konten-anlegen", metavar="DATEI")
+    parser.add_argument("--loeschliste", type=_kennungen, default=[])
+    parser.add_argument("--ohne-konto-zeigen", action="store_true")
+    args = parser.parse_args()
+
+    # Neu gelesen, nicht core.config.settings: dieselben Standardwerte wie der Dienst,
+    # mit der Umgebung dieses Aufrufs (docker exec -e).
+    konfiguration = Settings()
+    fehlt = [env for name, env in KEYCLOAK.items() if not getattr(konfiguration, name)]
+    if fehlt:
+        print(f"Es fehlt: {', '.join(fehlt)}", file=sys.stderr)
+        return 2
+
+    listen = {}
+    if konfiguration.admin_users:
+        listen["SEMANTIC_SEARCH_ADMIN_USERS"] = _kennungen(konfiguration.admin_users)
+    listen.update(args.liste)
+    anzulegen = _konten_lesen(args.konten_anlegen) if args.konten_anlegen else None
+
+    realm = KeycloakKonten(
+        basis_url=konfiguration.keycloak_url,
+        realm=konfiguration.keycloak_realm,
+        client_id=konfiguration.keycloak_admin_client_id,
+        client_secret=konfiguration.keycloak_admin_client_secret,
+    )
+    qdrant = QdrantClient(
+        url=konfiguration.qdrant_url, timeout=60, check_compatibility=False
+    )
+    engine = create_engine(konfiguration.app_database_url)
+    try:
+        with engine.connect() as verbindung:
+            ergebnis = umstellen(
+                verbindung,
+                qdrant,
+                konfiguration.qdrant_collection,
+                realm,
+                IDENTITY_PROVIDER,
+                listen=listen,
+                loeschliste=args.loeschliste,
+                anzulegen=anzulegen,
+                ausfuehren=args.ausfuehren,
+            )
+    finally:
+        engine.dispose()
+
+    _zahlen_ausgeben(ergebnis, anzulegen is not None)
+    _kennungen_ausgeben(ergebnis, args)
     return 0
 
 

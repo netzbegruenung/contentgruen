@@ -141,6 +141,23 @@ class TestPostgresUmschreiben:
             saetze = s.query(RawInputDraft).filter_by(raw_input_id=einwuerfe.fremd)
             assert {d.user_id for d in saetze} == {PERSON, NEU, ANDERE}
 
+    def test_anzeigename_der_alten_bleibt_solange_ihr_satz_stehen_bleibt(
+        self, datenbank, einwuerfe
+    ):
+        """Ohne die Zeile in users zeigte der Fangkorb am stehen gebliebenen Satz keinen Namen."""
+        with datenbank.get_session() as s:
+            _satz(s, einwuerfe.fremd, NEU, "Schon im Realm geschrieben")
+            s.add(User(user_id=NEU, anzeigename="Anna im Realm"))
+
+        bericht = _umschreiben(datenbank)
+        zweiter = _umschreiben(datenbank)
+
+        with datenbank.get_session() as s:
+            assert s.get(User, PERSON).anzeigename == "Anna B."
+            assert s.get(User, NEU).anzeigename == "Anna im Realm"
+        assert bericht.geaendert["users.user_id"] == 0
+        assert zweiter.geaendert["users.user_id"] == 0
+
 
 class Realm:
     """Attrappe des Realms: verknuepfte Konten, legt auf Wunsch eins an."""
@@ -251,6 +268,20 @@ class TestUmstellen:
         # Fuer Geloeschte kein Konto, und sie stehen nicht unter "ohne Konto".
         assert realm.angelegt_fuer == []
         assert "geloescht-ohne-konto" not in ergebnis.ohne_konto
+
+    def test_zweiter_lauf_ergaenzt_die_loeschliste_nicht_doppelt(
+        self, datenbank, spuren, qdrant
+    ):
+        realm = Realm({PERSON: NEU})
+        erster = _umstellen(
+            datenbank, qdrant, realm, loeschliste=[PERSON], ausfuehren=True
+        )
+
+        zweiter = _umstellen(
+            datenbank, qdrant, realm, loeschliste=erster.loeschliste, ausfuehren=True
+        )
+
+        assert zweiter.loeschliste == [PERSON, NEU]
 
 
 class TestKennungenInPostgres:

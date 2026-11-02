@@ -118,6 +118,11 @@ Was ohne Konto bleibt, behält seine Kennung: Beta-Zugänge (#488), Konten aus E
 (`system:suchanfrage`, „Gut gesagt Team“), und Mitglieder, für die keine Adresse
 angegeben ist.
 
+Die Ausgabe nennt zuerst nur Zahlen; nur die gehören in einen PR oder ein Issue. Nach der
+Zeile „Ab hier Kennungen“ folgen Kennungen (Personendaten, bleiben auf dem Host) und die
+neuen Werte der Listen; im Trockenlauf sind die nur eine Vorschau, weil die erst
+anzulegenden Konten fehlen.
+
 Das Image des Semantic-Service muss diesen Stand schon enthalten; ein älteres bricht mit
 `ModuleNotFoundError` ab, bevor es etwas schreibt. Auf dem Host, in einer ruhigen Zeit
 (eine Änderung an einem Beitrag während des Laufs kann verloren gehen), in dieser
@@ -156,8 +161,8 @@ docker exec -i "${KC[@]}" gutgesagt-semantic-search python - "${LISTEN[@]}" \
 docker exec gutgesagt-semantic-search rm /tmp/konten.csv; rm konten.csv
 ```
 
-5. Die ausgegebenen neuen Werte setzen: `SEMANTIC_SEARCH_ADMIN_USERS`, `ADMIN_USER_IDS`
-   und `geloeschte-konten.txt`.
+5. Die neuen Werte aus dem Lauf (Schritt 4, nicht aus einem Trockenlauf) setzen:
+   `SEMANTIC_SEARCH_ADMIN_USERS`, `ADMIN_USER_IDS` und `geloeschte-konten.txt`.
 6. Gleich danach Schritt 3 der Reihenfolge oben (BFF auf den Realm). Bis dahin melden sich
    Mitglieder noch mit der alten Kennung an, und was sie dann anlegen, trägt sie; ein
    Lauf nach dem Umstellen holt das nach, die Zuordnung bleibt im Realm.

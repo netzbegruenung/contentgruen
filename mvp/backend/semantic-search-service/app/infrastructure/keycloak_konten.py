@@ -119,7 +119,7 @@ class KeycloakKonten:
 
     # --- Kennungen umstellen (#487) ---------------------------------------
     # Viele Anfragen hintereinander: Laeuft das Token ab (Standard 5 Minuten), holt
-    # _anfrage ein neues und wiederholt die Anfrage einmal.
+    # _Sitzung.anfrage ein neues und wiederholt die Anfrage einmal.
 
     def kennungen_zuordnen(
         self, identity_provider: str, kennungen: Iterable[str]
@@ -130,11 +130,9 @@ class KeycloakKonten:
         """
         zuordnung: Dict[str, str] = {}
         with self._client() as http:
-            token = [self._token(http)]
+            sitzung = _Sitzung(self, http)
             for kennung in kennungen:
-                konto = self._verknuepftes_konto(
-                    http, token, identity_provider, kennung
-                )
+                konto = self._verknuepftes_konto(sitzung, identity_provider, kennung)
                 if konto:
                     zuordnung[kennung] = konto
         return zuordnung
@@ -150,13 +148,13 @@ class KeycloakKonten:
         """
         ergebnis = VerknuepfteKonten()
         with self._client() as http:
-            token = [self._token(http)]
+            sitzung = _Sitzung(self, http)
             for kennung, email in konten.items():
-                if self._verknuepftes_konto(http, token, identity_provider, kennung):
+                # Nach einem abgebrochenen Lauf gibt es das Konto vielleicht schon; ein
+                # POST bekaeme dann 409 und stuende faelschlich unter "vergeben".
+                if self._verknuepftes_konto(sitzung, identity_provider, kennung):
                     continue
-                antwort = self._anfrage(
-                    http,
-                    token,
+                antwort = sitzung.anfrage(
                     "POST",
                     self._admin,
                     json={
@@ -182,24 +180,10 @@ class KeycloakKonten:
                 ergebnis.angelegt[kennung] = self._konto_id(antwort)
         return ergebnis
 
-    def _anfrage(
-        self, http: httpx.Client, token: list, methode: str, url: str, **kwargs
-    ) -> httpx.Response:
-        """token ist eine Liste mit einem Eintrag, damit ein neues Token bleibt."""
-        for versuch in range(2):
-            kopf = {"Authorization": f"Bearer {token[0]}"}
-            antwort = http.request(methode, url, headers=kopf, **kwargs)
-            if antwort.status_code != 401 or versuch:
-                return antwort
-            token[0] = self._token(http)
-        return antwort
-
     def _verknuepftes_konto(
-        self, http: httpx.Client, token: list, identity_provider: str, kennung: str
+        self, sitzung: "_Sitzung", identity_provider: str, kennung: str
     ) -> Optional[str]:
-        antwort = self._anfrage(
-            http,
-            token,
+        antwort = sitzung.anfrage(
             "GET",
             self._admin,
             params={
@@ -213,3 +197,21 @@ class KeycloakKonten:
         # Keycloak vergleicht beides exakt; eine Kennung beim Identity Provider ist
         # hoechstens mit einem Konto verknuepft.
         return treffer[0]["id"] if treffer else None
+
+
+class _Sitzung:
+    """Ein HTTP-Client mit dem aktuellen Token; bei 401 einmal ein neues holen."""
+
+    def __init__(self, konten: KeycloakKonten, http: httpx.Client) -> None:
+        self._konten = konten
+        self._http = http
+        self._token = konten._token(http)
+
+    def anfrage(self, methode: str, url: str, **kwargs) -> httpx.Response:
+        for versuch in range(2):
+            kopf = {"Authorization": f"Bearer {self._token}"}
+            antwort = self._http.request(methode, url, headers=kopf, **kwargs)
+            if antwort.status_code != 401 or versuch:
+                return antwort
+            self._token = self._konten._token(self._http)
+        return antwort

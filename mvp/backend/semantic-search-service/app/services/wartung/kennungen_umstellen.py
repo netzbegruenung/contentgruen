@@ -111,12 +111,22 @@ class PostgresBericht:
 
 # Wo eine Kennung Teil eines eindeutigen Schluessels ist, gewinnt die Zeile der neuen
 # Kennung, falls es sie schon gibt; die der alten geht vorher. (Tabelle, Spalte,
-# weitere Spalten des Schlüssels)
+# weitere Spalten des Schluessels)
 _ZEILE_DER_NEUEN_GEWINNT = {
     ("users", "user_id"): (),
     ("gesehene_nutzung", "user_id"): (),
     ("votes", "user_id"): ("content_id",),
 }
+
+
+# Ein Satz, der mit alter Kennung stehen bleibt: Die neue hat am selben Einwurf schon
+# einen. Solange es ihn gibt, bleibt auch die Zeile der alten Kennung in users, sonst
+# verloere er seinen Anzeigenamen.
+_SATZ_BLEIBT = (
+    "EXISTS (SELECT 1 FROM raw_input_drafts AS d"
+    " JOIN raw_input_drafts AS dn ON dn.raw_input_id = d.raw_input_id"
+    " WHERE d.user_id = z.alt AND dn.user_id = z.neu)"
+)
 
 
 def _gleicher_schluessel(spalten: Iterable[str]) -> str:
@@ -170,15 +180,22 @@ def postgres_umschreiben(
 def _spalte_umschreiben(verbindung: Connection, tabelle: str, spalte: str) -> int:
     anzahl = 0
     schluessel = _ZEILE_DER_NEUEN_GEWINNT.get((tabelle, spalte))
+    bedingung = ""
     if schluessel is not None:
+        neue_hat_zeile = (
+            f"EXISTS (SELECT 1 FROM {tabelle} AS n"
+            f" WHERE n.{spalte} = z.neu{_gleicher_schluessel(schluessel)})"
+        )
+        bleibt = f" AND NOT {_SATZ_BLEIBT}" if tabelle == "users" else ""
         anzahl += verbindung.execute(
             text(
                 f"DELETE FROM {tabelle} AS t USING kennungen_zuordnung AS z"
-                f" WHERE t.{spalte} = z.alt AND EXISTS (SELECT 1 FROM {tabelle} AS n"
-                f" WHERE n.{spalte} = z.neu{_gleicher_schluessel(schluessel)})"
+                f" WHERE t.{spalte} = z.alt AND {neue_hat_zeile}{bleibt}"
             )
         ).rowcount
-    bedingung = ""
+        if tabelle == "users":
+            # Was hier noch steht, obwohl die neue eine Zeile hat, bleibt (Satz).
+            bedingung = f" AND NOT {neue_hat_zeile}"
     if (tabelle, spalte) == ("raw_input_drafts", "user_id"):
         # Satz der neuen Kennung am selben Einwurf: der alte bleibt stehen (Bericht).
         bedingung = (
@@ -218,9 +235,15 @@ def _felder(payload: Dict[str, Any]) -> Iterable[Any]:
                 yield eintrag.get(schluessel)
 
 
+def _zugeordnet(wert: Any, zuordnung: Zuordnung) -> bool:
+    # Nur Zeichenketten: Ein Objekt oder eine Liste im Feld liesse sich nicht
+    # nachschlagen (unhashable) und ist ohnehin keine Kennung.
+    return isinstance(wert, str) and wert in zuordnung
+
+
 def _traegt(eintrag: Any, schluessel: str, zuordnung: Zuordnung) -> bool:
     # Eintraege, die kein Objekt sind, ueberspringt auch _felder.
-    return isinstance(eintrag, dict) and eintrag.get(schluessel) in zuordnung
+    return isinstance(eintrag, dict) and _zugeordnet(eintrag.get(schluessel), zuordnung)
 
 
 def felder_ersetzt(payload: Dict[str, Any], zuordnung: Zuordnung) -> Dict[str, Any]:
@@ -228,7 +251,7 @@ def felder_ersetzt(payload: Dict[str, Any], zuordnung: Zuordnung) -> Dict[str, A
     neu: Dict[str, Any] = {
         feld: zuordnung[payload[feld]]
         for feld in KENNUNGSFELDER
-        if payload.get(feld) in zuordnung
+        if _zugeordnet(payload.get(feld), zuordnung)
     }
     for feld, schluessel in KENNUNGSLISTEN:
         eintraege = payload.get(feld) or []
@@ -392,8 +415,15 @@ def umstellen(
             collection: qdrant_umschreiben(qdrant, collection, zuordnung, ausfuehren)
         },
         listen={name: liste_umschreiben(w, zuordnung) for name, w in listen.items()},
-        loeschliste=list(loeschliste or [])
-        + [zuordnung[k] for k in geloescht if k in zuordnung],
+        # Ohne Doppelte: Ein zweiter Lauf bekommt die schon ergaenzte Liste.
+        loeschliste=list(
+            dict.fromkeys(
+                [
+                    *(loeschliste or []),
+                    *(zuordnung[k] for k in geloescht if k in zuordnung),
+                ]
+            )
+        ),
         ohne_konto=sorted(alte - set(zuordnung) - set(geloescht)),
         anzulegen=fehlend,
         vergeben=vergeben,

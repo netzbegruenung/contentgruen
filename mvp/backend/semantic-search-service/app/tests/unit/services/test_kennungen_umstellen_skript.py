@@ -74,6 +74,28 @@ class TestSkript:
         # Kennungen nur auf Wunsch einzeln
         assert "  user-001\n" not in ausgabe
 
+    def test_trockenlauf_zeigt_listen_nur_als_vorschau_nach_den_zahlen(
+        self, skript, capsys
+    ):
+        skript("--loeschliste", "alt-geloescht")
+
+        ausgabe = capsys.readouterr().out
+        zahlen, _, kennungen = ausgabe.partition("--- Ab hier Kennungen")
+        assert "Ohne Konto im Realm, bleiben: 1" in zahlen
+        assert "alt-geloescht" not in zahlen and "neu" not in zahlen
+        assert "Vorschau, nicht setzen" in kennungen
+        assert "von Hand setzen" not in ausgabe
+
+    def test_realm_und_collection_aus_der_konfiguration_des_dienstes(
+        self, skript, monkeypatch
+    ):
+        monkeypatch.delenv("SEMANTIC_SEARCH_QDRANT_COLLECTION")
+
+        skript()
+
+        assert skript.aufrufe[0]["collection"] == "content_collection"
+        assert skript.aufrufe[0]["realm"]._realm == "gutgesagt"
+
     def test_mit_ausfuehren_schreiben(self, skript, capsys):
         skript("--ausfuehren")
 
