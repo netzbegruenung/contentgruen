@@ -108,6 +108,7 @@ async def real_embeddings_manager(integration_settings, einbettungsmodell):
     )
     await manager.start()
     try:
+        assert manager.model is einbettungsmodell, "Modell nicht geteilt"
         yield manager
     finally:
         try:
