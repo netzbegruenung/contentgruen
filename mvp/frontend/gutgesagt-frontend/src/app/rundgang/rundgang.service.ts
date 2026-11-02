@@ -6,7 +6,7 @@ import { filter, take } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { angebotOeffnen } from './angebot-dialog.component';
 import { Angebot, MITMACHEN_ANGEBOT, RUNDGAENGE, Rundgang, RundgangId, WILLKOMMEN } from './rundgang-daten';
-import { MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL, gesehen, merken } from './rundgang-merker';
+import { gesehen, merken } from './rundgang-merker';
 
 export interface RundgangStand {
   rundgang: Rundgang;
@@ -18,6 +18,9 @@ export interface RundgangStand {
  * Treffer. Nicht auf Einladung, Anmeldung oder Rechtstexten, wo es den Weg verstellte.
  */
 const WILLKOMMEN_SEITEN = ['/search', '/result'];
+
+/** Hier legt sich auch das Mitmachen-Angebot nicht darüber; es wartet auf die nächste Seite. */
+const OHNE_ANGEBOT = ['/login', '/einladung', '/datenschutz', '/impressum', '/nutzungsbedingungen'];
 
 /**
  * Steuert Willkommen, Mitmachen-Angebot und den laufenden Rundgang (#389). Die
@@ -38,6 +41,8 @@ export class RundgangService {
   /** Zaehlt Schrittwechsel; ein ueberholter Wechsel setzt nach dem Laden nichts mehr. */
   private wechsel = 0;
   private mitmachenAusstehend = false;
+  /** Erst nach der ersten Seite steht fest, ob dort das Willkommen erscheint. */
+  private ersteSeiteDa = false;
 
   /**
    * Einmal beim Start der App: Willkommen beim ersten Besuch, Mitmachen nach der
@@ -52,9 +57,23 @@ export class RundgangService {
         takeUntilDestroyed(destroyRef),
       )
       .subscribe(() => {
-        if (!gesehen(WILLKOMMEN_SCHLUESSEL)) {
-          this.anbieten(WILLKOMMEN, WILLKOMMEN_SCHLUESSEL);
+        if (!gesehen(WILLKOMMEN.schluessel)) {
+          this.anbieten(WILLKOMMEN);
         }
+      });
+
+    // Mitmachen wartet die erste Seite ab: Ist sie Startseite oder Treffer, kommt dort
+    // zuerst das Willkommen; sonst (etwa nach einer Einladung) gleich das Angebot.
+    // Ein zurückgestelltes Angebot kommt mit der nächsten Seite.
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(destroyRef),
+      )
+      .subscribe(() => {
+        this.ersteSeiteDa = true;
+        // Das Willkommen-Abo oben hat schon reagiert, falls es diese Seite war
+        if (!this.angebotOffen) this.naechstesAngebot();
       });
 
     this.auth.userInfo$.pipe(takeUntilDestroyed(destroyRef)).subscribe((info) => {
@@ -111,13 +130,14 @@ export class RundgangService {
   }
 
   private mitmachenPruefen(): void {
-    if (gesehen(MITMACHEN_SCHLUESSEL)) return;
+    if (gesehen(MITMACHEN_ANGEBOT.schluessel)) return;
     // Nicht über ein anderes Angebot oder einen laufenden Rundgang legen; danach.
-    if (this.angebotOffen || this.stand() || !gesehen(WILLKOMMEN_SCHLUESSEL)) {
+    const ruhigeSeite = OHNE_ANGEBOT.some((s) => this.router.url.startsWith(s));
+    if (this.angebotOffen || this.stand() || !this.ersteSeiteDa || ruhigeSeite) {
       this.mitmachenAusstehend = true;
       return;
     }
-    this.anbieten(MITMACHEN_ANGEBOT, MITMACHEN_SCHLUESSEL);
+    this.anbieten(MITMACHEN_ANGEBOT);
   }
 
   private naechstesAngebot(): void {
@@ -127,14 +147,14 @@ export class RundgangService {
     }
   }
 
-  private anbieten(angebot: Angebot, schluessel: string): void {
+  private anbieten(angebot: Angebot): void {
     this.angebotOffen = true;
     angebotOeffnen(this.dialog, angebot)
       .afterClosed()
       .subscribe((wahl) => {
         this.angebotOffen = false;
         // Auch Escape und „Später“ zählen als gesehen: Das Angebot kommt nicht wieder.
-        merken(schluessel);
+        merken(angebot.schluessel);
         if (wahl === 'starten') {
           void this.starten(angebot.rundgang);
         } else {

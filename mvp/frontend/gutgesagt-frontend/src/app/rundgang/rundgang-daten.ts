@@ -5,6 +5,8 @@
  * Gestaltung und Texte nach Variante B des Klickdummys (Entscheidung 02.11.2026).
  */
 
+import { MITMACHEN_SCHLUESSEL, WILLKOMMEN_SCHLUESSEL } from './rundgang-merker';
+
 /** Ein Wert, der sich zwischen breitem Kopf (Desktop) und mobilem Kopf unterscheidet. */
 export type JeGeraet<T> = T | { desktop: T; mobil: T };
 
@@ -40,6 +42,8 @@ export interface Rundgang {
 /** Das Fenster, das einen Rundgang anbietet: Willkommen beim ersten Besuch oder Mitmachen nach der Anmeldung. */
 export interface Angebot {
   rundgang: RundgangId;
+  /** Unter diesem Schlüssel merkt sich der Browser, dass das Angebot gezeigt wurde. */
+  schluessel: string;
   titel: string;
   satz: string;
 }
@@ -49,14 +53,16 @@ export const BEISPIEL_AUSSAGE = 'Windräder töten die Vögel!';
 
 export const WILLKOMMEN: Angebot = {
   rundgang: 'antwort-finden',
+  schluessel: WILLKOMMEN_SCHLUESSEL,
   titel: 'Schön, dass du da bist!',
   satz:
     'Gut gesagt ist eine Tauschbörse für bewährte Argumente: Gib eine Aussage aus dem Netz ein und ' +
-    'finde fertige Kommentare, die andere Grüne schon erprobt haben.',
+    'finde Kommentare, die andere schon in echten Diskussionen erprobt haben.',
 };
 
 export const MITMACHEN_ANGEBOT: Angebot = {
   rundgang: 'mitmachen',
+  schluessel: MITMACHEN_SCHLUESSEL,
   titel: 'Jetzt kannst du mitmachen!',
   satz:
     'Du bist angemeldet: Du kannst Fundstücke einwerfen, im Fangkorb weiterarbeiten und eigene Beiträge ' +
@@ -77,8 +83,8 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
       {
         titel: 'Passende Treffer',
         text:
-          'Hier stehen fertige Kommentare, die auf deine Aussage antworten. Mit Kurz, Mittel und Lang ' +
-          'wählst du die Länge.',
+          'Hier stehen Kommentare, die auf deine Aussage antworten. Mit Kurz, Mittel und Lang ' +
+          'wählst du die Fassung.',
         ziel: 'app-beitragskarte',
         seite: { pfad: '/result', query: { searchQuery: BEISPIEL_AUSSAGE } },
       },
@@ -92,7 +98,9 @@ export const RUNDGAENGE: Record<RundgangId, Rundgang> = {
       },
       {
         titel: 'Abstimmen',
-        text: 'War der Kommentar hilfreich? Deine Stimme zeigt anderen, welche Antworten gut ankommen.',
+        text:
+          'War der Kommentar hilfreich? Angemeldet zeigt deine Stimme anderen, welche Kommentare gut ' +
+          'ankommen.',
         ziel: 'app-beitragskarte .stimmen',
         seite: { pfad: '/result', query: { searchQuery: BEISPIEL_AUSSAGE } },
       },

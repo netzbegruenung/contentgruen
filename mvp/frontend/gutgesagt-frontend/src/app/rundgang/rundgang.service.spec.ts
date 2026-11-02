@@ -64,6 +64,7 @@ describe('RundgangService', () => {
   });
 
   function navigiert(url: string): void {
+    router.url = url;
     events.next(new NavigationEnd(1, url, url));
   }
 
@@ -173,6 +174,7 @@ describe('RundgangService', () => {
   describe('Mitmachen nach der ersten Anmeldung', () => {
     it('bietet den Rundgang Mitmachen einmal an', () => {
       localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
+      navigiert('/search');
       userInfo.next(angemeldet);
       expect(dialog.open).toHaveBeenCalledTimes(1);
       expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
@@ -181,6 +183,25 @@ describe('RundgangService', () => {
 
       userInfo.next(angemeldet);
       expect(dialog.open).toHaveBeenCalledTimes(1);
+    });
+
+    it('bietet ihn nach einer Einladung auch ohne Willkommen an, wenn die erste Seite keine Startseite ist', () => {
+      userInfo.next(angemeldet);
+      expect(dialog.open).not.toHaveBeenCalled(); // erste Seite steht noch nicht fest
+      navigiert('/contribute');
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
+    });
+
+    it('legt sich nicht über Anmeldung, Einladung oder Rechtstexte, sondern kommt mit der nächsten Seite', () => {
+      localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
+      navigiert('/einladung/abc');
+      userInfo.next(angemeldet);
+      navigiert('/datenschutz');
+      expect(dialog.open).not.toHaveBeenCalled();
+      navigiert('/contribute');
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(angebotDaten()).toBe(MITMACHEN_ANGEBOT);
     });
 
     it('bietet nichts an, solange niemand angemeldet ist', () => {
@@ -204,6 +225,7 @@ describe('RundgangService', () => {
 
     it('startet mit „Rundgang starten“ den Rundgang Mitmachen', () => {
       localStorage.setItem(WILLKOMMEN_SCHLUESSEL, '1');
+      navigiert('/search');
       userInfo.next(angemeldet);
       geschlossen.next('starten');
       expect(service.aktiv()?.rundgang.id).toBe('mitmachen');

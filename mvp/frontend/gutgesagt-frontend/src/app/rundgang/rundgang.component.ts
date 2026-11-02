@@ -36,6 +36,8 @@ const SCHMAL = '(max-width: 599px)';
 /** Ab hier zeigt die App den mobilen Kopf mit Menü statt der Knöpfe (app.component.ts). */
 const KOPF_MOBIL = '(max-width: 959px)';
 const RUHIG = '(prefers-reduced-motion: reduce)';
+/** Hilfe-Knopf im Desktop-Kopf, mobil der Menü-Knopf. */
+const HILFE_WEG = '.hilfe-knopf, .mobile-header .menu-button';
 
 function passt(query: string): boolean {
   return typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
@@ -73,7 +75,9 @@ export class RundgangComponent implements OnDestroy {
   @HostBinding('class.ruhig') ruhig = passt(RUHIG);
 
   private ziel: HTMLElement | null = null;
+  /** Das Element, das vor dem Rundgang den Fokus hatte; danach bekommt es ihn zurück. */
   private vorher: HTMLElement | null = null;
+  private kopfMobil = passt(KOPF_MOBIL);
   private lauf = 0;
   private nachsuchen = 0;
   private readonly beimScrollen = () => this.ausrichten();
@@ -92,7 +96,7 @@ export class RundgangComponent implements OnDestroy {
   }
 
   get text(): string {
-    return this.schritt ? jeGeraet(this.schritt.text, passt(KOPF_MOBIL)) : '';
+    return this.schritt ? jeGeraet(this.schritt.text, this.kopfMobil) : '';
   }
 
   get letzter(): boolean {
@@ -134,7 +138,17 @@ export class RundgangComponent implements OnDestroy {
   @HostListener('window:resize')
   beiGroesse(): void {
     this.schmal = passt(SCHMAL);
+    this.kopfMobil = passt(KOPF_MOBIL);
     this.ausrichten();
+  }
+
+  /**
+   * Zurück zum Ausgangspunkt. Kam der Start aus der Hilfe, gibt es deren Knopf nicht
+   * mehr; dann auf den Weg, über den man die Hilfe wieder öffnet.
+   */
+  private fokusZurueck(): void {
+    const ziel = this.vorher?.isConnected ? this.vorher : sichtbaresElement(HILFE_WEG);
+    ziel?.focus();
   }
 
   ngOnDestroy(): void {
@@ -150,21 +164,24 @@ export class RundgangComponent implements OnDestroy {
         this.ziel = null;
         this.ansage.set('Rundgang beendet.');
         this.cdr.detectChanges();
-        if (this.vorher?.isConnected) this.vorher.focus();
-        this.vorher = null;
+        this.fokusZurueck();
       }
+      this.vorher = null; // auch, wenn schon beim Suchen des ersten Ziels beendet
       return;
     }
-    if (!this.stand() && document.activeElement instanceof HTMLElement) {
+    if (!this.stand() && !this.vorher && document.activeElement instanceof HTMLElement) {
       this.vorher = document.activeElement;
     }
+    this.ruhig = passt(RUHIG);
+    this.kopfMobil = passt(KOPF_MOBIL);
     const schritt = s.rundgang.schritte[s.index];
     const ziel = await this.zielFinden(schritt.ziel, lauf);
     if (lauf !== this.lauf) return; // inzwischen weitergeklickt
     this.ziel = ziel;
     this.stand.set(s);
-    const n = s.rundgang.schritte.length;
-    this.ansage.set(`Schritt ${s.index + 1} von ${n}: ${schritt.titel}. ${this.text}`);
+    // Den Schritt liest der Screenreader beim Fokus der Blase (Name und Beschreibung);
+    // die Live-Region meldet nur das Ende, sonst kaeme alles doppelt.
+    this.ansage.set('');
     this.cdr.detectChanges();
     if (ziel) this.insBild(ziel);
     this.ausrichten();
@@ -223,7 +240,8 @@ export class RundgangComponent implements OnDestroy {
     if (!this.ziel?.isConnected && this.schritt) {
       // Die Seite hat das Element neu gezeichnet (etwa nach dem Laden der Treffer)
       this.ziel = sichtbaresElement(this.schritt.ziel);
-      if (!this.ziel) this.spaeterAusrichten();
+      if (this.ziel) this.insBild(this.ziel);
+      else this.spaeterAusrichten();
     }
     if (!this.ziel) {
       this.kegel.set(null);

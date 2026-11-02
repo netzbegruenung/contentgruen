@@ -106,9 +106,10 @@ describe('RundgangComponent', () => {
       const b = blase()!;
       expect(b.getAttribute('role')).toBe('dialog');
       expect(b.getAttribute('aria-modal')).toBe('true');
-      expect(b.getAttribute('aria-label')).toBe('Rundgang Probe: Erster');
+      expect(b.getAttribute('aria-label')).toBe('Rundgang Probe, Schritt 1 von 3: Erster');
       expect(document.getElementById(b.getAttribute('aria-describedby')!)?.textContent).toContain('Text eins');
-      expect(fixture.nativeElement.querySelector('[aria-live]').textContent).toContain('Schritt 1 von 3: Erster');
+      // nicht doppelt: Den Schritt sagt der Fokus auf der Blase, die Live-Region schweigt
+      expect(fixture.nativeElement.querySelector('[aria-live]').textContent.trim()).toBe('');
       flush();
     }));
 
@@ -193,6 +194,37 @@ describe('RundgangComponent', () => {
       expect(document.activeElement).toBe(ausloeser);
       expect(fixture.nativeElement.querySelector('[aria-live]').textContent).toContain('Rundgang beendet');
       flush();
+    }));
+
+    it('gibt den Fokus an den Hilfe-Knopf, wenn der Ausgangspunkt weg ist (Start aus der Hilfe)', fakeAsync(() => {
+      const hilfe = document.createElement('button');
+      hilfe.className = 'hilfe-knopf';
+      seite.appendChild(hilfe);
+      ausloeser.focus();
+      starten();
+      ausloeser.remove();
+      taste('Escape', blase()!);
+      tick();
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(hilfe);
+      flush();
+    }));
+
+    it('vergisst den Ausgangspunkt, wenn schon beim Suchen des ersten Ziels beendet wird', fakeAsync(() => {
+      ausloeser.focus();
+      starten(2); // Ziel fehlt, der Schritt wartet noch
+      service.aktiv.set(null);
+      fixture.detectChanges();
+      tick(ZIEL_WARTEZEIT_MS);
+      const anderer = document.createElement('button');
+      seite.appendChild(anderer);
+      anderer.focus();
+      starten();
+      taste('Escape', blase()!);
+      tick();
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(anderer);
+      flush(200);
     }));
 
     it('bricht mit „Beenden“ in jedem Schritt ab', fakeAsync(() => {

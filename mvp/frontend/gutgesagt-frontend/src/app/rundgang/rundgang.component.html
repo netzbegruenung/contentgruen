@@ -10,7 +10,7 @@
     }
 
     <div #blase class="blase" role="dialog" aria-modal="true" tabindex="-1"
-         [attr.aria-label]="s.rundgang.name + ': ' + schritt?.titel"
+         [attr.aria-label]="s.rundgang.name + ', Schritt ' + (s.index + 1) + ' von ' + s.rundgang.schritte.length + ': ' + schritt?.titel"
          aria-describedby="rundgang-text"
          aria-roledescription="Rundgang-Schritt"
          cdkTrapFocus
