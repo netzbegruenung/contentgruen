@@ -10,7 +10,8 @@ Was hinausgeht, ist nur die Mail-Adresse. Den Code der Einladung erfaehrt Keyclo
 nicht (services/einladung_service.py).
 """
 
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Dict, Iterable, List, Mapping, Optional
 
 import httpx
 
@@ -28,6 +29,14 @@ MAIL_AKTIONEN = ["UPDATE_PASSWORD"]
 # So lange gilt der Link in der Mail; danach hilft "Passwort vergessen".
 MAIL_GUELTIG_SEKUNDEN = 3 * 24 * 60 * 60
 ZEITLIMIT_SEKUNDEN = 10.0
+
+
+@dataclass
+class VerknuepfteKonten:
+    # alte Kennung -> Kennung des neu angelegten Kontos
+    angelegt: Dict[str, str] = field(default_factory=dict)
+    # alte Kennungen, deren Mail-Adresse im Realm schon ein Konto hat
+    vergeben: List[str] = field(default_factory=list)
 
 
 class KeycloakKonten:
@@ -108,3 +117,83 @@ class KeycloakKonten:
                     )
                 raise
         return KontoErgebnis.ANGELEGT
+
+    # --- Kennungen umstellen (#487) ---------------------------------------
+
+    def kennungen_zuordnen(
+        self, identity_provider: str, kennungen: Iterable[str]
+    ) -> Dict[str, str]:
+        """
+        Alte Kennung -> Kennung im Realm. Alt ist die Kennung beim Identity Provider,
+        mit der das Konto im Realm verknuepft ist; ohne verknuepftes Konto fehlt sie.
+        """
+        zuordnung: Dict[str, str] = {}
+        with self._client() as http:
+            kopf = {"Authorization": f"Bearer {self._token(http)}"}
+            for kennung in kennungen:
+                konto = self._verknuepftes_konto(http, kopf, identity_provider, kennung)
+                if konto:
+                    zuordnung[kennung] = konto
+        return zuordnung
+
+    def konten_verknuepft_anlegen(
+        self, identity_provider: str, konten: Mapping[str, str]
+    ) -> VerknuepfteKonten:
+        """
+        Je alte Kennung (-> Mail-Adresse) ein Konto im Realm, mit dem Identity
+        Provider verknuepft. Keine Mail: Angemeldet wird weiter ueber den Identity
+        Provider, und Keycloak findet das Konto dann ueber die Verknuepfung.
+        Ist die Adresse im Realm schon vergeben, wird nichts verknuepft.
+        """
+        ergebnis = VerknuepfteKonten()
+        admin = f"{self._basis}/admin/realms/{self._realm}/users"
+        with self._client() as http:
+            kopf = {"Authorization": f"Bearer {self._token(http)}"}
+            for kennung, email in konten.items():
+                if self._verknuepftes_konto(http, kopf, identity_provider, kennung):
+                    continue
+                antwort = http.post(
+                    admin,
+                    headers=kopf,
+                    json={
+                        "username": email,
+                        "email": email,
+                        "enabled": True,
+                        # Der Identity Provider hat sie bestaetigt (Trust Email).
+                        "emailVerified": True,
+                        "requiredActions": PFLICHTAKTIONEN,
+                        "federatedIdentities": [
+                            {
+                                "identityProvider": identity_provider,
+                                "userId": kennung,
+                                "userName": email,
+                            }
+                        ],
+                    },
+                )
+                if antwort.status_code == 409:
+                    ergebnis.vergeben.append(kennung)
+                    continue
+                antwort.raise_for_status()
+                ergebnis.angelegt[kennung] = (
+                    antwort.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
+                )
+        return ergebnis
+
+    def _verknuepftes_konto(
+        self, http: httpx.Client, kopf: dict, identity_provider: str, kennung: str
+    ) -> Optional[str]:
+        antwort = http.get(
+            f"{self._basis}/admin/realms/{self._realm}/users",
+            headers=kopf,
+            params={
+                "idpAlias": identity_provider,
+                "idpUserId": kennung,
+                "briefRepresentation": "true",
+            },
+        )
+        antwort.raise_for_status()
+        treffer = antwort.json()
+        # Keycloak vergleicht beides exakt; eine Kennung beim Identity Provider ist
+        # hoechstens mit einem Konto verknuepft.
+        return treffer[0]["id"] if treffer else None
