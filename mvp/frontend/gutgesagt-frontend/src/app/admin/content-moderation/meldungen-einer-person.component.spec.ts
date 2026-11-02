@@ -154,7 +154,14 @@ describe('MeldungenEinerPersonComponent', () => {
 
       knopf('Angaben löschen')!.click();
 
-      expect(moderation.angabenLoeschen).toHaveBeenCalledWith({ email: 'anna@example.org', name: null });
+      expect(moderation.angabenLoeschen).toHaveBeenCalledWith({ email: 'anna@example.org', name: null }, ['report-1']);
+    });
+
+    it('lässt nicht löschen, solange eine neue Suche läuft', () => {
+      fixture.componentInstance.suchtGerade = true;
+      fixture.detectChanges();
+
+      expect(knopf('Angaben löschen')!.disabled).toBeTrue();
     });
 
     it('nennt das Ergebnis und sucht danach erneut', () => {

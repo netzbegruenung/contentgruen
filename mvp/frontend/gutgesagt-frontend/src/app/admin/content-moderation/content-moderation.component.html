@@ -2,6 +2,7 @@
   <div class="header">
     <h2>Moderation</h2>
     <button
+      *ngIf="selectedStatus !== 'person'"
       mat-raised-button
       color="primary"
       (click)="loadReports()">

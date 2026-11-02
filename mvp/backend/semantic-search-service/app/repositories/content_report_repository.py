@@ -64,13 +64,19 @@ def _als_dict(report: ContentReport) -> Dict[str, Any]:
 
 
 def _von_melder(suche: MelderSuche):
-    """Filter auf die Meldungen mit genau diesen Angaben (MelderSuche)."""
+    """Filter auf die Meldungen mit genau diesen Angaben (MelderSuche).
+
+    Beide Seiten klein in PostgreSQL, nicht die Eingabe in Python: Die beiden
+    verkleinern manche Zeichen verschieden (etwa ein Sigma am Wortende).
+    """
     bedingungen = []
     if suche.email is not None:
-        bedingungen.append(func.lower(ContentReport.melder_email) == suche.email)
+        bedingungen.append(
+            func.lower(ContentReport.melder_email) == func.lower(suche.email)
+        )
     if suche.name is not None:
         bedingungen.append(
-            func.lower(func.trim(ContentReport.melder_name)) == suche.name
+            func.lower(ContentReport.melder_name) == func.lower(suche.name)
         )
     return and_(*bedingungen)
 
@@ -237,38 +243,52 @@ class ContentReportRepository:
             )
             return [_als_dict(m) for m in meldungen]
 
-    def angaben_loeschen(self, suche: MelderSuche) -> AngabenGeloescht:
+    def angaben_loeschen(
+        self, suche: MelderSuche, meldung_ids: List[UUID]
+    ) -> AngabenGeloescht:
         """
         Die Angaben einer Person loeschen, die es verlangt (Art. 17 DSGVO, #494).
 
+        Nur die Meldungen, die der Admin in der Suche gesehen hat (``meldung_ids``)
+        und die noch zu den Angaben passen: Eine Meldung, die seitdem eingegangen
+        ist, hat niemand geprueft.
+
         Bearbeitete und abgewiesene Meldungen gehen ganz, wie sonst nach ihrer
         Frist. Offene haben keine Frist, weil sie noch Arbeit sind (Art. 16 DSA):
-        Sie bleiben mit Grund und Beschreibung stehen und verlieren nur Name und
-        E-Mail-Adresse. Beides in einer Transaktion (get_session schreibt am Ende);
-        Fehler gehen an den Aufrufer.
+        Sie bleiben mit Grund und Beschreibung stehen und verlieren Name,
+        E-Mail-Adresse und das Tagespseudonym (wie beim Abschluss ein Zufallswert,
+        #446). Alles in einer Transaktion (get_session schreibt am Ende); Fehler
+        gehen an den Aufrufer.
         """
+        if not meldung_ids:
+            return AngabenGeloescht(geloescht=0, angaben_entfernt=0)
+        gesehen = and_(_von_melder(suche), ContentReport.id.in_(meldung_ids))
         with self.db.get_session() as session:
             geloescht = (
                 session.query(ContentReport)
-                .filter(_von_melder(suche), ContentReport.status != "pending")
+                .filter(gesehen, ContentReport.status != "pending")
                 .delete(synchronize_session=False)
             )
-            angaben_entfernt = (
+            offene = (
                 session.query(ContentReport)
-                .filter(_von_melder(suche), ContentReport.status == "pending")
-                .update(
-                    {ContentReport.melder_name: None, ContentReport.melder_email: None},
-                    synchronize_session=False,
-                )
+                .filter(gesehen, ContentReport.status == "pending")
+                .all()
             )
+            for meldung in offene:
+                meldung.melder_name = None
+                meldung.melder_email = None
+                if not meldung.reported_by_user_id and not (
+                    meldung.reported_by_session_id or ""
+                ).startswith(PRAEFIX_OHNE_PSEUDONYM):
+                    meldung.reported_by_session_id = (
+                        f"{PRAEFIX_OHNE_PSEUDONYM}{uuid4()}"
+                    )
             # Wessen Angaben, steht nicht im Log: nur die Zahlen.
             logger.info(
                 f"Melder-Angaben geloescht: {geloescht} Meldungen entfernt, "
-                f"{angaben_entfernt} offene ohne Angaben"
+                f"{len(offene)} offene ohne Angaben"
             )
-            return AngabenGeloescht(
-                geloescht=geloescht, angaben_entfernt=angaben_entfernt
-            )
+            return AngabenGeloescht(geloescht=geloescht, angaben_entfernt=len(offene))
 
     def get_reports_by_content_id(self, content_id: UUID) -> List[ContentReport]:
         """

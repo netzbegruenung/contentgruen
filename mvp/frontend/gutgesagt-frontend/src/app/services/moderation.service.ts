@@ -194,9 +194,15 @@ export class ModerationService {
     return this.http.post<PendingReportsResponse>(`${this.baseUrl}/melder/meldungen`, suche);
   }
 
-  /** Die Angaben der Person an ihren Meldungen löschen (#494); dieselben Treffer wie die Suche. */
-  angabenLoeschen(suche: MelderSuche): Observable<AngabenGeloescht> {
-    return this.http.post<AngabenGeloescht>(`${this.baseUrl}/melder/angaben-loeschen`, suche);
+  /**
+   * Die Angaben der Person an ihren Meldungen löschen (#494): nur die gezeigten
+   * Meldungen (`meldungIds`), die noch zu den Angaben passen.
+   */
+  angabenLoeschen(suche: MelderSuche, meldungIds: string[]): Observable<AngabenGeloescht> {
+    return this.http.post<AngabenGeloescht>(`${this.baseUrl}/melder/angaben-loeschen`, {
+      ...suche,
+      meldung_ids: meldungIds,
+    });
   }
 
   dismissReport(reportId: string, notes?: string): Observable<any> {

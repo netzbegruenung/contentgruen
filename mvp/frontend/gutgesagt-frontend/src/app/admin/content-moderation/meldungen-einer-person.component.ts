@@ -28,7 +28,7 @@ const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
 
 /**
  * Meldungen einer Person nach Name oder E-Mail-Adresse finden und ihre Angaben löschen
- * (#494). Wer ohne Konto meldet, ist nur über diese Angaben zu finden: Die Liste ist die
+ * (#494). Gelöscht werden nur die gezeigten Treffer. Wer ohne Konto meldet, ist nur über diese Angaben zu finden: Die Liste ist die
  * Auskunft (Art. 15 DSGVO), „Angaben löschen“ die Löschung (Art. 17 DSGVO).
  */
 @Component({
@@ -48,7 +48,8 @@ const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
     <form class="melder-suche" (ngSubmit)="suchen()">
       <p class="hinweis">
         Für Auskunft oder Löschung auf Verlangen einer Person ohne Konto. Gesucht wird die ganze Angabe,
-        Groß- und Kleinschreibung zählen nicht; sind beide angegeben, müssen beide passen.
+        Groß- und Kleinschreibung zählen nicht; sind beide angegeben, müssen beide passen. Bei einer Suche nur
+        nach dem Namen prüfen, ob alle Treffer dieselbe Person sind.
       </p>
       <mat-form-field appearance="outline">
         <mat-label>E-Mail-Adresse</mat-label>
@@ -71,7 +72,7 @@ const LOESCHEN_FRAGE: BestaetigungsDialogDaten = {
       <ng-container *ngIf="treffer.length > 0">
         <div class="treffer-kopf">
           <strong>{{ treffer.length === 1 ? '1 Meldung' : treffer.length + ' Meldungen' }}</strong>
-          <button mat-raised-button color="warn" type="button" (click)="angabenLoeschen()">
+          <button mat-raised-button color="warn" type="button" [disabled]="suchtGerade || loeschtGerade" (click)="angabenLoeschen()">
             <mat-icon>delete</mat-icon>
             Angaben löschen
           </button>
@@ -103,6 +104,7 @@ export class MeldungenEinerPersonComponent {
   treffer: ContentReport[] | null = null;
   fehler: string | null = null;
   suchtGerade = false;
+  loeschtGerade = false;
   /** Die Angaben der gezeigten Treffer; „Angaben löschen“ nimmt diese, nicht die Felder. */
   private gesucht: MelderSuche | null = null;
 
@@ -128,22 +130,28 @@ export class MeldungenEinerPersonComponent {
 
   angabenLoeschen(): void {
     const suche = this.gesucht;
-    if (!suche) {
+    const ids = (this.treffer ?? []).map((m) => m.id);
+    if (!suche || ids.length === 0 || this.suchtGerade || this.loeschtGerade) {
       return;
     }
     this.dialog
       .open(BestaetigungsDialogComponent, { data: LOESCHEN_FRAGE, autoFocus: 'dialog' })
       .afterClosed()
       .pipe(filter((ja) => ja === true))
-      .subscribe(() =>
-        this.moderation.angabenLoeschen(suche).subscribe({
+      .subscribe(() => {
+        this.loeschtGerade = true;
+        this.moderation.angabenLoeschen(suche, ids).subscribe({
           next: (ergebnis) => {
+            this.loeschtGerade = false;
             this.snackBar.open(ergebnisText(ergebnis), 'OK', { duration: 5000 });
             this.laden(suche);
           },
-          error: () => this.snackBar.open('Fehler beim Löschen der Angaben', 'OK', { duration: 5000 }),
-        })
-      );
+          error: () => {
+            this.loeschtGerade = false;
+            this.snackBar.open('Fehler beim Löschen der Angaben', 'OK', { duration: 5000 });
+          },
+        });
+      });
   }
 
   statusLabel(status: string): string {

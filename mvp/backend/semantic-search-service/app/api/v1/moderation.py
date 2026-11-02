@@ -182,6 +182,12 @@ class MelderSucheRequest(BaseModel):
         return self
 
 
+class AngabenLoeschenRequest(MelderSucheRequest):
+    """Die Angaben der Suche und die Meldungen, die der Admin dazu gesehen hat."""
+
+    meldung_ids: List[uuid.UUID] = Field(..., min_length=1, max_length=1000)
+
+
 class AngabenGeloeschtResponse(BaseModel):
     """Bearbeitete und abgewiesene Meldungen sind geloescht, offene ohne Angaben."""
 
@@ -372,20 +378,23 @@ async def meldungen_einer_person(
 
 @router.post("/melder/angaben-loeschen", response_model=AngabenGeloeschtResponse)
 async def angaben_der_person_loeschen(
-    anfrage: MelderSucheRequest,
+    anfrage: AngabenLoeschenRequest,
     admin_user: str = Depends(require_admin),
     moderation_service: ModerationService = Depends(get_moderation_service),
 ):
     """
     Die Angaben einer Person an ihren Meldungen loeschen, die es verlangt
-    (Admin only, Art. 17 DSGVO). Dieselben Treffer wie die Suche: Bearbeitete
-    und abgewiesene Meldungen gehen ganz; offene bleiben fuer die Moderation
-    stehen (Art. 16 DSA) und verlieren nur Name und E-Mail-Adresse.
+    (Admin only, Art. 17 DSGVO). Nur die Meldungen aus der Suche, die der Admin
+    gesehen hat (meldung_ids) und die noch zu den Angaben passen: Bearbeitete und
+    abgewiesene gehen ganz; offene bleiben fuer die Moderation stehen (Art. 16
+    DSA) und verlieren Name, E-Mail-Adresse und das Tagespseudonym.
     """
     try:
         logger.info("Admin deleting Melder-Angaben")
         ergebnis = await moderation_service.angaben_der_person_loeschen(
-            email=anfrage.email, name=anfrage.name
+            [str(i) for i in anfrage.meldung_ids],
+            email=anfrage.email,
+            name=anfrage.name,
         )
         return AngabenGeloeschtResponse(
             geloescht=ergebnis.geloescht, angaben_entfernt=ergebnis.angaben_entfernt

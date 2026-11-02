@@ -43,8 +43,8 @@ class MelderSuche:
     name: Optional[str] = None
 
     def __post_init__(self):
-        email = (self.email or "").strip().lower() or None
-        name = (self.name or "").strip().lower() or None
+        email = (self.email or "").strip() or None
+        name = (self.name or "").strip() or None
         if email is None and name is None:
             raise ValueError("Name oder E-Mail-Adresse fehlt")
         object.__setattr__(self, "email", email)

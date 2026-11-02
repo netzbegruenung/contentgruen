@@ -25,7 +25,8 @@ from domain.models.meldung import (
 ADMIN = {"X-User": "admin-1", "X-Is-Admin": "true"}
 SUCHE = "/api/v1/moderation/melder/meldungen"
 LOESCHEN = "/api/v1/moderation/melder/angaben-loeschen"
-MELDUNG = {"id": "m-1", "status": "pending", "melder_email": "anna@example.org"}
+MELDUNG_ID = "11111111-2222-3333-4444-555555555555"
+MELDUNG = {"id": MELDUNG_ID, "status": "pending", "melder_email": "anna@example.org"}
 
 
 def _sucht(email=None, name=None):
@@ -34,7 +35,7 @@ def _sucht(email=None, name=None):
     return [MELDUNG]
 
 
-def _loescht(email=None, name=None):
+def _loescht(meldung_ids, email=None, name=None):
     MelderSuche(email=email, name=name)
     return AngabenGeloescht(geloescht=2, angaben_entfernt=1)
 
@@ -103,17 +104,34 @@ class TestMeldungenEinerPerson:
 class TestAngabenLoeschen:
     def test_melder_angaben_loeschen_nennt_die_zahlen(self, client, service):
         antwort = client.post(
-            LOESCHEN, headers=ADMIN, json={"email": "anna@example.org"}
+            LOESCHEN,
+            headers=ADMIN,
+            json={"email": "anna@example.org", "meldung_ids": [MELDUNG_ID]},
         )
 
         assert antwort.status_code == 200
         assert antwort.json() == {"geloescht": 2, "angaben_entfernt": 1}
         service.angaben_der_person_loeschen.assert_awaited_once_with(
-            email="anna@example.org", name=None
+            [MELDUNG_ID], email="anna@example.org", name=None
         )
 
     def test_melder_angaben_loeschen_ohne_angabe_ist_422(self, client, service):
-        antwort = client.post(LOESCHEN, headers=ADMIN, json={})
+        antwort = client.post(
+            LOESCHEN, headers=ADMIN, json={"meldung_ids": [MELDUNG_ID]}
+        )
+
+        assert antwort.status_code == 422
+        service.angaben_der_person_loeschen.assert_not_awaited()
+
+    @pytest.mark.parametrize("ids", [[], ["keine-uuid"], None])
+    def test_melder_angaben_loeschen_braucht_die_gesehenen_meldungen(
+        self, client, service, ids
+    ):
+        koerper = {"email": "anna@example.org"}
+        if ids is not None:
+            koerper["meldung_ids"] = ids
+
+        antwort = client.post(LOESCHEN, headers=ADMIN, json=koerper)
 
         assert antwort.status_code == 422
         service.angaben_der_person_loeschen.assert_not_awaited()

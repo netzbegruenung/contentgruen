@@ -75,6 +75,16 @@ def _alle(datenbank):
         }
 
 
+def _pseudonym(datenbank, meldung_id):
+    with datenbank.get_session() as s:
+        return s.get(ContentReport, uuid.UUID(meldung_id)).reported_by_session_id
+
+
+async def _gesehen(service, **angaben):
+    """Die Kennungen der Treffer, wie die Moderation sie nach der Suche hat."""
+    return [m["id"] for m in await service.meldungen_einer_person(**angaben)]
+
+
 async def test_meldungen_einer_person_findet_die_adresse_ohne_gross_und_kleinschreibung(
     service, datenbank
 ):
@@ -129,8 +139,11 @@ async def test_angaben_loeschen_entfernt_erledigte_und_leert_offene(service, dat
     bearbeitet = _meldung(datenbank, status="reviewed", email="Anna@example.org")
     abgewiesen = _meldung(datenbank, status="dismissed", email="anna@example.org")
     fremd = _meldung(datenbank, status="reviewed", email="bert@example.org")
+    gesehen = await _gesehen(service, email="anna@example.org")
 
-    ergebnis = await service.angaben_der_person_loeschen(email="anna@example.org")
+    ergebnis = await service.angaben_der_person_loeschen(
+        gesehen, email="anna@example.org"
+    )
 
     assert ergebnis.geloescht == 2
     assert ergebnis.angaben_entfernt == 1
@@ -138,22 +151,42 @@ async def test_angaben_loeschen_entfernt_erledigte_und_leert_offene(service, dat
     assert bearbeitet not in alle and abgewiesen not in alle
     # Die offene Meldung bleibt Arbeit fuer die Moderation, ohne Personenbezug.
     assert alle[offen] == ("pending", None, None, "Grund")
+    assert _pseudonym(datenbank, offen).startswith("anon:")
     assert alle[fremd] == ("reviewed", None, "bert@example.org", None)
     assert await service.meldungen_einer_person(email="anna@example.org") == []
 
 
-async def test_angaben_loeschen_ohne_treffer_aendert_nichts(service, datenbank):
-    fremd = _meldung(datenbank, email="bert@example.org")
+async def test_angaben_loeschen_nur_die_gesehenen_meldungen(service, datenbank):
+    """Was nach der Suche eingeht, hat niemand geprueft: Es bleibt."""
+    gesehen_offen = _meldung(datenbank, email="anna@example.org")
+    gesehen = await _gesehen(service, email="anna@example.org")
+    neu = _meldung(datenbank, email="anna@example.org", status="reviewed")
 
-    ergebnis = await service.angaben_der_person_loeschen(name="Niemand")
+    ergebnis = await service.angaben_der_person_loeschen(
+        gesehen, email="anna@example.org"
+    )
+
+    assert (ergebnis.geloescht, ergebnis.angaben_entfernt) == (0, 1)
+    alle = _alle(datenbank)
+    assert alle[gesehen_offen][2] is None
+    assert alle[neu][2] == "anna@example.org"
+
+
+async def test_angaben_loeschen_kennungen_anderer_angaben_bleiben(service, datenbank):
+    """Eine Kennung, die nicht zu den Angaben passt, loescht nichts."""
+    fremd = _meldung(datenbank, status="reviewed", email="bert@example.org")
+
+    ergebnis = await service.angaben_der_person_loeschen(
+        [fremd], email="anna@example.org"
+    )
 
     assert (ergebnis.geloescht, ergebnis.angaben_entfernt) == (0, 0)
     assert fremd in _alle(datenbank)
 
 
 async def test_angaben_loeschen_ohne_angabe_ist_ein_fehler(service, datenbank):
-    _meldung(datenbank, email="bert@example.org")
+    fremd = _meldung(datenbank, email="bert@example.org")
 
     with pytest.raises(ValueError):
-        await service.angaben_der_person_loeschen()
+        await service.angaben_der_person_loeschen([fremd])
     assert len(_alle(datenbank)) == 1
