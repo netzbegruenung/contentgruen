@@ -229,11 +229,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('siehe „Protokolldateien“');
     });
 
-    it('Suchen ohne Treffer: Netzwechsel zählt neu, gleicher Anschluss und Browser zählt als eine Person', () => {
+    it('Suchen ohne Treffer: Netzwechsel zählt neu, je Anschluss höchstens eine Person, auch mit anderem Browser', () => {
       const text = abschnitt('Suchen ohne Treffer');
 
       expect(text).toContain('anderes Netz');
-      expect(text).toContain('am selben Anschluss denselben Browser nutzen, als eine');
+      // #496: der Anschluss-Prüfwert; ein anderer Browser am selben Anschluss zählt nicht mehr neu.
+      expect(text).toContain('aus deinem Anschluss');
+      expect(text).toContain('je Anschluss höchstens eine Person');
+      expect(text).toContain('als eine, auch mit verschiedenen Browsern');
+      expect(text).not.toContain('anderen Browser</strong>');
+      expect(text).not.toContain('anderen Browser oder');
       expect(text).not.toContain('neue Sitzungskennung');
     });
 
