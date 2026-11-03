@@ -1,8 +1,8 @@
 """
 Das Schema des Fangkorbs festnageln.
 
-``raw_input_content_links`` ist die n:m-Verknuepfung zwischen Einwurf und
-Beitrag. Eine schmale Tabelle ist die erste, die jemand beim Aufraeumen
+``raw_input_content_links`` haelt fest, worin ein Einwurf ausformuliert ist
+(Glossar "Ausformuliert in"), n:m zwischen Einwurf und Beitrag. Eine schmale Tabelle ist die erste, die jemand beim Aufraeumen
 "vereinfacht" - etwa zu einem Feld ``resulting_content_id`` auf ``raw_inputs``.
 Das waere billiger und genau die Blockade, die docs/archiv/ROHINPUT.md (Abschnitt 6)
 benennt: ein Einwurf kann mehrere Beitraege hervorbringen und ein Beitrag aus
@@ -69,7 +69,7 @@ class TestEinwurfSchema:
 
 
 @pytest.mark.unit
-class TestVerknuepfungstabelle:
+class TestAusformuliertInTabelle:
     def test_tabelle_existiert_mit_ihren_feldern(self):
         assert set(AusformuliertIn.__table__.columns.keys()) == {
             "id",
@@ -108,10 +108,10 @@ class TestVerknuepfungstabelle:
         """Die Rolle, die last_modified_by am Beitrag nicht bewahrt."""
         assert "created_by" in AusformuliertIn.__table__.columns
 
-    def test_geleerter_satz_loescht_die_verknuepfung_nicht(self):
+    def test_geleerter_satz_loescht_ausformuliert_in_nicht(self):
         """
-        Ein leerer Satz loescht seine Zeile in raw_input_drafts. Die Verknuepfung
-        mit dem Beitrag muss das ueberleben - nur draft_id wird leer.
+        Ein leerer Satz loescht seine Zeile in raw_input_drafts. Der Ausformuliert-in-Eintrag
+        muss das ueberleben - nur draft_id wird leer.
         """
         spalte = AusformuliertIn.__table__.columns["draft_id"]
         (fremdschluessel,) = list(spalte.foreign_keys)
@@ -120,7 +120,7 @@ class TestVerknuepfungstabelle:
         assert fremdschluessel.ondelete == "SET NULL"
 
     def test_beitragstyp_ist_optional(self):
-        """Verknuepfungen aus der Zeit vor Fangkorb v2 kennen keinen Typ."""
+        """Ausformuliert-in-Eintraege aus der Zeit vor Fangkorb v2 kennen keinen Typ."""
         assert AusformuliertIn.__table__.columns["content_type"].nullable is True
 
 

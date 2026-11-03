@@ -87,7 +87,7 @@ class EinwurfRepository:
             "created_at": einwurf.created_at,
             "destilled_by": einwurf.destilled_by,
             "own_draft": eigener_satz,
-            # Die erste Verknuepfung: in der Tabelle created_by/created_at, nach aussen
+            # Der erste Ausformuliert-in-Eintrag: in der Tabelle created_by/created_at, nach aussen
             # processed_*.
             "processed_content_id": str(erste.content_id) if erste else None,
             "processed_by": erste.created_by if erste else None,
@@ -396,18 +396,18 @@ class EinwurfRepository:
         ist_admin: bool = False,
     ) -> Dict[str, Any]:
         """
-        Status setzen; bei processed zugleich die Verknuepfung schreiben.
+        Status setzen; bei processed zugleich den Ausformuliert-in-Eintrag schreiben.
 
         Verwerfen duerfen der Einwerfer und Admins (``ist_admin``), Admins auch
         einen Einwurf ohne Einwerfer.
 
-        Die Verknuepfung haelt fest, wer verknuepft hat (der Ausformulierer), welchen
+        Der Ausformuliert-in-Eintrag haelt fest, wer verknuepft hat (der Ausformulierer), welchen
         Beitragstyp der Beitrag hat und welcher Satz ausformuliert wurde - der des
         Ausformulierers (``draft_id``), sofern er einen gespeichert hat.
 
         Alles in einer Transaktion, die Zeile ist dabei gesperrt (FOR UPDATE),
-        damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Die
-        Verknuepfung ist idempotent (ON CONFLICT DO NOTHING): ein wiederholter
+        damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Der
+        Eintrag ist idempotent (ON CONFLICT DO NOTHING): ein wiederholter
         Aufruf nach verlorener Antwort schadet nicht.
 
         Raises:

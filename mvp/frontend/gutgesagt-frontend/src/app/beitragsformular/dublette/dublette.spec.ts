@@ -1,4 +1,4 @@
-import { DublettenTexte, Vorhanden, dublettenHinweis, vorhandenAus } from './dublette';
+import { DublettenTexte, Vorhanden, dublettenHinweis, offeneEntscheidung, vorhandenAus } from './dublette';
 
 const TEXTE: DublettenTexte = {
   hinweis: 'Gibt es schon.',
@@ -32,6 +32,14 @@ describe('Dublette', () => {
       const ergebnis = vorhandenAus({}, { id: 'v', vorhanden: {} })!;
       expect(ergebnis.titel).toBeNull();
       expect(ergebnis.eigen).toBeFalse();
+    });
+  });
+
+  describe('offeneEntscheidung', () => {
+    it('offen nur mit vorhandenem und ohne Wahl', () => {
+      expect(offeneEntscheidung(null)).toBeFalse();
+      expect(offeneEntscheidung(vorhanden())).toBeTrue();
+      expect(offeneEntscheidung(vorhanden({ gewaehlt: 'zugestimmt' }))).toBeFalse();
     });
   });
 

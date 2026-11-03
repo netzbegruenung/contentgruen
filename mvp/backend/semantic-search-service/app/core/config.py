@@ -204,7 +204,6 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices(
             "SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB",
             "SEMANTIC_SEARCH_ENABLE_USAGE_CLEANUP",
-            "enable_bereinigungsjob",
         ),
     )
     usage_retention_days: int = 90
@@ -249,6 +248,10 @@ class Settings(BaseSettings):
         env_prefix = "SEMANTIC_SEARCH_"
         # Also load standard environment variables for logging
         env_ignore_empty = True
+        # Felder mit validation_alias (enable_bereinigungsjob) auch per Feldname
+        # setzbar, etwa Settings(enable_bereinigungsjob=False); aus der Umgebung
+        # gelten nur die Aliase mit Praefix.
+        populate_by_name = True
 
     def _validate_paths(self):
         """Validate that required paths exist or can be created."""

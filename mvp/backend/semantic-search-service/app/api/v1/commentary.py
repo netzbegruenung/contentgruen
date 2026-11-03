@@ -1,6 +1,6 @@
 from domain.models.zeit import utc_jetzt
 import logging
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Header, HTTPException, Depends
 
@@ -245,11 +245,7 @@ async def add_commentary(
             statement_text=statement_text,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
-            vorhanden=(
-                VorhandenDto.aus(dublette.vorhanden, dublette.eigen)
-                if dublette
-                else None
-            ),
+            vorhanden=VorhandenDto.aus(dublette),
         )
 
     except HTTPException:

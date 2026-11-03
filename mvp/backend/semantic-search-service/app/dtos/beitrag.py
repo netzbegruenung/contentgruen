@@ -1,12 +1,15 @@
 import datetime
 from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
 from domain.models.commentary import CommentaryReference, Stil, Zweck
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextReference
+
+if TYPE_CHECKING:
+    from services.dublette import Dublette
 
 
 class VorhandenDto(BaseModel):
@@ -23,9 +26,11 @@ class VorhandenDto(BaseModel):
     eigen: bool = False
 
     @classmethod
-    def aus(cls, vorhanden, eigen: bool) -> "VorhandenDto":
-        """Aus dem vorhandenen Beitrag (BaseContentSearchResult)."""
-        return cls(titel=vorhanden.title, eigen=eigen)
+    def aus(cls, dublette: Optional["Dublette"]) -> Optional["VorhandenDto"]:
+        """Aus der Dublette (services/dublette.py); None ohne Dublette."""
+        if dublette is None:
+            return None
+        return cls(titel=dublette.vorhanden.title, eigen=dublette.eigen)
 
 
 class BeitragResponse(BaseModel):

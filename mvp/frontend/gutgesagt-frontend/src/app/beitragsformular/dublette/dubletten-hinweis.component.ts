@@ -3,7 +3,7 @@ import { NgIf } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { Vorhanden } from './dublette';
+import { Vorhanden, offeneEntscheidung } from './dublette';
 
 /**
  * Der Hinweis auf eine Dublette im Kommentar- und im Hintergrundinfo-Formular: der
@@ -40,8 +40,7 @@ export class DublettenHinweisComponent {
   @Output() nehmen = new EventEmitter<void>();
   @Output() trotzdem = new EventEmitter<void>();
 
-  /** Zu entscheiden ist, solange noch nichts gewaehlt ist. */
   get offeneEntscheidung(): boolean {
-    return !this.vorhanden.gewaehlt;
+    return offeneEntscheidung(this.vorhanden);
   }
 }

@@ -292,7 +292,7 @@ und der Ablauf oben erfasst die Tabelle nicht.
   (`SearchTrackingRepository.mische_abgeschlossene_tage`), bei jedem Lauf alle
   abgeschlossenen Tage der Frist, auch beim Start des Dienstes. Danach ergeben `xmin`
   und `ctid` für einen abgeschlossenen Tag keine Reihenfolge mehr; ein eingespielter
-  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `ENABLE_BEREINIGUNGSJOB=false`
+  älterer Dump ist nach dem nächsten Lauf ebenso gemischt. Mit `SEMANTIC_SEARCH_ENABLE_BEREINIGUNGSJOB=false`
   entfällt das Mischen mit dem Job. **Bleibt:** Der laufende Tag ist bis zum nächsten Lauf
   ungemischt. Ebenso eine Suche kurz vor Mitternacht UTC, deren Suchereignis erst
   eingeht, während der Lauf schon mischt (praktisch nur beim Start des Dienstes kurz nach

@@ -39,6 +39,7 @@ import {
   DublettenTexte,
   Vorhanden as VorhandenBeitrag,
   dublettenHinweis,
+  offeneEntscheidung,
   vorhandenAus,
 } from '../beitragsformular/dublette/dublette';
 import {
@@ -263,7 +264,7 @@ export class AddCommentaryComponent implements OnChanges {
 
   /** Zu entscheiden ist, solange es einen vorhandenen gibt und noch nichts gewaehlt ist. */
   get offeneEntscheidung(): boolean {
-    return !!this.vorhanden && !this.vorhanden.gewaehlt;
+    return offeneEntscheidung(this.vorhanden);
   }
 
   /** Zustimmen nur einem fremden Kommentar: sich selbst zuzustimmen sagt nichts. */

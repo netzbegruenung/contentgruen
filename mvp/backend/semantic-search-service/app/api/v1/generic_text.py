@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from domain.models.zeit import utc_jetzt
 from fastapi import APIRouter, HTTPException, Depends, Header
 import logging
@@ -234,11 +234,7 @@ async def add_generic_text(
             statement_text=statement_text,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
-            vorhanden=(
-                VorhandenDto.aus(dublette.vorhanden, dublette.eigen)
-                if dublette
-                else None
-            ),
+            vorhanden=VorhandenDto.aus(dublette),
         )
 
     except HTTPException:

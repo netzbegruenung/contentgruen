@@ -36,6 +36,7 @@ import {
   DublettenTexte,
   Vorhanden as VorhandenBeitrag,
   dublettenHinweis,
+  offeneEntscheidung,
   vorhandenAus,
 } from '../beitragsformular/dublette/dublette';
 import {
@@ -188,7 +189,7 @@ export class AddGenerictextComponent implements OnChanges {
 
   /** Zu entscheiden ist, solange es eine vorhandene gibt und noch nichts gewaehlt ist. */
   get offeneEntscheidung(): boolean {
-    return !!this.vorhanden && !this.vorhanden.gewaehlt;
+    return offeneEntscheidung(this.vorhanden);
   }
 
   /** Zustimmen nur einer fremden Hintergrundinfo: sich selbst zuzustimmen sagt nichts. */

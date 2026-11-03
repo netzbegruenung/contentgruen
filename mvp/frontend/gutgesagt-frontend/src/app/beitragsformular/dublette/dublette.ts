@@ -64,6 +64,11 @@ export function vorhandenAus<Anfrage extends { trotz_dublette_von?: string; vorh
   };
 }
 
+/** Zu entscheiden ist, solange es einen vorhandenen gibt und noch nichts gewaehlt ist. */
+export function offeneEntscheidung(vorhanden: Vorhanden<unknown> | null): boolean {
+  return !!vorhanden && !vorhanden.gewaehlt;
+}
+
 /**
  * Der Hinweis zur Dublette: nach der Wahl, was gilt; davor, ob es einen gibt und -
  * wenn er fremd ist und eine Aussage mitkam -, dass er sich ihr spaeter zuordnen laesst.

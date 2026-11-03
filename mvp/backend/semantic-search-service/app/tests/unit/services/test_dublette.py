@@ -77,6 +77,9 @@ class TestDublette:
 
     def test_antwort_nennt_titel_und_eigen(self):
         dublette = Dublette.aus(_vorhanden(autor="person-2"), "person-1", None)
-        antwort = VorhandenDto.aus(dublette.vorhanden, dublette.eigen)
+        antwort = VorhandenDto.aus(dublette)
         assert antwort.titel == "Vorhandener Titel"
         assert antwort.eigen is False
+
+    def test_ohne_dublette_keine_antwort(self):
+        assert VorhandenDto.aus(None) is None

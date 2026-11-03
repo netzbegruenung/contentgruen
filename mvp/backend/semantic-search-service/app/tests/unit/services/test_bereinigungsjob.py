@@ -105,6 +105,16 @@ class TestBereinigungsjobSettings:
 
         assert bereinigungsjob.settings.enable_bereinigungsjob is True
 
+    def test_ohne_praefix_schaltet_nichts_ab(self, settings_from_env, monkeypatch):
+        """Nur die Namen mit SEMANTIC_SEARCH_ gelten, keine fremde Variable."""
+        monkeypatch.setenv("ENABLE_BEREINIGUNGSJOB", "false")
+        settings_from_env()
+
+        assert bereinigungsjob.settings.enable_bereinigungsjob is True
+
+    def test_per_feldname_setzbar(self):
+        assert Settings(enable_bereinigungsjob=False).enable_bereinigungsjob is False
+
     def test_start_ohne_job_mit_dem_frueheren_schalter(self, settings_from_env):
         """Ein im Betrieb gesetztes ENABLE_USAGE_CLEANUP=false gilt weiter."""
         settings_from_env(ENABLE_USAGE_CLEANUP="false")
