@@ -26,8 +26,9 @@ export const MELDER_EMAIL_MAX = 254;
 /**
  * Der Meldedialog. Der DSA gilt fuer Gut gesagt (#438).
  * Deshalb fragt er die Angaben nach Art. 16 Abs. 2 DSA ab: Name und E-Mail-Adresse
- * freiwillig, die Erklaerung guten Glaubens als Pflicht. Eine Eingangsbestaetigung
- * per Mail gibt es nicht (kein Mailversand); bestaetigt wird der Eingang hier.
+ * freiwillig, die Erklaerung guten Glaubens als Pflicht. Bestaetigt wird der Eingang
+ * hier; mit E-Mail-Adresse schickt der Suchdienst die Bestaetigung und spaeter die
+ * Entscheidung auch per Mail (#493, services/meldung_mitteilen.py).
  */
 @Component({
   selector: 'app-report-dialog',
