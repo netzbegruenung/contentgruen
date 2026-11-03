@@ -11,7 +11,7 @@ Stand zu, der dann live ist (seit #521). Daneben fragt vorerst die Keycloak-Pfli
 sie. Fällt sie weg, entfallen die Schritte 4 und 5 unten
 (`docs/rechtstexte-luecken/README.md`, Abschnitt 5).
 
-Keycloak speichert dabei nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
+Bei der Pflichtaktion speichert Keycloak nur den Zeitpunkt der Zustimmung, nicht den Text. Welchem Stand jemand
 zugestimmt hat, ergibt sich deshalb aus diesem Verzeichnis: der Stand, der zu diesem Zeitpunkt
 live war. Wer über den CC0-Hinweis zugestimmt hat (NB §2, #415), dem gehört der Stand, der beim
 Absenden live war; den Zeitpunkt liefert der Beitrag, der Satz oder der Einwurf (Erstellungszeit),

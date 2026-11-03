@@ -37,7 +37,10 @@ describe('ImpressumComponent', () => {
   });
 
   it('nennt keine Verantwortliche nach § 18 Abs. 2 MStV, weil Gut gesagt kein journalistisch-redaktionelles Angebot ist (#521)', () => {
-    expect(normalisiert(seite.textContent)).not.toContain('MStV');
+    const text = normalisiert(seite.textContent);
+
+    expect(text).not.toContain('§ 18 Abs. 2 MStV');
+    expect(text).not.toContain('Verantwortlich für den Inhalt');
   });
 
   it('trägt das Tagesdatum der letzten Änderung als Stand, nicht nur den Monat (#498)', () => {

@@ -86,8 +86,8 @@ Absende-Knopf jedes Beitragsformulars einbezogen; keine Checkbox beim Anmelden, 
 je Konto. Umgesetzt mit #415: NB §2 sagt das (Stand 2. November 2026), der Hinweis verlinkt
 CC0 und die Nutzungsbedingungen. Die Keycloak-Pflichtaktion aus #429 bleibt vorerst daneben;
 ob sie ganz entfällt, ist offen (Entscheidung Maintainer, 02.11.2026). Seit #521 holt §10 die
-Zustimmung zu geänderten Bedingungen ebenfalls über den Hinweis ein; die Pflichtaktion nennt er
-nur noch als Möglichkeit.
+Zustimmung zu geänderten Bedingungen ebenfalls über den CC0-Hinweis ein; die Pflichtaktion nennt
+er nur noch als Möglichkeit.
 
 **CC0-Hinweis im Formular: umgesetzt.** Der Wortlaut steht in `shared/consent-hinweis.ts`, gezeigt
 von `shared/cc0-hinweis/`, und verlinkt CC0 (seit #415) und die Nutzungsbedingungen (neuer Tab): „Mit dem Absenden stellst du deine eigene Formulierung
@@ -125,22 +125,25 @@ Eine vorab angelegte Aussage trägt keine, weil sie kein Beitrag ist.
 Datenschutzerklärung und Nutzungsbedingungen beschreiben das seit #222 (Kennung unter „Beiträge,
 die du einstellst“, Freigabe beim Absenden und beim Satz beim Tippen in Abschnitt 4).
 
-**Änderungen und Ersatzlizenz (#466):** Seit dem Stand vom 30. Oktober 2026 gelten geänderte
-Nutzungsbedingungen erst nach ausdrücklicher Zustimmung beim Anmelden (§10, statt der früheren
-Zustimmung durch Schweigen und Weiternutzen; BGH XI ZR 26/20). Dafür wird die Pflichtaktion aus
-#429 je wesentlich geändertem Stand für alle Konten erneut ausgelöst, und alle werden abgemeldet;
+**Änderungen und Ersatzlizenz (#466, #521):** Geänderte Nutzungsbedingungen gelten erst nach
+Zustimmung (§10, statt der früheren Zustimmung durch Schweigen und Weiternutzen; BGH XI ZR 26/20);
 reine Korrekturen gelten ohne erneute Zustimmung (Entscheidung Maintainer, 30.10.2026). Seit #521
-gilt ein geänderter Stand mit dem nächsten Absenden unter dem Hinweis, der immer den aktuellen
-Stand verlinkt; die Pflichtaktion fragt vorerst daneben, das Abmelden aller entfällt.
+kommt die Zustimmung mit dem nächsten Absenden unter dem CC0-Hinweis, der immer den aktuellen
+Stand verlinkt; die Pflichtaktion aus #429 fragt vorerst daneben. Das Abmelden aller beim Wechsel
+(#466, Stand vom 30. Oktober 2026) entfällt damit.
 §4 räumt ein Nutzungsrecht ein, wo der CC0-Verzicht nach deutschem Recht nicht wirkt (Ersatzlizenz nach Abschnitt 3 der CC0-Erklärung).
 Stände und Ablauf: `docs/nutzungsbedingungen-staende/`. Die Juristin prüft beide Stellen und die
 Ausnahme für Korrekturen mit (#296); live erst danach.
 
 **Offen:**
-- Juristische Prüfung beider Wortlaute und der geänderten §4/§10: #296.
+- Juristische Prüfung beider Wortlaute und der geänderten §4, §5 und §10, dazu der Wegfall der
+  Angabe nach § 18 Abs. 2 MStV im Impressum (#521; geht schon mit dem nächsten Deploy live): #296.
+  Offen dort vor allem, ob die Zustimmung durch Absenden trägt, obwohl der CC0-Hinweis eine
+  Änderung nicht anzeigt (§10), ob §4 das Widerrufsrecht nach § 31a UrhG erwähnen muss und ob §5
+  beim Sperren fremder Bilder die Prüfung nach §7 ausdrücklich nennen soll.
 - Keycloak-Pflichtaktion „Terms and Conditions“ (#429): bleibt vorerst, Wegfall offen
   (Entscheidung Maintainer, 02.11.2026). NB §10 hängt seit #521 nicht mehr an ihr: Die
-  Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem Hinweis.
+  Zustimmung zu geänderten Bedingungen kommt mit dem nächsten Absenden unter dem CC0-Hinweis.
   Die Art.-9-Einwilligung beim ersten Login (D-N15) hängt ebenfalls an ihr, ebenso die
   Zustimmung von Personen, die nur bewerten.
 - Herkunft: Im Kommentar- und Hintergrundinfo-Formular wird eine neue Herkunft schon beim
