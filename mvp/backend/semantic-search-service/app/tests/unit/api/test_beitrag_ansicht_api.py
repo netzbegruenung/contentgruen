@@ -26,6 +26,7 @@ from dependencies import (
     get_image_service,
     get_post_service,
     get_reference_service,
+    get_voting_service,
 )
 from domain.models.content import ContentDbEntry
 from domain.models.content_type import ContentType
@@ -75,7 +76,14 @@ def laden():
 
 
 @pytest.fixture
-def client(dienste, laden, herkunft, nutzung):
+def stimmen():
+    dienst = MagicMock()
+    dienst.get_user_vote.return_value = None
+    return dienst
+
+
+@pytest.fixture
+def client(dienste, laden, herkunft, nutzung, stimmen):
     app = FastAPI()
     app.include_router(content_router, prefix="/api/v1/content")
     app.dependency_overrides.update(
@@ -86,6 +94,7 @@ def client(dienste, laden, herkunft, nutzung):
             get_post_service: lambda: dienste[ContentType.POST],
             get_image_service: lambda: dienste[ContentType.IMAGE],
             get_reference_service: lambda: herkunft,
+            get_voting_service: lambda: stimmen,
         }
     )
     with patch("api.v1.content.get_usage_service", return_value=nutzung):
@@ -138,6 +147,23 @@ class TestBeitragAnsicht:
 
         assert body["usage_count"] == 7
         herkunft.herkunft_ergaenzen.assert_awaited_once()
+
+    def test_mit_der_stimme_der_angemeldeten_person(self, client, stimmen):
+        # Abstimmen auf der Seite (Entscheidung @BanSe 03.11.): die Karte braucht die
+        # eigene Stimme wie in der Suche (user_vote).
+        stimmen.get_user_vote.return_value = "like"
+
+        body = client.get(URL, headers={"X-User": "person-1"}).json()
+
+        assert body["user_vote"] == "like"
+        stimmen.get_user_vote.assert_called_once_with("person-1", BEITRAG_ID)
+
+    @pytest.mark.parametrize("kopf", [{}, {"X-User": "anonymous"}])
+    def test_ohne_anmeldung_keine_stimme(self, client, stimmen, kopf):
+        body = client.get(URL, headers=kopf).json()
+
+        assert body["user_vote"] is None
+        stimmen.get_user_vote.assert_not_called()
 
     def test_nicht_da_ist_404(self, client, laden):
         # beitrag_laden: gesperrt, geloescht und nie vorhanden heissen None.

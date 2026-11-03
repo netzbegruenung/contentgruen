@@ -191,6 +191,11 @@ describe('karten-daten', () => {
       expect(daten.statement).toBeUndefined();
     });
 
+    it('uebernimmt die eigene Stimme fuers Abstimmen auf der Seite', () => {
+      expect(ausEinzelansicht(inhalt({ user_vote: 'dislike' })).stimme).toBe('dislike');
+      expect(ausEinzelansicht(inhalt({ user_vote: null })).stimme).toBeUndefined();
+    });
+
     it('zeigt ein Bild mit seiner Adresse', () => {
       const daten = ausEinzelansicht(inhalt({ content_type: 'image', image_url: 'https://example.org/b.jpg' }));
 

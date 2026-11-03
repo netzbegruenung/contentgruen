@@ -6,6 +6,7 @@ import { plattformAusUrl, plattformName } from '../shared/plattform';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
 import type { NutzungJeFassung } from '../shared/fassung';
 import { STIL_LABEL, Stil } from '../shared/zweck-stil';
+import type { BeitragAnsicht } from '../services/content.service';
 
 /**
  * Was eine Beitragskarte anzeigt, unabhaengig davon, woher die Daten kommen.
@@ -161,10 +162,10 @@ export function ausSuchergebnis(paket: Suchpaket): KartenDaten {
 
 /**
  * Ein Beitrag unter seiner eigenen Adresse (/content/beitrag/{id}, #300): flach wie
- * getById seines Typs, der Typ in content_type. Dieselbe Karte wie in der Suche, nur
- * ohne Aussage, ueber die er gefunden wurde.
+ * getById seines Typs, der Typ in content_type, dazu die eigene Stimme (user_vote).
+ * Dieselbe Karte wie in der Suche, nur ohne Aussage, ueber die er gefunden wurde.
  */
-export function ausEinzelansicht(beitrag: BaseContentResult & Record<string, any>): KartenDaten {
+export function ausEinzelansicht(beitrag: BeitragAnsicht): KartenDaten {
   const typ = resolveContentType(beitrag.content_type);
   const feld = typ ? CONTENT_TYPE_REGISTRY[typ].resultField : undefined;
   return ausSuchergebnis({
@@ -173,6 +174,7 @@ export function ausEinzelansicht(beitrag: BaseContentResult & Record<string, any
     statement_similarity_score: null,
     reply_relevance: null,
     content_type: beitrag.content_type,
+    user_vote: beitrag.user_vote ?? undefined,
     ...(feld ? { [feld]: beitrag } : {}),
   });
 }

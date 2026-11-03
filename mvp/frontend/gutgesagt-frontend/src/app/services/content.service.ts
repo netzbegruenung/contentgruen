@@ -7,8 +7,8 @@ import { LoggingService } from './logging.service';
 import { throwError } from 'rxjs';
 import { BaseContentResult } from './dtos/commonDtos';
 
-/** Ein Beitrag unter seiner eigenen Adresse: flach wie getById seines Typs (#300). */
-export type BeitragAnsicht = BaseContentResult & Record<string, any>;
+/** Ein Beitrag unter seiner Adresse (#300): flach wie getById seines Typs, dazu die eigene Stimme. */
+export type BeitragAnsicht = BaseContentResult & Record<string, any> & { user_vote?: 'like' | 'dislike' | null };
 
 export interface RecentContentResponse {
   results_count: number;

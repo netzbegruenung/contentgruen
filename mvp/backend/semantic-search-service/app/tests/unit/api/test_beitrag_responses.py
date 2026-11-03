@@ -29,6 +29,7 @@ from dependencies import (
     get_post_service,
     get_reference_service,
     get_settings,
+    get_voting_service,
 )
 from domain.models.author_entry import AuthorEntry
 from domain.models.base_content import BaseContentDbEntry
@@ -241,6 +242,7 @@ def lese_client(anzeigenamen_ohne_datenbank):
             get_settings: lambda: MagicMock(),
             get_reference_service: lambda: AsyncMock(),
             get_beitrag_laden: lambda: AsyncMock(side_effect=lambda i: _inhalt(i)),
+            get_voting_service: lambda: MagicMock(get_user_vote=lambda *_: None),
         }
     )
     factory = MagicMock()

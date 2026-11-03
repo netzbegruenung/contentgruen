@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Header, Response
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any
 import logging
 import uuid
 
@@ -15,6 +15,7 @@ from dependencies import (
     get_post_service,
     get_settings,
     get_reference_service,
+    get_voting_service,
 )
 from dtos.content import (
     ContentGetAllResponse,
@@ -39,6 +40,7 @@ from dtos.beitrag import (
 from dtos.image import BildResponse
 from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
+from services.voting_service import VotingService
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
     LoeschErgebnis,
@@ -196,13 +198,8 @@ async def get_recent_content(
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
-BeitragAnsicht = Union[
-    KommentarResponse, HintergrundinfoResponse, PostResponse, BildResponse
-]
-
-
 # response_model=None: Ein Union-Modell liesse Pydantic den Typ raten; die Antwort ist
-# schon das DTO ihres Typs, und das DTO ist die Feldauswahl.
+# schon das DTO ihres Typs (die Feldauswahl), dazu nur die eigene Stimme.
 @router.get("/beitrag/{beitrag_id}", response_model=None)
 async def beitrag_ansehen(
     beitrag_id: uuid.UUID,
@@ -213,7 +210,8 @@ async def beitrag_ansehen(
     image_service: Optional[BaseContentService] = Depends(get_image_service),
     reference_service: ReferenceService = Depends(get_reference_service),
     aufrufer: Aufrufer = Depends(get_aufrufer),
-) -> BeitragAnsicht:
+    voting_service: VotingService = Depends(get_voting_service),
+) -> Dict[str, Any]:
     """
     Ein Beitrag jedes Typs unter seiner eigenen Adresse (/beitrag/:id, #300).
 
@@ -225,6 +223,9 @@ async def beitrag_ansehen(
     404 fuer gesperrte, geloeschte und nie vorhandene Beitraege, auch fuer Admins:
     Gesperrtes finden sie ueber die Moderation (GLOSSARY.md, "Gesperrt"). Aussage
     und Herkunft sind keine Beitraege und haben hier keine Adresse.
+
+    user_vote ist die Stimme der angemeldeten Person wie in der Suche, damit die
+    Seite das Abstimmen anbietet (Entscheidung @BanSe 03.11.); ohne Anmeldung None.
     """
     nicht_da = HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
     dienste = {
@@ -262,7 +263,14 @@ async def beitrag_ansehen(
         [mit_nutzung] = get_usage_service().enrich_content_with_usage(
             [beitrag.model_dump()]
         )
-        return als_responses(ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer)[0]
+        [antwort] = als_responses(ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer)
+        # get_user_vote faengt Datenbankfehler selbst ab: ohne Stimme bleibt die Seite.
+        stimme = (
+            voting_service.get_user_vote(aufrufer.kennung, beitrag_id)
+            if aufrufer.angemeldet
+            else None
+        )
+        return {**antwort.model_dump(mode="json"), "user_vote": stimme}
     except Exception as e:
         logger.error(f"Error in /beitrag: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

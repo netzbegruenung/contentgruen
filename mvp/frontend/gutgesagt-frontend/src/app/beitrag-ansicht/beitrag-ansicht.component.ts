@@ -24,9 +24,8 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
  * Beitragstypen. Dorthin fuehren "Beitrag öffnen" im Menue der Karte (Suche, Album,
  * nach dem Speichern) und "Ansehen" an einem ausformulierten Einwurf.
  *
- * Wie die Sheets mit einem einzelnen Beitrag ohne Abstimmen: Die Stimme der Person
- * kennt nur die Suche (user_vote), und ohne sie zeigte die Karte eine falsche.
- * Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
+ * Mit Abstimmen wie in der Suche (Entscheidung @BanSe 03.11.): Der Endpunkt liefert
+ * die eigene Stimme mit (user_vote), sonst zeigte die Karte eine falsche. Gesperrte und geloeschte Beitraege gibt es hier fuer niemanden (404).
  */
 @Component({
   selector: 'app-beitrag-ansicht',
@@ -40,7 +39,7 @@ export const NICHT_ANZEIGBAR = 'Der Beitrag lässt sich gerade nicht anzeigen.';
       </div>
 
       <app-beitragskarte *ngIf="karte as karte" [daten]="karte" variante="voll"
-                         [abstimmenSichtbar]="false" [ansichtVerlinkt]="false"></app-beitragskarte>
+                         [ansichtVerlinkt]="false"></app-beitragskarte>
 
       <ng-container *ngIf="zustand === 'nichtDa' || zustand === 'stoerung'">
         <p class="hinweis" role="status">{{ zustand === 'nichtDa' ? nichtVerfuegbar : nichtAnzeigbar }}</p>

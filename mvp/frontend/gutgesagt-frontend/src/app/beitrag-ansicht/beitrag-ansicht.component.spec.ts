@@ -70,13 +70,19 @@ describe('BeitragAnsichtComponent', () => {
       expect(contentService.beitragLaden).toHaveBeenCalledWith('b-7');
     });
 
-    it('zeigt ihn als volle Karte, ohne Abstimmen und ohne Link auf sich selbst', async () => {
+    it('zeigt ihn als volle Karte mit Abstimmen, ohne Link auf sich selbst', async () => {
       await oeffnen(of(beitrag()));
 
       expect(karte()?.daten?.titel).toBe('Wärmepumpe lohnt sich auch im Altbau');
       expect(karte()?.variante).toBe('voll');
-      expect(karte()?.abstimmenSichtbar).toBeFalse();
+      expect(karte()?.abstimmenSichtbar).toBeTrue();
       expect(karte()?.ansichtVerlinkt).toBeFalse();
+    });
+
+    it('zeigt die eigene Stimme an der Karte', async () => {
+      await oeffnen(of(beitrag({ user_vote: 'like' })));
+
+      expect(karte()?.daten?.stimme).toBe('like');
     });
 
     it('zeigt jeden Beitragstyp, auch ein Bild', async () => {
