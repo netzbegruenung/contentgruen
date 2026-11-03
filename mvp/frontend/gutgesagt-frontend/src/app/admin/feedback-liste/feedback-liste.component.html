@@ -41,12 +41,19 @@
                 mat-stroked-button
                 type="button"
                 [disabled]="laeuft.has(e.id)"
+                [attr.aria-label]="(e.erledigt ? 'Wieder offen' : 'Als erledigt markieren') + ': Feedback vom ' + tag(e.eingegangen_am)"
                 (click)="erledigtSetzen(e, !e.erledigt)"
               >
                 <mat-icon>{{ e.erledigt ? 'undo' : 'done' }}</mat-icon>
-                {{ e.erledigt ? 'Wieder offen' : 'Erledigt' }}
+                {{ e.erledigt ? 'Wieder offen' : 'Als erledigt markieren' }}
               </button>
-              <button mat-button type="button" [disabled]="laeuft.has(e.id)" (click)="loeschen(e)">
+              <button
+                mat-button
+                type="button"
+                [disabled]="laeuft.has(e.id)"
+                [attr.aria-label]="'Löschen: Feedback vom ' + tag(e.eingegangen_am)"
+                (click)="loeschen(e)"
+              >
                 <mat-icon>delete</mat-icon>
                 Löschen
               </button>

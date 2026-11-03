@@ -25,6 +25,7 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from core.logging import get_logger
+from infrastructure.database.models import FeedbackZeile
 from repositories.feedback_repository import FeedbackRepository
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
@@ -46,7 +47,7 @@ class FeedbackEintrag:
     erledigt: bool
 
 
-def _eintrag(zeile) -> FeedbackEintrag:
+def _eintrag(zeile: FeedbackZeile) -> FeedbackEintrag:
     return FeedbackEintrag(
         zeile.id, zeile.text, zeile.kontakt, zeile.eingegangen_am, zeile.erledigt
     )

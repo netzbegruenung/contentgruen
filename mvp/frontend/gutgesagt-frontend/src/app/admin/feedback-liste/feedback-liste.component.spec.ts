@@ -129,7 +129,7 @@ describe('FeedbackListeComponent', () => {
     it('markiert offenes Feedback als erledigt und nimmt es aus der Liste', () => {
       laden(OFFEN, [eintrag()]);
 
-      knopf('Erledigt', zeile())!.click();
+      knopf('Als erledigt markieren', zeile())!.click();
       const anfrage = http.expectOne(`${URL}/a`);
       expect(anfrage.request.method).toBe('PATCH');
       expect(anfrage.request.body).toEqual({ erledigt: true });
@@ -137,6 +137,17 @@ describe('FeedbackListeComponent', () => {
       fixture.detectChanges();
 
       expect(zeilen()).toEqual([]);
+    });
+
+    it('nennt in den Knöpfen den Eintrag, für Screenreader', () => {
+      laden(OFFEN, [eintrag()]);
+
+      const beschriftungen = Array.from(zeile().querySelectorAll('button')).map((b) => b.getAttribute('aria-label'));
+
+      expect(beschriftungen).toEqual([
+        'Als erledigt markieren: Feedback vom 27.10.2026',
+        'Löschen: Feedback vom 27.10.2026',
+      ]);
     });
 
     it('nimmt erledigt zurück', () => {
@@ -156,7 +167,7 @@ describe('FeedbackListeComponent', () => {
     it('lässt den Eintrag bei einem Fehler stehen und sagt es', () => {
       laden(OFFEN, [eintrag()]);
 
-      knopf('Erledigt', zeile())!.click();
+      knopf('Als erledigt markieren', zeile())!.click();
       http.expectOne(`${URL}/a`).flush('kaputt', { status: 500, statusText: 'Server Error' });
       fixture.detectChanges();
 
