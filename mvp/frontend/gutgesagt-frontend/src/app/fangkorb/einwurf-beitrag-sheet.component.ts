@@ -23,6 +23,7 @@ import { CommentaryService } from '../services/commentary.service';
 import { GenericTextService } from '../services/generic-text.service';
 import { LoggingService } from '../services/logging.service';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
+import { ROUTES } from '../shared/constants/app.constants';
 
 /** Was das Sheet braucht: die Beitraege eines Einwurfs, aelteste zuerst. */
 export interface EinwurfBeitragSheetDaten {
@@ -95,8 +96,9 @@ interface Geladen {
       <p *ngIf="fehler" class="sheet-fehler">Dieser Beitrag ist nicht mehr verfügbar.</p>
 
       <!-- Wie im Album: kopieren und melden bleiben, abstimmen nicht -->
+      <!-- Ohne Link auf die Adresse: Beim Einwerfen ginge die Eingabe verloren -->
       <app-beitragskarte *ngIf="karte as karte" [daten]="karte" variante="voll"
-                         [abstimmenSichtbar]="false"></app-beitragskarte>
+                         [abstimmenSichtbar]="false" [ansichtVerlinkt]="false"></app-beitragskarte>
     </ng-template>
   `,
   styles: [
@@ -200,7 +202,7 @@ export class EinwurfBeitragSheetComponent implements OnInit, OnDestroy {
   oeffnen(beitrag: EinwurfBeitrag): void {
     if (this.daten.zurAdresse) {
       this.sheetRef?.dismiss();
-      this.router.navigate(['/beitrag', beitrag.contentId]);
+      this.router.navigate([ROUTES.BEITRAG, beitrag.contentId]);
       return;
     }
     this.auswahlOffen = false;

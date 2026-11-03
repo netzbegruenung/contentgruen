@@ -76,7 +76,7 @@
             <span>Inhalt melden</span>
         </button>
         <!-- Die eigene Adresse des Beitrags (#300), etwa um ihn wiederzufinden -->
-        <button mat-menu-item type="button" class="beitrag-oeffnen" *ngIf="ansichtVerlinkt && inhaltId"
+        <button mat-menu-item type="button" class="beitrag-oeffnen" *ngIf="ansichtVerlinkt && inhaltId && !vorschau"
                 (click)="beitragOeffnen()">
             <mat-icon>article</mat-icon>
             <span>Beitrag öffnen</span>

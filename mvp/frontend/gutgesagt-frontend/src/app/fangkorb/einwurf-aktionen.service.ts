@@ -11,6 +11,7 @@ import { SCHRITT_PARAM } from '../destillieren/destillier-uebergabe.service';
 import { EinwurfService } from '../services/einwurf.service';
 import { LoggingService } from '../services/logging.service';
 import { verwerfenFehlertext } from '../shared/fangkorb-texte';
+import { ROUTES } from '../shared/constants/app.constants';
 import { EinwurfAktion, EinwurfBeitrag, KartenDaten } from '../beitragskarte/karten-daten';
 
 /**
@@ -75,7 +76,7 @@ export class EinwurfAktionenService {
   private ansehen(karte: KartenDaten, beitraege: EinwurfBeitrag[]): void {
     const [einziger] = beitraege;
     if (beitraege.length === 1 && einziger) {
-      this.router.navigate(['/beitrag', einziger.contentId]);
+      this.router.navigate([ROUTES.BEITRAG, einziger.contentId]);
       return;
     }
     if (beitraege.length > 1) {

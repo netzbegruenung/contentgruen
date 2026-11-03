@@ -31,7 +31,7 @@ from dtos.beitrag import (
     KommentarResponse,
     PostResponse,
 )
-from dtos.image import BildResponse
+from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
 from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
@@ -44,12 +44,7 @@ router = APIRouter()
 
 # Was "Diese Woche oft genutzt" je Typ ausliefert (dtos/beitrag.py, #333); ein Typ
 # ohne Eintrag bekommt die allgemeine Auswahl.
-OFT_GENUTZT = {
-    ContentType.COMMENTARY.value: KommentarResponse,
-    ContentType.GENERIC_TEXT.value: HintergrundinfoResponse,
-    ContentType.POST.value: PostResponse,
-    ContentType.IMAGE.value: BildResponse,
-}
+OFT_GENUTZT = ANTWORT_JE_TYP
 
 
 class TrackUsageRequest(BaseModel):

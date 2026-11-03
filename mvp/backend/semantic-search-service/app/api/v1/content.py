@@ -37,6 +37,7 @@ from dtos.beitrag import (
     PostResponse,
 )
 from dtos.image import BildResponse
+from dtos.beitragstypen import ANTWORT_JE_TYP
 from services.content.reference_service import ReferenceService
 from services.content.beitrag_loeschen_service import (
     BeitragLoeschenService,
@@ -195,15 +196,6 @@ async def get_recent_content(
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
 
 
-# Die Antwort je Beitragstyp, wie getById des Typs sie liefert. Aussage und Herkunft
-# fehlen: Sie sind keine Beitraege (ADR 0002) und haben keine eigene Adresse.
-ANSICHT = {
-    ContentType.COMMENTARY: KommentarResponse,
-    ContentType.GENERIC_TEXT: HintergrundinfoResponse,
-    ContentType.POST: PostResponse,
-    ContentType.IMAGE: BildResponse,
-}
-
 BeitragAnsicht = Union[
     KommentarResponse, HintergrundinfoResponse, PostResponse, BildResponse
 ]
@@ -218,7 +210,7 @@ async def beitrag_ansehen(
     commentary_service: BaseContentService = Depends(get_commentary_service),
     generic_text_service: BaseContentService = Depends(get_generic_text_service),
     post_service: BaseContentService = Depends(get_post_service),
-    image_service: BaseContentService = Depends(get_image_service),
+    image_service: Optional[BaseContentService] = Depends(get_image_service),
     reference_service: ReferenceService = Depends(get_reference_service),
     aufrufer: Aufrufer = Depends(get_aufrufer),
 ) -> BeitragAnsicht:
@@ -226,37 +218,51 @@ async def beitrag_ansehen(
     Ein Beitrag jedes Typs unter seiner eigenen Adresse (/beitrag/:id, #300).
 
     Die Adresse traegt nur die ID; den Typ liest erst das aggregierte Repository,
-    den Beitrag mit seinen Feldern dann der Dienst seines Typs. Herkunft und Nutzung
-    wie in /recent. Oeffentlich wie die Suche (BFF: EndpointPolicy.AllowAnonymous).
+    den Beitrag mit seinen Feldern dann der Dienst seines Typs (die Antwort je Typ:
+    dtos/beitragstypen.py). Herkunft und Nutzung wie in /recent. Oeffentlich wie die
+    Suche (BFF: EndpointPolicy.AllowAnonymous).
 
     404 fuer gesperrte, geloeschte und nie vorhandene Beitraege, auch fuer Admins:
-    Gesperrtes finden sie ueber die Moderation (GLOSSARY.md, "Gesperrt").
+    Gesperrtes finden sie ueber die Moderation (GLOSSARY.md, "Gesperrt"). Aussage
+    und Herkunft sind keine Beitraege und haben hier keine Adresse.
     """
+    nicht_da = HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
     dienste = {
-        ContentType.COMMENTARY: commentary_service,
-        ContentType.GENERIC_TEXT: generic_text_service,
-        ContentType.POST: post_service,
-        ContentType.IMAGE: image_service,
+        ContentType.COMMENTARY.value: commentary_service,
+        ContentType.GENERIC_TEXT.value: generic_text_service,
+        ContentType.POST.value: post_service,
+        ContentType.IMAGE.value: image_service,
     }
     try:
         allgemein = await laden(beitrag_id)
-        typ = allgemein.content_type if allgemein else None
-        if typ not in ANSICHT:
-            raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
-        # ValueError: zwischen beiden Lesungen gesperrt oder geloescht.
-        beitrag = await dienste[typ].get(beitrag_id)
+    except BeitragUnlesbar:
+        # Geloggt hat beitrag_laden.
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    typ = allgemein.content_type.value if allgemein else None
+    if typ not in ANTWORT_JE_TYP:
+        raise nicht_da
+    dienst = dienste[typ]
+    if dienst is None:
+        # get_image_service liefert None, solange der Suchindex nicht bereit ist.
+        logger.error(f"No service for content type {typ} in /beitrag")
+        raise HTTPException(status_code=503, detail=INTERNER_FEHLER)
+
+    try:
+        beitrag = await dienst.get(beitrag_id)
+    except ValidationError:
+        # Vor ValueError, denn Pydantics ValidationError ist einer; kaputt, nicht
+        # abwesend. Geloggt hat das Repository.
+        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
+    except ValueError:
+        # Zwischen beiden Lesungen gesperrt oder geloescht (base_repository.get).
+        raise nicht_da
+
+    try:
         await reference_service.herkunft_ergaenzen(beitrag)
         [mit_nutzung] = get_usage_service().enrich_content_with_usage(
             [beitrag.model_dump()]
         )
-        return als_responses(ANSICHT[typ], [mit_nutzung], aufrufer)[0]
-    except HTTPException:
-        raise
-    except (BeitragUnlesbar, ValidationError):
-        # Kaputt, nicht abwesend; geloggt hat das Repository (beitrag_laden.py).
-        raise HTTPException(status_code=500, detail=INTERNER_FEHLER)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Beitrag nicht gefunden.")
+        return als_responses(ANTWORT_JE_TYP[typ], [mit_nutzung], aufrufer)[0]
     except Exception as e:
         logger.error(f"Error in /beitrag: {type(e).__name__}", exc_info=True)
         raise HTTPException(status_code=500, detail=INTERNER_FEHLER)

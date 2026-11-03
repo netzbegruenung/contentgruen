@@ -28,6 +28,7 @@ import { UsageTrackingService } from '../../services/usage-tracking.service';
 import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
 import { HAND_UMRISS } from '../../shared/marke/hand';
+import { ROUTES } from '../../shared/constants/app.constants';
 import type { Fassung } from '../../shared/fassung';
 
 /**
@@ -173,7 +174,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     if (this.vorschau || !this.inhaltId) {
       return;
     }
-    this.router.navigate(['/beitrag', this.inhaltId]);
+    this.router.navigate([ROUTES.BEITRAG, this.inhaltId]);
   }
 
   openReportDialog(): void {

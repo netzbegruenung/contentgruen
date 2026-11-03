@@ -252,9 +252,10 @@ Paths below `app/` are in `mvp/backend/semantic-search-service/app/`, frontend p
    fields, never the DbEntry, so no Kennung leaks (#333); build them with
    `als_responses`/`fuer_aufrufer` (`services/beitrag_fuer_aufrufer.py`). If the type shows up in
    `/content/recent`, add it to `NEUESTE` in `api/v1/content.py`; `OFT_GENUTZT` in
-   `api/v1/usage.py` maps every type to its response for „Diese Woche oft genutzt“. The
-   Beitrag's own address (`/beitrag/:id`, #300) needs the type in `ANSICHT` in
-   `api/v1/content.py` and its service in `beitrag_ansehen` there.
+   `api/v1/usage.py` maps every type to its response for „Diese Woche oft genutzt“ via
+   `ANTWORT_JE_TYP` in `dtos/beitragstypen.py`; add the type there. The Beitrag's own
+   address (`/beitrag/:id`, #300) also needs its service in `beitrag_ansehen` in
+   `api/v1/content.py`.
 5. **Frontend**: one entry in `shared/content-type-registry.ts` (key, icon, German `label`,
    `resultField`, `emoji`), the type's fields in the `ausSuchergebnis` adapter
    (`beitragskarte/karten-daten.ts`) and, only if it needs its own body, a block in

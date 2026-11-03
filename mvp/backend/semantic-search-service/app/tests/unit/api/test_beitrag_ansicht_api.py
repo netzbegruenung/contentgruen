@@ -182,5 +182,18 @@ class TestBeitragAnsicht:
 
         assert client.get(URL).status_code == 500
 
+    def test_ohne_bilddienst_503_statt_absturz(self, client, dienste, laden):
+        # get_image_service liefert None, solange der Suchindex nicht bereit ist.
+        dienste[ContentType.IMAGE] = None
+        laden.return_value = _allgemein(ContentType.IMAGE)
+
+        assert client.get(URL).status_code == 503
+
+    def test_fehler_nach_dem_lesen_ist_500_nicht_404(self, client, nutzung):
+        # Nur "nicht da" ist 404; ein ValueError in der Nutzung ist eine Stoerung.
+        nutzung.enrich_content_with_usage.side_effect = ValueError("kaputt")
+
+        assert client.get(URL).status_code == 500
+
     def test_keine_uuid_ist_422(self, client):
         assert client.get("/api/v1/content/beitrag/kein-beitrag").status_code == 422
