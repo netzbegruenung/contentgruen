@@ -214,6 +214,7 @@ async def beitrag_aendern(
             HerkunftAngabe(h.reference_string, h.description)
             for h in request.references
         ],
+        cc0_wortlaut=request.cc0_wortlaut,
     )
     try:
         ergebnis = await service.aendern(beitrag_id, x_user, aenderung)

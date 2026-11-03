@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 
 import { BeitragAendernDialogComponent, aendernFehlertext } from './beitrag-aendern-dialog.component';
@@ -24,9 +25,9 @@ describe('BeitragAendernDialogComponent', () => {
     autorName: null,
     nutzung: 3,
     quellen: [
-      { id: 'r-1', url: 'https://example.org/studie', beschreibung: 'Feldtest' },
-      // Ohne eigene Notiz zeigt die Karte die Adresse als Beschreibung.
-      { id: 'r-2', url: 'https://example.org/zweite', beschreibung: 'https://example.org/zweite' },
+      { id: 'r-1', url: 'https://example.org/studie', beschreibung: 'Feldtest', notiz: 'Feldtest' },
+      // Ohne eigene Notiz zeigt die Karte den Text der Herkunft; der wird keine Notiz.
+      { id: 'r-2', url: 'https://example.org/zweite', beschreibung: 'Text einer anderen Person' },
     ],
   };
 
@@ -48,6 +49,7 @@ describe('BeitragAendernDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [BeitragAendernDialogComponent, NoopAnimationsModule],
       providers: [
+        provideRouter([]),
         { provide: MAT_DIALOG_DATA, useValue: daten },
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: MeineBeitraegeService, useValue: beitraege },
@@ -103,6 +105,20 @@ describe('BeitragAendernDialogComponent', () => {
     expect(dialogRef.close).toHaveBeenCalledOnceWith(true);
   });
 
+  it('zeigt über dem Speichern-Knopf den CC0-Hinweis', () => {
+    erstellen();
+
+    expect(fixture.nativeElement.querySelector('p[appCc0Hinweis]').textContent).toContain('CC0');
+  });
+
+  it('speichert nicht mit einem Text unter 10 Zeichen, wie beim Anlegen', () => {
+    erstellen();
+    komponente.formular.controls.text.setValue('Zu kurz');
+    fixture.detectChanges();
+
+    expect(speichernKnopf().disabled).toBeTrue();
+  });
+
   it('speichert nicht mit einem Titel unter 3 Zeichen', () => {
     erstellen();
     komponente.formular.controls.title.setValue('ab');
@@ -148,6 +164,10 @@ describe('BeitragAendernDialogComponent', () => {
     it('rät bei 403 und 404 nicht zum erneuten Versuch', () => {
       expect(aendernFehlertext({ status: 403 })).toBe('Ändern kann nur der Autor des Beitrags.');
       expect(aendernFehlertext({ status: 404 })).toBe('Den Beitrag gibt es nicht mehr.');
+    });
+
+    it('nennt bei 422 die Grenzen von Titel und Text', () => {
+      expect(aendernFehlertext({ status: 422 })).toContain('mindestens 3 Zeichen');
     });
 
     it('rät sonst zum erneuten Versuch', () => {

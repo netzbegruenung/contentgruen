@@ -93,10 +93,11 @@ async def test_aendern_laesst_eine_sperre_stehen(
     await inhalte.inhalt_aendern(
         kommentar_id,
         ContentType.COMMENTARY.value,
-        {"title": "Geändert"},
+        {"title": "Geändert", "text": NEU},
         nicht_aus=AUSGEBLENDET,
     )
 
     punkt = await real_embeddings_manager.get_by_id(str(kommentar_id))
     assert punkt["status"] == ContentStatus.BLOCKED.value
     assert punkt["title"] == "Tempolimit spart CO2"
+    assert punkt["text"] == ALT

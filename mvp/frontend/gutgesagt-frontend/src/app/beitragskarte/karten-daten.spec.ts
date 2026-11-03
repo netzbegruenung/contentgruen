@@ -275,6 +275,24 @@ describe('karten-daten', () => {
       ]);
     });
 
+    it('nimmt die Notiz dieses Beitrags getrennt von der Beschreibung mit (#299)', () => {
+      const daten = ausBeitrag(
+        eintrag({
+          references: [
+            {
+              reference_id: 'r-1',
+              created: '2026-09-01T10:00:00',
+              reference_text: 'https://example.org/studie',
+              reference_description: 'Feldtest',
+              description: 'Feldtest',
+            },
+          ],
+        }),
+      );
+
+      expect(daten.quellen[0].notiz).toBe('Feldtest');
+    });
+
     it('zeigt ein Bild ohne Unterschrift mit Titel, ohne Titel mit der Domain der Bildadresse', () => {
       const mitTitel = ausBeitrag(
         eintrag({ content_type: 'image', text: null, title: 'Solardach', image_url: 'https://www.example.org/b.jpg' }),

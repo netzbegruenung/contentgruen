@@ -57,6 +57,8 @@ class Aenderung:
     titel: str
     text: str
     herkuenfte: List[HerkunftAngabe] = field(default_factory=list)
+    # Kennung des CC0-Hinweises, den der Dialog gezeigt hat; None von einer aelteren App.
+    cc0_wortlaut: Optional[str] = None
 
 
 class AenderErgebnis(Enum):
@@ -131,6 +133,9 @@ class BeitragAendernService:
             "last_modified": verlauf_payload[-1]["timestamp"],
             "last_modified_by": aufrufer,
         }
+        # Die neue Formulierung steht unter dem zuletzt gezeigten Wortlaut.
+        if aenderung.cc0_wortlaut is not None:
+            felder["cc0_wortlaut"] = aenderung.cc0_wortlaut
         await self.repository.inhalt_aendern(
             beitrag_id, beitrag.content_type.value, felder, nicht_aus=AUSGEBLENDET
         )

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { GetContributionsOfUserResponse } from './dtos/contributionDtos';
+import { mitCc0Wortlaut } from '../shared/consent-hinweis';
 
 /** Eine Herkunft in der Aenderung: Adresse oder Fundstelle, dazu die Notiz dieses Beitrags. */
 export interface HerkunftEingabe {
@@ -32,9 +33,15 @@ export class MeineBeitraegeService {
     return this.http.get<GetContributionsOfUserResponse>(url);
   }
 
-  /** Der Autor aendert Titel, Text und Herkunft seines Beitrags (#299). */
+  /**
+   * Der Autor aendert Titel, Text und Herkunft seines Beitrags (#299). Der Dialog zeigt
+   * den CC0-Hinweis; seine Kennung geht mit wie beim Anlegen (#431).
+   */
   beitragAendern(id: string, aenderung: BeitragAenderung): Observable<void> {
-    return this.http.put<void>(`${environment.baseUrl}/api/v1/content/${encodeURIComponent(id)}`, aenderung);
+    return this.http.put<void>(
+      `${environment.baseUrl}/api/v1/content/${encodeURIComponent(id)}`,
+      mitCc0Wortlaut(aenderung),
+    );
   }
 
   /** Der Autor loescht seinen Beitrag; er bekommt den Zustand "geloescht" (#250). */

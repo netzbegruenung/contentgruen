@@ -78,12 +78,13 @@ class TestBeitragAendernApi:
 
     def test_aendern_titel_und_text_ohne_leerraum_am_rand(self, client, service):
         _aendern(
-            client, {**ANFRAGE, "title": "  Ein Titel mit Haltung ", "text": " T "}
+            client,
+            {**ANFRAGE, "title": "  Ein Titel mit Haltung ", "text": " Text mit Rand "},
         )
 
         aenderung = service.aendern.await_args.args[2]
         assert aenderung.titel == "Ein Titel mit Haltung"
-        assert aenderung.text == "T"
+        assert aenderung.text == "Text mit Rand"
 
     def test_aendern_andere_person_ist_403(self, client, service):
         service.aendern.return_value = AenderErgebnis.NICHT_AUTOR
@@ -121,6 +122,8 @@ class TestBeitragAendernApi:
             {**ANFRAGE, "title": "ab"},
             {**ANFRAGE, "title": "x" * 121},
             {**ANFRAGE, "text": "   "},
+            {**ANFRAGE, "text": "Zu kurz"},
+            {**ANFRAGE, "cc0_wortlaut": "unbekannt"},
             {**ANFRAGE, "references": [{"reference_string": "  "}]},
             {**ANFRAGE, "references": [{"reference_string": "a"}] * 11},
         ],

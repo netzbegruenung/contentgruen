@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from core.fehler import Validierungsfehler
-from domain.models.content_status import ContentStatus
+from domain.models.content_status import AUSGEBLENDET, ContentStatus
 from repositories.aggregated.content_repository import ContentRepository
 from services.content.beitrag_aendern_service import (
     AenderErgebnis,
@@ -117,6 +117,36 @@ class TestBeitragAendern:
         assert verlauf[1]["action"] == "edit"
         assert gespeichert["last_modified_by"] == AUTOR
         assert gespeichert["last_modified"] == verlauf[1]["timestamp"]
+
+    async def test_aendern_speichert_den_gezeigten_cc0_wortlaut(
+        self, service, speicher
+    ):
+        speicher.add_test_data("commentary", [_beitrag(cc0_wortlaut=None)])
+        mit_hinweis = Aenderung(
+            AENDERUNG.titel, AENDERUNG.text, [], cc0_wortlaut="2026-11-02-formular"
+        )
+
+        await service.aendern(uuid.UUID(BEITRAG_ID), AUTOR, mit_hinweis)
+
+        assert _gespeichert(speicher)["cc0_wortlaut"] == "2026-11-02-formular"
+
+    async def test_inhalt_aendern_gesperrt_bekommt_keinen_neuen_vektor(
+        self, test_settings, speicher
+    ):
+        """Sperrt ein Admin zwischen Lesen und Schreiben: Text und Vektor bleiben."""
+        speicher.add_test_data(
+            "commentary", [_beitrag(status=ContentStatus.BLOCKED.value)]
+        )
+
+        await ContentRepository(test_settings, speicher).inhalt_aendern(
+            uuid.UUID(BEITRAG_ID),
+            "commentary",
+            {"text": "Neuer Text"},
+            nicht_aus=AUSGEBLENDET,
+        )
+
+        assert _gespeichert(speicher)["text"] == "Alter Text"
+        assert BEITRAG_ID not in speicher.vektor_texte
 
     async def test_aendern_andere_person_aendert_nichts(
         self, service, speicher, herkunft_id

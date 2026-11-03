@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, List, Optional
 from uuid import UUID
 
+from domain.cc0_hinweis import Cc0Wortlaut
 from domain.models.commentary import CommentaryReference, Stil, Zweck
 from domain.models.content_status import ContentStatus
 from domain.models.content_type import ContentType
@@ -146,10 +147,13 @@ class BeitragAendernRequest(BaseModel):
     """
 
     title: str = Field(min_length=3, max_length=120)
-    text: str = Field(min_length=1)
+    # Mindestens 10 Zeichen wie in den Formularen beim Anlegen.
+    text: str = Field(min_length=10)
     references: List[HerkunftEingabe] = Field(
         default_factory=list, max_length=HERKUENFTE_HOECHSTENS
     )
+    # Der CC0-Hinweis im Dialog, wie beim Anlegen (#431, domain/cc0_hinweis.py).
+    cc0_wortlaut: Cc0Wortlaut = None
 
     @field_validator("title", "text", mode="before")
     @classmethod

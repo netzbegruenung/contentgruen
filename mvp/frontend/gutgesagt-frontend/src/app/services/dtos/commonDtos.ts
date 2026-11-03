@@ -11,6 +11,8 @@ export interface ContentReference {
     created: string;
     reference_text?: string;  // The URL
     reference_description?: string;  // The description
+    /** Die Notiz dieses Beitrags zur Herkunft; ohne sie zeigt reference_description den Text der Herkunft. */
+    description?: string | null;
 }
 
 /**

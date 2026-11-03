@@ -806,10 +806,11 @@ class QdrantBaseRepository(
         Die Felder ueberschreiben, dann den Vektor aus dem neuen Text berechnen.
 
         Wie update_status mit nicht_aus: Qdrant prueft den Zustand im selben
-        Schreibvorgang, eine inzwischen gesetzte Sperre bleibt so stehen. Der Rest
-        des Payloads (Stimmen-, Melde- und Sperrfelder) bleibt unberuehrt, anders
-        als bei upsert(). Scheitert der Vektor nach den Feldern, findet die Suche
-        bis zum naechsten Versuch noch den alten Text; die Felder stimmen schon.
+        Schreibvorgang, eine inzwischen gesetzte Sperre bleibt so stehen. Den Vektor
+        gibt es nur, wenn danach der neue Text im Punkt steht; sonst passte er nicht
+        zum gespeicherten. Der Rest des Payloads (Stimmen-, Melde- und Sperrfelder)
+        bleibt unberuehrt, anders als bei upsert(). Scheitert der Vektor nach den
+        Feldern, findet die Suche bis zum naechsten Versuch noch den alten Text.
         """
         from qdrant_client.models import (
             FieldCondition,
@@ -836,11 +837,20 @@ class QdrantBaseRepository(
                 ],
             ),
         )
-        if text is not None:
+        if text is not None and await self._text_steht_im_punkt(item_id, text):
             await self._shared_manager.vektor_neu_berechnen(
                 str(item_id), text, content_type
             )
         logger.debug(f"Changed fields of {item_id}: {sorted(felder)}")
+
+    async def _text_steht_im_punkt(self, item_id: uuid.UUID, text: str) -> bool:
+        punkte = await self._shared_manager.async_client.retrieve(
+            collection_name=self._shared_manager.collection_name,
+            ids=[str(item_id)],
+            with_payload=["text"],
+            with_vectors=False,
+        )
+        return bool(punkte) and (punkte[0].payload or {}).get("text") == text
 
     @abstractmethod
     def initialize_with_initial_data(self):
