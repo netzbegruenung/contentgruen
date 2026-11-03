@@ -36,10 +36,11 @@ def _konto(kennung, angelegt=VORHER, **extra):
 class Keycloak:
     """Haelt Konten, Passwoerter und Verknuepfungen; zeichnet die Anfragen auf."""
 
-    def __init__(self, konten, passwort=(), verknuepft=()):
+    def __init__(self, konten, passwort=(), verknuepft=(), von_hand_geloescht=()):
         self.konten = {k["id"]: k for k in konten}
         self.passwort = set(passwort)
         self.verknuepft = set(verknuepft)
+        self.von_hand_geloescht = set(von_hand_geloescht)
         self.anfragen: list[httpx.Request] = []
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
@@ -65,6 +66,8 @@ class Keycloak:
             idp = [{"identityProvider": "netzbegruenung"}]
             return httpx.Response(200, json=idp if kennung in self.verknuepft else [])
         if request.method == "DELETE":
+            if kennung in self.von_hand_geloescht:
+                return httpx.Response(404)
             self.konten.pop(kennung, None)
             return httpx.Response(204)
         return httpx.Response(404)
@@ -123,6 +126,15 @@ def test_liest_alle_seiten_bevor_es_loescht(monkeypatch):
     assert sorted(keycloak.geloescht()) == [f"k{i}" for i in range(5)]
     methoden = [r.method for r in keycloak.anfragen]
     assert "GET" not in methoden[methoden.index("DELETE") :]
+
+
+def test_schon_geloeschtes_konto_haelt_den_lauf_nicht_auf():
+    # Zwischen Lesen und Loeschen hat jemand "weg" von Hand geloescht.
+    keycloak = Keycloak([_konto("weg"), _konto("da")], von_hand_geloescht=["weg"])
+
+    _konten(keycloak).nie_benutzte_loeschen(GRENZE)
+
+    assert keycloak.geloescht() == ["weg", "da"]
 
 
 def test_fragt_nur_unbestaetigte_konten_ab():

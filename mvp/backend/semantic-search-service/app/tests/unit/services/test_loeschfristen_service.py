@@ -183,12 +183,6 @@ class TestNieBenutzteKonten:
 
         meldungen.bearbeitete_loeschen_vor.assert_called_once()
 
-    async def test_ohne_zugang_zum_realm_nichts(self, service, meldungen):
-        # Wie im Dev-Stack: keine Admin-Zugangsdaten, also kein Konto zu loeschen.
-        await service.fristen_anwenden(HEUTE)
-
-        meldungen.bearbeitete_loeschen_vor.assert_called_once()
-
 
 class TestTakt:
     async def test_loeschen_im_takt_laeuft_nach_fehler_weiter(self):

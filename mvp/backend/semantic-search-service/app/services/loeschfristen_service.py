@@ -44,13 +44,12 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from core.logging import get_logger
-from domain.interfaces.konten_im_realm import INieBenutzteKonten
+from domain.interfaces.konten_im_realm import MAIL_GUELTIG_SEKUNDEN, INieBenutzteKonten
 from domain.models.content_status import FELD_GELOESCHT_AM
 from repositories.content_report_repository import ContentReportRepository
 from repositories.interfaces.moderation_repository import IModerationRepository
 from repositories.einwurf_repository import EinwurfRepository
 from repositories.sperre_repository import SperreRepository
-from infrastructure.keycloak_konten import MAIL_GUELTIG_SEKUNDEN
 from services.moderation_service import ModerationService
 from utils.utc_tag import heute_utc, sekunden_bis_mitternacht
 
@@ -99,23 +98,23 @@ class LoeschfristenService:
         nicht auf; der naechste Lauf holt nach, was liegen blieb.
         """
         heute = heute or heute_utc()
-        await self._zeilen_loeschen(
+        await self._frist_anwenden(
             self._meldungen.bearbeitete_loeschen_vor,
             _grenze(heute, MELDUNG_NACH_BEARBEITUNG_TAGE),
             "handled reports",
         )
-        await self._zeilen_loeschen(
+        await self._frist_anwenden(
             self._einwuerfe.ohne_beitrag_loeschen_vor,
             _grenze(heute, EINWURF_OHNE_BEITRAG_TAGE),
             "raw inputs",
         )
-        await self._zeilen_loeschen(
+        await self._frist_anwenden(
             self._sperren.aufgehobene_loeschen_vor,
             _grenze(heute, SPERRE_NACH_AUFHEBUNG_TAGE),
             "lifted Sperren",
         )
         if self._konten is not None:
-            await self._zeilen_loeschen(
+            await self._frist_anwenden(
                 self._konten.nie_benutzte_loeschen,
                 _grenze(heute, NIE_BENUTZTES_KONTO_TAGE)
                 - timedelta(seconds=MAIL_GUELTIG_SEKUNDEN),
@@ -129,7 +128,7 @@ class LoeschfristenService:
             )
 
     @staticmethod
-    async def _zeilen_loeschen(loeschen_vor, grenze: datetime, was: str) -> None:
+    async def _frist_anwenden(loeschen_vor, grenze: datetime, was: str) -> None:
         """Eine Frist in PostgreSQL oder im Realm anwenden; ein Fehler wird nur protokolliert."""
         try:
             n = await asyncio.to_thread(loeschen_vor, grenze)

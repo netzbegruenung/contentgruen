@@ -17,7 +17,11 @@ from typing import Dict, Iterable, List, Mapping, Optional
 import httpx
 
 from core.logging import get_logger
-from domain.interfaces.konten_im_realm import KontoErgebnis, VerknuepfteKonten
+from domain.interfaces.konten_im_realm import (
+    MAIL_GUELTIG_SEKUNDEN,
+    KontoErgebnis,
+    VerknuepfteKonten,
+)
 
 logger = get_logger(__name__)
 
@@ -27,8 +31,6 @@ logger = get_logger(__name__)
 PFLICHTAKTIONEN = ["TERMS_AND_CONDITIONS"]
 # Was der Link in der Mail tut. Keycloak bestaetigt dabei auch die Mail-Adresse.
 MAIL_AKTIONEN = ["UPDATE_PASSWORD"]
-# So lange gilt der Link in der Mail; danach hilft "Passwort vergessen".
-MAIL_GUELTIG_SEKUNDEN = 3 * 24 * 60 * 60
 ZEITLIMIT_SEKUNDEN = 10.0
 KONTEN_JE_SEITE = 100
 
@@ -224,9 +226,10 @@ class KeycloakKonten:
                 and not self._benutzt(sitzung, konto["id"])
             ]
             for konto_id in faellig:
-                sitzung.anfrage(
-                    "DELETE", f"{self._admin}/{konto_id}"
-                ).raise_for_status()
+                antwort = sitzung.anfrage("DELETE", f"{self._admin}/{konto_id}")
+                # 404: inzwischen von Hand geloescht; das Ziel ist erreicht.
+                if antwort.status_code != 404:
+                    antwort.raise_for_status()
         return len(faellig)
 
     def _unbestaetigte_konten(self, sitzung: "_Sitzung") -> List[dict]:
