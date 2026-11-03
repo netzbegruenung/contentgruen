@@ -44,7 +44,7 @@ from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
 from api.v1.einladungen import router as einladungen_router
 from api.v1.gegenlesen import router as gegenlesen_router
-from services.cleanup.usage_cleanup_service import start_cleanup_scheduler
+from services.cleanup.bereinigungsjob import bereinigungsjob_starten
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
     loeschen_im_takt,
@@ -111,10 +111,10 @@ async def lifespan(app: FastAPI):
         initialize_services()
         logger.info("✅ Content services initialized")
 
-        # Start cleanup scheduler for usage data retention
-        logger.info("Starting usage data cleanup scheduler...")
-        start_cleanup_scheduler()
-        logger.info("✅ Cleanup scheduler started")
+        # Der taegliche Bereinigungsjob (Fristen der Nutzungs- und Suchereignisse)
+        logger.info("Starting Bereinigungsjob...")
+        bereinigungsjob_starten()
+        logger.info("✅ Bereinigungsjob started")
 
         # Start rate limiter cleanup task
         logger.info("Starting rate limiter cleanup task...")
@@ -137,7 +137,7 @@ async def lifespan(app: FastAPI):
         logger.info("✅ Rate limiter cleanup task started")
 
         # Kennzahl "Suchen ohne Treffer": alte Wochen taeglich loeschen, unabhaengig
-        # vom abschaltbaren Usage-Cleanup (services/suchen_ohne_treffer_service.py).
+        # vom abschaltbaren Bereinigungsjob (services/suchen_ohne_treffer_service.py).
         app.state.suchen_ohne_treffer_loeschen = asyncio.create_task(
             loeschen_im_takt(
                 get_suchen_ohne_treffer_repository(), get_personen_des_tages()
@@ -145,7 +145,7 @@ async def lifespan(app: FastAPI):
         )
         logger.info("✅ Searches-without-hits cleanup task started")
 
-        # Feedback nach der Frist loeschen, ebenso unabhaengig vom Usage-Cleanup
+        # Feedback nach der Frist loeschen, ebenso unabhaengig vom Bereinigungsjob
         # (services/feedback_service.py).
         app.state.feedback_loeschen = asyncio.create_task(
             feedback_loeschen_im_takt(get_feedback_service())
@@ -158,7 +158,7 @@ async def lifespan(app: FastAPI):
         app.state.gegenlesen_vorladen = asyncio.create_task(_gegenlesen_vorladen())
 
         # Loeschfristen fuer Meldungen, Einwuerfe und geloeschte Beitraege, ebenso
-        # unabhaengig vom Usage-Cleanup (services/loeschfristen_service.py).
+        # unabhaengig vom Bereinigungsjob (services/loeschfristen_service.py).
         app.state.loeschfristen = asyncio.create_task(
             loeschfristen_im_takt(get_loeschfristen_service())
         )

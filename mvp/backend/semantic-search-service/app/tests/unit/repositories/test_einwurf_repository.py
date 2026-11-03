@@ -58,7 +58,9 @@ def _satz(user_id, sentence, einwurf=None):
     )
 
 
-def _verknuepfung(created_by, einwurf=None, draft_id=None, content_type="commentary"):
+def _ausformuliert_in(
+    created_by, einwurf=None, draft_id=None, content_type="commentary"
+):
     return SimpleNamespace(
         raw_input_id=einwurf or uuid.uuid4(),
         content_id=uuid.uuid4(),
@@ -138,7 +140,7 @@ class TestGetAll:
 
         with patch.object(
             EinwurfRepository,
-            "_mit_saetzen_und_verknuepfungen",
+            "_mit_saetzen_und_ausformuliert_in",
             side_effect=lambda s, rows, user: [
                 EinwurfRepository._to_dict(r) for r in rows
             ],
@@ -215,12 +217,12 @@ class TestGetAll:
         assert len(reihenfolge) == 1
         assert "created_at DESC" in _sql(reihenfolge[0])
 
-    def test_get_all_haengt_saetze_und_verknuepfungen_an(self, repository, session):
+    def test_get_all_haengt_saetze_und_ausformuliert_in_an(self, repository, session):
         zeile = _zeile()
         self._query_kette(session, [zeile])
         with patch.object(
             EinwurfRepository,
-            "_mit_saetzen_und_verknuepfungen",
+            "_mit_saetzen_und_ausformuliert_in",
             return_value=[{"id": "x"}],
         ) as anhaengen:
             ergebnis = repository.get_all(current_user="alice")
@@ -230,11 +232,11 @@ class TestGetAll:
 
 
 @pytest.mark.unit
-class TestSaetzeUndVerknuepfungen:
-    def test_to_dict_uebersetzt_erste_verknuepfung_in_processed_felder(self):
+class TestSaetzeUndAusformuliertIn:
+    def test_to_dict_uebersetzt_ersten_ausformuliert_in_in_processed_felder(self):
         satz_id = uuid.uuid4()
-        zuerst = _verknuepfung("bob", draft_id=satz_id)
-        danach = _verknuepfung("carol", content_type="generic_text")
+        zuerst = _ausformuliert_in("bob", draft_id=satz_id)
+        danach = _ausformuliert_in("carol", content_type="generic_text")
 
         eintrag = EinwurfRepository._to_dict(_zeile(), [], [zuerst, danach])
 
@@ -258,7 +260,7 @@ class TestSaetzeUndVerknuepfungen:
             },
         ]
 
-    def test_to_dict_ohne_verknuepfung_und_satz(self):
+    def test_to_dict_ohne_ausformuliert_in_und_satz(self):
         eintrag = EinwurfRepository._to_dict(_zeile())
 
         assert eintrag["own_draft"] is None
@@ -301,17 +303,17 @@ class TestSaetzeUndVerknuepfungen:
         assert eintrag["own_draft"] is None
         assert len(eintrag["drafts"]) == 1
 
-    def test_verknuepfungen_werden_je_einwurf_gruppiert(self, session):
+    def test_ausformuliert_in_wird_je_einwurf_gruppiert(self, session):
         einwurf = uuid.uuid4()
-        zuerst = _verknuepfung("alice", einwurf=einwurf)
-        danach = _verknuepfung("bob", einwurf=einwurf)
+        zuerst = _ausformuliert_in("alice", einwurf=einwurf)
+        danach = _ausformuliert_in("bob", einwurf=einwurf)
         query = MagicMock()
         session.query.return_value = query
         query.filter.return_value = query
         query.order_by.return_value = query
         query.all.return_value = [zuerst, danach]
 
-        gruppiert = EinwurfRepository._verknuepfungen(session, [einwurf])
+        gruppiert = EinwurfRepository._ausformuliert_in(session, [einwurf])
 
         assert gruppiert == {einwurf: [zuerst, danach]}
         assert "created_at" in _sql(query.order_by.call_args.args[0])
@@ -348,14 +350,14 @@ class TestGetById:
 
         assert repository.get_by_id(uuid.uuid4(), "alice") is None
 
-    def test_gefundener_einwurf_bekommt_saetze_und_verknuepfungen(
+    def test_gefundener_einwurf_bekommt_saetze_und_ausformuliert_in(
         self, repository, session
     ):
         zeile = _zeile()
         self._query_kette(session, zeile)
         with patch.object(
             EinwurfRepository,
-            "_mit_saetzen_und_verknuepfungen",
+            "_mit_saetzen_und_ausformuliert_in",
             return_value=[{"id": "x"}],
         ) as anhaengen:
             ergebnis = repository.get_by_id(zeile.id, "alice")
@@ -493,17 +495,17 @@ class TestSatzSpeichern:
 @pytest.mark.unit
 class TestStatusSetzen:
     @pytest.fixture(autouse=True)
-    def _ohne_saetze_und_verknuepfungen(self):
+    def _ohne_saetze_und_ausformuliert_in(self):
         with patch.object(
             EinwurfRepository,
-            "_mit_saetzen_und_verknuepfungen",
+            "_mit_saetzen_und_ausformuliert_in",
             return_value=[{"id": "x"}],
         ):
             yield
 
-    def test_verknuepfung_sql_ist_idempotent(self):
+    def test_ausformuliert_in_sql_ist_idempotent(self):
         sql = _sql(
-            EinwurfRepository._verknuepfung_einfuegen(
+            EinwurfRepository._ausformuliert_in_einfuegen(
                 uuid.uuid4(), uuid.uuid4(), "alice", uuid.uuid4(), "commentary"
             )
         )
@@ -590,7 +592,9 @@ class TestStatusSetzen:
 
         session.commit.assert_not_called()
 
-    def test_andere_verarbeiten_verworfenes_mit_verknuepfung(self, repository, session):
+    def test_andere_verarbeiten_verworfenes_mit_ausformuliert_in(
+        self, repository, session
+    ):
         """Verworfen heisst nicht gesperrt: andere duerfen trotzdem destillieren."""
         zeile = _zeile(submitted_by="alice", status=EinwurfStatus.DISCARDED.value)
         query = _gesperrte_zeile(session, zeile)
@@ -606,7 +610,9 @@ class TestStatusSetzen:
         assert statement.compile().params["content_id"] == inhalt_id
         session.commit.assert_called_once()
 
-    def test_verknuepfung_haelt_satz_und_beitragstyp_fest(self, repository, session):
+    def test_ausformuliert_in_haelt_satz_und_beitragstyp_fest(
+        self, repository, session
+    ):
         """draft_id ist der Satz der verarbeitenden Person - die Karte zeigt ihn."""
         zeile = _zeile(status=EinwurfStatus.IN_PROGRESS.value)
         query = _gesperrte_zeile(session, zeile)
@@ -648,12 +654,12 @@ class TestStatuswechselVorpruefen:
     """
 
     @staticmethod
-    def _abfragen(session, zeile, verknuepfung):
+    def _abfragen(session, zeile, eintrag):
         query = MagicMock()
         session.query.return_value = query
         query.filter.return_value = query
         query.one_or_none.return_value = zeile
-        query.first.return_value = verknuepfung
+        query.first.return_value = eintrag
         return query
 
     def test_unbekannter_einwurf_wirft(self, repository, session):
@@ -680,7 +686,7 @@ class TestStatuswechselVorpruefen:
                 uuid.uuid4(), EinwurfStatus.DISCARDED, "bob"
             )
 
-    def test_meldet_vorhandene_verknuepfung(self, repository, session):
+    def test_meldet_vorhandene_ausformuliert_in(self, repository, session):
         self._abfragen(
             session, _zeile(status="processed"), SimpleNamespace(content_id="x")
         )
@@ -692,7 +698,7 @@ class TestStatuswechselVorpruefen:
             is True
         )
 
-    def test_meldet_neue_verknuepfung(self, repository, session):
+    def test_meldet_neue_ausformuliert_in(self, repository, session):
         self._abfragen(session, _zeile(), None)
 
         assert (
@@ -732,7 +738,7 @@ class TestMitGleichemLink:
     def _ohne_saetze(self):
         with patch.object(
             EinwurfRepository,
-            "_mit_saetzen_und_verknuepfungen",
+            "_mit_saetzen_und_ausformuliert_in",
             side_effect=lambda s, rows, user: [
                 EinwurfRepository._to_dict(r) for r in rows
             ],

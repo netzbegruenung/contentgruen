@@ -411,7 +411,7 @@ describe('AddGenerictextComponent', () => {
 
   describe('Dublette', () => {
     it('Dublette ohne Aussage: bleibt im Formular, zeigt den Hinweis mit Link, meldet keinen Erfolg', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       const erfolg = spyOn(component.success, 'emit');
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
       ausfuellen();
@@ -434,7 +434,7 @@ describe('AddGenerictextComponent', () => {
     it('fremde Dublette mit Aussage: nennt den anderen Autor und den Weg über die Karte', fakeAsync(() => {
       // Keine Aussage in der Antwort, obwohl eine mitgeschickt wurde: die vorhandene
       // Hintergrundinfo ist von jemand anderem und wurde nicht verknuepft (verknuepft: false).
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
       ausfuellen();
       aussageAusAdresse('Wärmepumpen sind zu teuer');
@@ -453,7 +453,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('eigene Dublette mit Aussage: verknuepft noch nichts, bietet Nehmen und Trotzdem speichern an', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, vorhanden_eigen: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false });
       const erfolg = spyOn(component.success, 'emit');
       const ansehen = spyOn(fixture.debugElement.injector.get(BeitragAnsehenService), 'oeffnen');
       ausfuellen();
@@ -478,11 +478,10 @@ describe('AddGenerictextComponent', () => {
 
     it('Nehmen mit Aussage: schickt vorhanden_nehmen und meldet die vorhandene, jetzt verknuepft', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
         of({
           id: 'h-alt',
-          dublette: true,
-          vorhanden_eigen: true,
+          vorhanden: { eigen: true },
           statement_id: ID,
           statement_text: 'Wärmepumpen sind zu teuer',
           verknuepft: true,
@@ -516,8 +515,8 @@ describe('AddGenerictextComponent', () => {
 
     it('Nehmen scheitert beim Verknuepfen: sagt es, die Entscheidung bleibt offen', fakeAsync(() => {
       spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
-        of({ id: 'h-alt', dublette: true, vorhanden_eigen: true, statement_text: null, verknuepft: false } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, statement_text: null, verknuepft: false } as AddGenericTextResponse),
       );
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       ausfuellen();
@@ -538,7 +537,7 @@ describe('AddGenerictextComponent', () => {
 
     it('Nehmen scheitert mit 422: zeigt die Meldung des Backends', fakeAsync(() => {
       spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
         throwError(
           () =>
             new HttpErrorResponse({
@@ -565,7 +564,7 @@ describe('AddGenerictextComponent', () => {
 
     it('Nehmen, aber die vorhandene ist weg: sagt es und laesst neu speichern', fakeAsync(() => {
       spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
         throwError(() => new HttpErrorResponse({ status: 409 })),
       );
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
@@ -588,12 +587,11 @@ describe('AddGenerictextComponent', () => {
 
     it('Nehmen findet inzwischen eine andere vorhandene: zeigt erst sie, ohne Entscheidung', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
-        of({ id: 'h-anderer', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
+        of({ id: 'h-anderer', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
         of({
           id: 'h-anderer',
-          dublette: true,
-          vorhanden_eigen: true,
+          vorhanden: { eigen: true },
           statement_text: 'Wärmepumpen sind zu teuer',
           verknuepft: true,
         } as AddGenericTextResponse),
@@ -622,12 +620,11 @@ describe('AddGenerictextComponent', () => {
 
     it('nach Trotzdem speichern eine andere eigene vorhandene: Nehmen schickt nur vorhanden_nehmen', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
-        of({ id: 'h-anderer', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
+        of({ id: 'h-anderer', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
         of({
           id: 'h-anderer',
-          dublette: true,
-          vorhanden_eigen: true,
+          vorhanden: { eigen: true },
           statement_text: 'Wärmepumpen sind zu teuer',
           verknuepft: true,
         } as AddGenericTextResponse),
@@ -652,7 +649,7 @@ describe('AddGenerictextComponent', () => {
     it('waehrend Nehmen: Knoepfe gesperrt, Speichern dreht sich nicht', fakeAsync(() => {
       const verknuepfen = new Subject<AddGenericTextResponse>();
       spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false } as AddGenericTextResponse),
         verknuepfen,
       );
       ausfuellen();
@@ -671,7 +668,7 @@ describe('AddGenerictextComponent', () => {
       expect((seite().querySelector('.dublette-trotzdem') as HTMLButtonElement).disabled).toBeTrue();
       expect((seite().querySelector('app-formular-leiste .submit-btn') as HTMLButtonElement).disabled).toBeTrue();
 
-      verknuepfen.next({ id: 'h-alt', dublette: true, vorhanden_eigen: true, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
+      verknuepfen.next({ id: 'h-alt', vorhanden: { eigen: true }, statement_text: 'Wärmepumpen sind zu teuer', verknuepft: true });
       verknuepfen.complete();
       flush();
       expect(component.nimmt).toBeFalse();
@@ -679,7 +676,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('Nehmen mit zu kurzer Aussage: gesperrt, keine Anfrage', fakeAsync(() => {
-      const speichern = speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      const speichern = speichernMit({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false });
       ausfuellen();
       aussageAusAdresse('Wärmepumpen sind zu teuer');
       component.speichern();
@@ -700,7 +697,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('nennt den Titel der vorhandenen Hintergrundinfo und bietet Zustimmen und Trotzdem speichern an', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_titel: 'Wärmepumpen rechnen sich auch im Altbau' });
+      speichernMit({ id: 'h-alt', vorhanden: { titel: 'Wärmepumpen rechnen sich auch im Altbau' }, verknuepft: false });
       ausfuellen();
 
       component.speichern();
@@ -713,7 +710,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('Zustimmen: gibt der vorhandenen Hintergrundinfo eine Stimme, meldet sie und keinen Erfolg', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
         of({ content_id: 'h-alt', vote_type: 'like', message: 'ok' }),
       );
@@ -739,7 +736,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('Zustimmen scheitert: sagt es, das Formular bleibt, nichts wird gemeldet', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
         throwError(() => new HttpErrorResponse({ status: 503 })),
       );
@@ -760,8 +757,8 @@ describe('AddGenerictextComponent', () => {
 
     it('Trotzdem speichern: schickt dasselbe mit trotz_dublette_von und meldet die neue Hintergrundinfo', fakeAsync(() => {
       const speichern = spyOn(TestBed.inject(GenericTextService), 'addGenericText').and.returnValues(
-        of({ id: 'h-alt', dublette: true, verknuepft: false } as AddGenericTextResponse),
-        of({ id: 'h-neu', dublette: false, verknuepft: true } as AddGenericTextResponse),
+        of({ id: 'h-alt', vorhanden: {}, verknuepft: false } as AddGenericTextResponse),
+        of({ id: 'h-neu', verknuepft: true } as AddGenericTextResponse),
       );
       const erfolg = spyOn(component.success, 'emit');
       ausfuellen();
@@ -782,7 +779,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('verschwindet, sobald der Text geaendert wird: der Hinweis galt dem alten Text', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -797,7 +794,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('eigene Dublette: kein Zustimmen, aber Trotzdem speichern', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      speichernMit({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -808,7 +805,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('eigene Dublette ohne Aussage: kein Zustimmen, ausserhalb des Fangkorbs auch kein Nehmen', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      speichernMit({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -820,7 +817,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('eigene Dublette aus dem Fangkorb ohne Aussage: Nehmen meldet die vorhandene ohne Stimme', fakeAsync(() => {
-      const speichern = speichernMit({ id: 'h-alt', dublette: true, verknuepft: false, vorhanden_eigen: true });
+      const speichern = speichernMit({ id: 'h-alt', vorhanden: { eigen: true }, verknuepft: false });
       const stimme = spyOn(TestBed.inject(VotingService), 'setLike');
       const gewaehlt = spyOn(component.vorhandenGewaehlt, 'emit');
       const erfolg = spyOn(component.success, 'emit');
@@ -846,7 +843,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('liest nur den Hinweis als Statusmeldung vor, nicht die Knoepfe', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();
@@ -858,7 +855,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('nach dem Zustimmen steht in der Leiste kein Fehler', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       spyOn(TestBed.inject(VotingService), 'setLike').and.returnValue(
         of({ content_id: 'h-alt', vote_type: 'like', message: 'ok' }),
       );
@@ -874,7 +871,7 @@ describe('AddGenerictextComponent', () => {
     }));
 
     it('verschwindet mit Zuruecksetzen, auch der Link in der Leiste', fakeAsync(() => {
-      speichernMit({ id: 'h-alt', dublette: true, verknuepft: false });
+      speichernMit({ id: 'h-alt', vorhanden: {}, verknuepft: false });
       ausfuellen();
       component.speichern();
       flush();

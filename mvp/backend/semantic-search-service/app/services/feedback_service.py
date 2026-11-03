@@ -12,7 +12,7 @@ Gespeichert wird nur, was die Person selbst eingibt, und der Tag:
 Nach AUFBEWAHRUNG_TAGE loescht loeschen_im_takt, ein eigener Hintergrund-Task aus
 main.py, die ganze Zeile, Kontakt eingeschlossen, taeglich und zusaetzlich um
 Mitternacht (UTC). Wie bei den Suchen ohne Treffer haengt er nicht am abschaltbaren
-Usage-Cleanup: Die Frist steht im Loeschkonzept ohne Bedingung.
+Bereinigungsjob: Die Frist steht im Loeschkonzept ohne Bedingung.
 """
 
 import asyncio

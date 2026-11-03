@@ -1,6 +1,6 @@
 import { BaseContentResult, BaseSearchResult, ContentReference } from '../services/dtos/commonDtos';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { BeitragZustand, Einwurf, Verknuepfung } from '../services/einwurf.service';
+import { BeitragZustand, Einwurf, AusformuliertIn } from '../services/einwurf.service';
 import { CONTENT_TYPE_REGISTRY, resolveContentType } from '../shared/content-type-registry';
 import { plattformAusUrl, plattformName } from '../shared/plattform';
 import { KETTEN_ICONS } from '../shared/fangkorb-texte';
@@ -327,7 +327,7 @@ export const NICHT_SICHTBAR: Record<NichtSichtbar, StufenAnzeige> = {
 };
 
 /** Ob sich ein Beitrag, in dem der Einwurf ausformuliert ist, ansehen laesst; ohne Angabe vom Server: ja. */
-export function istSichtbar(link: Verknuepfung): boolean {
+export function istSichtbar(link: AusformuliertIn): boolean {
   return link.zustand !== 'gesperrt' && link.zustand !== 'geloescht';
 }
 

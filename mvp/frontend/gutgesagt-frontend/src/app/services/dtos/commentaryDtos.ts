@@ -1,3 +1,4 @@
+import type { VorhandenDto } from './dubletteDtos';
 import type { Thema } from './themenDtos';
 
 import type { Stil, Zweck } from '../../shared/zweck-stil';
@@ -59,12 +60,8 @@ export interface AddCommentaryResponse {
      * Bei einer Dublette true nur, wenn der genommene vorhandene jetzt an der Aussage haengt; sonst false.
      */
     verknuepft?: boolean;
-    /** true: Es gibt schon einen sehr aehnlichen Kommentar (id); nichts angelegt. Nach vorhanden_nehmen haengt er an der Aussage (statement_*, verknuepft). */
-    dublette?: boolean;
-    /** Titel des vorhandenen Kommentars, wenn Dublette. */
-    vorhanden_titel?: string | null;
-    /** true: Der vorhandene Kommentar ist von derselben Person, wenn Dublette. */
-    vorhanden_eigen?: boolean;
+    /** Gesetzt: Es gibt schon einen sehr aehnlichen Beitrag (id: dessen ID), nichts angelegt; Titel und ob er von derselben Person ist. */
+    vorhanden?: VorhandenDto | null;
 }
 
 

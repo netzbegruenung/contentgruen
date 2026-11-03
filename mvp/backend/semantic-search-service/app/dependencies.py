@@ -159,7 +159,7 @@ def get_bilanz_service(
     return BilanzService(
         get_search_tracking_repository(),
         get_usage_repository(),
-        settings.usage_retention_days if settings.enable_usage_cleanup else None,
+        settings.usage_retention_days if settings.enable_bereinigungsjob else None,
     )
 
 

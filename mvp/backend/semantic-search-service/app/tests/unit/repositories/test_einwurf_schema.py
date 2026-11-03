@@ -1,8 +1,8 @@
 """
 Das Schema des Fangkorbs festnageln.
 
-``raw_input_content_links`` ist die n:m-Verknuepfung zwischen Einwurf und
-Beitrag. Eine schmale Tabelle ist die erste, die jemand beim Aufraeumen
+``raw_input_content_links`` haelt fest, worin ein Einwurf ausformuliert ist
+(Glossar "Ausformuliert in"), n:m zwischen Einwurf und Beitrag. Eine schmale Tabelle ist die erste, die jemand beim Aufraeumen
 "vereinfacht" - etwa zu einem Feld ``resulting_content_id`` auf ``raw_inputs``.
 Das waere billiger und genau die Blockade, die docs/archiv/ROHINPUT.md (Abschnitt 6)
 benennt: ein Einwurf kann mehrere Beitraege hervorbringen und ein Beitrag aus
@@ -14,7 +14,7 @@ Spalte ergaenzt, braucht ein Migrationsskript in mvp/backend/postgres-app/migrat
 
 import pytest
 
-from infrastructure.database.models import Einwurf, Verknuepfung, Satz
+from infrastructure.database.models import Einwurf, AusformuliertIn, Satz
 
 
 @pytest.mark.unit
@@ -69,9 +69,9 @@ class TestEinwurfSchema:
 
 
 @pytest.mark.unit
-class TestVerknuepfungstabelle:
+class TestAusformuliertInTabelle:
     def test_tabelle_existiert_mit_ihren_feldern(self):
-        assert set(Verknuepfung.__table__.columns.keys()) == {
+        assert set(AusformuliertIn.__table__.columns.keys()) == {
             "id",
             "raw_input_id",
             "content_id",
@@ -88,40 +88,40 @@ class TestVerknuepfungstabelle:
         """
         eindeutige_indizes = {
             tuple(spalte.name for spalte in index.columns)
-            for index in Verknuepfung.__table__.indexes
+            for index in AusformuliertIn.__table__.indexes
             if index.unique
         }
         assert eindeutige_indizes == {("raw_input_id", "content_id")}
 
     def test_kein_fremdschluessel_auf_inhalte(self):
         """content_id zeigt auf einen Qdrant-Punkt, nicht auf eine Tabelle."""
-        assert Verknuepfung.__table__.columns["content_id"].foreign_keys == set()
+        assert AusformuliertIn.__table__.columns["content_id"].foreign_keys == set()
 
     def test_verweis_auf_den_einwurf_kaskadiert(self):
         (fremdschluessel,) = list(
-            Verknuepfung.__table__.columns["raw_input_id"].foreign_keys
+            AusformuliertIn.__table__.columns["raw_input_id"].foreign_keys
         )
         assert fremdschluessel.column.table.name == "raw_inputs"
         assert fremdschluessel.ondelete == "CASCADE"
 
     def test_wer_verarbeitet_hat_wird_festgehalten(self):
         """Die Rolle, die last_modified_by am Beitrag nicht bewahrt."""
-        assert "created_by" in Verknuepfung.__table__.columns
+        assert "created_by" in AusformuliertIn.__table__.columns
 
-    def test_geleerter_satz_loescht_die_verknuepfung_nicht(self):
+    def test_geleerter_satz_loescht_ausformuliert_in_nicht(self):
         """
-        Ein leerer Satz loescht seine Zeile in raw_input_drafts. Die Verknuepfung
-        mit dem Beitrag muss das ueberleben - nur draft_id wird leer.
+        Ein leerer Satz loescht seine Zeile in raw_input_drafts. Der Ausformuliert-in-Eintrag
+        muss das ueberleben - nur draft_id wird leer.
         """
-        spalte = Verknuepfung.__table__.columns["draft_id"]
+        spalte = AusformuliertIn.__table__.columns["draft_id"]
         (fremdschluessel,) = list(spalte.foreign_keys)
         assert spalte.nullable is True
         assert fremdschluessel.column.table.name == "raw_input_drafts"
         assert fremdschluessel.ondelete == "SET NULL"
 
     def test_beitragstyp_ist_optional(self):
-        """Verknuepfungen aus der Zeit vor Fangkorb v2 kennen keinen Typ."""
-        assert Verknuepfung.__table__.columns["content_type"].nullable is True
+        """Ausformuliert-in-Eintraege aus der Zeit vor Fangkorb v2 kennen keinen Typ."""
+        assert AusformuliertIn.__table__.columns["content_type"].nullable is True
 
 
 @pytest.mark.unit

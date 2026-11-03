@@ -105,9 +105,7 @@ def test_add_generic_text_with_unknown_reference_is_stored(services):
         "statement_id": None,
         "statement_text": None,
         "verknuepft": True,
-        "dublette": False,
-        "vorhanden_titel": None,
-        "vorhanden_eigen": False,
+        "vorhanden": None,
         "themen": [],
     }
 

@@ -32,7 +32,7 @@ from domain.models.einwurf import (
 from infrastructure.database.connection import AppDatabase, get_app_database
 from infrastructure.database.models import (
     Einwurf,
-    Verknuepfung,
+    AusformuliertIn,
     Satz,
     User,
 )
@@ -58,14 +58,14 @@ class EinwurfRepository:
     def _to_dict(
         einwurf: Einwurf,
         saetze: Sequence[Satz] = (),
-        verknuepfungen: Sequence[Verknuepfung] = (),
+        ausformuliert_in: Sequence[AusformuliertIn] = (),
         current_user: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         In ein Dict uebersetzen, solange die Session noch offen ist.
 
-        ``saetze`` und ``verknuepfungen`` kommen aelteste zuerst; die erste
-        Verknuepfung liefert die processed-Felder.
+        ``saetze`` und ``ausformuliert_in`` kommen aelteste zuerst; der erste Eintrag
+        liefert die processed-Felder.
         """
         eigener_satz = next(
             (
@@ -75,7 +75,7 @@ class EinwurfRepository:
             ),
             None,
         )
-        erste = verknuepfungen[0] if verknuepfungen else None
+        erste = ausformuliert_in[0] if ausformuliert_in else None
         return {
             "id": str(einwurf.id),
             "content": einwurf.content,
@@ -87,7 +87,7 @@ class EinwurfRepository:
             "created_at": einwurf.created_at,
             "destilled_by": einwurf.destilled_by,
             "own_draft": eigener_satz,
-            # Die erste Verknuepfung: in der Tabelle created_by/created_at, nach aussen
+            # Der erste Ausformuliert-in-Eintrag: in der Tabelle created_by/created_at, nach aussen
             # processed_*.
             "processed_content_id": str(erste.content_id) if erste else None,
             "processed_by": erste.created_by if erste else None,
@@ -103,15 +103,13 @@ class EinwurfRepository:
             ],
             "links": [
                 {
-                    "content_id": str(verknuepfung.content_id),
-                    "content_type": verknuepfung.content_type,
-                    "draft_id": (
-                        str(verknuepfung.draft_id) if verknuepfung.draft_id else None
-                    ),
-                    "processed_by": verknuepfung.created_by,
-                    "processed_at": verknuepfung.created_at,
+                    "content_id": str(eintrag.content_id),
+                    "content_type": eintrag.content_type,
+                    "draft_id": (str(eintrag.draft_id) if eintrag.draft_id else None),
+                    "processed_by": eintrag.created_by,
+                    "processed_at": eintrag.created_at,
                 }
-                for verknuepfung in verknuepfungen
+                for eintrag in ausformuliert_in
             ],
         }
 
@@ -202,7 +200,9 @@ class EinwurfRepository:
                     )
 
                 rows = query.order_by(*reihenfolge).limit(limit).offset(offset).all()
-                return self._mit_saetzen_und_verknuepfungen(session, rows, current_user)
+                return self._mit_saetzen_und_ausformuliert_in(
+                    session, rows, current_user
+                )
         except Exception as e:
             logger.error(
                 f"Fehler beim Lesen der Einwürfe: {type(e).__name__}", exc_info=True
@@ -212,7 +212,7 @@ class EinwurfRepository:
     def get_by_id(
         self, raw_input_id: uuid.UUID, current_user: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        """Einen Einwurf mit allen Saetzen und Verknuepfungen, oder None."""
+        """Einen Einwurf mit allen Saetzen und Ausformuliert-in-Eintraegen, oder None."""
         try:
             with self.db.get_session() as session:
                 row = (
@@ -222,7 +222,7 @@ class EinwurfRepository:
                 )
                 if row is None:
                     return None
-                return self._mit_saetzen_und_verknuepfungen(
+                return self._mit_saetzen_und_ausformuliert_in(
                     session, [row], current_user
                 )[0]
         except Exception as e:
@@ -273,7 +273,7 @@ class EinwurfRepository:
                     if len(kandidaten) < GLEICHER_LINK_SEITE:
                         break
                     seite += 1
-                return self._mit_saetzen_und_verknuepfungen(
+                return self._mit_saetzen_und_ausformuliert_in(
                     session, treffer[:GLEICHER_LINK_TREFFER], current_user
                 )
         except Exception as e:
@@ -396,18 +396,18 @@ class EinwurfRepository:
         ist_admin: bool = False,
     ) -> Dict[str, Any]:
         """
-        Status setzen; bei processed zugleich die Verknuepfung schreiben.
+        Status setzen; bei processed zugleich den Ausformuliert-in-Eintrag schreiben.
 
         Verwerfen duerfen der Einwerfer und Admins (``ist_admin``), Admins auch
         einen Einwurf ohne Einwerfer.
 
-        Die Verknuepfung haelt fest, wer verknuepft hat (der Ausformulierer), welchen
+        Der Ausformuliert-in-Eintrag haelt fest, wer verknuepft hat (der Ausformulierer), welchen
         Beitragstyp der Beitrag hat und welcher Satz ausformuliert wurde - der des
         Ausformulierers (``draft_id``), sofern er einen gespeichert hat.
 
         Alles in einer Transaktion, die Zeile ist dabei gesperrt (FOR UPDATE),
-        damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Die
-        Verknuepfung ist idempotent (ON CONFLICT DO NOTHING): ein wiederholter
+        damit zwei gleichzeitige Wechsel sich nicht ueberschreiben. Der
+        Eintrag ist idempotent (ON CONFLICT DO NOTHING): ein wiederholter
         Aufruf nach verlorener Antwort schadet nicht.
 
         Raises:
@@ -434,7 +434,7 @@ class EinwurfRepository:
                 if neuer_status == EinwurfStatus.PROCESSED:
                     draft_id = self._eigener_satz_id(session, raw_input_id, user_id)
                     session.execute(
-                        self._verknuepfung_einfuegen(
+                        self._ausformuliert_in_einfuegen(
                             raw_input_id, content_id, user_id, draft_id, content_type
                         )
                     )
@@ -442,7 +442,9 @@ class EinwurfRepository:
                 logger.info(
                     f"Einwurf {raw_input_id}: {aktuell.value} -> {neuer_status.value}"
                 )
-                return self._mit_saetzen_und_verknuepfungen(session, [row], user_id)[0]
+                return self._mit_saetzen_und_ausformuliert_in(session, [row], user_id)[
+                    0
+                ]
         except (EinwurfNichtGefunden, AktionNichtErlaubt, UebergangNichtErlaubt):
             raise
         except Exception as e:
@@ -485,10 +487,10 @@ class EinwurfRepository:
             if content_id is None:
                 return False
             return (
-                session.query(Verknuepfung.content_id)
+                session.query(AusformuliertIn.content_id)
                 .filter(
-                    Verknuepfung.raw_input_id == raw_input_id,
-                    Verknuepfung.content_id == content_id,
+                    AusformuliertIn.raw_input_id == raw_input_id,
+                    AusformuliertIn.content_id == content_id,
                 )
                 .first()
                 is not None
@@ -544,7 +546,7 @@ class EinwurfRepository:
         ).returning(Satz.updated_at)
 
     @staticmethod
-    def _verknuepfung_einfuegen(
+    def _ausformuliert_in_einfuegen(
         raw_input_id: uuid.UUID,
         content_id: uuid.UUID,
         user_id: str,
@@ -553,7 +555,7 @@ class EinwurfRepository:
     ):
         """INSERT ... ON CONFLICT (raw_input_id, content_id) DO NOTHING."""
         return (
-            insert(Verknuepfung)
+            insert(AusformuliertIn)
             .values(
                 raw_input_id=raw_input_id,
                 content_id=content_id,
@@ -563,8 +565,8 @@ class EinwurfRepository:
             )
             .on_conflict_do_nothing(
                 index_elements=[
-                    Verknuepfung.raw_input_id,
-                    Verknuepfung.content_id,
+                    AusformuliertIn.raw_input_id,
+                    AusformuliertIn.content_id,
                 ]
             )
         )
@@ -591,20 +593,20 @@ class EinwurfRepository:
             .scalar()
         )
 
-    def _mit_saetzen_und_verknuepfungen(
+    def _mit_saetzen_und_ausformuliert_in(
         self, session, rows: Sequence[Einwurf], current_user: Optional[str]
     ) -> List[Dict[str, Any]]:
-        """Alle Saetze und Verknuepfungen an die Zeilen haengen."""
+        """Alle Saetze und Ausformuliert-in-Eintraege an die Zeilen haengen."""
         if not rows:
             return []
         ids = [row.id for row in rows]
         saetze = self._saetze(session, ids)
-        verknuepfungen = self._verknuepfungen(session, ids)
+        ausformuliert_in = self._ausformuliert_in(session, ids)
         return [
             self._to_dict(
                 row,
                 saetze.get(row.id, []),
-                verknuepfungen.get(row.id, []),
+                ausformuliert_in.get(row.id, []),
                 current_user,
             )
             for row in rows
@@ -644,7 +646,7 @@ class EinwurfRepository:
             geloescht = (
                 session.query(Einwurf)
                 .filter(
-                    ~exists().where(Verknuepfung.raw_input_id == Einwurf.id),
+                    ~exists().where(AusformuliertIn.raw_input_id == Einwurf.id),
                     Einwurf.created_at < grenze,
                     or_(letzter_satz.is_(None), letzter_satz < grenze),
                 )
@@ -665,25 +667,25 @@ class EinwurfRepository:
         """
         with self.db.get_session() as session:
             return (
-                session.query(Verknuepfung)
-                .filter(Verknuepfung.content_id == content_id)
+                session.query(AusformuliertIn)
+                .filter(AusformuliertIn.content_id == content_id)
                 .delete(synchronize_session=False)
             )
 
     @staticmethod
-    def _verknuepfungen(
+    def _ausformuliert_in(
         session, ids: List[uuid.UUID]
-    ) -> Dict[uuid.UUID, List[Verknuepfung]]:
-        """Die Verknuepfungen zu den Einwuerfen, aelteste zuerst."""
-        verknuepfungen = (
-            session.query(Verknuepfung)
-            .filter(Verknuepfung.raw_input_id.in_(ids))
-            .order_by(Verknuepfung.created_at)
+    ) -> Dict[uuid.UUID, List[AusformuliertIn]]:
+        """Die Ausformuliert-in-Eintraege zu den Einwuerfen, aelteste zuerst."""
+        ausformuliert_in = (
+            session.query(AusformuliertIn)
+            .filter(AusformuliertIn.raw_input_id.in_(ids))
+            .order_by(AusformuliertIn.created_at)
             .all()
         )
-        gruppiert: Dict[uuid.UUID, List[Verknuepfung]] = defaultdict(list)
-        for verknuepfung in verknuepfungen:
-            gruppiert[verknuepfung.raw_input_id].append(verknuepfung)
+        gruppiert: Dict[uuid.UUID, List[AusformuliertIn]] = defaultdict(list)
+        for eintrag in ausformuliert_in:
+            gruppiert[eintrag.raw_input_id].append(eintrag)
         return gruppiert
 
 

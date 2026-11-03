@@ -16,7 +16,7 @@ import {
   EinwurfSeite,
   Einwurf,
   Satz,
-  Verknuepfung,
+  AusformuliertIn,
   EinwurfService,
 } from '../services/einwurf.service';
 import { AuthService, UserInfo } from '../auth/auth.service';
@@ -46,7 +46,7 @@ function satz(id: string, user_id: string, sentence: string): Satz {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:00:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = `c-${draft_id}`): Verknuepfung {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = `c-${draft_id}`): AusformuliertIn {
   return {
     content_id,
     content_type,

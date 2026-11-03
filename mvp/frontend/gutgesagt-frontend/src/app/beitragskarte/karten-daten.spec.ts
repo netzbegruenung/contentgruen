@@ -1,6 +1,6 @@
 import { ausBeitrag, ausEinwurf, ausSuchergebnis } from './karten-daten';
 import { ContentResult } from '../services/dtos/contributionDtos';
-import { Einwurf, Satz, Verknuepfung } from '../services/einwurf.service';
+import { Einwurf, Satz, AusformuliertIn } from '../services/einwurf.service';
 
 function inhalt(felder: Record<string, unknown> = {}): any {
   return {
@@ -49,7 +49,7 @@ function satz(id: string, user_id: string, sentence: string): Satz {
   return { id, user_id, sentence, updated_at: '2026-09-13T12:30:00Z' };
 }
 
-function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): Verknuepfung {
+function link(draft_id: string | null, content_type: string | null = 'commentary', content_id = 'c-9'): AusformuliertIn {
   return { content_id, content_type, draft_id, processed_by: 'carol', processed_at: '2026-09-13T13:00:00Z' };
 }
 

@@ -1,3 +1,4 @@
+import type { VorhandenDto } from './dubletteDtos';
 import type { Thema } from './themenDtos';
 
 //TODO: Evaluate usage of camel case and transformation in the backend
@@ -52,12 +53,8 @@ export interface AddGenericTextResponse {
      * Bei einer Dublette true nur, wenn die genommene vorhandene jetzt an der Aussage haengt; sonst false.
      */
     verknuepft?: boolean;
-    /** true: Es gibt schon eine sehr aehnliche Hintergrundinfo (id); nichts angelegt. */
-    dublette?: boolean;
-    /** Titel der vorhandenen Hintergrundinfo, wenn Dublette. */
-    vorhanden_titel?: string | null;
-    /** true: Die vorhandene Hintergrundinfo ist von derselben Person, wenn Dublette. */
-    vorhanden_eigen?: boolean;
+    /** Gesetzt: Es gibt schon einen sehr aehnlichen Beitrag (id: dessen ID), nichts angelegt; Titel und ob er von derselben Person ist. */
+    vorhanden?: VorhandenDto | null;
 }
 
 
