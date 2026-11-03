@@ -194,6 +194,9 @@ The old dummy login (`POST /login`, user id `test-user-id-1`) is gone since #488
 - **docker-compose.local-dbs.yml**: Qdrant + PostgreSQL only, for local component-based development
 - **docker-compose.prd.yml**: Placeholder; the production compose file is managed outside this repository
 
+Container names are the same in dev, test and production: `gutgesagt-app-postgres`,
+`gutgesagt-semantic-search`, `gutgesagt-qdrant`.
+
 ### Container Registry
 - Test/Prod images: `git.verdigado.com/netzbegruenung-images/*`
 - Local: Built from source

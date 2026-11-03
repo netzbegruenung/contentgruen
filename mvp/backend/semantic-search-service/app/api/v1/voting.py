@@ -6,9 +6,8 @@ from core.logging import get_logger
 from auth.authorization import validate_user_id, require_auth
 from domain.models.vote import VoteCreate, VoteResponse
 from services.voting_service import VotingService
-from core.config import Settings
-from dependencies import get_settings, get_voting_service
-from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
+from dependencies import get_beitrag_laden, get_voting_service
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from middleware.rate_limiter import check_voting_rate_limit
 from core.fehler import NICHT_ERREICHBAR, UNGUELTIGE_ANFRAGE, Validierungsfehler
 
@@ -25,7 +24,7 @@ def get_current_user(x_user: Optional[str] = Header(None)) -> str:
 
 
 async def nur_sichtbarer_beitrag(
-    content_id: uuid.UUID, settings: Settings = Depends(get_settings)
+    content_id: uuid.UUID, laden: BeitragLader = Depends(get_beitrag_laden)
 ) -> None:
     """
     Abstimmen nur auf einen Beitrag, den die Person sehen kann: Gesperrt, geloescht
@@ -39,7 +38,7 @@ async def nur_sichtbarer_beitrag(
     abhaengig machen.
     """
     try:
-        beitrag = await beitrag_laden(content_id, settings)
+        beitrag = await laden(content_id)
     except BeitragUnlesbar:
         return
     except Exception as fehler:

@@ -11,8 +11,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from infrastructure.database.models import RawInput
-from repositories.raw_input_repository import RawInputRepository
+from infrastructure.database.models import Einwurf
+from repositories.einwurf_repository import EinwurfRepository
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
 
 EINWERFER = "einwerfer"
@@ -36,7 +36,7 @@ def einwuerfe(datenbank):  # noqa: F811
             ]
         ):
             s.add(
-                RawInput(
+                Einwurf(
                     content=f"Fundstueck {tag}",
                     submitted_by=von,
                     status=status,
@@ -48,7 +48,7 @@ def einwuerfe(datenbank):  # noqa: F811
 @pytest.mark.usefixtures("einwuerfe")
 class TestMeineEinwuerfe:
     def test_nur_die_eigenen_neueste_zuerst(self, datenbank):  # noqa: F811
-        zeilen = RawInputRepository(datenbank).get_all(
+        zeilen = EinwurfRepository(datenbank).get_all(
             current_user=EINWERFER, submitted_by=EINWERFER
         )
 
@@ -60,14 +60,14 @@ class TestMeineEinwuerfe:
         assert {z["submitted_by"] for z in zeilen} == {EINWERFER}
 
     def test_zaehlung_passt_zur_liste(self, datenbank):  # noqa: F811
-        repository = RawInputRepository(datenbank)
+        repository = EinwurfRepository(datenbank)
 
         assert repository.count(submitted_by=EINWERFER) == 3
         assert repository.count(submitted_by=ANDERE) == 1
         assert repository.count() == 5
 
     def test_seite_zwei_setzt_fort(self, datenbank):  # noqa: F811
-        zweite = RawInputRepository(datenbank).get_all(
+        zweite = EinwurfRepository(datenbank).get_all(
             limit=2, offset=2, current_user=EINWERFER, submitted_by=EINWERFER
         )
 

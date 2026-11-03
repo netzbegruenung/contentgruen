@@ -386,13 +386,13 @@ class Sperre(Base):
     )
 
 
-class RawInput(Base):
+class Einwurf(Base):
     """
     Ein Einwurf in den Fangkorb: Link, Screenshot-URL oder ein Satz, roh, wie
     eingeworfen.
 
     Bewusst eine eigene Tabelle und kein Qdrant-Inhalt (siehe docs/archiv/ROHINPUT.md):
-    Rohinput wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
+    Ein Einwurf wird nie gesucht oder kopiert, aber sein Zustand aendert sich - und
     eine spaetere Zuweisung ("ich nehm das") ist ein Wettlauf zweier Nutzer um
     dieselbe Zeile, den nur eine Transaktion entscheidet.
 
@@ -439,7 +439,7 @@ class RawInput(Base):
     )
 
 
-class RawInputContentLink(Base):
+class Verknuepfung(Base):
     """
     Verknuepfung zwischen einem Einwurf und dem Beitrag, mit dem er ausformuliert
     wurde: einem neu gespeicherten oder, bei einer Dublette, dem vorhandenen.
@@ -505,9 +505,9 @@ class RawInputContentLink(Base):
     )
 
 
-class RawInputDraft(Base):
+class Satz(Base):
     """
-    Der Entwurfssatz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
+    Der Satz einer Person zu einem Einwurf ("Was ist der Punkt? Ein Satz.").
 
     Gehoert zu (Einwurf, Person) und nicht zum Einwurf allein: mehrere Leute
     duerfen denselben Einwurf gleichzeitig destillieren, jede Person mit ihrem
@@ -515,8 +515,8 @@ class RawInputDraft(Base):
     (120 Zeichen, wie der Titel) prueft das DTO, nicht die Datenbank.
 
     Gespeichert wird per Upsert auf den eindeutigen Index (raw_input_id, user_id).
-    Ein leerer Satz ist kein Entwurf: dann wird die Zeile geloescht statt ""
-    abzulegen, damit "hat einen eigenen Entwurf" genau eine Bedeutung hat.
+    Ein leerer Satz wird nicht abgelegt: dann wird die Zeile geloescht statt ""
+    abzulegen, damit "hat einen eigenen Satz" genau eine Bedeutung hat.
     """
 
     __tablename__ = "raw_input_drafts"
@@ -542,7 +542,7 @@ class RawInputDraft(Base):
 
     __table_args__ = (
         Index("idx_raw_input_drafts_user_id", "user_id"),
-        # Genau ein Entwurf je Person und Einwurf - der Upsert haengt daran.
+        # Genau ein Satz je Person und Einwurf - der Upsert haengt daran.
         Index(
             "idx_raw_input_drafts_unique",
             "raw_input_id",

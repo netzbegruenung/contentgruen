@@ -16,7 +16,7 @@ from api.v1.commentary import router as commentary_router
 from api.v1.generic_text import router as generic_text_router
 from api.v1.image import router as image_router
 from api.v1.post import router as post_router
-from api.v1.raw_input import router as raw_input_router
+from api.v1.einwurf import router as einwurf_router
 from dependencies import (
     get_commentary_service,
     get_generic_text_service,
@@ -25,8 +25,8 @@ from dependencies import (
     get_reference_service,
     get_statement_service,
 )
-from domain.models.raw_input import RawInputSource, RawInputStatus
-from repositories.raw_input_repository import get_raw_input_repository
+from domain.models.einwurf import EinwurfWeg, EinwurfStatus
+from repositories.einwurf_repository import get_einwurf_repository
 from services.content.base_content_service import Dublettenpruefung
 from utils.text_normalisierung import SperreJeText
 
@@ -40,7 +40,7 @@ app.include_router(commentary_router, prefix="/api/v1/commentary")
 app.include_router(generic_text_router, prefix="/api/v1/generictext")
 app.include_router(image_router, prefix="/api/v1/image")
 app.include_router(post_router, prefix="/api/v1/post")
-app.include_router(raw_input_router, prefix="/api/v1/rawinput")
+app.include_router(einwurf_router, prefix="/api/v1/rawinput")
 
 
 @pytest.fixture
@@ -103,16 +103,16 @@ def repository():
         "url": None,
         "image_url": None,
         "submitted_by": "person-1",
-        "source_channel": RawInputSource.WEB.value,
-        "status": RawInputStatus.OPEN.value,
+        "source_channel": EinwurfWeg.WEB.value,
+        "status": EinwurfStatus.OPEN.value,
         "created_at": datetime(2026, 10, 29, tzinfo=timezone.utc),
     }
-    repo.save_draft.side_effect = lambda id, person, satz, **_: {
+    repo.satz_speichern.side_effect = lambda id, person, satz, **_: {
         "raw_input_id": str(id),
         "sentence": satz,
         "updated_at": None,
     }
-    app.dependency_overrides[get_raw_input_repository] = lambda: repo
+    app.dependency_overrides[get_einwurf_repository] = lambda: repo
     return repo
 
 
@@ -284,7 +284,7 @@ class TestEinwurfUndSatz:
         )
 
         assert resp.status_code == 200, resp.text
-        assert repository.save_draft.call_args.kwargs["cc0_wortlaut"] == SATZ
+        assert repository.satz_speichern.call_args.kwargs["cc0_wortlaut"] == SATZ
 
     @pytest.mark.parametrize(
         "methode, url, body",
@@ -302,4 +302,4 @@ class TestEinwurfUndSatz:
 
         assert resp.status_code == 422
         repository.create.assert_not_called()
-        repository.save_draft.assert_not_called()
+        repository.satz_speichern.assert_not_called()

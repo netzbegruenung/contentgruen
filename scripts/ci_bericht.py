@@ -11,7 +11,8 @@ schreibt. Nur Standardbibliothek: der Bericht kommt auch, wenn die Installation 
 Aufruf: python3 scripts/ci_bericht.py <schritt> ...  (die Schritte in Pipeline-Reihenfolge)
 Umgebung: CI_FORGE_URL, CI_REPO_OWNER, CI_REPO_NAME, CI_COMMIT_PULL_REQUEST,
 CI_COMMIT_SHA, CI_PIPELINE_NUMBER, CI_PIPELINE_URL (setzt Woodpecker),
-FORGEJO_TOKEN (Secret forgejo_ci_bericht_token).
+FORGEJO_TOKEN (Secret forgejo_ci_bericht_token), CI_BERICHT_KONTO (Login des Kontos, dem
+der Token gehoert; nur dessen Kommentare zaehlen als voriger Bericht).
 """
 
 import hashlib
@@ -173,8 +174,12 @@ def marke_lesen(text: str) -> tuple[Optional[str], bool]:
     return treffer.group(1), bool(treffer.group(2))
 
 
+# Jeder Bericht beginnt so; Agenten schreiben mit demselben Konto, ihre Kommentare nicht
+_KOPF_ANFANG = "*Automatischer CI-Bericht (Woodpecker, "
+
+
 def _kopf(lauf: Lauf) -> str:
-    return f"*Automatischer CI-Bericht (Woodpecker, Pipeline `#{lauf.pipeline}`), kein Agent*"
+    return f"{_KOPF_ANFANG}Pipeline `#{lauf.pipeline}`), kein Agent*"
 
 
 def unveraendert_erstellen(lauf: Lauf, fingerabdruck: str, voriger_url: str) -> str:
@@ -266,16 +271,38 @@ class VorigerBericht:
     url: str
 
 
-def letzter_bericht(kommentare: object) -> Optional[VorigerBericht]:
-    """Fingerabdruck des juengsten Kommentars mit Fingerabdruck und Adresse des
-    juengsten vollen Berichts mit demselben Abdruck. ValueError, wenn die Antwort
-    keine Kommentarliste ist."""
-    if not isinstance(kommentare, list) or not all(
-        isinstance(k, dict) for k in kommentare
-    ):
+def _von(kommentar: dict, konto: str) -> bool:
+    """Ob ``konto`` den Kommentar geschrieben hat (Logins ohne Gross/Klein)."""
+    autor = kommentar.get("user")
+    login = autor.get("login") if isinstance(autor, dict) else None
+    return isinstance(login, str) and login.casefold() == konto.casefold()
+
+
+def _ist_bericht(kommentar: dict, konto: str) -> bool:
+    """Ob der Kommentar ein Bericht dieses Schritts ist: von ``konto`` und mit dem
+    Berichtskopf am Anfang (ein Agent desselben Kontos, der einen Bericht zitiert,
+    zaehlt nicht)."""
+    return _von(kommentar, konto) and str(kommentar.get("body") or "").startswith(
+        _KOPF_ANFANG
+    )
+
+
+def kommentarliste(antwort: object) -> list[dict]:
+    """Die Kommentare der API-Antwort; ValueError, wenn sie keine Kommentarliste ist."""
+    if not isinstance(antwort, list) or not all(isinstance(k, dict) for k in antwort):
         raise ValueError("keine Kommentarliste")
+    return antwort
+
+
+def letzter_bericht(kommentare: object, konto: str) -> Optional[VorigerBericht]:
+    """Fingerabdruck des juengsten Berichts von ``konto`` und Adresse des juengsten
+    vollen Berichts mit demselben Abdruck. Die Marke anderer Konten zaehlt nicht:
+    sonst lenkt ein nachgemachter Kommentar den Bericht um. ValueError, wenn die
+    Antwort keine Kommentarliste ist."""
     gefunden = None
-    for kommentar in reversed(kommentare):
+    for kommentar in reversed(kommentarliste(kommentare)):
+        if not _ist_bericht(kommentar, konto):
+            continue
         abdruck, einzeiler = marke_lesen(str(kommentar.get("body") or ""))
         if not abdruck:
             continue
@@ -314,14 +341,27 @@ def main(
     schritte = schritte_lesen(argv, verzeichnis)
     abdruck = fingerabdruck(schritte, [token])
 
-    # Sind die Kommentare nicht lesbar, kommt der volle Bericht: lieber einmal zu viel
-    # als ein roter Lauf ohne Bericht.
+    # Sind die Kommentare nicht lesbar oder ist das Konto unbekannt, kommt der volle
+    # Bericht: lieber einmal zu viel als ein roter Lauf ohne Bericht.
     voriger = None
-    try:
-        _, antwort = anfrage(kommentare_url, token)
-        voriger = letzter_bericht(json.loads(antwort))
-    except (*NETZFEHLER, ValueError) as fehler:
-        fehler_melden(f"Kommentare in PR #{pr} lesen", fehler)
+    konto = (env.get("CI_BERICHT_KONTO") or "").strip()
+    if not konto:
+        print("CI_BERICHT_KONTO ist nicht gesetzt: voller Bericht ohne Vergleich.")
+    else:
+        try:
+            _, antwort = anfrage(kommentare_url, token)
+            kommentare = kommentarliste(json.loads(antwort))
+            voriger = letzter_bericht(kommentare, konto)
+            if voriger is None and any(
+                marke_lesen(str(k.get("body") or ""))[0] for k in kommentare
+            ):
+                # Sonst faellt nie auf, dass der Token einem anderen Konto gehoert
+                print(
+                    f"Markierungen nur in Kommentaren anderer Konten als {konto}: "
+                    "voller Bericht. Gehoert der Token noch CI_BERICHT_KONTO?"
+                )
+        except (*NETZFEHLER, ValueError) as fehler:
+            fehler_melden(f"Kommentare in PR #{pr} lesen", fehler)
 
     if voriger and voriger.fingerabdruck == abdruck:
         art = "unverändert, Einzeiler"
