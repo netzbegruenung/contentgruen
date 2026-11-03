@@ -197,6 +197,11 @@ bis zu 28 Tage weiter (unter „Was nicht gelöscht wird“).
   ihre 180 Tage beginnen. Bearbeitete und abgewiesene behalten Entscheidung und Frist.
   Scheitert ein Schritt, bleibt der Beitrag stehen und der nächste Lauf versucht es erneut. Gesperrte Beiträge
   haben keine Frist: Admins brauchen sie für die Moderation.
+- **Nie benutzte Konten aus Einladungen (#538):** Wer den Link drei Tage ungenutzt lässt,
+  hat sich vertippt, eine fremde Adresse eingegeben oder es sich anders überlegt; einen
+  Monat lang kommt die Person noch über „Passwort vergessen“ hinein. Gezählt wird in ganzen
+  UTC-Tagen ab dem Anlegen, der tägliche Lauf löscht also 33 bis 35 Tage danach. Was „nie
+  benutzt“ heißt, steht unter „Einladungen“.
 - **Stimmen:** Aus ihnen entsteht die Güte; ohne Kennung ließe sich nicht verhindern, dass
   eine Person zweimal stimmt. Sie leben deshalb so lange wie der Beitrag.
 
@@ -234,15 +239,16 @@ und der Ablauf oben erfasst die Tabelle nicht.
 - **Frist:** keine. Einladungen bleiben stehen, auch abgelaufene; sie tragen keinen
   Personenbezug.
 - **Konto im Realm:** Löschen wie bisher in Keycloak; dass es über eine Einladung entstand,
-  steht nirgends. Nie benutzte Konten löscht der tägliche Task unter „Fristen“ (#538):
-  Mail-Adresse nicht bestätigt, Pflichtaktion „Terms and Conditions“ offen, kein Passwort,
-  keine Verknüpfung mit einem Identity Provider (`KeycloakKonten.nie_benutzte_loeschen`).
-  Vorab angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto
-  stammt, sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und
-  mit unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
-  Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht. Wer Keycloak-Admin ist,
-  kann bei einem persönlichen Link aber den Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
+  steht nirgends. Wer Keycloak-Admin ist, kann bei einem persönlichen Link aber den
+  Zeitpunkt der Kontoanlage (oder einer Anfrage an `/einloesen` im Access-Log) mit dem
   Zähler vergleichen.
+- **Nie benutzte Konten:** Sie löscht der tägliche Task unter „Fristen“ (#538): Mail-Adresse
+  nicht bestätigt, Pflichtaktion „Terms and Conditions“ offen, kein Passwort, keine
+  Verknüpfung mit einem Identity Provider (`KeycloakKonten.nie_benutzte_loeschen`). Vorab
+  angelegte Konten der Netzbegrünung sind verknüpft und bleiben. Woher ein Konto stammt,
+  sieht der Task nicht: Ein in Keycloak von Hand angelegtes Konto ohne Passwort und mit
+  unbestätigter Adresse geht nach der Frist ebenso. Ohne Zugang zur
+  Keycloak-Admin-Schnittstelle (Dev-Stack) läuft dieser Teil nicht.
 
 ## Vier Fallen
 

@@ -36,8 +36,16 @@ def _konto(kennung, angelegt=VORHER, **extra):
 class Keycloak:
     """Haelt Konten, Passwoerter und Verknuepfungen; zeichnet die Anfragen auf."""
 
-    def __init__(self, konten, passwort=(), verknuepft=(), von_hand_geloescht=()):
+    def __init__(
+        self,
+        konten,
+        passwort=(),
+        verknuepft=(),
+        von_hand_geloescht=(),
+        filtert=True,
+    ):
         self.konten = {k["id"]: k for k in konten}
+        self.filtert = filtert
         self.passwort = set(passwort)
         self.verknuepft = set(verknuepft)
         self.von_hand_geloescht = set(von_hand_geloescht)
@@ -53,7 +61,9 @@ class Keycloak:
             treffer = [
                 k
                 for k in self.konten.values()
-                if p.get("emailVerified") != "false" or not k["emailVerified"]
+                if not self.filtert
+                or p.get("emailVerified") != "false"
+                or not k["emailVerified"]
             ]
             erste = int(p.get("first", 0))
             anzahl = int(p["max"])
@@ -115,6 +125,16 @@ def test_benutzte_konten_bleiben():
     assert keycloak.geloescht() == []
 
 
+def test_bestaetigtes_konto_bleibt_auch_ohne_filter_in_keycloak():
+    # Uebergeht Keycloak den Filter emailVerified, entscheidet das Konto selbst.
+    keycloak = Keycloak([_konto("bestaetigt", emailVerified=True)], filtert=False)
+
+    anzahl = _konten(keycloak).nie_benutzte_loeschen(GRENZE)
+
+    assert anzahl == 0
+    assert keycloak.geloescht() == []
+
+
 def test_liest_alle_seiten_bevor_es_loescht(monkeypatch):
     # Loeschen waehrend des Blaetterns verschoebe die Seiten, Konten fielen durch.
     monkeypatch.setattr("infrastructure.keycloak_konten.KONTEN_JE_SEITE", 2)
@@ -132,9 +152,11 @@ def test_schon_geloeschtes_konto_haelt_den_lauf_nicht_auf():
     # Zwischen Lesen und Loeschen hat jemand "weg" von Hand geloescht.
     keycloak = Keycloak([_konto("weg"), _konto("da")], von_hand_geloescht=["weg"])
 
-    _konten(keycloak).nie_benutzte_loeschen(GRENZE)
+    anzahl = _konten(keycloak).nie_benutzte_loeschen(GRENZE)
 
     assert keycloak.geloescht() == ["weg", "da"]
+    # "weg" hat dieser Lauf nicht geloescht; das Log zaehlt nur "da".
+    assert anzahl == 1
 
 
 def test_fragt_nur_unbestaetigte_konten_ab():

@@ -208,11 +208,12 @@ class KeycloakKonten:
     def nie_benutzte_loeschen(self, angelegt_vor: datetime) -> int:
         """
         Loescht Konten, die vor ``angelegt_vor`` angelegt und nie benutzt wurden, und
-        gibt ihre Zahl zurueck. Nie benutzt: Die Mail-Adresse ist nicht bestaetigt, die
-        Pflichtaktion aus dem Anlegen steht noch aus, es gibt kein Passwort und keine
-        Verknuepfung mit einem Identity Provider. So sieht ein Konto aus einer Einladung
-        aus, dessen Link niemand geoeffnet hat; wer ihn oeffnet, setzt ein Passwort und
-        bestaetigt dabei die Adresse. Vorab angelegte Konten (#487) sind verknuepft.
+        gibt die Zahl der in diesem Lauf geloeschten zurueck. Nie benutzt: Die
+        Mail-Adresse ist nicht bestaetigt, die Pflichtaktion aus dem Anlegen steht noch
+        aus, es gibt kein Passwort und keine Verknuepfung mit einem Identity Provider.
+        So sieht ein Konto aus einer Einladung aus, dessen Link niemand geoeffnet hat;
+        wer ihn oeffnet, setzt ein Passwort und bestaetigt dabei die Adresse. Vorab
+        angelegte Konten (#487) sind verknuepft.
         """
         grenze_ms = int(angelegt_vor.timestamp() * 1000)
         with self._client() as http:
@@ -221,16 +222,23 @@ class KeycloakKonten:
             faellig = [
                 konto["id"]
                 for konto in self._unbestaetigte_konten(sitzung)
-                if konto.get("createdTimestamp", grenze_ms) < grenze_ms
+                # emailVerified auch hier: Der Filter in der Anfrage allein haelt ein
+                # bestaetigtes Konto nicht fern, falls Keycloak ihn uebergeht.
+                if konto.get("emailVerified") is False
+                and konto.get("createdTimestamp", grenze_ms) < grenze_ms
                 and set(PFLICHTAKTIONEN) <= set(konto.get("requiredActions") or [])
                 and not self._benutzt(sitzung, konto["id"])
             ]
+            geloescht = 0
             for konto_id in faellig:
                 antwort = sitzung.anfrage("DELETE", f"{self._admin}/{konto_id}")
-                # 404: inzwischen von Hand geloescht; das Ziel ist erreicht.
-                if antwort.status_code != 404:
-                    antwort.raise_for_status()
-        return len(faellig)
+                # 404: inzwischen von Hand geloescht; das Ziel ist erreicht, gezaehlt
+                # wird es nicht.
+                if antwort.status_code == 404:
+                    continue
+                antwort.raise_for_status()
+                geloescht += 1
+        return geloescht
 
     def _unbestaetigte_konten(self, sitzung: "_Sitzung") -> List[dict]:
         konten: List[dict] = []
