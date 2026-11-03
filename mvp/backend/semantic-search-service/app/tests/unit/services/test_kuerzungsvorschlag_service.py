@@ -88,6 +88,18 @@ class TestEinschuebeFallenWeg:
 
         assert service.vorschlagen(text, aussage=None) == text
 
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Die Pumpe (die nur nachts läuft) spart Strom.",
+            "Die Pumpe – die nur nachts läuft – spart Strom.",
+        ],
+    )
+    def test_relativsatz_bleibt_auch_in_klammer_und_zwischen_strichen(
+        self, service, text
+    ):
+        assert service.vorschlagen(text, aussage=None) == text
+
     def test_apposition_faellt_weg(self, service):
         vorschlag = service.vorschlagen(
             "Robert, unser Nachbar, heizt mit Strom.", aussage=None

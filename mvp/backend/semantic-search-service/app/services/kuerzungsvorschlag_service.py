@@ -163,10 +163,10 @@ def _ohne_einschuebe(satz: list) -> list:
     """Die Tokens des Satzes ohne seine Einschübe, in Originalreihenfolge."""
     weg: Set[int] = set()
     for span in _einschuebe(satz):
-        if not any(_traegt_bedeutung(t) for t in span):
+        if not any(_traegt_bedeutung(t) or _relativsatz(t) for t in span):
             weg.update(t.i for t in span)
     # Kommas um einen weggefallenen Einschub: das davor immer, das danach nur, wenn
-    # auch eines davor stand ("Die Pumpe, die laut ist, spart" -> "Die Pumpe spart").
+    # auch eines davor stand ("Robert, unser Nachbar, heizt" -> "Robert heizt").
     nach_index = {t.i: t for t in satz}
     for start, ende in _laeufe(sorted(weg)):
         davor, danach = nach_index.get(start - 1), nach_index.get(ende + 1)
@@ -217,7 +217,7 @@ def _einschuebe(satz: list) -> List[list]:
             else:
                 spans.append(satz[strich : pos + 1])
                 strich = None
-    # Relativsätze, Appositionen und Parenthesen, wenn ein Komma sie abtrennt.
+    # Appositionen und Parenthesen, wenn ein Komma sie abtrennt.
     nach_index = {t.i: t for t in satz}
     for t in satz:
         if t.dep_ not in _EINSCHUB_DEPS:
@@ -238,6 +238,12 @@ def _verneint(token) -> bool:
         or token.tag_ == "PTKNEG"
         or token.lower_ in _VERNEINUNGSWOERTER
     )
+
+
+def _relativsatz(token) -> bool:
+    """Gehört zu einem Relativsatz, auch in Klammern oder zwischen Gedankenstrichen,
+    wo das Modell ihn nicht immer als "rc" erkennt: am Relativpronomen."""
+    return token.dep_ == "rc" or token.tag_ in {"PRELS", "PRELAT"}
 
 
 def _traegt_bedeutung(token) -> bool:
