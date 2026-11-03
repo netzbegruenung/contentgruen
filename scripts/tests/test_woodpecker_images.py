@@ -98,15 +98,16 @@ class TestBeideWorkflows:
 
 
 def test_build_und_release_bauen_gleich():
-    # Bis auf Pfadfilter und Tag-Version: ein Release baut, was main gebaut hat
-    for name, schritt in build_schritte(BUILD).items():
-        release = build_schritte(RELEASE)[name]
-        assert schritt["image"] == release["image"]
-        einstellungen = schritt["settings"]
-        release_einstellungen = copy.deepcopy(release["settings"])
-        release_einstellungen.get("build_args", {}).pop("APP_VERSION", None)
-        assert einstellungen == release_einstellungen
-    assert schritte(BUILD)[TAGS] == schritte(RELEASE)[TAGS]
+    # Bis auf Pfadfilter und Tag-Version: ein Release baut, was main gebaut hat. Ganze
+    # Schritte in derselben Reihenfolge, damit auch ein zusätzlicher Schritt auffällt.
+    def ohne_unterschiede(workflow):
+        gleich = copy.deepcopy(workflow["steps"])
+        for schritt in gleich:
+            schritt.pop("when", None)
+            schritt.get("settings", {}).get("build_args", {}).pop("APP_VERSION", None)
+        return gleich
+
+    assert ohne_unterschiede(BUILD) == ohne_unterschiede(RELEASE)
 
 
 def test_ein_plugin_image_mit_digest():

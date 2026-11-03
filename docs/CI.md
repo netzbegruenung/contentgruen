@@ -205,12 +205,19 @@ enabled, and the pull request that adds the pipeline already needs it):
    account with write access to the packages of `netzbegruenung-images`, and a token for it
    with the scope `write:package` only. Store it in the team's password manager and add it in
    Woodpecker as secrets `registry_user` (the account name) and `registry_token`, events
-   "Push", "Tag" and "Manual" (for "Run pipeline" on `main`), image filter `woodpeckerci/plugin-docker-buildx` (so only the
-   build steps see them). The plugin needs Docker inside its container: it must be on the
-   list of privileged plugins of the Woodpecker server. Without the secrets the workflows
-   fail before any step; `ci` is not affected. Known limit: whoever can push a tag (write
-   access, the bot included) can run a changed `release.yaml` with the secret, limited to
-   the plugin, which can push any image to the registry. Tags are set by the maintainer only.
+   "Push", "Tag" and "Manual" (for "Run pipeline" on `main`), image filter
+   `woodpeckerci/plugin-docker-buildx` (so only the build steps see them). The plugin needs
+   Docker inside its container: it must be on the list of privileged plugins of the
+   Woodpecker server as `woodpeckerci/plugin-docker-buildx`, without a tag. The workflows pin
+   the plugin by tag and digest, and an entry with a tag only matches that exact reference.
+   In the repository settings, switch on "Cancel previous pipelines" for "Push": otherwise
+   two quick merges can build in parallel, and the older one, finishing last, leaves `:main`
+   on the older commit (the GitHub CI cancelled superseded runs too). Without the secrets
+   the workflows fail before any step; `ci` is not affected. Known limit: Woodpecker has no
+   branch filter for secrets. Whoever can push a branch or a tag (write access, the bot
+   included) can run a changed `build.yaml` or `release.yaml` with the secret, limited to
+   the plugin, which can push any image under any tag to the registry, `:main` included.
+   The same holds for `forgejo_wiki_token`. Tags are set by the maintainer only.
 5. **Required status:** after the first pull-request run, add `ci/woodpecker/pr/ci` as a
    required status check in the branch protection of `main`, and switch on "pull request
    must be up to date", so combinations of two pull requests run before the merge. A branch

@@ -19,10 +19,13 @@ import os
 import re
 import sys
 
-# SemVer 2.0.0 mit fuehrendem v, wie metadata-action type=semver es annahm
+# SemVer 2.0.0 mit fuehrendem v, wie metadata-action type=semver es annahm. Kennungen der
+# Vorabversion sind nicht leer, numerische ohne fuehrende Null (v1.2.3-rc..1, v1.2.3-01: rot).
+_VORAB_KENNUNG = r"(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)"
 SEMVER = re.compile(
     r"^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-    r"(?P<vorab>-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?"
+    rf"(?P<vorab>-{_VORAB_KENNUNG}(?:\.{_VORAB_KENNUNG})*)?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
 )
 
 
