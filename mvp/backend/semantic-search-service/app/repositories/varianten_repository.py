@@ -7,11 +7,11 @@ beruht. Was eine Variante ist, steht am Modell (infrastructure/database/models.p
 from typing import Dict, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database.connection import AppDatabase, get_app_database
-from infrastructure.database.models import VarianteZeile
+from infrastructure.database.models import Sperre, VarianteZeile
 
 
 class VariantenRepository:
@@ -40,12 +40,20 @@ class VariantenRepository:
             )
 
     def anzahl_je_original(self, original_ids: Sequence[UUID]) -> Dict[UUID, int]:
-        """Wie viele Varianten jedes Original hat; Originale ohne fehlen."""
+        """
+        Wie viele sichtbare Varianten jedes Original hat; Originale ohne fehlen.
+        Gesperrte zaehlen nicht (aktive Sperre in ``sperren``), damit die Zahl an der
+        Karte zur Liste passt; geloeschte haben keine Zeile mehr.
+        """
         if not original_ids:
             return {}
+        gesperrt = exists().where(
+            Sperre.content_id == VarianteZeile.variante_id,
+            Sperre.aufgehoben_am.is_(None),
+        )
         abfrage = (
             select(VarianteZeile.original_id, func.count())
-            .where(VarianteZeile.original_id.in_(list(original_ids)))
+            .where(VarianteZeile.original_id.in_(list(original_ids)), ~gesperrt)
             .group_by(VarianteZeile.original_id)
         )
         with self.db.get_session() as session:

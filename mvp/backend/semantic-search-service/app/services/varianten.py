@@ -38,17 +38,18 @@ async def beruht_auf_festhalten(
     Beitrag bleibt gespeichert.
     """
     try:
-        if await original_laden(original_id) is None:
-            raise ValueError("nicht da")
+        original = await original_laden(original_id)
     except ValueError:
-        logger.warning(
-            f"Variant {variante_id} saved without link: original {original_id} is not available"
-        )
-        return False
+        original = None
     except Exception as e:
         logger.error(
             f"Variant {variante_id} saved, original not readable: {type(e).__name__}",
             exc_info=True,
+        )
+        return False
+    if original is None:
+        logger.warning(
+            f"Variant {variante_id} saved without link: original {original_id} is not available"
         )
         return False
     try:

@@ -223,8 +223,8 @@ async def beitrag_loeschen(
             status_code=403, detail="Löschen kann nur der Autor des Beitrags."
         )
     # War er eine Variante, zaehlt er am Original nicht mehr mit (#356). Scheitert
-    # das, ist der Beitrag trotzdem geloescht; nur "N Varianten" zaehlt ihn weiter,
-    # die Liste der Varianten zeigt ihn nicht.
+    # das, ist der Beitrag trotzdem geloescht; dann zaehlt "N Varianten" ihn weiter,
+    # waehrend die Liste der Varianten ihn nicht zeigt.
     try:
         varianten.variante_entfernen(beitrag_id)
     except Exception as e:

@@ -5,9 +5,12 @@ festhalten, je Original zaehlen und loesen. Wegwerf-Schema aus der Fixture
 """
 
 import uuid
+from datetime import datetime, timezone
 
 import pytest
+from sqlalchemy import update
 
+from infrastructure.database.models import Sperre
 from repositories.varianten_repository import VariantenRepository
 from tests.integration.test_loeschkommando import datenbank  # noqa: F401
 
@@ -30,6 +33,27 @@ class TestVariantenRepository:
         }
         assert set(repo.varianten_von(original)) == {erste, zweite}
         assert repo.varianten_von(ohne) == []
+
+    def test_gesperrte_variante_zaehlt_erst_nach_aufheben_wieder(
+        self, datenbank  # noqa: F811
+    ):
+        repo = VariantenRepository(datenbank)
+        original, sichtbar, gesperrt = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+        repo.festhalten(sichtbar, original)
+        repo.festhalten(gesperrt, original)
+        with datenbank.get_session() as s:
+            s.add(Sperre(content_id=gesperrt, sperrgrund="spam", begruendung="x"))
+
+        assert repo.anzahl_je_original([original]) == {original: 1}
+
+        with datenbank.get_session() as s:
+            s.execute(
+                update(Sperre)
+                .where(Sperre.content_id == gesperrt)
+                .values(aufgehoben_am=datetime.now(timezone.utc))
+            )
+
+        assert repo.anzahl_je_original([original]) == {original: 2}
 
     def test_eine_variante_hat_genau_ein_original(self, datenbank):  # noqa: F811
         repo = VariantenRepository(datenbank)

@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, OnIn
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenlisteComponent } from '../beitragskarte/kartenliste.component';
@@ -59,28 +60,28 @@ export class VariantenComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Fehler je Laden abfangen: Sonst beendete ein gescheitertes Laden den Strom,
+    // und eine spaetere Adresse luede nichts mehr.
     this.route.paramMap
       .pipe(
         switchMap((params) => {
           this.laedt = true;
           this.fehler = null;
-          return this.service.laden(params.get('id') ?? '');
+          return this.service.laden(params.get('id') ?? '').pipe(
+            catchError((error) => {
+              this.logger.warn('Varianten nicht geladen', error);
+              this.fehler = error?.status === 404 ? ORIGINAL_NICHT_DA : NICHT_GELADEN;
+              return of(null);
+            }),
+          );
         }),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe({
-        next: (antwort) => {
-          this.original = alsKarte(antwort.original);
-          this.varianten = antwort.varianten.map(alsKarte).filter((k): k is KartenDaten => !!k);
-          this.laedt = false;
-          this.cdr.markForCheck();
-        },
-        error: (error) => {
-          this.logger.warn('Varianten nicht geladen', error);
-          this.fehler = error?.status === 404 ? ORIGINAL_NICHT_DA : NICHT_GELADEN;
-          this.laedt = false;
-          this.cdr.markForCheck();
-        },
+      .subscribe((antwort) => {
+        this.original = antwort ? alsKarte(antwort.original) : null;
+        this.varianten = antwort ? antwort.varianten.map(alsKarte).filter((k): k is KartenDaten => !!k) : [];
+        this.laedt = false;
+        this.cdr.markForCheck();
       });
   }
 }
