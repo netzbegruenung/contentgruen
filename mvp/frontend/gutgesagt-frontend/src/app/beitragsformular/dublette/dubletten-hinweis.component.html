@@ -1,0 +1,20 @@
+<div class="dubletten-hinweis">
+    <p role="status">
+        {{ hinweis }}
+        <span *ngIf="vorhanden.titel" class="vorhanden-titel">„{{ vorhanden.titel }}“</span>
+        <button type="button" class="text-link dublette-ansehen" (click)="ansehen.emit()">Ansehen</button>
+    </p>
+    <!-- Die Person entscheidet: den vorhandenen waehlen (fremd: zustimmen, eigen: nehmen) oder trotzdem speichern -->
+    <div *ngIf="offeneEntscheidung" class="dublette-entscheidung">
+        <button *ngIf="kannZustimmen" mat-stroked-button type="button" class="dublette-zustimmen"
+                [disabled]="beschaeftigt" (click)="zustimmen.emit()">Zustimmen</button>
+        <button *ngIf="kannNehmen" mat-stroked-button type="button" class="dublette-nehmen"
+                [disabled]="beschaeftigt || nehmenGesperrt" (click)="nehmen.emit()">
+            <mat-spinner *ngIf="nimmt" diameter="18" class="knopf-spinner"></mat-spinner>
+            {{ nehmenText }}
+        </button>
+        <button mat-button type="button" class="dublette-trotzdem"
+                [disabled]="beschaeftigt" (click)="trotzdem.emit()">Trotzdem speichern</button>
+    </div>
+    <p *ngIf="fehler" class="entscheidungs-fehler" role="alert">{{ fehler }}</p>
+</div>

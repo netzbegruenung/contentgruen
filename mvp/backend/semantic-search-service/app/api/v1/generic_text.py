@@ -15,8 +15,7 @@ from dtos.generic_text import (
     AddGenericTextRequest,
     AddGenericTextResponse,
 )
-from domain.models.base_content import BaseContentSearchResult
-from services.content.base_content_service import Dublettenpruefung
+from services.dublette import Dublette, VorhandenWeg, entscheidung_anwenden
 from services.content.generic_text_service import (
     GenericTextService,
     zu_pruefender_text,
@@ -41,17 +40,6 @@ logger = logging.getLogger(__name__)
 # Wie eng eine Hintergrundinfo zu ihrer Aussage passt, wenn jemand sie ausdruecklich
 # als Antwort darauf verfasst - etwas schwaecher als ein Kommentar.
 HINTERGRUNDINFO_RELEVANZ = 0.9
-
-
-def _ist_gezeigte(
-    vorhanden: Optional[BaseContentSearchResult], angefragt: Optional[UUID]
-) -> bool:
-    """Die Entscheidung der Person gilt genau der vorhandenen, die sie gesehen hat."""
-    return (
-        vorhanden is not None
-        and angefragt is not None
-        and str(vorhanden.id) == str(angefragt)
-    )
 
 
 async def _herkunft_anlegen(
@@ -155,22 +143,20 @@ async def add_generic_text(
         # Beitrag haengen.
         text = zu_pruefender_text(request.generictext)
         async with generic_text_service.sperre(text):
-            pruefung = await generic_text_service.pruefe_dublette(text)
-            if _ist_gezeigte(pruefung.vorhanden, request.trotz_dublette_von):
-                # Die Person hat genau diese vorhandene gesehen und entschieden:
-                # anlegen. Der aehnlichste Treffer bleibt fuer most_similar_* erhalten.
-                logger.info(
-                    f"Generic text saved although an existing one is similar: {pruefung.vorhanden.id}"
+            gefunden = await generic_text_service.pruefe_dublette(text)
+            try:
+                pruefung = entscheidung_anwenden(
+                    gefunden, request.trotz_dublette_von, request.vorhanden_nehmen
                 )
-                pruefung = Dublettenpruefung(
-                    vorhanden=None, aehnlichster=pruefung.aehnlichster
-                )
-            if pruefung.vorhanden is None and request.vorhanden_nehmen is not None:
-                # Die gewaehlte vorhandene ist weg: Eine neue anzulegen, hat die
-                # Person nicht gewaehlt.
+            except VorhandenWeg:
+                # Die gewaehlte vorhandene ist weg.
                 raise HTTPException(
                     status_code=409,
                     detail="The existing generic text is no longer available",
+                )
+            if gefunden.vorhanden is not None and pruefung.vorhanden is None:
+                logger.info(
+                    f"Generic text saved although an existing one is similar: {gefunden.vorhanden.id}"
                 )
             if pruefung.vorhanden is None:
                 request.generictext.references = await _herkunft_anlegen(
@@ -190,18 +176,13 @@ async def add_generic_text(
         # Verknuepft wird sie nur, wenn sie von derselben Person ist und sie sie mit
         # vorhanden_nehmen gewaehlt hat - eine fremde nie (Glossar "Dublette"; zur
         # Begruendung siehe api/v1/commentary.py).
-        vorhanden = pruefung.vorhanden
-        dublette = vorhanden is not None
-        vorhanden_eigen = dublette and vorhanden.original_author == x_user
-        vorhanden_genommen = vorhanden_eigen and _ist_gezeigte(
-            vorhanden, request.vorhanden_nehmen
-        )
+        dublette = Dublette.aus(pruefung.vorhanden, x_user, request.vorhanden_nehmen)
         if dublette:
-            generic_text_id = vorhanden.id
+            generic_text_id = dublette.vorhanden.id
             logger.info(
                 f"Generic text is a duplicate of {generic_text_id} "
-                f"({'same author' if vorhanden_eigen else 'other author'}, "
-                f"{'taken' if vorhanden_genommen else 'not linked'})"
+                f"({'same author' if dublette.eigen else 'other author'}, "
+                f"{'taken' if dublette.genommen else 'not linked'})"
             )
 
         # Antwort auf eine Aussage: im selben Aufruf verknuepfen. Scheitert das,
@@ -210,11 +191,11 @@ async def add_generic_text(
         statement_id = None
         statement_text = None
         themen: List[str] = []
-        verknuepft = not dublette
+        verknuepft = dublette is None
         aussage_mitgeschickt = bool(
             request.statement_id or (request.statement_text or "").strip()
         )
-        if aussage_mitgeschickt and (not dublette or vorhanden_genommen):
+        if aussage_mitgeschickt and (dublette is None or dublette.genommen):
             try:
                 statement_id, statement_text = (
                     await statement_service.beitrag_als_antwort_verknuepfen(
@@ -252,9 +233,7 @@ async def add_generic_text(
             statement_text=statement_text,
             themen=themen_dtos(themen),
             verknuepft=verknuepft,
-            dublette=dublette,
-            vorhanden_titel=vorhanden.title if dublette else None,
-            vorhanden_eigen=vorhanden_eigen,
+            vorhanden=dublette.als_antwort() if dublette else None,
         )
 
     except HTTPException:

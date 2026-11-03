@@ -9,6 +9,20 @@ from domain.models.content_type import ContentType
 from domain.models.generic_text import GenericTextReference
 
 
+class VorhandenDto(BaseModel):
+    """
+    In der Antwort auf das Anlegen eines Kommentars oder einer Hintergrundinfo: der
+    vorhandene Beitrag, dessen Dublette der neue waere (services/dublette.py). Dann
+    wurde nichts angelegt, und die Person entscheidet.
+    """
+
+    # Titel des vorhandenen, damit das Formular ihn nennen kann.
+    titel: Optional[str] = None
+    # Der vorhandene ist von derselben Person: Zustimmen saehe sich selbst eine
+    # Stimme geben, nehmen geht.
+    eigen: bool = False
+
+
 class BeitragResponse(BaseModel):
     """
     Ein Beitrag, wie Suche und lesende Routen ihn ausliefern (#333, Muster aus #311).
