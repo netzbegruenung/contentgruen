@@ -81,12 +81,12 @@ class TestNurWoerterDesOriginals:
 
 
 class TestEinschuebeFallenWeg:
-    def test_relativsatz_faellt_weg_samt_kommas(self, service):
-        vorschlag = service.vorschlagen(
-            "Die Wärmepumpe, die im Keller steht, spart viel Geld.", aussage=None
-        )
+    def test_relativsatz_bleibt_stehen(self, service):
+        # Entscheidung @BanSe 03.11.: Ein Relativsatz kann einschränken ("Nur Häuser,
+        # die gedämmt sind, ..."), deshalb fällt er nie weg.
+        text = "Nur Häuser, die gedämmt sind, sparen viel Energie."
 
-        assert vorschlag == "Die Wärmepumpe spart viel Geld."
+        assert service.vorschlagen(text, aussage=None) == text
 
     def test_apposition_faellt_weg(self, service):
         vorschlag = service.vorschlagen(
@@ -220,7 +220,7 @@ class TestZentraleSaetzeBleiben:
         # Satz selbst; nur einer passt hinein.
         knapp = KuerzungsvorschlagService(werkzeuge=service._werkzeuge, max_zeichen=40)
         text = (
-            "Mein Onkel, der die Förderung für Wärmepumpen kennt, fährt Rad. "
+            "Mein Onkel (er kennt die Förderung für Wärmepumpen) fährt Rad. "
             "Die Wärmepumpe spart Geld."
         )
 
@@ -228,6 +228,32 @@ class TestZentraleSaetzeBleiben:
             knapp.vorschlagen(text, aussage="Die Förderung für Wärmepumpen reicht")
             == "Die Wärmepumpe spart Geld."
         )
+
+    def test_satz_mit_verneinung_faellt_nie_weg(self, service):
+        # Entscheidung @BanSe 03.11.: Ohne den Satz mit der Verneinung kann der
+        # Vorschlag das Gegenteil sagen. Er bleibt, auch wenn er wenig zentral ist.
+        knapp = KuerzungsvorschlagService(werkzeuge=service._werkzeuge, max_zeichen=60)
+        text = (
+            "Die Wärmepumpe spart Geld. Die Wärmepumpe heizt gut. "
+            "Öl lohnt sich nicht."
+        )
+
+        vorschlag = knapp.vorschlagen(text, aussage="Die Wärmepumpe")
+
+        # Ein Wärmepumpen-Satz und der Satz mit Verneinung; beide Wärmepumpen-Sätze
+        # passen nicht mehr dazu.
+        assert vorschlag.startswith("Die Wärmepumpe ")
+        assert vorschlag.endswith(". Öl lohnt sich nicht.")
+        assert vorschlag.count("Wärmepumpe") == 1
+
+    def test_passen_die_saetze_mit_verneinung_nicht_kein_vorschlag(self, service):
+        knapp = KuerzungsvorschlagService(werkzeuge=service._werkzeuge, max_zeichen=30)
+        text = (
+            "Öl lohnt sich heute nicht mehr. Gas ist keine gute Lösung. "
+            "Die Wärmepumpe spart Geld."
+        )
+
+        assert knapp.vorschlagen(text, aussage=None) is None
 
     def test_ohne_passenden_satz_kein_vorschlag(self, service):
         # Kein Satz passt in die Grenze, und abgeschnitten wird nicht.

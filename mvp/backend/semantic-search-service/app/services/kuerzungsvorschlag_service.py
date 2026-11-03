@@ -2,12 +2,14 @@
 Kürzungsvorschlag (#403): eine Kurzfassung aus den eigenen Sätzen eines Kommentars,
 auf Klick, ohne KI (ADR 0005).
 
-Extraktiv: Jeder Satz verliert seine Einschübe (Relativsätze und Appositionen zwischen
+Extraktiv: Jeder Satz verliert seine Einschübe (Appositionen und Parenthesen zwischen
 Kommas, Klammern, Gedankenstrich-Paare), und die zentralen Sätze bleiben, bis die
 Kurzfassung voll ist. Zentral ist ein Satz, dessen Grundformen denen des ganzen
-Kommentars und der Aussage ähneln. Ein Einschub mit Verneinung oder Zahl bleibt stehen,
-damit kein Satz seine Bedeutung verliert. Der Vorschlag besteht so nur aus Wörtern des
-Originals, in Originalreihenfolge; er kann nicht umformulieren (das wäre #412).
+Kommentars und der Aussage ähneln. Damit kein Satz und kein Vorschlag seine Bedeutung
+verliert (Entscheidung @BanSe 03.11.): Relativsätze bleiben immer stehen, weil sie
+einschränken können; ein Einschub mit Verneinung oder Zahl bleibt stehen; ein Satz mit
+Verneinung fällt nie weg. Der Vorschlag besteht so nur aus Wörtern des Originals, in
+Originalreihenfolge; er kann nicht umformulieren (das wäre #412).
 
 Die Person übernimmt oder verwirft ihn (ADR 0003). Nichts davon wird gespeichert oder
 geloggt.
@@ -21,8 +23,8 @@ from dtos.commentary import KURZFASSUNG_MAX
 from services.gegenlesen.gegenlesen_service import Sprachwerkzeuge
 
 #: Abhängigkeiten, deren Teilbaum ein Einschub ist, wenn ein Komma davor steht:
-#: Relativsatz, Apposition, Parenthese (TIGER-Schema von de_core_news_sm).
-_EINSCHUB_DEPS = {"rc", "app", "par"}
+#: Apposition, Parenthese (TIGER-Schema von de_core_news_sm). Relativsätze ("rc") nie.
+_EINSCHUB_DEPS = {"app", "par"}
 #: Nur echte Gedankenstriche: Ein Bindestrich mit Leerzeichen steht auch in
 #: "Ost - West - Problem".
 _GEDANKENSTRICHE = {"–", "—"}
@@ -41,7 +43,6 @@ _VERNEINUNGSWOERTER = {
     "nirgends",
     "keinesfalls",
     "weder",
-    "noch",
     "kaum",
     "ohne",
 }
@@ -98,22 +99,34 @@ class KuerzungsvorschlagService:
                 w += _kosinus(formen[i], bezug)
             return w
 
-        # Die zentralsten zuerst, bei Gleichstand der frühere Satz. Ein Satz, der mit
-        # nichts anderem etwas gemein hat, schweift ab und kommt nicht in Frage; nur
-        # wenn alle so sind, bleibt der erste, der passt.
+        # Sätze mit Verneinung müssen hinein; passen sie nicht, gibt es keinen
+        # Vorschlag. Danach die zentralsten, bei Gleichstand der frühere Satz. Ein
+        # Satz, der mit nichts anderem etwas gemein hat, schweift ab und kommt nicht
+        # in Frage; nur wenn alle so sind, bleibt der erste, der passt.
         werte = {i: wert(i) for i in range(len(saetze))}
+        noetig = [i for i, s in enumerate(saetze) if any(_verneint(t) for t in s)]
         nur_zentrale = any(w > 0 for w in werte.values())
         reihenfolge = sorted(werte, key=lambda i: (-werte[i], i))
         gewaehlt: List[int] = []
         laenge = 0
-        for i in reihenfolge:
-            if not gekuerzt[i] or (nur_zentrale and werte[i] <= 0):
-                continue
+
+        def passt(i: int) -> bool:
+            nonlocal laenge
             # Mit einem Leerzeichen zwischen den Sätzen.
             neu = laenge + len(gekuerzt[i]) + (1 if gewaehlt else 0)
-            if neu <= self._max:
-                gewaehlt.append(i)
-                laenge = neu
+            if neu > self._max:
+                return False
+            gewaehlt.append(i)
+            laenge = neu
+            return True
+
+        for i in noetig:
+            if not passt(i):
+                return None
+        for i in reihenfolge:
+            if i in gewaehlt or not gekuerzt[i] or (nur_zentrale and werte[i] <= 0):
+                continue
+            passt(i)
         if not gewaehlt:
             return None
         return " ".join(gekuerzt[j] for j in sorted(gewaehlt))
@@ -219,12 +232,18 @@ def _einschuebe(satz: list) -> List[list]:
     return spans
 
 
-def _traegt_bedeutung(token) -> bool:
-    """Verneinungen und Zahlen fallen nie weg."""
+def _verneint(token) -> bool:
     return (
         token.dep_ == "ng"
         or token.tag_ == "PTKNEG"
         or token.lower_ in _VERNEINUNGSWOERTER
+    )
+
+
+def _traegt_bedeutung(token) -> bool:
+    """Verneinungen und Zahlen fallen nie weg."""
+    return (
+        _verneint(token)
         or token.lower_ in _ZAHLWOERTER
         or token.lemma_.lower() in _ZAHLWOERTER
         or token.like_num

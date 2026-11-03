@@ -48,7 +48,7 @@ def test_liefert_den_vorschlag(client, service):
     response = client.post(
         PFAD,
         json={
-            "text": "Die Wärmepumpe, die im Keller steht, spart Geld.",
+            "text": "Die Wärmepumpe (im Keller) spart Geld.",
             "aussage": "A",
         },
         headers=ANGEMELDET,
@@ -57,7 +57,7 @@ def test_liefert_den_vorschlag(client, service):
     assert response.status_code == 200
     assert response.json() == {"vorschlag": "Die Wärmepumpe spart Geld."}
     service.vorschlagen.assert_called_once_with(
-        "Die Wärmepumpe, die im Keller steht, spart Geld.", "A"
+        "Die Wärmepumpe (im Keller) spart Geld.", "A"
     )
 
 
