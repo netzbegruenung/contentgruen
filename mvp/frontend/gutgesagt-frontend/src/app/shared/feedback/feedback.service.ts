@@ -16,7 +16,7 @@ export interface FeedbackEintrag {
   kontakt: string | null;
   /** ISO-Datum (JJJJ-MM-TT), nur der Tag. */
   eingegangen_am: string;
-  /** Von einem Admin als bearbeitet markiert (#425); die Frist gilt trotzdem. */
+  /** Von einem Admin als erledigt markiert (#425); die Frist gilt trotzdem. */
   erledigt: boolean;
 }
 

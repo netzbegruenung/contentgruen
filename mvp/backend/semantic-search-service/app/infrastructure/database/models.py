@@ -255,7 +255,7 @@ class FeedbackZeile(Base):
     text = Column(Text, nullable=False)
     kontakt = Column(Text, nullable=True)
     eingegangen_am = Column(Date, nullable=False)
-    # Von Admins gesetzt, wenn das Feedback bearbeitet ist (#425); nur ein Merker,
+    # Von Admins gesetzt, wenn das Feedback erledigt ist (#425); nur ein Merker,
     # ohne Zeitpunkt und ohne wer.
     erledigt = Column(Boolean, nullable=False, default=False, server_default="false")
 

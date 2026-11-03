@@ -38,21 +38,14 @@
             <td class="inhalt">{{ e.kontakt ?? '–' }}</td>
             <td class="aktionen">
               <button
-                *ngIf="!e.erledigt; else wiederOffen"
                 mat-stroked-button
                 type="button"
                 [disabled]="laeuft.has(e.id)"
-                (click)="erledigtSetzen(e, true)"
+                (click)="erledigtSetzen(e, !e.erledigt)"
               >
-                <mat-icon>done</mat-icon>
-                Erledigt
+                <mat-icon>{{ e.erledigt ? 'undo' : 'done' }}</mat-icon>
+                {{ e.erledigt ? 'Wieder offen' : 'Erledigt' }}
               </button>
-              <ng-template #wiederOffen>
-                <button mat-stroked-button type="button" [disabled]="laeuft.has(e.id)" (click)="erledigtSetzen(e, false)">
-                  <mat-icon>undo</mat-icon>
-                  Wieder offen
-                </button>
-              </ng-template>
               <button mat-button type="button" [disabled]="laeuft.has(e.id)" (click)="loeschen(e)">
                 <mat-icon>delete</mat-icon>
                 Löschen

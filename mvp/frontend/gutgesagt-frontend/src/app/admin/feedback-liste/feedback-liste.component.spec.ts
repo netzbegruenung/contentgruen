@@ -67,6 +67,10 @@ describe('FeedbackListeComponent', () => {
     );
   }
 
+  function erledigteZeigen() {
+    knopf('Erledigt', element().querySelector('[data-testid="feedback-filter"]')!)!.click();
+  }
+
   function laden(url: string, eintraege: FeedbackEintrag[]) {
     http.expectOne(url).flush({ aufbewahrung_tage: 180, eintraege });
     fixture.detectChanges();
@@ -101,7 +105,7 @@ describe('FeedbackListeComponent', () => {
     it('lädt beim Umschalten das erledigte Feedback', () => {
       laden(OFFEN, [eintrag()]);
 
-      knopf('Erledigt', element().querySelector('[data-testid="feedback-filter"]')!)!.click();
+      erledigteZeigen();
       laden(ERLEDIGT, [eintrag({ id: 'c', text: 'Schon beantwortet', erledigt: true })]);
 
       expect(zeilen().map((z) => z[1])).toEqual(['Schon beantwortet']);
@@ -110,7 +114,7 @@ describe('FeedbackListeComponent', () => {
     it('sagt, wenn kein erledigtes Feedback da ist', () => {
       laden(OFFEN, []);
 
-      knopf('Erledigt', element().querySelector('[data-testid="feedback-filter"]')!)!.click();
+      erledigteZeigen();
       laden(ERLEDIGT, []);
 
       expect(text()).toContain('Kein erledigtes Feedback');
@@ -137,7 +141,7 @@ describe('FeedbackListeComponent', () => {
 
     it('nimmt erledigt zurück', () => {
       laden(OFFEN, []);
-      knopf('Erledigt', element().querySelector('[data-testid="feedback-filter"]')!)!.click();
+      erledigteZeigen();
       laden(ERLEDIGT, [eintrag({ erledigt: true })]);
 
       knopf('Wieder offen', zeile())!.click();

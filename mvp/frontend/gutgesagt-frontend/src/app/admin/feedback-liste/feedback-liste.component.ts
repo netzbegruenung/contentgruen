@@ -70,10 +70,7 @@ export class FeedbackListeComponent implements OnInit {
     this.laeuft.add(e.id);
     this.feedbackService.erledigtSetzen(e.id, erledigt).subscribe({
       next: () => this.entfernen(e),
-      error: () => {
-        this.laeuft.delete(e.id);
-        this.snackBar.open('Das Feedback konnte nicht geändert werden.', 'OK', { duration: 5000 });
-      },
+      error: () => this.fehlschlag(e, 'Das Feedback konnte nicht geändert werden.'),
     });
   }
 
@@ -86,10 +83,7 @@ export class FeedbackListeComponent implements OnInit {
         this.laeuft.add(e.id);
         this.feedbackService.loeschen(e.id).subscribe({
           next: () => this.entfernen(e),
-          error: () => {
-            this.laeuft.delete(e.id);
-            this.snackBar.open('Das Feedback konnte nicht gelöscht werden.', 'OK', { duration: 5000 });
-          },
+          error: () => this.fehlschlag(e, 'Das Feedback konnte nicht gelöscht werden.'),
         });
       });
   }
@@ -107,6 +101,12 @@ export class FeedbackListeComponent implements OnInit {
       next: (daten) => (this.daten = daten),
       error: () => (this.fehler = true),
     });
+  }
+
+  /** Der Eintrag bleibt stehen, seine Knöpfe gehen wieder. */
+  private fehlschlag(e: FeedbackEintrag, meldung: string) {
+    this.laeuft.delete(e.id);
+    this.snackBar.open(meldung, 'OK', { duration: 5000 });
   }
 
   /** Nach Umschalten oder Löschen gehört der Eintrag nicht mehr in diese Liste. */

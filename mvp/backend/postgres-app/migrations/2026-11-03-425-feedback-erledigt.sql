@@ -5,7 +5,11 @@
 -- Merker, ohne Zeitpunkt und ohne wer. Die Frist von 180 Tagen gilt unveraendert
 -- fuer offenes wie erledigtes Feedback (docs/LOESCHKONZEPT.md).
 --
--- Vorhandenes Feedback gilt als offen. Wiederholbar.
+-- Neue Datenbanken brauchen dieses Skript nicht: create_all legt die Tabelle
+-- mit der Spalte an (infrastructure/database/connection.py), und das Skript
+-- laeuft dann ohne Wirkung durch. Bestehende Datenbanken brauchen es, denn
+-- create_all ergaenzt keine Spalten. Vorhandenes Feedback gilt als offen.
+-- Wiederholbar.
 --
 -- Anwenden: siehe README.md in diesem Verzeichnis.
 

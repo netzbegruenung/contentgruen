@@ -191,11 +191,11 @@ class TestListe:
             ],
         }
 
-    @pytest.mark.parametrize("wert,filter", [("false", False), ("true", True)])
+    @pytest.mark.parametrize("wert,nur_erledigte", [("false", False), ("true", True)])
     def test_admin_filtert_nach_offen_oder_erledigt(
-        self, client, service, wert, filter
+        self, client, service, wert, nur_erledigte
     ):
         response = client.get(f"{LISTE}?erledigt={wert}", headers=ADMIN)
 
         assert response.status_code == 200
-        service.neueste.assert_called_once_with(100, filter)
+        service.neueste.assert_called_once_with(100, nur_erledigte)
