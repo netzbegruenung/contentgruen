@@ -129,42 +129,44 @@ your own address, then dismiss the Meldung in the moderation; both mails must ar
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status
-for `main`, see [CI.md](CI.md)). After the merge, GitHub Actions on the mirror build the images:
-- `.github/workflows/build.yml` — builds on every push to `main`, publishing `:main` and
-  `:sha-<short>` tags. The test environment runs `:main`, rolled out manually (see above).
-- `.github/workflows/release.yml` — runs on `v*` tags, publishing `:X.Y.Z` (the tag without
-  its `v`), `:X.Y` and `:latest` for all four images.
+for `main`, see [CI.md](CI.md)). After the merge the images are built. Until the switch
+described in [CI.md, "Images and releases"](CI.md#images-and-releases) two CIs build them:
 
-Both run the same test suites first, defined once in `.github/workflows/tests-backend.yml`,
-`tests-frontend.yml` and `tests-bff.yml` and called by each; images are pushed only if they pass.
+- **GitHub Actions on the mirror** (`.github/workflows/build.yml` and `release.yml`) publish
+  the tags the environments use, after running their test suites
+  (`tests-backend.yml`, `tests-frontend.yml`, `tests-bff.yml`).
+- **Woodpecker** (`.woodpecker/build.yaml` and `release.yaml`, after a green `ci` run) builds
+  the same images with the same tags, each with the prefix `woodpecker-` (`:woodpecker-main`,
+  `:woodpecker-0.9.0`), so the two CIs never overwrite each other's tags. After the switch
+  the prefix is gone and the GitHub workflows are removed.
 
-`:latest` is produced by `docker/metadata-action`'s `latest=auto` flavor: it moves for normal
-release tags but is skipped for prereleases (`v1.2.3-rc.1`). A prerelease tag therefore never
-reaches production.
+Tags, the same in both CIs (`scripts/image_tags.py`):
+
+- **Push to `main`:** `:main` and `:sha-<short>` for the images whose files changed. The test
+  environment runs `:main`, rolled out manually (see above).
+- **Tag `vX.Y.Z`:** `:X.Y.Z` (the tag without its `v`), `:X.Y` and `:latest` for all four
+  images. A prerelease (`v1.2.3-rc.1`) only gets `:1.2.3-rc.1`.
 
 Images are pushed into the Netzbegruenung/Verdigado registry:
 > https://git.verdigado.com/netzbegruenung-images/-/packages
 
-**How production updates:** production pins `:latest` by digest. Renovate raises the digest
-bumps; production changes only once the operators roll a bump out. A release tag does not
-deploy anything by itself.
-
-> Because production pins `:latest`, the `latest=auto` flavor in `release.yml` is
-> load-bearing. Disabling it, or moving the tag rules away from `type=semver`, would stop
-> `:latest` moving and silently freeze production updates with no failing build to signal it.
+**How production updates:** production pins a release version (`:X.Y.Z`, by digest), not
+`:latest`. Renovate proposes the next release version; production changes only once the
+operators roll it out. A release tag does not deploy anything by itself. `:latest` is still
+published for whoever wants the newest release, but nothing in production follows it.
 
 #### Releases
 
 1. **Only the maintainer sets tags.** Agents and contributors propose, they do not tag.
 2. **Version scheme:** `v0.x` releases until the public launch: `v0.8.0` first, for the move
    of production, `v0.9.0` at the internal launch, `v1.0.0` at the public launch,
-   [SemVer](https://semver.org/) after that. No release candidates (`-rc`): they do
-   not move `:latest` (see above), and production only follows `:latest`.
-3. **Release pull request:** before tagging, one pull request prepares the release:
-   - **Version in the footer:** the footer shows the `version` from
-     `mvp/frontend/gutgesagt-frontend/package.json`. Set it to `X.Y.Z` (without the `v`),
-     otherwise the new images show the old number. `npm version X.Y.Z --no-git-tag-version`
-     in that directory also updates `package-lock.json`.
+   [SemVer](https://semver.org/) after that. No release candidates (`-rc`): production only
+   takes release versions.
+3. **Release pull request:** before tagging, one pull request prepares the release. The
+   version needs no change in the repository: the release build passes the tag to the
+   frontend image (build argument `APP_VERSION`), and the footer shows it.
+   `mvp/frontend/gutgesagt-frontend/package.json` keeps its `version`; the footer only shows it
+   for images built without a tag (`:main`, local builds).
    - **Change list:** draft the text of the Forgejo release and show it in the description of
      the release pull request, so it is reviewed with it. The change list lives only in the
      Forgejo release, not in a file in the repository. Draft it with
@@ -185,8 +187,9 @@ deploy anything by itself.
    that it covers everything up to the tag except the release pull request itself.
 4. **Tag on Forgejo:** set the tag on the merge commit of the release pull request on `main`
    on Forgejo, not on a later commit: later pull requests belong to the next release. The push
-   mirror carries the tag to GitHub, where `release.yml` tests and builds the images. Check
-   that the run is green and `:latest` moved before announcing the release.
+   mirror carries the tag to GitHub, where `release.yml` tests and builds the images; on
+   Forgejo, Woodpecker runs `ci` and then `release` for the same tag. Check that the run is
+   green and the `:X.Y.Z` tags exist in the registry before announcing the release.
 5. **Forgejo release:** create the release to the tag on Forgejo (Releases on the Forgejo
    repository) and paste the reviewed draft from the release pull request. `scripts/changelog.sh
    vX.Y.Z` shows the tagged range for a last comparison; for the first release give the start
@@ -227,7 +230,8 @@ What this means for a rollout:
   without running.
 - **A new migration needs a new semantic search image.** The files are baked into it. A
   migration merged without other changes to the service only reaches `:main` once that image
-  is rebuilt (see the path filter in `.github/workflows/build.yml`); release tags build all images.
+  is rebuilt (path filters in `.woodpecker/build.yaml` and `.github/workflows/build.yml`;
+  Woodpecker also rebuilds it for a new migration alone); release tags build all images.
 - **After restoring a backup** the table holds the state of the backup. `restore.sh` restarts
   the semantic search service, which then applies the migrations added since; after a restore
   by other means, restart it yourself.

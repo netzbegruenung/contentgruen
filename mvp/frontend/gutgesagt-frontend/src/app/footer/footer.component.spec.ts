@@ -88,4 +88,16 @@ describe('buildKennung', () => {
     expect(buildKennung('1.1.0', '')).toBe('v1.1.0 · dev');
     expect(buildKennung('1.1.0', '${GIT_SHA}')).toBe('v1.1.0 · dev');
   });
+
+  // #327: Beim Release-Build kommt die Version aus dem Git-Tag, package.json muss nicht mit.
+  it('nimmt die Version aus dem Git-Tag, wenn der Build sie mitgibt', () => {
+    expect(buildKennung('0.8.0', '3523b55f0e1d', 'v0.9.0')).toBe('v0.9.0 · 3523b55');
+    expect(buildKennung('0.8.0', '3523b55f0e1d', '0.9.0')).toBe('v0.9.0 · 3523b55');
+  });
+
+  it('nimmt package.json ohne Tag-Version oder mit unersetztem Platzhalter', () => {
+    expect(buildKennung('0.8.0', '3523b55', undefined)).toBe('v0.8.0 · 3523b55');
+    expect(buildKennung('0.8.0', '3523b55', '')).toBe('v0.8.0 · 3523b55');
+    expect(buildKennung('0.8.0', '3523b55', '${APP_VERSION}')).toBe('v0.8.0 · 3523b55');
+  });
 });

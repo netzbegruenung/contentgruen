@@ -74,7 +74,7 @@ Candidate features:
 ## Environments
 
 * **Test:** https://gutgesagt-test.netzbegruenung.de — tracks `:main`, rolled out manually.
-* **Production:** https://gutgesagt.netzbegruenung.de — pins `:latest` by digest (release flow: `docs/DEPLOYMENT.md`).
+* **Production:** https://gutgesagt.netzbegruenung.de — pins a release version (`:X.Y.Z`) by digest (release flow: `docs/DEPLOYMENT.md`).
   https://contentgruen.de redirects here.
 
 Both run on verdigado's internal infrastructure; operational details are documented internally.

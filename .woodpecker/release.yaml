@@ -1,0 +1,86 @@
+# Baut bei einem Tag vX.Y.Z alle vier Images und pusht X.Y.Z, X.Y und latest (eine
+# Vorabversion nur X.Y.Z), wie bisher .github/workflows/release.yml (#327). Erst nach
+# gruenem ci (depends_on), also nur, was auch main bestanden haette. Ein Tag, der keine
+# SemVer-Version ist, macht image-tags rot und baut nichts.
+# Die Version im Footer kommt aus dem Tag (Build-Arg APP_VERSION), nicht aus package.json.
+when:
+  - event: tag
+    ref: refs/tags/v*
+
+depends_on: [ci]
+
+steps:
+  # Schreibt die Tags nach .image-tags (scripts/image_tags.py), die Build-Schritte lesen sie.
+  - name: image-tags
+    image: python:3.13-slim
+    depends_on: []
+    environment:
+      # Parallelbetrieb neben der GitHub-CI: eigene Tags, bis docs/CI.md "Umstieg" erledigt ist.
+      # In build.yaml und release.yaml gleich (scripts/tests/test_woodpecker_images.py).
+      IMAGE_TAG_PRAEFIX: woodpecker-
+    commands:
+      - python3 scripts/image_tags.py .image-tags
+
+  - name: frontend
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    depends_on: [image-tags]
+    settings:
+      registry: git.verdigado.com
+      repo: git.verdigado.com/netzbegruenung-images/gutgesagt-frontend
+      context: mvp/frontend/gutgesagt-frontend
+      dockerfile: mvp/frontend/gutgesagt-frontend/Dockerfile
+      platforms: linux/amd64
+      tags_file: .image-tags
+      username:
+        from_secret: registry_user
+      password:
+        from_secret: registry_token
+      build_args:
+        GIT_SHA: ${CI_COMMIT_SHA}
+        # Version im Footer aus dem Git-Tag, ohne Versionssprung in package.json
+        APP_VERSION: ${CI_COMMIT_TAG}
+
+  - name: bff
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    depends_on: [image-tags]
+    settings:
+      registry: git.verdigado.com
+      repo: git.verdigado.com/netzbegruenung-images/gutgesagt-bff
+      context: mvp/backend/BFF
+      dockerfile: mvp/backend/BFF/Dockerfile
+      platforms: linux/amd64
+      tags_file: .image-tags
+      username:
+        from_secret: registry_user
+      password:
+        from_secret: registry_token
+
+  - name: semantic-search
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    depends_on: [image-tags]
+    settings:
+      registry: git.verdigado.com
+      repo: git.verdigado.com/netzbegruenung-images/gutgesagt-semantic-search
+      context: mvp
+      dockerfile: mvp/backend/semantic-search-service/Dockerfile
+      platforms: linux/amd64
+      tags_file: .image-tags
+      username:
+        from_secret: registry_user
+      password:
+        from_secret: registry_token
+
+  - name: postgres-app
+    image: woodpeckerci/plugin-docker-buildx:6.0.2@sha256:82f90f336084c320c37970aa1cae8e8bf8a54a5b63f80093dd80dc2bb181b6ab
+    depends_on: [image-tags]
+    settings:
+      registry: git.verdigado.com
+      repo: git.verdigado.com/netzbegruenung-images/gutgesagt-postgres-app
+      context: mvp/backend/postgres-app
+      dockerfile: mvp/backend/postgres-app/Dockerfile
+      platforms: linux/amd64
+      tags_file: .image-tags
+      username:
+        from_secret: registry_user
+      password:
+        from_secret: registry_token
