@@ -26,7 +26,7 @@ Durchprobieren von Passwörtern liegen bei Keycloak. Warum so: ADR 0006
 | Realm `gutgesagt`, Selbstregistrierung aus | Konten entstehen nur über eine Einladung oder den Identity Provider |
 | Anmelden mit Mail-Adresse, Passwort vergessen, Mail-Bestätigung, Brute-Force-Schutz | alles von Keycloak |
 | Client `gutgesagt` | Anmeldung der App (BFF, Authorization Code mit PKCE) |
-| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an; engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
+| Client `gutgesagt-einladungen` mit Dienstkonto, Rolle `manage-users` | der Semantic-Service legt damit Konten aus Einladungen an und löscht nie benutzte nach der Frist (#538, `docs/LOESCHKONZEPT.md`); engere Rechte für „Konto anlegen“ bietet Keycloak nicht |
 | Identity Provider `netzbegruenung` | Netzbegrünung-Login; Adresse und Client sind Platzhalter |
 
 Die Pflichtaktionen stehen bewusst nicht in der Vorlage: Eine Liste dort ersetzt die
