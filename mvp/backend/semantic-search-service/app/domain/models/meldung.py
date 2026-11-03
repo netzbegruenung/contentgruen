@@ -8,7 +8,8 @@ E-Mail-Adresse (RFC 5321).
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import NamedTuple, Optional
+from uuid import UUID
 
 from pydantic.networks import validate_email
 from pydantic_core import PydanticCustomError
@@ -29,6 +30,13 @@ class MelderAngaben:
     guter_glaube: bool
     name: Optional[str] = None
     email: Optional[str] = None
+
+
+class MelderAdresse(NamedTuple):
+    """E-Mail-Adresse einer offenen Meldung und der gemeldete Beitrag (#493)."""
+
+    content_id: UUID
+    email: str
 
 
 @dataclass(frozen=True)

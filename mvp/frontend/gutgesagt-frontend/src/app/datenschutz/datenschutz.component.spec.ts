@@ -310,11 +310,16 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('siehe „Protokolldateien“');
     });
 
-    it('Suchen ohne Treffer: Netzwechsel zählt neu, gleicher Anschluss und Browser zählt als eine Person', () => {
+    it('Suchen ohne Treffer: Netzwechsel zählt neu, je Anschluss höchstens eine Person, auch mit anderem Browser', () => {
       const text = abschnitt('Suchen ohne Treffer');
 
       expect(text).toContain('anderes Netz');
-      expect(text).toContain('am selben Anschluss denselben Browser nutzen, als eine');
+      // #496: der Anschluss-Prüfwert; ein anderer Browser am selben Anschluss zählt nicht mehr neu.
+      expect(text).toContain('aus deinem Anschluss');
+      expect(text).toContain('je Anschluss höchstens eine Person');
+      expect(text).toContain('als eine, auch mit verschiedenen Browsern');
+      expect(text).not.toContain('anderen Browser</strong>');
+      expect(text).not.toContain('anderen Browser oder');
       expect(text).not.toContain('neue Sitzungskennung');
     });
 
@@ -474,8 +479,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('deine Erklärung, in gutem Glauben zu melden');
       expect(text).toContain('dein Name und deine E-Mail-Adresse, falls du sie angibst');
       expect(text).toContain('Name und E-Mail-Adresse sind freiwillig');
-      expect(text).toContain('um dir unsere Entscheidung über die Meldung mitzuteilen');
+      expect(text).toContain('teilen wir dir unsere Entscheidung über die Meldung mit');
       expect(text).toContain('Artikel 16 Absatz 5 DSA');
+      // #493: die Adresse dient auch der Eingangsbestätigung per Mail (Art. 16 Abs. 4 DSA).
+      expect(text).toContain('Gleich nach der Meldung bestätigen wir dir den Eingang');
+      expect(text).toContain('Artikel 16 Absatz 4 DSA');
+      expect(text).not.toContain('nur, um dir unsere Entscheidung');
       // Der Satz zu Name und E-Mail-Adresse steht hinter dem zu den Kennungen, damit
       // sich „beide“ nicht auf sie beziehen lässt.
       expect(text).not.toContain('stehen also beide nebeneinander');

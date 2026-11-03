@@ -108,6 +108,29 @@ the Kennungen (`--beta-zugaenge`, #488). Together with the BFF switch, remove th
 mount from test and production and set `ENABLE_MANAGED_AUTH=false`; the Direktanmeldung stays
 for the dev stack only. Steps: `docs/KEYCLOAK_REALM.md`, „Beta-Zugänge umziehen“.
 
+### ✉️ Mail (Meldungen)
+
+#493: Who gives an e-mail address when reporting a Beitrag gets two mails from the semantic
+service (Art. 16 (4) and (5) DSA): the Eingangsbestätigung right away, and the decision with the
+available remedies once an admin sperrt the Beitrag, dismisses the Meldung or removes the
+Beitrag. Texts: `services/meldung_mitteilen.py`; sending: `infrastructure/mail/versand.py`
+(SMTP with STARTTLS or TLS only, one connection per mail, 10 s per step; a request waits at most 15 s for its mails, then answers while the sending finishes in the background). The mails carry no text from the Meldung
+itself, only the title of a visible Beitrag.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `SEMANTIC_SEARCH_SMTP_HOST` | unset | SMTP server. Unset: no mail goes out, admins inform by hand (mailto link in the moderation) |
+| `SEMANTIC_SEARCH_SMTP_PORT` | `587` | |
+| `SEMANTIC_SEARCH_SMTP_VERSCHLUESSELUNG` | `starttls` | `starttls` or `ssl` (port 465). Nothing else: the service refuses to start with any other value and never sends in plain text; the certificate must match the host name |
+| `SEMANTIC_SEARCH_SMTP_BENUTZER` / `_PASSWORT` | unset | SMTP login; without a user no login. The password is a secret |
+| `SEMANTIC_SEARCH_MAIL_ABSENDER` | unset | `From` address; required, without it no mail goes out |
+| `SEMANTIC_SEARCH_MAIL_ANTWORT_AN` | unset | `Reply-To`; unset, replies go to the sender. The decision mail names a reply as the way to challenge the decision (Art. 20 DSA): set this to the contact address of the legal notice whenever the sender accepts no mail |
+
+The sender domain needs SPF/DKIM for the SMTP server, otherwise the mails land in spam. A failed
+mail never undoes a Meldung or decision; the log says `SMTP delivery failed (<error type>)`
+without the address. Check after setting the variables: report a Beitrag on the test system with
+your own address, then dismiss the Meldung in the moderation; both mails must arrive.
+
 ### 🚧 Updating Production
 
 Pull requests are checked on Forgejo by Woodpecker (`.woodpecker/ci.yaml`, required status

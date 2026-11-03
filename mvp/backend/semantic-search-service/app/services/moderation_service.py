@@ -6,7 +6,7 @@ Provides business logic for reporting and managing flagged content.
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from repositories.content_report_repository import (
@@ -25,15 +25,30 @@ from repositories.sperre_repository import SperreRepository, get_sperre_reposito
 from repositories.vote_repository import VoteRepository
 from domain.models.content_status import ContentStatus
 from domain.models.meldegrund import MELDEGRUENDE, Meldegrund, beschreibung_fehlt
-from domain.models.meldung import AngabenGeloescht, MelderAngaben, MelderSuche
+from domain.models.meldung import (
+    AngabenGeloescht,
+    MelderAdresse,
+    MelderAngaben,
+    MelderSuche,
+)
 from domain.models.sperrgrund import SPERRGRUENDE, Sperrgrund
 from domain.models.widerspruch import Widerspruchsergebnis
 from core.config import settings
 from core.fehler import Validierungsfehler
 from services.anzeigename_service import EHEMALIGE_PERSON_KENNUNG
 from services.content.verweise_entfernen import verweise_entfernen
+from services.meldung_mitteilen import (
+    Entscheidung,
+    MeldungMitteilung,
+    get_meldung_mitteilung,
+)
 
 logger = logging.getLogger(__name__)
+
+# Hoechstens so viele Sekunden wartet eine Anfrage auf den Mailversand (#493). Das
+# Timeout von smtplib gilt je Schritt, ein langsamer Server kaeme mit vielen Schritten
+# weit darueber; danach antwortet die Anfrage, und der Versand laeuft im Thread zu Ende.
+MAIL_FRIST = 15
 
 
 # Obergrenze fuer die Liste gesperrter Beitraege in der Moderation.
@@ -69,6 +84,27 @@ def _autor(beitrag: Dict[str, Any]) -> Optional[str]:
     return autor
 
 
+def _titel(beitrag: Optional[Dict[str, Any]]) -> Optional[str]:
+    """
+    Wie die Mail an die meldende Person den Beitrag nennt (#493): nur einen
+    sichtbaren mit Titel. Gesperrte und geloeschte findet die Melde-Route auch;
+    wer ihre Kennung kennt, bekaeme sonst ihren Titel per Mail.
+    """
+    if not beitrag or beitrag.get("status", ContentStatus.VISIBLE.value) != (
+        ContentStatus.VISIBLE.value
+    ):
+        return None
+    return beitrag.get("title") or beitrag.get("text")
+
+
+async def _hoechstens_mail_frist(funktion, *args) -> None:
+    """Fuehrt den Versand im Thread aus und wartet hoechstens MAIL_FRIST darauf."""
+    try:
+        await asyncio.wait_for(asyncio.to_thread(funktion, *args), timeout=MAIL_FRIST)
+    except asyncio.TimeoutError:
+        logger.warning("Mail not sent within the deadline, sending continues")
+
+
 def _iso(zeitpunkt) -> Optional[str]:
     return zeitpunkt.isoformat() if isinstance(zeitpunkt, datetime) else zeitpunkt
 
@@ -102,6 +138,7 @@ class ModerationService:
         vote_repo: Optional[VoteRepository] = None,
         einwurf_repo: Optional[EinwurfRepository] = None,
         sperre_repo: Optional[SperreRepository] = None,
+        mitteilung: Optional[MeldungMitteilung] = None,
     ):
         self.report_repo = report_repo or get_content_report_repository()
         self.moderation_repo = moderation_repo or get_moderation_repository()
@@ -109,6 +146,8 @@ class ModerationService:
         self._vote_repo = vote_repo
         self._einwurf_repo = einwurf_repo
         self._sperre_repo = sperre_repo
+        # Mails an die meldende Person (#493); ohne eingerichteten Versand geht nichts hinaus.
+        self._mitteilung = mitteilung
 
     async def report_content(
         self,
@@ -183,13 +222,20 @@ class ModerationService:
                 melder=melder,
             )
             logger.info(f"Content {content_id} reported: {reason}")
-            return report is not None
         except ValueError as e:
             logger.error("Invalid content_id format")
             return False
         except Exception as e:
             logger.error(f"Error reporting content: {type(e).__name__}", exc_info=True)
             return False
+
+        if report is None:
+            return False
+        # Art. 16 Abs. 4 DSA (#493): nur fuer eine neu angelegte Meldung, nicht fuer
+        # die Doppelmeldung oben.
+        if melder.email:
+            await self._eingang_bestaetigen(content_id, melder.email)
+        return True
 
     async def content_exists(self, content_id: str) -> bool:
         """
@@ -215,6 +261,48 @@ class ModerationService:
             # Im Zweifel durchlassen: eine Meldung zu verlieren waere schlimmer
             # als eine ins Leere zeigende anzunehmen.
             return True
+
+    def _mitteilung_holen(self) -> MeldungMitteilung:
+        if self._mitteilung is None:
+            self._mitteilung = get_meldung_mitteilung()
+        return self._mitteilung
+
+    async def _eingang_bestaetigen(self, content_id: str, email: str) -> None:
+        """Eingangsbestaetigung; MeldungMitteilung faengt jeden Fehler beim Versand."""
+        beitrag = await self._beitrag_fuer_mail(content_id)
+        await _hoechstens_mail_frist(
+            self._mitteilung_holen().eingang_bestaetigen, email, _titel(beitrag)
+        )
+
+    async def _beitrag_fuer_mail(self, content_id: str) -> Optional[Dict[str, Any]]:
+        """Der Beitrag fuer seinen Titel in der Mail; ohne ihn nennt sie keinen."""
+        try:
+            return await self._beitrag_laden(content_id)
+        except Exception as e:
+            logger.warning(f"Loading content for the mail failed ({type(e).__name__})")
+            return None
+
+    async def _entscheidung_mitteilen(
+        self,
+        adressen: List[MelderAdresse],
+        entscheidung: Entscheidung,
+        titel: Optional[str],
+    ) -> None:
+        """
+        Art. 16 Abs. 5 DSA (#493): je Adresse eine Mail, auch bei mehreren Meldungen.
+        Nacheinander in einem Thread: Viele Meldungen belegen so nicht den ganzen
+        Thread-Pool des Dienstes. MeldungMitteilung faengt jeden Fehler beim Versand.
+        """
+        if not adressen:
+            return
+        empfaenger = {adresse.email.lower(): adresse.email for adresse in adressen}
+        mitteilung = self._mitteilung_holen()
+
+        def alle_verschicken() -> None:
+            for email in empfaenger.values():
+                mitteilung.entscheidung_mitteilen(email, entscheidung, titel)
+
+        await _hoechstens_mail_frist(alle_verschicken)
 
     async def get_pending_reports(
         self, limit: int = 50, offset: int = 0
@@ -359,6 +447,8 @@ class ModerationService:
         if beitrag is None:
             logger.warning(f"Content {content_id} not found")
             return False
+        # Vor dem Sperren: Danach ist der Beitrag nicht mehr sichtbar (_titel).
+        titel = _titel(beitrag)
         neu = None
         if not await asyncio.to_thread(
             self._sperre_repository().aktive, UUID(content_id)
@@ -373,16 +463,19 @@ class ModerationService:
                 autor=_autor(beitrag),
             )
 
+        adressen: List[MelderAdresse] = []
         updated_count = self.report_repo.update_reports_by_content_id(
             content_id=UUID(content_id),
             status="reviewed",
             reviewed_by=gesperrt_von,
             resolution_notes="Beitrag gesperrt",
+            melder_adressen=adressen,
         )
         logger.info(
             f"Content {content_id} gesperrt, "
             f"{updated_count} reports marked as reviewed"
         )
+        await self._entscheidung_mitteilen(adressen, Entscheidung.GESPERRT, titel)
         if neu is None:
             raise SchonGesperrt()
         return True
@@ -562,9 +655,11 @@ class ModerationService:
             Datenbankfehler beim Loeschen von Stimmen oder "ausformuliert in" gehen
                 weiter; der Beitrag ist dann ebenfalls nicht entfernt.
         """
-        if await self._beitrag_laden(content_id) is None:
+        beitrag = await self._beitrag_laden(content_id)
+        if beitrag is None:
             logger.warning(f"Content {content_id} not found or already deleted")
             return False
+        titel = _titel(beitrag)
 
         await verweise_entfernen(self.moderation_repo, content_id)
         stimmen = await asyncio.to_thread(
@@ -601,6 +696,7 @@ class ModerationService:
 
         # Offene Meldungen als bearbeitet markieren. Der Beitrag ist schon weg;
         # ein Fehler hier macht die Loeschung nicht rueckgaengig.
+        adressen: List[MelderAdresse] = []
         try:
             updated_count = self.report_repo.update_reports_by_content_id(
                 content_id=UUID(content_id),
@@ -608,6 +704,7 @@ class ModerationService:
                 reviewed_by=deleted_by,
                 resolution_notes="Content deleted",
                 nur_offene=True,
+                melder_adressen=adressen,
             )
         except Exception as e:
             # Nur der Typ: Die Meldung einer Datenbank kann reviewed_by enthalten.
@@ -619,6 +716,12 @@ class ModerationService:
 
         logger.info(
             f"Content {content_id} ({content_type}) deleted, {updated_count} reports marked as reviewed"
+        )
+        # Ohne Admin hat die Loeschfrist entfernt, entschieden hat niemand.
+        await self._entscheidung_mitteilen(
+            adressen,
+            Entscheidung.ENTFERNT if deleted_by else Entscheidung.NICHT_MEHR_DA,
+            titel,
         )
         return True
 
@@ -653,14 +756,21 @@ class ModerationService:
         """
         try:
             report_uuid = UUID(report_id)
+            adressen: List[MelderAdresse] = []
             updated_report = self.report_repo.update_report_status(
                 report_id=report_uuid,
                 status="dismissed",
                 reviewed_by=dismissed_by,
                 resolution_notes=notes or "Report dismissed",
+                melder_adressen=adressen,
             )
             if updated_report:
                 logger.info(f"Report {report_id} dismissed")
+                if adressen:
+                    beitrag = await self._beitrag_fuer_mail(str(adressen[0].content_id))
+                    await self._entscheidung_mitteilen(
+                        adressen, Entscheidung.ABGEWIESEN, _titel(beitrag)
+                    )
                 return True
             else:
                 logger.warning(f"Report {report_id} not found")

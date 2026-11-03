@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import Field
-from typing import Optional
+from typing import Literal, Optional
 from dotenv import load_dotenv
 
 # Set up logger for module
@@ -18,6 +18,10 @@ if env_file.exists():
 # Das Einbettungsmodell. Die Aehnlichkeitsschwellen in Settings sind dafuer gemessen;
 # das Dockerfile laedt es beim Bauen vor und muss mitgezogen werden.
 EMBEDDING_MODELL = "intfloat/multilingual-e5-base"
+
+# Wie der Mailversand mit dem SMTP-Server spricht (infrastructure/mail/versand.py).
+# Nur verschluesselt: Adresse und Text der Mail gehen nie lesbar ueber das Netz.
+SmtpVerschluesselung = Literal["starttls", "ssl"]
 
 
 class Settings(BaseSettings):
@@ -150,6 +154,21 @@ class Settings(BaseSettings):
     # ihre Adresse. Ohne beide endet er auf der Kontoseite von Keycloak.
     keycloak_app_client_id: Optional[str] = None
     app_url: Optional[str] = None
+
+    # Mailversand an meldende Personen (#493): Eingangsbestaetigung und Entscheidung
+    # nach Art. 16 Abs. 4 und 5 DSA (infrastructure/mail/versand.py). Ohne Host und
+    # Absender geht keine Mail hinaus; die Entscheidung teilt dann ein Admin per Hand
+    # mit. Einrichten: docs/DEPLOYMENT.md, "Mail".
+    smtp_host: Optional[str] = None
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_benutzer: Optional[str] = None
+    smtp_passwort: Optional[str] = None
+    # starttls (Port 587) oder ssl (Port 465); unverschluesselt verschickt der Dienst nicht
+    smtp_verschluesselung: SmtpVerschluesselung = "starttls"
+    mail_absender: Optional[str] = None
+    # Wohin Antworten gehen; ohne Angabe an den Absender. Die Mail der Entscheidung
+    # nennt die Antwort als Weg, gegen sie vorzugehen: keine Adresse, die nichts annimmt.
+    mail_antwort_an: Optional[str] = None
 
     # Admin users (comma-separated list)
     admin_users: str = ""
