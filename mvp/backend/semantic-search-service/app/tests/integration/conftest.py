@@ -108,7 +108,9 @@ async def real_embeddings_manager(integration_settings, einbettungsmodell):
     )
     await manager.start()
     try:
-        assert manager.model is einbettungsmodell, "Modell nicht geteilt"
+        assert (
+            manager.model is einbettungsmodell
+        ), "Modell nicht geteilt: nutzt QdrantEmbeddingsManager.start() das uebergebene nicht?"
         yield manager
     finally:
         try:

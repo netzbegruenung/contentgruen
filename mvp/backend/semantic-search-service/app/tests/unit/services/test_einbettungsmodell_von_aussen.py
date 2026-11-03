@@ -17,6 +17,12 @@ from services.embeddings import qdrant_embeddings_manager
 from services.embeddings.qdrant_embeddings_manager import QdrantEmbeddingsManager
 
 
+@pytest.fixture(autouse=True)
+def ohne_threads_aus_umgebung(monkeypatch):
+    """Eine gesetzte Variable (Shell oder .env) veraendert sonst die Erwartungen."""
+    monkeypatch.delenv("SEMANTIC_SEARCH_EMBEDDING_THREADS", raising=False)
+
+
 @pytest.fixture
 def ohne_qdrant(monkeypatch):
     """Kein Qdrant noetig: Clients und Sammlungs-Pruefung sind ersetzt."""
@@ -74,6 +80,31 @@ class TestEinbettungsmodell:
 
         modell_klasse.assert_called_once_with(EMBEDDING_MODELL)
         assert manager.model is modell_klasse.return_value
+
+    def test_new_modell_bei_bestehender_instanz_warnt(self, ohne_qdrant, caplog):
+        erstes = MagicMock(name="erstes")
+        manager = QdrantEmbeddingsManager(_settings(), einbettungsmodell=erstes)
+
+        with caplog.at_level("WARNING"):
+            zweiter = QdrantEmbeddingsManager(
+                _settings(), einbettungsmodell=MagicMock(name="zweites")
+            )
+
+        assert zweiter is manager
+        assert manager._vorgegebenes_modell is erstes
+        assert "ignored" in caplog.text
+
+    def test_new_gleiches_modell_bei_bestehender_instanz_warnt_nicht(
+        self, ohne_qdrant, caplog
+    ):
+        modell = MagicMock(name="einbettungsmodell")
+        QdrantEmbeddingsManager(_settings(), einbettungsmodell=modell)
+
+        with caplog.at_level("WARNING"):
+            QdrantEmbeddingsManager(_settings(), einbettungsmodell=modell)
+            QdrantEmbeddingsManager(_settings())
+
+        assert "ignored" not in caplog.text
 
 
 class TestEinbettungThreads:
