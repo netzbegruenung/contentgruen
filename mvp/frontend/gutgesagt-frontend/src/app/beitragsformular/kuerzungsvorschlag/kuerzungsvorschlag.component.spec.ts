@@ -79,10 +79,10 @@ describe('KuerzungsvorschlagComponent', () => {
     expect(element().querySelector('.kuerzungsvorschlag-text')).toBeNull();
   });
 
-  it('sagt, wenn kein Satz in die Kurzfassung passt', () => {
+  it('sagt, wenn kein Vorschlag in die Kurzfassung passt', () => {
     vorschlagHolen(null);
 
-    expect(element().textContent).toContain('Kein Satz passt');
+    expect(element().textContent).toContain('Kein Vorschlag passt');
     expect(knopf('Übernehmen')).toBeUndefined();
     // Für denselben Text käme dieselbe Antwort; erst ein geänderter fragt neu.
     expect(knopf('Kürzungsvorschlag')).toBeUndefined();
