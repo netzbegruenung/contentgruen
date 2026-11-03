@@ -239,6 +239,12 @@ describe('DatenschutzComponent', () => {
       expect(text).toContain('Eine E-Mail bekommst du dabei nicht');
     });
 
+    it('Wo deine Daten liegen: Anmeldedienst samt Mailversand beim Auftragsverarbeiter (Entscheidung 03.11.2026)', () => {
+      const text = abschnitt('Wo deine Daten liegen');
+
+      expect(text).toContain('Dazu gehört auch der Anmeldedienst samt Mailversand. Weitere Empfänger gibt es nicht.');
+    });
+
     it('Pflichtangaben: E-Mail-Adresse bei jeder Kontoart', () => {
       expect(abschnitt('Was du angeben musst und was freiwillig ist')).toContain(
         'Kennung und eine E-Mail-Adresse, bei jeder Kontoart',
