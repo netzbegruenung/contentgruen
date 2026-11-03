@@ -203,6 +203,8 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
             # collection_exists() kennt auch Aliase; get_collections() listet sie nicht.
             if not await self._async_client.collection_exists(self.collection_name):
                 logger.info(f"📦 Creating Qdrant collection: {self.collection_name}")
+                # Auch nach einem Start auf einer alten Collection im selben Prozess.
+                self._vektorname = EMBEDDING_VEKTOR
 
                 # Create collection with optimized settings for <10k documents
                 await self._async_client.create_collection(
@@ -824,7 +826,15 @@ class QdrantEmbeddingsManager(IEmbeddingsManager):
 
             vektor = info.config.params.vectors
             if isinstance(vektor, dict):
-                vektor = vektor[self._vektorname or EMBEDDING_VEKTOR]
+                if self._vektorname is None:
+                    # vektor_benennen.py lief, der Dienst wurde nicht neu gestartet:
+                    # Suchen und Schreiben ohne Vektornamen schlagen fehl.
+                    logger.error(
+                        f"❌ Collection {self.collection_name} has named vectors now; "
+                        "restart the service"
+                    )
+                    return {"status": "unhealthy", "error": "restart_required"}
+                vektor = vektor[self._vektorname]
             return {
                 "status": "healthy",
                 "collection": self.collection_name,

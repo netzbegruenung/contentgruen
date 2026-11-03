@@ -15,6 +15,11 @@ ersetzt der naechste die halbe Kopie; brach er danach ab, setzt der naechste nur
 Alias. Den Dienst erst nach dem Lauf neu starten: Fehlt der Name, legt er eine leere
 Collection an.
 
+Rueckweg: Ein Restore ueber den Alias legt den unbenannten Vektor in die Collection
+hinter dem Alias, meist ``<name>_<EMBEDDING_VEKTOR>`` selbst. Ein neuer Lauf kopiert
+dann in eine andere Collection (``ziel_collection(name, belegt=...)``), setzt den Alias
+in einem Schritt um und loescht erst danach die alte; der Name fehlt dabei nie.
+
 Aufruf: scripts/manual/vektor_benennen.py
 """
 
@@ -25,6 +30,8 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import (
     CreateAlias,
     CreateAliasOperation,
+    DeleteAlias,
+    DeleteAliasOperation,
     PointStruct,
 )
 
@@ -50,9 +57,23 @@ class BenennenBericht:
     ziel: Optional[str] = None
 
 
-def ziel_collection(collection: str) -> str:
-    """Die neue Collection, auf die der alte Name danach als Alias zeigt."""
-    return f"{collection}_{EMBEDDING_VEKTOR}"
+def ziel_collection(collection: str, belegt: Optional[str] = None) -> str:
+    """
+    Die neue Collection, auf die der alte Name danach als Alias zeigt.
+
+    belegt: die Collection, aus der kopiert wird; liegt die Quelle schon unter dem
+    ueblichen Namen (nach einem Restore ueber den Alias), weicht das Ziel aus.
+    """
+    ziel = f"{collection}_{EMBEDDING_VEKTOR}"
+    return f"{ziel}_2" if ziel == belegt else ziel
+
+
+def _hinter_alias(client: QdrantClient, collection: str) -> Optional[str]:
+    """Die Collection, auf die collection als Alias zeigt; None, wenn kein Alias."""
+    for alias in client.get_aliases().aliases:
+        if alias.alias_name == collection:
+            return alias.collection_name
+    return None
 
 
 def _stand(client: QdrantClient, collection: str) -> str:
@@ -68,13 +89,16 @@ def _anzahl(client: QdrantClient, collection: str) -> int:
     return client.count(collection, exact=True).count
 
 
-def _alias_setzen(client: QdrantClient, collection: str, ziel: str) -> None:
+def _alias_setzen(
+    client: QdrantClient, collection: str, ziel: str, umsetzen: bool = False
+) -> None:
+    """Alias collection -> ziel; umsetzen: einen bestehenden Alias in einem Schritt."""
+    neu = CreateAliasOperation(
+        create_alias=CreateAlias(collection_name=ziel, alias_name=collection)
+    )
+    alt = DeleteAliasOperation(delete_alias=DeleteAlias(alias_name=collection))
     client.update_collection_aliases(
-        change_aliases_operations=[
-            CreateAliasOperation(
-                create_alias=CreateAlias(collection_name=ziel, alias_name=collection)
-            )
-        ]
+        change_aliases_operations=[alt, neu] if umsetzen else [neu]
     )
 
 
@@ -101,9 +125,13 @@ def benennen(
             ausgefuehrt=ausfuehren, vorher=vorher, punkte=punkte, nachher=vorher
         )
 
+    # Nach einem Restore ueber den Alias liegt die Quelle hinter dem Alias, oft unter
+    # dem ueblichen Zielnamen: dann nicht als Rest loeschen, sondern ausweichen.
+    quelle = _hinter_alias(client, collection)
+    ziel = ziel_collection(collection, belegt=quelle)
     info = client.get_collection(collection)
     if client.collection_exists(ziel):
-        client.delete_collection(ziel)  # Rest eines abgebrochenen Laufs
+        client.delete_collection(ziel)  # Rest eines abgebrochenen Laufs, nie die Quelle
     client.create_collection(
         ziel,
         vectors_config={EMBEDDING_VEKTOR: info.config.params.vectors},
@@ -147,8 +175,12 @@ def benennen(
             "erneut laufen lassen"
         )
 
-    client.delete_collection(collection)
-    _alias_setzen(client, collection, ziel)
+    if quelle is None:
+        client.delete_collection(collection)
+        _alias_setzen(client, collection, ziel)
+    else:
+        _alias_setzen(client, collection, ziel, umsetzen=True)
+        client.delete_collection(quelle)
     return BenennenBericht(
         ausgefuehrt=True,
         vorher=vorher,

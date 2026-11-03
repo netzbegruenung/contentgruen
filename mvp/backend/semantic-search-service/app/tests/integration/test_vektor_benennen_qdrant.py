@@ -98,10 +98,12 @@ async def test_dienst_sucht_vor_und_nach_der_umstellung_gleich(
                 typ,
             )
         vorher = await _suchen(manager)
-        await manager.shutdown()
 
         bericht = benennen(client, name, ausfuehren=True)
         assert bericht.kopiert == 3
+        # Ohne Neustart sucht der Dienst ohne Vektornamen; das meldet die Gesundheit.
+        ohne_neustart = await manager.health_check()
+        await manager.shutdown()
 
         manager = await _gestartet(integration_settings, einbettungsmodell)
         nachher = await _suchen(manager)
@@ -110,10 +112,38 @@ async def test_dienst_sucht_vor_und_nach_der_umstellung_gleich(
         await manager.shutdown()
         QdrantEmbeddingsManager._instance = None
 
+    assert ohne_neustart == {"status": "unhealthy", "error": "restart_required"}
     assert nachher == vorher
     assert vorher[0][0][0].endswith("1")  # Kommentar zum Tempolimit vorn
     assert gesundheit["status"] == "healthy"
     assert gesundheit["config"]["vector_size"] == 768
+
+
+@pytest.mark.asyncio
+async def test_neu_angelegte_collection_nach_alter_im_selben_prozess(
+    leerer_name, integration_settings, einbettungsmodell
+):
+    """Erst eine alte Collection, dann eine neu angelegte: der Vektor ist benannt."""
+    client, name = leerer_name
+    client.create_collection(
+        name, vectors_config=VectorParams(size=768, distance=Distance.COSINE)
+    )
+    manager = await _gestartet(integration_settings, einbettungsmodell)
+    try:
+        await manager.shutdown()
+        client.delete_collection(name)
+        await manager.start()  # dieselbe Instanz legt die Collection neu an
+
+        await manager.upsert_batch(
+            [("00000000-0000-4000-8000-000000000001", {"text": "x"}, "x")],
+            "commentary",
+        )
+        treffer = await manager.search("x", limit=1)
+    finally:
+        await manager.shutdown()
+        QdrantEmbeddingsManager._instance = None
+
+    assert [t["id"] for t in treffer] == ["00000000-0000-4000-8000-000000000001"]
 
 
 @pytest.mark.asyncio

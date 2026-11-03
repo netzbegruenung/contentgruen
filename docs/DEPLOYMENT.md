@@ -263,7 +263,9 @@ Once per environment:
 Commands are in [`mvp/scripts/manual/README.md`](../mvp/scripts/manual/README.md). Way back:
 restore the backup from step 1 and restart the service. The restore goes through the alias into
 `<collection>_e5_base` (checked against Qdrant 1.18.2), and the image with #395 works with
-both vector layouts.
+both vector layouts. To change it again after that, run the script again: it copies into
+`<collection>_e5_base_2`, moves the alias in one step and only then deletes the restored
+collection.
 
 ---
 

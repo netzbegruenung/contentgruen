@@ -13,6 +13,8 @@ from pathlib import Path
 import pytest
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
+    CreateAlias,
+    CreateAliasOperation,
     DeleteAlias,
     DeleteAliasOperation,
     Distance,
@@ -39,21 +41,22 @@ PUNKTE = {
 }
 
 
-def punkte_anlegen(client):
+def punkte_anlegen(client, name=COLLECTION):
     """Collection wie vor #395: ein unbenannter Vektor, Kosinus."""
     client.create_collection(
-        COLLECTION, vectors_config=VectorParams(size=2, distance=Distance.COSINE)
+        name, vectors_config=VectorParams(size=2, distance=Distance.COSINE)
     )
-    client.create_payload_index(COLLECTION, "content_type", field_schema="keyword")
+    client.create_payload_index(name, "content_type", field_schema="keyword")
     client.upsert(
-        COLLECTION,
+        name,
         [PointStruct(id=i, vector=v, payload=p) for i, (v, p) in PUNKTE.items()],
         wait=True,
     )
 
 
 def abraeumen(client):
-    for name in (COLLECTION, ziel_collection(COLLECTION)):
+    ziel = ziel_collection(COLLECTION)
+    for name in (COLLECTION, ziel, ziel_collection(COLLECTION, belegt=ziel)):
         if client.collection_exists(name):
             client.delete_collection(name)
 
@@ -162,6 +165,32 @@ class TestVektorBenennen:
         assert bericht.nachher == "benannt"
         assert bericht.punkte == 3
         assert client.count(COLLECTION, exact=True).count == 3
+
+    def test_nach_dem_rueckweg_erneut_umgestellt_ohne_datenverlust(self, client):
+        """Restore ueber den Alias: der unbenannte Vektor liegt in <name>_e5_base."""
+        hinter_alias = ziel_collection(COLLECTION)
+        client.delete_collection(COLLECTION)
+        punkte_anlegen(client, hinter_alias)
+        client.update_collection_aliases(
+            change_aliases_operations=[
+                CreateAliasOperation(
+                    create_alias=CreateAlias(
+                        collection_name=hinter_alias, alias_name=COLLECTION
+                    )
+                )
+            ]
+        )
+        vorher = _rangfolge(client)
+
+        bericht = benennen(client, COLLECTION, ausfuehren=True)
+
+        assert bericht.kopiert == 3
+        assert bericht.nachher == "benannt"
+        assert bericht.ziel == ziel_collection(COLLECTION, belegt=hinter_alias)
+        aliase = {a.alias_name: a.collection_name for a in client.get_aliases().aliases}
+        assert aliase[COLLECTION] == bericht.ziel
+        assert not client.collection_exists(hinter_alias)
+        assert _rangfolge(client, using=EMBEDDING_VEKTOR) == vorher
 
 
 class TestSkript:

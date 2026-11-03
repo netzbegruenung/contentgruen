@@ -72,7 +72,9 @@ Kopiert alle Punkte samt Vektoren und Payload-Indizes in die neue Collection
 `<collection>_e5_base`, loescht die alte und macht ihren Namen zum Alias auf die neue.
 Nichts wird neu eingebettet, die Treffer bleiben gleich. Ohne `--ausfuehren` zaehlt es
 nur; ein zweiter Lauf meldet `"vorher": "benannt"` und aendert nichts. Aendert sich die
-Zahl der Punkte waehrend der Kopie, bricht es ab, ohne umzustellen.
+Zahl der Punkte waehrend der Kopie, bricht es ab, ohne umzustellen. Nach dem Rueckweg
+(Restore ueber den Alias) kopiert ein neuer Lauf nach `<collection>_e5_base_2` und setzt
+den Alias in einem Schritt um.
 
 Reihenfolge, Backup und Rueckweg stehen in `docs/DEPLOYMENT.md`, „Qdrant: named vector
 (#395)“. Kurz: Backup, Version mit #395 ausrollen, zaehlen, umstellen und gleich danach
