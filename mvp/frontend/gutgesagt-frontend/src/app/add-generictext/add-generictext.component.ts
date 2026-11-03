@@ -13,6 +13,7 @@ import { LoggingService } from '../services/logging.service';
 import { AddGenericTextRequest, AddGenericTextResponse } from '../services/dtos/generictextDtos';
 import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component';
 import { KartenDaten, ausSuchergebnis } from '../beitragskarte/karten-daten';
+import { Vorlage, vorlageHinweis } from '../beitragsformular/vorlage';
 import { ReferenceInputComponent } from '../reference-input/reference-input.component';
 import { SHARED_IMPORTS } from '../shared/shared-imports';
 import type { Vorbefuellung } from '../destillieren/destillier-uebergabe.service';
@@ -150,6 +151,8 @@ export class AddGenerictextComponent implements OnChanges {
   @Input() aussageHinweis: string | null = null;
   /** Aus dem Destillier-Ablauf: Satz als Titel, Link als Herkunft, der Einwurf als Kopf. */
   @Input() vorbefuellung: Vorbefuellung | null = null;
+  /** "Als Vorlage nehmen" (#356): das Original, dessen Text das Formular vorbelegt. */
+  @Input() vorlage: Vorlage | null = null;
   @Output() success = new EventEmitter<BeitragGespeichert>();
   /** Die vorhandene Hintergrundinfo gewaehlt (zugestimmt oder genommen) statt zu speichern: ihre ID. */
   @Output() vorhandenGewaehlt = new EventEmitter<string>();
@@ -249,6 +252,20 @@ export class AddGenerictextComponent implements OnChanges {
     if (changes['vorbefuellung'] && this.vorbefuellung) {
       this.vorbefuellungAnwenden(this.vorbefuellung);
     }
+    if (changes['vorlage'] && this.vorlage) {
+      this.vorlageAnwenden(this.vorlage);
+    }
+  }
+
+  /** Der Hinweis ueber dem Formular, solange eine Vorlage gilt. */
+  get vorlageHinweis(): string | null {
+    return this.vorlage ? vorlageHinweis(this.vorlage) : null;
+  }
+
+  // "Als Vorlage nehmen": der Text des Originals, alles aenderbar. Die Herkunft
+  // nicht - fuer die eigene Fassung gibt die Person ihre an.
+  vorlageAnwenden(vorlage: Vorlage): void {
+    this.generictextForm.patchValue({ title: vorlage.titel, text: vorlage.text });
   }
 
   // Titel = Satz aus dem Destillier-Ablauf, Herkunft = Link des Einwurfs. Beides
@@ -386,6 +403,7 @@ export class AddGenerictextComponent implements OnChanges {
       references: references || [],
       ...this.aussageFuerAnfrage(),
       ...(trotzDubletteVon ? { trotz_dublette_von: trotzDubletteVon } : {}),
+      ...(this.vorlage ? { beruht_auf: this.vorlage.id } : {}),
     };
 
     this.genericTextService.addGenericText(request).subscribe({

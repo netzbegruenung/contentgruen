@@ -35,6 +35,10 @@ public static class EndpointPolicy
         // Einloesen; Liste, Anlegen und Abschalten unter /api/v1/einladungen sind admin-only.
         "/api/v1/einladungen/pruefen",
         "/api/v1/einladungen/einloesen",
+        // Die Varianten eines Beitrags (#356): Ziel von "N Varianten" an der Karte,
+        // die auch Besucher in der Suche sehen. Nur lesen; Speichern laeuft ueber die
+        // Formulare und bleibt hinter dem Gate.
+        "/api/v1/varianten/",
         // Nur dieser eine Metrics-Endpunkt, nicht das ganze Praefix: /getMetrics
         // liefert Bestandszaehler fuer die Startseite, die uebrigen sechs sind
         // Kennzahlen fuer Admins und im Backend admin-only. Der frueher hier stehende

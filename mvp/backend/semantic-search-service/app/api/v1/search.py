@@ -66,6 +66,10 @@ from services.content.statement_service import StatementService
 from services.content.generic_text_service import GenericTextService
 from services.content.reference_service import ReferenceService
 from core.fehler import INTERNER_FEHLER
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
 
 logger = get_logger(__name__)
 
@@ -97,6 +101,7 @@ async def search_by_text(
     ),
     aufrufer: Aufrufer = Depends(get_aufrufer),
     themen_service: AussageThemenService = Depends(get_aussage_themen_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
 ) -> SearchResponse:
     try:
         # Keine Logzeile je Suche: Der Suchtext ist der sensibelste Einzelwert der
@@ -241,6 +246,7 @@ async def search_by_text(
         if validated_user and validated_user != "anonymous":
             orchestrator.apply_user_votes(validated_user)
         orchestrator.fuer_aufrufer(aufrufer)
+        orchestrator.varianten_ergaenzen(varianten)
         try:
             orchestrator.themen_ergaenzen(themen_service)
         except Exception as e:

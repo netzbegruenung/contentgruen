@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -93,6 +94,7 @@ function nutzungsZeile(label: string, nutzung: number, zuwachs: number): Nutzung
     RelativeTimePipe,
     KartenAktionenComponent,
     FremdesBildComponent,
+    RouterLink,
   ],
   templateUrl: './beitragskarte.component.html',
   styleUrls: ['./beitragskarte.component.scss'],
@@ -176,6 +178,18 @@ export class BeitragskarteComponent implements OnChanges, OnDestroy {
    * Wer etwas eingestellt hat, sieht nur, wer angemeldet ist: Ohne Anmeldung steht in
    * der Meta-Zeile allein das Alter.
    */
+  /**
+   * "N Varianten" (#356): wie viele Beitraege jemand mit diesem als Vorlage
+   * angelegt hat, als Link auf ihre Liste. Nicht in der Formular-Vorschau.
+   */
+  get variantenAnzeige(): string | null {
+    const anzahl = this.daten.varianten ?? 0;
+    if (this.vorschau || anzahl < 1) {
+      return null;
+    }
+    return anzahl === 1 ? '1 Variante' : `${anzahl} Varianten`;
+  }
+
   get zeigtAutor(): boolean {
     return this.angemeldet && (!!this.daten.autor || !!this.daten.autorName || this.daten.eigen != null);
   }

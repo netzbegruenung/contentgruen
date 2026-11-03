@@ -332,6 +332,10 @@ und der Ablauf oben erfasst die Tabelle nicht.
   `fuers_testset`). Wer es herunterlädt, verwaltet die Kopie selbst; der Text einer
   vorab angelegten Aussage stammt von einer Person und kann, wie jeder Beitrag, Namen
   enthalten.
+- **`varianten`** (#356) trägt je Variante nur ihre ID und die ID des Originals, weder
+  Kennung noch Zeitpunkt: nichts, was sich einer Person zuordnen ließe. Wer die Variante
+  gespeichert hat, steht an ihr selbst. Löscht der Autor die Variante, geht ihre Zeile mit
+  (`api/v1/content.py`, `beitrag_loeschen`). Keine Frist.
 - **Backups** unter `/opt/gutgesagt-backups` halten 7 Tages- und 4 Wochenstände
   (`mvp/scripts/backup/backup.sh:12,28-29`), gelöschte Daten leben dort bis zu 28 Tage
   weiter. Selektives Editieren von

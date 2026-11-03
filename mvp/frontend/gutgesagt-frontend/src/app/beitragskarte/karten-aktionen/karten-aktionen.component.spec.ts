@@ -3,6 +3,7 @@ import { NO_ERRORS_SCHEMA, SimpleChange } from '@angular/core';
 import { Clipboard } from '@angular/cdk/clipboard';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { KartenAktionenComponent } from './karten-aktionen.component';
@@ -49,6 +50,7 @@ describe('KartenAktionenComponent - Abstimmen', () => {
         { provide: UsageTrackingService, useValue: usageTrackingSpy },
         { provide: AuthService, useValue: authServiceSpy },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
+        provideRouter([]),
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -514,6 +516,37 @@ describe('KartenAktionenComponent - Abstimmen', () => {
       const knoepfe: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.stimme-knopf'));
       expect(knoepfe.map((k) => k.querySelector('svg')!.getAttribute('aria-hidden'))).toEqual(['true', 'true']);
       expect(knoepfe.map((k) => k.getAttribute('aria-label'))).toEqual(['Gefällt mir', 'Gefällt mir nicht']);
+    });
+  });
+
+  describe('Als Vorlage nehmen (#356)', () => {
+    it('fuehrt angemeldet ins Formular des Typs mit der Vorlage', () => {
+      const router = TestBed.inject(Router);
+      const navigieren = spyOn(router, 'navigate').and.resolveTo(true);
+
+      expect(component.kannAlsVorlage).toBeTrue();
+      component.alsVorlageNehmen();
+
+      expect(navigieren).toHaveBeenCalledOnceWith(['/workflow/add-commentary'], {
+        queryParams: { vorlage: INHALT_ID },
+      });
+    });
+
+    it('gibt es an der Hintergrundinfo, nicht an Post und Bild', () => {
+      for (const [typ, erwartet] of [['generictext', true], ['post', false], ['image', false]] as const) {
+        component.typ = typ;
+        expect(component.kannAlsVorlage).withContext(typ).toBe(erwartet);
+      }
+    });
+
+    it('gibt es nicht fuer Besucher und nicht in der Vorschau', () => {
+      const authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
+      authService.getUserInfo.and.returnValue(null);
+      expect(component.kannAlsVorlage).toBeFalse();
+
+      authService.getUserInfo.and.returnValue({ isAuthenticated: true, userId: 'test-user' } as any);
+      component.vorschau = true;
+      expect(component.kannAlsVorlage).toBeFalse();
     });
   });
 

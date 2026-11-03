@@ -44,6 +44,7 @@ from api.v1.health import router as health_router
 from api.v1.feedback import router as feedback_router
 from api.v1.einladungen import router as einladungen_router
 from api.v1.gegenlesen import router as gegenlesen_router
+from api.v1.varianten import router as varianten_router
 from services.cleanup.bereinigungsjob import bereinigungsjob_starten
 from services.suchen_ohne_treffer_service import (
     get_personen_des_tages,
@@ -269,6 +270,7 @@ app.include_router(
     einladungen_router, prefix="/api/v1/einladungen", tags=["einladungen"]
 )
 app.include_router(gegenlesen_router, prefix="/api/v1/gegenlesen", tags=["gegenlesen"])
+app.include_router(varianten_router, prefix="/api/v1/varianten", tags=["varianten"])
 
 # Betriebskennzahlen unter /metrics (#420). Zuletzt hinzugefuegt, also aussen: Die
 # Middleware zaehlt auch, was das Rate-Limit abweist. Am BFF ist /metrics gesperrt.

@@ -36,6 +36,11 @@ from services.content.reference_service import ReferenceService
 from services.cleanup.bereinigungsjob import get_bereinigungsjob
 from core.config import Settings
 from core.logging import log_pseudonym
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
+from services.varianten import varianten_ergaenzen
 
 logger = logging.getLogger(__name__)
 
@@ -338,6 +343,7 @@ async def oft_genutzt(
     aufrufer: Aufrufer = Depends(get_aufrufer),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
 ):
     """
     "Diese Woche oft genutzt" auf der Startseite (#364): die sichtbaren Beitraege
@@ -378,6 +384,7 @@ async def oft_genutzt(
             ],
             aufrufer,
         )
+        varianten_ergaenzen(antworten, varianten)
         return OftGenutztResponse(
             results=[
                 {

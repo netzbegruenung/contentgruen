@@ -27,6 +27,8 @@ import {
   Vorbefuellung,
 } from '../destillieren/destillier-uebergabe.service';
 import { EINWURF_PARAM } from '../destillieren/einwurf-adresse';
+import { GenericTextService } from '../services/generic-text.service';
+import { VORLAGE_NICHT_VERFUEGBAR, VORLAGE_PARAM, Vorlage, hintergrundinfoVorlageLaden } from '../beitragsformular/vorlage';
 
 /** Hinweis im Formular, wenn ?aussage= auf nichts (mehr) zeigt. */
 export const AUSSAGE_NICHT_VERFUEGBAR =
@@ -56,6 +58,10 @@ export const ERNEUT_VERKNUEPFEN = 'Erneut versuchen';
 })
 export class AddGenerictextWorkflowComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
+  private genericTextService = inject(GenericTextService);
+  /** "Als Vorlage nehmen" (#356): das Original aus ?vorlage=, sonst null. */
+  vorlage: Vorlage | null = null;
+  private vorlageId: string | null = null;
   statementId: string = '';
   statementText: string = '';
   isLoadingStatement: boolean = false;
@@ -87,6 +93,7 @@ export class AddGenerictextWorkflowComponent implements OnInit {
       .pipe(
         switchMap((params) => {
           this.einwurfUebernehmen(params.get(EINWURF_PARAM));
+          this.vorlageUebernehmen(params.get(VORLAGE_PARAM));
           this.herkunftMerken(params);
           return this.aussageLaden(params);
         }),
@@ -114,6 +121,27 @@ export class AddGenerictextWorkflowComponent implements OnInit {
         return of({ statement_id: '', statement_text: '' });
       }),
     );
+  }
+
+  /**
+   * Das Original aus ?vorlage=. Ist es nicht ladbar (gesperrt, geloescht, alter
+   * Link), bleibt das Formular leer und nutzbar; ein Hinweis sagt es.
+   */
+  private vorlageUebernehmen(vorlageId: string | null): void {
+    if (vorlageId === this.vorlageId) {
+      return;
+    }
+    this.vorlageId = vorlageId;
+    this.vorlage = null;
+    if (vorlageId) {
+      hintergrundinfoVorlageLaden(this.genericTextService, vorlageId).subscribe({
+        next: (vorlage) => (this.vorlage = vorlage),
+        error: (error) => {
+          this.logger.warn('Vorlage aus der Adresse nicht ladbar', error);
+          this.snackBar.open(VORLAGE_NICHT_VERFUEGBAR, 'OK', { duration: 8000 });
+        },
+      });
+    }
   }
 
   private einwurfUebernehmen(einwurfId: string | null): void {

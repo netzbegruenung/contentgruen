@@ -18,6 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 
@@ -28,9 +29,11 @@ import { VotingService } from '../../services/voting.service';
 import { meldeDialogOeffnen } from '../../shared/components/report-dialog/report-dialog.component';
 import { HAND_UMRISS } from '../../shared/marke/hand';
 import type { Fassung } from '../../shared/fassung';
+import { kannVorlageSein, vorlageAdresse } from '../../beitragsformular/vorlage';
 
 /**
- * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden.
+ * Die Aktionsleiste der vollen Beitragskarte: abstimmen, kopieren, melden und,
+ * angemeldet, als Vorlage nehmen (#356).
  * Hat der Beitrag eine Herkunft, steht neben "Kopieren" die Wahl "Text" oder
  * "Text + Herkunft".
  *
@@ -104,6 +107,7 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
     private authService: AuthService,
     private logger: LoggingService,
     private dialog: MatDialog,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -162,6 +166,23 @@ export class KartenAktionenComponent implements OnInit, OnChanges, OnDestroy {
       this.kopiert.emit();
     }
     this.cdr.markForCheck();
+  }
+
+  /**
+   * "Als Vorlage nehmen" (#356): nur angemeldet und nur, wo sich das Formular
+   * vorbelegen laesst (Kommentar, Hintergrundinfo). Besucher sehen den Eintrag
+   * nicht: Das Formular verlangt ohnehin eine Anmeldung.
+   */
+  get kannAlsVorlage(): boolean {
+    return !this.vorschau && kannVorlageSein(this.typ) && !!this.authService.getUserInfo()?.isAuthenticated;
+  }
+
+  alsVorlageNehmen(): void {
+    if (!this.kannAlsVorlage || !kannVorlageSein(this.typ)) {
+      return;
+    }
+    const { pfad, queryParams } = vorlageAdresse(this.typ, this.inhaltId);
+    this.router.navigate([pfad], { queryParams });
   }
 
   openReportDialog(): void {

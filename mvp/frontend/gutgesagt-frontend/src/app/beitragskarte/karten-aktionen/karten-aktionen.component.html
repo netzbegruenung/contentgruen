@@ -71,6 +71,10 @@
     </button>
 
     <mat-menu #menue="matMenu">
+        <button mat-menu-item type="button" *ngIf="kannAlsVorlage" (click)="alsVorlageNehmen()">
+            <mat-icon>call_split</mat-icon>
+            <span>Als Vorlage nehmen</span>
+        </button>
         <button mat-menu-item type="button" (click)="openReportDialog()">
             <mat-icon>flag</mat-icon>
             <span>Inhalt melden</span>

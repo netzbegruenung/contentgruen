@@ -32,6 +32,11 @@ from services.content.beitrag_loeschen_service import (
 )
 from services.content.verweise_entfernen import VerweiseNichtEntfernt
 from core.fehler import INTERNER_FEHLER
+from repositories.varianten_repository import (
+    VariantenRepository,
+    get_varianten_repository,
+)
+from services.varianten import varianten_ergaenzen
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -86,6 +91,7 @@ async def get_recent_content(
     limit: int = Query(default=6, ge=1, le=20),
     settings: Settings = Depends(get_settings),
     reference_service: ReferenceService = Depends(get_reference_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
 ) -> Dict[str, Any]:
     """
     Get the most recently added content items.
@@ -165,6 +171,7 @@ async def get_recent_content(
             ],
             aufrufer,
         )
+        varianten_ergaenzen(antworten, varianten)
         enriched_results = [
             {**antwort.model_dump(mode="json"), "result_type": e["result_type"]}
             for e, antwort in zip(angereichert, antworten)
@@ -188,6 +195,7 @@ async def beitrag_loeschen(
     beitrag_id: uuid.UUID,
     x_user: Optional[str] = Header(default=None),
     service: BeitragLoeschenService = Depends(get_beitrag_loeschen_service),
+    varianten: VariantenRepository = Depends(get_varianten_repository),
 ) -> Response:
     """
     Der Autor loescht seinen Beitrag: Zustand "geloescht", der Beitrag bleibt
@@ -213,5 +221,14 @@ async def beitrag_loeschen(
     if ergebnis is LoeschErgebnis.NICHT_AUTOR:
         raise HTTPException(
             status_code=403, detail="Löschen kann nur der Autor des Beitrags."
+        )
+    # War er eine Variante, zaehlt er am Original nicht mehr mit (#356). Scheitert
+    # das, ist der Beitrag trotzdem geloescht; nur "N Varianten" zaehlt ihn weiter,
+    # die Liste der Varianten zeigt ihn nicht.
+    try:
+        varianten.variante_entfernen(beitrag_id)
+    except Exception as e:
+        logger.warning(
+            f"Deleted Beitrag {beitrag_id}, variant link not removed: {type(e).__name__}"
         )
     return Response(status_code=204)

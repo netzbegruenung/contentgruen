@@ -142,6 +142,23 @@ def suchen_ohne_treffer_ohne_datenbank(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def varianten_ohne_datenbank(monkeypatch):
+    """
+    Suche, /content/recent, "Oft genutzt" und das Loeschen fragen die Varianten ab
+    (#356, ``get_varianten_repository``). Ohne diesen Ersatz baute der erste Aufruf
+    das echte Repository und verbaende sich mit dem PostgreSQL aus den Settings
+    (siehe anzeigenamen_ohne_datenbank). Der Ersatz kennt keine Varianten.
+    """
+    import repositories.varianten_repository as modul
+
+    repository = MagicMock()
+    repository.anzahl_je_original.return_value = {}
+    repository.varianten_von.return_value = []
+    monkeypatch.setattr(modul, "_repository", repository)
+    yield repository
+
+
+@pytest.fixture(autouse=True)
 def aussage_themen_ohne_datenbank(monkeypatch):
     """
     Die Suche haengt die Themen an ihre Aussagen (``get_aussage_themen_service``).

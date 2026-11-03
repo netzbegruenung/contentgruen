@@ -109,6 +109,14 @@ export const routes: Routes = [
         data: { parent: '/search' }
     },
     {
+        // Die Varianten eines Beitrags (#356), Ziel von "N Varianten" an der Karte;
+        // auch fuer Besucher, die die Karte in der Suche sehen.
+        path: 'varianten/:id',
+        loadComponent: () => import('./varianten/varianten.component').then(m => m.VariantenComponent),
+        canActivate: [PublicGuard],
+        data: { parent: '/search' }
+    },
+    {
         path: 'hier-fehlt-eine-antwort',
         loadComponent: () => import('./hier-fehlt-eine-antwort/hier-fehlt-eine-antwort.component').then(m => m.HierFehltEineAntwortComponent),
         canActivate: [AuthGuard],

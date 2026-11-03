@@ -249,6 +249,12 @@
                 [fassung]="fassung"
                 (kopiert)="nutzungHochzaehlen()">
             </app-karten-aktionen>
+            <!-- Varianten (#356): Beitraege, die auf diesem beruhen -->
+            <a class="karte-varianten" *ngIf="variantenAnzeige as varianten"
+               [routerLink]="['/varianten', daten.id]"
+               (click)="$event.stopPropagation()">
+                <mat-icon aria-hidden="true">call_split</mat-icon>{{ varianten }}
+            </a>
             <!-- Ohne Anmeldung ohne Autorzeile: dann steht hier allein das Alter. -->
             <p class="karte-meta" *ngIf="zeigtAutor || daten.erstellt"><ng-container *ngIf="zeigtAutor">Von: {{ autorAnzeige }}</ng-container><ng-container *ngIf="zeigtAutor && daten.erstellt"> · </ng-container><ng-container *ngIf="daten.erstellt">{{ daten.erstellt | relativeTime }}</ng-container></p>
         </footer>
