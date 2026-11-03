@@ -11,6 +11,7 @@ import { BeitragskarteComponent } from '../beitragskarte/beitragskarte.component
 import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub';
 import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert/gespeichert-adresse';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
+import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
 
 describe('AddPostComponent', () => {
   let fixture: ComponentFixture<AddPostComponent>;
@@ -41,6 +42,13 @@ describe('AddPostComponent', () => {
 
   it('zeigt über dem Speichern-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
     erwarteCc0Hinweis(fixture.nativeElement);
+  });
+
+  it('gibt Titel und Text dem Sprachhinweis über dem CC0-Hinweis (#405)', () => {
+    component.postForm.patchValue(WERTE);
+    fixture.detectChanges();
+
+    erwarteSprachhinweisZumBeitrag(fixture.debugElement, WERTE.title, WERTE.text);
   });
 
   it('leitet die Plattform aus dem Link ab, solange niemand sie selbst gewaehlt hat', () => {

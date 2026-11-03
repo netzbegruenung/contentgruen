@@ -16,7 +16,7 @@ const SAETZE = {
   beitrag:
     'Dieser Beitrag ist offenbar nicht auf Deutsch. Gut gesagt ist auf deutsche Texte ausgelegt; speichern kannst du trotzdem.',
   aussage:
-    'Diese Aussage ist offenbar nicht auf Deutsch. Die Suche ist auf deutsche Texte ausgelegt; anlegen kannst du sie trotzdem.',
+    'Diese Aussage ist offenbar nicht auf Deutsch. Gut gesagt ist auf deutsche Texte ausgelegt; anlegen kannst du sie trotzdem.',
 } as const;
 
 /** Zu viele Anfragen: Der letzte Stand bleibt stehen, wie beim Gegenlesen. */

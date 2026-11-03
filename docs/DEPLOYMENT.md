@@ -79,6 +79,7 @@ for the Gegenlesen, about 0.5 GB more RAM than before (measured on the dev VM: ~
 model, ~350 MB for CharSplit's n-gram table), loaded in the background about two seconds after
 start. If the container has a memory limit, raise it accordingly. Since #405 Lingua adds about
 45 MB for the Sprachhinweis (11 languages, measured in the service image), also preloaded at start.
+Its models make the image about 300 MB larger on disk (the wheel ships all languages).
 
 Visitor counting (#446): the semantic service recognises visitors by a daily pseudonym built
 from the client address and the User-Agent (`utils/besucher_pseudonym.py`). Two preconditions:

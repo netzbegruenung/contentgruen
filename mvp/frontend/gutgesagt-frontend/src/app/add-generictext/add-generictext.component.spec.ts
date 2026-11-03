@@ -25,6 +25,7 @@ import { BeitragskarteStubComponent } from '../beitragskarte/beitragskarte.stub'
 import { AntwortAufComponent } from '../beitragsformular/antwort-auf/antwort-auf.component';
 import { BeitragAnsehenService } from '../beitragsformular/beitrag-ansehen.service';
 import { erwarteCc0Hinweis } from '../shared/cc0-hinweis/cc0-hinweis.testing';
+import { erwarteSprachhinweisZumBeitrag } from '../shared/components/sprachhinweis/sprachhinweis.testing';
 import { environment } from '../../environments/environment';
 
 /** Gleich gebaut wie das Kommentarformular; hier die Unterschiede und die geteilten Wege. */
@@ -115,6 +116,12 @@ describe('AddGenerictextComponent', () => {
 
     it('zeigt über dem Absende-Knopf den CC0-Hinweis mit Links auf CC0 und die Nutzungsbedingungen (#415)', () => {
       erwarteCc0Hinweis(seite());
+    });
+
+    it('gibt Titel und Text dem Sprachhinweis über dem CC0-Hinweis (#405)', () => {
+      ausfuellen();
+
+      erwarteSprachhinweisZumBeitrag(fixture.debugElement, 'Wärmepumpe lohnt sich im Altbau', 'Ein ausreichend langer Text.');
     });
 
     it('beschriftet den Knopf mit "Hintergrundinfo speichern" und zeigt die Vorschau immer', () => {

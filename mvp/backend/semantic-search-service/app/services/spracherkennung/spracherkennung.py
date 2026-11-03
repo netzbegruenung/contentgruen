@@ -22,10 +22,6 @@ from typing import Callable, Dict, Optional
 #: den Sprachhinweis reicht das, weil er nur sagt, dass ein Text nicht deutsch ist.
 SPRACHEN = ("de", "en", "fr", "tr", "es", "it", "pl", "ru", "uk", "ar", "nl")
 
-#: Lingua lädt die Modelle einer Schrift erst beim ersten Text in ihr; ein Satz beim
-#: Vorladen nimmt dem ersten Sprachhinweis diese Wartezeit (rund 80 ms).
-_VORLADESATZ = "Gut gesagt lädt die Spracherkennung vor."
-
 #: Ab so vielen Wörtern fragt die Erkennung: Auf Sätzen erkennt Lingua Deutsch zu
 #: 99,7 %, auf einzelnen Wörtern nur zu 74,2 %.
 MIN_WOERTER = 5
@@ -49,8 +45,13 @@ def _lingua_bauen() -> Erkenner:
         Language.from_iso_code_639_1(getattr(IsoCode639_1, code.upper()))
         for code in SPRACHEN
     ]
-    detector = LanguageDetectorBuilder.from_languages(*sprachen).build()
-    detector.compute_language_confidence_values(_VORLADESATZ)
+    # Ohne Vorladen lädt Lingua die Modelle erst, wenn ein Text sie braucht (je Schrift
+    # beim ersten Text, rund 80 ms); so wartet kein Sprachhinweis darauf.
+    detector = (
+        LanguageDetectorBuilder.from_languages(*sprachen)
+        .with_preloaded_language_models()
+        .build()
+    )
 
     def erkennen(text: str) -> Dict[str, float]:
         return {

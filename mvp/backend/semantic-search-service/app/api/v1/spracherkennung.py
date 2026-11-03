@@ -52,8 +52,9 @@ async def spracherkennung(
     try:
         # Lingua rechnet auf der CPU; nicht in der Event-Loop.
         sprache = await run_in_threadpool(erkennung.fremdsprache, request.text)
-    except (ImportError, OSError) as fehler:
-        # Lingua nicht installiert: Das Formular zeigt dann einfach keinen Sprachhinweis.
+    except Exception as fehler:
+        # Lingua fehlt oder ließ sich nicht laden: Das Formular zeigt dann einfach keinen
+        # Sprachhinweis. Geloggt wird nur der Typ, nie der Text.
         global _nicht_verfuegbar_geloggt
         if not _nicht_verfuegbar_geloggt:
             _nicht_verfuegbar_geloggt = True

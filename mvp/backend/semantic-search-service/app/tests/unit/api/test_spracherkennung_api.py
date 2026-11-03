@@ -12,6 +12,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+import api.v1.spracherkennung as spracherkennung_api
 from api.v1.spracherkennung import TEXT_MAX
 from api.v1.spracherkennung import router as spracherkennung_router
 from dependencies import get_spracherkennung
@@ -95,9 +96,18 @@ def test_rate_limit_je_person(client):
     )
 
 
-def test_ohne_lingua_503(client, erkennung):
-    erkennung.fremdsprache.side_effect = ImportError("lingua")
+@pytest.mark.parametrize("fehler", [ImportError("lingua"), AttributeError("EN")])
+def test_ohne_lingua_503_ohne_text_im_log(
+    client, erkennung, fehler, caplog, monkeypatch
+):
+    # Fehlt Lingua oder scheitert sein Bau, zeigt das Formular nur keinen Sprachhinweis;
+    # geloggt wird der Fehlertyp, nie der Text.
+    monkeypatch.setattr(spracherkennung_api, "_nicht_verfuegbar_geloggt", False)
+    erkennung.fremdsprache.side_effect = fehler
+    text = "Heat pumps are far too expensive."
 
-    response = client.post(PFAD, json={"text": "Text"}, headers=ANGEMELDET)
+    response = client.post(PFAD, json={"text": text}, headers=ANGEMELDET)
 
     assert response.status_code == 503
+    assert type(fehler).__name__ in caplog.text
+    assert text not in caplog.text
