@@ -6,7 +6,7 @@ import { CONSENT_HINWEIS_SATZ, mitCc0Wortlaut } from '../shared/consent-hinweis'
 import { environment } from '../../environments/environment';
 import { LoggingService } from './logging.service';
 
-/** Spiegelt RawInputSource im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
+/** Spiegelt EinwurfWeg im Backend. Ohne Angabe zaehlt der Einwurf als 'web'. */
 export type EinwurfWeg = 'web' | 'share';
 
 /**

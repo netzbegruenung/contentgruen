@@ -48,7 +48,7 @@ def moderation(real_embeddings_manager):
             embeddings_manager=real_embeddings_manager
         ),
         vote_repo=MagicMock(),
-        raw_input_repo=MagicMock(),
+        einwurf_repo=MagicMock(),
         sperre_repo=MagicMock(**{"aktive.return_value": None}),
     )
 

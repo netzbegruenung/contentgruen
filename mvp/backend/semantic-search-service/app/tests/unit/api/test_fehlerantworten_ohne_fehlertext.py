@@ -18,6 +18,7 @@ import importlib
 import importlib.util
 import sys
 import uuid
+from functools import partial
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
@@ -37,13 +38,14 @@ from core.fehler import (
 )
 from dependencies import (
     get_aussage_themen_service,
+    get_beitrag_laden,
     get_image_service,
     get_reference_service,
-    get_settings,
     get_voting_service,
 )
 from domain.themen import ThemaUngueltig
 from middleware.rate_limiter import check_reference_creation_rate_limit
+from services.beitrag_laden import beitrag_laden
 from services.content.base_content_service import BaseContentService
 from services.content.reference_service import ReferenceService
 
@@ -225,17 +227,13 @@ def stimm_dienst():
 def stimm_client(stimm_dienst):
     repository = MagicMock()
     repository.get = AsyncMock(return_value=object())
-    fabrik = Mock()
-    fabrik.return_value.create_content_repository.return_value = repository
     app = FastAPI()
     app.include_router(voting_router, prefix="/api/v1/voting")
-    app.dependency_overrides[get_settings] = lambda: Mock()
+    app.dependency_overrides[get_beitrag_laden] = lambda: partial(
+        beitrag_laden, repository=repository
+    )
     app.dependency_overrides[get_voting_service] = lambda: stimm_dienst
-    with patch(
-        "repositories.implementations.qdrant.qdrant_repository_factory.QdrantRepositoryFactory",
-        fabrik,
-    ):
-        yield TestClient(app)
+    return TestClient(app)
 
 
 class TestFehlerantworten:

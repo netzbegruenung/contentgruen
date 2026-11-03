@@ -23,7 +23,7 @@ import type { BeitragGespeichert } from '../beitragsformular/beitrag-gespeichert
 
 /**
  * Wie beim Bild: Der Post-Titel beschreibt, er folgt der Behauptungsregel fuer
- * Kommentar und Hintergrundinfo nicht (CLAUDE.md). Das Backend erlaubt 500; die
+ * Kommentar und Hintergrundinfo nicht (CODING_STANDARDS.md). Das Backend erlaubt 500; die
  * Titelbox der Karte kuerzt Laengeres ohnehin nach drei Zeilen.
  */
 export const TITEL_MAX = 200;

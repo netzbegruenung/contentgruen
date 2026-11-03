@@ -82,23 +82,50 @@ describe('NutzungsbedingungenComponent', () => {
     expect(text).toContain('Ersatzlizenz in Abschnitt 3 der CC0-Erklärung');
   });
 
-  it('lässt geänderte Bedingungen in Abschnitt 10 erst mit ausdrücklicher Zustimmung gelten (#466)', () => {
+  it('räumt das Nutzungsrecht in Abschnitt 4 wie CC0 für bekannte und künftige Nutzungsarten ein (#521)', () => {
+    const text = abschnittNummer('4.');
+
+    expect(text).toContain('für bekannte und künftige Nutzungsarten');
+    expect(text).not.toContain('alle bekannten Nutzungsarten');
+  });
+
+  it('lässt in Abschnitt 5 nur frei zugängliche fremde Bilder einbinden und sperrt andere erst nach Prüfung (#521)', () => {
+    const text = abschnittNummer('5.');
+
+    expect(text).toContain('Binde ein fremdes Bild nur ein, wenn es an seinem ursprünglichen Ort frei zugänglich ist');
+    expect(text).toContain('ohne Anmeldung, Bezahlschranke oder technischen Schutz');
+    // Wie in Abschnitt 7: Eine Meldung allein sperrt nichts, erst die Prüfung.
+    expect(text).toContain('sperren wir den Beitrag, sobald wir es geprüft haben');
+    expect(text).not.toContain('sobald wir davon erfahren');
+  });
+
+  it('lässt geänderte Bedingungen in Abschnitt 10 erst mit Zustimmung gelten (#466)', () => {
     const text = abschnittNummer('10.');
 
     expect(text).not.toContain('Widersprichst du nicht');
-    expect(text).toContain('erst, wenn du ihnen ausdrücklich zustimmst');
-    expect(text).toContain('Bei deiner nächsten Anmeldung');
+    expect(text).toContain('Geänderte Bedingungen gelten für dich erst, wenn du ihnen zustimmst');
     expect(text).toContain('Bis dahin gilt für dich der Stand, der vorher für dich galt');
-    expect(text).toContain('Schweigen oder bloßes Weiternutzen gilt nicht als Zustimmung');
+    expect(text).toContain('Schweigen oder bloßes Weiternutzen, etwa Lesen oder Bewerten, gilt nicht als Zustimmung');
     expect(text).toContain('Ab diesem Stand bewahren wir jeden Stand dieser Bedingungen');
   });
 
-  it('nimmt in Abschnitt 10 reine Korrekturen von der Zustimmung aus und meldet beim Wechsel alle ab (#466)', () => {
+  it('holt die Zustimmung in Abschnitt 10 mit dem nächsten Absenden ein, eine Frage beim Anmelden nur als Möglichkeit (#521)', () => {
+    const text = abschnittNummer('10.');
+
+    // Ohne Pflichtaktion: der Hinweis über dem Absende-Knopf (Abschnitt 2) verlinkt den aktuellen Stand.
+    expect(text).toContain('wenn du das nächste Mal etwas einstellst');
+    expect(text).toContain('Der Hinweis über dem Absende-Knopf verlinkt immer den aktuellen Stand');
+    // Mit Pflichtaktion: stimmt weiter, ohne sie zu versprechen.
+    expect(text).toContain('Fragen wir dich schon vorher, etwa bei der Anmeldung');
+    expect(text).not.toContain('Bei deiner nächsten Anmeldung zeigen wir dir');
+    expect(text).not.toContain('melden wir beim Wechsel alle ab');
+  });
+
+  it('nimmt in Abschnitt 10 reine Korrekturen von der Zustimmung aus (#466)', () => {
     const text = abschnittNummer('10.');
 
     expect(text).toContain('Reine Korrekturen, die deine Rechte und Pflichten nicht ändern');
     expect(text).toContain('gelten ohne erneute Zustimmung');
-    expect(text).toContain('melden wir beim Wechsel alle ab');
   });
 
   it('beschreibt Sperren als Regelweg der Moderation und behält die Mitteilung an die Person', () => {
