@@ -162,11 +162,15 @@ published for whoever wants the newest release, but nothing in production follow
    of production, `v0.9.0` at the internal launch, `v1.0.0` at the public launch,
    [SemVer](https://semver.org/) after that. No release candidates (`-rc`): production only
    takes release versions.
-3. **Release pull request:** before tagging, one pull request prepares the release. The
-   version needs no change in the repository: the release build passes the tag to the
-   frontend image (build argument `APP_VERSION`), and the footer shows it.
-   `mvp/frontend/gutgesagt-frontend/package.json` keeps its `version`; the footer only shows it
-   for images built without a tag (`:main`, local builds).
+3. **Release pull request:** before tagging, one pull request prepares the release.
+   - **Version in the footer:** Woodpecker's release build passes the tag to the frontend
+     image (build argument `APP_VERSION`), and the footer shows it; no version change is
+     needed for those images. **Until the switch** ([CI.md](CI.md#images-and-releases)) the
+     deployed images still come from GitHub's `release.yml`, which does not pass the tag: set
+     `version` in `mvp/frontend/gutgesagt-frontend/package.json` to `X.Y.Z` (without the `v`)
+     as before, `npm version X.Y.Z --no-git-tag-version` in that directory. This sub-step
+     goes with the switch. Images built without a tag (`:main`, local builds) show the
+     `package.json` version.
    - **Change list:** draft the text of the Forgejo release and show it in the description of
      the release pull request, so it is reviewed with it. The change list lives only in the
      Forgejo release, not in a file in the repository. Draft it with

@@ -22,7 +22,7 @@ import sys
 # SemVer 2.0.0 mit fuehrendem v, wie metadata-action type=semver es annahm
 SEMVER = re.compile(
     r"^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-    r"(?P<vorab>-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
+    r"(?P<vorab>-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?"
 )
 
 
@@ -33,7 +33,7 @@ def image_tags(ereignis, git_tag, commit_sha, praefix=""):
             raise ValueError("Commit fehlt (CI_COMMIT_SHA)")
         tags = ["main", f"sha-{commit_sha[:7]}"]
     elif ereignis == "tag":
-        treffer = SEMVER.match(git_tag)
+        treffer = SEMVER.fullmatch(git_tag)
         if not treffer:
             raise ValueError(f"Tag {git_tag!r} ist keine SemVer-Version vX.Y.Z")
         version = git_tag[1:].split("+", 1)[0]

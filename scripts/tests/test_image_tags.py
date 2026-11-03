@@ -33,7 +33,7 @@ class TestRelease:
         # metadata-action: Vorabversionen bekommen weder X.Y noch latest
         assert image_tags("tag", "v1.2.3-rc.1", SHA) == ["1.2.3-rc.1"]
 
-    @pytest.mark.parametrize("tag", ["v1.2", "version-1", "1.2.3", "v1.2.3.4", ""])
+    @pytest.mark.parametrize("tag", ["v1.2", "version-1", "1.2.3", "v1.2.3.4", "v1.2.3\n", ""])
     def test_tag_ohne_semver_bricht_ab(self, tag):
         with pytest.raises(ValueError, match="SemVer"):
             image_tags("tag", tag, SHA)

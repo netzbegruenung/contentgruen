@@ -3,7 +3,7 @@
 # Erst nach gruenem ci (depends_on), manuell auf main baut alle Images (kein Pfadfilter
 # bei manual). Die Pfadfilter decken alles ab, was das Dockerfile kopiert, dazu diese
 # Pipeline und das Tag-Skript; scripts/tests/test_woodpecker_images.py prueft das.
-# Secrets registry_user/registry_token: nur Events push und tag, nur fuer das Plugin-Image
+# Secrets registry_user/registry_token: Events push, tag und manual, nur fuer das Plugin-Image
 # (docs/CI.md, "Images and releases").
 when:
   - event: push

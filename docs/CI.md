@@ -147,8 +147,8 @@ deployment and Renovate keep working (#327). Both start only after a green `ci` 
   SemVer version `vX.Y.Z` turns the step red and nothing is built.
 - **Version in the footer from the tag.** The release build passes the tag as build
   argument `APP_VERSION` to the frontend image; a release needs no version change in
-  `package.json` (`docs/DEPLOYMENT.md`, "Releases"). Builds of `main` show the version from
-  `package.json`.
+  `package.json` once the GitHub workflows are gone (`docs/DEPLOYMENT.md`, "Releases").
+  Builds of `main` show the version from `package.json`.
 - **Path filters** per build step, because a filter on the workflow would hide it. They cover
   everything the Dockerfile copies (the semantic search image also takes the migrations,
   `mvp/scripts/backup`, `mvp/data` and `mvp/.dockerignore`), plus `build.yaml` and
@@ -172,7 +172,8 @@ have built on both sides:
    (`docker run --rm --entrypoint ls <image> -R /app` or similar per image), the frontend
    footer with the expected version and commit.
 2. Remove `IMAGE_TAG_PRAEFIX` from `build.yaml` and `release.yaml` and delete
-   `.github/workflows/`; update this section and `docs/DEPLOYMENT.md`.
+   `.github/workflows/`; update this section and `docs/DEPLOYMENT.md` (the `package.json`
+   step in "Releases" goes, the GitHub CI paragraph in "Updating Production" too).
 3. After the merge: delete the GitHub Actions secrets on the mirror and the prefixed tags in
    the registry.
 
@@ -204,7 +205,7 @@ enabled, and the pull request that adds the pipeline already needs it):
    account with write access to the packages of `netzbegruenung-images`, and a token for it
    with the scope `write:package` only. Store it in the team's password manager and add it in
    Woodpecker as secrets `registry_user` (the account name) and `registry_token`, events
-   "Push" and "Tag" only, image filter `woodpeckerci/plugin-docker-buildx` (so only the
+   "Push", "Tag" and "Manual" (for "Run pipeline" on `main`), image filter `woodpeckerci/plugin-docker-buildx` (so only the
    build steps see them). The plugin needs Docker inside its container: it must be on the
    list of privileged plugins of the Woodpecker server. Without the secrets the workflows
    fail before any step; `ci` is not affected. Known limit: whoever can push a tag (write
