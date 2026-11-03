@@ -14,7 +14,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 from sqlalchemy import text
 
-from infrastructure.database.models import GeseheneNutzung, RawInputDraft, User
+from infrastructure.database.models import GeseheneNutzung, Satz, User
 from domain.interfaces.konten_im_realm import VerknuepfteKonten
 from services.wartung.kennungen_umstellen import (
     kennungen_in_postgres,
@@ -138,7 +138,7 @@ class TestPostgresUmschreiben:
         assert bericht.stehen_geblieben == 1
         assert bericht.geaendert["raw_input_drafts.user_id"] == 0
         with datenbank.get_session() as s:
-            saetze = s.query(RawInputDraft).filter_by(raw_input_id=einwuerfe.fremd)
+            saetze = s.query(Satz).filter_by(raw_input_id=einwuerfe.fremd)
             assert {d.user_id for d in saetze} == {PERSON, NEU, ANDERE}
 
     def test_anzeigename_der_alten_bleibt_solange_ihr_satz_stehen_bleibt(

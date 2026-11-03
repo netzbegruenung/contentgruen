@@ -64,11 +64,11 @@ class TestAPIImports:
 
         assert seeding.router is not None
 
-    def test_import_raw_input_api(self):
-        """Test that raw_input API module imports without errors."""
-        from api.v1 import raw_input
+    def test_import_einwurf_api(self):
+        """Test that einwurf API module imports without errors."""
+        from api.v1 import einwurf
 
-        assert raw_input.router is not None
+        assert einwurf.router is not None
 
     def test_import_metrics_api(self):
         """Test that metrics API module imports without errors."""

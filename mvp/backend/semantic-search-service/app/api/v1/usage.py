@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from dependencies import (
+    get_beitrag_laden,
     get_aufrufer,
     get_settings,
     get_current_user_optional,
@@ -18,7 +19,7 @@ from dependencies import (
 )
 from utils.device_category import derive_device_category
 from services.usage_tracking_service import get_usage_service
-from services.beitrag_laden import BeitragUnlesbar, beitrag_laden
+from services.beitrag_laden import BeitragLader, BeitragUnlesbar
 from services.oft_genutzt_service import OftGenutztService, sichtbaren_beitrag_laden
 from services.beitrag_fuer_aufrufer import Aufrufer, fuer_aufrufer
 from domain.models.commentary import Fassung
@@ -123,7 +124,7 @@ async def track_content_usage(
     body: TrackUsageRequest,
     user_agent: Optional[str] = Header(None),
     aufrufer: Optional[str] = Depends(get_current_user_optional),
-    settings: Settings = Depends(get_settings),
+    laden: BeitragLader = Depends(get_beitrag_laden),
 ):
     """
     Track that a content item was used (copied).
@@ -157,7 +158,7 @@ async def track_content_usage(
         # auf eine ID, hinter der nichts steht. Ist er da, aber unlesbar, wird im
         # Zweifel gezaehlt - wem er gehoert, ist dann nicht feststellbar.
         try:
-            beitrag = await beitrag_laden(content_uuid, settings)
+            beitrag = await laden(content_uuid)
         except BeitragUnlesbar:
             beitrag = None
             unlesbar = True

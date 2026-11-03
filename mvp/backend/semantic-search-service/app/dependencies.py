@@ -1,3 +1,4 @@
+import uuid
 from typing import Optional, TYPE_CHECKING
 from fastapi import Depends, Header, HTTPException
 
@@ -15,6 +16,8 @@ from services.voting_service import VotingService
 from services.anzeigename_service import get_anzeigename_service
 from services.beitrag_fuer_aufrufer import Aufrufer
 from services.content.beitrag_loeschen_service import BeitragLoeschenService
+from services.beitrag_laden import BeitragLader, beitrag_laden
+from repositories.interfaces.content_repository import IContentRepository
 from repositories.implementations.qdrant.moderation_repository import (
     get_moderation_repository,
 )
@@ -47,7 +50,7 @@ from services.gegenlesen.gegenlesen_service import (
 from services.loeschfristen_service import LoeschfristenService
 from services.moderation_service import ModerationService
 from repositories.content_report_repository import get_content_report_repository
-from repositories.raw_input_repository import get_raw_input_repository
+from repositories.einwurf_repository import get_einwurf_repository
 from repositories.sperre_repository import get_sperre_repository
 from core.logging import get_logger
 
@@ -230,21 +233,40 @@ def get_moderation_service() -> ModerationService:
 def get_loeschfristen_service() -> LoeschfristenService:
     return LoeschfristenService(
         get_content_report_repository(),
-        get_raw_input_repository(),
+        get_einwurf_repository(),
         get_moderation_repository(),
         get_moderation_service(),
         get_sperre_repository(),
     )
 
 
-def get_beitrag_loeschen_service(
+def get_content_repository(
     settings: Settings = Depends(get_settings),
+) -> IContentRepository:
+    """Das aggregierte Content-Repository: liest und loescht jeden Beitragstyp."""
+    return QdrantRepositoryFactory().create_content_repository(settings)
+
+
+def get_beitrag_laden(settings: Settings = Depends(get_settings)) -> BeitragLader:
+    """
+    ``beitrag_laden`` ueber das aggregierte Repository, fuer Nutzung und Stimmen.
+
+    Das Repository entsteht erst beim Laden, nicht beim Aufloesen der Dependency:
+    Scheitert es, faengt das ``try`` des Endpunkts den Fehler wie einen Ausfall des
+    Suchindex (die Stimme zaehlt trotzdem, die Nutzung antwortet mit ihrem 500).
+    """
+
+    async def laden(content_id: uuid.UUID):
+        return await beitrag_laden(content_id, get_content_repository(settings))
+
+    return laden
+
+
+def get_beitrag_loeschen_service(
+    repository: IContentRepository = Depends(get_content_repository),
 ) -> BeitragLoeschenService:
     """Ueber das aggregierte Repository: Loeschen gilt fuer jeden Beitragstyp."""
-    return BeitragLoeschenService(
-        QdrantRepositoryFactory().create_content_repository(settings),
-        get_moderation_repository(),
-    )
+    return BeitragLoeschenService(repository, get_moderation_repository())
 
 
 def get_commentary_service() -> CommentaryService:
