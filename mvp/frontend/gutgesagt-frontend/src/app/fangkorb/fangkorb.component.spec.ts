@@ -321,6 +321,9 @@ describe('FangkorbComponent', () => {
       const host: HTMLElement = fixture.nativeElement;
       host.style.display = 'block';
       host.style.width = '320px';
+      // fonts.ready wartet nur auf Schriften, die schon angefordert sind; das Layout
+      // fordert die Schrift der Tabs an (#552).
+      void host.offsetWidth;
       await document.fonts.ready;
       const woerter = Array.from(host.querySelectorAll('.tab-wort') as NodeListOf<HTMLElement>);
 
